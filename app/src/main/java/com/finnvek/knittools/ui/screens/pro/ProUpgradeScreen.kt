@@ -60,14 +60,15 @@ fun ProUpgradeScreen(
                 )
                 Spacer(modifier = Modifier.height(16.dp))
 
-                val features = listOf(
-                    R.string.pro_feature_unlimited_projects,
-                    R.string.pro_feature_full_history,
-                    R.string.pro_feature_notes,
-                    R.string.pro_feature_secondary_counter,
-                    R.string.pro_feature_ocr,
-                    R.string.pro_feature_widget,
-                )
+                val features =
+                    listOf(
+                        R.string.pro_feature_unlimited_projects,
+                        R.string.pro_feature_full_history,
+                        R.string.pro_feature_notes,
+                        R.string.pro_feature_secondary_counter,
+                        R.string.pro_feature_ocr,
+                        R.string.pro_feature_widget,
+                    )
                 features.forEach { featureRes ->
                     Text(
                         text = "• ${stringResource(featureRes)}",

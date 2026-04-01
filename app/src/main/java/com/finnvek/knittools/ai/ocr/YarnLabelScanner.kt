@@ -11,18 +11,20 @@ import java.io.File
 import kotlin.coroutines.resume
 
 object YarnLabelScanner {
-
-    suspend fun analyzeImage(context: Context, imageUri: Uri): ParsedYarnLabel =
+    suspend fun analyzeImage(
+        context: Context,
+        imageUri: Uri,
+    ): ParsedYarnLabel =
         suspendCancellableCoroutine { continuation ->
             val image = InputImage.fromFilePath(context, imageUri)
             val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
 
-            recognizer.process(image)
+            recognizer
+                .process(image)
                 .addOnSuccessListener { visionText ->
                     val parsed = YarnLabelParser.parse(visionText.text)
                     continuation.resume(parsed)
-                }
-                .addOnFailureListener {
+                }.addOnFailureListener {
                     continuation.resume(ParsedYarnLabel())
                 }
         }

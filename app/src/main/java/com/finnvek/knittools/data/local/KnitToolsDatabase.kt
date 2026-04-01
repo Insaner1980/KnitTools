@@ -18,5 +18,6 @@ import androidx.room.RoomDatabase
 )
 abstract class KnitToolsDatabase : RoomDatabase() {
     abstract fun counterProjectDao(): CounterProjectDao
+
     abstract fun yarnCardDao(): YarnCardDao
 }

@@ -54,7 +54,10 @@ class YarnCardViewModel
 
         val isPro: Boolean get() = proManager.hasFeature(ProFeature.OCR)
 
-        fun loadFromScan(parsed: ParsedYarnLabel, photoUri: Uri?) {
+        fun loadFromScan(
+            parsed: ParsedYarnLabel,
+            photoUri: Uri?,
+        ) {
             _formState.value =
                 YarnCardFormState(
                     brand = parsed.brand,
@@ -112,7 +115,10 @@ class YarnCardViewModel
             viewModelScope.launch { repository.saveCard(card) }
         }
 
-        fun deleteCard(id: Long, onDeleted: () -> Unit) {
+        fun deleteCard(
+            id: Long,
+            onDeleted: () -> Unit,
+        ) {
             viewModelScope.launch {
                 repository.deleteCard(id)
                 onDeleted()

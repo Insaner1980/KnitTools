@@ -110,7 +110,15 @@ fun PasteInstructionButton(
                     },
                     enabled = instructionText.isNotBlank() && !isParsing,
                 ) {
-                    Text(if (isParsing) stringResource(R.string.parsing_instruction) else stringResource(R.string.paste_instruction))
+                    Text(
+                        if (isParsing) {
+                            stringResource(
+                                R.string.parsing_instruction,
+                            )
+                        } else {
+                            stringResource(R.string.paste_instruction)
+                        },
+                    )
                 }
 
                 resultMessage?.let {

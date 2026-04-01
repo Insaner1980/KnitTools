@@ -5,7 +5,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class YarnLabelParserTest {
-
     @Test
     fun `extract weight in grams`() {
         assertEquals("50", YarnLabelParser.extractWeight("50g / 175m"))
@@ -79,7 +78,8 @@ class YarnLabelParserTest {
 
     @Test
     fun `full label parse`() {
-        val label = """
+        val label =
+            """
             Drops
             Baby Merino
             100% Merino Wool
@@ -88,7 +88,7 @@ class YarnLabelParserTest {
             Color 46 Old Pink
             Dye Lot 23891
             DK
-        """.trimIndent()
+            """.trimIndent()
 
         val result = YarnLabelParser.parse(label)
         assertEquals("50", result.weightGrams)

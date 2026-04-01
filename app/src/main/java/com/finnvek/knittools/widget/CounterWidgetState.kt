@@ -16,7 +16,6 @@ data class WidgetData(
 )
 
 object CounterWidgetState {
-
     private val KEY_PROJECT_NAME = stringPreferencesKey("project_name")
     private val KEY_COUNT = intPreferencesKey("count")
 
@@ -28,7 +27,11 @@ object CounterWidgetState {
         )
     }
 
-    suspend fun save(context: Context, name: String, count: Int) {
+    suspend fun save(
+        context: Context,
+        name: String,
+        count: Int,
+    ) {
         context.widgetDataStore.edit {
             it[KEY_PROJECT_NAME] = name
             it[KEY_COUNT] = count

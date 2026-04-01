@@ -10,7 +10,6 @@ enum class NanoStatus {
 }
 
 object NanoAvailability {
-
     @Suppress("TooGenericExceptionCaught")
     suspend fun check(): NanoStatus =
         try {

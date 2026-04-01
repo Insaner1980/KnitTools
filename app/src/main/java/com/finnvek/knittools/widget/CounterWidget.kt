@@ -32,12 +32,15 @@ import androidx.glance.text.TextStyle
 import com.finnvek.knittools.MainActivity
 
 class CounterWidget : GlanceAppWidget() {
+    override val sizeMode =
+        SizeMode.Responsive(
+            setOf(SMALL_SIZE, MEDIUM_SIZE),
+        )
 
-    override val sizeMode = SizeMode.Responsive(
-        setOf(SMALL_SIZE, MEDIUM_SIZE),
-    )
-
-    override suspend fun provideGlance(context: Context, id: GlanceId) {
+    override suspend fun provideGlance(
+        context: Context,
+        id: GlanceId,
+    ) {
         val prefs = CounterWidgetState.load(context)
 
         provideContent {
@@ -73,11 +76,12 @@ private fun SmallWidget(
     count: Int,
 ) {
     Box(
-        modifier = GlanceModifier
-            .fillMaxSize()
-            .background(GlanceTheme.colors.surface)
-            .clickable(actionStartActivity<MainActivity>())
-            .padding(8.dp),
+        modifier =
+            GlanceModifier
+                .fillMaxSize()
+                .background(GlanceTheme.colors.surface)
+                .clickable(actionStartActivity<MainActivity>())
+                .padding(8.dp),
         contentAlignment = Alignment.CenterStart,
     ) {
         Row(
@@ -87,19 +91,21 @@ private fun SmallWidget(
             Column(modifier = GlanceModifier.defaultWeight()) {
                 Text(
                     text = projectName,
-                    style = TextStyle(
-                        fontSize = 12.sp,
-                        color = GlanceTheme.colors.onSurfaceVariant,
-                    ),
+                    style =
+                        TextStyle(
+                            fontSize = 12.sp,
+                            color = GlanceTheme.colors.onSurfaceVariant,
+                        ),
                     maxLines = 1,
                 )
                 Text(
                     text = "$count",
-                    style = TextStyle(
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = GlanceTheme.colors.onSurface,
-                    ),
+                    style =
+                        TextStyle(
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = GlanceTheme.colors.onSurface,
+                        ),
                 )
             }
         }
@@ -113,18 +119,20 @@ private fun MediumWidget(
     count: Int,
 ) {
     Column(
-        modifier = GlanceModifier
-            .fillMaxSize()
-            .background(GlanceTheme.colors.surface)
-            .padding(12.dp),
+        modifier =
+            GlanceModifier
+                .fillMaxSize()
+                .background(GlanceTheme.colors.surface)
+                .padding(12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
             text = projectName,
-            style = TextStyle(
-                fontSize = 12.sp,
-                color = GlanceTheme.colors.onSurfaceVariant,
-            ),
+            style =
+                TextStyle(
+                    fontSize = 12.sp,
+                    color = GlanceTheme.colors.onSurfaceVariant,
+                ),
             maxLines = 1,
         )
 
@@ -132,11 +140,12 @@ private fun MediumWidget(
 
         Text(
             text = "$count",
-            style = TextStyle(
-                fontSize = 36.sp,
-                fontWeight = FontWeight.Bold,
-                color = GlanceTheme.colors.onSurface,
-            ),
+            style =
+                TextStyle(
+                    fontSize = 36.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = GlanceTheme.colors.onSurface,
+                ),
         )
 
         Spacer(modifier = GlanceModifier.defaultWeight())
@@ -147,16 +156,18 @@ private fun MediumWidget(
         ) {
             WidgetButton(
                 text = "−",
-                onClick = actionSendBroadcast(
-                    CounterWidgetActions.decrementIntent(context),
-                ),
+                onClick =
+                    actionSendBroadcast(
+                        CounterWidgetActions.decrementIntent(context),
+                    ),
             )
             Spacer(modifier = GlanceModifier.width(12.dp))
             WidgetButton(
                 text = "+",
-                onClick = actionSendBroadcast(
-                    CounterWidgetActions.incrementIntent(context),
-                ),
+                onClick =
+                    actionSendBroadcast(
+                        CounterWidgetActions.incrementIntent(context),
+                    ),
             )
         }
     }
@@ -168,20 +179,22 @@ private fun WidgetButton(
     onClick: androidx.glance.action.Action,
 ) {
     Box(
-        modifier = GlanceModifier
-            .size(40.dp)
-            .cornerRadius(8.dp)
-            .background(GlanceTheme.colors.primary)
-            .clickable(onClick),
+        modifier =
+            GlanceModifier
+                .size(40.dp)
+                .cornerRadius(8.dp)
+                .background(GlanceTheme.colors.primary)
+                .clickable(onClick),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             text = text,
-            style = TextStyle(
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = GlanceTheme.colors.onPrimary,
-            ),
+            style =
+                TextStyle(
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = GlanceTheme.colors.onPrimary,
+                ),
         )
     }
 }

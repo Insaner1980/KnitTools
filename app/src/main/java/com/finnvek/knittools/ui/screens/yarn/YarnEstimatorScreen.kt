@@ -58,29 +58,31 @@ fun YarnEstimatorScreen(
 
     var pendingPhotoUri by remember { mutableStateOf<Uri?>(null) }
 
-    val cameraLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.TakePicture(),
-    ) { success ->
-        if (success && pendingPhotoUri != null) {
-            scope.launch {
-                yarnCardViewModel?.setScanning(true)
-                val parsed = YarnLabelScanner.analyzeImage(context, pendingPhotoUri!!)
-                yarnCardViewModel?.loadFromScan(parsed, pendingPhotoUri)
-                yarnCardViewModel?.setScanning(false)
-                onScanLabel()
+    val cameraLauncher =
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.TakePicture(),
+        ) { success ->
+            if (success && pendingPhotoUri != null) {
+                scope.launch {
+                    yarnCardViewModel?.setScanning(true)
+                    val parsed = YarnLabelScanner.analyzeImage(context, pendingPhotoUri!!)
+                    yarnCardViewModel?.loadFromScan(parsed, pendingPhotoUri)
+                    yarnCardViewModel?.setScanning(false)
+                    onScanLabel()
+                }
             }
         }
-    }
 
-    val permissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission(),
-    ) { granted ->
-        if (granted) {
-            val (_, uri) = YarnLabelScanner.createImageFile(context)
-            pendingPhotoUri = uri
-            cameraLauncher.launch(uri)
+    val permissionLauncher =
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.RequestPermission(),
+        ) { granted ->
+            if (granted) {
+                val (_, uri) = YarnLabelScanner.createImageFile(context)
+                pendingPhotoUri = uri
+                cameraLauncher.launch(uri)
+            }
         }
-    }
 
     val result by remember(totalYarn, yarnPerSkein, weightPerSkein) {
         derivedStateOf {
@@ -134,7 +136,14 @@ fun YarnEstimatorScreen(
                     }
                 },
             )
-            val lengthUnit = if (useImperial) stringResource(R.string.unit_yards) else stringResource(R.string.unit_meters)
+            val lengthUnit =
+                if (useImperial) {
+                    stringResource(
+                        R.string.unit_yards,
+                    )
+                } else {
+                    stringResource(R.string.unit_meters)
+                }
             NumberInputField(
                 value = totalYarn,
                 onValueChange = { totalYarn = it },

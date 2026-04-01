@@ -10,17 +10,20 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 class CounterWidgetActions : BroadcastReceiver() {
-
-    override fun onReceive(context: Context, intent: Intent?) {
+    override fun onReceive(
+        context: Context,
+        intent: Intent?,
+    ) {
         val action = intent?.action ?: return
 
         CoroutineScope(Dispatchers.IO).launch {
             val data = CounterWidgetState.load(context)
-            val newCount = when (action) {
-                ACTION_INCREMENT -> data.count + 1
-                ACTION_DECREMENT -> maxOf(0, data.count - 1)
-                else -> return@launch
-            }
+            val newCount =
+                when (action) {
+                    ACTION_INCREMENT -> data.count + 1
+                    ACTION_DECREMENT -> maxOf(0, data.count - 1)
+                    else -> return@launch
+                }
             CounterWidgetState.save(context, data.projectName, newCount)
             CounterWidget().updateAll(context)
         }

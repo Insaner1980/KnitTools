@@ -59,7 +59,11 @@ fun HomeScreen(
     val tools =
         listOf(
             ToolCardData(R.string.tool_row_counter, R.drawable.row_counter, Screen.Counter),
-            ToolCardData(R.string.tool_increase_decrease, R.drawable.increase_decrease_calculator, Screen.IncreaseDecrease),
+            ToolCardData(
+                R.string.tool_increase_decrease,
+                R.drawable.increase_decrease_calculator,
+                Screen.IncreaseDecrease,
+            ),
             ToolCardData(R.string.tool_gauge_converter, R.drawable.gauge_converter, Screen.Gauge),
             ToolCardData(R.string.tool_cast_on_calculator, R.drawable.cast_on_calculator, Screen.CastOn),
             ToolCardData(R.string.tool_yarn_estimator, R.drawable.yarn_estimator, Screen.Yarn),

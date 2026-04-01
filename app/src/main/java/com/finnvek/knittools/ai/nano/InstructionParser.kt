@@ -2,8 +2,8 @@ package com.finnvek.knittools.ai.nano
 
 import com.google.mlkit.genai.common.FeatureStatus
 import com.google.mlkit.genai.common.GenAiException
-import com.google.mlkit.genai.prompt.GenerativeModel
 import com.google.mlkit.genai.prompt.Generation
+import com.google.mlkit.genai.prompt.GenerativeModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.firstOrNull
 import kotlin.math.min
@@ -21,11 +21,12 @@ sealed class ParsedInstruction {
         val rowsPer10cm: Double,
     ) : ParsedInstruction()
 
-    data class Failure(val reason: String) : ParsedInstruction()
+    data class Failure(
+        val reason: String,
+    ) : ParsedInstruction()
 }
 
 object InstructionParser {
-
     private const val MAX_RETRIES = 3
     private const val BASE_DELAY_MS = 500L
     private const val MAX_DELAY_MS = 8000L
@@ -86,12 +87,18 @@ object InstructionParser {
             }
 
             FeatureStatus.AVAILABLE -> { /* ready */ }
-            else -> throw IllegalStateException("Feature unavailable")
+
+            else -> {
+                throw IllegalStateException("Feature unavailable")
+            }
         }
     }
 
     @Suppress("TooGenericExceptionCaught")
-    private suspend fun runWithRetry(model: GenerativeModel, instruction: String): String {
+    private suspend fun runWithRetry(
+        model: GenerativeModel,
+        instruction: String,
+    ): String {
         var lastException: Exception? = null
 
         repeat(MAX_RETRIES) { attempt ->
@@ -115,10 +122,11 @@ object InstructionParser {
     }
 
     internal fun parseResponse(response: String): ParsedInstruction {
-        val lines = response.trim().lines().associate { line ->
-            val parts = line.split(":", limit = 2)
-            if (parts.size == 2) parts[0].trim().uppercase() to parts[1].trim() else "" to ""
-        }
+        val lines =
+            response.trim().lines().associate { line ->
+                val parts = line.split(":", limit = 2)
+                if (parts.size == 2) parts[0].trim().uppercase() to parts[1].trim() else "" to ""
+            }
 
         if (lines.containsKey("TYPE") && lines.containsKey("CURRENT") && lines.containsKey("CHANGE")) {
             val isIncrease = lines["TYPE"]?.uppercase()?.contains("INCREASE") == true

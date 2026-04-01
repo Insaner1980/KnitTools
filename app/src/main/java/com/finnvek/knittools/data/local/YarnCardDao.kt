@@ -8,7 +8,6 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface YarnCardDao {
-
     @Query("SELECT * FROM yarn_cards ORDER BY createdAt DESC")
     fun getAllCards(): Flow<List<YarnCardEntity>>
 

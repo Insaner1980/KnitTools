@@ -18,19 +18,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
+import com.finnvek.knittools.ai.nano.ParsedInstruction
 import com.finnvek.knittools.domain.calculator.GaugeConverter
 import com.finnvek.knittools.domain.model.GaugeConversionResult
 import com.finnvek.knittools.ui.components.NumberInputField
+import com.finnvek.knittools.ui.components.PasteInstructionButton
 import com.finnvek.knittools.ui.components.ResultCard
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
-import com.finnvek.knittools.ui.components.PasteInstructionButton
 import com.finnvek.knittools.ui.components.UnitToggle
 import com.finnvek.knittools.ui.screens.home.HomeViewModel
 import com.finnvek.knittools.util.extensions.convertGaugeValue
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.finnvek.knittools.ai.nano.ParsedInstruction
 
 @Composable
 fun GaugeScreen(
@@ -84,7 +84,14 @@ fun GaugeScreen(
                     }
                 },
             )
-            val gaugeUnit = if (useImperial) stringResource(R.string.unit_per_4in) else stringResource(R.string.unit_per_10cm)
+            val gaugeUnit =
+                if (useImperial) {
+                    stringResource(
+                        R.string.unit_per_4in,
+                    )
+                } else {
+                    stringResource(R.string.unit_per_10cm)
+                }
 
             GaugeInputFields(
                 patternSt = patternSt,
@@ -198,11 +205,12 @@ private fun GaugeResultCard(result: GaugeConversionResult) {
             style = MaterialTheme.typography.headlineSmall,
         )
         Text(
-            text = stringResource(
-                R.string.exact_result,
-                "%.1f".format(result.adjustedStitchesExact),
-                "%.1f".format(result.adjustedRowsExact),
-            ),
+            text =
+                stringResource(
+                    R.string.exact_result,
+                    "%.1f".format(result.adjustedStitchesExact),
+                    "%.1f".format(result.adjustedRowsExact),
+                ),
             style = MaterialTheme.typography.bodySmall,
         )
         val sign = if (result.stitchPercentDifference >= 0) "+" else ""

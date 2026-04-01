@@ -71,7 +71,14 @@ fun CastOnScreen(onBack: () -> Unit) {
                 },
             )
             val unit = if (useImperial) stringResource(R.string.unit_inches) else stringResource(R.string.unit_cm)
-            val gaugeUnit = if (useImperial) stringResource(R.string.unit_st_per_4in) else stringResource(R.string.unit_st_per_10cm)
+            val gaugeUnit =
+                if (useImperial) {
+                    stringResource(
+                        R.string.unit_st_per_4in,
+                    )
+                } else {
+                    stringResource(R.string.unit_st_per_10cm)
+                }
             NumberInputField(
                 value = width,
                 onValueChange = { width = it },
@@ -115,7 +122,13 @@ fun CastOnScreen(onBack: () -> Unit) {
                     )
                     r.adjustedDown?.let { down ->
                         Text(
-                            text = stringResource(R.string.adjusted_down, down, "%.1f".format(r.adjustedDownWidth), unit),
+                            text =
+                                stringResource(
+                                    R.string.adjusted_down,
+                                    down,
+                                    "%.1f".format(r.adjustedDownWidth),
+                                    unit,
+                                ),
                             style = MaterialTheme.typography.bodySmall,
                         )
                     }

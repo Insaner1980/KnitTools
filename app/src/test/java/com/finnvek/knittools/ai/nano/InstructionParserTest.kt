@@ -5,14 +5,14 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class InstructionParserTest {
-
     @Test
     fun `parse increase response`() {
-        val response = """
+        val response =
+            """
             TYPE: INCREASE
             CURRENT: 96
             CHANGE: 12
-        """.trimIndent()
+            """.trimIndent()
 
         val result = InstructionParser.parseResponse(response)
         assertTrue(result is ParsedInstruction.IncreaseDecrease)
@@ -24,11 +24,12 @@ class InstructionParserTest {
 
     @Test
     fun `parse decrease response`() {
-        val response = """
+        val response =
+            """
             TYPE: DECREASE
             CURRENT: 120
             CHANGE: 8
-        """.trimIndent()
+            """.trimIndent()
 
         val result = InstructionParser.parseResponse(response)
         assertTrue(result is ParsedInstruction.IncreaseDecrease)
@@ -40,10 +41,11 @@ class InstructionParserTest {
 
     @Test
     fun `parse gauge response`() {
-        val response = """
+        val response =
+            """
             GAUGE_STITCHES: 22
             GAUGE_ROWS: 30
-        """.trimIndent()
+            """.trimIndent()
 
         val result = InstructionParser.parseResponse(response)
         assertTrue(result is ParsedInstruction.Gauge)
@@ -54,10 +56,11 @@ class InstructionParserTest {
 
     @Test
     fun `parse gauge with decimals`() {
-        val response = """
+        val response =
+            """
             GAUGE_STITCHES: 22.5
             GAUGE_ROWS: 30.5
-        """.trimIndent()
+            """.trimIndent()
 
         val result = InstructionParser.parseResponse(response)
         assertTrue(result is ParsedInstruction.Gauge)
@@ -85,11 +88,12 @@ class InstructionParserTest {
 
     @Test
     fun `parse response with extra whitespace`() {
-        val response = """
+        val response =
+            """
             TYPE:   INCREASE
             CURRENT:  96
             CHANGE:  12
-        """.trimIndent()
+            """.trimIndent()
 
         val result = InstructionParser.parseResponse(response)
         assertTrue(result is ParsedInstruction.IncreaseDecrease)
@@ -99,10 +103,11 @@ class InstructionParserTest {
 
     @Test
     fun `parse response with missing field returns failure`() {
-        val response = """
+        val response =
+            """
             TYPE: INCREASE
             CURRENT: 96
-        """.trimIndent()
+            """.trimIndent()
 
         val result = InstructionParser.parseResponse(response)
         assertTrue(result is ParsedInstruction.Failure)

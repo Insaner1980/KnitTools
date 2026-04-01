@@ -15,7 +15,6 @@ data class ParsedYarnLabel(
 )
 
 object YarnLabelParser {
-
     fun parse(rawText: String): ParsedYarnLabel {
         val lines = rawText.lines().map { it.trim() }.filter { it.isNotBlank() }
         val fullText = lines.joinToString(" ")
@@ -54,17 +53,22 @@ object YarnLabelParser {
     internal fun extractNeedleSize(text: String): String {
         val mmPattern = Regex("""(\d+(?:[.,]\d+)?)\s*mm""", RegexOption.IGNORE_CASE)
         val usPattern = Regex("""US\s*(\d+(?:\.\d+)?)""", RegexOption.IGNORE_CASE)
-        return mmPattern.find(text)?.groupValues?.get(1)?.replace(',', '.')
+        return mmPattern
+            .find(text)
+            ?.groupValues
+            ?.get(1)
+            ?.replace(',', '.')
             ?: usPattern.find(text)?.let { "US ${it.groupValues[1]}" }
             ?: ""
     }
 
     // Medium confidence: number + sts/stitches pattern
     internal fun extractGauge(text: String): String {
-        val pattern = Regex(
-            """(\d+)\s*(?:sts?|stitches?).*?(\d+)\s*(?:rows?).*?(?:=\s*)?(\d+)\s*(?:cm|in)""",
-            RegexOption.IGNORE_CASE,
-        )
+        val pattern =
+            Regex(
+                """(\d+)\s*(?:sts?|stitches?).*?(\d+)\s*(?:rows?).*?(?:=\s*)?(\d+)\s*(?:cm|in)""",
+                RegexOption.IGNORE_CASE,
+            )
         val match = pattern.find(text) ?: return ""
         val sts = match.groupValues[1]
         val rows = match.groupValues[2]
@@ -74,17 +78,35 @@ object YarnLabelParser {
 
     // Medium confidence: percentage + fiber keyword
     internal fun extractFiber(text: String): String {
-        val fibers = listOf(
-            "wool", "merino", "cotton", "acrylic", "polyester", "nylon", "silk",
-            "alpaca", "cashmere", "mohair", "linen", "bamboo", "viscose", "polyamide",
-        )
-        val pattern = Regex(
-            """(\d+)\s*%\s*(${fibers.joinToString("|")})""",
-            RegexOption.IGNORE_CASE,
-        )
+        val fibers =
+            listOf(
+                "wool",
+                "merino",
+                "cotton",
+                "acrylic",
+                "polyester",
+                "nylon",
+                "silk",
+                "alpaca",
+                "cashmere",
+                "mohair",
+                "linen",
+                "bamboo",
+                "viscose",
+                "polyamide",
+            )
+        val pattern =
+            Regex(
+                """(\d+)\s*%\s*(${fibers.joinToString("|")})""",
+                RegexOption.IGNORE_CASE,
+            )
         val matches = pattern.findAll(text).toList()
         if (matches.isEmpty()) return ""
-        return matches.joinToString(", ") { "${it.groupValues[1]}% ${it.groupValues[2].replaceFirstChar { c -> c.uppercase() }}" }
+        return matches.joinToString(", ") {
+            "${it.groupValues[1]}% ${it.groupValues[2].replaceFirstChar { c ->
+                c.uppercase()
+            }}"
+        }
     }
 
     // Medium confidence: short number near "col" or "color"
@@ -101,40 +123,52 @@ object YarnLabelParser {
 
     // Medium confidence: keyword match
     internal fun extractWeightCategory(text: String): String {
-        val categories = listOf(
-            "Super Bulky", "Bulky", "Aran", "Worsted", "DK", "Sport", "Fingering", "Lace",
-        )
+        val categories =
+            listOf(
+                "Super Bulky",
+                "Bulky",
+                "Aran",
+                "Worsted",
+                "DK",
+                "Sport",
+                "Fingering",
+                "Lace",
+            )
         val lower = text.lowercase()
         return categories.firstOrNull { lower.contains(it.lowercase()) } ?: ""
     }
 
     // Low confidence: first line that looks like a brand name
-    internal fun extractBrand(lines: List<String>): String {
-        return lines.firstOrNull { line ->
+    internal fun extractBrand(lines: List<String>): String =
+        lines.firstOrNull { line ->
             line.length in 2..30 &&
                 !line.contains(Regex("""\d+\s*[gm]""", RegexOption.IGNORE_CASE)) &&
                 !line.contains("%")
         } ?: ""
-    }
 
     // Low confidence: second substantial text line (often yarn name)
     internal fun extractYarnName(lines: List<String>): String {
-        val candidates = lines.filter { line ->
-            line.length in 2..40 &&
-                !line.contains(Regex("""\d+\s*[gm]""", RegexOption.IGNORE_CASE)) &&
-                !line.contains("%")
-        }
+        val candidates =
+            lines.filter { line ->
+                line.length in 2..40 &&
+                    !line.contains(Regex("""\d+\s*[gm]""", RegexOption.IGNORE_CASE)) &&
+                    !line.contains("%")
+            }
         return candidates.getOrNull(1) ?: ""
     }
 
     // Low confidence: text near color number
-    internal fun extractColorName(lines: List<String>, fullText: String): String {
+    internal fun extractColorName(
+        lines: List<String>,
+        fullText: String,
+    ): String {
         val colorNumber = extractColorNumber(fullText)
         if (colorNumber.isBlank()) return ""
         val lineWithColor = lines.firstOrNull { it.contains(colorNumber) } ?: return ""
-        val cleaned = lineWithColor
-            .replace(Regex("""(?:col(?:ou?r)?\.?\s*(?:#|no?\.?)?\s*)\d+""", RegexOption.IGNORE_CASE), "")
-            .trim()
+        val cleaned =
+            lineWithColor
+                .replace(Regex("""(?:col(?:ou?r)?\.?\s*(?:#|no?\.?)?\s*)\d+""", RegexOption.IGNORE_CASE), "")
+                .trim()
         return cleaned.takeIf { it.length in 2..30 } ?: ""
     }
 }

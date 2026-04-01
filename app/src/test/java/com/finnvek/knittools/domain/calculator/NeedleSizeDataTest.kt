@@ -5,7 +5,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class NeedleSizeDataTest {
-
     @Test
     fun `sizes list is not empty`() {
         assertTrue(NeedleSizeData.sizes.isNotEmpty())

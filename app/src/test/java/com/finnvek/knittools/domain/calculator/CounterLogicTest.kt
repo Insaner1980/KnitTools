@@ -5,7 +5,6 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class CounterLogicTest {
-
     @Test
     fun `increment increases count by step size`() {
         val state = CounterState(count = 5, stepSize = 1)

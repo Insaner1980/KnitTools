@@ -9,7 +9,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class IncreaseDecreaseCalculatorTest {
-
     @Test
     fun `increase 8 from 120 gives 128 total`() {
         val result = IncreaseDecreaseCalculator.calculate(120, 8, IncreaseDecreaseMode.INCREASE)

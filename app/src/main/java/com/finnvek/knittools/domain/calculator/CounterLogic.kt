@@ -7,7 +7,6 @@ data class CounterState(
 )
 
 object CounterLogic {
-
     fun increment(state: CounterState): CounterState =
         state.copy(
             count = state.count + state.stepSize,
@@ -27,9 +26,10 @@ object CounterLogic {
             state
         }
 
-    fun reset(state: CounterState): CounterState =
-        state.copy(count = 0, previousCount = state.count)
+    fun reset(state: CounterState): CounterState = state.copy(count = 0, previousCount = state.count)
 
-    fun setStepSize(state: CounterState, stepSize: Int): CounterState =
-        state.copy(stepSize = maxOf(1, stepSize))
+    fun setStepSize(
+        state: CounterState,
+        stepSize: Int,
+    ): CounterState = state.copy(stepSize = maxOf(1, stepSize))
 }

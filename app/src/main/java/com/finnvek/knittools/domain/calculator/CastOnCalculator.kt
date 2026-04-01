@@ -4,7 +4,6 @@ import com.finnvek.knittools.domain.model.CastOnResult
 import kotlin.math.roundToInt
 
 object CastOnCalculator {
-
     private const val GAUGE_REFERENCE_CM = 10.0
     private const val GAUGE_REFERENCE_INCHES = 4.0
 
@@ -36,11 +35,12 @@ object CastOnCalculator {
         val totalUp = nearestUp + edgeStitches
         val totalExact = rawStitches + edgeStitches
 
-        val closerTotal = if ((rawStitches - nearestDown) <= (nearestUp - rawStitches)) {
-            totalDown
-        } else {
-            totalUp
-        }
+        val closerTotal =
+            if ((rawStitches - nearestDown) <= (nearestUp - rawStitches)) {
+                totalDown
+            } else {
+                totalUp
+            }
 
         return CastOnResult(
             stitches = closerTotal,

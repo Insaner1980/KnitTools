@@ -4,7 +4,6 @@ import com.finnvek.knittools.domain.model.YarnEstimate
 import kotlin.math.ceil
 
 object YarnEstimator {
-
     fun estimate(
         totalYarnNeeded: Double,
         yarnPerSkein: Double,

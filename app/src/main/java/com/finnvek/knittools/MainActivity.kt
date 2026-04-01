@@ -6,20 +6,28 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import com.finnvek.knittools.ui.theme.AppTheme
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.finnvek.knittools.ui.navigation.KnitToolsNavHost
+import com.finnvek.knittools.ui.screens.settings.SettingsViewModel
+import com.finnvek.knittools.ui.theme.KnitToolsTheme
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            AppTheme {
+            val settingsViewModel: SettingsViewModel = hiltViewModel()
+            val prefs by settingsViewModel.preferences.collectAsStateWithLifecycle()
+
+            KnitToolsTheme(themeMode = prefs.themeMode) {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    Text("Hello")
+                    KnitToolsNavHost()
                 }
             }
         }

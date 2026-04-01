@@ -1,28 +1,51 @@
 package com.finnvek.knittools.ui.theme
 
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
+import com.finnvek.knittools.data.datastore.ThemeMode
+
+private val KnitToolsDarkColorScheme =
+    darkColorScheme(
+        primary = DarkAccent,
+        onPrimary = DarkPrimaryText,
+        secondary = DarkAccentVariant,
+        background = DarkBackground,
+        surface = DarkSurface,
+        onBackground = DarkPrimaryText,
+        onSurface = DarkPrimaryText,
+        onSurfaceVariant = DarkSecondaryText,
+        error = ErrorColor,
+    )
+
+private val KnitToolsLightColorScheme =
+    lightColorScheme(
+        primary = LightAccent,
+        onPrimary = LightSurface,
+        secondary = LightAccentVariant,
+        background = LightBackground,
+        surface = LightSurface,
+        onBackground = LightPrimaryText,
+        onSurface = LightPrimaryText,
+        onSurfaceVariant = LightSecondaryText,
+        error = ErrorColor,
+    )
 
 @Composable
-fun AppTheme(content: @Composable () -> Unit) {
-    val isDark = isSystemInDarkTheme()
-    val colorScheme =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            val context = LocalContext.current
-            if (isDark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        } else {
-            if (isDark) darkColorScheme() else lightColorScheme()
-        }
+fun KnitToolsTheme(
+    themeMode: ThemeMode = ThemeMode.SYSTEM,
+    content: @Composable () -> Unit,
+) {
+    val isDark = when (themeMode) {
+        ThemeMode.DARK -> true
+        ThemeMode.LIGHT -> false
+        ThemeMode.SYSTEM -> isSystemInDarkTheme()
+    }
 
     MaterialTheme(
-        colorScheme = colorScheme,
+        colorScheme = if (isDark) KnitToolsDarkColorScheme else KnitToolsLightColorScheme,
         typography = AppTypography,
         shapes = AppShapes,
         content = content,

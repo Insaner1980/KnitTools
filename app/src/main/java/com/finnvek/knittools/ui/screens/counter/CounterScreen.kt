@@ -1,7 +1,11 @@
 package com.finnvek.knittools.ui.screens.counter
 
-import android.view.HapticFeedbackConstants
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 import android.view.WindowManager
+import androidx.core.content.getSystemService
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -60,9 +64,19 @@ fun CounterScreen(
         }
     }
 
+    val vibrator = remember {
+        val context = view.context
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            context.getSystemService<VibratorManager>()?.defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            context.getSystemService<Vibrator>()
+        }
+    }
+
     fun performHaptic() {
         if (state.hapticFeedback) {
-            view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+            vibrator?.vibrate(VibrationEffect.createOneShot(12, 60))
         }
     }
 

@@ -123,4 +123,32 @@
     <string name="pro_feature_widget">Home screen widget</string>
     <string name="upgrade_for_price">Upgrade for %s</string>
     <string name="one_time_purchase">One-time purchase. No subscription.</string>
+
+    <!-- Yarn Card / OCR -->
+    <string name="scan_yarn_label">Scan yarn label</string>
+    <string name="saved_yarns">Saved yarns</string>
+    <string name="scanned_yarn">Scanned Yarn</string>
+    <string name="yarn_card_detail_title">Yarn Card</string>
+    <string name="brand">Brand</string>
+    <string name="yarn_name">Yarn name</string>
+    <string name="fiber_content">Fiber content</string>
+    <string name="weight_grams">Weight (g)</string>
+    <string name="length_meters">Length (m)</string>
+    <string name="needle_size_label">Needle size</string>
+    <string name="gauge_label">Gauge</string>
+    <string name="color_name">Color name</string>
+    <string name="color_number">Color number</string>
+    <string name="dye_lot">Dye lot</string>
+    <string name="weight_category">Weight category</string>
+    <string name="care_symbols">Care</string>
+    <string name="save_and_use">Save &amp; Use</string>
+    <string name="discard">Discard</string>
+    <string name="use_in_calculator">Use in calculator</string>
+    <string name="delete">Delete</string>
+    <string name="no_saved_yarns">No saved yarn cards yet</string>
+    <string name="camera_permission_required">Camera permission is required to scan yarn labels</string>
+    <string name="scanning">Scanning…</string>
+    <string name="card_deleted">Yarn card deleted</string>
+    <string name="undo">Undo</string>
+    <string name="pro_required_save">Pro required to save yarn cards</string>
 </resources>

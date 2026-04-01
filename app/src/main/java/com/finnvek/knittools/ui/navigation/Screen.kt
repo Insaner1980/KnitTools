@@ -20,4 +20,16 @@ sealed class Screen(
     data object Settings : Screen("settings")
 
     data object ProUpgrade : Screen("pro_upgrade")
+
+    data object YarnCardReview : Screen("yarn_card_review")
+
+    data object YarnCardList : Screen("yarn_card_list")
+
+    data class YarnCardDetail(
+        val cardId: Long,
+    ) : Screen("yarn_card_detail/$cardId") {
+        companion object {
+            const val ROUTE = "yarn_card_detail/{cardId}"
+        }
+    }
 }

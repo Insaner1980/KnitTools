@@ -220,6 +220,14 @@ dependencies {
     // Google Play Billing
     implementation(libs.billing)
 
+    // ML Kit OCR
+    implementation(libs.mlkit.text.recognition)
+
+    // CameraX
+    implementation(libs.camerax.camera2)
+    implementation(libs.camerax.lifecycle)
+    implementation(libs.camerax.view)
+
     // Detekt plugins
     detektPlugins(libs.detekt.compose.rules)
 

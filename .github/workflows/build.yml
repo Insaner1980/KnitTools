@@ -29,7 +29,7 @@ jobs:
         run: ./gradlew test
 
       - name: Run detekt
-        run: ./gradlew detektMain
+        run: ./gradlew :app:detekt
 
       - name: Run lint
         run: ./gradlew lint

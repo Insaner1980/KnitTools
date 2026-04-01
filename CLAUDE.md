@@ -4,7 +4,7 @@
 
 - `./gradlew assembleDebug` — debug build
 - `./gradlew test` — unit tests
-- `./gradlew detektMain` — static analysis
+- `./gradlew :app:detekt` — static analysis
 - `./gradlew lint` — Android lint
 
 ## Quality Tools (global, in ~/bin/)

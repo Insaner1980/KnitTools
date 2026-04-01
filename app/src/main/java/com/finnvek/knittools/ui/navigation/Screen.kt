@@ -18,4 +18,6 @@ sealed class Screen(
     data object Needles : Screen("needles")
 
     data object Settings : Screen("settings")
+
+    data object ProUpgrade : Screen("pro_upgrade")
 }

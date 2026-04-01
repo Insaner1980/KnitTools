@@ -217,6 +217,9 @@ dependencies {
     implementation(libs.core.ktx)
     implementation(libs.activity.compose)
 
+    // Google Play Billing
+    implementation(libs.billing)
+
     // Detekt plugins
     detektPlugins(libs.detekt.compose.rules)
 

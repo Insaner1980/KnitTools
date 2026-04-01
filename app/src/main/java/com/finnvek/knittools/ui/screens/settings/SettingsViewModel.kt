@@ -2,6 +2,7 @@ package com.finnvek.knittools.ui.screens.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.finnvek.knittools.billing.BillingManager
 import com.finnvek.knittools.data.datastore.AppPreferences
 import com.finnvek.knittools.data.datastore.PreferencesManager
 import com.finnvek.knittools.data.datastore.ThemeMode
@@ -17,6 +18,7 @@ class SettingsViewModel
     @Inject
     constructor(
         private val preferencesManager: PreferencesManager,
+        private val billingManager: BillingManager,
     ) : ViewModel() {
         val preferences: StateFlow<AppPreferences> =
             preferencesManager.preferences.stateIn(
@@ -39,5 +41,9 @@ class SettingsViewModel
 
         fun setUseImperial(imperial: Boolean) {
             viewModelScope.launch { preferencesManager.setUseImperial(imperial) }
+        }
+
+        fun restorePurchases() {
+            billingManager.restorePurchases()
         }
     }

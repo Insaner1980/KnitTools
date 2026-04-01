@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
@@ -24,6 +25,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -31,8 +33,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
+import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.ui.navigation.Screen
 
 data class ToolCardData(
@@ -43,7 +49,12 @@ data class ToolCardData(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(onNavigate: (Screen) -> Unit) {
+fun HomeScreen(
+    onNavigate: (Screen) -> Unit,
+    viewModel: HomeViewModel = hiltViewModel(),
+) {
+    val proState by viewModel.proState.collectAsStateWithLifecycle()
+
     val tools =
         listOf(
             ToolCardData("Row Counter", R.drawable.row_counter, Screen.Counter),
@@ -76,6 +87,38 @@ fun HomeScreen(onNavigate: (Screen) -> Unit) {
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            // Trial/Pro indicator
+            when (proState.status) {
+                ProStatus.TRIAL_ACTIVE -> {
+                    item(span = { GridItemSpan(2) }) {
+                        Text(
+                            text = "Pro trial — ${proState.trialDaysRemaining} days left",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                }
+
+                ProStatus.TRIAL_EXPIRED -> {
+                    item(span = { GridItemSpan(2) }) {
+                        Text(
+                            text = "Unlock all tools",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            textAlign = TextAlign.Center,
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .clickable { onNavigate(Screen.ProUpgrade) },
+                        )
+                    }
+                }
+
+                ProStatus.PRO_PURCHASED -> { /* no indicator */ }
+            }
+
             items(tools, key = { it.title }) { tool ->
                 ToolCard(
                     title = tool.title,

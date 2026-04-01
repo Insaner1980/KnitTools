@@ -79,6 +79,19 @@ fun SettingsScreen(
             )
 
             HorizontalDivider()
+            SectionHeader("Purchase")
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .clickable { viewModel.restorePurchases() }
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("Restore purchases")
+            }
+
+            HorizontalDivider()
             Text(
                 text = "KnitTools v1.0.0",
                 modifier = Modifier.padding(16.dp),

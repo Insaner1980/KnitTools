@@ -12,6 +12,7 @@ import com.finnvek.knittools.ui.screens.gauge.GaugeScreen
 import com.finnvek.knittools.ui.screens.home.HomeScreen
 import com.finnvek.knittools.ui.screens.increase.IncreaseDecreaseScreen
 import com.finnvek.knittools.ui.screens.needles.NeedleSizeScreen
+import com.finnvek.knittools.ui.screens.pro.ProUpgradeScreen
 import com.finnvek.knittools.ui.screens.settings.SettingsScreen
 import com.finnvek.knittools.ui.screens.yarn.YarnEstimatorScreen
 
@@ -50,6 +51,9 @@ fun KnitToolsNavHost(
         }
         composable(Screen.Settings.route) {
             SettingsScreen(onBack = { navController.popBackStack() })
+        }
+        composable(Screen.ProUpgrade.route) {
+            ProUpgradeScreen(onBack = { navController.popBackStack() })
         }
     }
 }

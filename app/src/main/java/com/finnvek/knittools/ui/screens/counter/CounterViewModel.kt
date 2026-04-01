@@ -160,6 +160,12 @@ class CounterViewModel
             persistSecondary()
         }
 
+        fun decrementSecondary() {
+            if (!proManager.hasFeature(ProFeature.SECONDARY_COUNTER)) return
+            _uiState.update { it.copy(secondaryCount = maxOf(0, it.secondaryCount - 1)) }
+            persistSecondary()
+        }
+
         fun resetSecondary() {
             _uiState.update { it.copy(secondaryCount = 0) }
             persistSecondary()

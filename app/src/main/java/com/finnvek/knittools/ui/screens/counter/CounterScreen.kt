@@ -163,6 +163,12 @@ fun CounterScreen(
                         )
                         FilledTonalButton(onClick = {
                             performHaptic()
+                            viewModel.decrementSecondary()
+                        }) {
+                            Text("-1")
+                        }
+                        FilledTonalButton(onClick = {
+                            performHaptic()
                             viewModel.incrementSecondary()
                         }) {
                             Text("+1")

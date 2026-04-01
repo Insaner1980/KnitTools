@@ -2,7 +2,7 @@ package com.finnvek.knittools.ui.screens.counter
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.finnvek.knittools.data.local.CounterProjectEntity
+import com.finnvek.knittools.data.datastore.PreferencesManager
 import com.finnvek.knittools.domain.calculator.CounterLogic
 import com.finnvek.knittools.domain.calculator.CounterState
 import com.finnvek.knittools.repository.CounterRepository
@@ -21,6 +21,8 @@ data class CounterUiState(
     val counter: CounterState = CounterState(),
     val sessionSeconds: Long = 0,
     val projectId: Long? = null,
+    val hapticFeedback: Boolean = true,
+    val keepScreenAwake: Boolean = false,
 )
 
 @HiltViewModel
@@ -28,6 +30,7 @@ class CounterViewModel
     @Inject
     constructor(
         private val repository: CounterRepository,
+        private val preferencesManager: PreferencesManager,
     ) : ViewModel() {
         private val _uiState = MutableStateFlow(CounterUiState())
         val uiState: StateFlow<CounterUiState> = _uiState.asStateFlow()
@@ -37,6 +40,20 @@ class CounterViewModel
         init {
             loadOrCreateProject()
             startTimer()
+            observePreferences()
+        }
+
+        private fun observePreferences() {
+            viewModelScope.launch {
+                preferencesManager.preferences.collect { prefs ->
+                    _uiState.update {
+                        it.copy(
+                            hapticFeedback = prefs.hapticFeedback,
+                            keepScreenAwake = prefs.keepScreenAwake,
+                        )
+                    }
+                }
+            }
         }
 
         private fun loadOrCreateProject() {
@@ -46,7 +63,6 @@ class CounterViewModel
                     val id = repository.createProject("My Project")
                     _uiState.update { it.copy(projectId = id) }
                 } else {
-                    // Load most recent project via Flow is better, but for init:
                     repository.getAllProjects().collect { list ->
                         list.firstOrNull()?.let { project ->
                             _uiState.update {

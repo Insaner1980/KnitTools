@@ -1,5 +1,7 @@
 package com.finnvek.knittools.ui.screens.counter
 
+import android.view.HapticFeedbackConstants
+import android.view.WindowManager
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -22,12 +24,14 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -43,6 +47,24 @@ fun CounterScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var showResetDialog by remember { mutableStateOf(false) }
+    val view = LocalView.current
+
+    // Keep screen awake when setting is enabled
+    if (state.keepScreenAwake) {
+        DisposableEffect(Unit) {
+            val window = (view.context as? android.app.Activity)?.window
+            window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            onDispose {
+                window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            }
+        }
+    }
+
+    fun performHaptic() {
+        if (state.hapticFeedback) {
+            view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+        }
+    }
 
     if (showResetDialog) {
         ConfirmationDialog(
@@ -108,11 +130,17 @@ fun CounterScreen(
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                FilledTonalButton(onClick = { viewModel.decrement() }) {
+                FilledTonalButton(onClick = {
+                    performHaptic()
+                    viewModel.decrement()
+                }) {
                     Icon(Icons.Filled.Remove, contentDescription = "Decrease")
                 }
                 FloatingActionButton(
-                    onClick = { viewModel.increment() },
+                    onClick = {
+                        performHaptic()
+                        viewModel.increment()
+                    },
                     modifier = Modifier.size(72.dp),
                     containerColor = MaterialTheme.colorScheme.primary,
                 ) {
@@ -122,7 +150,10 @@ fun CounterScreen(
                         modifier = Modifier.size(32.dp),
                     )
                 }
-                IconButton(onClick = { viewModel.undo() }) {
+                IconButton(onClick = {
+                    performHaptic()
+                    viewModel.undo()
+                }) {
                     Icon(Icons.Filled.Undo, contentDescription = "Undo")
                 }
             }

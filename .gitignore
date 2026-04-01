@@ -1,0 +1,26 @@
+*.iml
+.gradle/
+/local.properties
+.idea/
+/build/
+/app/build/
+/captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+/app/schemas/
+*.hprof
+*.log
+.claude/
+.remember/
+/reports/
+
+# Prevent CLAUDE.md files from breaking Android resource merger
+**/src/main/res/**/CLAUDE.md
+
+# SonarQube
+.scannerwork/

@@ -18,11 +18,12 @@ fun convertFieldValue(
 ): String {
     val num = value.toDoubleOrNull() ?: return value
     if (num == 0.0) return value
-    val converted = if (isLength) {
-        if (toImperial) cmToInches(num) else inchesToCm(num)
-    } else {
-        if (toImperial) metersToYards(num) else yardsToMeters(num)
-    }
+    val converted =
+        if (isLength) {
+            if (toImperial) cmToInches(num) else inchesToCm(num)
+        } else {
+            if (toImperial) metersToYards(num) else yardsToMeters(num)
+        }
     return "%.1f".format(converted)
 }
 
@@ -44,10 +45,11 @@ fun convertGaugeValue(
     //
     // Alkuperäinen koodi on oikein. Ongelma oli siinä ettei se näyttänyt isolta muutokselta
     // koska 10 cm ≈ 4 in. Arvot OVAT oikein.
-    val converted = if (toImperial) {
-        num * (4.0 * CM_PER_INCH) / 10.0
-    } else {
-        num * 10.0 / (4.0 * CM_PER_INCH)
-    }
+    val converted =
+        if (toImperial) {
+            num * (4.0 * CM_PER_INCH) / 10.0
+        } else {
+            num * 10.0 / (4.0 * CM_PER_INCH)
+        }
     return "%.1f".format(converted)
 }

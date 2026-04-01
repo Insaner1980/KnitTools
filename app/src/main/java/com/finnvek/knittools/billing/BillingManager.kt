@@ -50,8 +50,7 @@ class BillingManager
                     .setListener(this)
                     .enablePendingPurchases(
                         PendingPurchasesParams.newBuilder().enableOneTimeProducts().build(),
-                    )
-                    .build()
+                    ).build()
 
             billingClient?.startConnection(
                 object : BillingClientStateListener {

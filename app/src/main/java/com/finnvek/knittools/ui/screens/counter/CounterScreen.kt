@@ -5,7 +5,6 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import android.view.WindowManager
-import androidx.core.content.getSystemService
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,12 +14,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Remove
-import androidx.compose.material.icons.filled.Undo
+import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -39,6 +41,7 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.getSystemService
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.ui.components.ConfirmationDialog
@@ -53,7 +56,6 @@ fun CounterScreen(
     var showResetDialog by remember { mutableStateOf(false) }
     val view = LocalView.current
 
-    // Keep screen awake when setting is enabled
     if (state.keepScreenAwake) {
         DisposableEffect(Unit) {
             val window = (view.context as? android.app.Activity)?.window
@@ -64,15 +66,16 @@ fun CounterScreen(
         }
     }
 
-    val vibrator = remember {
-        val context = view.context
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            context.getSystemService<VibratorManager>()?.defaultVibrator
-        } else {
-            @Suppress("DEPRECATION")
-            context.getSystemService<Vibrator>()
+    val vibrator =
+        remember {
+            val context = view.context
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                context.getSystemService<VibratorManager>()?.defaultVibrator
+            } else {
+                @Suppress("DEPRECATION")
+                context.getSystemService<Vibrator>()
+            }
         }
-    }
 
     fun performHaptic() {
         if (state.hapticFeedback) {
@@ -110,7 +113,7 @@ fun CounterScreen(
                 singleLine = true,
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             // Timer
             val minutes = state.sessionSeconds / 60
@@ -123,7 +126,7 @@ fun CounterScreen(
 
             Spacer(modifier = Modifier.weight(1f))
 
-            // Count display
+            // Main count display
             Text(
                 text = "${state.counter.count}",
                 fontSize = 96.sp,
@@ -136,9 +139,44 @@ fun CounterScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
+            // Secondary counter (Pro)
+            if (state.isPro) {
+                Spacer(modifier = Modifier.height(12.dp))
+                HorizontalDivider()
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = "Pattern repeat",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(
+                            text = "${state.secondaryCount}",
+                            style = MaterialTheme.typography.titleLarge,
+                        )
+                        FilledTonalButton(onClick = {
+                            performHaptic()
+                            viewModel.incrementSecondary()
+                        }) {
+                            Text("+1")
+                        }
+                        TextButton(onClick = { viewModel.resetSecondary() }) {
+                            Text("Reset")
+                        }
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.weight(1f))
 
-            // Controls
+            // Main controls
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly,
@@ -168,14 +206,27 @@ fun CounterScreen(
                     performHaptic()
                     viewModel.undo()
                 }) {
-                    Icon(Icons.Filled.Undo, contentDescription = "Undo")
+                    Icon(Icons.AutoMirrored.Filled.Undo, contentDescription = "Undo")
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             TextButton(onClick = { showResetDialog = true }) {
                 Text("Reset")
+            }
+
+            // Notes (Pro)
+            if (state.isPro) {
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = state.notes,
+                    onValueChange = { viewModel.setNotes(it) },
+                    label = { Text("Notes") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 2,
+                    maxLines = 4,
+                )
             }
         }
     }

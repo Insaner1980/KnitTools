@@ -58,30 +58,33 @@ fun ProUpgradeScreen(
                 )
                 Spacer(modifier = Modifier.height(16.dp))
 
-                val features = listOf(
-                    "Unlimited counter projects",
-                    "Full counter history",
-                    "Notes per project",
-                    "Secondary counter",
-                    "Yarn label OCR scanning",
-                    "Home screen widget",
-                )
+                val features =
+                    listOf(
+                        "Unlimited counter projects",
+                        "Full counter history",
+                        "Notes per project",
+                        "Secondary counter",
+                        "Yarn label OCR scanning",
+                        "Home screen widget",
+                    )
                 features.forEach { feature ->
                     Text(
                         text = "• $feature",
                         style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 2.dp),
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 2.dp),
                     )
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                val priceText = productDetails
-                    ?.oneTimePurchaseOfferDetails
-                    ?.formattedPrice
-                    ?: "..."
+                val priceText =
+                    productDetails
+                        ?.oneTimePurchaseOfferDetails
+                        ?.formattedPrice
+                        ?: "..."
 
                 Button(
                     onClick = {

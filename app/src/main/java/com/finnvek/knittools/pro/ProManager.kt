@@ -47,27 +47,30 @@ class ProManager
                         billingManager.isProPurchased,
                     ) { trial, isPurchased ->
                         when {
-                            isPurchased ->
+                            isPurchased -> {
                                 ProState(
                                     status = ProStatus.PRO_PURCHASED,
                                     trialDaysRemaining = 0,
                                     trialStartTimestamp = trial.startTimestamp,
                                     purchaseTimestamp = System.currentTimeMillis(),
                                 )
+                            }
 
-                            trial.isActive ->
+                            trial.isActive -> {
                                 ProState(
                                     status = ProStatus.TRIAL_ACTIVE,
                                     trialDaysRemaining = trial.daysRemaining,
                                     trialStartTimestamp = trial.startTimestamp,
                                 )
+                            }
 
-                            else ->
+                            else -> {
                                 ProState(
                                     status = ProStatus.TRIAL_EXPIRED,
                                     trialDaysRemaining = 0,
                                     trialStartTimestamp = trial.startTimestamp,
                                 )
+                            }
                         }
                     }.collect { state ->
                         _proState.value = state

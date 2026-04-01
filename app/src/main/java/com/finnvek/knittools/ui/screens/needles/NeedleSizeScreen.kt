@@ -34,19 +34,21 @@ fun NeedleSizeScreen(onBack: () -> Unit) {
 
     ToolScreenScaffold(title = "Needle Sizes", onBack = onBack) { padding ->
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 16.dp),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(horizontal = 16.dp),
         ) {
             item {
                 OutlinedTextField(
                     value = query,
                     onValueChange = { query = it },
                     label = { Text("Search size...") },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
                     singleLine = true,
                 )
             }
@@ -66,9 +68,10 @@ fun NeedleSizeScreen(onBack: () -> Unit) {
 @Composable
 private fun HeaderRow() {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         listOf("mm", "US", "UK", "JP").forEach { header ->
@@ -89,18 +92,20 @@ private fun NeedleRow(
     isSelected: Boolean,
     onClick: () -> Unit,
 ) {
-    val bgColor = if (isSelected) {
-        MaterialTheme.colorScheme.primaryContainer
-    } else {
-        MaterialTheme.colorScheme.surface
-    }
+    val bgColor =
+        if (isSelected) {
+            MaterialTheme.colorScheme.primaryContainer
+        } else {
+            MaterialTheme.colorScheme.surface
+        }
 
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .background(bgColor)
-            .padding(vertical = 12.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick)
+                .background(bgColor)
+                .padding(vertical = 12.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         listOf(

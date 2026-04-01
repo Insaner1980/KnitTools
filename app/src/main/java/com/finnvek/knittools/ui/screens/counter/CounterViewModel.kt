@@ -53,10 +53,11 @@ class CounterViewModel
                                 it.copy(
                                     projectId = project.id,
                                     projectName = project.name,
-                                    counter = CounterState(
-                                        count = project.count,
-                                        stepSize = project.stepSize,
-                                    ),
+                                    counter =
+                                        CounterState(
+                                            count = project.count,
+                                            stepSize = project.stepSize,
+                                        ),
                                 )
                             }
                         }
@@ -66,12 +67,13 @@ class CounterViewModel
         }
 
         private fun startTimer() {
-            timerJob = viewModelScope.launch {
-                while (true) {
-                    delay(1000)
-                    _uiState.update { it.copy(sessionSeconds = it.sessionSeconds + 1) }
+            timerJob =
+                viewModelScope.launch {
+                    while (true) {
+                        delay(1000)
+                        _uiState.update { it.copy(sessionSeconds = it.sessionSeconds + 1) }
+                    }
                 }
-            }
         }
 
         fun increment() {

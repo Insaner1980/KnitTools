@@ -22,6 +22,7 @@ import com.finnvek.knittools.ui.components.NumberInputField
 import com.finnvek.knittools.ui.components.ResultCard
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
 import com.finnvek.knittools.ui.components.UnitToggle
+import com.finnvek.knittools.util.extensions.convertFieldValue
 
 @Composable
 fun YarnEstimatorScreen(onBack: () -> Unit) {
@@ -42,14 +43,24 @@ fun YarnEstimatorScreen(onBack: () -> Unit) {
 
     ToolScreenScaffold(title = "Yarn Estimator", onBack = onBack) { padding ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp)
-                .verticalScroll(rememberScrollState()),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(16.dp)
+                    .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            UnitToggle(useImperial = useImperial, onToggle = { useImperial = it })
+            UnitToggle(
+                useImperial = useImperial,
+                onToggle = { newImperial ->
+                    if (newImperial != useImperial) {
+                        totalYarn = convertFieldValue(totalYarn, newImperial, isLength = false)
+                        yarnPerSkein = convertFieldValue(yarnPerSkein, newImperial, isLength = false)
+                        useImperial = newImperial
+                    }
+                },
+            )
             val lengthUnit = if (useImperial) "yards" else "meters"
             NumberInputField(
                 value = totalYarn,

@@ -14,7 +14,6 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
-
     private const val DB_NAME = "knittools.db"
 
     @Provides
@@ -27,6 +26,5 @@ object DatabaseModule {
             .build()
 
     @Provides
-    fun provideCounterProjectDao(db: KnitToolsDatabase): CounterProjectDao =
-        db.counterProjectDao()
+    fun provideCounterProjectDao(db: KnitToolsDatabase): CounterProjectDao = db.counterProjectDao()
 }

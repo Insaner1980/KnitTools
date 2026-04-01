@@ -38,11 +38,12 @@ fun KnitToolsTheme(
     themeMode: ThemeMode = ThemeMode.SYSTEM,
     content: @Composable () -> Unit,
 ) {
-    val isDark = when (themeMode) {
-        ThemeMode.DARK -> true
-        ThemeMode.LIGHT -> false
-        ThemeMode.SYSTEM -> isSystemInDarkTheme()
-    }
+    val isDark =
+        when (themeMode) {
+            ThemeMode.DARK -> true
+            ThemeMode.LIGHT -> false
+            ThemeMode.SYSTEM -> isSystemInDarkTheme()
+        }
 
     MaterialTheme(
         colorScheme = if (isDark) KnitToolsDarkColorScheme else KnitToolsLightColorScheme,

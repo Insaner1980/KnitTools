@@ -4,7 +4,6 @@ import com.finnvek.knittools.domain.model.IncreaseDecreaseMode
 import com.finnvek.knittools.domain.model.IncreaseDecreaseResult
 import com.finnvek.knittools.domain.model.KnittingStyle
 import kotlin.math.ceil
-import kotlin.math.floor
 
 object IncreaseDecreaseCalculator {
     fun calculate(
@@ -22,6 +21,9 @@ object IncreaseDecreaseCalculator {
         if (mode == IncreaseDecreaseMode.DECREASE && changeBy >= currentStitches) {
             return errorResult("Cannot decrease by $changeBy — only $currentStitches stitches available")
         }
+        if (mode == IncreaseDecreaseMode.DECREASE && changeBy * 2 >= currentStitches) {
+            return errorResult("Not enough stitches — need at least ${changeBy * 2 + 1} for $changeBy decreases")
+        }
 
         val totalStitches =
             when (mode) {
@@ -29,147 +31,112 @@ object IncreaseDecreaseCalculator {
                 IncreaseDecreaseMode.DECREASE -> currentStitches - changeBy
             }
 
-        val easyPattern = buildEasyPattern(currentStitches, changeBy, mode, style)
-        val balancedPattern = buildBalancedPattern(currentStitches, changeBy, mode, style)
+        // For increase: M1 creates a stitch from nothing, so K stitches sum to currentStitches
+        // For decrease: K2tog consumes 2 stitches, so plain K stitches = currentStitches - 2*changeBy
+        val availableForKnit =
+            when (mode) {
+                IncreaseDecreaseMode.INCREASE -> currentStitches
+                IncreaseDecreaseMode.DECREASE -> currentStitches - 2 * changeBy
+            }
+
+        val warningMessage =
+            if (mode == IncreaseDecreaseMode.INCREASE && changeBy > currentStitches) {
+                "Warning: increasing more than current stitch count — some sections will have no knit stitches between increases"
+            } else {
+                null
+            }
+
+        val easyPattern = buildEasyPattern(availableForKnit, changeBy, mode, style, totalStitches)
+        val balancedPattern = buildBalancedPattern(availableForKnit, changeBy, mode, style, totalStitches)
 
         return IncreaseDecreaseResult(
             totalStitches = totalStitches,
             easyPattern = easyPattern,
             balancedPattern = balancedPattern,
             isValid = true,
+            errorMessage = warningMessage,
         )
     }
 
     private fun buildEasyPattern(
-        currentStitches: Int,
-        changeBy: Int,
+        availableForKnit: Int,
+        sections: Int,
         mode: IncreaseDecreaseMode,
         style: KnittingStyle,
+        totalStitches: Int,
     ): String {
-        val sections = changeBy
-        val stitchesPerSection = currentStitches / sections
-        val remainder = currentStitches % sections
-
         val actionAbbrev =
             when (mode) {
                 IncreaseDecreaseMode.INCREASE -> "M1"
                 IncreaseDecreaseMode.DECREASE -> "K2tog"
             }
-        val knitAbbrev = "K"
+
+        val base = availableForKnit / sections
+        val remainder = availableForKnit % sections
 
         return when (style) {
-            KnittingStyle.FLAT -> {
-                buildFlatEasy(
-                    stitchesPerSection,
-                    sections,
-                    remainder,
-                    knitAbbrev,
-                    actionAbbrev,
-                    mode,
-                    currentStitches,
-                    changeBy,
-                )
-            }
-
-            KnittingStyle.CIRCULAR -> {
-                buildCircularEasy(
-                    stitchesPerSection,
-                    sections,
-                    remainder,
-                    knitAbbrev,
-                    actionAbbrev,
-                    mode,
-                    currentStitches,
-                    changeBy,
-                )
-            }
+            KnittingStyle.FLAT -> buildFlatEasy(base, sections, remainder, actionAbbrev, totalStitches)
+            KnittingStyle.CIRCULAR -> buildCircularEasy(base, sections, remainder, actionAbbrev, totalStitches)
         }
     }
 
     private fun buildFlatEasy(
-        stitchesPerSection: Int,
+        base: Int,
         sections: Int,
         remainder: Int,
-        knitAbbrev: String,
         actionAbbrev: String,
-        mode: IncreaseDecreaseMode,
-        currentStitches: Int,
-        changeBy: Int,
+        totalStitches: Int,
     ): String {
-        val totalStitches =
-            when (mode) {
-                IncreaseDecreaseMode.INCREASE -> currentStitches + changeBy
-                IncreaseDecreaseMode.DECREASE -> currentStitches - changeBy
-            }
-
-        return if (remainder == 0) {
-            "($knitAbbrev$stitchesPerSection, $actionAbbrev) × $sections — total: $totalStitches stitches"
-        } else {
-            val half = remainder / 2
-            val parts = mutableListOf<String>()
-            if (half > 0) parts.add("$knitAbbrev$half")
-            parts.add("($knitAbbrev$stitchesPerSection, $actionAbbrev) × $sections")
-            val trailing = remainder - half
-            if (trailing > 0) parts.add("$knitAbbrev$trailing")
-            "${parts.joinToString(", ")} — total: $totalStitches stitches"
+        if (remainder == 0) {
+            return "(K$base, $actionAbbrev) × $sections — total: $totalStitches stitches"
         }
+        val half = remainder / 2
+        val parts = mutableListOf<String>()
+        if (half > 0) parts.add("K$half")
+        parts.add("(K$base, $actionAbbrev) × $sections")
+        val trailing = remainder - half
+        if (trailing > 0) parts.add("K$trailing")
+        return "${parts.joinToString(", ")} — total: $totalStitches stitches"
     }
 
     private fun buildCircularEasy(
-        stitchesPerSection: Int,
+        base: Int,
         sections: Int,
         remainder: Int,
-        knitAbbrev: String,
         actionAbbrev: String,
-        mode: IncreaseDecreaseMode,
-        currentStitches: Int,
-        changeBy: Int,
+        totalStitches: Int,
     ): String {
-        val totalStitches =
-            when (mode) {
-                IncreaseDecreaseMode.INCREASE -> currentStitches + changeBy
-                IncreaseDecreaseMode.DECREASE -> currentStitches - changeBy
-            }
-
-        return if (remainder == 0) {
-            "($knitAbbrev$stitchesPerSection, $actionAbbrev) × $sections — total: $totalStitches stitches"
-        } else {
-            val mainSections = sections - remainder
-            val biggerSections = remainder
-            val parts = mutableListOf<String>()
-            if (mainSections > 0) {
-                parts.add("($knitAbbrev$stitchesPerSection, $actionAbbrev) × $mainSections")
-            }
-            parts.add("($knitAbbrev${stitchesPerSection + 1}, $actionAbbrev) × $biggerSections")
-            "${parts.joinToString(", ")} — total: $totalStitches stitches"
+        if (remainder == 0) {
+            return "(K$base, $actionAbbrev) × $sections — total: $totalStitches stitches"
         }
+        val mainSections = sections - remainder
+        val biggerSections = remainder
+        val parts = mutableListOf<String>()
+        if (mainSections > 0) {
+            parts.add("(K$base, $actionAbbrev) × $mainSections")
+        }
+        parts.add("(K${base + 1}, $actionAbbrev) × $biggerSections")
+        return "${parts.joinToString(", ")} — total: $totalStitches stitches"
     }
 
     private fun buildBalancedPattern(
-        currentStitches: Int,
-        changeBy: Int,
+        availableForKnit: Int,
+        sections: Int,
         mode: IncreaseDecreaseMode,
         style: KnittingStyle,
+        totalStitches: Int,
     ): String {
-        val totalStitches =
-            when (mode) {
-                IncreaseDecreaseMode.INCREASE -> currentStitches + changeBy
-                IncreaseDecreaseMode.DECREASE -> currentStitches - changeBy
-            }
-
-        val sections = changeBy
-        val base = currentStitches / sections
-        val remainder = currentStitches % sections
-
         val actionAbbrev =
             when (mode) {
                 IncreaseDecreaseMode.INCREASE -> "M1"
                 IncreaseDecreaseMode.DECREASE -> "K2tog"
             }
-        val knitAbbrev = "K"
+
+        val base = availableForKnit / sections
+        val remainder = availableForKnit % sections
 
         if (remainder == 0) {
-            return "($knitAbbrev$base, $actionAbbrev) × $sections — total: $totalStitches stitches"
+            return "(K$base, $actionAbbrev) × $sections — total: $totalStitches stitches"
         }
 
         val bigCount = remainder
@@ -189,15 +156,10 @@ object IncreaseDecreaseCalculator {
         ) {
             if (count <= 0) return
             if (count == 1) {
-                parts.add("$knitAbbrev$size, $actionAbbrev")
+                parts.add("K$size, $actionAbbrev")
             } else {
-                parts.add("($knitAbbrev$size, $actionAbbrev) × $count")
+                parts.add("(K$size, $actionAbbrev) × $count")
             }
-        }
-
-        if (style == KnittingStyle.FLAT) {
-            val startPad = floor(remainder / 2.0).toInt()
-            if (startPad > 0) parts.add("$knitAbbrev$startPad")
         }
 
         addGroup(bigSize, halfBig)

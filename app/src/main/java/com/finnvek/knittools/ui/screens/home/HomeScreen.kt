@@ -44,14 +44,15 @@ data class ToolCardData(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(onNavigate: (Screen) -> Unit) {
-    val tools = listOf(
-        ToolCardData("Row Counter", R.drawable.row_counter, Screen.Counter),
-        ToolCardData("Increase / Decrease", R.drawable.increase_decrease_calculator, Screen.IncreaseDecrease),
-        ToolCardData("Gauge Converter", R.drawable.gauge_converter, Screen.Gauge),
-        ToolCardData("Cast On Calculator", R.drawable.cast_on_calculator, Screen.CastOn),
-        ToolCardData("Yarn Estimator", R.drawable.yarn_estimator, Screen.Yarn),
-        ToolCardData("Needle Sizes", R.drawable.needle_sizes, Screen.Needles),
-    )
+    val tools =
+        listOf(
+            ToolCardData("Row Counter", R.drawable.row_counter, Screen.Counter),
+            ToolCardData("Increase / Decrease", R.drawable.increase_decrease_calculator, Screen.IncreaseDecrease),
+            ToolCardData("Gauge Converter", R.drawable.gauge_converter, Screen.Gauge),
+            ToolCardData("Cast On Calculator", R.drawable.cast_on_calculator, Screen.CastOn),
+            ToolCardData("Yarn Estimator", R.drawable.yarn_estimator, Screen.Yarn),
+            ToolCardData("Needle Sizes", R.drawable.needle_sizes, Screen.Needles),
+        )
 
     Scaffold(
         topBar = {
@@ -67,9 +68,10 @@ fun HomeScreen(onNavigate: (Screen) -> Unit) {
     ) { padding ->
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(padding),
             contentPadding = PaddingValues(16.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -92,10 +94,11 @@ private fun ToolCard(
     onClick: () -> Unit,
 ) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(180.dp)
-            .clickable(onClick = onClick),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(180.dp)
+                .clickable(onClick = onClick),
         shape = MaterialTheme.shapes.medium,
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -106,19 +109,21 @@ private fun ToolCard(
                 contentScale = ContentScale.Crop,
             )
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.6f)),
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.6f)),
+                            ),
                         ),
-                    ),
             )
             Text(
                 text = title,
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(12.dp),
+                modifier =
+                    Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(12.dp),
                 color = Color.White,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,

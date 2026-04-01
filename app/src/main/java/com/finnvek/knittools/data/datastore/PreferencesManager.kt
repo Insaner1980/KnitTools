@@ -13,7 +13,9 @@ import javax.inject.Singleton
 
 private val Context.dataStore by preferencesDataStore(name = "knittools_preferences")
 
-enum class ThemeMode(val value: Int) {
+enum class ThemeMode(
+    val value: Int,
+) {
     SYSTEM(0),
     LIGHT(1),
     DARK(2),
@@ -35,9 +37,10 @@ class PreferencesManager
         val preferences: Flow<AppPreferences> =
             context.dataStore.data.map { prefs ->
                 AppPreferences(
-                    themeMode = ThemeMode.entries.firstOrNull {
-                        it.value == (prefs[KEY_THEME_MODE] ?: 0)
-                    } ?: ThemeMode.SYSTEM,
+                    themeMode =
+                        ThemeMode.entries.firstOrNull {
+                            it.value == (prefs[KEY_THEME_MODE] ?: 0)
+                        } ?: ThemeMode.SYSTEM,
                     hapticFeedback = prefs[KEY_HAPTIC_FEEDBACK] ?: true,
                     keepScreenAwake = prefs[KEY_KEEP_SCREEN_AWAKE] ?: false,
                     useImperial = prefs[KEY_USE_IMPERIAL] ?: false,

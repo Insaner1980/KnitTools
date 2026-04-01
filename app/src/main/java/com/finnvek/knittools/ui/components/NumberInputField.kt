@@ -19,18 +19,20 @@ fun NumberInputField(
     OutlinedTextField(
         value = value,
         onValueChange = { newValue ->
-            val filtered = if (isDecimal) {
-                newValue.filter { it.isDigit() || it == '.' }
-            } else {
-                newValue.filter { it.isDigit() }
-            }
+            val filtered =
+                if (isDecimal) {
+                    newValue.filter { it.isDigit() || it == '.' }
+                } else {
+                    newValue.filter { it.isDigit() }
+                }
             onValueChange(filtered)
         },
         label = { Text(label) },
         modifier = modifier,
-        keyboardOptions = KeyboardOptions(
-            keyboardType = if (isDecimal) KeyboardType.Decimal else KeyboardType.Number,
-        ),
+        keyboardOptions =
+            KeyboardOptions(
+                keyboardType = if (isDecimal) KeyboardType.Decimal else KeyboardType.Number,
+            ),
         singleLine = true,
         suffix = suffix?.let { { Text(it) } },
     )

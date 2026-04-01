@@ -22,6 +22,7 @@ import com.finnvek.knittools.ui.components.NumberInputField
 import com.finnvek.knittools.ui.components.ResultCard
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
 import com.finnvek.knittools.ui.components.UnitToggle
+import com.finnvek.knittools.util.extensions.convertGaugeValue
 
 @Composable
 fun GaugeScreen(onBack: () -> Unit) {
@@ -48,14 +49,26 @@ fun GaugeScreen(onBack: () -> Unit) {
 
     ToolScreenScaffold(title = "Gauge Converter", onBack = onBack) { padding ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp)
-                .verticalScroll(rememberScrollState()),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(16.dp)
+                    .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            UnitToggle(useImperial = useImperial, onToggle = { useImperial = it })
+            UnitToggle(
+                useImperial = useImperial,
+                onToggle = { newImperial ->
+                    if (newImperial != useImperial) {
+                        patternSt = convertGaugeValue(patternSt, newImperial)
+                        patternRows = convertGaugeValue(patternRows, newImperial)
+                        yourSt = convertGaugeValue(yourSt, newImperial)
+                        yourRows = convertGaugeValue(yourRows, newImperial)
+                        useImperial = newImperial
+                    }
+                },
+            )
             val gaugeUnit = if (useImperial) "per 4 in" else "per 10 cm"
 
             Text("Pattern gauge", style = MaterialTheme.typography.titleSmall)
@@ -113,7 +126,9 @@ fun GaugeScreen(onBack: () -> Unit) {
                         style = MaterialTheme.typography.headlineSmall,
                     )
                     Text(
-                        text = "Exact: ${"%.1f".format(r.adjustedStitchesExact)} st, ${"%.1f".format(r.adjustedRowsExact)} rows",
+                        text = "Exact: ${"%.1f".format(
+                            r.adjustedStitchesExact,
+                        )} st, ${"%.1f".format(r.adjustedRowsExact)} rows",
                         style = MaterialTheme.typography.bodySmall,
                     )
                     val sign = if (r.stitchPercentDifference >= 0) "+" else ""

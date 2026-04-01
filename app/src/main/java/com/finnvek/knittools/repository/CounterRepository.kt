@@ -17,8 +17,7 @@ class CounterRepository
 
         suspend fun getProject(id: Long): CounterProjectEntity? = dao.getProject(id)
 
-        suspend fun createProject(name: String): Long =
-            dao.insert(CounterProjectEntity(name = name))
+        suspend fun createProject(name: String): Long = dao.insert(CounterProjectEntity(name = name))
 
         suspend fun updateProject(project: CounterProjectEntity) =
             dao.update(project.copy(updatedAt = System.currentTimeMillis()))
@@ -43,9 +42,10 @@ class CounterRepository
             )
         }
 
-        fun getHistory(projectId: Long): Flow<List<CounterHistoryEntity>> =
-            dao.getHistory(projectId)
+        fun getHistory(projectId: Long): Flow<List<CounterHistoryEntity>> = dao.getHistory(projectId)
 
-        suspend fun deleteHistoryBefore(projectId: Long, before: Long) =
-            dao.deleteHistoryBefore(projectId, before)
+        suspend fun deleteHistoryBefore(
+            projectId: Long,
+            before: Long,
+        ) = dao.deleteHistoryBefore(projectId, before)
     }

@@ -59,10 +59,11 @@ fun CounterScreen(
 
     ToolScreenScaffold(title = "Row Counter", onBack = onBack) { padding ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             OutlinedTextField(

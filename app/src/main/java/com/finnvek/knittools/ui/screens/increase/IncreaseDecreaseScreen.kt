@@ -43,11 +43,12 @@ fun IncreaseDecreaseScreen(onBack: () -> Unit) {
 
     ToolScreenScaffold(title = "Increase / Decrease", onBack = onBack) { padding ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp)
-                .verticalScroll(rememberScrollState()),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(16.dp)
+                    .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

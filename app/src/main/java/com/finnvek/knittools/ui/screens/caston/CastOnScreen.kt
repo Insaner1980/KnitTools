@@ -22,6 +22,8 @@ import com.finnvek.knittools.ui.components.NumberInputField
 import com.finnvek.knittools.ui.components.ResultCard
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
 import com.finnvek.knittools.ui.components.UnitToggle
+import com.finnvek.knittools.util.extensions.convertFieldValue
+import com.finnvek.knittools.util.extensions.convertGaugeValue
 
 @Composable
 fun CastOnScreen(onBack: () -> Unit) {
@@ -48,14 +50,24 @@ fun CastOnScreen(onBack: () -> Unit) {
 
     ToolScreenScaffold(title = "Cast On Calculator", onBack = onBack) { padding ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp)
-                .verticalScroll(rememberScrollState()),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(16.dp)
+                    .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            UnitToggle(useImperial = useImperial, onToggle = { useImperial = it })
+            UnitToggle(
+                useImperial = useImperial,
+                onToggle = { newImperial ->
+                    if (newImperial != useImperial) {
+                        width = convertFieldValue(width, newImperial)
+                        gauge = convertGaugeValue(gauge, newImperial)
+                        useImperial = newImperial
+                    }
+                },
+            )
             val unit = if (useImperial) "inches" else "cm"
             NumberInputField(
                 value = width,

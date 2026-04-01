@@ -30,22 +30,25 @@ fun SettingsScreen(
 
     ToolScreenScaffold(title = "Settings", onBack = onBack) { padding ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(padding),
         ) {
             SectionHeader("Theme")
             ThemeMode.entries.forEach { mode ->
-                val label = when (mode) {
-                    ThemeMode.SYSTEM -> "System"
-                    ThemeMode.LIGHT -> "Light"
-                    ThemeMode.DARK -> "Dark"
-                }
+                val label =
+                    when (mode) {
+                        ThemeMode.SYSTEM -> "System"
+                        ThemeMode.LIGHT -> "Light"
+                        ThemeMode.DARK -> "Dark"
+                    }
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { viewModel.setThemeMode(mode) }
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .clickable { viewModel.setThemeMode(mode) }
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     RadioButton(
@@ -103,10 +106,11 @@ private fun SwitchRow(
     onCheckedChange: (Boolean) -> Unit,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onCheckedChange(!checked) }
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable { onCheckedChange(!checked) }
+                .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(label, modifier = Modifier.weight(1f))

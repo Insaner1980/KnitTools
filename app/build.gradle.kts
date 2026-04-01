@@ -231,6 +231,10 @@ dependencies {
     implementation(libs.camerax.lifecycle)
     implementation(libs.camerax.view)
 
+    // Glance (home screen widgets)
+    implementation(libs.glance.appwidget)
+    implementation(libs.glance.material3)
+
     // Detekt plugins
     detektPlugins(libs.detekt.compose.rules)
 

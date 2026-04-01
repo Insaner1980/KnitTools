@@ -158,4 +158,8 @@
     <string name="parsing_instruction">Parsing…</string>
     <string name="instruction_parsed">Values filled from instruction</string>
     <string name="instruction_parse_failed">Could not parse instruction</string>
+
+    <!-- Widget -->
+    <string name="widget_name">Row Counter</string>
+    <string name="widget_description">Row counter widget for active project</string>
 </resources>

@@ -19,9 +19,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.NeedleSizeData
 import com.finnvek.knittools.domain.model.NeedleSize
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
@@ -32,7 +34,7 @@ fun NeedleSizeScreen(onBack: () -> Unit) {
     var selectedMm by remember { mutableStateOf<Double?>(null) }
     val results = remember(query) { NeedleSizeData.search(query) }
 
-    ToolScreenScaffold(title = "Needle Sizes", onBack = onBack) { padding ->
+    ToolScreenScaffold(title = stringResource(R.string.tool_needle_sizes), onBack = onBack) { padding ->
         LazyColumn(
             modifier =
                 Modifier
@@ -44,7 +46,7 @@ fun NeedleSizeScreen(onBack: () -> Unit) {
                 OutlinedTextField(
                     value = query,
                     onValueChange = { query = it },
-                    label = { Text("Search size...") },
+                    label = { Text(stringResource(R.string.search_size)) },
                     modifier =
                         Modifier
                             .fillMaxWidth()
@@ -54,7 +56,7 @@ fun NeedleSizeScreen(onBack: () -> Unit) {
             }
             item {
                 Text(
-                    text = "Sizes are approximate equivalents. Japanese sizes use a separate metric scale.",
+                    text = stringResource(R.string.needle_size_disclaimer),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = 4.dp),
@@ -82,9 +84,14 @@ private fun HeaderRow() {
                 .padding(vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        listOf("mm", "US", "UK", "JP").forEach { header ->
+        listOf(
+            R.string.header_mm,
+            R.string.header_us,
+            R.string.header_uk,
+            R.string.header_jp,
+        ).forEach { headerRes ->
             Text(
-                text = header,
+                text = stringResource(headerRes),
                 modifier = Modifier.weight(1f),
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Bold,

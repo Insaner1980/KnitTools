@@ -5,6 +5,8 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.finnvek.knittools.R
 
 @Composable
 fun UnitToggle(
@@ -16,12 +18,12 @@ fun UnitToggle(
         FilterChip(
             selected = !useImperial,
             onClick = { onToggle(false) },
-            label = { Text("cm") },
+            label = { Text(stringResource(R.string.unit_cm)) },
         )
         FilterChip(
             selected = useImperial,
             onClick = { onToggle(true) },
-            label = { Text("inches") },
+            label = { Text(stringResource(R.string.unit_inches)) },
         )
     }
 }

@@ -14,8 +14,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.Add
@@ -38,12 +36,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.getSystemService
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.finnvek.knittools.R
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
 
@@ -85,9 +85,9 @@ fun CounterScreen(
 
     if (showResetDialog) {
         ConfirmationDialog(
-            title = "Reset Counter",
-            message = "Reset the counter to 0?",
-            confirmText = "Reset",
+            title = stringResource(R.string.reset_counter),
+            message = stringResource(R.string.reset_counter_message),
+            confirmText = stringResource(R.string.reset),
             onConfirm = {
                 viewModel.reset()
                 showResetDialog = false
@@ -96,7 +96,7 @@ fun CounterScreen(
         )
     }
 
-    ToolScreenScaffold(title = "Row Counter", onBack = onBack) { padding ->
+    ToolScreenScaffold(title = stringResource(R.string.tool_row_counter), onBack = onBack) { padding ->
         Column(
             modifier =
                 Modifier
@@ -108,14 +108,13 @@ fun CounterScreen(
             OutlinedTextField(
                 value = state.projectName,
                 onValueChange = { viewModel.setProjectName(it) },
-                label = { Text("Project name") },
+                label = { Text(stringResource(R.string.project_name)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Timer
             val minutes = state.sessionSeconds / 60
             val seconds = state.sessionSeconds % 60
             Text(
@@ -126,7 +125,6 @@ fun CounterScreen(
 
             Spacer(modifier = Modifier.weight(1f))
 
-            // Main count display
             Text(
                 text = "${state.counter.count}",
                 fontSize = 96.sp,
@@ -134,12 +132,11 @@ fun CounterScreen(
                 color = MaterialTheme.colorScheme.onBackground,
             )
             Text(
-                text = "step: ${state.counter.stepSize}",
+                text = stringResource(R.string.step_format, state.counter.stepSize),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
-            // Secondary counter (Pro)
             if (state.isPro) {
                 Spacer(modifier = Modifier.height(12.dp))
                 HorizontalDivider()
@@ -149,7 +146,7 @@ fun CounterScreen(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = "Pattern repeat",
+                        text = stringResource(R.string.pattern_repeat),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -165,16 +162,16 @@ fun CounterScreen(
                             performHaptic()
                             viewModel.decrementSecondary()
                         }) {
-                            Text("-1")
+                            Text(stringResource(R.string.minus_one))
                         }
                         FilledTonalButton(onClick = {
                             performHaptic()
                             viewModel.incrementSecondary()
                         }) {
-                            Text("+1")
+                            Text(stringResource(R.string.plus_one))
                         }
                         TextButton(onClick = { viewModel.resetSecondary() }) {
-                            Text("Reset")
+                            Text(stringResource(R.string.reset))
                         }
                     }
                 }
@@ -182,7 +179,6 @@ fun CounterScreen(
 
             Spacer(modifier = Modifier.weight(1f))
 
-            // Main controls
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly,
@@ -192,7 +188,7 @@ fun CounterScreen(
                     performHaptic()
                     viewModel.decrement()
                 }) {
-                    Icon(Icons.Filled.Remove, contentDescription = "Decrease")
+                    Icon(Icons.Filled.Remove, contentDescription = stringResource(R.string.counter_decrease))
                 }
                 FloatingActionButton(
                     onClick = {
@@ -204,7 +200,7 @@ fun CounterScreen(
                 ) {
                     Icon(
                         Icons.Filled.Add,
-                        contentDescription = "Increase",
+                        contentDescription = stringResource(R.string.counter_increase),
                         modifier = Modifier.size(32.dp),
                     )
                 }
@@ -212,23 +208,22 @@ fun CounterScreen(
                     performHaptic()
                     viewModel.undo()
                 }) {
-                    Icon(Icons.AutoMirrored.Filled.Undo, contentDescription = "Undo")
+                    Icon(Icons.AutoMirrored.Filled.Undo, contentDescription = stringResource(R.string.counter_undo))
                 }
             }
 
             Spacer(modifier = Modifier.height(8.dp))
 
             TextButton(onClick = { showResetDialog = true }) {
-                Text("Reset")
+                Text(stringResource(R.string.reset))
             }
 
-            // Notes (Pro)
             if (state.isPro) {
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
                     value = state.notes,
                     onValueChange = { viewModel.setNotes(it) },
-                    label = { Text("Notes") },
+                    label = { Text(stringResource(R.string.notes)) },
                     modifier = Modifier.fillMaxWidth(),
                     minLines = 2,
                     maxLines = 4,

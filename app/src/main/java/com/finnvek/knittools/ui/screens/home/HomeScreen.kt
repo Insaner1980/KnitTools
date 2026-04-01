@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -42,7 +43,7 @@ import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.ui.navigation.Screen
 
 data class ToolCardData(
-    val title: String,
+    val titleRes: Int,
     val imageRes: Int,
     val screen: Screen,
 )
@@ -57,21 +58,21 @@ fun HomeScreen(
 
     val tools =
         listOf(
-            ToolCardData("Row Counter", R.drawable.row_counter, Screen.Counter),
-            ToolCardData("Increase / Decrease", R.drawable.increase_decrease_calculator, Screen.IncreaseDecrease),
-            ToolCardData("Gauge Converter", R.drawable.gauge_converter, Screen.Gauge),
-            ToolCardData("Cast On Calculator", R.drawable.cast_on_calculator, Screen.CastOn),
-            ToolCardData("Yarn Estimator", R.drawable.yarn_estimator, Screen.Yarn),
-            ToolCardData("Needle Sizes", R.drawable.needle_sizes, Screen.Needles),
+            ToolCardData(R.string.tool_row_counter, R.drawable.row_counter, Screen.Counter),
+            ToolCardData(R.string.tool_increase_decrease, R.drawable.increase_decrease_calculator, Screen.IncreaseDecrease),
+            ToolCardData(R.string.tool_gauge_converter, R.drawable.gauge_converter, Screen.Gauge),
+            ToolCardData(R.string.tool_cast_on_calculator, R.drawable.cast_on_calculator, Screen.CastOn),
+            ToolCardData(R.string.tool_yarn_estimator, R.drawable.yarn_estimator, Screen.Yarn),
+            ToolCardData(R.string.tool_needle_sizes, R.drawable.needle_sizes, Screen.Needles),
         )
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("KnitTools") },
+                title = { Text(stringResource(R.string.app_name)) },
                 actions = {
                     IconButton(onClick = { onNavigate(Screen.Settings) }) {
-                        Icon(Icons.Filled.Settings, contentDescription = "Settings")
+                        Icon(Icons.Filled.Settings, contentDescription = stringResource(R.string.settings))
                     }
                 },
             )
@@ -87,12 +88,11 @@ fun HomeScreen(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            // Trial/Pro indicator
             when (proState.status) {
                 ProStatus.TRIAL_ACTIVE -> {
                     item(span = { GridItemSpan(2) }) {
                         Text(
-                            text = "Pro trial — ${proState.trialDaysRemaining} days left",
+                            text = stringResource(R.string.pro_trial_days_left, proState.trialDaysRemaining),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.primary,
                             textAlign = TextAlign.Center,
@@ -104,7 +104,7 @@ fun HomeScreen(
                 ProStatus.TRIAL_EXPIRED -> {
                     item(span = { GridItemSpan(2) }) {
                         Text(
-                            text = "Unlock all tools",
+                            text = stringResource(R.string.unlock_all_tools),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.primary,
                             textAlign = TextAlign.Center,
@@ -119,9 +119,10 @@ fun HomeScreen(
                 ProStatus.PRO_PURCHASED -> { /* no indicator */ }
             }
 
-            items(tools, key = { it.title }) { tool ->
+            items(tools, key = { it.titleRes }) { tool ->
+                val title = stringResource(tool.titleRes)
                 ToolCard(
-                    title = tool.title,
+                    title = title,
                     imageRes = tool.imageRes,
                     onClick = { onNavigate(tool.screen) },
                 )

@@ -18,7 +18,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.IncreaseDecreaseCalculator
 import com.finnvek.knittools.domain.model.IncreaseDecreaseMode
 import com.finnvek.knittools.domain.model.KnittingStyle
@@ -41,7 +43,7 @@ fun IncreaseDecreaseScreen(onBack: () -> Unit) {
         }
     }
 
-    ToolScreenScaffold(title = "Increase / Decrease", onBack = onBack) { padding ->
+    ToolScreenScaffold(title = stringResource(R.string.tool_increase_decrease), onBack = onBack) { padding ->
         Column(
             modifier =
                 Modifier
@@ -55,54 +57,65 @@ fun IncreaseDecreaseScreen(onBack: () -> Unit) {
                 FilterChip(
                     selected = mode == IncreaseDecreaseMode.INCREASE,
                     onClick = { mode = IncreaseDecreaseMode.INCREASE },
-                    label = { Text("Increase") },
+                    label = { Text(stringResource(R.string.mode_increase)) },
                 )
                 FilterChip(
                     selected = mode == IncreaseDecreaseMode.DECREASE,
                     onClick = { mode = IncreaseDecreaseMode.DECREASE },
-                    label = { Text("Decrease") },
+                    label = { Text(stringResource(R.string.mode_decrease)) },
                 )
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilterChip(
                     selected = style == KnittingStyle.FLAT,
                     onClick = { style = KnittingStyle.FLAT },
-                    label = { Text("Flat") },
+                    label = { Text(stringResource(R.string.style_flat)) },
                 )
                 FilterChip(
                     selected = style == KnittingStyle.CIRCULAR,
                     onClick = { style = KnittingStyle.CIRCULAR },
-                    label = { Text("Circular") },
+                    label = { Text(stringResource(R.string.style_circular)) },
                 )
             }
 
             NumberInputField(
                 value = currentStitches,
                 onValueChange = { currentStitches = it },
-                label = "Current stitches",
-                suffix = "st",
+                label = stringResource(R.string.current_stitches),
+                suffix = stringResource(R.string.unit_st),
                 modifier = Modifier.fillMaxWidth(),
             )
-            val changeLabel = if (mode == IncreaseDecreaseMode.INCREASE) "Increase by" else "Decrease by"
+            val changeLabel = if (mode == IncreaseDecreaseMode.INCREASE) {
+                stringResource(R.string.increase_by)
+            } else {
+                stringResource(R.string.decrease_by)
+            }
             NumberInputField(
                 value = changeBy,
                 onValueChange = { changeBy = it },
                 label = changeLabel,
-                suffix = "st",
+                suffix = stringResource(R.string.unit_st),
                 modifier = Modifier.fillMaxWidth(),
             )
 
             result?.let { r ->
                 if (!r.isValid) {
                     Text(
-                        text = r.errorMessage ?: "Invalid input",
+                        text = r.errorMessage ?: stringResource(R.string.invalid_input),
                         color = MaterialTheme.colorScheme.error,
                     )
                 } else {
-                    ResultCard(title = "Easy to remember") {
+                    if (r.errorMessage != null) {
+                        Text(
+                            text = r.errorMessage,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                    ResultCard(title = stringResource(R.string.easy_to_remember)) {
                         Text(text = r.easyPattern, style = MaterialTheme.typography.bodyLarge)
                     }
-                    ResultCard(title = "Balanced") {
+                    ResultCard(title = stringResource(R.string.balanced)) {
                         Text(text = r.balancedPattern, style = MaterialTheme.typography.bodyLarge)
                     }
                 }

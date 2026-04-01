@@ -1,3 +1,126 @@
 <resources>
     <string name="app_name">KnitTools</string>
+
+    <!-- Navigation & common -->
+    <string name="back">Back</string>
+    <string name="cancel">Cancel</string>
+    <string name="confirm">Confirm</string>
+    <string name="reset">Reset</string>
+    <string name="result">Result</string>
+    <string name="settings">Settings</string>
+
+    <!-- Units -->
+    <string name="unit_cm">cm</string>
+    <string name="unit_inches">inches</string>
+    <string name="unit_st">st</string>
+    <string name="unit_rows">rows</string>
+    <string name="unit_g">g</string>
+    <string name="unit_meters">meters</string>
+    <string name="unit_yards">yards</string>
+    <string name="unit_st_per_10cm">st/10 cm</string>
+    <string name="unit_st_per_4in">st/4 in</string>
+    <string name="unit_per_10cm">per 10 cm</string>
+    <string name="unit_per_4in">per 4 in</string>
+
+    <!-- Home screen -->
+    <string name="tool_row_counter">Row Counter</string>
+    <string name="tool_increase_decrease">Increase / Decrease</string>
+    <string name="tool_gauge_converter">Gauge Converter</string>
+    <string name="tool_cast_on_calculator">Cast On Calculator</string>
+    <string name="tool_yarn_estimator">Yarn Estimator</string>
+    <string name="tool_needle_sizes">Needle Sizes</string>
+    <string name="pro_trial_days_left">Pro trial — %d days left</string>
+    <string name="unlock_all_tools">Unlock all tools</string>
+
+    <!-- Row Counter -->
+    <string name="project_name">Project name</string>
+    <string name="default_project_name">My Project</string>
+    <string name="step_format">step: %d</string>
+    <string name="reset_counter">Reset Counter</string>
+    <string name="reset_counter_message">Reset the counter to 0?</string>
+    <string name="pattern_repeat">Pattern repeat</string>
+    <string name="notes">Notes</string>
+    <string name="counter_decrease">Decrease</string>
+    <string name="counter_increase">Increase</string>
+    <string name="counter_undo">Undo</string>
+    <string name="plus_one">+1</string>
+    <string name="minus_one">-1</string>
+
+    <!-- Increase / Decrease -->
+    <string name="mode_increase">Increase</string>
+    <string name="mode_decrease">Decrease</string>
+    <string name="style_flat">Flat</string>
+    <string name="style_circular">Circular</string>
+    <string name="current_stitches">Current stitches</string>
+    <string name="increase_by">Increase by</string>
+    <string name="decrease_by">Decrease by</string>
+    <string name="invalid_input">Invalid input</string>
+    <string name="easy_to_remember">Easy to remember</string>
+    <string name="balanced">Balanced</string>
+
+    <!-- Gauge Converter -->
+    <string name="pattern_gauge">Pattern gauge</string>
+    <string name="your_gauge">Your gauge</string>
+    <string name="pattern_instructions">Pattern instructions</string>
+    <string name="stitches_gauge">Stitches %s</string>
+    <string name="rows_gauge">Rows %s</string>
+    <string name="stitches_in_pattern">Stitches in pattern</string>
+    <string name="rows_in_pattern">Rows in pattern</string>
+    <string name="adjusted_for_your_gauge">Adjusted for your gauge</string>
+    <string name="adjusted_result">%d stitches, %d rows</string>
+    <string name="exact_result">Exact: %s st, %s rows</string>
+    <string name="stitch_gauge_diff">Stitch gauge: %s%%</string>
+
+    <!-- Cast On Calculator -->
+    <string name="desired_width">Desired width</string>
+    <string name="stitch_gauge">Stitch gauge</string>
+    <string name="pattern_repeat_optional">Pattern repeat (optional)</string>
+    <string name="edge_stitches_optional">Edge stitches (optional)</string>
+    <string name="stitches_result">%d stitches</string>
+    <string name="actual_width">Actual width: %s %s</string>
+    <string name="adjusted_down">Adjusted down: %d st (%s %s)</string>
+    <string name="adjusted_up">Adjusted up: %d st (%s %s)</string>
+
+    <!-- Yarn Estimator -->
+    <string name="total_yarn_needed">Total yarn needed</string>
+    <string name="yarn_per_skein">%s per skein</string>
+    <string name="weight_per_skein">Weight per skein</string>
+    <string name="skeins_result">%d skeins</string>
+    <string name="total_weight">Total weight: %s g</string>
+    <string name="exact_skeins">Exact: %s skeins</string>
+    <string name="extra_skein_note">Always buy one extra skein — dye lots may vary</string>
+
+    <!-- Needle Sizes -->
+    <string name="search_size">Search size…</string>
+    <string name="needle_size_disclaimer">Sizes are approximate equivalents. Japanese sizes use a separate metric scale.</string>
+    <string name="header_mm">mm</string>
+    <string name="header_us">US</string>
+    <string name="header_uk">UK</string>
+    <string name="header_jp">JP</string>
+
+    <!-- Settings -->
+    <string name="theme">Theme</string>
+    <string name="theme_system">System</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="preferences">Preferences</string>
+    <string name="haptic_feedback">Haptic feedback</string>
+    <string name="keep_screen_awake">Keep screen awake</string>
+    <string name="use_imperial_units">Use imperial units</string>
+    <string name="purchase">Purchase</string>
+    <string name="restore_purchases">Restore purchases</string>
+    <string name="version_format">KnitTools v%s</string>
+
+    <!-- Pro Upgrade -->
+    <string name="knittools_pro">KnitTools Pro</string>
+    <string name="you_have_pro">You have KnitTools Pro!</string>
+    <string name="all_features_unlocked">All features are unlocked.</string>
+    <string name="pro_feature_unlimited_projects">Unlimited counter projects</string>
+    <string name="pro_feature_full_history">Full counter history</string>
+    <string name="pro_feature_notes">Notes per project</string>
+    <string name="pro_feature_secondary_counter">Secondary counter</string>
+    <string name="pro_feature_ocr">Yarn label OCR scanning</string>
+    <string name="pro_feature_widget">Home screen widget</string>
+    <string name="upgrade_for_price">Upgrade for %s</string>
+    <string name="one_time_purchase">One-time purchase. No subscription.</string>
 </resources>

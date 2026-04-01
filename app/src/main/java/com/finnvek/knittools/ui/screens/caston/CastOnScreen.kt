@@ -16,7 +16,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.CastOnCalculator
 import com.finnvek.knittools.ui.components.NumberInputField
 import com.finnvek.knittools.ui.components.ResultCard
@@ -48,7 +50,7 @@ fun CastOnScreen(onBack: () -> Unit) {
         }
     }
 
-    ToolScreenScaffold(title = "Cast On Calculator", onBack = onBack) { padding ->
+    ToolScreenScaffold(title = stringResource(R.string.tool_cast_on_calculator), onBack = onBack) { padding ->
         Column(
             modifier =
                 Modifier
@@ -68,20 +70,20 @@ fun CastOnScreen(onBack: () -> Unit) {
                     }
                 },
             )
-            val unit = if (useImperial) "inches" else "cm"
+            val unit = if (useImperial) stringResource(R.string.unit_inches) else stringResource(R.string.unit_cm)
+            val gaugeUnit = if (useImperial) stringResource(R.string.unit_st_per_4in) else stringResource(R.string.unit_st_per_10cm)
             NumberInputField(
                 value = width,
                 onValueChange = { width = it },
-                label = "Desired width",
+                label = stringResource(R.string.desired_width),
                 isDecimal = true,
                 suffix = unit,
                 modifier = Modifier.fillMaxWidth(),
             )
-            val gaugeUnit = if (useImperial) "st/4 in" else "st/10 cm"
             NumberInputField(
                 value = gauge,
                 onValueChange = { gauge = it },
-                label = "Stitch gauge",
+                label = stringResource(R.string.stitch_gauge),
                 isDecimal = true,
                 suffix = gaugeUnit,
                 modifier = Modifier.fillMaxWidth(),
@@ -89,37 +91,37 @@ fun CastOnScreen(onBack: () -> Unit) {
             NumberInputField(
                 value = patternRepeat,
                 onValueChange = { patternRepeat = it },
-                label = "Pattern repeat (optional)",
-                suffix = "st",
+                label = stringResource(R.string.pattern_repeat_optional),
+                suffix = stringResource(R.string.unit_st),
                 modifier = Modifier.fillMaxWidth(),
             )
             NumberInputField(
                 value = edgeStitches,
                 onValueChange = { edgeStitches = it },
-                label = "Edge stitches (optional)",
-                suffix = "st",
+                label = stringResource(R.string.edge_stitches_optional),
+                suffix = stringResource(R.string.unit_st),
                 modifier = Modifier.fillMaxWidth(),
             )
 
             result?.let { r ->
-                ResultCard(title = "Result") {
+                ResultCard(title = stringResource(R.string.result)) {
                     Text(
-                        text = "${r.stitches} stitches",
+                        text = stringResource(R.string.stitches_result, r.stitches),
                         style = MaterialTheme.typography.headlineMedium,
                     )
                     Text(
-                        text = "Actual width: ${"%.1f".format(r.actualWidth)} $unit",
+                        text = stringResource(R.string.actual_width, "%.1f".format(r.actualWidth), unit),
                         style = MaterialTheme.typography.bodyMedium,
                     )
                     r.adjustedDown?.let { down ->
                         Text(
-                            text = "Adjusted down: $down st (${"%.1f".format(r.adjustedDownWidth)} $unit)",
+                            text = stringResource(R.string.adjusted_down, down, "%.1f".format(r.adjustedDownWidth), unit),
                             style = MaterialTheme.typography.bodySmall,
                         )
                     }
                     r.adjustedUp?.let { up ->
                         Text(
-                            text = "Adjusted up: $up st (${"%.1f".format(r.adjustedUpWidth)} $unit)",
+                            text = stringResource(R.string.adjusted_up, up, "%.1f".format(r.adjustedUpWidth), unit),
                             style = MaterialTheme.typography.bodySmall,
                         )
                     }

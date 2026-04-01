@@ -16,7 +16,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.YarnEstimator
 import com.finnvek.knittools.ui.components.NumberInputField
 import com.finnvek.knittools.ui.components.ResultCard
@@ -41,7 +43,7 @@ fun YarnEstimatorScreen(onBack: () -> Unit) {
         }
     }
 
-    ToolScreenScaffold(title = "Yarn Estimator", onBack = onBack) { padding ->
+    ToolScreenScaffold(title = stringResource(R.string.tool_yarn_estimator), onBack = onBack) { padding ->
         Column(
             modifier =
                 Modifier
@@ -61,11 +63,11 @@ fun YarnEstimatorScreen(onBack: () -> Unit) {
                     }
                 },
             )
-            val lengthUnit = if (useImperial) "yards" else "meters"
+            val lengthUnit = if (useImperial) stringResource(R.string.unit_yards) else stringResource(R.string.unit_meters)
             NumberInputField(
                 value = totalYarn,
                 onValueChange = { totalYarn = it },
-                label = "Total yarn needed",
+                label = stringResource(R.string.total_yarn_needed),
                 isDecimal = true,
                 suffix = lengthUnit,
                 modifier = Modifier.fillMaxWidth(),
@@ -73,7 +75,7 @@ fun YarnEstimatorScreen(onBack: () -> Unit) {
             NumberInputField(
                 value = yarnPerSkein,
                 onValueChange = { yarnPerSkein = it },
-                label = "$lengthUnit per skein",
+                label = stringResource(R.string.yarn_per_skein, lengthUnit),
                 isDecimal = true,
                 suffix = lengthUnit,
                 modifier = Modifier.fillMaxWidth(),
@@ -81,28 +83,28 @@ fun YarnEstimatorScreen(onBack: () -> Unit) {
             NumberInputField(
                 value = weightPerSkein,
                 onValueChange = { weightPerSkein = it },
-                label = "Weight per skein",
+                label = stringResource(R.string.weight_per_skein),
                 isDecimal = true,
-                suffix = "g",
+                suffix = stringResource(R.string.unit_g),
                 modifier = Modifier.fillMaxWidth(),
             )
 
             result?.let { r ->
-                ResultCard(title = "Result") {
+                ResultCard(title = stringResource(R.string.result)) {
                     Text(
-                        text = "${r.skeinsNeeded} skeins",
+                        text = stringResource(R.string.skeins_result, r.skeinsNeeded),
                         style = MaterialTheme.typography.headlineMedium,
                     )
                     Text(
-                        text = "Total weight: ${"%.0f".format(r.totalWeight)} g",
+                        text = stringResource(R.string.total_weight, "%.0f".format(r.totalWeight)),
                         style = MaterialTheme.typography.bodyMedium,
                     )
                     Text(
-                        text = "Exact: ${"%.2f".format(r.exactSkeins)} skeins",
+                        text = stringResource(R.string.exact_skeins, "%.2f".format(r.exactSkeins)),
                         style = MaterialTheme.typography.bodySmall,
                     )
                     Text(
-                        text = "Always buy one extra skein — dye lots may vary",
+                        text = stringResource(R.string.extra_skein_note),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

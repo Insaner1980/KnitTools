@@ -16,7 +16,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.GaugeConverter
 import com.finnvek.knittools.domain.model.GaugeConversionResult
 import com.finnvek.knittools.ui.components.NumberInputField
@@ -41,7 +43,7 @@ fun GaugeScreen(onBack: () -> Unit) {
         }
     }
 
-    ToolScreenScaffold(title = "Gauge Converter", onBack = onBack) { padding ->
+    ToolScreenScaffold(title = stringResource(R.string.tool_gauge_converter), onBack = onBack) { padding ->
         Column(
             modifier =
                 Modifier
@@ -63,7 +65,7 @@ fun GaugeScreen(onBack: () -> Unit) {
                     }
                 },
             )
-            val gaugeUnit = if (useImperial) "per 4 in" else "per 10 cm"
+            val gaugeUnit = if (useImperial) stringResource(R.string.unit_per_4in) else stringResource(R.string.unit_per_10cm)
 
             GaugeInputFields(
                 patternSt = patternSt,
@@ -120,71 +122,73 @@ private fun GaugeInputFields(
     onStitchCountChange: (String) -> Unit,
     onRowCountChange: (String) -> Unit,
 ) {
-    Text("Pattern gauge", style = MaterialTheme.typography.titleSmall)
+    Text(stringResource(R.string.pattern_gauge), style = MaterialTheme.typography.titleSmall)
     NumberInputField(
         value = patternSt,
         onValueChange = onPatternStChange,
-        label = "Stitches $gaugeUnit",
+        label = stringResource(R.string.stitches_gauge, gaugeUnit),
         isDecimal = true,
         modifier = Modifier.fillMaxWidth(),
     )
     NumberInputField(
         value = patternRows,
         onValueChange = onPatternRowsChange,
-        label = "Rows $gaugeUnit",
+        label = stringResource(R.string.rows_gauge, gaugeUnit),
         isDecimal = true,
         modifier = Modifier.fillMaxWidth(),
     )
 
-    Text("Your gauge", style = MaterialTheme.typography.titleSmall)
+    Text(stringResource(R.string.your_gauge), style = MaterialTheme.typography.titleSmall)
     NumberInputField(
         value = yourSt,
         onValueChange = onYourStChange,
-        label = "Stitches $gaugeUnit",
+        label = stringResource(R.string.stitches_gauge, gaugeUnit),
         isDecimal = true,
         modifier = Modifier.fillMaxWidth(),
     )
     NumberInputField(
         value = yourRows,
         onValueChange = onYourRowsChange,
-        label = "Rows $gaugeUnit",
+        label = stringResource(R.string.rows_gauge, gaugeUnit),
         isDecimal = true,
         modifier = Modifier.fillMaxWidth(),
     )
 
-    Text("Pattern instructions", style = MaterialTheme.typography.titleSmall)
+    Text(stringResource(R.string.pattern_instructions), style = MaterialTheme.typography.titleSmall)
     NumberInputField(
         value = stitchCount,
         onValueChange = onStitchCountChange,
-        label = "Stitches in pattern",
-        suffix = "st",
+        label = stringResource(R.string.stitches_in_pattern),
+        suffix = stringResource(R.string.unit_st),
         modifier = Modifier.fillMaxWidth(),
     )
     NumberInputField(
         value = rowCount,
         onValueChange = onRowCountChange,
-        label = "Rows in pattern",
-        suffix = "rows",
+        label = stringResource(R.string.rows_in_pattern),
+        suffix = stringResource(R.string.unit_rows),
         modifier = Modifier.fillMaxWidth(),
     )
 }
 
 @Composable
 private fun GaugeResultCard(result: GaugeConversionResult) {
-    ResultCard(title = "Adjusted for your gauge") {
+    ResultCard(title = stringResource(R.string.adjusted_for_your_gauge)) {
         Text(
-            text = "${result.adjustedStitches} stitches, ${result.adjustedRows} rows",
+            text = stringResource(R.string.adjusted_result, result.adjustedStitches, result.adjustedRows),
             style = MaterialTheme.typography.headlineSmall,
         )
         Text(
-            text = "Exact: ${"%.1f".format(
-                result.adjustedStitchesExact,
-            )} st, ${"%.1f".format(result.adjustedRowsExact)} rows",
+            text = stringResource(
+                R.string.exact_result,
+                "%.1f".format(result.adjustedStitchesExact),
+                "%.1f".format(result.adjustedRowsExact),
+            ),
             style = MaterialTheme.typography.bodySmall,
         )
         val sign = if (result.stitchPercentDifference >= 0) "+" else ""
         Text(
-            text = "Stitch gauge: $sign${"%.1f".format(result.stitchPercentDifference)}%",
+            text = stringResource(R.string.stitch_gauge_diff, "$sign${"%.1f".format(result.stitchPercentDifference)}"),
             style = MaterialTheme.typography.bodyMedium,
         )
     }

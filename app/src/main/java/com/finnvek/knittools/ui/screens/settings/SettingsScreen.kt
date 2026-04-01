@@ -15,9 +15,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.finnvek.knittools.R
 import com.finnvek.knittools.data.datastore.ThemeMode
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
 
@@ -28,20 +30,20 @@ fun SettingsScreen(
 ) {
     val prefs by viewModel.preferences.collectAsStateWithLifecycle()
 
-    ToolScreenScaffold(title = "Settings", onBack = onBack) { padding ->
+    ToolScreenScaffold(title = stringResource(R.string.settings), onBack = onBack) { padding ->
         Column(
             modifier =
                 Modifier
                     .fillMaxSize()
                     .padding(padding),
         ) {
-            SectionHeader("Theme")
+            SectionHeader(stringResource(R.string.theme))
             ThemeMode.entries.forEach { mode ->
                 val label =
                     when (mode) {
-                        ThemeMode.SYSTEM -> "System"
-                        ThemeMode.LIGHT -> "Light"
-                        ThemeMode.DARK -> "Dark"
+                        ThemeMode.SYSTEM -> stringResource(R.string.theme_system)
+                        ThemeMode.LIGHT -> stringResource(R.string.theme_light)
+                        ThemeMode.DARK -> stringResource(R.string.theme_dark)
                     }
                 Row(
                     modifier =
@@ -60,26 +62,26 @@ fun SettingsScreen(
             }
 
             HorizontalDivider()
-            SectionHeader("Preferences")
+            SectionHeader(stringResource(R.string.preferences))
 
             SwitchRow(
-                label = "Haptic feedback",
+                label = stringResource(R.string.haptic_feedback),
                 checked = prefs.hapticFeedback,
                 onCheckedChange = { viewModel.setHapticFeedback(it) },
             )
             SwitchRow(
-                label = "Keep screen awake",
+                label = stringResource(R.string.keep_screen_awake),
                 checked = prefs.keepScreenAwake,
                 onCheckedChange = { viewModel.setKeepScreenAwake(it) },
             )
             SwitchRow(
-                label = "Use imperial units",
+                label = stringResource(R.string.use_imperial_units),
                 checked = prefs.useImperial,
                 onCheckedChange = { viewModel.setUseImperial(it) },
             )
 
             HorizontalDivider()
-            SectionHeader("Purchase")
+            SectionHeader(stringResource(R.string.purchase))
             Row(
                 modifier =
                     Modifier
@@ -88,12 +90,12 @@ fun SettingsScreen(
                         .padding(horizontal = 16.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("Restore purchases")
+                Text(stringResource(R.string.restore_purchases))
             }
 
             HorizontalDivider()
             Text(
-                text = "KnitTools v1.0.0",
+                text = stringResource(R.string.version_format, "1.0.0"),
                 modifier = Modifier.padding(16.dp),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,

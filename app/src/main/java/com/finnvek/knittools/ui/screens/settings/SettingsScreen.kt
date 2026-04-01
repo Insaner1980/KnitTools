@@ -50,7 +50,7 @@ fun SettingsScreen(
                         Modifier
                             .fillMaxWidth()
                             .clickable { viewModel.setThemeMode(mode) }
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     RadioButton(

@@ -59,7 +59,7 @@ fun NeedleSizeScreen(onBack: () -> Unit) {
                     text = stringResource(R.string.needle_size_disclaimer),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(vertical = 4.dp),
+                    modifier = Modifier.padding(vertical = 8.dp),
                 )
             }
             item { HeaderRow() }

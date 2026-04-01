@@ -26,6 +26,7 @@ import com.finnvek.knittools.R
 import com.finnvek.knittools.ai.nano.ParsedInstruction
 import com.finnvek.knittools.domain.calculator.IncreaseDecreaseCalculator
 import com.finnvek.knittools.domain.model.IncreaseDecreaseMode
+import com.finnvek.knittools.domain.model.IncreaseDecreaseResult
 import com.finnvek.knittools.domain.model.KnittingStyle
 import com.finnvek.knittools.ui.components.NumberInputField
 import com.finnvek.knittools.ui.components.PasteInstructionButton
@@ -68,40 +69,13 @@ fun IncreaseDecreaseScreen(
                     if (parsed is ParsedInstruction.IncreaseDecrease) {
                         currentStitches = parsed.currentStitches.toString()
                         changeBy = parsed.changeBy.toString()
-                        mode =
-                            if (parsed.isIncrease) {
-                                IncreaseDecreaseMode.INCREASE
-                            } else {
-                                IncreaseDecreaseMode.DECREASE
-                            }
+                        mode = if (parsed.isIncrease) IncreaseDecreaseMode.INCREASE else IncreaseDecreaseMode.DECREASE
                     }
                 },
             )
 
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(
-                    selected = mode == IncreaseDecreaseMode.INCREASE,
-                    onClick = { mode = IncreaseDecreaseMode.INCREASE },
-                    label = { Text(stringResource(R.string.mode_increase)) },
-                )
-                FilterChip(
-                    selected = mode == IncreaseDecreaseMode.DECREASE,
-                    onClick = { mode = IncreaseDecreaseMode.DECREASE },
-                    label = { Text(stringResource(R.string.mode_decrease)) },
-                )
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(
-                    selected = style == KnittingStyle.FLAT,
-                    onClick = { style = KnittingStyle.FLAT },
-                    label = { Text(stringResource(R.string.style_flat)) },
-                )
-                FilterChip(
-                    selected = style == KnittingStyle.CIRCULAR,
-                    onClick = { style = KnittingStyle.CIRCULAR },
-                    label = { Text(stringResource(R.string.style_circular)) },
-                )
-            }
+            ModeSelector(mode = mode, onModeChange = { mode = it })
+            StyleSelector(style = style, onStyleChange = { style = it })
 
             NumberInputField(
                 value = currentStitches,
@@ -110,42 +84,81 @@ fun IncreaseDecreaseScreen(
                 suffix = stringResource(R.string.unit_st),
                 modifier = Modifier.fillMaxWidth(),
             )
-            val changeLabel =
-                if (mode == IncreaseDecreaseMode.INCREASE) {
-                    stringResource(R.string.increase_by)
-                } else {
-                    stringResource(R.string.decrease_by)
-                }
             NumberInputField(
                 value = changeBy,
                 onValueChange = { changeBy = it },
-                label = changeLabel,
+                label = if (mode == IncreaseDecreaseMode.INCREASE) {
+                    stringResource(R.string.increase_by)
+                } else {
+                    stringResource(R.string.decrease_by)
+                },
                 suffix = stringResource(R.string.unit_st),
                 modifier = Modifier.fillMaxWidth(),
             )
 
-            result?.let { r ->
-                if (!r.isValid) {
-                    Text(
-                        text = r.errorMessage ?: stringResource(R.string.invalid_input),
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                } else {
-                    if (r.errorMessage != null) {
-                        Text(
-                            text = r.errorMessage,
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodySmall,
-                        )
-                    }
-                    ResultCard(title = stringResource(R.string.easy_to_remember)) {
-                        Text(text = r.easyPattern, style = MaterialTheme.typography.bodyLarge)
-                    }
-                    ResultCard(title = stringResource(R.string.balanced)) {
-                        Text(text = r.balancedPattern, style = MaterialTheme.typography.bodyLarge)
-                    }
-                }
-            }
+            result?.let { r -> IncreaseDecreaseResultSection(r) }
+        }
+    }
+}
+
+@Composable
+private fun ModeSelector(
+    mode: IncreaseDecreaseMode,
+    onModeChange: (IncreaseDecreaseMode) -> Unit,
+) {
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        FilterChip(
+            selected = mode == IncreaseDecreaseMode.INCREASE,
+            onClick = { onModeChange(IncreaseDecreaseMode.INCREASE) },
+            label = { Text(stringResource(R.string.mode_increase)) },
+        )
+        FilterChip(
+            selected = mode == IncreaseDecreaseMode.DECREASE,
+            onClick = { onModeChange(IncreaseDecreaseMode.DECREASE) },
+            label = { Text(stringResource(R.string.mode_decrease)) },
+        )
+    }
+}
+
+@Composable
+private fun StyleSelector(
+    style: KnittingStyle,
+    onStyleChange: (KnittingStyle) -> Unit,
+) {
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        FilterChip(
+            selected = style == KnittingStyle.FLAT,
+            onClick = { onStyleChange(KnittingStyle.FLAT) },
+            label = { Text(stringResource(R.string.style_flat)) },
+        )
+        FilterChip(
+            selected = style == KnittingStyle.CIRCULAR,
+            onClick = { onStyleChange(KnittingStyle.CIRCULAR) },
+            label = { Text(stringResource(R.string.style_circular)) },
+        )
+    }
+}
+
+@Composable
+private fun IncreaseDecreaseResultSection(result: IncreaseDecreaseResult) {
+    if (!result.isValid) {
+        Text(
+            text = result.errorMessage ?: stringResource(R.string.invalid_input),
+            color = MaterialTheme.colorScheme.error,
+        )
+    } else {
+        result.errorMessage?.let {
+            Text(
+                text = it,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
+        ResultCard(title = stringResource(R.string.easy_to_remember)) {
+            Text(text = result.easyPattern, style = MaterialTheme.typography.bodyLarge)
+        }
+        ResultCard(title = stringResource(R.string.balanced)) {
+            Text(text = result.balancedPattern, style = MaterialTheme.typography.bodyLarge)
         }
     }
 }

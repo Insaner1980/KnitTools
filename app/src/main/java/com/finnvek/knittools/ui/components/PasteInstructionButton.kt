@@ -38,11 +38,6 @@ fun PasteInstructionButton(
 ) {
     var nanoAvailable by remember { mutableStateOf(false) }
     var expanded by remember { mutableStateOf(false) }
-    var instructionText by remember { mutableStateOf("") }
-    var isParsing by remember { mutableStateOf(false) }
-    var resultMessage by remember { mutableStateOf<String?>(null) }
-    val scope = rememberCoroutineScope()
-    val context = LocalContext.current
 
     LaunchedEffect(isPro) {
         if (isPro) {
@@ -50,86 +45,79 @@ fun PasteInstructionButton(
         }
     }
 
-    // Hide entirely if not Pro or Nano not available
     if (!isPro || !nanoAvailable) return
 
     Column(modifier = modifier) {
-        TextButton(
-            onClick = { expanded = !expanded },
-        ) {
-            Icon(
-                Icons.Filled.AutoAwesome,
-                contentDescription = null,
-                modifier = Modifier.padding(end = 4.dp),
-            )
+        TextButton(onClick = { expanded = !expanded }) {
+            Icon(Icons.Filled.AutoAwesome, contentDescription = null, modifier = Modifier.padding(end = 4.dp))
             Text(stringResource(R.string.paste_instruction))
         }
 
         AnimatedVisibility(visible = expanded) {
-            Column {
-                OutlinedTextField(
-                    value = instructionText,
-                    onValueChange = {
-                        instructionText = it
-                        resultMessage = null
-                    },
-                    label = { Text(stringResource(R.string.instruction_hint)) },
-                    modifier = Modifier.fillMaxWidth(),
-                    minLines = 2,
-                    maxLines = 4,
-                    trailingIcon = {
-                        if (isParsing) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.padding(8.dp),
-                                strokeWidth = 2.dp,
-                            )
-                        }
-                    },
-                )
+            InstructionInputForm(
+                onResult = { result ->
+                    onResult(result)
+                    expanded = false
+                },
+            )
+        }
+    }
+}
 
-                TextButton(
-                    onClick = {
-                        scope.launch {
-                            isParsing = true
-                            resultMessage = null
-                            val result = InstructionParser.parse(instructionText)
-                            isParsing = false
-                            when (result) {
-                                is ParsedInstruction.Failure -> {
-                                    resultMessage = result.reason
-                                }
+@Composable
+private fun InstructionInputForm(onResult: (ParsedInstruction) -> Unit) {
+    var instructionText by remember { mutableStateOf("") }
+    var isParsing by remember { mutableStateOf(false) }
+    var resultMessage by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
-                                else -> {
-                                    resultMessage = context.getString(R.string.instruction_parsed)
-                                    onResult(result)
-                                    expanded = false
-                                    instructionText = ""
-                                }
-                            }
-                        }
-                    },
-                    enabled = instructionText.isNotBlank() && !isParsing,
-                ) {
-                    Text(
-                        if (isParsing) {
-                            stringResource(
-                                R.string.parsing_instruction,
-                            )
-                        } else {
-                            stringResource(R.string.paste_instruction)
-                        },
-                    )
+    Column {
+        OutlinedTextField(
+            value = instructionText,
+            onValueChange = {
+                instructionText = it
+                resultMessage = null
+            },
+            label = { Text(stringResource(R.string.instruction_hint)) },
+            modifier = Modifier.fillMaxWidth(),
+            minLines = 2,
+            maxLines = 4,
+            trailingIcon = {
+                if (isParsing) {
+                    CircularProgressIndicator(modifier = Modifier.padding(8.dp), strokeWidth = 2.dp)
                 }
+            },
+        )
 
-                resultMessage?.let {
-                    Text(
-                        text = it,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 4.dp),
-                    )
+        TextButton(
+            onClick = {
+                scope.launch {
+                    isParsing = true
+                    resultMessage = null
+                    val result = InstructionParser.parse(instructionText)
+                    isParsing = false
+                    if (result is ParsedInstruction.Failure) {
+                        resultMessage = result.reason
+                    } else {
+                        resultMessage = context.getString(R.string.instruction_parsed)
+                        onResult(result)
+                        instructionText = ""
+                    }
                 }
-            }
+            },
+            enabled = instructionText.isNotBlank() && !isParsing,
+        ) {
+            Text(if (isParsing) stringResource(R.string.parsing_instruction) else stringResource(R.string.paste_instruction))
+        }
+
+        resultMessage?.let {
+            Text(
+                text = it,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp),
+            )
         }
     }
 }

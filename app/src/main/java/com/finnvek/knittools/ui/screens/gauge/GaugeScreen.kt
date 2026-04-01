@@ -93,18 +93,25 @@ fun GaugeScreen(
                     stringResource(R.string.unit_per_10cm)
                 }
 
-            GaugeInputFields(
-                patternSt = patternSt,
-                patternRows = patternRows,
-                yourSt = yourSt,
-                yourRows = yourRows,
+            GaugeSection(
+                title = stringResource(R.string.pattern_gauge),
+                stitches = patternSt,
+                rows = patternRows,
+                gaugeUnit = gaugeUnit,
+                onStitchesChange = { patternSt = it },
+                onRowsChange = { patternRows = it },
+            )
+            GaugeSection(
+                title = stringResource(R.string.your_gauge),
+                stitches = yourSt,
+                rows = yourRows,
+                gaugeUnit = gaugeUnit,
+                onStitchesChange = { yourSt = it },
+                onRowsChange = { yourRows = it },
+            )
+            PatternInputSection(
                 stitchCount = stitchCount,
                 rowCount = rowCount,
-                gaugeUnit = gaugeUnit,
-                onPatternStChange = { patternSt = it },
-                onPatternRowsChange = { patternRows = it },
-                onYourStChange = { yourSt = it },
-                onYourRowsChange = { yourRows = it },
                 onStitchCountChange = { stitchCount = it },
                 onRowCountChange = { rowCount = it },
             )
@@ -133,53 +140,38 @@ private fun parseAndConvert(
 }
 
 @Composable
-private fun GaugeInputFields(
-    patternSt: String,
-    patternRows: String,
-    yourSt: String,
-    yourRows: String,
+private fun GaugeSection(
+    title: String,
+    stitches: String,
+    rows: String,
+    gaugeUnit: String,
+    onStitchesChange: (String) -> Unit,
+    onRowsChange: (String) -> Unit,
+) {
+    Text(title, style = MaterialTheme.typography.titleSmall)
+    NumberInputField(
+        value = stitches,
+        onValueChange = onStitchesChange,
+        label = stringResource(R.string.stitches_gauge, gaugeUnit),
+        isDecimal = true,
+        modifier = Modifier.fillMaxWidth(),
+    )
+    NumberInputField(
+        value = rows,
+        onValueChange = onRowsChange,
+        label = stringResource(R.string.rows_gauge, gaugeUnit),
+        isDecimal = true,
+        modifier = Modifier.fillMaxWidth(),
+    )
+}
+
+@Composable
+private fun PatternInputSection(
     stitchCount: String,
     rowCount: String,
-    gaugeUnit: String,
-    onPatternStChange: (String) -> Unit,
-    onPatternRowsChange: (String) -> Unit,
-    onYourStChange: (String) -> Unit,
-    onYourRowsChange: (String) -> Unit,
     onStitchCountChange: (String) -> Unit,
     onRowCountChange: (String) -> Unit,
 ) {
-    Text(stringResource(R.string.pattern_gauge), style = MaterialTheme.typography.titleSmall)
-    NumberInputField(
-        value = patternSt,
-        onValueChange = onPatternStChange,
-        label = stringResource(R.string.stitches_gauge, gaugeUnit),
-        isDecimal = true,
-        modifier = Modifier.fillMaxWidth(),
-    )
-    NumberInputField(
-        value = patternRows,
-        onValueChange = onPatternRowsChange,
-        label = stringResource(R.string.rows_gauge, gaugeUnit),
-        isDecimal = true,
-        modifier = Modifier.fillMaxWidth(),
-    )
-
-    Text(stringResource(R.string.your_gauge), style = MaterialTheme.typography.titleSmall)
-    NumberInputField(
-        value = yourSt,
-        onValueChange = onYourStChange,
-        label = stringResource(R.string.stitches_gauge, gaugeUnit),
-        isDecimal = true,
-        modifier = Modifier.fillMaxWidth(),
-    )
-    NumberInputField(
-        value = yourRows,
-        onValueChange = onYourRowsChange,
-        label = stringResource(R.string.rows_gauge, gaugeUnit),
-        isDecimal = true,
-        modifier = Modifier.fillMaxWidth(),
-    )
-
     Text(stringResource(R.string.pattern_instructions), style = MaterialTheme.typography.titleSmall)
     NumberInputField(
         value = stitchCount,

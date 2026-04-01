@@ -75,6 +75,12 @@ class YarnCardViewModel
                 )
         }
 
+        fun loadCardById(id: Long) {
+            viewModelScope.launch {
+                repository.getCard(id)?.let { loadFromCard(it) }
+            }
+        }
+
         fun loadFromCard(card: YarnCardEntity) {
             _formState.value =
                 YarnCardFormState(

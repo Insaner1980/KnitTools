@@ -90,6 +90,9 @@ fun KnitToolsNavHost(
             arguments = listOf(navArgument("cardId") { type = NavType.LongType }),
         ) { backStackEntry ->
             val cardId = backStackEntry.arguments?.getLong("cardId") ?: return@composable
+            androidx.compose.runtime.LaunchedEffect(cardId) {
+                yarnCardViewModel.loadCardById(cardId)
+            }
             YarnCardReviewScreen(
                 viewModel = yarnCardViewModel,
                 onSaveAndUse = { _, _, _ -> navController.popBackStack() },

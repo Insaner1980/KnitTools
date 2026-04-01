@@ -88,9 +88,7 @@ object InstructionParser {
 
             FeatureStatus.AVAILABLE -> { /* ready */ }
 
-            else -> {
-                throw IllegalStateException("Feature unavailable")
-            }
+            else -> error("Feature unavailable")
         }
     }
 

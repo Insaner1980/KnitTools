@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.ai.ocr.YarnLabelScanner
 import com.finnvek.knittools.domain.calculator.YarnEstimator
+import com.finnvek.knittools.domain.model.YarnEstimate
 import com.finnvek.knittools.ui.components.NumberInputField
 import com.finnvek.knittools.ui.components.ResultCard
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
@@ -52,37 +53,7 @@ fun YarnEstimatorScreen(
     var yarnPerSkein by remember { mutableStateOf("") }
     var weightPerSkein by remember { mutableStateOf("") }
     var useImperial by remember { mutableStateOf(false) }
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     val isPro = yarnCardViewModel?.isPro ?: false
-
-    var pendingPhotoUri by remember { mutableStateOf<Uri?>(null) }
-
-    val cameraLauncher =
-        rememberLauncherForActivityResult(
-            ActivityResultContracts.TakePicture(),
-        ) { success ->
-            if (success && pendingPhotoUri != null) {
-                scope.launch {
-                    yarnCardViewModel?.setScanning(true)
-                    val parsed = YarnLabelScanner.analyzeImage(context, pendingPhotoUri!!)
-                    yarnCardViewModel?.loadFromScan(parsed, pendingPhotoUri)
-                    yarnCardViewModel?.setScanning(false)
-                    onScanLabel()
-                }
-            }
-        }
-
-    val permissionLauncher =
-        rememberLauncherForActivityResult(
-            ActivityResultContracts.RequestPermission(),
-        ) { granted ->
-            if (granted) {
-                val (_, uri) = YarnLabelScanner.createImageFile(context)
-                pendingPhotoUri = uri
-                cameraLauncher.launch(uri)
-            }
-        }
 
     val result by remember(totalYarn, yarnPerSkein, weightPerSkein) {
         derivedStateOf {
@@ -105,25 +76,11 @@ fun YarnEstimatorScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             if (isPro) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
-                ) {
-                    IconButton(onClick = { permissionLauncher.launch(Manifest.permission.CAMERA) }) {
-                        Icon(
-                            Icons.Filled.CameraAlt,
-                            contentDescription = stringResource(R.string.scan_yarn_label),
-                            tint = MaterialTheme.colorScheme.primary,
-                        )
-                    }
-                    IconButton(onClick = onSavedYarns) {
-                        Icon(
-                            Icons.Filled.Inventory2,
-                            contentDescription = stringResource(R.string.saved_yarns),
-                            tint = MaterialTheme.colorScheme.primary,
-                        )
-                    }
-                }
+                ProActionBar(
+                    yarnCardViewModel = yarnCardViewModel!!,
+                    onScanLabel = onScanLabel,
+                    onSavedYarns = onSavedYarns,
+                )
             }
 
             UnitToggle(
@@ -136,60 +93,121 @@ fun YarnEstimatorScreen(
                     }
                 },
             )
-            val lengthUnit =
-                if (useImperial) {
-                    stringResource(
-                        R.string.unit_yards,
-                    )
-                } else {
-                    stringResource(R.string.unit_meters)
-                }
-            NumberInputField(
-                value = totalYarn,
-                onValueChange = { totalYarn = it },
-                label = stringResource(R.string.total_yarn_needed),
-                isDecimal = true,
-                suffix = lengthUnit,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            NumberInputField(
-                value = yarnPerSkein,
-                onValueChange = { yarnPerSkein = it },
-                label = stringResource(R.string.yarn_per_skein, lengthUnit),
-                isDecimal = true,
-                suffix = lengthUnit,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            NumberInputField(
-                value = weightPerSkein,
-                onValueChange = { weightPerSkein = it },
-                label = stringResource(R.string.weight_per_skein),
-                isDecimal = true,
-                suffix = stringResource(R.string.unit_g),
-                modifier = Modifier.fillMaxWidth(),
+
+            val lengthUnit = if (useImperial) stringResource(R.string.unit_yards) else stringResource(R.string.unit_meters)
+            YarnInputFields(
+                totalYarn = totalYarn,
+                yarnPerSkein = yarnPerSkein,
+                weightPerSkein = weightPerSkein,
+                lengthUnit = lengthUnit,
+                onTotalYarnChange = { totalYarn = it },
+                onYarnPerSkeinChange = { yarnPerSkein = it },
+                onWeightPerSkeinChange = { weightPerSkein = it },
             )
 
-            result?.let { r ->
-                ResultCard(title = stringResource(R.string.result)) {
-                    Text(
-                        text = stringResource(R.string.skeins_result, r.skeinsNeeded),
-                        style = MaterialTheme.typography.headlineMedium,
-                    )
-                    Text(
-                        text = stringResource(R.string.total_weight, "%.0f".format(r.totalWeight)),
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                    Text(
-                        text = stringResource(R.string.exact_skeins, "%.2f".format(r.exactSkeins)),
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                    Text(
-                        text = stringResource(R.string.extra_skein_note),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+            result?.let { r -> YarnResultCard(r) }
+        }
+    }
+}
+
+@Composable
+private fun ProActionBar(
+    yarnCardViewModel: YarnCardViewModel,
+    onScanLabel: () -> Unit,
+    onSavedYarns: () -> Unit,
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var pendingPhotoUri by remember { mutableStateOf<Uri?>(null) }
+
+    val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
+        if (success && pendingPhotoUri != null) {
+            scope.launch {
+                yarnCardViewModel.setScanning(true)
+                val parsed = YarnLabelScanner.analyzeImage(context, pendingPhotoUri!!)
+                yarnCardViewModel.loadFromScan(parsed, pendingPhotoUri)
+                yarnCardViewModel.setScanning(false)
+                onScanLabel()
             }
         }
+    }
+
+    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) {
+            val (_, uri) = YarnLabelScanner.createImageFile(context)
+            pendingPhotoUri = uri
+            cameraLauncher.launch(uri)
+        }
+    }
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.End,
+    ) {
+        IconButton(onClick = { permissionLauncher.launch(Manifest.permission.CAMERA) }) {
+            Icon(Icons.Filled.CameraAlt, contentDescription = stringResource(R.string.scan_yarn_label), tint = MaterialTheme.colorScheme.primary)
+        }
+        IconButton(onClick = onSavedYarns) {
+            Icon(Icons.Filled.Inventory2, contentDescription = stringResource(R.string.saved_yarns), tint = MaterialTheme.colorScheme.primary)
+        }
+    }
+}
+
+@Composable
+private fun YarnInputFields(
+    totalYarn: String,
+    yarnPerSkein: String,
+    weightPerSkein: String,
+    lengthUnit: String,
+    onTotalYarnChange: (String) -> Unit,
+    onYarnPerSkeinChange: (String) -> Unit,
+    onWeightPerSkeinChange: (String) -> Unit,
+) {
+    NumberInputField(
+        value = totalYarn,
+        onValueChange = onTotalYarnChange,
+        label = stringResource(R.string.total_yarn_needed),
+        isDecimal = true,
+        suffix = lengthUnit,
+        modifier = Modifier.fillMaxWidth(),
+    )
+    NumberInputField(
+        value = yarnPerSkein,
+        onValueChange = onYarnPerSkeinChange,
+        label = stringResource(R.string.yarn_per_skein, lengthUnit),
+        isDecimal = true,
+        suffix = lengthUnit,
+        modifier = Modifier.fillMaxWidth(),
+    )
+    NumberInputField(
+        value = weightPerSkein,
+        onValueChange = onWeightPerSkeinChange,
+        label = stringResource(R.string.weight_per_skein),
+        isDecimal = true,
+        suffix = stringResource(R.string.unit_g),
+        modifier = Modifier.fillMaxWidth(),
+    )
+}
+
+@Composable
+private fun YarnResultCard(result: YarnEstimate) {
+    ResultCard(title = stringResource(R.string.result)) {
+        Text(
+            text = stringResource(R.string.skeins_result, result.skeinsNeeded),
+            style = MaterialTheme.typography.headlineMedium,
+        )
+        Text(
+            text = stringResource(R.string.total_weight, "%.0f".format(result.totalWeight)),
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        Text(
+            text = stringResource(R.string.exact_skeins, "%.2f".format(result.exactSkeins)),
+            style = MaterialTheme.typography.bodySmall,
+        )
+        Text(
+            text = stringResource(R.string.extra_skein_note),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }

@@ -17,8 +17,8 @@ class NeedleSizeDataTest {
     }
 
     @Test
-    fun `covers range from 2mm to 25mm`() {
-        assertEquals(2.0, NeedleSizeData.sizes.first().metricMm, 0.01)
+    fun `covers range from 1_5mm to 25mm`() {
+        assertEquals(1.5, NeedleSizeData.sizes.first().metricMm, 0.01)
         assertEquals(25.0, NeedleSizeData.sizes.last().metricMm, 0.01)
     }
 

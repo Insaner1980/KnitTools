@@ -5,9 +5,11 @@ import com.finnvek.knittools.domain.model.NeedleSize
 object NeedleSizeData {
     val sizes: List<NeedleSize> =
         listOf(
-            NeedleSize(2.0, "0", "14", "0"),
+            NeedleSize(1.5, "000", "—", "—"),
+            NeedleSize(1.75, "00", "—", "—"),
+            NeedleSize(2.0, "0", "14", "—"),
             NeedleSize(2.25, "1", "13", "—"),
-            NeedleSize(2.5, "1.5", "12", "1"),
+            NeedleSize(2.5, "1.5", "—", "1"),
             NeedleSize(2.75, "2", "12", "2"),
             NeedleSize(3.0, "2.5", "11", "3"),
             NeedleSize(3.25, "3", "10", "4"),

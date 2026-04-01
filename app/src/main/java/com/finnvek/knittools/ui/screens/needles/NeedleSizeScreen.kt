@@ -52,6 +52,14 @@ fun NeedleSizeScreen(onBack: () -> Unit) {
                     singleLine = true,
                 )
             }
+            item {
+                Text(
+                    text = "Sizes are approximate equivalents. Japanese sizes use a separate metric scale.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = 4.dp),
+                )
+            }
             item { HeaderRow() }
             items(results, key = { it.metricMm }) { needle ->
                 NeedleRow(

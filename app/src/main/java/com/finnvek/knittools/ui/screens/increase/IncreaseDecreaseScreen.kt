@@ -20,16 +20,25 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
+import com.finnvek.knittools.ai.nano.ParsedInstruction
 import com.finnvek.knittools.domain.calculator.IncreaseDecreaseCalculator
 import com.finnvek.knittools.domain.model.IncreaseDecreaseMode
 import com.finnvek.knittools.domain.model.KnittingStyle
 import com.finnvek.knittools.ui.components.NumberInputField
+import com.finnvek.knittools.ui.components.PasteInstructionButton
 import com.finnvek.knittools.ui.components.ResultCard
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
+import com.finnvek.knittools.ui.screens.home.HomeViewModel
 
 @Composable
-fun IncreaseDecreaseScreen(onBack: () -> Unit) {
+fun IncreaseDecreaseScreen(
+    onBack: () -> Unit,
+    homeViewModel: HomeViewModel = hiltViewModel(),
+) {
+    val proState by homeViewModel.proState.collectAsStateWithLifecycle()
     var currentStitches by remember { mutableStateOf("") }
     var changeBy by remember { mutableStateOf("") }
     var mode by remember { mutableStateOf(IncreaseDecreaseMode.INCREASE) }
@@ -53,6 +62,22 @@ fun IncreaseDecreaseScreen(onBack: () -> Unit) {
                     .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            PasteInstructionButton(
+                isPro = proState.isPro,
+                onResult = { parsed ->
+                    if (parsed is ParsedInstruction.IncreaseDecrease) {
+                        currentStitches = parsed.currentStitches.toString()
+                        changeBy = parsed.changeBy.toString()
+                        mode =
+                            if (parsed.isIncrease) {
+                                IncreaseDecreaseMode.INCREASE
+                            } else {
+                                IncreaseDecreaseMode.DECREASE
+                            }
+                    }
+                },
+            )
+
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilterChip(
                     selected = mode == IncreaseDecreaseMode.INCREASE,
@@ -85,11 +110,12 @@ fun IncreaseDecreaseScreen(onBack: () -> Unit) {
                 suffix = stringResource(R.string.unit_st),
                 modifier = Modifier.fillMaxWidth(),
             )
-            val changeLabel = if (mode == IncreaseDecreaseMode.INCREASE) {
-                stringResource(R.string.increase_by)
-            } else {
-                stringResource(R.string.decrease_by)
-            }
+            val changeLabel =
+                if (mode == IncreaseDecreaseMode.INCREASE) {
+                    stringResource(R.string.increase_by)
+                } else {
+                    stringResource(R.string.decrease_by)
+                }
             NumberInputField(
                 value = changeBy,
                 onValueChange = { changeBy = it },

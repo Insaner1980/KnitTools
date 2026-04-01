@@ -151,4 +151,11 @@
     <string name="card_deleted">Yarn card deleted</string>
     <string name="undo">Undo</string>
     <string name="pro_required_save">Pro required to save yarn cards</string>
+
+    <!-- Gemini Nano -->
+    <string name="paste_instruction">Paste instruction</string>
+    <string name="instruction_hint">e.g. "Increase 12 stitches evenly across 96 stitches"</string>
+    <string name="parsing_instruction">Parsing…</string>
+    <string name="instruction_parsed">Values filled from instruction</string>
+    <string name="instruction_parse_failed">Could not parse instruction</string>
 </resources>

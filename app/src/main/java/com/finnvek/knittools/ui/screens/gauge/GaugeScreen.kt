@@ -24,11 +24,20 @@ import com.finnvek.knittools.domain.model.GaugeConversionResult
 import com.finnvek.knittools.ui.components.NumberInputField
 import com.finnvek.knittools.ui.components.ResultCard
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
+import com.finnvek.knittools.ui.components.PasteInstructionButton
 import com.finnvek.knittools.ui.components.UnitToggle
+import com.finnvek.knittools.ui.screens.home.HomeViewModel
 import com.finnvek.knittools.util.extensions.convertGaugeValue
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.finnvek.knittools.ai.nano.ParsedInstruction
 
 @Composable
-fun GaugeScreen(onBack: () -> Unit) {
+fun GaugeScreen(
+    onBack: () -> Unit,
+    homeViewModel: HomeViewModel = hiltViewModel(),
+) {
+    val proState by homeViewModel.proState.collectAsStateWithLifecycle()
     var patternSt by remember { mutableStateOf("") }
     var patternRows by remember { mutableStateOf("") }
     var yourSt by remember { mutableStateOf("") }
@@ -53,6 +62,16 @@ fun GaugeScreen(onBack: () -> Unit) {
                     .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            PasteInstructionButton(
+                isPro = proState.isPro,
+                onResult = { parsed ->
+                    if (parsed is ParsedInstruction.Gauge) {
+                        yourSt = parsed.stitchesPer10cm.toString()
+                        yourRows = parsed.rowsPer10cm.toString()
+                    }
+                },
+            )
+
             UnitToggle(
                 useImperial = useImperial,
                 onToggle = { newImperial ->

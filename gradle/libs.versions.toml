@@ -24,6 +24,7 @@ detektComposeRules = "0.4.27"
 
 billing = "8.3.0"
 mlkitTextRecognition = "16.0.1"
+mlkitGenaiPrompt = "1.0.0-beta1"
 camerax = "1.5.0-alpha06"
 # Uncomment when needed:
 # glance = "1.1.1"
@@ -88,6 +89,9 @@ billing = { group = "com.android.billingclient", name = "billing-ktx", version.r
 
 # ML Kit OCR
 mlkit-text-recognition = { group = "com.google.mlkit", name = "text-recognition", version.ref = "mlkitTextRecognition" }
+
+# ML Kit GenAI (Gemini Nano on-device)
+mlkit-genai-prompt = { group = "com.google.mlkit", name = "genai-prompt", version.ref = "mlkitGenaiPrompt" }
 
 # CameraX
 camerax-camera2 = { group = "androidx.camera", name = "camera-camera2", version.ref = "camerax" }

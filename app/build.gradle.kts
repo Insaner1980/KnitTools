@@ -223,6 +223,9 @@ dependencies {
     // ML Kit OCR
     implementation(libs.mlkit.text.recognition)
 
+    // ML Kit GenAI (Gemini Nano on-device)
+    implementation(libs.mlkit.genai.prompt)
+
     // CameraX
     implementation(libs.camerax.camera2)
     implementation(libs.camerax.lifecycle)

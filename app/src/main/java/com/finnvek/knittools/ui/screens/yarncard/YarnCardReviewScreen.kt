@@ -21,6 +21,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
+import com.finnvek.knittools.ui.components.care.CareSymbolPicker
+import com.finnvek.knittools.ui.components.care.toggleCareSymbol
 
 @Composable
 fun YarnCardReviewScreen(
@@ -80,6 +82,13 @@ fun YarnCardReviewScreen(
             LabelField(stringResource(R.string.weight_category), form.weightCategory) {
                 viewModel.updateField { copy(weightCategory = it) }
             }
+
+            CareSymbolPicker(
+                careSymbols = form.careSymbols,
+                onToggle = { symbol ->
+                    viewModel.updateField { copy(careSymbols = careSymbols.toggleCareSymbol(symbol)) }
+                },
+            )
 
             Row(
                 modifier = Modifier.fillMaxWidth(),

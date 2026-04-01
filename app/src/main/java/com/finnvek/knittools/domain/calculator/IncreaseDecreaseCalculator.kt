@@ -47,7 +47,7 @@ object IncreaseDecreaseCalculator {
             }
 
         val easyPattern = buildEasyPattern(availableForKnit, changeBy, mode, style, totalStitches)
-        val balancedPattern = buildBalancedPattern(availableForKnit, changeBy, mode, style, totalStitches)
+        val balancedPattern = buildBalancedPattern(availableForKnit, changeBy, mode, totalStitches)
 
         return IncreaseDecreaseResult(
             totalStitches = totalStitches,
@@ -123,7 +123,6 @@ object IncreaseDecreaseCalculator {
         availableForKnit: Int,
         sections: Int,
         mode: IncreaseDecreaseMode,
-        style: KnittingStyle,
         totalStitches: Int,
     ): String {
         val actionAbbrev =

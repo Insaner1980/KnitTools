@@ -13,6 +13,18 @@ class YarnLabelParserTest {
     }
 
     @Test
+    fun `extract weight in ounces converts to grams`() {
+        assertEquals("50", YarnLabelParser.extractWeight("1.75 oz / 137 yds"))
+        assertEquals("28", YarnLabelParser.extractWeight("1 oz"))
+        assertEquals("85", YarnLabelParser.extractWeight("3 ounces"))
+    }
+
+    @Test
+    fun `grams preferred over ounces when both present`() {
+        assertEquals("50", YarnLabelParser.extractWeight("50g (1.75 oz)"))
+    }
+
+    @Test
     fun `extract length in meters`() {
         assertEquals("175", YarnLabelParser.extractLength("50g / 175m"))
         assertEquals("200", YarnLabelParser.extractLength("200 meters"))
@@ -30,6 +42,12 @@ class YarnLabelParserTest {
         assertEquals("3.5", YarnLabelParser.extractNeedleSize("Needle: 3.5mm"))
         assertEquals("4", YarnLabelParser.extractNeedleSize("4mm needles"))
         assertEquals("3.5", YarnLabelParser.extractNeedleSize("3,5 mm"))
+    }
+
+    @Test
+    fun `extract needle size range`() {
+        assertEquals("3.5 - 4mm", YarnLabelParser.extractNeedleSize("3.5 - 4mm"))
+        assertEquals("3.5 - 4.5mm", YarnLabelParser.extractNeedleSize("3,5 - 4,5 mm"))
     }
 
     @Test

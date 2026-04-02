@@ -72,8 +72,14 @@ fun KnitToolsNavHost(
             YarnCardReviewScreen(
                 viewModel = yarnCardViewModel,
                 onSaveAndUse = { _, _, _ -> navController.popBackStack() },
-                onDiscard = { _, _, _ -> navController.popBackStack() },
-                onBack = { navController.popBackStack() },
+                onDiscard = { _, _, _ ->
+                    yarnCardViewModel.discardScan()
+                    navController.popBackStack()
+                },
+                onBack = {
+                    yarnCardViewModel.discardScan()
+                    navController.popBackStack()
+                },
             )
         }
         composable(Screen.YarnCardList.route) {

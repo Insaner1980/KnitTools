@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -82,54 +83,56 @@ fun HomeScreen(
             )
         },
     ) { padding ->
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-            contentPadding = PaddingValues(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+        Box(
+            modifier = Modifier.fillMaxSize().padding(padding),
+            contentAlignment = Alignment.TopCenter,
         ) {
-            when (proState.status) {
-                ProStatus.TRIAL_ACTIVE -> {
-                    item(span = { GridItemSpan(2) }) {
-                        Text(
-                            text = stringResource(R.string.pro_trial_days_left, proState.trialDaysRemaining),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                modifier = Modifier.widthIn(max = 600.dp),
+                contentPadding = PaddingValues(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                when (proState.status) {
+                    ProStatus.TRIAL_ACTIVE -> {
+                        item(span = { GridItemSpan(2) }) {
+                            Text(
+                                text = stringResource(R.string.pro_trial_days_left, proState.trialDaysRemaining),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
                     }
+
+                    ProStatus.TRIAL_EXPIRED -> {
+                        item(span = { GridItemSpan(2) }) {
+                            Text(
+                                text = stringResource(R.string.unlock_all_tools),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary,
+                                textAlign = TextAlign.Center,
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .clickable { onNavigate(Screen.ProUpgrade) },
+                            )
+                        }
+                    }
+
+                    ProStatus.PRO_PURCHASED -> { /* no indicator */ }
                 }
 
-                ProStatus.TRIAL_EXPIRED -> {
-                    item(span = { GridItemSpan(2) }) {
-                        Text(
-                            text = stringResource(R.string.unlock_all_tools),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary,
-                            textAlign = TextAlign.Center,
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .clickable { onNavigate(Screen.ProUpgrade) },
-                        )
-                    }
+                items(tools, key = { it.titleRes }) { tool ->
+                    val title = stringResource(tool.titleRes)
+                    ToolCard(
+                        title = title,
+                        imageRes = tool.imageRes,
+                        onClick = { onNavigate(tool.screen) },
+                    )
                 }
-
-                ProStatus.PRO_PURCHASED -> { /* no indicator */ }
-            }
-
-            items(tools, key = { it.titleRes }) { tool ->
-                val title = stringResource(tool.titleRes)
-                ToolCard(
-                    title = title,
-                    imageRes = tool.imageRes,
-                    onClick = { onNavigate(tool.screen) },
-                )
             }
         }
     }

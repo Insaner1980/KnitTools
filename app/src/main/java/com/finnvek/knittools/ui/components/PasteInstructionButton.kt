@@ -20,7 +20,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
@@ -70,7 +69,16 @@ private fun InstructionInputForm(onResult: (ParsedInstruction) -> Unit) {
     var isParsing by remember { mutableStateOf(false) }
     var resultMessage by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
-    val context = LocalContext.current
+
+    val errorMessages =
+        mapOf(
+            ParsedInstruction.ErrorType.BUSY to stringResource(R.string.ai_error_busy),
+            ParsedInstruction.ErrorType.QUOTA to stringResource(R.string.ai_error_quota),
+            ParsedInstruction.ErrorType.UNAVAILABLE to stringResource(R.string.ai_error_unavailable),
+            ParsedInstruction.ErrorType.PARSE_FAILED to stringResource(R.string.instruction_parse_failed),
+            ParsedInstruction.ErrorType.UNKNOWN to stringResource(R.string.ai_error_unknown),
+        )
+    val successMessage = stringResource(R.string.instruction_parsed)
 
     Column {
         OutlinedTextField(
@@ -98,9 +106,9 @@ private fun InstructionInputForm(onResult: (ParsedInstruction) -> Unit) {
                     val result = InstructionParser.parse(instructionText)
                     isParsing = false
                     if (result is ParsedInstruction.Failure) {
-                        resultMessage = result.reason
+                        resultMessage = errorMessages[result.errorType]
                     } else {
-                        resultMessage = context.getString(R.string.instruction_parsed)
+                        resultMessage = successMessage
                         onResult(result)
                         instructionText = ""
                     }
@@ -108,7 +116,15 @@ private fun InstructionInputForm(onResult: (ParsedInstruction) -> Unit) {
             },
             enabled = instructionText.isNotBlank() && !isParsing,
         ) {
-            Text(if (isParsing) stringResource(R.string.parsing_instruction) else stringResource(R.string.paste_instruction))
+            Text(
+                if (isParsing) {
+                    stringResource(
+                        R.string.parsing_instruction,
+                    )
+                } else {
+                    stringResource(R.string.paste_instruction)
+                },
+            )
         }
 
         resultMessage?.let {

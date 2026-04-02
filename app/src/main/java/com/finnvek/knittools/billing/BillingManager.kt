@@ -121,11 +121,15 @@ class BillingManager
 
             val result = client.queryPurchasesAsync(params)
             if (result.billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                _isProPurchased.value =
-                    result.purchasesList.any {
+                val proPurchases =
+                    result.purchasesList.filter {
                         it.products.contains(PRODUCT_ID) &&
                             it.purchaseState == Purchase.PurchaseState.PURCHASED
                     }
+                _isProPurchased.value = proPurchases.isNotEmpty()
+                // Google Play palauttaa vahvistamattomat ostot 3 päivän jälkeen —
+                // varmista vahvistus joka käynnistyskerralla
+                proPurchases.filter { !it.isAcknowledged }.forEach { acknowledgePurchase(it) }
             }
         }
 

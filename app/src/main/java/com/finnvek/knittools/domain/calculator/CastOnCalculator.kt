@@ -35,7 +35,7 @@ object CastOnCalculator {
         val totalUp = nearestUp + edgeStitches
 
         val closerTotal =
-            if ((rawStitches - nearestDown) <= (nearestUp - rawStitches)) {
+            if ((bodyStitches - nearestDown) <= (nearestUp - bodyStitches)) {
                 totalDown
             } else {
                 totalUp

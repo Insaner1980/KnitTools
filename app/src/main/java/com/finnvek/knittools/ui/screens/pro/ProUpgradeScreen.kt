@@ -82,11 +82,7 @@ fun ProUpgradeScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                val priceText =
-                    productDetails
-                        ?.oneTimePurchaseOfferDetails
-                        ?.formattedPrice
-                        ?: "..."
+                val price = productDetails?.oneTimePurchaseOfferDetails?.formattedPrice
 
                 Button(
                     onClick = {
@@ -94,18 +90,31 @@ fun ProUpgradeScreen(
                             viewModel.purchase(activity)
                         }
                     },
+                    enabled = price != null,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text(stringResource(R.string.upgrade_for_price, priceText))
+                    if (price != null) {
+                        Text(stringResource(R.string.upgrade_for_price, price))
+                    } else {
+                        Text(stringResource(R.string.loading_price))
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                Text(
-                    text = stringResource(R.string.one_time_purchase),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                if (price != null) {
+                    Text(
+                        text = stringResource(R.string.one_time_purchase),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
+                    Text(
+                        text = stringResource(R.string.price_loading_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
     }

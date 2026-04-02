@@ -95,6 +95,39 @@ class GaugeConverterTest {
         assertEquals(0.0, result.rowPercentDifference, 0.01)
     }
 
+    @Test
+    fun `your gauge zero returns zero adjusted counts`() {
+        val result =
+            GaugeConverter.convert(
+                patternStitchGauge = 22.0,
+                patternRowGauge = 30.0,
+                yourStitchGauge = 0.0,
+                yourRowGauge = 0.0,
+                patternStitches = 100,
+                patternRows = 80,
+            )
+        assertEquals(0, result.adjustedStitches)
+        assertEquals(0, result.adjustedRows)
+        assertEquals(0.0, result.adjustedStitchesExact, 0.001)
+    }
+
+    @Test
+    fun `half value rounds up`() {
+        // 10 × (21/20) = 10.5 → roundToInt() = 11 (not 10)
+        val result =
+            GaugeConverter.convert(
+                patternStitchGauge = 20.0,
+                patternRowGauge = 20.0,
+                yourStitchGauge = 21.0,
+                yourRowGauge = 21.0,
+                patternStitches = 10,
+                patternRows = 10,
+            )
+        assertEquals(11, result.adjustedStitches)
+        assertEquals(11, result.adjustedRows)
+        assertEquals(10.5, result.adjustedStitchesExact, 0.001)
+    }
+
     private fun assertTrue(condition: Boolean) {
         org.junit.Assert.assertTrue(condition)
     }

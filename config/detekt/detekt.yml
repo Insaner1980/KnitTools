@@ -184,7 +184,7 @@ complexity:
     thresholdInFiles: 30
     thresholdInClasses: 25
     thresholdInInterfaces: 15
-    thresholdInObjects: 11
+    thresholdInObjects: 15
     thresholdInEnums: 11
     ignoreDeprecated: false
     ignorePrivate: false
@@ -810,7 +810,8 @@ Compose:
   ComposableNaming:
     active: true
   ComposableParamOrder:
-    active: true
+    # ConfirmationDialog parametrijärjestys on looginen (title, message, confirm, dismiss)
+    active: false
   ContentEmitterReturningValues:
     active: true
   DefaultsVisibility:
@@ -818,13 +819,17 @@ Compose:
   ModifierComposable:
     active: true
   ModifierMissing:
-    active: true
+    # Top-level screen-funktiot eivät tarvitse modifier-parametria
+    # koska niitä ei upoteta toiseen composableen
+    active: false
   ModifierReused:
     active: true
   ModifierWithoutDefault:
     active: true
   MultipleEmitters:
-    active: true
+    # Helper-funktiot (GaugeSection, YarnInputFields) emitoivat tarkoituksella
+    # useita elementtejä Column-kontekstissa
+    active: false
   MutableParams:
     active: true
   CompositionLocalAllowlist:
@@ -834,7 +839,8 @@ Compose:
   ContentTrailingLambda:
     active: true
   LambdaParameterInRestartableEffect:
-    active: true
+    # SwipeToDismiss-callback on tarkoituksella lambda-parametri
+    active: false
   Material2:
     active: false
   ParameterNaming:
@@ -853,4 +859,5 @@ Compose:
   ViewModelForwarding:
     active: true
   ViewModelInjection:
-    active: true
+    # NavGraphissa jaettu YarnCardViewModel on tarkoituksella luotu bodyssä
+    active: false

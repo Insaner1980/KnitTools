@@ -28,5 +28,6 @@ data class ProState(
     val isPro: Boolean
         get() = status == ProStatus.PRO_PURCHASED || status == ProStatus.TRIAL_ACTIVE
 
+    @Suppress("UNUSED_PARAMETER") // feature-parametri valmiina per-feature-gatingia varten
     fun hasFeature(feature: ProFeature): Boolean = isPro
 }

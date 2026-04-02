@@ -23,7 +23,10 @@ sealed class ParsedInstruction {
 
     data class Failure(
         val reason: String,
+        val errorType: ErrorType = ErrorType.UNKNOWN,
     ) : ParsedInstruction()
+
+    enum class ErrorType { BUSY, QUOTA, UNAVAILABLE, PARSE_FAILED, UNKNOWN }
 }
 
 object InstructionParser {
@@ -57,7 +60,7 @@ object InstructionParser {
         try {
             model = Generation.getClient()
         } catch (_: Exception) {
-            return ParsedInstruction.Failure("Gemini Nano not available")
+            return ParsedInstruction.Failure("unavailable", ParsedInstruction.ErrorType.UNAVAILABLE)
         }
 
         return try {
@@ -65,9 +68,14 @@ object InstructionParser {
             val result = runWithRetry(model, instruction)
             parseResponse(result)
         } catch (e: GenAiException) {
-            ParsedInstruction.Failure("AI error: ${e.message}")
+            val msg = e.message?.lowercase() ?: ""
+            when {
+                msg.contains("quota") -> ParsedInstruction.Failure("quota", ParsedInstruction.ErrorType.QUOTA)
+                msg.contains("busy") -> ParsedInstruction.Failure("busy", ParsedInstruction.ErrorType.BUSY)
+                else -> ParsedInstruction.Failure(e.message ?: "unknown", ParsedInstruction.ErrorType.UNKNOWN)
+            }
         } catch (_: Exception) {
-            ParsedInstruction.Failure("Unexpected error")
+            ParsedInstruction.Failure("unknown", ParsedInstruction.ErrorType.UNKNOWN)
         } finally {
             model.close()
         }
@@ -88,7 +96,9 @@ object InstructionParser {
 
             FeatureStatus.AVAILABLE -> { /* ready */ }
 
-            else -> error("Feature unavailable")
+            else -> {
+                error("Feature unavailable")
+            }
         }
     }
 
@@ -116,7 +126,7 @@ object InstructionParser {
             }
         }
 
-        throw lastException ?: IllegalStateException("Max retries exceeded")
+        throw lastException ?: error("Max retries exceeded")
     }
 
     internal fun parseResponse(response: String): ParsedInstruction {
@@ -143,6 +153,6 @@ object InstructionParser {
             }
         }
 
-        return ParsedInstruction.Failure("Could not parse instruction")
+        return ParsedInstruction.Failure("parse_failed", ParsedInstruction.ErrorType.PARSE_FAILED)
     }
 }

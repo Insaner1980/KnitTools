@@ -26,6 +26,9 @@ interface CounterProjectDao {
     @Query("SELECT COUNT(*) FROM counter_projects")
     suspend fun getProjectCount(): Int
 
+    @Query("SELECT * FROM counter_projects ORDER BY updatedAt DESC LIMIT 1")
+    suspend fun getFirstProject(): CounterProjectEntity?
+
     @Insert
     suspend fun insertHistory(entry: CounterHistoryEntity)
 

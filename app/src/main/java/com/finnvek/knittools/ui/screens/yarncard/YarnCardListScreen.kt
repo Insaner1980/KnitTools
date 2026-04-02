@@ -49,6 +49,8 @@ fun YarnCardListScreen(
     val cards by viewModel.savedCards.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val deletedMessage = stringResource(R.string.card_deleted)
+    val undoLabel = stringResource(R.string.undo)
 
     ToolScreenScaffold(title = stringResource(R.string.saved_yarns), onBack = onBack) { padding ->
         Column(
@@ -93,11 +95,13 @@ fun YarnCardListScreen(
                                     scope.launch {
                                         val result =
                                             snackbarHostState.showSnackbar(
-                                                message = "Yarn card deleted",
-                                                actionLabel = "Undo",
+                                                message = deletedMessage,
+                                                actionLabel = undoLabel,
                                             )
                                         if (result == SnackbarResult.ActionPerformed) {
                                             viewModel.saveCardEntity(card)
+                                        } else {
+                                            viewModel.deletePhotoFile(card.photoUri)
                                         }
                                     }
                                 }
@@ -152,7 +156,7 @@ private fun YarnCardRow(
                 listOfNotNull(
                     card.brand.takeIf { it.isNotBlank() },
                     card.yarnName.takeIf { it.isNotBlank() },
-                ).joinToString(" — ").ifBlank { "Yarn card" }
+                ).joinToString(" — ").ifBlank { stringResource(R.string.yarn_card_fallback_name) }
 
             Text(text = title, style = MaterialTheme.typography.titleSmall)
 

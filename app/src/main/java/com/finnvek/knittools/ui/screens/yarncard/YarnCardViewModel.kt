@@ -1,6 +1,8 @@
 package com.finnvek.knittools.ui.screens.yarncard
 
+import android.content.Context
 import android.net.Uri
+import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.finnvek.knittools.ai.ocr.ParsedYarnLabel
@@ -9,6 +11,7 @@ import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.YarnCardRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -41,6 +44,7 @@ class YarnCardViewModel
     constructor(
         private val repository: YarnCardRepository,
         private val proManager: ProManager,
+        @ApplicationContext private val context: Context,
     ) : ViewModel() {
         private val _formState = MutableStateFlow(YarnCardFormState())
         val formState: StateFlow<YarnCardFormState> = _formState.asStateFlow()
@@ -128,6 +132,21 @@ class YarnCardViewModel
             viewModelScope.launch {
                 repository.deleteCard(id)
                 onDeleted()
+            }
+        }
+
+        fun discardScan() {
+            deletePhotoFile(_formState.value.photoUri)
+            _formState.value = YarnCardFormState()
+        }
+
+        fun deletePhotoFile(uriString: String) {
+            if (uriString.isBlank()) return
+            try {
+                val uri = uriString.toUri()
+                context.contentResolver.delete(uri, null, null)
+            } catch (_: Exception) {
+                // Tiedostoa ei löydy tai ei oikeuksia — ei kriittinen
             }
         }
 

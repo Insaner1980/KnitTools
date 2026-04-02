@@ -33,7 +33,7 @@ android {
     defaultConfig {
         applicationId = "com.finnvek.knittools"
         minSdk = 29
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0.0"
 
@@ -193,6 +193,7 @@ dependencies {
     implementation(libs.navigation.compose)
 
     // Lifecycle
+    implementation(libs.lifecycle.process)
     implementation(libs.lifecycle.runtime.compose)
     implementation(libs.lifecycle.viewmodel.compose)
 
@@ -225,11 +226,6 @@ dependencies {
 
     // ML Kit GenAI (Gemini Nano on-device)
     implementation(libs.mlkit.genai.prompt)
-
-    // CameraX
-    implementation(libs.camerax.camera2)
-    implementation(libs.camerax.lifecycle)
-    implementation(libs.camerax.view)
 
     // Glance (home screen widgets)
     implementation(libs.glance.appwidget)

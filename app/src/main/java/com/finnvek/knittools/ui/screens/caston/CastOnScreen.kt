@@ -14,6 +14,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -29,11 +30,11 @@ import com.finnvek.knittools.util.extensions.convertGaugeValue
 
 @Composable
 fun CastOnScreen(onBack: () -> Unit) {
-    var width by remember { mutableStateOf("") }
-    var gauge by remember { mutableStateOf("") }
-    var patternRepeat by remember { mutableStateOf("") }
-    var edgeStitches by remember { mutableStateOf("") }
-    var useImperial by remember { mutableStateOf(false) }
+    var width by rememberSaveable { mutableStateOf("") }
+    var gauge by rememberSaveable { mutableStateOf("") }
+    var patternRepeat by rememberSaveable { mutableStateOf("") }
+    var edgeStitches by rememberSaveable { mutableStateOf("") }
+    var useImperial by rememberSaveable { mutableStateOf(false) }
 
     val result by remember(width, gauge, patternRepeat, edgeStitches, useImperial) {
         derivedStateOf {
@@ -108,6 +109,7 @@ fun CastOnScreen(onBack: () -> Unit) {
                 label = stringResource(R.string.edge_stitches_optional),
                 suffix = stringResource(R.string.unit_st),
                 modifier = Modifier.fillMaxWidth(),
+                isLast = true,
             )
 
             result?.let { r ->

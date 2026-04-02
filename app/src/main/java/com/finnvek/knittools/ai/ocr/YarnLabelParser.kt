@@ -1,5 +1,7 @@
 package com.finnvek.knittools.ai.ocr
 
+import kotlin.math.roundToInt
+
 data class ParsedYarnLabel(
     val brand: String = "",
     val yarnName: String = "",
@@ -34,10 +36,18 @@ object YarnLabelParser {
         )
     }
 
-    // High confidence: number + g/gr/grams
+    // High confidence: number + g/gr/grams tai oz/ounces (muunnetaan grammoiksi)
     internal fun extractWeight(text: String): String {
-        val pattern = Regex("""(\d+)\s*(?:g(?:r(?:ams?)?)?)\b""", RegexOption.IGNORE_CASE)
-        return pattern.find(text)?.groupValues?.get(1) ?: ""
+        val gramPattern = Regex("""(\d+)\s*(?:g(?:r(?:ams?)?)?)\b""", RegexOption.IGNORE_CASE)
+        gramPattern.find(text)?.let { return it.groupValues[1] }
+
+        val ozPattern = Regex("""(\d+(?:[.,]\d+)?)\s*(?:oz|ounces?)\b""", RegexOption.IGNORE_CASE)
+        ozPattern.find(text)?.let {
+            val oz = it.groupValues[1].replace(',', '.').toDoubleOrNull() ?: return ""
+            return (oz * GRAMS_PER_OUNCE).roundToInt().toString()
+        }
+
+        return ""
     }
 
     // High confidence: number + m/meters/mtr or yds/yards
@@ -49,8 +59,15 @@ object YarnLabelParser {
             ?: ""
     }
 
-    // High confidence: number + mm or "US X" pattern
+    // High confidence: number + mm (tukee myös "3.5 - 4mm" aluetta) tai "US X" pattern
     internal fun extractNeedleSize(text: String): String {
+        val rangePattern = Regex("""(\d+(?:[.,]\d+)?)\s*-\s*(\d+(?:[.,]\d+)?)\s*mm""", RegexOption.IGNORE_CASE)
+        rangePattern.find(text)?.let {
+            val low = it.groupValues[1].replace(',', '.')
+            val high = it.groupValues[2].replace(',', '.')
+            return "$low - ${high}mm"
+        }
+
         val mmPattern = Regex("""(\d+(?:[.,]\d+)?)\s*mm""", RegexOption.IGNORE_CASE)
         val usPattern = Regex("""US\s*(\d+(?:\.\d+)?)""", RegexOption.IGNORE_CASE)
         return mmPattern
@@ -156,6 +173,8 @@ object YarnLabelParser {
             }
         return candidates.getOrNull(1) ?: ""
     }
+
+    private const val GRAMS_PER_OUNCE = 28.3495
 
     // Low confidence: text near color number
     internal fun extractColorName(

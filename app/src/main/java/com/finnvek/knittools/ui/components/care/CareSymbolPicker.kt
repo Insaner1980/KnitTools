@@ -38,11 +38,11 @@ fun CareSymbolPicker(
             val symbols = CareSymbol.entries.filter { it.category == category }
             val categoryLabel =
                 when (category) {
-                    CareCategory.WASHING -> "Washing"
-                    CareCategory.BLEACHING -> "Bleaching"
-                    CareCategory.DRYING -> "Drying"
-                    CareCategory.IRONING -> "Ironing"
-                    CareCategory.DRY_CLEANING -> "Dry cleaning"
+                    CareCategory.WASHING -> stringResource(R.string.care_category_washing)
+                    CareCategory.BLEACHING -> stringResource(R.string.care_category_bleaching)
+                    CareCategory.DRYING -> stringResource(R.string.care_category_drying)
+                    CareCategory.IRONING -> stringResource(R.string.care_category_ironing)
+                    CareCategory.DRY_CLEANING -> stringResource(R.string.care_category_dry_cleaning)
                 }
 
             Text(

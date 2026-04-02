@@ -3,10 +3,7 @@
 # For more details, see:
 #   http://developer.android.com/guide/developing/tools/proguard.html
 
-# Keep Hilt-generated classes
--keep class dagger.hilt.** { *; }
--keep class * extends dagger.hilt.android.internal.managers.ViewComponentManager$FragmentContextWrapper { *; }
-
-# Keep Room entities
--keep class * extends androidx.room.RoomDatabase { *; }
+# Room-entityt — room-runtime keepaa vain RoomDatabase-aliluokan,
+# entity-luokat täytyy keepata erikseen
 -keep @androidx.room.Entity class * { *; }
+-keep @androidx.room.Dao class * { *; }

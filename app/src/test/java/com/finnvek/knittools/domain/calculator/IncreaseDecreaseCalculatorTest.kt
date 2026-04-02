@@ -116,6 +116,16 @@ class IncreaseDecreaseCalculatorTest {
     }
 
     @Test
+    fun `minimum viable decrease passes validation`() {
+        // 3 stitches, decrease 1: changeBy*2=2 < 3, so valid
+        // availableForKnit = 3 - 2 = 1, pattern: (K1, K2tog) × 1
+        val result = IncreaseDecreaseCalculator.calculate(3, 1, IncreaseDecreaseMode.DECREASE)
+        assertTrue(result.isValid)
+        assertEquals(2, result.totalStitches)
+        assertTrue(result.easyPattern.contains("K1"))
+    }
+
+    @Test
     fun `increase more than current warns but still valid`() {
         val result = IncreaseDecreaseCalculator.calculate(35, 68, IncreaseDecreaseMode.INCREASE)
         assertTrue(result.isValid)

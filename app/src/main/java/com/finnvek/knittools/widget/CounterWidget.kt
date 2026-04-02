@@ -30,6 +30,7 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import com.finnvek.knittools.MainActivity
+import dagger.hilt.android.EntryPointAccessors
 
 class CounterWidget : GlanceAppWidget() {
     override val sizeMode =
@@ -41,7 +42,21 @@ class CounterWidget : GlanceAppWidget() {
         context: Context,
         id: GlanceId,
     ) {
-        val prefs = CounterWidgetState.load(context)
+        var prefs = CounterWidgetState.load(context)
+
+        // Ensimmäinen renderöinti — hae data Roomista
+        if (prefs.projectId == 0L) {
+            val entryPoint =
+                EntryPointAccessors.fromApplication(
+                    context.applicationContext,
+                    WidgetEntryPoint::class.java,
+                )
+            val repository = entryPoint.counterRepository()
+            repository.getFirstProject()?.let { project ->
+                CounterWidgetState.save(context, project.name, project.count, project.id)
+                prefs = WidgetData(project.name, project.count, project.id)
+            }
+        }
 
         provideContent {
             GlanceTheme {

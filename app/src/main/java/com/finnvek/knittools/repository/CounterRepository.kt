@@ -26,6 +26,8 @@ class CounterRepository
 
         suspend fun getProjectCount(): Int = dao.getProjectCount()
 
+        suspend fun getFirstProject(): CounterProjectEntity? = dao.getFirstProject()
+
         suspend fun addHistoryEntry(
             projectId: Long,
             action: String,

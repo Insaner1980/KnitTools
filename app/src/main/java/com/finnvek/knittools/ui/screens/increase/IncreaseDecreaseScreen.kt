@@ -16,6 +16,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -40,10 +41,10 @@ fun IncreaseDecreaseScreen(
     homeViewModel: HomeViewModel = hiltViewModel(),
 ) {
     val proState by homeViewModel.proState.collectAsStateWithLifecycle()
-    var currentStitches by remember { mutableStateOf("") }
-    var changeBy by remember { mutableStateOf("") }
-    var mode by remember { mutableStateOf(IncreaseDecreaseMode.INCREASE) }
-    var style by remember { mutableStateOf(KnittingStyle.FLAT) }
+    var currentStitches by rememberSaveable { mutableStateOf("") }
+    var changeBy by rememberSaveable { mutableStateOf("") }
+    var mode by rememberSaveable { mutableStateOf(IncreaseDecreaseMode.INCREASE) }
+    var style by rememberSaveable { mutableStateOf(KnittingStyle.FLAT) }
 
     val result by remember(currentStitches, changeBy, mode, style) {
         derivedStateOf {
@@ -87,13 +88,15 @@ fun IncreaseDecreaseScreen(
             NumberInputField(
                 value = changeBy,
                 onValueChange = { changeBy = it },
-                label = if (mode == IncreaseDecreaseMode.INCREASE) {
-                    stringResource(R.string.increase_by)
-                } else {
-                    stringResource(R.string.decrease_by)
-                },
+                label =
+                    if (mode == IncreaseDecreaseMode.INCREASE) {
+                        stringResource(R.string.increase_by)
+                    } else {
+                        stringResource(R.string.decrease_by)
+                    },
                 suffix = stringResource(R.string.unit_st),
                 modifier = Modifier.fillMaxWidth(),
+                isLast = true,
             )
 
             result?.let { r -> IncreaseDecreaseResultSection(r) }

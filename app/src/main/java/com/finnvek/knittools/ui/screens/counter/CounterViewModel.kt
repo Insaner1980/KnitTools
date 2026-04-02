@@ -1,7 +1,13 @@
 package com.finnvek.knittools.ui.screens.counter
 
+import android.content.Context
+import androidx.glance.appwidget.updateAll
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.finnvek.knittools.R
 import com.finnvek.knittools.data.datastore.PreferencesManager
 import com.finnvek.knittools.data.local.CounterProjectEntity
 import com.finnvek.knittools.domain.calculator.CounterLogic
@@ -9,7 +15,10 @@ import com.finnvek.knittools.domain.calculator.CounterState
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.CounterRepository
+import com.finnvek.knittools.widget.CounterWidget
+import com.finnvek.knittools.widget.CounterWidgetState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -40,13 +49,27 @@ class CounterViewModel
         private val repository: CounterRepository,
         private val preferencesManager: PreferencesManager,
         private val proManager: ProManager,
+        @ApplicationContext private val context: Context,
     ) : ViewModel() {
         private val _uiState = MutableStateFlow(CounterUiState())
         val uiState: StateFlow<CounterUiState> = _uiState.asStateFlow()
 
         private var timerJob: Job? = null
+        private var isForeground = true
+
+        private val lifecycleObserver =
+            object : DefaultLifecycleObserver {
+                override fun onResume(owner: LifecycleOwner) {
+                    isForeground = true
+                }
+
+                override fun onPause(owner: LifecycleOwner) {
+                    isForeground = false
+                }
+            }
 
         init {
+            ProcessLifecycleOwner.get().lifecycle.addObserver(lifecycleObserver)
             loadOrCreateProject()
             startTimer()
             observePreferences()
@@ -81,12 +104,22 @@ class CounterViewModel
             viewModelScope.launch {
                 repository.getAllProjects().collect { list ->
                     if (list.isEmpty()) {
-                        val id = repository.createProject("My Project")
+                        val id = repository.createProject(context.getString(R.string.default_project_name))
                         _uiState.update { it.copy(projectId = id, projects = emptyList()) }
                     } else {
                         _uiState.update { it.copy(projects = list) }
-                        if (_uiState.value.projectId == null) {
+                        val currentId = _uiState.value.projectId
+                        if (currentId == null) {
                             selectProject(list.first())
+                        } else {
+                            // Ulkoinen muutos (esim. widget) — päivitä laskuri
+                            list.find { it.id == currentId }?.let { project ->
+                                if (project.count != _uiState.value.counter.count) {
+                                    _uiState.update {
+                                        it.copy(counter = it.counter.copy(count = project.count))
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -103,6 +136,7 @@ class CounterViewModel
                     notes = project.notes,
                 )
             }
+            viewModelScope.launch { syncWidget() }
         }
 
         fun createNewProject(name: String): Boolean {
@@ -189,6 +223,7 @@ class CounterViewModel
                 repository.getProject(id)?.let { project ->
                     repository.updateProject(project.copy(name = name))
                 }
+                syncWidget()
             }
         }
 
@@ -213,6 +248,7 @@ class CounterViewModel
                 state.counter.previousCount?.let { prev ->
                     repository.addHistoryEntry(id, action, prev, state.counter.count)
                 }
+                syncWidget()
             }
         }
 
@@ -234,14 +270,28 @@ class CounterViewModel
             }
         }
 
+        private suspend fun syncWidget() {
+            val state = _uiState.value
+            val id = state.projectId ?: return
+            CounterWidgetState.save(context, state.projectName, state.counter.count, id)
+            CounterWidget().updateAll(context)
+        }
+
         private fun startTimer() {
             timerJob =
                 viewModelScope.launch {
                     while (true) {
                         delay(1000)
-                        _uiState.update { it.copy(sessionSeconds = it.sessionSeconds + 1) }
+                        if (isForeground) {
+                            _uiState.update { it.copy(sessionSeconds = it.sessionSeconds + 1) }
+                        }
                     }
                 }
+        }
+
+        override fun onCleared() {
+            super.onCleared()
+            ProcessLifecycleOwner.get().lifecycle.removeObserver(lifecycleObserver)
         }
 
         private companion object {

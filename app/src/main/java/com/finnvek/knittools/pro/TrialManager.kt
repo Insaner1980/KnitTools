@@ -1,6 +1,7 @@
 package com.finnvek.knittools.pro
 
 import android.content.Context
+import androidx.annotation.VisibleForTesting
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -36,8 +37,6 @@ class TrialManager
             val lastKnown = prefs[KEY_LAST_KNOWN_TIMESTAMP] ?: 0L
             val now = System.currentTimeMillis()
 
-            val clockTampered = lastKnown > 0L && now < lastKnown - TimeUnit.HOURS.toMillis(1)
-
             context.trialDataStore.edit { it[KEY_LAST_KNOWN_TIMESTAMP] = now }
 
             val isFirstLaunch = startTimestamp == 0L
@@ -49,18 +48,7 @@ class TrialManager
                     startTimestamp
                 }
 
-            val daysElapsed = TimeUnit.MILLISECONDS.toDays(now - actualStart).toInt()
-            val daysRemaining = (TRIAL_DURATION_DAYS - daysElapsed).coerceAtLeast(0)
-            val isActive = daysRemaining > 0 && !clockTampered
-
-            _trialState.value =
-                TrialState(
-                    isActive = isActive,
-                    daysRemaining = daysRemaining,
-                    startTimestamp = actualStart,
-                    isFirstLaunch = isFirstLaunch,
-                    clockTampered = clockTampered,
-                )
+            _trialState.value = calculateTrialState(now, actualStart, lastKnown, isFirstLaunch)
         }
 
         suspend fun updateTimestamp() {
@@ -74,5 +62,28 @@ class TrialManager
             private val Context.trialDataStore by preferencesDataStore(name = "trial_state")
             private val KEY_TRIAL_START = longPreferencesKey("trial_start_timestamp")
             private val KEY_LAST_KNOWN_TIMESTAMP = longPreferencesKey("last_known_timestamp")
+
+            // Puhdas laskentalogiikka erotettuna DataStore-I/O:sta testattavuuden vuoksi
+            @VisibleForTesting
+            internal fun calculateTrialState(
+                now: Long,
+                startTimestamp: Long,
+                lastKnownTimestamp: Long,
+                isFirstLaunch: Boolean,
+            ): TrialState {
+                val clockTampered =
+                    lastKnownTimestamp > 0L &&
+                        now < lastKnownTimestamp - TimeUnit.HOURS.toMillis(1)
+                val daysElapsed = TimeUnit.MILLISECONDS.toDays(now - startTimestamp).toInt()
+                val daysRemaining = (TRIAL_DURATION_DAYS - daysElapsed).coerceAtLeast(0)
+                val isActive = daysRemaining > 0 && !clockTampered
+                return TrialState(
+                    isActive = isActive,
+                    daysRemaining = daysRemaining,
+                    startTimestamp = startTimestamp,
+                    isFirstLaunch = isFirstLaunch,
+                    clockTampered = clockTampered,
+                )
+            }
         }
     }

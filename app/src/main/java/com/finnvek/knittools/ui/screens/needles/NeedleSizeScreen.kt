@@ -17,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -30,8 +31,8 @@ import com.finnvek.knittools.ui.components.ToolScreenScaffold
 
 @Composable
 fun NeedleSizeScreen(onBack: () -> Unit) {
-    var query by remember { mutableStateOf("") }
-    var selectedMm by remember { mutableStateOf<Double?>(null) }
+    var query by rememberSaveable { mutableStateOf("") }
+    var selectedMm by rememberSaveable { mutableStateOf<Double?>(null) }
     val results = remember(query) { NeedleSizeData.search(query) }
 
     ToolScreenScaffold(title = stringResource(R.string.tool_needle_sizes), onBack = onBack) { padding ->

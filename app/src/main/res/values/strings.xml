@@ -123,12 +123,13 @@
     <string name="pro_feature_widget">Home screen widget</string>
     <string name="upgrade_for_price">Upgrade for %s</string>
     <string name="one_time_purchase">One-time purchase. No subscription.</string>
+    <string name="loading_price">Loading price…</string>
+    <string name="price_loading_hint">Connecting to Google Play — check your internet connection if this takes long</string>
 
     <!-- Yarn Card / OCR -->
     <string name="scan_yarn_label">Scan yarn label</string>
     <string name="saved_yarns">Saved yarns</string>
     <string name="scanned_yarn">Scanned Yarn</string>
-    <string name="yarn_card_detail_title">Yarn Card</string>
     <string name="brand">Brand</string>
     <string name="yarn_name">Yarn name</string>
     <string name="fiber_content">Fiber content</string>
@@ -144,9 +145,7 @@
     <string name="save_and_use">Save &amp; Use</string>
     <string name="discard">Discard</string>
     <string name="use_in_calculator">Use in calculator</string>
-    <string name="delete">Delete</string>
     <string name="no_saved_yarns">No saved yarn cards yet</string>
-    <string name="camera_permission_required">Camera permission is required to scan yarn labels</string>
     <string name="scanning">Scanning…</string>
     <string name="card_deleted">Yarn card deleted</string>
     <string name="undo">Undo</string>
@@ -157,7 +156,26 @@
     <string name="instruction_hint">e.g. "Increase 12 stitches evenly across 96 stitches"</string>
     <string name="parsing_instruction">Parsing…</string>
     <string name="instruction_parsed">Values filled from instruction</string>
-    <string name="instruction_parse_failed">Could not parse instruction</string>
+    <string name="instruction_parse_failed">Couldn\'t understand the instruction — try rephrasing</string>
+    <string name="ai_error_busy">AI is busy — try again in a moment</string>
+    <string name="ai_error_quota">Battery limit reached — try again later</string>
+    <string name="ai_error_unavailable">AI feature not available on this device</string>
+    <string name="ai_error_unknown">Something went wrong — try again</string>
+
+    <!-- Camera permission -->
+    <string name="camera_permission_denied">Camera permission is needed to scan yarn labels</string>
+    <string name="camera_permission_denied_permanent">Camera permission denied — enable it in Settings</string>
+    <string name="open_settings">Settings</string>
+
+    <!-- Care symbol categories -->
+    <string name="care_category_washing">Washing</string>
+    <string name="care_category_bleaching">Bleaching</string>
+    <string name="care_category_drying">Drying</string>
+    <string name="care_category_ironing">Ironing</string>
+    <string name="care_category_dry_cleaning">Dry cleaning</string>
+
+    <!-- Defaults -->
+    <string name="yarn_card_fallback_name">Yarn card</string>
 
     <!-- Widget -->
     <string name="widget_name">Row Counter</string>

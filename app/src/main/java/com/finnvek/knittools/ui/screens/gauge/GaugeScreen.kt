@@ -14,6 +14,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -38,13 +39,13 @@ fun GaugeScreen(
     homeViewModel: HomeViewModel = hiltViewModel(),
 ) {
     val proState by homeViewModel.proState.collectAsStateWithLifecycle()
-    var patternSt by remember { mutableStateOf("") }
-    var patternRows by remember { mutableStateOf("") }
-    var yourSt by remember { mutableStateOf("") }
-    var yourRows by remember { mutableStateOf("") }
-    var stitchCount by remember { mutableStateOf("") }
-    var rowCount by remember { mutableStateOf("") }
-    var useImperial by remember { mutableStateOf(false) }
+    var patternSt by rememberSaveable { mutableStateOf("") }
+    var patternRows by rememberSaveable { mutableStateOf("") }
+    var yourSt by rememberSaveable { mutableStateOf("") }
+    var yourRows by rememberSaveable { mutableStateOf("") }
+    var stitchCount by rememberSaveable { mutableStateOf("") }
+    var rowCount by rememberSaveable { mutableStateOf("") }
+    var useImperial by rememberSaveable { mutableStateOf(false) }
 
     val result by remember(patternSt, patternRows, yourSt, yourRows, stitchCount, rowCount) {
         derivedStateOf {
@@ -186,6 +187,7 @@ private fun PatternInputSection(
         label = stringResource(R.string.rows_in_pattern),
         suffix = stringResource(R.string.unit_rows),
         modifier = Modifier.fillMaxWidth(),
+        isLast = true,
     )
 }
 

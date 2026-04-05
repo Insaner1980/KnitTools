@@ -9,15 +9,19 @@ import androidx.room.RoomDatabase
         CounterProjectEntity::class,
         CounterHistoryEntity::class,
         YarnCardEntity::class,
+        SessionEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
+        AutoMigration(from = 2, to = 3),
     ],
 )
 abstract class KnitToolsDatabase : RoomDatabase() {
     abstract fun counterProjectDao(): CounterProjectDao
 
     abstract fun yarnCardDao(): YarnCardDao
+
+    abstract fun sessionDao(): SessionDao
 }

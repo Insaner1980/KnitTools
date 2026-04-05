@@ -1,5 +1,6 @@
 package com.finnvek.knittools.data.local
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
@@ -14,4 +15,16 @@ data class CounterProjectEntity(
     val notes: String = "",
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
+    @ColumnInfo(defaultValue = "NULL")
+    val sectionName: String? = null,
+    @ColumnInfo(defaultValue = "NULL")
+    val stitchCount: Int? = null,
+    @ColumnInfo(defaultValue = "0")
+    val isCompleted: Boolean = false,
+    @ColumnInfo(defaultValue = "NULL")
+    val totalRows: Int? = null,
+    @ColumnInfo(defaultValue = "NULL")
+    val completedAt: Long? = null,
+    @ColumnInfo(defaultValue = "")
+    val yarnCardIds: String = "",
 )

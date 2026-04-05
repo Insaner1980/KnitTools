@@ -25,26 +25,72 @@
     <!-- Home screen -->
     <string name="tool_row_counter">Row Counter</string>
     <string name="tool_increase_decrease">Increase / Decrease</string>
-    <string name="tool_gauge_converter">Gauge Converter</string>
+    <string name="tool_gauge_converter">Gauge Calculator</string>
     <string name="tool_cast_on_calculator">Cast On Calculator</string>
     <string name="tool_yarn_estimator">Yarn Estimator</string>
     <string name="tool_needle_sizes">Needle Sizes</string>
     <string name="pro_trial_days_left">Pro trial — %d days left</string>
     <string name="unlock_all_tools">Unlock all tools</string>
+    <string name="quick_tip_label">QUICK TIP</string>
+    <string name="desc_yarn_estimator_card">Calculate yardage and skeins needed</string>
+
+    <!-- Bottom navigation tabs -->
+    <string name="tab_projects">PROJECTS</string>
+    <string name="tab_tools">TOOLS</string>
+    <string name="tab_reference">REFERENCE</string>
+
+    <!-- Hub hero text -->
+    <string name="reference_hero_title">Knitting Reference</string>
+    <string name="reference_hero_subtitle">Quick access to sizes, abbreviations, and chart symbols.</string>
+
+    <!-- Project List -->
+    <string name="project_list_title">Projects</string>
+    <string name="section_active">ACTIVE</string>
+    <string name="section_completed">COMPLETED</string>
+    <string name="new_project">New Project</string>
+    <string name="no_active_projects">No active projects</string>
+    <string name="no_completed_projects">No completed projects yet</string>
+    <string name="archive_project">Archive</string>
+    <string name="delete_project">Delete</string>
+    <string name="delete_project_message">Delete %s? This will permanently remove the project and all its history.</string>
+    <string name="rename_project">Rename</string>
+    <string name="reactivate_project">Reactivate</string>
+    <string name="rows_format">%d rows</string>
+    <string name="just_now">just now</string>
+
+    <!-- Counter Screen -->
+    <string name="current_project">CURRENT PROJECT</string>
+    <string name="current_row">CURRENT ROW</string>
+    <string name="stitch_count_format">%d st</string>
+    <string name="time_spent_minutes_format">%dm</string>
+    <string name="link_to_project">Link to %s?</string>
+    <string name="link_yarn">Link yarn</string>
+    <string name="link">Link</string>
+    <string name="select_yarn_card">Select yarn card</string>
+    <string name="add_yarn">Add yarn</string>
+
+    <!-- Session History -->
+    <string name="session_history_title">Session History</string>
+    <string name="no_sessions">No sessions recorded yet. Start knitting to see your history here.</string>
+    <string name="session_row_range">Rows %1$d \u2192 %2$d</string>
+    <string name="session_duration_format">%1$dh %2$dm</string>
+    <string name="pro_full_history_hint">Upgrade to Pro for full session history</string>
+
+    <!-- Settings -->
+    <string name="show_knitting_tips">Show knitting tips</string>
+    <string name="project_summary">Project Summary</string>
+    <string name="generating_summary">Generating summary\u2026</string>
 
     <!-- Row Counter -->
-    <string name="project_name">Project name</string>
     <string name="default_project_name">My Project</string>
-    <string name="step_format">step: %d</string>
     <string name="reset_counter">Reset Counter</string>
     <string name="reset_counter_message">Reset the counter to 0?</string>
     <string name="pattern_repeat">Pattern repeat</string>
     <string name="notes">Notes</string>
+    <string name="add_note">Add note\u2026</string>
     <string name="counter_decrease">Decrease</string>
     <string name="counter_increase">Increase</string>
     <string name="counter_undo">Undo</string>
-    <string name="plus_one">+1</string>
-    <string name="minus_one">-1</string>
 
     <!-- Increase / Decrease -->
     <string name="mode_increase">Increase</string>
@@ -57,6 +103,7 @@
     <string name="invalid_input">Invalid input</string>
     <string name="easy_to_remember">Easy to remember</string>
     <string name="balanced">Balanced</string>
+    <string name="total_stitches_format">TOTAL: %1$d %2$s</string>
 
     <!-- Gauge Converter -->
     <string name="pattern_gauge">Pattern gauge</string>
@@ -153,7 +200,9 @@
 
     <!-- Gemini Nano -->
     <string name="paste_instruction">Paste instruction</string>
-    <string name="instruction_hint">e.g. "Increase 12 stitches evenly across 96 stitches"</string>
+    <string name="instruction_hint">Paste your knitting instruction here</string>
+    <string name="instruction_hint_increase">e.g. "Increase 12 stitches evenly across 96 stitches"</string>
+    <string name="instruction_hint_gauge">e.g. "22 stitches and 30 rows per 10cm" or "width 30 cm, 22 stitches"</string>
     <string name="parsing_instruction">Parsing…</string>
     <string name="instruction_parsed">Values filled from instruction</string>
     <string name="instruction_parse_failed">Couldn\'t understand the instruction — try rephrasing</string>
@@ -180,4 +229,74 @@
     <!-- Widget -->
     <string name="widget_name">Row Counter</string>
     <string name="widget_description">Row counter widget for active project</string>
+
+    <!-- Hubs -->
+    <string name="reference_hub_title">Reference</string>
+    <string name="desc_increase_decrease">Evenly space increases or decreases across a row</string>
+    <string name="desc_gauge_calculator">Calculate your gauge and convert pattern instructions</string>
+    <string name="desc_cast_on">Calculate stitches to cast on for a desired width</string>
+    <string name="desc_needle_sizes">Needle sizes across metric, US, UK, and Japanese systems</string>
+    <string name="desc_size_charts">Standard body measurements for garment sizing</string>
+    <string name="desc_abbreviations">Common knitting abbreviation reference</string>
+    <string name="desc_chart_symbols">Standard knitting chart symbol guide</string>
+
+    <!-- Gauge Calculator — swatch section -->
+    <string name="my_gauge">My Gauge</string>
+    <string name="measured_width">Measured width</string>
+    <string name="stitch_count_in_swatch">Stitches in swatch</string>
+    <string name="measured_height">Measured height</string>
+    <string name="row_count_in_swatch">Rows in swatch</string>
+    <string name="your_stitch_gauge">Your stitch gauge: %s</string>
+    <string name="your_row_gauge">Your row gauge: %s</string>
+
+    <!-- Size Charts -->
+    <string name="size_charts_title">Size Charts</string>
+    <string name="category_baby">Baby (0–24 months)</string>
+    <string name="category_child_youth">Child &amp; Youth (2–16)</string>
+    <string name="category_women">Women</string>
+    <string name="category_men">Men</string>
+    <string name="category_head">Head</string>
+    <string name="category_hand">Hand</string>
+
+    <!-- Abbreviations -->
+    <string name="abbreviations_title">Abbreviations</string>
+    <string name="search_abbreviation">Search abbreviations…</string>
+
+    <!-- Chart Symbols -->
+    <string name="chart_symbols_title">Chart Symbols</string>
+    <string name="chart_symbols_disclaimer">Symbols follow standard conventions. Always check your pattern\'s symbol key.</string>
+    <string name="category_basic">Basic Stitches</string>
+    <string name="category_decreases">Decreases</string>
+    <string name="category_increases">Increases</string>
+    <string name="category_cables">Cables</string>
+    <string name="category_other">Other</string>
+
+    <!-- Quick Tips -->
+    <string-array name="knitting_tips">
+        <item>Always swatch before starting a new project — even if you think you know your gauge.</item>
+        <item>Block your swatch the same way you plan to block your finished piece for an accurate gauge.</item>
+        <item>To avoid a jog when knitting stripes in the round, lift the stitch from the row below onto the left needle on the second row of the new color.</item>
+        <item>Keep your tension even for a professional finish on edges.</item>
+        <item>Place a locking stitch marker every 20 stitches when casting on large numbers.</item>
+        <item>Block your finished pieces — it makes a huge difference in the final look.</item>
+        <item>Count your stitches at the end of every row when working lace patterns.</item>
+        <item>Wind your yarn into a ball before starting — it prevents tangling.</item>
+        <item>Use a lifeline every few rows in lace knitting — thread waste yarn through all stitches.</item>
+        <item>Weave in ends as you go to avoid a pile-up at the end of your project.</item>
+        <item>Always buy one extra skein — dye lots may vary between batches.</item>
+        <item>Try knitting a gauge swatch in the round if your project is knit in the round — gauge can differ.</item>
+        <item>Use stitch markers to separate pattern repeats — they make counting much easier.</item>
+        <item>Read your entire pattern through before casting on to avoid surprises.</item>
+        <item>Keep a project notebook to track your modifications and notes for future reference.</item>
+        <item>When joining yarn, leave tails at least 15 cm long for secure weaving.</item>
+        <item>Practice new techniques on a small swatch before committing to your project.</item>
+        <item>Store your knitting in a project bag to keep it clean and prevent snags.</item>
+        <item>Take breaks to stretch your hands and prevent repetitive strain injuries.</item>
+        <item>Mark your place in the pattern with a sticky note or magnetic board.</item>
+        <item>Use bamboo needles for slippery yarns — they grip the stitches better.</item>
+        <item>When picking up stitches, use a needle one size smaller for a neater edge.</item>
+        <item>Twist your stitches on the first round after casting on to prevent the cast-on from twisting.</item>
+        <item>Measure your gauge after blocking, not before — many yarns change after washing.</item>
+        <item>Alternate between two skeins every few rows to avoid visible dye lot differences.</item>
+    </string-array>
 </resources>

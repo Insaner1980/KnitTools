@@ -1,8 +1,9 @@
 package com.finnvek.knittools.repository
 
-import com.finnvek.knittools.data.local.CounterHistoryEntity
 import com.finnvek.knittools.data.local.CounterProjectDao
 import com.finnvek.knittools.data.local.CounterProjectEntity
+import com.finnvek.knittools.data.local.SessionDao
+import com.finnvek.knittools.data.local.SessionEntity
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -12,15 +13,101 @@ class CounterRepository
     @Inject
     constructor(
         private val dao: CounterProjectDao,
+        private val sessionDao: SessionDao,
     ) {
         fun getAllProjects(): Flow<List<CounterProjectEntity>> = dao.getAllProjects()
 
+        fun getActiveProjects(): Flow<List<CounterProjectEntity>> = dao.getActiveProjects()
+
+        fun getCompletedProjects(): Flow<List<CounterProjectEntity>> = dao.getCompletedProjects()
+
+        suspend fun getActiveProjectCount(): Int = dao.getActiveProjectCount()
+
         suspend fun getProject(id: Long): CounterProjectEntity? = dao.getProject(id)
+
+        fun observeProject(id: Long): Flow<CounterProjectEntity?> = dao.observeProject(id)
 
         suspend fun createProject(name: String): Long = dao.insert(CounterProjectEntity(name = name))
 
         suspend fun updateProject(project: CounterProjectEntity) =
             dao.update(project.copy(updatedAt = System.currentTimeMillis()))
+
+        suspend fun adjustProjectCount(
+            id: Long,
+            delta: Int,
+        ) = dao.adjustCount(id, delta, System.currentTimeMillis())
+
+        suspend fun adjustProjectCountWithHistory(
+            id: Long,
+            delta: Int,
+            stepSize: Int,
+            action: String,
+            previousValue: Int,
+            newValue: Int,
+        ) = dao.adjustCountWithHistory(
+            projectId = id,
+            delta = delta,
+            stepSize = stepSize,
+            action = action,
+            previousValue = previousValue,
+            newValue = newValue,
+            updatedAt = System.currentTimeMillis(),
+        )
+
+        suspend fun updateProjectCounterStateWithHistory(
+            id: Long,
+            count: Int,
+            stepSize: Int,
+            action: String,
+            previousValue: Int,
+            newValue: Int,
+        ) = dao.updateCounterStateWithHistory(
+            projectId = id,
+            count = count,
+            stepSize = stepSize,
+            action = action,
+            previousValue = previousValue,
+            newValue = newValue,
+            updatedAt = System.currentTimeMillis(),
+        )
+
+        suspend fun updateProjectName(
+            id: Long,
+            name: String,
+        ) = dao.updateName(id, name, System.currentTimeMillis())
+
+        suspend fun updateProjectNotes(
+            id: Long,
+            notes: String,
+        ) = dao.updateNotes(id, notes, System.currentTimeMillis())
+
+        suspend fun updateProjectSecondaryCount(
+            id: Long,
+            secondaryCount: Int,
+        ) = dao.updateSecondaryCount(id, secondaryCount, System.currentTimeMillis())
+
+        suspend fun updateProjectSectionName(
+            id: Long,
+            sectionName: String?,
+        ) = dao.updateSectionName(id, sectionName, System.currentTimeMillis())
+
+        suspend fun updateProjectStitchCount(
+            id: Long,
+            stitchCount: Int?,
+        ) = dao.updateStitchCount(id, stitchCount, System.currentTimeMillis())
+
+        suspend fun updateProjectYarnCardIds(
+            id: Long,
+            yarnCardIds: String,
+        ) = dao.updateYarnCardIds(id, yarnCardIds, System.currentTimeMillis())
+
+        suspend fun archiveProject(
+            id: Long,
+            totalRows: Int,
+            completedAt: Long,
+        ) = dao.archiveProject(id, totalRows, completedAt, System.currentTimeMillis())
+
+        suspend fun reactivateProject(id: Long) = dao.reactivateProject(id, System.currentTimeMillis())
 
         suspend fun deleteProject(id: Long) = dao.delete(id)
 
@@ -28,26 +115,21 @@ class CounterRepository
 
         suspend fun getFirstProject(): CounterProjectEntity? = dao.getFirstProject()
 
-        suspend fun addHistoryEntry(
-            projectId: Long,
-            action: String,
-            previousValue: Int,
-            newValue: Int,
-        ) {
-            dao.insertHistory(
-                CounterHistoryEntity(
-                    projectId = projectId,
-                    action = action,
-                    previousValue = previousValue,
-                    newValue = newValue,
-                ),
-            )
-        }
-
-        fun getHistory(projectId: Long): Flow<List<CounterHistoryEntity>> = dao.getHistory(projectId)
-
         suspend fun deleteHistoryBefore(
             projectId: Long,
             before: Long,
         ) = dao.deleteHistoryBefore(projectId, before)
+
+        // Session-metodit
+        fun getSessionsForProject(projectId: Long): Flow<List<SessionEntity>> =
+            sessionDao.getSessionsForProject(projectId)
+
+        suspend fun insertSession(session: SessionEntity): Long = sessionDao.insert(session)
+
+        suspend fun deleteSessionsBefore(
+            projectId: Long,
+            before: Long,
+        ) = sessionDao.deleteSessionsBefore(projectId, before)
+
+        suspend fun getTotalMinutesForProject(projectId: Long): Int = sessionDao.getTotalMinutes(projectId)
     }

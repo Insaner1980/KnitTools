@@ -43,6 +43,10 @@ class SettingsViewModel
             viewModelScope.launch { preferencesManager.setUseImperial(imperial) }
         }
 
+        fun setShowKnittingTips(enabled: Boolean) {
+            viewModelScope.launch { preferencesManager.setShowKnittingTips(enabled) }
+        }
+
         fun restorePurchases() {
             billingManager.restorePurchases()
         }

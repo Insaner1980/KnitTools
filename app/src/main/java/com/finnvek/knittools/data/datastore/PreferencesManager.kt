@@ -26,6 +26,7 @@ data class AppPreferences(
     val hapticFeedback: Boolean = true,
     val keepScreenAwake: Boolean = false,
     val useImperial: Boolean = false,
+    val showKnittingTips: Boolean = true,
 )
 
 @Singleton
@@ -44,6 +45,7 @@ class PreferencesManager
                     hapticFeedback = prefs[KEY_HAPTIC_FEEDBACK] ?: true,
                     keepScreenAwake = prefs[KEY_KEEP_SCREEN_AWAKE] ?: false,
                     useImperial = prefs[KEY_USE_IMPERIAL] ?: false,
+                    showKnittingTips = prefs[KEY_SHOW_KNITTING_TIPS] ?: true,
                 )
             }
 
@@ -63,10 +65,15 @@ class PreferencesManager
             context.dataStore.edit { it[KEY_USE_IMPERIAL] = imperial }
         }
 
+        suspend fun setShowKnittingTips(enabled: Boolean) {
+            context.dataStore.edit { it[KEY_SHOW_KNITTING_TIPS] = enabled }
+        }
+
         private companion object {
             val KEY_THEME_MODE = intPreferencesKey("theme_mode")
             val KEY_HAPTIC_FEEDBACK = booleanPreferencesKey("haptic_feedback")
             val KEY_KEEP_SCREEN_AWAKE = booleanPreferencesKey("keep_screen_awake")
             val KEY_USE_IMPERIAL = booleanPreferencesKey("use_imperial")
+            val KEY_SHOW_KNITTING_TIPS = booleanPreferencesKey("show_knitting_tips")
         }
     }

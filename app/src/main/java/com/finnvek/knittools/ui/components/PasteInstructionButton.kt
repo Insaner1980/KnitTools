@@ -4,14 +4,16 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -32,8 +34,9 @@ import kotlinx.coroutines.launch
 @Composable
 fun PasteInstructionButton(
     isPro: Boolean,
-    onResult: (ParsedInstruction) -> Unit,
+    onResult: (ParsedInstruction) -> Boolean,
     modifier: Modifier = Modifier,
+    hintText: String? = null,
 ) {
     var nanoAvailable by remember { mutableStateOf(false) }
     var expanded by remember { mutableStateOf(false) }
@@ -55,16 +58,21 @@ fun PasteInstructionButton(
         AnimatedVisibility(visible = expanded) {
             InstructionInputForm(
                 onResult = { result ->
-                    onResult(result)
-                    expanded = false
+                    val accepted = onResult(result)
+                    if (accepted) expanded = false
+                    accepted
                 },
+                hintText = hintText ?: stringResource(R.string.instruction_hint),
             )
         }
     }
 }
 
 @Composable
-private fun InstructionInputForm(onResult: (ParsedInstruction) -> Unit) {
+private fun InstructionInputForm(
+    onResult: (ParsedInstruction) -> Boolean,
+    hintText: String,
+) {
     var instructionText by remember { mutableStateOf("") }
     var isParsing by remember { mutableStateOf(false) }
     var resultMessage by remember { mutableStateOf<String?>(null) }
@@ -81,13 +89,13 @@ private fun InstructionInputForm(onResult: (ParsedInstruction) -> Unit) {
     val successMessage = stringResource(R.string.instruction_parsed)
 
     Column {
-        OutlinedTextField(
+        TextField(
             value = instructionText,
             onValueChange = {
                 instructionText = it
                 resultMessage = null
             },
-            label = { Text(stringResource(R.string.instruction_hint)) },
+            label = { Text(hintText) },
             modifier = Modifier.fillMaxWidth(),
             minLines = 2,
             maxLines = 4,
@@ -96,6 +104,14 @@ private fun InstructionInputForm(onResult: (ParsedInstruction) -> Unit) {
                     CircularProgressIndicator(modifier = Modifier.padding(8.dp), strokeWidth = 2.dp)
                 }
             },
+            shape = RoundedCornerShape(12.dp),
+            colors =
+                TextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    focusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+                    unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+                ),
         )
 
         TextButton(
@@ -105,13 +121,9 @@ private fun InstructionInputForm(onResult: (ParsedInstruction) -> Unit) {
                     resultMessage = null
                     val result = InstructionParser.parse(instructionText)
                     isParsing = false
-                    if (result is ParsedInstruction.Failure) {
-                        resultMessage = errorMessages[result.errorType]
-                    } else {
-                        resultMessage = successMessage
-                        onResult(result)
-                        instructionText = ""
-                    }
+                    val (message, clearInput) = handleParseResult(result, onResult, errorMessages, successMessage)
+                    resultMessage = message
+                    if (clearInput) instructionText = ""
                 }
             },
             enabled = instructionText.isNotBlank() && !isParsing,
@@ -137,3 +149,17 @@ private fun InstructionInputForm(onResult: (ParsedInstruction) -> Unit) {
         }
     }
 }
+
+private fun handleParseResult(
+    result: ParsedInstruction,
+    onResult: (ParsedInstruction) -> Boolean,
+    errorMessages: Map<ParsedInstruction.ErrorType, String>,
+    successMessage: String,
+): Pair<String?, Boolean> =
+    if (result is ParsedInstruction.Failure) {
+        errorMessages[result.errorType] to false
+    } else if (onResult(result)) {
+        successMessage to true
+    } else {
+        errorMessages[ParsedInstruction.ErrorType.PARSE_FAILED] to false
+    }

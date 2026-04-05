@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.finnvek.knittools.data.local.CounterProjectDao
 import com.finnvek.knittools.data.local.KnitToolsDatabase
+import com.finnvek.knittools.data.local.SessionDao
 import com.finnvek.knittools.data.local.YarnCardDao
 import dagger.Module
 import dagger.Provides
@@ -31,4 +32,7 @@ object DatabaseModule {
 
     @Provides
     fun provideYarnCardDao(db: KnitToolsDatabase): YarnCardDao = db.yarnCardDao()
+
+    @Provides
+    fun provideSessionDao(db: KnitToolsDatabase): SessionDao = db.sessionDao()
 }

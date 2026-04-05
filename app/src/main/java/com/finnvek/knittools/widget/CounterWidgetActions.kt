@@ -31,15 +31,16 @@ class CounterWidgetActions : BroadcastReceiver() {
 
                 val project = repository.getProject(widgetData.projectId) ?: return@launch
 
-                val newCount =
+                val delta =
                     when (action) {
-                        ACTION_INCREMENT -> project.count + 1
-                        ACTION_DECREMENT -> maxOf(0, project.count - 1)
+                        ACTION_INCREMENT -> 1
+                        ACTION_DECREMENT -> -1
                         else -> return@launch
                     }
 
-                repository.updateProject(project.copy(count = newCount))
-                CounterWidgetState.save(context, project.name, newCount, project.id)
+                repository.adjustProjectCount(project.id, delta)
+                val updatedProject = repository.getProject(project.id) ?: return@launch
+                CounterWidgetState.save(context, updatedProject.name, updatedProject.count, updatedProject.id)
                 CounterWidget().updateAll(context)
             } finally {
                 pendingResult.finish()

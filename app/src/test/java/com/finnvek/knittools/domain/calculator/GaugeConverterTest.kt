@@ -2,7 +2,6 @@ package com.finnvek.knittools.domain.calculator
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
-import kotlin.math.abs
 
 class GaugeConverterTest {
     @Test

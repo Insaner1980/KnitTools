@@ -7,6 +7,7 @@ import dagger.hilt.components.SingletonComponent
 
 @EntryPoint
 @InstallIn(SingletonComponent::class)
+@Suppress("kotlin:S6517") // Hilt @EntryPoint vaatii interfacen
 interface WidgetEntryPoint {
     fun counterRepository(): CounterRepository
 }

@@ -2,8 +2,10 @@ package com.finnvek.knittools.ui.screens.caston
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -21,6 +23,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.CastOnCalculator
+import com.finnvek.knittools.domain.model.CastOnResult
+import com.finnvek.knittools.ui.components.AnimatedResultNumber
+import com.finnvek.knittools.ui.components.InfoNote
 import com.finnvek.knittools.ui.components.NumberInputField
 import com.finnvek.knittools.ui.components.ResultCard
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
@@ -51,7 +56,10 @@ fun CastOnScreen(onBack: () -> Unit) {
         }
     }
 
-    ToolScreenScaffold(title = stringResource(R.string.tool_cast_on_calculator), onBack = onBack) { padding ->
+    ToolScreenScaffold(
+        title = stringResource(R.string.tool_cast_on_calculator),
+        onBack = onBack,
+    ) { padding ->
         Column(
             modifier =
                 Modifier
@@ -113,35 +121,59 @@ fun CastOnScreen(onBack: () -> Unit) {
             )
 
             result?.let { r ->
-                ResultCard(title = stringResource(R.string.result)) {
-                    Text(
-                        text = stringResource(R.string.stitches_result, r.stitches),
-                        style = MaterialTheme.typography.headlineMedium,
-                    )
-                    Text(
-                        text = stringResource(R.string.actual_width, "%.1f".format(r.actualWidth), unit),
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                    r.adjustedDown?.let { down ->
-                        Text(
-                            text =
-                                stringResource(
-                                    R.string.adjusted_down,
-                                    down,
-                                    "%.1f".format(r.adjustedDownWidth),
-                                    unit,
-                                ),
-                            style = MaterialTheme.typography.bodySmall,
-                        )
-                    }
-                    r.adjustedUp?.let { up ->
-                        Text(
-                            text = stringResource(R.string.adjusted_up, up, "%.1f".format(r.adjustedUpWidth), unit),
-                            style = MaterialTheme.typography.bodySmall,
-                        )
-                    }
-                }
+                CastOnResultSection(r, unit, edgeStitches.toIntOrNull() ?: 0)
             }
         }
+    }
+}
+
+@Composable
+private fun CastOnResultSection(
+    result: CastOnResult,
+    unit: String,
+    edgeCount: Int,
+) {
+    ResultCard(title = stringResource(R.string.result)) {
+        AnimatedResultNumber(
+            targetValue = stringResource(R.string.stitches_result, result.stitches),
+        ) { value ->
+            Text(
+                text = value,
+                style = MaterialTheme.typography.displayMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = stringResource(R.string.actual_width, "%.1f".format(result.actualWidth), unit),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        result.adjustedDown?.let { down ->
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text =
+                    stringResource(
+                        R.string.adjusted_down,
+                        down,
+                        "%.1f".format(result.adjustedDownWidth),
+                        unit,
+                    ),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        result.adjustedUp?.let { up ->
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = stringResource(R.string.adjusted_up, up, "%.1f".format(result.adjustedUpWidth), unit),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+    if (edgeCount > 0) {
+        Spacer(modifier = Modifier.height(8.dp))
+        InfoNote(text = stringResource(R.string.edge_stitches_optional) + ": $edgeCount")
     }
 }

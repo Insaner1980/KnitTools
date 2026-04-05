@@ -11,7 +11,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -20,6 +19,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.NeedleSizeData
 import com.finnvek.knittools.domain.model.NeedleSize
+import com.finnvek.knittools.ui.components.SearchTextField
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
 
 @Composable
@@ -35,7 +36,10 @@ fun NeedleSizeScreen(onBack: () -> Unit) {
     var selectedMm by rememberSaveable { mutableStateOf<Double?>(null) }
     val results = remember(query) { NeedleSizeData.search(query) }
 
-    ToolScreenScaffold(title = stringResource(R.string.tool_needle_sizes), onBack = onBack) { padding ->
+    ToolScreenScaffold(
+        title = stringResource(R.string.tool_needle_sizes),
+        onBack = onBack,
+    ) { padding ->
         LazyColumn(
             modifier =
                 Modifier
@@ -44,15 +48,10 @@ fun NeedleSizeScreen(onBack: () -> Unit) {
                     .padding(horizontal = 16.dp),
         ) {
             item {
-                OutlinedTextField(
+                SearchTextField(
                     value = query,
                     onValueChange = { query = it },
-                    label = { Text(stringResource(R.string.search_size)) },
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp),
-                    singleLine = true,
+                    label = stringResource(R.string.search_size),
                 )
             }
             item {
@@ -70,7 +69,7 @@ fun NeedleSizeScreen(onBack: () -> Unit) {
                     isSelected = needle.metricMm == selectedMm,
                     onClick = { selectedMm = needle.metricMm },
                 )
-                HorizontalDivider()
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             }
         }
     }
@@ -82,6 +81,7 @@ private fun HeaderRow() {
         modifier =
             Modifier
                 .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
                 .padding(vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
@@ -110,9 +110,9 @@ private fun NeedleRow(
 ) {
     val bgColor =
         if (isSelected) {
-            MaterialTheme.colorScheme.primaryContainer
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
         } else {
-            MaterialTheme.colorScheme.surface
+            Color.Transparent
         }
 
     Row(

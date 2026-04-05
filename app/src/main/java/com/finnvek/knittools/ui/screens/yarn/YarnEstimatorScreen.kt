@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -50,6 +51,9 @@ import com.finnvek.knittools.R
 import com.finnvek.knittools.ai.ocr.YarnLabelScanner
 import com.finnvek.knittools.domain.calculator.YarnEstimator
 import com.finnvek.knittools.domain.model.YarnEstimate
+import com.finnvek.knittools.ui.components.AnimatedResultNumber
+import com.finnvek.knittools.ui.components.BadgePill
+import com.finnvek.knittools.ui.components.InfoNote
 import com.finnvek.knittools.ui.components.NumberInputField
 import com.finnvek.knittools.ui.components.ResultCard
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
@@ -65,94 +69,109 @@ fun YarnEstimatorScreen(
     onSavedYarns: () -> Unit = {},
     yarnCardViewModel: YarnCardViewModel? = null,
 ) {
-    var totalYarn by rememberSaveable { mutableStateOf("") }
-    var yarnPerSkein by rememberSaveable { mutableStateOf("") }
-    var weightPerSkein by rememberSaveable { mutableStateOf("") }
-    var useImperial by rememberSaveable { mutableStateOf(false) }
-    val isPro = yarnCardViewModel?.isPro ?: false
-
-    val result by remember(totalYarn, yarnPerSkein, weightPerSkein) {
-        derivedStateOf {
-            val total = totalYarn.toDoubleOrNull() ?: return@derivedStateOf null
-            val perSkein = yarnPerSkein.toDoubleOrNull() ?: return@derivedStateOf null
-            val weight = weightPerSkein.toDoubleOrNull() ?: return@derivedStateOf null
-            if (total <= 0 || perSkein <= 0 || weight <= 0) return@derivedStateOf null
-            YarnEstimator.estimate(total, perSkein, weight)
-        }
-    }
-
     val snackbarHostState = remember { SnackbarHostState() }
-    val formState = yarnCardViewModel?.formState?.collectAsStateWithLifecycle()
 
-    ToolScreenScaffold(title = stringResource(R.string.tool_yarn_estimator), onBack = onBack) { padding ->
+    ToolScreenScaffold(
+        title = stringResource(R.string.tool_yarn_estimator),
+        onBack = onBack,
+    ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
-            Column(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .padding(16.dp)
-                        .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                if (formState?.value?.isScanning == true) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = stringResource(R.string.scanning),
-                            style = MaterialTheme.typography.bodySmall,
-                        )
-                    }
-                }
-                if (isPro) {
-                    ProActionBar(
-                        yarnCardViewModel = yarnCardViewModel!!,
-                        onScanLabel = onScanLabel,
-                        onSavedYarns = onSavedYarns,
-                        snackbarHostState = snackbarHostState,
-                    )
-                }
-
-                UnitToggle(
-                    useImperial = useImperial,
-                    onToggle = { newImperial ->
-                        if (newImperial != useImperial) {
-                            totalYarn = convertFieldValue(totalYarn, newImperial, isLength = false)
-                            yarnPerSkein = convertFieldValue(yarnPerSkein, newImperial, isLength = false)
-                            useImperial = newImperial
-                        }
-                    },
-                )
-
-                val lengthUnit =
-                    if (useImperial) {
-                        stringResource(
-                            R.string.unit_yards,
-                        )
-                    } else {
-                        stringResource(R.string.unit_meters)
-                    }
-                YarnInputFields(
-                    totalYarn = totalYarn,
-                    yarnPerSkein = yarnPerSkein,
-                    weightPerSkein = weightPerSkein,
-                    lengthUnit = lengthUnit,
-                    onTotalYarnChange = { totalYarn = it },
-                    onYarnPerSkeinChange = { yarnPerSkein = it },
-                    onWeightPerSkeinChange = { weightPerSkein = it },
-                )
-
-                result?.let { r -> YarnResultCard(r) }
-            }
+            YarnEstimatorContent(
+                yarnCardViewModel = yarnCardViewModel,
+                onScanLabel = onScanLabel,
+                onSavedYarns = onSavedYarns,
+                snackbarHostState = snackbarHostState,
+            )
             SnackbarHost(
                 hostState = snackbarHostState,
                 modifier = Modifier.align(Alignment.BottomCenter),
             )
         }
+    }
+}
+
+@Composable
+private fun YarnEstimatorContent(
+    yarnCardViewModel: YarnCardViewModel?,
+    onScanLabel: () -> Unit,
+    onSavedYarns: () -> Unit,
+    snackbarHostState: SnackbarHostState,
+) {
+    var totalYarn by rememberSaveable { mutableStateOf("") }
+    var yarnPerSkein by rememberSaveable { mutableStateOf("") }
+    var weightPerSkein by rememberSaveable { mutableStateOf("") }
+    var useImperial by rememberSaveable { mutableStateOf(false) }
+
+    val result by remember(totalYarn, yarnPerSkein, weightPerSkein) {
+        derivedStateOf { calculateYarnEstimate(totalYarn, yarnPerSkein, weightPerSkein) }
+    }
+
+    val formState = yarnCardViewModel?.formState?.collectAsStateWithLifecycle()
+
+    Column(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        if (formState?.value?.isScanning == true) {
+            ScanningIndicator()
+        }
+        if (yarnCardViewModel != null && yarnCardViewModel.isPro) {
+            ProActionBar(
+                yarnCardViewModel = yarnCardViewModel,
+                onScanLabel = onScanLabel,
+                onSavedYarns = onSavedYarns,
+                snackbarHostState = snackbarHostState,
+            )
+        }
+
+        UnitToggle(
+            useImperial = useImperial,
+            onToggle = { newImperial ->
+                if (newImperial != useImperial) {
+                    totalYarn = convertFieldValue(totalYarn, newImperial, isLength = false)
+                    yarnPerSkein = convertFieldValue(yarnPerSkein, newImperial, isLength = false)
+                    useImperial = newImperial
+                }
+            },
+        )
+
+        val lengthUnit =
+            if (useImperial) {
+                stringResource(R.string.unit_yards)
+            } else {
+                stringResource(R.string.unit_meters)
+            }
+        YarnInputFields(
+            totalYarn = totalYarn,
+            yarnPerSkein = yarnPerSkein,
+            weightPerSkein = weightPerSkein,
+            lengthUnit = lengthUnit,
+            onTotalYarnChange = { totalYarn = it },
+            onYarnPerSkeinChange = { yarnPerSkein = it },
+            onWeightPerSkeinChange = { weightPerSkein = it },
+        )
+
+        result?.let { r -> YarnResultCard(r) }
+    }
+}
+
+@Composable
+private fun ScanningIndicator() {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = stringResource(R.string.scanning),
+            style = MaterialTheme.typography.bodySmall,
+        )
     }
 }
 
@@ -195,26 +214,14 @@ private fun ProActionBar(
                     activity != null &&
                         !ActivityCompat.shouldShowRequestPermissionRationale(activity, Manifest.permission.CAMERA)
                 scope.launch {
-                    if (permanentlyDenied) {
-                        val result =
-                            snackbarHostState.showSnackbar(
-                                message = permDeniedPermanentMessage,
-                                actionLabel = openSettingsLabel,
-                                duration = SnackbarDuration.Long,
-                            )
-                        if (result == SnackbarResult.ActionPerformed) {
-                            context.startActivity(
-                                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                                    data = Uri.fromParts("package", context.packageName, null)
-                                },
-                            )
-                        }
-                    } else {
-                        snackbarHostState.showSnackbar(
-                            message = permDeniedMessage,
-                            duration = SnackbarDuration.Short,
-                        )
-                    }
+                    showPermissionDeniedSnackbar(
+                        snackbarHostState,
+                        context,
+                        permanentlyDenied,
+                        permDeniedPermanentMessage,
+                        permDeniedMessage,
+                        openSettingsLabel,
+                    )
                 }
             }
         }
@@ -280,22 +287,68 @@ private fun YarnInputFields(
 @Composable
 private fun YarnResultCard(result: YarnEstimate) {
     ResultCard(title = stringResource(R.string.result)) {
-        Text(
-            text = stringResource(R.string.skeins_result, result.skeinsNeeded),
-            style = MaterialTheme.typography.headlineMedium,
-        )
-        Text(
+        AnimatedResultNumber(
+            targetValue = stringResource(R.string.skeins_result, result.skeinsNeeded),
+        ) { value ->
+            Text(
+                text = value,
+                style = MaterialTheme.typography.displayMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        BadgePill(
             text = stringResource(R.string.total_weight, "%.0f".format(result.totalWeight)),
-            style = MaterialTheme.typography.bodyMedium,
         )
+        Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = stringResource(R.string.exact_skeins, "%.2f".format(result.exactSkeins)),
-            style = MaterialTheme.typography.bodySmall,
-        )
-        Text(
-            text = stringResource(R.string.extra_skein_note),
-            style = MaterialTheme.typography.bodySmall,
+            style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+    Spacer(modifier = Modifier.height(8.dp))
+    InfoNote(text = stringResource(R.string.extra_skein_note))
+}
+
+private fun calculateYarnEstimate(
+    totalYarn: String,
+    yarnPerSkein: String,
+    weightPerSkein: String,
+): YarnEstimate? {
+    val total = totalYarn.toDoubleOrNull() ?: return null
+    val perSkein = yarnPerSkein.toDoubleOrNull() ?: return null
+    val weight = weightPerSkein.toDoubleOrNull() ?: return null
+    if (total <= 0 || perSkein <= 0 || weight <= 0) return null
+    return YarnEstimator.estimate(total, perSkein, weight)
+}
+
+private suspend fun showPermissionDeniedSnackbar(
+    snackbarHostState: SnackbarHostState,
+    context: android.content.Context,
+    permanentlyDenied: Boolean,
+    permanentMessage: String,
+    shortMessage: String,
+    openSettingsLabel: String,
+) {
+    if (permanentlyDenied) {
+        val result =
+            snackbarHostState.showSnackbar(
+                message = permanentMessage,
+                actionLabel = openSettingsLabel,
+                duration = SnackbarDuration.Long,
+            )
+        if (result == SnackbarResult.ActionPerformed) {
+            context.startActivity(
+                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                    data = Uri.fromParts("package", context.packageName, null)
+                },
+            )
+        }
+    } else {
+        snackbarHostState.showSnackbar(
+            message = shortMessage,
+            duration = SnackbarDuration.Short,
         )
     }
 }

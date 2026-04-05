@@ -1,9 +1,9 @@
 package com.finnvek.knittools.ui.components
 
-import androidx.compose.foundation.layout.Row
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.finnvek.knittools.R
@@ -14,16 +14,15 @@ fun UnitToggle(
     onToggle: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Row(modifier = modifier) {
-        FilterChip(
-            selected = !useImperial,
-            onClick = { onToggle(false) },
-            label = { Text(stringResource(R.string.unit_cm)) },
-        )
-        FilterChip(
-            selected = useImperial,
-            onClick = { onToggle(true) },
-            label = { Text(stringResource(R.string.unit_inches)) },
+    Box(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+        SegmentedToggle(
+            options =
+                listOf(
+                    stringResource(R.string.unit_cm),
+                    stringResource(R.string.unit_inches),
+                ),
+            selectedIndex = if (useImperial) 1 else 0,
+            onSelect = { onToggle(it == 1) },
         )
     }
 }

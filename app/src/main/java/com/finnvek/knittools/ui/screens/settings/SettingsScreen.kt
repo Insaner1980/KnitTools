@@ -17,7 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.data.datastore.ThemeMode
@@ -78,6 +78,11 @@ fun SettingsScreen(
                 label = stringResource(R.string.use_imperial_units),
                 checked = prefs.useImperial,
                 onCheckedChange = { viewModel.setUseImperial(it) },
+            )
+            SwitchRow(
+                label = stringResource(R.string.show_knitting_tips),
+                checked = prefs.showKnittingTips,
+                onCheckedChange = { viewModel.setShowKnittingTips(it) },
             )
 
             HorizontalDivider()

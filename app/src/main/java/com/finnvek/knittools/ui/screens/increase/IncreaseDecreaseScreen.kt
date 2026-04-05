@@ -1,14 +1,15 @@
 package com.finnvek.knittools.ui.screens.increase
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -18,10 +19,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.ai.nano.ParsedInstruction
@@ -29,9 +31,13 @@ import com.finnvek.knittools.domain.calculator.IncreaseDecreaseCalculator
 import com.finnvek.knittools.domain.model.IncreaseDecreaseMode
 import com.finnvek.knittools.domain.model.IncreaseDecreaseResult
 import com.finnvek.knittools.domain.model.KnittingStyle
+import com.finnvek.knittools.ui.components.AnimatedResultNumber
+import com.finnvek.knittools.ui.components.BadgePill
 import com.finnvek.knittools.ui.components.NumberInputField
 import com.finnvek.knittools.ui.components.PasteInstructionButton
 import com.finnvek.knittools.ui.components.ResultCard
+import com.finnvek.knittools.ui.components.ResultNumberInset
+import com.finnvek.knittools.ui.components.SegmentedToggle
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
 import com.finnvek.knittools.ui.screens.home.HomeViewModel
 
@@ -46,6 +52,9 @@ fun IncreaseDecreaseScreen(
     var mode by rememberSaveable { mutableStateOf(IncreaseDecreaseMode.INCREASE) }
     var style by rememberSaveable { mutableStateOf(KnittingStyle.FLAT) }
 
+    val modeOptions = listOf(stringResource(R.string.mode_increase), stringResource(R.string.mode_decrease))
+    val styleOptions = listOf(stringResource(R.string.style_flat), stringResource(R.string.style_circular))
+
     val result by remember(currentStitches, changeBy, mode, style) {
         derivedStateOf {
             val current = currentStitches.toIntOrNull() ?: return@derivedStateOf null
@@ -54,7 +63,10 @@ fun IncreaseDecreaseScreen(
         }
     }
 
-    ToolScreenScaffold(title = stringResource(R.string.tool_increase_decrease), onBack = onBack) { padding ->
+    ToolScreenScaffold(
+        title = stringResource(R.string.tool_increase_decrease),
+        onBack = onBack,
+    ) { padding ->
         Column(
             modifier =
                 Modifier
@@ -66,17 +78,32 @@ fun IncreaseDecreaseScreen(
         ) {
             PasteInstructionButton(
                 isPro = proState.isPro,
+                hintText = stringResource(R.string.instruction_hint_increase),
                 onResult = { parsed ->
-                    if (parsed is ParsedInstruction.IncreaseDecrease) {
-                        currentStitches = parsed.currentStitches.toString()
-                        changeBy = parsed.changeBy.toString()
-                        mode = if (parsed.isIncrease) IncreaseDecreaseMode.INCREASE else IncreaseDecreaseMode.DECREASE
-                    }
+                    applyIncDecInstruction(parsed)?.let { (st, ch, m) ->
+                        currentStitches = st
+                        changeBy = ch
+                        mode = m
+                        true
+                    } ?: false
                 },
             )
 
-            ModeSelector(mode = mode, onModeChange = { mode = it })
-            StyleSelector(style = style, onStyleChange = { style = it })
+            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                SegmentedToggle(
+                    options = modeOptions,
+                    selectedIndex = mode.ordinal,
+                    onSelect = { mode = IncreaseDecreaseMode.entries[it] },
+                )
+            }
+
+            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                SegmentedToggle(
+                    options = styleOptions,
+                    selectedIndex = style.ordinal,
+                    onSelect = { style = KnittingStyle.entries[it] },
+                )
+            }
 
             NumberInputField(
                 value = currentStitches,
@@ -88,12 +115,7 @@ fun IncreaseDecreaseScreen(
             NumberInputField(
                 value = changeBy,
                 onValueChange = { changeBy = it },
-                label =
-                    if (mode == IncreaseDecreaseMode.INCREASE) {
-                        stringResource(R.string.increase_by)
-                    } else {
-                        stringResource(R.string.decrease_by)
-                    },
+                label = stringResource(mode.labelRes()),
                 suffix = stringResource(R.string.unit_st),
                 modifier = Modifier.fillMaxWidth(),
                 isLast = true,
@@ -101,44 +123,6 @@ fun IncreaseDecreaseScreen(
 
             result?.let { r -> IncreaseDecreaseResultSection(r) }
         }
-    }
-}
-
-@Composable
-private fun ModeSelector(
-    mode: IncreaseDecreaseMode,
-    onModeChange: (IncreaseDecreaseMode) -> Unit,
-) {
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        FilterChip(
-            selected = mode == IncreaseDecreaseMode.INCREASE,
-            onClick = { onModeChange(IncreaseDecreaseMode.INCREASE) },
-            label = { Text(stringResource(R.string.mode_increase)) },
-        )
-        FilterChip(
-            selected = mode == IncreaseDecreaseMode.DECREASE,
-            onClick = { onModeChange(IncreaseDecreaseMode.DECREASE) },
-            label = { Text(stringResource(R.string.mode_decrease)) },
-        )
-    }
-}
-
-@Composable
-private fun StyleSelector(
-    style: KnittingStyle,
-    onStyleChange: (KnittingStyle) -> Unit,
-) {
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        FilterChip(
-            selected = style == KnittingStyle.FLAT,
-            onClick = { onStyleChange(KnittingStyle.FLAT) },
-            label = { Text(stringResource(R.string.style_flat)) },
-        )
-        FilterChip(
-            selected = style == KnittingStyle.CIRCULAR,
-            onClick = { onStyleChange(KnittingStyle.CIRCULAR) },
-            label = { Text(stringResource(R.string.style_circular)) },
-        )
     }
 }
 
@@ -157,11 +141,54 @@ private fun IncreaseDecreaseResultSection(result: IncreaseDecreaseResult) {
                 style = MaterialTheme.typography.bodySmall,
             )
         }
+
+        BadgePill(
+            text =
+                stringResource(R.string.unit_st).let { unit ->
+                    stringResource(R.string.total_stitches_format, result.totalStitches, unit)
+                },
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
         ResultCard(title = stringResource(R.string.easy_to_remember)) {
-            Text(text = result.easyPattern, style = MaterialTheme.typography.bodyLarge)
+            AnimatedResultNumber(targetValue = result.easyPattern) { value ->
+                ResultNumberInset {
+                    Text(
+                        text = value,
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            }
         }
         ResultCard(title = stringResource(R.string.balanced)) {
-            Text(text = result.balancedPattern, style = MaterialTheme.typography.bodyLarge)
+            AnimatedResultNumber(targetValue = result.balancedPattern) { value ->
+                ResultNumberInset {
+                    Text(
+                        text = value,
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            }
         }
     }
 }
+
+private fun applyIncDecInstruction(parsed: ParsedInstruction): Triple<String, String, IncreaseDecreaseMode>? =
+    if (parsed is ParsedInstruction.IncreaseDecrease) {
+        Triple(
+            parsed.currentStitches.toString(),
+            parsed.changeBy.toString(),
+            if (parsed.isIncrease) IncreaseDecreaseMode.INCREASE else IncreaseDecreaseMode.DECREASE,
+        )
+    } else {
+        null
+    }
+
+private fun IncreaseDecreaseMode.labelRes(): Int =
+    when (this) {
+        IncreaseDecreaseMode.INCREASE -> R.string.increase_by
+        IncreaseDecreaseMode.DECREASE -> R.string.decrease_by
+    }

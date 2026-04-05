@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.hilt) apply false
     alias(libs.plugins.ktlint)
     alias(libs.plugins.detekt) apply false
+    alias(libs.plugins.owasp.dependency.check)
 }
 
 ktlint {

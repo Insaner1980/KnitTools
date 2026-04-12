@@ -65,10 +65,10 @@ class ProgressPhotoRepository
 
         suspend fun deletePhotos(ids: List<Long>) {
             val photos = dao.getByIds(ids)
+            dao.deleteByIds(ids)
             withContext(Dispatchers.IO) {
                 photos.forEach { storage.deletePhoto(it.photoUri) }
             }
-            dao.deleteByIds(ids)
         }
 
         fun deleteAllPhotosForProject(projectId: Long) {

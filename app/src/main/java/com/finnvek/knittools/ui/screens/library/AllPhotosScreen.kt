@@ -309,7 +309,7 @@ private fun PhotoGridItem(
     onClick: () -> Unit,
     onLongClick: () -> Unit,
 ) {
-    val dateFormat = SimpleDateFormat("d MMM", Locale.getDefault())
+    val dateFormat = remember { SimpleDateFormat("d MMM", Locale.getDefault()) }
 
     // Valittu kortti saa kevyen primäärivärisen taustan
     val backgroundColor =
@@ -351,7 +351,7 @@ private fun PhotoGridItem(
                         )
                     }
                     Text(
-                        text = photo.note ?: "Row ${photo.rowNumber}",
+                        text = photo.note ?: stringResource(R.string.row_label_format, photo.rowNumber),
                         style = MaterialTheme.typography.bodySmall,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,

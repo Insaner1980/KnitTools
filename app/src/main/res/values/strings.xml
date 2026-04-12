@@ -5,8 +5,12 @@
     <string name="back">Back</string>
     <string name="cancel">Cancel</string>
     <string name="confirm">Confirm</string>
+    <string name="ok">OK</string>
+    <string name="add">Add</string>
+    <string name="delete">Delete</string>
     <string name="reset">Reset</string>
     <string name="result">Result</string>
+    <string name="save">Save</string>
     <string name="settings">Settings</string>
 
     <!-- Units -->
@@ -36,8 +40,20 @@
 
     <!-- Bottom navigation tabs -->
     <string name="tab_projects">PROJECTS</string>
+    <string name="tab_library">LIBRARY</string>
     <string name="tab_tools">TOOLS</string>
+    <string name="tab_insights">INSIGHTS</string>
     <string name="tab_reference">REFERENCE</string>
+    <string name="tab_settings">SETTINGS</string>
+
+    <!-- Screen titles -->
+    <string name="tools_title">Tools</string>
+    <string name="reference_title">Reference</string>
+    <string name="library_title">Library</string>
+    <string name="insights_title">Insights</string>
+    <string name="saved_patterns_title">Saved Patterns</string>
+    <string name="my_yarn_title">My Yarn</string>
+    <string name="all_photos_title">Photos</string>
 
     <!-- Hub hero text -->
     <string name="reference_hero_title">Knitting Reference</string>
@@ -45,29 +61,106 @@
 
     <!-- Project List -->
     <string name="project_list_title">Projects</string>
+    <string name="continue_knitting">CONTINUE KNITTING</string>
     <string name="section_active">ACTIVE</string>
     <string name="section_completed">COMPLETED</string>
     <string name="new_project">New Project</string>
+    <string name="new_project_name_format">Project %1$d</string>
     <string name="no_active_projects">No active projects</string>
     <string name="no_completed_projects">No completed projects yet</string>
-    <string name="archive_project">Archive</string>
+    <string name="archive_project">Complete</string>
     <string name="delete_project">Delete</string>
-    <string name="delete_project_message">Delete %s? This will permanently remove the project and all its history.</string>
+    <string name="delete_project_message">Delete %s? This cannot be undone.</string>
     <string name="rename_project">Rename</string>
     <string name="reactivate_project">Reactivate</string>
+    <string name="complete_project">Complete</string>
+    <string name="complete_project_message">Complete %s? The project will be moved to your completed projects.</string>
+    <string name="more_options">More options</string>
+
+    <!-- Project List overflow -->
+    <string name="select_projects">Select Projects</string>
+    <string name="sort_by">Sort by</string>
+    <string name="sort_name">Name</string>
+    <string name="sort_last_updated">Last Updated</string>
+    <string name="sort_created_date">Created Date</string>
+    <string name="show_completed">Show Completed</string>
+
+    <!-- Multi-select -->
+    <string name="n_selected">%d selected</string>
+    <string name="select_all">Select All</string>
+    <string name="complete_n_projects">Complete %d projects? They will be moved to your completed projects.</string>
+    <string name="delete_n_projects">Delete %d projects? This cannot be undone.</string>
     <string name="rows_format">%d rows</string>
     <string name="just_now">just now</string>
 
     <!-- Counter Screen -->
     <string name="current_project">CURRENT PROJECT</string>
     <string name="current_row">CURRENT ROW</string>
-    <string name="stitch_count_format">%d st</string>
+    <string name="stitch_count_format">%s st</string>
+    <string name="set_stitches">Set stitches</string>
+    <string name="stitches_per_row">Stitches per row</string>
+    <string name="track_stitches">Track stitches</string>
+    <string name="stitch_counter_compact_format">%1$d/%2$d</string>
+    <string name="stitch_previous">◄</string>
+    <string name="stitch_next">►</string>
+    <string name="attach_pattern">Attach pattern</string>
+    <string name="remove_pattern">Remove pattern</string>
+    <string name="change_pattern">Change pattern</string>
+    <string name="no_pattern_attached">No pattern attached</string>
+    <string name="show_pattern">Show pattern</string>
+    <string name="pattern_viewer_title">Pattern Viewer</string>
+    <string name="pattern_pdf_fallback_name">Pattern PDF</string>
+    <string name="pattern_loading">Loading pattern…</string>
+    <string name="pattern_open_failed">Pattern could not be opened.</string>
+    <string name="pattern_page_jump">Page jump</string>
+    <string name="pattern_page_number">Page number</string>
+    <string name="pattern_page_indicator">Page %1$d of %2$d</string>
+    <string name="pattern_previous_page">Previous page</string>
+    <string name="pattern_next_page">Next page</string>
+    <string name="pattern_mapping_hint">Long-press on the page to map the current row position.</string>
+    <string name="pattern_auto_mapping">Auto map</string>
+    <string name="pattern_auto_mapping_success">Auto-mapped %1$d row markers.</string>
+    <string name="pattern_auto_mapping_empty">No row markers detected on this page.</string>
+    <string name="pattern_picker_device_files">Choose PDF from device</string>
+    <string name="pattern_picker_saved_patterns">Saved patterns</string>
+    <string name="pattern_picker_camera_scan">Camera scan</string>
+    <string name="pattern_picker_pdf_unavailable">PDF unavailable</string>
+    <string name="pattern_scan_failed">Pattern scan could not be converted to PDF.</string>
+    <string name="imported_pattern_designer">Imported PDF</string>
+    <string name="pattern_annotation_mode">Annotation mode</string>
+    <string name="pattern_annotation_hide_mode">Hide annotation mode</string>
+    <string name="pattern_annotation_pen">Pen</string>
+    <string name="pattern_annotation_highlighter">Highlighter</string>
+    <string name="pattern_annotation_undo">Undo annotation</string>
+    <string name="pattern_annotation_clear">Clear page annotations</string>
+    <string name="current_row_short">Row %1$d</string>
+    <string name="pattern_instruction_copied">Instruction copied</string>
     <string name="time_spent_minutes_format">%dm</string>
     <string name="link_to_project">Link to %s?</string>
     <string name="link_yarn">Link yarn</string>
+    <string name="unlink_yarn">Unlink yarn</string>
     <string name="link">Link</string>
     <string name="select_yarn_card">Select yarn card</string>
     <string name="add_yarn">Add yarn</string>
+    <string name="linked_yarn_title">LINKED YARN</string>
+    <string name="no_linked_yarn">No yarn linked yet</string>
+    <string name="yarn_count_format">%1$d yarns</string>
+    <string name="linked_project_label">Linked project</string>
+    <string name="link_to_project_label">Link to project</string>
+    <string name="change_project_link">Change</string>
+    <string name="remove_project_link">Remove link</string>
+    <string name="select_project">Select project</string>
+    <string name="status_label">Status</string>
+    <string name="quantity_label">Quantity</string>
+    <string name="status_in_stash">In Stash</string>
+    <string name="status_in_use">In Use</string>
+    <string name="status_finished">Finished</string>
+    <string name="linked_project_arrow">\u2192 %1$s</string>
+    <string name="yarn_details_title">Details</string>
+    <string name="delete_yarn_card_message">Delete this yarn card? This cannot be undone.</string>
+    <string name="saved_to_my_yarn_toast">Saved to My Yarn in Library</string>
+    <string name="skein_count_one">%1$d skein</string>
+    <string name="skein_count_many">%1$d skeins</string>
 
     <!-- Session History -->
     <string name="session_history_title">Session History</string>
@@ -79,6 +172,7 @@
     <!-- Settings -->
     <string name="show_knitting_tips">Show knitting tips</string>
     <string name="project_summary">Project Summary</string>
+    <string name="view_ai_summary">View AI summary</string>
     <string name="generating_summary">Generating summary\u2026</string>
 
     <!-- Row Counter -->
@@ -114,8 +208,8 @@
     <string name="stitches_in_pattern">Stitches in pattern</string>
     <string name="rows_in_pattern">Rows in pattern</string>
     <string name="adjusted_for_your_gauge">Adjusted for your gauge</string>
-    <string name="adjusted_result">%d stitches, %d rows</string>
-    <string name="exact_result">Exact: %s st, %s rows</string>
+    <string name="adjusted_result">%1$d stitches, %2$d rows</string>
+    <string name="exact_result">Exact: %1$s st, %2$s rows</string>
     <string name="stitch_gauge_diff">Stitch gauge: %s%%</string>
 
     <!-- Cast On Calculator -->
@@ -124,9 +218,9 @@
     <string name="pattern_repeat_optional">Pattern repeat (optional)</string>
     <string name="edge_stitches_optional">Edge stitches (optional)</string>
     <string name="stitches_result">%d stitches</string>
-    <string name="actual_width">Actual width: %s %s</string>
-    <string name="adjusted_down">Adjusted down: %d st (%s %s)</string>
-    <string name="adjusted_up">Adjusted up: %d st (%s %s)</string>
+    <string name="actual_width">Actual width: %1$s %2$s</string>
+    <string name="adjusted_down">Adjusted down: %1$d st (%2$s %3$s)</string>
+    <string name="adjusted_up">Adjusted up: %1$d st (%2$s %3$s)</string>
 
     <!-- Yarn Estimator -->
     <string name="total_yarn_needed">Total yarn needed</string>
@@ -151,12 +245,19 @@
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>
     <string name="preferences">Preferences</string>
+    <string name="settings_section_settings">SETTINGS</string>
+    <string name="settings_section_pro">PRO</string>
+    <string name="settings_section_info">INFO</string>
     <string name="haptic_feedback">Haptic feedback</string>
     <string name="keep_screen_awake">Keep screen awake</string>
     <string name="use_imperial_units">Use imperial units</string>
     <string name="purchase">Purchase</string>
+    <string name="upgrade_to_pro">Upgrade to Pro</string>
     <string name="restore_purchases">Restore purchases</string>
-    <string name="version_format">KnitTools v%s</string>
+    <string name="privacy_summary">All data stays on your device. No analytics, no cloud sync, no accounts.</string>
+    <string name="pro_restored">Pro restored</string>
+    <string name="no_purchases_found">No purchases found</string>
+    <string name="version_format">KnitTools %s</string>
 
     <!-- Pro Upgrade -->
     <string name="knittools_pro">KnitTools Pro</string>
@@ -168,6 +269,14 @@
     <string name="pro_feature_secondary_counter">Secondary counter</string>
     <string name="pro_feature_ocr">Yarn label OCR scanning</string>
     <string name="pro_feature_widget">Home screen widget</string>
+    <string name="pro_feature_row_reminders">Row reminders</string>
+    <string name="pro_feature_progress_photos">Progress photos</string>
+    <string name="pro_feature_multiple_counters">Multiple counters</string>
+    <string name="pro_feature_pattern_annotation">Pattern annotations</string>
+    <string name="pro_feature_pattern_auto_mapping">Pattern row auto-mapping</string>
+    <string name="pro_feature_pattern_camera_scan">Pattern camera scan</string>
+    <string name="pro_feature">Pro feature</string>
+    <string name="pro_required_add">Upgrade to Pro to add more</string>
     <string name="upgrade_for_price">Upgrade for %s</string>
     <string name="one_time_purchase">One-time purchase. No subscription.</string>
     <string name="loading_price">Loading price…</string>
@@ -229,6 +338,7 @@
     <!-- Widget -->
     <string name="widget_name">Row Counter</string>
     <string name="widget_description">Row counter widget for active project</string>
+    <string name="widget_pro_required">Upgrade to Pro to use the widget</string>
 
     <!-- Hubs -->
     <string name="reference_hub_title">Reference</string>
@@ -240,8 +350,40 @@
     <string name="desc_abbreviations">Common knitting abbreviation reference</string>
     <string name="desc_chart_symbols">Standard knitting chart symbol guide</string>
 
+    <!-- Library — My Collection -->
+    <string name="library_my_collection">MY COLLECTION</string>
+    <string name="library_reference">REFERENCE</string>
+    <string name="desc_saved_patterns">Patterns you\'ve saved from Ravelry</string>
+    <string name="desc_my_yarn">Your yarn stash — brands, weights, and colors</string>
+    <string name="desc_all_photos">Progress photos from all your projects</string>
+    <string name="empty_saved_patterns">No saved patterns yet.\nFind patterns in Ravelry Search.</string>
+    <string name="empty_my_yarn">No yarn cards saved yet.</string>
+    <string name="empty_all_photos">No progress photos yet.</string>
+    <string name="filter_all">All</string>
+
+    <!-- Insights -->
+    <string name="total_time_label">TOTAL TIME</string>
+    <string name="avg_pace_label">AVG PACE</string>
+    <string name="completed_label">COMPLETED</string>
+    <string name="top_streak_label">TOP STREAK</string>
+    <string name="time_format_hours">%.1fh</string>
+    <string name="pace_format">%.0f rows/hr</string>
+    <string name="streak_format">%d days</string>
+    <string name="all_projects">All Projects</string>
+    <string name="pro_insights_hint">Unlock charts, streaks, and more with Pro</string>
+    <string name="insights_summary_format">%1$.1fh this week · %2$.0f rows/hr</string>
+    <string name="time_per_project">TIME PER PROJECT</string>
+    <string name="pace_over_time">PACE OVER TIME</string>
+
+    <!-- Settings -->
+    <string name="help_and_guide">Help &amp; Guide</string>
+
     <!-- Gauge Calculator — swatch section -->
     <string name="my_gauge">My Gauge</string>
+    <string name="your_gauge_section">Your Gauge</string>
+    <string name="measure_swatch">Measure swatch</string>
+    <string name="enter_directly">Enter directly</string>
+    <string name="calculated_gauge_format">= %1$.1f sts / %2$.1f rows %3$s</string>
     <string name="measured_width">Measured width</string>
     <string name="stitch_count_in_swatch">Stitches in swatch</string>
     <string name="measured_height">Measured height</string>
@@ -261,6 +403,7 @@
     <!-- Abbreviations -->
     <string name="abbreviations_title">Abbreviations</string>
     <string name="search_abbreviation">Search abbreviations…</string>
+    <string name="no_results_found">No results found</string>
 
     <!-- Chart Symbols -->
     <string name="chart_symbols_title">Chart Symbols</string>
@@ -299,4 +442,101 @@
         <item>Measure your gauge after blocking, not before — many yarns change after washing.</item>
         <item>Alternate between two skeins every few rows to avoid visible dye lot differences.</item>
     </string-array>
+
+    <!-- In-App Updates -->
+    <string name="update_downloaded">Update downloaded — restart to apply</string>
+    <string name="restart">Restart</string>
+
+    <!-- Row Reminders -->
+    <string name="reminders">Reminders</string>
+    <string name="reminders_count">Reminders (%d)</string>
+    <string name="add_reminder">Add reminder</string>
+    <string name="row_number">Row number</string>
+    <string name="reminder_message">Message</string>
+    <string name="reminder_message_hint">e.g. Switch to heel flap</string>
+    <string name="one_time">One-time</string>
+    <string name="repeating">Repeating</string>
+    <string name="repeat_every">Repeat every</string>
+    <string name="repeat_every_rows">rows</string>
+    <string name="repeat_count_format">Repeat %1$d/%2$d</string>
+    <string name="dismiss">Dismiss</string>
+    <string name="no_reminders">No reminders yet</string>
+
+    <!-- Multiple Counters -->
+    <string name="counters">Counters</string>
+    <string name="counters_count">Counters (%d)</string>
+    <string name="add_counter">Add counter</string>
+    <string name="counter_name">Name</string>
+    <string name="counter_name_hint">e.g. Sleeve increases</string>
+    <string name="count_up">Count up</string>
+    <string name="step_size">Step size</string>
+    <string name="shaping">Shaping</string>
+    <string name="repeat_section">Repeat section</string>
+    <string name="starting_stitches">Starting stitch count</string>
+    <string name="stitch_change">Stitches to add/remove</string>
+    <string name="shape_every_n">Shape every N rows</string>
+    <string name="repeat_section_start_row">Start row</string>
+    <string name="repeat_section_end_row">End row</string>
+    <string name="total_repeats">Total repeats</string>
+    <string name="repeat_section_progress_format">Repeat %1$d of %2$d · Row %3$d of %4$d</string>
+    <string name="repeat_section_complete">Complete</string>
+    <string name="next_shaping_format">Next shaping: Row %1$d → %2$d sts</string>
+    <string name="rename_counter">Rename</string>
+    <string name="reset_counter_name">Reset</string>
+    <string name="delete_counter">Delete</string>
+
+    <!-- Progress Photos -->
+    <string name="take_photo">Take photo</string>
+    <string name="progress_photos">Progress photos</string>
+    <string name="row_label_format">Row %d</string>
+    <string name="share_photo">Share</string>
+    <string name="delete_photo">Delete photo</string>
+    <string name="delete_photo_confirm">Delete this photo?</string>
+    <string name="delete_photos_confirm">Delete %d photos?</string>
+    <string name="no_photos">No photos yet</string>
+    <string name="rename_photo">Rename photo</string>
+    <string name="photo_name_hint">e.g. Sleeve done</string>
+
+    <!-- Ravelry -->
+    <string name="tool_ravelry">Ravelry</string>
+    <string name="desc_ravelry">Search patterns and save favorites</string>
+    <string name="ravelry_search">Search</string>
+    <string name="ravelry_saved_patterns">Saved Patterns</string>
+    <string name="start_project">Start Project</string>
+    <string name="save_pattern">Save Pattern</string>
+    <string name="open_in_ravelry">Open in Ravelry</string>
+    <string name="pattern_saved">Pattern saved</string>
+    <string name="no_saved_patterns">No saved patterns yet</string>
+    <string name="search_hint">Search knitting patterns…</string>
+    <string name="filter_craft">Craft</string>
+    <string name="filter_availability">Availability</string>
+    <string name="filter_category">Category</string>
+    <string name="filter_weight">Weight</string>
+    <string name="filter_difficulty">Difficulty</string>
+    <string name="free">Free</string>
+    <string name="paid">Paid</string>
+    <string name="all">All</string>
+    <string name="no_results">No patterns found</string>
+    <string name="search_error">Could not load patterns. Check your internet connection.</string>
+    <string name="ravelry_sign_in">Sign in with Ravelry</string>
+    <string name="difficulty_format">%.1f / 5</string>
+    <string name="yardage_format">%d yards</string>
+
+    <!-- Info tips -->
+    <string name="tip_your_gauge_title">What is gauge?</string>
+    <string name="tip_your_gauge_desc">Gauge tells you how many stitches and rows fit in a measured area. Knit a small sample (swatch) and measure it to find your personal gauge. This ensures your finished piece matches the pattern\'s intended size.</string>
+    <string name="tip_swatch_vs_direct_title">Swatch vs. direct entry</string>
+    <string name="tip_swatch_vs_direct_desc">Use \"Measure swatch\" if you\'ve knitted a test piece and want to measure it. Use \"Enter directly\" if you already know your gauge (e.g. 22 stitches per 10 cm).</string>
+    <string name="tip_pattern_repeat_title">Pattern repeat</string>
+    <string name="tip_pattern_repeat_desc">If your stitch pattern repeats every X stitches (e.g. a cable every 8 stitches), enter that number here. The calculator will round the cast-on count to the nearest multiple so your pattern aligns perfectly.</string>
+    <string name="tip_edge_stitches_title">Edge stitches</string>
+    <string name="tip_edge_stitches_desc">Edge stitches are extra stitches added at each side for a clean selvedge. They\'re not part of the pattern repeat. Common values: 1–2 stitches per side.</string>
+    <string name="tip_flat_vs_circular_title">Flat vs. circular</string>
+    <string name="tip_flat_vs_circular_desc">Flat knitting: you work back and forth on straight or circular needles, turning at the end of each row. Increases/decreases happen at both edges.\n\nCircular knitting: you work in a continuous round. Increases/decreases are evenly spaced around the round.</string>
+    <string name="tip_pattern_repeat_pill_title">Pattern repeat counter</string>
+    <string name="tip_pattern_repeat_pill_desc">This counts how many times you\'ve completed a pattern repeat section. It resets automatically based on your repeat interval. Useful for tracking cable twists, lace repeats, or color changes.</string>
+    <string name="tip_needle_sizes_title">Needle size systems</string>
+    <string name="tip_needle_sizes_desc">Metric (mm) is the universal standard. US sizes use a numbered system (0–50). UK/Canadian sizes use a different numbered system. Japanese sizes have their own numbering. Always check the mm size to be sure.</string>
+    <string name="tip_imperial_units_title">Imperial units</string>
+    <string name="tip_imperial_units_desc">When enabled, all calculators use inches instead of centimeters and yards instead of meters. Gauge is measured per 4 inches instead of per 10 cm.</string>
 </resources>

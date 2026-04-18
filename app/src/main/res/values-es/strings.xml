@@ -1,0 +1,678 @@
+<resources>
+    <string name="app_name">KnitTools</string>
+
+    <!-- Navigation & common -->
+    <string name="back">Atrás</string>
+    <string name="cancel">Cancelar</string>
+    <string name="confirm">Confirmar</string>
+    <string name="ok">OK</string>
+    <string name="add">Añadir</string>
+    <string name="delete">Eliminar</string>
+    <string name="reset">Restablecer</string>
+    <string name="result">Resultado</string>
+    <string name="save">Guardar</string>
+    <string name="settings">Ajustes</string>
+
+    <!-- Units -->
+    <string name="unit_cm">cm</string>
+    <string name="unit_inches">pulgadas</string>
+    <string name="unit_st">p</string>
+    <string name="unit_rows">vueltas</string>
+    <string name="unit_g">g</string>
+    <string name="unit_meters">metros</string>
+    <string name="unit_yards">yardas</string>
+    <string name="unit_st_per_10cm">p/10 cm</string>
+    <string name="unit_st_per_4in">p/4 in</string>
+    <string name="unit_per_10cm">por 10 cm</string>
+    <string name="unit_per_4in">por 4 in</string>
+
+    <!-- Home screen -->
+    <string name="tool_row_counter">Contador de vueltas</string>
+    <string name="tool_increase_decrease">Aumentos / disminuciones</string>
+    <string name="tool_gauge_converter">Calculadora de muestra</string>
+    <string name="tool_cast_on_calculator">Calculadora de montaje</string>
+    <string name="tool_yarn_estimator">Calculadora de hilo</string>
+    <string name="tool_needle_sizes">Tamaños de agujas</string>
+    <string name="pro_trial_days_left">Prueba Pro — quedan %d días</string>
+    <string name="unlock_all_tools">Desbloquear todas las herramientas</string>
+    <string name="quick_tip_label">CONSEJO RÁPIDO</string>
+    <string name="desc_yarn_estimator_card">Calcula el metraje y los ovillos necesarios</string>
+
+    <!-- Bottom navigation tabs -->
+    <string name="tab_projects">PROYECTOS</string>
+    <string name="tab_library">BIBLIOTECA</string>
+    <string name="tab_tools">HERRAMIENTAS</string>
+    <string name="tab_insights">ESTADÍSTICAS</string>
+    <string name="tab_reference">REFERENCIA</string>
+    <string name="tab_settings">AJUSTES</string>
+
+    <!-- Screen titles -->
+    <string name="tools_title">Herramientas</string>
+    <string name="reference_title">Referencia</string>
+    <string name="library_title">Biblioteca</string>
+    <string name="insights_title">Estadísticas</string>
+    <string name="saved_patterns_title">Patrones guardados</string>
+    <string name="my_yarn_title">Mi hilo</string>
+    <string name="all_photos_title">Fotos</string>
+
+    <!-- Hub hero text -->
+    <string name="reference_hero_title">Referencia de punto</string>
+    <string name="reference_hero_subtitle">Acceso rápido a tallas, abreviaturas y símbolos de gráficos.</string>
+
+    <!-- Project List -->
+    <string name="project_list_title">Proyectos</string>
+    <string name="continue_knitting">SEGUIR TEJIENDO</string>
+    <string name="section_active">ACTIVOS</string>
+    <string name="section_completed">TERMINADOS</string>
+    <string name="new_project">Nuevo proyecto</string>
+    <string name="new_project_name_format">Proyecto %1$d</string>
+    <string name="no_active_projects">No hay proyectos activos</string>
+    <string name="no_completed_projects">Aún no hay proyectos terminados</string>
+    <string name="archive_project">Terminar</string>
+    <string name="delete_project">Eliminar</string>
+    <string name="delete_project_message">¿Eliminar %s? Esto no se puede deshacer.</string>
+    <string name="rename_project">Renombrar</string>
+    <string name="reactivate_project">Reactivar</string>
+    <string name="complete_project">Terminar</string>
+    <string name="complete_project_message">¿Terminar %s? El proyecto se moverá a tus proyectos terminados.</string>
+    <string name="more_options">Más opciones</string>
+
+    <!-- Project List overflow -->
+    <string name="select_projects">Seleccionar proyectos</string>
+    <string name="sort_by">Ordenar por</string>
+    <string name="sort_name">Nombre</string>
+    <string name="sort_last_updated">Última actualización</string>
+    <string name="sort_created_date">Fecha de creación</string>
+    <string name="show_completed">Mostrar terminados</string>
+
+    <!-- Multi-select -->
+    <string name="n_selected">%d seleccionados</string>
+    <string name="select_all">Seleccionar todo</string>
+    <string name="complete_n_projects">¿Terminar %d proyectos? Se moverán a tus proyectos terminados.</string>
+    <string name="delete_n_projects">¿Eliminar %d proyectos? Esto no se puede deshacer.</string>
+    <string name="rows_format">%d vueltas</string>
+    <string name="just_now">justo ahora</string>
+
+    <!-- Counter Screen -->
+    <string name="current_project">PROYECTO ACTUAL</string>
+    <string name="current_row">VUELTA ACTUAL</string>
+    <string name="stitch_count_format">%s p</string>
+    <string name="set_stitches">Fijar puntos</string>
+    <string name="stitches_per_row">Puntos por vuelta</string>
+    <string name="track_stitches">Seguir puntos</string>
+    <string name="stitch_counter_compact_format">%1$d/%2$d</string>
+    <string name="stitch_previous">◄</string>
+    <string name="stitch_next">►</string>
+    <string name="attach_pattern">Adjuntar patrón</string>
+    <string name="remove_pattern">Quitar patrón</string>
+    <string name="no_pattern_attached">No hay ningún patrón adjunto</string>
+    <string name="show_pattern">Mostrar patrón</string>
+    <string name="pattern_viewer_title">Visor de patrones</string>
+    <string name="pattern_pdf_fallback_name">PDF del patrón</string>
+    <string name="pattern_loading">Cargando patrón…</string>
+    <string name="pattern_open_failed">No se pudo abrir el patrón.</string>
+    <string name="pattern_page_jump">Ir a la página</string>
+    <string name="pattern_page_number">Número de página</string>
+    <string name="pattern_page_indicator">Página %1$d de %2$d</string>
+    <string name="pattern_previous_page">Página anterior</string>
+    <string name="pattern_next_page">Página siguiente</string>
+    <string name="pattern_combine_instructions">Combinar instrucciones</string>
+    <string name="pattern_combine_none_found">No se encontraron instrucciones superpuestas en esta página.</string>
+    <string name="pattern_combine_requires_internet">Requiere conexión a internet</string>
+    <string name="pattern_combined_instructions_copied">Instrucciones combinadas copiadas</string>
+    <string name="pattern_picker_device_files">Elegir PDF del dispositivo</string>
+    <string name="pattern_picker_saved_patterns">Patrones guardados</string>
+    <string name="pattern_picker_camera_scan">Escaneo con cámara</string>
+    <string name="pattern_picker_pdf_unavailable">PDF no disponible</string>
+    <string name="pattern_scan_failed">El escaneo del patrón no pudo convertirse en PDF.</string>
+    <string name="imported_pattern_designer">PDF importado</string>
+    <string name="current_row_short">Vuelta %1$d</string>
+    <string name="pattern_instruction_copied">Instrucción copiada</string>
+    <string name="time_spent_minutes_format">%dm</string>
+    <string name="link_to_project">¿Vincular a %s?</string>
+    <string name="link_yarn">Vincular hilo</string>
+    <string name="unlink_yarn">Desvincular hilo</string>
+    <string name="link">Vincular</string>
+    <string name="select_yarn_card">Seleccionar ficha de hilo</string>
+    <string name="add_yarn">Añadir hilo</string>
+    <string name="linked_yarn_title">HILO VINCULADO</string>
+    <string name="no_linked_yarn">Aún no hay hilo vinculado</string>
+    <string name="yarn_count_format">%1$d hilos</string>
+    <string name="linked_project_label">Proyecto vinculado</string>
+    <string name="link_to_project_label">Vincular al proyecto</string>
+    <string name="change_project_link">Cambiar</string>
+    <string name="remove_project_link">Quitar vínculo</string>
+    <string name="select_project">Seleccionar proyecto</string>
+    <string name="status_label">Estado</string>
+    <string name="quantity_label">Cantidad</string>
+    <string name="status_in_stash">En reserva</string>
+    <string name="status_in_use">En uso</string>
+    <string name="status_finished">Terminado</string>
+    <string name="linked_project_arrow">\u2192 %1$s</string>
+    <string name="yarn_details_title">Detalles</string>
+    <string name="delete_yarn_card_message">¿Eliminar esta ficha de hilo? Esto no se puede deshacer.</string>
+    <string name="saved_to_my_yarn_toast">Guardado en Mi hilo en la biblioteca</string>
+    <string name="skein_count_one">%1$d ovillo</string>
+    <string name="skein_count_many">%1$d ovillos</string>
+
+    <!-- Session History -->
+    <string name="session_history_title">Historial</string>
+    <string name="no_sessions">Aún no hay sesiones registradas. Empieza a tejer para ver tu historial aquí.</string>
+    <string name="session_row_range">Vueltas %1$d \u2192 %2$d</string>
+    <string name="session_duration_format">%1$dh %2$dm</string>
+    <string name="pro_full_history_hint">Actualiza a Pro para ver el historial completo de sesiones</string>
+
+    <!-- Settings -->
+    <string name="show_knitting_tips">Mostrar consejos de tejido</string>
+    <string name="project_summary">Resumen del proyecto</string>
+    <string name="view_ai_summary">Ver resumen con IA</string>
+    <string name="generating_summary">Generando resumen…</string>
+    <string name="ai_quota_exhausted">Se alcanzó el límite mensual de IA</string>
+    <string name="ai_summary_fallback">No se pudo generar el resumen con IA; se mostrarán estadísticas básicas en su lugar</string>
+
+    <!-- Row Counter -->
+    <string name="default_project_name">Mi proyecto</string>
+    <string name="reset_counter">Restablecer contador</string>
+    <string name="reset_counter_message">¿Restablecer el contador a 0?</string>
+    <string name="pattern_repeat">Repetición del patrón</string>
+    <string name="notes">Notas</string>
+    <string name="add_note">Añadir nota…</string>
+    <string name="notes_editor_title">Notas — %1$s</string>
+    <string name="write_your_notes_here">Escribe aquí tus notas…</string>
+
+    <!-- Journal (AI journal entry) -->
+    <string name="journal_ai_badge">+ IA</string>
+    <string name="journal_add_entry_title">Añadir entrada al diario</string>
+    <string name="journal_mode_speak">Hablar</string>
+    <string name="journal_mode_type">Escribir</string>
+    <string name="journal_speak_title">Di tu entrada</string>
+    <string name="journal_type_title">Escribe tu entrada</string>
+    <string name="journal_listening">Escuchando…</string>
+    <string name="journal_tap_to_speak">Toca el micrófono para empezar</string>
+    <string name="journal_type_placeholder">¿Qué pasó en esta sesión?</string>
+    <string name="journal_transcription_placeholder">Tus palabras aparecerán aquí…</string>
+    <string name="journal_add_button">Añadir entrada</string>
+    <string name="journal_empty_error">La entrada no puede estar vacía</string>
+    <string name="journal_offline_notice">La IA no está disponible para dar formato; la entrada se guardó tal como la escribiste.</string>
+    <string name="journal_mic_permission_required">Se necesita permiso para usar el micrófono</string>
+    <string name="journal_processing">Dando formato…</string>
+    <string name="journal_row_label">Vuelta %1$d</string>
+    <string name="journal_speech_unavailable">El reconocimiento de voz no está disponible en este dispositivo</string>
+    <string name="journal_speech_network_error">El reconocimiento de voz necesita conexión de red</string>
+    <string name="journal_speech_no_match">No se entendió; inténtalo de nuevo</string>
+    <string name="journal_speech_error">Error de reconocimiento de voz</string>
+
+    <string name="counter_decrease">Disminuir</string>
+    <string name="counter_increase">Aumentar</string>
+    <string name="counter_undo">Deshacer</string>
+
+    <!-- Increase / Decrease -->
+    <string name="mode_increase">Aumentar</string>
+    <string name="mode_decrease">Disminuir</string>
+    <string name="style_flat">Plano</string>
+    <string name="style_circular">Circular</string>
+    <string name="current_stitches">Puntos actuales</string>
+    <string name="increase_by">Aumentar en</string>
+    <string name="decrease_by">Disminuir en</string>
+    <string name="invalid_input">Entrada no válida</string>
+    <string name="easy_to_remember">Fácil de recordar</string>
+    <string name="balanced">Equilibrado</string>
+    <string name="total_stitches_format">TOTAL: %1$d %2$s</string>
+
+    <!-- Gauge Converter -->
+    <string name="pattern_gauge">Muestra del patrón</string>
+    <string name="your_gauge">Tu muestra</string>
+    <string name="pattern_instructions">Instrucciones del patrón</string>
+    <string name="stitches_gauge">Puntos %s</string>
+    <string name="rows_gauge">Vueltas %s</string>
+    <string name="stitches_in_pattern">Puntos del patrón</string>
+    <string name="rows_in_pattern">Vueltas del patrón</string>
+    <string name="adjusted_for_your_gauge">Ajustado a tu muestra</string>
+    <string name="adjusted_result">%1$d puntos, %2$d vueltas</string>
+    <string name="exact_result">Exacto: %1$s p, %2$s vueltas</string>
+    <string name="stitch_gauge_diff">Densidad de puntos: %s%%</string>
+
+    <!-- Cast On Calculator -->
+    <string name="desired_width">Ancho deseado</string>
+    <string name="stitch_gauge">Densidad de puntos</string>
+    <string name="pattern_repeat_optional">Repetición del patrón (opcional)</string>
+    <string name="edge_stitches_optional">Puntos de borde (opcional)</string>
+    <string name="stitches_result">%d puntos</string>
+    <string name="actual_width">Ancho real: %1$s %2$s</string>
+    <string name="adjusted_down">Ajustado hacia abajo: %1$d p (%2$s %3$s)</string>
+    <string name="adjusted_up">Ajustado hacia arriba: %1$d p (%2$s %3$s)</string>
+
+    <!-- Yarn Estimator -->
+    <string name="total_yarn_needed">Cantidad total de hilo necesaria</string>
+    <string name="yarn_per_skein">%s por ovillo</string>
+    <string name="weight_per_skein">Peso por ovillo</string>
+    <string name="skeins_result">%d ovillos</string>
+    <string name="total_weight">Peso total: %s g</string>
+    <string name="exact_skeins">Exacto: %s ovillos</string>
+    <string name="extra_skein_note">Compra siempre un ovillo extra; los lotes de tinte pueden variar</string>
+
+    <!-- Needle Sizes -->
+    <string name="search_size">Buscar talla…</string>
+    <string name="needle_size_disclaimer">Las tallas son equivalencias aproximadas. Las tallas japonesas usan una escala métrica distinta.</string>
+    <string name="header_mm">mm</string>
+    <string name="header_us">US</string>
+    <string name="header_uk">UK</string>
+    <string name="header_jp">JP</string>
+
+    <!-- Settings -->
+    <string name="theme">Tema</string>
+    <string name="theme_system">Sistema</string>
+    <string name="theme_light">Claro</string>
+    <string name="theme_dark">Oscuro</string>
+    <string name="preferences">Preferencias</string>
+    <string name="settings_section_settings">AJUSTES</string>
+    <string name="settings_section_pro">PRO</string>
+    <string name="settings_section_info">INFO</string>
+    <string name="settings_language">Idioma de la app</string>
+    <string name="settings_language_change_hint">El cambio se aplica inmediatamente</string>
+    <string name="settings_language_system">Seguir el sistema</string>
+    <string name="settings_language_finnish">Suomi</string>
+    <string name="settings_language_english">English</string>
+    <string name="settings_language_swedish">Svenska</string>
+    <string name="settings_language_german">Deutsch</string>
+    <string name="settings_language_french">Français</string>
+    <string name="settings_language_spanish">Español</string>
+    <string name="settings_language_portuguese">Português</string>
+    <string name="settings_language_italian">Italiano</string>
+    <string name="settings_language_norwegian">Norsk</string>
+    <string name="settings_language_danish">Dansk</string>
+    <string name="settings_language_dutch">Nederlands</string>
+    <string name="haptic_feedback">Respuesta háptica</string>
+    <string name="keep_screen_awake">Mantener la pantalla encendida</string>
+    <string name="use_imperial_units">Usar unidades imperiales</string>
+    <string name="purchase">Comprar</string>
+    <string name="upgrade_to_pro">Actualizar a Pro</string>
+    <string name="restore_purchases">Restaurar compras</string>
+    <string name="privacy_summary">Todos los datos permanecen en tu dispositivo. Sin analíticas, sin sincronización en la nube, sin cuentas.</string>
+    <string name="pro_restored">Pro restaurado</string>
+    <string name="no_purchases_found">No se encontraron compras</string>
+    <string name="version_format">KnitTools %s</string>
+
+    <!-- Pro Upgrade -->
+    <string name="knittools_pro">KnitTools Pro</string>
+    <string name="you_have_pro">¡Tienes KnitTools Pro!</string>
+    <string name="all_features_unlocked">Todas las funciones están desbloqueadas.</string>
+    <string name="pro_feature_unlimited_projects">Proyectos de contador ilimitados</string>
+    <string name="pro_feature_full_history">Historial completo del contador</string>
+    <string name="pro_feature_notes">Notas por proyecto</string>
+    <string name="pro_feature_secondary_counter">Contador secundario</string>
+    <string name="pro_feature_ocr">Escaneo OCR de etiquetas de hilo</string>
+    <string name="pro_feature_widget">Widget de pantalla de inicio</string>
+    <string name="pro_feature_row_reminders">Recordatorios de vueltas</string>
+    <string name="pro_feature_progress_photos">Fotos de progreso</string>
+    <string name="pro_feature_multiple_counters">Múltiples contadores</string>
+    <string name="pro_feature_pattern_camera_scan">Escaneo de patrones con cámara</string>
+    <string name="pro_feature">Función Pro</string>
+    <string name="pro_required_add">Actualiza a Pro para añadir más</string>
+    <string name="upgrade_for_price">Actualizar por %s</string>
+    <string name="one_time_purchase">Compra única. Sin suscripción.</string>
+    <string name="loading_price">Cargando precio…</string>
+    <string name="price_loading_hint">Conectando con Google Play; comprueba tu conexión si esto tarda mucho</string>
+
+    <!-- Yarn Card / OCR -->
+    <string name="scan_yarn_label">Escanear etiqueta del hilo</string>
+    <string name="yarn_scan_failed">No se pudo leer una etiqueta de hilo en esta foto. Inténtalo de nuevo.</string>
+    <string name="yarn_scan_no_internet">El escaneo requiere conexión a internet</string>
+    <string name="saved_yarns">Hilos guardados</string>
+    <string name="scanned_yarn">Hilo escaneado</string>
+    <string name="brand">Marca</string>
+    <string name="yarn_name">Nombre del hilo</string>
+    <string name="fiber_content">Composición</string>
+    <string name="weight_grams">Peso (g)</string>
+    <string name="length_meters">Longitud (m)</string>
+    <string name="needle_size_label">Tamaño de aguja</string>
+    <string name="gauge_label">Muestra</string>
+    <string name="color_name">Nombre del color</string>
+    <string name="color_number">Número de color</string>
+    <string name="dye_lot">Lote de tinte</string>
+    <string name="weight_category">Categoría de grosor</string>
+    <string name="care_symbols">Cuidados</string>
+    <string name="save_and_use">Guardar y usar</string>
+    <string name="discard">Descartar</string>
+    <string name="use_in_calculator">Usar en la calculadora</string>
+    <string name="no_saved_yarns">Aún no hay fichas de hilo guardadas</string>
+    <string name="scanning">Escaneando…</string>
+    <string name="card_deleted">Ficha de hilo eliminada</string>
+    <string name="undo">Deshacer</string>
+    <string name="pro_required_save">Se requiere Pro para guardar fichas de hilo</string>
+
+    <!-- Gemini Nano -->
+    <string name="paste_instruction">Pegar instrucción</string>
+    <string name="instruction_hint">Pega aquí tu instrucción de tejido</string>
+    <string name="instruction_hint_increase">p. ej., "Aumentar 12 puntos repartidos uniformemente en 96 puntos"</string>
+    <string name="instruction_hint_gauge">p. ej., "22 puntos y 30 vueltas por 10 cm" o "ancho 30 cm, 22 puntos"</string>
+    <string name="parsing_instruction">Analizando…</string>
+    <string name="instruction_parsed">Valores rellenados a partir de la instrucción</string>
+    <string name="instruction_parse_failed">No se pudo entender la instrucción; intenta reformularla</string>
+    <string name="ai_error_busy">La IA está ocupada; inténtalo de nuevo en un momento</string>
+    <string name="ai_error_quota">Se alcanzó el límite de batería; inténtalo más tarde</string>
+    <string name="ai_error_unavailable">La función de IA no está disponible en este dispositivo</string>
+    <string name="ai_error_unknown">Algo salió mal; inténtalo de nuevo</string>
+
+    <!-- Camera permission -->
+    <string name="camera_permission_denied">Se necesita permiso de cámara para escanear etiquetas de hilo</string>
+    <string name="camera_permission_denied_permanent">Permiso de cámara denegado; actívalo en Ajustes</string>
+    <string name="open_settings">Ajustes</string>
+
+    <!-- Care symbol categories -->
+    <string name="care_category_washing">Lavado</string>
+    <string name="care_category_bleaching">Blanqueado</string>
+    <string name="care_category_drying">Secado</string>
+    <string name="care_category_ironing">Planchado</string>
+    <string name="care_category_dry_cleaning">Limpieza en seco</string>
+
+    <!-- Defaults -->
+    <string name="yarn_card_fallback_name">Ficha de hilo</string>
+
+    <!-- Widget -->
+    <string name="widget_name">Contador de vueltas</string>
+    <string name="widget_description">Widget de contador de vueltas para el proyecto activo</string>
+    <string name="widget_pro_required">Actualiza a Pro para usar el widget</string>
+
+    <!-- Hubs -->
+    <string name="reference_hub_title">Referencia</string>
+    <string name="desc_increase_decrease">Reparte aumentos o disminuciones uniformemente a lo largo de una vuelta</string>
+    <string name="desc_gauge_calculator">Calcula tu muestra y convierte instrucciones de patrones</string>
+    <string name="desc_cast_on">Calcula los puntos que debes montar para un ancho deseado</string>
+    <string name="desc_needle_sizes">Tamaños de agujas en sistemas métrico, US, UK y japonés</string>
+    <string name="desc_size_charts">Medidas corporales estándar para tallaje de prendas</string>
+    <string name="desc_abbreviations">Referencia de abreviaturas comunes de tejido</string>
+    <string name="desc_chart_symbols">Guía estándar de símbolos de gráficos de punto</string>
+
+    <!-- Library — My Collection -->
+    <string name="library_my_collection">MI COLECCIÓN</string>
+    <string name="library_reference">REFERENCIA</string>
+    <string name="desc_saved_patterns">Patrones de Ravelry y archivos PDF</string>
+    <string name="desc_my_yarn">Tu reserva de hilo: marcas, grosores y colores</string>
+    <string name="desc_all_photos">Fotos de progreso de todos tus proyectos</string>
+    <string name="empty_saved_patterns">Aún no hay patrones guardados.\nBusca patrones en la búsqueda de Ravelry.</string>
+    <string name="empty_my_yarn">Aún no hay fichas de hilo guardadas.</string>
+    <string name="empty_all_photos">Aún no hay fotos de progreso.</string>
+    <string name="filter_all">Todo</string>
+
+    <!-- Insights -->
+    <string name="total_time_label">TIEMPO TOTAL</string>
+    <string name="avg_pace_label">RITMO MEDIO</string>
+    <string name="completed_label">TERMINADOS</string>
+    <string name="top_streak_label">MEJOR RACHA</string>
+    <string name="time_format_hours">%.1fh</string>
+    <string name="pace_format">%.0f v/h</string>
+    <string name="streak_format">%d días</string>
+    <string name="all_projects">Todos los proyectos</string>
+    <string name="insights_all_time">Todo el tiempo</string>
+    <string name="insights_this_week">Esta semana</string>
+    <string name="insights_this_month">Este mes</string>
+    <string name="pro_insights_hint">Desbloquea gráficos, rachas y más con Pro</string>
+    <string name="insights_summary_format">%1$.1fh esta semana · %2$.0f v/h</string>
+    <string name="insights_knitting_activity">ACTIVIDAD DE TEJIDO</string>
+    <string name="insights_current_streak">Racha actual:</string>
+    <string name="insights_best_streak">Mejor:</string>
+    <string name="insights_project_time_with_rows">%1$s · %2$d vueltas</string>
+    <string name="insights_project_time_only">%1$s</string>
+    <string name="insights_rows_count">%1$d vueltas</string>
+    <string name="insights_less_than_tenth_hour">&lt;0.1h</string>
+    <string name="insights_no_time">—</string>
+    <string name="insights_footer_1">Cada vuelta cuenta; ¡sigue tejiendo!</string>
+    <string name="insights_footer_2">Tus agujas te están esperando.</string>
+    <string name="insights_footer_3">¿Una vuelta más?</string>
+    <string name="insights_footer_4">Punto a punto, vuelta a vuelta.</string>
+    <string name="insights_footer_5">Las grandes cosas empiezan con un solo montaje.</string>
+    <string name="relative_time_today">hoy</string>
+    <string name="relative_time_yesterday">ayer</string>
+    <string name="relative_time_days_ago">hace %1$d d</string>
+    <string name="relative_time_weeks_ago">hace %1$d sem</string>
+    <string name="relative_time_months_ago">hace %1$d mes</string>
+    <string name="week_now">ahora</string>
+    <string name="no_knitting">Nada de tejido</string>
+    <string name="time_per_project">TIEMPO POR PROYECTO</string>
+    <string name="pace_over_time">RITMO A LO LARGO DEL TIEMPO</string>
+
+    <!-- Settings -->
+    <string name="help_and_guide">Ayuda y guía</string>
+
+    <!-- Gauge Calculator — swatch section -->
+    <string name="my_gauge">Mi muestra</string>
+    <string name="your_gauge_section">Tu muestra</string>
+    <string name="measure_swatch">Medir muestra</string>
+    <string name="enter_directly">Introducir directamente</string>
+    <string name="calculated_gauge_format">= %1$.1f p / %2$.1f vueltas %3$s</string>
+    <string name="measured_width">Ancho medido</string>
+    <string name="stitch_count_in_swatch">Puntos en la muestra</string>
+    <string name="measured_height">Alto medido</string>
+    <string name="row_count_in_swatch">Vueltas en la muestra</string>
+    <string name="your_stitch_gauge">Tu densidad de puntos: %s</string>
+    <string name="your_row_gauge">Tu densidad de vueltas: %s</string>
+
+    <!-- Size Charts -->
+    <string name="size_charts_title">Tablas de tallas</string>
+    <string name="category_baby">Bebé (0–24 meses)</string>
+    <string name="category_child_youth">Niños y jóvenes (2–16)</string>
+    <string name="category_women">Mujer</string>
+    <string name="category_men">Hombre</string>
+    <string name="category_head">Cabeza</string>
+    <string name="category_hand">Mano</string>
+
+    <!-- Abbreviations -->
+    <string name="abbreviations_title">Abreviaturas</string>
+    <string name="search_abbreviation">Buscar abreviaturas…</string>
+    <string name="no_results_found">No se encontraron resultados</string>
+
+    <!-- Chart Symbols -->
+    <string name="chart_symbols_title">Símbolos de gráfico</string>
+    <string name="chart_symbols_disclaimer">Los símbolos siguen convenciones estándar. Comprueba siempre la leyenda de símbolos de tu patrón.</string>
+    <string name="category_basic">Puntos básicos</string>
+    <string name="category_decreases">Disminuciones</string>
+    <string name="category_increases">Aumentos</string>
+    <string name="category_cables">Trenzas</string>
+    <string name="category_other">Otros</string>
+
+    <!-- Quick Tips -->
+    <string-array name="knitting_tips">
+        <item>Haz siempre una muestra antes de empezar un proyecto nuevo, aunque creas que ya conoces tu tensión.</item>
+        <item>Bloquea la muestra del mismo modo en que piensas bloquear la prenda terminada para obtener una medida precisa.</item>
+        <item>Para evitar el escalón al tejer rayas en circular, levanta el punto de la vuelta inferior en la segunda vuelta del nuevo color y colócalo en la aguja izquierda.</item>
+        <item>Mantén una tensión uniforme para conseguir un acabado profesional en los bordes.</item>
+        <item>Coloca un marcador de punto con cierre cada 20 puntos cuando montes muchos puntos.</item>
+        <item>Bloquea las piezas terminadas; marca una gran diferencia en el resultado final.</item>
+        <item>Cuenta los puntos al final de cada vuelta cuando tejas encaje.</item>
+        <item>Haz una bola con el hilo antes de empezar; así evitarás enredos.</item>
+        <item>Usa un hilo de seguridad cada pocas vueltas en el encaje: pásalo por todos los puntos.</item>
+        <item>Remata las hebras a medida que avanzas para no acumularlas al final del proyecto.</item>
+        <item>Compra siempre un ovillo extra; los lotes de tinte pueden variar entre partidas.</item>
+        <item>Prueba a tejer la muestra en circular si tu proyecto se teje en circular; la tensión puede variar.</item>
+        <item>Usa marcadores de puntos para separar las repeticiones del patrón; facilitan muchísimo el conteo.</item>
+        <item>Lee el patrón completo antes de montar para evitar sorpresas.</item>
+        <item>Lleva un cuaderno de proyecto para anotar cambios y observaciones para el futuro.</item>
+        <item>Al unir un nuevo hilo, deja cabos de al menos 15 cm para rematarlos con seguridad.</item>
+        <item>Practica las técnicas nuevas en una muestra pequeña antes de aplicarlas en tu proyecto.</item>
+        <item>Guarda tu labor en una bolsa de proyecto para mantenerla limpia y evitar enganches.</item>
+        <item>Haz pausas para estirar las manos y prevenir lesiones por esfuerzo repetitivo.</item>
+        <item>Marca tu lugar en el patrón con una nota adhesiva o una pizarra magnética.</item>
+        <item>Usa agujas de bambú con hilos resbaladizos; sujetan mejor los puntos.</item>
+        <item>Al recoger puntos, usa una aguja un número más pequeña para conseguir un borde más limpio.</item>
+        <item>Asegúrate de que el montaje no se haya retorcido al unir la primera vuelta.</item>
+        <item>Mide tu muestra después del bloqueo, no antes; muchos hilos cambian tras el lavado.</item>
+        <item>Alterna entre dos ovillos cada pocas vueltas para evitar diferencias visibles entre lotes de tinte.</item>
+    </string-array>
+
+    <!-- In-App Updates -->
+    <string name="update_downloaded">Actualización descargada; reinicia para aplicarla</string>
+    <string name="restart">Reiniciar</string>
+
+    <!-- Row Reminders -->
+    <string name="reminders">Recordatorios</string>
+    <string name="reminders_count">Recordatorios (%d)</string>
+    <string name="add_reminder">Añadir recordatorio</string>
+    <string name="delete_reminder_title">¿Eliminar recordatorio?</string>
+    <string name="delete_reminder_confirm">¿Eliminar el recordatorio "%1$s"?</string>
+    <string name="row_number">Número de vuelta</string>
+    <string name="reminder_message">Mensaje</string>
+    <string name="reminder_message_hint">p. ej., Cambiar al talón</string>
+    <string name="one_time">Una vez</string>
+    <string name="repeating">Repetitivo</string>
+    <string name="repeat_every">Repetir cada</string>
+    <string name="repeat_every_rows">vueltas</string>
+    <string name="repeat_count_format">Repetición %1$d/%2$d</string>
+    <string name="dismiss">Descartar</string>
+    <string name="no_reminders">Aún no hay recordatorios</string>
+
+    <!-- Multiple Counters -->
+    <string name="counters">Contadores</string>
+    <string name="counters_count">Contadores (%d)</string>
+    <string name="add_counter">Añadir contador</string>
+    <string name="counter_name">Nombre</string>
+    <string name="counter_name_hint">p. ej., Aumentos de manga</string>
+    <string name="count_up">Contar hacia arriba</string>
+    <string name="step_size">Tamaño del paso</string>
+    <string name="shaping">Moldeado</string>
+    <string name="repeat_section">Sección de repetición</string>
+    <string name="starting_stitches">Número inicial de puntos</string>
+    <string name="stitch_change">Puntos a añadir/quitar</string>
+    <string name="shape_every_n">Moldear cada N vueltas</string>
+    <string name="repeat_section_start_row">Vuelta inicial</string>
+    <string name="repeat_section_end_row">Vuelta final</string>
+    <string name="total_repeats">Repeticiones totales</string>
+    <string name="repeat_section_progress_format">Repetición %1$d de %2$d · Vuelta %3$d de %4$d</string>
+    <string name="repeat_section_complete">Completo</string>
+    <string name="next_shaping_format">Siguiente moldeado: vuelta %1$d → %2$d p</string>
+    <string name="rename_counter">Renombrar</string>
+    <string name="reset_counter_name">Restablecer</string>
+    <string name="delete_counter">Eliminar</string>
+    <string name="delete_counter_title">¿Eliminar contador?</string>
+    <string name="delete_counter_message">\"%1$s\" se eliminará permanentemente.</string>
+    <string name="delete_annotation_title">¿Eliminar anotación?</string>
+    <string name="delete_annotation_message">La anotación se eliminará permanentemente.</string>
+
+    <!-- Progress Photos -->
+    <string name="take_photo">Hacer foto</string>
+    <string name="progress_photos">Fotos de progreso</string>
+    <string name="voice_commands">Comandos de voz</string>
+    <string name="voice_mode_timeout">El modo de voz terminó por inactividad</string>
+    <string name="voice_offline_mode">Modo sin conexión; solo comandos básicos</string>
+    <string name="voice_quota_daily_exhausted">Los comandos con IA están pausados por hoy; los comandos básicos siguen funcionando</string>
+    <string name="voice_command_unknown">No entendí eso</string>
+    <string name="voice_command_not_recognized_offline">Comando no reconocido sin conexión</string>
+    <string name="voice_help_text">Comandos disponibles: siguiente, atrás, deshacer, restablecer, parar, ayuda e instrucciones libres</string>
+    <string name="voice_note_saved">Nota guardada</string>
+    <string name="voice_counter_reset">Contador restablecido</string>
+    <string name="voice_row_current">Vuelta %d</string>
+    <string name="voice_row_of_target">Vuelta %1$d de %2$d, %3$d por ciento completado</string>
+    <string name="voice_rows_remaining">Quedan %d vueltas</string>
+    <string name="voice_no_target">No hay objetivo establecido</string>
+    <string name="voice_back_to_row">Volver a la vuelta %d</string>
+    <string name="voice_undone_row">Deshecho, vuelta %d</string>
+    <string name="voice_remaining_done">¡Ya has terminado!</string>
+    <string name="voice_session_minutes">Llevas %d minutos tejiendo</string>
+    <string name="voice_session_under_minute">Menos de un minuto</string>
+    <string name="voice_yarn_multiple">%1$s y %2$d más</string>
+    <string name="voice_yarn_none">No hay hilo vinculado</string>
+    <string name="voice_pattern_info">Patrón %1$s, página %2$d</string>
+    <string name="voice_instruction_none">No hay patrón vinculado</string>
+    <string name="voice_shaping_next">Siguiente %1$s en %2$d vueltas</string>
+    <string name="voice_shaping_at">%1$s en la vuelta %2$d</string>
+    <string name="voice_shaping_none">No hay un contador de moldeado activo</string>
+    <string name="voice_stitches_total">%1$d puntos en total, %2$d por vuelta durante %3$d vueltas</string>
+    <string name="voice_stitches_current">%d puntos</string>
+    <string name="voice_stitches_disabled">El seguimiento de puntos no está activado</string>
+    <string name="voice_reminders_none">No hay próximos recordatorios</string>
+    <string name="voice_reminder_next">Siguiente recordatorio: %1$s, en %2$d vueltas</string>
+    <string name="voice_reminders_multiple">Siguiente recordatorio: %1$s, en %2$d vueltas. Después hay %3$d más</string>
+    <string name="voice_counters_none">No hay contadores extra</string>
+    <string name="voice_counter_single">%1$s está en %2$d</string>
+    <string name="voice_counters_list">%1$d contadores: %2$s</string>
+    <string name="voice_notes_empty">Aún no hay notas</string>
+    <string name="voice_notes_content">Tus notas: %1$s</string>
+    <string name="voice_total_time_none">Aún no hay tiempo registrado</string>
+    <string name="voice_total_time_hours">%1$d horas y %2$d minutos en total en este proyecto</string>
+    <string name="voice_total_time_minutes">%1$d minutos en total en este proyecto</string>
+    <string name="voice_summary_none">No hay resumen del proyecto disponible. Abre primero el proyecto para generarlo.</string>
+    <string name="voice_project_name">Estás trabajando en %1$s</string>
+    <string name="voice_section_current">Sección actual: %1$s</string>
+    <string name="voice_section_none">No hay sección establecida</string>
+    <string name="voice_section_set">Sección establecida en %1$s</string>
+    <string name="voice_stitch_at">Punto %1$d</string>
+    <string name="voice_help_full">Puedes decir: siguiente, atrás, deshacer, restablecer y un número. Pregunta por el progreso, las vueltas restantes, el tiempo, el hilo, el patrón, los puntos, los recordatorios, los contadores o las notas. Di nota para guardar una nota o nombra un contador para cambiarlo.</string>
+    <string name="voice_reminder_dismissed">Recordatorio descartado</string>
+    <string name="voice_reminder_no_active">No hay recordatorio activo para descartar</string>
+    <string name="voice_counter_incremented">%1$s ahora está en %2$d</string>
+    <string name="voice_counter_decremented">%1$s ha vuelto a %2$d</string>
+    <string name="voice_counter_not_found">No se encontró ningún contador llamado %1$s</string>
+    <string name="voice_step_size_set">Tamaño del paso establecido en %1$d</string>
+    <string name="voice_counter_reset_named">%1$s restablecido a cero</string>
+    <string name="voice_page_current">Página %1$d</string>
+    <string name="voice_page_first">Ya estás en la primera página</string>
+    <string name="voice_project_completed">%1$s marcado como terminado. ¡Buen trabajo!</string>
+    <string name="voice_summary_generating">Generando resumen…</string>
+    <string name="voice_summary_unavailable">El resumen con IA no está disponible ahora mismo</string>
+    <string name="voice_reminder_added">Recordatorio creado: %1$s en la vuelta %2$d</string>
+    <string name="voice_stitch_count_set">Cantidad de puntos establecida en %1$d por vuelta</string>
+    <string name="voice_stitch_tracking_on">Seguimiento de puntos activado</string>
+    <string name="voice_stitch_tracking_off">Seguimiento de puntos desactivado</string>
+    <string name="voice_live_connecting">Conectando…</string>
+    <string name="voice_live_error">Falló la conexión de voz</string>
+    <string name="voice_live_quota_exhausted">Se agotaron los minutos de voz de este mes</string>
+    <string name="voice_natural_response">Voz natural</string>
+    <string name="voice_live_quota_remaining">%1$.0f / %2$.0f min restantes</string>
+    <string name="voice_mode_ended">Modo de voz finalizado</string>
+    <string name="voice_recognizer_error">Error de reconocimiento de voz</string>
+    <string name="row_label_format">Vuelta %d</string>
+    <string name="share_photo">Compartir</string>
+    <string name="delete_photo">Eliminar foto</string>
+    <string name="delete_photo_confirm">¿Eliminar esta foto?</string>
+    <string name="delete_photos_confirm">¿Eliminar %d fotos?</string>
+    <string name="delete_patterns_confirm">¿Eliminar %d patrones?</string>
+    <string name="delete_pattern">Eliminar patrón</string>
+    <string name="delete_yarn_cards_confirm">¿Eliminar %d fichas de hilo?</string>
+    <string name="delete_yarn_card">Eliminar ficha de hilo</string>
+    <string name="no_photos">Aún no hay fotos</string>
+    <string name="rename_photo">Renombrar foto</string>
+    <string name="photo_name_hint">p. ej., Manga terminada</string>
+
+    <!-- Ravelry -->
+    <string name="tool_ravelry">Ravelry</string>
+    <string name="desc_ravelry">Busca patrones y guarda favoritos</string>
+    <string name="ravelry_search">Buscar</string>
+    <string name="ravelry_saved_patterns">Patrones guardados</string>
+    <string name="start_project">Empezar proyecto</string>
+    <string name="save_pattern">Guardar patrón</string>
+    <string name="open_in_ravelry">Abrir en Ravelry</string>
+    <string name="pattern_saved">Patrón guardado</string>
+    <string name="no_saved_patterns">Aún no hay patrones guardados</string>
+    <string name="search_hint">Buscar patrones de punto…</string>
+    <string name="filter_craft">Manualidad</string>
+    <string name="filter_availability">Disponibilidad</string>
+    <string name="filter_category">Categoría</string>
+    <string name="filter_weight">Grosor</string>
+    <string name="filter_difficulty">Dificultad</string>
+    <string name="free">Gratis</string>
+    <string name="paid">De pago</string>
+    <string name="all">Todo</string>
+    <string name="no_results">No se encontraron patrones</string>
+    <string name="search_error">No se pudieron cargar los patrones. Comprueba tu conexión a internet.</string>
+    <string name="ravelry_sign_in">Iniciar sesión con Ravelry</string>
+    <string name="difficulty_format">%.1f / 5</string>
+    <string name="yardage_format">%d yardas</string>
+
+    <!-- Info tips -->
+    <string name="tip_your_gauge_title">¿Qué es la muestra?</string>
+    <string name="tip_your_gauge_desc">La muestra te indica cuántos puntos y vueltas caben en un área medida. Teje una pequeña muestra y mídela para conocer tu tensión personal. Así te aseguras de que la prenda terminada tenga el tamaño previsto en el patrón.</string>
+    <string name="tip_swatch_vs_direct_title">Muestra frente a introducción directa</string>
+    <string name="tip_swatch_vs_direct_desc">Usa "Medir muestra" si has tejido una muestra y quieres medirla. Usa "Introducir directamente" si ya conoces tu tensión (por ejemplo, 22 puntos por 10 cm).</string>
+    <string name="tip_pattern_repeat_title">Repetición del patrón</string>
+    <string name="tip_pattern_repeat_desc">Si tu motivo se repite cada X puntos (por ejemplo, una trenza cada 8 puntos), introduce ese número aquí. La calculadora redondeará el número de puntos montados al múltiplo más cercano para que el patrón encaje perfectamente.</string>
+    <string name="tip_edge_stitches_title">Puntos de borde</string>
+    <string name="tip_edge_stitches_desc">Los puntos de borde son puntos extra añadidos a cada lado para conseguir un orillo limpio. No forman parte de la repetición del patrón. Valores habituales: 1–2 puntos por lado.</string>
+    <string name="tip_flat_vs_circular_title">Plano frente a circular</string>
+    <string name="tip_flat_vs_circular_desc">Tejido plano: trabajas de ida y vuelta con agujas rectas o circulares, girando al final de cada vuelta. Los aumentos y disminuciones ocurren en ambos bordes.\n\nTejido circular: trabajas en una vuelta continua. Los aumentos y disminuciones se reparten uniformemente alrededor de la vuelta.</string>
+    <string name="tip_pattern_repeat_pill_title">Contador de repeticiones del patrón</string>
+    <string name="tip_pattern_repeat_pill_desc">Esto cuenta cuántas veces has completado una sección de repetición del patrón. Se restablece automáticamente según tu intervalo de repetición. Es útil para seguir giros de trenzas, repeticiones de encaje o cambios de color.</string>
+    <string name="tip_needle_sizes_title">Sistemas de tallas de agujas</string>
+    <string name="tip_needle_sizes_desc">El sistema métrico (mm) es el estándar universal. Las tallas US usan un sistema numerado (0–50). Las tallas UK/Canadá usan un sistema numerado diferente. Las tallas japonesas tienen su propia numeración. Comprueba siempre la medida en mm para asegurarte.</string>
+    <string name="tip_imperial_units_title">Unidades imperiales</string>
+    <string name="tip_imperial_units_desc">Cuando está activado, todas las calculadoras usan pulgadas en lugar de centímetros y yardas en lugar de metros. La muestra se mide por 4 pulgadas en lugar de por 10 cm.</string>
+</resources>

@@ -1,17 +1,24 @@
 package com.finnvek.knittools.ui.components
 
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.finnvek.knittools.R
 
+/**
+ * Yhtenäinen vahvistusdialogi destruktiivisille ja muille toiminnoille.
+ * Destruktiivisissa (isDestructive=true) vahvista-nappi saa error-värin.
+ */
 @Composable
 fun ConfirmationDialog(
     title: String,
     message: String,
     confirmText: String = stringResource(R.string.confirm),
+    isDestructive: Boolean = false,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -20,7 +27,15 @@ fun ConfirmationDialog(
         title = { Text(title) },
         text = { Text(message) },
         confirmButton = {
-            TextButton(onClick = onConfirm) {
+            TextButton(
+                onClick = onConfirm,
+                colors =
+                    if (isDestructive) {
+                        ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                    } else {
+                        ButtonDefaults.textButtonColors()
+                    },
+            ) {
                 Text(confirmText)
             }
         },

@@ -1,0 +1,678 @@
+<resources>
+    <string name="app_name">KnitTools</string>
+
+    <!-- Navigation & common -->
+    <string name="back">Tillbaka</string>
+    <string name="cancel">Avbryt</string>
+    <string name="confirm">Bekräfta</string>
+    <string name="ok">OK</string>
+    <string name="add">Lägg till</string>
+    <string name="delete">Ta bort</string>
+    <string name="reset">Nollställ</string>
+    <string name="result">Resultat</string>
+    <string name="save">Spara</string>
+    <string name="settings">Inställningar</string>
+
+    <!-- Units -->
+    <string name="unit_cm">cm</string>
+    <string name="unit_inches">tum</string>
+    <string name="unit_st">m</string>
+    <string name="unit_rows">varv</string>
+    <string name="unit_g">g</string>
+    <string name="unit_meters">meter</string>
+    <string name="unit_yards">yard</string>
+    <string name="unit_st_per_10cm">m/10 cm</string>
+    <string name="unit_st_per_4in">m/4 tum</string>
+    <string name="unit_per_10cm">per 10 cm</string>
+    <string name="unit_per_4in">per 4 tum</string>
+
+    <!-- Home screen -->
+    <string name="tool_row_counter">Varvräknare</string>
+    <string name="tool_increase_decrease">Ökningar / minskningar</string>
+    <string name="tool_gauge_converter">Stickfasthetsräknare</string>
+    <string name="tool_cast_on_calculator">Uppläggningsräknare</string>
+    <string name="tool_yarn_estimator">Garnberäknare</string>
+    <string name="tool_needle_sizes">Stickstorlekar</string>
+    <string name="pro_trial_days_left">Pro-testperiod — %d dagar kvar</string>
+    <string name="unlock_all_tools">Lås upp alla verktyg</string>
+    <string name="quick_tip_label">SNABBTIPS</string>
+    <string name="desc_yarn_estimator_card">Beräkna garnåtgång och antal nystan</string>
+
+    <!-- Bottom navigation tabs -->
+    <string name="tab_projects">PROJEKT</string>
+    <string name="tab_library">BIBLIOTEK</string>
+    <string name="tab_tools">VERKTYG</string>
+    <string name="tab_insights">INSIKTER</string>
+    <string name="tab_reference">REFERENS</string>
+    <string name="tab_settings">INSTÄLLNINGAR</string>
+
+    <!-- Screen titles -->
+    <string name="tools_title">Verktyg</string>
+    <string name="reference_title">Referens</string>
+    <string name="library_title">Bibliotek</string>
+    <string name="insights_title">Insikter</string>
+    <string name="saved_patterns_title">Sparade mönster</string>
+    <string name="my_yarn_title">Mitt garn</string>
+    <string name="all_photos_title">Bilder</string>
+
+    <!-- Hub hero text -->
+    <string name="reference_hero_title">Stickreferens</string>
+    <string name="reference_hero_subtitle">Snabb åtkomst till storlekar, förkortningar och diagramsymboler.</string>
+
+    <!-- Project List -->
+    <string name="project_list_title">Projekt</string>
+    <string name="continue_knitting">FORTSÄTT STICKA</string>
+    <string name="section_active">AKTIVA</string>
+    <string name="section_completed">FÄRDIGA</string>
+    <string name="new_project">Nytt projekt</string>
+    <string name="new_project_name_format">Projekt %1$d</string>
+    <string name="no_active_projects">Inga aktiva projekt</string>
+    <string name="no_completed_projects">Inga färdiga projekt ännu</string>
+    <string name="archive_project">Slutför</string>
+    <string name="delete_project">Ta bort</string>
+    <string name="delete_project_message">Ta bort %s? Detta kan inte ångras.</string>
+    <string name="rename_project">Byt namn</string>
+    <string name="reactivate_project">Aktivera igen</string>
+    <string name="complete_project">Slutför</string>
+    <string name="complete_project_message">Slutföra %s? Projektet flyttas till dina färdiga projekt.</string>
+    <string name="more_options">Fler alternativ</string>
+
+    <!-- Project List overflow -->
+    <string name="select_projects">Välj projekt</string>
+    <string name="sort_by">Sortera efter</string>
+    <string name="sort_name">Namn</string>
+    <string name="sort_last_updated">Senast uppdaterad</string>
+    <string name="sort_created_date">Skapad datum</string>
+    <string name="show_completed">Visa färdiga</string>
+
+    <!-- Multi-select -->
+    <string name="n_selected">%d valda</string>
+    <string name="select_all">Välj alla</string>
+    <string name="complete_n_projects">Slutföra %d projekt? De flyttas till dina färdiga projekt.</string>
+    <string name="delete_n_projects">Ta bort %d projekt? Detta kan inte ångras.</string>
+    <string name="rows_format">%d varv</string>
+    <string name="just_now">just nu</string>
+
+    <!-- Counter Screen -->
+    <string name="current_project">AKTUELLT PROJEKT</string>
+    <string name="current_row">AKTUELLT VARV</string>
+    <string name="stitch_count_format">%s m</string>
+    <string name="set_stitches">Ställ in maskor</string>
+    <string name="stitches_per_row">Maskor per varv</string>
+    <string name="track_stitches">Följ maskor</string>
+    <string name="stitch_counter_compact_format">%1$d/%2$d</string>
+    <string name="stitch_previous">◄</string>
+    <string name="stitch_next">►</string>
+    <string name="attach_pattern">Bifoga mönster</string>
+    <string name="remove_pattern">Ta bort mönster</string>
+    <string name="no_pattern_attached">Inget mönster bifogat</string>
+    <string name="show_pattern">Visa mönster</string>
+    <string name="pattern_viewer_title">Mönstervisare</string>
+    <string name="pattern_pdf_fallback_name">Mönster-PDF</string>
+    <string name="pattern_loading">Laddar mönster…</string>
+    <string name="pattern_open_failed">Mönstret kunde inte öppnas.</string>
+    <string name="pattern_page_jump">Hoppa till sida</string>
+    <string name="pattern_page_number">Sidnummer</string>
+    <string name="pattern_page_indicator">Sida %1$d av %2$d</string>
+    <string name="pattern_previous_page">Föregående sida</string>
+    <string name="pattern_next_page">Nästa sida</string>
+    <string name="pattern_combine_instructions">Kombinera instruktioner</string>
+    <string name="pattern_combine_none_found">Inga överlappande instruktioner hittades på den här sidan.</string>
+    <string name="pattern_combine_requires_internet">Kräver internetanslutning</string>
+    <string name="pattern_combined_instructions_copied">Kombinerade instruktioner kopierade</string>
+    <string name="pattern_picker_device_files">Välj PDF från enheten</string>
+    <string name="pattern_picker_saved_patterns">Sparade mönster</string>
+    <string name="pattern_picker_camera_scan">Kameraskanning</string>
+    <string name="pattern_picker_pdf_unavailable">PDF inte tillgänglig</string>
+    <string name="pattern_scan_failed">Mönsterskanningen kunde inte konverteras till PDF.</string>
+    <string name="imported_pattern_designer">Importerad PDF</string>
+    <string name="current_row_short">Varv %1$d</string>
+    <string name="pattern_instruction_copied">Instruktion kopierad</string>
+    <string name="time_spent_minutes_format">%dm</string>
+    <string name="link_to_project">Länka till %s?</string>
+    <string name="link_yarn">Länka garn</string>
+    <string name="unlink_yarn">Ta bort garnlänk</string>
+    <string name="link">Länka</string>
+    <string name="select_yarn_card">Välj garnkort</string>
+    <string name="add_yarn">Lägg till garn</string>
+    <string name="linked_yarn_title">LÄNKAT GARN</string>
+    <string name="no_linked_yarn">Inget garn länkat ännu</string>
+    <string name="yarn_count_format">%1$d garner</string>
+    <string name="linked_project_label">Länkat projekt</string>
+    <string name="link_to_project_label">Länka till projekt</string>
+    <string name="change_project_link">Ändra</string>
+    <string name="remove_project_link">Ta bort länk</string>
+    <string name="select_project">Välj projekt</string>
+    <string name="status_label">Status</string>
+    <string name="quantity_label">Antal</string>
+    <string name="status_in_stash">I lager</string>
+    <string name="status_in_use">Används</string>
+    <string name="status_finished">Slut</string>
+    <string name="linked_project_arrow">\u2192 %1$s</string>
+    <string name="yarn_details_title">Detaljer</string>
+    <string name="delete_yarn_card_message">Ta bort detta garnkort? Detta kan inte ångras.</string>
+    <string name="saved_to_my_yarn_toast">Sparat i Mitt garn i biblioteket</string>
+    <string name="skein_count_one">%1$d nystan</string>
+    <string name="skein_count_many">%1$d nystan</string>
+
+    <!-- Session History -->
+    <string name="session_history_title">Historik</string>
+    <string name="no_sessions">Inga sessioner registrerade ännu. Börja sticka för att se din historik här.</string>
+    <string name="session_row_range">Varv %1$d \u2192 %2$d</string>
+    <string name="session_duration_format">%1$dt %2$dm</string>
+    <string name="pro_full_history_hint">Uppgradera till Pro för full sessionshistorik</string>
+
+    <!-- Settings -->
+    <string name="show_knitting_tips">Visa sticktips</string>
+    <string name="project_summary">Projektsammanfattning</string>
+    <string name="view_ai_summary">Visa AI-sammanfattning</string>
+    <string name="generating_summary">Skapar sammanfattning…</string>
+    <string name="ai_quota_exhausted">Månadens AI-gräns har nåtts</string>
+    <string name="ai_summary_fallback">Kunde inte skapa AI-sammanfattning — visar grundläggande statistik i stället</string>
+
+    <!-- Row Counter -->
+    <string name="default_project_name">Mitt projekt</string>
+    <string name="reset_counter">Nollställ räknaren</string>
+    <string name="reset_counter_message">Nollställa räknaren till 0?</string>
+    <string name="pattern_repeat">Mönsterrapport</string>
+    <string name="notes">Anteckningar</string>
+    <string name="add_note">Lägg till anteckning…</string>
+    <string name="notes_editor_title">Anteckningar — %1$s</string>
+    <string name="write_your_notes_here">Skriv dina anteckningar här…</string>
+
+    <!-- Journal (AI journal entry) -->
+    <string name="journal_ai_badge">+ AI</string>
+    <string name="journal_add_entry_title">Lägg till journalanteckning</string>
+    <string name="journal_mode_speak">Tala</string>
+    <string name="journal_mode_type">Skriv</string>
+    <string name="journal_speak_title">Tala in din anteckning</string>
+    <string name="journal_type_title">Skriv din anteckning</string>
+    <string name="journal_listening">Lyssnar…</string>
+    <string name="journal_tap_to_speak">Tryck på mikrofonen för att börja</string>
+    <string name="journal_type_placeholder">Vad hände under den här sessionen?</string>
+    <string name="journal_transcription_placeholder">Dina ord visas här…</string>
+    <string name="journal_add_button">Lägg till anteckning</string>
+    <string name="journal_empty_error">Anteckningen kan inte vara tom</string>
+    <string name="journal_offline_notice">AI-formatering är inte tillgänglig, anteckningen sparades som du skrev den.</string>
+    <string name="journal_mic_permission_required">Mikrofonbehörighet krävs</string>
+    <string name="journal_processing">Formaterar…</string>
+    <string name="journal_row_label">Varv %1$d</string>
+    <string name="journal_speech_unavailable">Taligenkänning är inte tillgänglig på den här enheten</string>
+    <string name="journal_speech_network_error">Taligenkänning kräver nätverksanslutning</string>
+    <string name="journal_speech_no_match">Uppfattade inte det — försök igen</string>
+    <string name="journal_speech_error">Taligenkänningsfel</string>
+
+    <string name="counter_decrease">Minska</string>
+    <string name="counter_increase">Öka</string>
+    <string name="counter_undo">Ångra</string>
+
+    <!-- Increase / Decrease -->
+    <string name="mode_increase">Öka</string>
+    <string name="mode_decrease">Minska</string>
+    <string name="style_flat">Platt</string>
+    <string name="style_circular">Rundstickning</string>
+    <string name="current_stitches">Nuvarande maskantal</string>
+    <string name="increase_by">Öka med</string>
+    <string name="decrease_by">Minska med</string>
+    <string name="invalid_input">Ogiltig inmatning</string>
+    <string name="easy_to_remember">Lätt att komma ihåg</string>
+    <string name="balanced">Jämn</string>
+    <string name="total_stitches_format">TOTALT: %1$d %2$s</string>
+
+    <!-- Gauge Converter -->
+    <string name="pattern_gauge">Mönstrets stickfasthet</string>
+    <string name="your_gauge">Din stickfasthet</string>
+    <string name="pattern_instructions">Mönsterinstruktioner</string>
+    <string name="stitches_gauge">Maskor %s</string>
+    <string name="rows_gauge">Varv %s</string>
+    <string name="stitches_in_pattern">Maskor i mönstret</string>
+    <string name="rows_in_pattern">Varv i mönstret</string>
+    <string name="adjusted_for_your_gauge">Anpassat efter din stickfasthet</string>
+    <string name="adjusted_result">%1$d maskor, %2$d varv</string>
+    <string name="exact_result">Exakt: %1$s m, %2$s varv</string>
+    <string name="stitch_gauge_diff">Masktäthet: %s%%</string>
+
+    <!-- Cast On Calculator -->
+    <string name="desired_width">Önskad bredd</string>
+    <string name="stitch_gauge">Masktäthet</string>
+    <string name="pattern_repeat_optional">Mönsterrapport (valfritt)</string>
+    <string name="edge_stitches_optional">Kantmaskor (valfritt)</string>
+    <string name="stitches_result">%d maskor</string>
+    <string name="actual_width">Faktisk bredd: %1$s %2$s</string>
+    <string name="adjusted_down">Avrundat nedåt: %1$d m (%2$s %3$s)</string>
+    <string name="adjusted_up">Avrundat uppåt: %1$d m (%2$s %3$s)</string>
+
+    <!-- Yarn Estimator -->
+    <string name="total_yarn_needed">Total garnåtgång</string>
+    <string name="yarn_per_skein">%s per nystan</string>
+    <string name="weight_per_skein">Vikt per nystan</string>
+    <string name="skeins_result">%d nystan</string>
+    <string name="total_weight">Total vikt: %s g</string>
+    <string name="exact_skeins">Exakt: %s nystan</string>
+    <string name="extra_skein_note">Köp alltid ett extra nystan — färgbad kan variera</string>
+
+    <!-- Needle Sizes -->
+    <string name="search_size">Sök storlek…</string>
+    <string name="needle_size_disclaimer">Storlekarna är ungefärliga motsvarigheter. Japanska storlekar använder en separat metrisk skala.</string>
+    <string name="header_mm">mm</string>
+    <string name="header_us">US</string>
+    <string name="header_uk">UK</string>
+    <string name="header_jp">JP</string>
+
+    <!-- Settings -->
+    <string name="theme">Tema</string>
+    <string name="theme_system">System</string>
+    <string name="theme_light">Ljust</string>
+    <string name="theme_dark">Mörkt</string>
+    <string name="preferences">Inställningar</string>
+    <string name="settings_section_settings">INSTÄLLNINGAR</string>
+    <string name="settings_section_pro">PRO</string>
+    <string name="settings_section_info">INFO</string>
+    <string name="settings_language">Appspråk</string>
+    <string name="settings_language_change_hint">Ändringen gäller direkt</string>
+    <string name="settings_language_system">Följ systemet</string>
+    <string name="settings_language_finnish">Suomi</string>
+    <string name="settings_language_english">English</string>
+    <string name="settings_language_swedish">Svenska</string>
+    <string name="settings_language_german">Deutsch</string>
+    <string name="settings_language_french">Français</string>
+    <string name="settings_language_spanish">Español</string>
+    <string name="settings_language_portuguese">Português</string>
+    <string name="settings_language_italian">Italiano</string>
+    <string name="settings_language_norwegian">Norsk</string>
+    <string name="settings_language_danish">Dansk</string>
+    <string name="settings_language_dutch">Nederlands</string>
+    <string name="haptic_feedback">Haptisk återkoppling</string>
+    <string name="keep_screen_awake">Håll skärmen vaken</string>
+    <string name="use_imperial_units">Använd brittiska/amerikanska mått</string>
+    <string name="purchase">Köp</string>
+    <string name="upgrade_to_pro">Uppgradera till Pro</string>
+    <string name="restore_purchases">Återställ köp</string>
+    <string name="privacy_summary">All data stannar på din enhet. Ingen analys, ingen molnsynk, inga konton.</string>
+    <string name="pro_restored">Pro återställd</string>
+    <string name="no_purchases_found">Inga köp hittades</string>
+    <string name="version_format">KnitTools %s</string>
+
+    <!-- Pro Upgrade -->
+    <string name="knittools_pro">KnitTools Pro</string>
+    <string name="you_have_pro">Du har KnitTools Pro!</string>
+    <string name="all_features_unlocked">Alla funktioner är upplåsta.</string>
+    <string name="pro_feature_unlimited_projects">Obegränsat antal räknarprojekt</string>
+    <string name="pro_feature_full_history">Fullständig räknarhistorik</string>
+    <string name="pro_feature_notes">Anteckningar per projekt</string>
+    <string name="pro_feature_secondary_counter">Sekundär räknare</string>
+    <string name="pro_feature_ocr">OCR-skanning av garnetiketter</string>
+    <string name="pro_feature_widget">Widget på hemskärmen</string>
+    <string name="pro_feature_row_reminders">Varvpåminnelser</string>
+    <string name="pro_feature_progress_photos">Framstegsbilder</string>
+    <string name="pro_feature_multiple_counters">Flera räknare</string>
+    <string name="pro_feature_pattern_camera_scan">Mönsterskanning med kamera</string>
+    <string name="pro_feature">Pro-funktion</string>
+    <string name="pro_required_add">Uppgradera till Pro för att lägga till fler</string>
+    <string name="upgrade_for_price">Uppgradera för %s</string>
+    <string name="one_time_purchase">Engångsköp. Ingen prenumeration.</string>
+    <string name="loading_price">Laddar pris…</string>
+    <string name="price_loading_hint">Ansluter till Google Play — kontrollera internetanslutningen om detta tar lång tid</string>
+
+    <!-- Yarn Card / OCR -->
+    <string name="scan_yarn_label">Skanna garnetikett</string>
+    <string name="yarn_scan_failed">Kunde inte läsa någon garnetikett från bilden. Försök igen.</string>
+    <string name="yarn_scan_no_internet">Skanning kräver internetanslutning</string>
+    <string name="saved_yarns">Sparade garner</string>
+    <string name="scanned_yarn">Skannat garn</string>
+    <string name="brand">Märke</string>
+    <string name="yarn_name">Garnnamn</string>
+    <string name="fiber_content">Fiberinnehåll</string>
+    <string name="weight_grams">Vikt (g)</string>
+    <string name="length_meters">Längd (m)</string>
+    <string name="needle_size_label">Stickstorlek</string>
+    <string name="gauge_label">Stickfasthet</string>
+    <string name="color_name">Färgnamn</string>
+    <string name="color_number">Färgnummer</string>
+    <string name="dye_lot">Färgbad</string>
+    <string name="weight_category">Grovlekskategori</string>
+    <string name="care_symbols">Skötsel</string>
+    <string name="save_and_use">Spara och använd</string>
+    <string name="discard">Kassera</string>
+    <string name="use_in_calculator">Använd i räknaren</string>
+    <string name="no_saved_yarns">Inga garnkort sparade ännu</string>
+    <string name="scanning">Skannar…</string>
+    <string name="card_deleted">Garnkort borttaget</string>
+    <string name="undo">Ångra</string>
+    <string name="pro_required_save">Pro krävs för att spara garnkort</string>
+
+    <!-- Gemini Nano -->
+    <string name="paste_instruction">Klistra in instruktion</string>
+    <string name="instruction_hint">Klistra in din stickinstruktion här</string>
+    <string name="instruction_hint_increase">t.ex. "Öka 12 maskor jämnt fördelat över 96 maskor"</string>
+    <string name="instruction_hint_gauge">t.ex. "22 maskor och 30 varv per 10 cm" eller "bredd 30 cm, 22 maskor"</string>
+    <string name="parsing_instruction">Tolkar…</string>
+    <string name="instruction_parsed">Värden ifyllda från instruktionen</string>
+    <string name="instruction_parse_failed">Kunde inte förstå instruktionen — försök formulera om den</string>
+    <string name="ai_error_busy">AI är upptagen — försök igen om en stund</string>
+    <string name="ai_error_quota">Batterigränsen har nåtts — försök igen senare</string>
+    <string name="ai_error_unavailable">AI-funktionen är inte tillgänglig på den här enheten</string>
+    <string name="ai_error_unknown">Något gick fel — försök igen</string>
+
+    <!-- Camera permission -->
+    <string name="camera_permission_denied">Kamerabehörighet behövs för att skanna garnetiketter</string>
+    <string name="camera_permission_denied_permanent">Kamerabehörighet nekad — aktivera den i Inställningar</string>
+    <string name="open_settings">Inställningar</string>
+
+    <!-- Care symbol categories -->
+    <string name="care_category_washing">Tvätt</string>
+    <string name="care_category_bleaching">Blekning</string>
+    <string name="care_category_drying">Torkning</string>
+    <string name="care_category_ironing">Strykning</string>
+    <string name="care_category_dry_cleaning">Kemtvätt</string>
+
+    <!-- Defaults -->
+    <string name="yarn_card_fallback_name">Garnkort</string>
+
+    <!-- Widget -->
+    <string name="widget_name">Varvräknare</string>
+    <string name="widget_description">Varvräknarwidget för aktivt projekt</string>
+    <string name="widget_pro_required">Uppgradera till Pro för att använda widgeten</string>
+
+    <!-- Hubs -->
+    <string name="reference_hub_title">Referens</string>
+    <string name="desc_increase_decrease">Fördela ökningar eller minskningar jämnt över ett varv</string>
+    <string name="desc_gauge_calculator">Beräkna din stickfasthet och omvandla mönsterinstruktioner</string>
+    <string name="desc_cast_on">Beräkna hur många maskor du ska lägga upp för önskad bredd</string>
+    <string name="desc_needle_sizes">Stickstorlekar i metriska, US-, UK- och japanska system</string>
+    <string name="desc_size_charts">Standardmått för plaggstorlekar</string>
+    <string name="desc_abbreviations">Vanliga stickförkortningar</string>
+    <string name="desc_chart_symbols">Guide till vanliga diagramsymboler</string>
+
+    <!-- Library — My Collection -->
+    <string name="library_my_collection">MIN SAMLING</string>
+    <string name="library_reference">REFERENS</string>
+    <string name="desc_saved_patterns">Mönster från Ravelry och PDF-filer</string>
+    <string name="desc_my_yarn">Ditt garnlager — märken, grovlekar och färger</string>
+    <string name="desc_all_photos">Framstegsbilder från alla dina projekt</string>
+    <string name="empty_saved_patterns">Inga mönster sparade ännu.\nHitta mönster i Ravelry-sökningen.</string>
+    <string name="empty_my_yarn">Inga garnkort sparade ännu.</string>
+    <string name="empty_all_photos">Inga framstegsbilder ännu.</string>
+    <string name="filter_all">Alla</string>
+
+    <!-- Insights -->
+    <string name="total_time_label">TOTAL TID</string>
+    <string name="avg_pace_label">MEDELTAKT</string>
+    <string name="completed_label">FÄRDIGA</string>
+    <string name="top_streak_label">LÄNGSTA SVIT</string>
+    <string name="time_format_hours">%.1ft</string>
+    <string name="pace_format">%.0f v/t</string>
+    <string name="streak_format">%d dagar</string>
+    <string name="all_projects">Alla projekt</string>
+    <string name="insights_all_time">All tid</string>
+    <string name="insights_this_week">Den här veckan</string>
+    <string name="insights_this_month">Den här månaden</string>
+    <string name="pro_insights_hint">Lås upp diagram, sviter och mer med Pro</string>
+    <string name="insights_summary_format">%1$.1ft den här veckan · %2$.0f v/t</string>
+    <string name="insights_knitting_activity">STICKAKTIVITET</string>
+    <string name="insights_current_streak">Nuvarande svit:</string>
+    <string name="insights_best_streak">Bästa:</string>
+    <string name="insights_project_time_with_rows">%1$s · %2$d varv</string>
+    <string name="insights_project_time_only">%1$s</string>
+    <string name="insights_rows_count">%1$d varv</string>
+    <string name="insights_less_than_tenth_hour">&lt;0.1t</string>
+    <string name="insights_no_time">—</string>
+    <string name="insights_footer_1">Varje varv räknas — fortsätt sticka!</string>
+    <string name="insights_footer_2">Dina stickor väntar.</string>
+    <string name="insights_footer_3">Ett varv till?</string>
+    <string name="insights_footer_4">Maska för maska, varv för varv.</string>
+    <string name="insights_footer_5">Stora saker börjar med en enda uppläggning.</string>
+    <string name="relative_time_today">idag</string>
+    <string name="relative_time_yesterday">igår</string>
+    <string name="relative_time_days_ago">%1$dd sedan</string>
+    <string name="relative_time_weeks_ago">%1$dv sedan</string>
+    <string name="relative_time_months_ago">%1$dmån sedan</string>
+    <string name="week_now">nu</string>
+    <string name="no_knitting">Ingen stickning</string>
+    <string name="time_per_project">TID PER PROJEKT</string>
+    <string name="pace_over_time">TAKT ÖVER TID</string>
+
+    <!-- Settings -->
+    <string name="help_and_guide">Hjälp och guide</string>
+
+    <!-- Gauge Calculator — swatch section -->
+    <string name="my_gauge">Min stickfasthet</string>
+    <string name="your_gauge_section">Din stickfasthet</string>
+    <string name="measure_swatch">Mät provlapp</string>
+    <string name="enter_directly">Ange direkt</string>
+    <string name="calculated_gauge_format">= %1$.1f m / %2$.1f varv %3$s</string>
+    <string name="measured_width">Uppmätt bredd</string>
+    <string name="stitch_count_in_swatch">Maskor i provlappen</string>
+    <string name="measured_height">Uppmätt höjd</string>
+    <string name="row_count_in_swatch">Varv i provlappen</string>
+    <string name="your_stitch_gauge">Din masktäthet: %s</string>
+    <string name="your_row_gauge">Din varvtäthet: %s</string>
+
+    <!-- Size Charts -->
+    <string name="size_charts_title">Storlekstabeller</string>
+    <string name="category_baby">Baby (0–24 månader)</string>
+    <string name="category_child_youth">Barn och ungdom (2–16)</string>
+    <string name="category_women">Damer</string>
+    <string name="category_men">Herrar</string>
+    <string name="category_head">Huvud</string>
+    <string name="category_hand">Hand</string>
+
+    <!-- Abbreviations -->
+    <string name="abbreviations_title">Förkortningar</string>
+    <string name="search_abbreviation">Sök förkortningar…</string>
+    <string name="no_results_found">Inga resultat hittades</string>
+
+    <!-- Chart Symbols -->
+    <string name="chart_symbols_title">Diagramsymboler</string>
+    <string name="chart_symbols_disclaimer">Symbolerna följer vanliga konventioner. Kontrollera alltid symbolförklaringen i ditt mönster.</string>
+    <string name="category_basic">Grundmaskor</string>
+    <string name="category_decreases">Minskningar</string>
+    <string name="category_increases">Ökningar</string>
+    <string name="category_cables">Flätor</string>
+    <string name="category_other">Övrigt</string>
+
+    <!-- Quick Tips -->
+    <string-array name="knitting_tips">
+        <item>Sticka alltid en provlapp innan du börjar på ett nytt projekt — även om du tror att du redan känner din stickfasthet.</item>
+        <item>Blocka provlappen på samma sätt som du tänker blocka det färdiga plagget för att få en korrekt stickfasthet.</item>
+        <item>För att undvika ett hack när du stickar ränder runt, lyft upp maskan från varvet under till vänster sticka på andra varvet i den nya färgen.</item>
+        <item>Håll jämn handlag för ett proffsigt resultat i kanterna.</item>
+        <item>Sätt en låsbar maskmarkör var 20:e maska när du lägger upp många maskor.</item>
+        <item>Blocka dina färdiga delar — det gör stor skillnad för slutresultatet.</item>
+        <item>Räkna maskorna i slutet av varje varv när du stickar spetsmönster.</item>
+        <item>Nysta upp garnet till en boll innan du börjar — det minskar trassel.</item>
+        <item>Använd en livlina med några varvs mellanrum i spetsstickning — trä en hjälptråd genom alla maskor.</item>
+        <item>Fäst trådändar efter hand för att slippa ett stort jobb i slutet av projektet.</item>
+        <item>Köp alltid ett extra nystan — färgbad kan skilja sig mellan olika partier.</item>
+        <item>Prova att sticka provlappen runt om projektet stickas runt — stickfastheten kan skilja sig.</item>
+        <item>Använd maskmarkörer för att skilja mönsterrapporter åt — det gör räknandet mycket enklare.</item>
+        <item>Läs igenom hela mönstret innan du lägger upp för att undvika överraskningar.</item>
+        <item>Ha en projektanteckningsbok där du skriver upp ändringar och anteckningar för framtiden.</item>
+        <item>När du skarvar garn, lämna trådändar som är minst 15 cm långa för säker fästning.</item>
+        <item>Öva nya tekniker på en liten provlapp innan du använder dem i projektet.</item>
+        <item>Förvara stickningen i en projektpåse så håller den sig ren och inte fastnar i något.</item>
+        <item>Ta pauser för att stretcha händerna och förebygga belastningsskador.</item>
+        <item>Markera din plats i mönstret med en klisterlapp eller magnettavla.</item>
+        <item>Använd bambustickor till hala garner — de håller maskorna bättre på plats.</item>
+        <item>När du plockar upp maskor, använd en sticka som är en storlek mindre för en snyggare kant.</item>
+        <item>Vrid ut uppläggningen rätt på första varvet för att undvika att uppläggningen vrider sig.</item>
+        <item>Mät stickfastheten efter blockning, inte före — många garner förändras efter tvätt.</item>
+        <item>Växla mellan två nystan med några varvs mellanrum för att undvika synliga skillnader mellan färgbad.</item>
+    </string-array>
+
+    <!-- In-App Updates -->
+    <string name="update_downloaded">Uppdatering nedladdad — starta om för att tillämpa</string>
+    <string name="restart">Starta om</string>
+
+    <!-- Row Reminders -->
+    <string name="reminders">Påminnelser</string>
+    <string name="reminders_count">Påminnelser (%d)</string>
+    <string name="add_reminder">Lägg till påminnelse</string>
+    <string name="delete_reminder_title">Ta bort påminnelse?</string>
+    <string name="delete_reminder_confirm">Ta bort påminnelsen "%1$s"?</string>
+    <string name="row_number">Varvnummer</string>
+    <string name="reminder_message">Meddelande</string>
+    <string name="reminder_message_hint">t.ex. Byt till hällapp</string>
+    <string name="one_time">Engångs</string>
+    <string name="repeating">Återkommande</string>
+    <string name="repeat_every">Upprepa var</string>
+    <string name="repeat_every_rows">varv</string>
+    <string name="repeat_count_format">Upprepning %1$d/%2$d</string>
+    <string name="dismiss">Avfärda</string>
+    <string name="no_reminders">Inga påminnelser ännu</string>
+
+    <!-- Multiple Counters -->
+    <string name="counters">Räknare</string>
+    <string name="counters_count">Räknare (%d)</string>
+    <string name="add_counter">Lägg till räknare</string>
+    <string name="counter_name">Namn</string>
+    <string name="counter_name_hint">t.ex. Ärmökningar</string>
+    <string name="count_up">Räkna uppåt</string>
+    <string name="step_size">Steglängd</string>
+    <string name="shaping">Formning</string>
+    <string name="repeat_section">Rapportsektion</string>
+    <string name="starting_stitches">Startmaskantal</string>
+    <string name="stitch_change">Maskor att lägga till/ta bort</string>
+    <string name="shape_every_n">Forma vart N:e varv</string>
+    <string name="repeat_section_start_row">Startvarv</string>
+    <string name="repeat_section_end_row">Slutvarv</string>
+    <string name="total_repeats">Totalt antal upprepningar</string>
+    <string name="repeat_section_progress_format">Upprepning %1$d av %2$d · Varv %3$d av %4$d</string>
+    <string name="repeat_section_complete">Klar</string>
+    <string name="next_shaping_format">Nästa formning: varv %1$d → %2$d m</string>
+    <string name="rename_counter">Byt namn</string>
+    <string name="reset_counter_name">Nollställ</string>
+    <string name="delete_counter">Ta bort</string>
+    <string name="delete_counter_title">Ta bort räknare?</string>
+    <string name="delete_counter_message">\"%1$s\" tas bort permanent.</string>
+    <string name="delete_annotation_title">Ta bort anteckning?</string>
+    <string name="delete_annotation_message">Anteckningen tas bort permanent.</string>
+
+    <!-- Progress Photos -->
+    <string name="take_photo">Ta foto</string>
+    <string name="progress_photos">Framstegsbilder</string>
+    <string name="voice_commands">Röstkommandon</string>
+    <string name="voice_mode_timeout">Röstläget avslutades på grund av inaktivitet</string>
+    <string name="voice_offline_mode">Offlineläge, bara grundkommandon</string>
+    <string name="voice_quota_daily_exhausted">AI-kommandon pausade för idag, grundkommandon fungerar fortfarande</string>
+    <string name="voice_command_unknown">Jag förstod inte</string>
+    <string name="voice_command_not_recognized_offline">Kommandot kändes inte igen offline</string>
+    <string name="voice_help_text">Tillgängliga kommandon: nästa, tillbaka, ångra, nollställ, stoppa, hjälp och fria instruktioner</string>
+    <string name="voice_note_saved">Anteckning sparad</string>
+    <string name="voice_counter_reset">Räknare nollställd</string>
+    <string name="voice_row_current">Varv %d</string>
+    <string name="voice_row_of_target">Varv %1$d av %2$d, %3$d procent klart</string>
+    <string name="voice_rows_remaining">%d varv kvar</string>
+    <string name="voice_no_target">Inget mål inställt</string>
+    <string name="voice_back_to_row">Tillbaka till varv %d</string>
+    <string name="voice_undone_row">Ångrat, varv %d</string>
+    <string name="voice_remaining_done">Du är klar!</string>
+    <string name="voice_session_minutes">Du har stickat i %d minuter</string>
+    <string name="voice_session_under_minute">Mindre än en minut</string>
+    <string name="voice_yarn_multiple">%1$s och %2$d till</string>
+    <string name="voice_yarn_none">Inget garn länkat</string>
+    <string name="voice_pattern_info">Mönster %1$s, sida %2$d</string>
+    <string name="voice_instruction_none">Inget mönster länkat</string>
+    <string name="voice_shaping_next">Nästa %1$s om %2$d varv</string>
+    <string name="voice_shaping_at">%1$s på varv %2$d</string>
+    <string name="voice_shaping_none">Ingen formningsräknare aktiv</string>
+    <string name="voice_stitches_total">%1$d maskor totalt, %2$d per varv över %3$d varv</string>
+    <string name="voice_stitches_current">%d maskor</string>
+    <string name="voice_stitches_disabled">Maskspårning är inte aktiverad</string>
+    <string name="voice_reminders_none">Inga kommande påminnelser</string>
+    <string name="voice_reminder_next">Nästa påminnelse: %1$s, om %2$d varv</string>
+    <string name="voice_reminders_multiple">Nästa påminnelse: %1$s, om %2$d varv. %3$d till efter det</string>
+    <string name="voice_counters_none">Inga extra räknare</string>
+    <string name="voice_counter_single">%1$s står på %2$d</string>
+    <string name="voice_counters_list">%1$d räknare: %2$s</string>
+    <string name="voice_notes_empty">Inga anteckningar ännu</string>
+    <string name="voice_notes_content">Dina anteckningar: %1$s</string>
+    <string name="voice_total_time_none">Ingen tid registrerad ännu</string>
+    <string name="voice_total_time_hours">%1$d timmar och %2$d minuter totalt i det här projektet</string>
+    <string name="voice_total_time_minutes">%1$d minuter totalt i det här projektet</string>
+    <string name="voice_summary_none">Ingen projektsammanfattning tillgänglig. Öppna projektet först för att skapa en.</string>
+    <string name="voice_project_name">Du arbetar med %1$s</string>
+    <string name="voice_section_current">Aktuell sektion: %1$s</string>
+    <string name="voice_section_none">Ingen sektion inställd</string>
+    <string name="voice_section_set">Sektion satt till %1$s</string>
+    <string name="voice_stitch_at">Maska %1$d</string>
+    <string name="voice_help_full">Du kan säga: nästa, tillbaka, ångra, nollställ, plus ett tal. Fråga om framsteg, återstående varv, tid, garn, mönster, maskor, påminnelser, räknare eller anteckningar. Säg anteckning för att spara en anteckning, eller nämn en räknare för att ändra den.</string>
+    <string name="voice_reminder_dismissed">Påminnelse avfärdad</string>
+    <string name="voice_reminder_no_active">Ingen aktiv påminnelse att avfärda</string>
+    <string name="voice_counter_incremented">%1$s är nu på %2$d</string>
+    <string name="voice_counter_decremented">%1$s tillbaka på %2$d</string>
+    <string name="voice_counter_not_found">Ingen räknare med namnet %1$s</string>
+    <string name="voice_step_size_set">Steglängd satt till %1$d</string>
+    <string name="voice_counter_reset_named">%1$s nollställd till noll</string>
+    <string name="voice_page_current">Sida %1$d</string>
+    <string name="voice_page_first">Redan på första sidan</string>
+    <string name="voice_project_completed">%1$s markerades som klart. Bra jobbat!</string>
+    <string name="voice_summary_generating">Skapar sammanfattning…</string>
+    <string name="voice_summary_unavailable">AI-sammanfattning är inte tillgänglig just nu</string>
+    <string name="voice_reminder_added">Påminnelse satt: %1$s på varv %2$d</string>
+    <string name="voice_stitch_count_set">Maskantal satt till %1$d per varv</string>
+    <string name="voice_stitch_tracking_on">Maskspårning aktiverad</string>
+    <string name="voice_stitch_tracking_off">Maskspårning avaktiverad</string>
+    <string name="voice_live_connecting">Ansluter…</string>
+    <string name="voice_live_error">Röstanslutning misslyckades</string>
+    <string name="voice_live_quota_exhausted">Röstminuterna för månaden är slut</string>
+    <string name="voice_natural_response">Naturlig röst</string>
+    <string name="voice_live_quota_remaining">%1$.0f / %2$.0f min kvar</string>
+    <string name="voice_mode_ended">Röstläget avslutat</string>
+    <string name="voice_recognizer_error">Taligenkänningsfel</string>
+    <string name="row_label_format">Varv %d</string>
+    <string name="share_photo">Dela</string>
+    <string name="delete_photo">Ta bort foto</string>
+    <string name="delete_photo_confirm">Ta bort det här fotot?</string>
+    <string name="delete_photos_confirm">Ta bort %d bilder?</string>
+    <string name="delete_patterns_confirm">Ta bort %d mönster?</string>
+    <string name="delete_pattern">Ta bort mönster</string>
+    <string name="delete_yarn_cards_confirm">Ta bort %d garnkort?</string>
+    <string name="delete_yarn_card">Ta bort garnkort</string>
+    <string name="no_photos">Inga bilder ännu</string>
+    <string name="rename_photo">Byt namn på foto</string>
+    <string name="photo_name_hint">t.ex. Ärm klar</string>
+
+    <!-- Ravelry -->
+    <string name="tool_ravelry">Ravelry</string>
+    <string name="desc_ravelry">Sök mönster och spara favoriter</string>
+    <string name="ravelry_search">Sök</string>
+    <string name="ravelry_saved_patterns">Sparade mönster</string>
+    <string name="start_project">Starta projekt</string>
+    <string name="save_pattern">Spara mönster</string>
+    <string name="open_in_ravelry">Öppna i Ravelry</string>
+    <string name="pattern_saved">Mönster sparat</string>
+    <string name="no_saved_patterns">Inga sparade mönster ännu</string>
+    <string name="search_hint">Sök stickmönster…</string>
+    <string name="filter_craft">Hantverk</string>
+    <string name="filter_availability">Tillgänglighet</string>
+    <string name="filter_category">Kategori</string>
+    <string name="filter_weight">Grovlek</string>
+    <string name="filter_difficulty">Svårighet</string>
+    <string name="free">Gratis</string>
+    <string name="paid">Betald</string>
+    <string name="all">Alla</string>
+    <string name="no_results">Inga mönster hittades</string>
+    <string name="search_error">Kunde inte ladda mönster. Kontrollera internetanslutningen.</string>
+    <string name="ravelry_sign_in">Logga in med Ravelry</string>
+    <string name="difficulty_format">%.1f / 5</string>
+    <string name="yardage_format">%d yard</string>
+
+    <!-- Info tips -->
+    <string name="tip_your_gauge_title">Vad är stickfasthet?</string>
+    <string name="tip_your_gauge_desc">Stickfastheten visar hur många maskor och varv som ryms inom ett uppmätt område. Sticka en liten provlapp och mät den för att ta reda på din personliga stickfasthet. Då får det färdiga arbetet den storlek som mönstret är tänkt att ha.</string>
+    <string name="tip_swatch_vs_direct_title">Provlapp vs. direkt inmatning</string>
+    <string name="tip_swatch_vs_direct_desc">Använd "Mät provlapp" om du har stickat en provbit och vill mäta den. Använd "Ange direkt" om du redan vet din stickfasthet (t.ex. 22 maskor per 10 cm).</string>
+    <string name="tip_pattern_repeat_title">Mönsterrapport</string>
+    <string name="tip_pattern_repeat_desc">Om ditt mönster upprepas var X:e maska (t.ex. en fläta var 8:e maska), ange det talet här. Räknaren avrundar uppläggningsantalet till närmaste passande multipel så att mönstret stämmer exakt.</string>
+    <string name="tip_edge_stitches_title">Kantmaskor</string>
+    <string name="tip_edge_stitches_desc">Kantmaskor är extra maskor som läggs till i varje sida för en snygg kant. De ingår inte i mönsterrapporten. Vanliga värden: 1–2 maskor per sida.</string>
+    <string name="tip_flat_vs_circular_title">Platt vs. runt</string>
+    <string name="tip_flat_vs_circular_desc">Platt stickning: du stickar fram och tillbaka på raka eller runda stickor och vänder i slutet av varje varv. Ökningar/minskningar sker i båda kanterna.\n\nRundstickning: du stickar i ett kontinuerligt varv. Ökningar/minskningar fördelas jämnt runt varvet.</string>
+    <string name="tip_pattern_repeat_pill_title">Rapport-räknare</string>
+    <string name="tip_pattern_repeat_pill_desc">Den här räknar hur många gånger du har slutfört en mönsterrapport. Den nollställs automatiskt utifrån ditt repetitionsintervall. Användbar för att hålla koll på flätvridningar, spetsrapporter eller färgbyten.</string>
+    <string name="tip_needle_sizes_title">System för stickstorlekar</string>
+    <string name="tip_needle_sizes_desc">Metrisk storlek (mm) är den universella standarden. US-storlekar använder ett numrerat system (0–50). UK/Kanada använder ett annat numrerat system. Japanska storlekar har en egen numrering. Kontrollera alltid mm-storleken för säkerhets skull.</string>
+    <string name="tip_imperial_units_title">Brittiska/amerikanska mått</string>
+    <string name="tip_imperial_units_desc">När detta är aktiverat använder alla räknare tum i stället för centimeter och yard i stället för meter. Stickfastheten mäts per 4 tum i stället för per 10 cm.</string>
+</resources>

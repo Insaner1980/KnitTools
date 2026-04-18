@@ -599,6 +599,7 @@ private fun CounterScreenDialogs(
             title = stringResource(R.string.delete_project),
             message = stringResource(R.string.delete_project_message, state.projectName),
             confirmText = stringResource(R.string.delete_project),
+            isDestructive = true,
             onConfirm = actions.onDeleteConfirm,
             onDismiss = actions.onDeleteDismiss,
         )
@@ -1112,6 +1113,9 @@ private fun CounterScreenContent(
                 isEditingName = isEditingName,
                 actions = projectHeaderActions,
             )
+            // Joustava välitila pitää counter-ryhmän ankkuroituna alaosaan,
+            // vaikka ProjectHeader kasvaa (stitch tracking, pattern jne.)
+            Spacer(modifier = Modifier.weight(1f))
             CounterReadoutSection(
                 state = state,
                 actions = actions,

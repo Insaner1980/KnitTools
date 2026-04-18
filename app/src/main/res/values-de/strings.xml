@@ -1,0 +1,678 @@
+<resources>
+    <string name="app_name">KnitTools</string>
+
+    <!-- Navigation & common -->
+    <string name="back">Zurück</string>
+    <string name="cancel">Abbrechen</string>
+    <string name="confirm">Bestätigen</string>
+    <string name="ok">OK</string>
+    <string name="add">Hinzufügen</string>
+    <string name="delete">Löschen</string>
+    <string name="reset">Zurücksetzen</string>
+    <string name="result">Ergebnis</string>
+    <string name="save">Speichern</string>
+    <string name="settings">Einstellungen</string>
+
+    <!-- Units -->
+    <string name="unit_cm">cm</string>
+    <string name="unit_inches">Zoll</string>
+    <string name="unit_st">M</string>
+    <string name="unit_rows">Reihen</string>
+    <string name="unit_g">g</string>
+    <string name="unit_meters">Meter</string>
+    <string name="unit_yards">Yard</string>
+    <string name="unit_st_per_10cm">M/10 cm</string>
+    <string name="unit_st_per_4in">M/4 in</string>
+    <string name="unit_per_10cm">pro 10 cm</string>
+    <string name="unit_per_4in">pro 4 in</string>
+
+    <!-- Home screen -->
+    <string name="tool_row_counter">Reihenzähler</string>
+    <string name="tool_increase_decrease">Zu- / Abnahmen</string>
+    <string name="tool_gauge_converter">Maschenprobenrechner</string>
+    <string name="tool_cast_on_calculator">Maschenanschlag-Rechner</string>
+    <string name="tool_yarn_estimator">Garnrechner</string>
+    <string name="tool_needle_sizes">Nadelstärken</string>
+    <string name="pro_trial_days_left">Pro-Testversion — %d Tage übrig</string>
+    <string name="unlock_all_tools">Alle Werkzeuge freischalten</string>
+    <string name="quick_tip_label">KURZTIPP</string>
+    <string name="desc_yarn_estimator_card">Garnverbrauch und benötigte Knäuel berechnen</string>
+
+    <!-- Bottom navigation tabs -->
+    <string name="tab_projects">PROJEKTE</string>
+    <string name="tab_library">BIBLIOTHEK</string>
+    <string name="tab_tools">WERKZEUGE</string>
+    <string name="tab_insights">EINBLICKE</string>
+    <string name="tab_reference">REFERENZ</string>
+    <string name="tab_settings">EINSTELLUNGEN</string>
+
+    <!-- Screen titles -->
+    <string name="tools_title">Werkzeuge</string>
+    <string name="reference_title">Referenz</string>
+    <string name="library_title">Bibliothek</string>
+    <string name="insights_title">Einblicke</string>
+    <string name="saved_patterns_title">Gespeicherte Anleitungen</string>
+    <string name="my_yarn_title">Mein Garn</string>
+    <string name="all_photos_title">Fotos</string>
+
+    <!-- Hub hero text -->
+    <string name="reference_hero_title">Strickreferenz</string>
+    <string name="reference_hero_subtitle">Schneller Zugriff auf Größen, Abkürzungen und Chart-Symbole.</string>
+
+    <!-- Project List -->
+    <string name="project_list_title">Projekte</string>
+    <string name="continue_knitting">WEITERSTRICKEN</string>
+    <string name="section_active">AKTIV</string>
+    <string name="section_completed">FERTIG</string>
+    <string name="new_project">Neues Projekt</string>
+    <string name="new_project_name_format">Projekt %1$d</string>
+    <string name="no_active_projects">Keine aktiven Projekte</string>
+    <string name="no_completed_projects">Noch keine fertigen Projekte</string>
+    <string name="archive_project">Fertigstellen</string>
+    <string name="delete_project">Löschen</string>
+    <string name="delete_project_message">%s löschen? Dies kann nicht rückgängig gemacht werden.</string>
+    <string name="rename_project">Umbenennen</string>
+    <string name="reactivate_project">Reaktivieren</string>
+    <string name="complete_project">Fertigstellen</string>
+    <string name="complete_project_message">%s fertigstellen? Das Projekt wird zu deinen fertigen Projekten verschoben.</string>
+    <string name="more_options">Weitere Optionen</string>
+
+    <!-- Project List overflow -->
+    <string name="select_projects">Projekte auswählen</string>
+    <string name="sort_by">Sortieren nach</string>
+    <string name="sort_name">Name</string>
+    <string name="sort_last_updated">Zuletzt aktualisiert</string>
+    <string name="sort_created_date">Erstellt am</string>
+    <string name="show_completed">Fertige anzeigen</string>
+
+    <!-- Multi-select -->
+    <string name="n_selected">%d ausgewählt</string>
+    <string name="select_all">Alle auswählen</string>
+    <string name="complete_n_projects">%d Projekte fertigstellen? Sie werden zu deinen fertigen Projekten verschoben.</string>
+    <string name="delete_n_projects">%d Projekte löschen? Dies kann nicht rückgängig gemacht werden.</string>
+    <string name="rows_format">%d Reihen</string>
+    <string name="just_now">gerade eben</string>
+
+    <!-- Counter Screen -->
+    <string name="current_project">AKTUELLES PROJEKT</string>
+    <string name="current_row">AKTUELLE REIHE</string>
+    <string name="stitch_count_format">%s M</string>
+    <string name="set_stitches">Maschen festlegen</string>
+    <string name="stitches_per_row">Maschen pro Reihe</string>
+    <string name="track_stitches">Maschen verfolgen</string>
+    <string name="stitch_counter_compact_format">%1$d/%2$d</string>
+    <string name="stitch_previous">◄</string>
+    <string name="stitch_next">►</string>
+    <string name="attach_pattern">Anleitung anhängen</string>
+    <string name="remove_pattern">Anleitung entfernen</string>
+    <string name="no_pattern_attached">Keine Anleitung angehängt</string>
+    <string name="show_pattern">Anleitung anzeigen</string>
+    <string name="pattern_viewer_title">Anleitungsanzeige</string>
+    <string name="pattern_pdf_fallback_name">Anleitungs-PDF</string>
+    <string name="pattern_loading">Anleitung wird geladen…</string>
+    <string name="pattern_open_failed">Die Anleitung konnte nicht geöffnet werden.</string>
+    <string name="pattern_page_jump">Zu Seite springen</string>
+    <string name="pattern_page_number">Seitennummer</string>
+    <string name="pattern_page_indicator">Seite %1$d von %2$d</string>
+    <string name="pattern_previous_page">Vorherige Seite</string>
+    <string name="pattern_next_page">Nächste Seite</string>
+    <string name="pattern_combine_instructions">Anweisungen zusammenführen</string>
+    <string name="pattern_combine_none_found">Auf dieser Seite wurden keine überlappenden Anweisungen gefunden.</string>
+    <string name="pattern_combine_requires_internet">Internetverbindung erforderlich</string>
+    <string name="pattern_combined_instructions_copied">Zusammengeführte Anweisungen kopiert</string>
+    <string name="pattern_picker_device_files">PDF vom Gerät auswählen</string>
+    <string name="pattern_picker_saved_patterns">Gespeicherte Anleitungen</string>
+    <string name="pattern_picker_camera_scan">Kamera-Scan</string>
+    <string name="pattern_picker_pdf_unavailable">PDF nicht verfügbar</string>
+    <string name="pattern_scan_failed">Der Scan der Anleitung konnte nicht in PDF umgewandelt werden.</string>
+    <string name="imported_pattern_designer">Importiertes PDF</string>
+    <string name="current_row_short">Reihe %1$d</string>
+    <string name="pattern_instruction_copied">Anweisung kopiert</string>
+    <string name="time_spent_minutes_format">%dm</string>
+    <string name="link_to_project">Mit %s verknüpfen?</string>
+    <string name="link_yarn">Garn verknüpfen</string>
+    <string name="unlink_yarn">Garnverknüpfung lösen</string>
+    <string name="link">Verknüpfen</string>
+    <string name="select_yarn_card">Garnkarte auswählen</string>
+    <string name="add_yarn">Garn hinzufügen</string>
+    <string name="linked_yarn_title">VERKNÜPFTES GARN</string>
+    <string name="no_linked_yarn">Noch kein Garn verknüpft</string>
+    <string name="yarn_count_format">%1$d Garne</string>
+    <string name="linked_project_label">Verknüpftes Projekt</string>
+    <string name="link_to_project_label">Mit Projekt verknüpfen</string>
+    <string name="change_project_link">Ändern</string>
+    <string name="remove_project_link">Verknüpfung entfernen</string>
+    <string name="select_project">Projekt auswählen</string>
+    <string name="status_label">Status</string>
+    <string name="quantity_label">Menge</string>
+    <string name="status_in_stash">Vorrat</string>
+    <string name="status_in_use">In Gebrauch</string>
+    <string name="status_finished">Aufgebraucht</string>
+    <string name="linked_project_arrow">\u2192 %1$s</string>
+    <string name="yarn_details_title">Details</string>
+    <string name="delete_yarn_card_message">Diese Garnkarte löschen? Dies kann nicht rückgängig gemacht werden.</string>
+    <string name="saved_to_my_yarn_toast">Unter „Mein Garn“ in der Bibliothek gespeichert</string>
+    <string name="skein_count_one">%1$d Knäuel</string>
+    <string name="skein_count_many">%1$d Knäuel</string>
+
+    <!-- Session History -->
+    <string name="session_history_title">Verlauf</string>
+    <string name="no_sessions">Noch keine Sitzungen aufgezeichnet. Beginne zu stricken, um hier deinen Verlauf zu sehen.</string>
+    <string name="session_row_range">Reihen %1$d \u2192 %2$d</string>
+    <string name="session_duration_format">%1$dh %2$dm</string>
+    <string name="pro_full_history_hint">Auf Pro upgraden für den vollständigen Sitzungsverlauf</string>
+
+    <!-- Settings -->
+    <string name="show_knitting_tips">Stricktipps anzeigen</string>
+    <string name="project_summary">Projektzusammenfassung</string>
+    <string name="view_ai_summary">KI-Zusammenfassung anzeigen</string>
+    <string name="generating_summary">Zusammenfassung wird erstellt…</string>
+    <string name="ai_quota_exhausted">Monatliches KI-Limit erreicht</string>
+    <string name="ai_summary_fallback">KI-Zusammenfassung konnte nicht erstellt werden — stattdessen werden grundlegende Statistiken angezeigt</string>
+
+    <!-- Row Counter -->
+    <string name="default_project_name">Mein Projekt</string>
+    <string name="reset_counter">Zähler zurücksetzen</string>
+    <string name="reset_counter_message">Den Zähler auf 0 zurücksetzen?</string>
+    <string name="pattern_repeat">Rapport</string>
+    <string name="notes">Notizen</string>
+    <string name="add_note">Notiz hinzufügen…</string>
+    <string name="notes_editor_title">Notizen — %1$s</string>
+    <string name="write_your_notes_here">Schreibe hier deine Notizen…</string>
+
+    <!-- Journal (AI journal entry) -->
+    <string name="journal_ai_badge">+ KI</string>
+    <string name="journal_add_entry_title">Tagebucheintrag hinzufügen</string>
+    <string name="journal_mode_speak">Sprechen</string>
+    <string name="journal_mode_type">Tippen</string>
+    <string name="journal_speak_title">Sprich deinen Eintrag</string>
+    <string name="journal_type_title">Tippe deinen Eintrag</string>
+    <string name="journal_listening">Hört zu…</string>
+    <string name="journal_tap_to_speak">Tippe auf das Mikrofon, um zu starten</string>
+    <string name="journal_type_placeholder">Was ist in dieser Sitzung passiert?</string>
+    <string name="journal_transcription_placeholder">Deine Worte erscheinen hier…</string>
+    <string name="journal_add_button">Eintrag hinzufügen</string>
+    <string name="journal_empty_error">Der Eintrag darf nicht leer sein</string>
+    <string name="journal_offline_notice">KI-Formatierung nicht verfügbar, der Eintrag wurde unverändert gespeichert.</string>
+    <string name="journal_mic_permission_required">Mikrofonberechtigung erforderlich</string>
+    <string name="journal_processing">Wird formatiert…</string>
+    <string name="journal_row_label">Reihe %1$d</string>
+    <string name="journal_speech_unavailable">Spracherkennung ist auf diesem Gerät nicht verfügbar</string>
+    <string name="journal_speech_network_error">Spracherkennung benötigt eine Netzwerkverbindung</string>
+    <string name="journal_speech_no_match">Nicht verstanden — versuche es erneut</string>
+    <string name="journal_speech_error">Spracherkennungsfehler</string>
+
+    <string name="counter_decrease">Verringern</string>
+    <string name="counter_increase">Erhöhen</string>
+    <string name="counter_undo">Rückgängig</string>
+
+    <!-- Increase / Decrease -->
+    <string name="mode_increase">Zunahme</string>
+    <string name="mode_decrease">Abnahme</string>
+    <string name="style_flat">Flach</string>
+    <string name="style_circular">Rund</string>
+    <string name="current_stitches">Aktuelle Maschenzahl</string>
+    <string name="increase_by">Erhöhen um</string>
+    <string name="decrease_by">Verringern um</string>
+    <string name="invalid_input">Ungültige Eingabe</string>
+    <string name="easy_to_remember">Leicht zu merken</string>
+    <string name="balanced">Ausgewogen</string>
+    <string name="total_stitches_format">GESAMT: %1$d %2$s</string>
+
+    <!-- Gauge Converter -->
+    <string name="pattern_gauge">Maschenprobe der Anleitung</string>
+    <string name="your_gauge">Deine Maschenprobe</string>
+    <string name="pattern_instructions">Angaben der Anleitung</string>
+    <string name="stitches_gauge">Maschen %s</string>
+    <string name="rows_gauge">Reihen %s</string>
+    <string name="stitches_in_pattern">Maschen in der Anleitung</string>
+    <string name="rows_in_pattern">Reihen in der Anleitung</string>
+    <string name="adjusted_for_your_gauge">An deine Maschenprobe angepasst</string>
+    <string name="adjusted_result">%1$d Maschen, %2$d Reihen</string>
+    <string name="exact_result">Exakt: %1$s M, %2$s Reihen</string>
+    <string name="stitch_gauge_diff">Maschendichte: %s%%</string>
+
+    <!-- Cast On Calculator -->
+    <string name="desired_width">Gewünschte Breite</string>
+    <string name="stitch_gauge">Maschendichte</string>
+    <string name="pattern_repeat_optional">Rapport (optional)</string>
+    <string name="edge_stitches_optional">Randmaschen (optional)</string>
+    <string name="stitches_result">%d Maschen</string>
+    <string name="actual_width">Tatsächliche Breite: %1$s %2$s</string>
+    <string name="adjusted_down">Nach unten angepasst: %1$d M (%2$s %3$s)</string>
+    <string name="adjusted_up">Nach oben angepasst: %1$d M (%2$s %3$s)</string>
+
+    <!-- Yarn Estimator -->
+    <string name="total_yarn_needed">Gesamter Garnbedarf</string>
+    <string name="yarn_per_skein">%s pro Knäuel</string>
+    <string name="weight_per_skein">Gewicht pro Knäuel</string>
+    <string name="skeins_result">%d Knäuel</string>
+    <string name="total_weight">Gesamtgewicht: %s g</string>
+    <string name="exact_skeins">Exakt: %s Knäuel</string>
+    <string name="extra_skein_note">Kaufe immer ein zusätzliches Knäuel — Farbpartien können variieren</string>
+
+    <!-- Needle Sizes -->
+    <string name="search_size">Größe suchen…</string>
+    <string name="needle_size_disclaimer">Die Größen sind ungefähre Entsprechungen. Japanische Größen verwenden eine eigene metrische Skala.</string>
+    <string name="header_mm">mm</string>
+    <string name="header_us">US</string>
+    <string name="header_uk">UK</string>
+    <string name="header_jp">JP</string>
+
+    <!-- Settings -->
+    <string name="theme">Design</string>
+    <string name="theme_system">System</string>
+    <string name="theme_light">Hell</string>
+    <string name="theme_dark">Dunkel</string>
+    <string name="preferences">Einstellungen</string>
+    <string name="settings_section_settings">EINSTELLUNGEN</string>
+    <string name="settings_section_pro">PRO</string>
+    <string name="settings_section_info">INFO</string>
+    <string name="settings_language">App-Sprache</string>
+    <string name="settings_language_change_hint">Die Änderung gilt sofort</string>
+    <string name="settings_language_system">System folgen</string>
+    <string name="settings_language_finnish">Suomi</string>
+    <string name="settings_language_english">English</string>
+    <string name="settings_language_swedish">Svenska</string>
+    <string name="settings_language_german">Deutsch</string>
+    <string name="settings_language_french">Français</string>
+    <string name="settings_language_spanish">Español</string>
+    <string name="settings_language_portuguese">Português</string>
+    <string name="settings_language_italian">Italiano</string>
+    <string name="settings_language_norwegian">Norsk</string>
+    <string name="settings_language_danish">Dansk</string>
+    <string name="settings_language_dutch">Nederlands</string>
+    <string name="haptic_feedback">Haptisches Feedback</string>
+    <string name="keep_screen_awake">Bildschirm aktiv halten</string>
+    <string name="use_imperial_units">Imperiale Einheiten verwenden</string>
+    <string name="purchase">Kaufen</string>
+    <string name="upgrade_to_pro">Auf Pro upgraden</string>
+    <string name="restore_purchases">Käufe wiederherstellen</string>
+    <string name="privacy_summary">Alle Daten bleiben auf deinem Gerät. Keine Analysen, keine Cloud-Synchronisierung, keine Konten.</string>
+    <string name="pro_restored">Pro wiederhergestellt</string>
+    <string name="no_purchases_found">Keine Käufe gefunden</string>
+    <string name="version_format">KnitTools %s</string>
+
+    <!-- Pro Upgrade -->
+    <string name="knittools_pro">KnitTools Pro</string>
+    <string name="you_have_pro">Du hast KnitTools Pro!</string>
+    <string name="all_features_unlocked">Alle Funktionen sind freigeschaltet.</string>
+    <string name="pro_feature_unlimited_projects">Unbegrenzte Zählerprojekte</string>
+    <string name="pro_feature_full_history">Vollständiger Zählerverlauf</string>
+    <string name="pro_feature_notes">Notizen pro Projekt</string>
+    <string name="pro_feature_secondary_counter">Sekundärzähler</string>
+    <string name="pro_feature_ocr">OCR-Scan von Garnetiketten</string>
+    <string name="pro_feature_widget">Startbildschirm-Widget</string>
+    <string name="pro_feature_row_reminders">Reihenerinnerungen</string>
+    <string name="pro_feature_progress_photos">Fortschrittsfotos</string>
+    <string name="pro_feature_multiple_counters">Mehrere Zähler</string>
+    <string name="pro_feature_pattern_camera_scan">Kamera-Scan für Anleitungen</string>
+    <string name="pro_feature">Pro-Funktion</string>
+    <string name="pro_required_add">Upgrade auf Pro, um mehr hinzuzufügen</string>
+    <string name="upgrade_for_price">Upgrade für %s</string>
+    <string name="one_time_purchase">Einmalkauf. Kein Abo.</string>
+    <string name="loading_price">Preis wird geladen…</string>
+    <string name="price_loading_hint">Verbindung zu Google Play wird hergestellt — überprüfe deine Internetverbindung, wenn dies lange dauert</string>
+
+    <!-- Yarn Card / OCR -->
+    <string name="scan_yarn_label">Garnetikett scannen</string>
+    <string name="yarn_scan_failed">Auf diesem Foto konnte kein Garnetikett gelesen werden. Versuche es erneut.</string>
+    <string name="yarn_scan_no_internet">Scannen erfordert eine Internetverbindung</string>
+    <string name="saved_yarns">Gespeicherte Garne</string>
+    <string name="scanned_yarn">Gescanntes Garn</string>
+    <string name="brand">Marke</string>
+    <string name="yarn_name">Garnname</string>
+    <string name="fiber_content">Fasergehalt</string>
+    <string name="weight_grams">Gewicht (g)</string>
+    <string name="length_meters">Länge (m)</string>
+    <string name="needle_size_label">Nadelstärke</string>
+    <string name="gauge_label">Maschenprobe</string>
+    <string name="color_name">Farbname</string>
+    <string name="color_number">Farbnummer</string>
+    <string name="dye_lot">Farbpartie</string>
+    <string name="weight_category">Stärkenkategorie</string>
+    <string name="care_symbols">Pflege</string>
+    <string name="save_and_use">Speichern und verwenden</string>
+    <string name="discard">Verwerfen</string>
+    <string name="use_in_calculator">Im Rechner verwenden</string>
+    <string name="no_saved_yarns">Noch keine Garnkarten gespeichert</string>
+    <string name="scanning">Wird gescannt…</string>
+    <string name="card_deleted">Garnkarte gelöscht</string>
+    <string name="undo">Rückgängig</string>
+    <string name="pro_required_save">Pro erforderlich, um Garnkarten zu speichern</string>
+
+    <!-- Gemini Nano -->
+    <string name="paste_instruction">Anweisung einfügen</string>
+    <string name="instruction_hint">Füge hier deine Strickanweisung ein</string>
+    <string name="instruction_hint_increase">z. B. "12 Maschen gleichmäßig über 96 Maschen verteilt zunehmen"</string>
+    <string name="instruction_hint_gauge">z. B. "22 Maschen und 30 Reihen pro 10 cm" oder "Breite 30 cm, 22 Maschen"</string>
+    <string name="parsing_instruction">Wird analysiert…</string>
+    <string name="instruction_parsed">Werte aus der Anweisung übernommen</string>
+    <string name="instruction_parse_failed">Die Anweisung konnte nicht verstanden werden — versuche eine andere Formulierung</string>
+    <string name="ai_error_busy">Die KI ist beschäftigt — versuche es gleich noch einmal</string>
+    <string name="ai_error_quota">Akku-Limit erreicht — versuche es später erneut</string>
+    <string name="ai_error_unavailable">KI-Funktion auf diesem Gerät nicht verfügbar</string>
+    <string name="ai_error_unknown">Etwas ist schiefgelaufen — versuche es erneut</string>
+
+    <!-- Camera permission -->
+    <string name="camera_permission_denied">Die Kameraberechtigung wird benötigt, um Garnetiketten zu scannen</string>
+    <string name="camera_permission_denied_permanent">Kameraberechtigung verweigert — aktiviere sie in den Einstellungen</string>
+    <string name="open_settings">Einstellungen</string>
+
+    <!-- Care symbol categories -->
+    <string name="care_category_washing">Waschen</string>
+    <string name="care_category_bleaching">Bleichen</string>
+    <string name="care_category_drying">Trocknen</string>
+    <string name="care_category_ironing">Bügeln</string>
+    <string name="care_category_dry_cleaning">Chemische Reinigung</string>
+
+    <!-- Defaults -->
+    <string name="yarn_card_fallback_name">Garnkarte</string>
+
+    <!-- Widget -->
+    <string name="widget_name">Reihenzähler</string>
+    <string name="widget_description">Reihenzähler-Widget für das aktive Projekt</string>
+    <string name="widget_pro_required">Upgrade auf Pro, um das Widget zu verwenden</string>
+
+    <!-- Hubs -->
+    <string name="reference_hub_title">Referenz</string>
+    <string name="desc_increase_decrease">Zu- oder Abnahmen gleichmäßig über eine Reihe verteilen</string>
+    <string name="desc_gauge_calculator">Maschenprobe berechnen und Angaben aus Anleitungen umrechnen</string>
+    <string name="desc_cast_on">Maschen für die gewünschte Breite berechnen</string>
+    <string name="desc_needle_sizes">Nadelstärken in metrischen, US-, UK- und japanischen Systemen</string>
+    <string name="desc_size_charts">Standard-Körpermaße für Kleidergrößen</string>
+    <string name="desc_abbreviations">Nachschlagewerk für gängige Strickabkürzungen</string>
+    <string name="desc_chart_symbols">Leitfaden für gängige Strickchart-Symbole</string>
+
+    <!-- Library — My Collection -->
+    <string name="library_my_collection">MEINE SAMMLUNG</string>
+    <string name="library_reference">REFERENZ</string>
+    <string name="desc_saved_patterns">Anleitungen aus Ravelry und PDF-Dateien</string>
+    <string name="desc_my_yarn">Dein Garnvorrat — Marken, Stärken und Farben</string>
+    <string name="desc_all_photos">Fortschrittsfotos aus all deinen Projekten</string>
+    <string name="empty_saved_patterns">Noch keine Anleitungen gespeichert.\nFinde Anleitungen in der Ravelry-Suche.</string>
+    <string name="empty_my_yarn">Noch keine Garnkarten gespeichert.</string>
+    <string name="empty_all_photos">Noch keine Fortschrittsfotos.</string>
+    <string name="filter_all">Alle</string>
+
+    <!-- Insights -->
+    <string name="total_time_label">GESAMTZEIT</string>
+    <string name="avg_pace_label">DURCHSCHNITTSTEMPO</string>
+    <string name="completed_label">FERTIG</string>
+    <string name="top_streak_label">BESTE SERIE</string>
+    <string name="time_format_hours">%.1fh</string>
+    <string name="pace_format">%.0f R/h</string>
+    <string name="streak_format">%d Tage</string>
+    <string name="all_projects">Alle Projekte</string>
+    <string name="insights_all_time">Gesamte Zeit</string>
+    <string name="insights_this_week">Diese Woche</string>
+    <string name="insights_this_month">Diesen Monat</string>
+    <string name="pro_insights_hint">Schalte Diagramme, Serien und mehr mit Pro frei</string>
+    <string name="insights_summary_format">%1$.1fh diese Woche · %2$.0f R/h</string>
+    <string name="insights_knitting_activity">STRICKAKTIVITÄT</string>
+    <string name="insights_current_streak">Aktuelle Serie:</string>
+    <string name="insights_best_streak">Beste:</string>
+    <string name="insights_project_time_with_rows">%1$s · %2$d Reihen</string>
+    <string name="insights_project_time_only">%1$s</string>
+    <string name="insights_rows_count">%1$d Reihen</string>
+    <string name="insights_less_than_tenth_hour">&lt;0.1h</string>
+    <string name="insights_no_time">—</string>
+    <string name="insights_footer_1">Jede Reihe zählt — weiterstricken!</string>
+    <string name="insights_footer_2">Deine Nadeln warten schon.</string>
+    <string name="insights_footer_3">Noch eine Reihe?</string>
+    <string name="insights_footer_4">Masche für Masche, Reihe für Reihe.</string>
+    <string name="insights_footer_5">Große Dinge beginnen mit einem einzigen Anschlag.</string>
+    <string name="relative_time_today">heute</string>
+    <string name="relative_time_yesterday">gestern</string>
+    <string name="relative_time_days_ago">vor %1$d T</string>
+    <string name="relative_time_weeks_ago">vor %1$d W</string>
+    <string name="relative_time_months_ago">vor %1$d Mon</string>
+    <string name="week_now">jetzt</string>
+    <string name="no_knitting">Kein Stricken</string>
+    <string name="time_per_project">ZEIT PRO PROJEKT</string>
+    <string name="pace_over_time">TEMPO IM VERLAUF</string>
+
+    <!-- Settings -->
+    <string name="help_and_guide">Hilfe und Anleitung</string>
+
+    <!-- Gauge Calculator — swatch section -->
+    <string name="my_gauge">Meine Maschenprobe</string>
+    <string name="your_gauge_section">Deine Maschenprobe</string>
+    <string name="measure_swatch">Maschenprobe messen</string>
+    <string name="enter_directly">Direkt eingeben</string>
+    <string name="calculated_gauge_format">= %1$.1f M / %2$.1f Reihen %3$s</string>
+    <string name="measured_width">Gemessene Breite</string>
+    <string name="stitch_count_in_swatch">Maschen in der Maschenprobe</string>
+    <string name="measured_height">Gemessene Höhe</string>
+    <string name="row_count_in_swatch">Reihen in der Maschenprobe</string>
+    <string name="your_stitch_gauge">Deine Maschendichte: %s</string>
+    <string name="your_row_gauge">Deine Reihendichte: %s</string>
+
+    <!-- Size Charts -->
+    <string name="size_charts_title">Größentabellen</string>
+    <string name="category_baby">Baby (0–24 Monate)</string>
+    <string name="category_child_youth">Kinder und Jugendliche (2–16)</string>
+    <string name="category_women">Damen</string>
+    <string name="category_men">Herren</string>
+    <string name="category_head">Kopf</string>
+    <string name="category_hand">Hand</string>
+
+    <!-- Abbreviations -->
+    <string name="abbreviations_title">Abkürzungen</string>
+    <string name="search_abbreviation">Abkürzungen suchen…</string>
+    <string name="no_results_found">Keine Ergebnisse gefunden</string>
+
+    <!-- Chart Symbols -->
+    <string name="chart_symbols_title">Chart-Symbole</string>
+    <string name="chart_symbols_disclaimer">Die Symbole folgen gängigen Konventionen. Prüfe immer die Zeichenerklärung deiner Anleitung.</string>
+    <string name="category_basic">Grundmaschen</string>
+    <string name="category_decreases">Abnahmen</string>
+    <string name="category_increases">Zunahmen</string>
+    <string name="category_cables">Zöpfe</string>
+    <string name="category_other">Sonstiges</string>
+
+    <!-- Quick Tips -->
+    <string-array name="knitting_tips">
+        <item>Stricke immer zuerst eine Maschenprobe, bevor du ein neues Projekt beginnst — selbst wenn du glaubst, deine Maschenprobe schon zu kennen.</item>
+        <item>Spanne deine Maschenprobe genauso, wie du später das fertige Stück spannen willst, damit die Maschenprobe stimmt.</item>
+        <item>Um beim Ringelstricken in Runden einen Versatz zu vermeiden, hebe in der zweiten Reihe der neuen Farbe die Masche der darunterliegenden Reihe auf die linke Nadel.</item>
+        <item>Achte auf eine gleichmäßige Fadenspannung für saubere Kanten.</item>
+        <item>Setze beim Anschlag großer Maschenzahlen alle 20 Maschen einen verschließbaren Maschenmarkierer.</item>
+        <item>Spanne deine fertigen Teile — das macht einen großen Unterschied im Endergebnis.</item>
+        <item>Zähle bei Spitzenmustern am Ende jeder Reihe deine Maschen.</item>
+        <item>Wickle dein Garn vor dem Start zu einem Ball — das verhindert Verknoten.</item>
+        <item>Verwende beim Spitzenstricken alle paar Reihen eine Lebenslinie — ziehe einen Hilfsfaden durch alle Maschen.</item>
+        <item>Vernähe Fadenenden schon während des Strickens, damit sich am Ende nicht alles staut.</item>
+        <item>Kaufe immer ein zusätzliches Knäuel — Farbpartien können sich unterscheiden.</item>
+        <item>Stricke die Maschenprobe in Runden, wenn dein Projekt in Runden gestrickt wird — die Maschenprobe kann sich unterscheiden.</item>
+        <item>Verwende Maschenmarkierer, um Rapporte zu trennen — das erleichtert das Zählen enorm.</item>
+        <item>Lies die gesamte Anleitung durch, bevor du anschlägst, um Überraschungen zu vermeiden.</item>
+        <item>Führe ein Projektnotizbuch, um Änderungen und Notizen für später festzuhalten.</item>
+        <item>Lass beim Ansetzen eines neuen Garns mindestens 15 cm Fadenende zum sicheren Vernähen.</item>
+        <item>Übe neue Techniken zuerst an einer kleinen Maschenprobe, bevor du sie im Projekt verwendest.</item>
+        <item>Bewahre dein Strickstück in einer Projekttasche auf, damit es sauber bleibt und nirgendwo hängen bleibt.</item>
+        <item>Mache Pausen, um deine Hände zu dehnen und Überlastung zu vermeiden.</item>
+        <item>Markiere deine Stelle in der Anleitung mit einem Haftzettel oder Magnetbrett.</item>
+        <item>Verwende Bambusnadeln für rutschige Garne — sie halten die Maschen besser fest.</item>
+        <item>Wenn du Maschen aufnimmst, verwende eine Nadel eine Stärke kleiner für eine sauberere Kante.</item>
+        <item>Achte in der ersten Runde nach dem Anschlag darauf, dass sich der Anschlag nicht verdreht.</item>
+        <item>Messe deine Maschenprobe nach dem Spannen, nicht davor — viele Garne verändern sich nach dem Waschen.</item>
+        <item>Wechsle alle paar Reihen zwischen zwei Knäueln, um sichtbare Unterschiede zwischen Farbpartien zu vermeiden.</item>
+    </string-array>
+
+    <!-- In-App Updates -->
+    <string name="update_downloaded">Update heruntergeladen — neu starten, um es anzuwenden</string>
+    <string name="restart">Neustarten</string>
+
+    <!-- Row Reminders -->
+    <string name="reminders">Erinnerungen</string>
+    <string name="reminders_count">Erinnerungen (%d)</string>
+    <string name="add_reminder">Erinnerung hinzufügen</string>
+    <string name="delete_reminder_title">Erinnerung löschen?</string>
+    <string name="delete_reminder_confirm">Erinnerung „%1$s“ löschen?</string>
+    <string name="row_number">Reihennummer</string>
+    <string name="reminder_message">Nachricht</string>
+    <string name="reminder_message_hint">z. B. Zur Fersenwand wechseln</string>
+    <string name="one_time">Einmalig</string>
+    <string name="repeating">Wiederholend</string>
+    <string name="repeat_every">Wiederholen alle</string>
+    <string name="repeat_every_rows">Reihen</string>
+    <string name="repeat_count_format">Wiederholung %1$d/%2$d</string>
+    <string name="dismiss">Ausblenden</string>
+    <string name="no_reminders">Noch keine Erinnerungen</string>
+
+    <!-- Multiple Counters -->
+    <string name="counters">Zähler</string>
+    <string name="counters_count">Zähler (%d)</string>
+    <string name="add_counter">Zähler hinzufügen</string>
+    <string name="counter_name">Name</string>
+    <string name="counter_name_hint">z. B. Ärmelzunahmen</string>
+    <string name="count_up">Aufwärts zählen</string>
+    <string name="step_size">Schrittweite</string>
+    <string name="shaping">Formgebung</string>
+    <string name="repeat_section">Rapportabschnitt</string>
+    <string name="starting_stitches">Anfangsmaschenzahl</string>
+    <string name="stitch_change">Hinzugefügte/entfernte Maschen</string>
+    <string name="shape_every_n">Alle N Reihen formen</string>
+    <string name="repeat_section_start_row">Startreihe</string>
+    <string name="repeat_section_end_row">Endreihe</string>
+    <string name="total_repeats">Gesamtzahl der Wiederholungen</string>
+    <string name="repeat_section_progress_format">Wiederholung %1$d von %2$d · Reihe %3$d von %4$d</string>
+    <string name="repeat_section_complete">Fertig</string>
+    <string name="next_shaping_format">Nächste Formgebung: Reihe %1$d → %2$d M</string>
+    <string name="rename_counter">Umbenennen</string>
+    <string name="reset_counter_name">Zurücksetzen</string>
+    <string name="delete_counter">Löschen</string>
+    <string name="delete_counter_title">Zähler löschen?</string>
+    <string name="delete_counter_message">\"%1$s\" wird dauerhaft gelöscht.</string>
+    <string name="delete_annotation_title">Anmerkung löschen?</string>
+    <string name="delete_annotation_message">Die Anmerkung wird dauerhaft gelöscht.</string>
+
+    <!-- Progress Photos -->
+    <string name="take_photo">Foto aufnehmen</string>
+    <string name="progress_photos">Fortschrittsfotos</string>
+    <string name="voice_commands">Sprachbefehle</string>
+    <string name="voice_mode_timeout">Sprachmodus wegen Inaktivität beendet</string>
+    <string name="voice_offline_mode">Offline-Modus, nur einfache Befehle</string>
+    <string name="voice_quota_daily_exhausted">KI-Befehle für heute pausiert, einfache Befehle funktionieren weiterhin</string>
+    <string name="voice_command_unknown">Ich habe das nicht verstanden</string>
+    <string name="voice_command_not_recognized_offline">Befehl offline nicht erkannt</string>
+    <string name="voice_help_text">Verfügbare Befehle: weiter, zurück, rückgängig, zurücksetzen, stoppen, Hilfe und freie Anweisungen</string>
+    <string name="voice_note_saved">Notiz gespeichert</string>
+    <string name="voice_counter_reset">Zähler zurückgesetzt</string>
+    <string name="voice_row_current">Reihe %d</string>
+    <string name="voice_row_of_target">Reihe %1$d von %2$d, %3$d Prozent erledigt</string>
+    <string name="voice_rows_remaining">%d Reihen übrig</string>
+    <string name="voice_no_target">Kein Ziel festgelegt</string>
+    <string name="voice_back_to_row">Zurück zu Reihe %d</string>
+    <string name="voice_undone_row">Rückgängig, Reihe %d</string>
+    <string name="voice_remaining_done">Du bist fertig!</string>
+    <string name="voice_session_minutes">Du strickst seit %d Minuten</string>
+    <string name="voice_session_under_minute">Weniger als eine Minute</string>
+    <string name="voice_yarn_multiple">%1$s und %2$d weitere</string>
+    <string name="voice_yarn_none">Kein Garn verknüpft</string>
+    <string name="voice_pattern_info">Anleitung %1$s, Seite %2$d</string>
+    <string name="voice_instruction_none">Keine Anleitung verknüpft</string>
+    <string name="voice_shaping_next">Nächste %1$s in %2$d Reihen</string>
+    <string name="voice_shaping_at">%1$s bei Reihe %2$d</string>
+    <string name="voice_shaping_none">Kein Formgebungszähler aktiv</string>
+    <string name="voice_stitches_total">%1$d Maschen insgesamt, %2$d pro Reihe über %3$d Reihen</string>
+    <string name="voice_stitches_current">%d Maschen</string>
+    <string name="voice_stitches_disabled">Maschenverfolgung ist nicht aktiviert</string>
+    <string name="voice_reminders_none">Keine kommenden Erinnerungen</string>
+    <string name="voice_reminder_next">Nächste Erinnerung: %1$s, in %2$d Reihen</string>
+    <string name="voice_reminders_multiple">Nächste Erinnerung: %1$s, in %2$d Reihen. Danach noch %3$d weitere</string>
+    <string name="voice_counters_none">Keine zusätzlichen Zähler</string>
+    <string name="voice_counter_single">%1$s steht bei %2$d</string>
+    <string name="voice_counters_list">%1$d Zähler: %2$s</string>
+    <string name="voice_notes_empty">Noch keine Notizen</string>
+    <string name="voice_notes_content">Deine Notizen: %1$s</string>
+    <string name="voice_total_time_none">Noch keine Zeit erfasst</string>
+    <string name="voice_total_time_hours">%1$d Stunden und %2$d Minuten insgesamt für dieses Projekt</string>
+    <string name="voice_total_time_minutes">%1$d Minuten insgesamt für dieses Projekt</string>
+    <string name="voice_summary_none">Keine Projektzusammenfassung verfügbar. Öffne zuerst das Projekt, um eine zu erstellen.</string>
+    <string name="voice_project_name">Du arbeitest an %1$s</string>
+    <string name="voice_section_current">Aktueller Abschnitt: %1$s</string>
+    <string name="voice_section_none">Kein Abschnitt festgelegt</string>
+    <string name="voice_section_set">Abschnitt auf %1$s gesetzt</string>
+    <string name="voice_stitch_at">Masche %1$d</string>
+    <string name="voice_help_full">Du kannst sagen: weiter, zurück, rückgängig, zurücksetzen und eine Zahl. Frage nach Fortschritt, verbleibenden Reihen, Zeit, Garn, Anleitung, Maschen, Erinnerungen, Zählern oder Notizen. Sage Notiz, um eine Notiz zu speichern, oder nenne einen Zähler, um ihn zu ändern.</string>
+    <string name="voice_reminder_dismissed">Erinnerung ausgeblendet</string>
+    <string name="voice_reminder_no_active">Keine aktive Erinnerung zum Ausblenden</string>
+    <string name="voice_counter_incremented">%1$s jetzt bei %2$d</string>
+    <string name="voice_counter_decremented">%1$s zurück auf %2$d</string>
+    <string name="voice_counter_not_found">Kein Zähler mit dem Namen %1$s gefunden</string>
+    <string name="voice_step_size_set">Schrittweite auf %1$d gesetzt</string>
+    <string name="voice_counter_reset_named">%1$s auf null zurückgesetzt</string>
+    <string name="voice_page_current">Seite %1$d</string>
+    <string name="voice_page_first">Bereits auf der ersten Seite</string>
+    <string name="voice_project_completed">%1$s als fertig markiert. Gute Arbeit!</string>
+    <string name="voice_summary_generating">Zusammenfassung wird erstellt…</string>
+    <string name="voice_summary_unavailable">KI-Zusammenfassung ist derzeit nicht verfügbar</string>
+    <string name="voice_reminder_added">Erinnerung gesetzt: %1$s bei Reihe %2$d</string>
+    <string name="voice_stitch_count_set">Maschenzahl auf %1$d pro Reihe gesetzt</string>
+    <string name="voice_stitch_tracking_on">Maschenverfolgung aktiviert</string>
+    <string name="voice_stitch_tracking_off">Maschenverfolgung deaktiviert</string>
+    <string name="voice_live_connecting">Verbinden…</string>
+    <string name="voice_live_error">Sprachverbindung fehlgeschlagen</string>
+    <string name="voice_live_quota_exhausted">Die Sprachminuten für diesen Monat sind aufgebraucht</string>
+    <string name="voice_natural_response">Natürliche Stimme</string>
+    <string name="voice_live_quota_remaining">%1$.0f / %2$.0f Min verbleibend</string>
+    <string name="voice_mode_ended">Sprachmodus beendet</string>
+    <string name="voice_recognizer_error">Spracherkennungsfehler</string>
+    <string name="row_label_format">Reihe %d</string>
+    <string name="share_photo">Teilen</string>
+    <string name="delete_photo">Foto löschen</string>
+    <string name="delete_photo_confirm">Dieses Foto löschen?</string>
+    <string name="delete_photos_confirm">%d Fotos löschen?</string>
+    <string name="delete_patterns_confirm">%d Anleitungen löschen?</string>
+    <string name="delete_pattern">Anleitung löschen</string>
+    <string name="delete_yarn_cards_confirm">%d Garnkarten löschen?</string>
+    <string name="delete_yarn_card">Garnkarte löschen</string>
+    <string name="no_photos">Noch keine Fotos</string>
+    <string name="rename_photo">Foto umbenennen</string>
+    <string name="photo_name_hint">z. B. Ärmel fertig</string>
+
+    <!-- Ravelry -->
+    <string name="tool_ravelry">Ravelry</string>
+    <string name="desc_ravelry">Anleitungen suchen und Favoriten speichern</string>
+    <string name="ravelry_search">Suchen</string>
+    <string name="ravelry_saved_patterns">Gespeicherte Anleitungen</string>
+    <string name="start_project">Projekt starten</string>
+    <string name="save_pattern">Anleitung speichern</string>
+    <string name="open_in_ravelry">In Ravelry öffnen</string>
+    <string name="pattern_saved">Anleitung gespeichert</string>
+    <string name="no_saved_patterns">Noch keine Anleitungen gespeichert</string>
+    <string name="search_hint">Strickanleitungen suchen…</string>
+    <string name="filter_craft">Handarbeit</string>
+    <string name="filter_availability">Verfügbarkeit</string>
+    <string name="filter_category">Kategorie</string>
+    <string name="filter_weight">Stärke</string>
+    <string name="filter_difficulty">Schwierigkeit</string>
+    <string name="free">Kostenlos</string>
+    <string name="paid">Kostenpflichtig</string>
+    <string name="all">Alle</string>
+    <string name="no_results">Keine Anleitungen gefunden</string>
+    <string name="search_error">Anleitungen konnten nicht geladen werden. Überprüfe deine Internetverbindung.</string>
+    <string name="ravelry_sign_in">Mit Ravelry anmelden</string>
+    <string name="difficulty_format">%.1f / 5</string>
+    <string name="yardage_format">%d Yard</string>
+
+    <!-- Info tips -->
+    <string name="tip_your_gauge_title">Was ist eine Maschenprobe?</string>
+    <string name="tip_your_gauge_desc">Die Maschenprobe zeigt, wie viele Maschen und Reihen in einen gemessenen Bereich passen. Stricke ein kleines Probestück und miss es, um deine persönliche Maschenprobe zu ermitteln. So entspricht dein fertiges Stück der vorgesehenen Größe der Anleitung.</string>
+    <string name="tip_swatch_vs_direct_title">Maschenprobe vs. direkte Eingabe</string>
+    <string name="tip_swatch_vs_direct_desc">Verwende „Maschenprobe messen“, wenn du ein Probestück gestrickt hast und es messen möchtest. Verwende „Direkt eingeben“, wenn du deine Maschenprobe bereits kennst (z. B. 22 Maschen pro 10 cm).</string>
+    <string name="tip_pattern_repeat_title">Rapport</string>
+    <string name="tip_pattern_repeat_desc">Wenn sich dein Muster alle X Maschen wiederholt (z. B. ein Zopf alle 8 Maschen), gib diese Zahl hier ein. Der Rechner rundet die Anschlagszahl auf das nächstpassende Vielfache, damit dein Muster genau aufgeht.</string>
+    <string name="tip_edge_stitches_title">Randmaschen</string>
+    <string name="tip_edge_stitches_desc">Randmaschen sind zusätzliche Maschen an beiden Seiten für eine saubere Kante. Sie gehören nicht zum Rapport. Übliche Werte: 1–2 Maschen pro Seite.</string>
+    <string name="tip_flat_vs_circular_title">Flach vs. rund</string>
+    <string name="tip_flat_vs_circular_desc">Flach gestrickt: Du arbeitest hin und her auf geraden oder Rundnadeln und wendest am Ende jeder Reihe. Zu- und Abnahmen erfolgen an beiden Rändern.\n\nRund gestrickt: Du arbeitest in einer fortlaufenden Runde. Zu- und Abnahmen werden gleichmäßig über die Runde verteilt.</string>
+    <string name="tip_pattern_repeat_pill_title">Rapportzähler</string>
+    <string name="tip_pattern_repeat_pill_desc">Damit zählst du, wie oft du einen Rapport abgeschlossen hast. Er wird je nach Wiederholungsintervall automatisch zurückgesetzt. Praktisch zum Verfolgen von Zopfdrehungen, Spitzenrapporten oder Farbwechseln.</string>
+    <string name="tip_needle_sizes_title">Systeme für Nadelstärken</string>
+    <string name="tip_needle_sizes_desc">Metrisch (mm) ist der universelle Standard. US-Größen verwenden ein nummeriertes System (0–50). UK/Kanada nutzen ein anderes Nummernsystem. Japanische Größen haben eine eigene Nummerierung. Prüfe sicherheitshalber immer die mm-Angabe.</string>
+    <string name="tip_imperial_units_title">Imperiale Einheiten</string>
+    <string name="tip_imperial_units_desc">Wenn aktiviert, verwenden alle Rechner Zoll statt Zentimeter und Yard statt Meter. Die Maschenprobe wird dann pro 4 Zoll statt pro 10 cm gemessen.</string>
+</resources>

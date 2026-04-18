@@ -1,0 +1,918 @@
+<resources>
+    <string name="app_name">KnitTools</string>
+
+    <!-- Navigaatio ja yleiset -->
+    <string name="back">Takaisin</string>
+    <string name="cancel">Peruuta</string>
+    <string name="confirm">Vahvista</string>
+    <string name="ok">OK</string>
+    <string name="add">Lisää</string>
+    <string name="delete">Poista</string>
+    <string name="reset">Nollaa</string>
+    <string name="result">Tulos</string>
+    <string name="save">Tallenna</string>
+    <string name="settings">Asetukset</string>
+
+    <!-- Yksiköt -->
+    <string name="unit_cm">cm</string>
+    <string name="unit_inches">tuumaa</string>
+    <string name="unit_st">s</string>
+    <string name="unit_rows">krs</string>
+    <string name="unit_g">g</string>
+    <string name="unit_meters">metriä</string>
+    <string name="unit_yards">jaardia</string>
+    <string name="unit_st_per_10cm">s/10 cm</string>
+    <string name="unit_st_per_4in">s/4 in</string>
+    <string name="unit_per_10cm">10 cm:ssä</string>
+    <string name="unit_per_4in">4 tuumaa kohti</string>
+
+    <!-- Aloitusnäkymä -->
+    <string name="tool_row_counter">Kerroslaskuri</string>
+    <string name="tool_increase_decrease">Lisäykset / kavennukset</string>
+    <string name="tool_gauge_converter">Tiheyslaskuri</string>
+    <string name="tool_cast_on_calculator">Luomislaskuri</string>
+    <string name="tool_yarn_estimator">Lankalaskuri</string>
+    <string name="tool_needle_sizes">Puikkokoot</string>
+    <string name="pro_trial_days_left">Pro-kokeilu — %d päivää jäljellä</string>
+    <string name="unlock_all_tools">Avaa kaikki työkalut</string>
+    <string name="quick_tip_label">PIKAVINKKI</string>
+    <string name="desc_yarn_estimator_card">Laske tarvittava lankamäärä ja kerien lukumäärä</string>
+
+    <!-- Alapalkin välilehdet -->
+    <string name="tab_projects">PROJEKTIT</string>
+    <string name="tab_library">KIRJASTO</string>
+    <string name="tab_tools">TYÖKALUT</string>
+    <string name="tab_insights">TILASTOT</string>
+    <string name="tab_reference">VIITTEET</string>
+    <string name="tab_settings">ASETUKSET</string>
+
+    <!-- Näyttöjen otsikot -->
+    <string name="tools_title">Työkalut</string>
+    <string name="reference_title">Viitteet</string>
+    <string name="library_title">Kirjasto</string>
+    <string name="insights_title">Tilastot</string>
+    <string name="saved_patterns_title">Tallennetut ohjeet</string>
+    <string name="my_yarn_title">Omat langat</string>
+    <string name="all_photos_title">Valokuvat</string>
+
+    <!-- Viiteosion hero-teksti -->
+    <string name="reference_hero_title">Neulonnan pikaopas</string>
+    <string name="reference_hero_subtitle">Nopea pääsy kokoihin, lyhenteisiin ja kaaviomerkkeihin.</string>
+
+    <!-- Projektilista -->
+    <string name="project_list_title">Projektit</string>
+    <string name="continue_knitting">JATKA NEULOMISTA</string>
+    <string name="section_active">AKTIIVISET</string>
+    <string name="section_completed">VALMIIT</string>
+    <string name="new_project">Uusi projekti</string>
+    <string name="new_project_name_format">Projekti %1$d</string>
+    <string name="no_active_projects">Ei aktiivisia projekteja</string>
+    <string name="no_completed_projects">Ei valmiita projekteja vielä</string>
+    <string name="archive_project">Merkitse valmistuneeksi</string>
+    <string name="delete_project">Poista</string>
+    <string name="delete_project_message">Poistetaanko %s? Tätä ei voi kumota.</string>
+    <string name="rename_project">Nimeä uudelleen</string>
+    <string name="reactivate_project">Aktivoi uudelleen</string>
+    <string name="complete_project">Merkitse valmistuneeksi</string>
+    <string name="complete_project_message">Merkitäänkö %s valmistuneeksi? Projekti siirretään valmiisiin projekteihin.</string>
+    <string name="more_options">Lisää vaihtoehtoja</string>
+
+    <!-- Projektilistan valikko -->
+    <string name="select_projects">Valitse projektit</string>
+    <string name="sort_by">Järjestä</string>
+    <string name="sort_name">Nimi</string>
+    <string name="sort_last_updated">Viimeksi päivitetty</string>
+    <string name="sort_created_date">Luontipäivä</string>
+    <string name="show_completed">Näytä valmiit</string>
+
+    <!-- Monivalinta -->
+    <string name="n_selected">%d valittu</string>
+    <string name="select_all">Valitse kaikki</string>
+    <string name="complete_n_projects">Merkitäänkö %d projektia valmistuneiksi? Ne siirretään valmiisiin projekteihin.</string>
+    <string name="delete_n_projects">Poistetaanko %d projektia? Tätä ei voi kumota.</string>
+    <string name="rows_format">%d kerrosta</string>
+    <string name="just_now">juuri nyt</string>
+
+    <!-- Laskurinäkymä -->
+    <string name="current_project">NYKYINEN PROJEKTI</string>
+    <string name="current_row">NYKYINEN KERROS</string>
+    <string name="stitch_count_format">%s s</string>
+    <string name="set_stitches">Aseta silmukkamäärä</string>
+    <string name="stitches_per_row">Silmukkaa per kerros</string>
+    <string name="track_stitches">Seuraa silmukoita</string>
+    <string name="stitch_counter_compact_format">%1$d/%2$d</string>
+    <string name="stitch_previous">◄</string>
+    <string name="stitch_next">►</string>
+    <string name="attach_pattern">Liitä ohje</string>
+    <string name="remove_pattern">Poista ohje</string>
+    <string name="no_pattern_attached">Ohjetta ei ole liitetty</string>
+    <string name="show_pattern">Näytä ohje</string>
+    <string name="pattern_viewer_title">Ohjeen lukija</string>
+    <string name="pattern_pdf_fallback_name">Ohjeen PDF</string>
+    <string name="pattern_loading">Ladataan ohjetta…</string>
+    <string name="pattern_open_failed">Ohjetta ei voitu avata.</string>
+    <string name="pattern_page_jump">Siirry sivulle</string>
+    <string name="pattern_page_number">Sivunumero</string>
+    <string name="pattern_page_indicator">Sivu %1$d / %2$d</string>
+    <string name="pattern_previous_page">Edellinen sivu</string>
+    <string name="pattern_next_page">Seuraava sivu</string>
+    <string name="pattern_combine_instructions">Yhdistä ohjeet</string>
+    <string name="pattern_combine_none_found">Tältä sivulta ei löytynyt päällekkäisiä ohjeita.</string>
+    <string name="pattern_combine_requires_internet">Vaatii internetyhteyden</string>
+    <string name="pattern_combined_instructions_copied">Yhdistetyt ohjeet kopioitu</string>
+    <string name="pattern_picker_device_files">Valitse PDF laitteelta</string>
+    <string name="pattern_picker_saved_patterns">Tallennetut ohjeet</string>
+    <string name="pattern_picker_camera_scan">Kameraskannaus</string>
+    <string name="pattern_picker_pdf_unavailable">PDF ei ole saatavilla</string>
+    <string name="pattern_scan_failed">Ohjeskannausta ei voitu muuntaa PDF:ksi.</string>
+    <string name="imported_pattern_designer">Tuotu PDF</string>
+    <string name="current_row_short">Kerros %1$d</string>
+    <string name="pattern_instruction_copied">Ohje kopioitu</string>
+    <string name="time_spent_minutes_format">%dm</string>
+    <string name="link_to_project">Liitetäänkö projektiin %s?</string>
+    <string name="link_yarn">Liitä lanka</string>
+    <string name="unlink_yarn">Poista lankalinkki</string>
+    <string name="link">Liitä</string>
+    <string name="select_yarn_card">Valitse lankakortti</string>
+    <string name="add_yarn">Lisää lanka</string>
+    <string name="linked_yarn_title">LIITETTY LANKA</string>
+    <string name="no_linked_yarn">Lankaa ei ole vielä liitetty</string>
+    <string name="yarn_count_format">%1$d lankaa</string>
+    <string name="linked_project_label">Liitetty projekti</string>
+    <string name="link_to_project_label">Liitä projektiin</string>
+    <string name="change_project_link">Vaihda</string>
+    <string name="remove_project_link">Poista linkki</string>
+    <string name="select_project">Valitse projekti</string>
+    <string name="status_label">Tila</string>
+    <string name="quantity_label">Määrä</string>
+    <string name="status_in_stash">Varastossa</string>
+    <string name="status_in_use">Käytössä</string>
+    <string name="status_finished">Valmis</string>
+    <string name="linked_project_arrow">\u2192 %1$s</string>
+    <string name="yarn_details_title">Tiedot</string>
+    <string name="delete_yarn_card_message">Poistetaanko tämä lankakortti? Tätä ei voi kumota.</string>
+    <string name="saved_to_my_yarn_toast">Tallennettu kirjaston Omiin lankoihin</string>
+    <string name="skein_count_one">%1$d kerä</string>
+    <string name="skein_count_many">%1$d kerää</string>
+
+    <!-- Istuntohistoria -->
+    <string name="session_history_title">Historia</string>
+    <string name="no_sessions">Istuntoja ei ole vielä tallennettu. Aloita neulominen, niin näet historian täällä.</string>
+    <string name="session_row_range">Kerrokset %1$d \u2192 %2$d</string>
+    <string name="session_duration_format">%1$dt %2$dmin</string>
+    <string name="pro_full_history_hint">Päivitä Prohon nähdäksesi koko istuntohistorian</string>
+
+    <!-- Asetukset -->
+    <string name="show_knitting_tips">Näytä neulontavinkit</string>
+    <string name="project_summary">Projektin yhteenveto</string>
+    <string name="view_ai_summary">Näytä AI-yhteenveto</string>
+    <string name="generating_summary">Luodaan yhteenvetoa…</string>
+    <string name="ai_quota_exhausted">Kuukauden AI-raja täynnä</string>
+    <string name="ai_summary_fallback">AI-yhteenvetoa ei voitu luoda — näytetään perusluvut sen sijaan</string>
+
+    <!-- Kerroslaskuri -->
+    <string name="default_project_name">Oma projekti</string>
+    <string name="reset_counter">Nollaa laskuri</string>
+    <string name="reset_counter_message">Nollataanko laskuri arvoon 0?</string>
+    <string name="pattern_repeat">Mallikerta</string>
+    <string name="notes">Muistiinpanot</string>
+    <string name="add_note">Lisää muistiinpano…</string>
+    <string name="notes_editor_title">Muistiinpanot — %1$s</string>
+    <string name="write_your_notes_here">Kirjoita muistiinpanosi tähän…</string>
+
+    <!-- Päiväkirja (AI-merkintä) -->
+    <string name="journal_ai_badge">+ AI</string>
+    <string name="journal_add_entry_title">Lisää päiväkirjamerkintä</string>
+    <string name="journal_mode_speak">Puhu</string>
+    <string name="journal_mode_type">Kirjoita</string>
+    <string name="journal_speak_title">Puhu merkintäsi</string>
+    <string name="journal_type_title">Kirjoita merkintäsi</string>
+    <string name="journal_listening">Kuunnellaan…</string>
+    <string name="journal_tap_to_speak">Aloita painamalla mikrofonia</string>
+    <string name="journal_type_placeholder">Mitä tässä istunnossa tapahtui?</string>
+    <string name="journal_transcription_placeholder">Sanasi ilmestyvät tähän…</string>
+    <string name="journal_add_button">Lisää merkintä</string>
+    <string name="journal_empty_error">Merkintä ei voi olla tyhjä</string>
+    <string name="journal_offline_notice">AI-muotoilu ei ole käytettävissä, merkintä tallennettiin kirjoittamassasi muodossa.</string>
+    <string name="journal_mic_permission_required">Mikrofonin käyttöoikeus vaaditaan</string>
+    <string name="journal_processing">Muotoillaan…</string>
+    <string name="journal_row_label">Kerros %1$d</string>
+    <string name="journal_speech_unavailable">Puheentunnistus ei ole käytettävissä tällä laitteella</string>
+    <string name="journal_speech_network_error">Puheentunnistus tarvitsee verkkoyhteyden</string>
+    <string name="journal_speech_no_match">Puhetta ei tunnistettu — yritä uudelleen</string>
+    <string name="journal_speech_error">Puheentunnistusvirhe</string>
+
+    <string name="counter_decrease">Vähennä</string>
+    <string name="counter_increase">Lisää</string>
+    <string name="counter_undo">Kumoa</string>
+
+    <!-- Lisäykset / kavennukset -->
+    <string name="mode_increase">Lisäys</string>
+    <string name="mode_decrease">Kavennus</string>
+    <string name="style_flat">Tasoneule</string>
+    <string name="style_circular">Pyöröneule</string>
+    <string name="current_stitches">Nykyinen silmukkamäärä</string>
+    <string name="increase_by">Lisää</string>
+    <string name="decrease_by">Kavenna</string>
+    <string name="invalid_input">Virheellinen syöte</string>
+    <string name="easy_to_remember">Helppo muistaa</string>
+    <string name="balanced">Tasainen</string>
+    <string name="total_stitches_format">YHTEENSÄ: %1$d %2$s</string>
+
+    <!-- Tiheyslaskuri -->
+    <string name="pattern_gauge">Ohjeen tiheys</string>
+    <string name="your_gauge">Oma tiheys</string>
+    <string name="pattern_instructions">Ohjeen tiedot</string>
+    <string name="stitches_gauge">Silmukoita %s</string>
+    <string name="rows_gauge">Kerroksia %s</string>
+    <string name="stitches_in_pattern">Ohjeen silmukkamäärä</string>
+    <string name="rows_in_pattern">Ohjeen kerrosmäärä</string>
+    <string name="adjusted_for_your_gauge">Sovitettu sinun tiheydellesi</string>
+    <string name="adjusted_result">%1$d silmukkaa, %2$d kerrosta</string>
+    <string name="exact_result">Tarkka: %1$s s, %2$s krs</string>
+    <string name="stitch_gauge_diff">Silmukkatiheys: %s%%</string>
+
+    <!-- Luomislaskuri -->
+    <string name="desired_width">Haluttu leveys</string>
+    <string name="stitch_gauge">Silmukkatiheys</string>
+    <string name="pattern_repeat_optional">Mallikerta (valinnainen)</string>
+    <string name="edge_stitches_optional">Reunasilmukat (valinnainen)</string>
+    <string name="stitches_result">%d silmukkaa</string>
+    <string name="actual_width">Todellinen leveys: %1$s %2$s</string>
+    <string name="adjusted_down">Pyöristetty alas: %1$d s (%2$s %3$s)</string>
+    <string name="adjusted_up">Pyöristetty ylös: %1$d s (%2$s %3$s)</string>
+
+    <!-- Lankalaskuri -->
+    <string name="total_yarn_needed">Tarvittava lankamäärä yhteensä</string>
+    <string name="yarn_per_skein">%s / kerä</string>
+    <string name="weight_per_skein">Paino / kerä</string>
+    <string name="skeins_result">%d kerää</string>
+    <string name="total_weight">Kokonaispaino: %s g</string>
+    <string name="exact_skeins">Tarkka määrä: %s kerää</string>
+    <string name="extra_skein_note">Osta aina yksi ylimääräinen kerä — värjäyserät voivat vaihdella</string>
+
+    <!-- Puikkokoot -->
+    <string name="search_size">Etsi kokoa…</string>
+    <string name="needle_size_disclaimer">Koot ovat likimääräisiä vastaavuuksia. Japanilaisissa kooissa käytetään erillistä metristä asteikkoa.</string>
+    <string name="header_mm">mm</string>
+    <string name="header_us">US</string>
+    <string name="header_uk">UK</string>
+    <string name="header_jp">JP</string>
+
+    <!-- Asetukset -->
+    <string name="theme">Teema</string>
+    <string name="theme_system">Järjestelmä</string>
+    <string name="theme_light">Vaalea</string>
+    <string name="theme_dark">Tumma</string>
+    <string name="preferences">Asetukset</string>
+    <string name="settings_section_settings">ASETUKSET</string>
+    <string name="settings_section_pro">PRO</string>
+    <string name="settings_section_info">TIETOA</string>
+    <string name="settings_language">Sovelluksen kieli</string>
+    <string name="settings_language_change_hint">Kieli vaihtuu heti</string>
+    <string name="settings_language_system">Seuraa järjestelmää</string>
+    <string name="settings_language_finnish">Suomi</string>
+    <string name="settings_language_english">English</string>
+    <string name="settings_language_swedish">Svenska</string>
+    <string name="settings_language_german">Deutsch</string>
+    <string name="settings_language_french">Français</string>
+    <string name="settings_language_spanish">Español</string>
+    <string name="settings_language_portuguese">Português</string>
+    <string name="settings_language_italian">Italiano</string>
+    <string name="settings_language_norwegian">Norsk</string>
+    <string name="settings_language_danish">Dansk</string>
+    <string name="settings_language_dutch">Nederlands</string>
+    <string name="haptic_feedback">Haptinen palaute</string>
+    <string name="keep_screen_awake">Pidä näyttö hereillä</string>
+    <string name="use_imperial_units">Käytä imperiaalisia mittayksiköitä</string>
+    <string name="purchase">Osta</string>
+    <string name="upgrade_to_pro">Päivitä Prohon</string>
+    <string name="restore_purchases">Palauta ostot</string>
+    <string name="privacy_summary">Kaikki tiedot pysyvät laitteellasi. Ei analytiikkaa, ei pilvisynkronointia, ei tilejä.</string>
+    <string name="pro_restored">Pro palautettu</string>
+    <string name="no_purchases_found">Ostoja ei löytynyt</string>
+    <string name="version_format">KnitTools %s</string>
+
+    <!-- Pro-päivitys -->
+    <string name="knittools_pro">KnitTools Pro</string>
+    <string name="you_have_pro">Sinulla on KnitTools Pro!</string>
+    <string name="all_features_unlocked">Kaikki ominaisuudet on avattu.</string>
+    <string name="pro_feature_unlimited_projects">Rajattomasti laskuriprojekteja</string>
+    <string name="pro_feature_full_history">Täysi laskurihistoria</string>
+    <string name="pro_feature_notes">Projektikohtaiset muistiinpanot</string>
+    <string name="pro_feature_secondary_counter">Toinen laskuri</string>
+    <string name="pro_feature_ocr">Lankavyötteen OCR-skannaus</string>
+    <string name="pro_feature_widget">Aloitusnäytön widget</string>
+    <string name="pro_feature_row_reminders">Kerrosmuistutukset</string>
+    <string name="pro_feature_progress_photos">Edistymiskuvat</string>
+    <string name="pro_feature_multiple_counters">Useita laskureita</string>
+    <string name="pro_feature_pattern_camera_scan">Ohjeen kameraskannaus</string>
+    <string name="pro_feature">Pro-ominaisuus</string>
+    <string name="pro_required_add">Päivitä Prohon lisätäksesi enemmän</string>
+    <string name="upgrade_for_price">Päivitä hintaan %s</string>
+    <string name="one_time_purchase">Kertaostos. Ei tilausta.</string>
+    <string name="loading_price">Ladataan hintaa…</string>
+    <string name="price_loading_hint">Yhdistetään Google Playhin — tarkista internetyhteys, jos tämä kestää pitkään</string>
+
+    <!-- Lankakortti / OCR -->
+    <string name="scan_yarn_label">Skannaa lankavyöte</string>
+    <string name="yarn_scan_failed">Tästä kuvasta ei voitu lukea lankavyötettä. Yritä uudelleen.</string>
+    <string name="yarn_scan_no_internet">Skannaus vaatii internetyhteyden</string>
+    <string name="saved_yarns">Tallennetut langat</string>
+    <string name="scanned_yarn">Skannattu lanka</string>
+    <string name="brand">Merkki</string>
+    <string name="yarn_name">Langan nimi</string>
+    <string name="fiber_content">Koostumus</string>
+    <string name="weight_grams">Paino (g)</string>
+    <string name="length_meters">Pituus (m)</string>
+    <string name="needle_size_label">Puikkokoko</string>
+    <string name="gauge_label">Tiheys</string>
+    <string name="color_name">Värin nimi</string>
+    <string name="color_number">Värinumero</string>
+    <string name="dye_lot">Värjäyserä</string>
+    <string name="weight_category">Paksuusluokka</string>
+    <string name="care_symbols">Hoito</string>
+    <string name="save_and_use">Tallenna ja käytä</string>
+    <string name="discard">Hylkää</string>
+    <string name="use_in_calculator">Käytä laskurissa</string>
+    <string name="no_saved_yarns">Lankakortteja ei ole vielä tallennettu</string>
+    <string name="scanning">Skannataan…</string>
+    <string name="card_deleted">Lankakortti poistettu</string>
+    <string name="undo">Kumoa</string>
+    <string name="pro_required_save">Pro vaaditaan lankakorttien tallentamiseen</string>
+
+    <!-- Gemini Nano -->
+    <string name="paste_instruction">Liitä ohje</string>
+    <string name="instruction_hint">Liitä neuleohje tähän</string>
+    <string name="instruction_hint_increase">esim. "Lisää 12 silmukkaa tasaisesti 96 silmukalle"</string>
+    <string name="instruction_hint_gauge">esim. "22 silmukkaa ja 30 kerrosta / 10 cm" tai "leveys 30 cm, 22 silmukkaa"</string>
+    <string name="parsing_instruction">Jäsennetään…</string>
+    <string name="instruction_parsed">Arvot täytetty ohjeesta</string>
+    <string name="instruction_parse_failed">Ohjetta ei ymmärretty — kokeile muotoilla se toisin</string>
+    <string name="ai_error_busy">AI on varattu — yritä hetken kuluttua uudelleen</string>
+    <string name="ai_error_quota">Akkuraja saavutettu — yritä myöhemmin uudelleen</string>
+    <string name="ai_error_unavailable">AI-ominaisuus ei ole käytettävissä tällä laitteella</string>
+    <string name="ai_error_unknown">Jotain meni pieleen — yritä uudelleen</string>
+
+    <!-- Kameran käyttöoikeus -->
+    <string name="camera_permission_denied">Kameran käyttöoikeus tarvitaan lankavyötteen skannaukseen</string>
+    <string name="camera_permission_denied_permanent">Kameran käyttö estetty — ota se käyttöön asetuksissa</string>
+    <string name="open_settings">Asetukset</string>
+
+    <!-- Hoitomerkkien luokat -->
+    <string name="care_category_washing">Pesu</string>
+    <string name="care_category_bleaching">Valkaisu</string>
+    <string name="care_category_drying">Kuivaus</string>
+    <string name="care_category_ironing">Silitys</string>
+    <string name="care_category_dry_cleaning">Kemiallinen pesu</string>
+
+    <!-- Oletukset -->
+    <string name="yarn_card_fallback_name">Lankakortti</string>
+
+    <!-- Widget -->
+    <string name="widget_name">Kerroslaskuri</string>
+    <string name="widget_description">Kerroslaskuriwidget aktiiviselle projektille</string>
+    <string name="widget_pro_required">Päivitä Prohon käyttääksesi widgetiä</string>
+
+    <!-- Hubit -->
+    <string name="reference_hub_title">Viitteet</string>
+    <string name="desc_increase_decrease">Jaa lisäykset tai kavennukset tasaisesti kerrokselle</string>
+    <string name="desc_gauge_calculator">Laske tiheys ja muunna ohjeen tiedot</string>
+    <string name="desc_cast_on">Laske haluttuun leveyteen luotavat silmukat</string>
+    <string name="desc_needle_sizes">Puikkokoot metrisessä, US-, UK- ja japanilaisessa järjestelmässä</string>
+    <string name="desc_size_charts">Vaatteiden standardimitoitukset kokojen tueksi</string>
+    <string name="desc_abbreviations">Yleisimpien neulelyhenteiden hakemisto</string>
+    <string name="desc_chart_symbols">Tavallisten neulekaaviomerkkien opas</string>
+
+    <!-- Kirjasto — oma kokoelma -->
+    <string name="library_my_collection">OMA KOKOELMA</string>
+    <string name="library_reference">VIITTEET</string>
+    <string name="desc_saved_patterns">Ravelrystä tallentamasi ohjeet ja PDF-tiedostot</string>
+    <string name="desc_my_yarn">Lankavarastosi — merkit, paksuudet ja värit</string>
+    <string name="desc_all_photos">Kaikkien projektiesi edistymiskuvat</string>
+    <string name="empty_saved_patterns">Ei tallennettuja ohjeita vielä.\nEtsi ohjeita Ravelry-haulla.</string>
+    <string name="empty_my_yarn">Lankakortteja ei ole vielä tallennettu.</string>
+    <string name="empty_all_photos">Edistymiskuvia ei ole vielä.</string>
+    <string name="filter_all">Kaikki</string>
+
+    <!-- Tilastot -->
+    <string name="total_time_label">KOKONAISAIKA</string>
+    <string name="avg_pace_label">KESKITAHTI</string>
+    <string name="completed_label">VALMIIT</string>
+    <string name="top_streak_label">PISIN PUTKI</string>
+    <string name="time_format_hours">%.1f h</string>
+    <string name="pace_format">%.0f krs/h</string>
+    <string name="streak_format">%d päivää</string>
+    <string name="all_projects">Kaikki projektit</string>
+    <string name="insights_all_time">Kaikki</string>
+    <string name="insights_this_week">Tämä viikko</string>
+    <string name="insights_this_month">Tämä kuukausi</string>
+    <string name="pro_insights_hint">Avaa kaaviot, putket ja muuta Prolla</string>
+    <string name="insights_summary_format">%1$.1f h tällä viikolla · %2$.0f krs/h</string>
+    <string name="insights_knitting_activity">NEULONTA-AKTIIVISUUS</string>
+    <string name="insights_current_streak">Nykyinen putki:</string>
+    <string name="insights_best_streak">Paras:</string>
+    <string name="insights_project_time_with_rows">%1$s · %2$d kerrosta</string>
+    <string name="insights_project_time_only">%1$s</string>
+    <string name="insights_rows_count">%1$d kerrosta</string>
+    <string name="insights_less_than_tenth_hour">&lt;0,1 h</string>
+    <string name="insights_no_time">—</string>
+    <string name="insights_footer_1">Jokainen kerros lasketaan — jatka neulomista!</string>
+    <string name="insights_footer_2">Puikot odottavat.</string>
+    <string name="insights_footer_3">Vielä yksi kerros?</string>
+    <string name="insights_footer_4">Silmukka silmukalta, kerros kerrokselta.</string>
+    <string name="insights_footer_5">Suuret asiat alkavat yhdestä luomisesta.</string>
+    <string name="relative_time_today">tänään</string>
+    <string name="relative_time_yesterday">eilen</string>
+    <string name="relative_time_days_ago">%1$dpv sitten</string>
+    <string name="relative_time_weeks_ago">%1$dv sitten</string>
+    <string name="relative_time_months_ago">%1$dkk sitten</string>
+    <string name="week_now">nyt</string>
+    <string name="no_knitting">Ei neulontaa</string>
+    <string name="time_per_project">AIKA PROJEKTEITTAIN</string>
+    <string name="pace_over_time">TAHTI AJASSA</string>
+
+    <!-- Asetukset -->
+    <string name="help_and_guide">Ohjeet ja opas</string>
+
+    <!-- Tiheyslaskuri — mallitilkkiosio -->
+    <string name="my_gauge">Oma tiheys</string>
+    <string name="your_gauge_section">Sinun tiheytesi</string>
+    <string name="measure_swatch">Mittaa mallitilkku</string>
+    <string name="enter_directly">Syötä suoraan</string>
+    <string name="calculated_gauge_format">= %1$.1f s / %2$.1f krs %3$s</string>
+    <string name="measured_width">Mitattu leveys</string>
+    <string name="stitch_count_in_swatch">Silmukoita mallitilkussa</string>
+    <string name="measured_height">Mitattu korkeus</string>
+    <string name="row_count_in_swatch">Kerroksia mallitilkussa</string>
+    <string name="your_stitch_gauge">Sinun silmukkatiheytesi: %s</string>
+    <string name="your_row_gauge">Sinun kerrostiheytesi: %s</string>
+
+    <!-- Kokotaulukot -->
+    <string name="size_charts_title">Kokotaulukot</string>
+    <string name="category_baby">Vauva (0–24 kk)</string>
+    <string name="category_child_youth">Lapset ja nuoret (2–16)</string>
+    <string name="category_women">Naiset</string>
+    <string name="category_men">Miehet</string>
+    <string name="category_head">Pää</string>
+    <string name="category_hand">Käsi</string>
+    <!-- Kokotaulukon otsikot -->
+    <string name="size_col_size">Koko</string>
+    <string name="size_col_chest">Rinta</string>
+    <string name="size_col_waist">Vyötärö</string>
+    <string name="size_col_hips">Lantio</string>
+    <string name="size_col_head">Pää</string>
+    <string name="size_col_length">Pituus</string>
+    <string name="size_col_height">Pituus</string>
+    <string name="size_col_arm">Hihan pituus</string>
+    <string name="size_col_bust">Rinta</string>
+    <string name="size_col_circumference">Ympärys</string>
+    <!-- Kokotaulukon rivinimet -->
+    <string name="size_row_preemie">Keskonen</string>
+    <string name="size_row_baby">Vauva</string>
+    <string name="size_row_toddler">Taapero</string>
+    <string name="size_row_child">Lapsi</string>
+    <string name="size_row_adult_s">Aikuinen S</string>
+    <string name="size_row_adult_m">Aikuinen M</string>
+    <string name="size_row_adult_l">Aikuinen L</string>
+    <string name="size_row_adult_xl">Aikuinen XL</string>
+    <string name="size_row_child_s">Lapsi S</string>
+    <string name="size_row_child_m">Lapsi M</string>
+    <string name="size_row_child_l">Lapsi L</string>
+    <string name="size_row_age_0_3m">0–3 kk</string>
+    <string name="size_row_age_3_6m">3–6 kk</string>
+    <string name="size_row_age_6_12m">6–12 kk</string>
+    <string name="size_row_age_12_18m">12–18 kk</string>
+    <string name="size_row_age_18_24m">18–24 kk</string>
+
+    <!-- Lyhenteet -->
+    <string name="abbreviations_title">Lyhenteet</string>
+    <string name="search_abbreviation">Etsi lyhennettä…</string>
+    <string name="no_results_found">Tuloksia ei löytynyt</string>
+    <!-- Lyhenteiden selitykset -->
+    <string name="abbr_k_meaning">Neulo oikein</string>
+    <string name="abbr_k_desc">Pistä puikko silmukan etureunasta, kierrä lanka, vedä läpi</string>
+    <string name="abbr_p_meaning">Neulo nurin</string>
+    <string name="abbr_p_desc">Pistä puikko silmukan takareunasta, kierrä lanka, vedä läpi</string>
+    <string name="abbr_sts_meaning">Silmukka/silmukat</string>
+    <string name="abbr_sts_desc">Yksi tai useampi silmukka puikolla</string>
+    <string name="abbr_rs_meaning">Oikea puoli</string>
+    <string name="abbr_rs_desc">Työn näkyvä etupuoli</string>
+    <string name="abbr_ws_meaning">Nurja puoli</string>
+    <string name="abbr_ws_desc">Työn kääntöpuoli</string>
+    <string name="abbr_yo_meaning">Langankierto (ylivetosilmukka)</string>
+    <string name="abbr_yo_desc">Kierrä lanka puikon yli luodaksesi uuden silmukan ja koristereiän</string>
+    <string name="abbr_kwise_meaning">Oikeinneulottavasti</string>
+    <string name="abbr_kwise_desc">Pistä puikko silmukkaan kuin oikein neulottaessa</string>
+    <string name="abbr_pwise_meaning">Nurinneulottavasti</string>
+    <string name="abbr_pwise_desc">Pistä puikko silmukkaan kuin nurin neulottaessa</string>
+    <string name="abbr_k2tog_meaning">Neulo 2 yhteen oikein</string>
+    <string name="abbr_k2tog_desc">Oikealle kallistuva kavennus: neulo kaksi silmukkaa yhtenä oikein</string>
+    <string name="abbr_p2tog_meaning">Neulo 2 yhteen nurin</string>
+    <string name="abbr_p2tog_desc">Neulo kaksi silmukkaa yhtenä nurin</string>
+    <string name="abbr_ssk_meaning">Nosta, nosta, neulo (ylivetokavennus)</string>
+    <string name="abbr_ssk_desc">Vasemmalle kallistuva kavennus: nosta 2 silmukkaa oikein, neulo ne yhteen takareunoista</string>
+    <string name="abbr_ssp_meaning">Nosta, nosta, neulo nurin</string>
+    <string name="abbr_ssp_desc">Vasemmalle kallistuva kavennus nurjan puolen kerroksella</string>
+    <string name="abbr_skp_meaning">Nosta, neulo, vedä nostettu yli</string>
+    <string name="abbr_skp_desc">Vasemmalle kallistuva kavennus, vaihtoehto SSK:lle</string>
+    <string name="abbr_k3tog_meaning">Neulo 3 yhteen oikein</string>
+    <string name="abbr_k3tog_desc">Oikealle kallistuva kaksoiskavennus</string>
+    <string name="abbr_p3tog_meaning">Neulo 3 yhteen nurin</string>
+    <string name="abbr_p3tog_desc">Neulo kolme silmukkaa yhtenä nurin</string>
+    <string name="abbr_s2kp_meaning">Nosta 2, neulo 1, vedä nostetut yli</string>
+    <string name="abbr_s2kp_desc">Keskitetty kaksoiskavennus</string>
+    <string name="abbr_sk2p_meaning">Nosta 1, neulo 2 yhteen, vedä nostettu yli</string>
+    <string name="abbr_sk2p_desc">Vasemmalle kallistuva kaksoiskavennus</string>
+    <string name="abbr_cdd_meaning">Keskitetty kaksoiskavennus</string>
+    <string name="abbr_cdd_desc">Nosta 2 yhteen oikein, neulo 1 oikein, vedä nostetut yli</string>
+    <string name="abbr_psso_meaning">Vedä nostettu silmukka yli</string>
+    <string name="abbr_psso_desc">Nosta aiemmin nostettu silmukka viimeksi neulotun yli</string>
+    <string name="abbr_dec_meaning">Kavennus</string>
+    <string name="abbr_dec_desc">Vähennä silmukoiden määrää</string>
+    <string name="abbr_m1_meaning">Lisää 1 silmukka</string>
+    <string name="abbr_m1_desc">Poimi silmukoiden välinen lanka ja neulo takareunasta lisätäksesi silmukan</string>
+    <string name="abbr_m1l_meaning">Lisää 1 vasen</string>
+    <string name="abbr_m1l_desc">Vasemmalle kallistuva lisäys silmukoiden välistä</string>
+    <string name="abbr_m1r_meaning">Lisää 1 oikea</string>
+    <string name="abbr_m1r_desc">Oikealle kallistuva lisäys silmukoiden välistä</string>
+    <string name="abbr_kfb_meaning">Neulo etu- ja takareunasta oikein</string>
+    <string name="abbr_kfb_desc">Neulo samaan silmukkaan etu- ja takareunasta lisätäksesi silmukan</string>
+    <string name="abbr_pfb_meaning">Neulo etu- ja takareunasta nurin</string>
+    <string name="abbr_pfb_desc">Neulo nurin samaan silmukkaan etu- ja takareunasta lisätäksesi silmukan</string>
+    <string name="abbr_inc_meaning">Lisäys</string>
+    <string name="abbr_inc_desc">Lisää silmukoita työhön</string>
+    <string name="abbr_sl_meaning">Nosta silmukka</string>
+    <string name="abbr_sl_desc">Siirrä silmukka vasemmalta puikolta oikealle neulomatta</string>
+    <string name="abbr_sl1k_meaning">Nosta 1 oikeinneulottavasti</string>
+    <string name="abbr_sl1k_desc">Nosta silmukka kuin oikein neulottaessa</string>
+    <string name="abbr_sl1p_meaning">Nosta 1 nurinneulottavasti</string>
+    <string name="abbr_sl1p_desc">Nosta silmukka kuin nurin neulottaessa</string>
+    <string name="abbr_co_meaning">Luo silmukat</string>
+    <string name="abbr_co_desc">Luo aloitussilmukat puikolle</string>
+    <string name="abbr_bo_meaning">Päätä silmukat</string>
+    <string name="abbr_bo_desc">Päätä silmukat niin ettei työ aukea</string>
+    <string name="abbr_pu_meaning">Poimi silmukoita</string>
+    <string name="abbr_pu_desc">Poimi silmukoita työn reunasta</string>
+    <string name="abbr_pm_meaning">Aseta merkki</string>
+    <string name="abbr_pm_desc">Aseta silmukkamerkki puikolle</string>
+    <string name="abbr_sm_meaning">Siirrä merkki</string>
+    <string name="abbr_sm_desc">Siirrä merkki vasemmalta puikolta oikealle</string>
+    <string name="abbr_rep_meaning">Toista</string>
+    <string name="abbr_rep_desc">Neulo ilmoitettu osio uudelleen</string>
+    <string name="abbr_rnd_meaning">Kierros</string>
+    <string name="abbr_rnd_desc">Yksi täysi kierros pyöröneuleessa</string>
+    <string name="abbr_eor_meaning">Joka toinen kerros</string>
+    <string name="abbr_eor_desc">Neulotaan vain joka toisella kerroksella</string>
+    <string name="abbr_dpn_meaning">Sukkapuikot</string>
+    <string name="abbr_dpn_desc">Lyhyet puikot joissa on kärjet molemmissa päissä, pienen ympärysmitan neulontaan</string>
+    <string name="abbr_cn_meaning">Palmikkopuikko</string>
+    <string name="abbr_cn_desc">Lyhyt apupuikko silmukoiden pitämiseen palmikoita neulottaessa</string>
+    <string name="abbr_circ_meaning">Pyöröpuikko</string>
+    <string name="abbr_circ_desc">Kaksi puikonkärkeä yhdistettynä taipuisalla kaapelilla</string>
+    <string name="abbr_tbl_meaning">Takareunasta</string>
+    <string name="abbr_tbl_desc">Neulo silmukan takareunasta</string>
+    <string name="abbr_ktbl_meaning">Oikein takareunasta</string>
+    <string name="abbr_ktbl_desc">Kierretty oikea silmukka</string>
+    <string name="abbr_ptbl_meaning">Nurin takareunasta</string>
+    <string name="abbr_ptbl_desc">Kierretty nurja silmukka</string>
+    <string name="abbr_c4f_meaning">Palmikko 4 edessä</string>
+    <string name="abbr_c4f_desc">Nosta 2 apupuikolle eteen, neulo 2 oikein, neulo 2 apupuikolta oikein</string>
+    <string name="abbr_c4b_meaning">Palmikko 4 takana</string>
+    <string name="abbr_c4b_desc">Nosta 2 apupuikolle taakse, neulo 2 oikein, neulo 2 apupuikolta oikein</string>
+    <string name="abbr_c6f_meaning">Palmikko 6 edessä</string>
+    <string name="abbr_c6f_desc">Nosta 3 apupuikolle eteen, neulo 3 oikein, neulo 3 apupuikolta oikein</string>
+    <string name="abbr_c6b_meaning">Palmikko 6 takana</string>
+    <string name="abbr_c6b_desc">Nosta 3 apupuikolle taakse, neulo 3 oikein, neulo 3 apupuikolta oikein</string>
+    <string name="abbr_wyif_meaning">Lanka edessä</string>
+    <string name="abbr_wyif_desc">Pidä lanka työn etupuolella (nurjalla puolella)</string>
+    <string name="abbr_wyib_meaning">Lanka takana</string>
+    <string name="abbr_wyib_desc">Pidä lanka työn takapuolella (oikealla puolella)</string>
+    <string name="abbr_wt_meaning">Kiedo ja käännä</string>
+    <string name="abbr_wt_desc">Kiedo seuraava silmukka ja käännä työ lyhennetyille kerroksille</string>
+    <string name="abbr_st_st_meaning">Sileä neule</string>
+    <string name="abbr_st_st_desc">Oikein oikealla puolella, nurin nurjalla puolella (tai pelkkä oikein pyörönä)</string>
+    <string name="abbr_rev_st_st_meaning">Nurja sileä neule</string>
+    <string name="abbr_rev_st_st_desc">Nurin oikealla puolella, oikein nurjalla puolella</string>
+    <string name="abbr_g_st_meaning">Ainaoikea</string>
+    <string name="abbr_g_st_desc">Oikein joka kerroksella (tai oikein/nurin vuorotellen pyörönä)</string>
+    <string name="abbr_seed_st_meaning">Riisineule</string>
+    <string name="abbr_seed_st_desc">Vuorottele 1 oikein ja 1 nurin, limittäen joka kerros</string>
+    <string name="abbr_tog_meaning">Yhteen</string>
+    <string name="abbr_tog_desc">Neulo silmukat yhtenä</string>
+    <string name="abbr_rem_meaning">Jäljellä</string>
+    <string name="abbr_rem_desc">Silmukat jotka puikolla on jäljellä</string>
+    <string name="abbr_beg_meaning">Alku</string>
+    <string name="abbr_beg_desc">Kerroksen tai kierroksen alku</string>
+    <string name="abbr_alt_meaning">Vuorotellen</string>
+    <string name="abbr_alt_desc">Joka toisella kerroksella tai silmukalla</string>
+    <string name="abbr_approx_meaning">Suunnilleen</string>
+    <string name="abbr_approx_desc">Likimain, ei tarkasti</string>
+    <string name="abbr_cont_meaning">Jatka</string>
+    <string name="abbr_cont_desc">Jatka aloitetulla tavalla</string>
+    <string name="abbr_foll_meaning">Seuraava(t)</string>
+    <string name="abbr_foll_desc">Seuraava kerros, kierros tai ohje</string>
+    <string name="abbr_prev_meaning">Edellinen</string>
+    <string name="abbr_prev_desc">Nykyistä edeltävä kerros, kierros tai silmukka</string>
+    <string name="abbr_patt_meaning">Malli/kuvio</string>
+    <string name="abbr_patt_desc">Jatka aloitetulla kuvioilla</string>
+    <string name="abbr_sk_meaning">Ohita</string>
+    <string name="abbr_sk_desc">Jätä seuraava silmukka väliin</string>
+    <string name="abbr_selvage_meaning">Reunasilmukka</string>
+    <string name="abbr_selvage_desc">Reunasilmukat, joita neulotaan eri tavalla siistin reunan saamiseksi</string>
+    <string name="abbr_lh_meaning">Vasen</string>
+    <string name="abbr_lh_desc">Vasen puikko tai vasen puoli</string>
+    <string name="abbr_rh_meaning">Oikea</string>
+    <string name="abbr_rh_desc">Oikea puikko tai oikea puoli</string>
+    <string name="abbr_mc_meaning">Pääväri</string>
+    <string name="abbr_mc_desc">Projektin ensisijainen lankaväri</string>
+    <string name="abbr_cc_meaning">Kontrastiväri</string>
+    <string name="abbr_cc_desc">Projektin toissijainen lankaväri</string>
+    <string name="abbr_wpi_meaning">Kierrosta tuumalla</string>
+    <string name="abbr_wpi_desc">Langan paksuusmitta: kuinka monta kierrosta mahtuu viivoittimella tuumalle</string>
+    <string name="abbr_gauge_meaning">Tiheys/käsiala</string>
+    <string name="abbr_gauge_desc">Silmukoiden ja kerrosten määrä mittayksikköä kohti</string>
+    <string name="abbr_fo_meaning">Valmis työ</string>
+    <string name="abbr_fo_desc">Valmistunut neuleprojekti</string>
+    <string name="abbr_wip_meaning">Työn alla</string>
+    <string name="abbr_wip_desc">Parhaillaan neulottava projekti</string>
+    <string name="abbr_ufo_meaning">Keskeneräinen projekti</string>
+    <string name="abbr_ufo_desc">Hylätty tai pysäytetty projekti</string>
+    <string name="abbr_frog_meaning">Purku (frogaus)</string>
+    <string name="abbr_frog_desc">Työn purkaminen — englanninkielinen nimi tulee sammakon kurnutuksesta \"rip-it\"</string>
+    <string name="abbr_tink_meaning">Takaisin purkaminen</string>
+    <string name="abbr_tink_desc">Silmukka kerrallaan takaisin purkaminen (knit takaperin = tink)</string>
+    <string name="abbr_lys_meaning">Paikallinen lankaliike</string>
+    <string name="abbr_lys_desc">Oman naapuruston lankakauppa</string>
+
+    <!-- Kaaviomerkit -->
+    <string name="chart_symbols_title">Kaaviomerkit</string>
+    <string name="chart_symbols_disclaimer">Merkit noudattavat yleisiä käytäntöjä. Tarkista aina oman ohjeesi merkkiselite.</string>
+    <string name="category_basic">Perussilmukat</string>
+    <string name="category_decreases">Kavennukset</string>
+    <string name="category_increases">Lisäykset</string>
+    <string name="category_cables">Palmikot</string>
+    <string name="category_other">Muut</string>
+    <!-- Kaaviomerkkien selitykset -->
+    <string name="sym_knit_name">Oikea silmukka</string>
+    <string name="sym_knit_desc">Oikein oikealla puolella, nurin nurjalla puolella</string>
+    <string name="sym_purl_name">Nurja silmukka</string>
+    <string name="sym_purl_desc">Nurin oikealla puolella, oikein nurjalla puolella</string>
+    <string name="sym_yarn_over_name">Langankierto</string>
+    <string name="sym_yarn_over_desc">Kierrä lanka puikon yli luodaksesi reiän</string>
+    <string name="sym_knit_tbl_name">Oikea takareunasta</string>
+    <string name="sym_knit_tbl_desc">Neulo oikein takareunasta (kierretty)</string>
+    <string name="sym_purl_tbl_name">Nurja takareunasta</string>
+    <string name="sym_purl_tbl_desc">Neulo nurin takareunasta (kierretty)</string>
+    <string name="sym_slip_knitwise_name">Nosta oikeinneulottavasti</string>
+    <string name="sym_slip_knitwise_desc">Nosta silmukka kuin oikein neulottaessa</string>
+    <string name="sym_slip_purlwise_name">Nosta nurinneulottavasti</string>
+    <string name="sym_slip_purlwise_desc">Nosta silmukka kuin nurin neulottaessa</string>
+    <string name="sym_k2tog_name">K2tog</string>
+    <string name="sym_k2tog_desc">Neulo 2 yhteen oikein — oikealle kallistuva kavennus</string>
+    <string name="sym_ssk_name">SSK</string>
+    <string name="sym_ssk_desc">Nosta, nosta, neulo — vasemmalle kallistuva kavennus</string>
+    <string name="sym_p2tog_name">P2tog</string>
+    <string name="sym_p2tog_desc">Neulo 2 yhteen nurin</string>
+    <string name="sym_s2kp_name">S2KP / CDD</string>
+    <string name="sym_s2kp_desc">Keskitetty kaksoiskavennus</string>
+    <string name="sym_k3tog_name">K3tog</string>
+    <string name="sym_k3tog_desc">Neulo 3 yhteen oikein — kaksoiskavennus</string>
+    <string name="sym_sk2p_name">SK2P</string>
+    <string name="sym_sk2p_desc">Nosta 1, K2tog, vedä nostettu yli</string>
+    <string name="sym_m1l_name">M1L</string>
+    <string name="sym_m1l_desc">Lisäys vasemmalle — vasemmalle kallistuva lisäys</string>
+    <string name="sym_m1r_name">M1R</string>
+    <string name="sym_m1r_desc">Lisäys oikealle — oikealle kallistuva lisäys</string>
+    <string name="sym_kfb_name">KFB</string>
+    <string name="sym_kfb_desc">Neulo etu- ja takareunasta — lisäys</string>
+    <string name="sym_lifted_inc_left_name">Nostettu lisäys vasen</string>
+    <string name="sym_lifted_inc_left_desc">Vasemmalle kallistuva nostettu lisäys</string>
+    <string name="sym_lifted_inc_right_name">Nostettu lisäys oikea</string>
+    <string name="sym_lifted_inc_right_desc">Oikealle kallistuva nostettu lisäys</string>
+    <string name="sym_cable_2_2_left_name">Palmikko 2/2 vasen</string>
+    <string name="sym_cable_2_2_left_desc">2 yli 2 vasemmalle risteävä palmikko</string>
+    <string name="sym_cable_2_2_right_name">Palmikko 2/2 oikea</string>
+    <string name="sym_cable_2_2_right_desc">2 yli 2 oikealle risteävä palmikko</string>
+    <string name="sym_cable_3_3_left_name">Palmikko 3/3 vasen</string>
+    <string name="sym_cable_3_3_left_desc">3 yli 3 vasemmalle risteävä palmikko</string>
+    <string name="sym_cable_3_3_right_name">Palmikko 3/3 oikea</string>
+    <string name="sym_cable_3_3_right_desc">3 yli 3 oikealle risteävä palmikko</string>
+    <string name="sym_no_stitch_name">Ei silmukkaa</string>
+    <string name="sym_no_stitch_desc">Harmaa laatikko — muotoilukohta jossa ei ole silmukkaa</string>
+    <string name="sym_marker_name">Silmukkamerkki</string>
+    <string name="sym_marker_desc">Silmukkamerkin sijainti</string>
+    <string name="sym_repeat_name">Toisto</string>
+    <string name="sym_repeat_desc">Kuvion toistosulku</string>
+
+    <!-- Pikavinkit -->
+    <string-array name="knitting_tips">
+        <item>Neulo aina mallitilkku ennen uuden projektin aloittamista — vaikka luulisit jo tuntevasi oman tiheytesi.</item>
+        <item>Viimeistele mallitilkku samalla tavalla kuin valmis työ, jotta tiheys on mahdollisimman tarkka.</item>
+        <item>Vältä raitojen porrastus pyöröneuleessa nostamalla uuden värin toisella kerroksella alla olevan kerroksen silmukka vasemmalle puikolle.</item>
+        <item>Pidä käsiala tasaisena, niin reunoista tulee siistit ja viimeistellyt.</item>
+        <item>Laita lukollinen silmukkamerkki joka 20. silmukan kohdalle, kun luot paljon silmukoita.</item>
+        <item>Viimeistele valmiit osat — lopputulos näyttää huomattavasti paremmalta.</item>
+        <item>Laske silmukat jokaisen kerroksen lopussa, kun neulot pitsiä.</item>
+        <item>Keri lanka palloksi ennen aloittamista — se vähentää sotkeutumista.</item>
+        <item>Käytä turvalankaa muutaman kerroksen välein pitsineuleessa — pujota apulanka kaikkien silmukoiden läpi.</item>
+        <item>Päättele langanpäät työn edetessä, niin ne eivät kasaannu projektin loppuun.</item>
+        <item>Osta aina yksi ylimääräinen kerä — värjäyserät voivat vaihdella erien välillä.</item>
+        <item>Neulo mallitilkku pyörönä, jos varsinainen työ neulotaan pyörönä — tiheys voi erota tasoneuleesta.</item>
+        <item>Erottele mallikerrat silmukkamerkeillä — laskeminen helpottuu huomattavasti.</item>
+        <item>Lue koko ohje läpi ennen luomista, jotta vältyt yllätyksiltä.</item>
+        <item>Pidä projektivihkoa muokkauksia ja muistiinpanoja varten, jotta niihin on helppo palata myöhemmin.</item>
+        <item>Jätä lankaliitoksiin vähintään 15 cm hännät, jotta päättely pysyy varmasti paikallaan.</item>
+        <item>Harjoittele uutta tekniikkaa pienellä mallitilkulla ennen kuin käytät sitä varsinaisessa työssä.</item>
+        <item>Säilytä neule työpussissa, jotta se pysyy puhtaana eikä tartu mihinkään.</item>
+        <item>Pidä taukoja ja venyttele käsiäsi, jotta vältät rasitusvaivoja.</item>
+        <item>Merkitse oma kohtasi ohjeessa tarralapulla tai magneettialustalla.</item>
+        <item>Käytä bambupuikkoja liukkaille langoille — ne pitävät silmukat paremmin paikoillaan.</item>
+        <item>Kun poimit silmukoita, käytä yhtä kokoa pienempää puikkoa, niin reunasta tulee siistimpi.</item>
+        <item>Tarkista ensimmäisellä kerroksella, etteivät luodut silmukat ole kiertyneet.</item>
+        <item>Mittaa tiheys viimeistelyn jälkeen, ei ennen sitä — moni lanka muuttuu pesussa.</item>
+        <item>Vuorottele kahta kerää muutaman kerroksen välein, jotta mahdolliset värjäyseroavaisuudet tasoittuvat.</item>
+    </string-array>
+
+    <!-- Sovelluksen sisäiset päivitykset -->
+    <string name="update_downloaded">Päivitys ladattu — käynnistä uudelleen ottaaksesi sen käyttöön</string>
+    <string name="restart">Käynnistä uudelleen</string>
+
+    <!-- Kerrosmuistutukset -->
+    <string name="reminders">Muistutukset</string>
+    <string name="reminders_count">Muistutukset (%d)</string>
+    <string name="add_reminder">Lisää muistutus</string>
+    <string name="delete_reminder_title">Poistetaanko muistutus?</string>
+    <string name="delete_reminder_confirm">Poistetaanko muistutus "%1$s"?</string>
+    <string name="row_number">Kerrosnumero</string>
+    <string name="reminder_message">Viesti</string>
+    <string name="reminder_message_hint">esim. Siirry kantatilkkuun</string>
+    <string name="one_time">Kertaluonteinen</string>
+    <string name="repeating">Toistuva</string>
+    <string name="repeat_every">Toista joka</string>
+    <string name="repeat_every_rows">kerros</string>
+    <string name="repeat_count_format">Toisto %1$d/%2$d</string>
+    <string name="dismiss">Kuittaa</string>
+    <string name="no_reminders">Ei muistutuksia vielä</string>
+
+    <!-- Useita laskureita -->
+    <string name="counters">Laskurit</string>
+    <string name="counters_count">Laskurit (%d)</string>
+    <string name="add_counter">Lisää laskuri</string>
+    <string name="counter_name">Nimi</string>
+    <string name="counter_name_hint">esim. Hihan lisäykset</string>
+    <string name="count_up">Laske ylöspäin</string>
+    <string name="step_size">Askelkoko</string>
+    <string name="shaping">Muotoilu</string>
+    <string name="repeat_section">Toisto-osio</string>
+    <string name="starting_stitches">Aloitussilmukkamäärä</string>
+    <string name="stitch_change">Lisättävät/poistettavat silmukat</string>
+    <string name="shape_every_n">Muotoile joka N. kerros</string>
+    <string name="repeat_section_start_row">Aloituskerros</string>
+    <string name="repeat_section_end_row">Lopetuskerros</string>
+    <string name="total_repeats">Toistoja yhteensä</string>
+    <string name="repeat_section_progress_format">Toisto %1$d / %2$d · Kerros %3$d / %4$d</string>
+    <string name="repeat_section_complete">Valmis</string>
+    <string name="next_shaping_format">Seuraava muotoilu: kerros %1$d → %2$d s</string>
+    <string name="rename_counter">Nimeä uudelleen</string>
+    <string name="reset_counter_name">Nollaa</string>
+    <string name="delete_counter">Poista</string>
+    <string name="delete_counter_title">Poistetaanko laskuri?</string>
+    <string name="delete_counter_message">\"%1$s\" poistetaan pysyvästi.</string>
+    <string name="delete_annotation_title">Poistetaanko merkintä?</string>
+    <string name="delete_annotation_message">Merkintä poistetaan pysyvästi.</string>
+
+    <!-- Edistymiskuvat -->
+    <string name="take_photo">Ota kuva</string>
+    <string name="progress_photos">Edistymiskuvat</string>
+    <string name="voice_commands">Äänikomennot</string>
+    <string name="voice_mode_timeout">Äänitila päättyi toimettomuuden vuoksi</string>
+    <string name="voice_offline_mode">Offline-tila, vain peruskomennot käytössä</string>
+    <string name="voice_quota_daily_exhausted">AI-komennot ovat tauolla tältä päivältä, mutta peruskomennot toimivat edelleen</string>
+    <string name="voice_command_unknown">En ymmärtänyt</string>
+    <string name="voice_command_not_recognized_offline">Komentoa ei tunnistettu offline-tilassa</string>
+    <string name="voice_help_text">Komennot: seuraava, takaisin, kumoa, nollaa, lopeta, apua sekä vapaamuotoiset ohjeet</string>
+    <string name="voice_note_saved">Muistiinpano tallennettu</string>
+    <string name="voice_counter_reset">Laskuri nollattu</string>
+    <string name="voice_row_current">Kerros %d</string>
+    <string name="voice_row_of_target">Kerros %1$d / %2$d, %3$d prosenttia valmiina</string>
+    <string name="voice_rows_remaining">%d kerrosta jäljellä</string>
+    <string name="voice_no_target">Tavoitetta ei ole asetettu</string>
+    <string name="voice_back_to_row">Takaisin kerrokseen %d</string>
+    <string name="voice_undone_row">Kumottu, kerros %d</string>
+    <string name="voice_remaining_done">Valmista tuli!</string>
+    <string name="voice_session_minutes">Olet neulonut %d minuuttia</string>
+    <string name="voice_session_under_minute">Alle minuutin</string>
+    <string name="voice_yarn_multiple">%1$s ja %2$d muuta</string>
+    <string name="voice_yarn_none">Lankaa ei ole liitetty</string>
+    <string name="voice_pattern_info">Ohje %1$s, sivu %2$d</string>
+    <string name="voice_instruction_none">Ohjetta ei ole liitetty</string>
+    <string name="voice_shaping_next">Seuraava %1$s %2$d kerroksen päästä</string>
+    <string name="voice_shaping_at">%1$s kerroksella %2$d</string>
+    <string name="voice_shaping_none">Muotoilulaskuri ei ole aktiivinen</string>
+    <string name="voice_stitches_total">%1$d silmukkaa yhteensä, %2$d per kerros %3$d kerroksella</string>
+    <string name="voice_stitches_current">%d silmukkaa</string>
+    <string name="voice_stitches_disabled">Silmukkaseuranta ei ole käytössä</string>
+    <string name="voice_reminders_none">Tulevia muistutuksia ei ole</string>
+    <string name="voice_reminder_next">Seuraava muistutus: %1$s, %2$d kerroksen päästä</string>
+    <string name="voice_reminders_multiple">Seuraava muistutus: %1$s, %2$d kerroksen päästä. Sen jälkeen vielä %3$d muuta</string>
+    <string name="voice_counters_none">Lisälaskureita ei ole</string>
+    <string name="voice_counter_single">%1$s on kohdassa %2$d</string>
+    <string name="voice_counters_list">%1$d laskuria: %2$s</string>
+    <string name="voice_notes_empty">Muistiinpanoja ei ole vielä</string>
+    <string name="voice_notes_content">Muistiinpanosi: %1$s</string>
+    <string name="voice_total_time_none">Aikaa ei ole vielä tallennettu</string>
+    <string name="voice_total_time_hours">Tähän projektiin on käytetty yhteensä %1$d tuntia ja %2$d minuuttia</string>
+    <string name="voice_total_time_minutes">Tähän projektiin on käytetty yhteensä %1$d minuuttia</string>
+    <string name="voice_summary_none">Projektin yhteenvetoa ei ole saatavilla. Avaa projekti ensin, jotta yhteenveto voidaan luoda.</string>
+    <string name="voice_project_name">Työstät projektia %1$s</string>
+    <string name="voice_section_current">Nykyinen osio: %1$s</string>
+    <string name="voice_section_none">Osiota ei ole asetettu</string>
+    <string name="voice_section_set">Osioksi asetettu %1$s</string>
+    <string name="voice_stitch_at">Silmukka %1$d</string>
+    <string name="voice_help_full">Voit sanoa: seuraava, takaisin, kumoa, nollaa sekä numeron. Kysy edistymisestä, jäljellä olevista kerroksista, ajasta, langasta, ohjeesta, silmukoista, muistutuksista, laskureista tai muistiinpanoista. Sano muistiinpano tallentaaksesi merkinnän tai mainitse laskurin nimi muuttaaksesi sitä.</string>
+    <string name="voice_reminder_dismissed">Muistutus kuitattu</string>
+    <string name="voice_reminder_no_active">Aktiivista muistutusta ei ole kuitattavana</string>
+    <string name="voice_counter_incremented">%1$s on nyt %2$d</string>
+    <string name="voice_counter_decremented">%1$s takaisin kohtaan %2$d</string>
+    <string name="voice_counter_not_found">Laskuria nimeltä %1$s ei löytynyt</string>
+    <string name="voice_step_size_set">Askelkooksi asetettu %1$d</string>
+    <string name="voice_counter_reset_named">%1$s nollattu</string>
+    <string name="voice_page_current">Sivu %1$d</string>
+    <string name="voice_page_first">Olet jo ensimmäisellä sivulla</string>
+    <string name="voice_project_completed">%1$s merkitty valmistuneeksi. Hienoa työtä!</string>
+    <string name="voice_summary_generating">Luodaan yhteenvetoa…</string>
+    <string name="voice_summary_unavailable">AI-yhteenveto ei ole juuri nyt saatavilla</string>
+    <string name="voice_reminder_added">Muistutus asetettu: %1$s kerrokselle %2$d</string>
+    <string name="voice_stitch_count_set">Silmukkamääräksi asetettu %1$d per kerros</string>
+    <string name="voice_stitch_tracking_on">Silmukkaseuranta käytössä</string>
+    <string name="voice_stitch_tracking_off">Silmukkaseuranta pois käytöstä</string>
+    <string name="voice_live_connecting">Yhdistetään…</string>
+    <string name="voice_live_error">Ääniyhteys epäonnistui</string>
+    <string name="voice_live_quota_exhausted">Kuukauden ääniminuutit on käytetty</string>
+    <string name="voice_natural_response">Luonnollinen ääni</string>
+    <string name="voice_live_quota_remaining">%1$.0f / %2$.0f min jäljellä</string>
+    <string name="voice_mode_ended">Äänitila päättyi</string>
+    <string name="voice_recognizer_error">Puheentunnistusvirhe</string>
+    <string name="row_label_format">Kerros %d</string>
+    <string name="share_photo">Jaa</string>
+    <string name="delete_photo">Poista kuva</string>
+    <string name="delete_photo_confirm">Poistetaanko tämä kuva?</string>
+    <string name="delete_photos_confirm">Poistetaanko %d kuvaa?</string>
+    <string name="delete_patterns_confirm">Poistetaanko %d ohjetta?</string>
+    <string name="delete_pattern">Poista ohje</string>
+    <string name="delete_yarn_cards_confirm">Poistetaanko %d lankakorttia?</string>
+    <string name="delete_yarn_card">Poista lankakortti</string>
+    <string name="no_photos">Kuvia ei ole vielä</string>
+    <string name="rename_photo">Nimeä kuva uudelleen</string>
+    <string name="photo_name_hint">esim. Hiha valmis</string>
+
+    <!-- Ravelry -->
+    <string name="tool_ravelry">Ravelry</string>
+    <string name="desc_ravelry">Etsi ohjeita ja tallenna suosikkeja</string>
+    <string name="ravelry_search">Haku</string>
+    <string name="ravelry_saved_patterns">Tallennetut ohjeet</string>
+    <string name="start_project">Aloita projekti</string>
+    <string name="save_pattern">Tallenna ohje</string>
+    <string name="open_in_ravelry">Avaa Ravelryssä</string>
+    <string name="pattern_saved">Ohje tallennettu</string>
+    <string name="no_saved_patterns">Ei tallennettuja ohjeita vielä</string>
+    <string name="search_hint">Etsi neuleohjeita…</string>
+    <string name="filter_craft">Laji</string>
+    <string name="filter_availability">Saatavuus</string>
+    <string name="filter_category">Kategoria</string>
+    <string name="filter_weight">Paksuus</string>
+    <string name="filter_difficulty">Vaikeus</string>
+    <string name="free">Ilmainen</string>
+    <string name="paid">Maksullinen</string>
+    <string name="all">Kaikki</string>
+    <string name="no_results">Ohjeita ei löytynyt</string>
+    <string name="search_error">Ohjeita ei voitu ladata. Tarkista internetyhteytesi.</string>
+    <string name="ravelry_sign_in">Kirjaudu Ravelryyn</string>
+    <string name="difficulty_format">%.1f / 5</string>
+    <string name="yardage_format">%d jaardia</string>
+    <string name="pattern_detail_needles">Puikot</string>
+    <string name="pattern_detail_yardage">Lankamäärä</string>
+    <string name="pattern_detail_sizes">Koot</string>
+    <string name="pattern_saved_to_library">Tallennettu kirjastoon</string>
+    <string name="show_more">Näytä lisää</string>
+    <string name="show_less">Näytä vähemmän</string>
+
+    <!-- Infovinkit -->
+    <string name="tip_your_gauge_title">Mitä tiheys tarkoittaa?</string>
+    <string name="tip_your_gauge_desc">Tiheys kertoo, kuinka monta silmukkaa ja kerrosta mahtuu mitattuun alueeseen. Neulo pieni mallitilkku ja mittaa se, niin saat oman tiheytesi selville. Näin valmis työ vastaa ohjeen tarkoitettua kokoa.</string>
+    <string name="tip_swatch_vs_direct_title">Mallitilkku vai suora syöttö</string>
+    <string name="tip_swatch_vs_direct_desc">Valitse "Mittaa mallitilkku", jos olet neulonut koetilkun ja haluat mitata sen. Valitse "Syötä suoraan", jos tiedät tiheytesi jo valmiiksi (esim. 22 silmukkaa / 10 cm).</string>
+    <string name="tip_pattern_repeat_title">Mallikerta</string>
+    <string name="tip_pattern_repeat_desc">Jos mallikuviosi toistuu joka X silmukan välein (esim. palmikko joka 8. silmukka), syötä luku tähän. Laskuri pyöristää luotavan silmukkamäärän lähimpään sopivaan monikertaan, jotta kuvio asettuu oikein.</string>
+    <string name="tip_edge_stitches_title">Reunasilmukat</string>
+    <string name="tip_edge_stitches_desc">Reunasilmukat ovat ylimääräisiä silmukoita, jotka lisätään työn reunoihin siistiä reunaa varten. Ne eivät kuulu mallikertaan. Tavallisia arvoja ovat 1–2 silmukkaa per reuna.</string>
+    <string name="tip_flat_vs_circular_title">Tasoneule vs. pyöröneule</string>
+    <string name="tip_flat_vs_circular_desc">Tasoneule: neulot edestakaisin suorilla tai pyöröpuikoilla ja käännät työn jokaisen kerroksen lopussa. Lisäykset ja kavennukset tehdään molemmissa reunoissa.\n\nPyöröneule: neulot jatkuvaa kierrosta. Lisäykset ja kavennukset jaetaan tasaisesti koko kierrokselle.</string>
+    <string name="tip_pattern_repeat_pill_title">Mallikertalaskuri</string>
+    <string name="tip_pattern_repeat_pill_desc">Tämä laskee, kuinka monta kertaa olet tehnyt mallikertaosion valmiiksi. Se nollautuu automaattisesti määrittämäsi toistovälin mukaan. Hyödyllinen esimerkiksi palmikoiden, pitsikertojen tai värinvaihtojen seuraamiseen.</string>
+    <string name="tip_needle_sizes_title">Puikkokokojen järjestelmät</string>
+    <string name="tip_needle_sizes_desc">Metrinen koko (mm) on yleinen standardi. US-koot käyttävät numeroasteikkoa (0–50). UK- ja kanadalaiset koot käyttävät eri numerojärjestelmää. Japanilaisissa kooissa on oma numerointi. Varmista aina koko millimetreinä.</string>
+    <string name="tip_imperial_units_title">Imperiaaliset yksiköt</string>
+    <string name="tip_imperial_units_desc">Kun asetus on käytössä, kaikki laskurit käyttävät senttimetrien sijasta tuumia ja metrien sijasta jaardeja. Tiheys ilmoitetaan silloin 4 tuumaa kohti 10 cm:n sijaan.</string>
+</resources>

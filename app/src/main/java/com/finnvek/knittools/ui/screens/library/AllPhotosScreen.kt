@@ -1,17 +1,12 @@
 package com.finnvek.knittools.ui.screens.library
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -26,12 +21,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.outlined.Circle
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -68,47 +58,54 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+// Data-luokat AllPhotosScreen-parametrien ryhmittelyyn (S107)
+data class AllPhotosState(
+    val photos: List<ProgressPhotoEntity>,
+    val projects: List<CounterProjectEntity>,
+    val isSelectMode: Boolean,
+    val selectedPhotoIds: Set<Long>,
+)
+
+data class AllPhotosActions(
+    val onDeletePhoto: (ProgressPhotoEntity) -> Unit,
+    val onEnterSelectMode: (Long) -> Unit,
+    val onToggleSelection: (Long) -> Unit,
+    val onSelectAll: (List<Long>) -> Unit,
+    val onDeleteSelected: () -> Unit,
+    val onExitSelectMode: () -> Unit,
+    val onBack: () -> Unit,
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AllPhotosScreen(
-    photos: List<ProgressPhotoEntity>,
-    projects: List<CounterProjectEntity>,
-    isSelectMode: Boolean,
-    selectedPhotoIds: Set<Long>,
-    onDeletePhoto: (ProgressPhotoEntity) -> Unit,
-    onEnterSelectMode: (Long) -> Unit,
-    onToggleSelection: (Long) -> Unit,
-    onSelectAll: (List<Long>) -> Unit,
-    onDeleteSelected: () -> Unit,
-    onExitSelectMode: () -> Unit,
-    onBack: () -> Unit,
+    state: AllPhotosState,
+    actions: AllPhotosActions,
 ) {
     var selectedProjectId by rememberSaveable { mutableStateOf<Long?>(null) }
     var viewingPhoto by remember { mutableStateOf<ProgressPhotoEntity?>(null) }
     var showDeleteConfirmDialog by rememberSaveable { mutableStateOf(false) }
 
-    val projectMap = projects.associateBy { it.id }
-    val projectsWithPhotos = photos.map { it.projectId }.distinct()
     val filteredPhotos =
         if (selectedProjectId != null) {
-            photos.filter { it.projectId == selectedProjectId }
+            state.photos.filter { it.projectId == selectedProjectId }
         } else {
-            photos
+            state.photos
         }
 
     // Poistu valintamoodista back-painikkeella
-    BackHandler(enabled = isSelectMode) {
-        onExitSelectMode()
+    BackHandler(enabled = state.isSelectMode) {
+        actions.onExitSelectMode()
     }
 
     // PhotoViewer (vain normaalimoodissa)
-    if (!isSelectMode) {
+    if (!state.isSelectMode) {
         viewingPhoto?.let { photo ->
             PhotoViewer(
                 photo = photo,
                 onDismiss = { viewingPhoto = null },
                 onDelete = {
-                    onDeletePhoto(it)
+                    actions.onDeletePhoto(it)
                     viewingPhoto = null
                 },
             )
@@ -117,12 +114,10 @@ fun AllPhotosScreen(
 
     // Vahvistusdialoogi batch-poistolle
     if (showDeleteConfirmDialog) {
-        ConfirmationDialog(
-            title = stringResource(R.string.delete_photo),
-            message = stringResource(R.string.delete_photos_confirm, selectedPhotoIds.size),
-            confirmText = stringResource(R.string.delete),
+        AllPhotosDeleteDialog(
+            selectedCount = state.selectedPhotoIds.size,
             onConfirm = {
-                onDeleteSelected()
+                actions.onDeleteSelected()
                 showDeleteConfirmDialog = false
             },
             onDismiss = { showDeleteConfirmDialog = false },
@@ -132,97 +127,22 @@ fun AllPhotosScreen(
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            if (isSelectMode) {
-                // Valintamoodi: sulje-ikoni, "N selected", "Select All" -painike
-                TopAppBar(
-                    title = {
-                        Text(
-                            text = stringResource(R.string.n_selected, selectedPhotoIds.size),
-                            style = MaterialTheme.typography.titleLarge,
-                        )
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = onExitSelectMode) {
-                            Icon(
-                                imageVector = Icons.Filled.Close,
-                                contentDescription = stringResource(R.string.cancel),
-                            )
-                        }
-                    },
-                    actions = {
-                        TextButton(onClick = { onSelectAll(filteredPhotos.map { it.id }) }) {
-                            Text(stringResource(R.string.select_all))
-                        }
-                    },
-                    colors =
-                        TopAppBarDefaults.topAppBarColors(
-                            containerColor = Color.Transparent,
-                            scrolledContainerColor = Color.Transparent,
-                        ),
-                )
-            } else {
-                // Normaalinäkymä: sama tyyli kuin ToolScreenScaffold
-                TopAppBar(
-                    title = {
-                        Text(
-                            text = stringResource(R.string.all_photos_title),
-                            style = MaterialTheme.typography.titleLarge,
-                        )
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = onBack) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = stringResource(R.string.back),
-                                tint = MaterialTheme.colorScheme.outline,
-                            )
-                        }
-                    },
-                    colors =
-                        TopAppBarDefaults.topAppBarColors(
-                            containerColor = Color.Transparent,
-                            scrolledContainerColor = Color.Transparent,
-                        ),
-                )
-            }
+            AllPhotosTopBar(
+                state = state,
+                filteredPhotos = filteredPhotos,
+                onExitSelectMode = actions.onExitSelectMode,
+                onSelectAll = actions.onSelectAll,
+                onBack = actions.onBack,
+            )
         },
         bottomBar = {
-            // Poistopalkki: näkyy vain valintamoodissa, kun jotain on valittu
-            AnimatedVisibility(
-                visible = isSelectMode && selectedPhotoIds.isNotEmpty(),
-                enter = slideInVertically(initialOffsetY = { it }),
-                exit = slideOutVertically(targetOffsetY = { it }),
-            ) {
-                Surface(color = MaterialTheme.colorScheme.surfaceVariant) {
-                    Row(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                        horizontalArrangement = Arrangement.Center,
-                    ) {
-                        Button(
-                            onClick = { showDeleteConfirmDialog = true },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors =
-                                ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.error,
-                                ),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Delete,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp),
-                            )
-                            Spacer(modifier = Modifier.size(8.dp))
-                            Text(stringResource(R.string.delete))
-                        }
-                    }
-                }
-            }
+            SelectModeDeleteBar(
+                visible = state.isSelectMode && state.selectedPhotoIds.isNotEmpty(),
+                onDeleteClick = { showDeleteConfirmDialog = true },
+            )
         },
     ) { padding ->
-        if (photos.isEmpty()) {
+        if (state.photos.isEmpty()) {
             Box(
                 modifier = Modifier.fillMaxSize().padding(padding),
                 contentAlignment = Alignment.Center,
@@ -235,66 +155,199 @@ fun AllPhotosScreen(
                 )
             }
         } else {
-            Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-                // Suodatinsiput piilotetaan valintamoodissa
-                if (!isSelectMode) {
-                    LazyRow(
-                        contentPadding = PaddingValues(horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        item {
-                            FilterChip(
-                                selected = selectedProjectId == null,
-                                onClick = { selectedProjectId = null },
-                                label = { Text(stringResource(R.string.filter_all)) },
-                            )
-                        }
-                        items(projectsWithPhotos) { projectId ->
-                            val name = projectMap[projectId]?.name ?: "Project $projectId"
-                            FilterChip(
-                                selected = selectedProjectId == projectId,
-                                onClick = { selectedProjectId = projectId },
-                                label = {
-                                    Text(
-                                        text = name,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                    )
-                                },
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
+            AllPhotosContent(
+                state = state,
+                actions = actions,
+                filteredPhotos = filteredPhotos,
+                selectedProjectId = selectedProjectId,
+                onProjectFilterClick = { selectedProjectId = it },
+                onPhotoClick = { viewingPhoto = it },
+                padding = padding,
+            )
+        }
+    }
+}
+
+@Composable
+private fun AllPhotosDeleteDialog(
+    selectedCount: Int,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    ConfirmationDialog(
+        title = stringResource(R.string.delete_photo),
+        message = stringResource(R.string.delete_photos_confirm, selectedCount),
+        confirmText = stringResource(R.string.delete),
+        isDestructive = true,
+        onConfirm = onConfirm,
+        onDismiss = onDismiss,
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AllPhotosTopBar(
+    state: AllPhotosState,
+    filteredPhotos: List<ProgressPhotoEntity>,
+    onExitSelectMode: () -> Unit,
+    onSelectAll: (List<Long>) -> Unit,
+    onBack: () -> Unit,
+) {
+    if (state.isSelectMode) {
+        TopAppBar(
+            title = {
+                Text(
+                    text = stringResource(R.string.n_selected, state.selectedPhotoIds.size),
+                    style = MaterialTheme.typography.titleLarge,
+                )
+            },
+            navigationIcon = {
+                IconButton(onClick = onExitSelectMode) {
+                    Icon(
+                        imageVector = Icons.Filled.Close,
+                        contentDescription = stringResource(R.string.cancel),
+                    )
                 }
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(2),
-                    contentPadding = PaddingValues(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    items(filteredPhotos, key = { it.id }) { photo ->
-                        val isSelected = photo.id in selectedPhotoIds
-                        PhotoGridItem(
-                            photo = photo,
-                            projectName = projectMap[photo.projectId]?.name,
-                            isSelectMode = isSelectMode,
-                            isSelected = isSelected,
-                            onClick = {
-                                if (isSelectMode) {
-                                    onToggleSelection(photo.id)
-                                } else {
-                                    viewingPhoto = photo
-                                }
-                            },
-                            onLongClick = {
-                                if (!isSelectMode) {
-                                    onEnterSelectMode(photo.id)
-                                }
-                            },
-                        )
-                    }
+            },
+            actions = {
+                TextButton(onClick = { onSelectAll(filteredPhotos.map { it.id }) }) {
+                    Text(stringResource(R.string.select_all))
                 }
-            }
+            },
+            colors =
+                TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent,
+                    scrolledContainerColor = Color.Transparent,
+                ),
+        )
+    } else {
+        TopAppBar(
+            title = {
+                Text(
+                    text = stringResource(R.string.all_photos_title),
+                    style = MaterialTheme.typography.titleLarge,
+                )
+            },
+            navigationIcon = {
+                IconButton(onClick = onBack) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = stringResource(R.string.back),
+                        tint = MaterialTheme.colorScheme.outline,
+                    )
+                }
+            },
+            colors =
+                TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent,
+                    scrolledContainerColor = Color.Transparent,
+                ),
+        )
+    }
+}
+
+@Composable
+private fun AllPhotosContent(
+    state: AllPhotosState,
+    actions: AllPhotosActions,
+    filteredPhotos: List<ProgressPhotoEntity>,
+    selectedProjectId: Long?,
+    onProjectFilterClick: (Long?) -> Unit,
+    onPhotoClick: (ProgressPhotoEntity) -> Unit,
+    padding: PaddingValues,
+) {
+    val projectMap = state.projects.associateBy { it.id }
+    val projectsWithPhotos = state.photos.map { it.projectId }.distinct()
+
+    Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+        // Suodatinsiput piilotetaan valintamoodissa
+        if (!state.isSelectMode) {
+            ProjectFilterChips(
+                projectsWithPhotos = projectsWithPhotos,
+                projectMap = projectMap,
+                selectedProjectId = selectedProjectId,
+                onProjectFilterClick = onProjectFilterClick,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+        PhotoGrid(
+            filteredPhotos = filteredPhotos,
+            state = state,
+            actions = actions,
+            projectMap = projectMap,
+            onPhotoClick = onPhotoClick,
+        )
+    }
+}
+
+@Composable
+private fun ProjectFilterChips(
+    projectsWithPhotos: List<Long>,
+    projectMap: Map<Long, CounterProjectEntity>,
+    selectedProjectId: Long?,
+    onProjectFilterClick: (Long?) -> Unit,
+) {
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        item {
+            FilterChip(
+                selected = selectedProjectId == null,
+                onClick = { onProjectFilterClick(null) },
+                label = { Text(stringResource(R.string.filter_all)) },
+            )
+        }
+        items(projectsWithPhotos) { projectId ->
+            val name = projectMap[projectId]?.name ?: "Project $projectId"
+            FilterChip(
+                selected = selectedProjectId == projectId,
+                onClick = { onProjectFilterClick(projectId) },
+                label = {
+                    Text(
+                        text = name,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun PhotoGrid(
+    filteredPhotos: List<ProgressPhotoEntity>,
+    state: AllPhotosState,
+    actions: AllPhotosActions,
+    projectMap: Map<Long, CounterProjectEntity>,
+    onPhotoClick: (ProgressPhotoEntity) -> Unit,
+) {
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(2),
+        contentPadding = PaddingValues(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        items(filteredPhotos, key = { it.id }) { photo ->
+            PhotoGridItem(
+                photo = photo,
+                projectName = projectMap[photo.projectId]?.name,
+                isSelectMode = state.isSelectMode,
+                isSelected = photo.id in state.selectedPhotoIds,
+                onClick = {
+                    if (state.isSelectMode) {
+                        actions.onToggleSelection(photo.id)
+                    } else {
+                        onPhotoClick(photo)
+                    }
+                },
+                onLongClick = {
+                    if (!state.isSelectMode) {
+                        actions.onEnterSelectMode(photo.id)
+                    }
+                },
+            )
         }
     }
 }
@@ -364,37 +417,11 @@ private fun PhotoGridItem(
                 }
             }
 
-            // Valintaindikaattori-ikoni kuvan päällä oikeassa yläkulmassa
             if (isSelectMode) {
-                val iconTint =
-                    if (isSelected) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                    }
-                Box(
-                    modifier =
-                        Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(6.dp)
-                            .background(
-                                color = MaterialTheme.colorScheme.background.copy(alpha = 0.7f),
-                                shape = MaterialTheme.shapes.small,
-                            )
-                            .padding(2.dp),
-                ) {
-                    Icon(
-                        imageVector =
-                            if (isSelected) {
-                                Icons.Filled.CheckCircle
-                            } else {
-                                Icons.Outlined.Circle
-                            },
-                        contentDescription = null,
-                        tint = iconTint,
-                        modifier = Modifier.size(22.dp),
-                    )
-                }
+                SelectionIndicator(
+                    isSelected = isSelected,
+                    modifier = Modifier.align(Alignment.TopEnd).padding(6.dp),
+                )
             }
         }
     }

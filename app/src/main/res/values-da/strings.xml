@@ -1,0 +1,678 @@
+<resources>
+    <string name="app_name">KnitTools</string>
+
+    <!-- Navigation & common -->
+    <string name="back">Tilbage</string>
+    <string name="cancel">Annuller</string>
+    <string name="confirm">Bekræft</string>
+    <string name="ok">OK</string>
+    <string name="add">Tilføj</string>
+    <string name="delete">Slet</string>
+    <string name="reset">Nulstil</string>
+    <string name="result">Resultat</string>
+    <string name="save">Gem</string>
+    <string name="settings">Indstillinger</string>
+
+    <!-- Units -->
+    <string name="unit_cm">cm</string>
+    <string name="unit_inches">tommer</string>
+    <string name="unit_st">m</string>
+    <string name="unit_rows">pinde</string>
+    <string name="unit_g">g</string>
+    <string name="unit_meters">meter</string>
+    <string name="unit_yards">yard</string>
+    <string name="unit_st_per_10cm">m/10 cm</string>
+    <string name="unit_st_per_4in">m/4 in</string>
+    <string name="unit_per_10cm">pr. 10 cm</string>
+    <string name="unit_per_4in">pr. 4 in</string>
+
+    <!-- Home screen -->
+    <string name="tool_row_counter">Rækketæller</string>
+    <string name="tool_increase_decrease">Tag ud / tag ind</string>
+    <string name="tool_gauge_converter">Fasthedsberegner</string>
+    <string name="tool_cast_on_calculator">Opslagsberegner</string>
+    <string name="tool_yarn_estimator">Garnberegner</string>
+    <string name="tool_needle_sizes">Pindestørrelser</string>
+    <string name="pro_trial_days_left">Pro-prøveperiode — %d dage tilbage</string>
+    <string name="unlock_all_tools">Lås alle værktøjer op</string>
+    <string name="quick_tip_label">HURTIGT TIP</string>
+    <string name="desc_yarn_estimator_card">Beregn garnforbrug og antal nøgler</string>
+
+    <!-- Bottom navigation tabs -->
+    <string name="tab_projects">PROJEKTER</string>
+    <string name="tab_library">BIBLIOTEK</string>
+    <string name="tab_tools">VÆRKTØJER</string>
+    <string name="tab_insights">INDSIGT</string>
+    <string name="tab_reference">OPSLAG</string>
+    <string name="tab_settings">INDSTILLINGER</string>
+
+    <!-- Screen titles -->
+    <string name="tools_title">Værktøjer</string>
+    <string name="reference_title">Opslag</string>
+    <string name="library_title">Bibliotek</string>
+    <string name="insights_title">Indsigt</string>
+    <string name="saved_patterns_title">Gemte opskrifter</string>
+    <string name="my_yarn_title">Mit garn</string>
+    <string name="all_photos_title">Billeder</string>
+
+    <!-- Hub hero text -->
+    <string name="reference_hero_title">Strikkeopslag</string>
+    <string name="reference_hero_subtitle">Hurtig adgang til størrelser, forkortelser og diagramsymboler.</string>
+
+    <!-- Project List -->
+    <string name="project_list_title">Projekter</string>
+    <string name="continue_knitting">FORTSÆT MED AT STRIKKE</string>
+    <string name="section_active">AKTIVE</string>
+    <string name="section_completed">AFSLUTTEDE</string>
+    <string name="new_project">Nyt projekt</string>
+    <string name="new_project_name_format">Projekt %1$d</string>
+    <string name="no_active_projects">Ingen aktive projekter</string>
+    <string name="no_completed_projects">Ingen afsluttede projekter endnu</string>
+    <string name="archive_project">Afslut</string>
+    <string name="delete_project">Slet</string>
+    <string name="delete_project_message">Slette %s? Dette kan ikke fortrydes.</string>
+    <string name="rename_project">Omdøb</string>
+    <string name="reactivate_project">Aktivér igen</string>
+    <string name="complete_project">Afslut</string>
+    <string name="complete_project_message">Afslutte %s? Projektet flyttes til dine afsluttede projekter.</string>
+    <string name="more_options">Flere muligheder</string>
+
+    <!-- Project List overflow -->
+    <string name="select_projects">Vælg projekter</string>
+    <string name="sort_by">Sortér efter</string>
+    <string name="sort_name">Navn</string>
+    <string name="sort_last_updated">Senest opdateret</string>
+    <string name="sort_created_date">Oprettelsesdato</string>
+    <string name="show_completed">Vis afsluttede</string>
+
+    <!-- Multi-select -->
+    <string name="n_selected">%d valgt</string>
+    <string name="select_all">Vælg alle</string>
+    <string name="complete_n_projects">Afslutte %d projekter? De flyttes til dine afsluttede projekter.</string>
+    <string name="delete_n_projects">Slette %d projekter? Dette kan ikke fortrydes.</string>
+    <string name="rows_format">%d pinde</string>
+    <string name="just_now">lige nu</string>
+
+    <!-- Counter Screen -->
+    <string name="current_project">AKTUELT PROJEKT</string>
+    <string name="current_row">AKTUEL PINDE</string>
+    <string name="stitch_count_format">%s m</string>
+    <string name="set_stitches">Angiv masker</string>
+    <string name="stitches_per_row">Masker pr. pind</string>
+    <string name="track_stitches">Spor masker</string>
+    <string name="stitch_counter_compact_format">%1$d/%2$d</string>
+    <string name="stitch_previous">◄</string>
+    <string name="stitch_next">►</string>
+    <string name="attach_pattern">Tilføj opskrift</string>
+    <string name="remove_pattern">Fjern opskrift</string>
+    <string name="no_pattern_attached">Ingen opskrift tilknyttet</string>
+    <string name="show_pattern">Vis opskrift</string>
+    <string name="pattern_viewer_title">Opskriftsviser</string>
+    <string name="pattern_pdf_fallback_name">Opskrift-PDF</string>
+    <string name="pattern_loading">Indlæser opskrift…</string>
+    <string name="pattern_open_failed">Opskriften kunne ikke åbnes.</string>
+    <string name="pattern_page_jump">Gå til side</string>
+    <string name="pattern_page_number">Sidenummer</string>
+    <string name="pattern_page_indicator">Side %1$d af %2$d</string>
+    <string name="pattern_previous_page">Forrige side</string>
+    <string name="pattern_next_page">Næste side</string>
+    <string name="pattern_combine_instructions">Kombinér instruktioner</string>
+    <string name="pattern_combine_none_found">Ingen overlappende instruktioner fundet på denne side.</string>
+    <string name="pattern_combine_requires_internet">Kræver internetforbindelse</string>
+    <string name="pattern_combined_instructions_copied">Kombinerede instruktioner kopieret</string>
+    <string name="pattern_picker_device_files">Vælg PDF fra enheden</string>
+    <string name="pattern_picker_saved_patterns">Gemte opskrifter</string>
+    <string name="pattern_picker_camera_scan">Kamerascanning</string>
+    <string name="pattern_picker_pdf_unavailable">PDF ikke tilgængelig</string>
+    <string name="pattern_scan_failed">Den scannede opskrift kunne ikke konverteres til PDF.</string>
+    <string name="imported_pattern_designer">Importeret PDF</string>
+    <string name="current_row_short">Pind %1$d</string>
+    <string name="pattern_instruction_copied">Instruktion kopieret</string>
+    <string name="time_spent_minutes_format">%dm</string>
+    <string name="link_to_project">Knyt til %s?</string>
+    <string name="link_yarn">Knyt garn</string>
+    <string name="unlink_yarn">Fjern garnkobling</string>
+    <string name="link">Knyt</string>
+    <string name="select_yarn_card">Vælg garnkort</string>
+    <string name="add_yarn">Tilføj garn</string>
+    <string name="linked_yarn_title">TILKNYTTET GARN</string>
+    <string name="no_linked_yarn">Intet garn tilknyttet endnu</string>
+    <string name="yarn_count_format">%1$d garner</string>
+    <string name="linked_project_label">Tilknyttet projekt</string>
+    <string name="link_to_project_label">Knyt til projekt</string>
+    <string name="change_project_link">Skift</string>
+    <string name="remove_project_link">Fjern kobling</string>
+    <string name="select_project">Vælg projekt</string>
+    <string name="status_label">Status</string>
+    <string name="quantity_label">Antal</string>
+    <string name="status_in_stash">På lager</string>
+    <string name="status_in_use">I brug</string>
+    <string name="status_finished">Færdig</string>
+    <string name="linked_project_arrow">\u2192 %1$s</string>
+    <string name="yarn_details_title">Detaljer</string>
+    <string name="delete_yarn_card_message">Slette dette garnkort? Dette kan ikke fortrydes.</string>
+    <string name="saved_to_my_yarn_toast">Gemt i Mit garn i biblioteket</string>
+    <string name="skein_count_one">%1$d nøgle</string>
+    <string name="skein_count_many">%1$d nøgler</string>
+
+    <!-- Session History -->
+    <string name="session_history_title">Historik</string>
+    <string name="no_sessions">Ingen sessioner registreret endnu. Begynd at strikke for at se din historik her.</string>
+    <string name="session_row_range">Pinde %1$d \u2192 %2$d</string>
+    <string name="session_duration_format">%1$dt %2$dm</string>
+    <string name="pro_full_history_hint">Opgradér til Pro for fuld sessionshistorik</string>
+
+    <!-- Settings -->
+    <string name="show_knitting_tips">Vis strikketips</string>
+    <string name="project_summary">Projektoversigt</string>
+    <string name="view_ai_summary">Vis AI-oversigt</string>
+    <string name="generating_summary">Genererer oversigt…</string>
+    <string name="ai_quota_exhausted">Månedlig AI-grænse nået</string>
+    <string name="ai_summary_fallback">Kunne ikke generere AI-oversigt — viser grundlæggende statistik i stedet</string>
+
+    <!-- Row Counter -->
+    <string name="default_project_name">Mit projekt</string>
+    <string name="reset_counter">Nulstil tæller</string>
+    <string name="reset_counter_message">Nulstille tælleren til 0?</string>
+    <string name="pattern_repeat">Mønsterrapport</string>
+    <string name="notes">Noter</string>
+    <string name="add_note">Tilføj note…</string>
+    <string name="notes_editor_title">Noter — %1$s</string>
+    <string name="write_your_notes_here">Skriv dine noter her…</string>
+
+    <!-- Journal (AI journal entry) -->
+    <string name="journal_ai_badge">+ AI</string>
+    <string name="journal_add_entry_title">Tilføj journalnotat</string>
+    <string name="journal_mode_speak">Tal</string>
+    <string name="journal_mode_type">Skriv</string>
+    <string name="journal_speak_title">Sig dit notat</string>
+    <string name="journal_type_title">Skriv dit notat</string>
+    <string name="journal_listening">Lytter…</string>
+    <string name="journal_tap_to_speak">Tryk på mikrofonen for at starte</string>
+    <string name="journal_type_placeholder">Hvad skete der i denne session?</string>
+    <string name="journal_transcription_placeholder">Dine ord vises her…</string>
+    <string name="journal_add_button">Tilføj notat</string>
+    <string name="journal_empty_error">Notatet kan ikke være tomt</string>
+    <string name="journal_offline_notice">AI-formatering er ikke tilgængelig, notatet blev gemt som skrevet.</string>
+    <string name="journal_mic_permission_required">Mikrofontilladelse kræves</string>
+    <string name="journal_processing">Formaterer…</string>
+    <string name="journal_row_label">Pind %1$d</string>
+    <string name="journal_speech_unavailable">Talegenkendelse er ikke tilgængelig på denne enhed</string>
+    <string name="journal_speech_network_error">Talegenkendelse kræver netværksforbindelse</string>
+    <string name="journal_speech_no_match">Det fangede jeg ikke — prøv igen</string>
+    <string name="journal_speech_error">Fejl i talegenkendelse</string>
+
+    <string name="counter_decrease">Tag ind</string>
+    <string name="counter_increase">Tag ud</string>
+    <string name="counter_undo">Fortryd</string>
+
+    <!-- Increase / Decrease -->
+    <string name="mode_increase">Tag ud</string>
+    <string name="mode_decrease">Tag ind</string>
+    <string name="style_flat">Fladt</string>
+    <string name="style_circular">Rundt</string>
+    <string name="current_stitches">Nuværende masker</string>
+    <string name="increase_by">Øg med</string>
+    <string name="decrease_by">Mindsk med</string>
+    <string name="invalid_input">Ugyldigt input</string>
+    <string name="easy_to_remember">Let at huske</string>
+    <string name="balanced">Balanceret</string>
+    <string name="total_stitches_format">I ALT: %1$d %2$s</string>
+
+    <!-- Gauge Converter -->
+    <string name="pattern_gauge">Opskriftens strikkefasthed</string>
+    <string name="your_gauge">Din strikkefasthed</string>
+    <string name="pattern_instructions">Instruktioner i opskriften</string>
+    <string name="stitches_gauge">Masker %s</string>
+    <string name="rows_gauge">Pinde %s</string>
+    <string name="stitches_in_pattern">Masker i opskriften</string>
+    <string name="rows_in_pattern">Pinde i opskriften</string>
+    <string name="adjusted_for_your_gauge">Tilpasset din strikkefasthed</string>
+    <string name="adjusted_result">%1$d masker, %2$d pinde</string>
+    <string name="exact_result">Præcist: %1$s m, %2$s pinde</string>
+    <string name="stitch_gauge_diff">Maskefasthed: %s%%</string>
+
+    <!-- Cast On Calculator -->
+    <string name="desired_width">Ønsket bredde</string>
+    <string name="stitch_gauge">Maskefasthed</string>
+    <string name="pattern_repeat_optional">Mønsterrapport (valgfrit)</string>
+    <string name="edge_stitches_optional">Kantmasker (valgfrit)</string>
+    <string name="stitches_result">%d masker</string>
+    <string name="actual_width">Faktisk bredde: %1$s %2$s</string>
+    <string name="adjusted_down">Justeret ned: %1$d m (%2$s %3$s)</string>
+    <string name="adjusted_up">Justeret op: %1$d m (%2$s %3$s)</string>
+
+    <!-- Yarn Estimator -->
+    <string name="total_yarn_needed">Samlet garnbehov</string>
+    <string name="yarn_per_skein">%s pr. nøgle</string>
+    <string name="weight_per_skein">Vægt pr. nøgle</string>
+    <string name="skeins_result">%d nøgler</string>
+    <string name="total_weight">Samlet vægt: %s g</string>
+    <string name="exact_skeins">Præcist: %s nøgler</string>
+    <string name="extra_skein_note">Køb altid et ekstra nøgle — farvepartier kan variere</string>
+
+    <!-- Needle Sizes -->
+    <string name="search_size">Søg efter størrelse…</string>
+    <string name="needle_size_disclaimer">Størrelserne er omtrentlige ækvivalenter. Japanske størrelser bruger en separat metrisk skala.</string>
+    <string name="header_mm">mm</string>
+    <string name="header_us">US</string>
+    <string name="header_uk">UK</string>
+    <string name="header_jp">JP</string>
+
+    <!-- Settings -->
+    <string name="theme">Tema</string>
+    <string name="theme_system">System</string>
+    <string name="theme_light">Lyst</string>
+    <string name="theme_dark">Mørkt</string>
+    <string name="preferences">Præferencer</string>
+    <string name="settings_section_settings">INDSTILLINGER</string>
+    <string name="settings_section_pro">PRO</string>
+    <string name="settings_section_info">INFO</string>
+    <string name="settings_language">App-sprog</string>
+    <string name="settings_language_change_hint">Ændringen gælder med det samme</string>
+    <string name="settings_language_system">Følg systemet</string>
+    <string name="settings_language_finnish">Suomi</string>
+    <string name="settings_language_english">English</string>
+    <string name="settings_language_swedish">Svenska</string>
+    <string name="settings_language_german">Deutsch</string>
+    <string name="settings_language_french">Français</string>
+    <string name="settings_language_spanish">Español</string>
+    <string name="settings_language_portuguese">Português</string>
+    <string name="settings_language_italian">Italiano</string>
+    <string name="settings_language_norwegian">Norsk</string>
+    <string name="settings_language_danish">Dansk</string>
+    <string name="settings_language_dutch">Nederlands</string>
+    <string name="haptic_feedback">Haptisk feedback</string>
+    <string name="keep_screen_awake">Hold skærmen tændt</string>
+    <string name="use_imperial_units">Brug imperiale enheder</string>
+    <string name="purchase">Køb</string>
+    <string name="upgrade_to_pro">Opgradér til Pro</string>
+    <string name="restore_purchases">Gendan køb</string>
+    <string name="privacy_summary">Alle data bliver på din enhed. Ingen analyse, ingen cloudsynkronisering, ingen konti.</string>
+    <string name="pro_restored">Pro gendannet</string>
+    <string name="no_purchases_found">Ingen køb fundet</string>
+    <string name="version_format">KnitTools %s</string>
+
+    <!-- Pro Upgrade -->
+    <string name="knittools_pro">KnitTools Pro</string>
+    <string name="you_have_pro">Du har KnitTools Pro!</string>
+    <string name="all_features_unlocked">Alle funktioner er låst op.</string>
+    <string name="pro_feature_unlimited_projects">Ubegrænsede tællerprojekter</string>
+    <string name="pro_feature_full_history">Fuld tællerhistorik</string>
+    <string name="pro_feature_notes">Noter pr. projekt</string>
+    <string name="pro_feature_secondary_counter">Sekundær tæller</string>
+    <string name="pro_feature_ocr">OCR-scanning af garnetiketter</string>
+    <string name="pro_feature_widget">Widget til startskærmen</string>
+    <string name="pro_feature_row_reminders">Pindepåmindelser</string>
+    <string name="pro_feature_progress_photos">Fremdriftsbilleder</string>
+    <string name="pro_feature_multiple_counters">Flere tællere</string>
+    <string name="pro_feature_pattern_camera_scan">Kamerascanning af opskrift</string>
+    <string name="pro_feature">Pro-funktion</string>
+    <string name="pro_required_add">Opgradér til Pro for at tilføje mere</string>
+    <string name="upgrade_for_price">Opgradér for %s</string>
+    <string name="one_time_purchase">Engangskøb. Intet abonnement.</string>
+    <string name="loading_price">Indlæser pris…</string>
+    <string name="price_loading_hint">Forbinder til Google Play — tjek din internetforbindelse, hvis dette tager lang tid</string>
+
+    <!-- Yarn Card / OCR -->
+    <string name="scan_yarn_label">Scan garnetiket</string>
+    <string name="yarn_scan_failed">Kunne ikke læse en garnetiket fra dette billede. Prøv igen.</string>
+    <string name="yarn_scan_no_internet">Scanning kræver internetforbindelse</string>
+    <string name="saved_yarns">Gemte garner</string>
+    <string name="scanned_yarn">Scannet garn</string>
+    <string name="brand">Mærke</string>
+    <string name="yarn_name">Garnnavn</string>
+    <string name="fiber_content">Fiberindhold</string>
+    <string name="weight_grams">Vægt (g)</string>
+    <string name="length_meters">Længde (m)</string>
+    <string name="needle_size_label">Pindestørrelse</string>
+    <string name="gauge_label">Strikkefasthed</string>
+    <string name="color_name">Farvenavn</string>
+    <string name="color_number">Farvenummer</string>
+    <string name="dye_lot">Farveparti</string>
+    <string name="weight_category">Tykkelseskategori</string>
+    <string name="care_symbols">Pleje</string>
+    <string name="save_and_use">Gem &amp; brug</string>
+    <string name="discard">Kassér</string>
+    <string name="use_in_calculator">Brug i beregner</string>
+    <string name="no_saved_yarns">Ingen garnkort gemt endnu</string>
+    <string name="scanning">Scanner…</string>
+    <string name="card_deleted">Garnkort slettet</string>
+    <string name="undo">Fortryd</string>
+    <string name="pro_required_save">Pro kræves for at gemme garnkort</string>
+
+    <!-- Gemini Nano -->
+    <string name="paste_instruction">Indsæt instruktion</string>
+    <string name="instruction_hint">Indsæt din strikkeinstruktion her</string>
+    <string name="instruction_hint_increase">f.eks. "Tag 12 masker ud jævnt fordelt over 96 masker"</string>
+    <string name="instruction_hint_gauge">f.eks. "22 masker og 30 pinde pr. 10 cm" eller "bredde 30 cm, 22 masker"</string>
+    <string name="parsing_instruction">Fortolker…</string>
+    <string name="instruction_parsed">Værdier udfyldt ud fra instruktionen</string>
+    <string name="instruction_parse_failed">Kunne ikke forstå instruktionen — prøv at formulere den anderledes</string>
+    <string name="ai_error_busy">AI er optaget — prøv igen om lidt</string>
+    <string name="ai_error_quota">Batterigrænse nået — prøv igen senere</string>
+    <string name="ai_error_unavailable">AI-funktionen er ikke tilgængelig på denne enhed</string>
+    <string name="ai_error_unknown">Noget gik galt — prøv igen</string>
+
+    <!-- Camera permission -->
+    <string name="camera_permission_denied">Kameratilladelse er nødvendig for at scanne garnetiketter</string>
+    <string name="camera_permission_denied_permanent">Kameratilladelse afvist — aktivér den i Indstillinger</string>
+    <string name="open_settings">Indstillinger</string>
+
+    <!-- Care symbol categories -->
+    <string name="care_category_washing">Vask</string>
+    <string name="care_category_bleaching">Blegning</string>
+    <string name="care_category_drying">Tørring</string>
+    <string name="care_category_ironing">Strygning</string>
+    <string name="care_category_dry_cleaning">Rens</string>
+
+    <!-- Defaults -->
+    <string name="yarn_card_fallback_name">Garnkort</string>
+
+    <!-- Widget -->
+    <string name="widget_name">Rækketæller</string>
+    <string name="widget_description">Rækketæller-widget til aktivt projekt</string>
+    <string name="widget_pro_required">Opgradér til Pro for at bruge widgeten</string>
+
+    <!-- Hubs -->
+    <string name="reference_hub_title">Opslag</string>
+    <string name="desc_increase_decrease">Fordel udtagninger eller indtagninger jævnt over en pind</string>
+    <string name="desc_gauge_calculator">Beregn din strikkefasthed og konvertér instruktioner fra opskrifter</string>
+    <string name="desc_cast_on">Beregn hvor mange masker du skal slå op til en ønsket bredde</string>
+    <string name="desc_needle_sizes">Pindestørrelser i metrisk, US-, UK- og japansk system</string>
+    <string name="desc_size_charts">Standard kropsmål til størrelsesbestemmelse</string>
+    <string name="desc_abbreviations">Opslag over almindelige strikkeforkortelser</string>
+    <string name="desc_chart_symbols">Guide til standard diagramsymboler</string>
+
+    <!-- Library — My Collection -->
+    <string name="library_my_collection">MIN SAMLING</string>
+    <string name="library_reference">OPSLAG</string>
+    <string name="desc_saved_patterns">Opskrifter fra Ravelry og PDF-filer</string>
+    <string name="desc_my_yarn">Dit garnlager — mærker, tykkelser og farver</string>
+    <string name="desc_all_photos">Fremdriftsbilleder fra alle dine projekter</string>
+    <string name="empty_saved_patterns">Ingen gemte opskrifter endnu.\nFind opskrifter i Ravelry-søgning.</string>
+    <string name="empty_my_yarn">Ingen garnkort gemt endnu.</string>
+    <string name="empty_all_photos">Ingen fremdriftsbilleder endnu.</string>
+    <string name="filter_all">Alle</string>
+
+    <!-- Insights -->
+    <string name="total_time_label">SAMLET TID</string>
+    <string name="avg_pace_label">GENNEMSNITLIGT TEMPO</string>
+    <string name="completed_label">AFSLUTTET</string>
+    <string name="top_streak_label">BEDSTE STIME</string>
+    <string name="time_format_hours">%.1ft</string>
+    <string name="pace_format">%.0f p/t</string>
+    <string name="streak_format">%d dage</string>
+    <string name="all_projects">Alle projekter</string>
+    <string name="insights_all_time">Hele tiden</string>
+    <string name="insights_this_week">Denne uge</string>
+    <string name="insights_this_month">Denne måned</string>
+    <string name="pro_insights_hint">Lås grafer, stimer og mere op med Pro</string>
+    <string name="insights_summary_format">%1$.1ft denne uge · %2$.0f p/t</string>
+    <string name="insights_knitting_activity">STRIKKEAKTIVITET</string>
+    <string name="insights_current_streak">Nuværende stime:</string>
+    <string name="insights_best_streak">Bedste:</string>
+    <string name="insights_project_time_with_rows">%1$s · %2$d pinde</string>
+    <string name="insights_project_time_only">%1$s</string>
+    <string name="insights_rows_count">%1$d pinde</string>
+    <string name="insights_less_than_tenth_hour">&lt;0.1t</string>
+    <string name="insights_no_time">—</string>
+    <string name="insights_footer_1">Hver pind tæller — bliv ved med at strikke!</string>
+    <string name="insights_footer_2">Dine pinde venter.</string>
+    <string name="insights_footer_3">Én pind mere?</string>
+    <string name="insights_footer_4">Maske for maske, pind for pind.</string>
+    <string name="insights_footer_5">Store ting begynder med en enkelt opslagning.</string>
+    <string name="relative_time_today">i dag</string>
+    <string name="relative_time_yesterday">i går</string>
+    <string name="relative_time_days_ago">%1$dd siden</string>
+    <string name="relative_time_weeks_ago">%1$du siden</string>
+    <string name="relative_time_months_ago">%1$dmdr siden</string>
+    <string name="week_now">nu</string>
+    <string name="no_knitting">Ingen strikning</string>
+    <string name="time_per_project">TID PR. PROJEKT</string>
+    <string name="pace_over_time">TEMPO OVER TID</string>
+
+    <!-- Settings -->
+    <string name="help_and_guide">Hjælp og guide</string>
+
+    <!-- Gauge Calculator — swatch section -->
+    <string name="my_gauge">Min strikkefasthed</string>
+    <string name="your_gauge_section">Din strikkefasthed</string>
+    <string name="measure_swatch">Mål strikkeprøve</string>
+    <string name="enter_directly">Indtast direkte</string>
+    <string name="calculated_gauge_format">= %1$.1f m / %2$.1f pinde %3$s</string>
+    <string name="measured_width">Målt bredde</string>
+    <string name="stitch_count_in_swatch">Masker i strikkeprøven</string>
+    <string name="measured_height">Målt højde</string>
+    <string name="row_count_in_swatch">Pinde i strikkeprøven</string>
+    <string name="your_stitch_gauge">Din maskefasthed: %s</string>
+    <string name="your_row_gauge">Din pindefasthed: %s</string>
+
+    <!-- Size Charts -->
+    <string name="size_charts_title">Størrelsesguides</string>
+    <string name="category_baby">Baby (0–24 måneder)</string>
+    <string name="category_child_youth">Barn og ungdom (2–16)</string>
+    <string name="category_women">Kvinder</string>
+    <string name="category_men">Mænd</string>
+    <string name="category_head">Hoved</string>
+    <string name="category_hand">Hånd</string>
+
+    <!-- Abbreviations -->
+    <string name="abbreviations_title">Forkortelser</string>
+    <string name="search_abbreviation">Søg forkortelser…</string>
+    <string name="no_results_found">Ingen resultater fundet</string>
+
+    <!-- Chart Symbols -->
+    <string name="chart_symbols_title">Diagramsymboler</string>
+    <string name="chart_symbols_disclaimer">Symbolerne følger standardkonventioner. Tjek altid symbolforklaringen i opskriften.</string>
+    <string name="category_basic">Grundmasker</string>
+    <string name="category_decreases">Indtagninger</string>
+    <string name="category_increases">Udtagninger</string>
+    <string name="category_cables">Snoninger</string>
+    <string name="category_other">Andet</string>
+
+    <!-- Quick Tips -->
+    <string-array name="knitting_tips">
+        <item>Strik altid en strikkeprøve, før du starter et nyt projekt — også selv om du tror, du kender din strikkefasthed.</item>
+        <item>Blok din strikkeprøve på samme måde som du vil blokke det færdige arbejde, så fastheden bliver korrekt.</item>
+        <item>For at undgå et hak, når du strikker striber rundt, kan du løfte masken fra rækken nedenunder op på venstre pind på anden omgang i den nye farve.</item>
+        <item>Hold spændingen jævn for et professionelt resultat langs kanterne.</item>
+        <item>Sæt en låsbar maskemarkør for hver 20. maske, når du slår mange masker op.</item>
+        <item>Blok dine færdige dele — det gør en stor forskel for det endelige udtryk.</item>
+        <item>Tæl maskerne ved slutningen af hver pind, når du strikker hulmønster.</item>
+        <item>Vind dit garn op til et nøgle, før du går i gang — det forebygger sammenfiltring.</item>
+        <item>Brug en livline med få pinders mellemrum i hulstrik — træk restegarn gennem alle masker.</item>
+        <item>Hæft ender undervejs, så du undgår en stor bunke til sidst i projektet.</item>
+        <item>Køb altid et ekstra nøgle — farvepartier kan variere mellem partier.</item>
+        <item>Prøv at strikke en strikkeprøve rundt, hvis dit projekt strikkes rundt — fastheden kan være anderledes.</item>
+        <item>Brug maskemarkører til at adskille mønsterrapporter — det gør det meget lettere at tælle.</item>
+        <item>Læs hele opskriften igennem, før du slår op, så du undgår overraskelser.</item>
+        <item>Før en projektbog med ændringer og noter til senere brug.</item>
+        <item>Når du samler garn, så lad enderne være mindst 15 cm lange, så de kan hæftes sikkert.</item>
+        <item>Øv nye teknikker på en lille strikkeprøve, før du bruger dem i projektet.</item>
+        <item>Opbevar dit strikketøj i en projektpose for at holde det rent og undgå, at det hænger fast.</item>
+        <item>Tag pauser og stræk hænderne for at forebygge belastningsskader.</item>
+        <item>Marker din plads i opskriften med en sticky note eller en magnetplade.</item>
+        <item>Brug bambuspinde til glatte garner — de holder bedre på maskerne.</item>
+        <item>Når du samler masker op, så brug en pind, der er én størrelse mindre, for en pænere kant.</item>
+        <item>Kontrollér at opslagningen ikke er snoet på første omgang efter opslagning.</item>
+        <item>Mål din strikkefasthed efter blokning, ikke før — mange garner ændrer sig efter vask.</item>
+        <item>Skift mellem to nøgler med få pinders mellemrum for at undgå synlige forskelle mellem farvepartier.</item>
+    </string-array>
+
+    <!-- In-App Updates -->
+    <string name="update_downloaded">Opdatering hentet — genstart for at anvende</string>
+    <string name="restart">Genstart</string>
+
+    <!-- Row Reminders -->
+    <string name="reminders">Påmindelser</string>
+    <string name="reminders_count">Påmindelser (%d)</string>
+    <string name="add_reminder">Tilføj påmindelse</string>
+    <string name="delete_reminder_title">Slette påmindelse?</string>
+    <string name="delete_reminder_confirm">Slette påmindelsen \"%1$s\"?</string>
+    <string name="row_number">Pindenummer</string>
+    <string name="reminder_message">Besked</string>
+    <string name="reminder_message_hint">f.eks. Skift til hælflap</string>
+    <string name="one_time">Én gang</string>
+    <string name="repeating">Gentagende</string>
+    <string name="repeat_every">Gentag hver</string>
+    <string name="repeat_every_rows">pinde</string>
+    <string name="repeat_count_format">Gentagelse %1$d/%2$d</string>
+    <string name="dismiss">Afvis</string>
+    <string name="no_reminders">Ingen påmindelser endnu</string>
+
+    <!-- Multiple Counters -->
+    <string name="counters">Tællere</string>
+    <string name="counters_count">Tællere (%d)</string>
+    <string name="add_counter">Tilføj tæller</string>
+    <string name="counter_name">Navn</string>
+    <string name="counter_name_hint">f.eks. Udtagninger på ærmet</string>
+    <string name="count_up">Tæl op</string>
+    <string name="step_size">Trinstørrelse</string>
+    <string name="shaping">Formgivning</string>
+    <string name="repeat_section">Gentag sektion</string>
+    <string name="starting_stitches">Startmasker</string>
+    <string name="stitch_change">Masker, der skal tilføjes/fjernes</string>
+    <string name="shape_every_n">Form hver N. pind</string>
+    <string name="repeat_section_start_row">Startpind</string>
+    <string name="repeat_section_end_row">Slutpind</string>
+    <string name="total_repeats">Samlet antal gentagelser</string>
+    <string name="repeat_section_progress_format">Gentagelse %1$d af %2$d · Pind %3$d af %4$d</string>
+    <string name="repeat_section_complete">Færdig</string>
+    <string name="next_shaping_format">Næste formgivning: Pind %1$d → %2$d m</string>
+    <string name="rename_counter">Omdøb</string>
+    <string name="reset_counter_name">Nulstil</string>
+    <string name="delete_counter">Slet</string>
+    <string name="delete_counter_title">Slet tæller?</string>
+    <string name="delete_counter_message">\"%1$s\" slettes permanent.</string>
+    <string name="delete_annotation_title">Slet notat?</string>
+    <string name="delete_annotation_message">Notatet slettes permanent.</string>
+
+    <!-- Progress Photos -->
+    <string name="take_photo">Tag billede</string>
+    <string name="progress_photos">Fremdriftsbilleder</string>
+    <string name="voice_commands">Stemmekommandoer</string>
+    <string name="voice_mode_timeout">Stemmetilstand afsluttet på grund af inaktivitet</string>
+    <string name="voice_offline_mode">Offline-tilstand, kun grundlæggende kommandoer</string>
+    <string name="voice_quota_daily_exhausted">AI-kommandoer er sat på pause for i dag, men grundlæggende kommandoer virker stadig</string>
+    <string name="voice_command_unknown">Det forstod jeg ikke</string>
+    <string name="voice_command_not_recognized_offline">Kommandoen genkendes ikke offline</string>
+    <string name="voice_help_text">Tilgængelige kommandoer: næste, tilbage, fortryd, nulstil, stop, hjælp og frie instruktioner</string>
+    <string name="voice_note_saved">Note gemt</string>
+    <string name="voice_counter_reset">Tæller nulstillet</string>
+    <string name="voice_row_current">Pind %d</string>
+    <string name="voice_row_of_target">Pind %1$d af %2$d, %3$d procent færdig</string>
+    <string name="voice_rows_remaining">%d pinde tilbage</string>
+    <string name="voice_no_target">Intet mål sat</string>
+    <string name="voice_back_to_row">Tilbage til pind %d</string>
+    <string name="voice_undone_row">Fortrudt, pind %d</string>
+    <string name="voice_remaining_done">Du er færdig!</string>
+    <string name="voice_session_minutes">Du har strikket i %d minutter</string>
+    <string name="voice_session_under_minute">Mindre end et minut</string>
+    <string name="voice_yarn_multiple">%1$s og %2$d mere</string>
+    <string name="voice_yarn_none">Intet garn tilknyttet</string>
+    <string name="voice_pattern_info">Opskrift %1$s, side %2$d</string>
+    <string name="voice_instruction_none">Ingen opskrift tilknyttet</string>
+    <string name="voice_shaping_next">Næste %1$s om %2$d pinde</string>
+    <string name="voice_shaping_at">%1$s på pind %2$d</string>
+    <string name="voice_shaping_none">Ingen aktiv formgivningstæller</string>
+    <string name="voice_stitches_total">%1$d masker i alt, %2$d pr. pind over %3$d pinde</string>
+    <string name="voice_stitches_current">%d masker</string>
+    <string name="voice_stitches_disabled">Maskesporing er ikke aktiveret</string>
+    <string name="voice_reminders_none">Ingen kommende påmindelser</string>
+    <string name="voice_reminder_next">Næste påmindelse: %1$s, om %2$d pinde</string>
+    <string name="voice_reminders_multiple">Næste påmindelse: %1$s, om %2$d pinde. Derefter kommer %3$d mere</string>
+    <string name="voice_counters_none">Ingen ekstra tællere</string>
+    <string name="voice_counter_single">%1$s står på %2$d</string>
+    <string name="voice_counters_list">%1$d tællere: %2$s</string>
+    <string name="voice_notes_empty">Ingen noter endnu</string>
+    <string name="voice_notes_content">Dine noter: %1$s</string>
+    <string name="voice_total_time_none">Ingen tid registreret endnu</string>
+    <string name="voice_total_time_hours">%1$d timer og %2$d minutter i alt på dette projekt</string>
+    <string name="voice_total_time_minutes">%1$d minutter i alt på dette projekt</string>
+    <string name="voice_summary_none">Ingen projektoversigt tilgængelig. Åbn projektet først for at generere en.</string>
+    <string name="voice_project_name">Du arbejder på %1$s</string>
+    <string name="voice_section_current">Aktuel sektion: %1$s</string>
+    <string name="voice_section_none">Ingen sektion sat</string>
+    <string name="voice_section_set">Sektion sat til %1$s</string>
+    <string name="voice_stitch_at">Maske %1$d</string>
+    <string name="voice_help_full">Du kan sige: næste, tilbage, fortryd, nulstil samt et tal. Spørg om fremdrift, resterende pinde, tid, garn, opskrift, masker, påmindelser, tællere eller noter. Sig note for at gemme en note, eller sig navnet på en tæller for at ændre den.</string>
+    <string name="voice_reminder_dismissed">Påmindelse afvist</string>
+    <string name="voice_reminder_no_active">Ingen aktiv påmindelse at afvise</string>
+    <string name="voice_counter_incremented">%1$s er nu på %2$d</string>
+    <string name="voice_counter_decremented">%1$s tilbage på %2$d</string>
+    <string name="voice_counter_not_found">Ingen tæller med navnet %1$s</string>
+    <string name="voice_step_size_set">Trinstørrelse sat til %1$d</string>
+    <string name="voice_counter_reset_named">%1$s nulstillet til nul</string>
+    <string name="voice_page_current">Side %1$d</string>
+    <string name="voice_page_first">Allerede på første side</string>
+    <string name="voice_project_completed">%1$s markeret som afsluttet. Godt arbejde!</string>
+    <string name="voice_summary_generating">Genererer oversigt…</string>
+    <string name="voice_summary_unavailable">AI-oversigt er ikke tilgængelig lige nu</string>
+    <string name="voice_reminder_added">Påmindelse sat: %1$s på pind %2$d</string>
+    <string name="voice_stitch_count_set">Antal masker sat til %1$d pr. pind</string>
+    <string name="voice_stitch_tracking_on">Maskesporing aktiveret</string>
+    <string name="voice_stitch_tracking_off">Maskesporing deaktiveret</string>
+    <string name="voice_live_connecting">Forbinder…</string>
+    <string name="voice_live_error">Stemmeforbindelse mislykkedes</string>
+    <string name="voice_live_quota_exhausted">Denne måneds stemmeminutter er brugt op</string>
+    <string name="voice_natural_response">Naturlig stemme</string>
+    <string name="voice_live_quota_remaining">%1$.0f / %2$.0f min tilbage</string>
+    <string name="voice_mode_ended">Stemmetilstand afsluttet</string>
+    <string name="voice_recognizer_error">Fejl i talegenkendelse</string>
+    <string name="row_label_format">Pind %d</string>
+    <string name="share_photo">Del</string>
+    <string name="delete_photo">Slet billede</string>
+    <string name="delete_photo_confirm">Slette dette billede?</string>
+    <string name="delete_photos_confirm">Slette %d billeder?</string>
+    <string name="delete_patterns_confirm">Slette %d opskrifter?</string>
+    <string name="delete_pattern">Slet opskrift</string>
+    <string name="delete_yarn_cards_confirm">Slette %d garnkort?</string>
+    <string name="delete_yarn_card">Slet garnkort</string>
+    <string name="no_photos">Ingen billeder endnu</string>
+    <string name="rename_photo">Omdøb billede</string>
+    <string name="photo_name_hint">f.eks. Ærmet færdigt</string>
+
+    <!-- Ravelry -->
+    <string name="tool_ravelry">Ravelry</string>
+    <string name="desc_ravelry">Søg efter opskrifter og gem favoritter</string>
+    <string name="ravelry_search">Søg</string>
+    <string name="ravelry_saved_patterns">Gemte opskrifter</string>
+    <string name="start_project">Start projekt</string>
+    <string name="save_pattern">Gem opskrift</string>
+    <string name="open_in_ravelry">Åbn i Ravelry</string>
+    <string name="pattern_saved">Opskrift gemt</string>
+    <string name="no_saved_patterns">Ingen gemte opskrifter endnu</string>
+    <string name="search_hint">Søg efter strikkeopskrifter…</string>
+    <string name="filter_craft">Håndarbejde</string>
+    <string name="filter_availability">Tilgængelighed</string>
+    <string name="filter_category">Kategori</string>
+    <string name="filter_weight">Tykkelse</string>
+    <string name="filter_difficulty">Sværhedsgrad</string>
+    <string name="free">Gratis</string>
+    <string name="paid">Betalt</string>
+    <string name="all">Alle</string>
+    <string name="no_results">Ingen opskrifter fundet</string>
+    <string name="search_error">Kunne ikke indlæse opskrifter. Tjek din internetforbindelse.</string>
+    <string name="ravelry_sign_in">Log ind med Ravelry</string>
+    <string name="difficulty_format">%.1f / 5</string>
+    <string name="yardage_format">%d yard</string>
+
+    <!-- Info tips -->
+    <string name="tip_your_gauge_title">Hvad er strikkefasthed?</string>
+    <string name="tip_your_gauge_desc">Strikkefasthed fortæller, hvor mange masker og pinde der passer inden for et målt område. Strik en lille prøve og mål den for at finde din personlige strikkefasthed. Det sikrer, at dit færdige arbejde passer til opskriftens tilsigtede størrelse.</string>
+    <string name="tip_swatch_vs_direct_title">Strikkeprøve vs. direkte indtastning</string>
+    <string name="tip_swatch_vs_direct_desc">Brug \"Mål strikkeprøve\", hvis du har strikket en prøve og vil måle den. Brug \"Indtast direkte\", hvis du allerede kender din strikkefasthed (f.eks. 22 masker pr. 10 cm).</string>
+    <string name="tip_pattern_repeat_title">Mønsterrapport</string>
+    <string name="tip_pattern_repeat_desc">Hvis dit mønster gentager sig for hver X masker (f.eks. en snoning for hver 8 masker), skal du indtaste tallet her. Beregneren runder opslagningen til nærmeste multiplum, så mønsteret passer perfekt.</string>
+    <string name="tip_edge_stitches_title">Kantmasker</string>
+    <string name="tip_edge_stitches_desc">Kantmasker er ekstra masker i hver side for en pæn kant. De er ikke en del af mønsterrapporten. Almindelige værdier er 1–2 masker pr. side.</string>
+    <string name="tip_flat_vs_circular_title">Fladstrik vs. rundstrik</string>
+    <string name="tip_flat_vs_circular_desc">Ved fladstrik arbejder du frem og tilbage på lige eller rundpinde og vender ved slutningen af hver pind. Udtagninger og indtagninger sker i begge sider.\n\nVed rundstrik arbejder du i en sammenhængende omgang. Udtagninger og indtagninger fordeles jævnt rundt på omgangen.</string>
+    <string name="tip_pattern_repeat_pill_title">Tæller for mønsterrapporter</string>
+    <string name="tip_pattern_repeat_pill_desc">Denne tæller, hvor mange gange du har gennemført en mønstersektion. Den nulstilles automatisk ud fra dit gentagelsesinterval. Nyttig til at følge snoninger, hulmønstre eller farveskift.</string>
+    <string name="tip_needle_sizes_title">Systemer for pindestørrelser</string>
+    <string name="tip_needle_sizes_desc">Metrisk (mm) er den universelle standard. US-størrelser bruger et nummersystem (0–50). UK/Canada bruger et andet nummersystem. Japanske størrelser har deres egen nummerering. Tjek altid mm-størrelsen for at være sikker.</string>
+    <string name="tip_imperial_units_title">Imperiale enheder</string>
+    <string name="tip_imperial_units_desc">Når dette er slået til, bruger alle beregnere tommer i stedet for centimeter og yard i stedet for meter. Strikkefastheden måles da pr. 4 tommer i stedet for pr. 10 cm.</string>
+</resources>

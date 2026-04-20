@@ -46,7 +46,6 @@ import com.finnvek.knittools.repository.ProjectCounterRepository
 import com.finnvek.knittools.repository.ReminderRepository
 import com.finnvek.knittools.repository.SavedPatternRepository
 import com.finnvek.knittools.repository.YarnCardRepository
-import com.finnvek.knittools.widget.CounterWidget
 import com.finnvek.knittools.widget.CounterWidgetState
 import com.finnvek.knittools.widget.WidgetData
 import com.google.firebase.ai.type.FunctionCallPart
@@ -1027,22 +1026,7 @@ class CounterViewModel
                     totalStitches = state.stitchCount?.takeIf { it > 0 },
                     stitchTrackingEnabled = state.stitchTrackingEnabled,
                 )
-            CounterWidgetState.save(context, widgetData)
-            val widget = CounterWidget()
-            val manager = androidx.glance.appwidget.GlanceAppWidgetManager(context)
-            val revKey = androidx.datastore.preferences.core.intPreferencesKey("rev")
-            manager.getGlanceIds(CounterWidget::class.java).forEach { id ->
-                androidx.glance.appwidget.state.updateAppWidgetState(
-                    context,
-                    androidx.glance.state.PreferencesGlanceStateDefinition,
-                    id,
-                ) { prefs ->
-                    prefs.toMutablePreferences().apply {
-                        this[revKey] = (prefs[revKey] ?: 0) + 1
-                    }
-                }
-                widget.update(context, id)
-            }
+            CounterWidgetState.syncAll(context, widgetData)
         }
 
         private fun startTimer() {

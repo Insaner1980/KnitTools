@@ -5,10 +5,12 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.datastore.preferences.core.Preferences
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
 import androidx.glance.LocalSize
+import androidx.glance.currentState
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.SizeMode
@@ -16,6 +18,7 @@ import androidx.glance.appwidget.action.actionSendBroadcast
 import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
+import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.glance.background
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
@@ -42,6 +45,8 @@ import com.finnvek.knittools.ui.theme.TextSecondary
 import dagger.hilt.android.EntryPointAccessors
 
 class CounterWidget : GlanceAppWidget() {
+    override val stateDefinition = PreferencesGlanceStateDefinition
+
     override val sizeMode =
         SizeMode.Responsive(
             setOf(SMALL_SIZE, MEDIUM_SIZE, LARGE_SIZE),
@@ -57,19 +62,29 @@ class CounterWidget : GlanceAppWidget() {
                 WidgetEntryPoint::class.java,
             )
         val isPro = entryPoint.proManager().isPro()
+        val widgetData = CounterWidgetState.loadGlance(context, id)
 
-        var prefs = CounterWidgetState.load(context)
-
-        // Ensimmäinen renderöinti — hae data Roomista
-        if (isPro && prefs.projectId == 0L) {
-            val repository = entryPoint.counterRepository()
-            repository.getFirstProject()?.let { project ->
-                CounterWidgetState.save(context, project)
-                prefs = project.toWidgetData()
+        // Uudelle widget-instanssille peilataan viimeisin tunnettu tila, tai haetaan
+        // ensimmäinen projekti jos mitään tilaa ei ole vielä alustettu.
+        if (isPro && widgetData.projectId == 0L) {
+            val sharedWidgetData = CounterWidgetState.load(context)
+            when {
+                sharedWidgetData.projectId > 0L ->
+                    CounterWidgetState.saveGlance(context, id, sharedWidgetData)
+                else -> {
+                    val repository = entryPoint.counterRepository()
+                    repository.getFirstProject()?.let { project ->
+                        val initialData = project.toWidgetData()
+                        CounterWidgetState.save(context, initialData)
+                        CounterWidgetState.saveGlance(context, id, initialData)
+                    }
+                }
             }
         }
 
         provideContent {
+            val prefs = currentState<Preferences>()
+            val data = CounterWidgetState.fromPreferences(context, prefs)
             val widgetScheme =
                 darkColorScheme(
                     primary = Primary,
@@ -83,14 +98,14 @@ class CounterWidget : GlanceAppWidget() {
                     ProRequiredWidget(context)
                 } else {
                     val size = LocalSize.current
-                    val projectId = prefs.projectId.takeIf { it > 0L }
+                    val projectId = data.projectId.takeIf { it > 0L }
                     when {
                         size.width >= LARGE_SIZE.width && size.height >= LARGE_SIZE.height ->
-                            LargeWidget(context = context, data = prefs, projectId = projectId)
+                            LargeWidget(context = context, data = data, projectId = projectId)
                         size.width >= MEDIUM_SIZE.width && size.height >= MEDIUM_SIZE.height ->
-                            MediumWidget(context = context, data = prefs, projectId = projectId)
+                            MediumWidget(context = context, data = data, projectId = projectId)
                         else ->
-                            SmallWidget(context = context, data = prefs, projectId = projectId)
+                            SmallWidget(context = context, data = data, projectId = projectId)
                     }
                 }
             }

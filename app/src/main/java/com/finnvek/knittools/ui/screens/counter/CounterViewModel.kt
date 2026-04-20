@@ -48,6 +48,7 @@ import com.finnvek.knittools.repository.SavedPatternRepository
 import com.finnvek.knittools.repository.YarnCardRepository
 import com.finnvek.knittools.widget.CounterWidget
 import com.finnvek.knittools.widget.CounterWidgetState
+import com.finnvek.knittools.widget.WidgetData
 import com.google.firebase.ai.type.FunctionCallPart
 import com.google.firebase.ai.type.FunctionResponsePart
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -1010,12 +1011,23 @@ class CounterViewModel
 
         private suspend fun syncWidget(
             projectId: Long? = _uiState.value.projectId,
-            @Suppress("UNUSED_PARAMETER") projectName: String = _uiState.value.projectName,
-            @Suppress("UNUSED_PARAMETER") count: Int = _uiState.value.counter.count,
+            projectName: String = _uiState.value.projectName,
+            count: Int = _uiState.value.counter.count,
         ) {
             val resolvedProjectId = projectId ?: return
-            val project = repository.getProject(resolvedProjectId) ?: return
-            CounterWidgetState.save(context, project)
+            val state = _uiState.value
+            val widgetData =
+                WidgetData(
+                    projectName = projectName,
+                    count = count,
+                    projectId = resolvedProjectId,
+                    targetRows = state.totalRows?.takeIf { it > 0 },
+                    sectionName = state.sectionName?.takeIf { it.isNotBlank() },
+                    currentStitch = state.currentStitch,
+                    totalStitches = state.stitchCount?.takeIf { it > 0 },
+                    stitchTrackingEnabled = state.stitchTrackingEnabled,
+                )
+            CounterWidgetState.save(context, widgetData)
             val widget = CounterWidget()
             val manager = androidx.glance.appwidget.GlanceAppWidgetManager(context)
             manager.getGlanceIds(CounterWidget::class.java).forEach { id ->

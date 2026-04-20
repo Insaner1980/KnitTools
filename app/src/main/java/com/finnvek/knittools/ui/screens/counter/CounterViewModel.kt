@@ -1011,11 +1011,12 @@ class CounterViewModel
 
         private suspend fun syncWidget(
             projectId: Long? = _uiState.value.projectId,
-            projectName: String = _uiState.value.projectName,
-            count: Int = _uiState.value.counter.count,
+            @Suppress("UNUSED_PARAMETER") projectName: String = _uiState.value.projectName,
+            @Suppress("UNUSED_PARAMETER") count: Int = _uiState.value.counter.count,
         ) {
             val resolvedProjectId = projectId ?: return
-            CounterWidgetState.save(context, projectName, count, resolvedProjectId)
+            val project = repository.getProject(resolvedProjectId) ?: return
+            CounterWidgetState.save(context, project)
             CounterWidget().updateAll(context)
         }
 

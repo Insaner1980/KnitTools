@@ -42,7 +42,7 @@ class CounterWidgetActions : BroadcastReceiver() {
 
                 repository.adjustProjectCount(project.id, delta)
                 val updatedProject = repository.getProject(project.id) ?: return@launch
-                CounterWidgetState.save(context, updatedProject.name, updatedProject.count, updatedProject.id)
+                CounterWidgetState.save(context, updatedProject)
                 CounterWidget().updateAll(context)
             } catch (_: Exception) {
                 // Widget-toiminto epäonnistui — ei kaadeta sovellusta

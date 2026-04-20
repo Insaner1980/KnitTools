@@ -272,7 +272,9 @@ private fun DetailRow(
             text = label,
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.width(80.dp),
+            modifier = Modifier.width(120.dp),
+            maxLines = 1,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
         )
         Text(
             text = value,

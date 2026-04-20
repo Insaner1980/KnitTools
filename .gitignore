@@ -27,3 +27,27 @@ app/google-services.json
 
 # SonarQube
 .scannerwork/
+
+# Paikalliset spec- ja delta-dokumentit repojuuressa (ei commitoida)
+/knittools-*.md
+/insights-*-delta.md
+/delegated-painting-duckling.md
+/firebase-ai-logic-setup-guide.md
+
+# Paikalliset kuvat ja varmuuskopiot repojuuressa
+/icon_app*.png
+/icon_simple_app*.png
+/icon_app_simple_transparent.png
+/icon_splash_screen.*
+/camera-icon.webp
+/screen.png
+*.bak
+
+# Paikalliset docs- ja launcher-assetit
+/docs/
+/Images/Screens/pro_upgrade.*
+/Images/button.webp
+/app/src/main/ic_launcher-playstore_backup.png
+
+# Eksynyt npm-lockfile (ei käytössä)
+/package-lock.json

@@ -2,7 +2,6 @@ package com.finnvek.knittools.ui.screens.counter
 
 import android.content.Context
 import android.net.Uri
-import androidx.glance.appwidget.updateAll
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
@@ -1017,7 +1016,11 @@ class CounterViewModel
             val resolvedProjectId = projectId ?: return
             val project = repository.getProject(resolvedProjectId) ?: return
             CounterWidgetState.save(context, project)
-            CounterWidget().updateAll(context)
+            val widget = CounterWidget()
+            val manager = androidx.glance.appwidget.GlanceAppWidgetManager(context)
+            manager.getGlanceIds(CounterWidget::class.java).forEach { id ->
+                widget.update(context, id)
+            }
         }
 
         private fun startTimer() {

@@ -4,7 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.util.Log
-import androidx.glance.appwidget.updateAll
+import androidx.glance.appwidget.GlanceAppWidgetManager
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -64,7 +64,12 @@ class CounterWidgetActions : BroadcastReceiver() {
                 }
                 Log.d(TAG, "after=${updatedProject.count}")
                 CounterWidgetState.save(context, updatedProject)
-                CounterWidget().updateAll(context)
+
+                val widget = CounterWidget()
+                val manager = GlanceAppWidgetManager(context)
+                val glanceIds = manager.getGlanceIds(CounterWidget::class.java)
+                Log.d(TAG, "updating ${glanceIds.size} widget instance(s)")
+                glanceIds.forEach { id -> widget.update(context, id) }
             } catch (e: Exception) {
                 Log.e(TAG, "Widget action failed", e)
             } finally {

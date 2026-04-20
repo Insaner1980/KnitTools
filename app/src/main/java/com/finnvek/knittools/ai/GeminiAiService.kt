@@ -44,7 +44,10 @@ class GeminiAiService
          * Selittää neulontaohjeen lyhyesti selkokielellä.
          * Palauttaa null jos kutsu epäonnistuu tai vastaus on tyhjä.
          */
-        suspend fun explainInstruction(instruction: String): String? {
+        suspend fun explainInstruction(
+            instruction: String,
+            responseLanguage: String = "English",
+        ): String? {
             if (instruction.isBlank()) return null
             val prompt =
                 """
@@ -52,7 +55,7 @@ class GeminiAiService
 
                 Explain this knitting instruction in plain language. Go through each part in order. For each abbreviation, state what it means and briefly what the knitter does physically. Keep it concise - one sentence per abbreviation or short group. Do not repeat the original instruction at the start.
 
-                Respond in English.
+                Respond in $responseLanguage.
 
                 Instruction: $instruction
                 """.trimIndent()

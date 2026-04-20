@@ -12,6 +12,7 @@ import com.finnvek.knittools.ai.AiQuotaManager
 import com.finnvek.knittools.ai.CombinedInstructionResult
 import com.finnvek.knittools.ai.GeminiAiService
 import com.finnvek.knittools.ai.PatternInstructionGemini
+import com.finnvek.knittools.data.datastore.PreferencesManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
@@ -19,6 +20,7 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -51,6 +53,7 @@ class PatternViewerViewModel
         @param:ApplicationContext private val context: Context,
         private val geminiAiService: GeminiAiService,
         private val aiQuotaManager: AiQuotaManager,
+        private val preferencesManager: PreferencesManager,
     ) : ViewModel() {
         private val _instructionState = MutableStateFlow(InstructionDisplayState())
         val instructionState: StateFlow<InstructionDisplayState> = _instructionState
@@ -200,7 +203,12 @@ class PatternViewerViewModel
                             forInstruction = instructionText,
                         )
 
-                    val result = geminiAiService.explainInstruction(instructionText)
+                    val language =
+                        preferencesManager.preferences
+                            .first()
+                            .appLanguage
+                            .promptLanguageName()
+                    val result = geminiAiService.explainInstruction(instructionText, language)
                     ensureActive()
 
                     if (result != null) {

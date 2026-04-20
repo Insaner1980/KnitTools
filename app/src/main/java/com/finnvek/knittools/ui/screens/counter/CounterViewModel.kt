@@ -1127,7 +1127,12 @@ class CounterViewModel
                     return@launch
                 }
 
-                val aiSummary = ProjectSummarizer.summarize(geminiAiService, data)
+                val language =
+                    preferencesManager.preferences
+                        .first()
+                        .appLanguage
+                        .promptLanguageName()
+                val aiSummary = ProjectSummarizer.summarize(geminiAiService, data, language)
                 if (aiSummary != null) {
                     aiQuotaManager.recordCall()
                     _uiState.update {

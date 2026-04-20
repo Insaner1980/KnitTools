@@ -6,14 +6,19 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -50,7 +55,7 @@ import com.finnvek.knittools.BuildConfig
 import com.finnvek.knittools.R
 import java.time.LocalDate
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun InsightsScreen(
     onProUpgrade: () -> Unit = {},
@@ -130,9 +135,10 @@ fun InsightsScreen(
             }
 
             item {
-                Row(
+                FlowRow(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     TimeRangeChip(
                         label = stringResource(R.string.insights_all_time),
@@ -154,7 +160,10 @@ fun InsightsScreen(
 
             item {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(IntrinsicSize.Max),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     AnimatedMetricCard(
@@ -164,7 +173,7 @@ fun InsightsScreen(
                         labelColor = MaterialTheme.colorScheme.primary,
                         animationDelay = 0,
                         animationKey = animationKey,
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f).fillMaxHeight(),
                     )
                     AnimatedMetricCard(
                         label = stringResource(R.string.avg_pace_label),
@@ -173,7 +182,7 @@ fun InsightsScreen(
                         labelColor = MaterialTheme.colorScheme.secondary,
                         animationDelay = 80,
                         animationKey = animationKey,
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f).fillMaxHeight(),
                     )
                     AnimatedMetricCard(
                         label = stringResource(R.string.completed_label),
@@ -182,7 +191,7 @@ fun InsightsScreen(
                         labelColor = MaterialTheme.colorScheme.tertiary,
                         animationDelay = 160,
                         animationKey = animationKey,
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f).fillMaxHeight(),
                     )
                 }
             }
@@ -325,13 +334,18 @@ private fun AnimatedMetricCard(
         color = MaterialTheme.colorScheme.surfaceVariant,
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 14.dp),
+            modifier =
+                Modifier
+                    .fillMaxHeight()
+                    .padding(horizontal = 12.dp, vertical = 14.dp),
+            verticalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelSmall,
                 color = labelColor,
-                maxLines = 1,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(

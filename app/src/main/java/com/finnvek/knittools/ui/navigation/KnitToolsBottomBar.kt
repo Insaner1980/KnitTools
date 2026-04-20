@@ -2,13 +2,15 @@ package com.finnvek.knittools.ui.navigation
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -61,9 +63,19 @@ fun KnitToolsBottomBar(navController: NavController) {
                         )
                     },
                     label = {
-                        Text(
+                        val labelStyle =
+                            MaterialTheme.typography.labelSmall.copy(
+                                letterSpacing = 0.sp,
+                                color = LocalContentColor.current,
+                            )
+                        BasicText(
                             text = stringResource(destination.labelRes),
-                            style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 0.sp),
+                            style = labelStyle,
+                            autoSize =
+                                TextAutoSize.StepBased(
+                                    minFontSize = 8.sp,
+                                    maxFontSize = labelStyle.fontSize,
+                                ),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )

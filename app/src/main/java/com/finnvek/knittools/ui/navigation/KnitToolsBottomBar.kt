@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -99,6 +100,7 @@ fun KnitToolsBottomBar(navController: NavController) {
                                 text = stringResource(destination.labelRes),
                                 style = labelStyle.copy(color = LocalContentColor.current),
                                 fontSize = sharedLabelFontSize,
+                                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                             )

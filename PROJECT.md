@@ -241,6 +241,7 @@ Tämä lista kuvaa toteutuksessa olevat screenitiedostot, ei suunnitelmia:
 - `needles/NeedleSizeScreen.kt`
 - `notes/NotesEditorScreen.kt`
 - `pattern/PatternViewerScreen.kt`
+- sama tiedosto sisältää myös `LibraryPatternViewerScreen`-variantin tallennetuille pattern-PDF:ille
 - `pro/ProUpgradeScreen.kt`
 - `project/ProjectListScreen.kt`
 - `ravelry/RavelrySearchScreen.kt`
@@ -354,6 +355,7 @@ Tiedostotallennuksen näkyvät entrypointit:
 - `PatternDocumentStorage`
 - `ProgressPhotoStorage`
 - `FileProvider` manifestissa + polut `res/xml/file_paths.xml`
+- widgetin jaetun bootstrap-tilan snapshot: `widget/CounterWidgetState.kt` oma DataStore `counter_widget`
 
 ## Kielet Ja Lokalisaatio
 
@@ -443,6 +445,12 @@ AI-pinta ei ole yksi ominaisuus vaan useita erillisiä polkuja:
 - OCR ja skannaus `ai/ocr/`
 - kevyt raakapuheentunnistus `ai/speech/SimpleSpeechRecognizer.kt`
 
+Nykyinen kielikäytös:
+
+- AI-vastaukset eivät ole enää kovakoodatusti englanniksi
+- `AppLanguage.promptLanguageName()` mapittaa nykyisen app-kielen englanninkieliseksi prompt-kieleksi
+- ainakin instruction explanation -flow ja project summary -flow syöttävät tämän kielen Gemini-promptiin
+
 ### Voice: kaksi erillistä polkua
 
 KnitTools käyttää kahta toisistaan riippumatonta ääniputkea. Ne elävät rinnakkain, gate eri `ProFeature`-lipulla, eivätkä jaa audio-tilaa:
@@ -471,8 +479,31 @@ Nykyinen Glance-widget:
 - on edelleen mukana tuotantokoodissa
 - on Pro-gatettu (`CounterWidget` tarkistaa `proManager().isPro()`)
 - osaa avata sovelluksen suoraan counteriin
-- medium-koossa näyttää `+` / `-` -toiminnot broadcast-actioneina
-- käyttää `CounterWidgetState`-tilaa ensimmäisen renderöinnin bootstrapissa
+- käyttää kolmea responsive-kokoa:
+  - small `120dp x 48dp` (käytännössä 2x1)
+  - medium `160dp x 160dp` (käytännössä 2x2)
+  - large `300dp x 160dp` (käytännössä 4x2)
+- small näyttää vain projektin nimen + laskurin
+- medium ja large näyttävät `+` / `-` -toiminnot broadcast-actioneina
+- renderöi Glancen omasta `PreferencesGlanceStateDefinition`-tilasta, ei pelkästä ulkoisesta snapshotista
+- `CounterWidgetState.syncAll(...)` peilaa widgetdatan sekä omaan `counter_widget`-DataStoreen että kaikille widget-instansseille Glance-stateen
+- uuden instanssin bootstrap käyttää ensin shared widget-storea ja fallbackina `CounterRepository.getFirstProject()`-hakua
+
+Source of truth:
+
+- `app/src/main/java/com/finnvek/knittools/widget/CounterWidget.kt`
+- `app/src/main/java/com/finnvek/knittools/widget/CounterWidgetState.kt`
+- `app/src/main/res/xml/counter_widget_info.xml`
+- `app/src/main/res/layout/widget_counter_preview.xml`
+
+## Näkyvät UI-Huomiot
+
+Tämänhetkisiä toteutuksessa näkyviä UI-ratkaisuja, joita ei kannata päätellä vanhoista mockeista:
+
+- bottom navigation käyttää jaettua label-fonttikoon laskentaa, jotta viiden tabin lokalisoidut tekstit mahtuvat yhdelle riville
+- bottom navigationin inaktiivinen sisältö käyttää erillistä `inactiveContent`-väriä ja labelit painotetaan `FontWeight.Medium`-tasolle
+- Insights-metriikkakortit ja activity grid on säädetty välttämään tekstien leikkautumista ja parantamaan wrappausta erityisesti lokalisoiduilla labeleilla
+- Ravelry detail -näytön tietoriveissä label-sarake on levennetty, jotta pidemmät lokalisoidut otsikot eivät työnnä sisältöä epätasaisesti
 
 Manifestin näkyvät komponentit:
 

@@ -4,10 +4,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.util.Log
-import androidx.datastore.preferences.core.intPreferencesKey
-import androidx.glance.appwidget.GlanceAppWidgetManager
-import androidx.glance.appwidget.state.updateAppWidgetState
-import androidx.glance.state.PreferencesGlanceStateDefinition
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -66,24 +62,7 @@ class CounterWidgetActions : BroadcastReceiver() {
                     return@launch
                 }
                 Log.d(TAG, "after=${updatedProject.count}")
-                CounterWidgetState.save(context, updatedProject)
-
-                // Glance ei havaitse oman DataStoremme muutoksia → bump rev-laskuri
-                // Glancen omaan state-storeen, jolloin Glance merkitsee widgetin
-                // dirty:ksi ja provideGlance ajetaan uudelleen widget.update():ssa.
-                val widget = CounterWidget()
-                val manager = GlanceAppWidgetManager(context)
-                val glanceIds = manager.getGlanceIds(CounterWidget::class.java)
-                Log.d(TAG, "refreshing ${glanceIds.size} widget instance(s)")
-                glanceIds.forEach { id ->
-                    updateAppWidgetState(context, PreferencesGlanceStateDefinition, id) { prefs ->
-                        prefs.toMutablePreferences().apply {
-                            val key = intPreferencesKey("rev")
-                            this[key] = (prefs[key] ?: 0) + 1
-                        }
-                    }
-                    widget.update(context, id)
-                }
+                CounterWidgetState.syncAll(context, updatedProject.toWidgetData())
             } catch (e: Exception) {
                 Log.e(TAG, "Widget action failed", e)
             } finally {

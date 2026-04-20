@@ -397,7 +397,7 @@
 
     <!-- Insights -->
     <string name="total_time_label">GESAMTZEIT</string>
-    <string name="avg_pace_label">DURCHSCHNITTSTEMPO</string>
+    <string name="avg_pace_label">DURCHSCHNITTS-TEMPO</string>
     <string name="completed_label">FERTIG</string>
     <string name="top_streak_label">BESTE SERIE</string>
     <string name="time_format_hours">%.1fh</string>

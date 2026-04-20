@@ -1,10 +1,11 @@
 package com.finnvek.knittools.widget
 
+import android.appwidget.AppWidgetManager
 import android.content.BroadcastReceiver
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.util.Log
-import androidx.glance.appwidget.GlanceAppWidgetManager
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -65,11 +66,21 @@ class CounterWidgetActions : BroadcastReceiver() {
                 Log.d(TAG, "after=${updatedProject.count}")
                 CounterWidgetState.save(context, updatedProject)
 
-                val widget = CounterWidget()
-                val manager = GlanceAppWidgetManager(context)
-                val glanceIds = manager.getGlanceIds(CounterWidget::class.java)
-                Log.d(TAG, "updating ${glanceIds.size} widget instance(s)")
-                glanceIds.forEach { id -> widget.update(context, id) }
+                // Pakota launcherin widget-päivitys ACTION_APPWIDGET_UPDATE -broadcastilla.
+                // Glancen widget.update() ei aina laukaise RemoteViews-päivitystä
+                // BroadcastReceiver-kontekstissa → käytetään OS:n virallista mekanismia.
+                val appWidgetManager = AppWidgetManager.getInstance(context)
+                val widgetIds =
+                    appWidgetManager.getAppWidgetIds(
+                        ComponentName(context, CounterWidgetReceiver::class.java),
+                    )
+                Log.d(TAG, "broadcasting update to ${widgetIds.size} widget instance(s)")
+                val updateIntent =
+                    Intent(context, CounterWidgetReceiver::class.java).apply {
+                        this.action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
+                        putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, widgetIds)
+                    }
+                context.sendBroadcast(updateIntent)
             } catch (e: Exception) {
                 Log.e(TAG, "Widget action failed", e)
             } finally {

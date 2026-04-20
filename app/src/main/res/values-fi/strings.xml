@@ -396,7 +396,7 @@
     <string name="filter_all">Kaikki</string>
 
     <!-- Tilastot -->
-    <string name="total_time_label">KOKONAIS-AIKA</string>
+    <string name="total_time_label">KOKONAIS-\nAIKA</string>
     <string name="avg_pace_label">KESKITAHTI</string>
     <string name="completed_label">VALMIIT</string>
     <string name="top_streak_label">PISIN PUTKI</string>

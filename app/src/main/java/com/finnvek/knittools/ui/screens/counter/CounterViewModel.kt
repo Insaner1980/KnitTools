@@ -1030,7 +1030,17 @@ class CounterViewModel
             CounterWidgetState.save(context, widgetData)
             val widget = CounterWidget()
             val manager = androidx.glance.appwidget.GlanceAppWidgetManager(context)
+            val revKey = androidx.datastore.preferences.core.intPreferencesKey("rev")
             manager.getGlanceIds(CounterWidget::class.java).forEach { id ->
+                androidx.glance.appwidget.state.updateAppWidgetState(
+                    context,
+                    androidx.glance.state.PreferencesGlanceStateDefinition,
+                    id,
+                ) { prefs ->
+                    prefs.toMutablePreferences().apply {
+                        this[revKey] = (prefs[revKey] ?: 0) + 1
+                    }
+                }
                 widget.update(context, id)
             }
         }

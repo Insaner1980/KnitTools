@@ -1,11 +1,13 @@
 package com.finnvek.knittools.widget
 
-import android.appwidget.AppWidgetManager
 import android.content.BroadcastReceiver
-import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.util.Log
+import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.glance.appwidget.GlanceAppWidgetManager
+import androidx.glance.appwidget.state.updateAppWidgetState
+import androidx.glance.state.PreferencesGlanceStateDefinition
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -66,21 +68,22 @@ class CounterWidgetActions : BroadcastReceiver() {
                 Log.d(TAG, "after=${updatedProject.count}")
                 CounterWidgetState.save(context, updatedProject)
 
-                // Pakota launcherin widget-päivitys ACTION_APPWIDGET_UPDATE -broadcastilla.
-                // Glancen widget.update() ei aina laukaise RemoteViews-päivitystä
-                // BroadcastReceiver-kontekstissa → käytetään OS:n virallista mekanismia.
-                val appWidgetManager = AppWidgetManager.getInstance(context)
-                val widgetIds =
-                    appWidgetManager.getAppWidgetIds(
-                        ComponentName(context, CounterWidgetReceiver::class.java),
-                    )
-                Log.d(TAG, "broadcasting update to ${widgetIds.size} widget instance(s)")
-                val updateIntent =
-                    Intent(context, CounterWidgetReceiver::class.java).apply {
-                        this.action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
-                        putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, widgetIds)
+                // Glance ei havaitse oman DataStoremme muutoksia → bump rev-laskuri
+                // Glancen omaan state-storeen, jolloin Glance merkitsee widgetin
+                // dirty:ksi ja provideGlance ajetaan uudelleen widget.update():ssa.
+                val widget = CounterWidget()
+                val manager = GlanceAppWidgetManager(context)
+                val glanceIds = manager.getGlanceIds(CounterWidget::class.java)
+                Log.d(TAG, "refreshing ${glanceIds.size} widget instance(s)")
+                glanceIds.forEach { id ->
+                    updateAppWidgetState(context, PreferencesGlanceStateDefinition, id) { prefs ->
+                        prefs.toMutablePreferences().apply {
+                            val key = intPreferencesKey("rev")
+                            this[key] = (prefs[key] ?: 0) + 1
+                        }
                     }
-                context.sendBroadcast(updateIntent)
+                    widget.update(context, id)
+                }
             } catch (e: Exception) {
                 Log.e(TAG, "Widget action failed", e)
             } finally {

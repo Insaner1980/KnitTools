@@ -24,7 +24,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.ChartSymbolData
@@ -72,7 +71,6 @@ fun ChartSymbolScreen(onBack: () -> Unit) {
                     Text(
                         text = categoryNames[category] ?: category.name,
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
                     )
                 }
@@ -99,12 +97,11 @@ private fun ChartSymbolRow(symbol: ChartSymbol) {
         Spacer(modifier = Modifier.width(12.dp))
         Column {
             Text(
-                text = symbol.name,
+                text = stringResource(symbol.nameResId),
                 style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium,
             )
             Text(
-                text = symbol.description,
+                text = stringResource(symbol.descriptionResId),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

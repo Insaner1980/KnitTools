@@ -27,4 +27,18 @@ data class CounterProjectEntity(
     val completedAt: Long? = null,
     @ColumnInfo(defaultValue = "")
     val yarnCardIds: String = "",
+    @ColumnInfo(defaultValue = "NULL")
+    val linkedPatternId: Long? = null,
+    @ColumnInfo(defaultValue = "NULL")
+    val patternUri: String? = null,
+    @ColumnInfo(defaultValue = "NULL")
+    val patternName: String? = null,
+    @ColumnInfo(defaultValue = "0")
+    val currentPatternPage: Int = 0,
+    @ColumnInfo(defaultValue = "NULL")
+    val patternRowMapping: String? = null,
+    @ColumnInfo(defaultValue = "0")
+    val stitchTrackingEnabled: Boolean = false,
+    @ColumnInfo(defaultValue = "0")
+    val currentStitch: Int = 0,
 )

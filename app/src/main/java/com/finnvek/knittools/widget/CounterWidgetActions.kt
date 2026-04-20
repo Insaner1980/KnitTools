@@ -24,6 +24,8 @@ class CounterWidgetActions : BroadcastReceiver() {
                         context.applicationContext,
                         WidgetEntryPoint::class.java,
                     )
+                if (!entryPoint.proManager().isPro()) return@launch
+
                 val repository = entryPoint.counterRepository()
                 val widgetData = CounterWidgetState.load(context)
 
@@ -42,6 +44,8 @@ class CounterWidgetActions : BroadcastReceiver() {
                 val updatedProject = repository.getProject(project.id) ?: return@launch
                 CounterWidgetState.save(context, updatedProject.name, updatedProject.count, updatedProject.id)
                 CounterWidget().updateAll(context)
+            } catch (_: Exception) {
+                // Widget-toiminto epäonnistui — ei kaadeta sovellusta
             } finally {
                 pendingResult.finish()
             }

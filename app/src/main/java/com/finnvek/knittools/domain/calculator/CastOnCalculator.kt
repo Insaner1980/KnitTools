@@ -27,7 +27,9 @@ object CastOnCalculator {
             )
         }
 
-        val bodyStitches = rawStitches - edgeStitches
+        // desiredWidth is already translated into the body stitch target.
+        // Edge stitches are added on top after snapping the body to the nearest repeat.
+        val bodyStitches = rawStitches
         val nearestDown = (bodyStitches / patternRepeat) * patternRepeat
         val nearestUp = nearestDown + patternRepeat
 

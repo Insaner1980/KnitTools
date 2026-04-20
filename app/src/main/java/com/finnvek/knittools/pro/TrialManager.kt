@@ -2,7 +2,9 @@ package com.finnvek.knittools.pro
 
 import android.content.Context
 import androidx.annotation.VisibleForTesting
+import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -26,7 +28,7 @@ data class TrialState(
 class TrialManager
     @Inject
     constructor(
-        @ApplicationContext private val context: Context,
+        @param:ApplicationContext private val context: Context,
     ) {
         private val _trialState = MutableStateFlow(TrialState())
         val trialState: StateFlow<TrialState> = _trialState.asStateFlow()
@@ -58,8 +60,11 @@ class TrialManager
         }
 
         companion object {
-            const val TRIAL_DURATION_DAYS = 7
-            private val Context.trialDataStore by preferencesDataStore(name = "trial_state")
+            const val TRIAL_DURATION_DAYS = 14
+            private val Context.trialDataStore by preferencesDataStore(
+                name = "trial_state",
+                corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() },
+            )
             private val KEY_TRIAL_START = longPreferencesKey("trial_start_timestamp")
             private val KEY_LAST_KNOWN_TIMESTAMP = longPreferencesKey("last_known_timestamp")
 

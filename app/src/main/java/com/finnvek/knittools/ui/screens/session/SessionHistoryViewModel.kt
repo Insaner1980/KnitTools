@@ -29,7 +29,7 @@ class SessionHistoryViewModel
             repository
                 .getSessionsForProject(projectId)
                 .map { sessions ->
-                    if (proManager.hasFeature(ProFeature.NOTES)) {
+                    if (proManager.hasFeature(ProFeature.FULL_HISTORY)) {
                         // Pro: koko historia
                         sessions
                     } else {
@@ -39,5 +39,5 @@ class SessionHistoryViewModel
                     }
                 }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-        val isPro: Boolean get() = proManager.hasFeature(ProFeature.NOTES)
+        val isPro: Boolean get() = proManager.hasFeature(ProFeature.FULL_HISTORY)
     }

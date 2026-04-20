@@ -51,7 +51,7 @@ fun ToolScreenScaffold(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(R.string.back),
-                            tint = MaterialTheme.colorScheme.primary,
+                            tint = MaterialTheme.colorScheme.outline,
                         )
                     }
                 },

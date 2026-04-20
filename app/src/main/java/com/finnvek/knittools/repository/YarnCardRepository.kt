@@ -18,7 +18,26 @@ class YarnCardRepository
 
         suspend fun getCards(ids: List<Long>): List<YarnCardEntity> = dao.getCards(ids)
 
-        suspend fun saveCard(card: YarnCardEntity): Long = dao.insert(card)
+        suspend fun saveCard(card: YarnCardEntity): Long = dao.upsert(card)
+
+        fun getCardCount() = dao.getCardCount()
+
+        suspend fun updateQuantity(
+            id: Long,
+            quantity: Int,
+        ) = dao.updateQuantity(id, quantity)
+
+        suspend fun updateStatus(
+            id: Long,
+            status: String,
+        ) = dao.updateStatus(id, status)
+
+        suspend fun updateLinkedProjectId(
+            id: Long,
+            projectId: Long?,
+        ) = dao.updateLinkedProjectId(id, projectId)
 
         suspend fun deleteCard(id: Long) = dao.delete(id)
+
+        suspend fun deleteCards(ids: List<Long>) = dao.deleteByIds(ids)
     }

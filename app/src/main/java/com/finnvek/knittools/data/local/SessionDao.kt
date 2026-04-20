@@ -21,4 +21,29 @@ interface SessionDao {
 
     @Query("SELECT COALESCE(SUM(durationMinutes), 0) FROM sessions WHERE projectId = :projectId")
     suspend fun getTotalMinutes(projectId: Long): Int
+
+    // Insights-queryt
+
+    @Query(
+        "SELECT COALESCE(SUM(durationMinutes), 0) FROM sessions WHERE (:projectId IS NULL OR projectId = :projectId)",
+    )
+    fun getTotalDurationMinutes(projectId: Long?): Flow<Int>
+
+    @Query(
+        "SELECT * FROM sessions WHERE startedAt >= :start AND startedAt <= :end AND (:projectId IS NULL OR projectId = :projectId) ORDER BY startedAt",
+    )
+    fun getSessionsInRange(
+        start: Long,
+        end: Long,
+        projectId: Long?,
+    ): Flow<List<SessionEntity>>
+
+    @Query("SELECT * FROM sessions WHERE (:projectId IS NULL OR projectId = :projectId) ORDER BY startedAt")
+    fun getAllSessions(projectId: Long?): Flow<List<SessionEntity>>
+
+    @Query("SELECT * FROM sessions WHERE projectId = :projectId ORDER BY endedAt DESC LIMIT 1")
+    suspend fun getLatestSession(projectId: Long): SessionEntity?
+
+    @Query("SELECT COUNT(*) FROM counter_projects WHERE isCompleted = 1")
+    fun getCompletedProjectCount(): Flow<Int>
 }

@@ -24,8 +24,8 @@ import javax.inject.Inject
 class LibraryViewModel
     @Inject
     constructor(
-        savedPatternRepository: SavedPatternRepository,
-        yarnCardRepository: YarnCardRepository,
+        private val savedPatternRepository: SavedPatternRepository,
+        private val yarnCardRepository: YarnCardRepository,
         private val progressPhotoRepository: ProgressPhotoRepository,
         counterRepository: CounterRepository,
     ) : ViewModel() {
@@ -91,6 +91,86 @@ class LibraryViewModel
                 val ids = _selectedPhotoIds.value.toList()
                 progressPhotoRepository.deletePhotos(ids)
                 exitPhotoSelectMode()
+            }
+        }
+
+        // === Multi-select (SavedPatternsScreen) ===
+
+        private val _isPatternSelectMode = MutableStateFlow(false)
+        val isPatternSelectMode: StateFlow<Boolean> = _isPatternSelectMode.asStateFlow()
+
+        private val _selectedPatternIds = MutableStateFlow<Set<Long>>(emptySet())
+        val selectedPatternIds: StateFlow<Set<Long>> = _selectedPatternIds.asStateFlow()
+
+        fun enterPatternSelectMode(initialPatternId: Long) {
+            _isPatternSelectMode.value = true
+            _selectedPatternIds.value = setOf(initialPatternId)
+        }
+
+        fun exitPatternSelectMode() {
+            _isPatternSelectMode.value = false
+            _selectedPatternIds.value = emptySet()
+        }
+
+        fun togglePatternSelection(id: Long) {
+            _selectedPatternIds.update { current ->
+                val next = if (id in current) current - id else current + id
+                if (next.isEmpty()) {
+                    _isPatternSelectMode.value = false
+                }
+                next
+            }
+        }
+
+        fun selectAllPatterns(visibleIds: List<Long>) {
+            _selectedPatternIds.value = visibleIds.toSet()
+        }
+
+        fun deleteSelectedPatterns() {
+            viewModelScope.launch {
+                val ids = _selectedPatternIds.value.toList()
+                savedPatternRepository.deleteByIds(ids)
+                exitPatternSelectMode()
+            }
+        }
+
+        // === Multi-select (MyYarnScreen) ===
+
+        private val _isYarnSelectMode = MutableStateFlow(false)
+        val isYarnSelectMode: StateFlow<Boolean> = _isYarnSelectMode.asStateFlow()
+
+        private val _selectedYarnIds = MutableStateFlow<Set<Long>>(emptySet())
+        val selectedYarnIds: StateFlow<Set<Long>> = _selectedYarnIds.asStateFlow()
+
+        fun enterYarnSelectMode(initialYarnId: Long) {
+            _isYarnSelectMode.value = true
+            _selectedYarnIds.value = setOf(initialYarnId)
+        }
+
+        fun exitYarnSelectMode() {
+            _isYarnSelectMode.value = false
+            _selectedYarnIds.value = emptySet()
+        }
+
+        fun toggleYarnSelection(id: Long) {
+            _selectedYarnIds.update { current ->
+                val next = if (id in current) current - id else current + id
+                if (next.isEmpty()) {
+                    _isYarnSelectMode.value = false
+                }
+                next
+            }
+        }
+
+        fun selectAllYarn(visibleIds: List<Long>) {
+            _selectedYarnIds.value = visibleIds.toSet()
+        }
+
+        fun deleteSelectedYarn() {
+            viewModelScope.launch {
+                val ids = _selectedYarnIds.value.toList()
+                yarnCardRepository.deleteCards(ids)
+                exitYarnSelectMode()
             }
         }
     }

@@ -3,22 +3,13 @@ package com.finnvek.knittools.ui.screens.home
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Calculate
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Straighten
-import androidx.compose.material.icons.filled.SwapVert
-import androidx.compose.material.icons.outlined.Functions
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -40,6 +31,8 @@ import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.ui.components.HubListItem
 import com.finnvek.knittools.ui.components.QuickTipCard
 import com.finnvek.knittools.ui.navigation.Screen
+import com.finnvek.knittools.ui.theme.RavelryTeal
+import com.finnvek.knittools.ui.theme.knitToolsColors
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,30 +49,10 @@ fun HomeScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Column {
-                        Text(
-                            text = stringResource(R.string.app_name),
-                            style = MaterialTheme.typography.headlineSmall,
-                        )
-                        if (proState.status == ProStatus.TRIAL_ACTIVE) {
-                            Text(
-                                text = stringResource(R.string.pro_trial_days_left, proState.trialDaysRemaining),
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontStyle = FontStyle.Italic,
-                                color = MaterialTheme.colorScheme.secondary,
-                            )
-                        }
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { onNavigate(Screen.Settings) }) {
-                        Icon(
-                            Icons.Filled.Settings,
-                            contentDescription = stringResource(R.string.settings),
-                            modifier = Modifier.padding(0.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+                    Text(
+                        text = stringResource(R.string.tools_title),
+                        style = MaterialTheme.typography.headlineMedium,
+                    )
                 },
                 colors =
                     TopAppBarDefaults.topAppBarColors(
@@ -99,6 +72,18 @@ fun HomeScreen(
                         .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
+                // Pro trial info
+                if (proState.status == ProStatus.TRIAL_ACTIVE) {
+                    item {
+                        Text(
+                            text = stringResource(R.string.pro_trial_days_left, proState.trialDaysRemaining),
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontStyle = FontStyle.Italic,
+                            color = MaterialTheme.knitToolsColors.brandWine,
+                        )
+                    }
+                }
+
                 // Trial expired
                 if (proState.status == ProStatus.TRIAL_EXPIRED) {
                     item {
@@ -119,34 +104,42 @@ fun HomeScreen(
                 // Laskimet — suora lista
                 item {
                     HubListItem(
-                        icon = Icons.Filled.Straighten,
                         title = stringResource(R.string.tool_gauge_converter),
                         description = stringResource(R.string.desc_gauge_calculator),
                         onClick = { onNavigate(Screen.Gauge) },
+                        titleColor = MaterialTheme.colorScheme.primary,
                     )
                 }
                 item {
                     HubListItem(
-                        icon = Icons.Filled.SwapVert,
                         title = stringResource(R.string.tool_increase_decrease),
                         description = stringResource(R.string.desc_increase_decrease),
                         onClick = { onNavigate(Screen.IncreaseDecrease) },
+                        titleColor = MaterialTheme.colorScheme.secondary,
                     )
                 }
                 item {
                     HubListItem(
-                        icon = Icons.Filled.Calculate,
                         title = stringResource(R.string.tool_cast_on_calculator),
                         description = stringResource(R.string.desc_cast_on),
                         onClick = { onNavigate(Screen.CastOn) },
+                        titleColor = MaterialTheme.colorScheme.tertiary,
                     )
                 }
                 item {
                     HubListItem(
-                        icon = Icons.Outlined.Functions,
                         title = stringResource(R.string.tool_yarn_estimator),
                         description = stringResource(R.string.desc_yarn_estimator_card),
                         onClick = { onNavigate(Screen.Yarn) },
+                        titleColor = MaterialTheme.knitToolsColors.brandWine,
+                    )
+                }
+                item {
+                    HubListItem(
+                        title = stringResource(R.string.tool_ravelry),
+                        description = stringResource(R.string.desc_ravelry),
+                        onClick = { onNavigate(Screen.Ravelry) },
+                        titleColor = RavelryTeal,
                     )
                 }
 

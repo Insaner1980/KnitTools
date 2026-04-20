@@ -1295,33 +1295,47 @@ class CounterViewModel
         fun emitLocalVoiceFeedback(command: VoiceCommand) {
             val response =
                 when (command) {
-                    is VoiceCommand.Increment ->
+                    is VoiceCommand.Increment -> {
                         if (command.count > 1) {
                             context.getString(R.string.voice_row_current, _uiState.value.counter.count)
                         } else {
                             null
                         }
-                    is VoiceCommand.Decrement ->
+                    }
+
+                    is VoiceCommand.Decrement -> {
                         if (command.count > 1) {
                             context.getString(R.string.voice_back_to_row, _uiState.value.counter.count)
                         } else {
                             null
                         }
-                    VoiceCommand.Undo ->
+                    }
+
+                    VoiceCommand.Undo -> {
                         context.getString(R.string.voice_undone_row, _uiState.value.counter.count)
-                    VoiceCommand.Reset ->
+                    }
+
+                    VoiceCommand.Reset -> {
                         context.getString(R.string.voice_counter_reset)
+                    }
+
                     VoiceCommand.StitchIncrement,
                     VoiceCommand.StitchDecrement,
-                    ->
+                    -> {
                         if (_uiState.value.stitchTrackingEnabled) {
                             context.getString(R.string.voice_stitch_at, _uiState.value.currentStitch)
                         } else {
                             null
                         }
-                    VoiceCommand.Help ->
+                    }
+
+                    VoiceCommand.Help -> {
                         context.getString(R.string.voice_help_full)
-                    VoiceCommand.StopListening -> null
+                    }
+
+                    VoiceCommand.StopListening -> {
+                        null
+                    }
                 }
             response?.let { _voiceResponse.tryEmit(it) }
         }

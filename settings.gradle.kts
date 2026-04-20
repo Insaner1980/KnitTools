@@ -22,3 +22,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "KnitTools"
 include(":app")
+include(":baselineprofile")

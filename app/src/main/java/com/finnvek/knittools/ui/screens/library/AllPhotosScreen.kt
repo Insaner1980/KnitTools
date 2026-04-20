@@ -2,6 +2,7 @@ package com.finnvek.knittools.ui.screens.library
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -44,6 +45,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -143,10 +145,18 @@ fun AllPhotosScreen(
         },
     ) { padding ->
         if (state.photos.isEmpty()) {
-            Box(
-                modifier = Modifier.fillMaxSize().padding(padding),
-                contentAlignment = Alignment.Center,
+            Column(
+                modifier = Modifier.fillMaxSize().padding(padding).padding(32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
             ) {
+                Image(
+                    painter = painterResource(R.drawable.camera_icon),
+                    contentDescription = null,
+                    modifier = Modifier.size(240.dp),
+                    contentScale = ContentScale.Fit,
+                )
+                Spacer(modifier = Modifier.height(24.dp))
                 Text(
                     text = stringResource(R.string.empty_all_photos),
                     style = MaterialTheme.typography.bodyLarge,

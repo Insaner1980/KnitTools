@@ -50,13 +50,18 @@ object YarnLabelParser {
         return ""
     }
 
-    // High confidence: number + m/meters/mtr or yds/yards
+    // High confidence: number + m/meters/mtr or yds/yards (imperial → metrit)
     internal fun extractLength(text: String): String {
         val metricPattern = Regex("""(\d+)\s*(?:m(?:eters?|tr)?)\b""", RegexOption.IGNORE_CASE)
+        metricPattern.find(text)?.let { return it.groupValues[1] }
+
         val imperialPattern = Regex("""(\d+)\s*(?:y(?:a?rds?|ds?))\b""", RegexOption.IGNORE_CASE)
-        return metricPattern.find(text)?.groupValues?.get(1)
-            ?: imperialPattern.find(text)?.groupValues?.get(1)
-            ?: ""
+        imperialPattern.find(text)?.let {
+            val yards = it.groupValues[1].toDoubleOrNull() ?: return ""
+            return (yards * METERS_PER_YARD).roundToInt().toString()
+        }
+
+        return ""
     }
 
     // High confidence: number + mm (tukee myös "3.5 - 4mm" aluetta) tai "US X" pattern
@@ -83,14 +88,15 @@ object YarnLabelParser {
     internal fun extractGauge(text: String): String {
         val pattern =
             Regex(
-                """(\d+)\s*(?:sts?|stitches?).*?(\d+)\s*(?:rows?).*?(?:=\s*)?(\d+)\s*(?:cm|in)""",
+                """(\d+)\s*(?:sts?|stitches?).*?(\d+)\s*(?:rows?).*?(?:=\s*)?(\d+)\s*(cm|in)""",
                 RegexOption.IGNORE_CASE,
             )
         val match = pattern.find(text) ?: return ""
         val sts = match.groupValues[1]
         val rows = match.groupValues[2]
-        val unit = match.groupValues[3]
-        return "$sts sts × $rows rows = ${unit}cm"
+        val size = match.groupValues[3]
+        val unit = match.groupValues[4]
+        return "$sts sts × $rows rows = $size $unit"
     }
 
     // Medium confidence: percentage + fiber keyword
@@ -175,6 +181,7 @@ object YarnLabelParser {
     }
 
     private const val GRAMS_PER_OUNCE = 28.3495
+    private const val METERS_PER_YARD = 0.9144
 
     // Low confidence: text near color number
     internal fun extractColorName(

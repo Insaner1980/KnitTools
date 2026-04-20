@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
@@ -31,8 +32,10 @@ import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -46,6 +49,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.ai.ocr.YarnLabelScanner
@@ -57,9 +61,8 @@ import com.finnvek.knittools.ui.components.InfoNote
 import com.finnvek.knittools.ui.components.NumberInputField
 import com.finnvek.knittools.ui.components.ResultCard
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
-import com.finnvek.knittools.ui.components.UnitToggle
+import com.finnvek.knittools.ui.screens.home.HomeViewModel
 import com.finnvek.knittools.ui.screens.yarncard.YarnCardViewModel
-import com.finnvek.knittools.util.extensions.convertFieldValue
 import kotlinx.coroutines.launch
 
 @Composable
@@ -68,8 +71,10 @@ fun YarnEstimatorScreen(
     onScanLabel: () -> Unit = {},
     onSavedYarns: () -> Unit = {},
     yarnCardViewModel: YarnCardViewModel? = null,
+    homeViewModel: HomeViewModel = hiltViewModel(),
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
+    val useImperial by homeViewModel.useImperial.collectAsStateWithLifecycle()
 
     ToolScreenScaffold(
         title = stringResource(R.string.tool_yarn_estimator),
@@ -81,6 +86,7 @@ fun YarnEstimatorScreen(
                 onScanLabel = onScanLabel,
                 onSavedYarns = onSavedYarns,
                 snackbarHostState = snackbarHostState,
+                useImperial = useImperial,
             )
             SnackbarHost(
                 hostState = snackbarHostState,
@@ -96,17 +102,40 @@ private fun YarnEstimatorContent(
     onScanLabel: () -> Unit,
     onSavedYarns: () -> Unit,
     snackbarHostState: SnackbarHostState,
+    useImperial: Boolean,
 ) {
     var totalYarn by rememberSaveable { mutableStateOf("") }
     var yarnPerSkein by rememberSaveable { mutableStateOf("") }
     var weightPerSkein by rememberSaveable { mutableStateOf("") }
-    var useImperial by rememberSaveable { mutableStateOf(false) }
+
+    // Täytä kentät skannatuista arvoista (Save and Use / Use in Calculator)
+    if (yarnCardViewModel != null) {
+        ApplyPendingCalcValues(yarnCardViewModel) { w, l ->
+            if (l.isNotBlank()) yarnPerSkein = l
+            if (w.isNotBlank()) weightPerSkein = w
+        }
+    }
 
     val result by remember(totalYarn, yarnPerSkein, weightPerSkein) {
         derivedStateOf { calculateYarnEstimate(totalYarn, yarnPerSkein, weightPerSkein) }
     }
 
-    val formState = yarnCardViewModel?.formState?.collectAsStateWithLifecycle()
+    val formState = yarnCardViewModel?.formState?.collectAsStateWithLifecycle()?.value
+    val isScanning = formState?.isScanning == true
+    val scanError = formState?.scanError
+
+    LaunchedEffect(scanError) {
+        if (!scanError.isNullOrBlank()) {
+            snackbarHostState.showSnackbar(scanError, duration = SnackbarDuration.Short)
+            yarnCardViewModel.updateField { copy(scanError = null) }
+        }
+    }
+    val lengthUnit =
+        if (useImperial) {
+            stringResource(R.string.unit_yards)
+        } else {
+            stringResource(R.string.unit_meters)
+        }
 
     Column(
         modifier =
@@ -116,46 +145,53 @@ private fun YarnEstimatorContent(
                 .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        if (formState?.value?.isScanning == true) {
+        if (isScanning) {
             ScanningIndicator()
         }
-        if (yarnCardViewModel != null && yarnCardViewModel.isPro) {
+        yarnCardViewModel?.takeIf { it.isPro }?.let { vm ->
             ProActionBar(
-                yarnCardViewModel = yarnCardViewModel,
+                yarnCardViewModel = vm,
                 onScanLabel = onScanLabel,
                 onSavedYarns = onSavedYarns,
                 snackbarHostState = snackbarHostState,
             )
         }
 
-        UnitToggle(
-            useImperial = useImperial,
-            onToggle = { newImperial ->
-                if (newImperial != useImperial) {
-                    totalYarn = convertFieldValue(totalYarn, newImperial, isLength = false)
-                    yarnPerSkein = convertFieldValue(yarnPerSkein, newImperial, isLength = false)
-                    useImperial = newImperial
-                }
-            },
-        )
-
-        val lengthUnit =
-            if (useImperial) {
-                stringResource(R.string.unit_yards)
-            } else {
-                stringResource(R.string.unit_meters)
+        Surface(
+            shape = RoundedCornerShape(18.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                YarnInputFields(
+                    totalYarn = totalYarn,
+                    yarnPerSkein = yarnPerSkein,
+                    weightPerSkein = weightPerSkein,
+                    lengthUnit = lengthUnit,
+                    onTotalYarnChange = { totalYarn = it },
+                    onYarnPerSkeinChange = { yarnPerSkein = it },
+                    onWeightPerSkeinChange = { weightPerSkein = it },
+                )
             }
-        YarnInputFields(
-            totalYarn = totalYarn,
-            yarnPerSkein = yarnPerSkein,
-            weightPerSkein = weightPerSkein,
-            lengthUnit = lengthUnit,
-            onTotalYarnChange = { totalYarn = it },
-            onYarnPerSkeinChange = { yarnPerSkein = it },
-            onWeightPerSkeinChange = { weightPerSkein = it },
-        )
+        }
 
         result?.let { r -> YarnResultCard(r) }
+    }
+}
+
+@Composable
+private fun ApplyPendingCalcValues(
+    yarnCardViewModel: YarnCardViewModel,
+    onApply: (weight: String, length: String) -> Unit,
+) {
+    val pending by yarnCardViewModel.pendingCalcValues.collectAsStateWithLifecycle()
+    LaunchedEffect(pending) {
+        val (w, l, _) = pending ?: return@LaunchedEffect
+        onApply(w, l)
+        yarnCardViewModel.clearPendingCalcValues()
     }
 }
 
@@ -184,7 +220,8 @@ private fun ProActionBar(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var pendingPhotoUri by remember { mutableStateOf<Uri?>(null) }
+    var pendingPhotoUriString by rememberSaveable { mutableStateOf<String?>(null) }
+    val pendingPhotoUri = pendingPhotoUriString?.let(Uri::parse)
     val permDeniedMessage = stringResource(R.string.camera_permission_denied)
     val permDeniedPermanentMessage = stringResource(R.string.camera_permission_denied_permanent)
     val openSettingsLabel = stringResource(R.string.open_settings)
@@ -192,11 +229,8 @@ private fun ProActionBar(
     val cameraLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
             if (success && pendingPhotoUri != null) {
-                scope.launch {
-                    yarnCardViewModel.setScanning(true)
-                    val parsed = YarnLabelScanner.analyzeImage(context, pendingPhotoUri!!)
-                    yarnCardViewModel.loadFromScan(parsed, pendingPhotoUri)
-                    yarnCardViewModel.setScanning(false)
+                yarnCardViewModel.scanWithGemini(pendingPhotoUri) {
+                    pendingPhotoUriString = null
                     onScanLabel()
                 }
             }
@@ -206,7 +240,7 @@ private fun ProActionBar(
         rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
             if (granted) {
                 val (_, uri) = YarnLabelScanner.createImageFile(context)
-                pendingPhotoUri = uri
+                pendingPhotoUriString = uri.toString()
                 cameraLauncher.launch(uri)
             } else {
                 val activity = context as? Activity

@@ -69,10 +69,10 @@ class CastOnCalculatorTest {
     }
 
     @Test
-    fun `pattern repeat proximity uses body stitches not raw`() {
-        // rawStitches=27, edgeStitches=3 → bodyStitches=24
+    fun `pattern repeat proximity uses width derived body stitches`() {
+        // rawStitches=27, edgeStitches=3 → bodyStitches=27
         // nearestDown=20, nearestUp=30
-        // Body 24 is closer to 20 (diff 4) than 30 (diff 6) → should pick down
+        // Body 27 is closer to 30 (diff 3) than 20 (diff 7) → should pick up
         val result =
             CastOnCalculator.calculate(
                 desiredWidth = 12.3,
@@ -81,9 +81,23 @@ class CastOnCalculatorTest {
                 edgeStitches = 3,
             )
         // totalDown = 20 + 3 = 23, totalUp = 30 + 3 = 33
-        assertEquals(23, result.stitches)
+        assertEquals(33, result.stitches)
         assertEquals(23, result.adjustedDown)
         assertEquals(33, result.adjustedUp)
+    }
+
+    @Test
+    fun `pattern repeat with edge stitches snaps body before adding edges`() {
+        val result =
+            CastOnCalculator.calculate(
+                desiredWidth = 25.0,
+                stitchGauge = 22.0,
+                patternRepeat = 6,
+                edgeStitches = 4,
+            )
+        assertEquals(58, result.stitches)
+        assertEquals(58, result.adjustedDown)
+        assertEquals(64, result.adjustedUp)
     }
 
     @Test
@@ -109,9 +123,8 @@ class CastOnCalculatorTest {
                 patternRepeat = 10,
                 edgeStitches = 20,
             )
-        // rawStitches=11, bodyStitches=-9, nearestDown=0, totalDown=20
-        // Nonsensical but should not crash
-        assertEquals(20, result.adjustedDown)
+        // rawStitches=11, bodyStitches=11, nearestDown=10, totalDown=30
+        assertEquals(30, result.adjustedDown)
         assertNotNull(result.adjustedUp)
     }
 

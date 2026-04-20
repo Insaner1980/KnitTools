@@ -10,11 +10,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -26,21 +26,26 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.SizeChartData
 import com.finnvek.knittools.domain.model.SizeChartEntry
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
-import com.finnvek.knittools.ui.components.UnitToggle
+import com.finnvek.knittools.ui.screens.home.HomeViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SizeChartScreen(onBack: () -> Unit) {
+fun SizeChartScreen(
+    onBack: () -> Unit,
+    homeViewModel: HomeViewModel = hiltViewModel(),
+) {
     var selectedCategory by rememberSaveable { mutableStateOf(SizeChartData.Category.WOMEN) }
-    var useImperial by rememberSaveable { mutableStateOf(false) }
+    val useImperial by homeViewModel.useImperial.collectAsStateWithLifecycle()
     var dropdownExpanded by remember { mutableStateOf(false) }
 
     val headers = remember(selectedCategory) { SizeChartData.headers(selectedCategory) }
@@ -81,7 +86,7 @@ fun SizeChartScreen(onBack: () -> Unit) {
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = dropdownExpanded) },
                         modifier =
                             Modifier
-                                .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
                                 .fillMaxWidth()
                                 .padding(vertical = 8.dp),
                         colors =
@@ -109,14 +114,6 @@ fun SizeChartScreen(onBack: () -> Unit) {
                 }
             }
 
-            // Yksikkö-toggle
-            item {
-                UnitToggle(
-                    useImperial = useImperial,
-                    onToggle = { useImperial = it },
-                )
-            }
-
             // Taulukko-otsikko
             item { SizeChartHeaderRow(headers) }
 
@@ -130,7 +127,7 @@ fun SizeChartScreen(onBack: () -> Unit) {
 }
 
 @Composable
-private fun SizeChartHeaderRow(headers: List<String>) {
+private fun SizeChartHeaderRow(headerResIds: List<Int>) {
     Row(
         modifier =
             Modifier
@@ -138,12 +135,11 @@ private fun SizeChartHeaderRow(headers: List<String>) {
                 .background(MaterialTheme.colorScheme.surfaceContainerHighest)
                 .padding(vertical = 8.dp),
     ) {
-        headers.forEach { header ->
+        headerResIds.forEach { resId ->
             Text(
-                text = header,
+                text = stringResource(resId),
                 modifier = Modifier.weight(1f),
                 style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
             )
         }
@@ -155,15 +151,15 @@ private fun SizeChartDataRow(
     entry: SizeChartEntry,
     useImperial: Boolean,
 ) {
+    val context = LocalContext.current
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
     ) {
         // Ensimmäinen sarake = koon nimi
         Text(
-            text = entry.sizeLabel,
+            text = entry.sizeLabel.resolve(context),
             modifier = Modifier.weight(1f),
             style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
             textAlign = TextAlign.Center,
         )
         // Loput sarakkeet = mitat

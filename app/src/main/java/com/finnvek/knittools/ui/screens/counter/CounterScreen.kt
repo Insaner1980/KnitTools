@@ -444,7 +444,9 @@ private fun HandleVoiceCommands(
                     // Handler pysäyttää jatkuvan kuuntelun itse
                 }
 
-                VoiceCommand.Help -> Unit
+                VoiceCommand.Help -> {
+                    Unit
+                }
             }
             // TTS-vahvistus ei-triviaaleille komennoille (paikallinen parseri, offline-yhteensopiva)
             viewModel.emitLocalVoiceFeedback(command)

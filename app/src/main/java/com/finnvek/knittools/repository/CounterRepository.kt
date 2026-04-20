@@ -1,9 +1,12 @@
 package com.finnvek.knittools.repository
 
+import android.content.Context
 import com.finnvek.knittools.data.local.CounterProjectDao
 import com.finnvek.knittools.data.local.CounterProjectEntity
 import com.finnvek.knittools.data.local.SessionDao
 import com.finnvek.knittools.data.local.SessionEntity
+import com.finnvek.knittools.data.storage.ProgressPhotoStorage
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -14,12 +17,28 @@ class CounterRepository
     constructor(
         private val dao: CounterProjectDao,
         private val sessionDao: SessionDao,
+        private val photoStorage: ProgressPhotoStorage,
+        @param:ApplicationContext private val context: Context,
     ) {
         fun getAllProjects(): Flow<List<CounterProjectEntity>> = dao.getAllProjects()
 
         fun getActiveProjects(): Flow<List<CounterProjectEntity>> = dao.getActiveProjects()
 
+        fun getActiveProjects(sortOrder: String): Flow<List<CounterProjectEntity>> =
+            when (sortOrder) {
+                "name" -> dao.getActiveProjectsByName()
+                "created" -> dao.getActiveProjectsByCreated()
+                else -> dao.getActiveProjects()
+            }
+
         fun getCompletedProjects(): Flow<List<CounterProjectEntity>> = dao.getCompletedProjects()
+
+        fun getCompletedProjects(sortOrder: String): Flow<List<CounterProjectEntity>> =
+            when (sortOrder) {
+                "name" -> dao.getCompletedProjectsByName()
+                "created" -> dao.getCompletedProjectsByCreated()
+                else -> dao.getCompletedProjects()
+            }
 
         suspend fun getActiveProjectCount(): Int = dao.getActiveProjectCount()
 
@@ -96,6 +115,46 @@ class CounterRepository
             stitchCount: Int?,
         ) = dao.updateStitchCount(id, stitchCount, System.currentTimeMillis())
 
+        suspend fun updateCurrentStitch(
+            id: Long,
+            stitch: Int,
+        ) = dao.updateCurrentStitch(id, stitch, System.currentTimeMillis())
+
+        suspend fun updateStitchTrackingEnabled(
+            id: Long,
+            enabled: Boolean,
+        ) = dao.updateStitchTrackingEnabled(id, enabled, System.currentTimeMillis())
+
+        suspend fun updatePattern(
+            id: Long,
+            patternUri: String?,
+            patternName: String?,
+            currentPatternPage: Int,
+            patternRowMapping: String?,
+        ) = dao.updatePattern(
+            id = id,
+            patternUri = patternUri,
+            patternName = patternName,
+            currentPatternPage = currentPatternPage,
+            patternRowMapping = patternRowMapping,
+            updatedAt = System.currentTimeMillis(),
+        )
+
+        suspend fun updateCurrentPatternPage(
+            id: Long,
+            page: Int,
+        ) = dao.updateCurrentPatternPage(id, page, System.currentTimeMillis())
+
+        suspend fun updatePatternRowMapping(
+            id: Long,
+            mapping: String?,
+        ) = dao.updatePatternRowMapping(id, mapping, System.currentTimeMillis())
+
+        suspend fun updateProjectStepSize(
+            id: Long,
+            stepSize: Int,
+        ) = dao.updateStepSize(id, stepSize, System.currentTimeMillis())
+
         suspend fun updateProjectYarnCardIds(
             id: Long,
             yarnCardIds: String,
@@ -109,7 +168,10 @@ class CounterRepository
 
         suspend fun reactivateProject(id: Long) = dao.reactivateProject(id, System.currentTimeMillis())
 
-        suspend fun deleteProject(id: Long) = dao.delete(id)
+        suspend fun deleteProject(id: Long) {
+            photoStorage.deleteProjectPhotos(context, id)
+            dao.delete(id) // CASCADE poistaa liittyvät rivit muista tauluista
+        }
 
         suspend fun getProjectCount(): Int = dao.getProjectCount()
 
@@ -124,6 +186,12 @@ class CounterRepository
         fun getSessionsForProject(projectId: Long): Flow<List<SessionEntity>> =
             sessionDao.getSessionsForProject(projectId)
 
+        fun getAllSessions(projectId: Long?): Flow<List<SessionEntity>> = sessionDao.getAllSessions(projectId)
+
+        fun getCompletedProjectCount(): Flow<Int> = sessionDao.getCompletedProjectCount()
+
+        fun getTotalDurationMinutes(projectId: Long?): Flow<Int> = sessionDao.getTotalDurationMinutes(projectId)
+
         suspend fun insertSession(session: SessionEntity): Long = sessionDao.insert(session)
 
         suspend fun deleteSessionsBefore(
@@ -132,4 +200,6 @@ class CounterRepository
         ) = sessionDao.deleteSessionsBefore(projectId, before)
 
         suspend fun getTotalMinutesForProject(projectId: Long): Int = sessionDao.getTotalMinutes(projectId)
+
+        suspend fun getLatestSession(projectId: Long): SessionEntity? = sessionDao.getLatestSession(projectId)
     }

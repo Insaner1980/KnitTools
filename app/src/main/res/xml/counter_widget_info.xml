@@ -11,4 +11,5 @@
     android:targetCellHeight="1"
     android:updatePeriodMillis="3600000"
     android:widgetCategory="home_screen"
-    android:description="@string/widget_description" />
+    android:description="@string/widget_description"
+    android:initialLayout="@layout/glance_default_loading_layout" />

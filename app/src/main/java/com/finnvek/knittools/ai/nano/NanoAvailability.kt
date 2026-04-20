@@ -24,4 +24,6 @@ object NanoAvailability {
         } catch (_: Exception) {
             NanoStatus.UNAVAILABLE
         }
+
+    suspend fun isUsable(): Boolean = check() != NanoStatus.UNAVAILABLE
 }

@@ -32,9 +32,11 @@ class YarnLabelParserTest {
     }
 
     @Test
-    fun `extract length in yards`() {
-        assertEquals("220", YarnLabelParser.extractLength("220 yds"))
-        assertEquals("191", YarnLabelParser.extractLength("191 yards"))
+    fun `extract length in yards converts to meters`() {
+        // 220 yds × 0.9144 = 201.2 → 201
+        assertEquals("201", YarnLabelParser.extractLength("220 yds"))
+        // 191 yards × 0.9144 = 174.6 → 175
+        assertEquals("175", YarnLabelParser.extractLength("191 yards"))
     }
 
     @Test
@@ -87,6 +89,18 @@ class YarnLabelParserTest {
         assertEquals("Worsted", YarnLabelParser.extractWeightCategory("Worsted Weight"))
         assertEquals("Fingering", YarnLabelParser.extractWeightCategory("Fingering / 4-ply"))
         assertEquals("Super Bulky", YarnLabelParser.extractWeightCategory("Super Bulky"))
+    }
+
+    @Test
+    fun `extract gauge metric`() {
+        val result = YarnLabelParser.extractGauge("22 sts 30 rows = 10 cm")
+        assertEquals("22 sts × 30 rows = 10 cm", result)
+    }
+
+    @Test
+    fun `extract gauge imperial`() {
+        val result = YarnLabelParser.extractGauge("22 stitches 30 rows = 4 in")
+        assertEquals("22 sts × 30 rows = 4 in", result)
     }
 
     @Test

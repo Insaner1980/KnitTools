@@ -1,143 +1,116 @@
 package com.finnvek.knittools.domain.calculator
 
+import android.content.Context
+import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.KnittingAbbreviation
 
 object AbbreviationData {
     val abbreviations: List<KnittingAbbreviation> =
         listOf(
             // Perussilmukat
-            KnittingAbbreviation("K", "Knit", "Insert needle knitwise, wrap yarn, pull through"),
-            KnittingAbbreviation("P", "Purl", "Insert needle purlwise, wrap yarn, pull through"),
-            KnittingAbbreviation("St(s)", "Stitch(es)", "One or more loops on the needle"),
-            KnittingAbbreviation("RS", "Right side", "The public-facing side of the work"),
-            KnittingAbbreviation("WS", "Wrong side", "The private/back side of the work"),
-            KnittingAbbreviation(
-                "YO",
-                "Yarn over",
-                "Wrap yarn around needle to create a new stitch and decorative hole",
-            ),
-            KnittingAbbreviation("Kwise", "Knitwise", "Insert needle as if to knit"),
-            KnittingAbbreviation("Pwise", "Purlwise", "Insert needle as if to purl"),
-            // Vähenykset
-            KnittingAbbreviation("K2tog", "Knit 2 together", "Right-leaning decrease: knit two stitches as one"),
-            KnittingAbbreviation("P2tog", "Purl 2 together", "Purl two stitches together as one"),
-            KnittingAbbreviation(
-                "SSK",
-                "Slip, slip, knit",
-                "Left-leaning decrease: slip 2 stitches knitwise, knit them together through back loops",
-            ),
-            KnittingAbbreviation("SSP", "Slip, slip, purl", "Left-leaning purl decrease"),
-            KnittingAbbreviation(
-                "SKP",
-                "Slip, knit, pass slipped stitch over",
-                "Left-leaning decrease, alternative to SSK",
-            ),
-            KnittingAbbreviation("K3tog", "Knit 3 together", "Right-leaning double decrease"),
-            KnittingAbbreviation("P3tog", "Purl 3 together", "Purl three stitches together"),
-            KnittingAbbreviation("S2KP", "Slip 2, knit 1, pass slipped stitches over", "Centered double decrease"),
-            KnittingAbbreviation(
-                "SK2P",
-                "Slip 1, knit 2 together, pass slipped stitch over",
-                "Left-leaning double decrease",
-            ),
-            KnittingAbbreviation(
-                "CDD",
-                "Central double decrease",
-                "Slip 2 together knitwise, K1, pass slipped stitches over",
-            ),
-            KnittingAbbreviation("Psso", "Pass slipped stitch over", "Lift slipped stitch over the last worked stitch"),
-            KnittingAbbreviation("Dec", "Decrease", "Reduce the number of stitches"),
+            KnittingAbbreviation("K", R.string.abbr_k_meaning, R.string.abbr_k_desc),
+            KnittingAbbreviation("P", R.string.abbr_p_meaning, R.string.abbr_p_desc),
+            KnittingAbbreviation("St(s)", R.string.abbr_sts_meaning, R.string.abbr_sts_desc),
+            KnittingAbbreviation("RS", R.string.abbr_rs_meaning, R.string.abbr_rs_desc),
+            KnittingAbbreviation("WS", R.string.abbr_ws_meaning, R.string.abbr_ws_desc),
+            KnittingAbbreviation("YO", R.string.abbr_yo_meaning, R.string.abbr_yo_desc),
+            KnittingAbbreviation("Kwise", R.string.abbr_kwise_meaning, R.string.abbr_kwise_desc),
+            KnittingAbbreviation("Pwise", R.string.abbr_pwise_meaning, R.string.abbr_pwise_desc),
+            // Kavennukset
+            KnittingAbbreviation("K2tog", R.string.abbr_k2tog_meaning, R.string.abbr_k2tog_desc),
+            KnittingAbbreviation("P2tog", R.string.abbr_p2tog_meaning, R.string.abbr_p2tog_desc),
+            KnittingAbbreviation("SSK", R.string.abbr_ssk_meaning, R.string.abbr_ssk_desc),
+            KnittingAbbreviation("SSP", R.string.abbr_ssp_meaning, R.string.abbr_ssp_desc),
+            KnittingAbbreviation("SKP", R.string.abbr_skp_meaning, R.string.abbr_skp_desc),
+            KnittingAbbreviation("K3tog", R.string.abbr_k3tog_meaning, R.string.abbr_k3tog_desc),
+            KnittingAbbreviation("P3tog", R.string.abbr_p3tog_meaning, R.string.abbr_p3tog_desc),
+            KnittingAbbreviation("S2KP", R.string.abbr_s2kp_meaning, R.string.abbr_s2kp_desc),
+            KnittingAbbreviation("SK2P", R.string.abbr_sk2p_meaning, R.string.abbr_sk2p_desc),
+            KnittingAbbreviation("CDD", R.string.abbr_cdd_meaning, R.string.abbr_cdd_desc),
+            KnittingAbbreviation("Psso", R.string.abbr_psso_meaning, R.string.abbr_psso_desc),
+            KnittingAbbreviation("Dec", R.string.abbr_dec_meaning, R.string.abbr_dec_desc),
             // Lisäykset
-            KnittingAbbreviation("M1", "Make 1", "Pick up bar between stitches and knit through back loop to increase"),
-            KnittingAbbreviation("M1L", "Make 1 left", "Left-leaning increase using the bar between stitches"),
-            KnittingAbbreviation("M1R", "Make 1 right", "Right-leaning increase using the bar between stitches"),
-            KnittingAbbreviation("KFB", "Knit front and back", "Knit into front and back of same stitch to increase"),
-            KnittingAbbreviation("PFB", "Purl front and back", "Purl into front and back of same stitch to increase"),
-            KnittingAbbreviation("Inc", "Increase", "Add stitches to the work"),
+            KnittingAbbreviation("M1", R.string.abbr_m1_meaning, R.string.abbr_m1_desc),
+            KnittingAbbreviation("M1L", R.string.abbr_m1l_meaning, R.string.abbr_m1l_desc),
+            KnittingAbbreviation("M1R", R.string.abbr_m1r_meaning, R.string.abbr_m1r_desc),
+            KnittingAbbreviation("KFB", R.string.abbr_kfb_meaning, R.string.abbr_kfb_desc),
+            KnittingAbbreviation("PFB", R.string.abbr_pfb_meaning, R.string.abbr_pfb_desc),
+            KnittingAbbreviation("Inc", R.string.abbr_inc_meaning, R.string.abbr_inc_desc),
             // Siirtäminen
-            KnittingAbbreviation("SL", "Slip", "Move stitch from left to right needle without working it"),
-            KnittingAbbreviation("SL1K", "Slip 1 knitwise", "Slip one stitch as if to knit"),
-            KnittingAbbreviation("SL1P", "Slip 1 purlwise", "Slip one stitch as if to purl"),
+            KnittingAbbreviation("SL", R.string.abbr_sl_meaning, R.string.abbr_sl_desc),
+            KnittingAbbreviation("SL1K", R.string.abbr_sl1k_meaning, R.string.abbr_sl1k_desc),
+            KnittingAbbreviation("SL1P", R.string.abbr_sl1p_meaning, R.string.abbr_sl1p_desc),
             // Aloitus ja lopetus
-            KnittingAbbreviation("CO", "Cast on", "Create initial stitches on the needle"),
-            KnittingAbbreviation("BO", "Bind off", "Secure stitches to prevent unraveling"),
-            KnittingAbbreviation("PU", "Pick up", "Pick up stitches along an edge"),
+            KnittingAbbreviation("CO", R.string.abbr_co_meaning, R.string.abbr_co_desc),
+            KnittingAbbreviation("BO", R.string.abbr_bo_meaning, R.string.abbr_bo_desc),
+            KnittingAbbreviation("PU", R.string.abbr_pu_meaning, R.string.abbr_pu_desc),
             // Merkit ja toisto
-            KnittingAbbreviation("PM", "Place marker", "Place a stitch marker on the needle"),
-            KnittingAbbreviation("SM", "Slip marker", "Move marker from left to right needle"),
-            KnittingAbbreviation("Rep", "Repeat", "Work the specified section again"),
-            KnittingAbbreviation("Rnd", "Round", "One complete circuit in circular knitting"),
-            KnittingAbbreviation("EOR", "Every other row", "Work on alternate rows"),
-            // Neulat
-            KnittingAbbreviation(
-                "DPN",
-                "Double-pointed needles",
-                "Short needles pointed at both ends, used for small circumference knitting",
-            ),
-            KnittingAbbreviation("CN", "Cable needle", "Short needle used to hold stitches when working cables"),
-            KnittingAbbreviation("Circ", "Circular needle", "Two needle tips connected by a cable"),
-            // Twisted-silmukat
-            KnittingAbbreviation("Tbl", "Through back loop", "Work into the back leg of the stitch"),
-            KnittingAbbreviation("Ktbl", "Knit through back loop", "Twisted knit stitch"),
-            KnittingAbbreviation("Ptbl", "Purl through back loop", "Twisted purl stitch"),
-            // Kaapelit
-            KnittingAbbreviation("C4F", "Cable 4 front", "Slip 2 to CN and hold in front, K2, K2 from CN"),
-            KnittingAbbreviation("C4B", "Cable 4 back", "Slip 2 to CN and hold in back, K2, K2 from CN"),
-            KnittingAbbreviation("C6F", "Cable 6 front", "Slip 3 to CN and hold in front, K3, K3 from CN"),
-            KnittingAbbreviation("C6B", "Cable 6 back", "Slip 3 to CN and hold in back, K3, K3 from CN"),
+            KnittingAbbreviation("PM", R.string.abbr_pm_meaning, R.string.abbr_pm_desc),
+            KnittingAbbreviation("SM", R.string.abbr_sm_meaning, R.string.abbr_sm_desc),
+            KnittingAbbreviation("Rep", R.string.abbr_rep_meaning, R.string.abbr_rep_desc),
+            KnittingAbbreviation("Rnd", R.string.abbr_rnd_meaning, R.string.abbr_rnd_desc),
+            KnittingAbbreviation("EOR", R.string.abbr_eor_meaning, R.string.abbr_eor_desc),
+            // Puikot
+            KnittingAbbreviation("DPN", R.string.abbr_dpn_meaning, R.string.abbr_dpn_desc),
+            KnittingAbbreviation("CN", R.string.abbr_cn_meaning, R.string.abbr_cn_desc),
+            KnittingAbbreviation("Circ", R.string.abbr_circ_meaning, R.string.abbr_circ_desc),
+            // Takareunasta
+            KnittingAbbreviation("Tbl", R.string.abbr_tbl_meaning, R.string.abbr_tbl_desc),
+            KnittingAbbreviation("Ktbl", R.string.abbr_ktbl_meaning, R.string.abbr_ktbl_desc),
+            KnittingAbbreviation("Ptbl", R.string.abbr_ptbl_meaning, R.string.abbr_ptbl_desc),
+            // Palmikot
+            KnittingAbbreviation("C4F", R.string.abbr_c4f_meaning, R.string.abbr_c4f_desc),
+            KnittingAbbreviation("C4B", R.string.abbr_c4b_meaning, R.string.abbr_c4b_desc),
+            KnittingAbbreviation("C6F", R.string.abbr_c6f_meaning, R.string.abbr_c6f_desc),
+            KnittingAbbreviation("C6B", R.string.abbr_c6b_meaning, R.string.abbr_c6b_desc),
             // Lankasijainti
-            KnittingAbbreviation("Wyif", "With yarn in front", "Hold yarn to the front (purl side) of work"),
-            KnittingAbbreviation("Wyib", "With yarn in back", "Hold yarn to the back (knit side) of work"),
-            // Short rows
-            KnittingAbbreviation("W&T", "Wrap and turn", "Wrap the next stitch and turn work for short row shaping"),
-            // Neulontatyylit
-            KnittingAbbreviation(
-                "St st",
-                "Stockinette stitch",
-                "Knit on RS, purl on WS (or knit every round in circular)",
-            ),
-            KnittingAbbreviation("Rev St st", "Reverse stockinette", "Purl on RS, knit on WS"),
-            KnittingAbbreviation("G st", "Garter stitch", "Knit every row (or knit/purl alternate rounds in circular)"),
-            KnittingAbbreviation("Seed st", "Seed stitch", "Alternating K1, P1 with offset each row"),
+            KnittingAbbreviation("Wyif", R.string.abbr_wyif_meaning, R.string.abbr_wyif_desc),
+            KnittingAbbreviation("Wyib", R.string.abbr_wyib_meaning, R.string.abbr_wyib_desc),
+            // Lyhennetyt kerrokset
+            KnittingAbbreviation("W&T", R.string.abbr_wt_meaning, R.string.abbr_wt_desc),
+            // Neuletyypit
+            KnittingAbbreviation("St st", R.string.abbr_st_st_meaning, R.string.abbr_st_st_desc),
+            KnittingAbbreviation("Rev St st", R.string.abbr_rev_st_st_meaning, R.string.abbr_rev_st_st_desc),
+            KnittingAbbreviation("G st", R.string.abbr_g_st_meaning, R.string.abbr_g_st_desc),
+            KnittingAbbreviation("Seed st", R.string.abbr_seed_st_meaning, R.string.abbr_seed_st_desc),
             // Yleiset termit
-            KnittingAbbreviation("Tog", "Together", "Work stitches together as one"),
-            KnittingAbbreviation("Rem", "Remaining", "Stitches left on the needle"),
-            KnittingAbbreviation("Beg", "Beginning", "Start of the row or round"),
-            KnittingAbbreviation("Alt", "Alternate", "Every other row or stitch"),
-            KnittingAbbreviation("Approx", "Approximately", "Close to but not exact"),
-            KnittingAbbreviation("Cont", "Continue", "Keep working as established"),
-            KnittingAbbreviation("Foll", "Following", "The next row, round, or instruction"),
-            KnittingAbbreviation("Prev", "Previous", "The row, round, or stitch before the current one"),
-            KnittingAbbreviation("Patt", "Pattern", "Continue in established pattern"),
-            KnittingAbbreviation("Sk", "Skip", "Miss the next stitch"),
-            KnittingAbbreviation(
-                "Selvage",
-                "Selvage/selvedge stitch",
-                "Edge stitch worked differently for a neat border",
-            ),
-            KnittingAbbreviation("LH", "Left hand", "Left needle or left side"),
-            KnittingAbbreviation("RH", "Right hand", "Right needle or right side"),
+            KnittingAbbreviation("Tog", R.string.abbr_tog_meaning, R.string.abbr_tog_desc),
+            KnittingAbbreviation("Rem", R.string.abbr_rem_meaning, R.string.abbr_rem_desc),
+            KnittingAbbreviation("Beg", R.string.abbr_beg_meaning, R.string.abbr_beg_desc),
+            KnittingAbbreviation("Alt", R.string.abbr_alt_meaning, R.string.abbr_alt_desc),
+            KnittingAbbreviation("Approx", R.string.abbr_approx_meaning, R.string.abbr_approx_desc),
+            KnittingAbbreviation("Cont", R.string.abbr_cont_meaning, R.string.abbr_cont_desc),
+            KnittingAbbreviation("Foll", R.string.abbr_foll_meaning, R.string.abbr_foll_desc),
+            KnittingAbbreviation("Prev", R.string.abbr_prev_meaning, R.string.abbr_prev_desc),
+            KnittingAbbreviation("Patt", R.string.abbr_patt_meaning, R.string.abbr_patt_desc),
+            KnittingAbbreviation("Sk", R.string.abbr_sk_meaning, R.string.abbr_sk_desc),
+            KnittingAbbreviation("Selvage", R.string.abbr_selvage_meaning, R.string.abbr_selvage_desc),
+            KnittingAbbreviation("LH", R.string.abbr_lh_meaning, R.string.abbr_lh_desc),
+            KnittingAbbreviation("RH", R.string.abbr_rh_meaning, R.string.abbr_rh_desc),
             // Värit
-            KnittingAbbreviation("MC", "Main color", "The primary yarn color in a project"),
-            KnittingAbbreviation("CC", "Contrast color", "The secondary yarn color"),
+            KnittingAbbreviation("MC", R.string.abbr_mc_meaning, R.string.abbr_mc_desc),
+            KnittingAbbreviation("CC", R.string.abbr_cc_meaning, R.string.abbr_cc_desc),
             // Mittaus
-            KnittingAbbreviation("WPI", "Wraps per inch", "Yarn thickness measurement: wraps around a ruler per inch"),
-            KnittingAbbreviation("Gauge", "Gauge/tension", "Number of stitches and rows per unit of measurement"),
+            KnittingAbbreviation("WPI", R.string.abbr_wpi_meaning, R.string.abbr_wpi_desc),
+            KnittingAbbreviation("Gauge", R.string.abbr_gauge_meaning, R.string.abbr_gauge_desc),
             // Yhteisötermit
-            KnittingAbbreviation("FO", "Finished object", "A completed knitting project"),
-            KnittingAbbreviation("WIP", "Work in progress", "A project currently being knitted"),
-            KnittingAbbreviation("UFO", "Unfinished object", "An abandoned or paused project"),
-            KnittingAbbreviation("Frog", "Frog/frogging", "Rip out knitting (rip-it, rip-it — like a frog)"),
-            KnittingAbbreviation("Tink", "Tink", "Unknit stitch by stitch (knit spelled backwards)"),
-            KnittingAbbreviation("LYS", "Local yarn store", "A neighborhood yarn shop"),
+            KnittingAbbreviation("FO", R.string.abbr_fo_meaning, R.string.abbr_fo_desc),
+            KnittingAbbreviation("WIP", R.string.abbr_wip_meaning, R.string.abbr_wip_desc),
+            KnittingAbbreviation("UFO", R.string.abbr_ufo_meaning, R.string.abbr_ufo_desc),
+            KnittingAbbreviation("Frog", R.string.abbr_frog_meaning, R.string.abbr_frog_desc),
+            KnittingAbbreviation("Tink", R.string.abbr_tink_meaning, R.string.abbr_tink_desc),
+            KnittingAbbreviation("LYS", R.string.abbr_lys_meaning, R.string.abbr_lys_desc),
         )
 
-    fun search(query: String): List<KnittingAbbreviation> {
+    fun search(
+        context: Context,
+        query: String,
+    ): List<KnittingAbbreviation> {
         val trimmed = query.trim().lowercase()
         if (trimmed.isEmpty()) return abbreviations
         return abbreviations.filter {
             it.abbreviation.lowercase().contains(trimmed) ||
-                it.meaning.lowercase().contains(trimmed)
+                context.getString(it.meaningResId).lowercase().contains(trimmed)
         }
     }
 }

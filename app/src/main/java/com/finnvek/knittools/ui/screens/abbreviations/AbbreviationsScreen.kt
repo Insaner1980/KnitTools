@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -21,8 +20,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.AbbreviationData
@@ -34,7 +33,8 @@ import com.finnvek.knittools.ui.components.ToolScreenScaffold
 fun AbbreviationsScreen(onBack: () -> Unit) {
     var query by rememberSaveable { mutableStateOf("") }
     var expandedAbbreviation by rememberSaveable { mutableStateOf<String?>(null) }
-    val results = remember(query) { AbbreviationData.search(query) }
+    val context = LocalContext.current
+    val results = remember(query, context) { AbbreviationData.search(context, query) }
 
     ToolScreenScaffold(
         title = stringResource(R.string.abbreviations_title),
@@ -55,15 +55,32 @@ fun AbbreviationsScreen(onBack: () -> Unit) {
                     label = stringResource(R.string.search_abbreviation),
                 )
             }
-            items(results, key = { it.abbreviation }) { abbreviation ->
-                AbbreviationItem(
-                    abbreviation = abbreviation,
-                    isExpanded = expandedAbbreviation == abbreviation.abbreviation,
-                    onClick = {
-                        expandedAbbreviation =
-                            if (expandedAbbreviation == abbreviation.abbreviation) null else abbreviation.abbreviation
-                    },
-                )
+            if (results.isEmpty()) {
+                item {
+                    Text(
+                        text = stringResource(R.string.no_results_found),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(vertical = 24.dp),
+                    )
+                }
+            } else {
+                items(results, key = { it.abbreviation }) { abbreviation ->
+                    AbbreviationItem(
+                        abbreviation = abbreviation,
+                        isExpanded = expandedAbbreviation == abbreviation.abbreviation,
+                        onClick = {
+                            expandedAbbreviation =
+                                if (expandedAbbreviation ==
+                                    abbreviation.abbreviation
+                                ) {
+                                    null
+                                } else {
+                                    abbreviation.abbreviation
+                                }
+                        },
+                    )
+                }
             }
         }
     }
@@ -77,7 +94,7 @@ private fun AbbreviationItem(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
-        shape = RoundedCornerShape(12.dp),
+        shape = MaterialTheme.shapes.medium,
         colors =
             CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
@@ -88,16 +105,15 @@ private fun AbbreviationItem(
             Text(
                 text = abbreviation.abbreviation,
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
             )
             Text(
-                text = abbreviation.meaning,
+                text = stringResource(abbreviation.meaningResId),
                 style = MaterialTheme.typography.bodyMedium,
             )
-            AnimatedVisibility(visible = isExpanded && abbreviation.description.isNotEmpty()) {
+            AnimatedVisibility(visible = isExpanded) {
                 Text(
-                    text = abbreviation.description,
+                    text = stringResource(abbreviation.descriptionResId),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 8.dp),

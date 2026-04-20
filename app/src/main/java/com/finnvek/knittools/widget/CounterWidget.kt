@@ -1,6 +1,7 @@
 package com.finnvek.knittools.widget
 
 import android.content.Context
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -8,11 +9,11 @@ import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
 import androidx.glance.LocalSize
-import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.action.actionSendBroadcast
+import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
@@ -26,10 +27,17 @@ import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.padding
 import androidx.glance.layout.size
 import androidx.glance.layout.width
+import androidx.glance.material3.ColorProviders
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import com.finnvek.knittools.MainActivity
+import com.finnvek.knittools.R
+import com.finnvek.knittools.ui.theme.OnPrimary
+import com.finnvek.knittools.ui.theme.Primary
+import com.finnvek.knittools.ui.theme.Surface
+import com.finnvek.knittools.ui.theme.TextPrimary
+import com.finnvek.knittools.ui.theme.TextSecondary
 import dagger.hilt.android.EntryPointAccessors
 
 class CounterWidget : GlanceAppWidget() {
@@ -42,15 +50,17 @@ class CounterWidget : GlanceAppWidget() {
         context: Context,
         id: GlanceId,
     ) {
+        val entryPoint =
+            EntryPointAccessors.fromApplication(
+                context.applicationContext,
+                WidgetEntryPoint::class.java,
+            )
+        val isPro = entryPoint.proManager().isPro()
+
         var prefs = CounterWidgetState.load(context)
 
         // Ensimmäinen renderöinti — hae data Roomista
-        if (prefs.projectId == 0L) {
-            val entryPoint =
-                EntryPointAccessors.fromApplication(
-                    context.applicationContext,
-                    WidgetEntryPoint::class.java,
-                )
+        if (isPro && prefs.projectId == 0L) {
             val repository = entryPoint.counterRepository()
             repository.getFirstProject()?.let { project ->
                 CounterWidgetState.save(context, project.name, project.count, project.id)
@@ -59,21 +69,36 @@ class CounterWidget : GlanceAppWidget() {
         }
 
         provideContent {
-            GlanceTheme {
-                val size = LocalSize.current
-                val isSmall = size.width < MEDIUM_SIZE.width
-
-                if (isSmall) {
-                    SmallWidget(
-                        projectName = prefs.projectName,
-                        count = prefs.count,
-                    )
+            val widgetScheme =
+                darkColorScheme(
+                    primary = Primary,
+                    onPrimary = OnPrimary,
+                    surface = Surface,
+                    onSurface = TextPrimary,
+                    onSurfaceVariant = TextSecondary,
+                )
+            GlanceTheme(colors = ColorProviders(dark = widgetScheme, light = widgetScheme)) {
+                if (!isPro) {
+                    ProRequiredWidget(context)
                 } else {
-                    MediumWidget(
-                        context = context,
-                        projectName = prefs.projectName,
-                        count = prefs.count,
-                    )
+                    val size = LocalSize.current
+                    val isSmall = size.width < MEDIUM_SIZE.width
+
+                    if (isSmall) {
+                        SmallWidget(
+                            context = context,
+                            projectName = prefs.projectName,
+                            count = prefs.count,
+                            projectId = prefs.projectId.takeIf { it > 0L },
+                        )
+                    } else {
+                        MediumWidget(
+                            context = context,
+                            projectName = prefs.projectName,
+                            count = prefs.count,
+                            projectId = prefs.projectId.takeIf { it > 0L },
+                        )
+                    }
                 }
             }
         }
@@ -86,17 +111,50 @@ class CounterWidget : GlanceAppWidget() {
 }
 
 @androidx.compose.runtime.Composable
+private fun ProRequiredWidget(context: Context) {
+    Box(
+        modifier =
+            GlanceModifier
+                .fillMaxSize()
+                .background(GlanceTheme.colors.surface)
+                .clickable(
+                    actionStartActivity(
+                        MainActivity.createCounterLaunchIntent(context = context, projectId = null),
+                    ),
+                ).padding(12.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = context.getString(R.string.widget_pro_required),
+            style =
+                TextStyle(
+                    fontSize = 12.sp,
+                    color = GlanceTheme.colors.onSurfaceVariant,
+                ),
+        )
+    }
+}
+
+@androidx.compose.runtime.Composable
 private fun SmallWidget(
+    context: Context,
     projectName: String,
     count: Int,
+    projectId: Long? = null,
 ) {
     Box(
         modifier =
             GlanceModifier
                 .fillMaxSize()
                 .background(GlanceTheme.colors.surface)
-                .clickable(actionStartActivity<MainActivity>())
-                .padding(8.dp),
+                .clickable(
+                    actionStartActivity(
+                        MainActivity.createCounterLaunchIntent(
+                            context = context,
+                            projectId = projectId,
+                        ),
+                    ),
+                ).padding(8.dp),
         contentAlignment = Alignment.CenterStart,
     ) {
         Row(
@@ -132,13 +190,21 @@ private fun MediumWidget(
     context: Context,
     projectName: String,
     count: Int,
+    projectId: Long? = null,
 ) {
     Column(
         modifier =
             GlanceModifier
                 .fillMaxSize()
                 .background(GlanceTheme.colors.surface)
-                .padding(12.dp),
+                .clickable(
+                    actionStartActivity(
+                        MainActivity.createCounterLaunchIntent(
+                            context = context,
+                            projectId = projectId,
+                        ),
+                    ),
+                ).padding(12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(

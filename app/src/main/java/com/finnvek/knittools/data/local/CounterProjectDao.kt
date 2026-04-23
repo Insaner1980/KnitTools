@@ -219,6 +219,20 @@ interface CounterProjectDao {
     @Query(
         """
         UPDATE counter_projects
+        SET targetRows = :targetRows,
+            updatedAt = :updatedAt
+        WHERE id = :id
+        """,
+    )
+    suspend fun updateTargetRows(
+        id: Long,
+        targetRows: Int?,
+        updatedAt: Long,
+    )
+
+    @Query(
+        """
+        UPDATE counter_projects
         SET isCompleted = 1,
             totalRows = :totalRows,
             completedAt = :completedAt,

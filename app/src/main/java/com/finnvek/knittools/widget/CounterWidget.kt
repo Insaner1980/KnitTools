@@ -233,6 +233,7 @@ private fun MediumWidget(
                 ).padding(horizontal = 16.dp, vertical = 10.dp),
     ) {
         WidgetHeader(data = data, fontSize = 13.sp, centered = true, maxLines = 2)
+        WidgetTargetLabel(context = context, data = data, fontSize = 11.sp)
         Spacer(modifier = GlanceModifier.defaultWeight())
         Box(
             modifier = GlanceModifier.fillMaxWidth(),
@@ -249,6 +250,7 @@ private fun MediumWidget(
                 maxLines = 1,
             )
         }
+        WidgetProgressBar(data = data, topSpacing = 8.dp)
         Spacer(modifier = GlanceModifier.height(12.dp))
         Row(
             modifier = GlanceModifier.fillMaxWidth(),
@@ -294,6 +296,7 @@ private fun LargeWidget(
                 ).padding(horizontal = 18.dp, vertical = 10.dp),
     ) {
         WidgetHeader(data = data, fontSize = 14.sp, centered = true, maxLines = 2)
+        WidgetTargetLabel(context = context, data = data, fontSize = 12.sp)
         Spacer(modifier = GlanceModifier.defaultWeight())
         Box(
             modifier = GlanceModifier.fillMaxWidth(),
@@ -310,6 +313,7 @@ private fun LargeWidget(
                 maxLines = 1,
             )
         }
+        WidgetProgressBar(data = data, topSpacing = 10.dp)
         Spacer(modifier = GlanceModifier.height(14.dp))
         Row(
             modifier = GlanceModifier.fillMaxWidth(),
@@ -371,6 +375,62 @@ private fun WidgetHeader(
 }
 
 private fun formatPrimaryCount(data: WidgetData): String = data.count.toString()
+
+@androidx.compose.runtime.Composable
+private fun WidgetTargetLabel(
+    context: Context,
+    data: WidgetData,
+    fontSize: androidx.compose.ui.unit.TextUnit,
+) {
+    val target = data.targetRows ?: return
+    if (target <= 0) return
+    Text(
+        text = context.getString(R.string.row_label_with_target, data.count, target),
+        modifier = GlanceModifier.fillMaxWidth(),
+        style =
+            TextStyle(
+                fontSize = fontSize,
+                color = GlanceTheme.colors.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            ),
+        maxLines = 1,
+    )
+}
+
+@androidx.compose.runtime.Composable
+private fun WidgetProgressBar(
+    data: WidgetData,
+    topSpacing: androidx.compose.ui.unit.Dp,
+) {
+    val target = data.targetRows ?: return
+    if (target <= 0) return
+    val fraction = (data.count.toFloat() / target.toFloat()).coerceIn(0f, 1f)
+    val completed = data.count >= target
+    val fillColor = if (completed) GlanceTheme.colors.tertiary else GlanceTheme.colors.primary
+    Spacer(modifier = GlanceModifier.height(topSpacing))
+    Row(modifier = GlanceModifier.fillMaxWidth().height(2.dp)) {
+        if (fraction > 0f) {
+            Box(
+                modifier =
+                    GlanceModifier
+                        .defaultWeight()
+                        .height(2.dp)
+                        .background(fillColor),
+                content = {},
+            )
+        }
+        if (fraction < 1f) {
+            val emptyBox =
+                GlanceModifier
+                    .height(2.dp)
+                    .background(GlanceTheme.colors.surfaceVariant)
+            Box(
+                modifier = if (fraction > 0f) emptyBox.defaultWeight() else emptyBox.fillMaxWidth(),
+                content = {},
+            )
+        }
+    }
+}
 
 @androidx.compose.runtime.Composable
 private fun WidgetActionButton(

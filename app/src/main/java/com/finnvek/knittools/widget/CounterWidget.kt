@@ -2,7 +2,9 @@ package com.finnvek.knittools.widget
 
 import android.content.Context
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.datastore.preferences.core.Preferences
@@ -10,7 +12,6 @@ import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
 import androidx.glance.LocalSize
-import androidx.glance.currentState
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.SizeMode
@@ -18,28 +19,36 @@ import androidx.glance.appwidget.action.actionSendBroadcast
 import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
-import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.glance.background
+import androidx.glance.currentState
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
 import androidx.glance.layout.Column
 import androidx.glance.layout.Row
 import androidx.glance.layout.Spacer
-import androidx.glance.layout.fillMaxHeight
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
+import androidx.glance.layout.height
 import androidx.glance.layout.padding
 import androidx.glance.layout.size
 import androidx.glance.layout.width
 import androidx.glance.material3.ColorProviders
+import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import com.finnvek.knittools.MainActivity
 import com.finnvek.knittools.R
+import com.finnvek.knittools.ui.theme.DustyRose
+import com.finnvek.knittools.ui.theme.LightDustyRose
+import com.finnvek.knittools.ui.theme.LightSurface
+import com.finnvek.knittools.ui.theme.LightSurfaceHigh
+import com.finnvek.knittools.ui.theme.LightTextPrimary
+import com.finnvek.knittools.ui.theme.LightTextSecondary
 import com.finnvek.knittools.ui.theme.OnPrimary
 import com.finnvek.knittools.ui.theme.Primary
 import com.finnvek.knittools.ui.theme.Surface
+import com.finnvek.knittools.ui.theme.SurfaceHigh
 import com.finnvek.knittools.ui.theme.TextPrimary
 import com.finnvek.knittools.ui.theme.TextSecondary
 import dagger.hilt.android.EntryPointAccessors
@@ -69,8 +78,10 @@ class CounterWidget : GlanceAppWidget() {
         if (isPro && widgetData.projectId == 0L) {
             val sharedWidgetData = CounterWidgetState.load(context)
             when {
-                sharedWidgetData.projectId > 0L ->
+                sharedWidgetData.projectId > 0L -> {
                     CounterWidgetState.saveGlance(context, id, sharedWidgetData)
+                }
+
                 else -> {
                     val repository = entryPoint.counterRepository()
                     repository.getFirstProject()?.let { project ->
@@ -85,27 +96,44 @@ class CounterWidget : GlanceAppWidget() {
         provideContent {
             val prefs = currentState<Preferences>()
             val data = CounterWidgetState.fromPreferences(context, prefs)
-            val widgetScheme =
+            val darkScheme =
                 darkColorScheme(
                     primary = Primary,
                     onPrimary = OnPrimary,
                     surface = Surface,
+                    surfaceVariant = SurfaceHigh,
                     onSurface = TextPrimary,
                     onSurfaceVariant = TextSecondary,
+                    tertiary = DustyRose,
                 )
-            GlanceTheme(colors = ColorProviders(dark = widgetScheme, light = widgetScheme)) {
+            val lightScheme =
+                lightColorScheme(
+                    primary = Primary,
+                    onPrimary = OnPrimary,
+                    surface = LightSurface,
+                    surfaceVariant = LightSurfaceHigh,
+                    onSurface = LightTextPrimary,
+                    onSurfaceVariant = LightTextSecondary,
+                    tertiary = LightDustyRose,
+                )
+            GlanceTheme(colors = ColorProviders(dark = darkScheme, light = lightScheme)) {
                 if (!isPro) {
                     ProRequiredWidget(context)
                 } else {
                     val size = LocalSize.current
                     val projectId = data.projectId.takeIf { it > 0L }
                     when {
-                        size.width >= LARGE_SIZE.width && size.height >= LARGE_SIZE.height ->
+                        size.width >= LARGE_SIZE.width && size.height >= LARGE_SIZE.height -> {
                             LargeWidget(context = context, data = data, projectId = projectId)
-                        size.width >= MEDIUM_SIZE.width && size.height >= MEDIUM_SIZE.height ->
+                        }
+
+                        size.width >= MEDIUM_SIZE.width && size.height >= MEDIUM_SIZE.height -> {
                             MediumWidget(context = context, data = data, projectId = projectId)
-                        else ->
+                        }
+
+                        else -> {
                             SmallWidget(context = context, data = data, projectId = projectId)
+                        }
                     }
                 }
             }
@@ -150,7 +178,7 @@ private fun SmallWidget(
     data: WidgetData,
     projectId: Long?,
 ) {
-    Box(
+    Column(
         modifier =
             GlanceModifier
                 .fillMaxSize()
@@ -162,24 +190,19 @@ private fun SmallWidget(
                             projectId = projectId,
                         ),
                     ),
-                ).padding(8.dp),
-        contentAlignment = Alignment.CenterStart,
+                ).padding(horizontal = 8.dp, vertical = 6.dp),
     ) {
-        Column(modifier = GlanceModifier.fillMaxWidth()) {
+        WidgetHeader(data = data, fontSize = 12.sp)
+        Spacer(modifier = GlanceModifier.defaultWeight())
+        Box(
+            modifier = GlanceModifier.fillMaxWidth(),
+            contentAlignment = Alignment.Center,
+        ) {
             Text(
-                text = data.projectName,
+                text = formatPrimaryCount(data),
                 style =
                     TextStyle(
-                        fontSize = 12.sp,
-                        color = GlanceTheme.colors.onSurfaceVariant,
-                    ),
-                maxLines = 1,
-            )
-            Text(
-                text = formatCountWithTarget(data),
-                style =
-                    TextStyle(
-                        fontSize = 24.sp,
+                        fontSize = 28.sp,
                         fontWeight = FontWeight.Bold,
                         color = GlanceTheme.colors.onSurface,
                     ),
@@ -207,42 +230,46 @@ private fun MediumWidget(
                             projectId = projectId,
                         ),
                     ),
-                ).padding(12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
+                ).padding(horizontal = 10.dp, vertical = 8.dp),
     ) {
-        WidgetHeader(data = data, fontSize = 12.sp)
-
+        WidgetHeader(data = data, fontSize = 13.sp)
         Spacer(modifier = GlanceModifier.defaultWeight())
-
-        Text(
-            text = formatCountWithTarget(data),
-            style =
-                TextStyle(
-                    fontSize = 34.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = GlanceTheme.colors.onSurface,
-                ),
-            maxLines = 1,
-        )
-
-        Spacer(modifier = GlanceModifier.defaultWeight())
-
+        Box(
+            modifier = GlanceModifier.fillMaxWidth(),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = formatPrimaryCount(data),
+                style =
+                    TextStyle(
+                        fontSize = 40.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = GlanceTheme.colors.onSurface,
+                    ),
+                maxLines = 1,
+            )
+        }
+        Spacer(modifier = GlanceModifier.height(12.dp))
         Row(
             modifier = GlanceModifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            WidgetButton(
+            WidgetActionButton(
                 text = "−",
-                size = 40.dp,
+                size = 42.dp,
+                contentDescription = context.getString(R.string.counter_decrease),
                 onClick = actionSendBroadcast(CounterWidgetActions.decrementIntent(context)),
             )
-            Spacer(modifier = GlanceModifier.width(12.dp))
-            WidgetButton(
+            Spacer(modifier = GlanceModifier.width(16.dp))
+            WidgetActionButton(
                 text = "+",
-                size = 40.dp,
+                size = 42.dp,
+                contentDescription = context.getString(R.string.counter_increase),
                 onClick = actionSendBroadcast(CounterWidgetActions.incrementIntent(context)),
             )
         }
+        Spacer(modifier = GlanceModifier.defaultWeight())
     }
 }
 
@@ -264,65 +291,46 @@ private fun LargeWidget(
                             projectId = projectId,
                         ),
                     ),
-                ).padding(horizontal = 16.dp, vertical = 12.dp),
+                ).padding(horizontal = 12.dp, vertical = 8.dp),
     ) {
-        WidgetHeader(data = data, fontSize = 13.sp)
-
+        WidgetHeader(data = data, fontSize = 14.sp)
         Spacer(modifier = GlanceModifier.defaultWeight())
-
-        Row(
+        Box(
             modifier = GlanceModifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
+            contentAlignment = Alignment.Center,
         ) {
-            WidgetButton(
-                text = "−",
-                size = 48.dp,
-                onClick = actionSendBroadcast(CounterWidgetActions.decrementIntent(context)),
-            )
-
-            Box(
-                modifier =
-                    GlanceModifier
-                        .defaultWeight()
-                        .fillMaxHeight(),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = formatCountWithTarget(data),
-                    style =
-                        TextStyle(
-                            fontSize = 44.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = GlanceTheme.colors.onSurface,
-                        ),
-                    maxLines = 1,
-                )
-            }
-
-            WidgetButton(
-                text = "+",
-                size = 48.dp,
-                onClick = actionSendBroadcast(CounterWidgetActions.incrementIntent(context)),
-            )
-        }
-
-        Spacer(modifier = GlanceModifier.defaultWeight())
-
-        if (data.stitchTrackingEnabled && data.totalStitches != null) {
             Text(
-                text = context.getString(
-                    R.string.widget_stitches_format,
-                    data.currentStitch,
-                    data.totalStitches,
-                ),
+                text = formatPrimaryCount(data),
                 style =
                     TextStyle(
-                        fontSize = 11.sp,
-                        color = GlanceTheme.colors.onSurfaceVariant,
+                        fontSize = 52.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = GlanceTheme.colors.onSurface,
                     ),
                 maxLines = 1,
             )
         }
+        Spacer(modifier = GlanceModifier.height(14.dp))
+        Row(
+            modifier = GlanceModifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            WidgetActionButton(
+                text = "−",
+                size = 50.dp,
+                contentDescription = context.getString(R.string.counter_decrease),
+                onClick = actionSendBroadcast(CounterWidgetActions.decrementIntent(context)),
+            )
+            Spacer(modifier = GlanceModifier.width(18.dp))
+            WidgetActionButton(
+                text = "+",
+                size = 50.dp,
+                contentDescription = context.getString(R.string.counter_increase),
+                onClick = actionSendBroadcast(CounterWidgetActions.incrementIntent(context)),
+            )
+        }
+        Spacer(modifier = GlanceModifier.defaultWeight())
     }
 }
 
@@ -337,7 +345,7 @@ private fun WidgetHeader(
             TextStyle(
                 fontSize = fontSize,
                 fontWeight = FontWeight.Medium,
-                color = GlanceTheme.colors.onSurface,
+                color = GlanceTheme.colors.tertiary,
             ),
         maxLines = 1,
     )
@@ -354,25 +362,21 @@ private fun WidgetHeader(
     }
 }
 
-private fun formatCountWithTarget(data: WidgetData): String =
-    if (data.targetRows != null) {
-        "${data.count} / ${data.targetRows}"
-    } else {
-        "${data.count}"
-    }
+private fun formatPrimaryCount(data: WidgetData): String = data.count.toString()
 
 @androidx.compose.runtime.Composable
-private fun WidgetButton(
+private fun WidgetActionButton(
     text: String,
     size: androidx.compose.ui.unit.Dp,
+    contentDescription: String,
     onClick: androidx.glance.action.Action,
 ) {
     Box(
         modifier =
             GlanceModifier
                 .size(size)
-                .cornerRadius(8.dp)
-                .background(GlanceTheme.colors.primary)
+                .cornerRadius(size / 2)
+                .background(GlanceTheme.colors.tertiary)
                 .clickable(onClick),
         contentAlignment = Alignment.Center,
     ) {
@@ -380,7 +384,7 @@ private fun WidgetButton(
             text = text,
             style =
                 TextStyle(
-                    fontSize = 20.sp,
+                    fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
                     color = GlanceTheme.colors.onPrimary,
                 ),

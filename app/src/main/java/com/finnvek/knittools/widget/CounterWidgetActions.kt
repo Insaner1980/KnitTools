@@ -14,10 +14,11 @@ class CounterWidgetActions : BroadcastReceiver() {
         context: Context,
         intent: Intent?,
     ) {
-        val action = intent?.action ?: run {
-            Log.w(TAG, "onReceive with null action")
-            return
-        }
+        val action =
+            intent?.action ?: run {
+                Log.w(TAG, "onReceive with null action")
+                return
+            }
         val pendingResult = goAsync()
 
         CoroutineScope(Dispatchers.IO).launch {
@@ -36,32 +37,40 @@ class CounterWidgetActions : BroadcastReceiver() {
                 val widgetData = CounterWidgetState.load(context)
 
                 if (widgetData.projectId == 0L) {
-                    Log.w(TAG, "Widget action ignored — no projectId in widget state")
+                    Log.w(TAG, "Widget action ignored — widget state incomplete")
                     return@launch
                 }
 
-                val project = repository.getProject(widgetData.projectId) ?: run {
-                    Log.w(TAG, "Widget action ignored — project ${widgetData.projectId} not found")
-                    return@launch
-                }
+                val project =
+                    repository.getProject(widgetData.projectId) ?: run {
+                        Log.w(TAG, "Widget action ignored — target not found")
+                        return@launch
+                    }
 
                 val delta =
                     when (action) {
-                        ACTION_INCREMENT -> 1
-                        ACTION_DECREMENT -> -1
+                        ACTION_INCREMENT -> {
+                            1
+                        }
+
+                        ACTION_DECREMENT -> {
+                            -1
+                        }
+
                         else -> {
                             Log.w(TAG, "Unknown action: $action")
                             return@launch
                         }
                     }
 
-                Log.d(TAG, "action=$action projectId=${project.id} before=${project.count}")
+                Log.d(TAG, "Applying widget action: $action")
                 repository.adjustProjectCount(project.id, delta)
-                val updatedProject = repository.getProject(project.id) ?: run {
-                    Log.e(TAG, "Project ${project.id} disappeared after adjustProjectCount")
-                    return@launch
-                }
-                Log.d(TAG, "after=${updatedProject.count}")
+                val updatedProject =
+                    repository.getProject(project.id) ?: run {
+                        Log.e(TAG, "Widget action target disappeared after update")
+                        return@launch
+                    }
+                Log.d(TAG, "Widget action applied successfully")
                 CounterWidgetState.syncAll(context, updatedProject.toWidgetData())
             } catch (e: Exception) {
                 Log.e(TAG, "Widget action failed", e)
@@ -70,7 +79,6 @@ class CounterWidgetActions : BroadcastReceiver() {
             }
         }
     }
-
 
     companion object {
         private const val TAG = "CounterWidgetActions"

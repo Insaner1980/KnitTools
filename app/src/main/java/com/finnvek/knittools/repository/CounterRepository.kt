@@ -182,11 +182,8 @@ class CounterRepository
             before: Long,
         ) = dao.deleteHistoryBefore(projectId, before)
 
-        suspend fun undoLastChange(projectId: Long) {
-            val entry = dao.getLatestHistory(projectId) ?: return
-            dao.updateCount(projectId, entry.previousValue, System.currentTimeMillis())
-            dao.deleteHistoryById(entry.id)
-        }
+        suspend fun undoLastChange(projectId: Long) =
+            dao.undoLastChange(projectId, System.currentTimeMillis())
 
         suspend fun setTargetRows(
             projectId: Long,

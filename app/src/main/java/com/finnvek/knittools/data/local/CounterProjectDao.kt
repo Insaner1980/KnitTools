@@ -322,7 +322,10 @@ interface CounterProjectDao {
         before: Long,
     )
 
-    @Query("SELECT * FROM counter_history WHERE projectId = :projectId ORDER BY timestamp DESC LIMIT 1")
+    @Query(
+        "SELECT * FROM counter_history WHERE projectId = :projectId " +
+            "ORDER BY timestamp DESC, id DESC LIMIT 1",
+    )
     suspend fun getLatestHistory(projectId: Long): CounterHistoryEntity?
 
     @Query("DELETE FROM counter_history WHERE id = :id")
@@ -334,6 +337,16 @@ interface CounterProjectDao {
         count: Int,
         updatedAt: Long,
     )
+
+    @Transaction
+    suspend fun undoLastChange(
+        projectId: Long,
+        updatedAt: Long,
+    ) {
+        val entry = getLatestHistory(projectId) ?: return
+        updateCount(projectId, entry.previousValue, updatedAt)
+        deleteHistoryById(entry.id)
+    }
 
     @Query("SELECT * FROM counter_projects WHERE isCompleted = 0 ORDER BY updatedAt DESC")
     fun getActiveProjects(): Flow<List<CounterProjectEntity>>

@@ -36,6 +36,7 @@ import androidx.glance.material3.ColorProviders
 import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
+import androidx.glance.text.TextAlign
 import androidx.glance.text.TextStyle
 import com.finnvek.knittools.MainActivity
 import com.finnvek.knittools.R
@@ -231,7 +232,7 @@ private fun MediumWidget(
                     ),
                 ).padding(horizontal = 16.dp, vertical = 10.dp),
     ) {
-        WidgetHeader(data = data, fontSize = 13.sp)
+        WidgetHeader(data = data, fontSize = 13.sp, centered = true, maxLines = 2)
         Spacer(modifier = GlanceModifier.defaultWeight())
         Box(
             modifier = GlanceModifier.fillMaxWidth(),
@@ -292,7 +293,7 @@ private fun LargeWidget(
                     ),
                 ).padding(horizontal = 18.dp, vertical = 10.dp),
     ) {
-        WidgetHeader(data = data, fontSize = 14.sp)
+        WidgetHeader(data = data, fontSize = 14.sp, centered = true, maxLines = 2)
         Spacer(modifier = GlanceModifier.defaultWeight())
         Box(
             modifier = GlanceModifier.fillMaxWidth(),
@@ -337,24 +338,32 @@ private fun LargeWidget(
 private fun WidgetHeader(
     data: WidgetData,
     fontSize: androidx.compose.ui.unit.TextUnit,
+    centered: Boolean = false,
+    maxLines: Int = 1,
 ) {
+    val textAlign = if (centered) TextAlign.Center else TextAlign.Start
+    val modifier = if (centered) GlanceModifier.fillMaxWidth() else GlanceModifier
     Text(
         text = data.projectName,
+        modifier = modifier,
         style =
             TextStyle(
                 fontSize = fontSize,
                 fontWeight = FontWeight.Medium,
                 color = GlanceTheme.colors.tertiary,
+                textAlign = textAlign,
             ),
-        maxLines = 1,
+        maxLines = maxLines,
     )
     data.sectionName?.let { section ->
         Text(
             text = section,
+            modifier = modifier,
             style =
                 TextStyle(
                     fontSize = (fontSize.value - 2f).sp,
                     color = GlanceTheme.colors.onSurfaceVariant,
+                    textAlign = textAlign,
                 ),
             maxLines = 1,
         )

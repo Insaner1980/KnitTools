@@ -1,8 +1,9 @@
 package com.finnvek.knittools.ui.screens.counter
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedTextField
@@ -16,6 +17,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 
 @Composable
@@ -42,26 +44,24 @@ fun TargetRowsDialog(
             )
         },
         confirmButton = {
-            TextButton(
-                onClick = { parsed?.let(onConfirm) },
-                enabled = parsed != null,
-            ) {
-                Text(stringResource(android.R.string.ok))
-            }
-        },
-        dismissButton = {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
+            Row {
                 if (currentTarget != null) {
                     TextButton(onClick = onRemove) {
                         Text(stringResource(R.string.target_rows_remove))
                     }
+                    Spacer(modifier = Modifier.width(8.dp))
                 }
-                TextButton(onClick = onDismiss) {
-                    Text(stringResource(android.R.string.cancel))
+                TextButton(
+                    onClick = { parsed?.let(onConfirm) },
+                    enabled = parsed != null,
+                ) {
+                    Text(stringResource(android.R.string.ok))
                 }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(android.R.string.cancel))
             }
         },
     )

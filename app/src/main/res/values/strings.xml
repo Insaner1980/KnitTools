@@ -381,7 +381,6 @@
     <string name="target_rows_edit">Edit target</string>
     <string name="target_rows_remove">Remove target</string>
     <string name="target_rows_hint">Number of rows</string>
-    <string name="row_label_current_only">Row %1$d</string>
     <string name="row_label_with_target">Row %1$d / %2$d</string>
     <string name="widget_undo_action">Undo</string>
     <string name="widget_undo_content_description">Undo last change</string>

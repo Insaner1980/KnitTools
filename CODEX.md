@@ -9,8 +9,8 @@ Use [`CLAUDE.md`](/home/emma/dev/KnitTools/CLAUDE.md) when product wording, visu
 - Android app in `app` plus `baselineprofile`
 - Kotlin + Jetpack Compose + Material 3
 - Hilt, Room, DataStore, Glance
-- Room schema version `7`
-- AGP 9 built-in Kotlin is in use
+- Room schema version `8`
+- AGP `9.1.0` + Kotlin Compose plugin `2.3.10`
 
 ## Architecture
 

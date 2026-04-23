@@ -374,6 +374,15 @@
     <string name="widget_description">Kerroslaskuriwidget aktiiviselle projektille</string>
     <string name="widget_pro_required">Päivitä Prohon käyttääksesi widgetiä</string>
     <string name="widget_stitches_format">Silmukat: %1$d / %2$d</string>
+    <string name="target_rows_dialog_title">Aseta tavoiterivit</string>
+    <string name="target_rows_set">Aseta tavoite…</string>
+    <string name="target_rows_edit">Muokkaa tavoitetta</string>
+    <string name="target_rows_remove">Poista tavoite</string>
+    <string name="target_rows_hint">Rivien määrä</string>
+    <string name="row_label_current_only">Rivi %1$d</string>
+    <string name="row_label_with_target">Rivi %1$d / %2$d</string>
+    <string name="widget_undo_action">Peru</string>
+    <string name="widget_undo_content_description">Peru viimeisin muutos</string>
 
     <!-- Hubit -->
     <string name="reference_hub_title">Viitteet</string>

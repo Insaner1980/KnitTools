@@ -49,6 +49,7 @@ import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.outlined.FilterVintage
 import androidx.compose.material.icons.outlined.OpenInFull
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -702,8 +703,21 @@ private fun StitchCountDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cancel))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (currentStitchCount != null && currentStitchCount > 0) {
+                    TextButton(
+                        onClick = { onConfirm(null) },
+                        colors =
+                            ButtonDefaults.textButtonColors(
+                                contentColor = MaterialTheme.colorScheme.error,
+                            ),
+                    ) {
+                        Text(stringResource(R.string.delete))
+                    }
+                }
+                TextButton(onClick = onDismiss) {
+                    Text(stringResource(R.string.cancel))
+                }
             }
         },
     )

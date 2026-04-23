@@ -107,6 +107,7 @@ data class CounterUiState(
     val currentPatternPage: Int = 0,
     val patternRowMapping: String? = null,
     val totalRows: Int? = null,
+    val targetRows: Int? = null,
     val isLiveSessionActive: Boolean = false,
     val voiceLiveEnabled: Boolean = true,
 )
@@ -299,6 +300,7 @@ class CounterViewModel
                                 currentPatternPage = project.currentPatternPage,
                                 patternRowMapping = project.patternRowMapping,
                                 totalRows = project.totalRows,
+                                targetRows = project.targetRows,
                             )
                         }
 
@@ -521,6 +523,21 @@ class CounterViewModel
                 clearPendingSessionState()
                 clearSelectedProject()
             }
+        }
+
+        fun setTargetRows(target: Int?) {
+            val state = _uiState.value
+            val projectId = state.projectId ?: return
+            val validated = target?.takeIf { it > 0 }
+            viewModelScope.launch {
+                repository.setTargetRows(projectId, validated)
+                _uiState.update { it.copy(targetRows = validated) }
+                syncWidget()
+            }
+        }
+
+        fun clearTarget() {
+            setTargetRows(null)
         }
 
         fun deleteProject(id: Long) {
@@ -1020,7 +1037,7 @@ class CounterViewModel
                     projectName = projectName,
                     count = count,
                     projectId = resolvedProjectId,
-                    targetRows = state.totalRows?.takeIf { it > 0 },
+                    targetRows = state.targetRows?.takeIf { it > 0 },
                     sectionName = state.sectionName?.takeIf { it.isNotBlank() },
                     currentStitch = state.currentStitch,
                     totalStitches = state.stitchCount?.takeIf { it > 0 },
@@ -1383,7 +1400,7 @@ class CounterViewModel
                     VoiceCommandInterpreter.ProjectContext(
                         projectName = state.projectName,
                         currentRow = state.counter.count,
-                        targetRows = state.totalRows,
+                        targetRows = state.targetRows,
                         stitchTrackingEnabled = state.stitchTrackingEnabled,
                         currentStitch = state.currentStitch,
                         totalStitches = state.stitchCount,
@@ -1534,7 +1551,7 @@ class CounterViewModel
             return ProjectVoiceContext(
                 projectName = state.projectName,
                 currentRow = state.counter.count,
-                targetRows = state.totalRows,
+                targetRows = state.targetRows,
                 sectionName = state.sectionName,
                 stitchTrackingEnabled = state.stitchTrackingEnabled,
                 currentStitch = state.currentStitch,
@@ -2031,20 +2048,20 @@ class CounterViewModel
         // — Voice query helpers —
 
         private fun voiceQueryProgress(state: CounterUiState): String =
-            if (state.totalRows != null && state.totalRows > 0) {
+            if (state.targetRows != null && state.targetRows > 0) {
                 context.getString(
                     R.string.voice_row_of_target,
                     state.counter.count,
-                    state.totalRows,
-                    (state.counter.count * 100) / state.totalRows,
+                    state.targetRows,
+                    (state.counter.count * 100) / state.targetRows,
                 )
             } else {
                 context.getString(R.string.voice_row_current, state.counter.count)
             }
 
         private fun voiceQueryRemaining(state: CounterUiState): String =
-            if (state.totalRows != null) {
-                val remaining = (state.totalRows - state.counter.count).coerceAtLeast(0)
+            if (state.targetRows != null) {
+                val remaining = (state.targetRows - state.counter.count).coerceAtLeast(0)
                 if (remaining ==
                     0
                 ) {

@@ -11,9 +11,14 @@
 ## Quality Tools (global, in ~/bin/)
 
 - `lint-check` (alias `lc`) — runs ktlint + detekt + Android lint, results in `reports/`
-- `security-check` (alias `sc`) — runs semgrep + OWASP dependency-check, results in `reports/`
+- `security-check` (alias `sc`) — global wrapper; repo-local authoritative implementation is `scripts/security-check.sh`
+- `security-check-full` (alias `sc-full`) — täysi ajo, joka sisältää myös dependency-checkin
 - Don't run these scripts yourself — user runs them via `! lc` / `! sc`
 - `reports/` is gitignored, never commit it
+- Security risk decisions and temporary exceptions are documented in `docs/security-decisions.md`
+- `sc` käyttää tässä repossa paikallisia Semgrep-sääntöjä ja ohittaa dependency-checkin oletuksena, jotta ajo pysyy nopeana.
+- Täysi riippuvuusskannaus ajetaan vain erikseen: `sc-full`
+- Jos ajat dependency-checkin, pidä `NVD_API_KEY` asetettuna jotta NVD-päivitys ei hidastu tarpeettomasti.
 
 ## Conventions
 

@@ -526,12 +526,11 @@ class CounterViewModel
         }
 
         fun setTargetRows(target: Int?) {
-            val state = _uiState.value
-            val projectId = state.projectId ?: return
+            val projectId = _uiState.value.projectId ?: return
             val validated = target?.takeIf { it > 0 }
+            _uiState.update { it.copy(targetRows = validated) }
             viewModelScope.launch {
                 repository.setTargetRows(projectId, validated)
-                _uiState.update { it.copy(targetRows = validated) }
                 syncWidget()
             }
         }

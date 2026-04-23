@@ -293,7 +293,7 @@ private fun LargeWidget(
                             projectId = projectId,
                         ),
                     ),
-                ).padding(horizontal = 18.dp, vertical = 10.dp),
+                ).padding(horizontal = 18.dp, vertical = 8.dp),
     ) {
         WidgetHeader(data = data, fontSize = 14.sp, centered = true, maxLines = 2)
         WidgetTargetLabel(context = context, data = data, fontSize = 12.sp)
@@ -306,15 +306,15 @@ private fun LargeWidget(
                 text = formatPrimaryCount(data),
                 style =
                     TextStyle(
-                        fontSize = 52.sp,
+                        fontSize = 44.sp,
                         fontWeight = FontWeight.Bold,
                         color = GlanceTheme.colors.onSurface,
                     ),
                 maxLines = 1,
             )
         }
-        WidgetProgressBar(data = data, topSpacing = 10.dp)
-        Spacer(modifier = GlanceModifier.height(14.dp))
+        WidgetProgressBar(data = data, topSpacing = 6.dp)
+        Spacer(modifier = GlanceModifier.height(8.dp))
         Row(
             modifier = GlanceModifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -322,14 +322,14 @@ private fun LargeWidget(
         ) {
             WidgetActionButton(
                 text = "−",
-                size = 50.dp,
+                size = 44.dp,
                 contentDescription = context.getString(R.string.counter_decrease),
                 onClick = actionSendBroadcast(CounterWidgetActions.decrementIntent(context)),
             )
             Spacer(modifier = GlanceModifier.width(18.dp))
             WidgetActionButton(
                 text = "+",
-                size = 50.dp,
+                size = 44.dp,
                 contentDescription = context.getString(R.string.counter_increase),
                 onClick = actionSendBroadcast(CounterWidgetActions.incrementIntent(context)),
             )

@@ -189,7 +189,7 @@ private fun SmallWidget(
                             projectId = projectId,
                         ),
                     ),
-                ).padding(horizontal = 8.dp, vertical = 6.dp),
+                ).padding(horizontal = 14.dp, vertical = 6.dp),
     ) {
         WidgetHeader(data = data, fontSize = 12.sp)
         Spacer(modifier = GlanceModifier.defaultWeight())
@@ -229,7 +229,7 @@ private fun MediumWidget(
                             projectId = projectId,
                         ),
                     ),
-                ).padding(horizontal = 10.dp, vertical = 8.dp),
+                ).padding(horizontal = 16.dp, vertical = 10.dp),
     ) {
         WidgetHeader(data = data, fontSize = 13.sp)
         Spacer(modifier = GlanceModifier.defaultWeight())
@@ -290,7 +290,7 @@ private fun LargeWidget(
                             projectId = projectId,
                         ),
                     ),
-                ).padding(horizontal = 12.dp, vertical = 8.dp),
+                ).padding(horizontal = 18.dp, vertical = 10.dp),
     ) {
         WidgetHeader(data = data, fontSize = 14.sp)
         Spacer(modifier = GlanceModifier.defaultWeight())

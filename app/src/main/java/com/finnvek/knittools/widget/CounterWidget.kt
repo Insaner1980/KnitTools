@@ -39,14 +39,13 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import com.finnvek.knittools.MainActivity
 import com.finnvek.knittools.R
-import com.finnvek.knittools.ui.theme.DustyRose
-import com.finnvek.knittools.ui.theme.LightDustyRose
 import com.finnvek.knittools.ui.theme.LightSurface
 import com.finnvek.knittools.ui.theme.LightSurfaceHigh
 import com.finnvek.knittools.ui.theme.LightTextPrimary
 import com.finnvek.knittools.ui.theme.LightTextSecondary
 import com.finnvek.knittools.ui.theme.OnPrimary
 import com.finnvek.knittools.ui.theme.Primary
+import com.finnvek.knittools.ui.theme.PrimaryContainer
 import com.finnvek.knittools.ui.theme.Surface
 import com.finnvek.knittools.ui.theme.SurfaceHigh
 import com.finnvek.knittools.ui.theme.TextPrimary
@@ -104,7 +103,7 @@ class CounterWidget : GlanceAppWidget() {
                     surfaceVariant = SurfaceHigh,
                     onSurface = TextPrimary,
                     onSurfaceVariant = TextSecondary,
-                    tertiary = DustyRose,
+                    tertiary = PrimaryContainer,
                 )
             val lightScheme =
                 lightColorScheme(
@@ -114,7 +113,7 @@ class CounterWidget : GlanceAppWidget() {
                     surfaceVariant = LightSurfaceHigh,
                     onSurface = LightTextPrimary,
                     onSurfaceVariant = LightTextSecondary,
-                    tertiary = LightDustyRose,
+                    tertiary = Primary,
                 )
             GlanceTheme(colors = ColorProviders(dark = darkScheme, light = lightScheme)) {
                 if (!isPro) {

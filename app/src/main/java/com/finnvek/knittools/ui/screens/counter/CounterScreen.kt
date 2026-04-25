@@ -151,37 +151,34 @@ fun CounterScreen(
             }
         }
     // TopBar mic: toggle live (v3) tai continuous (v2)
-    val toggleVoice: () -> Unit =
-        remember(voiceCommandHandler, viewModel) {
-            {
-                when {
-                    // Live API aktiivinen → pysäytä
-                    state.isLiveSessionActive -> {
-                        viewModel.stopLiveVoice()
-                    }
+    val toggleVoice = {
+        when {
+            // Live API aktiivinen → pysäytä
+            state.isLiveSessionActive -> {
+                viewModel.stopLiveVoice()
+            }
 
-                    // V2 continuous aktiivinen → pysäytä
-                    voiceCommandHandler.isContinuousMode.value -> {
-                        voiceCommandHandler.stopContinuousListening()
-                    }
+            // V2 continuous aktiivinen → pysäytä
+            voiceCommandHandler.isContinuousMode.value -> {
+                voiceCommandHandler.stopContinuousListening()
+            }
 
-                    // Live API käytössä → käynnistä live
-                    state.voiceLiveEnabled && hasAudioPermission(context) -> {
-                        viewModel.startLiveVoice()
-                    }
+            // Live API käytössä → käynnistä live
+            state.voiceLiveEnabled && hasAudioPermission(context) -> {
+                viewModel.startLiveVoice()
+            }
 
-                    // V2 fallback → käynnistä continuous
-                    !state.voiceLiveEnabled && hasAudioPermission(context) -> {
-                        voiceCommandHandler.startContinuousListening()
-                    }
+            // V2 fallback → käynnistä continuous
+            !state.voiceLiveEnabled && hasAudioPermission(context) -> {
+                voiceCommandHandler.startContinuousListening()
+            }
 
-                    // Ei lupaa → pyydä
-                    else -> {
-                        micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                    }
-                }
+            // Ei lupaa → pyydä
+            else -> {
+                micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
             }
         }
+    }
     var showResetDialog by rememberSaveable { mutableStateOf(false) }
     var showOverflowMenu by rememberSaveable { mutableStateOf(false) }
     var showCompleteDialog by rememberSaveable { mutableStateOf(false) }

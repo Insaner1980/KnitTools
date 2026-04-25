@@ -75,10 +75,6 @@ class YarnCardViewModel
 
         val isPro: Boolean get() = proManager.hasFeature(ProFeature.OCR)
 
-        // Aktiivinen projekti linkitystä varten (viimeksi päivitetty)
-        private val _activeProject = MutableStateFlow<CounterProjectEntity?>(null)
-        val activeProject: StateFlow<CounterProjectEntity?> = _activeProject.asStateFlow()
-
         val availableProjects: StateFlow<List<CounterProjectEntity>> =
             counterRepository
                 .getActiveProjects()
@@ -100,12 +96,6 @@ class YarnCardViewModel
         // Skannatut arvot estimaattorille (Save and Use / Use in Calculator)
         private val _pendingCalcValues = MutableStateFlow<Triple<String, String, String>?>(null)
         val pendingCalcValues: StateFlow<Triple<String, String, String>?> = _pendingCalcValues.asStateFlow()
-
-        init {
-            viewModelScope.launch {
-                _activeProject.value = counterRepository.getFirstProject()
-            }
-        }
 
         fun setPendingCalcValues(
             weightGrams: String,

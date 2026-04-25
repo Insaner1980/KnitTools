@@ -27,9 +27,13 @@ class InAppUpdateManager
         private val _updateDownloaded = MutableStateFlow(false)
         val updateDownloaded: StateFlow<Boolean> = _updateDownloaded.asStateFlow()
 
+        private var listenerRegistered = false
+        private var updateFlowInProgress = false
+
         private val installStateListener =
             InstallStateUpdatedListener { state ->
                 if (state.installStatus() == InstallStatus.DOWNLOADED) {
+                    updateFlowInProgress = false
                     _updateDownloaded.value = true
                 }
             }
@@ -39,16 +43,19 @@ class InAppUpdateManager
          * Kutsutaan Activityn onCreatessa.
          */
         fun checkForUpdate(resultLauncher: ActivityResultLauncher<IntentSenderRequest>) {
-            appUpdateManager.registerListener(installStateListener)
+            registerListenerIfNeeded()
+            if (updateFlowInProgress) return
+
             appUpdateManager.appUpdateInfo.addOnSuccessListener { info ->
                 if (info.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE &&
                     info.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE)
                 ) {
-                    appUpdateManager.startUpdateFlowForResult(
-                        info,
-                        resultLauncher,
-                        AppUpdateOptions.newBuilder(AppUpdateType.FLEXIBLE).build(),
-                    )
+                    updateFlowInProgress =
+                        appUpdateManager.startUpdateFlowForResult(
+                            info,
+                            resultLauncher,
+                            AppUpdateOptions.newBuilder(AppUpdateType.FLEXIBLE).build(),
+                        )
                 }
             }
         }
@@ -60,9 +67,14 @@ class InAppUpdateManager
         fun checkDownloadedOnResume() {
             appUpdateManager.appUpdateInfo.addOnSuccessListener { info ->
                 if (info.installStatus() == InstallStatus.DOWNLOADED) {
+                    updateFlowInProgress = false
                     _updateDownloaded.value = true
                 }
             }
+        }
+
+        fun onUpdateFlowResult() {
+            updateFlowInProgress = false
         }
 
         /** Käynnistää sovelluksen uudelleen asentaakseen ladatun päivityksen. */
@@ -72,6 +84,17 @@ class InAppUpdateManager
 
         /** Poistaa kuuntelijan. Kutsutaan Activityn onDestroyssa. */
         fun cleanup() {
-            appUpdateManager.unregisterListener(installStateListener)
+            if (listenerRegistered) {
+                appUpdateManager.unregisterListener(installStateListener)
+                listenerRegistered = false
+            }
+            updateFlowInProgress = false
+        }
+
+        private fun registerListenerIfNeeded() {
+            if (!listenerRegistered) {
+                appUpdateManager.registerListener(installStateListener)
+                listenerRegistered = true
+            }
         }
     }

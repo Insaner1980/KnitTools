@@ -4,6 +4,6 @@ import androidx.annotation.StringRes
 
 data class KnittingAbbreviation(
     val abbreviation: String,
-    @StringRes val meaningResId: Int,
-    @StringRes val descriptionResId: Int,
+    @param:StringRes val meaningResId: Int,
+    @param:StringRes val descriptionResId: Int,
 )

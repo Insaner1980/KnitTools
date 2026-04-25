@@ -15,7 +15,6 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -119,9 +118,8 @@ class PreferencesManager
             }
         }
 
-        fun applyStoredAppLanguage() {
-            val storedLanguage = runBlocking { preferences.first().appLanguage }
-            applyAppLanguage(storedLanguage)
+        suspend fun applyStoredAppLanguage() {
+            applyAppLanguage(preferences.first().appLanguage)
         }
 
         private fun applyAppLanguage(language: AppLanguage) {

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "906825433664",
+    "project_id": "knittools-43974",
+    "storage_bucket": "knittools-43974.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:906825433664:android:26da1e83e51496fa5155a5",
+        "android_client_info": {
+          "package_name": "com.finnvek.knittools"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBlBvapnrk6JiPxEvkkQCLEoGf_ln_rtGY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -11,6 +11,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -292,9 +293,7 @@ private fun NavGraphBuilder.toolsGraph(
                 }
             val counterViewModel: CounterViewModel? = projectsEntry?.let { hiltViewModel(it) }
             val counterState = counterViewModel?.uiState?.collectAsStateWithLifecycle()
-            val fallbackProject by yarnCardViewModel.activeProject.collectAsStateWithLifecycle()
-
-            val activeProjectName = counterState?.value?.projectName ?: fallbackProject?.name
+            val activeProjectId = counterState?.value?.projectId
 
             YarnCardReviewScreen(
                 viewModel = yarnCardViewModel,
@@ -310,17 +309,11 @@ private fun NavGraphBuilder.toolsGraph(
                     yarnCardViewModel.discardScan()
                     navController.popBackStack()
                 },
-                activeProjectName = activeProjectName,
+                initialLinkProjectId = activeProjectId,
                 onLinkToProject =
-                    if (activeProjectName != null) {
-                        { cardId: Long ->
-                            if (counterViewModel != null) {
-                                counterViewModel.linkYarnCard(cardId)
-                            } else {
-                                fallbackProject?.let { project ->
-                                    yarnCardViewModel.linkCardToProject(cardId, project.id)
-                                }
-                            }
+                    if (activeProjectId != null) {
+                        { cardId: Long, projectId: Long ->
+                            yarnCardViewModel.linkCardToProject(cardId, projectId)
                         }
                     } else {
                         null
@@ -500,7 +493,7 @@ private fun NavGraphBuilder.libraryMyYarnRoute(
         val selectedYarnIds by libraryViewModel.selectedYarnIds.collectAsStateWithLifecycle()
 
         // Kameraskannaus My Yarn -näytöltä
-        var pendingPhotoUriString by remember { mutableStateOf<String?>(null) }
+        var pendingPhotoUriString by rememberSaveable { mutableStateOf<String?>(null) }
         val pendingPhotoUri = pendingPhotoUriString?.let(android.net.Uri::parse)
         val cameraLauncher =
             androidx.activity.compose.rememberLauncherForActivityResult(

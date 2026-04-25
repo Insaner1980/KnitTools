@@ -109,7 +109,6 @@ import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.RollingCounter
 import com.finnvek.knittools.ui.components.StitchCounter
 import com.finnvek.knittools.ui.screens.pattern.PatternPickerSheet
-import com.finnvek.knittools.ui.theme.MarketingTextStyle
 import com.finnvek.knittools.ui.theme.YarnColors
 import com.finnvek.knittools.ui.theme.knitToolsColors
 // MaterialTheme.colorScheme.primaryContainer korvattu primaryContainer-tokenilla
@@ -1421,8 +1420,7 @@ private fun PatternHeaderRow(
             Text(
                 text = attachedPatternName,
                 style = MaterialTheme.typography.labelLarge,
-                color = MarketingTextStyle.color(MaterialTheme.colorScheme.primary),
-                fontWeight = MarketingTextStyle.weight(),
+                color = MaterialTheme.colorScheme.primary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier =
@@ -1437,8 +1435,7 @@ private fun PatternHeaderRow(
             Text(
                 text = "$linkedPatternName · Ravelry",
                 style = MaterialTheme.typography.labelMedium,
-                color = MarketingTextStyle.color(MaterialTheme.colorScheme.primary),
-                fontWeight = MarketingTextStyle.weight(),
+                color = MaterialTheme.colorScheme.primary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier =
@@ -1509,8 +1506,7 @@ private fun ProjectInfoCard(
                     Text(
                         text = stringResource(R.string.track_stitches),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MarketingTextStyle.color(MaterialTheme.colorScheme.onSurface),
-                        fontWeight = MarketingTextStyle.weight(),
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
                     Switch(
                         checked = state.stitchTrackingEnabled,
@@ -1588,16 +1584,14 @@ private fun StatsRow(
             Text(
                 text = stringResource(R.string.stitch_count_format, formatted),
                 style = MaterialTheme.typography.bodySmall,
-                color = MarketingTextStyle.color(MaterialTheme.colorScheme.onSurfaceVariant),
-                fontWeight = MarketingTextStyle.weight(),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.clickable(onClick = onStitchClick),
             )
         } else {
             Text(
                 text = stringResource(R.string.set_stitches),
                 style = MaterialTheme.typography.bodySmall,
-                color = MarketingTextStyle.color(MaterialTheme.colorScheme.secondary),
-                fontWeight = MarketingTextStyle.weight(),
+                color = MaterialTheme.colorScheme.secondary,
                 modifier = Modifier.clickable(onClick = onStitchClick),
             )
         }
@@ -1606,8 +1600,7 @@ private fun StatsRow(
         Text(
             text = "%02d:%02d".format(state.sessionSeconds / 60, state.sessionSeconds % 60),
             style = MaterialTheme.typography.bodySmall,
-            color = MarketingTextStyle.color(MaterialTheme.colorScheme.onSurfaceVariant),
-            fontWeight = MarketingTextStyle.weight(),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.clickable(onClick = onTimeClick),
         )
         Spacer(modifier = Modifier.weight(1f))
@@ -1616,8 +1609,7 @@ private fun StatsRow(
             Text(
                 text = stringResource(R.string.view_ai_summary),
                 style = MaterialTheme.typography.bodySmall,
-                color = MarketingTextStyle.color(MaterialTheme.knitToolsColors.brandWine),
-                fontWeight = MarketingTextStyle.weight(),
+                color = MaterialTheme.knitToolsColors.brandWine,
                 modifier = Modifier.clickable(onClick = onSummary),
             )
         }
@@ -1646,8 +1638,7 @@ private fun CompactYarnLine(
     Text(
         text = text,
         style = MaterialTheme.typography.bodyMedium,
-        color = MarketingTextStyle.color(textColor),
-        fontWeight = MarketingTextStyle.weight(),
+        color = textColor,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
         modifier = modifier.clickable(onClick = onClick),
@@ -1773,14 +1764,12 @@ private fun ProjectCountersSection(
             Text(
                 text = stringResource(R.string.counters),
                 style = MaterialTheme.typography.labelLarge,
-                color = MarketingTextStyle.color(MaterialTheme.colorScheme.secondary),
-                fontWeight = MarketingTextStyle.weight(),
+                color = MaterialTheme.colorScheme.secondary,
             )
             TextButton(onClick = actions.onAddCounter) {
                 Text(
                     text = stringResource(R.string.add_counter),
-                    color = MarketingTextStyle.color(LocalContentColor.current),
-                    fontWeight = MarketingTextStyle.weight(),
+                    color = LocalContentColor.current,
                 )
             }
         }

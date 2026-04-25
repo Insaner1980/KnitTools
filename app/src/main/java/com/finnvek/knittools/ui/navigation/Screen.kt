@@ -15,6 +15,8 @@ sealed class Screen(
 ) {
     data object Tools : Screen("tools")
 
+    // Counter ei kanna projectId:tä route-parametrina.
+    // Aktiivinen projekti valitaan Projects-graafin jaetun CounterViewModelin kautta.
     data object Counter : Screen("counter")
 
     data object IncreaseDecrease : Screen("increase_decrease")
@@ -37,6 +39,7 @@ sealed class Screen(
 
     data object ProUpgrade : Screen("pro_upgrade")
 
+    // Sama composable hoitaa sekä skannatun langan review-flow’n että tallennetun kortin detail-tilan.
     data object YarnCardReview : Screen("yarn_card_review")
 
     data class YarnCardDetail(

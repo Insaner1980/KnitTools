@@ -1371,6 +1371,9 @@ class CounterViewModel
             response?.let { _voiceResponse.tryEmit(it) }
         }
 
+        // "Klassinen" voice-putki ei ole pelkkä offline-keyword-parseri:
+        // paikallisesti tunnistamattomat komennot tulevat tänne Gemini-tulkintaan.
+        // Live API on tästä erillinen putki, joka voi tarvittaessa fallbackata v2-tilaan.
         fun interpretVoiceCommand(recognizedText: String) {
             viewModelScope.launch {
                 val normalizedText = recognizedText.lowercase().trim().replace(Regex("\\s+"), " ")

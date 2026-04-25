@@ -34,6 +34,8 @@ data class WidgetData(
     val stitchTrackingEnabled: Boolean = false,
 )
 
+// Widgetit eivät ole projektisidonnaisia per instanssi, vaan kaikki instanssit
+// peilaavat samaa aktiivista projektia shared widget-storesta.
 object CounterWidgetState {
     val KEY_PROJECT_NAME = stringPreferencesKey("project_name")
     val KEY_COUNT = intPreferencesKey("count")
@@ -97,6 +99,7 @@ object CounterWidgetState {
         context: Context,
         data: WidgetData,
     ) {
+        // Päivitä ensin jaettu store ja peilaa sama data kaikkiin Glance-instansseihin.
         save(context, data)
 
         val widget = CounterWidget()

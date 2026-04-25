@@ -34,6 +34,8 @@ import com.finnvek.knittools.ui.navigation.Screen
 import com.finnvek.knittools.ui.theme.RavelryTeal
 import com.finnvek.knittools.ui.theme.knitToolsColors
 
+// Historiallinen nimi: tämä composable on Tools-välilehden aloitusruutu,
+// ei sovelluksen globaali home-screen.
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(

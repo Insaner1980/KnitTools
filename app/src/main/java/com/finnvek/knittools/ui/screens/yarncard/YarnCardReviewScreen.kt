@@ -61,6 +61,9 @@ import com.finnvek.knittools.ui.screens.library.YarnStatusSheet
 import com.finnvek.knittools.ui.screens.library.yarnStatusUi
 import com.finnvek.knittools.ui.theme.knitToolsColors
 
+// Historiallisesta nimestä huolimatta ruutu toimii kahdessa tilassa:
+// 1) skannatun yarn cardin review/tallennus
+// 2) tallennetun yarn cardin detail/editointi Library-flow’ssa
 @Composable
 // Compose-modal-state ja ruudun orkestrointi tuottavat Sonarille vääriä osumia.
 @Suppress("kotlin:S6615", "kotlin:S3776")

@@ -40,6 +40,8 @@ data class ProState(
     val isPro: Boolean
         get() = status == ProStatus.PRO_PURCHASED || status == ProStatus.TRIAL_ACTIVE
 
-    @Suppress("UNUSED_PARAMETER") // feature-parametri valmiina per-feature-gatingia varten
+    // Nykyinen tuotemalli on yksi Pro-taso: feature-parametri nimeää käyttöpaikan,
+    // mutta ei vielä eriytä oikeuksia ominaisuuskohtaisesti.
+    @Suppress("UNUSED_PARAMETER")
     fun hasFeature(feature: ProFeature): Boolean = isPro
 }

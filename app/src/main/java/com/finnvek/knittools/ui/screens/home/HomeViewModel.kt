@@ -17,6 +17,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
+// Nimestä huolimatta tämä ei ole koko sovelluksen home/start-näkymän ViewModel,
+// vaan Tools-välilehden entry-ruudun state.
 @HiltViewModel
 class HomeViewModel
     @Inject

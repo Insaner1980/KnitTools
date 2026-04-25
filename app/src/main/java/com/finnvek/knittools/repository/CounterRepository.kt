@@ -182,6 +182,14 @@ class CounterRepository
             before: Long,
         ) = dao.deleteHistoryBefore(projectId, before)
 
+        suspend fun undoLastChange(projectId: Long) =
+            dao.undoLastChange(projectId, System.currentTimeMillis())
+
+        suspend fun setTargetRows(
+            projectId: Long,
+            targetRows: Int?,
+        ) = dao.updateTargetRows(projectId, targetRows, System.currentTimeMillis())
+
         // Session-metodit
         fun getSessionsForProject(projectId: Long): Flow<List<SessionEntity>> =
             sessionDao.getSessionsForProject(projectId)

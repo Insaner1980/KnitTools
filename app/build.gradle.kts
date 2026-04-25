@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
+    alias(libs.plugins.owasp.dependency.check)
     alias(libs.plugins.baselineprofile)
     alias(libs.plugins.ktlint)
     alias(libs.plugins.detekt)
@@ -205,6 +206,35 @@ android {
         checkGeneratedSources = false
         htmlReport = true
         xmlReport = true
+    }
+}
+
+dependencyCheck {
+    formats = listOf("HTML", "JSON")
+    outputDirectory = rootProject.layout.projectDirectory.dir("reports")
+    autoUpdate =
+        (providers.environmentVariable("DEPENDENCY_CHECK_AUTO_UPDATE").orNull ?: "false")
+            .toBoolean()
+    failBuildOnCVSS = 11f
+    suppressionFiles =
+        listOf(
+            rootProject.file("config/dependency-check-suppressions.xml").absolutePath,
+        )
+    scanConfigurations = listOf("debugRuntimeClasspath", "releaseRuntimeClasspath")
+    skipTestGroups = true
+    hostedSuppressions {
+        enabled = false
+    }
+    analyzers {
+        kev {
+            enabled = false
+        }
+        retirejs {
+            enabled = false
+        }
+    }
+    nvd {
+        apiKey = providers.environmentVariable("NVD_API_KEY").orNull
     }
 }
 

@@ -124,7 +124,9 @@ fun KnitToolsNavHost(
             toolsGraph(navController, yarnCardViewModel) { projectId ->
                 internalCounterLaunch = CounterLaunchRequest(projectId = projectId)
             }
-            libraryGraph(navController, yarnCardViewModel)
+            libraryGraph(navController, yarnCardViewModel) { projectId ->
+                internalCounterLaunch = CounterLaunchRequest(projectId = projectId)
+            }
             insightsGraph(navController)
             settingsGraph(navController)
 
@@ -210,11 +212,18 @@ private fun NavGraphBuilder.projectsGraph(
             Screen.PatternViewer.ROUTE,
             arguments = listOf(navArgument("projectId") { type = NavType.LongType }),
         ) { backStackEntry ->
+            val projectId = backStackEntry.arguments?.getLong("projectId") ?: return@composable
             val parentEntry =
                 remember(backStackEntry) {
                     navController.getBackStackEntry(TopLevelDestination.Projects.route)
                 }
             val counterViewModel: CounterViewModel = hiltViewModel(parentEntry)
+            val counterState by counterViewModel.uiState.collectAsStateWithLifecycle()
+            LaunchedEffect(projectId, counterState.projectId) {
+                if (counterState.projectId != projectId) {
+                    counterViewModel.selectProjectById(projectId)
+                }
+            }
             PatternViewerScreen(
                 onBack = { navController.popBackStack() },
                 counterViewModel = counterViewModel,
@@ -322,7 +331,10 @@ private fun NavGraphBuilder.toolsGraph(
         composable(Screen.Ravelry.route) {
             RavelrySearchScreen(
                 onPatternClick = { id ->
-                    navController.navigateSingleTopTo("ravelry_detail/$id")
+                    navController.navigateSingleTopTo(Screen.RavelryDetail(id).route)
+                },
+                onLocalPatternClick = { savedPatternId ->
+                    navController.navigateSingleTopTo(Screen.LibraryPatternViewer(savedPatternId).route)
                 },
                 onSavedPatterns = {
                     navController.navigateSingleTopTo(Screen.SavedPatterns.route)
@@ -349,6 +361,7 @@ private fun NavGraphBuilder.toolsGraph(
 private fun NavGraphBuilder.libraryGraph(
     navController: NavHostController,
     yarnCardViewModel: YarnCardViewModel,
+    onLaunchCounter: (Long) -> Unit,
 ) {
     navigation(
         startDestination = Screen.Library.route,
@@ -368,9 +381,9 @@ private fun NavGraphBuilder.libraryGraph(
         libraryReferenceRoutes(navController)
         librarySavedPatternsRoute(navController)
         libraryPatternViewerRoute(navController)
-        libraryRavelryDetailRoute(navController)
+        libraryRavelryDetailRoute(navController, onLaunchCounter)
         libraryMyYarnRoute(navController, yarnCardViewModel)
-        libraryYarnCardDetailRoute(navController, yarnCardViewModel)
+        libraryYarnCardDetailRoute(navController, yarnCardViewModel, onLaunchCounter)
         libraryAllPhotosRoute(navController)
     }
 }
@@ -450,28 +463,20 @@ private fun NavGraphBuilder.libraryPatternViewerRoute(navController: NavHostCont
     }
 }
 
-private fun NavGraphBuilder.libraryRavelryDetailRoute(navController: NavHostController) {
+private fun NavGraphBuilder.libraryRavelryDetailRoute(
+    navController: NavHostController,
+    onLaunchCounter: (Long) -> Unit,
+) {
     composable(
         Screen.LibraryRavelryDetail.ROUTE,
         arguments = listOf(navArgument("patternId") { type = NavType.IntType }),
     ) { backStackEntry ->
         val patternId = backStackEntry.arguments?.getInt("patternId") ?: return@composable
-        val projectsEntry =
-            remember(backStackEntry) {
-                try {
-                    navController.getBackStackEntry(TopLevelDestination.Projects.route)
-                } catch (_: Exception) {
-                    null
-                }
-            }
-        val counterViewModel: CounterViewModel? = projectsEntry?.let { hiltViewModel(it) }
         RavelryDetailScreen(
             patternId = patternId,
             onBack = { navController.popBackStack() },
             onStartProject = { projectId ->
-                counterViewModel?.selectProjectById(projectId)
-                navController.navigateToTopLevel(TopLevelDestination.Projects)
-                navController.navigateSingleTopTo(Screen.Counter.route)
+                onLaunchCounter(projectId)
             },
         )
     }
@@ -554,21 +559,13 @@ private fun NavGraphBuilder.libraryMyYarnRoute(
 private fun NavGraphBuilder.libraryYarnCardDetailRoute(
     navController: NavHostController,
     yarnCardViewModel: YarnCardViewModel,
+    onLaunchCounter: (Long) -> Unit,
 ) {
     composable(
         Screen.YarnCardDetail.ROUTE,
         arguments = listOf(navArgument("cardId") { type = NavType.LongType }),
     ) { backStackEntry ->
         val cardId = backStackEntry.arguments?.getLong("cardId") ?: return@composable
-        val projectsEntry =
-            remember(backStackEntry) {
-                try {
-                    navController.getBackStackEntry(TopLevelDestination.Projects.route)
-                } catch (_: Exception) {
-                    null
-                }
-            }
-        val counterViewModel: CounterViewModel? = projectsEntry?.let { hiltViewModel(it) }
         androidx.compose.runtime.LaunchedEffect(cardId) {
             yarnCardViewModel.loadCardById(cardId)
         }
@@ -578,9 +575,7 @@ private fun NavGraphBuilder.libraryYarnCardDetailRoute(
             onDiscard = { _, _, _ -> navController.popBackStack() },
             onBack = { navController.popBackStack() },
             onOpenLinkedProject = { projectId ->
-                counterViewModel?.selectProjectById(projectId)
-                navController.navigateToTopLevel(TopLevelDestination.Projects)
-                navController.navigateSingleTopTo(Screen.Counter.route)
+                onLaunchCounter(projectId)
             },
         )
     }

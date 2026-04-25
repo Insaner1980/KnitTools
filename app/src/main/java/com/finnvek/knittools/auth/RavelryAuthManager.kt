@@ -5,7 +5,7 @@ import android.content.SharedPreferences
 import android.net.Uri
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.security.crypto.EncryptedSharedPreferences
-import androidx.security.crypto.MasterKeys
+import androidx.security.crypto.MasterKey
 import com.finnvek.knittools.BuildConfig
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.ktor.client.HttpClient
@@ -45,16 +45,21 @@ class RavelryAuthManager
             private const val PREFS_FILE = "ravelry_oauth2"
             private const val KEY_ACCESS_TOKEN = "access_token"
             private const val KEY_REFRESH_TOKEN = "refresh_token"
+            private const val KEY_PENDING_STATE = "pending_state"
         }
 
         private val json = Json { ignoreUnknownKeys = true }
 
         private val prefs: SharedPreferences by lazy {
-            val masterKeyAlias = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC)
+            val masterKey =
+                MasterKey
+                    .Builder(context)
+                    .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                    .build()
             EncryptedSharedPreferences.create(
-                PREFS_FILE,
-                masterKeyAlias,
                 context,
+                PREFS_FILE,
+                masterKey,
                 EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
                 EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
             )
@@ -64,7 +69,7 @@ class RavelryAuthManager
         val isAuthenticated: StateFlow<Boolean> = _isAuthenticated.asStateFlow()
 
         // CSRF-suojaus: tallennetaan state OAuth-pyynnön ajaksi
-        private var pendingState: String? = null
+        private var pendingState: String? = prefs.getString(KEY_PENDING_STATE, null)
 
         val accessToken: String? get() = prefs.getString(KEY_ACCESS_TOKEN, null)
         private val refreshToken: String? get() = prefs.getString(KEY_REFRESH_TOKEN, null)
@@ -76,7 +81,7 @@ class RavelryAuthManager
          */
         fun startOAuthFlow(activity: android.app.Activity) {
             val state = generateState()
-            pendingState = state
+            savePendingState(state)
 
             val authUri =
                 Uri
@@ -103,12 +108,16 @@ class RavelryAuthManager
         ): Boolean {
             val code = uri.getQueryParameter("code") ?: return false
             val state = uri.getQueryParameter("state")
+            val expectedState = pendingState ?: prefs.getString(KEY_PENDING_STATE, null)
 
             // Tarkista CSRF state
-            if (state != pendingState) return false
-            pendingState = null
+            if (state != expectedState) return false
 
-            return exchangeCodeForTokens(httpClient, code)
+            val success = exchangeCodeForTokens(httpClient, code)
+            if (success) {
+                clearPendingState()
+            }
+            return success
         }
 
         /**
@@ -128,7 +137,18 @@ class RavelryAuthManager
 
         fun signOut() {
             prefs.edit().clear().apply()
+            pendingState = null
             _isAuthenticated.value = false
+        }
+
+        private fun savePendingState(state: String) {
+            pendingState = state
+            prefs.edit().putString(KEY_PENDING_STATE, state).apply()
+        }
+
+        private fun clearPendingState() {
+            pendingState = null
+            prefs.edit().remove(KEY_PENDING_STATE).apply()
         }
 
         private suspend fun exchangeCodeForTokens(

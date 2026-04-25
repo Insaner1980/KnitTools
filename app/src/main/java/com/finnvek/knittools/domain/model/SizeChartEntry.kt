@@ -14,7 +14,7 @@ sealed class SizeLabel {
     ) : SizeLabel()
 
     data class Resource(
-        @StringRes val resId: Int,
+        @param:StringRes val resId: Int,
     ) : SizeLabel()
 
     fun resolve(context: Context): String =

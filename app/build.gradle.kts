@@ -215,7 +215,12 @@ dependencyCheck {
     autoUpdate =
         (providers.environmentVariable("DEPENDENCY_CHECK_AUTO_UPDATE").orNull ?: "false")
             .toBoolean()
-    failBuildOnCVSS = 11f
+    failBuildOnCVSS =
+        providers
+            .environmentVariable("DEPENDENCY_CHECK_FAIL_BUILD_ON_CVSS")
+            .orNull
+            ?.toFloatOrNull()
+            ?: 7f
     suppressionFiles =
         listOf(
             rootProject.file("config/dependency-check-suppressions.xml").absolutePath,
@@ -239,23 +244,20 @@ dependencyCheck {
 }
 
 gradle.taskGraph.whenReady {
-    val requestedTasks = gradle.startParameter.taskNames
+    val appReleaseArtifactTasks =
+        setOf(
+            ":app:assembleRelease",
+            ":app:bundleRelease",
+            ":app:packageRelease",
+            ":app:publishRelease",
+        )
 
-    val explicitAppReleaseArtifactsRequested =
-        requestedTasks.any { requestedTask ->
-            val taskName = requestedTask.substringAfterLast(':')
-            val targetsApp = !requestedTask.contains(':') || requestedTask.startsWith(":app:")
-            targetsApp &&
-                taskName in
-                setOf(
-                    "assembleRelease",
-                    "bundleRelease",
-                    "packageRelease",
-                    "publishRelease",
-                )
+    val appReleaseArtifactsRequested =
+        allTasks.any { task ->
+            task.path in appReleaseArtifactTasks
         }
 
-    if (explicitAppReleaseArtifactsRequested) {
+    if (appReleaseArtifactsRequested) {
         val missingSigningEnvNames = missingEnvNames(releaseSigningEnvNames)
         val missingRavelryEnvNames = missingEnvNames(releaseRavelryEnvNames)
         val releaseProblems =
@@ -327,6 +329,12 @@ dependencies {
         }
         implementation(libs.kotlinx.serialization.json) {
             because("Room 2.8.x migration helpers require kotlinx.serialization 1.8.1")
+        }
+        implementation(libs.ktor.client.logging) {
+            because("Firebase AI tuo Ktor 3.0.x -transitiiveja; pidetään kaikki Ktor-artefaktit samassa versiossa")
+        }
+        implementation(libs.ktor.client.websockets) {
+            because("Firebase AI tuo Ktor 3.0.x -transitiiveja; pidetään kaikki Ktor-artefaktit samassa versiossa")
         }
     }
 

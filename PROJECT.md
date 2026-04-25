@@ -107,7 +107,8 @@ Build-huomiot:
 - `org.jetbrains.kotlin.android`-pluginia ei käytetä
 - release signing on ympäristömuuttujapohjainen
 - release-artifaktit estetään ilman signing-muuttujia
-- release-artifaktit estetään myös ilman Ravelry-credentialeja, ellei eksplisiittistä opt-in-lippua ole annettu
+- release-artifaktit estetään ilman Ravelry-credentialeja
+- release-artifaktit estetään myös ilman eksplisiittistä opt-in-lippua `KNITTOOLS_ALLOW_EMBEDDED_RAVELRY_SECRETS=true`, koska release upottaa Ravelry-arvot `BuildConfig`iin
 - debug lukee Ravelry-avaimet `local.properties`:sta
 
 ### `:baselineprofile`
@@ -190,6 +191,13 @@ ViewModel-scope:
 - `CounterViewModel` on scoped `Projects`-graafin tasolle
 - `LibraryViewModel` on scoped `Library`-graafin tasolle
 - `YarnCardViewModel` luodaan nav host -tasolla ja jaetaan Tools/Library-flow’hin
+
+Counterin projektivalinta:
+
+- route `counter` ei kanna `projectId`:tä navigaatioargumenttina
+- aktiivinen projekti valitaan ja säilytetään jaetussa `CounterViewModel`:ssä
+- widget-launch, Ravelryn "Start Project" ja project list -navigaatio käyttävät samaa valintamallia
+- `CounterLaunchRequest` on runtime-entry point intentti- ja cross-flow-launchille, ei pysyvä route-contract
 
 ## Reittikartta
 
@@ -440,6 +448,16 @@ Release lukee ne ympäristömuuttujista.
 
 ### Pro / Billing / Trial
 
+Koodissa vahvistuvat nykyfaktat:
+
+- 14 päivän ilmainen kokeilu
+- yksi kertamaksullinen Pro-tuote (ei tilausmalli)
+
+Huomio source of truthista:
+
+- product ID + trial-pituus: koodi (`BillingManager`, `TrialManager`)
+- saatavuus, hinnat ja store-listaukset eivät ole tämän tiedoston tekninen source of truth, koska ne eivät vahvistu toteutuksesta
+
 Billing-tuote:
 
 - `BillingManager.PRODUCT_ID = "knittools_pro"`
@@ -564,6 +582,166 @@ Source of truth:
 - `app/src/main/res/xml/counter_widget_info.xml`
 - `app/src/main/res/layout/widget_counter_preview.xml`
 
+## Teema, värit ja typografia
+
+Source of truth:
+
+- `app/src/main/java/com/finnvek/knittools/ui/theme/Color.kt`
+- `app/src/main/java/com/finnvek/knittools/ui/theme/Theme.kt`
+- `app/src/main/java/com/finnvek/knittools/ui/theme/Type.kt`
+- `app/src/main/java/com/finnvek/knittools/ui/theme/Shapes.kt`
+- `app/src/main/res/font/outfit.ttf`
+
+### Teema-arkkitehtuuri
+
+- Material 3 + Compose, oma `KnitToolsTheme`-wrapper
+- light + dark color scheme, valinta `AppPreferences.themeMode`-asetuksen kautta
+- `isSystemInDarkTheme()` vaikuttaa vain silloin kun käyttäjä on valinnut teemaksi `SYSTEM`
+- visuaalinen suunta: "70s Craft Revival" — lämpimät oliivit, poltettu oranssi, avokado, sinappi
+- ei dynaamisia (Material You) värejä, paletti on lukittu
+- standardin `MaterialTheme.colorScheme` lisäksi erillinen `KnitToolsExtendedColors` (`MaterialTheme.knitToolsColors`)
+- extended-tokenit: `surfaceTint`, `secondaryOutline`, `onSurfaceMuted`, `brandWine`, `inactiveContent`, `navBarContainer`, `navBarIndicator`
+
+### Värit — dark
+
+Taustat:
+
+- `Background` `#1E1E12` — tumma oliivi, päätausta
+- `BackgroundAlt` `#252518` — kontrastialue
+- `Surface` `#2E2E20` — korttien peruspinta
+- `SurfaceHigh` `#3A3A2A` — korotetut kortit
+- `SurfaceHighest` `#454535` — syötekentät
+
+Brand:
+
+- `Primary` `#C45100` — poltettu oranssi (CTA, + nappi)
+- `PrimaryContainer` `#D4722A` — vaaleampi oranssi, gradientit
+- `Secondary` `#8BA44A` — avokado (labelit, osio-otsikot, "CURRENT ROW")
+- `SecondaryMuted` `#6B8A35`, `SecondaryContainer` `#3A4020`
+- `Tertiary` `#C9A435` — sinappi (vinkit, aksentit)
+- `TertiaryContainer` `#3A3520` — quick tip -kortin tausta
+
+Teksti:
+
+- `TextPrimary` `#E8E4D0` — lämmin kerma
+- `TextSecondary` `#B8B4A0`
+- `TextMuted` `#8A866E`
+- `TextDisabled` `#5A5840`
+
+Aksentti:
+
+- `DustyRose` `#B8908F` — Pro trial -teksti, AI summary, yarn card
+
+Status:
+
+- `Error` `#C44D4D`, `ErrorContainer` `#3A2020`
+- `Success` `#8BA44A` (= Secondary), `SuccessContainer` `#3A4020`
+
+Navigaatio (alanavi):
+
+- `NavBackground` `#161610` — erittäin tumma
+- `NavText` `#B0AC92` — inaktiiviset
+- `NavActive` `#C45100`
+- `NavActiveBg` `#3A2010` — aktiivisen tabin indikaattori
+
+Ravelry-erikoistapaukset: `RavelryTeal` `#5F8A8B`, `LightRavelryTeal` `#4A7172`.
+
+### Värit — light
+
+Taustat (light):
+
+- `LightBackground` `#E8E4D0` — lämmin kerma, sama sävy kuin dark-teeman pääteksti ja app-ikonin tausta
+- `LightBackgroundAlt` `#DDD8C3`
+- `LightSurface` `#D2CDB5` — korttien peruspinta
+- `LightSurfaceHigh` `#BBB59A` — korotetut kortit (huom. tummempi = korkeampi korotus)
+- `LightSurfaceMediumHigh` `#C8C3A8` — dialogit, popupit
+- `LightSurfaceHighest` `#A49D80` — syötekentät
+
+Brand (primary jaettu darkin kanssa):
+
+- `LightSecondary` `#6B8A2E` — tummempi avokado
+- `LightSecondaryMuted` `#5A7525`, `LightSecondaryContainer` `#D0DDB5`
+- `LightTertiary` `#9A7B18` — tumma kulta/sinappi
+- `LightTertiaryContainer` `#E8DFB5`
+
+Teksti (lämmin ruskea, ei mustaa):
+
+- `LightTextPrimary` `#2E2A1E`
+- `LightTextSecondary` `#5C5643`
+- `LightTextMuted` `#8A8370`
+- `LightTextDisabled` `#C0BAA5`
+
+Aksentti (light): `LightDustyRose` `#9E706E`.
+
+Status (light): `LightErrorContainer` `#EAD0D0`, `LightSuccessContainer` `#D0DDB5`.
+
+Navigaatio (light):
+
+- `LightNavBackground` `#DDD8C3`
+- `LightNavText` `#5A5440`
+- `LightNavActiveBg` `#EAD0B5`
+
+Erotin: `LightDivider` `#C5C0A8`.
+
+### Lankaikonipaletti
+
+Deterministinen ID-pohjainen valinta listasta `YarnColors` (`Color.kt`):
+
+- `#C45100` poltettu oranssi
+- `#8BA44A` avokado
+- `#C9A435` sinappi
+- `#B8908F` dusty rose
+- `#9A6B4A` terrakotta
+- `#5A8A7A` teal
+- `#9A82AA` laventeli
+- `#A85A3A` ruosteenpunainen
+
+### Typografia
+
+Fontti:
+
+- yksi family: **Outfit**, variable font (`res/font/outfit.ttf`)
+- weightit: `Normal`, `Medium`, `SemiBold`, `Bold`, `ExtraBold`
+- ladataan `FontVariation.Settings(FontVariation.weight(...))`-kautta
+
+Material 3 -roolit `AppTypography`:ssa (size sp, letter spacing sp):
+
+| Rooli | Weight | Size | Letter spacing |
+|-|-|-|-|
+| `displayLarge` | Bold | 57 | -0.25 |
+| `displayMedium` | Bold | 45 | 0 |
+| `displaySmall` | SemiBold | 36 | 0 |
+| `headlineLarge` | Bold | 32 | 0 |
+| `headlineMedium` | SemiBold | 28 | 0 |
+| `headlineSmall` | SemiBold | 24 | 0 |
+| `titleLarge` | SemiBold | 22 | 0 |
+| `titleMedium` | SemiBold | 16 | 0.15 |
+| `titleSmall` | Medium | 14 | 0.1 |
+| `bodyLarge` | Normal | 16 | 0.5 |
+| `bodyMedium` | Normal | 14 | 0.25 |
+| `bodySmall` | Normal | 12 | 0.4 |
+| `labelLarge` | SemiBold | 14 | 0.1 |
+| `labelMedium` | SemiBold | 12 | 0.5 |
+| `labelSmall` | SemiBold | 11 | 1.5 (all-caps: "CURRENT ROW", "QUICK TIP", nav-labelit) |
+
+Säännöt:
+
+- ei inline-overrideja `letterSpacing` / `fontSize` / `fontWeight` Type.kt:n ulkopuolella
+- ainoa hyväksytty poikkeus: CounterScreenin pääluku **115sp Bold**
+
+### Muodot (`AppShapes`)
+
+- `small` — `RoundedCornerShape(8.dp)`
+- `medium` — `RoundedCornerShape(12.dp)` (kortit)
+- `large` — `RoundedCornerShape(16.dp)` (modaalit, isot pinnat)
+
+### Pinta- ja scaffold-säännöt
+
+- Scaffold-taustaväri kaikissa näytöissä: `MaterialTheme.colorScheme.background` (ei `surface`)
+- `ToolScreenScaffold`: puhdas teemapinta, ei ambient-kuvia, transparent TopAppBar, max content width `600dp`
+- Tools/Library-listoissa: ei ikoneita korteissa, otsikkoteksti aksenttivärillä per kohde
+- Window insets: NavHost käsittelee `consumeWindowInsets(scaffoldPadding)`, sisemmät Scaffoldit eivät lisää tuplainsetejä
+
 ## Näkyvät UI-huomiot
 
 Toteutuksessa näkyviä asioita, joita ei kannata päätellä vanhoista mockeista:
@@ -615,6 +793,12 @@ Pienimmät hyödylliset tarkistuskomennot:
 - `./gradlew lint`
 - `./gradlew :app:generateBaselineProfile`
 
+Julkaisuvalmiuden muistilista:
+
+- pidä dependency-check kehitysvaiheessa manuaalisena, mutta dokumentoi ennen julkaisua puhtaan koneen komento ja tarvittavat `DEPENDENCY_CHECK_AUTO_UPDATE` / `NVD_API_KEY` -odotukset
+- päätä ennen julkaisua, jääkö Baseline Profile manuaaliseksi vai lisätäänkö sille emulaattori-/managed-device-polku CI:hin
+- lisää `ktlintCheck` pakolliseksi vasta, kun nykyinen koodi on siivottu ktlint-puhtaaksi eikä se hidasta normaalia ominaisuuskehitystä
+
 Älä käytä agenttityössä käyttäjän wrapper-skriptejä `lint-check` tai `security-check`.
 
 ## Ominaisuudet nykykoodin perusteella
@@ -641,6 +825,7 @@ Pienimmät hyödylliset tarkistuskomennot:
 - OCR + Gemini/Nano-pohjainen yarn label -skannaus
 - all photos
 - multi-select batch-poistot
+- reference-näkymät: needles, size charts, abbreviations, chart symbols
 
 ### Tools
 
@@ -649,13 +834,13 @@ Pienimmät hyödylliset tarkistuskomennot:
 - cast on
 - yarn estimator
 - Ravelry search/detail
-- reference-näkymät: needles, size charts, abbreviations, chart symbols
 
 ### Insights
 
 - ajankäyttö
 - tahtimittarit
 - charts/heatmap/streak-tyyppiset näkymät
+- debug-build voi näyttää placeholder-projektidataa charttiin, jos oikeaa sessiodataa ei vielä ole
 
 ### AI ja ääni
 

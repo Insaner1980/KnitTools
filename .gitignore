@@ -12,15 +12,11 @@
 *.ap_
 *.dex
 *.class
-/app/schemas/
 *.hprof
 *.log
 .claude/
 .remember/
 /reports/
-
-# Firebase config (sisältää projektikohtaisia tunnistetietoja)
-app/google-services.json
 
 # Prevent CLAUDE.md files from breaking Android resource merger
 **/src/main/res/**/CLAUDE.md
@@ -33,6 +29,15 @@ app/google-services.json
 /insights-*-delta.md
 /delegated-painting-duckling.md
 /firebase-ai-logic-setup-guide.md
+
+# Paikalliset code review -muistiinpanot (ei commitoida)
+/claude_code_review_*.md
+/codex_review_*.md
+/knittools_claude_code_review*.md
+/knittools_codex_review*.md
+/widget-*-bug.md
+/row-counter-muokkaus-markkinointi.md
+/row-counter-hero.png
 
 # Paikalliset kuvat ja varmuuskopiot repojuuressa
 /icon_app*.png

@@ -72,8 +72,8 @@ fun YarnCardReviewScreen(
     onSaveAndUse: (weightGrams: String, lengthMeters: String, needleSize: String) -> Unit,
     onDiscard: (weightGrams: String, lengthMeters: String, needleSize: String) -> Unit,
     onBack: () -> Unit,
-    activeProjectName: String? = null,
-    onLinkToProject: ((Long) -> Unit)? = null,
+    initialLinkProjectId: Long? = null,
+    onLinkToProject: ((cardId: Long, projectId: Long) -> Unit)? = null,
     onOpenLinkedProject: ((Long) -> Unit)? = null,
 ) {
     val form by viewModel.formState.collectAsStateWithLifecycle()
@@ -87,12 +87,13 @@ fun YarnCardReviewScreen(
     var showProjectSheet by rememberSaveable { mutableStateOf(false) }
     var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
 
-    if (showLinkDialog && activeProjectName != null && onLinkToProject != null) {
+    if (showLinkDialog && initialLinkProjectId != null && onLinkToProject != null) {
         LinkYarnDialog(
             savedCardId = savedCardId,
-            activeProjectName = activeProjectName,
-            onLink = { id ->
-                onLinkToProject(id)
+            projects = availableProjects,
+            initialProjectId = initialLinkProjectId,
+            onLink = { cardId, projectId ->
+                onLinkToProject(cardId, projectId)
                 showLinkDialog = false
                 val (w, l, n) = viewModel.getCalculatorValues()
                 onSaveAndUse(w, l, n)
@@ -199,7 +200,8 @@ fun YarnCardReviewScreen(
                     savedCardId = id
                     showLinkDialog = true
                 },
-                activeProjectName = activeProjectName,
+                initialLinkProjectId = initialLinkProjectId,
+                availableProjects = availableProjects,
                 onLinkToProject = onLinkToProject,
                 toastContext = toastContext,
                 modifier =
@@ -221,8 +223,9 @@ private fun YarnCardScanContent(
     onDiscard: (String, String, String) -> Unit,
     onSaveAndUse: (String, String, String) -> Unit,
     onShowLinkDialog: (Long) -> Unit,
-    activeProjectName: String?,
-    onLinkToProject: ((Long) -> Unit)?,
+    initialLinkProjectId: Long?,
+    availableProjects: List<CounterProjectEntity>,
+    onLinkToProject: ((cardId: Long, projectId: Long) -> Unit)?,
     toastContext: android.content.Context,
     modifier: Modifier = Modifier,
 ) {
@@ -286,7 +289,10 @@ private fun YarnCardScanContent(
             onSaveClick = {
                 handleSaveClick(
                     viewModel = viewModel,
-                    canLink = activeProjectName != null && onLinkToProject != null,
+                    canLink =
+                        initialLinkProjectId != null &&
+                            onLinkToProject != null &&
+                            availableProjects.any { it.id == initialLinkProjectId },
                     onSaveAndUse = onSaveAndUse,
                     onShowLinkDialog = onShowLinkDialog,
                     onSaved = {
@@ -689,16 +695,64 @@ private fun LinkedProjectSheet(
 @Composable
 private fun LinkYarnDialog(
     savedCardId: Long,
-    activeProjectName: String,
-    onLink: (Long) -> Unit,
+    projects: List<CounterProjectEntity>,
+    initialProjectId: Long,
+    onLink: (cardId: Long, projectId: Long) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    var selectedProjectId by rememberSaveable(savedCardId, initialProjectId) {
+        mutableLongStateOf(initialProjectId)
+    }
+    val selectedProject = projects.firstOrNull { it.id == selectedProjectId }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.link_yarn)) },
-        text = { Text(stringResource(R.string.link_to_project, activeProjectName)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                selectedProject?.let { project ->
+                    Text(stringResource(R.string.link_to_project, project.name))
+                }
+                Text(
+                    text = stringResource(R.string.select_project),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.secondary,
+                )
+                projects.forEach { project ->
+                    val isSelected = project.id == selectedProjectId
+                    Row(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .background(
+                                    color =
+                                        if (isSelected) {
+                                            MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                                        } else {
+                                            MaterialTheme.colorScheme.surfaceContainerHigh
+                                        },
+                                    shape = MaterialTheme.shapes.medium,
+                                ).clickable { selectedProjectId = project.id }
+                                .padding(horizontal = 14.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = project.name,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.weight(1f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+            }
+        },
         confirmButton = {
-            TextButton(onClick = { onLink(savedCardId) }) {
+            TextButton(
+                onClick = { selectedProject?.let { onLink(savedCardId, it.id) } },
+                enabled = selectedProject != null,
+            ) {
                 Text(stringResource(R.string.link))
             }
         },

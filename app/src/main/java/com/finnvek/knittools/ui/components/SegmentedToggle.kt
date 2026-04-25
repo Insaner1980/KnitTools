@@ -1,7 +1,6 @@
 package com.finnvek.knittools.ui.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,6 +8,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.TextAutoSize
@@ -19,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -48,6 +50,7 @@ fun SegmentedToggle(
                 .fillMaxWidth(if (isGrid) 1f else fraction)
                 .clip(containerShape)
                 .background(MaterialTheme.colorScheme.surfaceVariant)
+                .selectableGroup()
                 .padding(6.dp),
     ) {
         if (isGrid) {
@@ -165,7 +168,11 @@ private fun SegmentedToggleItem(
                     } else {
                         Modifier
                     },
-                ).clickable(onClick = onClick),
+                ).selectable(
+                    selected = isSelected,
+                    onClick = onClick,
+                    role = Role.RadioButton,
+                ),
         contentAlignment = Alignment.Center,
     ) {
         val baseStyle = MaterialTheme.typography.labelMedium

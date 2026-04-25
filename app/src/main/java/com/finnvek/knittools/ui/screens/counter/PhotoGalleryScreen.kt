@@ -39,6 +39,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -70,14 +71,15 @@ fun PhotoGalleryScreen(
 ) {
     val appContext = LocalContext.current.applicationContext
     val photoStorage = remember { ProgressPhotoStorage() }
-    var pendingPhotoUri by remember { mutableStateOf<Uri?>(null) }
+    var pendingPhotoUriString by rememberSaveable { mutableStateOf<String?>(null) }
+    val pendingPhotoUri = pendingPhotoUriString?.let(Uri::parse)
     var renamingPhoto by remember { mutableStateOf<ProgressPhotoEntity?>(null) }
     var viewingPhoto by remember { mutableStateOf<ProgressPhotoEntity?>(null) }
 
     val cameraLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
             if (success) pendingPhotoUri?.let { onSavePhoto(it) }
-            pendingPhotoUri = null
+            pendingPhotoUriString = null
         }
 
     val permissionLauncher =
@@ -85,7 +87,7 @@ fun PhotoGalleryScreen(
             if (granted) {
                 projectId?.let { id ->
                     val (_, uri) = photoStorage.createPhotoFile(appContext, id)
-                    pendingPhotoUri = uri
+                    pendingPhotoUriString = uri.toString()
                     cameraLauncher.launch(uri)
                 }
             }
@@ -95,7 +97,7 @@ fun PhotoGalleryScreen(
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             projectId?.let { id ->
                 val (_, uri) = photoStorage.createPhotoFile(appContext, id)
-                pendingPhotoUri = uri
+                pendingPhotoUriString = uri.toString()
                 cameraLauncher.launch(uri)
             }
         } else {

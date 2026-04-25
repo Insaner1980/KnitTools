@@ -349,6 +349,7 @@ dependencies {
     implementation(libs.compose.animation)
     implementation(libs.compose.foundation)
     debugImplementation(libs.compose.ui.tooling)
+    debugImplementation(composeBom)
 
     // Navigation
     implementation(libs.navigation.compose)
@@ -434,5 +435,8 @@ dependencies {
     testImplementation(libs.turbine)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(composeBom)
+    androidTestImplementation(libs.compose.ui.test.junit4)
     androidTestImplementation(libs.room.testing)
+    debugImplementation(libs.compose.ui.test.manifest)
 }

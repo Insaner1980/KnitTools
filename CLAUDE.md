@@ -11,9 +11,14 @@
 ## Quality Tools (global, in ~/bin/)
 
 - `lint-check` (alias `lc`) — runs ktlint + detekt + Android lint, results in `reports/`
-- `security-check` (alias `sc`) — runs semgrep + OWASP dependency-check, results in `reports/`
+- `security-check` (alias `sc`) — global wrapper; repo-local authoritative implementation is `scripts/security-check.sh`
+- `security-check-full` (alias `sc-full`) — täysi ajo, joka sisältää myös dependency-checkin
 - Don't run these scripts yourself — user runs them via `! lc` / `! sc`
 - `reports/` is gitignored, never commit it
+- Security risk decisions and temporary exceptions are documented in `docs/security-decisions.md`
+- `sc` käyttää tässä repossa paikallisia Semgrep-sääntöjä ja ohittaa dependency-checkin oletuksena, jotta ajo pysyy nopeana.
+- Täysi riippuvuusskannaus ajetaan vain erikseen: `sc-full`
+- Jos ajat dependency-checkin, pidä `NVD_API_KEY` asetettuna jotta NVD-päivitys ei hidastu tarpeettomasti.
 
 ## Conventions
 
@@ -33,8 +38,8 @@
 - Window insets: `consumeWindowInsets(scaffoldPadding)` NavHostissa — sisemmät Scaffoldit eivät lisää tuplainsetejä
 - CounterViewModel scopattu `TopLevelDestination.Projects.route`-tasolle (jaettu Counter + ProjectList)
 - LibraryViewModel scopattu `TopLevelDestination.Library.route`-tasolle (jaettu Library + alanäytöt)
-- Navigaatio: 5 tabia (Projects, Library, Tools, Insights, Settings). Sovellus käynnistyy Projects-tabista. Room v7.
-- Voice commands v2: `VoiceCommandHandler` (continuous + one-shot, sealed class `VoiceCommand` with count), `VoiceCommandInterpreter` (Gemini AI fallback), `VoiceResponseManager` (TTS), `AiQuotaManager.hasVoiceQuota()` (50/pv). Tunnistus: exact keyword → counted command (paikallinen EN+FI lukuparseri 1-20) → first-word fallback → Gemini
+- Navigaatio: 5 tabia (Projects, Library, Tools, Insights, Settings). Sovellus käynnistyy Projects-tabista. Room v8.
+- Voice commands v2: `VoiceCommandHandler` (continuous + one-shot, sealed class `VoiceCommand` with count), `VoiceCommandInterpreter` (Gemini AI fallback), `VoiceResponseManager` (TTS), `AiQuotaManager.hasVoiceQuota()` (sama kuukausikiintiö kuin muilla AI-kutsuilla, `AiQuotaManager.MONTHLY_ALLOWANCE = 500`). Tunnistus: exact keyword → counted command (paikallinen EN+FI lukuparseri 1-20) → first-word fallback → Gemini
 - Multi-select UI: `SelectionIndicator` ja `SelectModeDeleteBar` jaetut internal composablet `SavedPatternsScreen.kt`:ssä
 - Notes: bottom sheet + full-screen editor (`notes_editor/{projectId}`), `NotesEditorViewModel` (debounced auto-save). Full-screen editorin TopAppBarissa `+ AI` -nappi avaa `JournalEntryBottomSheet` (Speak/Type) → `JournalEntryProcessor` (Gemini 2.5 Flash Lite siivoaa välimerkit) → `NotesEditorViewModel.appendJournalEntry()` lisää päivättyyn + rivi-headeriin. Fallback (offline/quota/ei-Pro) säilyttää raakatekstin. Pro-gate: `ProFeature.AI_FEATURES`.
 - Simple speech-to-text: `ai/speech/SimpleSpeechRecognizer` — kevyt raakatranskriptio-wrapper (erillään `VoiceCommandHandler`ista joka on kytketty keyword-parsingiin). Journal käyttää tätä.

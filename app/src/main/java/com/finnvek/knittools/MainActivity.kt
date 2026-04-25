@@ -2,6 +2,7 @@ package com.finnvek.knittools
 
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -64,7 +65,10 @@ class MainActivity : AppCompatActivity() {
     private val updateResultLauncher =
         registerForActivityResult(
             ActivityResultContracts.StartIntentSenderForResult(),
-        ) { /* Flexible mode — tulos käsitelty installStateListenerissa */ }
+        ) {
+            inAppUpdateManager.onUpdateFlowResult()
+            /* Flexible mode — lataustulos käsitellään installStateListenerissa */
+        }
 
     private var counterLaunchRequest by mutableStateOf<CounterLaunchRequest?>(null)
 
@@ -117,7 +121,10 @@ class MainActivity : AppCompatActivity() {
                         KnitToolsNavHost(
                             startDestination = TopLevelDestination.Projects.route,
                             counterLaunchRequest = counterLaunchRequest,
-                            onCounterLaunchHandled = { counterLaunchRequest = null },
+                            onCounterLaunchHandled = {
+                                counterLaunchRequest = null
+                                clearCounterLaunchIntent()
+                            },
                         )
                     }
                     SnackbarHost(
@@ -150,9 +157,23 @@ class MainActivity : AppCompatActivity() {
         val uri = intent?.data ?: return
         if (uri.scheme == "com.finnvek.knittools" && uri.host == "oauth") {
             lifecycleScope.launch {
-                ravelryAuthManager.handleCallback(httpClient, uri)
+                val handled = ravelryAuthManager.handleCallback(httpClient, uri)
+                if (handled) {
+                    clearOAuthCallbackIntent(uri)
+                }
             }
         }
+    }
+
+    private fun clearOAuthCallbackIntent(uri: Uri) {
+        if (intent?.data == uri) {
+            intent.data = null
+        }
+    }
+
+    private fun clearCounterLaunchIntent() {
+        intent?.removeExtra(EXTRA_OPEN_COUNTER)
+        intent?.removeExtra(EXTRA_PROJECT_ID)
     }
 
     private fun Intent?.toCounterLaunchRequest(): CounterLaunchRequest? {

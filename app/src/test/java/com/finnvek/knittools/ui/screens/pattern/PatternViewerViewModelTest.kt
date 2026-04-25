@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import com.finnvek.knittools.ai.AiQuotaManager
 import com.finnvek.knittools.ai.GeminiAiService
+import com.finnvek.knittools.data.datastore.PreferencesManager
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -28,6 +29,7 @@ class PatternViewerViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var geminiAiService: GeminiAiService
     private lateinit var aiQuotaManager: AiQuotaManager
+    private lateinit var preferencesManager: PreferencesManager
     private lateinit var context: Context
 
     @Before
@@ -36,6 +38,7 @@ class PatternViewerViewModelTest {
         context = mockk(relaxed = true)
         geminiAiService = mockk(relaxed = true)
         aiQuotaManager = mockk(relaxed = true)
+        preferencesManager = mockk(relaxed = true)
         coEvery { aiQuotaManager.hasQuota() } returns true
     }
 
@@ -50,6 +53,7 @@ class PatternViewerViewModelTest {
             context = context,
             geminiAiService = geminiAiService,
             aiQuotaManager = aiQuotaManager,
+            preferencesManager = preferencesManager,
         )
 
     @Test

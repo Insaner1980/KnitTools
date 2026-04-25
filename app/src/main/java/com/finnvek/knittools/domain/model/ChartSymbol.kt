@@ -12,7 +12,7 @@ enum class ChartSymbolCategory {
 
 data class ChartSymbol(
     val id: String,
-    @StringRes val nameResId: Int,
-    @StringRes val descriptionResId: Int,
+    @param:StringRes val nameResId: Int,
+    @param:StringRes val descriptionResId: Int,
     val category: ChartSymbolCategory,
 )

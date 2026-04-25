@@ -373,7 +373,17 @@
     <string name="widget_name">Row Counter</string>
     <string name="widget_description">Row counter widget for active project</string>
     <string name="widget_pro_required">Upgrade to Pro to use the widget</string>
+    <string name="widget_rows_remaining_format">%d rows left</string>
+    <string name="widget_target_reached">Target reached</string>
     <string name="widget_stitches_format">Stitches: %1$d / %2$d</string>
+    <string name="target_rows_dialog_title">Set target rows</string>
+    <string name="target_rows_set">Set target…</string>
+    <string name="target_rows_edit">Edit target</string>
+    <string name="target_rows_remove">Remove target</string>
+    <string name="target_rows_hint">Number of rows</string>
+    <string name="row_label_with_target">Row %1$d / %2$d</string>
+    <string name="widget_undo_action">Undo</string>
+    <string name="widget_undo_content_description">Undo last change</string>
 
     <!-- Hubs -->
     <string name="reference_hub_title">Reference</string>

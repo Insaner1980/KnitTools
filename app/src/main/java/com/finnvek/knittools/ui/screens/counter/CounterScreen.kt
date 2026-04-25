@@ -49,11 +49,13 @@ import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.outlined.FilterVintage
 import androidx.compose.material.icons.outlined.OpenInFull
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
@@ -107,6 +109,7 @@ import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.RollingCounter
 import com.finnvek.knittools.ui.components.StitchCounter
 import com.finnvek.knittools.ui.screens.pattern.PatternPickerSheet
+import com.finnvek.knittools.ui.theme.MarketingTextStyle
 import com.finnvek.knittools.ui.theme.YarnColors
 import com.finnvek.knittools.ui.theme.knitToolsColors
 // MaterialTheme.colorScheme.primaryContainer korvattu primaryContainer-tokenilla
@@ -196,6 +199,7 @@ fun CounterScreen(
     var showStitchDialog by rememberSaveable { mutableStateOf(false) }
     var showPatternInfoSheet by rememberSaveable { mutableStateOf(false) }
     var showPatternPicker by rememberSaveable { mutableStateOf(false) }
+    var showTargetDialog by rememberSaveable { mutableStateOf(false) }
     val savedYarnCards by viewModel.savedYarnCards.collectAsStateWithLifecycle()
     val savedPatterns by viewModel.savedPatterns.collectAsStateWithLifecycle()
 
@@ -330,6 +334,7 @@ fun CounterScreen(
                 performHaptic()
                 viewModel.incrementStitch()
             },
+            onShowTargetDialog = { showTargetDialog = true },
         )
 
     CounterScreenDialogs(
@@ -348,6 +353,21 @@ fun CounterScreen(
             ),
         actions = dialogActions,
     )
+
+    if (showTargetDialog) {
+        TargetRowsDialog(
+            currentTarget = state.targetRows,
+            onDismiss = { showTargetDialog = false },
+            onConfirm = { target ->
+                viewModel.setTargetRows(target)
+                showTargetDialog = false
+            },
+            onRemove = {
+                viewModel.clearTarget()
+                showTargetDialog = false
+            },
+        )
+    }
 
     CounterScreenSheets(
         state =
@@ -384,6 +404,8 @@ fun CounterScreen(
                 isLiveSessionActive = state.isLiveSessionActive,
                 onMicClick = toggleVoice,
                 actions = topBarActions,
+                targetRows = state.targetRows,
+                onShowTargetDialog = { showTargetDialog = true },
             )
         },
     ) { scaffoldPadding ->
@@ -702,8 +724,21 @@ private fun StitchCountDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cancel))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (currentStitchCount != null && currentStitchCount > 0) {
+                    TextButton(
+                        onClick = { onConfirm(null) },
+                        colors =
+                            ButtonDefaults.textButtonColors(
+                                contentColor = MaterialTheme.colorScheme.error,
+                            ),
+                    ) {
+                        Text(stringResource(R.string.delete))
+                    }
+                }
+                TextButton(onClick = onDismiss) {
+                    Text(stringResource(R.string.cancel))
+                }
             }
         },
     )
@@ -822,6 +857,8 @@ private fun CounterTopBar(
     isLiveSessionActive: Boolean = false,
     onMicClick: () -> Unit,
     actions: CounterTopBarActions,
+    targetRows: Int? = null,
+    onShowTargetDialog: () -> Unit = {},
 ) {
     TopAppBar(
         title = {},
@@ -867,6 +904,8 @@ private fun CounterTopBar(
                     onComplete = actions.onComplete,
                     onReset = actions.onReset,
                     onDelete = actions.onDelete,
+                    targetRows = targetRows,
+                    onShowTargetDialog = onShowTargetDialog,
                 )
             }
         },
@@ -949,6 +988,8 @@ private fun CounterOverflowMenu(
     onComplete: () -> Unit,
     onReset: () -> Unit,
     onDelete: () -> Unit,
+    targetRows: Int? = null,
+    onShowTargetDialog: () -> Unit = {},
 ) {
     DropdownMenu(
         expanded = expanded,
@@ -962,6 +1003,21 @@ private fun CounterOverflowMenu(
         DropdownMenuItem(
             text = { Text(stringResource(R.string.rename_project)) },
             onClick = onRename,
+            contentPadding = PaddingValues(horizontal = 12.dp),
+        )
+        DropdownMenuItem(
+            text = {
+                Text(
+                    stringResource(
+                        if (targetRows == null) R.string.target_rows_set
+                        else R.string.target_rows_edit,
+                    ),
+                )
+            },
+            onClick = {
+                onShowTargetDialog()
+                onDismiss()
+            },
             contentPadding = PaddingValues(horizontal = 12.dp),
         )
         DropdownMenuItem(
@@ -1085,6 +1141,7 @@ private data class CounterMainContentActions(
     val onIncrementSecondary: () -> Unit,
     val onDecrementStitch: () -> Unit,
     val onIncrementStitch: () -> Unit,
+    val onShowTargetDialog: () -> Unit,
 )
 
 @Composable
@@ -1188,10 +1245,17 @@ private fun ColumnScope.CounterReadoutSection(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
+        val labelText =
+            if (state.targetRows != null) {
+                stringResource(R.string.row_label_with_target, state.counter.count, state.targetRows)
+            } else {
+                stringResource(R.string.current_row)
+            }
         Text(
-            text = stringResource(R.string.current_row),
+            text = labelText,
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.secondary,
+            modifier = Modifier.clickable(onClick = actions.onShowTargetDialog),
         )
 
         val counterFontSize = (115f / LocalDensity.current.fontScale).sp
@@ -1204,6 +1268,31 @@ private fun ColumnScope.CounterReadoutSection(
                     fontFeatureSettings = "tnum",
                 ),
         )
+
+        if (state.targetRows != null && state.targetRows > 0) {
+            Spacer(modifier = Modifier.height(12.dp))
+            val fraction = (state.counter.count.toFloat() / state.targetRows.toFloat()).coerceIn(0f, 1f)
+            val completed = state.counter.count >= state.targetRows
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(2.dp)
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                        .clickable(onClick = actions.onShowTargetDialog),
+            ) {
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth(fraction)
+                            .height(2.dp)
+                            .background(
+                                if (completed) MaterialTheme.colorScheme.tertiary
+                                else MaterialTheme.colorScheme.primary,
+                            ),
+                )
+            }
+        }
 
         if (state.isPro) {
             Spacer(modifier = Modifier.height(8.dp))
@@ -1332,7 +1421,8 @@ private fun PatternHeaderRow(
             Text(
                 text = attachedPatternName,
                 style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
+                color = MarketingTextStyle.color(MaterialTheme.colorScheme.primary),
+                fontWeight = MarketingTextStyle.weight(),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier =
@@ -1347,7 +1437,8 @@ private fun PatternHeaderRow(
             Text(
                 text = "$linkedPatternName · Ravelry",
                 style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.primary,
+                color = MarketingTextStyle.color(MaterialTheme.colorScheme.primary),
+                fontWeight = MarketingTextStyle.weight(),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier =
@@ -1418,7 +1509,8 @@ private fun ProjectInfoCard(
                     Text(
                         text = stringResource(R.string.track_stitches),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
+                        color = MarketingTextStyle.color(MaterialTheme.colorScheme.onSurface),
+                        fontWeight = MarketingTextStyle.weight(),
                     )
                     Switch(
                         checked = state.stitchTrackingEnabled,
@@ -1496,14 +1588,16 @@ private fun StatsRow(
             Text(
                 text = stringResource(R.string.stitch_count_format, formatted),
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = MarketingTextStyle.color(MaterialTheme.colorScheme.onSurfaceVariant),
+                fontWeight = MarketingTextStyle.weight(),
                 modifier = Modifier.clickable(onClick = onStitchClick),
             )
         } else {
             Text(
                 text = stringResource(R.string.set_stitches),
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.secondary,
+                color = MarketingTextStyle.color(MaterialTheme.colorScheme.secondary),
+                fontWeight = MarketingTextStyle.weight(),
                 modifier = Modifier.clickable(onClick = onStitchClick),
             )
         }
@@ -1512,7 +1606,8 @@ private fun StatsRow(
         Text(
             text = "%02d:%02d".format(state.sessionSeconds / 60, state.sessionSeconds % 60),
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = MarketingTextStyle.color(MaterialTheme.colorScheme.onSurfaceVariant),
+            fontWeight = MarketingTextStyle.weight(),
             modifier = Modifier.clickable(onClick = onTimeClick),
         )
         Spacer(modifier = Modifier.weight(1f))
@@ -1521,7 +1616,8 @@ private fun StatsRow(
             Text(
                 text = stringResource(R.string.view_ai_summary),
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.knitToolsColors.brandWine,
+                color = MarketingTextStyle.color(MaterialTheme.knitToolsColors.brandWine),
+                fontWeight = MarketingTextStyle.weight(),
                 modifier = Modifier.clickable(onClick = onSummary),
             )
         }
@@ -1550,7 +1646,8 @@ private fun CompactYarnLine(
     Text(
         text = text,
         style = MaterialTheme.typography.bodyMedium,
-        color = textColor,
+        color = MarketingTextStyle.color(textColor),
+        fontWeight = MarketingTextStyle.weight(),
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
         modifier = modifier.clickable(onClick = onClick),
@@ -1676,10 +1773,15 @@ private fun ProjectCountersSection(
             Text(
                 text = stringResource(R.string.counters),
                 style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.secondary,
+                color = MarketingTextStyle.color(MaterialTheme.colorScheme.secondary),
+                fontWeight = MarketingTextStyle.weight(),
             )
             TextButton(onClick = actions.onAddCounter) {
-                Text(text = stringResource(R.string.add_counter))
+                Text(
+                    text = stringResource(R.string.add_counter),
+                    color = MarketingTextStyle.color(LocalContentColor.current),
+                    fontWeight = MarketingTextStyle.weight(),
+                )
             }
         }
 

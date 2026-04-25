@@ -73,6 +73,7 @@ import com.finnvek.knittools.ui.screens.library.SelectionIndicator
 @Composable
 fun RavelrySearchScreen(
     onPatternClick: (Int) -> Unit,
+    onLocalPatternClick: (Long) -> Unit,
     onSavedPatterns: () -> Unit,
     onBack: () -> Unit,
     viewModel: RavelryViewModel = hiltViewModel(),
@@ -265,6 +266,7 @@ fun RavelrySearchScreen(
                         isSelectMode = isSavedSelectMode,
                         selectedIds = selectedSavedIds,
                         onPatternClick = onPatternClick,
+                        onLocalPatternClick = onLocalPatternClick,
                         onEnterSelectMode = viewModel::enterSavedSelectMode,
                         onToggleSelection = viewModel::toggleSavedSelection,
                     )
@@ -387,6 +389,7 @@ private fun SavedTab(
     isSelectMode: Boolean,
     selectedIds: Set<Long>,
     onPatternClick: (Int) -> Unit,
+    onLocalPatternClick: (Long) -> Unit,
     onEnterSelectMode: (Long) -> Unit,
     onToggleSelection: (Long) -> Unit,
 ) {
@@ -404,6 +407,7 @@ private fun SavedTab(
                     isSelectMode = isSelectMode,
                     isSelected = pattern.id in selectedIds,
                     onPatternClick = onPatternClick,
+                    onLocalPatternClick = onLocalPatternClick,
                     onEnterSelectMode = onEnterSelectMode,
                     onToggleSelection = onToggleSelection,
                 )
@@ -434,6 +438,7 @@ private fun SavedPatternItem(
     isSelectMode: Boolean,
     isSelected: Boolean,
     onPatternClick: (Int) -> Unit,
+    onLocalPatternClick: (Long) -> Unit,
     onEnterSelectMode: (Long) -> Unit,
     onToggleSelection: (Long) -> Unit,
 ) {
@@ -452,8 +457,10 @@ private fun SavedPatternItem(
                     onClick = {
                         if (isSelectMode) {
                             onToggleSelection(pattern.id)
-                        } else {
+                        } else if (pattern.ravelryId > 0) {
                             onPatternClick(pattern.ravelryId)
+                        } else {
+                            onLocalPatternClick(pattern.id)
                         }
                     },
                     onLongClick = {
@@ -472,8 +479,10 @@ private fun SavedPatternItem(
             onClick = {
                 if (isSelectMode) {
                     onToggleSelection(pattern.id)
-                } else {
+                } else if (pattern.ravelryId > 0) {
                     onPatternClick(pattern.ravelryId)
+                } else {
+                    onLocalPatternClick(pattern.id)
                 }
             },
             modifier = Modifier.background(backgroundColor, MaterialTheme.shapes.large),

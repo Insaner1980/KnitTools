@@ -1,4 +1,6 @@
 package com.finnvek.knittools.ui.screens.ravelry
+
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.finnvek.knittools.auth.RavelryAuthManager
@@ -51,6 +53,9 @@ class RavelryViewModel
         private val _error = MutableStateFlow<String?>(null)
         val error: StateFlow<String?> = _error.asStateFlow()
 
+        private val _detailError = MutableStateFlow<String?>(null)
+        val detailError: StateFlow<String?> = _detailError.asStateFlow()
+
         private val _filters = MutableStateFlow(SearchFilters())
         val filters: StateFlow<SearchFilters> = _filters.asStateFlow()
 
@@ -78,9 +83,7 @@ class RavelryViewModel
 
         val isPro: Boolean get() = proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS)
 
-        fun startSignIn(activity: android.app.Activity) {
-            authManager.startOAuthFlow(activity)
-        }
+        fun createSignInUri(): Uri = authManager.createOAuthUri()
 
         fun signOut() {
             authManager.signOut()
@@ -95,19 +98,20 @@ class RavelryViewModel
         }
 
         fun search() {
-            currentPage = 1
             _searchResults.value = emptyList()
-            loadPage()
+            loadPage(page = 1, replaceResults = true)
         }
 
         fun loadMore() {
             if (currentPage < totalPages && !_isLoading.value) {
-                currentPage++
-                loadPage()
+                loadPage(page = currentPage + 1, replaceResults = false)
             }
         }
 
-        private fun loadPage() {
+        private fun loadPage(
+            page: Int,
+            replaceResults: Boolean,
+        ) {
             viewModelScope.launch {
                 _isLoading.value = true
                 _error.value = null
@@ -123,11 +127,16 @@ class RavelryViewModel
                                 weight = filters.weight,
                                 difficultyFrom = filters.difficultyFrom,
                                 difficultyTo = filters.difficultyTo,
-                                page = currentPage,
+                                page = page,
                             ),
                         )
                     totalPages = response.paginator?.pageCount ?: 1
-                    _searchResults.update { current -> current + response.patterns }
+                    currentPage = page
+                    if (replaceResults) {
+                        _searchResults.value = response.patterns
+                    } else {
+                        _searchResults.update { current -> current + response.patterns }
+                    }
                 } catch (e: Exception) {
                     _error.value = e.message
                 } finally {
@@ -141,12 +150,13 @@ class RavelryViewModel
                 _isDetailLoading.value = true
                 _patternDetail.value = null
                 _isPatternSaved.value = false
+                _detailError.value = null
                 try {
                     val detail = repository.getPatternDetail(patternId)
                     _patternDetail.value = detail
                     _isPatternSaved.value = repository.isPatternSaved(patternId)
                 } catch (e: Exception) {
-                    _error.value = e.message
+                    _detailError.value = e.message
                 } finally {
                     _isDetailLoading.value = false
                 }

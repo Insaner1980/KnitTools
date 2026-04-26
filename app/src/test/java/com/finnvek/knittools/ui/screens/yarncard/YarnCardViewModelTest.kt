@@ -6,6 +6,7 @@ import com.finnvek.knittools.data.local.YarnCardEntity
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.CounterRepository
+import com.finnvek.knittools.repository.YarnLabelScanRepository
 import com.finnvek.knittools.repository.YarnCardRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -31,7 +32,7 @@ class YarnCardViewModelTest {
     private lateinit var repository: YarnCardRepository
     private lateinit var counterRepository: CounterRepository
     private lateinit var proManager: ProManager
-    private lateinit var geminiAiService: com.finnvek.knittools.ai.GeminiAiService
+    private lateinit var scanRepository: YarnLabelScanRepository
     private lateinit var aiQuotaManager: com.finnvek.knittools.ai.AiQuotaManager
     private lateinit var context: Context
 
@@ -41,7 +42,7 @@ class YarnCardViewModelTest {
         repository = mockk(relaxed = true)
         counterRepository = mockk(relaxed = true)
         proManager = mockk()
-        geminiAiService = mockk(relaxed = true)
+        scanRepository = mockk(relaxed = true)
         aiQuotaManager = mockk(relaxed = true)
         context = mockk(relaxed = true)
 
@@ -55,7 +56,7 @@ class YarnCardViewModelTest {
     }
 
     private fun createViewModel() =
-        YarnCardViewModel(repository, counterRepository, proManager, geminiAiService, aiQuotaManager, context)
+        YarnCardViewModel(repository, counterRepository, proManager, scanRepository, aiQuotaManager, context)
 
     @Test
     fun `loadFromScan populates form state`() {

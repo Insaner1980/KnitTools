@@ -52,7 +52,6 @@ import androidx.core.app.ActivityCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
-import com.finnvek.knittools.ai.ocr.YarnLabelScanner
 import com.finnvek.knittools.domain.calculator.YarnEstimator
 import com.finnvek.knittools.domain.model.YarnEstimate
 import com.finnvek.knittools.ui.components.AnimatedResultNumber
@@ -239,7 +238,7 @@ private fun ProActionBar(
     val permissionLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
             if (granted) {
-                val (_, uri) = YarnLabelScanner.createImageFile(context)
+                val uri = yarnCardViewModel.createScanPhotoUri()
                 pendingPhotoUriString = uri.toString()
                 cameraLauncher.launch(uri)
             } else {

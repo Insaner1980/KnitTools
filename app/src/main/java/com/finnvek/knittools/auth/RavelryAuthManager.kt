@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package com.finnvek.knittools.auth
 
 import android.content.Context
@@ -51,6 +53,8 @@ class RavelryAuthManager
         private val json = Json { ignoreUnknownKeys = true }
 
         private val prefs: SharedPreferences by lazy {
+            // AndroidX Security Crypto on deprekoitu kokonaisena API:na, mutta säilytetään nykyinen
+            // salattu tokenivarasto kunnes korvaava tallennusmalli migroidaan erikseen.
             val masterKey =
                 MasterKey
                     .Builder(context)
@@ -77,25 +81,28 @@ class RavelryAuthManager
         private fun hasStoredTokens(): Boolean = prefs.getString(KEY_ACCESS_TOKEN, null)?.isNotEmpty() == true
 
         /**
-         * Avaa Chrome Custom Tab Ravelryn OAuth 2.0 -valtuutussivulle.
+         * Luo Ravelryn OAuth 2.0 -valtuutusosoitteen ja tallentaa CSRF-state-arvon.
          */
-        fun startOAuthFlow(activity: android.app.Activity) {
+        fun createOAuthUri(): Uri {
             val state = generateState()
             savePendingState(state)
 
-            val authUri =
-                Uri
-                    .parse(AUTH_URL)
-                    .buildUpon()
-                    .appendQueryParameter("response_type", "code")
-                    .appendQueryParameter("client_id", BuildConfig.RAVELRY_OAUTH2_CLIENT_ID)
-                    .appendQueryParameter("redirect_uri", REDIRECT_URI)
-                    .appendQueryParameter("scope", SCOPE)
-                    .appendQueryParameter("state", state)
-                    .build()
+            return Uri
+                .parse(AUTH_URL)
+                .buildUpon()
+                .appendQueryParameter("response_type", "code")
+                .appendQueryParameter("client_id", BuildConfig.RAVELRY_OAUTH2_CLIENT_ID)
+                .appendQueryParameter("redirect_uri", REDIRECT_URI)
+                .appendQueryParameter("scope", SCOPE)
+                .appendQueryParameter("state", state)
+                .build()
+        }
 
-            val customTab = CustomTabsIntent.Builder().build()
-            customTab.launchUrl(activity, authUri)
+        /**
+         * Avaa Chrome Custom Tab Ravelryn OAuth 2.0 -valtuutussivulle.
+         */
+        fun startOAuthFlow(activity: android.app.Activity) {
+            CustomTabsIntent.Builder().build().launchUrl(activity, createOAuthUri())
         }
 
         /**

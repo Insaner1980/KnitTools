@@ -1,7 +1,7 @@
 package com.finnvek.knittools.ui.screens.ravelry
 
-import android.app.Activity
 import androidx.activity.compose.BackHandler
+import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
@@ -66,6 +66,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.ui.components.ConfirmationDialog
+import com.finnvek.knittools.ui.components.StatusMessage
+import com.finnvek.knittools.ui.components.StatusMessageType
 import com.finnvek.knittools.ui.screens.library.SelectionIndicator
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -212,7 +214,10 @@ fun RavelrySearchScreen(
                 ) {
                     Button(
                         onClick = {
-                            (context as? Activity)?.let { viewModel.startSignIn(it) }
+                            CustomTabsIntent
+                                .Builder()
+                                .build()
+                                .launchUrl(context, viewModel.createSignInUri())
                         },
                     ) {
                         Text(stringResource(R.string.ravelry_sign_in))
@@ -358,12 +363,23 @@ private fun SearchTab(
 
         if (state.error != null && state.results.isEmpty()) {
             item {
-                Text(
-                    text = stringResource(R.string.search_error),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth().padding(32.dp),
+                StatusMessage(
+                    message = stringResource(R.string.search_error),
+                    type = StatusMessageType.Error,
+                    actionLabel = stringResource(R.string.retry),
+                    onAction = onSearch,
+                    modifier = Modifier.padding(vertical = 24.dp),
+                )
+            }
+        }
+
+        if (state.error != null && state.results.isNotEmpty()) {
+            item {
+                StatusMessage(
+                    message = stringResource(R.string.search_more_error),
+                    type = StatusMessageType.Error,
+                    actionLabel = stringResource(R.string.retry),
+                    onAction = onLoadMore,
                 )
             }
         }

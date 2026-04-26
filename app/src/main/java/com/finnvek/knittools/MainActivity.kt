@@ -31,6 +31,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import com.finnvek.knittools.auth.RavelryAuthManager
+import com.finnvek.knittools.billing.BillingManager
 import com.finnvek.knittools.data.datastore.ThemeMode
 import com.finnvek.knittools.pro.InAppReviewManager
 import com.finnvek.knittools.pro.InAppUpdateManager
@@ -58,6 +59,9 @@ class MainActivity : AppCompatActivity() {
 
     @Inject
     lateinit var ravelryAuthManager: RavelryAuthManager
+
+    @Inject
+    lateinit var billingManager: BillingManager
 
     @Inject
     lateinit var httpClient: io.ktor.client.HttpClient
@@ -121,6 +125,7 @@ class MainActivity : AppCompatActivity() {
                         KnitToolsNavHost(
                             startDestination = TopLevelDestination.Projects.route,
                             counterLaunchRequest = counterLaunchRequest,
+                            onPurchasePro = billingManager::launchPurchaseFlow,
                             onCounterLaunchHandled = {
                                 counterLaunchRequest = null
                                 clearCounterLaunchIntent()

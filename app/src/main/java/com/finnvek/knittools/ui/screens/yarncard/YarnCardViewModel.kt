@@ -1,22 +1,18 @@
 package com.finnvek.knittools.ui.screens.yarncard
 
 import android.content.Context
-import android.graphics.Bitmap
-import android.graphics.ImageDecoder
 import android.net.Uri
-import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.finnvek.knittools.R
 import com.finnvek.knittools.ai.AiQuotaManager
-import com.finnvek.knittools.ai.GeminiAiService
-import com.finnvek.knittools.ai.YarnLabelGeminiScanner
 import com.finnvek.knittools.ai.ocr.ParsedYarnLabel
 import com.finnvek.knittools.data.local.CounterProjectEntity
 import com.finnvek.knittools.data.local.YarnCardEntity
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.CounterRepository
+import com.finnvek.knittools.repository.YarnLabelScanRepository
 import com.finnvek.knittools.repository.YarnCardRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -59,7 +55,7 @@ class YarnCardViewModel
         private val repository: YarnCardRepository,
         private val counterRepository: CounterRepository,
         private val proManager: ProManager,
-        private val geminiAiService: GeminiAiService,
+        private val scanRepository: YarnLabelScanRepository,
         private val aiQuotaManager: AiQuotaManager,
         @param:ApplicationContext private val context: Context,
     ) : ViewModel() {
@@ -202,18 +198,7 @@ class YarnCardViewModel
                     return@launch
                 }
 
-                val bitmap = loadBitmapFromUri(photoUri)
-                if (bitmap == null) {
-                    _formState.update {
-                        it.copy(
-                            isScanning = false,
-                            scanError = context.getString(R.string.yarn_scan_failed),
-                        )
-                    }
-                    return@launch
-                }
-
-                val parsed = YarnLabelGeminiScanner.scan(geminiAiService, bitmap)
+                val parsed = scanRepository.scanLabel(photoUri)
                 if (parsed != null) {
                     aiQuotaManager.recordCall()
                     loadFromScan(parsed, photoUri)
@@ -229,17 +214,7 @@ class YarnCardViewModel
             }
         }
 
-        @Suppress("TooGenericExceptionCaught")
-        private fun loadBitmapFromUri(uri: Uri): Bitmap? =
-            try {
-                val source = ImageDecoder.createSource(context.contentResolver, uri)
-                ImageDecoder.decodeBitmap(source) { decoder, _, _ ->
-                    decoder.setTargetSampleSize(2) // Pienennä muistinkäyttöä
-                    decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
-                }
-            } catch (_: Exception) {
-                null
-            }
+        fun createScanPhotoUri(): Uri = scanRepository.createScanPhotoUri()
 
         fun saveCard(onSaved: (Long) -> Unit) {
             if (!proManager.hasFeature(ProFeature.OCR)) return
@@ -270,13 +245,7 @@ class YarnCardViewModel
         }
 
         fun deletePhotoFile(uriString: String) {
-            if (uriString.isBlank()) return
-            try {
-                val uri = uriString.toUri()
-                context.contentResolver.delete(uri, null, null)
-            } catch (_: Exception) {
-                // Tiedostoa ei löydy tai ei oikeuksia — ei kriittinen
-            }
+            scanRepository.deleteScanPhoto(uriString)
         }
 
         fun getCalculatorValues(): Triple<String, String, String> {

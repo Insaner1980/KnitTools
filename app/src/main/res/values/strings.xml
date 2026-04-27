@@ -932,4 +932,15 @@
     <string name="tip_needle_sizes_desc">Metric (mm) is the universal standard. US sizes use a numbered system (0–50). UK/Canadian sizes use a different numbered system. Japanese sizes have their own numbering. Always check the mm size to be sure.</string>
     <string name="tip_imperial_units_title">Imperial units</string>
     <string name="tip_imperial_units_desc">When enabled, all calculators use inches instead of centimeters and yards instead of meters. Gauge is measured per 4 inches instead of per 10 cm.</string>
+
+    <!-- Counter screen redesign: bottom sheet -->
+    <string name="project_actions_title">Project actions</string>
+    <string name="project_actions_section_this_project">THIS PROJECT</string>
+    <string name="project_actions_section_counters">COUNTERS</string>
+    <string name="project_actions_section_project_actions">PROJECT ACTIONS</string>
+    <string name="project_actions_yarn">Yarn</string>
+    <string name="project_actions_ai_summary">AI summary</string>
+    <string name="project_actions_photos">Photos</string>
+    <string name="counter_repeat_label">REPEAT</string>
+    <string name="counters_list_title">Counters</string>
 </resources>

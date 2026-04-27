@@ -6,8 +6,8 @@ import com.finnvek.knittools.data.local.YarnCardEntity
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.CounterRepository
-import com.finnvek.knittools.repository.YarnLabelScanRepository
 import com.finnvek.knittools.repository.YarnCardRepository
+import com.finnvek.knittools.repository.YarnLabelScanRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every

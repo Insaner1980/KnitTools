@@ -3,8 +3,8 @@ package com.finnvek.knittools.widget
 import android.content.Context
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
-import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -43,15 +43,15 @@ import androidx.glance.text.TextStyle
 import com.finnvek.knittools.MainActivity
 import com.finnvek.knittools.R
 import com.finnvek.knittools.ui.theme.LightSurface
-import com.finnvek.knittools.ui.theme.LightTextPrimary
 import com.finnvek.knittools.ui.theme.LightTextMuted
+import com.finnvek.knittools.ui.theme.LightTextPrimary
 import com.finnvek.knittools.ui.theme.LightTextSecondary
 import com.finnvek.knittools.ui.theme.OnPrimary
 import com.finnvek.knittools.ui.theme.Primary
 import com.finnvek.knittools.ui.theme.PrimaryContainer
 import com.finnvek.knittools.ui.theme.Surface
-import com.finnvek.knittools.ui.theme.TextPrimary
 import com.finnvek.knittools.ui.theme.TextMuted
+import com.finnvek.knittools.ui.theme.TextPrimary
 import com.finnvek.knittools.ui.theme.TextSecondary
 import dagger.hilt.android.EntryPointAccessors
 
@@ -74,31 +74,8 @@ class CounterWidget : GlanceAppWidget() {
             )
         val isPro = entryPoint.proManager().isPro()
         val widgetData = CounterWidgetState.loadGlance(context, id)
-        var initialWidgetData = widgetData
-
-        // Widgetit seuraavat samaa aktiivista projektia. Peilaa jaettu tila myös silloin,
-        // kun Glance-instanssille on jäänyt vanha projekti aiemmasta renderöinnistä.
-        if (isPro) {
-            val sharedWidgetData = CounterWidgetState.load(context)
-            when {
-                sharedWidgetData.projectId > 0L -> {
-                    initialWidgetData = sharedWidgetData
-                    if (sharedWidgetData != widgetData) {
-                        CounterWidgetState.saveGlance(context, id, sharedWidgetData)
-                    }
-                }
-
-                widgetData.projectId == 0L -> {
-                    val repository = entryPoint.counterRepository()
-                    repository.getFirstProject()?.let { project ->
-                        val initialData = project.toWidgetData()
-                        initialWidgetData = initialData
-                        CounterWidgetState.save(context, initialData)
-                        CounterWidgetState.saveGlance(context, id, initialData)
-                    }
-                }
-            }
-        }
+        val initialWidgetData =
+            if (isPro) resolveInitialWidgetData(context, id, entryPoint, widgetData) else widgetData
 
         provideContent {
             val prefs = currentState<Preferences>()
@@ -109,46 +86,40 @@ class CounterWidget : GlanceAppWidget() {
                 } else {
                     storedData
                 }
-            val darkScheme =
-                darkColorScheme(
-                    primary = Primary,
-                    onPrimary = OnPrimary,
-                    surface = Surface,
-                    surfaceVariant = TextMuted,
-                    onSurface = TextPrimary,
-                    onSurfaceVariant = TextSecondary,
-                    tertiary = PrimaryContainer,
-                )
-            val lightScheme =
-                lightColorScheme(
-                    primary = Primary,
-                    onPrimary = OnPrimary,
-                    surface = LightSurface,
-                    surfaceVariant = LightTextMuted,
-                    onSurface = LightTextPrimary,
-                    onSurfaceVariant = LightTextSecondary,
-                    tertiary = PrimaryContainer,
-                )
-            GlanceTheme(colors = ColorProviders(dark = darkScheme, light = lightScheme)) {
-                if (!isPro) {
-                    ProRequiredWidget(context)
-                } else {
-                    val size = LocalSize.current
-                    val projectId = data.projectId.takeIf { it > 0L }
-                    when {
-                        size.width >= LARGE_SIZE.width && size.height >= LARGE_SIZE.height -> {
-                            LargeWidget(context = context, data = data, projectId = projectId)
-                        }
+            GlanceTheme(colors = ColorProviders(dark = WidgetDarkScheme, light = WidgetLightScheme)) {
+                WidgetSizedContent(context = context, data = data, isPro = isPro)
+            }
+        }
+    }
 
-                        size.width >= MEDIUM_SIZE.width && size.height >= MEDIUM_SIZE.height -> {
-                            MediumWidget(context = context, data = data, projectId = projectId)
-                        }
-
-                        else -> {
-                            SmallWidget(context = context, data = data, projectId = projectId)
-                        }
-                    }
+    private suspend fun resolveInitialWidgetData(
+        context: Context,
+        id: GlanceId,
+        entryPoint: WidgetEntryPoint,
+        widgetData: WidgetData,
+    ): WidgetData {
+        // Widgetit seuraavat samaa aktiivista projektia. Peilaa jaettu tila myös silloin,
+        // kun Glance-instanssille on jäänyt vanha projekti aiemmasta renderöinnistä.
+        val sharedWidgetData = CounterWidgetState.load(context)
+        return when {
+            sharedWidgetData.projectId > 0L -> {
+                if (sharedWidgetData != widgetData) {
+                    CounterWidgetState.saveGlance(context, id, sharedWidgetData)
                 }
+                sharedWidgetData
+            }
+
+            widgetData.projectId == 0L -> {
+                entryPoint.counterRepository().getFirstProject()?.let { project ->
+                    val initialData = project.toWidgetData()
+                    CounterWidgetState.save(context, initialData)
+                    CounterWidgetState.saveGlance(context, id, initialData)
+                    initialData
+                } ?: widgetData
+            }
+
+            else -> {
+                widgetData
             }
         }
     }
@@ -157,6 +128,55 @@ class CounterWidget : GlanceAppWidget() {
         val SMALL_SIZE = DpSize(120.dp, 48.dp)
         val MEDIUM_SIZE = DpSize(160.dp, 160.dp)
         val LARGE_SIZE = DpSize(300.dp, 160.dp)
+    }
+}
+
+private val WidgetDarkScheme =
+    darkColorScheme(
+        primary = Primary,
+        onPrimary = OnPrimary,
+        surface = Surface,
+        surfaceVariant = TextMuted,
+        onSurface = TextPrimary,
+        onSurfaceVariant = TextSecondary,
+        tertiary = PrimaryContainer,
+    )
+
+private val WidgetLightScheme =
+    lightColorScheme(
+        primary = Primary,
+        onPrimary = OnPrimary,
+        surface = LightSurface,
+        surfaceVariant = LightTextMuted,
+        onSurface = LightTextPrimary,
+        onSurfaceVariant = LightTextSecondary,
+        tertiary = PrimaryContainer,
+    )
+
+@androidx.compose.runtime.Composable
+private fun WidgetSizedContent(
+    context: Context,
+    data: WidgetData,
+    isPro: Boolean,
+) {
+    if (!isPro) {
+        ProRequiredWidget(context)
+        return
+    }
+    val size = LocalSize.current
+    val projectId = data.projectId.takeIf { it > 0L }
+    when {
+        size.width >= CounterWidget.LARGE_SIZE.width && size.height >= CounterWidget.LARGE_SIZE.height -> {
+            LargeWidget(context = context, data = data, projectId = projectId)
+        }
+
+        size.width >= CounterWidget.MEDIUM_SIZE.width && size.height >= CounterWidget.MEDIUM_SIZE.height -> {
+            MediumWidget(context = context, data = data, projectId = projectId)
+        }
+
+        else -> {
+            SmallWidget(context = context, data = data, projectId = projectId)
+        }
     }
 }
 
@@ -195,9 +215,7 @@ private fun SmallWidget(
         projectId = projectId,
         horizontalPadding = 14.dp,
         verticalPadding = 4.dp,
-        outerPadding = 2.dp,
-        borderWidth = 2.dp,
-        cornerRadius = 18.dp,
+        frame = WidgetCardFrame(outerPadding = 2.dp, borderWidth = 2.dp, cornerRadius = 18.dp),
     ) {
         WidgetHeader(data = data, fontSize = 12.sp)
         Spacer(modifier = GlanceModifier.defaultWeight())
@@ -259,14 +277,12 @@ private fun MediumWidget(
             WidgetActionButton(
                 text = "−",
                 size = 42.dp,
-                contentDescription = context.getString(R.string.counter_decrease),
                 onClick = actionSendBroadcast(CounterWidgetActions.decrementIntent(context)),
             )
             Spacer(modifier = GlanceModifier.width(16.dp))
             WidgetActionButton(
                 text = "+",
                 size = 42.dp,
-                contentDescription = context.getString(R.string.counter_increase),
                 onClick = actionSendBroadcast(CounterWidgetActions.incrementIntent(context)),
             )
         }
@@ -314,14 +330,12 @@ private fun LargeWidget(
             WidgetActionButton(
                 text = "−",
                 size = 44.dp,
-                contentDescription = context.getString(R.string.counter_decrease),
                 onClick = actionSendBroadcast(CounterWidgetActions.decrementIntent(context)),
             )
             Spacer(modifier = GlanceModifier.width(18.dp))
             WidgetActionButton(
                 text = "+",
                 size = 44.dp,
-                contentDescription = context.getString(R.string.counter_increase),
                 onClick = actionSendBroadcast(CounterWidgetActions.incrementIntent(context)),
             )
         }
@@ -329,23 +343,27 @@ private fun LargeWidget(
     }
 }
 
+data class WidgetCardFrame(
+    val outerPadding: Dp = 2.dp,
+    val borderWidth: Dp = 3.dp,
+    val cornerRadius: Dp = 24.dp,
+)
+
 @androidx.compose.runtime.Composable
 private fun WidgetCard(
     context: Context,
     projectId: Long?,
     horizontalPadding: Dp,
     verticalPadding: Dp,
-    outerPadding: Dp = 2.dp,
-    borderWidth: Dp = 3.dp,
-    cornerRadius: Dp = 24.dp,
+    frame: WidgetCardFrame = WidgetCardFrame(),
     content: @androidx.compose.runtime.Composable ColumnScope.() -> Unit,
 ) {
     Box(
         modifier =
             GlanceModifier
                 .fillMaxSize()
-                .padding(outerPadding)
-                .cornerRadius(cornerRadius)
+                .padding(frame.outerPadding)
+                .cornerRadius(frame.cornerRadius)
                 .background(GlanceTheme.colors.surfaceVariant)
                 .clickable(
                     actionStartActivity(
@@ -354,14 +372,14 @@ private fun WidgetCard(
                             projectId = projectId,
                         ),
                     ),
-                ).padding(borderWidth),
+                ).padding(frame.borderWidth),
         contentAlignment = Alignment.Center,
     ) {
         Column(
             modifier =
                 GlanceModifier
                     .fillMaxSize()
-                    .cornerRadius(cornerRadius - borderWidth)
+                    .cornerRadius(frame.cornerRadius - frame.borderWidth)
                     .background(GlanceTheme.colors.surface)
                     .padding(horizontal = horizontalPadding, vertical = verticalPadding),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -469,7 +487,6 @@ private fun WidgetProgressBar(
 private fun WidgetActionButton(
     text: String,
     size: Dp,
-    contentDescription: String,
     onClick: androidx.glance.action.Action,
 ) {
     Box(

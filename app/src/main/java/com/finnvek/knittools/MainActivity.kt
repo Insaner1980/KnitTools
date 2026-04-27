@@ -71,7 +71,7 @@ class MainActivity : AppCompatActivity() {
             ActivityResultContracts.StartIntentSenderForResult(),
         ) {
             inAppUpdateManager.onUpdateFlowResult()
-            /* Flexible mode — lataustulos käsitellään installStateListenerissa */
+            // Flexible mode — lataustulos käsitellään installStateListenerissa
         }
 
     private var counterLaunchRequest by mutableStateOf<CounterLaunchRequest?>(null)

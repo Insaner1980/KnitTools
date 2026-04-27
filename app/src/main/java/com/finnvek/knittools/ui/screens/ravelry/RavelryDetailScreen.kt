@@ -76,26 +76,36 @@ fun RavelryDetailScreen(
             hasDetailError = hasDetailError,
             isLoading = isLoading,
             isSaved = isSaved,
-            onRetry = { viewModel.loadDetail(patternId) },
-            onStartProject = { viewModel.createProjectFromPattern() },
-            onSave = {
-                viewModel.savePattern()
-                Toast
-                    .makeText(
-                        context,
-                        context.getString(R.string.pattern_saved_to_library),
-                        Toast.LENGTH_SHORT,
-                    ).show()
-            },
-            onOpenInRavelry = {
-                detail?.let {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(it.ravelryUrl))
-                    context.startActivity(intent)
-                }
-            },
+            actions =
+                PatternDetailActions(
+                    onRetry = { viewModel.loadDetail(patternId) },
+                    onStartProject = { viewModel.createProjectFromPattern() },
+                    onSave = {
+                        viewModel.savePattern()
+                        Toast
+                            .makeText(
+                                context,
+                                context.getString(R.string.pattern_saved_to_library),
+                                Toast.LENGTH_SHORT,
+                            ).show()
+                    },
+                    onOpenInRavelry = {
+                        detail?.let {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(it.ravelryUrl))
+                            context.startActivity(intent)
+                        }
+                    },
+                ),
         )
     }
 }
+
+data class PatternDetailActions(
+    val onRetry: () -> Unit,
+    val onStartProject: () -> Unit,
+    val onSave: () -> Unit,
+    val onOpenInRavelry: () -> Unit,
+)
 
 @Composable
 private fun PatternDetailBody(
@@ -103,10 +113,7 @@ private fun PatternDetailBody(
     hasDetailError: Boolean,
     isLoading: Boolean,
     isSaved: Boolean,
-    onRetry: () -> Unit,
-    onStartProject: () -> Unit,
-    onSave: () -> Unit,
-    onOpenInRavelry: () -> Unit,
+    actions: PatternDetailActions,
 ) {
     when {
         isLoading -> {
@@ -122,9 +129,9 @@ private fun PatternDetailBody(
             PatternDetailContent(
                 pattern = detail,
                 isSaved = isSaved,
-                onStartProject = onStartProject,
-                onSave = onSave,
-                onOpenInRavelry = onOpenInRavelry,
+                onStartProject = actions.onStartProject,
+                onSave = actions.onSave,
+                onOpenInRavelry = actions.onOpenInRavelry,
             )
         }
 
@@ -137,7 +144,7 @@ private fun PatternDetailBody(
                     message = stringResource(R.string.pattern_detail_error),
                     type = com.finnvek.knittools.ui.components.StatusMessageType.Error,
                     actionLabel = stringResource(R.string.retry),
-                    onAction = onRetry,
+                    onAction = actions.onRetry,
                 )
             }
         }

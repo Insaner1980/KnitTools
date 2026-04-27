@@ -318,5 +318,4 @@ class PatternViewerViewModel
             explanationJob?.cancel()
             _explanationState.value = ExplanationState()
         }
-
     }

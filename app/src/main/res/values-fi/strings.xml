@@ -924,4 +924,15 @@
     <string name="tip_needle_sizes_desc">Metrinen koko (mm) on yleinen standardi. US-koot käyttävät numeroasteikkoa (0–50). UK- ja kanadalaiset koot käyttävät eri numerojärjestelmää. Japanilaisissa kooissa on oma numerointi. Varmista aina koko millimetreinä.</string>
     <string name="tip_imperial_units_title">Imperiaaliset yksiköt</string>
     <string name="tip_imperial_units_desc">Kun asetus on käytössä, kaikki laskurit käyttävät senttimetrien sijasta tuumia ja metrien sijasta jaardeja. Tiheys ilmoitetaan silloin 4 tuumaa kohti 10 cm:n sijaan.</string>
+
+    <!-- Laskurinäytön redesign: bottom sheet (TODO_FINNISH_REVIEW) -->
+    <string name="project_actions_title">Projektin toiminnot</string>
+    <string name="project_actions_section_this_project">TÄMÄ PROJEKTI</string>
+    <string name="project_actions_section_counters">LASKURIT</string>
+    <string name="project_actions_section_project_actions">PROJEKTIN TOIMINNOT</string>
+    <string name="project_actions_yarn">Lanka</string>
+    <string name="project_actions_ai_summary">Tekoälyn yhteenveto</string>
+    <string name="project_actions_photos">Kuvat</string>
+    <string name="counter_repeat_label">TOISTO</string>
+    <string name="counters_list_title">Laskurit</string>
 </resources>

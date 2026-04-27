@@ -113,28 +113,14 @@ fun MyYarnScreen(
 
     val permissionLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-            if (granted) {
-                scanPermissionMessageRes = null
-                val uri = actions.onCreateScanPhotoUri?.invoke()
-                if (uri != null) {
-                    pendingPhotoUriString = uri.toString()
-                    cameraLauncher.launch(uri)
-                }
-            } else {
-                val activity = context as? Activity
-                val permanentlyDenied =
-                    activity != null &&
-                        !ActivityCompat.shouldShowRequestPermissionRationale(
-                            activity,
-                            Manifest.permission.CAMERA,
-                        )
-                scanPermissionMessageRes =
-                    if (permanentlyDenied) {
-                        R.string.camera_permission_denied_permanent
-                    } else {
-                        R.string.camera_permission_denied
-                    }
-            }
+            scanPermissionMessageRes =
+                handlePermissionResult(
+                    granted = granted,
+                    activity = context as? Activity,
+                    onCreateScanPhotoUri = actions.onCreateScanPhotoUri,
+                    cameraLauncher = cameraLauncher,
+                    setPendingUri = { pendingPhotoUriString = it },
+                )
         }
 
     val displayState =
@@ -149,19 +135,12 @@ fun MyYarnScreen(
                 permissionLauncher.launch(Manifest.permission.CAMERA)
             },
             onStatusAction = {
-                if (scanPermissionMessageRes == R.string.camera_permission_denied_permanent) {
-                    context.startActivity(
-                        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                            data = Uri.fromParts("package", context.packageName, null)
-                        },
-                    )
-                } else {
-                    actions.onStatusAction?.invoke()
-                        ?: run {
-                            actions.onScanLabel?.invoke()
-                            permissionLauncher.launch(Manifest.permission.CAMERA)
-                        }
-                }
+                handleStatusAction(
+                    context = context,
+                    permissionMessageRes = scanPermissionMessageRes,
+                    actions = actions,
+                    permissionLauncher = permissionLauncher,
+                )
             },
         )
 
@@ -238,10 +217,17 @@ private fun MyYarnState.withPermissionStatus(
         statusMessage = permissionMessage ?: statusMessage,
         statusActionLabel =
             when {
-                permissionMessageRes == R.string.camera_permission_denied_permanent ->
+                permissionMessageRes == R.string.camera_permission_denied_permanent -> {
                     context.getString(R.string.open_settings)
-                permissionMessage != null -> context.getString(R.string.retry)
-                else -> statusActionLabel
+                }
+
+                permissionMessage != null -> {
+                    context.getString(R.string.retry)
+                }
+
+                else -> {
+                    statusActionLabel
+                }
             },
     )
 }
@@ -259,6 +245,56 @@ private fun MyYarnActions.withScanLaunchers(
             },
         onStatusAction = onStatusAction,
     )
+
+private fun handlePermissionResult(
+    granted: Boolean,
+    activity: Activity?,
+    onCreateScanPhotoUri: (() -> Uri?)?,
+    cameraLauncher: androidx.activity.result.ActivityResultLauncher<Uri>,
+    setPendingUri: (String) -> Unit,
+): Int? {
+    if (granted) {
+        onCreateScanPhotoUri?.invoke()?.let { uri ->
+            setPendingUri(uri.toString())
+            cameraLauncher.launch(uri)
+        }
+        return null
+    }
+    val permanentlyDenied =
+        activity != null &&
+            !ActivityCompat.shouldShowRequestPermissionRationale(
+                activity,
+                Manifest.permission.CAMERA,
+            )
+    return if (permanentlyDenied) {
+        R.string.camera_permission_denied_permanent
+    } else {
+        R.string.camera_permission_denied
+    }
+}
+
+private fun handleStatusAction(
+    context: android.content.Context,
+    permissionMessageRes: Int?,
+    actions: MyYarnActions,
+    permissionLauncher: androidx.activity.result.ActivityResultLauncher<String>,
+) {
+    if (permissionMessageRes == R.string.camera_permission_denied_permanent) {
+        context.startActivity(
+            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                data = Uri.fromParts("package", context.packageName, null)
+            },
+        )
+        return
+    }
+    val statusAction = actions.onStatusAction
+    if (statusAction != null) {
+        statusAction()
+    } else {
+        actions.onScanLabel?.invoke()
+        permissionLauncher.launch(Manifest.permission.CAMERA)
+    }
+}
 
 @Composable
 private fun MyYarnDeleteDialog(

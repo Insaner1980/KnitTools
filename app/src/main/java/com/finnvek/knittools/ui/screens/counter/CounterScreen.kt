@@ -13,14 +13,12 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -39,10 +37,10 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.Subject
 import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Remove
@@ -50,15 +48,11 @@ import androidx.compose.material.icons.outlined.FilterVintage
 import androidx.compose.material.icons.outlined.OpenInFull
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -107,11 +101,8 @@ import com.finnvek.knittools.data.local.YarnCardEntity
 import com.finnvek.knittools.domain.model.ProjectCounterDraft
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.RollingCounter
-import com.finnvek.knittools.ui.components.StitchCounter
 import com.finnvek.knittools.ui.screens.pattern.PatternPickerSheet
 import com.finnvek.knittools.ui.theme.YarnColors
-import com.finnvek.knittools.ui.theme.knitToolsColors
-// MaterialTheme.colorScheme.primaryContainer korvattu primaryContainer-tokenilla
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -180,7 +171,8 @@ fun CounterScreen(
         }
     }
     var showResetDialog by rememberSaveable { mutableStateOf(false) }
-    var showOverflowMenu by rememberSaveable { mutableStateOf(false) }
+    var showProjectActionsSheet by rememberSaveable { mutableStateOf(false) }
+    var showCountersListSheet by rememberSaveable { mutableStateOf(false) }
     var showCompleteDialog by rememberSaveable { mutableStateOf(false) }
     var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
     var showRenameDialog by rememberSaveable { mutableStateOf(false) }
@@ -270,29 +262,20 @@ fun CounterScreen(
             onBack = onBack,
             onPhotoGallery = onPhotoGallery,
             projectId = state.projectId,
-            onSessionHistory = onSessionHistory,
-            onShowOverflowMenu = { showOverflowMenu = true },
-            onHideOverflowMenu = { showOverflowMenu = false },
-            onStartRename = {
-                renameText = state.projectName
-                showRenameDialog = true
-            },
-            onShowCompleteDialog = { showCompleteDialog = true },
-            onShowResetDialog = { showResetDialog = true },
-            onShowDeleteDialog = { showDeleteDialog = true },
+            onPatternViewer = onPatternViewer,
+            onShowProjectActions = { showProjectActionsSheet = true },
         )
+    val startRename = {
+        renameText = state.projectName
+        showRenameDialog = true
+    }
     val projectHeaderActionDependencies =
         ProjectHeaderActionDependencies(
             viewModel = viewModel,
             projectId = state.projectId,
             onPatternViewer = onPatternViewer,
-            onSessionHistory = onSessionHistory,
             onShowPatternInfo = { showPatternInfoSheet = true },
             onShowPatternPicker = { showPatternPicker = true },
-            onShowYarnManagement = { showYarnManagementSheet = true },
-            onShowNotes = { showNotesSheet = true },
-            onShowStitchDialog = { showStitchDialog = true },
-            onShowSummarySheet = { showSummarySheet = true },
             onEditingNameChange = { isEditingName = it },
         )
     val dialogActions = rememberCounterDialogActions(dialogActionDependencies)
@@ -393,20 +376,92 @@ fun CounterScreen(
         actions = sheetActions,
     )
 
+    if (showProjectActionsSheet) {
+        ProjectActionsBottomSheet(
+            state = ProjectActionsSheetState(
+                linkedYarnCount = state.linkedYarns.size,
+                projectCounterCount = state.projectCounters.size,
+                stitchTrackingEnabled = state.stitchTrackingEnabled,
+                isPro = state.isPro,
+                isAiAvailable = state.isAiAvailable,
+            ),
+            callbacks = ProjectActionsSheetCallbacks(
+                onDismiss = { showProjectActionsSheet = false },
+                onOpenYarnManagement = {
+                    showProjectActionsSheet = false
+                    showYarnManagementSheet = true
+                },
+                onOpenNotes = {
+                    showProjectActionsSheet = false
+                    state.projectId?.let(onNotesEditor)
+                },
+                onOpenSummary = {
+                    showProjectActionsSheet = false
+                    viewModel.generateSummary()
+                    showSummarySheet = true
+                },
+                onOpenPhotos = {
+                    showProjectActionsSheet = false
+                    onPhotoGallery()
+                },
+                onOpenCountersList = {
+                    showProjectActionsSheet = false
+                    showCountersListSheet = true
+                },
+                onOpenAddCounter = {
+                    showProjectActionsSheet = false
+                    showAddCounter = true
+                },
+                onToggleStitchTracking = viewModel::setStitchTrackingEnabled,
+                onOpenSessionHistory = {
+                    showProjectActionsSheet = false
+                    state.projectId?.let(onSessionHistory)
+                },
+                onStartRename = {
+                    showProjectActionsSheet = false
+                    startRename()
+                },
+                onShowResetDialog = {
+                    showProjectActionsSheet = false
+                    showResetDialog = true
+                },
+                onShowCompleteDialog = {
+                    showProjectActionsSheet = false
+                    showCompleteDialog = true
+                },
+                onShowDeleteDialog = {
+                    showProjectActionsSheet = false
+                    showDeleteDialog = true
+                },
+            ),
+        )
+    }
+
+    if (showCountersListSheet) {
+        CountersListSheet(
+            projectCounters = state.projectCounters,
+            mainRowCount = state.counter.count,
+            actions = projectCountersActions,
+            onDismiss = { showCountersListSheet = false },
+        )
+    }
+
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             CounterTopBar(
                 isPro = state.isPro,
-                showOverflowMenu = showOverflowMenu,
-                isVoiceListening = isVoiceListening,
-                isContinuousMode = isContinuousMode,
-                isLiveSessionActive = state.isLiveSessionActive,
+                showPatternIcon = state.projectId != null &&
+                    (state.patternUri != null || state.linkedPattern != null),
+                micState =
+                    CounterTopBarMicState(
+                        isVoiceListening = isVoiceListening,
+                        isContinuousMode = isContinuousMode,
+                        isLiveSessionActive = state.isLiveSessionActive,
+                    ),
                 onMicClick = toggleVoice,
                 actions = topBarActions,
-                targetRows = state.targetRows,
-                onShowTargetDialog = { showTargetDialog = true },
             )
         },
     ) { scaffoldPadding ->
@@ -415,7 +470,6 @@ fun CounterScreen(
             state = state,
             isEditingName = isEditingName,
             projectHeaderActions = projectHeaderActions,
-            projectCountersActions = projectCountersActions,
             actions = mainContentActions,
         )
     }
@@ -839,27 +893,24 @@ private fun CounterScreenSheets(
 data class CounterTopBarActions(
     val onBack: () -> Unit,
     val onPhotoGallery: () -> Unit,
-    val onShowOverflowMenu: () -> Unit,
-    val onDismissOverflowMenu: () -> Unit,
-    val onSessionHistory: () -> Unit,
-    val onRename: () -> Unit,
-    val onComplete: () -> Unit,
-    val onReset: () -> Unit,
-    val onDelete: () -> Unit,
+    val onShowPattern: () -> Unit,
+    val onShowProjectActions: () -> Unit,
+)
+
+data class CounterTopBarMicState(
+    val isVoiceListening: Boolean,
+    val isContinuousMode: Boolean = false,
+    val isLiveSessionActive: Boolean = false,
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CounterTopBar(
     isPro: Boolean,
-    showOverflowMenu: Boolean,
-    isVoiceListening: Boolean,
-    isContinuousMode: Boolean = false,
-    isLiveSessionActive: Boolean = false,
+    showPatternIcon: Boolean,
+    micState: CounterTopBarMicState,
     onMicClick: () -> Unit,
     actions: CounterTopBarActions,
-    targetRows: Int? = null,
-    onShowTargetDialog: () -> Unit = {},
 ) {
     TopAppBar(
         title = {},
@@ -868,11 +919,20 @@ private fun CounterTopBar(
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = stringResource(R.string.back),
-                    tint = MaterialTheme.colorScheme.outline,
+                    tint = MaterialTheme.colorScheme.onSurface,
                 )
             }
         },
         actions = {
+            if (showPatternIcon) {
+                IconButton(onClick = actions.onShowPattern) {
+                    Icon(
+                        imageVector = Icons.Filled.Description,
+                        contentDescription = stringResource(R.string.show_pattern),
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            }
             if (isPro || BuildConfig.DEBUG) {
                 IconButton(onClick = actions.onPhotoGallery) {
                     Icon(
@@ -883,30 +943,17 @@ private fun CounterTopBar(
                 }
                 IconButton(onClick = onMicClick) {
                     CounterTopBarMicAction(
-                        isVoiceListening = isVoiceListening,
-                        isContinuousMode = isContinuousMode,
-                        isLiveSessionActive = isLiveSessionActive,
+                        isVoiceListening = micState.isVoiceListening,
+                        isContinuousMode = micState.isContinuousMode,
+                        isLiveSessionActive = micState.isLiveSessionActive,
                     )
                 }
             }
-            Box {
-                IconButton(onClick = actions.onShowOverflowMenu) {
-                    Icon(
-                        imageVector = Icons.Default.MoreVert,
-                        contentDescription = stringResource(R.string.more_options),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                CounterOverflowMenu(
-                    expanded = showOverflowMenu,
-                    onDismiss = actions.onDismissOverflowMenu,
-                    onSessionHistory = actions.onSessionHistory,
-                    onRename = actions.onRename,
-                    onComplete = actions.onComplete,
-                    onReset = actions.onReset,
-                    onDelete = actions.onDelete,
-                    targetRows = targetRows,
-                    onShowTargetDialog = onShowTargetDialog,
+            IconButton(onClick = actions.onShowProjectActions) {
+                Icon(
+                    imageVector = Icons.Default.MoreVert,
+                    contentDescription = stringResource(R.string.project_actions_title),
+                    tint = MaterialTheme.colorScheme.onSurface,
                 )
             }
         },
@@ -981,70 +1028,6 @@ private fun ActiveCounterMicIcon(isLiveSessionActive: Boolean) {
 }
 
 @Composable
-private fun CounterOverflowMenu(
-    expanded: Boolean,
-    onDismiss: () -> Unit,
-    onSessionHistory: () -> Unit,
-    onRename: () -> Unit,
-    onComplete: () -> Unit,
-    onReset: () -> Unit,
-    onDelete: () -> Unit,
-    targetRows: Int? = null,
-    onShowTargetDialog: () -> Unit = {},
-) {
-    DropdownMenu(
-        expanded = expanded,
-        onDismissRequest = onDismiss,
-    ) {
-        DropdownMenuItem(
-            text = { Text(stringResource(R.string.session_history_title)) },
-            onClick = onSessionHistory,
-            contentPadding = PaddingValues(horizontal = 12.dp),
-        )
-        DropdownMenuItem(
-            text = { Text(stringResource(R.string.rename_project)) },
-            onClick = onRename,
-            contentPadding = PaddingValues(horizontal = 12.dp),
-        )
-        DropdownMenuItem(
-            text = {
-                Text(
-                    stringResource(
-                        if (targetRows == null) R.string.target_rows_set
-                        else R.string.target_rows_edit,
-                    ),
-                )
-            },
-            onClick = {
-                onShowTargetDialog()
-                onDismiss()
-            },
-            contentPadding = PaddingValues(horizontal = 12.dp),
-        )
-        DropdownMenuItem(
-            text = { Text(stringResource(R.string.complete_project)) },
-            onClick = onComplete,
-            contentPadding = PaddingValues(horizontal = 12.dp),
-        )
-        DropdownMenuItem(
-            text = { Text(stringResource(R.string.reset_counter)) },
-            onClick = onReset,
-            contentPadding = PaddingValues(horizontal = 12.dp),
-        )
-        DropdownMenuItem(
-            text = {
-                Text(
-                    stringResource(R.string.delete_project),
-                    color = MaterialTheme.colorScheme.error,
-                )
-            },
-            onClick = onDelete,
-            contentPadding = PaddingValues(horizontal = 12.dp),
-        )
-    }
-}
-
-@Composable
 private fun rememberVibrator(): Vibrator? {
     val context = LocalView.current.context
     return remember {
@@ -1063,21 +1046,6 @@ data class ProjectHeaderActions(
     val onShowPatternInfo: () -> Unit,
     val onShowPatternPicker: () -> Unit,
     val onOpenPattern: () -> Unit,
-    val onShowYarnManagement: () -> Unit,
-    val onShowNotes: () -> Unit,
-    val onStitchClick: () -> Unit,
-    val onTimeClick: () -> Unit,
-    val onSummary: () -> Unit,
-    val onToggleStitchTracking: (Boolean) -> Unit,
-)
-
-data class ProjectInfoCardActions(
-    val onShowYarnManagement: () -> Unit,
-    val onShowNotes: () -> Unit,
-    val onStitchClick: () -> Unit,
-    val onTimeClick: () -> Unit,
-    val onSummary: () -> Unit,
-    val onToggleStitchTracking: (Boolean) -> Unit,
 )
 
 data class ProjectCountersSectionActions(
@@ -1109,26 +1077,16 @@ private data class CounterTopBarActionDependencies(
     val onBack: () -> Unit,
     val onPhotoGallery: () -> Unit,
     val projectId: Long?,
-    val onSessionHistory: (Long) -> Unit,
-    val onShowOverflowMenu: () -> Unit,
-    val onHideOverflowMenu: () -> Unit,
-    val onStartRename: () -> Unit,
-    val onShowCompleteDialog: () -> Unit,
-    val onShowResetDialog: () -> Unit,
-    val onShowDeleteDialog: () -> Unit,
+    val onPatternViewer: (Long) -> Unit,
+    val onShowProjectActions: () -> Unit,
 )
 
 private data class ProjectHeaderActionDependencies(
     val viewModel: CounterViewModel,
     val projectId: Long?,
     val onPatternViewer: (Long) -> Unit,
-    val onSessionHistory: (Long) -> Unit,
     val onShowPatternInfo: () -> Unit,
     val onShowPatternPicker: () -> Unit,
-    val onShowYarnManagement: () -> Unit,
-    val onShowNotes: () -> Unit,
-    val onShowStitchDialog: () -> Unit,
-    val onShowSummarySheet: () -> Unit,
     val onEditingNameChange: (Boolean) -> Unit,
 )
 
@@ -1151,7 +1109,6 @@ private fun CounterScreenContent(
     state: CounterUiState,
     isEditingName: Boolean,
     projectHeaderActions: ProjectHeaderActions,
-    projectCountersActions: ProjectCountersSectionActions,
     actions: CounterMainContentActions,
 ) {
     Box(
@@ -1173,190 +1130,127 @@ private fun CounterScreenContent(
                 isEditingName = isEditingName,
                 actions = projectHeaderActions,
             )
-            // Joustava välitila pitää counter-ryhmän ankkuroituna alaosaan,
-            // vaikka ProjectHeader kasvaa (stitch tracking, pattern jne.)
-            Spacer(modifier = Modifier.weight(1f))
-            CounterReadoutSection(
-                state = state,
-                actions = actions,
-                hasCountersBelow = (state.isPro || BuildConfig.DEBUG) && state.projectCounters.isNotEmpty(),
-            )
+            // Compact pattern-repeat -rivi on otsikon alapuolella; alla oleva
+            // weight-Box pitää laskurin keskellä riippumatta tämän näkyvyydestä.
+            if (state.isPro) {
+                Spacer(modifier = Modifier.height(8.dp))
+                CompactPatternRepeatRow(
+                    count = state.secondaryCount,
+                    onDecrement = actions.onDecrementSecondary,
+                    onIncrement = actions.onIncrementSecondary,
+                )
+            }
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                contentAlignment = Alignment.Center,
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(onClick = actions.onSurfaceIncrement),
+                ) {
+                    CounterRowLabel(state = state, onShowTargetDialog = actions.onShowTargetDialog)
+                    CounterMainNumber(state = state)
+                    CounterTargetProgressBar(state = state, onShowTargetDialog = actions.onShowTargetDialog)
+                }
+            }
             CounterButtons(
                 onDecrement = actions.onDecrement,
                 onIncrement = actions.onIncrement,
                 onUndo = actions.onUndo,
             )
-            CounterBottomSection(
-                state = state,
-                projectCountersActions = projectCountersActions,
-            )
-        }
-    }
-}
-
-@Composable
-private fun ColumnScope.CounterBottomSection(
-    state: CounterUiState,
-    projectCountersActions: ProjectCountersSectionActions,
-) {
-    val showPro = state.isPro || BuildConfig.DEBUG
-    if (!showPro) {
-        Spacer(modifier = Modifier.height(16.dp))
-        return
-    }
-    Spacer(modifier = Modifier.height(16.dp))
-    if (state.projectCounters.isNotEmpty()) {
-        Column(
-            modifier =
-                Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState()),
-        ) {
-            ProjectCountersSection(
-                projectCounters = state.projectCounters,
-                mainRowCount = state.counter.count,
-                actions = projectCountersActions,
-            )
             Spacer(modifier = Modifier.height(16.dp))
         }
-    } else {
-        ProjectCountersSection(
-            projectCounters = state.projectCounters,
-            mainRowCount = state.counter.count,
-            actions = projectCountersActions,
-        )
-        Spacer(modifier = Modifier.height(16.dp))
     }
 }
 
 @Composable
-private fun ColumnScope.CounterReadoutSection(
+private fun CounterRowLabel(
     state: CounterUiState,
-    actions: CounterMainContentActions,
-    hasCountersBelow: Boolean = false,
+    onShowTargetDialog: () -> Unit,
 ) {
-    val baseModifier =
-        if (hasCountersBelow) {
-            Modifier.fillMaxWidth()
+    val labelText =
+        if (state.targetRows != null) {
+            stringResource(R.string.row_label_with_target, state.counter.count, state.targetRows)
         } else {
-            Modifier.weight(1f).fillMaxWidth()
+            stringResource(R.string.current_row)
         }
-    Column(
-        modifier = baseModifier.clickable(onClick = actions.onSurfaceIncrement),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        val labelText =
-            if (state.targetRows != null) {
-                stringResource(R.string.row_label_with_target, state.counter.count, state.targetRows)
-            } else {
-                stringResource(R.string.current_row)
-            }
-        Text(
-            text = labelText,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.secondary,
-            modifier = Modifier.clickable(onClick = actions.onShowTargetDialog),
-        )
+    Text(
+        text = labelText,
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.clickable(onClick = onShowTargetDialog),
+    )
+}
 
-        val counterFontSize = (115f / LocalDensity.current.fontScale).sp
-        val counterDescription =
-            if (state.targetRows != null && state.targetRows > 0) {
-                val percent =
-                    ((state.counter.count.toFloat() / state.targetRows.toFloat()) * 100)
-                        .toInt()
-                        .coerceIn(0, 100)
-                stringResource(R.string.voice_row_of_target, state.counter.count, state.targetRows, percent)
-            } else {
-                stringResource(R.string.current_row_short, state.counter.count)
-            }
-        RollingCounter(
-            count = state.counter.count,
-            textStyle =
-                MaterialTheme.typography.displayMedium.copy(
-                    fontSize = counterFontSize,
-                    fontWeight = FontWeight.Bold,
-                    fontFeatureSettings = "tnum",
-                ),
-            contentDescription = counterDescription,
-        )
-
+@Composable
+private fun CounterMainNumber(state: CounterUiState) {
+    val counterFontSize = (115f / LocalDensity.current.fontScale).sp
+    val counterDescription =
         if (state.targetRows != null && state.targetRows > 0) {
-            Spacer(modifier = Modifier.height(12.dp))
-            val fraction = (state.counter.count.toFloat() / state.targetRows.toFloat()).coerceIn(0f, 1f)
-            val completed = state.counter.count >= state.targetRows
-            Box(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .height(2.dp)
-                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
-                        .clickable(onClick = actions.onShowTargetDialog),
-            ) {
-                Box(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth(fraction)
-                            .height(2.dp)
-                            .background(
-                                if (completed) MaterialTheme.colorScheme.tertiary
-                                else MaterialTheme.colorScheme.primary,
-                            ),
-                )
-            }
+            val percent =
+                ((state.counter.count.toFloat() / state.targetRows.toFloat()) * 100)
+                    .toInt()
+                    .coerceIn(0, 100)
+            stringResource(R.string.voice_row_of_target, state.counter.count, state.targetRows, percent)
+        } else {
+            stringResource(R.string.current_row_short, state.counter.count)
         }
+    RollingCounter(
+        count = state.counter.count,
+        textStyle =
+            MaterialTheme.typography.displayMedium.copy(
+                fontSize = counterFontSize,
+                fontWeight = FontWeight.Bold,
+                fontFeatureSettings = "tnum",
+            ),
+        contentDescription = counterDescription,
+    )
+}
 
-        if (state.isPro) {
-            Spacer(modifier = Modifier.height(8.dp))
-            PatternRepeatPill(
-                count = state.secondaryCount,
-                onDecrement = actions.onDecrementSecondary,
-                onIncrement = actions.onIncrementSecondary,
-            )
-        }
-
-        if (state.stitchTrackingEnabled && (state.stitchCount ?: 0) > 0) {
-            Spacer(modifier = Modifier.height(8.dp))
-            StitchCounter(
-                currentStitch = state.currentStitch,
-                totalStitches = state.stitchCount ?: 0,
-                onDecrement = actions.onDecrementStitch,
-                onIncrement = actions.onIncrementStitch,
-            )
-        }
-
-        val projectId = state.projectId
-        if (state.patternUri != null && projectId != null) {
-            Spacer(modifier = Modifier.height(8.dp))
-            TextButton(onClick = { actions.onOpenPatternViewer(projectId) }) {
-                Text(text = stringResource(R.string.show_pattern))
-            }
-        }
+@Composable
+private fun CounterTargetProgressBar(
+    state: CounterUiState,
+    onShowTargetDialog: () -> Unit,
+) {
+    val target = state.targetRows ?: return
+    if (target <= 0) return
+    Spacer(modifier = Modifier.height(12.dp))
+    val fraction = (state.counter.count.toFloat() / target.toFloat()).coerceIn(0f, 1f)
+    val completed = state.counter.count >= target
+    val fillColor =
+        if (completed) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary
+    Box(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(2.dp)
+                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                .clickable(onClick = onShowTargetDialog),
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth(fraction)
+                    .height(2.dp)
+                    .background(fillColor),
+        )
     }
 }
 
-// Erotettu CounterScreen-funktiosta kognitiivisen kompleksisuuden vähentämiseksi (S3776)
 @Composable
 private fun ProjectHeader(
     state: CounterUiState,
     isEditingName: Boolean,
     actions: ProjectHeaderActions,
 ) {
-    val onNameChange = actions.onNameChange
-    val onEditingNameChange = actions.onEditingNameChange
-    val onShowPatternInfo = actions.onShowPatternInfo
-    val onShowPatternPicker = actions.onShowPatternPicker
-    val onOpenPattern = actions.onOpenPattern
-    val onShowYarnManagement = actions.onShowYarnManagement
-    val onShowNotes = actions.onShowNotes
-    val onStitchClick = actions.onStitchClick
-    val onTimeClick = actions.onTimeClick
-    val onSummary = actions.onSummary
-    val onToggleStitchTracking = actions.onToggleStitchTracking
     if (isEditingName) {
         TextField(
             value = state.projectName,
-            onValueChange = onNameChange,
+            onValueChange = actions.onNameChange,
             modifier = Modifier.fillMaxWidth(),
             placeholder = { Text(stringResource(R.string.default_project_name)) },
             singleLine = true,
@@ -1369,7 +1263,7 @@ private fun ProjectHeader(
                     unfocusedIndicatorColor = Color.Transparent,
                 ),
             trailingIcon = {
-                IconButton(onClick = { onEditingNameChange(false) }) {
+                IconButton(onClick = { actions.onEditingNameChange(false) }) {
                     Icon(
                         Icons.Filled.Add,
                         contentDescription = stringResource(R.string.save),
@@ -1380,7 +1274,6 @@ private fun ProjectHeader(
             },
         )
     } else {
-        // Projektin nimi
         Text(
             text = state.projectName.ifEmpty { stringResource(R.string.default_project_name) }.uppercase(),
             style =
@@ -1393,29 +1286,15 @@ private fun ProjectHeader(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .clickable(onClick = { onEditingNameChange(true) }),
+                    .clickable(onClick = { actions.onEditingNameChange(true) }),
         )
         Spacer(modifier = Modifier.height(6.dp))
         PatternHeaderRow(
             attachedPatternName = state.patternName,
             linkedPatternName = state.linkedPattern?.name,
-            onShowPatternPicker = onShowPatternPicker,
-            onOpenPattern = onOpenPattern,
-            onShowPatternInfo = onShowPatternInfo,
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        // Kompakti projekti-infokortti
-        ProjectInfoCard(
-            state = state,
-            actions =
-                ProjectInfoCardActions(
-                    onShowYarnManagement = onShowYarnManagement,
-                    onShowNotes = onShowNotes,
-                    onStitchClick = onStitchClick,
-                    onTimeClick = onTimeClick,
-                    onSummary = onSummary,
-                    onToggleStitchTracking = onToggleStitchTracking,
-                ),
+            onShowPatternPicker = actions.onShowPatternPicker,
+            onOpenPattern = actions.onOpenPattern,
+            onShowPatternInfo = actions.onShowPatternInfo,
         )
     }
 }
@@ -1473,235 +1352,6 @@ private fun PatternHeaderRow(
     }
 }
 
-@Composable
-private fun ProjectInfoCard(
-    state: CounterUiState,
-    actions: ProjectInfoCardActions,
-) {
-    Surface(
-        shape = RoundedCornerShape(14.dp),
-        color = MaterialTheme.colorScheme.surface,
-    ) {
-        Column(
-            modifier = Modifier.padding(vertical = 10.dp, horizontal = 14.dp),
-        ) {
-            // Rivi 1: Lanka-tiedot + Notes-ikoni
-            YarnAndNotesRow(
-                linkedYarns = state.linkedYarns,
-                isPro = state.isPro,
-                hasNotes = state.notes.isNotEmpty(),
-                onShowYarnManagement = actions.onShowYarnManagement,
-                onShowNotes = actions.onShowNotes,
-            )
-
-            // Rivi 2: Stats (vasemmalla) + AI summary (oikealla)
-            StatsRow(
-                state =
-                    StatsRowState(
-                        stitchCount = state.stitchCount,
-                        rowCount = state.counter.count,
-                        sessionSeconds = state.sessionSeconds,
-                        isPro = state.isPro,
-                        isAiAvailable = state.isAiAvailable,
-                    ),
-                onStitchClick = actions.onStitchClick,
-                onTimeClick = actions.onTimeClick,
-                onSummary = actions.onSummary,
-            )
-
-            if (state.stitchCount != null && state.stitchCount > 0) {
-                Spacer(modifier = Modifier.height(10.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Text(
-                        text = stringResource(R.string.track_stitches),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                    Switch(
-                        checked = state.stitchTrackingEnabled,
-                        onCheckedChange = actions.onToggleStitchTracking,
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun YarnAndNotesRow(
-    linkedYarns: List<Pair<Long, String>>,
-    isPro: Boolean,
-    hasNotes: Boolean,
-    onShowYarnManagement: () -> Unit,
-    onShowNotes: () -> Unit,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        CompactYarnLine(
-            linkedYarns = linkedYarns,
-            onClick = onShowYarnManagement,
-            modifier = Modifier.weight(1f),
-        )
-        if (isPro) {
-            val notesTint =
-                if (hasNotes) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                }
-            IconButton(onClick = onShowNotes, modifier = Modifier.size(36.dp)) {
-                Icon(
-                    Icons.AutoMirrored.Filled.Subject,
-                    contentDescription = stringResource(R.string.notes),
-                    modifier = Modifier.size(20.dp),
-                    tint = notesTint,
-                )
-            }
-        }
-    }
-}
-
-// Data-luokka StatsRow-parametrien ryhmittelyyn (S107)
-data class StatsRowState(
-    val stitchCount: Int?,
-    val rowCount: Int,
-    val sessionSeconds: Long,
-    val isPro: Boolean,
-    val isAiAvailable: Boolean,
-)
-
-@Composable
-private fun StatsRow(
-    state: StatsRowState,
-    onStitchClick: () -> Unit,
-    onTimeClick: () -> Unit,
-    onSummary: () -> Unit,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        // Silmukat
-        if (state.stitchCount != null && state.stitchCount > 0) {
-            val total = state.stitchCount.toLong() * state.rowCount
-            val formatted =
-                java.text.NumberFormat
-                    .getIntegerInstance()
-                    .format(total)
-            Text(
-                text = stringResource(R.string.stitch_count_format, formatted),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.clickable(onClick = onStitchClick),
-            )
-        } else {
-            Text(
-                text = stringResource(R.string.set_stitches),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.secondary,
-                modifier = Modifier.clickable(onClick = onStitchClick),
-            )
-        }
-        Spacer(modifier = Modifier.width(12.dp))
-        // Sessioaika
-        Text(
-            text = "%02d:%02d".format(state.sessionSeconds / 60, state.sessionSeconds % 60),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.clickable(onClick = onTimeClick),
-        )
-        Spacer(modifier = Modifier.weight(1f))
-        // AI summary -linkki
-        if (state.isPro && state.isAiAvailable) {
-            Text(
-                text = stringResource(R.string.view_ai_summary),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.knitToolsColors.brandWine,
-                modifier = Modifier.clickable(onClick = onSummary),
-            )
-        }
-    }
-}
-
-@Composable
-private fun CompactYarnLine(
-    linkedYarns: List<Pair<Long, String>>,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val text =
-        when (linkedYarns.size) {
-            0 -> stringResource(R.string.add_yarn)
-            1 -> linkedYarns.first().second
-            else -> stringResource(R.string.yarn_count_format, linkedYarns.size)
-        }
-    val textColor =
-        if (linkedYarns.isEmpty()) {
-            MaterialTheme.colorScheme.tertiary
-        } else {
-            MaterialTheme.colorScheme.onSurface
-        }
-
-    Text(
-        text = text,
-        style = MaterialTheme.typography.bodyMedium,
-        color = textColor,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-        modifier = modifier.clickable(onClick = onClick),
-    )
-}
-
-@Composable
-private fun PatternRepeatPill(
-    count: Int,
-    onDecrement: () -> Unit,
-    onIncrement: () -> Unit,
-) {
-    Row(
-        modifier =
-            Modifier
-                .clip(RoundedCornerShape(16.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-                .padding(horizontal = 12.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        OutlinedButton(
-            onClick = onDecrement,
-            modifier = Modifier.size(32.dp),
-            shape = CircleShape,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-            contentPadding =
-                androidx.compose.foundation.layout
-                    .PaddingValues(0.dp),
-        ) {
-            Icon(Icons.Filled.Remove, null, Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-        Text(
-            text = stringResource(R.string.pattern_repeat).uppercase() + ": $count",
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        OutlinedButton(
-            onClick = onIncrement,
-            modifier = Modifier.size(32.dp),
-            shape = CircleShape,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-            contentPadding =
-                androidx.compose.foundation.layout
-                    .PaddingValues(0.dp),
-        ) {
-            Icon(Icons.Filled.Add, null, Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-    }
-}
 
 @Composable
 private fun CounterButtons(
@@ -1760,53 +1410,129 @@ private fun CounterButtons(
 }
 
 @Composable
-private fun ProjectCountersSection(
-    projectCounters: List<ProjectCounterEntity>,
-    mainRowCount: Int,
-    actions: ProjectCountersSectionActions,
+private fun CompactPatternRepeatRow(
+    count: Int,
+    onDecrement: () -> Unit,
+    onIncrement: () -> Unit,
 ) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .padding(horizontal = 14.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
+        Text(
+            text = stringResource(R.string.counter_repeat_label),
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontWeight = FontWeight.Bold,
+                fontSize = 12.sp,
+                letterSpacing = 0.8.sp,
+            ),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
+            Box(
+                modifier = Modifier
+                    .size(28.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surface)
+                    .clickable(onClick = onDecrement),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Remove,
+                    contentDescription = stringResource(R.string.counter_decrease),
+                    modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.onSurface,
+                )
+            }
             Text(
-                text = stringResource(R.string.counters),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.secondary,
+                text = count.toString(),
+                style = MaterialTheme.typography.labelLarge.copy(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                ),
+                color = MaterialTheme.colorScheme.onSurface,
             )
-            TextButton(onClick = actions.onAddCounter) {
-                Text(
-                    text = stringResource(R.string.add_counter),
-                    color = LocalContentColor.current,
+            Box(
+                modifier = Modifier
+                    .size(28.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surface)
+                    .clickable(onClick = onIncrement),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Add,
+                    contentDescription = stringResource(R.string.counter_increase),
+                    modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.onSurface,
                 )
             }
         }
+    }
+}
 
-        projectCounters.forEach { counter ->
-            if (counter.counterType == "REPEAT_SECTION") {
-                RepeatSectionItem(
-                    counter = counter,
-                    mainRowCount = mainRowCount,
-                    onDelete = { actions.onDeleteCounter(counter.id) },
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CountersListSheet(
+    projectCounters: List<ProjectCounterEntity>,
+    mainRowCount: Int,
+    actions: ProjectCountersSectionActions,
+    onDismiss: () -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(horizontal = 20.dp)
+                .padding(bottom = 32.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.counters_list_title),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            if (projectCounters.isEmpty()) {
+                Text(
+                    text = stringResource(R.string.voice_counters_none),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             } else {
-                CounterListItem(
-                    counter = counter,
-                    actions =
-                        CounterItemActions(
-                            onIncrement = { actions.onIncrementCounter(counter) },
-                            onDecrement = { actions.onDecrementCounter(counter) },
-                            onRename = { actions.onRenameCounter(counter.id, it) },
-                            onReset = { actions.onResetCounter(counter.id) },
+                projectCounters.forEach { counter ->
+                    if (counter.counterType == "REPEAT_SECTION") {
+                        RepeatSectionItem(
+                            counter = counter,
+                            mainRowCount = mainRowCount,
                             onDelete = { actions.onDeleteCounter(counter.id) },
-                            performHaptic = actions.performHaptic,
-                        ),
-                )
+                        )
+                    } else {
+                        CounterListItem(
+                            counter = counter,
+                            actions = CounterItemActions(
+                                onIncrement = { actions.onIncrementCounter(counter) },
+                                onDecrement = { actions.onDecrementCounter(counter) },
+                                onRename = { actions.onRenameCounter(counter.id, it) },
+                                onReset = { actions.onResetCounter(counter.id) },
+                                onDelete = { actions.onDeleteCounter(counter.id) },
+                                performHaptic = actions.performHaptic,
+                            ),
+                        )
+                    }
+                }
             }
         }
     }
@@ -2232,57 +1958,24 @@ private fun rememberCounterSheetActions(
 
 @Composable
 private fun rememberCounterTopBarActions(dependencies: CounterTopBarActionDependencies): CounterTopBarActions =
-    remember(
-        dependencies,
-    ) {
+    remember(dependencies) {
         CounterTopBarActions(
             onBack = dependencies.onBack,
             onPhotoGallery = dependencies.onPhotoGallery,
-            onShowOverflowMenu = dependencies.onShowOverflowMenu,
-            onDismissOverflowMenu = dependencies.onHideOverflowMenu,
-            onSessionHistory = {
-                dependencies.onHideOverflowMenu()
-                dependencies.projectId?.let(dependencies.onSessionHistory)
-            },
-            onRename = {
-                dependencies.onHideOverflowMenu()
-                dependencies.onStartRename()
-            },
-            onComplete = {
-                dependencies.onHideOverflowMenu()
-                dependencies.onShowCompleteDialog()
-            },
-            onReset = {
-                dependencies.onHideOverflowMenu()
-                dependencies.onShowResetDialog()
-            },
-            onDelete = {
-                dependencies.onHideOverflowMenu()
-                dependencies.onShowDeleteDialog()
-            },
+            onShowPattern = { dependencies.projectId?.let(dependencies.onPatternViewer) },
+            onShowProjectActions = dependencies.onShowProjectActions,
         )
     }
 
 @Composable
 private fun rememberProjectHeaderActions(dependencies: ProjectHeaderActionDependencies): ProjectHeaderActions =
-    remember(
-        dependencies,
-    ) {
+    remember(dependencies) {
         ProjectHeaderActions(
             onNameChange = dependencies.viewModel::setProjectName,
             onEditingNameChange = dependencies.onEditingNameChange,
             onShowPatternInfo = dependencies.onShowPatternInfo,
             onShowPatternPicker = dependencies.onShowPatternPicker,
             onOpenPattern = { dependencies.projectId?.let(dependencies.onPatternViewer) },
-            onShowYarnManagement = dependencies.onShowYarnManagement,
-            onShowNotes = dependencies.onShowNotes,
-            onStitchClick = dependencies.onShowStitchDialog,
-            onTimeClick = { dependencies.projectId?.let(dependencies.onSessionHistory) },
-            onSummary = {
-                dependencies.viewModel.generateSummary()
-                dependencies.onShowSummarySheet()
-            },
-            onToggleStitchTracking = dependencies.viewModel::setStitchTrackingEnabled,
         )
     }
 

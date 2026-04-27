@@ -9,6 +9,8 @@ import io.ktor.client.request.header
 import io.ktor.client.request.parameter
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
+import kotlinx.coroutines.delay
+import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.io.encoding.Base64
@@ -35,6 +37,8 @@ class RavelryApiService
     ) {
         companion object {
             private const val BASE_URL = "https://api.ravelry.com"
+            private const val MAX_TRANSIENT_RETRIES = 2
+            private const val INITIAL_RETRY_DELAY_MS = 500L
         }
 
         suspend fun searchPatterns(params: PatternSearchParams): PatternSearchResponse =
@@ -56,14 +60,37 @@ class RavelryApiService
                 .pattern
 
         /**
-         * GET-pyyntö retry-logiikalla:
+         * GET-pyyntö autentikointi- ja retry-logiikalla:
          * 1. Bearer-token jos saatavilla
          * 2. Jos 401/403 → refresh token
          * 3. Jos refresh epäonnistuu → fallback Basic Auth
+         * 4. Transientit verkkovirheet ja 5xx-vastaukset yritetään rajatusti uudelleen
          */
         private suspend inline fun <reified T> authenticatedGet(
             url: String,
             crossinline block: io.ktor.client.request.HttpRequestBuilder.() -> Unit = {},
+        ): T {
+            var attempt = 0
+            var retryDelayMs = INITIAL_RETRY_DELAY_MS
+
+            while (true) {
+                try {
+                    return authenticatedGetOnce(url, block)
+                } catch (e: IOException) {
+                    if (attempt >= MAX_TRANSIENT_RETRIES) {
+                        throw e
+                    }
+                }
+
+                delay(retryDelayMs)
+                retryDelayMs *= 2
+                attempt++
+            }
+        }
+
+        private suspend inline fun <reified T> authenticatedGetOnce(
+            url: String,
+            crossinline block: io.ktor.client.request.HttpRequestBuilder.() -> Unit,
         ): T {
             val token = authManager.accessToken
 
@@ -74,6 +101,8 @@ class RavelryApiService
                         header(HttpHeaders.Authorization, "Bearer $token")
                         block()
                     }
+
+                response.throwIfTransientServerError()
 
                 if (response.status != HttpStatusCode.Unauthorized &&
                     response.status != HttpStatusCode.Forbidden
@@ -88,6 +117,7 @@ class RavelryApiService
                             header(HttpHeaders.Authorization, "Bearer ${authManager.accessToken}")
                             block()
                         }
+                    retryResponse.throwIfTransientServerError()
                     if (retryResponse.status != HttpStatusCode.Unauthorized &&
                         retryResponse.status != HttpStatusCode.Forbidden
                     ) {
@@ -104,7 +134,14 @@ class RavelryApiService
                 .get(url) {
                     header(HttpHeaders.Authorization, basicAuthHeader())
                     block()
-                }.body()
+                }.also { response -> response.throwIfTransientServerError() }
+                .body()
+        }
+
+        private fun io.ktor.client.statement.HttpResponse.throwIfTransientServerError() {
+            if (status.value in 500..599) {
+                throw TransientRavelryException(status.value)
+            }
         }
 
         @OptIn(ExperimentalEncodingApi::class)
@@ -116,4 +153,8 @@ class RavelryApiService
                 )
             return "Basic $credentials"
         }
+
+        private class TransientRavelryException(
+            statusCode: Int,
+        ) : IOException("Ravelry returned HTTP $statusCode")
     }

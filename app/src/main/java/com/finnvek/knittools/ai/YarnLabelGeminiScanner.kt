@@ -53,7 +53,7 @@ object YarnLabelGeminiScanner {
     }
 
     internal fun parseResponse(response: String): ParsedYarnLabel? {
-        val jsonText = extractJson(response) ?: return null
+        val jsonText = extractJson(response) ?: return ParsedYarnLabel()
         return try {
             val json = JSONObject(jsonText)
             if (json.has("error")) return null
@@ -74,9 +74,10 @@ object YarnLabelGeminiScanner {
                 colorName = json.optStringOrEmpty("colorName"),
                 colorNumber = json.optStringOrEmpty("colorNumber"),
                 dyeLot = json.optStringOrEmpty("dyeLot"),
+                careSymbols = parseCareSymbols(json.optStringOrEmpty("careInstructions")),
             )
         } catch (_: Exception) {
-            null
+            ParsedYarnLabel()
         }
     }
 
@@ -116,6 +117,56 @@ object YarnLabelGeminiScanner {
     }
 
     private fun formatNeedle(mm: Double): String = if (mm == mm.toLong().toDouble()) "${mm.toLong()}mm" else "${mm}mm"
+
+    private fun parseCareSymbols(instructions: String): Long {
+        val text = instructions.lowercase()
+        if (text.isBlank()) return 0L
+
+        var symbols = 0L
+        fun add(bitPosition: Int) {
+            symbols = symbols or (1L shl bitPosition)
+        }
+
+        if (text.contains("do not wash") || text.contains("don't wash")) {
+            add(4)
+        } else {
+            if (text.contains("hand wash")) add(3)
+            when {
+                text.contains("60") -> add(2)
+                text.contains("40") -> add(1)
+                text.contains("30") -> add(0)
+            }
+        }
+
+        when {
+            text.contains("do not bleach") || text.contains("don't bleach") -> add(7)
+            text.contains("non-chlorine") || text.contains("non chlorine") -> add(6)
+            text.contains("bleach") -> add(5)
+        }
+
+        when {
+            text.contains("do not tumble") || text.contains("don't tumble") -> add(11)
+            text.contains("flat") -> add(10)
+            text.contains("tumble") && text.contains("low") -> add(8)
+            text.contains("tumble") -> add(9)
+        }
+
+        when {
+            text.contains("do not iron") || text.contains("don't iron") -> add(15)
+            text.contains("iron") && text.contains("high") -> add(14)
+            text.contains("iron") && text.contains("medium") -> add(13)
+            text.contains("iron") && text.contains("low") -> add(12)
+        }
+
+        when {
+            text.contains("do not dry clean") || text.contains("don't dry clean") -> add(19)
+            text.contains("dry clean") && Regex("""\bp\b""").containsMatchIn(text) -> add(17)
+            text.contains("dry clean") && Regex("""\bf\b""").containsMatchIn(text) -> add(18)
+            text.contains("dry clean") -> add(16)
+        }
+
+        return symbols
+    }
 
     private fun JSONObject.optStringOrEmpty(key: String): String {
         if (isNull(key)) return ""

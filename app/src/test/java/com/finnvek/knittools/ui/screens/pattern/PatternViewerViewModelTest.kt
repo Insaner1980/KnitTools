@@ -1,10 +1,8 @@
 package com.finnvek.knittools.ui.screens.pattern
 
-import android.content.Context
 import android.graphics.Bitmap
-import com.finnvek.knittools.ai.AiQuotaManager
-import com.finnvek.knittools.ai.GeminiAiService
-import com.finnvek.knittools.data.datastore.PreferencesManager
+import com.finnvek.knittools.ai.PatternInstructionGemini
+import com.finnvek.knittools.repository.PatternInstructionRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -27,19 +25,12 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class PatternViewerViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
-    private lateinit var geminiAiService: GeminiAiService
-    private lateinit var aiQuotaManager: AiQuotaManager
-    private lateinit var preferencesManager: PreferencesManager
-    private lateinit var context: Context
+    private lateinit var instructionRepository: PatternInstructionRepository
 
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
-        context = mockk(relaxed = true)
-        geminiAiService = mockk(relaxed = true)
-        aiQuotaManager = mockk(relaxed = true)
-        preferencesManager = mockk(relaxed = true)
-        coEvery { aiQuotaManager.hasQuota() } returns true
+        instructionRepository = mockk(relaxed = true)
     }
 
     @After
@@ -50,17 +41,14 @@ class PatternViewerViewModelTest {
 
     private fun createViewModel(): PatternViewerViewModel =
         PatternViewerViewModel(
-            context = context,
-            geminiAiService = geminiAiService,
-            aiQuotaManager = aiQuotaManager,
-            preferencesManager = preferencesManager,
+            instructionRepository = instructionRepository,
         )
 
     @Test
     fun `valid viewer context loads instruction from Gemini`() =
         runTest {
-            coEvery { geminiAiService.generateFromImage(any(), any()) } returns
-                """{"instruction": "SSK, knit across", "positionPercent": 50}"""
+            coEvery { instructionRepository.getInstruction(any(), 8) } returns
+                PatternInstructionGemini.InstructionResult("SSK, knit across", 50)
             val viewModel = createViewModel()
 
             viewModel.onViewerContextChanged(
@@ -121,7 +109,7 @@ class PatternViewerViewModelTest {
     @Test
     fun `Gemini returning null hides instruction`() =
         runTest {
-            coEvery { geminiAiService.generateFromImage(any(), any()) } returns null
+            coEvery { instructionRepository.getInstruction(any(), 5) } returns null
             val viewModel = createViewModel()
 
             viewModel.onViewerContextChanged(
@@ -141,8 +129,8 @@ class PatternViewerViewModelTest {
     @Test
     fun `clearInstructionCaches resets state`() =
         runTest {
-            coEvery { geminiAiService.generateFromImage(any(), any()) } returns
-                """{"instruction": "Knit", "positionPercent": 30}"""
+            coEvery { instructionRepository.getInstruction(any(), 1) } returns
+                PatternInstructionGemini.InstructionResult("Knit", 30)
             val viewModel = createViewModel()
 
             viewModel.onViewerContextChanged(
@@ -163,7 +151,7 @@ class PatternViewerViewModelTest {
     @Test
     fun `instruction explanation is cached by instruction text`() =
         runTest {
-            coEvery { geminiAiService.explainInstruction("K2tog, YO") } returns
+            coEvery { instructionRepository.explainInstruction("K2tog, YO") } returns
                 "Knit 2 together, then yarn over."
             val viewModel = createViewModel()
 
@@ -183,15 +171,15 @@ class PatternViewerViewModelTest {
             val secondState = viewModel.explanationState.value
             assertEquals("Knit 2 together, then yarn over.", secondState.explanation)
             assertTrue(secondState.isVisible)
-            coVerify(exactly = 1) { geminiAiService.explainInstruction("K2tog, YO") }
+            coVerify(exactly = 1) { instructionRepository.explainInstruction("K2tog, YO") }
         }
 
     @Test
     fun `row change hides visible explanation`() =
         runTest {
-            coEvery { geminiAiService.generateFromImage(any(), any()) } returns
-                """{"instruction": "SSK", "positionPercent": 42}"""
-            coEvery { geminiAiService.explainInstruction("SSK") } returns
+            coEvery { instructionRepository.getInstruction(any(), any()) } returns
+                PatternInstructionGemini.InstructionResult("SSK", 42)
+            coEvery { instructionRepository.explainInstruction("SSK") } returns
                 "Slip, slip, knit for a left-leaning decrease."
             val viewModel = createViewModel()
 

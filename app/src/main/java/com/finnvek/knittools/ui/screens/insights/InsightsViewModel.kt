@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.finnvek.knittools.data.local.CounterProjectEntity
 import com.finnvek.knittools.data.local.SessionEntity
+import com.finnvek.knittools.data.local.SessionInsightsTotals
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.CounterRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -19,6 +20,7 @@ import kotlinx.coroutines.flow.stateIn
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.ZoneId.systemDefault
 import java.time.temporal.TemporalAdjusters
 import java.time.temporal.WeekFields
 import java.util.Locale
@@ -59,21 +61,33 @@ class InsightsViewModel
                 emptyList(),
             )
 
-        // Kaikki sessiot valitulle projektille → avg pace + streak + kaaviodata
-        private val allSessions: StateFlow<List<SessionEntity>> =
-            _selectedProjectId
-                .flatMapLatest { projectId ->
-                    counterRepository.getAllSessions(projectId)
+        private val queryParams: StateFlow<InsightsQueryParams> =
+            combine(selectedProjectId, timeRange) { projectId, activeTimeRange ->
+                InsightsQueryParams(
+                    projectId = projectId,
+                    startMillis = rangeStartMillis(activeTimeRange),
+                )
+            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), InsightsQueryParams())
+
+        private val insightSessions: StateFlow<List<SessionEntity>> =
+            queryParams
+                .flatMapLatest { params ->
+                    counterRepository.getSessionsForInsights(params.projectId, params.startMillis)
                 }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-        private val filteredSessions: StateFlow<List<SessionEntity>> =
-            combine(allSessions, timeRange) { sessions, activeTimeRange ->
-                filterSessionsByTimeRange(sessions, activeTimeRange)
-            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        private val totals: StateFlow<SessionInsightsTotals> =
+            queryParams
+                .flatMapLatest { params ->
+                    counterRepository.getInsightsTotals(params.projectId, params.startMillis)
+                }.stateIn(
+                    viewModelScope,
+                    SharingStarted.WhileSubscribed(5000),
+                    SessionInsightsTotals(0, 0, 0),
+                )
 
         val hasSessionData: StateFlow<Boolean> =
-            filteredSessions
-                .map { it.isNotEmpty() }
+            totals
+                .map { it.sessionCount > 0 }
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
         val completedCount: StateFlow<Int> =
@@ -87,32 +101,33 @@ class InsightsViewModel
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
         val totalMinutes: StateFlow<Int> =
-            filteredSessions
-                .map { sessions -> sessions.sumOf { it.durationMinutes } }
+            totals
+                .map { it.totalMinutes }
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
         val avgPace: StateFlow<Float> =
-            combine(filteredSessions, totalMinutes) { sessions, minutes ->
-                if (minutes <= 0) return@combine 0f
-                val totalRows = sessions.sumOf { (it.endRow - it.startRow).coerceAtLeast(0) }
-                val hours = minutes / 60f
-                if (hours > 0f) totalRows / hours else 0f
+            totals.map { summary ->
+                if (summary.totalMinutes <= 0) {
+                    0f
+                } else {
+                    summary.totalRows / (summary.totalMinutes / 60f)
+                }
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0f)
 
         val bestStreak: StateFlow<Int> =
-            filteredSessions
+            insightSessions
                 .map { sessions ->
                     calculateStreak(sessions)
                 }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
         val currentStreak: StateFlow<Int> =
-            filteredSessions
+            insightSessions
                 .map { sessions ->
                     calculateCurrentStreak(sessions)
                 }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
         val dailyActivity: StateFlow<Map<LocalDate, Int>> =
-            filteredSessions
+            insightSessions
                 .map { sessions ->
                     val cutoff = LocalDate.now().minusDays(55)
                     val zone = ZoneId.systemDefault()
@@ -126,20 +141,20 @@ class InsightsViewModel
                 }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
         val timePerProject: StateFlow<List<ProjectTime>> =
-            combine(filteredSessions, projects) { sessions, projectList ->
-                val projectMap = projectList.associateBy { it.id }
-                sessions
-                    .groupBy { it.projectId }
-                    .map { (projectId, projectSessions) ->
+            queryParams
+                .flatMapLatest { params ->
+                    counterRepository.getProjectTimeSummaries(params.projectId, params.startMillis)
+                }.map { summaries ->
+                    summaries.map { summary ->
                         ProjectTime(
-                            projectId = projectId,
-                            projectName = projectMap[projectId]?.name ?: "Project $projectId",
-                            totalMinutes = projectSessions.sumOf { it.durationMinutes },
-                            totalRows = projectSessions.sumOf { (it.endRow - it.startRow).coerceAtLeast(0) },
-                            lastSessionAt = projectSessions.maxOf { it.startedAt },
+                            projectId = summary.projectId,
+                            projectName = summary.projectName,
+                            totalMinutes = summary.totalMinutes,
+                            totalRows = summary.totalRows,
+                            lastSessionAt = summary.lastSessionAt,
                         )
-                    }.sortedByDescending { it.totalMinutes }
-            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+                    }
+                }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
         fun selectProject(projectId: Long?) {
             _selectedProjectId.value = projectId
@@ -193,18 +208,6 @@ class InsightsViewModel
                 return streak
             }
 
-            private fun filterSessionsByTimeRange(
-                sessions: List<SessionEntity>,
-                timeRange: TimeRange,
-            ): List<SessionEntity> {
-                val rangeStart = rangeStartDate(timeRange) ?: return sessions
-                val zone = ZoneId.systemDefault()
-                return sessions.filter { session ->
-                    val sessionDate = Instant.ofEpochMilli(session.startedAt).atZone(zone).toLocalDate()
-                    !sessionDate.isBefore(rangeStart)
-                }
-            }
-
             private fun isProjectWithinTimeRange(
                 project: CounterProjectEntity,
                 timeRange: TimeRange,
@@ -238,6 +241,12 @@ class InsightsViewModel
                 }
             }
 
+            private fun rangeStartMillis(timeRange: TimeRange): Long? =
+                rangeStartDate(timeRange)
+                    ?.atStartOfDay(systemDefault())
+                    ?.toInstant()
+                    ?.toEpochMilli()
+
             private fun sessionToDayKey(timestamp: Long): Long =
                 Instant
                     .ofEpochMilli(timestamp)
@@ -246,3 +255,8 @@ class InsightsViewModel
                     .toEpochDay()
         }
     }
+
+private data class InsightsQueryParams(
+    val projectId: Long? = null,
+    val startMillis: Long? = null,
+)

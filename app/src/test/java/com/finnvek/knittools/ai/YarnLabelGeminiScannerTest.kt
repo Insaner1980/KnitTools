@@ -1,5 +1,6 @@
 package com.finnvek.knittools.ai
 
+import com.finnvek.knittools.ai.ocr.ParsedYarnLabel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -40,6 +41,7 @@ class YarnLabelGeminiScannerTest {
         assertEquals("Natural White", result.colorName)
         assertEquals("0100", result.colorNumber)
         assertEquals("2847", result.dyeLot)
+        assertEquals(9L, result.careSymbols)
     }
 
     @Test
@@ -81,8 +83,8 @@ class YarnLabelGeminiScannerTest {
     }
 
     @Test
-    fun `parseResponse returns null for garbage input`() {
-        assertNull(YarnLabelGeminiScanner.parseResponse("this is not json"))
+    fun `parseResponse returns empty label for garbage input`() {
+        assertEquals(ParsedYarnLabel(), YarnLabelGeminiScanner.parseResponse("this is not json"))
     }
 
     @Test

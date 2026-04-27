@@ -12,8 +12,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Testaa Room-migraatiot v1→v7.
- * v1→v3: AutoMigration. v3→v7: manuaaliset muutokset.
+ * Testaa Room-migraatiot v1→v9.
+ * v1→v3: AutoMigration. v3→v9: manuaaliset muutokset.
  */
 @RunWith(AndroidJUnit4::class)
 class MigrationTest {
@@ -30,6 +30,8 @@ class MigrationTest {
             KnitToolsDatabase.MIGRATION_4_5,
             KnitToolsDatabase.MIGRATION_5_6,
             KnitToolsDatabase.MIGRATION_6_7,
+            KnitToolsDatabase.MIGRATION_7_8,
+            KnitToolsDatabase.MIGRATION_8_9,
         )
 
     @Test
@@ -329,6 +331,47 @@ class MigrationTest {
     }
 
     @Test
+    fun migrate4to5() {
+        val testDb = "migration-test-v4-to-v5"
+
+        helper.createDatabase(testDb, 4).apply {
+            execSQL(
+                """
+                INSERT INTO counter_projects (
+                    id, name, count, secondaryCount, stepSize, notes, createdAt, updatedAt,
+                    sectionName, stitchCount, isCompleted, totalRows, completedAt, yarnCardIds
+                ) VALUES (
+                    1, 'Pattern link project', 42, 0, 1, '', 1000, 2000,
+                    NULL, NULL, 0, NULL, NULL, ''
+                )
+                """.trimIndent(),
+            )
+            close()
+        }
+
+        val db =
+            helper.runMigrationsAndValidate(
+                testDb,
+                5,
+                true,
+                KnitToolsDatabase.MIGRATION_4_5,
+            )
+
+        val patternCursor = db.query("SELECT COUNT(*) FROM saved_patterns")
+        assertTrue(patternCursor.moveToFirst())
+        assertEquals(0, patternCursor.getInt(0))
+        patternCursor.close()
+
+        val projectCursor = db.query("SELECT name, linkedPatternId FROM counter_projects WHERE id = 1")
+        assertTrue(projectCursor.moveToFirst())
+        assertEquals("Pattern link project", projectCursor.getString(0))
+        assertTrue(projectCursor.isNull(1))
+        projectCursor.close()
+
+        db.close()
+    }
+
+    @Test
     fun migrate5to6() {
         val testDb = "migration-test-v5-to-v6"
 
@@ -577,6 +620,137 @@ class MigrationTest {
         assertTrue(annotationCursor.moveToFirst())
         assertEquals(0, annotationCursor.getInt(0))
         annotationCursor.close()
+
+        db.close()
+    }
+
+    @Test
+    fun migrate7to8() {
+        val testDb = "migration-test-v7-to-v8"
+
+        helper.createDatabase(testDb, 7).apply {
+            execSQL(
+                """
+                INSERT INTO counter_projects (
+                    id, name, count, secondaryCount, stepSize, notes, createdAt, updatedAt,
+                    sectionName, stitchCount, isCompleted, totalRows, completedAt, yarnCardIds,
+                    linkedPatternId, patternUri, patternName, currentPatternPage, patternRowMapping,
+                    stitchTrackingEnabled, currentStitch
+                ) VALUES (
+                    1, 'Target row project', 10, 0, 1, '', 1000, 2000,
+                    NULL, NULL, 0, NULL, NULL, '',
+                    NULL, NULL, NULL, 0, NULL,
+                    0, 0
+                )
+                """.trimIndent(),
+            )
+            close()
+        }
+
+        val db =
+            helper.runMigrationsAndValidate(
+                testDb,
+                8,
+                true,
+                KnitToolsDatabase.MIGRATION_7_8,
+            )
+
+        val projectCursor = db.query("SELECT name, targetRows FROM counter_projects WHERE id = 1")
+        assertTrue(projectCursor.moveToFirst())
+        assertEquals("Target row project", projectCursor.getString(0))
+        assertTrue(projectCursor.isNull(1))
+        projectCursor.close()
+
+        db.close()
+    }
+
+    @Test
+    fun migrate8to9() {
+        val testDb = "migration-test-v8-to-v9"
+
+        helper.createDatabase(testDb, 8).apply {
+            execSQL(
+                """
+                INSERT INTO counter_projects (
+                    id, name, count, secondaryCount, stepSize, notes, createdAt, updatedAt,
+                    sectionName, stitchCount, isCompleted, totalRows, completedAt, yarnCardIds,
+                    linkedPatternId, patternUri, patternName, currentPatternPage, patternRowMapping,
+                    stitchTrackingEnabled, currentStitch, targetRows
+                ) VALUES (
+                    1, 'Indexed project', 10, 0, 1, '', 1000, 2000,
+                    NULL, NULL, 0, NULL, NULL, '',
+                    NULL, NULL, NULL, 0, NULL,
+                    0, 0, NULL
+                )
+                """.trimIndent(),
+            )
+            execSQL(
+                """
+                INSERT INTO sessions (
+                    id, projectId, startedAt, endedAt, startRow, endRow, durationMinutes
+                ) VALUES (
+                    1, 1, 1000, 2000, 1, 5, 30
+                )
+                """.trimIndent(),
+            )
+            close()
+        }
+
+        val db =
+            helper.runMigrationsAndValidate(
+                testDb,
+                9,
+                true,
+                KnitToolsDatabase.MIGRATION_8_9,
+            )
+
+        val indexCursor = db.query("PRAGMA index_list('sessions')")
+        var hasStartedAtIndex = false
+        while (indexCursor.moveToNext()) {
+            if (indexCursor.getString(1) == "index_sessions_startedAt") {
+                hasStartedAtIndex = true
+            }
+        }
+        indexCursor.close()
+        assertTrue(hasStartedAtIndex)
+
+        db.close()
+    }
+
+    @Test
+    fun migrate1to9() {
+        val testDb = "migration-test-v1-to-v9"
+
+        helper.createDatabase(testDb, 1).apply {
+            execSQL(
+                "INSERT INTO counter_projects (id, name, count, secondaryCount, stepSize, notes, createdAt, updatedAt) VALUES (1, 'Full Chain v9', 50, 3, 4, 'test', 1000, 2000)",
+            )
+            close()
+        }
+
+        val db =
+            helper.runMigrationsAndValidate(
+                testDb,
+                9,
+                true,
+                *allMigrations,
+            )
+
+        val projectCursor = db.query("SELECT name, targetRows FROM counter_projects WHERE id = 1")
+        assertTrue(projectCursor.moveToFirst())
+        assertEquals("Full Chain v9", projectCursor.getString(0))
+        assertTrue(projectCursor.isNull(1))
+        projectCursor.close()
+
+        val indexCursor = db.query("PRAGMA index_list('sessions')")
+        var hasStartedAtIndex = false
+        while (indexCursor.moveToNext()) {
+            if (indexCursor.getString(1) == "index_sessions_startedAt") {
+                hasStartedAtIndex = true
+            }
+        }
+        indexCursor.close()
+        assertTrue(hasStartedAtIndex)
 
         db.close()
     }

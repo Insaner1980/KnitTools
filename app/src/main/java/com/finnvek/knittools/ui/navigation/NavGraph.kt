@@ -1,5 +1,6 @@
 package com.finnvek.knittools.ui.navigation
 
+import android.app.Activity
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -11,7 +12,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -67,6 +67,7 @@ private val HIDE_BOTTOM_BAR_ROUTES =
     setOf(
         Screen.ProUpgrade.route,
         Screen.YarnCardReview.route,
+        Screen.LibraryYarnCardReview.route,
         Screen.YarnCardDetail.ROUTE,
         Screen.PatternViewer.ROUTE,
         Screen.LibraryPatternViewer.ROUTE,
@@ -79,10 +80,9 @@ fun KnitToolsNavHost(
     navController: NavHostController = rememberNavController(),
     startDestination: String = TopLevelDestination.Projects.route,
     counterLaunchRequest: CounterLaunchRequest? = null,
+    onPurchasePro: (Activity) -> Unit = {},
     onCounterLaunchHandled: () -> Unit = {},
 ) {
-    val yarnCardViewModel: YarnCardViewModel = hiltViewModel()
-
     // Ravelry "Start Project" käyttää samaa mekanismia kuin widget-launch
     var internalCounterLaunch by remember { mutableStateOf<CounterLaunchRequest?>(null) }
     val effectiveCounterLaunch = counterLaunchRequest ?: internalCounterLaunch
@@ -122,10 +122,10 @@ fun KnitToolsNavHost(
                     internalCounterLaunch = null
                 },
             )
-            toolsGraph(navController, yarnCardViewModel) { projectId ->
+            toolsGraph(navController) { projectId ->
                 internalCounterLaunch = CounterLaunchRequest(projectId = projectId)
             }
-            libraryGraph(navController, yarnCardViewModel) { projectId ->
+            libraryGraph(navController) { projectId ->
                 internalCounterLaunch = CounterLaunchRequest(projectId = projectId)
             }
             insightsGraph(navController)
@@ -133,7 +133,10 @@ fun KnitToolsNavHost(
 
             // Globaalit reitit (ei välilehdissä)
             composable(Screen.ProUpgrade.route) {
-                ProUpgradeScreen(onBack = { navController.popBackStack() })
+                ProUpgradeScreen(
+                    onBack = { navController.popBackStack() },
+                    onPurchase = onPurchasePro,
+                )
             }
         }
     }
@@ -253,7 +256,6 @@ private fun NavGraphBuilder.projectsGraph(
 @Suppress("kotlin:S3776") // Navigaation route-rekisteri kokoaa tarkoituksella useita haaroja yhteen paikkaan
 private fun NavGraphBuilder.toolsGraph(
     navController: NavHostController,
-    yarnCardViewModel: YarnCardViewModel,
     onLaunchCounter: (Long) -> Unit,
 ) {
     navigation(
@@ -275,6 +277,11 @@ private fun NavGraphBuilder.toolsGraph(
             CastOnScreen(onBack = { navController.popBackStack() })
         }
         composable(Screen.Yarn.route) {
+            val parentEntry =
+                remember(it) {
+                    navController.getBackStackEntry(TopLevelDestination.Tools.route)
+                }
+            val yarnCardViewModel: YarnCardViewModel = hiltViewModel(parentEntry)
             YarnEstimatorScreen(
                 onBack = { navController.popBackStack() },
                 onScanLabel = { navController.navigateSingleTopTo(Screen.YarnCardReview.route) },
@@ -283,6 +290,11 @@ private fun NavGraphBuilder.toolsGraph(
             )
         }
         composable(Screen.YarnCardReview.route) { backStackEntry ->
+            val toolsEntry =
+                remember(backStackEntry) {
+                    navController.getBackStackEntry(TopLevelDestination.Tools.route)
+                }
+            val yarnCardViewModel: YarnCardViewModel = hiltViewModel(toolsEntry)
             val projectsEntry =
                 remember(backStackEntry) {
                     try {
@@ -353,7 +365,6 @@ private fun NavGraphBuilder.toolsGraph(
 
 private fun NavGraphBuilder.libraryGraph(
     navController: NavHostController,
-    yarnCardViewModel: YarnCardViewModel,
     onLaunchCounter: (Long) -> Unit,
 ) {
     navigation(
@@ -375,8 +386,9 @@ private fun NavGraphBuilder.libraryGraph(
         librarySavedPatternsRoute(navController)
         libraryPatternViewerRoute(navController)
         libraryRavelryDetailRoute(navController, onLaunchCounter)
-        libraryMyYarnRoute(navController, yarnCardViewModel)
-        libraryYarnCardDetailRoute(navController, yarnCardViewModel, onLaunchCounter)
+        libraryMyYarnRoute(navController)
+        libraryYarnCardReviewRoute(navController)
+        libraryYarnCardDetailRoute(navController, onLaunchCounter)
         libraryAllPhotosRoute(navController)
     }
 }
@@ -477,7 +489,6 @@ private fun NavGraphBuilder.libraryRavelryDetailRoute(
 
 private fun NavGraphBuilder.libraryMyYarnRoute(
     navController: NavHostController,
-    yarnCardViewModel: YarnCardViewModel,
 ) {
     composable(Screen.MyYarn.route) { backStackEntry ->
         val parentEntry =
@@ -485,42 +496,14 @@ private fun NavGraphBuilder.libraryMyYarnRoute(
                 navController.getBackStackEntry(TopLevelDestination.Library.route)
             }
         val libraryViewModel: LibraryViewModel = hiltViewModel(parentEntry)
+        val yarnCardViewModel: YarnCardViewModel = hiltViewModel(parentEntry)
         val cards by libraryViewModel.yarnCards.collectAsStateWithLifecycle(initialValue = emptyList())
         val activeProjectNames by libraryViewModel.activeProjectNames.collectAsStateWithLifecycle(
             initialValue = emptyMap(),
         )
         val isYarnSelectMode by libraryViewModel.isYarnSelectMode.collectAsStateWithLifecycle()
         val selectedYarnIds by libraryViewModel.selectedYarnIds.collectAsStateWithLifecycle()
-
-        // Kameraskannaus My Yarn -näytöltä
-        var pendingPhotoUriString by rememberSaveable { mutableStateOf<String?>(null) }
-        val pendingPhotoUri = pendingPhotoUriString?.let(android.net.Uri::parse)
-        val cameraLauncher =
-            androidx.activity.compose.rememberLauncherForActivityResult(
-                androidx.activity.result.contract.ActivityResultContracts
-                    .TakePicture(),
-            ) { success ->
-                if (success && pendingPhotoUri != null) {
-                    yarnCardViewModel.scanWithGemini(pendingPhotoUri) {
-                        pendingPhotoUriString = null
-                        navController.navigateSingleTopTo(Screen.YarnCardReview.route)
-                    }
-                }
-            }
-        val scanContext = androidx.compose.ui.platform.LocalContext.current
-        val permissionLauncher =
-            androidx.activity.compose.rememberLauncherForActivityResult(
-                androidx.activity.result.contract.ActivityResultContracts
-                    .RequestPermission(),
-            ) { granted ->
-                if (granted) {
-                    val (_, uri) =
-                        com.finnvek.knittools.ai.ocr.YarnLabelScanner
-                            .createImageFile(scanContext)
-                    pendingPhotoUriString = uri.toString()
-                    cameraLauncher.launch(uri)
-                }
-            }
+        val yarnFormState by yarnCardViewModel.formState.collectAsStateWithLifecycle()
 
         MyYarnScreen(
             state =
@@ -529,6 +512,8 @@ private fun NavGraphBuilder.libraryMyYarnRoute(
                     activeProjectNames = activeProjectNames,
                     isSelectMode = isYarnSelectMode,
                     selectedYarnIds = selectedYarnIds,
+                    isScanning = yarnFormState.isScanning,
+                    statusMessage = yarnFormState.scanError,
                 ),
             actions =
                 MyYarnActions(
@@ -541,7 +526,13 @@ private fun NavGraphBuilder.libraryMyYarnRoute(
                     onDeleteSelected = libraryViewModel::deleteSelectedYarn,
                     onExitSelectMode = libraryViewModel::exitYarnSelectMode,
                     onScanLabel = {
-                        permissionLauncher.launch(android.Manifest.permission.CAMERA)
+                        yarnCardViewModel.updateField { copy(scanError = null) }
+                    },
+                    onCreateScanPhotoUri = yarnCardViewModel::createScanPhotoUri,
+                    onScanPhoto = { uri ->
+                        yarnCardViewModel.scanWithGemini(uri) {
+                            navController.navigateSingleTopTo(Screen.LibraryYarnCardReview.route)
+                        }
                     },
                     onBack = { navController.popBackStack() },
                 ),
@@ -549,15 +540,42 @@ private fun NavGraphBuilder.libraryMyYarnRoute(
     }
 }
 
+private fun NavGraphBuilder.libraryYarnCardReviewRoute(navController: NavHostController) {
+    composable(Screen.LibraryYarnCardReview.route) { backStackEntry ->
+        val parentEntry =
+            remember(backStackEntry) {
+                navController.getBackStackEntry(TopLevelDestination.Library.route)
+            }
+        val yarnCardViewModel: YarnCardViewModel = hiltViewModel(parentEntry)
+
+        YarnCardReviewScreen(
+            viewModel = yarnCardViewModel,
+            onSaveAndUse = { _, _, _ -> navController.popBackStack() },
+            onDiscard = { _, _, _ ->
+                yarnCardViewModel.discardScan()
+                navController.popBackStack()
+            },
+            onBack = {
+                yarnCardViewModel.discardScan()
+                navController.popBackStack()
+            },
+        )
+    }
+}
+
 private fun NavGraphBuilder.libraryYarnCardDetailRoute(
     navController: NavHostController,
-    yarnCardViewModel: YarnCardViewModel,
     onLaunchCounter: (Long) -> Unit,
 ) {
     composable(
         Screen.YarnCardDetail.ROUTE,
         arguments = listOf(navArgument("cardId") { type = NavType.LongType }),
     ) { backStackEntry ->
+        val parentEntry =
+            remember(backStackEntry) {
+                navController.getBackStackEntry(TopLevelDestination.Library.route)
+            }
+        val yarnCardViewModel: YarnCardViewModel = hiltViewModel(parentEntry)
         val cardId = backStackEntry.arguments?.getLong("cardId") ?: return@composable
         androidx.compose.runtime.LaunchedEffect(cardId) {
             yarnCardViewModel.loadCardById(cardId)

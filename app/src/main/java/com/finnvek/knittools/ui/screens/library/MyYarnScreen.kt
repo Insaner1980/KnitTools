@@ -1,6 +1,13 @@
 package com.finnvek.knittools.ui.screens.library
 
+import android.Manifest
+import android.app.Activity
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -22,6 +29,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -42,15 +50,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.core.app.ActivityCompat
 import com.finnvek.knittools.R
 import com.finnvek.knittools.data.local.YarnCardEntity
 import com.finnvek.knittools.ui.components.BadgePill
 import com.finnvek.knittools.ui.components.ConfirmationDialog
+import com.finnvek.knittools.ui.components.StatusMessage
+import com.finnvek.knittools.ui.components.StatusMessageType
 import com.finnvek.knittools.ui.theme.knitToolsColors
 
 // Data-luokat MyYarnScreen-parametrien ryhmittelyyn (S107)
@@ -59,6 +71,9 @@ data class MyYarnState(
     val activeProjectNames: Map<Long, String>,
     val isSelectMode: Boolean,
     val selectedYarnIds: Set<Long>,
+    val isScanning: Boolean = false,
+    val statusMessage: String? = null,
+    val statusActionLabel: String? = null,
 )
 
 data class MyYarnActions(
@@ -69,6 +84,9 @@ data class MyYarnActions(
     val onDeleteSelected: () -> Unit,
     val onExitSelectMode: () -> Unit,
     val onScanLabel: (() -> Unit)? = null,
+    val onCreateScanPhotoUri: (() -> Uri?)? = null,
+    val onScanPhoto: ((Uri) -> Unit)? = null,
+    val onStatusAction: (() -> Unit)? = null,
     val onBack: () -> Unit,
 )
 
@@ -79,6 +97,73 @@ fun MyYarnScreen(
     actions: MyYarnActions,
 ) {
     var showDeleteConfirmDialog by rememberSaveable { mutableStateOf(false) }
+    var pendingPhotoUriString by rememberSaveable { mutableStateOf<String?>(null) }
+    var scanPermissionMessageRes by rememberSaveable { mutableStateOf<Int?>(null) }
+    val context = LocalContext.current
+    val pendingPhotoUri = pendingPhotoUriString?.let(Uri::parse)
+
+    val cameraLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
+            if (success && pendingPhotoUri != null) {
+                actions.onScanPhoto?.invoke(pendingPhotoUri)
+                pendingPhotoUriString = null
+                scanPermissionMessageRes = null
+            }
+        }
+
+    val permissionLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (granted) {
+                scanPermissionMessageRes = null
+                val uri = actions.onCreateScanPhotoUri?.invoke()
+                if (uri != null) {
+                    pendingPhotoUriString = uri.toString()
+                    cameraLauncher.launch(uri)
+                }
+            } else {
+                val activity = context as? Activity
+                val permanentlyDenied =
+                    activity != null &&
+                        !ActivityCompat.shouldShowRequestPermissionRationale(
+                            activity,
+                            Manifest.permission.CAMERA,
+                        )
+                scanPermissionMessageRes =
+                    if (permanentlyDenied) {
+                        R.string.camera_permission_denied_permanent
+                    } else {
+                        R.string.camera_permission_denied
+                    }
+            }
+        }
+
+    val displayState =
+        state.withPermissionStatus(
+            permissionMessageRes = scanPermissionMessageRes,
+            context = context,
+        )
+    val displayActions =
+        actions.withScanLaunchers(
+            onLaunchScan = {
+                actions.onScanLabel?.invoke()
+                permissionLauncher.launch(Manifest.permission.CAMERA)
+            },
+            onStatusAction = {
+                if (scanPermissionMessageRes == R.string.camera_permission_denied_permanent) {
+                    context.startActivity(
+                        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                            data = Uri.fromParts("package", context.packageName, null)
+                        },
+                    )
+                } else {
+                    actions.onStatusAction?.invoke()
+                        ?: run {
+                            actions.onScanLabel?.invoke()
+                            permissionLauncher.launch(Manifest.permission.CAMERA)
+                        }
+                }
+            },
+        )
 
     BackHandler(enabled = state.isSelectMode) {
         actions.onExitSelectMode()
@@ -98,8 +183,8 @@ fun MyYarnScreen(
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         floatingActionButton = {
-            if (!state.isSelectMode) {
-                actions.onScanLabel?.let { onScan ->
+            if (!displayState.isSelectMode) {
+                displayActions.onScanLabel?.let { onScan ->
                     FloatingActionButton(
                         onClick = onScan,
                         containerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -115,30 +200,65 @@ fun MyYarnScreen(
         },
         topBar = {
             MyYarnTopBar(
-                state = state,
-                onExitSelectMode = actions.onExitSelectMode,
-                onSelectAll = { actions.onSelectAll(state.cards.map { it.id }) },
-                onBack = actions.onBack,
+                state = displayState,
+                onExitSelectMode = displayActions.onExitSelectMode,
+                onSelectAll = { displayActions.onSelectAll(displayState.cards.map { it.id }) },
+                onBack = displayActions.onBack,
             )
         },
         bottomBar = {
             SelectModeDeleteBar(
-                visible = state.isSelectMode && state.selectedYarnIds.isNotEmpty(),
+                visible = displayState.isSelectMode && displayState.selectedYarnIds.isNotEmpty(),
                 onDeleteClick = { showDeleteConfirmDialog = true },
             )
         },
     ) { padding ->
-        if (state.cards.isEmpty()) {
-            MyYarnEmptyState(padding)
+        if (displayState.cards.isEmpty()) {
+            MyYarnEmptyState(
+                state = displayState,
+                actions = displayActions,
+                padding = padding,
+            )
         } else {
             MyYarnList(
-                state = state,
-                actions = actions,
+                state = displayState,
+                actions = displayActions,
                 padding = padding,
             )
         }
     }
 }
+
+private fun MyYarnState.withPermissionStatus(
+    permissionMessageRes: Int?,
+    context: android.content.Context,
+): MyYarnState {
+    val permissionMessage = permissionMessageRes?.let(context::getString)
+    return copy(
+        statusMessage = permissionMessage ?: statusMessage,
+        statusActionLabel =
+            when {
+                permissionMessageRes == R.string.camera_permission_denied_permanent ->
+                    context.getString(R.string.open_settings)
+                permissionMessage != null -> context.getString(R.string.retry)
+                else -> statusActionLabel
+            },
+    )
+}
+
+private fun MyYarnActions.withScanLaunchers(
+    onLaunchScan: () -> Unit,
+    onStatusAction: () -> Unit,
+): MyYarnActions =
+    copy(
+        onScanLabel =
+            if (onScanLabel != null && onCreateScanPhotoUri != null && onScanPhoto != null) {
+                onLaunchScan
+            } else {
+                onScanLabel
+            },
+        onStatusAction = onStatusAction,
+    )
 
 @Composable
 private fun MyYarnDeleteDialog(
@@ -218,12 +338,21 @@ private fun MyYarnTopBar(
 }
 
 @Composable
-private fun MyYarnEmptyState(padding: PaddingValues) {
+private fun MyYarnEmptyState(
+    state: MyYarnState,
+    actions: MyYarnActions,
+    padding: PaddingValues,
+) {
     Column(
         modifier = Modifier.fillMaxSize().padding(padding).padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
+        MyYarnStatusMessage(
+            state = state,
+            actions = actions,
+            modifier = Modifier.padding(bottom = 16.dp),
+        )
         Image(
             painter = painterResource(R.drawable.camera_icon),
             contentDescription = null,
@@ -251,6 +380,14 @@ private fun MyYarnList(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item { Spacer(modifier = Modifier.height(4.dp)) }
+        if (state.isScanning || !state.statusMessage.isNullOrBlank()) {
+            item {
+                MyYarnStatusMessage(
+                    state = state,
+                    actions = actions,
+                )
+            }
+        }
         items(state.cards, key = { it.id }) { card ->
             YarnStashCardItem(
                 card = card,
@@ -272,6 +409,46 @@ private fun MyYarnList(
             )
         }
         item { Spacer(modifier = Modifier.height(8.dp)) }
+    }
+}
+
+@Composable
+private fun MyYarnStatusMessage(
+    state: MyYarnState,
+    actions: MyYarnActions,
+    modifier: Modifier = Modifier,
+) {
+    when {
+        state.isScanning -> {
+            Row(
+                modifier =
+                    modifier
+                        .fillMaxWidth()
+                        .background(
+                            color = MaterialTheme.colorScheme.surfaceContainerLow,
+                            shape = MaterialTheme.shapes.large,
+                        ).padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                Spacer(modifier = Modifier.size(12.dp))
+                Text(
+                    text = stringResource(R.string.scanning),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+
+        !state.statusMessage.isNullOrBlank() -> {
+            StatusMessage(
+                message = state.statusMessage,
+                type = StatusMessageType.Error,
+                actionLabel = state.statusActionLabel,
+                onAction = actions.onStatusAction,
+                modifier = modifier,
+            )
+        }
     }
 }
 

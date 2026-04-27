@@ -20,6 +20,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -42,6 +43,7 @@ class BillingManager
         val productDetails: StateFlow<ProductDetails?> = _productDetails.asStateFlow()
 
         private var billingClient: BillingClient? = null
+        private val pendingAcknowledgementRetries = mutableSetOf<String>()
 
         fun initialize() {
             billingClient =
@@ -198,16 +200,32 @@ class BillingManager
                         .newBuilder()
                         .setPurchaseToken(purchase.purchaseToken)
                         .build()
-                billingClient?.acknowledgePurchase(params) { /* acknowledged */ }
+                billingClient?.acknowledgePurchase(params) { result ->
+                    if (result.responseCode == BillingClient.BillingResponseCode.OK) {
+                        pendingAcknowledgementRetries.remove(purchase.purchaseToken)
+                    } else {
+                        scheduleAcknowledgementRetry(purchase.purchaseToken)
+                    }
+                }
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
-                // Will retry on next app start
+                scheduleAcknowledgementRetry(purchase.purchaseToken)
+            }
+        }
+
+        private fun scheduleAcknowledgementRetry(purchaseToken: String) {
+            if (!pendingAcknowledgementRetries.add(purchaseToken)) return
+            scope.launch {
+                delay(ACKNOWLEDGEMENT_RETRY_DELAY_MS)
+                pendingAcknowledgementRetries.remove(purchaseToken)
+                queryPurchases()
             }
         }
 
         companion object {
             const val PRODUCT_ID = "knittools_pro"
+            private const val ACKNOWLEDGEMENT_RETRY_DELAY_MS = 5_000L
         }
     }
 

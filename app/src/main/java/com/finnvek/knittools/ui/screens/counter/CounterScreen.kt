@@ -212,22 +212,25 @@ fun CounterScreen(
 
     val vibrator = rememberVibrator()
 
-    fun performHaptic() {
-        if (state.hapticFeedback) {
-            vibrator?.vibrate(VibrationEffect.createOneShot(12, 60))
+    val performHaptic =
+        remember(state.hapticFeedback, vibrator) {
+            {
+                if (state.hapticFeedback) {
+                    vibrator?.vibrate(VibrationEffect.createOneShot(12, 60))
+                }
+            }
         }
-    }
 
     KeepScreenAwake(state.keepScreenAwake)
     HandleVoiceCommands(
         voiceCommandHandler = voiceCommandHandler,
         viewModel = viewModel,
-        performHaptic = ::performHaptic,
+        performHaptic = performHaptic,
     )
     TriggerAlertHaptic(
         alertId = state.activeAlert?.id,
         hasActiveAlert = state.activeAlert != null,
-        performHaptic = ::performHaptic,
+        performHaptic = performHaptic,
     )
     val sheetActions =
         rememberCounterSheetActions(
@@ -244,7 +247,7 @@ fun CounterScreen(
     val projectCountersActions =
         rememberProjectCountersSectionActions(
             viewModel = viewModel,
-            performHaptic = ::performHaptic,
+            performHaptic = performHaptic,
             onShowAddCounter = { showAddCounter = true },
         )
     val dialogActionDependencies =
@@ -296,42 +299,44 @@ fun CounterScreen(
     val topBarActions = rememberCounterTopBarActions(topBarActionDependencies)
     val projectHeaderActions = rememberProjectHeaderActions(projectHeaderActionDependencies)
     val mainContentActions =
-        CounterMainContentActions(
-            onSurfaceIncrement = {
-                performHaptic()
-                viewModel.increment()
-            },
-            onDecrement = {
-                performHaptic()
-                viewModel.decrement()
-            },
-            onIncrement = {
-                performHaptic()
-                viewModel.increment()
-            },
-            onUndo = {
-                performHaptic()
-                viewModel.undo()
-            },
-            onOpenPatternViewer = onPatternViewer,
-            onDecrementSecondary = {
-                performHaptic()
-                viewModel.decrementSecondary()
-            },
-            onIncrementSecondary = {
-                performHaptic()
-                viewModel.incrementSecondary()
-            },
-            onDecrementStitch = {
-                performHaptic()
-                viewModel.decrementStitch()
-            },
-            onIncrementStitch = {
-                performHaptic()
-                viewModel.incrementStitch()
-            },
-            onShowTargetDialog = { showTargetDialog = true },
-        )
+        remember(viewModel, performHaptic, onPatternViewer) {
+            CounterMainContentActions(
+                onSurfaceIncrement = {
+                    performHaptic()
+                    viewModel.increment()
+                },
+                onDecrement = {
+                    performHaptic()
+                    viewModel.decrement()
+                },
+                onIncrement = {
+                    performHaptic()
+                    viewModel.increment()
+                },
+                onUndo = {
+                    performHaptic()
+                    viewModel.undo()
+                },
+                onOpenPatternViewer = onPatternViewer,
+                onDecrementSecondary = {
+                    performHaptic()
+                    viewModel.decrementSecondary()
+                },
+                onIncrementSecondary = {
+                    performHaptic()
+                    viewModel.incrementSecondary()
+                },
+                onDecrementStitch = {
+                    performHaptic()
+                    viewModel.decrementStitch()
+                },
+                onIncrementStitch = {
+                    performHaptic()
+                    viewModel.incrementStitch()
+                },
+                onShowTargetDialog = { showTargetDialog = true },
+            )
+        }
 
     CounterScreenDialogs(
         state =
@@ -1255,6 +1260,16 @@ private fun ColumnScope.CounterReadoutSection(
         )
 
         val counterFontSize = (115f / LocalDensity.current.fontScale).sp
+        val counterDescription =
+            if (state.targetRows != null && state.targetRows > 0) {
+                val percent =
+                    ((state.counter.count.toFloat() / state.targetRows.toFloat()) * 100)
+                        .toInt()
+                        .coerceIn(0, 100)
+                stringResource(R.string.voice_row_of_target, state.counter.count, state.targetRows, percent)
+            } else {
+                stringResource(R.string.current_row_short, state.counter.count)
+            }
         RollingCounter(
             count = state.counter.count,
             textStyle =
@@ -1263,6 +1278,7 @@ private fun ColumnScope.CounterReadoutSection(
                     fontWeight = FontWeight.Bold,
                     fontFeatureSettings = "tnum",
                 ),
+            contentDescription = counterDescription,
         )
 
         if (state.targetRows != null && state.targetRows > 0) {
@@ -1356,7 +1372,7 @@ private fun ProjectHeader(
                 IconButton(onClick = { onEditingNameChange(false) }) {
                     Icon(
                         Icons.Filled.Add,
-                        contentDescription = null,
+                        contentDescription = stringResource(R.string.save),
                         modifier = Modifier.size(20.dp),
                         tint = MaterialTheme.colorScheme.primary,
                     )
@@ -1993,7 +2009,7 @@ private fun NotesSheet(
                 ) {
                     Icon(
                         imageVector = Icons.Outlined.OpenInFull,
-                        contentDescription = null,
+                        contentDescription = stringResource(R.string.open_notes_editor),
                         modifier = Modifier.size(20.dp),
                         tint = MaterialTheme.colorScheme.primary,
                     )

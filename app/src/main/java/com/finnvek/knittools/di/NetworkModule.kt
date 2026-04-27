@@ -9,6 +9,7 @@ import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
+import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
 @Module
@@ -18,6 +19,13 @@ object NetworkModule {
     @Singleton
     fun provideHttpClient(): HttpClient =
         HttpClient(OkHttp) {
+            engine {
+                config {
+                    connectTimeout(15, TimeUnit.SECONDS)
+                    readTimeout(30, TimeUnit.SECONDS)
+                    writeTimeout(30, TimeUnit.SECONDS)
+                }
+            }
             install(ContentNegotiation) {
                 json(
                     Json {

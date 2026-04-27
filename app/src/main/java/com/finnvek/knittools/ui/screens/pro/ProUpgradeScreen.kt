@@ -19,6 +19,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -44,15 +45,20 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.pro.ProStatus
+import com.finnvek.knittools.ui.components.StatusMessage
+import com.finnvek.knittools.ui.components.StatusMessageType
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProUpgradeScreen(
     onBack: () -> Unit,
+    onPurchase: (Activity) -> Unit,
     viewModel: ProUpgradeViewModel = hiltViewModel(),
 ) {
     val proState by viewModel.proState.collectAsStateWithLifecycle()
     val productDetails by viewModel.productDetails.collectAsStateWithLifecycle()
+    val restoreMessageRes by viewModel.restoreMessageRes.collectAsStateWithLifecycle()
+    val isRestoring by viewModel.isRestoring.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val backgroundColor = MaterialTheme.colorScheme.background
 
@@ -99,10 +105,10 @@ fun ProUpgradeScreen(
                 } else {
                     ProUpgradeContent(
                         price = productDetails?.oneTimePurchaseOfferDetails?.formattedPrice,
+                        restoreMessageRes = restoreMessageRes,
+                        isRestoring = isRestoring,
                         onPurchase = {
-                            (context as? Activity)?.let { activity ->
-                                viewModel.purchase(activity)
-                            }
+                            (context as? Activity)?.let(onPurchase)
                         },
                         onRestore = { viewModel.restorePurchases() },
                     )
@@ -166,6 +172,8 @@ private fun ProPurchasedContent() {
 @Composable
 private fun ProUpgradeContent(
     price: String?,
+    restoreMessageRes: Int?,
+    isRestoring: Boolean,
     onPurchase: () -> Unit,
     onRestore: () -> Unit,
 ) {
@@ -200,11 +208,36 @@ private fun ProUpgradeContent(
     Spacer(modifier = Modifier.height(16.dp))
 
     // Palauta ostokset
-    TextButton(onClick = onRestore) {
+    TextButton(
+        onClick = onRestore,
+        enabled = !isRestoring,
+    ) {
+        if (isRestoring) {
+            CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+            Spacer(modifier = Modifier.width(8.dp))
+        }
         Text(
-            text = stringResource(R.string.restore_purchases),
+            text =
+                if (isRestoring) {
+                    stringResource(R.string.restore_purchases_checking)
+                } else {
+                    stringResource(R.string.restore_purchases)
+                },
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+
+    restoreMessageRes?.let { messageRes ->
+        Spacer(modifier = Modifier.height(8.dp))
+        StatusMessage(
+            message = stringResource(messageRes),
+            type =
+                if (messageRes == R.string.pro_restored) {
+                    StatusMessageType.Success
+                } else {
+                    StatusMessageType.Info
+                },
         )
     }
 

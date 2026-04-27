@@ -12,7 +12,6 @@ import com.finnvek.knittools.BuildConfig
 import com.finnvek.knittools.R
 import com.finnvek.knittools.ai.AiQuotaManager
 import com.finnvek.knittools.ai.GeminiAiService
-import com.finnvek.knittools.ai.ProjectSummarizer
 import com.finnvek.knittools.ai.VoiceCommandInterpreter
 import com.finnvek.knittools.ai.live.LiveVoiceState
 import com.finnvek.knittools.ai.live.ProjectVoiceContext
@@ -46,6 +45,7 @@ import com.finnvek.knittools.repository.ProjectCounterRepository
 import com.finnvek.knittools.repository.ReminderRepository
 import com.finnvek.knittools.repository.SavedPatternRepository
 import com.finnvek.knittools.repository.YarnCardRepository
+import com.finnvek.knittools.util.NetworkStatusProvider
 import com.finnvek.knittools.widget.CounterWidgetState
 import com.finnvek.knittools.widget.WidgetData
 import com.google.firebase.ai.type.FunctionCallPart
@@ -64,10 +64,10 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.intOrNull
@@ -131,6 +131,8 @@ class CounterViewModel
         private val voiceLiveSession: VoiceLiveSession,
         private val voiceLiveQuotaManager: VoiceLiveQuotaManager,
         private val inAppReviewManager: InAppReviewManager,
+        private val counterSummaryGenerator: CounterSummaryGenerator,
+        private val networkStatusProvider: NetworkStatusProvider,
         private val savedStateHandle: SavedStateHandle,
         @param:ApplicationContext private val context: Context,
     ) : ViewModel() {
@@ -877,12 +879,14 @@ class CounterViewModel
             viewModelScope.launch {
                 // Kopioi PDF sisäiseen tallennustilaan — estää permission-ongelmat
                 val internalUri =
-                    patternDocumentStorage.copyPdfToInternal(
-                        context = context,
-                        projectId = projectId,
-                        sourceUri = Uri.parse(uri),
-                        fileName = sanitizedName,
-                    ) ?: uri
+                    withContext(Dispatchers.IO) {
+                        patternDocumentStorage.copyPdfToInternal(
+                            context = context,
+                            projectId = projectId,
+                            sourceUri = Uri.parse(uri),
+                            fileName = sanitizedName,
+                        )
+                    } ?: uri
 
                 _uiState.update {
                     it.copy(
@@ -1081,99 +1085,35 @@ class CounterViewModel
         fun generateSummary() {
             viewModelScope.launch {
                 val state = _uiState.value
-                val projectId = state.projectId ?: return@launch
+                state.projectId ?: return@launch
                 _uiState.update { it.copy(isSummaryLoading = true, projectSummary = null, summaryError = null) }
 
-                val sessionCount =
-                    repository
-                        .getSessionsForProject(projectId)
-                        .first()
-                        .size
-                val totalMinutes = repository.getTotalMinutesForProject(projectId)
-                val avgRows = if (sessionCount > 0) state.counter.count.toDouble() / sessionCount else 0.0
-                val createdAt = state.projects.find { it.id == projectId }?.createdAt ?: System.currentTimeMillis()
-                val daysActive = ((System.currentTimeMillis() - createdAt) / 86_400_000).toInt().coerceAtLeast(1)
-                val counterSummary =
-                    state.projectCounters
-                        .takeIf { it.isNotEmpty() }
-                        ?.joinToString(", ") { "${it.name}: ${it.count}" }
-
-                val lastSession = repository.getLatestSession(projectId)
-                val hoursSinceLastSession =
-                    lastSession?.let {
-                        (System.currentTimeMillis() - it.endedAt) / 3_600_000
+                when (val result = counterSummaryGenerator.generate(state)) {
+                    is CounterSummaryResult.Success -> {
+                        _uiState.update {
+                            it.copy(projectSummary = result.summary, isSummaryLoading = false)
+                        }
+                        refreshAiAvailability()
                     }
 
-                val yarnDetailedInfo =
-                    state.linkedYarns.firstOrNull()?.first?.let { yarnId ->
-                        yarnCardRepository.getCard(yarnId)?.let { card ->
-                            buildString {
-                                append("${card.brand} ${card.yarnName}".trim())
-                                card.weightCategory.takeIf { it.isNotBlank() }?.let { append(", $it") }
-                                card.fiberContent.takeIf { it.isNotBlank() }?.let { append(", $it") }
-                                if (card.lengthMeters.isNotBlank() && card.weightGrams.isNotBlank()) {
-                                    append(", ${card.lengthMeters}m/${card.weightGrams}g")
-                                }
-                                card.needleSize.takeIf { it.isNotBlank() }?.let { append(", needle $it") }
-                                card.gaugeInfo.takeIf { it.isNotBlank() }?.let { append(", gauge $it") }
-                            }
+                    is CounterSummaryResult.Fallback -> {
+                        _uiState.update {
+                            it.copy(
+                                projectSummary = result.summary,
+                                summaryError = result.error,
+                                isSummaryLoading = false,
+                            )
                         }
                     }
 
-                val data =
-                    ProjectSummarizer.ProjectData(
-                        name = state.projectName,
-                        currentRow = state.counter.count,
-                        patternName = state.patternName,
-                        yarnInfo =
-                            state.linkedYarns
-                                .map { it.second }
-                                .takeIf { it.isNotEmpty() }
-                                ?.joinToString(", "),
-                        yarnDetailedInfo = yarnDetailedInfo,
-                        totalSessionMinutes = totalMinutes,
-                        sessionCount = sessionCount,
-                        averageRowsPerSession = avgRows,
-                        stitchCount = state.stitchCount,
-                        notes = state.notes,
-                        daysActive = daysActive,
-                        counterSummary = counterSummary,
-                        hoursSinceLastSession = hoursSinceLastSession,
-                        lastSessionEndRow = lastSession?.endRow,
-                    )
-
-                if (!aiQuotaManager.hasQuota()) {
-                    _uiState.update {
-                        it.copy(
-                            projectSummary = null,
-                            summaryError = context.getString(R.string.ai_quota_exhausted),
-                            isSummaryLoading = false,
-                        )
-                    }
-                    return@launch
-                }
-
-                val language =
-                    preferencesManager.preferences
-                        .first()
-                        .appLanguage
-                        .promptLanguageName()
-                val aiSummary = ProjectSummarizer.summarize(geminiAiService, data, language)
-                if (aiSummary != null) {
-                    aiQuotaManager.recordCall()
-                    _uiState.update {
-                        it.copy(projectSummary = aiSummary, isSummaryLoading = false)
-                    }
-                    refreshAiAvailability()
-                } else {
-                    // Gemini-kutsu epäonnistui — fallback
-                    val fallback = ProjectSummarizer.simpleSummary(data)
-                    _uiState.update {
-                        it.copy(
-                            projectSummary = fallback,
-                            summaryError = context.getString(R.string.ai_summary_fallback),
-                            isSummaryLoading = false,
-                        )
+                    is CounterSummaryResult.Failure -> {
+                        _uiState.update {
+                            it.copy(
+                                projectSummary = null,
+                                summaryError = result.error,
+                                isSummaryLoading = false,
+                            )
+                        }
                     }
                 }
             }
@@ -1540,12 +1480,7 @@ class CounterViewModel
         }
 
         private fun isOnline(): Boolean {
-            val cm = context.getSystemService(android.net.ConnectivityManager::class.java) ?: return false
-            val network = cm.activeNetwork ?: return false
-            val caps = cm.getNetworkCapabilities(network) ?: return false
-            // VALIDATED varmistaa että yhteys oikeasti toimii (captive portal / ei-dataa -tilanteet hylätään)
-            return caps.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
-                caps.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+            return networkStatusProvider.isOnline()
         }
 
         private fun buildProjectVoiceContext(): ProjectVoiceContext {
@@ -2238,6 +2173,7 @@ class CounterViewModel
             @Suppress("TooGenericExceptionCaught")
             CoroutineScope(Dispatchers.IO + NonCancellable).launch {
                 try {
+                    voiceLiveSession.stop()
                     val projectId = state.projectId ?: return@launch
                     persistSessionSnapshotIfNeeded(
                         projectId = projectId,

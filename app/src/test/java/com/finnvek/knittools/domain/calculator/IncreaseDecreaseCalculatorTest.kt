@@ -64,7 +64,7 @@ class IncreaseDecreaseCalculatorTest {
         // Pattern must consume exactly 35 stitches
         // With availableForKnit=27: (K3, K2tog)×5, (K4, K2tog)×3 = 5*5+3*6 = 43 ≠ 35 WRONG
         // With availableForKnit=19: (K2, K2tog)×5, (K3, K2tog)×3 = 5*4+3*5 = 35 ✓
-        assertTrue(result.easyPattern.contains("K2tog"))
+        assertEquals("K1, (K2, K2tog) × 8, K2 — total: 27 stitches", result.easyPattern)
     }
 
     @Test

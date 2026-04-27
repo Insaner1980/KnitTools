@@ -27,6 +27,7 @@ fun RollingCounter(
     count: Int,
     modifier: Modifier = Modifier,
     textStyle: TextStyle = MaterialTheme.typography.displayMedium,
+    contentDescription: String = count.toString(),
 ) {
     val countStr = count.toString()
     var previousCount by remember { mutableIntStateOf(count) }
@@ -39,7 +40,7 @@ fun RollingCounter(
     Row(
         modifier =
             modifier.clearAndSetSemantics {
-                contentDescription = countStr
+                this.contentDescription = contentDescription
                 liveRegion = LiveRegionMode.Polite
             },
     ) {

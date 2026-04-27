@@ -42,6 +42,8 @@ sealed class Screen(
     // Sama composable hoitaa sekä skannatun langan review-flow’n että tallennetun kortin detail-tilan.
     data object YarnCardReview : Screen("yarn_card_review")
 
+    data object LibraryYarnCardReview : Screen("library_yarn_card_review")
+
     data class YarnCardDetail(
         val cardId: Long,
     ) : Screen("yarn_card_detail/$cardId") {

@@ -54,6 +54,7 @@ fun RavelryDetailScreen(
     val detail by viewModel.patternDetail.collectAsStateWithLifecycle()
     val isLoading by viewModel.isDetailLoading.collectAsStateWithLifecycle()
     val isSaved by viewModel.isPatternSaved.collectAsStateWithLifecycle()
+    val hasDetailError by viewModel.hasDetailError.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     LaunchedEffect(patternId) {
@@ -70,32 +71,75 @@ fun RavelryDetailScreen(
         title = detail?.name ?: stringResource(R.string.tool_ravelry),
         onBack = onBack,
     ) { _ ->
-        if (isLoading) {
+        PatternDetailBody(
+            detail = detail,
+            hasDetailError = hasDetailError,
+            isLoading = isLoading,
+            isSaved = isSaved,
+            onRetry = { viewModel.loadDetail(patternId) },
+            onStartProject = { viewModel.createProjectFromPattern() },
+            onSave = {
+                viewModel.savePattern()
+                Toast
+                    .makeText(
+                        context,
+                        context.getString(R.string.pattern_saved_to_library),
+                        Toast.LENGTH_SHORT,
+                    ).show()
+            },
+            onOpenInRavelry = {
+                detail?.let {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(it.ravelryUrl))
+                    context.startActivity(intent)
+                }
+            },
+        )
+    }
+}
+
+@Composable
+private fun PatternDetailBody(
+    detail: PatternDetail?,
+    hasDetailError: Boolean,
+    isLoading: Boolean,
+    isSaved: Boolean,
+    onRetry: () -> Unit,
+    onStartProject: () -> Unit,
+    onSave: () -> Unit,
+    onOpenInRavelry: () -> Unit,
+) {
+    when {
+        isLoading -> {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center,
             ) {
                 CircularProgressIndicator()
             }
-        } else if (detail != null) {
+        }
+
+        detail != null -> {
             PatternDetailContent(
-                pattern = detail!!,
+                pattern = detail,
                 isSaved = isSaved,
-                onStartProject = { viewModel.createProjectFromPattern() },
-                onSave = {
-                    viewModel.savePattern()
-                    Toast
-                        .makeText(
-                            context,
-                            context.getString(R.string.pattern_saved_to_library),
-                            Toast.LENGTH_SHORT,
-                        ).show()
-                },
-                onOpenInRavelry = {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(detail!!.ravelryUrl))
-                    context.startActivity(intent)
-                },
+                onStartProject = onStartProject,
+                onSave = onSave,
+                onOpenInRavelry = onOpenInRavelry,
             )
+        }
+
+        hasDetailError -> {
+            Box(
+                modifier = Modifier.fillMaxSize().padding(16.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                com.finnvek.knittools.ui.components.StatusMessage(
+                    message = stringResource(R.string.pattern_detail_error),
+                    type = com.finnvek.knittools.ui.components.StatusMessageType.Error,
+                    actionLabel = stringResource(R.string.retry),
+                    onAction = onRetry,
+                )
+            }
         }
     }
 }

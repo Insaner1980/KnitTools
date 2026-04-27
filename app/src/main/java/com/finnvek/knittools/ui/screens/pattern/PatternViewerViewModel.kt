@@ -1,26 +1,20 @@
 package com.finnvek.knittools.ui.screens.pattern
 
-import android.content.Context
 import android.graphics.Bitmap
-import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
 import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.finnvek.knittools.R
-import com.finnvek.knittools.ai.AiQuotaManager
 import com.finnvek.knittools.ai.CombinedInstructionResult
-import com.finnvek.knittools.ai.GeminiAiService
 import com.finnvek.knittools.ai.PatternInstructionGemini
-import com.finnvek.knittools.data.datastore.PreferencesManager
+import com.finnvek.knittools.repository.CombineInstructionsOutcome
+import com.finnvek.knittools.repository.PatternInstructionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -50,10 +44,7 @@ data class CombineState(
 class PatternViewerViewModel
     @Inject
     constructor(
-        @param:ApplicationContext private val context: Context,
-        private val geminiAiService: GeminiAiService,
-        private val aiQuotaManager: AiQuotaManager,
-        private val preferencesManager: PreferencesManager,
+        private val instructionRepository: PatternInstructionRepository,
     ) : ViewModel() {
         private val _instructionState = MutableStateFlow(InstructionDisplayState())
         val instructionState: StateFlow<InstructionDisplayState> = _instructionState
@@ -143,8 +134,7 @@ class PatternViewerViewModel
                         )
 
                     val result =
-                        PatternInstructionGemini.getInstruction(
-                            geminiAiService = geminiAiService,
+                        instructionRepository.getInstruction(
                             pageBitmap = renderedBitmap,
                             rowNumber = currentRow,
                         )
@@ -153,7 +143,6 @@ class PatternViewerViewModel
 
                     if (result != null) {
                         instructionCache[cacheKey] = result
-                        aiQuotaManager.recordCall()
                         _instructionState.value =
                             InstructionDisplayState(
                                 instruction = result.instruction,
@@ -203,17 +192,11 @@ class PatternViewerViewModel
                             forInstruction = instructionText,
                         )
 
-                    val language =
-                        preferencesManager.preferences
-                            .first()
-                            .appLanguage
-                            .promptLanguageName()
-                    val result = geminiAiService.explainInstruction(instructionText, language)
+                    val result = instructionRepository.explainInstruction(instructionText)
                     ensureActive()
 
                     if (result != null) {
                         explanationCache[instructionText] = result
-                        aiQuotaManager.recordCall()
                         _explanationState.value =
                             ExplanationState(
                                 explanation = result,
@@ -239,14 +222,12 @@ class PatternViewerViewModel
             prefetchJob =
                 viewModelScope.launch {
                     val result =
-                        PatternInstructionGemini.getInstruction(
-                            geminiAiService = geminiAiService,
+                        instructionRepository.getInstruction(
                             pageBitmap = bitmap,
                             rowNumber = row,
                         )
                     if (result != null) {
                         instructionCache[key] = result
-                        aiQuotaManager.recordCall()
                     }
                 }
         }
@@ -281,43 +262,44 @@ class PatternViewerViewModel
             combineJob?.cancel()
             combineJob =
                 viewModelScope.launch {
-                    if (!isOnline()) {
-                        _combineState.value =
-                            CombineState(
-                                isVisible = true,
-                                messageResId = R.string.pattern_combine_requires_internet,
-                            )
-                        return@launch
-                    }
-
-                    if (!aiQuotaManager.hasQuota()) {
-                        _combineState.value =
-                            CombineState(
-                                isVisible = true,
-                                messageResId = R.string.ai_quota_exhausted,
-                            )
-                        return@launch
-                    }
-
                     _combineState.value = CombineState(isLoading = true, isVisible = true)
 
-                    val result = geminiAiService.combineInstructions(pageBitmap)
+                    val result = instructionRepository.combineInstructions(pageBitmap)
                     ensureActive()
 
-                    if (result != null) {
-                        combineCache[currentPage] = result
-                        aiQuotaManager.recordCall()
-                        _combineState.value =
-                            CombineState(
-                                result = result,
-                                isVisible = true,
-                            )
-                    } else {
-                        _combineState.value =
-                            CombineState(
-                                isVisible = true,
-                                messageResId = R.string.ai_error_busy,
-                            )
+                    when (result) {
+                        is CombineInstructionsOutcome.Success -> {
+                            combineCache[currentPage] = result.result
+                            _combineState.value =
+                                CombineState(
+                                    result = result.result,
+                                    isVisible = true,
+                                )
+                        }
+
+                        CombineInstructionsOutcome.Offline -> {
+                            _combineState.value =
+                                CombineState(
+                                    isVisible = true,
+                                    messageResId = R.string.pattern_combine_requires_internet,
+                                )
+                        }
+
+                        CombineInstructionsOutcome.QuotaExhausted -> {
+                            _combineState.value =
+                                CombineState(
+                                    isVisible = true,
+                                    messageResId = R.string.ai_quota_exhausted,
+                                )
+                        }
+
+                        CombineInstructionsOutcome.Failed -> {
+                            _combineState.value =
+                                CombineState(
+                                    isVisible = true,
+                                    messageResId = R.string.ai_error_busy,
+                                )
+                        }
                     }
                 }
         }
@@ -337,12 +319,4 @@ class PatternViewerViewModel
             _explanationState.value = ExplanationState()
         }
 
-        private fun isOnline(): Boolean {
-            val connectivityManager = context.getSystemService(ConnectivityManager::class.java) ?: return false
-            val activeNetwork = connectivityManager.activeNetwork ?: return false
-            val capabilities = connectivityManager.getNetworkCapabilities(activeNetwork) ?: return false
-            // VALIDATED varmistaa että yhteys oikeasti toimii (captive portal / ei-dataa -tilanteet hylätään)
-            return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
-                capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
-        }
     }

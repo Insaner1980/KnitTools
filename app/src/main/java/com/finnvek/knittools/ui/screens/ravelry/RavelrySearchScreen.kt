@@ -1,7 +1,7 @@
 package com.finnvek.knittools.ui.screens.ravelry
 
-import android.app.Activity
 import androidx.activity.compose.BackHandler
+import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
@@ -66,6 +66,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.ui.components.ConfirmationDialog
+import com.finnvek.knittools.ui.components.StatusMessage
+import com.finnvek.knittools.ui.components.StatusMessageType
 import com.finnvek.knittools.ui.screens.library.SelectionIndicator
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -81,7 +83,7 @@ fun RavelrySearchScreen(
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     val results by viewModel.searchResults.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
-    val error by viewModel.error.collectAsStateWithLifecycle()
+    val hasError by viewModel.hasError.collectAsStateWithLifecycle()
     val savedPatterns by viewModel.savedPatterns.collectAsStateWithLifecycle()
     val isAuthenticated by viewModel.isAuthenticated.collectAsStateWithLifecycle()
     val isSavedSelectMode by viewModel.isSavedSelectMode.collectAsStateWithLifecycle()
@@ -212,7 +214,10 @@ fun RavelrySearchScreen(
                 ) {
                     Button(
                         onClick = {
-                            (context as? Activity)?.let { viewModel.startSignIn(it) }
+                            CustomTabsIntent
+                                .Builder()
+                                .build()
+                                .launchUrl(context, viewModel.createSignInUri())
                         },
                     ) {
                         Text(stringResource(R.string.ravelry_sign_in))
@@ -248,7 +253,7 @@ fun RavelrySearchScreen(
                                 searchQuery = searchQuery,
                                 results = results,
                                 isLoading = isLoading,
-                                error = error,
+                                hasError = hasError,
                             ),
                         onQueryChange = viewModel::updateQuery,
                         onSearch = {
@@ -280,7 +285,7 @@ private data class SearchTabState(
     val searchQuery: String,
     val results: List<com.finnvek.knittools.data.remote.PatternSearchResult>,
     val isLoading: Boolean,
-    val error: String?,
+    val hasError: Boolean,
 )
 
 @Composable
@@ -356,19 +361,30 @@ private fun SearchTab(
             }
         }
 
-        if (state.error != null && state.results.isEmpty()) {
+        if (state.hasError && state.results.isEmpty()) {
             item {
-                Text(
-                    text = stringResource(R.string.search_error),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth().padding(32.dp),
+                StatusMessage(
+                    message = stringResource(R.string.search_error),
+                    type = StatusMessageType.Error,
+                    actionLabel = stringResource(R.string.retry),
+                    onAction = onSearch,
+                    modifier = Modifier.padding(vertical = 24.dp),
                 )
             }
         }
 
-        if (!state.isLoading && state.error == null && state.results.isEmpty() && state.searchQuery.isNotEmpty()) {
+        if (state.hasError && state.results.isNotEmpty()) {
+            item {
+                StatusMessage(
+                    message = stringResource(R.string.search_more_error),
+                    type = StatusMessageType.Error,
+                    actionLabel = stringResource(R.string.retry),
+                    onAction = onLoadMore,
+                )
+            }
+        }
+
+        if (!state.isLoading && !state.hasError && state.results.isEmpty() && state.searchQuery.isNotEmpty()) {
             item {
                 Text(
                     text = stringResource(R.string.no_results),

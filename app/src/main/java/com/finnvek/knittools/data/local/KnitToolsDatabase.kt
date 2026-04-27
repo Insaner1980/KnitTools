@@ -18,7 +18,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         SavedPatternEntity::class,
         PatternAnnotationEntity::class,
     ],
-    version = 8,
+    version = 9,
     exportSchema = true,
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
@@ -220,6 +220,13 @@ abstract class KnitToolsDatabase : RoomDatabase() {
             object : Migration(7, 8) {
                 override fun migrate(db: SupportSQLiteDatabase) {
                     db.execSQL("ALTER TABLE counter_projects ADD COLUMN targetRows INTEGER DEFAULT NULL")
+                }
+            }
+
+        val MIGRATION_8_9 =
+            object : Migration(8, 9) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL("CREATE INDEX IF NOT EXISTS `index_sessions_startedAt` ON `sessions` (`startedAt`)")
                 }
             }
     }

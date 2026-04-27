@@ -54,7 +54,7 @@ fun RavelryDetailScreen(
     val detail by viewModel.patternDetail.collectAsStateWithLifecycle()
     val isLoading by viewModel.isDetailLoading.collectAsStateWithLifecycle()
     val isSaved by viewModel.isPatternSaved.collectAsStateWithLifecycle()
-    val detailError by viewModel.detailError.collectAsStateWithLifecycle()
+    val hasDetailError by viewModel.hasDetailError.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     LaunchedEffect(patternId) {
@@ -73,7 +73,7 @@ fun RavelryDetailScreen(
     ) { _ ->
         PatternDetailBody(
             detail = detail,
-            detailError = detailError,
+            hasDetailError = hasDetailError,
             isLoading = isLoading,
             isSaved = isSaved,
             onRetry = { viewModel.loadDetail(patternId) },
@@ -100,7 +100,7 @@ fun RavelryDetailScreen(
 @Composable
 private fun PatternDetailBody(
     detail: PatternDetail?,
-    detailError: String?,
+    hasDetailError: Boolean,
     isLoading: Boolean,
     isSaved: Boolean,
     onRetry: () -> Unit,
@@ -128,7 +128,7 @@ private fun PatternDetailBody(
             )
         }
 
-        detailError != null -> {
+        hasDetailError -> {
             Box(
                 modifier = Modifier.fillMaxSize().padding(16.dp),
                 contentAlignment = Alignment.Center,

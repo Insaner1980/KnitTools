@@ -78,7 +78,7 @@ class ProManager
                 } catch (e: CancellationException) {
                     throw e
                 } catch (_: Exception) {
-                    // Pro state initialization failed — default to expired
+                    initialized = false
                 }
             }
         }

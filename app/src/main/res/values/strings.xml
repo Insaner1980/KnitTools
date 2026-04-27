@@ -111,6 +111,7 @@
     <string name="pattern_pdf_fallback_name">Pattern PDF</string>
     <string name="pattern_loading">Loading pattern…</string>
     <string name="pattern_open_failed">Pattern could not be opened.</string>
+    <string name="pattern_row_highlight_description">Row %1$d highlighted about %2$d percent down the page</string>
     <string name="pattern_page_jump">Page jump</string>
     <string name="pattern_page_number">Page number</string>
     <string name="pattern_page_indicator">Page %1$d of %2$d</string>
@@ -176,6 +177,7 @@
     <string name="reset_counter_message">Reset the counter to 0?</string>
     <string name="pattern_repeat">Pattern repeat</string>
     <string name="notes">Notes</string>
+    <string name="open_notes_editor">Open notes editor</string>
     <string name="add_note">Add note\u2026</string>
     <string name="notes_editor_title">Notes \u2014 %1$s</string>
     <string name="write_your_notes_here">Write your notes here\u2026</string>

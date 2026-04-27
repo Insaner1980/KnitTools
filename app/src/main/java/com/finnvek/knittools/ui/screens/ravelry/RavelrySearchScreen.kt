@@ -83,7 +83,7 @@ fun RavelrySearchScreen(
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     val results by viewModel.searchResults.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
-    val error by viewModel.error.collectAsStateWithLifecycle()
+    val hasError by viewModel.hasError.collectAsStateWithLifecycle()
     val savedPatterns by viewModel.savedPatterns.collectAsStateWithLifecycle()
     val isAuthenticated by viewModel.isAuthenticated.collectAsStateWithLifecycle()
     val isSavedSelectMode by viewModel.isSavedSelectMode.collectAsStateWithLifecycle()
@@ -253,7 +253,7 @@ fun RavelrySearchScreen(
                                 searchQuery = searchQuery,
                                 results = results,
                                 isLoading = isLoading,
-                                error = error,
+                                hasError = hasError,
                             ),
                         onQueryChange = viewModel::updateQuery,
                         onSearch = {
@@ -285,7 +285,7 @@ private data class SearchTabState(
     val searchQuery: String,
     val results: List<com.finnvek.knittools.data.remote.PatternSearchResult>,
     val isLoading: Boolean,
-    val error: String?,
+    val hasError: Boolean,
 )
 
 @Composable
@@ -361,7 +361,7 @@ private fun SearchTab(
             }
         }
 
-        if (state.error != null && state.results.isEmpty()) {
+        if (state.hasError && state.results.isEmpty()) {
             item {
                 StatusMessage(
                     message = stringResource(R.string.search_error),
@@ -373,7 +373,7 @@ private fun SearchTab(
             }
         }
 
-        if (state.error != null && state.results.isNotEmpty()) {
+        if (state.hasError && state.results.isNotEmpty()) {
             item {
                 StatusMessage(
                     message = stringResource(R.string.search_more_error),
@@ -384,7 +384,7 @@ private fun SearchTab(
             }
         }
 
-        if (!state.isLoading && state.error == null && state.results.isEmpty() && state.searchQuery.isNotEmpty()) {
+        if (!state.isLoading && !state.hasError && state.results.isEmpty() && state.searchQuery.isNotEmpty()) {
             item {
                 Text(
                     text = stringResource(R.string.no_results),

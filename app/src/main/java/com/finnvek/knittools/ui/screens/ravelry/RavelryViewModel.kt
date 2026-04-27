@@ -50,11 +50,11 @@ class RavelryViewModel
         private val _isLoading = MutableStateFlow(false)
         val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
-        private val _error = MutableStateFlow<String?>(null)
-        val error: StateFlow<String?> = _error.asStateFlow()
+        private val _hasError = MutableStateFlow(false)
+        val hasError: StateFlow<Boolean> = _hasError.asStateFlow()
 
-        private val _detailError = MutableStateFlow<String?>(null)
-        val detailError: StateFlow<String?> = _detailError.asStateFlow()
+        private val _hasDetailError = MutableStateFlow(false)
+        val hasDetailError: StateFlow<Boolean> = _hasDetailError.asStateFlow()
 
         private val _filters = MutableStateFlow(SearchFilters())
         val filters: StateFlow<SearchFilters> = _filters.asStateFlow()
@@ -114,7 +114,7 @@ class RavelryViewModel
         ) {
             viewModelScope.launch {
                 _isLoading.value = true
-                _error.value = null
+                _hasError.value = false
                 try {
                     val filters = _filters.value
                     val response =
@@ -138,7 +138,7 @@ class RavelryViewModel
                         _searchResults.update { current -> current + response.patterns }
                     }
                 } catch (e: Exception) {
-                    _error.value = e.message
+                    _hasError.value = true
                 } finally {
                     _isLoading.value = false
                 }
@@ -150,13 +150,13 @@ class RavelryViewModel
                 _isDetailLoading.value = true
                 _patternDetail.value = null
                 _isPatternSaved.value = false
-                _detailError.value = null
+                _hasDetailError.value = false
                 try {
                     val detail = repository.getPatternDetail(patternId)
                     _patternDetail.value = detail
                     _isPatternSaved.value = repository.isPatternSaved(patternId)
                 } catch (e: Exception) {
-                    _detailError.value = e.message
+                    _hasDetailError.value = true
                 } finally {
                     _isDetailLoading.value = false
                 }

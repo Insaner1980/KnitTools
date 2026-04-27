@@ -73,6 +73,7 @@ class YarnCardViewModelTest {
                 colorNumber = "044",
                 dyeLot = "A123",
                 weightCategory = "DK",
+                careSymbols = 9L,
             )
 
         val vm = createViewModel()
@@ -86,6 +87,7 @@ class YarnCardViewModelTest {
         assertEquals("200", form.lengthMeters)
         assertEquals("3.5", form.needleSize)
         assertEquals("DK", form.weightCategory)
+        assertEquals(9L, form.careSymbols)
         assertEquals("", form.photoUri)
     }
 

@@ -16,9 +16,12 @@ internal object VoiceCommandParser {
 
         parseCountedCommand(normalized)?.let { return it }
 
+        val firstWord = normalized.split("\\s+".toRegex()).firstOrNull()
         return when {
             normalized in INCREMENT_WORDS -> VoiceCommand.Increment()
             normalized in DECREMENT_WORDS -> VoiceCommand.Decrement()
+            firstWord in INCREMENT_WORDS -> VoiceCommand.Increment()
+            firstWord in DECREMENT_WORDS -> VoiceCommand.Decrement()
             else -> null
         }
     }
@@ -363,6 +366,20 @@ internal object VoiceCommandParser {
             "yhdeksän" to 9,
             "yhdeksan" to 9,
             "kymmenen" to 10,
+            "yksitoista" to 11,
+            "kaksitoista" to 12,
+            "kolmetoista" to 13,
+            "neljätoista" to 14,
+            "neljatoista" to 14,
+            "viisitoista" to 15,
+            "kuusitoista" to 16,
+            "seitsemäntoista" to 17,
+            "seitsemantoista" to 17,
+            "kahdeksantoista" to 18,
+            "yhdeksäntoista" to 19,
+            "yhdeksantoista" to 19,
+            "kaksikymmentä" to 20,
+            "kaksikymmenta" to 20,
             // Swedish
             "ett" to 1,
             "en" to 1,

@@ -1479,9 +1479,7 @@ class CounterViewModel
             }
         }
 
-        private fun isOnline(): Boolean {
-            return networkStatusProvider.isOnline()
-        }
+        private fun isOnline(): Boolean = networkStatusProvider.isOnline()
 
         private fun buildProjectVoiceContext(): ProjectVoiceContext {
             val state = _uiState.value

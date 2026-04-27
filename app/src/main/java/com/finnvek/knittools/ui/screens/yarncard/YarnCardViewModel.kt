@@ -12,8 +12,8 @@ import com.finnvek.knittools.data.local.YarnCardEntity
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.CounterRepository
-import com.finnvek.knittools.repository.YarnLabelScanRepository
 import com.finnvek.knittools.repository.YarnCardRepository
+import com.finnvek.knittools.repository.YarnLabelScanRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow

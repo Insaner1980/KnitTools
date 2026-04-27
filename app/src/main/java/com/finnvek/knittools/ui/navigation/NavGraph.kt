@@ -487,9 +487,7 @@ private fun NavGraphBuilder.libraryRavelryDetailRoute(
     }
 }
 
-private fun NavGraphBuilder.libraryMyYarnRoute(
-    navController: NavHostController,
-) {
+private fun NavGraphBuilder.libraryMyYarnRoute(navController: NavHostController) {
     composable(Screen.MyYarn.route) { backStackEntry ->
         val parentEntry =
             remember(backStackEntry) {

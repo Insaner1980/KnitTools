@@ -65,8 +65,9 @@ class PatternInstructionRepository
             if (!networkStatusProvider.isOnline()) return CombineInstructionsOutcome.Offline
             if (!aiQuotaManager.hasQuota()) return CombineInstructionsOutcome.QuotaExhausted
 
-            val result = geminiAiService.combineInstructions(pageBitmap)
-                ?: return CombineInstructionsOutcome.Failed
+            val result =
+                geminiAiService.combineInstructions(pageBitmap)
+                    ?: return CombineInstructionsOutcome.Failed
             aiQuotaManager.recordCall()
             return CombineInstructionsOutcome.Success(result)
         }

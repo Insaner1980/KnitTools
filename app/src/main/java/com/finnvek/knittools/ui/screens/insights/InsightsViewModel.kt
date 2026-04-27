@@ -106,13 +106,14 @@ class InsightsViewModel
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
         val avgPace: StateFlow<Float> =
-            totals.map { summary ->
-                if (summary.totalMinutes <= 0) {
-                    0f
-                } else {
-                    summary.totalRows / (summary.totalMinutes / 60f)
-                }
-            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0f)
+            totals
+                .map { summary ->
+                    if (summary.totalMinutes <= 0) {
+                        0f
+                    } else {
+                        summary.totalRows / (summary.totalMinutes / 60f)
+                    }
+                }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0f)
 
         val bestStreak: StateFlow<Int> =
             insightSessions

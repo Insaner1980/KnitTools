@@ -10,6 +10,8 @@ import com.finnvek.knittools.ai.GeminiAiService
 import com.finnvek.knittools.ai.YarnLabelGeminiScanner
 import com.finnvek.knittools.ai.ocr.ParsedYarnLabel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -29,7 +31,10 @@ class YarnLabelScanRepository
         }
 
         suspend fun scanLabel(photoUri: Uri): ParsedYarnLabel? {
-            val bitmap = loadBitmapFromUri(photoUri) ?: return null
+            val bitmap =
+                withContext(Dispatchers.IO) {
+                    loadBitmapFromUri(photoUri)
+                } ?: return null
             return YarnLabelGeminiScanner.scan(geminiAiService, bitmap)
         }
 

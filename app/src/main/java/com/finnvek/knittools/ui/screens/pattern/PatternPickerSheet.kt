@@ -28,6 +28,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -38,6 +39,9 @@ import androidx.core.app.ActivityCompat
 import com.finnvek.knittools.R
 import com.finnvek.knittools.data.local.SavedPatternEntity
 import com.finnvek.knittools.data.storage.PatternDocumentStorage
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 private data class PatternPickerActions(
     val openDeviceFiles: () -> Unit,
@@ -86,6 +90,7 @@ private fun rememberPatternPickerActions(
     onDismiss: () -> Unit,
 ): PatternPickerActions {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val patternStorage = remember { PatternDocumentStorage() }
     var pendingCaptureImageUriString by rememberSaveable { mutableStateOf<String?>(null) }
     var pendingCaptureFilePath by rememberSaveable { mutableStateOf<String?>(null) }
@@ -102,18 +107,20 @@ private fun rememberPatternPickerActions(
         }
     val cameraLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
-            handleCaptureResult(
-                success = success,
-                context = context,
-                projectId = projectId,
-                patternStorage = patternStorage,
-                pendingImageUriString = pendingCaptureImageUriString,
-                onDocumentSelected = onDocumentSelected,
-                onDismiss = onDismiss,
-            )
-            pendingCaptureFilePath?.let { path -> java.io.File(path).delete() }
-            pendingCaptureImageUriString = null
-            pendingCaptureFilePath = null
+            scope.launch {
+                handleCaptureResult(
+                    success = success,
+                    context = context,
+                    projectId = projectId,
+                    patternStorage = patternStorage,
+                    pendingImageUriString = pendingCaptureImageUriString,
+                    onDocumentSelected = onDocumentSelected,
+                    onDismiss = onDismiss,
+                )
+                pendingCaptureFilePath?.let { path -> java.io.File(path).delete() }
+                pendingCaptureImageUriString = null
+                pendingCaptureFilePath = null
+            }
         }
     val permissionLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -224,7 +231,7 @@ private fun PatternPickerSavedPatterns(
     }
 }
 
-private fun handleCaptureResult(
+private suspend fun handleCaptureResult(
     success: Boolean,
     context: android.content.Context,
     projectId: Long?,
@@ -236,7 +243,10 @@ private fun handleCaptureResult(
     val pendingUri = pendingImageUriString?.let(Uri::parse)
     if (!success || pendingUri == null || projectId == null) return
     val fileName = "pattern-scan-${System.currentTimeMillis()}.pdf"
-    val converted = patternStorage.convertImageToPdf(context, projectId, pendingUri, fileName)
+    val converted =
+        withContext(Dispatchers.IO) {
+            patternStorage.convertImageToPdf(context, projectId, pendingUri, fileName)
+        }
     if (converted != null) {
         onDocumentSelected(converted.first, converted.second)
         onDismiss()

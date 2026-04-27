@@ -5,6 +5,8 @@ import com.finnvek.knittools.data.local.CounterProjectDao
 import com.finnvek.knittools.data.local.CounterProjectEntity
 import com.finnvek.knittools.data.local.SessionDao
 import com.finnvek.knittools.data.local.SessionEntity
+import com.finnvek.knittools.data.local.SessionInsightsTotals
+import com.finnvek.knittools.data.local.SessionProjectSummary
 import com.finnvek.knittools.data.storage.ProgressPhotoStorage
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
@@ -199,6 +201,21 @@ class CounterRepository
         fun getCompletedProjectCount(): Flow<Int> = sessionDao.getCompletedProjectCount()
 
         fun getTotalDurationMinutes(projectId: Long?): Flow<Int> = sessionDao.getTotalDurationMinutes(projectId)
+
+        fun getInsightsTotals(
+            projectId: Long?,
+            start: Long?,
+        ): Flow<SessionInsightsTotals> = sessionDao.getInsightsTotals(projectId, start)
+
+        fun getSessionsForInsights(
+            projectId: Long?,
+            start: Long?,
+        ): Flow<List<SessionEntity>> = sessionDao.getSessionsForInsights(projectId, start)
+
+        fun getProjectTimeSummaries(
+            projectId: Long?,
+            start: Long?,
+        ): Flow<List<SessionProjectSummary>> = sessionDao.getProjectTimeSummaries(projectId, start)
 
         suspend fun insertSession(session: SessionEntity): Long = sessionDao.insert(session)
 

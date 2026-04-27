@@ -67,6 +67,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.intOrNull
@@ -878,12 +879,14 @@ class CounterViewModel
             viewModelScope.launch {
                 // Kopioi PDF sisäiseen tallennustilaan — estää permission-ongelmat
                 val internalUri =
-                    patternDocumentStorage.copyPdfToInternal(
-                        context = context,
-                        projectId = projectId,
-                        sourceUri = Uri.parse(uri),
-                        fileName = sanitizedName,
-                    ) ?: uri
+                    withContext(Dispatchers.IO) {
+                        patternDocumentStorage.copyPdfToInternal(
+                            context = context,
+                            projectId = projectId,
+                            sourceUri = Uri.parse(uri),
+                            fileName = sanitizedName,
+                        )
+                    } ?: uri
 
                 _uiState.update {
                     it.copy(

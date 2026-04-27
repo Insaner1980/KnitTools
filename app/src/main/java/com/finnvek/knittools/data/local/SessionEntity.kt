@@ -15,7 +15,10 @@ import androidx.room.PrimaryKey
             onDelete = ForeignKey.CASCADE,
         ),
     ],
-    indices = [Index("projectId")],
+    indices = [
+        Index("projectId"),
+        Index("startedAt"),
+    ],
 )
 data class SessionEntity(
     @PrimaryKey(autoGenerate = true)

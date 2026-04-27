@@ -201,6 +201,7 @@ fun PatternViewerScreen(
             rendererError = renderState.rendererError,
             renderedBitmap = renderState.renderedBitmap,
             patternName = counterState.patternName,
+            currentRow = counterState.counter.count,
             positionPercent = instructionState.positionPercent,
             modifier =
                 Modifier
@@ -281,6 +282,7 @@ fun LibraryPatternViewerScreen(
             rendererError = renderState.rendererError,
             renderedBitmap = renderState.renderedBitmap,
             patternName = patternName,
+            currentRow = null,
             positionPercent = null,
             modifier =
                 Modifier
@@ -569,6 +571,7 @@ private fun PatternViewerContent(
     rendererError: String?,
     renderedBitmap: Bitmap?,
     patternName: String?,
+    currentRow: Int?,
     positionPercent: Int?,
     modifier: Modifier = Modifier,
 ) {
@@ -592,6 +595,7 @@ private fun PatternViewerContent(
                 PatternViewerDocument(
                     renderedBitmap = renderedBitmap,
                     patternName = patternName,
+                    currentRow = currentRow,
                     positionPercent = positionPercent,
                     modifier =
                         Modifier
@@ -607,6 +611,7 @@ private fun PatternViewerContent(
 private fun PatternViewerDocument(
     renderedBitmap: Bitmap,
     patternName: String?,
+    currentRow: Int?,
     positionPercent: Int?,
     modifier: Modifier = Modifier,
 ) {
@@ -661,6 +666,12 @@ private fun PatternViewerDocument(
                 RowHighlightOverlay(
                     yPosition = positionPercent?.let { it / 100f },
                     modifier = Modifier.fillMaxSize(),
+                    accessibilityDescription =
+                        if (currentRow != null && positionPercent != null) {
+                            stringResource(R.string.pattern_row_highlight_description, currentRow, positionPercent)
+                        } else {
+                            null
+                        },
                 )
             }
         }

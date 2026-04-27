@@ -136,6 +136,7 @@ class YarnCardViewModel
                     colorNumber = parsed.colorNumber,
                     dyeLot = parsed.dyeLot,
                     weightCategory = parsed.weightCategory,
+                    careSymbols = parsed.careSymbols,
                     photoUri = photoUri?.toString() ?: "",
                 )
         }

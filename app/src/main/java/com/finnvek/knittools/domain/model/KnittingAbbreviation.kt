@@ -1,7 +1,9 @@
 package com.finnvek.knittools.domain.model
 
+import androidx.annotation.StringRes
+
 data class KnittingAbbreviation(
     val abbreviation: String,
-    val meaning: String,
-    val description: String = "",
+    @StringRes val meaningResId: Int,
+    @StringRes val descriptionResId: Int,
 )

@@ -31,7 +31,7 @@ import javax.inject.Singleton
 class BillingManager
     @Inject
     constructor(
-        @ApplicationContext private val context: Context,
+        @param:ApplicationContext private val context: Context,
     ) : PurchasesUpdatedListener {
         private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
@@ -92,6 +92,25 @@ class BillingManager
             scope.launch { queryPurchases() }
         }
 
+        suspend fun restorePurchasesWithResult(): RestorePurchasesResult =
+            when (val result = queryPurchasesInternal()) {
+                is PurchaseQueryResult.Success -> {
+                    _isProPurchased.value = result.proPurchases.isNotEmpty()
+                    result.proPurchases
+                        .filter { !it.isAcknowledged }
+                        .forEach { acknowledgePurchase(it) }
+                    if (result.proPurchases.isNotEmpty()) {
+                        RestorePurchasesResult.RESTORED
+                    } else {
+                        RestorePurchasesResult.NOT_FOUND
+                    }
+                }
+
+                PurchaseQueryResult.Failure -> {
+                    RestorePurchasesResult.NOT_FOUND
+                }
+            }
+
         override fun onPurchasesUpdated(
             result: BillingResult,
             purchases: List<Purchase>?,
@@ -112,7 +131,24 @@ class BillingManager
         }
 
         private suspend fun queryPurchases() {
-            val client = billingClient ?: return
+            when (val result = queryPurchasesInternal()) {
+                is PurchaseQueryResult.Success -> {
+                    _isProPurchased.value = result.proPurchases.isNotEmpty()
+                    // Google Play palauttaa vahvistamattomat ostot 3 päivän jälkeen —
+                    // varmista vahvistus joka käynnistyskerralla
+                    result.proPurchases
+                        .filter { !it.isAcknowledged }
+                        .forEach { acknowledgePurchase(it) }
+                }
+
+                PurchaseQueryResult.Failure -> {
+                    Unit
+                }
+            }
+        }
+
+        private suspend fun queryPurchasesInternal(): PurchaseQueryResult {
+            val client = billingClient ?: return PurchaseQueryResult.Failure
             val params =
                 QueryPurchasesParams
                     .newBuilder()
@@ -120,17 +156,16 @@ class BillingManager
                     .build()
 
             val result = client.queryPurchasesAsync(params)
-            if (result.billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                val proPurchases =
-                    result.purchasesList.filter {
-                        it.products.contains(PRODUCT_ID) &&
-                            it.purchaseState == Purchase.PurchaseState.PURCHASED
-                    }
-                _isProPurchased.value = proPurchases.isNotEmpty()
-                // Google Play palauttaa vahvistamattomat ostot 3 päivän jälkeen —
-                // varmista vahvistus joka käynnistyskerralla
-                proPurchases.filter { !it.isAcknowledged }.forEach { acknowledgePurchase(it) }
+            if (result.billingResult.responseCode != BillingClient.BillingResponseCode.OK) {
+                return PurchaseQueryResult.Failure
             }
+
+            val proPurchases =
+                result.purchasesList.filter {
+                    it.products.contains(PRODUCT_ID) &&
+                        it.purchaseState == Purchase.PurchaseState.PURCHASED
+                }
+            return PurchaseQueryResult.Success(proPurchases)
         }
 
         private suspend fun queryProductDetails() {
@@ -175,3 +210,16 @@ class BillingManager
             const val PRODUCT_ID = "knittools_pro"
         }
     }
+
+enum class RestorePurchasesResult {
+    RESTORED,
+    NOT_FOUND,
+}
+
+private sealed interface PurchaseQueryResult {
+    data class Success(
+        val proPurchases: List<Purchase>,
+    ) : PurchaseQueryResult
+
+    data object Failure : PurchaseQueryResult
+}

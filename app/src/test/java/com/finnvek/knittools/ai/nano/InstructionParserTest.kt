@@ -29,18 +29,19 @@ class InstructionParserTest {
 
     @Test
     fun `parseResponse - gauge`() {
-        val result = InstructionParser.parseResponse("GAUGE_STITCHES: 22.5\nGAUGE_ROWS: 30")
+        val result = InstructionParser.parseResponse("GAUGE_STITCHES: 22.5\nGAUGE_ROWS: 30\nGAUGE_UNIT: 10CM")
         assertTrue(result is ParsedInstruction.Gauge)
         val g = result as ParsedInstruction.Gauge
         assertEquals(22.5, g.stitchesPer10cm, 0.01)
         assertEquals(30.0, g.rowsPer10cm, 0.01)
+        assertEquals(ParsedInstruction.GaugeUnit.PER_10_CM, g.unit)
     }
 
     @Test
     fun `parseResponse - swatch`() {
         val result =
             InstructionParser.parseResponse(
-                "SWATCH_WIDTH: 13.5\nSWATCH_STITCHES: 30\nSWATCH_HEIGHT: 15\nSWATCH_ROWS: 38",
+                "SWATCH_WIDTH: 13.5\nSWATCH_STITCHES: 30\nSWATCH_HEIGHT: 15\nSWATCH_ROWS: 38\nSWATCH_UNIT: CM",
             )
         assertTrue(result is ParsedInstruction.GaugeSwatch)
         val s = result as ParsedInstruction.GaugeSwatch
@@ -48,17 +49,19 @@ class InstructionParserTest {
         assertEquals(30, s.stitches)
         assertEquals(15.0, s.height!!, 0.01)
         assertEquals(38, s.rows)
+        assertEquals(ParsedInstruction.LengthUnit.CM, s.lengthUnit)
     }
 
     @Test
     fun `parseResponse - swatch partial`() {
-        val result = InstructionParser.parseResponse("SWATCH_WIDTH: 30\nSWATCH_STITCHES: 22")
+        val result = InstructionParser.parseResponse("SWATCH_WIDTH: 30\nSWATCH_STITCHES: 22\nSWATCH_UNIT: IN")
         assertTrue(result is ParsedInstruction.GaugeSwatch)
         val s = result as ParsedInstruction.GaugeSwatch
         assertEquals(30.0, s.width!!, 0.01)
         assertEquals(22, s.stitches)
         assertEquals(null, s.height)
         assertEquals(null, s.rows)
+        assertEquals(ParsedInstruction.LengthUnit.INCHES, s.lengthUnit)
     }
 
     @Test
@@ -134,6 +137,16 @@ class InstructionParserTest {
     }
 
     @Test
+    fun `regex - inc 1 stitch every 8th stitch across 96`() {
+        val result = InstructionParser.parseWithRegex("INC 1 ST IN EVERY 8TH ST ACROSS 96")
+        assertTrue(result is ParsedInstruction.IncreaseDecrease)
+        val inc = result as ParsedInstruction.IncreaseDecrease
+        assertEquals(96, inc.currentStitches)
+        assertEquals(12, inc.changeBy)
+        assertTrue(inc.isIncrease)
+    }
+
+    @Test
     fun `regex - inc abbreviated`() {
         val result = InstructionParser.parseWithRegex("INC 10 STS ACROSS 80 STS")
         assertTrue(result is ParsedInstruction.IncreaseDecrease)
@@ -152,6 +165,7 @@ class InstructionParserTest {
         val g = result as ParsedInstruction.Gauge
         assertEquals(22.0, g.stitchesPer10cm, 0.01)
         assertEquals(30.0, g.rowsPer10cm, 0.01)
+        assertEquals(ParsedInstruction.GaugeUnit.PER_10_CM, g.unit)
     }
 
     @Test
@@ -161,6 +175,7 @@ class InstructionParserTest {
         val g = result as ParsedInstruction.Gauge
         assertEquals(28.0, g.stitchesPer10cm, 0.01)
         assertEquals(36.0, g.rowsPer10cm, 0.01)
+        assertEquals(ParsedInstruction.GaugeUnit.PER_10_CM, g.unit)
     }
 
     @Test
@@ -170,15 +185,17 @@ class InstructionParserTest {
         val g = result as ParsedInstruction.Gauge
         assertEquals(22.0, g.stitchesPer10cm, 0.01)
         assertEquals(30.0, g.rowsPer10cm, 0.01)
+        assertEquals(ParsedInstruction.GaugeUnit.PER_10_CM, g.unit)
     }
 
     @Test
-    fun `regex - sts per inch multiplied by 4`() {
+    fun `regex - sts per inch normalizes to 4 inch gauge unit`() {
         val result = InstructionParser.parseWithRegex("5.5 STS PER INCH, 7 ROWS PER INCH")
         assertTrue(result is ParsedInstruction.Gauge)
         val g = result as ParsedInstruction.Gauge
         assertEquals(22.0, g.stitchesPer10cm, 0.01)
         assertEquals(28.0, g.rowsPer10cm, 0.01)
+        assertEquals(ParsedInstruction.GaugeUnit.PER_4_INCHES, g.unit)
     }
 
     @Test
@@ -188,6 +205,7 @@ class InstructionParserTest {
         val g = result as ParsedInstruction.Gauge
         assertEquals(20.0, g.stitchesPer10cm, 0.01)
         assertEquals(28.0, g.rowsPer10cm, 0.01)
+        assertEquals(ParsedInstruction.GaugeUnit.PER_4_INCHES, g.unit)
     }
 
     @Test
@@ -197,6 +215,7 @@ class InstructionParserTest {
         val g = result as ParsedInstruction.Gauge
         assertEquals(22.0, g.stitchesPer10cm, 0.01)
         assertEquals(30.0, g.rowsPer10cm, 0.01)
+        assertEquals(ParsedInstruction.GaugeUnit.PER_10_CM, g.unit)
     }
 
     // === parseWithRegex: Swatch ===
@@ -207,6 +226,7 @@ class InstructionParserTest {
         assertTrue(result is ParsedInstruction.GaugeSwatch)
         val s = result as ParsedInstruction.GaugeSwatch
         assertEquals(30.0, s.width!!, 0.01)
+        assertEquals(ParsedInstruction.LengthUnit.CM, s.lengthUnit)
     }
 
     @Test
@@ -216,6 +236,7 @@ class InstructionParserTest {
         val s = result as ParsedInstruction.GaugeSwatch
         assertEquals(30.0, s.width!!, 0.01)
         assertEquals(22, s.stitches)
+        assertEquals(null, s.lengthUnit)
     }
 
     @Test
@@ -225,6 +246,7 @@ class InstructionParserTest {
         val s = result as ParsedInstruction.GaugeSwatch
         assertEquals(12.0, s.width!!, 0.01)
         assertEquals(26, s.stitches)
+        assertEquals(ParsedInstruction.LengthUnit.CM, s.lengthUnit)
     }
 
     @Test
@@ -234,6 +256,7 @@ class InstructionParserTest {
         val s = result as ParsedInstruction.GaugeSwatch
         assertEquals(10.0, s.width!!, 0.01)
         assertEquals(24, s.stitches)
+        assertEquals(ParsedInstruction.LengthUnit.CM, s.lengthUnit)
     }
 
     @Test
@@ -242,6 +265,7 @@ class InstructionParserTest {
         assertTrue("Expected GaugeSwatch but got $result", result is ParsedInstruction.GaugeSwatch)
         val s = result as ParsedInstruction.GaugeSwatch
         assertEquals(22, s.stitches)
+        assertEquals(ParsedInstruction.LengthUnit.CM, s.lengthUnit)
     }
 
     @Test
@@ -251,6 +275,7 @@ class InstructionParserTest {
         val s = result as ParsedInstruction.GaugeSwatch
         assertEquals(15.0, s.height!!, 0.01)
         assertEquals(30, s.rows)
+        assertEquals(ParsedInstruction.LengthUnit.CM, s.lengthUnit)
     }
 
     // === Typo tolerance ===
@@ -271,6 +296,7 @@ class InstructionParserTest {
         val g = result as ParsedInstruction.Gauge
         assertEquals(22.0, g.stitchesPer10cm, 0.01)
         assertEquals(30.0, g.rowsPer10cm, 0.01)
+        assertEquals(ParsedInstruction.GaugeUnit.PER_10_CM, g.unit)
     }
 
     @Test
@@ -279,6 +305,7 @@ class InstructionParserTest {
         assertTrue(result is ParsedInstruction.GaugeSwatch)
         val s = result as ParsedInstruction.GaugeSwatch
         assertEquals(30.0, s.width!!, 0.01)
+        assertEquals(ParsedInstruction.LengthUnit.CM, s.lengthUnit)
     }
 
     @Test

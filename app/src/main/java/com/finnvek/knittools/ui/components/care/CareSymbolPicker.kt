@@ -7,9 +7,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -71,6 +71,7 @@ private fun CareChip(
     isSelected: Boolean,
     onClick: () -> Unit,
 ) {
+    val chipShape = MaterialTheme.shapes.small
     val borderColor =
         if (isSelected) {
             MaterialTheme.colorScheme.primary
@@ -87,9 +88,10 @@ private fun CareChip(
     Row(
         modifier =
             Modifier
-                .clip(RoundedCornerShape(8.dp))
-                .border(1.dp, borderColor, RoundedCornerShape(8.dp))
+                .clip(chipShape)
+                .border(1.dp, borderColor, chipShape)
                 .clickable(onClick = onClick)
+                .heightIn(min = 48.dp)
                 .padding(horizontal = 8.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp),

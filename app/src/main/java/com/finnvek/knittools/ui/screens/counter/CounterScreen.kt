@@ -100,14 +100,14 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.BuildConfig
 import com.finnvek.knittools.R
-import com.finnvek.knittools.data.local.ProjectCounterEntity
-import com.finnvek.knittools.data.local.YarnCardEntity
+import com.finnvek.knittools.domain.model.ProjectCounter
 import com.finnvek.knittools.domain.model.ProjectCounterDraft
+import com.finnvek.knittools.domain.model.SavedPattern
+import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.RollingCounter
 import com.finnvek.knittools.ui.components.StitchCounter
 import com.finnvek.knittools.ui.screens.pattern.PatternPickerSheet
-import com.finnvek.knittools.ui.theme.YarnColors
 import com.finnvek.knittools.ui.theme.knitToolsColors
 // MaterialTheme.colorScheme.primaryContainer korvattu primaryContainer-tokenilla
 
@@ -365,7 +365,7 @@ fun CounterScreen(
                 showPatternPicker = showPatternPicker,
                 projectId = state.projectId,
                 savedPatterns = savedPatterns,
-                isPro = state.isPro,
+                canUsePatternCameraScan = state.canUsePatternCameraScan,
                 showPatternInfoSheet = showPatternInfoSheet,
                 linkedPattern = state.linkedPattern,
             ),
@@ -377,7 +377,8 @@ fun CounterScreen(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             CounterTopBar(
-                isPro = state.isPro,
+                canUseProgressPhotos = state.canUseProgressPhotos,
+                canUseVoiceCommands = state.canUseVoiceCommands,
                 showOverflowMenu = showOverflowMenu,
                 isVoiceListening = isVoiceListening,
                 isContinuousMode = isContinuousMode,
@@ -444,7 +445,9 @@ private fun HandleVoiceCommands(
                     // Handler pysäyttää jatkuvan kuuntelun itse
                 }
 
-                VoiceCommand.Help -> Unit
+                VoiceCommand.Help -> {
+                    Unit
+                }
             }
             // TTS-vahvistus ei-triviaaleille komennoille (paikallinen parseri, offline-yhteensopiva)
             viewModel.emitLocalVoiceFeedback(command)
@@ -475,13 +478,16 @@ private fun VoiceCommandEffects(
         }
     }
 
+    val voiceTimeoutMessage = stringResource(R.string.voice_mode_timeout)
+    val voiceFatalMessage = stringResource(R.string.voice_recognizer_error)
+    val voiceOfflineMessage = stringResource(R.string.voice_offline_mode)
     LaunchedEffect(voiceCommandHandler) {
         voiceCommandHandler.voiceError.collect { error ->
             val message =
                 when (error) {
-                    VoiceError.Timeout -> context.getString(R.string.voice_mode_timeout)
-                    VoiceError.Fatal -> context.getString(R.string.voice_recognizer_error)
-                    VoiceError.NetworkLost -> context.getString(R.string.voice_offline_mode)
+                    VoiceError.Timeout -> voiceTimeoutMessage
+                    VoiceError.Fatal -> voiceFatalMessage
+                    VoiceError.NetworkLost -> voiceOfflineMessage
                 }
             snackbarHostState.showSnackbar(message)
         }
@@ -711,7 +717,7 @@ private fun StitchCountDialog(
 data class CounterSheetState(
     val showYarnPicker: Boolean,
     val showYarnManagementSheet: Boolean,
-    val savedYarnCards: List<YarnCardEntity>,
+    val savedYarnCards: List<YarnCard>,
     val linkedYarns: List<Pair<Long, String>>,
     val showNotesSheet: Boolean,
     val notes: String,
@@ -721,10 +727,10 @@ data class CounterSheetState(
     val summaryError: String?,
     val showPatternPicker: Boolean,
     val projectId: Long?,
-    val savedPatterns: List<com.finnvek.knittools.data.local.SavedPatternEntity>,
-    val isPro: Boolean,
+    val savedPatterns: List<SavedPattern>,
+    val canUsePatternCameraScan: Boolean,
     val showPatternInfoSheet: Boolean,
-    val linkedPattern: com.finnvek.knittools.data.local.SavedPatternEntity?,
+    val linkedPattern: SavedPattern?,
 )
 
 data class CounterSheetActions(
@@ -740,7 +746,7 @@ data class CounterSheetActions(
     val onPatternPickerDismiss: () -> Unit,
     val onPatternInfoDismiss: () -> Unit,
     val onPatternFileSelected: (String, String) -> Unit,
-    val onSavedPatternSelected: (com.finnvek.knittools.data.local.SavedPatternEntity) -> Unit,
+    val onSavedPatternSelected: (SavedPattern) -> Unit,
 )
 
 @Composable
@@ -783,7 +789,7 @@ private fun CounterScreenSheets(
         PatternPickerSheet(
             projectId = state.projectId,
             savedPatterns = state.savedPatterns,
-            isPro = state.isPro,
+            canUseCameraScan = state.canUsePatternCameraScan,
             onSavedPatternSelected = actions.onSavedPatternSelected,
             onDocumentSelected = actions.onPatternFileSelected,
             onDismiss = actions.onPatternPickerDismiss,
@@ -813,7 +819,8 @@ data class CounterTopBarActions(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CounterTopBar(
-    isPro: Boolean,
+    canUseProgressPhotos: Boolean,
+    canUseVoiceCommands: Boolean,
     showOverflowMenu: Boolean,
     isVoiceListening: Boolean,
     isContinuousMode: Boolean = false,
@@ -833,7 +840,7 @@ private fun CounterTopBar(
             }
         },
         actions = {
-            if (isPro || BuildConfig.DEBUG) {
+            if (canUseProgressPhotos || BuildConfig.DEBUG) {
                 IconButton(onClick = actions.onPhotoGallery) {
                     Icon(
                         imageVector = Icons.Filled.CameraAlt,
@@ -841,6 +848,8 @@ private fun CounterTopBar(
                         tint = MaterialTheme.colorScheme.primary,
                     )
                 }
+            }
+            if (canUseVoiceCommands || BuildConfig.DEBUG) {
                 IconButton(onClick = onMicClick) {
                     CounterTopBarMicAction(
                         isVoiceListening = isVoiceListening,
@@ -1023,8 +1032,8 @@ data class ProjectInfoCardActions(
 
 data class ProjectCountersSectionActions(
     val onAddCounter: () -> Unit,
-    val onIncrementCounter: (ProjectCounterEntity) -> Unit,
-    val onDecrementCounter: (ProjectCounterEntity) -> Unit,
+    val onIncrementCounter: (ProjectCounter) -> Unit,
+    val onDecrementCounter: (ProjectCounter) -> Unit,
     val onRenameCounter: (Long, String) -> Unit,
     val onResetCounter: (Long) -> Unit,
     val onDeleteCounter: (Long) -> Unit,
@@ -1119,7 +1128,8 @@ private fun CounterScreenContent(
             CounterReadoutSection(
                 state = state,
                 actions = actions,
-                hasCountersBelow = (state.isPro || BuildConfig.DEBUG) && state.projectCounters.isNotEmpty(),
+                hasCountersBelow = (state.canUseMultipleCounters || BuildConfig.DEBUG) &&
+                    state.projectCounters.isNotEmpty(),
             )
             CounterButtons(
                 onDecrement = actions.onDecrement,
@@ -1139,7 +1149,7 @@ private fun ColumnScope.CounterBottomSection(
     state: CounterUiState,
     projectCountersActions: ProjectCountersSectionActions,
 ) {
-    val showPro = state.isPro || BuildConfig.DEBUG
+    val showPro = state.canUseMultipleCounters || BuildConfig.DEBUG
     if (!showPro) {
         Spacer(modifier = Modifier.height(16.dp))
         return
@@ -1203,7 +1213,7 @@ private fun ColumnScope.CounterReadoutSection(
                 ),
         )
 
-        if (state.isPro) {
+        if (state.canUseSecondaryCounter) {
             Spacer(modifier = Modifier.height(8.dp))
             PatternRepeatPill(
                 count = state.secondaryCount,
@@ -1385,7 +1395,7 @@ private fun ProjectInfoCard(
             // Rivi 1: Lanka-tiedot + Notes-ikoni
             YarnAndNotesRow(
                 linkedYarns = state.linkedYarns,
-                isPro = state.isPro,
+                canUseNotes = state.canUseNotes,
                 hasNotes = state.notes.isNotEmpty(),
                 onShowYarnManagement = actions.onShowYarnManagement,
                 onShowNotes = actions.onShowNotes,
@@ -1398,7 +1408,7 @@ private fun ProjectInfoCard(
                         stitchCount = state.stitchCount,
                         rowCount = state.counter.count,
                         sessionSeconds = state.sessionSeconds,
-                        isPro = state.isPro,
+                        canUseAiSummary = state.isAiAvailable,
                         isAiAvailable = state.isAiAvailable,
                     ),
                 onStitchClick = actions.onStitchClick,
@@ -1431,7 +1441,7 @@ private fun ProjectInfoCard(
 @Composable
 private fun YarnAndNotesRow(
     linkedYarns: List<Pair<Long, String>>,
-    isPro: Boolean,
+    canUseNotes: Boolean,
     hasNotes: Boolean,
     onShowYarnManagement: () -> Unit,
     onShowNotes: () -> Unit,
@@ -1445,7 +1455,7 @@ private fun YarnAndNotesRow(
             onClick = onShowYarnManagement,
             modifier = Modifier.weight(1f),
         )
-        if (isPro) {
+        if (canUseNotes) {
             val notesTint =
                 if (hasNotes) {
                     MaterialTheme.colorScheme.primary
@@ -1469,7 +1479,7 @@ data class StatsRowState(
     val stitchCount: Int?,
     val rowCount: Int,
     val sessionSeconds: Long,
-    val isPro: Boolean,
+    val canUseAiSummary: Boolean,
     val isAiAvailable: Boolean,
 )
 
@@ -1515,7 +1525,7 @@ private fun StatsRow(
         )
         Spacer(modifier = Modifier.weight(1f))
         // AI summary -linkki
-        if (state.isPro && state.isAiAvailable) {
+        if (state.canUseAiSummary && state.isAiAvailable) {
             Text(
                 text = stringResource(R.string.view_ai_summary),
                 style = MaterialTheme.typography.bodySmall,
@@ -1658,7 +1668,7 @@ private fun CounterButtons(
 
 @Composable
 private fun ProjectCountersSection(
-    projectCounters: List<ProjectCounterEntity>,
+    projectCounters: List<ProjectCounter>,
     mainRowCount: Int,
     actions: ProjectCountersSectionActions,
 ) {
@@ -1709,7 +1719,7 @@ private fun ProjectCountersSection(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun YarnPickerSheet(
-    savedYarnCards: List<YarnCardEntity>,
+    savedYarnCards: List<YarnCard>,
     onSelect: (Long) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -1750,7 +1760,7 @@ private fun YarnPickerSheet(
 
 @Composable
 private fun YarnPickerItem(
-    card: YarnCardEntity,
+    card: YarnCard,
     onSelect: () -> Unit,
 ) {
     val name =
@@ -1791,7 +1801,7 @@ private fun YarnPickerItem(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PatternInfoSheet(
-    pattern: com.finnvek.knittools.data.local.SavedPatternEntity,
+    pattern: SavedPattern,
     onDismiss: () -> Unit,
 ) {
     ModalBottomSheet(
@@ -2025,8 +2035,6 @@ private fun KeepScreenAwake(enabled: Boolean) {
 private fun hasAudioPermission(context: android.content.Context): Boolean =
     context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) ==
         android.content.pm.PackageManager.PERMISSION_GRANTED
-
-private fun yarnColor(yarnId: Long): androidx.compose.ui.graphics.Color = YarnColors[(yarnId % YarnColors.size).toInt()]
 
 @Composable
 private fun rememberCounterDialogActions(dependencies: CounterDialogActionDependencies): CounterDialogActions =

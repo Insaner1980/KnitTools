@@ -49,7 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.finnvek.knittools.R
-import com.finnvek.knittools.data.local.CounterProjectEntity
+import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
 import com.finnvek.knittools.ui.components.care.CareSymbol
@@ -620,7 +620,7 @@ private fun YarnCareSection(careSymbols: Long) {
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 private fun LinkedProjectSheet(
-    projects: List<CounterProjectEntity>,
+    projects: List<CounterProject>,
     linkedProjectId: Long?,
     onSelectProject: (Long) -> Unit,
     onRemoveLink: () -> Unit,

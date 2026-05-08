@@ -27,7 +27,6 @@
     <string name="unit_per_4in">per 4 in</string>
 
     <!-- Home screen -->
-    <string name="tool_row_counter">Contaferri</string>
     <string name="tool_increase_decrease">Aumenti / diminuzioni</string>
     <string name="tool_gauge_converter">Calcolatore campione</string>
     <string name="tool_cast_on_calculator">Calcolatore avvio maglie</string>
@@ -43,12 +42,10 @@
     <string name="tab_library">LIBRERIA</string>
     <string name="tab_tools">STRUMENTI</string>
     <string name="tab_insights">STATISTICHE</string>
-    <string name="tab_reference">RIFERIMENTI</string>
     <string name="tab_settings">IMPOSTAZIONI</string>
 
     <!-- Screen titles -->
     <string name="tools_title">Strumenti</string>
-    <string name="reference_title">Riferimenti</string>
     <string name="library_title">Libreria</string>
     <string name="insights_title">Statistiche</string>
     <string name="saved_patterns_title">Modelli salvati</string>
@@ -56,8 +53,6 @@
     <string name="all_photos_title">Foto</string>
 
     <!-- Hub hero text -->
-    <string name="reference_hero_title">Riferimenti per la maglia</string>
-    <string name="reference_hero_subtitle">Accesso rapido a misure, abbreviazioni e simboli dei grafici.</string>
 
     <!-- Project List -->
     <string name="project_list_title">Progetti</string>
@@ -68,11 +63,9 @@
     <string name="new_project_name_format">Progetto %1$d</string>
     <string name="no_active_projects">Nessun progetto attivo</string>
     <string name="no_completed_projects">Nessun progetto completato per ora</string>
-    <string name="archive_project">Completa</string>
     <string name="delete_project">Elimina</string>
     <string name="delete_project_message">Eliminare %s? Questa azione non può essere annullata.</string>
     <string name="rename_project">Rinomina</string>
-    <string name="reactivate_project">Riattiva</string>
     <string name="complete_project">Completa</string>
     <string name="complete_project_message">Completare %s? Il progetto verrà spostato tra quelli completati.</string>
     <string name="more_options">Altre opzioni</string>
@@ -94,7 +87,6 @@
     <string name="just_now">proprio ora</string>
 
     <!-- Counter Screen -->
-    <string name="current_project">PROGETTO ATTUALE</string>
     <string name="current_row">FERRO ATTUALE</string>
     <string name="stitch_count_format">%s m</string>
     <string name="set_stitches">Imposta maglie</string>
@@ -123,7 +115,6 @@
     <string name="pattern_picker_device_files">Scegli PDF dal dispositivo</string>
     <string name="pattern_picker_saved_patterns">Modelli salvati</string>
     <string name="pattern_picker_camera_scan">Scansione con fotocamera</string>
-    <string name="pattern_picker_pdf_unavailable">PDF non disponibile</string>
     <string name="pattern_scan_failed">La scansione del modello non può essere convertita in PDF.</string>
     <string name="imported_pattern_designer">PDF importato</string>
     <string name="current_row_short">Ferro %1$d</string>
@@ -196,7 +187,6 @@
     <string name="journal_offline_notice">Formattazione AI non disponibile, la voce è stata salvata così com\'è.</string>
     <string name="journal_mic_permission_required">È necessaria l\'autorizzazione al microfono</string>
     <string name="journal_processing">Formattazione…</string>
-    <string name="journal_row_label">Ferro %1$d</string>
     <string name="journal_speech_unavailable">Il riconoscimento vocale non è disponibile su questo dispositivo</string>
     <string name="journal_speech_network_error">Il riconoscimento vocale richiede una connessione di rete</string>
     <string name="journal_speech_no_match">Non ho capito — riprova</string>
@@ -221,7 +211,6 @@
 
     <!-- Gauge Converter -->
     <string name="pattern_gauge">Campione del modello</string>
-    <string name="your_gauge">Il tuo campione</string>
     <string name="pattern_instructions">Istruzioni del modello</string>
     <string name="stitches_gauge">Maglie %s</string>
     <string name="rows_gauge">Ferri %s</string>
@@ -260,11 +249,9 @@
     <string name="header_jp">JP</string>
 
     <!-- Settings -->
-    <string name="theme">Tema</string>
     <string name="theme_system">Sistema</string>
     <string name="theme_light">Chiaro</string>
     <string name="theme_dark">Scuro</string>
-    <string name="preferences">Preferenze</string>
     <string name="settings_section_settings">IMPOSTAZIONI</string>
     <string name="settings_section_pro">PRO</string>
     <string name="settings_section_info">INFO</string>
@@ -285,7 +272,6 @@
     <string name="haptic_feedback">Feedback aptico</string>
     <string name="keep_screen_awake">Mantieni acceso lo schermo</string>
     <string name="use_imperial_units">Usa unità imperiali</string>
-    <string name="purchase">Acquista</string>
     <string name="upgrade_to_pro">Passa a Pro</string>
     <string name="restore_purchases">Ripristina acquisti</string>
     <string name="privacy_summary">Tutti i dati restano sul tuo dispositivo. Nessuna analisi, nessuna sincronizzazione cloud, nessun account.</string>
@@ -294,7 +280,6 @@
     <string name="version_format">KnitTools %s</string>
 
     <!-- Pro Upgrade -->
-    <string name="knittools_pro">KnitTools Pro</string>
     <string name="you_have_pro">Hai KnitTools Pro!</string>
     <string name="all_features_unlocked">Tutte le funzioni sono sbloccate.</string>
     <string name="pro_feature_unlimited_projects">Progetti contatore illimitati</string>
@@ -303,12 +288,8 @@
     <string name="pro_feature_secondary_counter">Contatore secondario</string>
     <string name="pro_feature_ocr">Scansione OCR delle etichette del filato</string>
     <string name="pro_feature_widget">Widget nella schermata iniziale</string>
-    <string name="pro_feature_row_reminders">Promemoria ferri</string>
-    <string name="pro_feature_progress_photos">Foto di avanzamento</string>
-    <string name="pro_feature_multiple_counters">Contatori multipli</string>
     <string name="pro_feature_pattern_camera_scan">Scansione del modello con fotocamera</string>
     <string name="pro_feature">Funzione Pro</string>
-    <string name="pro_required_add">Passa a Pro per aggiungere altro</string>
     <string name="upgrade_for_price">Passa a Pro per %s</string>
     <string name="one_time_purchase">Acquisto una tantum. Nessun abbonamento.</string>
     <string name="loading_price">Caricamento prezzo…</string>
@@ -317,7 +298,6 @@
     <!-- Yarn Card / OCR -->
     <string name="scan_yarn_label">Scansiona etichetta del filato</string>
     <string name="yarn_scan_failed">Impossibile leggere un\'etichetta del filato da questa foto. Riprova.</string>
-    <string name="yarn_scan_no_internet">La scansione richiede una connessione internet</string>
     <string name="saved_yarns">Filati salvati</string>
     <string name="scanned_yarn">Filato scansionato</string>
     <string name="brand">Marca</string>
@@ -337,8 +317,6 @@
     <string name="use_in_calculator">Usa nel calcolatore</string>
     <string name="no_saved_yarns">Nessuna scheda filato salvata per ora</string>
     <string name="scanning">Scansione…</string>
-    <string name="card_deleted">Scheda filato eliminata</string>
-    <string name="undo">Annulla</string>
     <string name="pro_required_save">Serve Pro per salvare le schede filato</string>
 
     <!-- Gemini Nano -->
@@ -375,7 +353,6 @@
     <string name="widget_pro_required">Passa a Pro per usare il widget</string>
 
     <!-- Hubs -->
-    <string name="reference_hub_title">Riferimenti</string>
     <string name="desc_increase_decrease">Distribuisci aumenti o diminuzioni in modo uniforme su un ferro</string>
     <string name="desc_gauge_calculator">Calcola il tuo campione e converti le istruzioni del modello</string>
     <string name="desc_cast_on">Calcola quante maglie avviare per ottenere la larghezza desiderata</string>
@@ -399,7 +376,6 @@
     <string name="total_time_label">TEMPO TOTALE</string>
     <string name="avg_pace_label">RITMO MEDIO</string>
     <string name="completed_label">COMPLETATI</string>
-    <string name="top_streak_label">SERIE MIGLIORE</string>
     <string name="time_format_hours">%.1fh</string>
     <string name="pace_format">%.0f f/h</string>
     <string name="streak_format">%d giorni</string>
@@ -407,13 +383,9 @@
     <string name="insights_all_time">Sempre</string>
     <string name="insights_this_week">Questa settimana</string>
     <string name="insights_this_month">Questo mese</string>
-    <string name="pro_insights_hint">Sblocca grafici, serie e altro con Pro</string>
-    <string name="insights_summary_format">%1$.1fh questa settimana · %2$.0f f/h</string>
     <string name="insights_knitting_activity">ATTIVITÀ DI MAGLIA</string>
     <string name="insights_current_streak">Serie attuale:</string>
     <string name="insights_best_streak">Migliore:</string>
-    <string name="insights_project_time_with_rows">%1$s · %2$d ferri</string>
-    <string name="insights_project_time_only">%1$s</string>
     <string name="insights_rows_count">%1$d ferri</string>
     <string name="insights_less_than_tenth_hour">&lt;0.1h</string>
     <string name="insights_no_time">—</string>
@@ -427,16 +399,13 @@
     <string name="relative_time_days_ago">%1$dg fa</string>
     <string name="relative_time_weeks_ago">%1$dsett fa</string>
     <string name="relative_time_months_ago">%1$dm fa</string>
-    <string name="week_now">ora</string>
     <string name="no_knitting">Nessun lavoro a maglia</string>
     <string name="time_per_project">TEMPO PER PROGETTO</string>
-    <string name="pace_over_time">RITMO NEL TEMPO</string>
 
     <!-- Settings -->
     <string name="help_and_guide">Aiuto e guida</string>
 
     <!-- Gauge Calculator — swatch section -->
-    <string name="my_gauge">Il mio campione</string>
     <string name="your_gauge_section">Il tuo campione</string>
     <string name="measure_swatch">Misura campione</string>
     <string name="enter_directly">Inserisci direttamente</string>
@@ -445,8 +414,6 @@
     <string name="stitch_count_in_swatch">Maglie del campione</string>
     <string name="measured_height">Altezza misurata</string>
     <string name="row_count_in_swatch">Ferri del campione</string>
-    <string name="your_stitch_gauge">Il tuo campione maglie: %s</string>
-    <string name="your_row_gauge">Il tuo campione ferri: %s</string>
 
     <!-- Size Charts -->
     <string name="size_charts_title">Tabelle taglie</string>
@@ -505,8 +472,6 @@
     <string name="restart">Riavvia</string>
 
     <!-- Row Reminders -->
-    <string name="reminders">Promemoria</string>
-    <string name="reminders_count">Promemoria (%d)</string>
     <string name="add_reminder">Aggiungi promemoria</string>
     <string name="delete_reminder_title">Eliminare il promemoria?</string>
     <string name="delete_reminder_confirm">Eliminare il promemoria \"%1$s\"?</string>
@@ -519,11 +484,9 @@
     <string name="repeat_every_rows">ferri</string>
     <string name="repeat_count_format">Ripetizione %1$d/%2$d</string>
     <string name="dismiss">Chiudi</string>
-    <string name="no_reminders">Nessun promemoria per ora</string>
 
     <!-- Multiple Counters -->
     <string name="counters">Contatori</string>
-    <string name="counters_count">Contatori (%d)</string>
     <string name="add_counter">Aggiungi contatore</string>
     <string name="counter_name">Nome</string>
     <string name="counter_name_hint">es. Aumenti manica</string>
@@ -545,8 +508,6 @@
     <string name="delete_counter">Elimina</string>
     <string name="delete_counter_title">Eliminare il contatore?</string>
     <string name="delete_counter_message">\"%1$s\" verrà eliminato definitivamente.</string>
-    <string name="delete_annotation_title">Eliminare l\'annotazione?</string>
-    <string name="delete_annotation_message">L\'annotazione verrà eliminata definitivamente.</string>
 
     <!-- Progress Photos -->
     <string name="take_photo">Scatta foto</string>
@@ -556,8 +517,6 @@
     <string name="voice_offline_mode">Modalità offline, solo comandi di base</string>
     <string name="voice_quota_daily_exhausted">I comandi AI sono in pausa per oggi, ma quelli di base funzionano ancora</string>
     <string name="voice_command_unknown">Non ho capito</string>
-    <string name="voice_command_not_recognized_offline">Comando non riconosciuto offline</string>
-    <string name="voice_help_text">Comandi disponibili: avanti, indietro, annulla, reimposta, stop, aiuto e istruzioni libere</string>
     <string name="voice_note_saved">Nota salvata</string>
     <string name="voice_counter_reset">Contatore reimpostato</string>
     <string name="voice_row_current">Ferro %d</string>
@@ -613,12 +572,10 @@
     <string name="voice_stitch_count_set">Numero di maglie impostato a %1$d per ferro</string>
     <string name="voice_stitch_tracking_on">Conteggio maglie attivato</string>
     <string name="voice_stitch_tracking_off">Conteggio maglie disattivato</string>
-    <string name="voice_live_connecting">Connessione…</string>
     <string name="voice_live_error">Connessione vocale non riuscita</string>
     <string name="voice_live_quota_exhausted">I minuti vocali di questo mese sono esauriti</string>
     <string name="voice_natural_response">Voce naturale</string>
     <string name="voice_live_quota_remaining">%1$.0f / %2$.0f min rimasti</string>
-    <string name="voice_mode_ended">Modalità vocale terminata</string>
     <string name="voice_recognizer_error">Errore di riconoscimento vocale</string>
     <string name="row_label_format">Ferro %d</string>
     <string name="share_photo">Condividi</string>
@@ -644,14 +601,10 @@
     <string name="pattern_saved">Modello salvato</string>
     <string name="no_saved_patterns">Nessun modello salvato per ora</string>
     <string name="search_hint">Cerca modelli di maglia…</string>
-    <string name="filter_craft">Artigianato</string>
-    <string name="filter_availability">Disponibilità</string>
-    <string name="filter_category">Categoria</string>
     <string name="filter_weight">Spessore</string>
     <string name="filter_difficulty">Difficoltà</string>
     <string name="free">Gratis</string>
     <string name="paid">A pagamento</string>
-    <string name="all">Tutti</string>
     <string name="no_results">Nessun modello trovato</string>
     <string name="search_error">Impossibile caricare i modelli. Controlla la tua connessione internet.</string>
     <string name="ravelry_sign_in">Accedi con Ravelry</string>
@@ -661,16 +614,12 @@
     <!-- Info tips -->
     <string name="tip_your_gauge_title">Che cos\'è il campione?</string>
     <string name="tip_your_gauge_desc">Il campione indica quante maglie e quanti ferri entrano in un\'area misurata. Lavora un piccolo campione e misuralo per trovare il tuo campione personale. In questo modo il lavoro finito corrisponderà alla misura prevista dal modello.</string>
-    <string name="tip_swatch_vs_direct_title">Campione vs. inserimento diretto</string>
-    <string name="tip_swatch_vs_direct_desc">Usa \"Misura campione\" se hai lavorato un campione e vuoi misurarlo. Usa \"Inserisci direttamente\" se conosci già il tuo campione (ad es. 22 maglie per 10 cm).</string>
     <string name="tip_pattern_repeat_title">Ripetizione del motivo</string>
     <string name="tip_pattern_repeat_desc">Se il motivo si ripete ogni X maglie (ad es. una treccia ogni 8 maglie), inserisci qui quel numero. Il calcolatore arrotonderà il numero di maglie da avviare al multiplo più vicino, così il motivo risulterà perfettamente allineato.</string>
     <string name="tip_edge_stitches_title">Maglie di vivagno</string>
     <string name="tip_edge_stitches_desc">Le maglie di vivagno sono maglie extra ai lati per un bordo pulito. Non fanno parte della ripetizione del motivo. Valori comuni: 1–2 maglie per lato.</string>
     <string name="tip_flat_vs_circular_title">In piano vs. in tondo</string>
     <string name="tip_flat_vs_circular_desc">Nel lavoro in piano lavori avanti e indietro su ferri dritti o circolari, girando alla fine di ogni ferro. Aumenti e diminuzioni avvengono su entrambi i lati.\n\nNel lavoro in tondo lavori in modo continuo. Aumenti e diminuzioni sono distribuiti uniformemente lungo il giro.</string>
-    <string name="tip_pattern_repeat_pill_title">Contatore ripetizioni motivo</string>
-    <string name="tip_pattern_repeat_pill_desc">Conta quante volte hai completato una sezione ripetuta del motivo. Si azzera automaticamente in base all\'intervallo di ripetizione. Utile per seguire incroci di trecce, trafori o cambi colore.</string>
     <string name="tip_needle_sizes_title">Sistemi di misure dei ferri</string>
     <string name="tip_needle_sizes_desc">Il sistema metrico (mm) è lo standard universale. Le misure US usano un sistema numerato (0–50). Le misure UK/Canada usano un altro sistema numerato. Le misure giapponesi hanno una numerazione propria. Controlla sempre la misura in mm per sicurezza.</string>
     <string name="tip_imperial_units_title">Unità imperiali</string>

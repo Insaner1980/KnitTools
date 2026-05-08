@@ -3,7 +3,7 @@ package com.finnvek.knittools.ui.screens.session
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.finnvek.knittools.data.local.SessionEntity
+import com.finnvek.knittools.domain.model.KnitSession
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.CounterRepository
@@ -25,11 +25,11 @@ class SessionHistoryViewModel
     ) : ViewModel() {
         private val projectId: Long = savedStateHandle["projectId"] ?: 0L
 
-        val sessions: StateFlow<List<SessionEntity>> =
+        val sessions: StateFlow<List<KnitSession>> =
             repository
                 .getSessionsForProject(projectId)
                 .map { sessions ->
-                    if (proManager.hasFeature(ProFeature.NOTES)) {
+                    if (proManager.hasFeature(ProFeature.FULL_HISTORY)) {
                         // Pro: koko historia
                         sessions
                     } else {
@@ -39,5 +39,5 @@ class SessionHistoryViewModel
                     }
                 }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-        val isPro: Boolean get() = proManager.hasFeature(ProFeature.NOTES)
+        val isPro: Boolean get() = proManager.hasFeature(ProFeature.FULL_HISTORY)
     }

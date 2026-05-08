@@ -32,6 +32,11 @@ class HomeViewModel
                 .map { it.showKnittingTips }
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
+        val useImperial: StateFlow<Boolean> =
+            preferencesManager.preferences
+                .map { it.useImperial }
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
         private val tips = context.resources.getStringArray(R.array.knitting_tips)
         private val _currentTip = MutableStateFlow(tips.random())
         val currentTip: StateFlow<String> = _currentTip.asStateFlow()

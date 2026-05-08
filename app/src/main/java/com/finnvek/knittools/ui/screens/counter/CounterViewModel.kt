@@ -2,6 +2,7 @@ package com.finnvek.knittools.ui.screens.counter
 
 import android.content.Context
 import android.net.Uri
+import androidx.core.net.toUri
 import androidx.glance.appwidget.updateAll
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
@@ -11,6 +12,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.finnvek.knittools.BuildConfig
 import com.finnvek.knittools.R
+import com.finnvek.knittools.ai.AiVoiceAction
 import com.finnvek.knittools.ai.AiQuotaManager
 import com.finnvek.knittools.ai.GeminiAiService
 import com.finnvek.knittools.ai.ProjectSummarizer
@@ -21,13 +23,6 @@ import com.finnvek.knittools.ai.live.VoiceLiveQuotaManager
 import com.finnvek.knittools.ai.live.VoiceLiveSession
 import com.finnvek.knittools.ai.nano.NanoAvailability
 import com.finnvek.knittools.data.datastore.PreferencesManager
-import com.finnvek.knittools.data.local.CounterProjectEntity
-import com.finnvek.knittools.data.local.ProgressPhotoEntity
-import com.finnvek.knittools.data.local.ProjectCounterEntity
-import com.finnvek.knittools.data.local.RowReminderEntity
-import com.finnvek.knittools.data.local.SavedPatternEntity
-import com.finnvek.knittools.data.local.SessionEntity
-import com.finnvek.knittools.data.local.YarnCardEntity
 import com.finnvek.knittools.data.storage.PatternDocumentStorage
 import com.finnvek.knittools.domain.calculator.CounterLogic
 import com.finnvek.knittools.domain.calculator.CounterState
@@ -36,7 +31,14 @@ import com.finnvek.knittools.domain.calculator.RepeatSectionLogic
 import com.finnvek.knittools.domain.calculator.RowMarker
 import com.finnvek.knittools.domain.calculator.parseMapping
 import com.finnvek.knittools.domain.calculator.serializeMapping
+import com.finnvek.knittools.domain.model.CounterProject
+import com.finnvek.knittools.domain.model.KnitSession
+import com.finnvek.knittools.domain.model.ProgressPhoto
+import com.finnvek.knittools.domain.model.ProjectCounter
 import com.finnvek.knittools.domain.model.ProjectCounterDraft
+import com.finnvek.knittools.domain.model.RowReminder
+import com.finnvek.knittools.domain.model.SavedPattern
+import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.pro.InAppReviewManager
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
@@ -86,8 +88,14 @@ data class CounterUiState(
     val hapticFeedback: Boolean = true,
     val keepScreenAwake: Boolean = false,
     val isPro: Boolean = false,
+    val canUseSecondaryCounter: Boolean = false,
+    val canUseNotes: Boolean = false,
+    val canUseProgressPhotos: Boolean = false,
+    val canUseMultipleCounters: Boolean = false,
+    val canUsePatternCameraScan: Boolean = false,
+    val canUseVoiceCommands: Boolean = false,
     val isNanoAvailable: Boolean = false,
-    val projects: List<CounterProjectEntity> = emptyList(),
+    val projects: List<CounterProject> = emptyList(),
     val sectionName: String? = null,
     val stitchCount: Int? = null,
     val stitchTrackingEnabled: Boolean = false,
@@ -98,11 +106,11 @@ data class CounterUiState(
     val projectSummary: String? = null,
     val summaryError: String? = null,
     val isSummaryLoading: Boolean = false,
-    val reminders: List<RowReminderEntity> = emptyList(),
-    val activeAlert: RowReminderEntity? = null,
-    val projectCounters: List<ProjectCounterEntity> = emptyList(),
-    val latestPhotos: List<ProgressPhotoEntity> = emptyList(),
-    val linkedPattern: SavedPatternEntity? = null,
+    val reminders: List<RowReminder> = emptyList(),
+    val activeAlert: RowReminder? = null,
+    val projectCounters: List<ProjectCounter> = emptyList(),
+    val latestPhotos: List<ProgressPhoto> = emptyList(),
+    val linkedPattern: SavedPattern? = null,
     val patternUri: String? = null,
     val patternName: String? = null,
     val currentPatternPage: Int = 0,
@@ -143,22 +151,22 @@ class CounterViewModel
             )
         val uiState: StateFlow<CounterUiState> = _uiState.asStateFlow()
 
-        val savedYarnCards: StateFlow<List<YarnCardEntity>> =
+        val savedYarnCards: StateFlow<List<YarnCard>> =
             yarnCardRepository.getAllCards().stateIn(
                 viewModelScope,
                 SharingStarted.WhileSubscribed(5000),
                 emptyList(),
             )
 
-        val savedPatterns: StateFlow<List<SavedPatternEntity>> =
+        val savedPatterns: StateFlow<List<SavedPattern>> =
             savedPatternRepository.getAll().stateIn(
                 viewModelScope,
                 SharingStarted.WhileSubscribed(5000),
                 emptyList(),
             )
 
-        private val _allPhotos = MutableStateFlow<List<ProgressPhotoEntity>>(emptyList())
-        val allPhotos: StateFlow<List<ProgressPhotoEntity>> = _allPhotos.asStateFlow()
+        private val _allPhotos = MutableStateFlow<List<ProgressPhoto>>(emptyList())
+        val allPhotos: StateFlow<List<ProgressPhoto>> = _allPhotos.asStateFlow()
 
         private var timerJob: Job? = null
         private var selectedProjectJob: Job? = null
@@ -211,7 +219,17 @@ class CounterViewModel
         private fun observeProState() {
             viewModelScope.launch {
                 proManager.proState.collect { proState ->
-                    _uiState.update { it.copy(isPro = proState.isPro) }
+                    _uiState.update {
+                        it.copy(
+                            isPro = proState.isPro,
+                            canUseSecondaryCounter = proState.hasFeature(ProFeature.SECONDARY_COUNTER),
+                            canUseNotes = proState.hasFeature(ProFeature.NOTES),
+                            canUseProgressPhotos = proState.hasFeature(ProFeature.PROGRESS_PHOTOS),
+                            canUseMultipleCounters = proState.hasFeature(ProFeature.MULTIPLE_COUNTERS),
+                            canUsePatternCameraScan = proState.hasFeature(ProFeature.PATTERN_CAMERA_SCAN),
+                            canUseVoiceCommands = proState.hasFeature(ProFeature.VOICE_COMMANDS),
+                        )
+                    }
                     if (!proState.isPro) {
                         _uiState.update { it.copy(isNanoAvailable = false, isAiAvailable = false) }
                         pruneHistoryForFree()
@@ -266,7 +284,7 @@ class CounterViewModel
             }
         }
 
-        fun selectProject(project: CounterProjectEntity) {
+        fun selectProject(project: CounterProject) {
             viewModelScope.launch {
                 // Pysäytä live-sessio ennen projektin vaihtoa — konteksti muuttuu
                 if (voiceLiveSession.isActive()) voiceLiveSession.stop()
@@ -401,7 +419,7 @@ class CounterViewModel
             if (durationMinutes < 1 && endRow == sessionStartRow) return
 
             repository.insertSession(
-                SessionEntity(
+                KnitSession(
                     projectId = projectId,
                     startedAt = sessionStartedAt,
                     endedAt = System.currentTimeMillis(),
@@ -412,7 +430,7 @@ class CounterViewModel
             )
         }
 
-        private suspend fun recoverPendingSessionIfNeeded(projects: List<CounterProjectEntity>) {
+        private suspend fun recoverPendingSessionIfNeeded(projects: List<CounterProject>) {
             val projectId = savedStateHandle.get<Long>(KEY_SELECTED_PROJECT_ID) ?: return
             val pendingProject =
                 projects.find { it.id == projectId } ?: run {
@@ -436,7 +454,7 @@ class CounterViewModel
             clearPendingSessionState()
         }
 
-        private suspend fun startProjectSession(project: CounterProjectEntity) {
+        private suspend fun startProjectSession(project: CounterProject) {
             sessionStartedAt = System.currentTimeMillis()
             sessionStartRow = project.count
             linkedYarnIdsCache = project.yarnCardIds
@@ -626,11 +644,13 @@ class CounterViewModel
         }
 
         fun incrementSecondary() {
+            if (!proManager.hasFeature(ProFeature.SECONDARY_COUNTER)) return
             _uiState.update { it.copy(secondaryCount = it.secondaryCount + 1) }
             persistSecondary()
         }
 
         fun decrementSecondary() {
+            if (!proManager.hasFeature(ProFeature.SECONDARY_COUNTER)) return
             _uiState.update { it.copy(secondaryCount = maxOf(0, it.secondaryCount - 1)) }
             persistSecondary()
         }
@@ -664,7 +684,7 @@ class CounterViewModel
             viewModelScope.launch {
                 val projectId = _uiState.value.projectId ?: return@launch
                 val counter =
-                    ProjectCounterEntity(
+                    ProjectCounter(
                         projectId = projectId,
                         name = draft.name,
                         repeatAt = draft.repeatAt,
@@ -688,13 +708,13 @@ class CounterViewModel
             }
         }
 
-        fun incrementProjectCounter(counter: ProjectCounterEntity) {
+        fun incrementProjectCounter(counter: ProjectCounter) {
             viewModelScope.launch {
                 projectCounterRepository.incrementCounter(counter)
             }
         }
 
-        fun decrementProjectCounter(counter: ProjectCounterEntity) {
+        fun decrementProjectCounter(counter: ProjectCounter) {
             viewModelScope.launch {
                 projectCounterRepository.decrementCounter(counter)
             }
@@ -751,7 +771,7 @@ class CounterViewModel
             viewModelScope.launch {
                 val projectId = _uiState.value.projectId ?: return@launch
                 reminderRepository.insert(
-                    RowReminderEntity(
+                    RowReminder(
                         projectId = projectId,
                         targetRow = targetRow,
                         repeatInterval = repeatInterval,
@@ -816,7 +836,7 @@ class CounterViewModel
             }
         }
 
-        fun deletePhoto(photo: ProgressPhotoEntity) {
+        fun deletePhoto(photo: ProgressPhoto) {
             viewModelScope.launch {
                 photoRepository.deletePhoto(photo)
             }
@@ -865,7 +885,7 @@ class CounterViewModel
                     patternDocumentStorage.copyPdfToInternal(
                         context = context,
                         projectId = projectId,
-                        sourceUri = Uri.parse(uri),
+                        sourceUri = uri.toUri(),
                         fileName = sanitizedName,
                     ) ?: uri
 
@@ -1235,7 +1255,7 @@ class CounterViewModel
 
         private fun syncRepeatSectionCounters(
             mainRowCount: Int,
-            counters: List<ProjectCounterEntity>,
+            counters: List<ProjectCounter>,
             persist: Boolean,
         ) {
             val syncedCounters =
@@ -1295,33 +1315,47 @@ class CounterViewModel
         fun emitLocalVoiceFeedback(command: VoiceCommand) {
             val response =
                 when (command) {
-                    is VoiceCommand.Increment ->
+                    is VoiceCommand.Increment -> {
                         if (command.count > 1) {
                             context.getString(R.string.voice_row_current, _uiState.value.counter.count)
                         } else {
                             null
                         }
-                    is VoiceCommand.Decrement ->
+                    }
+
+                    is VoiceCommand.Decrement -> {
                         if (command.count > 1) {
                             context.getString(R.string.voice_back_to_row, _uiState.value.counter.count)
                         } else {
                             null
                         }
-                    VoiceCommand.Undo ->
+                    }
+
+                    VoiceCommand.Undo -> {
                         context.getString(R.string.voice_undone_row, _uiState.value.counter.count)
-                    VoiceCommand.Reset ->
+                    }
+
+                    VoiceCommand.Reset -> {
                         context.getString(R.string.voice_counter_reset)
+                    }
+
                     VoiceCommand.StitchIncrement,
                     VoiceCommand.StitchDecrement,
-                    ->
+                    -> {
                         if (_uiState.value.stitchTrackingEnabled) {
                             context.getString(R.string.voice_stitch_at, _uiState.value.currentStitch)
                         } else {
                             null
                         }
-                    VoiceCommand.Help ->
+                    }
+
+                    VoiceCommand.Help -> {
                         context.getString(R.string.voice_help_full)
-                    VoiceCommand.StopListening -> null
+                    }
+
+                    VoiceCommand.StopListening -> {
+                        null
+                    }
                 }
             response?.let { _voiceResponse.tryEmit(it) }
         }

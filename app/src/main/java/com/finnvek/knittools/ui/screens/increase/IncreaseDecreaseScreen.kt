@@ -9,8 +9,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
@@ -33,6 +35,7 @@ import com.finnvek.knittools.domain.model.IncreaseDecreaseResult
 import com.finnvek.knittools.domain.model.KnittingStyle
 import com.finnvek.knittools.ui.components.AnimatedResultNumber
 import com.finnvek.knittools.ui.components.BadgePill
+import com.finnvek.knittools.ui.components.InfoTip
 import com.finnvek.knittools.ui.components.NumberInputField
 import com.finnvek.knittools.ui.components.PasteInstructionButton
 import com.finnvek.knittools.ui.components.ResultCard
@@ -89,37 +92,54 @@ fun IncreaseDecreaseScreen(
                 },
             )
 
-            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                SegmentedToggle(
-                    options = modeOptions,
-                    selectedIndex = mode.ordinal,
-                    onSelect = { mode = IncreaseDecreaseMode.entries[it] },
-                )
-            }
-
-            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                SegmentedToggle(
-                    options = styleOptions,
-                    selectedIndex = style.ordinal,
-                    onSelect = { style = KnittingStyle.entries[it] },
-                )
-            }
-
-            NumberInputField(
-                value = currentStitches,
-                onValueChange = { currentStitches = it },
-                label = stringResource(R.string.current_stitches),
-                suffix = stringResource(R.string.unit_st),
+            Surface(
+                shape = RoundedCornerShape(18.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant,
                 modifier = Modifier.fillMaxWidth(),
-            )
-            NumberInputField(
-                value = changeBy,
-                onValueChange = { changeBy = it },
-                label = stringResource(mode.labelRes()),
-                suffix = stringResource(R.string.unit_st),
-                modifier = Modifier.fillMaxWidth(),
-                isLast = true,
-            )
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        SegmentedToggle(
+                            options = modeOptions,
+                            selectedIndex = mode.ordinal,
+                            onSelect = { mode = IncreaseDecreaseMode.entries[it] },
+                        )
+                    }
+
+                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        SegmentedToggle(
+                            options = styleOptions,
+                            selectedIndex = style.ordinal,
+                            onSelect = { style = KnittingStyle.entries[it] },
+                        )
+                        Box(modifier = Modifier.align(Alignment.CenterEnd)) {
+                            InfoTip(
+                                title = stringResource(R.string.tip_flat_vs_circular_title),
+                                description = stringResource(R.string.tip_flat_vs_circular_desc),
+                            )
+                        }
+                    }
+
+                    NumberInputField(
+                        value = currentStitches,
+                        onValueChange = { currentStitches = it },
+                        label = stringResource(R.string.current_stitches),
+                        suffix = stringResource(R.string.unit_st),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    NumberInputField(
+                        value = changeBy,
+                        onValueChange = { changeBy = it },
+                        label = stringResource(mode.labelRes()),
+                        suffix = stringResource(R.string.unit_st),
+                        modifier = Modifier.fillMaxWidth(),
+                        isLast = true,
+                    )
+                }
+            }
 
             result?.let { r -> IncreaseDecreaseResultSection(r) }
         }

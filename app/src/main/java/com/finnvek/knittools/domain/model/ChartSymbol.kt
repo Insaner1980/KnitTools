@@ -1,5 +1,7 @@
 package com.finnvek.knittools.domain.model
 
+import androidx.annotation.StringRes
+
 enum class ChartSymbolCategory {
     BASIC,
     DECREASES,
@@ -10,7 +12,7 @@ enum class ChartSymbolCategory {
 
 data class ChartSymbol(
     val id: String,
-    val name: String,
-    val description: String,
+    @StringRes val nameResId: Int,
+    @StringRes val descriptionResId: Int,
     val category: ChartSymbolCategory,
 )

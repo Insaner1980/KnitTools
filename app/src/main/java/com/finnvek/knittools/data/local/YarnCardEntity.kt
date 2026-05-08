@@ -1,5 +1,6 @@
 package com.finnvek.knittools.data.local
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
@@ -21,4 +22,10 @@ data class YarnCardEntity(
     val careSymbols: Long = 0L,
     val photoUri: String = "",
     val createdAt: Long = System.currentTimeMillis(),
+    @ColumnInfo(defaultValue = "1")
+    val quantityInStash: Int = 1,
+    @ColumnInfo(defaultValue = "IN_STASH")
+    val status: String = "IN_STASH",
+    @ColumnInfo(defaultValue = "NULL")
+    val linkedProjectId: Long? = null,
 )

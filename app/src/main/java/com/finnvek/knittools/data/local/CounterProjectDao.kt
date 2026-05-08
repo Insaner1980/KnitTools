@@ -126,6 +126,82 @@ interface CounterProjectDao {
         updatedAt: Long,
     )
 
+    @Query("UPDATE counter_projects SET currentStitch = :stitch, updatedAt = :updatedAt WHERE id = :id")
+    suspend fun updateCurrentStitch(
+        id: Long,
+        stitch: Int,
+        updatedAt: Long,
+    )
+
+    @Query("UPDATE counter_projects SET stitchTrackingEnabled = :enabled, updatedAt = :updatedAt WHERE id = :id")
+    suspend fun updateStitchTrackingEnabled(
+        id: Long,
+        enabled: Boolean,
+        updatedAt: Long,
+    )
+
+    @Query(
+        """
+        UPDATE counter_projects
+        SET patternUri = :patternUri,
+            patternName = :patternName,
+            currentPatternPage = :currentPatternPage,
+            patternRowMapping = :patternRowMapping,
+            updatedAt = :updatedAt
+        WHERE id = :id
+        """,
+    )
+    suspend fun updatePattern(
+        id: Long,
+        patternUri: String?,
+        patternName: String?,
+        currentPatternPage: Int,
+        patternRowMapping: String?,
+        updatedAt: Long,
+    )
+
+    @Query(
+        """
+        UPDATE counter_projects
+        SET currentPatternPage = :page,
+            updatedAt = :updatedAt
+        WHERE id = :id
+        """,
+    )
+    suspend fun updateCurrentPatternPage(
+        id: Long,
+        page: Int,
+        updatedAt: Long,
+    )
+
+    @Query(
+        """
+        UPDATE counter_projects
+        SET patternRowMapping = :mapping,
+            updatedAt = :updatedAt
+        WHERE id = :id
+        """,
+    )
+    suspend fun updatePatternRowMapping(
+        id: Long,
+        mapping: String?,
+        updatedAt: Long,
+    )
+
+    @Query(
+        """
+        UPDATE counter_projects
+        SET stepSize = :stepSize,
+            updatedAt = :updatedAt
+        WHERE id = :id
+        """,
+    )
+    suspend fun updateStepSize(
+        id: Long,
+        stepSize: Int,
+        updatedAt: Long,
+    )
+
     @Query(
         """
         UPDATE counter_projects
@@ -235,8 +311,20 @@ interface CounterProjectDao {
     @Query("SELECT * FROM counter_projects WHERE isCompleted = 0 ORDER BY updatedAt DESC")
     fun getActiveProjects(): Flow<List<CounterProjectEntity>>
 
+    @Query("SELECT * FROM counter_projects WHERE isCompleted = 0 ORDER BY name COLLATE NOCASE ASC")
+    fun getActiveProjectsByName(): Flow<List<CounterProjectEntity>>
+
+    @Query("SELECT * FROM counter_projects WHERE isCompleted = 0 ORDER BY id DESC")
+    fun getActiveProjectsByCreated(): Flow<List<CounterProjectEntity>>
+
     @Query("SELECT * FROM counter_projects WHERE isCompleted = 1 ORDER BY completedAt DESC")
     fun getCompletedProjects(): Flow<List<CounterProjectEntity>>
+
+    @Query("SELECT * FROM counter_projects WHERE isCompleted = 1 ORDER BY name COLLATE NOCASE ASC")
+    fun getCompletedProjectsByName(): Flow<List<CounterProjectEntity>>
+
+    @Query("SELECT * FROM counter_projects WHERE isCompleted = 1 ORDER BY id DESC")
+    fun getCompletedProjectsByCreated(): Flow<List<CounterProjectEntity>>
 
     @Query("SELECT COUNT(*) FROM counter_projects WHERE isCompleted = 0")
     suspend fun getActiveProjectCount(): Int

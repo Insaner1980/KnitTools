@@ -9,7 +9,6 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
-import com.finnvek.knittools.data.datastore.ThemeMode
 
 @Immutable
 data class KnitToolsExtendedColors(
@@ -18,6 +17,8 @@ data class KnitToolsExtendedColors(
     val onSurfaceMuted: Color,
     val brandWine: Color,
     val inactiveContent: Color,
+    val navBarContainer: Color,
+    val navBarIndicator: Color,
 )
 
 val LocalKnitToolsColors =
@@ -28,6 +29,8 @@ val LocalKnitToolsColors =
             onSurfaceMuted = Color.Unspecified,
             brandWine = Color.Unspecified,
             inactiveContent = Color.Unspecified,
+            navBarContainer = Color.Unspecified,
+            navBarIndicator = Color.Unspecified,
         )
     }
 
@@ -35,91 +38,97 @@ val MaterialTheme.knitToolsColors: KnitToolsExtendedColors
     @Composable
     get() = LocalKnitToolsColors.current
 
+// === Dark color scheme ===
+
 private val KnitToolsDarkColorScheme =
     darkColorScheme(
-        primary = DarkPrimary,
-        onPrimary = DarkOnPrimary,
-        primaryContainer = DarkPrimaryContainer,
-        onPrimaryContainer = DarkPrimary,
-        secondary = DarkSecondary,
-        secondaryContainer = DarkSecondaryContainer,
-        surface = DarkSurface,
-        surfaceVariant = DarkSurfaceVariant,
-        surfaceContainerLowest = DarkSurfaceContainerLowest,
-        surfaceContainerLow = DarkSurfaceContainerLow,
-        surfaceContainer = DarkSurfaceContainer,
-        surfaceContainerHigh = DarkSurfaceContainerHigh,
-        surfaceContainerHighest = DarkSurfaceContainerHighest,
-        onSurface = DarkOnSurface,
-        onSurfaceVariant = DarkOnSurfaceVariant,
-        background = DarkBackground,
-        onBackground = DarkOnSurface,
-        error = DarkError,
-        errorContainer = DarkErrorContainer,
-        outline = DarkOutline,
-        outlineVariant = DarkOutlineVariant,
-    )
-
-private val KnitToolsLightColorScheme =
-    lightColorScheme(
-        primary = LightPrimary,
-        onPrimary = LightOnPrimary,
-        primaryContainer = LightPrimaryContainer,
-        onPrimaryContainer = LightOnPrimaryContainer,
-        secondary = LightSecondary,
-        secondaryContainer = LightSecondaryContainer,
-        surface = LightSurface,
-        surfaceVariant = LightSurfaceVariant,
-        surfaceContainerLowest = LightSurfaceContainerLowest,
-        surfaceContainerLow = LightSurfaceContainerLow,
-        surfaceContainer = LightSurfaceContainer,
-        surfaceContainerHigh = LightSurfaceContainerHigh,
-        surfaceContainerHighest = LightSurfaceContainerHighest,
-        onSurface = LightOnSurface,
-        onSurfaceVariant = LightOnSurfaceVariant,
-        background = LightBackground,
-        onBackground = LightOnSurface,
-        error = LightError,
-        errorContainer = LightErrorContainer,
-        outline = LightOutline,
-        outlineVariant = LightOutlineVariant,
+        primary = Primary,
+        onPrimary = OnPrimary,
+        primaryContainer = PrimaryContainer,
+        onPrimaryContainer = TextPrimary,
+        secondary = Secondary,
+        secondaryContainer = SecondaryContainer,
+        tertiary = Tertiary,
+        tertiaryContainer = TertiaryContainer,
+        surface = Surface,
+        surfaceVariant = SurfaceHigh,
+        surfaceContainerLowest = Background,
+        surfaceContainerLow = Surface,
+        surfaceContainer = SurfaceHigh,
+        surfaceContainerHigh = SurfaceHighest,
+        surfaceContainerHighest = SurfaceHighest,
+        onSurface = TextPrimary,
+        onSurfaceVariant = TextSecondary,
+        background = Background,
+        onBackground = TextPrimary,
+        error = Error,
+        errorContainer = ErrorContainer,
+        outline = TextMuted,
+        outlineVariant = Divider,
     )
 
 private val DarkExtendedColors =
     KnitToolsExtendedColors(
-        surfaceTint = DarkSurfaceTint,
-        secondaryOutline = DarkSecondaryContainer,
-        onSurfaceMuted = DarkOnSurfaceMuted,
-        brandWine = BrandWine,
-        inactiveContent = InactiveContent,
+        surfaceTint = SurfaceHighest,
+        secondaryOutline = Divider,
+        onSurfaceMuted = TextMuted,
+        brandWine = DustyRose,
+        inactiveContent = NavText,
+        navBarContainer = NavBackground,
+        navBarIndicator = NavActiveBg,
+    )
+
+// === Light color scheme ===
+
+private val KnitToolsLightColorScheme =
+    lightColorScheme(
+        primary = Primary,
+        onPrimary = OnPrimary,
+        primaryContainer = PrimaryContainer,
+        onPrimaryContainer = LightTextPrimary,
+        secondary = LightSecondary,
+        secondaryContainer = LightSecondaryContainer,
+        tertiary = LightTertiary,
+        tertiaryContainer = LightTertiaryContainer,
+        surface = LightSurface,
+        surfaceVariant = LightSurfaceHigh,
+        surfaceContainerLowest = LightBackground,
+        surfaceContainerLow = LightSurface,
+        surfaceContainer = LightSurfaceHigh,
+        surfaceContainerHigh = LightSurfaceMediumHigh,
+        surfaceContainerHighest = LightSurfaceHighest,
+        onSurface = LightTextPrimary,
+        onSurfaceVariant = LightTextSecondary,
+        background = LightBackground,
+        onBackground = LightTextPrimary,
+        error = Error,
+        errorContainer = LightErrorContainer,
+        outline = LightTextMuted,
+        outlineVariant = LightDivider,
     )
 
 private val LightExtendedColors =
     KnitToolsExtendedColors(
-        surfaceTint = LightSurfaceTint,
-        secondaryOutline = LightSecondaryOutline,
-        onSurfaceMuted = LightOnSurfaceMuted,
-        brandWine = BrandWine,
-        inactiveContent = InactiveContent,
+        surfaceTint = LightSurfaceHighest,
+        secondaryOutline = LightDivider,
+        onSurfaceMuted = LightTextMuted,
+        brandWine = LightDustyRose,
+        inactiveContent = LightNavText,
+        navBarContainer = LightNavBackground,
+        navBarIndicator = LightNavActiveBg,
     )
 
 @Composable
 fun KnitToolsTheme(
-    themeMode: ThemeMode = ThemeMode.SYSTEM,
+    isDarkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit,
 ) {
-    val isDark =
-        when (themeMode) {
-            ThemeMode.DARK -> true
-            ThemeMode.LIGHT -> false
-            ThemeMode.SYSTEM -> isSystemInDarkTheme()
-        }
-
-    val extendedColors = if (isDark) DarkExtendedColors else LightExtendedColors
+    val colorScheme = if (isDarkTheme) KnitToolsDarkColorScheme else KnitToolsLightColorScheme
+    val extendedColors = if (isDarkTheme) DarkExtendedColors else LightExtendedColors
 
     CompositionLocalProvider(LocalKnitToolsColors provides extendedColors) {
         MaterialTheme(
-            colorScheme = if (isDark) KnitToolsDarkColorScheme else KnitToolsLightColorScheme,
+            colorScheme = colorScheme,
             typography = AppTypography,
             shapes = AppShapes,
             content = content,

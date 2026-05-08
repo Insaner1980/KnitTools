@@ -2,6 +2,7 @@ package com.finnvek.knittools.ui.screens.library
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -44,14 +45,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.finnvek.knittools.R
-import com.finnvek.knittools.data.local.CounterProjectEntity
-import com.finnvek.knittools.data.local.ProgressPhotoEntity
+import com.finnvek.knittools.domain.model.CounterProject
+import com.finnvek.knittools.domain.model.ProgressPhoto
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.screens.counter.PhotoViewer
 import java.text.SimpleDateFormat
@@ -60,14 +62,14 @@ import java.util.Locale
 
 // Data-luokat AllPhotosScreen-parametrien ryhmittelyyn (S107)
 data class AllPhotosState(
-    val photos: List<ProgressPhotoEntity>,
-    val projects: List<CounterProjectEntity>,
+    val photos: List<ProgressPhoto>,
+    val projects: List<CounterProject>,
     val isSelectMode: Boolean,
     val selectedPhotoIds: Set<Long>,
 )
 
 data class AllPhotosActions(
-    val onDeletePhoto: (ProgressPhotoEntity) -> Unit,
+    val onDeletePhoto: (ProgressPhoto) -> Unit,
     val onEnterSelectMode: (Long) -> Unit,
     val onToggleSelection: (Long) -> Unit,
     val onSelectAll: (List<Long>) -> Unit,
@@ -83,7 +85,7 @@ fun AllPhotosScreen(
     actions: AllPhotosActions,
 ) {
     var selectedProjectId by rememberSaveable { mutableStateOf<Long?>(null) }
-    var viewingPhoto by remember { mutableStateOf<ProgressPhotoEntity?>(null) }
+    var viewingPhoto by remember { mutableStateOf<ProgressPhoto?>(null) }
     var showDeleteConfirmDialog by rememberSaveable { mutableStateOf(false) }
 
     val filteredPhotos =
@@ -143,10 +145,18 @@ fun AllPhotosScreen(
         },
     ) { padding ->
         if (state.photos.isEmpty()) {
-            Box(
-                modifier = Modifier.fillMaxSize().padding(padding),
-                contentAlignment = Alignment.Center,
+            Column(
+                modifier = Modifier.fillMaxSize().padding(padding).padding(32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
             ) {
+                Image(
+                    painter = painterResource(R.drawable.camera_icon),
+                    contentDescription = null,
+                    modifier = Modifier.size(240.dp),
+                    contentScale = ContentScale.Fit,
+                )
+                Spacer(modifier = Modifier.height(24.dp))
                 Text(
                     text = stringResource(R.string.empty_all_photos),
                     style = MaterialTheme.typography.bodyLarge,
@@ -188,7 +198,7 @@ private fun AllPhotosDeleteDialog(
 @Composable
 private fun AllPhotosTopBar(
     state: AllPhotosState,
-    filteredPhotos: List<ProgressPhotoEntity>,
+    filteredPhotos: List<ProgressPhoto>,
     onExitSelectMode: () -> Unit,
     onSelectAll: (List<Long>) -> Unit,
     onBack: () -> Unit,
@@ -250,10 +260,10 @@ private fun AllPhotosTopBar(
 private fun AllPhotosContent(
     state: AllPhotosState,
     actions: AllPhotosActions,
-    filteredPhotos: List<ProgressPhotoEntity>,
+    filteredPhotos: List<ProgressPhoto>,
     selectedProjectId: Long?,
     onProjectFilterClick: (Long?) -> Unit,
-    onPhotoClick: (ProgressPhotoEntity) -> Unit,
+    onPhotoClick: (ProgressPhoto) -> Unit,
     padding: PaddingValues,
 ) {
     val projectMap = state.projects.associateBy { it.id }
@@ -283,7 +293,7 @@ private fun AllPhotosContent(
 @Composable
 private fun ProjectFilterChips(
     projectsWithPhotos: List<Long>,
-    projectMap: Map<Long, CounterProjectEntity>,
+    projectMap: Map<Long, CounterProject>,
     selectedProjectId: Long?,
     onProjectFilterClick: (Long?) -> Unit,
 ) {
@@ -317,11 +327,11 @@ private fun ProjectFilterChips(
 
 @Composable
 private fun PhotoGrid(
-    filteredPhotos: List<ProgressPhotoEntity>,
+    filteredPhotos: List<ProgressPhoto>,
     state: AllPhotosState,
     actions: AllPhotosActions,
-    projectMap: Map<Long, CounterProjectEntity>,
-    onPhotoClick: (ProgressPhotoEntity) -> Unit,
+    projectMap: Map<Long, CounterProject>,
+    onPhotoClick: (ProgressPhoto) -> Unit,
 ) {
     LazyVerticalGrid(
         columns = GridCells.Fixed(2),
@@ -355,7 +365,7 @@ private fun PhotoGrid(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun PhotoGridItem(
-    photo: ProgressPhotoEntity,
+    photo: ProgressPhoto,
     projectName: String?,
     isSelectMode: Boolean,
     isSelected: Boolean,

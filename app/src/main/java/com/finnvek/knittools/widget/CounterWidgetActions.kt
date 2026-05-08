@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import androidx.glance.appwidget.updateAll
+import com.finnvek.knittools.pro.ProFeature
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -24,6 +25,8 @@ class CounterWidgetActions : BroadcastReceiver() {
                         context.applicationContext,
                         WidgetEntryPoint::class.java,
                     )
+                if (!entryPoint.proManager().hasFeature(ProFeature.WIDGET)) return@launch
+
                 val repository = entryPoint.counterRepository()
                 val widgetData = CounterWidgetState.load(context)
 
@@ -42,6 +45,8 @@ class CounterWidgetActions : BroadcastReceiver() {
                 val updatedProject = repository.getProject(project.id) ?: return@launch
                 CounterWidgetState.save(context, updatedProject.name, updatedProject.count, updatedProject.id)
                 CounterWidget().updateAll(context)
+            } catch (_: Exception) {
+                // Widget-toiminto epäonnistui — ei kaadeta sovellusta
             } finally {
                 pendingResult.finish()
             }

@@ -1,0 +1,25 @@
+package com.finnvek.knittools.domain.model
+
+data class CounterProject(
+    val id: Long = 0,
+    val name: String = "",
+    val count: Int = 0,
+    val secondaryCount: Int = 0,
+    val stepSize: Int = 1,
+    val notes: String = "",
+    val createdAt: Long = System.currentTimeMillis(),
+    val updatedAt: Long = System.currentTimeMillis(),
+    val sectionName: String? = null,
+    val stitchCount: Int? = null,
+    val isCompleted: Boolean = false,
+    val totalRows: Int? = null,
+    val completedAt: Long? = null,
+    val yarnCardIds: String = "",
+    val linkedPatternId: Long? = null,
+    val patternUri: String? = null,
+    val patternName: String? = null,
+    val currentPatternPage: Int = 0,
+    val patternRowMapping: String? = null,
+    val stitchTrackingEnabled: Boolean = false,
+    val currentStitch: Int = 0,
+)

@@ -4,9 +4,8 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.outlined.FilterVintage
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -20,6 +19,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -27,7 +27,6 @@ import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.ai.nano.InstructionParser
 import com.finnvek.knittools.ai.nano.NanoAvailability
-import com.finnvek.knittools.ai.nano.NanoStatus
 import com.finnvek.knittools.ai.nano.ParsedInstruction
 import kotlinx.coroutines.launch
 
@@ -39,19 +38,33 @@ fun PasteInstructionButton(
     hintText: String? = null,
 ) {
     var nanoAvailable by remember { mutableStateOf(false) }
-    var expanded by remember { mutableStateOf(false) }
+    var expanded by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(isPro) {
         if (isPro) {
-            nanoAvailable = NanoAvailability.check() != NanoStatus.UNAVAILABLE
+            nanoAvailable = NanoAvailability.isUsable()
         }
     }
 
     if (!isPro || !nanoAvailable) return
 
     Column(modifier = modifier) {
-        TextButton(onClick = { expanded = !expanded }) {
-            Icon(Icons.Filled.AutoAwesome, contentDescription = null, modifier = Modifier.padding(end = 4.dp))
+        TextButton(
+            onClick = { expanded = !expanded },
+            colors =
+                androidx.compose.material3.ButtonDefaults.textButtonColors(
+                    containerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.10f),
+                    contentColor = MaterialTheme.colorScheme.tertiary,
+                ),
+            shape =
+                androidx.compose.foundation.shape
+                    .RoundedCornerShape(14.dp),
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding =
+                androidx.compose.foundation.layout
+                    .PaddingValues(vertical = 14.dp),
+        ) {
+            Icon(Icons.Outlined.FilterVintage, contentDescription = null, modifier = Modifier.padding(end = 4.dp))
             Text(stringResource(R.string.paste_instruction))
         }
 
@@ -73,7 +86,7 @@ private fun InstructionInputForm(
     onResult: (ParsedInstruction) -> Boolean,
     hintText: String,
 ) {
-    var instructionText by remember { mutableStateOf("") }
+    var instructionText by rememberSaveable { mutableStateOf("") }
     var isParsing by remember { mutableStateOf(false) }
     var resultMessage by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
@@ -104,7 +117,7 @@ private fun InstructionInputForm(
                     CircularProgressIndicator(modifier = Modifier.padding(8.dp), strokeWidth = 2.dp)
                 }
             },
-            shape = RoundedCornerShape(12.dp),
+            shape = MaterialTheme.shapes.medium,
             colors =
                 TextFieldDefaults.colors(
                     focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,

@@ -24,8 +24,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 
-private val InputFieldShape = RoundedCornerShape(12.dp)
-
 @Composable
 fun NumberInputField(
     value: String,
@@ -39,6 +37,7 @@ fun NumberInputField(
     val focusManager = LocalFocusManager.current
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
+    val inputFieldShape = RoundedCornerShape(14.dp)
 
     Column(modifier = modifier) {
         Text(
@@ -50,22 +49,21 @@ fun NumberInputField(
         TextField(
             value = value,
             onValueChange = { newValue ->
-                val filtered =
-                    if (isDecimal) {
-                        newValue.filter { it.isDigit() || it == '.' }
-                    } else {
-                        newValue.filter { it.isDigit() }
-                    }
-                onValueChange(filtered)
+                onValueChange(filterNumericInput(newValue, isDecimal))
             },
             modifier =
-                Modifier.then(
-                    if (isFocused) {
-                        Modifier.border(2.dp, MaterialTheme.colorScheme.primaryContainer, InputFieldShape)
-                    } else {
-                        Modifier
-                    },
-                ),
+                Modifier
+                    .border(
+                        1.dp,
+                        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                        inputFieldShape,
+                    ).then(
+                        if (isFocused) {
+                            Modifier.border(2.dp, MaterialTheme.colorScheme.primaryContainer, inputFieldShape)
+                        } else {
+                            Modifier
+                        },
+                    ),
             textStyle = MaterialTheme.typography.titleSmall,
             keyboardOptions =
                 KeyboardOptions(
@@ -88,11 +86,11 @@ fun NumberInputField(
                         )
                     }
                 },
-            shape = InputFieldShape,
+            shape = inputFieldShape,
             colors =
                 TextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
                     focusedIndicatorColor = Color.Transparent,
                     unfocusedIndicatorColor = Color.Transparent,
                     disabledIndicatorColor = Color.Transparent,
@@ -100,4 +98,31 @@ fun NumberInputField(
             interactionSource = interactionSource,
         )
     }
+}
+
+private fun filterNumericInput(
+    value: String,
+    isDecimal: Boolean,
+): String {
+    if (!isDecimal) {
+        return value.filter(Char::isDigit)
+    }
+
+    val result = StringBuilder()
+    var hasDecimalSeparator = false
+
+    value.forEach { char ->
+        when {
+            char.isDigit() -> {
+                result.append(char)
+            }
+
+            (char == '.' || char == ',') && !hasDecimalSeparator -> {
+                result.append('.')
+                hasDecimalSeparator = true
+            }
+        }
+    }
+
+    return result.toString()
 }

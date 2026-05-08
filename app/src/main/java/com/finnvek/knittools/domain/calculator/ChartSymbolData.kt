@@ -1,5 +1,6 @@
 package com.finnvek.knittools.domain.calculator
 
+import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.ChartSymbol
 import com.finnvek.knittools.domain.model.ChartSymbolCategory
 
@@ -7,50 +8,95 @@ object ChartSymbolData {
     val symbols: List<ChartSymbol> =
         listOf(
             // Perussilmukat
-            ChartSymbol("knit", "Knit", "Knit on RS, purl on WS", ChartSymbolCategory.BASIC),
-            ChartSymbol("purl", "Purl", "Purl on RS, knit on WS", ChartSymbolCategory.BASIC),
+            ChartSymbol("knit", R.string.sym_knit_name, R.string.sym_knit_desc, ChartSymbolCategory.BASIC),
+            ChartSymbol("purl", R.string.sym_purl_name, R.string.sym_purl_desc, ChartSymbolCategory.BASIC),
             ChartSymbol(
                 "yarn_over",
-                "Yarn Over",
-                "Wrap yarn around needle to create a hole",
+                R.string.sym_yarn_over_name,
+                R.string.sym_yarn_over_desc,
                 ChartSymbolCategory.BASIC,
             ),
-            ChartSymbol("knit_tbl", "Knit TBL", "Knit through the back loop (twisted)", ChartSymbolCategory.BASIC),
-            ChartSymbol("purl_tbl", "Purl TBL", "Purl through the back loop (twisted)", ChartSymbolCategory.BASIC),
-            ChartSymbol("slip_knitwise", "Slip Knitwise", "Slip stitch as if to knit", ChartSymbolCategory.BASIC),
-            ChartSymbol("slip_purlwise", "Slip Purlwise", "Slip stitch as if to purl", ChartSymbolCategory.BASIC),
+            ChartSymbol(
+                "knit_tbl",
+                R.string.sym_knit_tbl_name,
+                R.string.sym_knit_tbl_desc,
+                ChartSymbolCategory.BASIC,
+            ),
+            ChartSymbol(
+                "purl_tbl",
+                R.string.sym_purl_tbl_name,
+                R.string.sym_purl_tbl_desc,
+                ChartSymbolCategory.BASIC,
+            ),
+            ChartSymbol(
+                "slip_knitwise",
+                R.string.sym_slip_knitwise_name,
+                R.string.sym_slip_knitwise_desc,
+                ChartSymbolCategory.BASIC,
+            ),
+            ChartSymbol(
+                "slip_purlwise",
+                R.string.sym_slip_purlwise_name,
+                R.string.sym_slip_purlwise_desc,
+                ChartSymbolCategory.BASIC,
+            ),
             // Kavennukset
-            ChartSymbol("k2tog", "K2tog", "Knit 2 together — right-leaning decrease", ChartSymbolCategory.DECREASES),
-            ChartSymbol("ssk", "SSK", "Slip, slip, knit — left-leaning decrease", ChartSymbolCategory.DECREASES),
-            ChartSymbol("p2tog", "P2tog", "Purl 2 together", ChartSymbolCategory.DECREASES),
-            ChartSymbol("s2kp", "S2KP / CDD", "Centered double decrease", ChartSymbolCategory.DECREASES),
-            ChartSymbol("k3tog", "K3tog", "Knit 3 together — double decrease", ChartSymbolCategory.DECREASES),
-            ChartSymbol("sk2p", "SK2P", "Slip 1, K2tog, pass slipped stitch over", ChartSymbolCategory.DECREASES),
+            ChartSymbol("k2tog", R.string.sym_k2tog_name, R.string.sym_k2tog_desc, ChartSymbolCategory.DECREASES),
+            ChartSymbol("ssk", R.string.sym_ssk_name, R.string.sym_ssk_desc, ChartSymbolCategory.DECREASES),
+            ChartSymbol("p2tog", R.string.sym_p2tog_name, R.string.sym_p2tog_desc, ChartSymbolCategory.DECREASES),
+            ChartSymbol("s2kp", R.string.sym_s2kp_name, R.string.sym_s2kp_desc, ChartSymbolCategory.DECREASES),
+            ChartSymbol("k3tog", R.string.sym_k3tog_name, R.string.sym_k3tog_desc, ChartSymbolCategory.DECREASES),
+            ChartSymbol("sk2p", R.string.sym_sk2p_name, R.string.sym_sk2p_desc, ChartSymbolCategory.DECREASES),
             // Lisäykset
-            ChartSymbol("m1l", "M1L", "Make 1 left — left-leaning increase", ChartSymbolCategory.INCREASES),
-            ChartSymbol("m1r", "M1R", "Make 1 right — right-leaning increase", ChartSymbolCategory.INCREASES),
-            ChartSymbol("kfb", "KFB", "Knit front and back — increase", ChartSymbolCategory.INCREASES),
+            ChartSymbol("m1l", R.string.sym_m1l_name, R.string.sym_m1l_desc, ChartSymbolCategory.INCREASES),
+            ChartSymbol("m1r", R.string.sym_m1r_name, R.string.sym_m1r_desc, ChartSymbolCategory.INCREASES),
+            ChartSymbol("kfb", R.string.sym_kfb_name, R.string.sym_kfb_desc, ChartSymbolCategory.INCREASES),
             ChartSymbol(
                 "lifted_inc_left",
-                "Lifted Inc Left",
-                "Left-leaning lifted increase",
+                R.string.sym_lifted_inc_left_name,
+                R.string.sym_lifted_inc_left_desc,
                 ChartSymbolCategory.INCREASES,
             ),
             ChartSymbol(
                 "lifted_inc_right",
-                "Lifted Inc Right",
-                "Right-leaning lifted increase",
+                R.string.sym_lifted_inc_right_name,
+                R.string.sym_lifted_inc_right_desc,
                 ChartSymbolCategory.INCREASES,
             ),
             // Palmikot
-            ChartSymbol("cable_2_2_left", "Cable 2/2 Left", "2-over-2 left cross cable", ChartSymbolCategory.CABLES),
-            ChartSymbol("cable_2_2_right", "Cable 2/2 Right", "2-over-2 right cross cable", ChartSymbolCategory.CABLES),
-            ChartSymbol("cable_3_3_left", "Cable 3/3 Left", "3-over-3 left cross cable", ChartSymbolCategory.CABLES),
-            ChartSymbol("cable_3_3_right", "Cable 3/3 Right", "3-over-3 right cross cable", ChartSymbolCategory.CABLES),
+            ChartSymbol(
+                "cable_2_2_left",
+                R.string.sym_cable_2_2_left_name,
+                R.string.sym_cable_2_2_left_desc,
+                ChartSymbolCategory.CABLES,
+            ),
+            ChartSymbol(
+                "cable_2_2_right",
+                R.string.sym_cable_2_2_right_name,
+                R.string.sym_cable_2_2_right_desc,
+                ChartSymbolCategory.CABLES,
+            ),
+            ChartSymbol(
+                "cable_3_3_left",
+                R.string.sym_cable_3_3_left_name,
+                R.string.sym_cable_3_3_left_desc,
+                ChartSymbolCategory.CABLES,
+            ),
+            ChartSymbol(
+                "cable_3_3_right",
+                R.string.sym_cable_3_3_right_name,
+                R.string.sym_cable_3_3_right_desc,
+                ChartSymbolCategory.CABLES,
+            ),
             // Muut
-            ChartSymbol("no_stitch", "No Stitch", "Gray box — placeholder for shaping", ChartSymbolCategory.OTHER),
-            ChartSymbol("marker", "Marker", "Stitch marker position", ChartSymbolCategory.OTHER),
-            ChartSymbol("repeat", "Repeat", "Pattern repeat bracket", ChartSymbolCategory.OTHER),
+            ChartSymbol(
+                "no_stitch",
+                R.string.sym_no_stitch_name,
+                R.string.sym_no_stitch_desc,
+                ChartSymbolCategory.OTHER,
+            ),
+            ChartSymbol("marker", R.string.sym_marker_name, R.string.sym_marker_desc, ChartSymbolCategory.OTHER),
+            ChartSymbol("repeat", R.string.sym_repeat_name, R.string.sym_repeat_desc, ChartSymbolCategory.OTHER),
         )
 
     fun byCategory(): Map<ChartSymbolCategory, List<ChartSymbol>> = symbols.groupBy { it.category }

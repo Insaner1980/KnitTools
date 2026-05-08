@@ -49,13 +49,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
-import com.finnvek.knittools.data.local.SavedPatternEntity
+import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.screens.ravelry.PatternCard
 
 // Data-luokat SavedPatternsScreen-parametrien ryhmittelyyn (S107)
 data class SavedPatternsState(
-    val patterns: List<SavedPatternEntity>,
+    val patterns: List<SavedPattern>,
     val isSelectMode: Boolean,
     val selectedPatternIds: Set<Long>,
 )
@@ -320,7 +320,7 @@ internal fun SelectionIndicator(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun SavedPatternItem(
-    pattern: SavedPatternEntity,
+    pattern: SavedPattern,
     isSelectMode: Boolean,
     isSelected: Boolean,
     onClick: () -> Unit,

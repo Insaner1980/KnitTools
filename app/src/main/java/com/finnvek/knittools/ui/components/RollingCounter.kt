@@ -10,11 +10,16 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.text.TextStyle
 
 @Composable
@@ -27,12 +32,17 @@ fun RollingCounter(
     var previousCount by remember { mutableIntStateOf(count) }
     val goingUp = count >= previousCount
 
-    // Päivitä edellinen arvo kun uusi tulee
-    if (count != previousCount) {
+    LaunchedEffect(count) {
         previousCount = count
     }
 
-    Row(modifier = modifier) {
+    Row(
+        modifier =
+            modifier.clearAndSetSemantics {
+                contentDescription = countStr
+                liveRegion = LiveRegionMode.Polite
+            },
+    ) {
         countStr.forEachIndexed { index, char ->
             val key = "${countStr.length}-$index-$char"
             AnimatedContent(

@@ -21,12 +21,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.NeedleSizeData
 import com.finnvek.knittools.domain.model.NeedleSize
+import com.finnvek.knittools.ui.components.InfoTip
 import com.finnvek.knittools.ui.components.SearchTextField
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
 
@@ -55,21 +55,41 @@ fun NeedleSizeScreen(onBack: () -> Unit) {
                 )
             }
             item {
-                Text(
-                    text = stringResource(R.string.needle_size_disclaimer),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                Row(
                     modifier = Modifier.padding(vertical = 8.dp),
-                )
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = stringResource(R.string.needle_size_disclaimer),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f),
+                    )
+                    InfoTip(
+                        title = stringResource(R.string.tip_needle_sizes_title),
+                        description = stringResource(R.string.tip_needle_sizes_desc),
+                    )
+                }
             }
             item { HeaderRow() }
-            items(results, key = { it.metricMm }) { needle ->
-                NeedleRow(
-                    needle = needle,
-                    isSelected = needle.metricMm == selectedMm,
-                    onClick = { selectedMm = needle.metricMm },
-                )
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            if (results.isEmpty()) {
+                item {
+                    Text(
+                        text = stringResource(R.string.no_results_found),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(vertical = 24.dp),
+                    )
+                }
+            } else {
+                items(results, key = { it.metricMm }) { needle ->
+                    NeedleRow(
+                        needle = needle,
+                        isSelected = needle.metricMm == selectedMm,
+                        onClick = { selectedMm = needle.metricMm },
+                    )
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                }
             }
         }
     }
@@ -95,7 +115,6 @@ private fun HeaderRow() {
                 text = stringResource(headerRes),
                 modifier = Modifier.weight(1f),
                 style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
             )
         }

@@ -41,4 +41,6 @@ data class CounterProjectEntity(
     val stitchTrackingEnabled: Boolean = false,
     @ColumnInfo(defaultValue = "0")
     val currentStitch: Int = 0,
+    @ColumnInfo(defaultValue = "NULL")
+    val targetRows: Int? = null,
 )

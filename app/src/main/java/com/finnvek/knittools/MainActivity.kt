@@ -2,6 +2,7 @@ package com.finnvek.knittools
 
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -30,6 +31,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import com.finnvek.knittools.auth.RavelryAuthManager
+import com.finnvek.knittools.billing.BillingManager
 import com.finnvek.knittools.data.datastore.ThemeMode
 import com.finnvek.knittools.pro.InAppReviewManager
 import com.finnvek.knittools.pro.InAppUpdateManager
@@ -59,12 +61,18 @@ class MainActivity : AppCompatActivity() {
     lateinit var ravelryAuthManager: RavelryAuthManager
 
     @Inject
+    lateinit var billingManager: BillingManager
+
+    @Inject
     lateinit var httpClient: io.ktor.client.HttpClient
 
     private val updateResultLauncher =
         registerForActivityResult(
             ActivityResultContracts.StartIntentSenderForResult(),
-        ) { /* Flexible mode — tulos käsitelty installStateListenerissa */ }
+        ) {
+            inAppUpdateManager.onUpdateFlowResult()
+            // Flexible mode — lataustulos käsitellään installStateListenerissa
+        }
 
     private var counterLaunchRequest by mutableStateOf<CounterLaunchRequest?>(null)
 
@@ -117,7 +125,11 @@ class MainActivity : AppCompatActivity() {
                         KnitToolsNavHost(
                             startDestination = TopLevelDestination.Projects.route,
                             counterLaunchRequest = counterLaunchRequest,
-                            onCounterLaunchHandled = { counterLaunchRequest = null },
+                            onPurchasePro = billingManager::launchPurchaseFlow,
+                            onCounterLaunchHandled = {
+                                counterLaunchRequest = null
+                                clearCounterLaunchIntent()
+                            },
                         )
                     }
                     SnackbarHost(
@@ -150,9 +162,23 @@ class MainActivity : AppCompatActivity() {
         val uri = intent?.data ?: return
         if (uri.scheme == "com.finnvek.knittools" && uri.host == "oauth") {
             lifecycleScope.launch {
-                ravelryAuthManager.handleCallback(httpClient, uri)
+                val handled = ravelryAuthManager.handleCallback(httpClient, uri)
+                if (handled) {
+                    clearOAuthCallbackIntent(uri)
+                }
             }
         }
+    }
+
+    private fun clearOAuthCallbackIntent(uri: Uri) {
+        if (intent?.data == uri) {
+            intent.data = null
+        }
+    }
+
+    private fun clearCounterLaunchIntent() {
+        intent?.removeExtra(EXTRA_OPEN_COUNTER)
+        intent?.removeExtra(EXTRA_PROJECT_ID)
     }
 
     private fun Intent?.toCounterLaunchRequest(): CounterLaunchRequest? {

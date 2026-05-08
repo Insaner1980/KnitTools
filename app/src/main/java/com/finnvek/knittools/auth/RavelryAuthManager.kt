@@ -1,13 +1,13 @@
+@file:Suppress("DEPRECATION")
+
 package com.finnvek.knittools.auth
 
 import android.content.Context
 import android.content.SharedPreferences
 import android.net.Uri
 import androidx.browser.customtabs.CustomTabsIntent
-import androidx.core.content.edit
-import androidx.core.net.toUri
 import androidx.security.crypto.EncryptedSharedPreferences
-import androidx.security.crypto.MasterKeys
+import androidx.security.crypto.MasterKey
 import com.finnvek.knittools.BuildConfig
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.ktor.client.HttpClient
@@ -47,16 +47,23 @@ class RavelryAuthManager
             private const val PREFS_FILE = "ravelry_oauth2"
             private const val KEY_ACCESS_TOKEN = "access_token"
             private const val KEY_REFRESH_TOKEN = "refresh_token"
+            private const val KEY_PENDING_STATE = "pending_state"
         }
 
         private val json = Json { ignoreUnknownKeys = true }
 
         private val prefs: SharedPreferences by lazy {
-            val masterKeyAlias = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC)
+            // AndroidX Security Crypto on deprekoitu kokonaisena API:na, mutta säilytetään nykyinen
+            // salattu tokenivarasto kunnes korvaava tallennusmalli migroidaan erikseen.
+            val masterKey =
+                MasterKey
+                    .Builder(context)
+                    .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                    .build()
             EncryptedSharedPreferences.create(
-                PREFS_FILE,
-                masterKeyAlias,
                 context,
+                PREFS_FILE,
+                masterKey,
                 EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
                 EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
             )
@@ -66,7 +73,7 @@ class RavelryAuthManager
         val isAuthenticated: StateFlow<Boolean> = _isAuthenticated.asStateFlow()
 
         // CSRF-suojaus: tallennetaan state OAuth-pyynnön ajaksi
-        private var pendingState: String? = null
+        private var pendingState: String? = prefs.getString(KEY_PENDING_STATE, null)
 
         val accessToken: String? get() = prefs.getString(KEY_ACCESS_TOKEN, null)
         private val refreshToken: String? get() = prefs.getString(KEY_REFRESH_TOKEN, null)
@@ -74,25 +81,28 @@ class RavelryAuthManager
         private fun hasStoredTokens(): Boolean = prefs.getString(KEY_ACCESS_TOKEN, null)?.isNotEmpty() == true
 
         /**
+         * Luo Ravelryn OAuth 2.0 -valtuutusosoitteen ja tallentaa CSRF-state-arvon.
+         */
+        fun createOAuthUri(): Uri {
+            val state = generateState()
+            savePendingState(state)
+
+            return Uri
+                .parse(AUTH_URL)
+                .buildUpon()
+                .appendQueryParameter("response_type", "code")
+                .appendQueryParameter("client_id", BuildConfig.RAVELRY_OAUTH2_CLIENT_ID)
+                .appendQueryParameter("redirect_uri", REDIRECT_URI)
+                .appendQueryParameter("scope", SCOPE)
+                .appendQueryParameter("state", state)
+                .build()
+        }
+
+        /**
          * Avaa Chrome Custom Tab Ravelryn OAuth 2.0 -valtuutussivulle.
          */
         fun startOAuthFlow(activity: android.app.Activity) {
-            val state = generateState()
-            pendingState = state
-
-            val authUri =
-                AUTH_URL
-                    .toUri()
-                    .buildUpon()
-                    .appendQueryParameter("response_type", "code")
-                    .appendQueryParameter("client_id", BuildConfig.RAVELRY_OAUTH2_CLIENT_ID)
-                    .appendQueryParameter("redirect_uri", REDIRECT_URI)
-                    .appendQueryParameter("scope", SCOPE)
-                    .appendQueryParameter("state", state)
-                    .build()
-
-            val customTab = CustomTabsIntent.Builder().build()
-            customTab.launchUrl(activity, authUri)
+            CustomTabsIntent.Builder().build().launchUrl(activity, createOAuthUri())
         }
 
         /**
@@ -105,12 +115,16 @@ class RavelryAuthManager
         ): Boolean {
             val code = uri.getQueryParameter("code") ?: return false
             val state = uri.getQueryParameter("state")
+            val expectedState = pendingState ?: prefs.getString(KEY_PENDING_STATE, null)
 
             // Tarkista CSRF state
-            if (state != pendingState) return false
-            pendingState = null
+            if (state != expectedState) return false
 
-            return exchangeCodeForTokens(httpClient, code)
+            val success = exchangeCodeForTokens(httpClient, code)
+            if (success) {
+                clearPendingState()
+            }
+            return success
         }
 
         /**
@@ -129,8 +143,19 @@ class RavelryAuthManager
         }
 
         fun signOut() {
-            prefs.edit { clear() }
+            prefs.edit().clear().apply()
+            pendingState = null
             _isAuthenticated.value = false
+        }
+
+        private fun savePendingState(state: String) {
+            pendingState = state
+            prefs.edit().putString(KEY_PENDING_STATE, state).apply()
+        }
+
+        private fun clearPendingState() {
+            pendingState = null
+            prefs.edit().remove(KEY_PENDING_STATE).apply()
         }
 
         private suspend fun exchangeCodeForTokens(
@@ -177,12 +202,14 @@ class RavelryAuthManager
             val newAccessToken = jsonObj["access_token"]?.jsonPrimitive?.content ?: return false
             val newRefreshToken = jsonObj["refresh_token"]?.jsonPrimitive?.content
 
-            prefs.edit {
-                putString(KEY_ACCESS_TOKEN, newAccessToken)
-                if (newRefreshToken != null) {
-                    putString(KEY_REFRESH_TOKEN, newRefreshToken)
-                }
-            }
+            prefs
+                .edit()
+                .putString(KEY_ACCESS_TOKEN, newAccessToken)
+                .apply {
+                    if (newRefreshToken != null) {
+                        putString(KEY_REFRESH_TOKEN, newRefreshToken)
+                    }
+                }.apply()
 
             _isAuthenticated.value = true
             return true

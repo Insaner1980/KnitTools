@@ -132,7 +132,7 @@ fun CounterListItem(
         ) {
             Icon(
                 imageVector = Icons.Filled.Remove,
-                contentDescription = null,
+                contentDescription = stringResource(R.string.counter_decrease),
                 modifier = Modifier.size(16.dp),
             )
         }
@@ -167,7 +167,7 @@ fun CounterListItem(
         ) {
             Icon(
                 imageVector = Icons.Filled.Add,
-                contentDescription = null,
+                contentDescription = stringResource(R.string.counter_increase),
                 modifier = Modifier.size(16.dp),
             )
         }

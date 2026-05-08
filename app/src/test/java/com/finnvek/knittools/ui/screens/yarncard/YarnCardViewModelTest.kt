@@ -1,13 +1,13 @@
 package com.finnvek.knittools.ui.screens.yarncard
 
 import android.content.Context
-import com.finnvek.knittools.ai.ParsedYarnLabel
-import com.finnvek.knittools.domain.model.CounterProject
-import com.finnvek.knittools.domain.model.YarnCard
+import com.finnvek.knittools.ai.ocr.ParsedYarnLabel
+import com.finnvek.knittools.data.local.YarnCardEntity
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.CounterRepository
 import com.finnvek.knittools.repository.YarnCardRepository
+import com.finnvek.knittools.repository.YarnLabelScanRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -32,7 +32,7 @@ class YarnCardViewModelTest {
     private lateinit var repository: YarnCardRepository
     private lateinit var counterRepository: CounterRepository
     private lateinit var proManager: ProManager
-    private lateinit var geminiAiService: com.finnvek.knittools.ai.GeminiAiService
+    private lateinit var scanRepository: YarnLabelScanRepository
     private lateinit var aiQuotaManager: com.finnvek.knittools.ai.AiQuotaManager
     private lateinit var context: Context
 
@@ -42,7 +42,7 @@ class YarnCardViewModelTest {
         repository = mockk(relaxed = true)
         counterRepository = mockk(relaxed = true)
         proManager = mockk()
-        geminiAiService = mockk(relaxed = true)
+        scanRepository = mockk(relaxed = true)
         aiQuotaManager = mockk(relaxed = true)
         context = mockk(relaxed = true)
 
@@ -56,7 +56,7 @@ class YarnCardViewModelTest {
     }
 
     private fun createViewModel() =
-        YarnCardViewModel(repository, counterRepository, proManager, geminiAiService, aiQuotaManager, context)
+        YarnCardViewModel(repository, counterRepository, proManager, scanRepository, aiQuotaManager, context)
 
     @Test
     fun `loadFromScan populates form state`() {
@@ -73,6 +73,7 @@ class YarnCardViewModelTest {
                 colorNumber = "044",
                 dyeLot = "A123",
                 weightCategory = "DK",
+                careSymbols = 9L,
             )
 
         val vm = createViewModel()
@@ -86,13 +87,14 @@ class YarnCardViewModelTest {
         assertEquals("200", form.lengthMeters)
         assertEquals("3.5", form.needleSize)
         assertEquals("DK", form.weightCategory)
+        assertEquals(9L, form.careSymbols)
         assertEquals("", form.photoUri)
     }
 
     @Test
     fun `loadFromCard sets editingCardId`() {
         val card =
-            YarnCard(
+            YarnCardEntity(
                 id = 5,
                 brand = "Drops",
                 yarnName = "Alpaca",
@@ -191,7 +193,10 @@ class YarnCardViewModelTest {
     @Test
     fun `linkCardToProject updates yarn card ids`() =
         runTest {
-            val project = CounterProject(id = 1L, yarnCardIds = "")
+            val project =
+                mockk<com.finnvek.knittools.data.local.CounterProjectEntity> {
+                    every { yarnCardIds } returns ""
+                }
             coEvery { counterRepository.getProject(1L) } returns project
 
             val vm = createViewModel()
@@ -203,7 +208,10 @@ class YarnCardViewModelTest {
     @Test
     fun `linkCardToProject skips duplicate`() =
         runTest {
-            val project = CounterProject(id = 1L, yarnCardIds = "5")
+            val project =
+                mockk<com.finnvek.knittools.data.local.CounterProjectEntity> {
+                    every { yarnCardIds } returns "5"
+                }
             coEvery { counterRepository.getProject(1L) } returns project
 
             val vm = createViewModel()

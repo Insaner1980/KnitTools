@@ -2,7 +2,7 @@ package com.finnvek.knittools.ui.screens.notes
 
 import androidx.lifecycle.SavedStateHandle
 import com.finnvek.knittools.ai.AiQuotaManager
-import com.finnvek.knittools.domain.model.CounterProject
+import com.finnvek.knittools.data.local.CounterProjectEntity
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.CounterRepository
@@ -48,7 +48,7 @@ class NotesEditorViewModelTest {
         count: Int = 0,
     ): NotesEditorViewModel {
         coEvery { repository.getProject(1L) } returns
-            CounterProject(
+            CounterProjectEntity(
                 id = 1L,
                 name = "Test",
                 count = count,

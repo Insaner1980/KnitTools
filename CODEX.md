@@ -2,43 +2,28 @@ KnitTools Codex Instructions
 
 Keep this file aligned with `AGENTS.md`. If one changes, update the other in the same change.
 
-Use [`CLAUDE.md`](CLAUDE.md) when product wording, visual direction, or UX structure matters.
+Use [`CLAUDE.md`](/home/emma/dev/KnitTools/CLAUDE.md) when product wording, visual direction, or UX structure matters.
 
 ## Snapshot
 
-- Gradle modules are `:app` and `:baselineprofile`
-- Android app lives in `app`
-- Baseline profile tests live in `baselineprofile`
-- Main app namespace/applicationId is `com.finnvek.knittools`
-- Baseline profile namespace is `com.finnvek.knittools.baselineprofile`
+- Android app in `app` plus `baselineprofile`
 - Kotlin + Jetpack Compose + Material 3
 - Hilt, Room, DataStore, Glance
-- Room schema version `7`
-- AGP 9 built-in Kotlin is in use
+- Room schema version `8`
+- AGP `9.1.0` + Kotlin Compose plugin `2.3.10`
 
 ## Architecture
 
-- Main source root is `app/src/main/java/com/finnvek/knittools`
-- Top-level source packages are `ai`, `auth`, `billing`, `data`, `di`, `domain`, `pro`, `repository`, `ui`, `util`, and `widget`
 - `data/` owns Room, DataStore, storage, Android framework access
-- `data/local/EntityMappers.kt` owns Room entity `<->` domain model conversion; mapper tests must preserve every entity field and default
-- `data/remote` owns Ravelry API models/service; `data/storage` owns app file creation helpers
-- `domain/` owns calculation logic and Room-free domain models
+- `domain/` owns calculation logic and domain models
 - `repository/` is the seam between storage/framework details and UI consumers
-- `CounterRepository`, `SavedPatternRepository`, `ProgressPhotoRepository`, `YarnCardRepository`, `PatternAnnotationRepository`, `ProjectCounterRepository`, and `ReminderRepository` expose domain models publicly and map to Room entities internally
-- Room entity types are `data/local` storage details and should not leak into `ui/` or `domain/calculator`
-- `ui/` owns screens, navigation, theme, and ViewModels; journal UI and `JournalEntryViewModel` live in `ui/screens/notes`
-- `ai/` owns Firebase AI integrations, AI voice command action contracts, and remaining on-device parsers; journal AI processing lives in `ai/journal`; yarn label parsing is Gemini-only, while yarn label photo file creation belongs in `data/storage`
-- `auth/` owns Ravelry authentication
-- `billing/` and `pro/` own billing, trials, Pro feature access, reviews, and updates
-- `di/` owns Hilt modules
-- `widget/` owns Glance home screen widget code
+- `ui/` owns screens, navigation, theme, and ViewModels
 - Keep business logic out of composables when a ViewModel or use case should own it
 
 ## Navigation Rules
 
 - Top-level tabs are `Projects`, `Library`, `Tools`, `Insights`, `Settings`
-- `TopLevelDestination` in [Screen.kt](app/src/main/java/com/finnvek/knittools/ui/navigation/Screen.kt) is the source of truth
+- `TopLevelDestination` in [Screen.kt](/home/emma/dev/KnitTools/app/src/main/java/com/finnvek/knittools/ui/navigation/Screen.kt) is the source of truth
 - `CounterViewModel` is shared at the Projects graph level
 - `LibraryViewModel` is shared at the Library graph level
 - Do not turn `Tools` back into a generic dashboard grid
@@ -64,7 +49,7 @@ Use [`CLAUDE.md`](CLAUDE.md) when product wording, visual direction, or UX struc
 - Keep `usesCleartextTraffic` disabled unless explicitly justified
 - Exported components must stay intentional and minimal
 - Keep `FileProvider` usage least-privilege
-- Do not log billing state, label scan content, AI prompt content, or user project data
+- Do not log billing state, OCR text, AI prompt content, or user project data
 
 ## Working Conventions
 

@@ -42,7 +42,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.BuildConfig
@@ -62,16 +61,11 @@ fun SettingsScreen(
     val proState by viewModel.proState.collectAsStateWithLifecycle()
     val voiceUsage by viewModel.voiceLiveUsage.collectAsStateWithLifecycle()
     val context = LocalContext.current
-
-    // ViewModel emittoi resurssi-ID:t Flow:lla, joten käännös täytyy hakea ajonaikaisesti.
-    // stringResource ei toimi non-composable lambdassa, joten luotamme contextiin tässä.
-    @Suppress("LocalContextResourcesRead")
-    val resources = context.resources
     val showLanguageSheet = remember { mutableStateOf(false) }
 
     LaunchedEffect(viewModel, context) {
         viewModel.messages.collect { messageRes ->
-            Toast.makeText(context, resources.getString(messageRes), Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, context.getString(messageRes), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -200,7 +194,7 @@ fun SettingsScreen(
                         androidx.browser.customtabs.CustomTabsIntent
                             .Builder()
                             .build()
-                    intent.launchUrl(context, "https://knittools.app/guide".toUri())
+                    intent.launchUrl(context, android.net.Uri.parse("https://knittools.app/guide"))
                 },
             )
 

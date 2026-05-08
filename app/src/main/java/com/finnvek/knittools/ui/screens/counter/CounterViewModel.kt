@@ -2,8 +2,6 @@ package com.finnvek.knittools.ui.screens.counter
 
 import android.content.Context
 import android.net.Uri
-import androidx.core.net.toUri
-import androidx.glance.appwidget.updateAll
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
@@ -12,10 +10,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.finnvek.knittools.BuildConfig
 import com.finnvek.knittools.R
-import com.finnvek.knittools.ai.AiVoiceAction
 import com.finnvek.knittools.ai.AiQuotaManager
 import com.finnvek.knittools.ai.GeminiAiService
-import com.finnvek.knittools.ai.ProjectSummarizer
 import com.finnvek.knittools.ai.VoiceCommandInterpreter
 import com.finnvek.knittools.ai.live.LiveVoiceState
 import com.finnvek.knittools.ai.live.ProjectVoiceContext
@@ -23,6 +19,13 @@ import com.finnvek.knittools.ai.live.VoiceLiveQuotaManager
 import com.finnvek.knittools.ai.live.VoiceLiveSession
 import com.finnvek.knittools.ai.nano.NanoAvailability
 import com.finnvek.knittools.data.datastore.PreferencesManager
+import com.finnvek.knittools.data.local.CounterProjectEntity
+import com.finnvek.knittools.data.local.ProgressPhotoEntity
+import com.finnvek.knittools.data.local.ProjectCounterEntity
+import com.finnvek.knittools.data.local.RowReminderEntity
+import com.finnvek.knittools.data.local.SavedPatternEntity
+import com.finnvek.knittools.data.local.SessionEntity
+import com.finnvek.knittools.data.local.YarnCardEntity
 import com.finnvek.knittools.data.storage.PatternDocumentStorage
 import com.finnvek.knittools.domain.calculator.CounterLogic
 import com.finnvek.knittools.domain.calculator.CounterState
@@ -31,14 +34,7 @@ import com.finnvek.knittools.domain.calculator.RepeatSectionLogic
 import com.finnvek.knittools.domain.calculator.RowMarker
 import com.finnvek.knittools.domain.calculator.parseMapping
 import com.finnvek.knittools.domain.calculator.serializeMapping
-import com.finnvek.knittools.domain.model.CounterProject
-import com.finnvek.knittools.domain.model.KnitSession
-import com.finnvek.knittools.domain.model.ProgressPhoto
-import com.finnvek.knittools.domain.model.ProjectCounter
 import com.finnvek.knittools.domain.model.ProjectCounterDraft
-import com.finnvek.knittools.domain.model.RowReminder
-import com.finnvek.knittools.domain.model.SavedPattern
-import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.pro.InAppReviewManager
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
@@ -49,8 +45,9 @@ import com.finnvek.knittools.repository.ProjectCounterRepository
 import com.finnvek.knittools.repository.ReminderRepository
 import com.finnvek.knittools.repository.SavedPatternRepository
 import com.finnvek.knittools.repository.YarnCardRepository
-import com.finnvek.knittools.widget.CounterWidget
+import com.finnvek.knittools.util.NetworkStatusProvider
 import com.finnvek.knittools.widget.CounterWidgetState
+import com.finnvek.knittools.widget.WidgetData
 import com.google.firebase.ai.type.FunctionCallPart
 import com.google.firebase.ai.type.FunctionResponsePart
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -67,10 +64,10 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.intOrNull
@@ -88,14 +85,8 @@ data class CounterUiState(
     val hapticFeedback: Boolean = true,
     val keepScreenAwake: Boolean = false,
     val isPro: Boolean = false,
-    val canUseSecondaryCounter: Boolean = false,
-    val canUseNotes: Boolean = false,
-    val canUseProgressPhotos: Boolean = false,
-    val canUseMultipleCounters: Boolean = false,
-    val canUsePatternCameraScan: Boolean = false,
-    val canUseVoiceCommands: Boolean = false,
     val isNanoAvailable: Boolean = false,
-    val projects: List<CounterProject> = emptyList(),
+    val projects: List<CounterProjectEntity> = emptyList(),
     val sectionName: String? = null,
     val stitchCount: Int? = null,
     val stitchTrackingEnabled: Boolean = false,
@@ -106,16 +97,17 @@ data class CounterUiState(
     val projectSummary: String? = null,
     val summaryError: String? = null,
     val isSummaryLoading: Boolean = false,
-    val reminders: List<RowReminder> = emptyList(),
-    val activeAlert: RowReminder? = null,
-    val projectCounters: List<ProjectCounter> = emptyList(),
-    val latestPhotos: List<ProgressPhoto> = emptyList(),
-    val linkedPattern: SavedPattern? = null,
+    val reminders: List<RowReminderEntity> = emptyList(),
+    val activeAlert: RowReminderEntity? = null,
+    val projectCounters: List<ProjectCounterEntity> = emptyList(),
+    val latestPhotos: List<ProgressPhotoEntity> = emptyList(),
+    val linkedPattern: SavedPatternEntity? = null,
     val patternUri: String? = null,
     val patternName: String? = null,
     val currentPatternPage: Int = 0,
     val patternRowMapping: String? = null,
     val totalRows: Int? = null,
+    val targetRows: Int? = null,
     val isLiveSessionActive: Boolean = false,
     val voiceLiveEnabled: Boolean = true,
 )
@@ -139,6 +131,8 @@ class CounterViewModel
         private val voiceLiveSession: VoiceLiveSession,
         private val voiceLiveQuotaManager: VoiceLiveQuotaManager,
         private val inAppReviewManager: InAppReviewManager,
+        private val counterSummaryGenerator: CounterSummaryGenerator,
+        private val networkStatusProvider: NetworkStatusProvider,
         private val savedStateHandle: SavedStateHandle,
         @param:ApplicationContext private val context: Context,
     ) : ViewModel() {
@@ -151,22 +145,22 @@ class CounterViewModel
             )
         val uiState: StateFlow<CounterUiState> = _uiState.asStateFlow()
 
-        val savedYarnCards: StateFlow<List<YarnCard>> =
+        val savedYarnCards: StateFlow<List<YarnCardEntity>> =
             yarnCardRepository.getAllCards().stateIn(
                 viewModelScope,
                 SharingStarted.WhileSubscribed(5000),
                 emptyList(),
             )
 
-        val savedPatterns: StateFlow<List<SavedPattern>> =
+        val savedPatterns: StateFlow<List<SavedPatternEntity>> =
             savedPatternRepository.getAll().stateIn(
                 viewModelScope,
                 SharingStarted.WhileSubscribed(5000),
                 emptyList(),
             )
 
-        private val _allPhotos = MutableStateFlow<List<ProgressPhoto>>(emptyList())
-        val allPhotos: StateFlow<List<ProgressPhoto>> = _allPhotos.asStateFlow()
+        private val _allPhotos = MutableStateFlow<List<ProgressPhotoEntity>>(emptyList())
+        val allPhotos: StateFlow<List<ProgressPhotoEntity>> = _allPhotos.asStateFlow()
 
         private var timerJob: Job? = null
         private var selectedProjectJob: Job? = null
@@ -219,17 +213,7 @@ class CounterViewModel
         private fun observeProState() {
             viewModelScope.launch {
                 proManager.proState.collect { proState ->
-                    _uiState.update {
-                        it.copy(
-                            isPro = proState.isPro,
-                            canUseSecondaryCounter = proState.hasFeature(ProFeature.SECONDARY_COUNTER),
-                            canUseNotes = proState.hasFeature(ProFeature.NOTES),
-                            canUseProgressPhotos = proState.hasFeature(ProFeature.PROGRESS_PHOTOS),
-                            canUseMultipleCounters = proState.hasFeature(ProFeature.MULTIPLE_COUNTERS),
-                            canUsePatternCameraScan = proState.hasFeature(ProFeature.PATTERN_CAMERA_SCAN),
-                            canUseVoiceCommands = proState.hasFeature(ProFeature.VOICE_COMMANDS),
-                        )
-                    }
+                    _uiState.update { it.copy(isPro = proState.isPro) }
                     if (!proState.isPro) {
                         _uiState.update { it.copy(isNanoAvailable = false, isAiAvailable = false) }
                         pruneHistoryForFree()
@@ -284,7 +268,7 @@ class CounterViewModel
             }
         }
 
-        fun selectProject(project: CounterProject) {
+        fun selectProject(project: CounterProjectEntity) {
             viewModelScope.launch {
                 // Pysäytä live-sessio ennen projektin vaihtoa — konteksti muuttuu
                 if (voiceLiveSession.isActive()) voiceLiveSession.stop()
@@ -318,6 +302,7 @@ class CounterViewModel
                                 currentPatternPage = project.currentPatternPage,
                                 patternRowMapping = project.patternRowMapping,
                                 totalRows = project.totalRows,
+                                targetRows = project.targetRows,
                             )
                         }
 
@@ -419,7 +404,7 @@ class CounterViewModel
             if (durationMinutes < 1 && endRow == sessionStartRow) return
 
             repository.insertSession(
-                KnitSession(
+                SessionEntity(
                     projectId = projectId,
                     startedAt = sessionStartedAt,
                     endedAt = System.currentTimeMillis(),
@@ -430,7 +415,7 @@ class CounterViewModel
             )
         }
 
-        private suspend fun recoverPendingSessionIfNeeded(projects: List<CounterProject>) {
+        private suspend fun recoverPendingSessionIfNeeded(projects: List<CounterProjectEntity>) {
             val projectId = savedStateHandle.get<Long>(KEY_SELECTED_PROJECT_ID) ?: return
             val pendingProject =
                 projects.find { it.id == projectId } ?: run {
@@ -454,7 +439,7 @@ class CounterViewModel
             clearPendingSessionState()
         }
 
-        private suspend fun startProjectSession(project: CounterProject) {
+        private suspend fun startProjectSession(project: CounterProjectEntity) {
             sessionStartedAt = System.currentTimeMillis()
             sessionStartRow = project.count
             linkedYarnIdsCache = project.yarnCardIds
@@ -540,6 +525,20 @@ class CounterViewModel
                 clearPendingSessionState()
                 clearSelectedProject()
             }
+        }
+
+        fun setTargetRows(target: Int?) {
+            val projectId = _uiState.value.projectId ?: return
+            val validated = target?.takeIf { it > 0 }
+            _uiState.update { it.copy(targetRows = validated) }
+            viewModelScope.launch {
+                repository.setTargetRows(projectId, validated)
+                syncWidget()
+            }
+        }
+
+        fun clearTarget() {
+            setTargetRows(null)
         }
 
         fun deleteProject(id: Long) {
@@ -644,13 +643,11 @@ class CounterViewModel
         }
 
         fun incrementSecondary() {
-            if (!proManager.hasFeature(ProFeature.SECONDARY_COUNTER)) return
             _uiState.update { it.copy(secondaryCount = it.secondaryCount + 1) }
             persistSecondary()
         }
 
         fun decrementSecondary() {
-            if (!proManager.hasFeature(ProFeature.SECONDARY_COUNTER)) return
             _uiState.update { it.copy(secondaryCount = maxOf(0, it.secondaryCount - 1)) }
             persistSecondary()
         }
@@ -684,7 +681,7 @@ class CounterViewModel
             viewModelScope.launch {
                 val projectId = _uiState.value.projectId ?: return@launch
                 val counter =
-                    ProjectCounter(
+                    ProjectCounterEntity(
                         projectId = projectId,
                         name = draft.name,
                         repeatAt = draft.repeatAt,
@@ -708,13 +705,13 @@ class CounterViewModel
             }
         }
 
-        fun incrementProjectCounter(counter: ProjectCounter) {
+        fun incrementProjectCounter(counter: ProjectCounterEntity) {
             viewModelScope.launch {
                 projectCounterRepository.incrementCounter(counter)
             }
         }
 
-        fun decrementProjectCounter(counter: ProjectCounter) {
+        fun decrementProjectCounter(counter: ProjectCounterEntity) {
             viewModelScope.launch {
                 projectCounterRepository.decrementCounter(counter)
             }
@@ -771,7 +768,7 @@ class CounterViewModel
             viewModelScope.launch {
                 val projectId = _uiState.value.projectId ?: return@launch
                 reminderRepository.insert(
-                    RowReminder(
+                    RowReminderEntity(
                         projectId = projectId,
                         targetRow = targetRow,
                         repeatInterval = repeatInterval,
@@ -836,7 +833,7 @@ class CounterViewModel
             }
         }
 
-        fun deletePhoto(photo: ProgressPhoto) {
+        fun deletePhoto(photo: ProgressPhotoEntity) {
             viewModelScope.launch {
                 photoRepository.deletePhoto(photo)
             }
@@ -882,12 +879,14 @@ class CounterViewModel
             viewModelScope.launch {
                 // Kopioi PDF sisäiseen tallennustilaan — estää permission-ongelmat
                 val internalUri =
-                    patternDocumentStorage.copyPdfToInternal(
-                        context = context,
-                        projectId = projectId,
-                        sourceUri = uri.toUri(),
-                        fileName = sanitizedName,
-                    ) ?: uri
+                    withContext(Dispatchers.IO) {
+                        patternDocumentStorage.copyPdfToInternal(
+                            context = context,
+                            projectId = projectId,
+                            sourceUri = Uri.parse(uri),
+                            fileName = sanitizedName,
+                        )
+                    } ?: uri
 
                 _uiState.update {
                     it.copy(
@@ -1035,8 +1034,19 @@ class CounterViewModel
             count: Int = _uiState.value.counter.count,
         ) {
             val resolvedProjectId = projectId ?: return
-            CounterWidgetState.save(context, projectName, count, resolvedProjectId)
-            CounterWidget().updateAll(context)
+            val state = _uiState.value
+            val widgetData =
+                WidgetData(
+                    projectName = projectName,
+                    count = count,
+                    projectId = resolvedProjectId,
+                    targetRows = state.targetRows?.takeIf { it > 0 },
+                    sectionName = state.sectionName?.takeIf { it.isNotBlank() },
+                    currentStitch = state.currentStitch,
+                    totalStitches = state.stitchCount?.takeIf { it > 0 },
+                    stitchTrackingEnabled = state.stitchTrackingEnabled,
+                )
+            CounterWidgetState.syncAll(context, widgetData)
         }
 
         private fun startTimer() {
@@ -1075,94 +1085,35 @@ class CounterViewModel
         fun generateSummary() {
             viewModelScope.launch {
                 val state = _uiState.value
-                val projectId = state.projectId ?: return@launch
+                state.projectId ?: return@launch
                 _uiState.update { it.copy(isSummaryLoading = true, projectSummary = null, summaryError = null) }
 
-                val sessionCount =
-                    repository
-                        .getSessionsForProject(projectId)
-                        .first()
-                        .size
-                val totalMinutes = repository.getTotalMinutesForProject(projectId)
-                val avgRows = if (sessionCount > 0) state.counter.count.toDouble() / sessionCount else 0.0
-                val createdAt = state.projects.find { it.id == projectId }?.createdAt ?: System.currentTimeMillis()
-                val daysActive = ((System.currentTimeMillis() - createdAt) / 86_400_000).toInt().coerceAtLeast(1)
-                val counterSummary =
-                    state.projectCounters
-                        .takeIf { it.isNotEmpty() }
-                        ?.joinToString(", ") { "${it.name}: ${it.count}" }
-
-                val lastSession = repository.getLatestSession(projectId)
-                val hoursSinceLastSession =
-                    lastSession?.let {
-                        (System.currentTimeMillis() - it.endedAt) / 3_600_000
+                when (val result = counterSummaryGenerator.generate(state)) {
+                    is CounterSummaryResult.Success -> {
+                        _uiState.update {
+                            it.copy(projectSummary = result.summary, isSummaryLoading = false)
+                        }
+                        refreshAiAvailability()
                     }
 
-                val yarnDetailedInfo =
-                    state.linkedYarns.firstOrNull()?.first?.let { yarnId ->
-                        yarnCardRepository.getCard(yarnId)?.let { card ->
-                            buildString {
-                                append("${card.brand} ${card.yarnName}".trim())
-                                card.weightCategory.takeIf { it.isNotBlank() }?.let { append(", $it") }
-                                card.fiberContent.takeIf { it.isNotBlank() }?.let { append(", $it") }
-                                if (card.lengthMeters.isNotBlank() && card.weightGrams.isNotBlank()) {
-                                    append(", ${card.lengthMeters}m/${card.weightGrams}g")
-                                }
-                                card.needleSize.takeIf { it.isNotBlank() }?.let { append(", needle $it") }
-                                card.gaugeInfo.takeIf { it.isNotBlank() }?.let { append(", gauge $it") }
-                            }
+                    is CounterSummaryResult.Fallback -> {
+                        _uiState.update {
+                            it.copy(
+                                projectSummary = result.summary,
+                                summaryError = result.error,
+                                isSummaryLoading = false,
+                            )
                         }
                     }
 
-                val data =
-                    ProjectSummarizer.ProjectData(
-                        name = state.projectName,
-                        currentRow = state.counter.count,
-                        patternName = state.patternName,
-                        yarnInfo =
-                            state.linkedYarns
-                                .map { it.second }
-                                .takeIf { it.isNotEmpty() }
-                                ?.joinToString(", "),
-                        yarnDetailedInfo = yarnDetailedInfo,
-                        totalSessionMinutes = totalMinutes,
-                        sessionCount = sessionCount,
-                        averageRowsPerSession = avgRows,
-                        stitchCount = state.stitchCount,
-                        notes = state.notes,
-                        daysActive = daysActive,
-                        counterSummary = counterSummary,
-                        hoursSinceLastSession = hoursSinceLastSession,
-                        lastSessionEndRow = lastSession?.endRow,
-                    )
-
-                if (!aiQuotaManager.hasQuota()) {
-                    _uiState.update {
-                        it.copy(
-                            projectSummary = null,
-                            summaryError = context.getString(R.string.ai_quota_exhausted),
-                            isSummaryLoading = false,
-                        )
-                    }
-                    return@launch
-                }
-
-                val aiSummary = ProjectSummarizer.summarize(geminiAiService, data)
-                if (aiSummary != null) {
-                    aiQuotaManager.recordCall()
-                    _uiState.update {
-                        it.copy(projectSummary = aiSummary, isSummaryLoading = false)
-                    }
-                    refreshAiAvailability()
-                } else {
-                    // Gemini-kutsu epäonnistui — fallback
-                    val fallback = ProjectSummarizer.simpleSummary(data)
-                    _uiState.update {
-                        it.copy(
-                            projectSummary = fallback,
-                            summaryError = context.getString(R.string.ai_summary_fallback),
-                            isSummaryLoading = false,
-                        )
+                    is CounterSummaryResult.Failure -> {
+                        _uiState.update {
+                            it.copy(
+                                projectSummary = null,
+                                summaryError = result.error,
+                                isSummaryLoading = false,
+                            )
+                        }
                     }
                 }
             }
@@ -1255,7 +1206,7 @@ class CounterViewModel
 
         private fun syncRepeatSectionCounters(
             mainRowCount: Int,
-            counters: List<ProjectCounter>,
+            counters: List<ProjectCounterEntity>,
             persist: Boolean,
         ) {
             val syncedCounters =
@@ -1360,6 +1311,9 @@ class CounterViewModel
             response?.let { _voiceResponse.tryEmit(it) }
         }
 
+        // "Klassinen" voice-putki ei ole pelkkä offline-keyword-parseri:
+        // paikallisesti tunnistamattomat komennot tulevat tänne Gemini-tulkintaan.
+        // Live API on tästä erillinen putki, joka voi tarvittaessa fallbackata v2-tilaan.
         fun interpretVoiceCommand(recognizedText: String) {
             viewModelScope.launch {
                 val normalizedText = recognizedText.lowercase().trim().replace(Regex("\\s+"), " ")
@@ -1388,7 +1342,7 @@ class CounterViewModel
                     VoiceCommandInterpreter.ProjectContext(
                         projectName = state.projectName,
                         currentRow = state.counter.count,
-                        targetRows = state.totalRows,
+                        targetRows = state.targetRows,
                         stitchTrackingEnabled = state.stitchTrackingEnabled,
                         currentStitch = state.currentStitch,
                         totalStitches = state.stitchCount,
@@ -1525,21 +1479,14 @@ class CounterViewModel
             }
         }
 
-        private fun isOnline(): Boolean {
-            val cm = context.getSystemService(android.net.ConnectivityManager::class.java) ?: return false
-            val network = cm.activeNetwork ?: return false
-            val caps = cm.getNetworkCapabilities(network) ?: return false
-            // VALIDATED varmistaa että yhteys oikeasti toimii (captive portal / ei-dataa -tilanteet hylätään)
-            return caps.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
-                caps.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_VALIDATED)
-        }
+        private fun isOnline(): Boolean = networkStatusProvider.isOnline()
 
         private fun buildProjectVoiceContext(): ProjectVoiceContext {
             val state = _uiState.value
             return ProjectVoiceContext(
                 projectName = state.projectName,
                 currentRow = state.counter.count,
-                targetRows = state.totalRows,
+                targetRows = state.targetRows,
                 sectionName = state.sectionName,
                 stitchTrackingEnabled = state.stitchTrackingEnabled,
                 currentStitch = state.currentStitch,
@@ -2036,20 +1983,20 @@ class CounterViewModel
         // — Voice query helpers —
 
         private fun voiceQueryProgress(state: CounterUiState): String =
-            if (state.totalRows != null && state.totalRows > 0) {
+            if (state.targetRows != null && state.targetRows > 0) {
                 context.getString(
                     R.string.voice_row_of_target,
                     state.counter.count,
-                    state.totalRows,
-                    (state.counter.count * 100) / state.totalRows,
+                    state.targetRows,
+                    (state.counter.count * 100) / state.targetRows,
                 )
             } else {
                 context.getString(R.string.voice_row_current, state.counter.count)
             }
 
         private fun voiceQueryRemaining(state: CounterUiState): String =
-            if (state.totalRows != null) {
-                val remaining = (state.totalRows - state.counter.count).coerceAtLeast(0)
+            if (state.targetRows != null) {
+                val remaining = (state.targetRows - state.counter.count).coerceAtLeast(0)
                 if (remaining ==
                     0
                 ) {
@@ -2224,6 +2171,7 @@ class CounterViewModel
             @Suppress("TooGenericExceptionCaught")
             CoroutineScope(Dispatchers.IO + NonCancellable).launch {
                 try {
+                    voiceLiveSession.stop()
                     val projectId = state.projectId ?: return@launch
                     persistSessionSnapshotIfNeeded(
                         projectId = projectId,

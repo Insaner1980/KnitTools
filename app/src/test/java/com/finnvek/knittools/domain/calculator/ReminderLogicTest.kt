@@ -1,6 +1,6 @@
 package com.finnvek.knittools.domain.calculator
 
-import com.finnvek.knittools.domain.model.RowReminder
+import com.finnvek.knittools.data.local.RowReminderEntity
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -10,7 +10,7 @@ class ReminderLogicTest {
     private fun oneTime(
         targetRow: Int,
         isCompleted: Boolean = false,
-    ) = RowReminder(
+    ) = RowReminderEntity(
         id = 1,
         projectId = 1,
         targetRow = targetRow,
@@ -22,7 +22,7 @@ class ReminderLogicTest {
     private fun repeating(
         targetRow: Int,
         interval: Int,
-    ) = RowReminder(
+    ) = RowReminderEntity(
         id = 2,
         projectId = 1,
         targetRow = targetRow,

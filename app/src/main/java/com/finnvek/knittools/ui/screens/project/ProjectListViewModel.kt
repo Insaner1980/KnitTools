@@ -5,7 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.finnvek.knittools.R
 import com.finnvek.knittools.data.datastore.PreferencesManager
-import com.finnvek.knittools.domain.model.CounterProject
+import com.finnvek.knittools.data.local.CounterProjectEntity
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.CounterRepository
@@ -64,13 +64,13 @@ class ProjectListViewModel
 
         // === Lajittelutietoiset projektilistaukset ===
 
-        val activeProjects: StateFlow<List<CounterProject>> =
+        val activeProjects: StateFlow<List<CounterProjectEntity>> =
             sortOrder
                 .flatMapLatest { order ->
                     repository.getActiveProjects(order)
                 }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-        val completedProjects: StateFlow<List<CounterProject>> =
+        val completedProjects: StateFlow<List<CounterProjectEntity>> =
             sortOrder
                 .flatMapLatest { order ->
                     repository.getCompletedProjects(order)
@@ -181,7 +181,7 @@ class ProjectListViewModel
 
         // === Projektitoiminnot ===
 
-        private suspend fun updateContinueKnitting(projects: List<CounterProject>) {
+        private suspend fun updateContinueKnitting(projects: List<CounterProjectEntity>) {
             val candidate = projects.firstOrNull { it.count > 0 }
             _continueKnittingProject.value =
                 if (candidate != null) {
@@ -197,7 +197,7 @@ class ProjectListViewModel
                 }
         }
 
-        private suspend fun updateYarnNames(projects: List<CounterProject>) {
+        private suspend fun updateYarnNames(projects: List<CounterProjectEntity>) {
             val yarnMap = mutableMapOf<Long, String>()
             val allYarnIds =
                 projects
@@ -222,7 +222,7 @@ class ProjectListViewModel
             _projectYarnNames.value = yarnMap
         }
 
-        private suspend fun updatePhotoCounts(projects: List<CounterProject>) {
+        private suspend fun updatePhotoCounts(projects: List<CounterProjectEntity>) {
             val countMap = mutableMapOf<Long, Int>()
             projects.forEach { p ->
                 val count = photoRepository.getPhotoCount(p.id).first()
@@ -231,7 +231,7 @@ class ProjectListViewModel
             _projectPhotoCounts.value = countMap
         }
 
-        private suspend fun updatePatternNames(projects: List<CounterProject>) {
+        private suspend fun updatePatternNames(projects: List<CounterProjectEntity>) {
             val nameMap = mutableMapOf<Long, String>()
             projects.forEach { p ->
                 p.patternName?.takeIf { it.isNotBlank() }?.let {
@@ -244,7 +244,7 @@ class ProjectListViewModel
             _projectPatternNames.value = nameMap
         }
 
-        private fun updateHasNotes(projects: List<CounterProject>) {
+        private fun updateHasNotes(projects: List<CounterProjectEntity>) {
             _projectHasNotes.value = projects.filter { it.notes.isNotBlank() }.map { it.id }.toSet()
         }
 

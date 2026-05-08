@@ -1,6 +1,8 @@
 package com.finnvek.knittools.ui.screens.counter
 
+import android.Manifest
 import android.net.Uri
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -37,6 +39,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,11 +51,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.core.net.toUri
 import coil3.compose.AsyncImage
 import com.finnvek.knittools.R
+import com.finnvek.knittools.data.local.ProgressPhotoEntity
 import com.finnvek.knittools.data.storage.ProgressPhotoStorage
-import com.finnvek.knittools.domain.model.ProgressPhoto
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -60,31 +62,46 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PhotoGalleryScreen(
-    photos: List<ProgressPhoto>,
+    photos: List<ProgressPhotoEntity>,
     projectId: Long?,
     onBack: () -> Unit,
     onSavePhoto: (Uri) -> Unit,
-    onDeletePhoto: (ProgressPhoto) -> Unit,
+    onDeletePhoto: (ProgressPhotoEntity) -> Unit,
     onUpdateNote: (Long, String?) -> Unit = { _, _ -> },
 ) {
     val appContext = LocalContext.current.applicationContext
     val photoStorage = remember { ProgressPhotoStorage() }
-    var pendingPhotoUri by remember { mutableStateOf<Uri?>(null) }
-    var renamingPhoto by remember { mutableStateOf<ProgressPhoto?>(null) }
-    var viewingPhoto by remember { mutableStateOf<ProgressPhoto?>(null) }
+    var pendingPhotoUriString by rememberSaveable { mutableStateOf<String?>(null) }
+    val pendingPhotoUri = pendingPhotoUriString?.let(Uri::parse)
+    var renamingPhoto by remember { mutableStateOf<ProgressPhotoEntity?>(null) }
+    var viewingPhoto by remember { mutableStateOf<ProgressPhotoEntity?>(null) }
 
     val cameraLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
             if (success) pendingPhotoUri?.let { onSavePhoto(it) }
-            pendingPhotoUri = null
+            pendingPhotoUriString = null
+        }
+
+    val permissionLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (granted) {
+                projectId?.let { id ->
+                    val (_, uri) = photoStorage.createPhotoFile(appContext, id)
+                    pendingPhotoUriString = uri.toString()
+                    cameraLauncher.launch(uri)
+                }
+            }
         }
 
     fun launchCamera() {
-        // minSdk 29 → Storage permission ei tarvita kuvien tallennukseen sovelluksen omaan tilaan
-        projectId?.let { id ->
-            val (_, uri) = photoStorage.createPhotoFile(appContext, id)
-            pendingPhotoUri = uri
-            cameraLauncher.launch(uri)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            projectId?.let { id ->
+                val (_, uri) = photoStorage.createPhotoFile(appContext, id)
+                pendingPhotoUriString = uri.toString()
+                cameraLauncher.launch(uri)
+            }
+        } else {
+            permissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
         }
     }
 
@@ -206,7 +223,7 @@ fun PhotoGalleryScreen(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun PhotoGridItem(
-    photo: ProgressPhoto,
+    photo: ProgressPhotoEntity,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
 ) {
@@ -238,7 +255,7 @@ private fun PhotoGridItem(
                         .clip(MaterialTheme.shapes.medium),
             ) {
                 AsyncImage(
-                    model = photo.photoUri.toUri(),
+                    model = Uri.parse(photo.photoUri),
                     contentDescription = displayName,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,

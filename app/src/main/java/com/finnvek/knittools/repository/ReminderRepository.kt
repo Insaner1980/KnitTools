@@ -1,11 +1,8 @@
 package com.finnvek.knittools.repository
 
 import com.finnvek.knittools.data.local.RowReminderDao
-import com.finnvek.knittools.data.local.toDomain
-import com.finnvek.knittools.data.local.toEntity
-import com.finnvek.knittools.domain.model.RowReminder
+import com.finnvek.knittools.data.local.RowReminderEntity
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -15,12 +12,12 @@ class ReminderRepository
     constructor(
         private val dao: RowReminderDao,
     ) {
-        fun getRemindersForProject(projectId: Long): Flow<List<RowReminder>> =
-            dao.getRemindersForProject(projectId).map { reminders -> reminders.map { it.toDomain() } }
+        fun getRemindersForProject(projectId: Long): Flow<List<RowReminderEntity>> =
+            dao.getRemindersForProject(projectId)
 
-        suspend fun insert(reminder: RowReminder): Long = dao.insert(reminder.toEntity())
+        suspend fun insert(reminder: RowReminderEntity): Long = dao.insert(reminder)
 
-        suspend fun update(reminder: RowReminder) = dao.update(reminder.toEntity())
+        suspend fun update(reminder: RowReminderEntity) = dao.update(reminder)
 
         suspend fun delete(id: Long) = dao.delete(id)
 

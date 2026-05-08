@@ -1,7 +1,6 @@
 package com.finnvek.knittools.ui.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,18 +8,24 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 private val PillContainerShape = RoundedCornerShape(50)
 private val PillItemShape = RoundedCornerShape(50)
@@ -45,6 +50,7 @@ fun SegmentedToggle(
                 .fillMaxWidth(if (isGrid) 1f else fraction)
                 .clip(containerShape)
                 .background(MaterialTheme.colorScheme.surfaceVariant)
+                .selectableGroup()
                 .padding(6.dp),
     ) {
         if (isGrid) {
@@ -162,20 +168,36 @@ private fun SegmentedToggleItem(
                     } else {
                         Modifier
                     },
-                ).clickable(onClick = onClick),
+                ).selectable(
+                    selected = isSelected,
+                    onClick = onClick,
+                    role = Role.RadioButton,
+                ),
         contentAlignment = Alignment.Center,
     ) {
-        Text(
+        val baseStyle = MaterialTheme.typography.labelMedium
+        val textColor =
+            if (isSelected) {
+                MaterialTheme.colorScheme.onPrimary
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            }
+        BasicText(
+            modifier = Modifier.padding(horizontal = 6.dp),
             text = label,
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-            textAlign = TextAlign.Center,
-            color =
-                if (isSelected) {
-                    MaterialTheme.colorScheme.onPrimary
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                },
+            style =
+                baseStyle.copy(
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                    textAlign = TextAlign.Center,
+                    color = textColor,
+                ),
+            autoSize =
+                TextAutoSize.StepBased(
+                    minFontSize = 9.sp,
+                    maxFontSize = baseStyle.fontSize,
+                ),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }

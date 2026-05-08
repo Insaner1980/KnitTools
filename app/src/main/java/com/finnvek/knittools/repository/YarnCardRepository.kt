@@ -1,11 +1,8 @@
 package com.finnvek.knittools.repository
 
 import com.finnvek.knittools.data.local.YarnCardDao
-import com.finnvek.knittools.data.local.toDomain
-import com.finnvek.knittools.data.local.toEntity
-import com.finnvek.knittools.domain.model.YarnCard
+import com.finnvek.knittools.data.local.YarnCardEntity
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -15,13 +12,13 @@ class YarnCardRepository
     constructor(
         private val dao: YarnCardDao,
     ) {
-        fun getAllCards(): Flow<List<YarnCard>> = dao.getAllCards().map { cards -> cards.map { it.toDomain() } }
+        fun getAllCards(): Flow<List<YarnCardEntity>> = dao.getAllCards()
 
-        suspend fun getCard(id: Long): YarnCard? = dao.getCard(id)?.toDomain()
+        suspend fun getCard(id: Long): YarnCardEntity? = dao.getCard(id)
 
-        suspend fun getCards(ids: List<Long>): List<YarnCard> = dao.getCards(ids).map { it.toDomain() }
+        suspend fun getCards(ids: List<Long>): List<YarnCardEntity> = dao.getCards(ids)
 
-        suspend fun saveCard(card: YarnCard): Long = dao.upsert(card.toEntity())
+        suspend fun saveCard(card: YarnCardEntity): Long = dao.upsert(card)
 
         fun getCardCount() = dao.getCardCount()
 

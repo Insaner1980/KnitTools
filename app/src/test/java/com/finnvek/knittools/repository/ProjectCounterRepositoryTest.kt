@@ -2,9 +2,7 @@ package com.finnvek.knittools.repository
 
 import com.finnvek.knittools.data.local.ProjectCounterDao
 import com.finnvek.knittools.data.local.ProjectCounterEntity
-import com.finnvek.knittools.domain.model.ProjectCounter
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -17,36 +15,15 @@ class ProjectCounterRepositoryTest {
 
     @Before
     fun setup() {
-        fakeDao =
-            FakeProjectCounterDao(
-                counters =
-                    listOf(
-                        ProjectCounterEntity(
-                            id = 42L,
-                            projectId = 1L,
-                            name = "Sleeve counter",
-                            count = 3,
-                            stepSize = 2,
-                        ),
-                    ),
-            )
+        fakeDao = FakeProjectCounterDao()
         repository = ProjectCounterRepository(fakeDao)
     }
 
     @Test
-    fun `getCountersForProject exposes domain counters`() =
-        runTest {
-            val counters: List<ProjectCounter> = repository.getCountersForProject(1L).first()
-
-            assertEquals("Sleeve counter", counters.single().name)
-            assertEquals(3, counters.single().count)
-        }
-
-    @Test
-    fun `addCounter accepts domain counter and truncates name to 50 chars`() =
+    fun `addCounter truncates name to 50 chars`() =
         runTest {
             val longName = "A".repeat(100)
-            repository.addCounter(ProjectCounter(projectId = 1L, name = longName, stepSize = 1))
+            repository.addCounter(ProjectCounterEntity(projectId = 1L, name = longName, stepSize = 1))
 
             assertEquals(50, fakeDao.lastInserted!!.name.length)
         }
@@ -54,7 +31,7 @@ class ProjectCounterRepositoryTest {
     @Test
     fun `addCounter keeps short name intact`() =
         runTest {
-            repository.addCounter(ProjectCounter(projectId = 1L, name = "Sleeve counter", stepSize = 2))
+            repository.addCounter(ProjectCounterEntity(projectId = 1L, name = "Sleeve counter", stepSize = 2))
 
             assertEquals("Sleeve counter", fakeDao.lastInserted!!.name)
             assertEquals(2, fakeDao.lastInserted!!.stepSize)
@@ -63,17 +40,18 @@ class ProjectCounterRepositoryTest {
     @Test
     fun `addCounter passes repeatAt`() =
         runTest {
-            repository.addCounter(ProjectCounter(projectId = 1L, name = "Test", stepSize = 1, repeatAt = 10))
+            repository.addCounter(ProjectCounterEntity(projectId = 1L, name = "Test", stepSize = 1, repeatAt = 10))
 
             assertEquals(10, fakeDao.lastInserted!!.repeatAt)
         }
 
     @Test
-    fun `incrementCounter delegates domain counter to ProjectCounterLogic`() =
+    fun `incrementCounter delegates to ProjectCounterLogic`() =
         runTest {
-            val counter = ProjectCounter(id = 1, projectId = 1, name = "Test", count = 5, stepSize = 2)
+            val counter = ProjectCounterEntity(id = 1, projectId = 1, name = "Test", count = 5, stepSize = 2)
             repository.incrementCounter(counter)
 
+            // ProjectCounterLogic.increment: 5 + 2 = 7
             assertEquals(1L, fakeDao.lastUpdatedId)
             assertEquals(7, fakeDao.lastUpdatedCount)
         }
@@ -81,18 +59,21 @@ class ProjectCounterRepositoryTest {
     @Test
     fun `incrementCounter resets at repeatAt`() =
         runTest {
-            val counter = ProjectCounter(id = 1, projectId = 1, name = "Test", count = 9, stepSize = 1, repeatAt = 10)
+            val counter =
+                ProjectCounterEntity(id = 1, projectId = 1, name = "Test", count = 9, stepSize = 1, repeatAt = 10)
             repository.incrementCounter(counter)
 
+            // ProjectCounterLogic.increment: 9 + 1 = 10 >= repeatAt(10) -> reset to 0
             assertEquals(0, fakeDao.lastUpdatedCount)
         }
 
     @Test
     fun `decrementCounter does not go below zero`() =
         runTest {
-            val counter = ProjectCounter(id = 1, projectId = 1, name = "Test", count = 1, stepSize = 3)
+            val counter = ProjectCounterEntity(id = 1, projectId = 1, name = "Test", count = 1, stepSize = 3)
             repository.decrementCounter(counter)
 
+            // ProjectCounterLogic.decrement: (1 - 3).coerceAtLeast(0) = 0
             assertEquals(0, fakeDao.lastUpdatedCount)
         }
 
@@ -121,9 +102,9 @@ class ProjectCounterRepositoryTest {
             assertEquals(7L, fakeDao.lastDeletedId)
         }
 
-    private class FakeProjectCounterDao(
-        private val counters: List<ProjectCounterEntity> = emptyList(),
-    ) : ProjectCounterDao {
+    // -- Fake DAO --
+
+    private class FakeProjectCounterDao : ProjectCounterDao {
         var lastInserted: ProjectCounterEntity? = null
         var lastUpdatedId: Long = -1
         var lastUpdatedCount: Int = -1
@@ -131,17 +112,14 @@ class ProjectCounterRepositoryTest {
         var lastRenamedId: Long = -1
         var lastRenamedName: String? = null
 
-        override fun getCountersForProject(projectId: Long): Flow<List<ProjectCounterEntity>> =
-            flowOf(counters.filter { it.projectId == projectId })
+        override fun getCountersForProject(projectId: Long): Flow<List<ProjectCounterEntity>> = flowOf(emptyList())
 
         override suspend fun insert(counter: ProjectCounterEntity): Long {
             lastInserted = counter
             return 1L
         }
 
-        override suspend fun update(counter: ProjectCounterEntity) {
-            // Test fake — ei tarvetta päivitysseurantaan
-        }
+        override suspend fun update(counter: ProjectCounterEntity) {}
 
         override suspend fun delete(id: Long) {
             lastDeletedId = id

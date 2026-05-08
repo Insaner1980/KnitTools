@@ -1,7 +1,7 @@
 package com.finnvek.knittools.ui.screens.session
 
 import androidx.lifecycle.SavedStateHandle
-import com.finnvek.knittools.domain.model.KnitSession
+import com.finnvek.knittools.data.local.SessionEntity
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.CounterRepository
@@ -48,9 +48,9 @@ class SessionHistoryViewModelTest {
         return SessionHistoryViewModel(savedState, repository, proManager)
     }
 
-    private fun sessionAt(hoursAgo: Long): KnitSession {
+    private fun sessionAt(hoursAgo: Long): SessionEntity {
         val time = System.currentTimeMillis() - TimeUnit.HOURS.toMillis(hoursAgo)
-        return KnitSession(
+        return SessionEntity(
             projectId = projectId,
             startedAt = time,
             endedAt = time + TimeUnit.MINUTES.toMillis(30),

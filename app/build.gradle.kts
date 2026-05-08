@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
+    alias(libs.plugins.owasp.dependency.check)
     alias(libs.plugins.baselineprofile)
     alias(libs.plugins.ktlint)
     alias(libs.plugins.detekt)
@@ -192,6 +193,7 @@ android {
                 "RtlHardcoded",
                 "ContentDescription",
                 "PrivateResource",
+                "InvalidPackage",
                 "WrongThread",
             )
 
@@ -199,11 +201,6 @@ android {
             setOf(
                 "GradleDependency",
                 "AndroidGradlePluginVersion",
-                // ktor-utils-jvm viittaa java.lang.management-pakettiin debug-detektorissa
-                // — koodi ei ajeta Androidilla, joten tämä on false positive
-                "InvalidPackage",
-                // targetSdk = 36 on uusin saatavilla, ennakoiva varoitus
-                "OldTargetApi",
             )
 
         checkGeneratedSources = false
@@ -212,24 +209,55 @@ android {
     }
 }
 
-gradle.taskGraph.whenReady {
-    val requestedTasks = gradle.startParameter.taskNames
+dependencyCheck {
+    formats = listOf("HTML", "JSON")
+    outputDirectory = rootProject.layout.projectDirectory.dir("reports")
+    autoUpdate =
+        (providers.environmentVariable("DEPENDENCY_CHECK_AUTO_UPDATE").orNull ?: "false")
+            .toBoolean()
+    failBuildOnCVSS =
+        providers
+            .environmentVariable("DEPENDENCY_CHECK_FAIL_BUILD_ON_CVSS")
+            .orNull
+            ?.toFloatOrNull()
+            ?: 7f
+    suppressionFiles =
+        listOf(
+            rootProject.file("config/dependency-check-suppressions.xml").absolutePath,
+        )
+    scanConfigurations = listOf("debugRuntimeClasspath", "releaseRuntimeClasspath")
+    skipTestGroups = true
+    hostedSuppressions {
+        enabled = false
+    }
+    analyzers {
+        kev {
+            enabled = false
+        }
+        retirejs {
+            enabled = false
+        }
+    }
+    nvd {
+        apiKey = providers.environmentVariable("NVD_API_KEY").orNull
+    }
+}
 
-    val explicitAppReleaseArtifactsRequested =
-        requestedTasks.any { requestedTask ->
-            val taskName = requestedTask.substringAfterLast(':')
-            val targetsApp = !requestedTask.contains(':') || requestedTask.startsWith(":app:")
-            targetsApp &&
-                taskName in
-                setOf(
-                    "assembleRelease",
-                    "bundleRelease",
-                    "packageRelease",
-                    "publishRelease",
-                )
+gradle.taskGraph.whenReady {
+    val appReleaseArtifactTasks =
+        setOf(
+            ":app:assembleRelease",
+            ":app:bundleRelease",
+            ":app:packageRelease",
+            ":app:publishRelease",
+        )
+
+    val appReleaseArtifactsRequested =
+        allTasks.any { task ->
+            task.path in appReleaseArtifactTasks
         }
 
-    if (explicitAppReleaseArtifactsRequested) {
+    if (appReleaseArtifactsRequested) {
         val missingSigningEnvNames = missingEnvNames(releaseSigningEnvNames)
         val missingRavelryEnvNames = missingEnvNames(releaseRavelryEnvNames)
         val releaseProblems =
@@ -302,6 +330,12 @@ dependencies {
         implementation(libs.kotlinx.serialization.json) {
             because("Room 2.8.x migration helpers require kotlinx.serialization 1.8.1")
         }
+        implementation(libs.ktor.client.logging) {
+            because("Firebase AI tuo Ktor 3.0.x -transitiiveja; pidetään kaikki Ktor-artefaktit samassa versiossa")
+        }
+        implementation(libs.ktor.client.websockets) {
+            because("Firebase AI tuo Ktor 3.0.x -transitiiveja; pidetään kaikki Ktor-artefaktit samassa versiossa")
+        }
     }
 
     // Compose BOM
@@ -315,6 +349,7 @@ dependencies {
     implementation(libs.compose.animation)
     implementation(libs.compose.foundation)
     debugImplementation(libs.compose.ui.tooling)
+    debugImplementation(composeBom)
 
     // Navigation
     implementation(libs.navigation.compose)
@@ -393,12 +428,15 @@ dependencies {
     detektPlugins(libs.detekt.compose.rules)
 
     // Testing
-    testImplementation(libs.json.org)
+    testImplementation("org.json:json:20240303")
     testImplementation(libs.junit)
     testImplementation(libs.coroutines.test)
     testImplementation(libs.mockk)
     testImplementation(libs.turbine)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(composeBom)
+    androidTestImplementation(libs.compose.ui.test.junit4)
     androidTestImplementation(libs.room.testing)
+    debugImplementation(libs.compose.ui.test.manifest)
 }

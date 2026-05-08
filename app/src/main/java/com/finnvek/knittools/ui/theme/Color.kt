@@ -42,7 +42,7 @@ val SuccessContainer = Color(0xFF3A4020)
 
 // === Navigaatio ===
 val NavBackground = Color(0xFF161610) // Alanav-tausta — erittäin tumma
-val NavText = Color(0xFF6A664E) // Inaktiiviset navikohteet
+val NavText = Color(0xFFB0AC92) // Inaktiiviset navikohteet — vaalennettu luettavuutta varten
 val NavActive = Color(0xFFC45100) // Aktiivinen kohde — poltettu oranssi
 val NavActiveBg = Color(0xFF3A2010) // Aktiivisen tabin indikaattoritausta
 
@@ -87,7 +87,7 @@ val LightSuccessContainer = Color(0xFFD0DDB5)
 
 // === Light-teeman navigaatio ===
 val LightNavBackground = Color(0xFFDDD8C3) // Lämmin navipalkki
-val LightNavText = Color(0xFFA09880) // Inaktiiviset navikohteet
+val LightNavText = Color(0xFF5A5440) // Inaktiiviset navikohteet — tummennettu luettavuutta varten
 val LightNavActiveBg = Color(0xFFEAD0B5) // Aktiivisen tabin indikaattoritausta
 
 // === Light-teeman erotin ===

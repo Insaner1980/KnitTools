@@ -374,7 +374,7 @@
 
     <!-- Insights -->
     <string name="total_time_label">GESAMTZEIT</string>
-    <string name="avg_pace_label">DURCHSCHNITTSTEMPO</string>
+    <string name="avg_pace_label">DURCHSCHNITTS-\nTEMPO</string>
     <string name="completed_label">FERTIG</string>
     <string name="time_format_hours">%.1fh</string>
     <string name="pace_format">%.0f R/h</string>

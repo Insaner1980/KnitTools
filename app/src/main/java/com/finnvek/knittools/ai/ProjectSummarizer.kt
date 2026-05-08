@@ -28,9 +28,13 @@ object ProjectSummarizer {
     suspend fun summarize(
         geminiAiService: GeminiAiService,
         data: ProjectData,
-    ): String? = geminiAiService.generateText(buildPrompt(data))
+        responseLanguage: String = "English",
+    ): String? = geminiAiService.generateText(buildPrompt(data, responseLanguage))
 
-    internal fun buildPrompt(data: ProjectData): String {
+    internal fun buildPrompt(
+        data: ProjectData,
+        responseLanguage: String = "English",
+    ): String {
         val truncatedNotes = data.notes.take(MAX_NOTES_LENGTH)
         val hoursSince = data.hoursSinceLastSession?.toString() ?: "never"
         val lastEndRow = data.lastSessionEndRow?.toString() ?: "unknown"
@@ -45,7 +49,7 @@ object ProjectSummarizer {
 
             If the project has both a linked pattern and a linked yarn, briefly note yarn compatibility. Compare weight category, fiber type, and meters-per-gram ratio if available. If they are clearly different (e.g., DK pattern with fingering yarn), mention it factually with a practical note about gauge adjustment. If they seem compatible, do not mention it — only flag differences. Keep the yarn note to one sentence maximum.
 
-            Respond in English.
+            Respond in $responseLanguage.
 
             Project data:
             - Name: ${data.name}

@@ -1,6 +1,7 @@
 package com.finnvek.knittools.ai
 
 import android.graphics.Bitmap
+import com.finnvek.knittools.ai.ocr.ParsedYarnLabel
 import org.json.JSONObject
 
 /**
@@ -52,7 +53,7 @@ object YarnLabelGeminiScanner {
     }
 
     internal fun parseResponse(response: String): ParsedYarnLabel? {
-        val jsonText = extractJson(response) ?: return null
+        val jsonText = extractJson(response) ?: return ParsedYarnLabel()
         return try {
             val json = JSONObject(jsonText)
             if (json.has("error")) return null
@@ -73,9 +74,10 @@ object YarnLabelGeminiScanner {
                 colorName = json.optStringOrEmpty("colorName"),
                 colorNumber = json.optStringOrEmpty("colorNumber"),
                 dyeLot = json.optStringOrEmpty("dyeLot"),
+                careSymbols = parseCareSymbols(json.optStringOrEmpty("careInstructions")),
             )
         } catch (_: Exception) {
-            null
+            ParsedYarnLabel()
         }
     }
 
@@ -115,6 +117,87 @@ object YarnLabelGeminiScanner {
     }
 
     private fun formatNeedle(mm: Double): String = if (mm == mm.toLong().toDouble()) "${mm.toLong()}mm" else "${mm}mm"
+
+    private const val DRY_CLEAN = "dry clean"
+
+    private fun parseCareSymbols(instructions: String): Long {
+        val text = instructions.lowercase()
+        if (text.isBlank()) return 0L
+
+        var symbols = 0L
+        val add: (Int) -> Unit = { bit -> symbols = symbols or (1L shl bit) }
+
+        parseWashingSymbols(text, add)
+        parseBleachingSymbols(text, add)
+        parseDryingSymbols(text, add)
+        parseIroningSymbols(text, add)
+        parseDryCleaningSymbols(text, add)
+
+        return symbols
+    }
+
+    private fun parseWashingSymbols(
+        text: String,
+        add: (Int) -> Unit,
+    ) {
+        if (text.contains("do not wash") || text.contains("don't wash")) {
+            add(4)
+            return
+        }
+        if (text.contains("hand wash")) add(3)
+        when {
+            text.contains("60") -> add(2)
+            text.contains("40") -> add(1)
+            text.contains("30") -> add(0)
+        }
+    }
+
+    private fun parseBleachingSymbols(
+        text: String,
+        add: (Int) -> Unit,
+    ) {
+        when {
+            text.contains("do not bleach") || text.contains("don't bleach") -> add(7)
+            text.contains("non-chlorine") || text.contains("non chlorine") -> add(6)
+            text.contains("bleach") -> add(5)
+        }
+    }
+
+    private fun parseDryingSymbols(
+        text: String,
+        add: (Int) -> Unit,
+    ) {
+        when {
+            text.contains("do not tumble") || text.contains("don't tumble") -> add(11)
+            text.contains("flat") -> add(10)
+            text.contains("tumble") && text.contains("low") -> add(8)
+            text.contains("tumble") -> add(9)
+        }
+    }
+
+    private fun parseIroningSymbols(
+        text: String,
+        add: (Int) -> Unit,
+    ) {
+        when {
+            text.contains("do not iron") || text.contains("don't iron") -> add(15)
+            text.contains("iron") && text.contains("high") -> add(14)
+            text.contains("iron") && text.contains("medium") -> add(13)
+            text.contains("iron") && text.contains("low") -> add(12)
+        }
+    }
+
+    private fun parseDryCleaningSymbols(
+        text: String,
+        add: (Int) -> Unit,
+    ) {
+        when {
+            text.contains("do not $DRY_CLEAN") || text.contains("don't $DRY_CLEAN") -> add(19)
+            text.contains(DRY_CLEAN) && Regex("""\bp\b""").containsMatchIn(text) -> add(17)
+            text.contains(DRY_CLEAN) && Regex("""\bf\b""").containsMatchIn(text) -> add(18)
+            text.contains(DRY_CLEAN) -> add(16)
+        }
+    }
 
     private fun JSONObject.optStringOrEmpty(key: String): String {
         if (isNull(key)) return ""

@@ -261,21 +261,22 @@ private fun StreakStat(
     modifier: Modifier = Modifier,
     alignEnd: Boolean = false,
 ) {
-    Row(
+    Column(
         modifier = modifier,
-        horizontalArrangement = if (alignEnd) Arrangement.End else Arrangement.Start,
+        horizontalAlignment = if (alignEnd) Alignment.End else Alignment.Start,
     ) {
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
         )
-        Spacer(modifier = Modifier.width(4.dp))
         Text(
             text = value,
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurface,
             fontWeight = FontWeight.Medium,
+            maxLines = 1,
         )
     }
 }

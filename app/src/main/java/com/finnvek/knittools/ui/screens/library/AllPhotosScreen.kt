@@ -308,7 +308,7 @@ private fun ProjectFilterChips(
                 label = { Text(stringResource(R.string.filter_all)) },
             )
         }
-        items(projectsWithPhotos) { projectId ->
+        items(projectsWithPhotos, key = { it }) { projectId ->
             val name = projectMap[projectId]?.name ?: "Project $projectId"
             FilterChip(
                 selected = selectedProjectId == projectId,

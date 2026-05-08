@@ -5,8 +5,6 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.core.content.FileProvider
-import androidx.core.graphics.scale
-import androidx.core.net.toUri
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -58,7 +56,7 @@ class ProgressPhotoStorage
         }
 
         fun deletePhoto(photoUri: String) {
-            val file = File(photoUri.toUri().path ?: return)
+            val file = File(Uri.parse(photoUri).path ?: return)
             if (file.exists()) file.delete()
         }
 
@@ -73,7 +71,7 @@ class ProgressPhotoStorage
             val ratio = maxDimension.toFloat() / maxOf(width, height)
             val newWidth = (width * ratio).toInt()
             val newHeight = (height * ratio).toInt()
-            return bitmap.scale(newWidth, newHeight)
+            return Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true)
         }
 
         private companion object {

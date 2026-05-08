@@ -12,7 +12,7 @@ class TrialManagerTest {
     private val baseTime = 1_700_000_000_000L // kiinteä alkuhetki
 
     @Test
-    fun `first launch starts 7 day trial`() {
+    fun `first launch starts 14 day trial`() {
         val state =
             TrialManager.calculateTrialState(
                 now = baseTime,
@@ -22,12 +22,12 @@ class TrialManagerTest {
             )
         assertTrue(state.isActive)
         assertTrue(state.isFirstLaunch)
-        assertEquals(7, state.daysRemaining)
+        assertEquals(14, state.daysRemaining)
         assertFalse(state.clockTampered)
     }
 
     @Test
-    fun `day 3 shows 4 days remaining`() {
+    fun `day 3 shows 11 days remaining`() {
         val state =
             TrialManager.calculateTrialState(
                 now = baseTime + 3 * day,
@@ -36,16 +36,16 @@ class TrialManagerTest {
                 isFirstLaunch = false,
             )
         assertTrue(state.isActive)
-        assertEquals(4, state.daysRemaining)
+        assertEquals(11, state.daysRemaining)
     }
 
     @Test
-    fun `day 6 shows 1 day remaining`() {
+    fun `day 13 shows 1 day remaining`() {
         val state =
             TrialManager.calculateTrialState(
-                now = baseTime + 6 * day,
+                now = baseTime + 13 * day,
                 startTimestamp = baseTime,
-                lastKnownTimestamp = baseTime + 5 * day,
+                lastKnownTimestamp = baseTime + 12 * day,
                 isFirstLaunch = false,
             )
         assertTrue(state.isActive)
@@ -53,12 +53,12 @@ class TrialManagerTest {
     }
 
     @Test
-    fun `day 7 expires trial`() {
+    fun `day 14 expires trial`() {
         val state =
             TrialManager.calculateTrialState(
-                now = baseTime + 7 * day,
+                now = baseTime + 14 * day,
                 startTimestamp = baseTime,
-                lastKnownTimestamp = baseTime + 6 * day,
+                lastKnownTimestamp = baseTime + 13 * day,
                 isFirstLaunch = false,
             )
         assertFalse(state.isActive)
@@ -79,6 +79,20 @@ class TrialManagerTest {
     }
 
     @Test
+    fun `resume after expiry stays expired`() {
+        val state =
+            TrialManager.calculateTrialState(
+                now = baseTime + 20 * day,
+                startTimestamp = baseTime,
+                lastKnownTimestamp = baseTime + 19 * day,
+                isFirstLaunch = false,
+            )
+        assertFalse(state.isActive)
+        assertEquals(0, state.daysRemaining)
+        assertFalse(state.isFirstLaunch)
+    }
+
+    @Test
     fun `clock set back more than 1h triggers tampering`() {
         // Viimeisin tunnettu aika on 2h edellä nykyhetkeä
         val state =
@@ -90,7 +104,7 @@ class TrialManagerTest {
             )
         assertTrue(state.clockTampered)
         assertFalse(state.isActive)
-        assertEquals(4, state.daysRemaining) // päiviä jäljellä mutta trial kuitenkin estetty
+        assertEquals(11, state.daysRemaining) // päiviä jäljellä mutta trial kuitenkin estetty
     }
 
     @Test

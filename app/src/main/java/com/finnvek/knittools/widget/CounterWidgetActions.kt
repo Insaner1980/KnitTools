@@ -3,8 +3,7 @@ package com.finnvek.knittools.widget
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import androidx.glance.appwidget.updateAll
-import com.finnvek.knittools.pro.ProFeature
+import android.util.Log
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -15,7 +14,11 @@ class CounterWidgetActions : BroadcastReceiver() {
         context: Context,
         intent: Intent?,
     ) {
-        val action = intent?.action ?: return
+        val action =
+            intent?.action ?: run {
+                Log.w(TAG, "onReceive with null action")
+                return
+            }
         val pendingResult = goAsync()
 
         CoroutineScope(Dispatchers.IO).launch {
@@ -25,28 +28,52 @@ class CounterWidgetActions : BroadcastReceiver() {
                         context.applicationContext,
                         WidgetEntryPoint::class.java,
                     )
-                if (!entryPoint.proManager().hasFeature(ProFeature.WIDGET)) return@launch
+                if (!entryPoint.proManager().isPro()) {
+                    Log.w(TAG, "Widget action ignored — not Pro")
+                    return@launch
+                }
 
                 val repository = entryPoint.counterRepository()
                 val widgetData = CounterWidgetState.load(context)
 
-                if (widgetData.projectId == 0L) return@launch
+                if (widgetData.projectId == 0L) {
+                    Log.w(TAG, "Widget action ignored — widget state incomplete")
+                    return@launch
+                }
 
-                val project = repository.getProject(widgetData.projectId) ?: return@launch
+                val project =
+                    repository.getProject(widgetData.projectId) ?: run {
+                        Log.w(TAG, "Widget action ignored — target not found")
+                        return@launch
+                    }
 
                 val delta =
                     when (action) {
-                        ACTION_INCREMENT -> 1
-                        ACTION_DECREMENT -> -1
-                        else -> return@launch
+                        ACTION_INCREMENT -> {
+                            1
+                        }
+
+                        ACTION_DECREMENT -> {
+                            -1
+                        }
+
+                        else -> {
+                            Log.w(TAG, "Unknown action: $action")
+                            return@launch
+                        }
                     }
 
+                Log.d(TAG, "Applying widget action: $action")
                 repository.adjustProjectCount(project.id, delta)
-                val updatedProject = repository.getProject(project.id) ?: return@launch
-                CounterWidgetState.save(context, updatedProject.name, updatedProject.count, updatedProject.id)
-                CounterWidget().updateAll(context)
-            } catch (_: Exception) {
-                // Widget-toiminto epäonnistui — ei kaadeta sovellusta
+                val updatedProject =
+                    repository.getProject(project.id) ?: run {
+                        Log.e(TAG, "Widget action target disappeared after update")
+                        return@launch
+                    }
+                Log.d(TAG, "Widget action applied successfully")
+                CounterWidgetState.syncAll(context, updatedProject.toWidgetData())
+            } catch (e: Exception) {
+                Log.e(TAG, "Widget action failed", e)
             } finally {
                 pendingResult.finish()
             }
@@ -54,6 +81,7 @@ class CounterWidgetActions : BroadcastReceiver() {
     }
 
     companion object {
+        private const val TAG = "CounterWidgetActions"
         private const val ACTION_INCREMENT = "com.finnvek.knittools.widget.INCREMENT"
         private const val ACTION_DECREMENT = "com.finnvek.knittools.widget.DECREMENT"
 

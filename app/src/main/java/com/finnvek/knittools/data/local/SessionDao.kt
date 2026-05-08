@@ -30,6 +30,22 @@ interface SessionDao {
     fun getTotalDurationMinutes(projectId: Long?): Flow<Int>
 
     @Query(
+        """
+        SELECT
+            COALESCE(SUM(durationMinutes), 0) AS totalMinutes,
+            COALESCE(SUM(CASE WHEN endRow > startRow THEN endRow - startRow ELSE 0 END), 0) AS totalRows,
+            COUNT(*) AS sessionCount
+        FROM sessions
+        WHERE (:projectId IS NULL OR projectId = :projectId)
+            AND (:start IS NULL OR startedAt >= :start)
+        """,
+    )
+    fun getInsightsTotals(
+        projectId: Long?,
+        start: Long?,
+    ): Flow<SessionInsightsTotals>
+
+    @Query(
         "SELECT * FROM sessions WHERE startedAt >= :start AND startedAt <= :end AND (:projectId IS NULL OR projectId = :projectId) ORDER BY startedAt",
     )
     fun getSessionsInRange(
@@ -40,6 +56,35 @@ interface SessionDao {
 
     @Query("SELECT * FROM sessions WHERE (:projectId IS NULL OR projectId = :projectId) ORDER BY startedAt")
     fun getAllSessions(projectId: Long?): Flow<List<SessionEntity>>
+
+    @Query(
+        "SELECT * FROM sessions WHERE (:projectId IS NULL OR projectId = :projectId) AND (:start IS NULL OR startedAt >= :start) ORDER BY startedAt",
+    )
+    fun getSessionsForInsights(
+        projectId: Long?,
+        start: Long?,
+    ): Flow<List<SessionEntity>>
+
+    @Query(
+        """
+        SELECT
+            sessions.projectId AS projectId,
+            COALESCE(counter_projects.name, 'Project ' || sessions.projectId) AS projectName,
+            COALESCE(SUM(sessions.durationMinutes), 0) AS totalMinutes,
+            COALESCE(SUM(CASE WHEN sessions.endRow > sessions.startRow THEN sessions.endRow - sessions.startRow ELSE 0 END), 0) AS totalRows,
+            MAX(sessions.startedAt) AS lastSessionAt
+        FROM sessions
+        LEFT JOIN counter_projects ON counter_projects.id = sessions.projectId
+        WHERE (:projectId IS NULL OR sessions.projectId = :projectId)
+            AND (:start IS NULL OR sessions.startedAt >= :start)
+        GROUP BY sessions.projectId, counter_projects.name
+        ORDER BY totalMinutes DESC
+        """,
+    )
+    fun getProjectTimeSummaries(
+        projectId: Long?,
+        start: Long?,
+    ): Flow<List<SessionProjectSummary>>
 
     @Query("SELECT * FROM sessions WHERE projectId = :projectId ORDER BY endedAt DESC LIMIT 1")
     suspend fun getLatestSession(projectId: Long): SessionEntity?

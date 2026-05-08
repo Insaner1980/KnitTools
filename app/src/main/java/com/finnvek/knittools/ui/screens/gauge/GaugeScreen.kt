@@ -50,6 +50,7 @@ import com.finnvek.knittools.ui.components.ToolScreenScaffold
 import com.finnvek.knittools.ui.screens.home.HomeViewModel
 import com.finnvek.knittools.util.extensions.convertFieldValue
 import com.finnvek.knittools.util.extensions.convertGaugeValue
+import java.util.Locale
 
 @Composable
 fun GaugeScreen(
@@ -85,8 +86,8 @@ fun GaugeScreen(
     LaunchedEffect(swatchResult, gaugeInputMode) {
         if (gaugeInputMode != 0) return@LaunchedEffect
         val result = swatchResult ?: return@LaunchedEffect
-        val autoFilledSt = "%.1f".format(result.stitchesPerGaugeUnit)
-        val autoFilledRows = "%.1f".format(result.rowsPerGaugeUnit)
+        val autoFilledSt = String.format(Locale.US, "%.1f", result.stitchesPerGaugeUnit)
+        val autoFilledRows = String.format(Locale.US, "%.1f", result.rowsPerGaugeUnit)
 
         if (yourSt.isBlank() || yourSt == lastAutoFilledYourSt) {
             yourSt = autoFilledSt

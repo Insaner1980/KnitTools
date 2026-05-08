@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
+import com.finnvek.knittools.ai.journal.JournalEntryBottomSheet
 import com.finnvek.knittools.ai.journal.JournalProcessResult
 import kotlinx.coroutines.launch
 

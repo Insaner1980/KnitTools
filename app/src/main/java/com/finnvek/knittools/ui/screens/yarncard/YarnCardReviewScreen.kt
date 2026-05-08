@@ -224,7 +224,7 @@ private fun YarnCardScanContent(
     onSaveAndUse: (String, String, String) -> Unit,
     onShowLinkDialog: (Long) -> Unit,
     initialLinkProjectId: Long?,
-    availableProjects: List<CounterProjectEntity>,
+    availableProjects: List<CounterProject>,
     onLinkToProject: ((cardId: Long, projectId: Long) -> Unit)?,
     toastContext: android.content.Context,
     modifier: Modifier = Modifier,
@@ -695,7 +695,7 @@ private fun LinkedProjectSheet(
 @Composable
 private fun LinkYarnDialog(
     savedCardId: Long,
-    projects: List<CounterProjectEntity>,
+    projects: List<CounterProject>,
     initialProjectId: Long,
     onLink: (cardId: Long, projectId: Long) -> Unit,
     onDismiss: () -> Unit,

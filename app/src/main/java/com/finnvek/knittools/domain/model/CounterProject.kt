@@ -22,4 +22,5 @@ data class CounterProject(
     val patternRowMapping: String? = null,
     val stitchTrackingEnabled: Boolean = false,
     val currentStitch: Int = 0,
+    val targetRows: Int? = null,
 )

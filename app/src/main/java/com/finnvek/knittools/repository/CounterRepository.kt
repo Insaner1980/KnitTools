@@ -2,14 +2,17 @@ package com.finnvek.knittools.repository
 
 import android.content.Context
 import com.finnvek.knittools.data.local.CounterProjectDao
-import com.finnvek.knittools.data.local.CounterProjectEntity
 import com.finnvek.knittools.data.local.SessionDao
-import com.finnvek.knittools.data.local.SessionEntity
-import com.finnvek.knittools.data.local.SessionInsightsTotals
-import com.finnvek.knittools.data.local.SessionProjectSummary
+import com.finnvek.knittools.data.local.toDomain
+import com.finnvek.knittools.data.local.toEntity
 import com.finnvek.knittools.data.storage.ProgressPhotoStorage
+import com.finnvek.knittools.domain.model.CounterProject
+import com.finnvek.knittools.domain.model.KnitSession
+import com.finnvek.knittools.domain.model.SessionInsightsSummary
+import com.finnvek.knittools.domain.model.SessionProjectTimeSummary
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -22,36 +25,38 @@ class CounterRepository
         private val photoStorage: ProgressPhotoStorage,
         @param:ApplicationContext private val context: Context,
     ) {
-        fun getAllProjects(): Flow<List<CounterProjectEntity>> = dao.getAllProjects()
+        fun getAllProjects(): Flow<List<CounterProject>> = dao.getAllProjects().map { projects -> projects.map { it.toDomain() } }
 
-        fun getActiveProjects(): Flow<List<CounterProjectEntity>> = dao.getActiveProjects()
+        fun getActiveProjects(): Flow<List<CounterProject>> =
+            dao.getActiveProjects().map { projects -> projects.map { it.toDomain() } }
 
-        fun getActiveProjects(sortOrder: String): Flow<List<CounterProjectEntity>> =
+        fun getActiveProjects(sortOrder: String): Flow<List<CounterProject>> =
             when (sortOrder) {
                 "name" -> dao.getActiveProjectsByName()
                 "created" -> dao.getActiveProjectsByCreated()
                 else -> dao.getActiveProjects()
-            }
+            }.map { projects -> projects.map { it.toDomain() } }
 
-        fun getCompletedProjects(): Flow<List<CounterProjectEntity>> = dao.getCompletedProjects()
+        fun getCompletedProjects(): Flow<List<CounterProject>> =
+            dao.getCompletedProjects().map { projects -> projects.map { it.toDomain() } }
 
-        fun getCompletedProjects(sortOrder: String): Flow<List<CounterProjectEntity>> =
+        fun getCompletedProjects(sortOrder: String): Flow<List<CounterProject>> =
             when (sortOrder) {
                 "name" -> dao.getCompletedProjectsByName()
                 "created" -> dao.getCompletedProjectsByCreated()
                 else -> dao.getCompletedProjects()
-            }
+            }.map { projects -> projects.map { it.toDomain() } }
 
         suspend fun getActiveProjectCount(): Int = dao.getActiveProjectCount()
 
-        suspend fun getProject(id: Long): CounterProjectEntity? = dao.getProject(id)
+        suspend fun getProject(id: Long): CounterProject? = dao.getProject(id)?.toDomain()
 
-        fun observeProject(id: Long): Flow<CounterProjectEntity?> = dao.observeProject(id)
+        fun observeProject(id: Long): Flow<CounterProject?> = dao.observeProject(id).map { it?.toDomain() }
 
-        suspend fun createProject(name: String): Long = dao.insert(CounterProjectEntity(name = name))
+        suspend fun createProject(name: String): Long = dao.insert(CounterProject(name = name).toEntity())
 
-        suspend fun updateProject(project: CounterProjectEntity) =
-            dao.update(project.copy(updatedAt = System.currentTimeMillis()))
+        suspend fun updateProject(project: CounterProject) =
+            dao.update(project.copy(updatedAt = System.currentTimeMillis()).toEntity())
 
         suspend fun adjustProjectCount(
             id: Long,
@@ -177,7 +182,7 @@ class CounterRepository
 
         suspend fun getProjectCount(): Int = dao.getProjectCount()
 
-        suspend fun getFirstProject(): CounterProjectEntity? = dao.getFirstProject()
+        suspend fun getFirstProject(): CounterProject? = dao.getFirstProject()?.toDomain()
 
         suspend fun deleteHistoryBefore(
             projectId: Long,
@@ -192,10 +197,11 @@ class CounterRepository
         ) = dao.updateTargetRows(projectId, targetRows, System.currentTimeMillis())
 
         // Session-metodit
-        fun getSessionsForProject(projectId: Long): Flow<List<SessionEntity>> =
-            sessionDao.getSessionsForProject(projectId)
+        fun getSessionsForProject(projectId: Long): Flow<List<KnitSession>> =
+            sessionDao.getSessionsForProject(projectId).map { sessions -> sessions.map { it.toDomain() } }
 
-        fun getAllSessions(projectId: Long?): Flow<List<SessionEntity>> = sessionDao.getAllSessions(projectId)
+        fun getAllSessions(projectId: Long?): Flow<List<KnitSession>> =
+            sessionDao.getAllSessions(projectId).map { sessions -> sessions.map { it.toDomain() } }
 
         fun getCompletedProjectCount(): Flow<Int> = sessionDao.getCompletedProjectCount()
 
@@ -204,19 +210,38 @@ class CounterRepository
         fun getInsightsTotals(
             projectId: Long?,
             start: Long?,
-        ): Flow<SessionInsightsTotals> = sessionDao.getInsightsTotals(projectId, start)
+        ): Flow<SessionInsightsSummary> =
+            sessionDao.getInsightsTotals(projectId, start).map { totals ->
+                SessionInsightsSummary(
+                    totalMinutes = totals.totalMinutes,
+                    totalRows = totals.totalRows,
+                    sessionCount = totals.sessionCount,
+                )
+            }
 
         fun getSessionsForInsights(
             projectId: Long?,
             start: Long?,
-        ): Flow<List<SessionEntity>> = sessionDao.getSessionsForInsights(projectId, start)
+        ): Flow<List<KnitSession>> =
+            sessionDao.getSessionsForInsights(projectId, start).map { sessions -> sessions.map { it.toDomain() } }
 
         fun getProjectTimeSummaries(
             projectId: Long?,
             start: Long?,
-        ): Flow<List<SessionProjectSummary>> = sessionDao.getProjectTimeSummaries(projectId, start)
+        ): Flow<List<SessionProjectTimeSummary>> =
+            sessionDao.getProjectTimeSummaries(projectId, start).map { summaries ->
+                summaries.map {
+                    SessionProjectTimeSummary(
+                        projectId = it.projectId,
+                        projectName = it.projectName,
+                        totalMinutes = it.totalMinutes,
+                        totalRows = it.totalRows,
+                        lastSessionAt = it.lastSessionAt,
+                    )
+                }
+            }
 
-        suspend fun insertSession(session: SessionEntity): Long = sessionDao.insert(session)
+        suspend fun insertSession(session: KnitSession): Long = sessionDao.insert(session.toEntity())
 
         suspend fun deleteSessionsBefore(
             projectId: Long,
@@ -225,5 +250,5 @@ class CounterRepository
 
         suspend fun getTotalMinutesForProject(projectId: Long): Int = sessionDao.getTotalMinutes(projectId)
 
-        suspend fun getLatestSession(projectId: Long): SessionEntity? = sessionDao.getLatestSession(projectId)
+        suspend fun getLatestSession(projectId: Long): KnitSession? = sessionDao.getLatestSession(projectId)?.toDomain()
     }

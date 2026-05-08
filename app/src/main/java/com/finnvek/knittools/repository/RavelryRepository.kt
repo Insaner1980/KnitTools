@@ -2,11 +2,11 @@ package com.finnvek.knittools.repository
 
 import com.finnvek.knittools.data.local.CounterProjectDao
 import com.finnvek.knittools.data.local.CounterProjectEntity
-import com.finnvek.knittools.data.local.SavedPatternEntity
 import com.finnvek.knittools.data.remote.PatternDetail
 import com.finnvek.knittools.data.remote.PatternSearchParams
 import com.finnvek.knittools.data.remote.PatternSearchResponse
 import com.finnvek.knittools.data.remote.RavelryApiService
+import com.finnvek.knittools.domain.model.SavedPattern
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -23,7 +23,7 @@ class RavelryRepository
 
         suspend fun getPatternDetail(id: Int): PatternDetail = api.getPatternDetail(id)
 
-        fun getSavedPatterns(): Flow<List<SavedPatternEntity>> = savedPatternRepository.getAll()
+        fun getSavedPatterns(): Flow<List<SavedPattern>> = savedPatternRepository.getAll()
 
         fun getSavedPatternCount(): Flow<Int> = savedPatternRepository.getCount()
 
@@ -31,7 +31,7 @@ class RavelryRepository
 
         suspend fun savePattern(detail: PatternDetail): Long =
             savedPatternRepository.save(
-                SavedPatternEntity(
+                SavedPattern(
                     ravelryId = detail.id,
                     name = detail.name,
                     designerName = detail.designer?.name ?: "",

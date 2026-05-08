@@ -15,7 +15,7 @@ import androidx.glance.appwidget.state.getAppWidgetState
 import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.glance.state.PreferencesGlanceStateDefinition
 import com.finnvek.knittools.R
-import com.finnvek.knittools.data.local.CounterProjectEntity
+import com.finnvek.knittools.domain.model.CounterProject
 import kotlinx.coroutines.flow.first
 
 private val Context.widgetDataStore by preferencesDataStore(
@@ -117,7 +117,7 @@ object CounterWidgetState {
 
     suspend fun save(
         context: Context,
-        project: CounterProjectEntity,
+        project: CounterProject,
     ) = save(context, project.toWidgetData())
 
     fun fromPreferences(
@@ -147,7 +147,7 @@ object CounterWidgetState {
     }
 }
 
-fun CounterProjectEntity.toWidgetData(): WidgetData =
+fun CounterProject.toWidgetData(): WidgetData =
     WidgetData(
         projectName = name,
         count = count,

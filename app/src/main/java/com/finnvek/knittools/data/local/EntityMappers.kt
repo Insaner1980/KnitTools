@@ -32,6 +32,7 @@ fun CounterProjectEntity.toDomain(): CounterProject =
         patternRowMapping = patternRowMapping,
         stitchTrackingEnabled = stitchTrackingEnabled,
         currentStitch = currentStitch,
+        targetRows = targetRows,
     )
 
 fun CounterProject.toEntity(): CounterProjectEntity =
@@ -57,6 +58,7 @@ fun CounterProject.toEntity(): CounterProjectEntity =
         patternRowMapping = patternRowMapping,
         stitchTrackingEnabled = stitchTrackingEnabled,
         currentStitch = currentStitch,
+        targetRows = targetRows,
     )
 
 fun ProjectCounterEntity.toDomain(): ProjectCounter =

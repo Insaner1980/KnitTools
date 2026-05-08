@@ -96,9 +96,10 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.BuildConfig
 import com.finnvek.knittools.R
-import com.finnvek.knittools.data.local.ProjectCounterEntity
-import com.finnvek.knittools.data.local.YarnCardEntity
+import com.finnvek.knittools.domain.model.ProjectCounter
 import com.finnvek.knittools.domain.model.ProjectCounterDraft
+import com.finnvek.knittools.domain.model.SavedPattern
+import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.RollingCounter
 import com.finnvek.knittools.ui.screens.pattern.PatternPickerSheet
@@ -803,7 +804,7 @@ private fun StitchCountDialog(
 data class CounterSheetState(
     val showYarnPicker: Boolean,
     val showYarnManagementSheet: Boolean,
-    val savedYarnCards: List<YarnCardEntity>,
+    val savedYarnCards: List<YarnCard>,
     val linkedYarns: List<Pair<Long, String>>,
     val showNotesSheet: Boolean,
     val notes: String,
@@ -813,10 +814,10 @@ data class CounterSheetState(
     val summaryError: String?,
     val showPatternPicker: Boolean,
     val projectId: Long?,
-    val savedPatterns: List<com.finnvek.knittools.data.local.SavedPatternEntity>,
+    val savedPatterns: List<SavedPattern>,
     val isPro: Boolean,
     val showPatternInfoSheet: Boolean,
-    val linkedPattern: com.finnvek.knittools.data.local.SavedPatternEntity?,
+    val linkedPattern: SavedPattern?,
 )
 
 data class CounterSheetActions(
@@ -832,7 +833,7 @@ data class CounterSheetActions(
     val onPatternPickerDismiss: () -> Unit,
     val onPatternInfoDismiss: () -> Unit,
     val onPatternFileSelected: (String, String) -> Unit,
-    val onSavedPatternSelected: (com.finnvek.knittools.data.local.SavedPatternEntity) -> Unit,
+    val onSavedPatternSelected: (SavedPattern) -> Unit,
 )
 
 @Composable
@@ -1050,8 +1051,8 @@ data class ProjectHeaderActions(
 
 data class ProjectCountersSectionActions(
     val onAddCounter: () -> Unit,
-    val onIncrementCounter: (ProjectCounterEntity) -> Unit,
-    val onDecrementCounter: (ProjectCounterEntity) -> Unit,
+    val onIncrementCounter: (ProjectCounter) -> Unit,
+    val onDecrementCounter: (ProjectCounter) -> Unit,
     val onRenameCounter: (Long, String) -> Unit,
     val onResetCounter: (Long) -> Unit,
     val onDeleteCounter: (Long) -> Unit,
@@ -1482,7 +1483,7 @@ private fun CompactPatternRepeatRow(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CountersListSheet(
-    projectCounters: List<ProjectCounterEntity>,
+    projectCounters: List<ProjectCounter>,
     mainRowCount: Int,
     actions: ProjectCountersSectionActions,
     onDismiss: () -> Unit,
@@ -1541,7 +1542,7 @@ private fun CountersListSheet(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun YarnPickerSheet(
-    savedYarnCards: List<YarnCardEntity>,
+    savedYarnCards: List<YarnCard>,
     onSelect: (Long) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -1582,7 +1583,7 @@ private fun YarnPickerSheet(
 
 @Composable
 private fun YarnPickerItem(
-    card: YarnCardEntity,
+    card: YarnCard,
     onSelect: () -> Unit,
 ) {
     val name =
@@ -1623,7 +1624,7 @@ private fun YarnPickerItem(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PatternInfoSheet(
-    pattern: com.finnvek.knittools.data.local.SavedPatternEntity,
+    pattern: SavedPattern,
     onDismiss: () -> Unit,
 ) {
     ModalBottomSheet(

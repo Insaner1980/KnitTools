@@ -53,7 +53,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.finnvek.knittools.R
-import com.finnvek.knittools.data.local.ProgressPhotoEntity
+import com.finnvek.knittools.domain.model.ProgressPhoto
 import com.finnvek.knittools.data.storage.ProgressPhotoStorage
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -62,19 +62,19 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PhotoGalleryScreen(
-    photos: List<ProgressPhotoEntity>,
+    photos: List<ProgressPhoto>,
     projectId: Long?,
     onBack: () -> Unit,
     onSavePhoto: (Uri) -> Unit,
-    onDeletePhoto: (ProgressPhotoEntity) -> Unit,
+    onDeletePhoto: (ProgressPhoto) -> Unit,
     onUpdateNote: (Long, String?) -> Unit = { _, _ -> },
 ) {
     val appContext = LocalContext.current.applicationContext
     val photoStorage = remember { ProgressPhotoStorage() }
     var pendingPhotoUriString by rememberSaveable { mutableStateOf<String?>(null) }
     val pendingPhotoUri = pendingPhotoUriString?.let(Uri::parse)
-    var renamingPhoto by remember { mutableStateOf<ProgressPhotoEntity?>(null) }
-    var viewingPhoto by remember { mutableStateOf<ProgressPhotoEntity?>(null) }
+    var renamingPhoto by remember { mutableStateOf<ProgressPhoto?>(null) }
+    var viewingPhoto by remember { mutableStateOf<ProgressPhoto?>(null) }
 
     val cameraLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
@@ -223,7 +223,7 @@ fun PhotoGalleryScreen(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun PhotoGridItem(
-    photo: ProgressPhotoEntity,
+    photo: ProgressPhoto,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
 ) {

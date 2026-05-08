@@ -1,10 +1,10 @@
 package com.finnvek.knittools.domain.calculator
 
-import com.finnvek.knittools.data.local.RowReminderEntity
+import com.finnvek.knittools.domain.model.RowReminder
 
 object ReminderLogic {
     fun shouldTrigger(
-        reminder: RowReminderEntity,
+        reminder: RowReminder,
         currentRow: Int,
     ): Boolean {
         if (currentRow <= 0) return false
@@ -20,7 +20,7 @@ object ReminderLogic {
     }
 
     fun repeatCount(
-        reminder: RowReminderEntity,
+        reminder: RowReminder,
         currentRow: Int,
     ): Int {
         val interval = reminder.repeatInterval ?: return 0
@@ -29,7 +29,7 @@ object ReminderLogic {
     }
 
     fun activeReminders(
-        reminders: List<RowReminderEntity>,
+        reminders: List<RowReminder>,
         currentRow: Int,
-    ): List<RowReminderEntity> = reminders.filter { shouldTrigger(it, currentRow) }
+    ): List<RowReminder> = reminders.filter { shouldTrigger(it, currentRow) }
 }

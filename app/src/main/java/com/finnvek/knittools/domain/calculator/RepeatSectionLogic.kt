@@ -1,12 +1,12 @@
 package com.finnvek.knittools.domain.calculator
 
-import com.finnvek.knittools.data.local.ProjectCounterEntity
+import com.finnvek.knittools.domain.model.ProjectCounter
 
 object RepeatSectionLogic {
     fun updatePosition(
-        counter: ProjectCounterEntity,
+        counter: ProjectCounter,
         mainRowCount: Int,
-    ): ProjectCounterEntity {
+    ): ProjectCounter {
         val startRow = counter.repeatStartRow ?: return counter
         val endRow = counter.repeatEndRow ?: return counter
         val totalRepeats = counter.totalRepeats ?: return counter
@@ -31,7 +31,7 @@ object RepeatSectionLogic {
     }
 
     fun isComplete(
-        counter: ProjectCounterEntity,
+        counter: ProjectCounter,
         mainRowCount: Int,
     ): Boolean {
         val startRow = counter.repeatStartRow ?: return false
@@ -47,12 +47,12 @@ object RepeatSectionLogic {
     }
 
     fun currentRowInRepeat(
-        counter: ProjectCounterEntity,
+        counter: ProjectCounter,
         mainRowCount: Int,
     ): Int = updatePosition(counter, mainRowCount).count
 
     fun progress(
-        counter: ProjectCounterEntity,
+        counter: ProjectCounter,
         mainRowCount: Int,
     ): Float {
         val startRow = counter.repeatStartRow ?: return 0f

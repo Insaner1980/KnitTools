@@ -19,13 +19,6 @@ import com.finnvek.knittools.ai.live.VoiceLiveQuotaManager
 import com.finnvek.knittools.ai.live.VoiceLiveSession
 import com.finnvek.knittools.ai.nano.NanoAvailability
 import com.finnvek.knittools.data.datastore.PreferencesManager
-import com.finnvek.knittools.data.local.CounterProjectEntity
-import com.finnvek.knittools.data.local.ProgressPhotoEntity
-import com.finnvek.knittools.data.local.ProjectCounterEntity
-import com.finnvek.knittools.data.local.RowReminderEntity
-import com.finnvek.knittools.data.local.SavedPatternEntity
-import com.finnvek.knittools.data.local.SessionEntity
-import com.finnvek.knittools.data.local.YarnCardEntity
 import com.finnvek.knittools.data.storage.PatternDocumentStorage
 import com.finnvek.knittools.domain.calculator.CounterLogic
 import com.finnvek.knittools.domain.calculator.CounterState
@@ -34,7 +27,14 @@ import com.finnvek.knittools.domain.calculator.RepeatSectionLogic
 import com.finnvek.knittools.domain.calculator.RowMarker
 import com.finnvek.knittools.domain.calculator.parseMapping
 import com.finnvek.knittools.domain.calculator.serializeMapping
+import com.finnvek.knittools.domain.model.CounterProject
+import com.finnvek.knittools.domain.model.KnitSession
+import com.finnvek.knittools.domain.model.ProgressPhoto
+import com.finnvek.knittools.domain.model.ProjectCounter
 import com.finnvek.knittools.domain.model.ProjectCounterDraft
+import com.finnvek.knittools.domain.model.RowReminder
+import com.finnvek.knittools.domain.model.SavedPattern
+import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.pro.InAppReviewManager
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
@@ -86,7 +86,7 @@ data class CounterUiState(
     val keepScreenAwake: Boolean = false,
     val isPro: Boolean = false,
     val isNanoAvailable: Boolean = false,
-    val projects: List<CounterProjectEntity> = emptyList(),
+    val projects: List<CounterProject> = emptyList(),
     val sectionName: String? = null,
     val stitchCount: Int? = null,
     val stitchTrackingEnabled: Boolean = false,
@@ -97,11 +97,11 @@ data class CounterUiState(
     val projectSummary: String? = null,
     val summaryError: String? = null,
     val isSummaryLoading: Boolean = false,
-    val reminders: List<RowReminderEntity> = emptyList(),
-    val activeAlert: RowReminderEntity? = null,
-    val projectCounters: List<ProjectCounterEntity> = emptyList(),
-    val latestPhotos: List<ProgressPhotoEntity> = emptyList(),
-    val linkedPattern: SavedPatternEntity? = null,
+    val reminders: List<RowReminder> = emptyList(),
+    val activeAlert: RowReminder? = null,
+    val projectCounters: List<ProjectCounter> = emptyList(),
+    val latestPhotos: List<ProgressPhoto> = emptyList(),
+    val linkedPattern: SavedPattern? = null,
     val patternUri: String? = null,
     val patternName: String? = null,
     val currentPatternPage: Int = 0,
@@ -145,22 +145,22 @@ class CounterViewModel
             )
         val uiState: StateFlow<CounterUiState> = _uiState.asStateFlow()
 
-        val savedYarnCards: StateFlow<List<YarnCardEntity>> =
+        val savedYarnCards: StateFlow<List<YarnCard>> =
             yarnCardRepository.getAllCards().stateIn(
                 viewModelScope,
                 SharingStarted.WhileSubscribed(5000),
                 emptyList(),
             )
 
-        val savedPatterns: StateFlow<List<SavedPatternEntity>> =
+        val savedPatterns: StateFlow<List<SavedPattern>> =
             savedPatternRepository.getAll().stateIn(
                 viewModelScope,
                 SharingStarted.WhileSubscribed(5000),
                 emptyList(),
             )
 
-        private val _allPhotos = MutableStateFlow<List<ProgressPhotoEntity>>(emptyList())
-        val allPhotos: StateFlow<List<ProgressPhotoEntity>> = _allPhotos.asStateFlow()
+        private val _allPhotos = MutableStateFlow<List<ProgressPhoto>>(emptyList())
+        val allPhotos: StateFlow<List<ProgressPhoto>> = _allPhotos.asStateFlow()
 
         private var timerJob: Job? = null
         private var selectedProjectJob: Job? = null
@@ -268,7 +268,7 @@ class CounterViewModel
             }
         }
 
-        fun selectProject(project: CounterProjectEntity) {
+        fun selectProject(project: CounterProject) {
             viewModelScope.launch {
                 // Pysäytä live-sessio ennen projektin vaihtoa — konteksti muuttuu
                 if (voiceLiveSession.isActive()) voiceLiveSession.stop()
@@ -404,7 +404,7 @@ class CounterViewModel
             if (durationMinutes < 1 && endRow == sessionStartRow) return
 
             repository.insertSession(
-                SessionEntity(
+                KnitSession(
                     projectId = projectId,
                     startedAt = sessionStartedAt,
                     endedAt = System.currentTimeMillis(),
@@ -415,7 +415,7 @@ class CounterViewModel
             )
         }
 
-        private suspend fun recoverPendingSessionIfNeeded(projects: List<CounterProjectEntity>) {
+        private suspend fun recoverPendingSessionIfNeeded(projects: List<CounterProject>) {
             val projectId = savedStateHandle.get<Long>(KEY_SELECTED_PROJECT_ID) ?: return
             val pendingProject =
                 projects.find { it.id == projectId } ?: run {
@@ -439,7 +439,7 @@ class CounterViewModel
             clearPendingSessionState()
         }
 
-        private suspend fun startProjectSession(project: CounterProjectEntity) {
+        private suspend fun startProjectSession(project: CounterProject) {
             sessionStartedAt = System.currentTimeMillis()
             sessionStartRow = project.count
             linkedYarnIdsCache = project.yarnCardIds
@@ -681,7 +681,7 @@ class CounterViewModel
             viewModelScope.launch {
                 val projectId = _uiState.value.projectId ?: return@launch
                 val counter =
-                    ProjectCounterEntity(
+                    ProjectCounter(
                         projectId = projectId,
                         name = draft.name,
                         repeatAt = draft.repeatAt,
@@ -705,13 +705,13 @@ class CounterViewModel
             }
         }
 
-        fun incrementProjectCounter(counter: ProjectCounterEntity) {
+        fun incrementProjectCounter(counter: ProjectCounter) {
             viewModelScope.launch {
                 projectCounterRepository.incrementCounter(counter)
             }
         }
 
-        fun decrementProjectCounter(counter: ProjectCounterEntity) {
+        fun decrementProjectCounter(counter: ProjectCounter) {
             viewModelScope.launch {
                 projectCounterRepository.decrementCounter(counter)
             }
@@ -768,7 +768,7 @@ class CounterViewModel
             viewModelScope.launch {
                 val projectId = _uiState.value.projectId ?: return@launch
                 reminderRepository.insert(
-                    RowReminderEntity(
+                    RowReminder(
                         projectId = projectId,
                         targetRow = targetRow,
                         repeatInterval = repeatInterval,
@@ -833,7 +833,7 @@ class CounterViewModel
             }
         }
 
-        fun deletePhoto(photo: ProgressPhotoEntity) {
+        fun deletePhoto(photo: ProgressPhoto) {
             viewModelScope.launch {
                 photoRepository.deletePhoto(photo)
             }
@@ -1206,7 +1206,7 @@ class CounterViewModel
 
         private fun syncRepeatSectionCounters(
             mainRowCount: Int,
-            counters: List<ProjectCounterEntity>,
+            counters: List<ProjectCounter>,
             persist: Boolean,
         ) {
             val syncedCounters =

@@ -37,15 +37,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
-import com.finnvek.knittools.data.local.RowReminderEntity
 import com.finnvek.knittools.domain.calculator.ReminderLogic
+import com.finnvek.knittools.domain.model.RowReminder
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.NumberInputField
 import com.finnvek.knittools.ui.components.SegmentedToggle
 
 @Composable
 fun ReminderAlertCard(
-    reminder: RowReminderEntity,
+    reminder: RowReminder,
     currentRow: Int,
     onDismiss: (Long) -> Unit,
     modifier: Modifier = Modifier,
@@ -103,7 +103,7 @@ fun ReminderAlertCard(
 
 @Composable
 fun ReminderList(
-    reminders: List<RowReminderEntity>,
+    reminders: List<RowReminder>,
     currentRow: Int,
     onDelete: (Long) -> Unit,
     modifier: Modifier = Modifier,
@@ -139,10 +139,10 @@ fun ReminderList(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ReminderListItem(
-    reminder: RowReminderEntity,
+    reminder: RowReminder,
     currentRow: Int,
-    onLongClick: () -> Unit = {},
     modifier: Modifier = Modifier,
+    onLongClick: () -> Unit = {},
 ) {
     val isUpcoming = !reminder.isCompleted && reminder.targetRow <= currentRow + 5
     val dotColor =

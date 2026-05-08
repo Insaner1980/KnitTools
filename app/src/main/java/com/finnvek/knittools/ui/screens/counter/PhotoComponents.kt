@@ -1,7 +1,6 @@
 package com.finnvek.knittools.ui.screens.counter
 
 import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -38,9 +37,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.core.net.toUri
 import coil3.compose.AsyncImage
 import com.finnvek.knittools.R
-import com.finnvek.knittools.data.local.ProgressPhotoEntity
+import com.finnvek.knittools.domain.model.ProgressPhoto
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -48,8 +48,8 @@ import java.util.Locale
 
 @Composable
 fun PhotoThumbnailStrip(
-    photos: List<ProgressPhotoEntity>,
-    onPhotoClick: (ProgressPhotoEntity) -> Unit,
+    photos: List<ProgressPhoto>,
+    onPhotoClick: (ProgressPhoto) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyRow(
@@ -65,7 +65,7 @@ fun PhotoThumbnailStrip(
                         .clickable { onPhotoClick(photo) },
             ) {
                 AsyncImage(
-                    model = Uri.parse(photo.photoUri),
+                    model = photo.photoUri.toUri(),
                     contentDescription = stringResource(R.string.row_label_format, photo.rowNumber),
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,
@@ -77,9 +77,9 @@ fun PhotoThumbnailStrip(
 
 @Composable
 fun PhotoViewer(
-    photo: ProgressPhotoEntity,
+    photo: ProgressPhoto,
     onDismiss: () -> Unit,
-    onDelete: (ProgressPhotoEntity) -> Unit,
+    onDelete: (ProgressPhoto) -> Unit,
 ) {
     var showDeleteConfirm by rememberSaveable { mutableStateOf(false) }
     val context = LocalContext.current
@@ -111,7 +111,7 @@ fun PhotoViewer(
                     .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.9f)),
         ) {
             AsyncImage(
-                model = Uri.parse(photo.photoUri),
+                model = photo.photoUri.toUri(),
                 contentDescription = stringResource(R.string.progress_photos),
                 modifier =
                     Modifier
@@ -137,7 +137,7 @@ fun PhotoViewer(
                 }
                 IconButton(
                     onClick = {
-                        val photoFile = java.io.File(Uri.parse(photo.photoUri).path!!)
+                        val photoFile = java.io.File(photo.photoUri.toUri().path!!)
                         val contentUri =
                             androidx.core.content.FileProvider.getUriForFile(
                                 context,

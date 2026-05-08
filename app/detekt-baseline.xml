@@ -1,0 +1,57 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>ComplexCondition:GaugeSwatchCalculator.kt$GaugeSwatchCalculator$measuredWidth &lt;= 0 || measuredHeight &lt;= 0 || stitchCount &lt;= 0 || rowCount &lt;= 0</ID>
+    <ID>ComplexCondition:InstructionParser.kt$InstructionParser$swW != null || swS != null || swH != null || swR != null</ID>
+    <ID>ComplexCondition:InstructionParser.kt$InstructionParser$upper.contains("INCREASE") || upper.contains("DECREASE") || upper.contains("INC ") || upper.contains("DEC ")</ID>
+    <ID>ComplexCondition:MultiCounterComponents.kt$counter.counterType == "SHAPING" &amp;&amp; counter.startingStitches != null &amp;&amp; counter.stitchChange != null &amp;&amp; counter.shapeEveryN != null</ID>
+    <ID>ComplexCondition:PatternViewerViewModel.kt$PatternViewerViewModel$patternUri.isNullOrBlank() || renderedBitmap == null || !canDisplayInstruction || currentRow &lt;= 0</ID>
+    <ID>ComplexCondition:RavelrySearchScreen.kt$!state.isLoading &amp;&amp; state.error == null &amp;&amp; state.results.isEmpty() &amp;&amp; state.searchQuery.isNotEmpty()</ID>
+    <ID>ContentSlotReused:TooltipManager.kt$content</ID>
+    <ID>CyclomaticComplexMethod:ChartSymbolScreen.kt$private fun DrawScope.drawSymbol( id: String, tint: Color, )</ID>
+    <ID>CyclomaticComplexMethod:CounterViewModel.kt$CounterViewModel$fun generateSummary()</ID>
+    <ID>CyclomaticComplexMethod:CounterViewModel.kt$CounterViewModel$private fun executeVoiceCommandAction( action: AiVoiceAction, state: CounterUiState, ): String</ID>
+    <ID>CyclomaticComplexMethod:CounterViewModel.kt$CounterViewModel$private fun executeVoiceQueryAction( action: AiVoiceAction, state: CounterUiState, ): String</ID>
+    <ID>CyclomaticComplexMethod:InstructionParser.kt$InstructionParser$@Suppress("TooGenericExceptionCaught") suspend fun parse(instruction: String): ParsedInstruction</ID>
+    <ID>CyclomaticComplexMethod:InstructionParser.kt$InstructionParser$internal fun parseResponse(response: String): ParsedInstruction</ID>
+    <ID>CyclomaticComplexMethod:InstructionParser.kt$InstructionParser$private fun parseIncreaseDecrease(upper: String): ParsedInstruction?</ID>
+    <ID>CyclomaticComplexMethod:MultiCounterComponents.kt$private fun isAddCounterFormValid(params: AddCounterFormParams): Boolean</ID>
+    <ID>CyclomaticComplexMethod:PatternInstructionCombinerGemini.kt$PatternInstructionCombinerGemini$internal fun parseResponse(response: String): CombinedInstructionResult?</ID>
+    <ID>CyclomaticComplexMethod:YarnLabelNanoParser.kt$YarnLabelNanoParser$internal fun parseResponse(response: String): ParsedYarnLabel?</ID>
+    <ID>LargeClass:CounterViewModel.kt$CounterViewModel : ViewModel</ID>
+    <ID>LongMethod:ChartSymbolScreen.kt$private fun DrawScope.drawSymbol( id: String, tint: Color, )</ID>
+    <ID>LongMethod:CounterViewModel.kt$CounterViewModel$@Suppress("CyclomaticComplexMethod") // Dispatch map — jokainen haara on yksinkertainen private fun buildFunctionCallHandler(): (FunctionCallPart) -&gt; FunctionResponsePart</ID>
+    <ID>LongMethod:CounterViewModel.kt$CounterViewModel$fun generateSummary()</ID>
+    <ID>LongMethod:CounterViewModel.kt$CounterViewModel$fun interpretVoiceCommand(recognizedText: String)</ID>
+    <ID>LongMethod:CounterViewModel.kt$CounterViewModel$private fun executeVoiceCommandAction( action: AiVoiceAction, state: CounterUiState, ): String</ID>
+    <ID>LongMethod:InstructionParser.kt$InstructionParser$private fun parseGaugeSwatch(upper: String): ParsedInstruction?</ID>
+    <ID>LongMethod:KnitToolsDatabase.kt$KnitToolsDatabase.Companion.&lt;no name provided&gt;$override fun migrate(db: SupportSQLiteDatabase)</ID>
+    <ID>LongMethod:NavGraph.kt$@Suppress("kotlin:S3776") // Navigaation route-rekisteri kokoaa tarkoituksella useita haaroja yhteen paikkaan private fun NavGraphBuilder.toolsGraph( navController: NavHostController, yarnCardViewModel: YarnCardViewModel, onLaunchCounter: (Long) -&gt; Unit, )</ID>
+    <ID>LongMethod:NavGraph.kt$private fun NavGraphBuilder.libraryMyYarnRoute( navController: NavHostController, yarnCardViewModel: YarnCardViewModel, )</ID>
+    <ID>LongMethod:NavGraph.kt$private fun NavGraphBuilder.projectsGraph( navController: NavHostController, counterLaunchRequest: CounterLaunchRequest?, onCounterLaunchHandled: () -&gt; Unit, )</ID>
+    <ID>LongMethod:PatternViewerViewModel.kt$PatternViewerViewModel$fun onViewerContextChanged( patternUri: String?, currentPage: Int, currentRow: Int, renderedBitmap: Bitmap?, canDisplayInstruction: Boolean, )</ID>
+    <ID>LongMethod:VoiceCommandInterpreter.kt$VoiceCommandInterpreter$internal fun buildPrompt( text: String, context: ProjectContext, locale: String, ): String</ID>
+    <ID>LongParameterList:CounterViewModel.kt$CounterViewModel$( private val repository: CounterRepository, private val reminderRepository: ReminderRepository, private val projectCounterRepository: ProjectCounterRepository, private val photoRepository: ProgressPhotoRepository, private val patternAnnotationRepository: PatternAnnotationRepository, private val preferencesManager: PreferencesManager, private val proManager: ProManager, private val yarnCardRepository: YarnCardRepository, private val savedPatternRepository: SavedPatternRepository, private val patternDocumentStorage: PatternDocumentStorage, private val geminiAiService: GeminiAiService, private val aiQuotaManager: AiQuotaManager, private val voiceLiveSession: VoiceLiveSession, private val voiceLiveQuotaManager: VoiceLiveQuotaManager, private val inAppReviewManager: InAppReviewManager, private val savedStateHandle: SavedStateHandle, @param:ApplicationContext private val context: Context, )</ID>
+    <ID>LoopWithTooManyJumpStatements:PatternInstructionCombinerGemini.kt$PatternInstructionCombinerGemini$for</ID>
+    <ID>MaxLineLength:InstructionParser.kt$InstructionParser$"""(\d+(?:\.\d+)?)\s*(?:STITCHES?|STS?)\s*(?:AND|,|&amp;|X|/)\s*(\d+(?:\.\d+)?)\s*(?:ROWS?|R)\s*(?:=|PER|TO|OVER|IN)?\s*(10\s*CM|4\s*IN(?:CHES?)?)"""</ID>
+    <ID>MaxLineLength:SessionDao.kt$SessionDao$"SELECT * FROM sessions WHERE startedAt &gt;= :start AND startedAt &lt;= :end AND (:projectId IS NULL OR projectId = :projectId) ORDER BY startedAt"</ID>
+    <ID>MaxLineLength:VoiceFunctionDeclarations.kt$VoiceFunctionDeclarations$"One of: progress, remaining, session_time, total_time, yarn, instruction, shaping, stitches, reminders, counters, notes, summary, project, section"</ID>
+    <ID>MutableStateAutoboxing:PatternViewerScreen.kt$mutableStateOf(0)</ID>
+    <ID>ReturnCount:InstructionParser.kt$InstructionParser$private fun parseIncreaseDecrease(upper: String): ParsedInstruction?</ID>
+    <ID>ReturnCount:VoiceCommandParser.kt$VoiceCommandParser$fun parse(text: String): VoiceCommand?</ID>
+    <ID>TooGenericExceptionCaught:GeminiAiService.kt$GeminiAiService$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:RavelryViewModel.kt$RavelryViewModel$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:VoiceLiveSession.kt$VoiceLiveSession$e: Exception</ID>
+    <ID>TooManyFunctions:CounterProjectDao.kt$CounterProjectDao</ID>
+    <ID>TooManyFunctions:CounterRepository.kt$CounterRepository</ID>
+    <ID>TooManyFunctions:CounterScreen.kt$com.finnvek.knittools.ui.screens.counter.CounterScreen.kt</ID>
+    <ID>TooManyFunctions:CounterViewModel.kt$CounterViewModel : ViewModel</ID>
+    <ID>TooManyFunctions:InstructionParser.kt$InstructionParser</ID>
+    <ID>ViewModelForwarding:CounterScreen.kt$CounterDialogActionDependencies( viewModel = viewModel, projectId = state.projectId, renameText = renameText, onRenameTextChange = { renameText = it }, onBack = onBack, onHideAddReminder = { showAddReminder = false }, onHideAddCounter = { showAddCounter = false }, onHideResetDialog = { showResetDialog = false }, onHideCompleteDialog = { showCompleteDialog = false }, onHideDeleteDialog = { showDeleteDialog = false }, onHideRenameDialog = { showRenameDialog = false }, onHideStitchDialog = { showStitchDialog = false }, )</ID>
+    <ID>ViewModelForwarding:CounterScreen.kt$HandleVoiceCommands( voiceCommandHandler = voiceCommandHandler, viewModel = viewModel, performHaptic = ::performHaptic, )</ID>
+    <ID>ViewModelForwarding:CounterScreen.kt$ProjectHeaderActionDependencies( viewModel = viewModel, projectId = state.projectId, onPatternViewer = onPatternViewer, onSessionHistory = onSessionHistory, onShowPatternInfo = { showPatternInfoSheet = true }, onShowPatternPicker = { showPatternPicker = true }, onShowYarnManagement = { showYarnManagementSheet = true }, onShowNotes = { showNotesSheet = true }, onShowStitchDialog = { showStitchDialog = true }, onShowSummarySheet = { showSummarySheet = true }, onEditingNameChange = { isEditingName = it }, )</ID>
+    <ID>ViewModelForwarding:CounterScreen.kt$VoiceCommandEffects( voiceCommandHandler = voiceCommandHandler, voiceResponseManager = voiceResponseManager, viewModel = viewModel, snackbarHostState = snackbarHostState, )</ID>
+    <ID>ViewModelForwarding:YarnCardReviewScreen.kt$YarnCardScanContent( form = form, viewModel = viewModel, onDiscard = onDiscard, onSaveAndUse = onSaveAndUse, onShowLinkDialog = { id -&gt; savedCardId = id showLinkDialog = true }, activeProjectName = activeProjectName, onLinkToProject = onLinkToProject, toastContext = toastContext, modifier = Modifier .fillMaxSize() .padding(padding) .padding(16.dp) .verticalScroll(rememberScrollState()), )</ID>
+  </CurrentIssues>
+</SmellBaseline>

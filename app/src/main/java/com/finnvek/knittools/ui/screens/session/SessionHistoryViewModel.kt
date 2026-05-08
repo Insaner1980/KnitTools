@@ -3,7 +3,7 @@ package com.finnvek.knittools.ui.screens.session
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.finnvek.knittools.data.local.SessionEntity
+import com.finnvek.knittools.domain.model.KnitSession
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.CounterRepository
@@ -25,7 +25,7 @@ class SessionHistoryViewModel
     ) : ViewModel() {
         private val projectId: Long = savedStateHandle["projectId"] ?: 0L
 
-        val sessions: StateFlow<List<SessionEntity>> =
+        val sessions: StateFlow<List<KnitSession>> =
             repository
                 .getSessionsForProject(projectId)
                 .map { sessions ->

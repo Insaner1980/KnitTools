@@ -27,7 +27,6 @@
     <string name="unit_per_4in">4 tuumaa kohti</string>
 
     <!-- Aloitusnäkymä -->
-    <string name="tool_row_counter">Kerroslaskuri</string>
     <string name="tool_increase_decrease">Lisäykset / kavennukset</string>
     <string name="tool_gauge_converter">Tiheyslaskuri</string>
     <string name="tool_cast_on_calculator">Luomislaskuri</string>
@@ -43,12 +42,10 @@
     <string name="tab_library">KIRJASTO</string>
     <string name="tab_tools">TYÖKALUT</string>
     <string name="tab_insights">TILASTOT</string>
-    <string name="tab_reference">VIITTEET</string>
     <string name="tab_settings">ASETUKSET</string>
 
     <!-- Näyttöjen otsikot -->
     <string name="tools_title">Työkalut</string>
-    <string name="reference_title">Viitteet</string>
     <string name="library_title">Kirjasto</string>
     <string name="insights_title">Tilastot</string>
     <string name="saved_patterns_title">Tallennetut ohjeet</string>
@@ -56,8 +53,6 @@
     <string name="all_photos_title">Valokuvat</string>
 
     <!-- Viiteosion hero-teksti -->
-    <string name="reference_hero_title">Neulonnan pikaopas</string>
-    <string name="reference_hero_subtitle">Nopea pääsy kokoihin, lyhenteisiin ja kaaviomerkkeihin.</string>
 
     <!-- Projektilista -->
     <string name="project_list_title">Projektit</string>
@@ -68,11 +63,9 @@
     <string name="new_project_name_format">Projekti %1$d</string>
     <string name="no_active_projects">Ei aktiivisia projekteja</string>
     <string name="no_completed_projects">Ei valmiita projekteja vielä</string>
-    <string name="archive_project">Merkitse valmistuneeksi</string>
     <string name="delete_project">Poista</string>
     <string name="delete_project_message">Poistetaanko %s? Tätä ei voi kumota.</string>
     <string name="rename_project">Nimeä uudelleen</string>
-    <string name="reactivate_project">Aktivoi uudelleen</string>
     <string name="complete_project">Merkitse valmistuneeksi</string>
     <string name="complete_project_message">Merkitäänkö %s valmistuneeksi? Projekti siirretään valmiisiin projekteihin.</string>
     <string name="more_options">Lisää vaihtoehtoja</string>
@@ -94,7 +87,6 @@
     <string name="just_now">juuri nyt</string>
 
     <!-- Laskurinäkymä -->
-    <string name="current_project">NYKYINEN PROJEKTI</string>
     <string name="current_row">NYKYINEN KERROS</string>
     <string name="stitch_count_format">%s s</string>
     <string name="set_stitches">Aseta silmukkamäärä</string>
@@ -123,7 +115,6 @@
     <string name="pattern_picker_device_files">Valitse PDF laitteelta</string>
     <string name="pattern_picker_saved_patterns">Tallennetut ohjeet</string>
     <string name="pattern_picker_camera_scan">Kameraskannaus</string>
-    <string name="pattern_picker_pdf_unavailable">PDF ei ole saatavilla</string>
     <string name="pattern_scan_failed">Ohjeskannausta ei voitu muuntaa PDF:ksi.</string>
     <string name="imported_pattern_designer">Tuotu PDF</string>
     <string name="current_row_short">Kerros %1$d</string>
@@ -196,7 +187,6 @@
     <string name="journal_offline_notice">AI-muotoilu ei ole käytettävissä, merkintä tallennettiin kirjoittamassasi muodossa.</string>
     <string name="journal_mic_permission_required">Mikrofonin käyttöoikeus vaaditaan</string>
     <string name="journal_processing">Muotoillaan…</string>
-    <string name="journal_row_label">Kerros %1$d</string>
     <string name="journal_speech_unavailable">Puheentunnistus ei ole käytettävissä tällä laitteella</string>
     <string name="journal_speech_network_error">Puheentunnistus tarvitsee verkkoyhteyden</string>
     <string name="journal_speech_no_match">Puhetta ei tunnistettu — yritä uudelleen</string>
@@ -221,7 +211,6 @@
 
     <!-- Tiheyslaskuri -->
     <string name="pattern_gauge">Ohjeen tiheys</string>
-    <string name="your_gauge">Oma tiheys</string>
     <string name="pattern_instructions">Ohjeen tiedot</string>
     <string name="stitches_gauge">Silmukoita %s</string>
     <string name="rows_gauge">Kerroksia %s</string>
@@ -260,11 +249,9 @@
     <string name="header_jp">JP</string>
 
     <!-- Asetukset -->
-    <string name="theme">Teema</string>
     <string name="theme_system">Järjestelmä</string>
     <string name="theme_light">Vaalea</string>
     <string name="theme_dark">Tumma</string>
-    <string name="preferences">Asetukset</string>
     <string name="settings_section_settings">ASETUKSET</string>
     <string name="settings_section_pro">PRO</string>
     <string name="settings_section_info">TIETOA</string>
@@ -285,7 +272,6 @@
     <string name="haptic_feedback">Haptinen palaute</string>
     <string name="keep_screen_awake">Pidä näyttö hereillä</string>
     <string name="use_imperial_units">Käytä imperiaalisia mittayksiköitä</string>
-    <string name="purchase">Osta</string>
     <string name="upgrade_to_pro">Päivitä Prohon</string>
     <string name="restore_purchases">Palauta ostot</string>
     <string name="privacy_summary">Kaikki tiedot pysyvät laitteellasi. Ei analytiikkaa, ei pilvisynkronointia, ei tilejä.</string>
@@ -294,7 +280,6 @@
     <string name="version_format">KnitTools %s</string>
 
     <!-- Pro-päivitys -->
-    <string name="knittools_pro">KnitTools Pro</string>
     <string name="you_have_pro">Sinulla on KnitTools Pro!</string>
     <string name="all_features_unlocked">Kaikki ominaisuudet on avattu.</string>
     <string name="pro_feature_unlimited_projects">Rajattomasti laskuriprojekteja</string>
@@ -303,12 +288,8 @@
     <string name="pro_feature_secondary_counter">Toinen laskuri</string>
     <string name="pro_feature_ocr">Lankavyötteen OCR-skannaus</string>
     <string name="pro_feature_widget">Aloitusnäytön widget</string>
-    <string name="pro_feature_row_reminders">Kerrosmuistutukset</string>
-    <string name="pro_feature_progress_photos">Edistymiskuvat</string>
-    <string name="pro_feature_multiple_counters">Useita laskureita</string>
     <string name="pro_feature_pattern_camera_scan">Ohjeen kameraskannaus</string>
     <string name="pro_feature">Pro-ominaisuus</string>
-    <string name="pro_required_add">Päivitä Prohon lisätäksesi enemmän</string>
     <string name="upgrade_for_price">Päivitä hintaan %s</string>
     <string name="one_time_purchase">Kertaostos. Ei tilausta.</string>
     <string name="loading_price">Ladataan hintaa…</string>
@@ -317,7 +298,6 @@
     <!-- Lankakortti / OCR -->
     <string name="scan_yarn_label">Skannaa lankavyöte</string>
     <string name="yarn_scan_failed">Tästä kuvasta ei voitu lukea lankavyötettä. Yritä uudelleen.</string>
-    <string name="yarn_scan_no_internet">Skannaus vaatii internetyhteyden</string>
     <string name="saved_yarns">Tallennetut langat</string>
     <string name="scanned_yarn">Skannattu lanka</string>
     <string name="brand">Merkki</string>
@@ -337,8 +317,6 @@
     <string name="use_in_calculator">Käytä laskurissa</string>
     <string name="no_saved_yarns">Lankakortteja ei ole vielä tallennettu</string>
     <string name="scanning">Skannataan…</string>
-    <string name="card_deleted">Lankakortti poistettu</string>
-    <string name="undo">Kumoa</string>
     <string name="pro_required_save">Pro vaaditaan lankakorttien tallentamiseen</string>
 
     <!-- Gemini Nano -->
@@ -384,7 +362,6 @@
     <string name="widget_undo_content_description">Peru viimeisin muutos</string>
 
     <!-- Hubit -->
-    <string name="reference_hub_title">Viitteet</string>
     <string name="desc_increase_decrease">Jaa lisäykset tai kavennukset tasaisesti kerrokselle</string>
     <string name="desc_gauge_calculator">Laske tiheys ja muunna ohjeen tiedot</string>
     <string name="desc_cast_on">Laske haluttuun leveyteen luotavat silmukat</string>
@@ -408,7 +385,6 @@
     <string name="total_time_label">KOKONAIS-\nAIKA</string>
     <string name="avg_pace_label">KESKITAHTI</string>
     <string name="completed_label">VALMIIT</string>
-    <string name="top_streak_label">PISIN PUTKI</string>
     <string name="time_format_hours">%.1f h</string>
     <string name="pace_format">%.0f krs/h</string>
     <string name="streak_format">%d päivää</string>
@@ -416,13 +392,9 @@
     <string name="insights_all_time">Kaikki</string>
     <string name="insights_this_week">Tämä viikko</string>
     <string name="insights_this_month">Tämä kuukausi</string>
-    <string name="pro_insights_hint">Avaa kaaviot, putket ja muuta Prolla</string>
-    <string name="insights_summary_format">%1$.1f h tällä viikolla · %2$.0f krs/h</string>
     <string name="insights_knitting_activity">NEULONTA-AKTIIVISUUS</string>
     <string name="insights_current_streak">Nykyinen putki:</string>
     <string name="insights_best_streak">Paras:</string>
-    <string name="insights_project_time_with_rows">%1$s · %2$d kerrosta</string>
-    <string name="insights_project_time_only">%1$s</string>
     <string name="insights_rows_count">%1$d kerrosta</string>
     <string name="insights_less_than_tenth_hour">&lt;0,1 h</string>
     <string name="insights_no_time">—</string>
@@ -436,16 +408,13 @@
     <string name="relative_time_days_ago">%1$dpv sitten</string>
     <string name="relative_time_weeks_ago">%1$dv sitten</string>
     <string name="relative_time_months_ago">%1$dkk sitten</string>
-    <string name="week_now">nyt</string>
     <string name="no_knitting">Ei neulontaa</string>
     <string name="time_per_project">AIKA PROJEKTEITTAIN</string>
-    <string name="pace_over_time">TAHTI AJASSA</string>
 
     <!-- Asetukset -->
     <string name="help_and_guide">Ohjeet ja opas</string>
 
     <!-- Tiheyslaskuri — mallitilkkiosio -->
-    <string name="my_gauge">Oma tiheys</string>
     <string name="your_gauge_section">Sinun tiheytesi</string>
     <string name="measure_swatch">Mittaa mallitilkku</string>
     <string name="enter_directly">Syötä suoraan</string>
@@ -454,8 +423,6 @@
     <string name="stitch_count_in_swatch">Silmukoita mallitilkussa</string>
     <string name="measured_height">Mitattu korkeus</string>
     <string name="row_count_in_swatch">Kerroksia mallitilkussa</string>
-    <string name="your_stitch_gauge">Sinun silmukkatiheytesi: %s</string>
-    <string name="your_row_gauge">Sinun kerrostiheytesi: %s</string>
 
     <!-- Kokotaulukot -->
     <string name="size_charts_title">Kokotaulukot</string>
@@ -748,8 +715,6 @@
     <string name="restart">Käynnistä uudelleen</string>
 
     <!-- Kerrosmuistutukset -->
-    <string name="reminders">Muistutukset</string>
-    <string name="reminders_count">Muistutukset (%d)</string>
     <string name="add_reminder">Lisää muistutus</string>
     <string name="delete_reminder_title">Poistetaanko muistutus?</string>
     <string name="delete_reminder_confirm">Poistetaanko muistutus "%1$s"?</string>
@@ -762,11 +727,9 @@
     <string name="repeat_every_rows">kerros</string>
     <string name="repeat_count_format">Toisto %1$d/%2$d</string>
     <string name="dismiss">Kuittaa</string>
-    <string name="no_reminders">Ei muistutuksia vielä</string>
 
     <!-- Useita laskureita -->
     <string name="counters">Laskurit</string>
-    <string name="counters_count">Laskurit (%d)</string>
     <string name="add_counter">Lisää laskuri</string>
     <string name="counter_name">Nimi</string>
     <string name="counter_name_hint">esim. Hihan lisäykset</string>
@@ -788,8 +751,6 @@
     <string name="delete_counter">Poista</string>
     <string name="delete_counter_title">Poistetaanko laskuri?</string>
     <string name="delete_counter_message">\"%1$s\" poistetaan pysyvästi.</string>
-    <string name="delete_annotation_title">Poistetaanko merkintä?</string>
-    <string name="delete_annotation_message">Merkintä poistetaan pysyvästi.</string>
 
     <!-- Edistymiskuvat -->
     <string name="take_photo">Ota kuva</string>
@@ -799,8 +760,6 @@
     <string name="voice_offline_mode">Offline-tila, vain peruskomennot käytössä</string>
     <string name="voice_quota_daily_exhausted">AI-komennot ovat tauolla tältä päivältä, mutta peruskomennot toimivat edelleen</string>
     <string name="voice_command_unknown">En ymmärtänyt</string>
-    <string name="voice_command_not_recognized_offline">Komentoa ei tunnistettu offline-tilassa</string>
-    <string name="voice_help_text">Komennot: seuraava, takaisin, kumoa, nollaa, lopeta, apua sekä vapaamuotoiset ohjeet</string>
     <string name="voice_note_saved">Muistiinpano tallennettu</string>
     <string name="voice_counter_reset">Laskuri nollattu</string>
     <string name="voice_row_current">Kerros %d</string>
@@ -856,12 +815,10 @@
     <string name="voice_stitch_count_set">Silmukkamääräksi asetettu %1$d per kerros</string>
     <string name="voice_stitch_tracking_on">Silmukkaseuranta käytössä</string>
     <string name="voice_stitch_tracking_off">Silmukkaseuranta pois käytöstä</string>
-    <string name="voice_live_connecting">Yhdistetään…</string>
     <string name="voice_live_error">Ääniyhteys epäonnistui</string>
     <string name="voice_live_quota_exhausted">Kuukauden ääniminuutit on käytetty</string>
     <string name="voice_natural_response">Luonnollinen ääni</string>
     <string name="voice_live_quota_remaining">%1$.0f / %2$.0f min jäljellä</string>
-    <string name="voice_mode_ended">Äänitila päättyi</string>
     <string name="voice_recognizer_error">Puheentunnistusvirhe</string>
     <string name="row_label_format">Kerros %d</string>
     <string name="share_photo">Jaa</string>
@@ -887,14 +844,10 @@
     <string name="pattern_saved">Ohje tallennettu</string>
     <string name="no_saved_patterns">Ei tallennettuja ohjeita vielä</string>
     <string name="search_hint">Etsi neuleohjeita…</string>
-    <string name="filter_craft">Laji</string>
-    <string name="filter_availability">Saatavuus</string>
-    <string name="filter_category">Kategoria</string>
     <string name="filter_weight">Paksuus</string>
     <string name="filter_difficulty">Vaikeus</string>
     <string name="free">Ilmainen</string>
     <string name="paid">Maksullinen</string>
-    <string name="all">Kaikki</string>
     <string name="no_results">Ohjeita ei löytynyt</string>
     <string name="search_error">Ohjeita ei voitu ladata. Tarkista internetyhteytesi.</string>
     <string name="ravelry_sign_in">Kirjaudu Ravelryyn</string>
@@ -910,16 +863,12 @@
     <!-- Infovinkit -->
     <string name="tip_your_gauge_title">Mitä tiheys tarkoittaa?</string>
     <string name="tip_your_gauge_desc">Tiheys kertoo, kuinka monta silmukkaa ja kerrosta mahtuu mitattuun alueeseen. Neulo pieni mallitilkku ja mittaa se, niin saat oman tiheytesi selville. Näin valmis työ vastaa ohjeen tarkoitettua kokoa.</string>
-    <string name="tip_swatch_vs_direct_title">Mallitilkku vai suora syöttö</string>
-    <string name="tip_swatch_vs_direct_desc">Valitse "Mittaa mallitilkku", jos olet neulonut koetilkun ja haluat mitata sen. Valitse "Syötä suoraan", jos tiedät tiheytesi jo valmiiksi (esim. 22 silmukkaa / 10 cm).</string>
     <string name="tip_pattern_repeat_title">Mallikerta</string>
     <string name="tip_pattern_repeat_desc">Jos mallikuviosi toistuu joka X silmukan välein (esim. palmikko joka 8. silmukka), syötä luku tähän. Laskuri pyöristää luotavan silmukkamäärän lähimpään sopivaan monikertaan, jotta kuvio asettuu oikein.</string>
     <string name="tip_edge_stitches_title">Reunasilmukat</string>
     <string name="tip_edge_stitches_desc">Reunasilmukat ovat ylimääräisiä silmukoita, jotka lisätään työn reunoihin siistiä reunaa varten. Ne eivät kuulu mallikertaan. Tavallisia arvoja ovat 1–2 silmukkaa per reuna.</string>
     <string name="tip_flat_vs_circular_title">Tasoneule vs. pyöröneule</string>
     <string name="tip_flat_vs_circular_desc">Tasoneule: neulot edestakaisin suorilla tai pyöröpuikoilla ja käännät työn jokaisen kerroksen lopussa. Lisäykset ja kavennukset tehdään molemmissa reunoissa.\n\nPyöröneule: neulot jatkuvaa kierrosta. Lisäykset ja kavennukset jaetaan tasaisesti koko kierrokselle.</string>
-    <string name="tip_pattern_repeat_pill_title">Mallikertalaskuri</string>
-    <string name="tip_pattern_repeat_pill_desc">Tämä laskee, kuinka monta kertaa olet tehnyt mallikertaosion valmiiksi. Se nollautuu automaattisesti määrittämäsi toistovälin mukaan. Hyödyllinen esimerkiksi palmikoiden, pitsikertojen tai värinvaihtojen seuraamiseen.</string>
     <string name="tip_needle_sizes_title">Puikkokokojen järjestelmät</string>
     <string name="tip_needle_sizes_desc">Metrinen koko (mm) on yleinen standardi. US-koot käyttävät numeroasteikkoa (0–50). UK- ja kanadalaiset koot käyttävät eri numerojärjestelmää. Japanilaisissa kooissa on oma numerointi. Varmista aina koko millimetreinä.</string>
     <string name="tip_imperial_units_title">Imperiaaliset yksiköt</string>

@@ -27,7 +27,6 @@
     <string name="unit_per_4in">per 4 in</string>
 
     <!-- Home screen -->
-    <string name="tool_row_counter">Rijenteller</string>
     <string name="tool_increase_decrease">Meerderen / minderen</string>
     <string name="tool_gauge_converter">Stekenproefcalculator</string>
     <string name="tool_cast_on_calculator">Opzetcalculator</string>
@@ -43,12 +42,10 @@
     <string name="tab_library">BIBLIOTHEEK</string>
     <string name="tab_tools">TOOLS</string>
     <string name="tab_insights">INZICHTEN</string>
-    <string name="tab_reference">NASLAG</string>
     <string name="tab_settings">INSTELLINGEN</string>
 
     <!-- Screen titles -->
     <string name="tools_title">Tools</string>
-    <string name="reference_title">Naslag</string>
     <string name="library_title">Bibliotheek</string>
     <string name="insights_title">Inzichten</string>
     <string name="saved_patterns_title">Opgeslagen patronen</string>
@@ -56,8 +53,6 @@
     <string name="all_photos_title">Foto\'s</string>
 
     <!-- Hub hero text -->
-    <string name="reference_hero_title">Breinaslag</string>
-    <string name="reference_hero_subtitle">Snelle toegang tot maten, afkortingen en breischema-symbolen.</string>
 
     <!-- Project List -->
     <string name="project_list_title">Projecten</string>
@@ -68,11 +63,9 @@
     <string name="new_project_name_format">Project %1$d</string>
     <string name="no_active_projects">Geen actieve projecten</string>
     <string name="no_completed_projects">Nog geen voltooide projecten</string>
-    <string name="archive_project">Voltooien</string>
     <string name="delete_project">Verwijderen</string>
     <string name="delete_project_message">%s verwijderen? Dit kan niet ongedaan worden gemaakt.</string>
     <string name="rename_project">Naam wijzigen</string>
-    <string name="reactivate_project">Opnieuw activeren</string>
     <string name="complete_project">Voltooien</string>
     <string name="complete_project_message">%s voltooien? Het project wordt naar je voltooide projecten verplaatst.</string>
     <string name="more_options">Meer opties</string>
@@ -94,7 +87,6 @@
     <string name="just_now">zojuist</string>
 
     <!-- Counter Screen -->
-    <string name="current_project">HUIDIG PROJECT</string>
     <string name="current_row">HUIDIGE TOER</string>
     <string name="stitch_count_format">%s st</string>
     <string name="set_stitches">Steken instellen</string>
@@ -123,7 +115,6 @@
     <string name="pattern_picker_device_files">PDF van apparaat kiezen</string>
     <string name="pattern_picker_saved_patterns">Opgeslagen patronen</string>
     <string name="pattern_picker_camera_scan">Scannen met camera</string>
-    <string name="pattern_picker_pdf_unavailable">PDF niet beschikbaar</string>
     <string name="pattern_scan_failed">De patroonscan kon niet naar PDF worden omgezet.</string>
     <string name="imported_pattern_designer">Geïmporteerde PDF</string>
     <string name="current_row_short">Toer %1$d</string>
@@ -196,7 +187,6 @@
     <string name="journal_offline_notice">AI-opmaak niet beschikbaar, item opgeslagen zoals getypt.</string>
     <string name="journal_mic_permission_required">Microfoonmachtiging vereist</string>
     <string name="journal_processing">Opmaak toepassen…</string>
-    <string name="journal_row_label">Toer %1$d</string>
     <string name="journal_speech_unavailable">Spraakherkenning is niet beschikbaar op dit apparaat</string>
     <string name="journal_speech_network_error">Spraakherkenning heeft een netwerkverbinding nodig</string>
     <string name="journal_speech_no_match">Niet goed verstaan — probeer het opnieuw</string>
@@ -221,7 +211,6 @@
 
     <!-- Gauge Converter -->
     <string name="pattern_gauge">Stekenproef van patroon</string>
-    <string name="your_gauge">Jouw stekenproef</string>
     <string name="pattern_instructions">Patrooninstructies</string>
     <string name="stitches_gauge">Steken %s</string>
     <string name="rows_gauge">Toeren %s</string>
@@ -260,11 +249,9 @@
     <string name="header_jp">JP</string>
 
     <!-- Settings -->
-    <string name="theme">Thema</string>
     <string name="theme_system">Systeem</string>
     <string name="theme_light">Licht</string>
     <string name="theme_dark">Donker</string>
-    <string name="preferences">Voorkeuren</string>
     <string name="settings_section_settings">INSTELLINGEN</string>
     <string name="settings_section_pro">PRO</string>
     <string name="settings_section_info">INFO</string>
@@ -285,7 +272,6 @@
     <string name="haptic_feedback">Haptische feedback</string>
     <string name="keep_screen_awake">Scherm actief houden</string>
     <string name="use_imperial_units">Imperiale eenheden gebruiken</string>
-    <string name="purchase">Kopen</string>
     <string name="upgrade_to_pro">Upgrade naar Pro</string>
     <string name="restore_purchases">Aankopen herstellen</string>
     <string name="privacy_summary">Alle gegevens blijven op je apparaat. Geen analytics, geen cloudsynchronisatie, geen accounts.</string>
@@ -294,7 +280,6 @@
     <string name="version_format">KnitTools %s</string>
 
     <!-- Pro Upgrade -->
-    <string name="knittools_pro">KnitTools Pro</string>
     <string name="you_have_pro">Je hebt KnitTools Pro!</string>
     <string name="all_features_unlocked">Alle functies zijn ontgrendeld.</string>
     <string name="pro_feature_unlimited_projects">Onbeperkt aantal telprojecten</string>
@@ -303,12 +288,8 @@
     <string name="pro_feature_secondary_counter">Secundaire teller</string>
     <string name="pro_feature_ocr">OCR-scan van garenlabels</string>
     <string name="pro_feature_widget">Widget op het startscherm</string>
-    <string name="pro_feature_row_reminders">Toerherinneringen</string>
-    <string name="pro_feature_progress_photos">Voortgangsfoto\'s</string>
-    <string name="pro_feature_multiple_counters">Meerdere tellers</string>
     <string name="pro_feature_pattern_camera_scan">Patroon scannen met camera</string>
     <string name="pro_feature">Pro-functie</string>
-    <string name="pro_required_add">Upgrade naar Pro om meer toe te voegen</string>
     <string name="upgrade_for_price">Upgrade voor %s</string>
     <string name="one_time_purchase">Eenmalige aankoop. Geen abonnement.</string>
     <string name="loading_price">Prijs laden…</string>
@@ -317,7 +298,6 @@
     <!-- Yarn Card / OCR -->
     <string name="scan_yarn_label">Garenlabel scannen</string>
     <string name="yarn_scan_failed">Er kon geen garenlabel uit deze foto worden gelezen. Probeer het opnieuw.</string>
-    <string name="yarn_scan_no_internet">Scannen vereist een internetverbinding</string>
     <string name="saved_yarns">Opgeslagen garens</string>
     <string name="scanned_yarn">Gescand garen</string>
     <string name="brand">Merk</string>
@@ -337,8 +317,6 @@
     <string name="use_in_calculator">Gebruik in calculator</string>
     <string name="no_saved_yarns">Nog geen garenkaarten opgeslagen</string>
     <string name="scanning">Scannen…</string>
-    <string name="card_deleted">Garenkaart verwijderd</string>
-    <string name="undo">Ongedaan maken</string>
     <string name="pro_required_save">Pro vereist om garenkaarten op te slaan</string>
 
     <!-- Gemini Nano -->
@@ -375,7 +353,6 @@
     <string name="widget_pro_required">Upgrade naar Pro om de widget te gebruiken</string>
 
     <!-- Hubs -->
-    <string name="reference_hub_title">Naslag</string>
     <string name="desc_increase_decrease">Verdeel meerderingen of minderingen gelijkmatig over een toer</string>
     <string name="desc_gauge_calculator">Bereken je stekenproef en zet patrooninstructies om</string>
     <string name="desc_cast_on">Bereken hoeveel steken je moet opzetten voor de gewenste breedte</string>
@@ -399,7 +376,6 @@
     <string name="total_time_label">TOTALE TIJD</string>
     <string name="avg_pace_label">GEMIDDELD TEMPO</string>
     <string name="completed_label">VOLTOOID</string>
-    <string name="top_streak_label">BESTE REEKS</string>
     <string name="time_format_hours">%.1fu</string>
     <string name="pace_format">%.0f t/u</string>
     <string name="streak_format">%d dagen</string>
@@ -407,13 +383,9 @@
     <string name="insights_all_time">Altijd</string>
     <string name="insights_this_week">Deze week</string>
     <string name="insights_this_month">Deze maand</string>
-    <string name="pro_insights_hint">Ontgrendel grafieken, reeksen en meer met Pro</string>
-    <string name="insights_summary_format">%1$.1fu deze week · %2$.0f t/u</string>
     <string name="insights_knitting_activity">BREIACTIVITEIT</string>
     <string name="insights_current_streak">Huidige reeks:</string>
     <string name="insights_best_streak">Beste:</string>
-    <string name="insights_project_time_with_rows">%1$s · %2$d toeren</string>
-    <string name="insights_project_time_only">%1$s</string>
     <string name="insights_rows_count">%1$d toeren</string>
     <string name="insights_less_than_tenth_hour">&lt;0.1u</string>
     <string name="insights_no_time">—</string>
@@ -427,16 +399,13 @@
     <string name="relative_time_days_ago">%1$dd geleden</string>
     <string name="relative_time_weeks_ago">%1$dw geleden</string>
     <string name="relative_time_months_ago">%1$dmnd geleden</string>
-    <string name="week_now">nu</string>
     <string name="no_knitting">Niet gebreid</string>
     <string name="time_per_project">TIJD PER PROJECT</string>
-    <string name="pace_over_time">TEMPO IN DE TIJD</string>
 
     <!-- Settings -->
     <string name="help_and_guide">Hulp en gids</string>
 
     <!-- Gauge Calculator — swatch section -->
-    <string name="my_gauge">Mijn stekenproef</string>
     <string name="your_gauge_section">Jouw stekenproef</string>
     <string name="measure_swatch">Stekenproef meten</string>
     <string name="enter_directly">Direct invoeren</string>
@@ -445,8 +414,6 @@
     <string name="stitch_count_in_swatch">Steken in proeflap</string>
     <string name="measured_height">Gemeten hoogte</string>
     <string name="row_count_in_swatch">Toeren in proeflap</string>
-    <string name="your_stitch_gauge">Jouw stekenproef in steken: %s</string>
-    <string name="your_row_gauge">Jouw stekenproef in toeren: %s</string>
 
     <!-- Size Charts -->
     <string name="size_charts_title">Maattabellen</string>
@@ -505,8 +472,6 @@
     <string name="restart">Herstarten</string>
 
     <!-- Row Reminders -->
-    <string name="reminders">Herinneringen</string>
-    <string name="reminders_count">Herinneringen (%d)</string>
     <string name="add_reminder">Herinnering toevoegen</string>
     <string name="delete_reminder_title">Herinnering verwijderen?</string>
     <string name="delete_reminder_confirm">Herinnering \"%1$s\" verwijderen?</string>
@@ -519,11 +484,9 @@
     <string name="repeat_every_rows">toeren</string>
     <string name="repeat_count_format">Herhaling %1$d/%2$d</string>
     <string name="dismiss">Sluiten</string>
-    <string name="no_reminders">Nog geen herinneringen</string>
 
     <!-- Multiple Counters -->
     <string name="counters">Tellers</string>
-    <string name="counters_count">Tellers (%d)</string>
     <string name="add_counter">Teller toevoegen</string>
     <string name="counter_name">Naam</string>
     <string name="counter_name_hint">bijv. Meerderingen mouw</string>
@@ -545,8 +508,6 @@
     <string name="delete_counter">Verwijderen</string>
     <string name="delete_counter_title">Teller verwijderen?</string>
     <string name="delete_counter_message">\"%1$s\" wordt permanent verwijderd.</string>
-    <string name="delete_annotation_title">Notitie verwijderen?</string>
-    <string name="delete_annotation_message">De notitie wordt permanent verwijderd.</string>
 
     <!-- Progress Photos -->
     <string name="take_photo">Foto maken</string>
@@ -556,8 +517,6 @@
     <string name="voice_offline_mode">Offline modus, alleen basisopdrachten</string>
     <string name="voice_quota_daily_exhausted">AI-opdrachten zijn voor vandaag gepauzeerd, basisopdrachten werken nog wel</string>
     <string name="voice_command_unknown">Ik begreep dat niet</string>
-    <string name="voice_command_not_recognized_offline">Opdracht offline niet herkend</string>
-    <string name="voice_help_text">Beschikbare opdrachten: volgende, terug, ongedaan maken, resetten, stop, help en vrije instructies</string>
     <string name="voice_note_saved">Notitie opgeslagen</string>
     <string name="voice_counter_reset">Teller gereset</string>
     <string name="voice_row_current">Toer %d</string>
@@ -613,12 +572,10 @@
     <string name="voice_stitch_count_set">Aantal steken ingesteld op %1$d per toer</string>
     <string name="voice_stitch_tracking_on">Steken bijhouden ingeschakeld</string>
     <string name="voice_stitch_tracking_off">Steken bijhouden uitgeschakeld</string>
-    <string name="voice_live_connecting">Verbinden…</string>
     <string name="voice_live_error">Spraakverbinding mislukt</string>
     <string name="voice_live_quota_exhausted">De spraakminuten van deze maand zijn opgebruikt</string>
     <string name="voice_natural_response">Natuurlijke stem</string>
     <string name="voice_live_quota_remaining">%1$.0f / %2$.0f min over</string>
-    <string name="voice_mode_ended">Spraakmodus beëindigd</string>
     <string name="voice_recognizer_error">Fout bij spraakherkenning</string>
     <string name="row_label_format">Toer %d</string>
     <string name="share_photo">Delen</string>
@@ -644,14 +601,10 @@
     <string name="pattern_saved">Patroon opgeslagen</string>
     <string name="no_saved_patterns">Nog geen patronen opgeslagen</string>
     <string name="search_hint">Zoek naar breipatronen…</string>
-    <string name="filter_craft">Handwerk</string>
-    <string name="filter_availability">Beschikbaarheid</string>
-    <string name="filter_category">Categorie</string>
     <string name="filter_weight">Dikte</string>
     <string name="filter_difficulty">Moeilijkheidsgraad</string>
     <string name="free">Gratis</string>
     <string name="paid">Betaald</string>
-    <string name="all">Alles</string>
     <string name="no_results">Geen patronen gevonden</string>
     <string name="search_error">Patronen konden niet worden geladen. Controleer je internetverbinding.</string>
     <string name="ravelry_sign_in">Inloggen met Ravelry</string>
@@ -661,16 +614,12 @@
     <!-- Info tips -->
     <string name="tip_your_gauge_title">Wat is stekenproef?</string>
     <string name="tip_your_gauge_desc">Je stekenproef geeft aan hoeveel steken en toeren in een gemeten vlak passen. Brei een proeflapje en meet het om jouw persoonlijke stekenproef te bepalen. Zo komt het uiteindelijke werk overeen met de bedoelde maat van het patroon.</string>
-    <string name="tip_swatch_vs_direct_title">Proeflapje vs. direct invoeren</string>
-    <string name="tip_swatch_vs_direct_desc">Gebruik \"Stekenproef meten\" als je een proeflapje hebt gebreid en dat wilt meten. Gebruik \"Direct invoeren\" als je je stekenproef al kent (bijv. 22 steken per 10 cm).</string>
     <string name="tip_pattern_repeat_title">Patroonherhaling</string>
     <string name="tip_pattern_repeat_desc">Als je stekenpatroon zich elke X steken herhaalt (bijv. een kabel elke 8 steken), vul dat getal hier in. De calculator rondt het aantal opzetsteken af naar het dichtstbijzijnde veelvoud, zodat je patroon perfect uitkomt.</string>
     <string name="tip_edge_stitches_title">Kantsteken</string>
     <string name="tip_edge_stitches_desc">Kantsteken zijn extra steken aan beide zijkanten voor een nette rand. Ze maken geen deel uit van de patroonherhaling. Veelgebruikte waarden zijn 1–2 steken per kant.</string>
     <string name="tip_flat_vs_circular_title">Heen en weer vs. in het rond</string>
     <string name="tip_flat_vs_circular_desc">Bij heen-en-weer breien werk je vooruit en terug op rechte of rondbreinaalden en keer je aan het einde van elke toer. Meerderen en minderen gebeuren aan beide kanten.\n\nBij rondbreien werk je in een doorlopende ronde. Meerderen en minderen worden gelijkmatig over de ronde verdeeld.</string>
-    <string name="tip_pattern_repeat_pill_title">Teller voor patroonherhalingen</string>
-    <string name="tip_pattern_repeat_pill_desc">Deze telt hoe vaak je een patroonsectie hebt voltooid. Hij reset automatisch op basis van je herhalingsinterval. Handig voor het volgen van kabelkruisingen, ajourherhalingen of kleurwisselingen.</string>
     <string name="tip_needle_sizes_title">Systemen voor naaldmaten</string>
     <string name="tip_needle_sizes_desc">Metrisch (mm) is de universele standaard. US-maten gebruiken een nummersysteem (0–50). UK/Canadese maten gebruiken een ander nummersysteem. Japanse maten hebben hun eigen nummering. Controleer altijd de maat in mm om zeker te zijn.</string>
     <string name="tip_imperial_units_title">Imperiale eenheden</string>

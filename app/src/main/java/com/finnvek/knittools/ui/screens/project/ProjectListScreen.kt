@@ -67,7 +67,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
-import com.finnvek.knittools.data.local.CounterProjectEntity
+import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.ProjectCard
 
@@ -600,8 +600,8 @@ private fun MultiSelectBottomBar(
 
 // Data-luokat ProjectListContent-parametrien ryhmittelyyn (S107)
 data class ProjectListContentState(
-    val active: List<CounterProjectEntity>,
-    val completed: List<CounterProjectEntity>,
+    val active: List<CounterProject>,
+    val completed: List<CounterProject>,
     val continueKnitting: ContinueKnittingProject?,
     val yarnNames: Map<Long, String>,
     val photoCounts: Map<Long, Int>,
@@ -750,7 +750,7 @@ data class ActiveProjectItemActions(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ActiveProjectItem(
-    project: CounterProjectEntity,
+    project: CounterProject,
     state: ActiveProjectItemState,
     actions: ActiveProjectItemActions,
 ) {

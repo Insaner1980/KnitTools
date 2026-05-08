@@ -2,9 +2,9 @@ package com.finnvek.knittools.ui.screens.insights
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.finnvek.knittools.data.local.CounterProjectEntity
-import com.finnvek.knittools.data.local.SessionEntity
-import com.finnvek.knittools.data.local.SessionInsightsTotals
+import com.finnvek.knittools.domain.model.CounterProject
+import com.finnvek.knittools.domain.model.KnitSession
+import com.finnvek.knittools.domain.model.SessionInsightsSummary
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.CounterRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -54,7 +54,7 @@ class InsightsViewModel
         val selectedProjectId: StateFlow<Long?> = _selectedProjectId.asStateFlow()
         val timeRange: StateFlow<TimeRange> = _timeRange.asStateFlow()
 
-        val projects: StateFlow<List<CounterProjectEntity>> =
+        val projects: StateFlow<List<CounterProject>> =
             counterRepository.getAllProjects().stateIn(
                 viewModelScope,
                 SharingStarted.WhileSubscribed(5000),
@@ -69,20 +69,20 @@ class InsightsViewModel
                 )
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), InsightsQueryParams())
 
-        private val insightSessions: StateFlow<List<SessionEntity>> =
+        private val insightSessions: StateFlow<List<KnitSession>> =
             queryParams
                 .flatMapLatest { params ->
                     counterRepository.getSessionsForInsights(params.projectId, params.startMillis)
                 }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-        private val totals: StateFlow<SessionInsightsTotals> =
+        private val totals: StateFlow<SessionInsightsSummary> =
             queryParams
                 .flatMapLatest { params ->
                     counterRepository.getInsightsTotals(params.projectId, params.startMillis)
                 }.stateIn(
                     viewModelScope,
                     SharingStarted.WhileSubscribed(5000),
-                    SessionInsightsTotals(0, 0, 0),
+                    SessionInsightsSummary(0, 0, 0),
                 )
 
         val hasSessionData: StateFlow<Boolean> =
@@ -169,7 +169,7 @@ class InsightsViewModel
             /**
              * Laskee pisimmän peräkkäisten neulontapäivien ketjun.
              */
-            fun calculateStreak(sessions: List<SessionEntity>): Int {
+            fun calculateStreak(sessions: List<KnitSession>): Int {
                 if (sessions.isEmpty()) return 0
                 val days = sessions.map { sessionToDayKey(it.startedAt) }.distinct().sorted()
                 var maxStreak = 1
@@ -185,7 +185,7 @@ class InsightsViewModel
                 return maxStreak
             }
 
-            fun calculateCurrentStreak(sessions: List<SessionEntity>): Int {
+            fun calculateCurrentStreak(sessions: List<KnitSession>): Int {
                 if (sessions.isEmpty()) return 0
                 val zone = ZoneId.systemDefault()
                 val activeDates =
@@ -210,7 +210,7 @@ class InsightsViewModel
             }
 
             private fun isProjectWithinTimeRange(
-                project: CounterProjectEntity,
+                project: CounterProject,
                 timeRange: TimeRange,
             ): Boolean {
                 if (timeRange == TimeRange.ALL_TIME) return true

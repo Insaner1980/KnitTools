@@ -7,8 +7,8 @@ import androidx.lifecycle.viewModelScope
 import com.finnvek.knittools.R
 import com.finnvek.knittools.ai.AiQuotaManager
 import com.finnvek.knittools.ai.ocr.ParsedYarnLabel
-import com.finnvek.knittools.data.local.CounterProjectEntity
-import com.finnvek.knittools.data.local.YarnCardEntity
+import com.finnvek.knittools.domain.model.CounterProject
+import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.CounterRepository
@@ -62,7 +62,7 @@ class YarnCardViewModel
         private val _formState = MutableStateFlow(YarnCardFormState())
         val formState: StateFlow<YarnCardFormState> = _formState.asStateFlow()
 
-        val savedCards: StateFlow<List<YarnCardEntity>> =
+        val savedCards: StateFlow<List<YarnCard>> =
             repository.getAllCards().stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5000),
@@ -71,7 +71,7 @@ class YarnCardViewModel
 
         val isPro: Boolean get() = proManager.hasFeature(ProFeature.OCR)
 
-        val availableProjects: StateFlow<List<CounterProjectEntity>> =
+        val availableProjects: StateFlow<List<CounterProject>> =
             counterRepository
                 .getActiveProjects()
                 .stateIn(
@@ -147,7 +147,7 @@ class YarnCardViewModel
             }
         }
 
-        fun loadFromCard(card: YarnCardEntity) {
+        fun loadFromCard(card: YarnCard) {
             _formState.value =
                 YarnCardFormState(
                     editingCardId = card.id,
@@ -221,12 +221,12 @@ class YarnCardViewModel
             if (!proManager.hasFeature(ProFeature.OCR)) return
             viewModelScope.launch {
                 val form = _formState.value
-                val id = repository.saveCard(form.toEntity())
+                val id = repository.saveCard(form.toDomain())
                 onSaved(id)
             }
         }
 
-        fun saveCardEntity(card: YarnCardEntity) {
+        fun saveCardDomain(card: YarnCard) {
             viewModelScope.launch { repository.saveCard(card) }
         }
 
@@ -302,8 +302,8 @@ class YarnCardViewModel
             }
         }
 
-        private fun YarnCardFormState.toEntity() =
-            YarnCardEntity(
+        private fun YarnCardFormState.toDomain() =
+            YarnCard(
                 id = editingCardId ?: 0,
                 brand = brand,
                 yarnName = yarnName,

@@ -40,9 +40,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
-import com.finnvek.knittools.data.local.ProjectCounterEntity
 import com.finnvek.knittools.domain.calculator.RepeatSectionLogic
 import com.finnvek.knittools.domain.calculator.ShapingCounterLogic
+import com.finnvek.knittools.domain.model.ProjectCounter
 import com.finnvek.knittools.domain.model.ProjectCounterDraft
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.NumberInputField
@@ -60,7 +60,7 @@ data class CounterItemActions(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun CounterListItem(
-    counter: ProjectCounterEntity,
+    counter: ProjectCounter,
     actions: CounterItemActions,
     modifier: Modifier = Modifier,
 ) {
@@ -600,7 +600,7 @@ private fun RepeatSectionFields(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun RepeatSectionItem(
-    counter: ProjectCounterEntity,
+    counter: ProjectCounter,
     mainRowCount: Int,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,

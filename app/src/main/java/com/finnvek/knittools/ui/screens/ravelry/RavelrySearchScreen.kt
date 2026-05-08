@@ -65,6 +65,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
+import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.StatusMessage
 import com.finnvek.knittools.ui.components.StatusMessageType
@@ -401,7 +402,7 @@ private fun SearchTab(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun SavedTab(
-    patterns: List<com.finnvek.knittools.data.local.SavedPatternEntity>,
+    patterns: List<SavedPattern>,
     isSelectMode: Boolean,
     selectedIds: Set<Long>,
     onPatternClick: (Int) -> Unit,
@@ -450,7 +451,7 @@ private fun SavedTabEmptyState() {
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun SavedPatternItem(
-    pattern: com.finnvek.knittools.data.local.SavedPatternEntity,
+    pattern: SavedPattern,
     isSelectMode: Boolean,
     isSelected: Boolean,
     onPatternClick: (Int) -> Unit,

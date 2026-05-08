@@ -2,10 +2,10 @@ package com.finnvek.knittools.ui.screens.library
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.finnvek.knittools.data.local.CounterProjectEntity
-import com.finnvek.knittools.data.local.ProgressPhotoEntity
-import com.finnvek.knittools.data.local.SavedPatternEntity
-import com.finnvek.knittools.data.local.YarnCardEntity
+import com.finnvek.knittools.domain.model.CounterProject
+import com.finnvek.knittools.domain.model.ProgressPhoto
+import com.finnvek.knittools.domain.model.SavedPattern
+import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.repository.CounterRepository
 import com.finnvek.knittools.repository.ProgressPhotoRepository
 import com.finnvek.knittools.repository.SavedPatternRepository
@@ -35,10 +35,10 @@ class LibraryViewModel
         val photoCount: Flow<Int> = progressPhotoRepository.getAllPhotoCount()
 
         // Listat alanäytöille
-        val savedPatterns: Flow<List<SavedPatternEntity>> = savedPatternRepository.getAll()
-        val yarnCards: Flow<List<YarnCardEntity>> = yarnCardRepository.getAllCards()
-        val allPhotos: Flow<List<ProgressPhotoEntity>> = progressPhotoRepository.getAllPhotos()
-        val allProjects: Flow<List<CounterProjectEntity>> = counterRepository.getAllProjects()
+        val savedPatterns: Flow<List<SavedPattern>> = savedPatternRepository.getAll()
+        val yarnCards: Flow<List<YarnCard>> = yarnCardRepository.getAllCards()
+        val allPhotos: Flow<List<ProgressPhoto>> = progressPhotoRepository.getAllPhotos()
+        val allProjects: Flow<List<CounterProject>> = counterRepository.getAllProjects()
         val activeProjectNames: Flow<Map<Long, String>> =
             counterRepository
                 .getAllProjects()
@@ -48,7 +48,7 @@ class LibraryViewModel
                         .associate { it.id to it.name }
                 }
 
-        fun deletePhoto(photo: ProgressPhotoEntity) {
+        fun deletePhoto(photo: ProgressPhoto) {
             viewModelScope.launch {
                 progressPhotoRepository.deletePhoto(photo)
             }

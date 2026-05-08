@@ -37,7 +37,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import com.finnvek.knittools.R
-import com.finnvek.knittools.data.local.SavedPatternEntity
+import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.data.storage.PatternDocumentStorage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -52,9 +52,9 @@ private data class PatternPickerActions(
 @Composable
 fun PatternPickerSheet(
     projectId: Long?,
-    savedPatterns: List<SavedPatternEntity>,
+    savedPatterns: List<SavedPattern>,
     isPro: Boolean,
-    onSavedPatternSelected: (SavedPatternEntity) -> Unit,
+    onSavedPatternSelected: (SavedPattern) -> Unit,
     onDocumentSelected: (String, String) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -145,11 +145,11 @@ private fun rememberPatternPickerActions(
 
 @Composable
 private fun PatternPickerSheetContent(
-    attachablePatterns: List<SavedPatternEntity>,
+    attachablePatterns: List<SavedPattern>,
     isPro: Boolean,
     projectId: Long?,
     actions: PatternPickerActions,
-    onSavedPatternSelected: (SavedPatternEntity) -> Unit,
+    onSavedPatternSelected: (SavedPattern) -> Unit,
 ) {
     Column(
         modifier =
@@ -196,8 +196,8 @@ private fun PatternPickerSheetContent(
 
 @Composable
 private fun PatternPickerSavedPatterns(
-    attachablePatterns: List<SavedPatternEntity>,
-    onSavedPatternSelected: (SavedPatternEntity) -> Unit,
+    attachablePatterns: List<SavedPattern>,
+    onSavedPatternSelected: (SavedPattern) -> Unit,
 ) {
     LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         items(attachablePatterns, key = { it.id }) { pattern ->

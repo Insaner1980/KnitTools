@@ -1,9 +1,12 @@
 package com.finnvek.knittools.repository
 
 import com.finnvek.knittools.data.local.ProjectCounterDao
-import com.finnvek.knittools.data.local.ProjectCounterEntity
+import com.finnvek.knittools.data.local.toDomain
+import com.finnvek.knittools.data.local.toEntity
 import com.finnvek.knittools.domain.calculator.ProjectCounterLogic
+import com.finnvek.knittools.domain.model.ProjectCounter
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -13,18 +16,18 @@ class ProjectCounterRepository
     constructor(
         private val dao: ProjectCounterDao,
     ) {
-        fun getCountersForProject(projectId: Long): Flow<List<ProjectCounterEntity>> =
-            dao.getCountersForProject(projectId)
+        fun getCountersForProject(projectId: Long): Flow<List<ProjectCounter>> =
+            dao.getCountersForProject(projectId).map { counters -> counters.map { it.toDomain() } }
 
-        suspend fun addCounter(counter: ProjectCounterEntity): Long =
-            dao.insert(counter.copy(name = counter.name.take(50)))
+        suspend fun addCounter(counter: ProjectCounter): Long =
+            dao.insert(counter.copy(name = counter.name.take(50)).toEntity())
 
-        suspend fun incrementCounter(counter: ProjectCounterEntity) {
+        suspend fun incrementCounter(counter: ProjectCounter) {
             val updated = ProjectCounterLogic.increment(counter)
             dao.updateCount(counter.id, updated.count)
         }
 
-        suspend fun decrementCounter(counter: ProjectCounterEntity) {
+        suspend fun decrementCounter(counter: ProjectCounter) {
             val updated = ProjectCounterLogic.decrement(counter)
             dao.updateCount(counter.id, updated.count)
         }

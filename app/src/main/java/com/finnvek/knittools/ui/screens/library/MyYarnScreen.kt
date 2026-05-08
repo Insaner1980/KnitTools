@@ -58,7 +58,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import com.finnvek.knittools.R
-import com.finnvek.knittools.data.local.YarnCardEntity
+import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.ui.components.BadgePill
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.StatusMessage
@@ -67,7 +67,7 @@ import com.finnvek.knittools.ui.theme.knitToolsColors
 
 // Data-luokat MyYarnScreen-parametrien ryhmittelyyn (S107)
 data class MyYarnState(
-    val cards: List<YarnCardEntity>,
+    val cards: List<YarnCard>,
     val activeProjectNames: Map<Long, String>,
     val isSelectMode: Boolean,
     val selectedYarnIds: Set<Long>,
@@ -491,7 +491,7 @@ private fun MyYarnStatusMessage(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun YarnStashCardItem(
-    card: YarnCardEntity,
+    card: YarnCard,
     linkedProjectName: String?,
     isSelectMode: Boolean,
     isSelected: Boolean,
@@ -533,7 +533,7 @@ private fun YarnStashCardItem(
 
 @Composable
 private fun YarnCardContent(
-    card: YarnCardEntity,
+    card: YarnCard,
     linkedProjectName: String?,
 ) {
     val displayName = card.yarnName.ifBlank { stringResource(R.string.yarn_card_fallback_name) }

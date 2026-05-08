@@ -1,9 +1,9 @@
 package com.finnvek.knittools.domain.calculator
 
-import com.finnvek.knittools.data.local.ProjectCounterEntity
+import com.finnvek.knittools.domain.model.ProjectCounter
 
 object ProjectCounterLogic {
-    fun increment(counter: ProjectCounterEntity): ProjectCounterEntity {
+    fun increment(counter: ProjectCounter): ProjectCounter {
         val newCount = counter.count + counter.stepSize
         // SHAPING-tyyppi ei resettaa — normaali laskenta
         if (counter.counterType == "SHAPING") {
@@ -20,7 +20,7 @@ object ProjectCounterLogic {
         }
     }
 
-    fun decrement(counter: ProjectCounterEntity): ProjectCounterEntity {
+    fun decrement(counter: ProjectCounter): ProjectCounter {
         if (counter.counterType == "REPEAT_SECTION") {
             return counter
         }

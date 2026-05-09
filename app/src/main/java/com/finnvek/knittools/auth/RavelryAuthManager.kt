@@ -20,9 +20,11 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import java.io.IOException
 import java.security.SecureRandom
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -142,7 +144,9 @@ class RavelryAuthManager
                 exchangeCodeForTokens(httpClient, code)
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
+            } catch (e: IOException) {
+                Log.w(TAG, "Ravelry OAuth token exchange failed", e)
+            } catch (e: SerializationException) {
                 Log.w(TAG, "Ravelry OAuth token exchange failed", e)
             }
 

@@ -1,8 +1,9 @@
 package com.finnvek.knittools.ui.screens.yarncard
 
 import android.content.Context
-import com.finnvek.knittools.ai.ocr.ParsedYarnLabel
-import com.finnvek.knittools.data.local.YarnCardEntity
+import com.finnvek.knittools.ai.ParsedYarnLabel
+import com.finnvek.knittools.domain.model.CounterProject
+import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.CounterRepository
@@ -94,7 +95,7 @@ class YarnCardViewModelTest {
     @Test
     fun `loadFromCard sets editingCardId`() {
         val card =
-            YarnCardEntity(
+            YarnCard(
                 id = 5,
                 brand = "Drops",
                 yarnName = "Alpaca",
@@ -194,9 +195,7 @@ class YarnCardViewModelTest {
     fun `linkCardToProject updates yarn card ids`() =
         runTest {
             val project =
-                mockk<com.finnvek.knittools.data.local.CounterProjectEntity> {
-                    every { yarnCardIds } returns ""
-                }
+                CounterProject(id = 1L, name = "Test", yarnCardIds = "")
             coEvery { counterRepository.getProject(1L) } returns project
 
             val vm = createViewModel()
@@ -209,9 +208,7 @@ class YarnCardViewModelTest {
     fun `linkCardToProject skips duplicate`() =
         runTest {
             val project =
-                mockk<com.finnvek.knittools.data.local.CounterProjectEntity> {
-                    every { yarnCardIds } returns "5"
-                }
+                CounterProject(id = 1L, name = "Test", yarnCardIds = "5")
             coEvery { counterRepository.getProject(1L) } returns project
 
             val vm = createViewModel()

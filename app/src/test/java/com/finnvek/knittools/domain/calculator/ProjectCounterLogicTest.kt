@@ -1,6 +1,6 @@
 package com.finnvek.knittools.domain.calculator
 
-import com.finnvek.knittools.data.local.ProjectCounterEntity
+import com.finnvek.knittools.domain.model.ProjectCounter
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -9,7 +9,7 @@ class ProjectCounterLogicTest {
         count: Int = 0,
         stepSize: Int = 1,
         repeatAt: Int? = null,
-    ) = ProjectCounterEntity(
+    ) = ProjectCounter(
         id = 1,
         projectId = 1,
         name = "Test",

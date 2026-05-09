@@ -12,14 +12,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.AddCircle
-import androidx.compose.material.icons.outlined.EditNote
-import androidx.compose.material.icons.outlined.FormatListNumbered
 import androidx.compose.material.icons.automirrored.outlined.Article
+import androidx.compose.material.icons.outlined.AddCircle
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.EditNote
+import androidx.compose.material.icons.outlined.FormatListNumbered
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material.icons.outlined.Numbers
@@ -175,11 +175,12 @@ private fun ProjectActionsSection(
 ) {
     Text(
         text = title,
-        style = MaterialTheme.typography.labelSmall.copy(
-            fontWeight = FontWeight.Bold,
-            fontSize = 11.sp,
-            letterSpacing = 0.8.sp,
-        ),
+        style =
+            MaterialTheme.typography.labelSmall.copy(
+                fontWeight = FontWeight.Bold,
+                fontSize = 11.sp,
+                letterSpacing = 0.8.sp,
+            ),
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(start = 22.dp, end = 22.dp, top = 14.dp, bottom = 8.dp),
     )
@@ -196,22 +197,25 @@ private fun ActionRow(
     showChevron: Boolean = true,
     isDanger: Boolean = false,
 ) {
-    val contentColor = when {
-        isDanger -> MaterialTheme.colorScheme.error
-        !enabled -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-        else -> MaterialTheme.colorScheme.onSurface
-    }
-    val mutedColor = if (enabled) {
-        MaterialTheme.colorScheme.onSurfaceVariant
-    } else {
-        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
-    }
+    val contentColor =
+        when {
+            isDanger -> MaterialTheme.colorScheme.error
+            !enabled -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+            else -> MaterialTheme.colorScheme.onSurface
+        }
+    val mutedColor =
+        if (enabled) {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
+        }
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .defaultMinSize(minHeight = 48.dp)
-            .clickable(enabled = enabled, onClick = onClick)
-            .padding(horizontal = 22.dp, vertical = 12.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .defaultMinSize(minHeight = 48.dp)
+                .clickable(enabled = enabled, onClick = onClick)
+                .padding(horizontal = 22.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
@@ -255,11 +259,12 @@ private fun SwitchRow(
 ) {
     val contentColor = MaterialTheme.colorScheme.onSurface
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .defaultMinSize(minHeight = 48.dp)
-            .clickable { onCheckedChange(!checked) }
-            .padding(horizontal = 22.dp, vertical = 12.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .defaultMinSize(minHeight = 48.dp)
+                .clickable { onCheckedChange(!checked) }
+                .padding(horizontal = 22.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(

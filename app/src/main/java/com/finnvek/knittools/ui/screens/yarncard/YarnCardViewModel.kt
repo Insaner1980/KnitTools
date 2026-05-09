@@ -6,7 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.finnvek.knittools.R
 import com.finnvek.knittools.ai.AiQuotaManager
-import com.finnvek.knittools.ai.ocr.ParsedYarnLabel
+import com.finnvek.knittools.ai.ParsedYarnLabel
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.pro.ProFeature

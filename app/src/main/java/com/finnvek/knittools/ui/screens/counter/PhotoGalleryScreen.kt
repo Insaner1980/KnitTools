@@ -53,8 +53,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.finnvek.knittools.R
-import com.finnvek.knittools.domain.model.ProgressPhoto
 import com.finnvek.knittools.data.storage.ProgressPhotoStorage
+import com.finnvek.knittools.domain.model.ProgressPhoto
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale

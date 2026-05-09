@@ -18,14 +18,18 @@ class GeminiAiService
     constructor() {
         private val model by lazy {
             Firebase
-                .ai(backend = GenerativeBackend.googleAI())
-                .generativeModel(MODEL_NAME)
+                .ai(
+                    backend = GenerativeBackend.googleAI(),
+                    useLimitedUseAppCheckTokens = true,
+                ).generativeModel(MODEL_NAME)
         }
 
         private val voiceModel by lazy {
             Firebase
-                .ai(backend = GenerativeBackend.googleAI())
-                .generativeModel(VOICE_MODEL_NAME)
+                .ai(
+                    backend = GenerativeBackend.googleAI(),
+                    useLimitedUseAppCheckTokens = true,
+                ).generativeModel(VOICE_MODEL_NAME)
         }
 
         /**

@@ -25,7 +25,10 @@ class CounterRepository
         private val photoStorage: ProgressPhotoStorage,
         @param:ApplicationContext private val context: Context,
     ) {
-        fun getAllProjects(): Flow<List<CounterProject>> = dao.getAllProjects().map { projects -> projects.map { it.toDomain() } }
+        fun getAllProjects(): Flow<List<CounterProject>> =
+            dao.getAllProjects().map { projects ->
+                projects.map { it.toDomain() }
+            }
 
         fun getActiveProjects(): Flow<List<CounterProject>> =
             dao.getActiveProjects().map { projects -> projects.map { it.toDomain() } }

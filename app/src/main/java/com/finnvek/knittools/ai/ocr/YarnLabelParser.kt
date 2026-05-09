@@ -1,21 +1,7 @@
 package com.finnvek.knittools.ai.ocr
 
+import com.finnvek.knittools.ai.ParsedYarnLabel
 import kotlin.math.roundToInt
-
-data class ParsedYarnLabel(
-    val brand: String = "",
-    val yarnName: String = "",
-    val fiberContent: String = "",
-    val weightGrams: String = "",
-    val lengthMeters: String = "",
-    val needleSize: String = "",
-    val gaugeInfo: String = "",
-    val colorName: String = "",
-    val colorNumber: String = "",
-    val dyeLot: String = "",
-    val weightCategory: String = "",
-    val careSymbols: Long = 0L,
-)
 
 object YarnLabelParser {
     fun parse(rawText: String): ParsedYarnLabel {

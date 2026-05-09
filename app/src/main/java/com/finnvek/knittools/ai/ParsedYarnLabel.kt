@@ -12,4 +12,5 @@ data class ParsedYarnLabel(
     val colorNumber: String = "",
     val dyeLot: String = "",
     val weightCategory: String = "",
+    val careSymbols: Long = 0L,
 )

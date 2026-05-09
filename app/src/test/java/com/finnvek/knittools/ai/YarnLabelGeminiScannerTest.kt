@@ -1,6 +1,4 @@
 package com.finnvek.knittools.ai
-
-import com.finnvek.knittools.ai.ocr.ParsedYarnLabel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -28,7 +26,7 @@ class YarnLabelGeminiScannerTest {
             }
             """.trimIndent()
 
-        val result = YarnLabelGeminiScanner.parseResponse(json)
+        val result: ParsedYarnLabel? = YarnLabelGeminiScanner.parseResponse(json)
         assertNotNull(result)
         assertEquals("Drops", result!!.brand)
         assertEquals("Alpaca", result.yarnName)

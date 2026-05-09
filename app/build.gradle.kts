@@ -1,3 +1,5 @@
+import com.android.build.api.variant.BuildConfigField
+import java.io.StringReader
 import java.util.Properties
 
 plugins {
@@ -13,17 +15,9 @@ plugins {
     alias(libs.plugins.google.services)
 }
 
-// Lataa local.properties BuildConfig-kenttiä varten
-val localProps =
-    Properties().also { props ->
-        rootProject
-            .file("local.properties")
-            .takeIf { it.exists() }
-            ?.inputStream()
-            ?.use { props.load(it) }
-    }
-
 val releaseSigningEnvPrefix = "KNITTOOLS" // Change to your app name, e.g. "KNITTOOLS"
+val debugCredentialsFile = rootProject.layout.projectDirectory.file("debug.credentials.properties")
+val debugCredentialsText = providers.fileContents(debugCredentialsFile).asText.orElse("")
 
 val releaseSigningEnvNames =
     listOf(
@@ -58,14 +52,26 @@ fun requiredReleaseEnv(name: String): String =
     providers.environmentVariable(name).orNull?.takeIf { it.isNotBlank() }
         ?: error("Release signing requires the $name environment variable.")
 
-fun localProp(name: String): String = localProps.getProperty(name, "")
-
 fun releaseEnvOrEmpty(name: String): String =
     providers
         .environmentVariable(name)
         .orNull
         ?.takeIf { it.isNotBlank() }
         .orEmpty()
+
+fun debugBuildConfigField(name: String) =
+    debugCredentialsText.map { text ->
+        val value =
+            Properties()
+                .also { props ->
+                    StringReader(text).use { props.load(it) }
+                }.getProperty(name, "")
+        val quotedValue =
+            "\"${value
+                .replace("\\", "\\\\")
+                .replace("\"", "\\\"")}\""
+        BuildConfigField("String", quotedValue, null)
+    }
 
 fun quotedBuildConfigValue(value: String): String =
     "\"${value
@@ -107,28 +113,6 @@ android {
     }
 
     buildTypes {
-        debug {
-            buildConfigField(
-                "String",
-                "RAVELRY_BASIC_AUTH_USER",
-                quotedBuildConfigValue(localProp("ravelry.basicAuthUser")),
-            )
-            buildConfigField(
-                "String",
-                "RAVELRY_BASIC_AUTH_PASSWORD",
-                quotedBuildConfigValue(localProp("ravelry.basicAuthPassword")),
-            )
-            buildConfigField(
-                "String",
-                "RAVELRY_OAUTH2_CLIENT_ID",
-                quotedBuildConfigValue(localProp("ravelry.oauth2ClientId")),
-            )
-            buildConfigField(
-                "String",
-                "RAVELRY_OAUTH2_CLIENT_SECRET",
-                quotedBuildConfigValue(localProp("ravelry.oauth2ClientSecret")),
-            )
-        }
         release {
             isDebuggable = false
             isMinifyEnabled = true
@@ -206,6 +190,31 @@ android {
         checkGeneratedSources = false
         htmlReport = true
         xmlReport = true
+    }
+}
+
+androidComponents {
+    onVariants(selector().withBuildType("debug")) { variant ->
+        val buildConfigFields =
+            variant.buildConfigFields
+                ?: error("Debug BuildConfig -kenttiä ei voi määrittää, koska BuildConfig ei ole käytössä.")
+
+        buildConfigFields.put(
+            "RAVELRY_BASIC_AUTH_USER",
+            debugBuildConfigField("ravelry.basicAuthUser"),
+        )
+        buildConfigFields.put(
+            "RAVELRY_BASIC_AUTH_PASSWORD",
+            debugBuildConfigField("ravelry.basicAuthPassword"),
+        )
+        buildConfigFields.put(
+            "RAVELRY_OAUTH2_CLIENT_ID",
+            debugBuildConfigField("ravelry.oauth2ClientId"),
+        )
+        buildConfigFields.put(
+            "RAVELRY_OAUTH2_CLIENT_SECRET",
+            debugBuildConfigField("ravelry.oauth2ClientSecret"),
+        )
     }
 }
 
@@ -394,6 +403,7 @@ dependencies {
     // Firebase
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.ai)
+    implementation(libs.firebase.appcheck.playintegrity)
 
     // ML Kit OCR
     implementation(libs.mlkit.text.recognition)
@@ -428,7 +438,7 @@ dependencies {
     detektPlugins(libs.detekt.compose.rules)
 
     // Testing
-    testImplementation("org.json:json:20240303")
+    testImplementation(libs.org.json)
     testImplementation(libs.junit)
     testImplementation(libs.coroutines.test)
     testImplementation(libs.mockk)

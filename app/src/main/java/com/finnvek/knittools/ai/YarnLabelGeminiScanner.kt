@@ -1,7 +1,6 @@
 package com.finnvek.knittools.ai
 
 import android.graphics.Bitmap
-import com.finnvek.knittools.ai.ocr.ParsedYarnLabel
 import org.json.JSONObject
 
 /**

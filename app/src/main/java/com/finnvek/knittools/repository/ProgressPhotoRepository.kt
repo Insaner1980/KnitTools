@@ -5,8 +5,8 @@ import android.net.Uri
 import com.finnvek.knittools.data.local.ProgressPhotoDao
 import com.finnvek.knittools.data.local.ProgressPhotoEntity
 import com.finnvek.knittools.data.local.toDomain
-import com.finnvek.knittools.domain.model.ProgressPhoto
 import com.finnvek.knittools.data.storage.ProgressPhotoStorage
+import com.finnvek.knittools.domain.model.ProgressPhoto
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -23,7 +23,10 @@ class ProgressPhotoRepository
         private val storage: ProgressPhotoStorage,
         @param:ApplicationContext private val context: Context,
     ) {
-        fun getAllPhotos(): Flow<List<ProgressPhoto>> = dao.getAllPhotos().map { photos -> photos.map { it.toDomain() } }
+        fun getAllPhotos(): Flow<List<ProgressPhoto>> =
+            dao.getAllPhotos().map { photos ->
+                photos.map { it.toDomain() }
+            }
 
         fun getAllPhotoCount(): Flow<Int> = dao.getAllPhotoCount()
 

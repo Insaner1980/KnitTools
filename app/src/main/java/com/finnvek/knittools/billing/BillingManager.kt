@@ -2,6 +2,7 @@ package com.finnvek.knittools.billing
 
 import android.app.Activity
 import android.content.Context
+import android.util.Log
 import com.android.billingclient.api.AcknowledgePurchaseParams
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
@@ -62,10 +63,13 @@ class BillingManager
                                 queryPurchases()
                                 queryProductDetails()
                             }
+                        } else {
+                            Log.w(TAG, "Billing-alustus epäonnistui: ${result.responseCode} ${result.debugMessage}")
                         }
                     }
 
                     override fun onBillingServiceDisconnected() {
+                        Log.w(TAG, "Billing-palveluyhteys katkesi")
                         // Retry on next user action
                     }
                 },
@@ -225,6 +229,7 @@ class BillingManager
 
         companion object {
             const val PRODUCT_ID = "knittools_pro"
+            private const val TAG = "BillingManager"
             private const val ACKNOWLEDGEMENT_RETRY_DELAY_MS = 5_000L
         }
     }

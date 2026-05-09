@@ -1,6 +1,5 @@
 package com.finnvek.knittools.ai
 
-import com.finnvek.knittools.ui.screens.counter.AiVoiceAction
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

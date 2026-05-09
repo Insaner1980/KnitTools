@@ -56,8 +56,6 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
@@ -379,62 +377,64 @@ fun CounterScreen(
 
     if (showProjectActionsSheet) {
         ProjectActionsBottomSheet(
-            state = ProjectActionsSheetState(
-                linkedYarnCount = state.linkedYarns.size,
-                projectCounterCount = state.projectCounters.size,
-                stitchTrackingEnabled = state.stitchTrackingEnabled,
-                isPro = state.isPro,
-                isAiAvailable = state.isAiAvailable,
-            ),
-            callbacks = ProjectActionsSheetCallbacks(
-                onDismiss = { showProjectActionsSheet = false },
-                onOpenYarnManagement = {
-                    showProjectActionsSheet = false
-                    showYarnManagementSheet = true
-                },
-                onOpenNotes = {
-                    showProjectActionsSheet = false
-                    state.projectId?.let(onNotesEditor)
-                },
-                onOpenSummary = {
-                    showProjectActionsSheet = false
-                    viewModel.generateSummary()
-                    showSummarySheet = true
-                },
-                onOpenPhotos = {
-                    showProjectActionsSheet = false
-                    onPhotoGallery()
-                },
-                onOpenCountersList = {
-                    showProjectActionsSheet = false
-                    showCountersListSheet = true
-                },
-                onOpenAddCounter = {
-                    showProjectActionsSheet = false
-                    showAddCounter = true
-                },
-                onToggleStitchTracking = viewModel::setStitchTrackingEnabled,
-                onOpenSessionHistory = {
-                    showProjectActionsSheet = false
-                    state.projectId?.let(onSessionHistory)
-                },
-                onStartRename = {
-                    showProjectActionsSheet = false
-                    startRename()
-                },
-                onShowResetDialog = {
-                    showProjectActionsSheet = false
-                    showResetDialog = true
-                },
-                onShowCompleteDialog = {
-                    showProjectActionsSheet = false
-                    showCompleteDialog = true
-                },
-                onShowDeleteDialog = {
-                    showProjectActionsSheet = false
-                    showDeleteDialog = true
-                },
-            ),
+            state =
+                ProjectActionsSheetState(
+                    linkedYarnCount = state.linkedYarns.size,
+                    projectCounterCount = state.projectCounters.size,
+                    stitchTrackingEnabled = state.stitchTrackingEnabled,
+                    isPro = state.isPro,
+                    isAiAvailable = state.isAiAvailable,
+                ),
+            callbacks =
+                ProjectActionsSheetCallbacks(
+                    onDismiss = { showProjectActionsSheet = false },
+                    onOpenYarnManagement = {
+                        showProjectActionsSheet = false
+                        showYarnManagementSheet = true
+                    },
+                    onOpenNotes = {
+                        showProjectActionsSheet = false
+                        state.projectId?.let(onNotesEditor)
+                    },
+                    onOpenSummary = {
+                        showProjectActionsSheet = false
+                        viewModel.generateSummary()
+                        showSummarySheet = true
+                    },
+                    onOpenPhotos = {
+                        showProjectActionsSheet = false
+                        onPhotoGallery()
+                    },
+                    onOpenCountersList = {
+                        showProjectActionsSheet = false
+                        showCountersListSheet = true
+                    },
+                    onOpenAddCounter = {
+                        showProjectActionsSheet = false
+                        showAddCounter = true
+                    },
+                    onToggleStitchTracking = viewModel::setStitchTrackingEnabled,
+                    onOpenSessionHistory = {
+                        showProjectActionsSheet = false
+                        state.projectId?.let(onSessionHistory)
+                    },
+                    onStartRename = {
+                        showProjectActionsSheet = false
+                        startRename()
+                    },
+                    onShowResetDialog = {
+                        showProjectActionsSheet = false
+                        showResetDialog = true
+                    },
+                    onShowCompleteDialog = {
+                        showProjectActionsSheet = false
+                        showCompleteDialog = true
+                    },
+                    onShowDeleteDialog = {
+                        showProjectActionsSheet = false
+                        showDeleteDialog = true
+                    },
+                ),
         )
     }
 
@@ -453,8 +453,9 @@ fun CounterScreen(
         topBar = {
             CounterTopBar(
                 isPro = state.isPro,
-                showPatternIcon = state.projectId != null &&
-                    (state.patternUri != null || state.linkedPattern != null),
+                showPatternIcon =
+                    state.projectId != null &&
+                        state.patternUri != null,
                 micState =
                     CounterTopBarMicState(
                         isVoiceListening = isVoiceListening,
@@ -539,6 +540,9 @@ private fun VoiceCommandEffects(
     viewModel: CounterViewModel,
     snackbarHostState: SnackbarHostState,
 ) {
+    val timeoutMessage = stringResource(R.string.voice_mode_timeout)
+    val fatalMessage = stringResource(R.string.voice_recognizer_error)
+    val networkLostMessage = stringResource(R.string.voice_offline_mode)
     val context = LocalContext.current
 
     DisposableEffect(voiceCommandHandler, voiceResponseManager) {
@@ -559,9 +563,9 @@ private fun VoiceCommandEffects(
         voiceCommandHandler.voiceError.collect { error ->
             val message =
                 when (error) {
-                    VoiceError.Timeout -> context.getString(R.string.voice_mode_timeout)
-                    VoiceError.Fatal -> context.getString(R.string.voice_recognizer_error)
-                    VoiceError.NetworkLost -> context.getString(R.string.voice_offline_mode)
+                    VoiceError.Timeout -> timeoutMessage
+                    VoiceError.Fatal -> fatalMessage
+                    VoiceError.NetworkLost -> networkLostMessage
                 }
             snackbarHostState.showSnackbar(message)
         }
@@ -1142,16 +1146,18 @@ private fun CounterScreenContent(
                 )
             }
             Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
                 contentAlignment = Alignment.Center,
             ) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable(onClick = actions.onSurfaceIncrement),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .clickable(onClick = actions.onSurfaceIncrement),
                 ) {
                     CounterRowLabel(state = state, onShowTargetDialog = actions.onShowTargetDialog)
                     CounterMainNumber(state = state)
@@ -1353,7 +1359,6 @@ private fun PatternHeaderRow(
     }
 }
 
-
 @Composable
 private fun CounterButtons(
     onDecrement: () -> Unit,
@@ -1417,21 +1422,23 @@ private fun CompactPatternRepeatRow(
     onIncrement: () -> Unit,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .padding(horizontal = 14.dp, vertical = 8.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .padding(horizontal = 14.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Text(
             text = stringResource(R.string.counter_repeat_label),
-            style = MaterialTheme.typography.labelSmall.copy(
-                fontWeight = FontWeight.Bold,
-                fontSize = 12.sp,
-                letterSpacing = 0.8.sp,
-            ),
+            style =
+                MaterialTheme.typography.labelSmall.copy(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp,
+                    letterSpacing = 0.8.sp,
+                ),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Row(
@@ -1439,11 +1446,12 @@ private fun CompactPatternRepeatRow(
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Box(
-                modifier = Modifier
-                    .size(28.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surface)
-                    .clickable(onClick = onDecrement),
+                modifier =
+                    Modifier
+                        .size(28.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surface)
+                        .clickable(onClick = onDecrement),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
@@ -1455,18 +1463,20 @@ private fun CompactPatternRepeatRow(
             }
             Text(
                 text = count.toString(),
-                style = MaterialTheme.typography.labelLarge.copy(
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp,
-                ),
+                style =
+                    MaterialTheme.typography.labelLarge.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp,
+                    ),
                 color = MaterialTheme.colorScheme.onSurface,
             )
             Box(
-                modifier = Modifier
-                    .size(28.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surface)
-                    .clickable(onClick = onIncrement),
+                modifier =
+                    Modifier
+                        .size(28.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surface)
+                        .clickable(onClick = onIncrement),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
@@ -1496,9 +1506,10 @@ private fun CountersListSheet(
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
     ) {
         Column(
-            modifier = Modifier
-                .padding(horizontal = 20.dp)
-                .padding(bottom = 32.dp),
+            modifier =
+                Modifier
+                    .padding(horizontal = 20.dp)
+                    .padding(bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Text(
@@ -1523,14 +1534,15 @@ private fun CountersListSheet(
                     } else {
                         CounterListItem(
                             counter = counter,
-                            actions = CounterItemActions(
-                                onIncrement = { actions.onIncrementCounter(counter) },
-                                onDecrement = { actions.onDecrementCounter(counter) },
-                                onRename = { actions.onRenameCounter(counter.id, it) },
-                                onReset = { actions.onResetCounter(counter.id) },
-                                onDelete = { actions.onDeleteCounter(counter.id) },
-                                performHaptic = actions.performHaptic,
-                            ),
+                            actions =
+                                CounterItemActions(
+                                    onIncrement = { actions.onIncrementCounter(counter) },
+                                    onDecrement = { actions.onDecrementCounter(counter) },
+                                    onRename = { actions.onRenameCounter(counter.id, it) },
+                                    onReset = { actions.onResetCounter(counter.id) },
+                                    onDelete = { actions.onDeleteCounter(counter.id) },
+                                    performHaptic = actions.performHaptic,
+                                ),
                         )
                     }
                 }

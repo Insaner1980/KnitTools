@@ -1,12 +1,12 @@
 package com.finnvek.knittools
 
-import java.nio.file.Files
-import java.nio.file.Path
-import javax.xml.parsers.DocumentBuilderFactory
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.nio.file.Files
+import java.nio.file.Path
+import javax.xml.parsers.DocumentBuilderFactory
 
 class EdgeToEdgeConfigurationTest {
     @Test

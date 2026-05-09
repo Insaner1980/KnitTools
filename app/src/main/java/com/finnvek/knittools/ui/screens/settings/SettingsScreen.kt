@@ -38,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -61,11 +62,12 @@ fun SettingsScreen(
     val proState by viewModel.proState.collectAsStateWithLifecycle()
     val voiceUsage by viewModel.voiceLiveUsage.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val resources = LocalResources.current
     val showLanguageSheet = remember { mutableStateOf(false) }
 
-    LaunchedEffect(viewModel, context) {
+    LaunchedEffect(viewModel, context, resources) {
         viewModel.messages.collect { messageRes ->
-            Toast.makeText(context, context.getString(messageRes), Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, resources.getString(messageRes), Toast.LENGTH_SHORT).show()
         }
     }
 

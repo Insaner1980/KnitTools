@@ -2,6 +2,7 @@ package com.finnvek.knittools.repository
 
 import com.finnvek.knittools.data.local.ProjectCounterDao
 import com.finnvek.knittools.data.local.ProjectCounterEntity
+import com.finnvek.knittools.domain.model.ProjectCounter
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -23,7 +24,7 @@ class ProjectCounterRepositoryTest {
     fun `addCounter truncates name to 50 chars`() =
         runTest {
             val longName = "A".repeat(100)
-            repository.addCounter(ProjectCounterEntity(projectId = 1L, name = longName, stepSize = 1))
+            repository.addCounter(ProjectCounter(projectId = 1L, name = longName, stepSize = 1))
 
             assertEquals(50, fakeDao.lastInserted!!.name.length)
         }
@@ -31,7 +32,7 @@ class ProjectCounterRepositoryTest {
     @Test
     fun `addCounter keeps short name intact`() =
         runTest {
-            repository.addCounter(ProjectCounterEntity(projectId = 1L, name = "Sleeve counter", stepSize = 2))
+            repository.addCounter(ProjectCounter(projectId = 1L, name = "Sleeve counter", stepSize = 2))
 
             assertEquals("Sleeve counter", fakeDao.lastInserted!!.name)
             assertEquals(2, fakeDao.lastInserted!!.stepSize)
@@ -40,7 +41,7 @@ class ProjectCounterRepositoryTest {
     @Test
     fun `addCounter passes repeatAt`() =
         runTest {
-            repository.addCounter(ProjectCounterEntity(projectId = 1L, name = "Test", stepSize = 1, repeatAt = 10))
+            repository.addCounter(ProjectCounter(projectId = 1L, name = "Test", stepSize = 1, repeatAt = 10))
 
             assertEquals(10, fakeDao.lastInserted!!.repeatAt)
         }
@@ -48,7 +49,7 @@ class ProjectCounterRepositoryTest {
     @Test
     fun `incrementCounter delegates to ProjectCounterLogic`() =
         runTest {
-            val counter = ProjectCounterEntity(id = 1, projectId = 1, name = "Test", count = 5, stepSize = 2)
+            val counter = ProjectCounter(id = 1, projectId = 1, name = "Test", count = 5, stepSize = 2)
             repository.incrementCounter(counter)
 
             // ProjectCounterLogic.increment: 5 + 2 = 7
@@ -60,7 +61,7 @@ class ProjectCounterRepositoryTest {
     fun `incrementCounter resets at repeatAt`() =
         runTest {
             val counter =
-                ProjectCounterEntity(id = 1, projectId = 1, name = "Test", count = 9, stepSize = 1, repeatAt = 10)
+                ProjectCounter(id = 1, projectId = 1, name = "Test", count = 9, stepSize = 1, repeatAt = 10)
             repository.incrementCounter(counter)
 
             // ProjectCounterLogic.increment: 9 + 1 = 10 >= repeatAt(10) -> reset to 0
@@ -70,7 +71,7 @@ class ProjectCounterRepositoryTest {
     @Test
     fun `decrementCounter does not go below zero`() =
         runTest {
-            val counter = ProjectCounterEntity(id = 1, projectId = 1, name = "Test", count = 1, stepSize = 3)
+            val counter = ProjectCounter(id = 1, projectId = 1, name = "Test", count = 1, stepSize = 3)
             repository.decrementCounter(counter)
 
             // ProjectCounterLogic.decrement: (1 - 3).coerceAtLeast(0) = 0

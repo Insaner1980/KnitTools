@@ -1,5 +1,6 @@
 package com.finnvek.knittools.pro
 
+import android.util.Log
 import com.finnvek.knittools.billing.BillingManager
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -77,7 +78,8 @@ class ProManager
                     }
                 } catch (e: CancellationException) {
                     throw e
-                } catch (_: Exception) {
+                } catch (e: Exception) {
+                    Log.e(TAG, "Pro-tilan alustus epäonnistui", e)
                     initialized = false
                 }
             }
@@ -86,4 +88,8 @@ class ProManager
         fun hasFeature(feature: ProFeature): Boolean = _proState.value.hasFeature(feature)
 
         fun isPro(): Boolean = _proState.value.isPro
+
+        private companion object {
+            const val TAG = "ProManager"
+        }
     }

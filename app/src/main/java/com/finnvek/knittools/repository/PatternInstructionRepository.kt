@@ -36,6 +36,8 @@ class PatternInstructionRepository
             pageBitmap: Bitmap,
             rowNumber: Int,
         ): PatternInstructionGemini.InstructionResult? {
+            if (!aiQuotaManager.hasQuota()) return null
+
             val result =
                 PatternInstructionGemini.getInstruction(
                     geminiAiService = geminiAiService,
@@ -49,6 +51,8 @@ class PatternInstructionRepository
         }
 
         suspend fun explainInstruction(instructionText: String): String? {
+            if (!aiQuotaManager.hasQuota()) return null
+
             val language =
                 preferencesManager.preferences
                     .first()

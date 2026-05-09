@@ -7,6 +7,8 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -80,6 +82,7 @@ fun KnitToolsNavHost(
     navController: NavHostController = rememberNavController(),
     startDestination: String = TopLevelDestination.Projects.route,
     counterLaunchRequest: CounterLaunchRequest? = null,
+    snackbarHostState: SnackbarHostState? = null,
     onPurchasePro: (Activity) -> Unit = {},
     onCounterLaunchHandled: () -> Unit = {},
 ) {
@@ -99,6 +102,9 @@ fun KnitToolsNavHost(
 
     Scaffold(
         modifier = modifier,
+        snackbarHost = {
+            snackbarHostState?.let { SnackbarHost(hostState = it) }
+        },
         bottomBar = {
             if (showBottomBar) {
                 KnitToolsBottomBar(navController = navController)
@@ -175,7 +181,9 @@ private fun NavGraphBuilder.projectsGraph(
             val counterViewModel: CounterViewModel = hiltViewModel(parentEntry)
             LaunchedEffect(counterLaunchRequest?.requestId) {
                 val launchRequest = counterLaunchRequest ?: return@LaunchedEffect
-                launchRequest.projectId?.let(counterViewModel::selectProjectById)
+                launchRequest.projectId?.let { projectId ->
+                    counterViewModel.selectProjectByIdForLaunch(projectId)
+                }
                 onCounterLaunchHandled()
             }
             CounterScreen(

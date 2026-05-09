@@ -8,7 +8,6 @@ import com.finnvek.knittools.data.local.SessionDao
 import com.finnvek.knittools.data.local.SessionEntity
 import com.finnvek.knittools.data.local.SessionInsightsTotals
 import com.finnvek.knittools.data.local.SessionProjectSummary
-import com.finnvek.knittools.data.storage.ProgressPhotoStorage
 import io.mockk.mockk
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf

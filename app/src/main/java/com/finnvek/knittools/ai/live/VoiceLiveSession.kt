@@ -69,8 +69,10 @@ class VoiceLiveSession
             try {
                 val liveModel =
                     Firebase
-                        .ai(backend = GenerativeBackend.googleAI())
-                        .liveModel(
+                        .ai(
+                            backend = GenerativeBackend.googleAI(),
+                            useLimitedUseAppCheckTokens = true,
+                        ).liveModel(
                             modelName = MODEL_NAME,
                             generationConfig =
                                 liveGenerationConfig {

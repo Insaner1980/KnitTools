@@ -2,7 +2,7 @@ package com.finnvek.knittools.ui.screens.project
 
 import android.content.Context
 import com.finnvek.knittools.data.datastore.PreferencesManager
-import com.finnvek.knittools.data.local.CounterProjectEntity
+import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.CounterRepository
@@ -107,7 +107,7 @@ class ProjectListViewModelTest {
     fun `archiveProject calls repository with correct data`() =
         runTest {
             every { proManager.hasFeature(any()) } returns true
-            val project = CounterProjectEntity(id = 5, name = "Sukat", count = 42)
+            val project = CounterProject(id = 5, name = "Sukat", count = 42)
             coEvery { repository.getProject(5L) } returns project
 
             val vm = createViewModel()

@@ -137,7 +137,7 @@ There are three voice paths, falling back automatically:
 | **Yarn Estimator screen** ("scan yarn label" → estimate skeins) | `YarnLabelGeminiScanner` (cloud Gemini Flash Lite, multimodal) | **Online** |
 | **Yarn Card screen** ("create yarn card from label photo", Pro) | `YarnLabelGeminiScanner` (cloud Gemini Flash Lite, multimodal) | **Online** |
 
-The previous ML Kit OCR → Gemini Nano → regex yarn-label pipeline has been removed from the production surface. The camera file creation lives in `data/storage/YarnLabelPhotoStorage`; parsing lives in `ai/YarnLabelGeminiScanner`. Manual yarn card creation is always offline.
+The previous ML Kit OCR → Gemini Nano → regex yarn-label pipeline has been removed from the production surface. The camera file creation lives in `data/storage/YarnLabelPhotoStorage`; scan orchestration lives in `repository/YarnLabelScanRepository`; parsing lives in `ai/YarnLabelGeminiScanner` and returns the shared `ai/ParsedYarnLabel` model. Manual yarn card creation is always offline.
 
 ### Pattern viewer — PDF is offline, "smart row" is online
 
@@ -159,7 +159,7 @@ The previous ML Kit OCR → Gemini Nano → regex yarn-label pipeline has been r
 
 - **Network check** lives in `CounterViewModel.isOnline()`. Use the same shape (validated capability) for any new online-gated feature.
 - **AI quotas** are tracked separately for general AI calls (`AiQuotaManager`, 500/month shared by general AI and voice fallback) and Live API time (`VoiceLiveQuotaManager`).
-- **All Gemini cloud calls** funnel through `GeminiAiService` — there are no scattered Firebase calls elsewhere in the codebase.
+- **Non-Live Gemini cloud calls** funnel through `GeminiAiService`. `VoiceLiveSession` owns the separate Gemini Live API session because it uses the Live audio API directly.
 - **On-device AI** (Gemini Nano) goes through `com.google.mlkit.genai.prompt.Generation`. Availability is checked via `NanoAvailability.check()`. Nano features hide their UI when Nano is unavailable rather than falling back to cloud.
 - When adding a new AI feature, decide explicitly which lane it belongs in: cloud-only, on-device only, or hybrid with a non-AI fallback. The codebase currently has examples of all three.
 

@@ -37,8 +37,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import com.finnvek.knittools.R
-import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.data.storage.PatternDocumentStorage
+import com.finnvek.knittools.domain.model.SavedPattern
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -98,7 +98,7 @@ private fun rememberPatternPickerActions(
     val openDocumentLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
             uri ?: return@rememberLauncherForActivityResult
-            val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
+            val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
             runCatching {
                 context.contentResolver.takePersistableUriPermission(uri, flags)
             }

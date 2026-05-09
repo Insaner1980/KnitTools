@@ -4,9 +4,9 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.finnvek.knittools.auth.RavelryAuthManager
-import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.data.remote.PatternDetail
 import com.finnvek.knittools.data.remote.PatternSearchResult
+import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.RavelryRepository

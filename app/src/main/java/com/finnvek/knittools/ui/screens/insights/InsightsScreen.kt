@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -43,6 +42,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -73,6 +73,7 @@ fun InsightsScreen(
     val timeRange by viewModel.timeRange.collectAsStateWithLifecycle()
     val hasSessionData by viewModel.hasSessionData.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val resources = LocalResources.current
 
     var showProjectPicker by remember { mutableStateOf(false) }
     val selectedName =
@@ -169,7 +170,7 @@ fun InsightsScreen(
                     AnimatedMetricCard(
                         label = stringResource(R.string.total_time_label),
                         targetValue = totalMinutes / 60f,
-                        formatValue = { context.getString(R.string.time_format_hours, it) },
+                        formatValue = { resources.getString(R.string.time_format_hours, it) },
                         labelColor = MaterialTheme.colorScheme.primary,
                         animationDelay = 0,
                         animationKey = animationKey,
@@ -178,7 +179,7 @@ fun InsightsScreen(
                     AnimatedMetricCard(
                         label = stringResource(R.string.avg_pace_label),
                         targetValue = avgPace,
-                        formatValue = { context.getString(R.string.pace_format, it) },
+                        formatValue = { resources.getString(R.string.pace_format, it) },
                         labelColor = MaterialTheme.colorScheme.secondary,
                         animationDelay = 80,
                         animationKey = animationKey,

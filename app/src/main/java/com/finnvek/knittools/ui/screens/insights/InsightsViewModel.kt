@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.KnitSession
 import com.finnvek.knittools.domain.model.SessionInsightsSummary
+import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.CounterRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -48,7 +49,7 @@ class InsightsViewModel
         private val counterRepository: CounterRepository,
         private val proManager: ProManager,
     ) : ViewModel() {
-        val isPro: Boolean get() = proManager.isPro()
+        val isPro: Boolean get() = proManager.hasFeature(ProFeature.INSIGHTS_CHARTS)
         private val _selectedProjectId = MutableStateFlow<Long?>(null)
         private val _timeRange = MutableStateFlow(TimeRange.ALL_TIME)
         val selectedProjectId: StateFlow<Long?> = _selectedProjectId.asStateFlow()

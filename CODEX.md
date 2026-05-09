@@ -9,7 +9,7 @@ Use [`CLAUDE.md`](/home/emma/dev/KnitTools/CLAUDE.md) when product wording, visu
 - Android app in `app` plus `baselineprofile`
 - Kotlin + Jetpack Compose + Material 3
 - Hilt, Room, DataStore, Glance
-- Room schema version `8`
+- Room schema version `9`
 - AGP `9.1.0` + Kotlin Compose plugin `2.3.10`
 
 ## Architecture
@@ -19,6 +19,9 @@ Use [`CLAUDE.md`](/home/emma/dev/KnitTools/CLAUDE.md) when product wording, visu
 - `repository/` is the seam between storage/framework details and UI consumers
 - `ui/` owns screens, navigation, theme, and ViewModels
 - Keep business logic out of composables when a ViewModel or use case should own it
+- `ai/AiVoiceAction` is the single AI voice action contract; keyword-only voice commands stay in the counter UI voice handler
+- Journal UI and `JournalEntryViewModel` live under `ui/screens/notes`; `ai/journal` owns only journal AI processing and result models
+- PDF rendering lives in `data/storage/PdfPageRenderer`; pattern UI should not define renderer copies
 
 ## Navigation Rules
 
@@ -26,6 +29,8 @@ Use [`CLAUDE.md`](/home/emma/dev/KnitTools/CLAUDE.md) when product wording, visu
 - `TopLevelDestination` in [Screen.kt](/home/emma/dev/KnitTools/app/src/main/java/com/finnvek/knittools/ui/navigation/Screen.kt) is the source of truth
 - `CounterViewModel` is shared at the Projects graph level
 - `LibraryViewModel` is shared at the Library graph level
+- Widget counter launches carry a `CounterLaunchRequest.requestId`; `MainActivity` clears consumed launch extras and saves the consumed id across recreation
+- Pattern viewer entry points require an attached PDF URI; Ravelry pattern links are metadata until a local PDF is attached
 - Do not turn `Tools` back into a generic dashboard grid
 
 ## UI Rules
@@ -43,10 +48,12 @@ Use [`CLAUDE.md`](/home/emma/dev/KnitTools/CLAUDE.md) when product wording, visu
 - Do not add back `org.jetbrains.kotlin.android`
 - Do not reintroduce `android.disallowKotlinSourceSets`, `android.newDsl`, or `android.builtInKotlin` toggles unless absolutely necessary
 - Release signing must stay environment-variable-driven
+- Debug-only Ravelry credentials belong in ignored `debug.credentials.properties`, not `local.properties`; release Ravelry credentials must come only from `KNITTOOLS_RAVELRY_*` environment variables
 
 ## Security
 
 - Keep `usesCleartextTraffic` disabled unless explicitly justified
+- Firebase AI calls must keep Firebase App Check enabled through the Play Integrity provider, and AI SDK instances should request limited-use App Check tokens
 - Exported components must stay intentional and minimal
 - Keep `FileProvider` usage least-privilege
 - Do not log billing state, OCR text, AI prompt content, or user project data

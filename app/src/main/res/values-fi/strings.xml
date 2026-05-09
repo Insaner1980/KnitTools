@@ -884,4 +884,12 @@
     <string name="project_actions_photos">Kuvat</string>
     <string name="counter_repeat_label">TOISTO</string>
     <string name="counters_list_title">Laskurit</string>
+    <string name="pattern_row_highlight_description">Rivi %1$d korostettu noin %2$d prosenttia sivun alusta</string>
+    <string name="open_notes_editor">Avaa muistiinpanot</string>
+    <string name="restore_purchases_checking">Tarkistetaan ostoksia…</string>
+    <string name="retry">Yritä uudelleen</string>
+    <string name="widget_rows_remaining_format">%d riviä jäljellä</string>
+    <string name="widget_target_reached">Tavoite saavutettu</string>
+    <string name="search_more_error">Lisää ohjeita ei voitu ladata. Tarkista internet-yhteys.</string>
+    <string name="pattern_detail_error">Ohjeen tietoja ei voitu ladata. Tarkista internet-yhteys.</string>
 </resources>

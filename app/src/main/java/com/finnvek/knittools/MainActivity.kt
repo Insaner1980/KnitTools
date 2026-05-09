@@ -84,11 +84,7 @@ class MainActivity : AppCompatActivity() {
         val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
         splashScreen.setKeepOnScreenCondition { !startupThemeLoaded }
-        consumedCounterLaunchRequestId = savedInstanceState?.getString(STATE_CONSUMED_COUNTER_LAUNCH_REQUEST_ID)
-        counterLaunchRequest =
-            intent.toCounterLaunchRequest(
-                consumedRequestId = consumedCounterLaunchRequestId.takeIf { savedInstanceState != null },
-            )
+        restoreCounterLaunchRequest(savedInstanceState)
         handleOAuthCallbackIfNeeded(intent)
         inAppUpdateManager.checkForUpdate(updateResultLauncher)
         setContent {
@@ -146,6 +142,14 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    private fun restoreCounterLaunchRequest(savedInstanceState: Bundle?) {
+        consumedCounterLaunchRequestId = savedInstanceState?.getString(STATE_CONSUMED_COUNTER_LAUNCH_REQUEST_ID)
+        counterLaunchRequest =
+            intent.toCounterLaunchRequest(
+                consumedRequestId = consumedCounterLaunchRequestId.takeIf { savedInstanceState != null },
+            )
     }
 
     private fun applyEdgeToEdgeIfNeeded(isDarkTheme: Boolean) {

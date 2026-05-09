@@ -34,7 +34,7 @@ Nykytilan kannalta hyödyllinen järjestys:
 - Integraatiot: Ravelry OAuth2/API, Firebase AI, Google Play Billing, In-App Review, In-App Update
 - On-device-ominaisuudet: ML Kit Text Recognition, ML Kit GenAI Prompt API, omat parserit `ai/nano/`
 - Lokalisaatio: `localeConfig` + useat `values-*`-hakemistot
-- Room schema version: `8`
+- Room schema version: `9`
 - `compileSdk` / `targetSdk` / `minSdk`: `36 / 36 / 29`
 - `baselineprofile`-moduulin `minSdk`: `28`
 - Java target: `17`
@@ -60,10 +60,13 @@ Jos avaat vain muutaman tiedoston, avaa nämä:
 - käynnistys:
   - `app/src/main/java/com/finnvek/knittools/App.kt`
   - `app/src/main/java/com/finnvek/knittools/MainActivity.kt`
+  - `app/src/main/AndroidManifest.xml`
+  - `app/src/main/res/values/themes.xml`
 - navigaatio:
   - `app/src/main/java/com/finnvek/knittools/ui/navigation/Screen.kt`
   - `app/src/main/java/com/finnvek/knittools/ui/navigation/NavGraph.kt`
   - `app/src/main/java/com/finnvek/knittools/ui/navigation/KnitToolsBottomBar.kt`
+  - `app/src/main/java/com/finnvek/knittools/ui/navigation/CounterLaunchRequest.kt`
 - data:
   - `app/src/main/java/com/finnvek/knittools/data/local/KnitToolsDatabase.kt`
   - `app/src/main/java/com/finnvek/knittools/data/datastore/PreferencesManager.kt`
@@ -73,6 +76,9 @@ Jos avaat vain muutaman tiedoston, avaa nämä:
   - `app/src/main/java/com/finnvek/knittools/pro/`
 - AI / voice:
   - `app/src/main/java/com/finnvek/knittools/ai/`
+  - `app/src/main/java/com/finnvek/knittools/repository/PatternInstructionRepository.kt`
+  - `app/src/main/java/com/finnvek/knittools/repository/YarnLabelScanRepository.kt`
+  - `app/src/main/java/com/finnvek/knittools/util/NetworkStatusProvider.kt`
 - widgetit:
   - `app/src/main/java/com/finnvek/knittools/widget/`
 
@@ -283,6 +289,7 @@ Huomio:
 
 - `ai/`
   - cloud: `GeminiAiService`, `PatternInstructionGemini`, `PatternInstructionCombinerGemini`, `PatternTextExtractor`, `ProjectSummarizer`, `YarnLabelGeminiScanner`, `VoiceCommandInterpreter`
+  - shared models: `ParsedYarnLabel`, `AiVoiceAction`
   - quota: `AiQuotaManager`
   - journal: `ai/journal/`
   - live-voice: `ai/live/`
@@ -304,6 +311,7 @@ Huomio:
 - `data/storage/`
   - `PatternDocumentStorage.kt`
   - `ProgressPhotoStorage.kt`
+  - `YarnLabelPhotoStorage.kt`
 - `di/`
   - `DatabaseModule.kt`
   - `NetworkModule.kt`
@@ -320,12 +328,14 @@ Huomio:
 - `repository/`
   - `CounterRepository.kt`
   - `PatternAnnotationRepository.kt`
+  - `PatternInstructionRepository.kt`
   - `ProgressPhotoRepository.kt`
   - `ProjectCounterRepository.kt`
   - `RavelryRepository.kt`
   - `ReminderRepository.kt`
   - `SavedPatternRepository.kt`
   - `YarnCardRepository.kt`
+  - `YarnLabelScanRepository.kt`
 - `widget/`
   - `CounterWidget.kt`
   - `CounterWidgetActions.kt`
@@ -352,11 +362,12 @@ Huomio:
 Migraatiotilanne:
 
 - automaattiset migraatiot: `1 -> 2`, `2 -> 3`
-- käsinkirjoitetut migraatiot: `3 -> 4`, `4 -> 5`, `5 -> 6`, `6 -> 7`, `7 -> 8`
-- schema exportataan hakemistoon `app/schemas/.../8.json`
+- käsinkirjoitetut migraatiot: `3 -> 4`, `4 -> 5`, `5 -> 6`, `6 -> 7`, `7 -> 8`, `8 -> 9`
+- schema exportataan hakemistoon `app/schemas/.../9.json`
 
 Näkyvä uusin lisäys:
 
+- `sessions.startedAt`-indeksi lisättiin migraatiossa `8 -> 9`
 - `counter_projects.targetRows` lisättiin migraatiossa `7 -> 8`
 
 ### DataStore
@@ -379,6 +390,7 @@ Lisäksi käytössä on erillisiä DataStoreja:
 - `ai_quota`
 - `voice_live_quota`
 - `trial_state`
+- `review_state`
 - `counter_widget`
 
 ### Paikallinen tiedostodata
@@ -387,6 +399,7 @@ Entry pointit:
 
 - `PatternDocumentStorage`
 - `ProgressPhotoStorage`
+- `YarnLabelPhotoStorage`
 - `FileProvider` + `res/xml/file_paths.xml`
 
 ## Kielet ja lokalisaatio
@@ -579,6 +592,10 @@ Source of truth:
 - `app/src/main/java/com/finnvek/knittools/widget/CounterWidget.kt`
 - `app/src/main/java/com/finnvek/knittools/widget/CounterWidgetState.kt`
 - `app/src/main/java/com/finnvek/knittools/widget/CounterWidgetActions.kt`
+- `app/src/main/java/com/finnvek/knittools/widget/CounterWidgetReceiver.kt`
+- `app/src/main/java/com/finnvek/knittools/widget/WidgetEntryPoint.kt`
+- `app/src/main/java/com/finnvek/knittools/MainActivity.kt`
+- `app/src/main/AndroidManifest.xml`
 - `app/src/main/res/xml/counter_widget_info.xml`
 - `app/src/main/res/layout/widget_counter_preview.xml`
 
@@ -797,7 +814,7 @@ Julkaisuvalmiuden muistilista:
 
 - pidä dependency-check kehitysvaiheessa manuaalisena, mutta dokumentoi ennen julkaisua puhtaan koneen komento ja tarvittavat `DEPENDENCY_CHECK_AUTO_UPDATE` / `NVD_API_KEY` -odotukset
 - päätä ennen julkaisua, jääkö Baseline Profile manuaaliseksi vai lisätäänkö sille emulaattori-/managed-device-polku CI:hin
-- lisää `ktlintCheck` pakolliseksi vasta, kun nykyinen koodi on siivottu ktlint-puhtaaksi eikä se hidasta normaalia ominaisuuskehitystä
+- pidä `ktlintCheck` pakollisena CI:ssä; nykyinen build-workflow ajaa `./gradlew :app:ktlintCheck`
 
 Älä käytä agenttityössä käyttäjän wrapper-skriptejä `lint-check` tai `security-check`.
 
@@ -859,7 +876,7 @@ Julkaisuvalmiuden muistilista:
 
 Näihin kannattaa suhtautua epäluuloisesti vanhoissa dokumenteissa:
 
-- Room schema version: nykyinen on `8`, ei `7`
+- Room schema version: nykyinen on `9`, ei `8` tai `7`
 - `allowBackup`: nykyinen on `false`, ei `true`
 - voice-parserin local count-range: käytännössä `1–20`, ei `1–100`
 - widgetit eivät ole enää pelkkä basic counter-preview vaan niissä on oma state-sync ja viimeistelty kortti-UI

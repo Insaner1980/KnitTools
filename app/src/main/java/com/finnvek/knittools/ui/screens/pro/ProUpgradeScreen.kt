@@ -83,11 +83,12 @@ fun ProUpgradeScreen(
                     ),
             )
         },
-    ) { _ ->
+    ) { padding ->
         Column(
             modifier =
                 Modifier
                     .fillMaxSize()
+                    .padding(padding)
                     .verticalScroll(rememberScrollState()),
         ) {
             ProHeroBanner(backgroundColor = backgroundColor)

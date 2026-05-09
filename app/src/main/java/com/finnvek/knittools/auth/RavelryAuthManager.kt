@@ -5,6 +5,7 @@ package com.finnvek.knittools.auth
 import android.content.Context
 import android.content.SharedPreferences
 import android.net.Uri
+import android.util.Log
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
@@ -15,12 +16,15 @@ import io.ktor.client.request.forms.submitForm
 import io.ktor.client.request.header
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.parameters
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import java.io.IOException
 import java.security.SecureRandom
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -41,13 +45,17 @@ class RavelryAuthManager
         companion object {
             private const val AUTH_URL = "https://www.ravelry.com/oauth2/auth"
             private const val TOKEN_URL = "https://www.ravelry.com/oauth2/token"
-            private const val REDIRECT_URI = "com.finnvek.knittools://oauth/callback"
+            private const val REDIRECT_SCHEME = "com.finnvek.knittools"
+            private const val REDIRECT_HOST = "oauth"
+            private const val REDIRECT_PATH = "/callback"
+            private const val REDIRECT_URI = "$REDIRECT_SCHEME://$REDIRECT_HOST$REDIRECT_PATH"
             private const val SCOPE = "offline"
 
             private const val PREFS_FILE = "ravelry_oauth2"
             private const val KEY_ACCESS_TOKEN = "access_token"
             private const val KEY_REFRESH_TOKEN = "refresh_token"
             private const val KEY_PENDING_STATE = "pending_state"
+            private const val TAG = "RavelryAuthManager"
         }
 
         private val json = Json { ignoreUnknownKeys = true }
@@ -113,19 +121,43 @@ class RavelryAuthManager
             httpClient: HttpClient,
             uri: Uri,
         ): Boolean {
-            val code = uri.getQueryParameter("code") ?: return false
-            val state = uri.getQueryParameter("state")
+            if (!isOAuthCallback(uri)) return false
+
             val expectedState = pendingState ?: prefs.getString(KEY_PENDING_STATE, null)
-
-            // Tarkista CSRF state
-            if (state != expectedState) return false
-
-            val success = exchangeCodeForTokens(httpClient, code)
-            if (success) {
-                clearPendingState()
+            val state = uri.getQueryParameter("state")
+            if (state.isNullOrEmpty() || expectedState.isNullOrEmpty() || state != expectedState) {
+                return true
             }
-            return success
+
+            if (uri.getQueryParameter("error") != null) {
+                clearPendingState()
+                return true
+            }
+
+            val code = uri.getQueryParameter("code")
+            if (code.isNullOrEmpty()) {
+                clearPendingState()
+                return true
+            }
+
+            try {
+                exchangeCodeForTokens(httpClient, code)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: IOException) {
+                Log.w(TAG, "Ravelry OAuth token exchange failed", e)
+            } catch (e: SerializationException) {
+                Log.w(TAG, "Ravelry OAuth token exchange failed", e)
+            }
+
+            clearPendingState()
+            return true
         }
+
+        fun isOAuthCallback(uri: Uri): Boolean =
+            uri.scheme == REDIRECT_SCHEME &&
+                uri.host == REDIRECT_HOST &&
+                uri.path == REDIRECT_PATH
 
         /**
          * Päivittää access tokenin refresh tokenilla.

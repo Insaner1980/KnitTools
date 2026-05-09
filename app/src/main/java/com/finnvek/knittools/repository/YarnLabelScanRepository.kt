@@ -4,15 +4,14 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.ImageDecoder
 import android.net.Uri
-import androidx.core.content.FileProvider
 import androidx.core.net.toUri
 import com.finnvek.knittools.ai.GeminiAiService
+import com.finnvek.knittools.ai.ParsedYarnLabel
 import com.finnvek.knittools.ai.YarnLabelGeminiScanner
-import com.finnvek.knittools.ai.ocr.ParsedYarnLabel
+import com.finnvek.knittools.data.storage.YarnLabelPhotoStorage
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -23,12 +22,7 @@ class YarnLabelScanRepository
         private val geminiAiService: GeminiAiService,
         @param:ApplicationContext private val context: Context,
     ) {
-        fun createScanPhotoUri(): Uri {
-            val dir = File(context.filesDir, "yarn_photos")
-            dir.mkdirs()
-            val file = File(dir, "scan_${System.currentTimeMillis()}.jpg")
-            return FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
-        }
+        fun createScanPhotoUri(): Uri = YarnLabelPhotoStorage.createImageFile(context).second
 
         suspend fun scanLabel(photoUri: Uri): ParsedYarnLabel? {
             val bitmap =

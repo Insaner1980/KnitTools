@@ -2,11 +2,18 @@
 
 ## 2026-05-08
 
+- 2026-05-09: Widgetistä avattu counter käyttää nyt kertakäyttöistä `CounterLaunchRequest.requestId`-tunnistetta. `MainActivity` tallentaa käsitellyn tunnisteen `savedInstanceState`en, tyhjentää intent-extrat kuittauksen jälkeen ja hyväksyy `onNewIntent`-polun uutena käyttäjän käynnistyksenä.
+- 2026-05-09: Firebase AI -tuotantokutsut suojataan clientissä Firebase App Checkin Play Integrity -providerilla. `App` alustaa App Checkin ennen muita Firebase-käyttöjä, ja Firebase AI -instanssit pyytävät limited-use App Check -tokeneita.
+- 2026-05-09: Debug-only Ravelry credentialit kuuluvat ignored `debug.credentials.properties` -tiedostoon, eivät `local.properties`-tiedostoon. Release Ravelry credentialit tulevat vain `KNITTOOLS_RAVELRY_*`-ympäristömuuttujista.
+- 2026-05-09: PatternViewerin Gemini-riviohje- ja selityskutsut tarkistavat `AiQuotaManager.hasQuota()` ennen Gemini-kutsua.
+- 2026-05-09: Vanhat relocation-kopiot poistettiin: `ui/screens/counter/AiVoiceAction.kt`, `ai/journal/JournalEntryBottomSheet.kt`, `ai/journal/JournalEntryViewModel.kt` ja `ui/screens/pattern/PdfPageRenderer.kt`. Canonical-tyypit ja toteutukset ovat nyt `ai/AiVoiceAction.kt`, `ui/screens/notes/JournalEntry*` ja `data/storage/PdfPageRenderer.kt`.
+- 2026-05-09: Counterin pattern-kuvake näytetään vain, kun projektilla on oikea `patternUri`; pelkkä Ravelry/SavedPattern-metadata `linkedPatternId` ei enää avaa PDF-vieweriä ilman liitettyä PDF:ää.
 - Lankalipun offline OCR/Nano-parseripolku poistettiin tuotantopinnasta. Lankalipun skannaus kulkee nyt `YarnLabelGeminiScanner`in kautta Firebase AI / Gemini -multimodal-kuvasyotteella.
 - `ParsedYarnLabel` kuuluu yleiseen `ai/`-pakettiin, koska sama jäsennetty malli ei ole enää OCR-paketin omistama.
 - `AiVoiceAction` kuuluu yleiseen `ai/`-pakettiin AI-äänikomentotulkinnan sopimuksena, ei counter-UI:n omistamaksi tyypiksi.
 - Journalin Compose UI ja `JournalEntryViewModel` kuuluvat `ui/screens/notes`-pakettiin; journalin AI-prosessointi ja prosessointitulokset kuuluvat edelleen `ai/journal`-pakettiin.
 - Kameralla otettavan lankalippukuvan tiedostoluonti kuuluu `data/storage/YarnLabelPhotoStorage.kt`:lle, ei AI- tai OCR-paketille.
+- Tuotantokoodi käyttää nyt yhtä `ai/ParsedYarnLabel`-mallia myös OCR-parserissa, Gemini-skannerissa, scan-repositoryssa ja YarnCardViewModelissa; `ai/ocr` ei omista erillistä ParsedYarnLabel-tyyppiä.
 - `ProFeature`-gateja käytetään featurekohtaisten enum-arvojen kautta; Insights tarkistaa `ProFeature.INSIGHTS_CHARTS`in eikä yleistä `isPro()`-tilaa.
 - Room-entityjen irrotus on aloitettu lisäämällä Room-vapaat domain-mallit `domain/model`-pakettiin sekä kaksisuuntaiset entity/domain-mapperit `data/local/EntityMappers.kt`:hen.
 - `CounterRepository`, `SavedPatternRepository`, `ProgressPhotoRepository`, `YarnCardRepository`, `PatternAnnotationRepository`, `ProjectCounterRepository` ja `ReminderRepository` paljastavat nyt public API:ssaan domain-mallit ja muuntavat entityiksi vain DAO-rajalla. `CounterProject` ja `KnitSession` ovat pääprojektien ja sessioiden UI-/repository-rajapinnan mallit.

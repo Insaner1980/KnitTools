@@ -56,6 +56,7 @@ fun RavelryDetailScreen(
     val isSaved by viewModel.isPatternSaved.collectAsStateWithLifecycle()
     val hasDetailError by viewModel.hasDetailError.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val savedMessage = stringResource(R.string.pattern_saved_to_library)
 
     LaunchedEffect(patternId) {
         viewModel.loadDetail(patternId)
@@ -85,7 +86,7 @@ fun RavelryDetailScreen(
                         Toast
                             .makeText(
                                 context,
-                                context.getString(R.string.pattern_saved_to_library),
+                                savedMessage,
                                 Toast.LENGTH_SHORT,
                             ).show()
                     },

@@ -24,8 +24,9 @@ Supported current surfaces include Increase/Decrease and Gauge parsing.
 **Current implementation:**
 
 - Implemented in `app/src/main/java/com/finnvek/knittools/ai/YarnLabelGeminiScanner.kt`
-- Called through `YarnCardViewModel.scanWithGemini(...)`
+- Called through `YarnCardViewModel.scanWithGemini(...)` via `YarnLabelScanRepository`
 - Camera file creation lives in `app/src/main/java/com/finnvek/knittools/data/storage/YarnLabelPhotoStorage.kt`
+- Parsed output uses the shared `app/src/main/java/com/finnvek/knittools/ai/ParsedYarnLabel.kt` model
 - Uses Firebase AI / Gemini multimodal image input through `GeminiAiService.generateFromImage(...)`
 - Requires network
 - The old ML Kit OCR -> Gemini Nano -> regex yarn-label pipeline is no longer in production code

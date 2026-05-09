@@ -11,6 +11,7 @@ import androidx.lifecycle.viewModelScope
 import com.finnvek.knittools.BuildConfig
 import com.finnvek.knittools.R
 import com.finnvek.knittools.ai.AiQuotaManager
+import com.finnvek.knittools.ai.AiVoiceAction
 import com.finnvek.knittools.ai.GeminiAiService
 import com.finnvek.knittools.ai.VoiceCommandInterpreter
 import com.finnvek.knittools.ai.live.LiveVoiceState
@@ -1075,10 +1076,14 @@ class CounterViewModel
 
         fun selectProjectById(id: Long) {
             viewModelScope.launch {
-                repository.getProject(id)?.let {
-                    persistCurrentSessionIfNeeded()
-                    startProjectSession(it)
-                }
+                selectProjectByIdForLaunch(id)
+            }
+        }
+
+        suspend fun selectProjectByIdForLaunch(id: Long) {
+            repository.getProject(id)?.let {
+                persistCurrentSessionIfNeeded()
+                startProjectSession(it)
             }
         }
 

@@ -4,6 +4,9 @@ import android.app.Application
 import com.finnvek.knittools.billing.BillingManager
 import com.finnvek.knittools.data.datastore.PreferencesManager
 import com.finnvek.knittools.pro.ProManager
+import com.google.firebase.FirebaseApp
+import com.google.firebase.appcheck.FirebaseAppCheck
+import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -26,6 +29,7 @@ class App : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        initializeFirebaseAppCheck()
         appScope.launch {
             preferencesManager.get().applyStoredAppLanguage()
         }
@@ -36,5 +40,14 @@ class App : Application() {
     override fun onTerminate() {
         super.onTerminate()
         billingManager.get().destroy()
+    }
+
+    private fun initializeFirebaseAppCheck() {
+        FirebaseApp.initializeApp(this)
+        FirebaseAppCheck
+            .getInstance()
+            .installAppCheckProviderFactory(
+                PlayIntegrityAppCheckProviderFactory.getInstance(),
+            )
     }
 }

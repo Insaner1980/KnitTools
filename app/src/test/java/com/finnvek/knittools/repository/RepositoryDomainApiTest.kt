@@ -121,6 +121,7 @@ class RepositoryDomainApiTest {
                     YarnCard(
                         brand = "Novita",
                         yarnName = "Nalle",
+                        createdAt = 123L,
                         quantityInStash = 5,
                         status = "IN_STASH",
                     ),
@@ -129,7 +130,16 @@ class RepositoryDomainApiTest {
             assertEquals("Soft DK", cards.single().yarnName)
             assertEquals("Finn Wool", card?.brand)
             assertEquals(88L, savedId)
-            assertEquals(YarnCardEntity(brand = "Novita", yarnName = "Nalle", quantityInStash = 5, status = "IN_STASH"), dao.lastUpserted)
+            assertEquals(
+                YarnCardEntity(
+                    brand = "Novita",
+                    yarnName = "Nalle",
+                    createdAt = 123L,
+                    quantityInStash = 5,
+                    status = "IN_STASH",
+                ),
+                dao.lastUpserted,
+            )
         }
 
     @Test
@@ -225,8 +235,7 @@ class RepositoryDomainApiTest {
 
         override suspend fun getCard(id: Long): YarnCardEntity? = yarnCards.firstOrNull { it.id == id }
 
-        override suspend fun getCards(ids: List<Long>): List<YarnCardEntity> =
-            yarnCards.filter { it.id in ids }
+        override suspend fun getCards(ids: List<Long>): List<YarnCardEntity> = yarnCards.filter { it.id in ids }
 
         override suspend fun upsert(card: YarnCardEntity): Long {
             lastUpserted = card
@@ -266,8 +275,7 @@ class RepositoryDomainApiTest {
         override fun getLatestPhotos(
             projectId: Long,
             limit: Int,
-        ): Flow<List<ProgressPhotoEntity>> =
-            flowOf(progressPhotos.filter { it.projectId == projectId }.take(limit))
+        ): Flow<List<ProgressPhotoEntity>> = flowOf(progressPhotos.filter { it.projectId == projectId }.take(limit))
 
         override fun getPhotoCount(projectId: Long): Flow<Int> =
             flowOf(progressPhotos.count { it.projectId == projectId })

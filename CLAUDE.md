@@ -12,13 +12,15 @@
 
 - `lint-check` (alias `lc`) — runs ktlint + detekt + Android lint, results in `reports/`
 - `security-check` (alias `sc`) — global wrapper; repo-local authoritative implementation is `scripts/security-check.sh`
-- `security-check-full` (alias `sc-full`) — täysi ajo, joka sisältää myös dependency-checkin
+- `security-check-full` (alias `sc-full`) — compatibility alias täydelle security-ajolle
 - Don't run these scripts yourself — user runs them via `! lc` / `! sc`
 - `reports/` is gitignored, never commit it
 - Security risk decisions and temporary exceptions are documented in `docs/security-decisions.md`
-- `sc` käyttää tässä repossa paikallisia Semgrep-sääntöjä ja ohittaa dependency-checkin oletuksena, jotta ajo pysyy nopeana.
-- Täysi riippuvuusskannaus ajetaan vain erikseen: `sc-full`
-- Jos ajat dependency-checkin, pidä `NVD_API_KEY` asetettuna jotta NVD-päivitys ei hidastu tarpeettomasti.
+- `sc` käyttää tässä repossa paikallisia Semgrep-sääntöjä ja ajaa myös OWASP dependency-checkin.
+- Dependency-checkin voi ohittaa vain erikseen: `DEPENDENCY_CHECK_ENABLED=false sc`
+- Ensimmäinen OWASP dependency-check -ajo voi olla hidas, koska se alustaa CVE-tietokannan automaattisesti. `NVD_API_KEY` nopeuttaa NVD-päivitystä, jos sellainen on käytössä.
+- `sonar` ajaa projektin SonarCloud-skannauksen Gradlen `assembleDebug sonar` -polulla ja kirjoittaa lokin `reports/sonar.txt`; `sonar auth login/status/...` ohjautuu edelleen SonarQube CLI:lle.
+- SonarCloud-skannaus tarvitsee `SONAR_TOKEN`-ympäristömuuttujan. SonarQube CLI:n keychain-kirjautumista käytetään issueiden lukemiseen `reports/sonar-issues.json`-raporttiin.
 
 ## Conventions
 

@@ -70,9 +70,9 @@ fun CounterListItem(
     val onReset = actions.onReset
     val onDelete = actions.onDelete
     val performHaptic = actions.performHaptic
-    var showContextMenu by rememberSaveable { mutableStateOf(false) }
-    var showRenameDialog by rememberSaveable { mutableStateOf(false) }
-    var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
+    var showContextMenu by rememberSaveable(counter.id) { mutableStateOf(false) }
+    var showRenameDialog by rememberSaveable(counter.id) { mutableStateOf(false) }
+    var showDeleteDialog by rememberSaveable(counter.id) { mutableStateOf(false) }
 
     Row(
         modifier =
@@ -613,8 +613,8 @@ fun RepeatSectionItem(
     val isComplete = RepeatSectionLogic.isComplete(counter, mainRowCount)
     val currentRepeat = syncedCounter.currentRepeat?.coerceIn(1, totalRepeats) ?: 1
     val currentRowInRepeat = RepeatSectionLogic.currentRowInRepeat(counter, mainRowCount)
-    var showContextMenu by rememberSaveable { mutableStateOf(false) }
-    var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
+    var showContextMenu by rememberSaveable(counter.id) { mutableStateOf(false) }
+    var showDeleteDialog by rememberSaveable(counter.id) { mutableStateOf(false) }
 
     if (showDeleteDialog) {
         ConfirmationDialog(

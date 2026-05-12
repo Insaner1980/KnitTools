@@ -15,11 +15,14 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -73,8 +76,15 @@ class ProjectListViewModelTest {
             coEvery { repository.getActiveProjectCount() } returns 1
 
             val vm = createViewModel()
+            var upgradeEvents = 0
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                vm.upgradeToPro.collect {
+                    upgradeEvents += 1
+                }
+            }
             vm.createProject()
 
+            assertEquals(1, upgradeEvents)
             coVerify(exactly = 0) { repository.createProject(any()) }
         }
 

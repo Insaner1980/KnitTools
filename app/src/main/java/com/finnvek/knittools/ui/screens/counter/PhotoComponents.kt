@@ -25,6 +25,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -83,7 +84,8 @@ fun PhotoViewer(
 ) {
     var showDeleteConfirm by rememberSaveable { mutableStateOf(false) }
     val context = LocalContext.current
-    val dateFormat = SimpleDateFormat("d MMM yyyy, HH:mm", Locale.getDefault())
+    val locale = Locale.getDefault()
+    val dateFormat = remember(locale) { SimpleDateFormat("d MMM yyyy, HH:mm", locale) }
 
     if (showDeleteConfirm) {
         ConfirmationDialog(

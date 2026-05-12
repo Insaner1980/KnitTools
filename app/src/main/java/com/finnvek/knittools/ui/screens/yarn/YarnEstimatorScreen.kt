@@ -62,6 +62,8 @@ import com.finnvek.knittools.ui.components.ResultCard
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
 import com.finnvek.knittools.ui.screens.home.HomeViewModel
 import com.finnvek.knittools.ui.screens.yarncard.YarnCardViewModel
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 @Composable
@@ -121,13 +123,17 @@ private fun YarnEstimatorContent(
 
     val formState = yarnCardViewModel?.formState?.collectAsStateWithLifecycle()?.value
     val isScanning = formState?.isScanning == true
-    val scanError = formState?.scanError
 
-    LaunchedEffect(scanError) {
-        if (!scanError.isNullOrBlank()) {
-            snackbarHostState.showSnackbar(scanError, duration = SnackbarDuration.Short)
-            yarnCardViewModel.updateField { copy(scanError = null) }
-        }
+    LaunchedEffect(yarnCardViewModel) {
+        val viewModel = yarnCardViewModel ?: return@LaunchedEffect
+        viewModel.formState
+            .map { it.scanError }
+            .filter { !it.isNullOrBlank() }
+            .collect { scanError ->
+                scanError ?: return@collect
+                viewModel.updateField { copy(scanError = null) }
+                snackbarHostState.showSnackbar(scanError, duration = SnackbarDuration.Short)
+            }
     }
     val lengthUnit =
         if (useImperial) {

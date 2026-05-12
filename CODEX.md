@@ -18,9 +18,10 @@ Use [`CLAUDE.md`](/home/emma/dev/KnitTools/CLAUDE.md) when product wording, visu
 - `domain/` owns calculation logic and domain models
 - `repository/` is the seam between storage/framework details and UI consumers
 - `ui/` owns screens, navigation, theme, and ViewModels
+- Coroutine dispatchers that cross architectural boundaries are provided through `di/DispatchersModule` (`@IoDispatcher`); avoid hardcoded `Dispatchers.IO` in repositories and ViewModels
 - Keep business logic out of composables when a ViewModel or use case should own it
 - `ai/AiVoiceAction` is the single AI voice action contract; keyword-only voice commands stay in the counter UI voice handler
-- Journal UI and `JournalEntryViewModel` live under `ui/screens/notes`; `ai/journal` owns only journal AI processing and result models
+- Journal UI and `JournalEntryViewModel` live under `ui/screens/notes`; `ai/journal` owns only journal AI processing and result models; completed journal entries are exposed through `JournalEntryUiState.pendingEntry` and consumed by `NotesEditorScreen`
 - PDF rendering lives in `data/storage/PdfPageRenderer`; pattern UI should not define renderer copies
 
 ## Navigation Rules
@@ -30,6 +31,7 @@ Use [`CLAUDE.md`](/home/emma/dev/KnitTools/CLAUDE.md) when product wording, visu
 - `CounterViewModel` is shared at the Projects graph level
 - `LibraryViewModel` is shared at the Library graph level
 - Widget counter launches carry a `CounterLaunchRequest.requestId`; `MainActivity` clears consumed launch extras and saves the consumed id across recreation
+- Widget counter launch ids must be issued by `data/storage/CounterLaunchTokenStore`; `MainActivity` must ignore untrusted counter extras and OAuth callback intents must not trigger counter navigation
 - Pattern viewer entry points require an attached PDF URI; Ravelry pattern links are metadata until a local PDF is attached
 - Do not turn `Tools` back into a generic dashboard grid
 
@@ -55,6 +57,7 @@ Use [`CLAUDE.md`](/home/emma/dev/KnitTools/CLAUDE.md) when product wording, visu
 - Keep `usesCleartextTraffic` disabled unless explicitly justified
 - Firebase AI calls must keep Firebase App Check enabled through the Play Integrity provider, and AI SDK instances should request limited-use App Check tokens
 - Exported components must stay intentional and minimal
+- Treat extras on exported activities as untrusted unless they are explicitly validated against app-owned state
 - Keep `FileProvider` usage least-privilege
 - Do not log billing state, OCR text, AI prompt content, or user project data
 

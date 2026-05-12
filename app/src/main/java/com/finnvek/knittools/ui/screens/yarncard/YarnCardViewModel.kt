@@ -49,6 +49,7 @@ data class YarnCardFormState(
 )
 
 @HiltViewModel
+@Suppress("TooManyFunctions")
 class YarnCardViewModel
     @Inject
     constructor(
@@ -92,6 +93,8 @@ class YarnCardViewModel
         // Skannatut arvot estimaattorille (Save and Use / Use in Calculator)
         private val _pendingCalcValues = MutableStateFlow<Triple<String, String, String>?>(null)
         val pendingCalcValues: StateFlow<Triple<String, String, String>?> = _pendingCalcValues.asStateFlow()
+
+        private var activeScanRequestId = 0L
 
         fun setPendingCalcValues(
             weightGrams: String,
@@ -142,12 +145,30 @@ class YarnCardViewModel
         }
 
         fun loadCardById(id: Long) {
+            loadCardForDetail(id)
+        }
+
+        fun loadCardForDetail(
+            id: Long,
+            onLoaded: (Boolean) -> Unit = {},
+        ) {
             viewModelScope.launch {
-                repository.getCard(id)?.let { loadFromCard(it) }
+                onLoaded(loadCardForDetailInternal(id))
             }
         }
 
+        private suspend fun loadCardForDetailInternal(id: Long): Boolean {
+            val card = repository.getCard(id)
+            if (card == null) {
+                clearFormState()
+                return false
+            }
+            loadFromCard(card)
+            return true
+        }
+
         fun loadFromCard(card: YarnCard) {
+            invalidateActiveScan()
             _formState.value =
                 YarnCardFormState(
                     editingCardId = card.id,
@@ -186,33 +207,61 @@ class YarnCardViewModel
             photoUri: Uri,
             onSuccess: () -> Unit,
         ) {
+            if (!isPro) {
+                rejectScanWithoutPro()
+                return
+            }
+            val scanRequestId = startScanRequest()
             viewModelScope.launch {
+                if (!isActiveScan(scanRequestId)) return@launch
                 _formState.update { it.copy(isScanning = true, scanError = null) }
 
-                if (!aiQuotaManager.hasQuota()) {
-                    _formState.update {
-                        it.copy(
-                            isScanning = false,
-                            scanError = context.getString(R.string.ai_quota_exhausted),
-                        )
-                    }
-                    return@launch
-                }
+                if (!hasQuotaForActiveScan(scanRequestId)) return@launch
 
                 val parsed = scanRepository.scanLabel(photoUri)
-                if (parsed != null) {
-                    aiQuotaManager.recordCall()
-                    loadFromScan(parsed, photoUri)
-                    onSuccess()
-                } else {
-                    _formState.update {
-                        it.copy(
-                            isScanning = false,
-                            scanError = context.getString(R.string.yarn_scan_failed),
-                        )
-                    }
-                }
+                if (!isActiveScan(scanRequestId)) return@launch
+                finishActiveScan(scanRequestId, parsed, photoUri, onSuccess)
             }
+        }
+
+        private fun rejectScanWithoutPro() {
+            invalidateActiveScan()
+            _formState.update { it.copy(isScanning = false, scanError = null) }
+        }
+
+        private suspend fun hasQuotaForActiveScan(scanRequestId: Long): Boolean {
+            if (aiQuotaManager.hasQuota()) return true
+            if (!isActiveScan(scanRequestId)) return false
+            _formState.update {
+                it.copy(
+                    isScanning = false,
+                    scanError = context.getString(R.string.ai_quota_exhausted),
+                )
+            }
+            return false
+        }
+
+        private suspend fun finishActiveScan(
+            scanRequestId: Long,
+            parsed: ParsedYarnLabel?,
+            photoUri: Uri,
+            onSuccess: () -> Unit,
+        ) {
+            if (parsed == null) {
+                deletePhotoFile(photoUri.toString())
+                _formState.update {
+                    it.copy(
+                        isScanning = false,
+                        scanError = context.getString(R.string.yarn_scan_failed),
+                    )
+                }
+                return
+            }
+
+            aiQuotaManager.recordCall()
+            if (!isActiveScan(scanRequestId)) return
+            loadFromScan(parsed, photoUri)
+            onSuccess()
         }
 
         fun createScanPhotoUri(): Uri = scanRepository.createScanPhotoUri()
@@ -242,6 +291,11 @@ class YarnCardViewModel
 
         fun discardScan() {
             deletePhotoFile(_formState.value.photoUri)
+            clearFormState()
+        }
+
+        fun clearFormState() {
+            invalidateActiveScan()
             _formState.value = YarnCardFormState()
         }
 
@@ -322,4 +376,15 @@ class YarnCardViewModel
                 status = status,
                 linkedProjectId = linkedProjectId,
             )
+
+        private fun startScanRequest(): Long {
+            activeScanRequestId += 1
+            return activeScanRequestId
+        }
+
+        private fun invalidateActiveScan() {
+            activeScanRequestId += 1
+        }
+
+        private fun isActiveScan(scanRequestId: Long): Boolean = activeScanRequestId == scanRequestId
     }

@@ -10,6 +10,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -28,6 +29,9 @@ fun SessionItem(
     endRow: Int,
     modifier: Modifier = Modifier,
 ) {
+    val locale = Locale.getDefault()
+    val dateFormat = remember(locale) { SimpleDateFormat("MMM d, HH:mm", locale) }
+
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
@@ -43,7 +47,7 @@ fun SessionItem(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = formatSessionDate(startedAt),
+                    text = formatSessionDate(startedAt, dateFormat),
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.weight(1f),
                 )
@@ -63,10 +67,10 @@ fun SessionItem(
     }
 }
 
-private fun formatSessionDate(timestamp: Long): String {
-    val dateFormat = SimpleDateFormat("MMM d, HH:mm", Locale.getDefault())
-    return dateFormat.format(Date(timestamp))
-}
+private fun formatSessionDate(
+    timestamp: Long,
+    dateFormat: SimpleDateFormat,
+): String = dateFormat.format(Date(timestamp))
 
 @Composable
 private fun formatDuration(minutes: Int): String =

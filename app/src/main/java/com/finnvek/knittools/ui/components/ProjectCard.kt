@@ -24,6 +24,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -131,6 +132,8 @@ private fun ProjectCardStatsRow(
     hasNotes: Boolean = false,
     onNotesClick: (() -> Unit)? = null,
 ) {
+    val locale = Locale.getDefault()
+    val dateFormat = remember(locale) { SimpleDateFormat("MMM d", locale) }
     val rowCountColor =
         if (rowCount == 0) {
             MaterialTheme.knitToolsColors.onSurfaceMuted
@@ -146,7 +149,7 @@ private fun ProjectCardStatsRow(
         )
         Spacer(modifier = Modifier.width(12.dp))
         Text(
-            text = formatDate(lastUpdated),
+            text = formatDate(lastUpdated, dateFormat),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.knitToolsColors.onSurfaceMuted,
         )
@@ -216,7 +219,10 @@ private fun ProjectCardYarnLine(
 }
 
 @Composable
-private fun formatDate(timestamp: Long): String {
+private fun formatDate(
+    timestamp: Long,
+    dateFormat: SimpleDateFormat,
+): String {
     val now = System.currentTimeMillis()
     val diff = now - timestamp
     val relativeTime =
@@ -229,6 +235,6 @@ private fun formatDate(timestamp: Long): String {
     return when {
         diff < 60_000 -> stringResource(R.string.just_now)
         diff < 86_400_000 -> relativeTime.toString()
-        else -> SimpleDateFormat("MMM d", Locale.getDefault()).format(Date(timestamp))
+        else -> dateFormat.format(Date(timestamp))
     }
 }

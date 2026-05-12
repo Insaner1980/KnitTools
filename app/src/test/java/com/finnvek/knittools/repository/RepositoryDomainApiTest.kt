@@ -2,6 +2,8 @@ package com.finnvek.knittools.repository
 
 import android.content.Context
 import com.finnvek.knittools.R
+import com.finnvek.knittools.data.local.CounterProjectDao
+import com.finnvek.knittools.data.local.CounterProjectEntity
 import com.finnvek.knittools.data.local.PatternAnnotationDao
 import com.finnvek.knittools.data.local.PatternAnnotationEntity
 import com.finnvek.knittools.data.local.ProgressPhotoDao
@@ -17,15 +19,18 @@ import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.YarnCard
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class RepositoryDomainApiTest {
     private lateinit var context: Context
 
@@ -52,7 +57,7 @@ class RepositoryDomainApiTest {
                             ),
                         ),
                 )
-            val repository = SavedPatternRepository(dao, context)
+            val repository = SavedPatternRepository(dao, context, FakeCounterProjectDao())
 
             val patterns: List<SavedPattern> = repository.getAll().first()
             val byId: SavedPattern? = repository.getById(1L)
@@ -86,7 +91,7 @@ class RepositoryDomainApiTest {
     fun `saved pattern repository creates imported pattern as domain id without exposing entity`() =
         runTest {
             val dao = FakeSavedPatternDao()
-            val repository = SavedPatternRepository(dao, context)
+            val repository = SavedPatternRepository(dao, context, FakeCounterProjectDao())
 
             val importedId = repository.saveImportedPatternIfMissing("content://pattern", "Local pattern")
             val ignoredId = repository.saveImportedPatternIfMissing("https://example.com/pattern", "Remote pattern")
@@ -112,7 +117,7 @@ class RepositoryDomainApiTest {
                             ),
                         ),
                 )
-            val repository = YarnCardRepository(dao)
+            val repository = YarnCardRepository(dao, FakeCounterProjectDao(), context)
 
             val cards: List<YarnCard> = repository.getAllCards().first()
             val card: YarnCard? = repository.getCard(2L)
@@ -143,6 +148,51 @@ class RepositoryDomainApiTest {
         }
 
     @Test
+    fun `yarn card repository removes deleted card ids from projects`() =
+        runTest {
+            val yarnDao =
+                FakeYarnCardDao(
+                    yarnCards =
+                        listOf(
+                            YarnCardEntity(id = 2L, yarnName = "Deleted"),
+                        ),
+                )
+            val projectDao =
+                FakeCounterProjectDao(
+                    projects =
+                        listOf(
+                            CounterProjectEntity(id = 10L, yarnCardIds = "1,2,3"),
+                            CounterProjectEntity(id = 11L, yarnCardIds = "2"),
+                        ),
+                )
+            val repository = YarnCardRepository(yarnDao, projectDao, context)
+
+            repository.deleteCards(listOf(2L))
+
+            assertEquals(mapOf(10L to "1,3", 11L to ""), projectDao.updatedYarnCardIds)
+            assertEquals(listOf(2L), yarnDao.deletedIds)
+        }
+
+    @Test
+    fun `saved pattern repository clears linked projects before deleting patterns`() =
+        runTest {
+            val dao =
+                FakeSavedPatternDao(
+                    savedPatterns =
+                        listOf(
+                            SavedPatternEntity(id = 4L, ravelryId = 4, name = "Pattern", designerName = "Designer"),
+                        ),
+                )
+            val projectDao = FakeCounterProjectDao()
+            val repository = SavedPatternRepository(dao, context, projectDao)
+
+            repository.deleteByIds(listOf(4L))
+
+            assertEquals(listOf(4L), projectDao.clearedPatternIds)
+            assertEquals(listOf(4L), dao.deletedIds)
+        }
+
+    @Test
     fun `progress photo repository exposes domain models and deletes by domain photo`() =
         runTest {
             val dao =
@@ -160,7 +210,7 @@ class RepositoryDomainApiTest {
                         ),
                 )
             val storage = mockk<ProgressPhotoStorage>(relaxed = true)
-            val repository = ProgressPhotoRepository(dao, storage, context)
+            val repository = ProgressPhotoRepository(dao, storage, context, UnconfinedTestDispatcher(testScheduler))
 
             val photos: List<ProgressPhoto> = repository.getAllPhotos().first()
             val projectPhotos: List<ProgressPhoto> = repository.getPhotosForProject(7L).first()
@@ -203,6 +253,7 @@ class RepositoryDomainApiTest {
         private val savedPatterns: List<SavedPatternEntity> = emptyList(),
     ) : SavedPatternDao {
         var lastInserted: SavedPatternEntity? = null
+        var deletedIds: List<Long> = emptyList()
 
         override fun getAll(): Flow<List<SavedPatternEntity>> = flowOf(savedPatterns)
 
@@ -214,14 +265,21 @@ class RepositoryDomainApiTest {
         override suspend fun getByPatternUrl(patternUrl: String): SavedPatternEntity? =
             savedPatterns.firstOrNull { it.patternUrl == patternUrl }
 
+        override suspend fun getByIds(ids: List<Long>): List<SavedPatternEntity> =
+            savedPatterns.filter { it.id in ids }
+
         override suspend fun insert(pattern: SavedPatternEntity): Long {
             lastInserted = pattern
             return 99L
         }
 
-        override suspend fun deleteById(id: Long) = Unit
+        override suspend fun deleteById(id: Long) {
+            deletedIds = listOf(id)
+        }
 
-        override suspend fun deleteByIds(ids: List<Long>) = Unit
+        override suspend fun deleteByIds(ids: List<Long>) {
+            deletedIds = ids
+        }
 
         override fun getCount(): Flow<Int> = flowOf(savedPatterns.size)
     }
@@ -230,6 +288,8 @@ class RepositoryDomainApiTest {
         private val yarnCards: List<YarnCardEntity> = emptyList(),
     ) : YarnCardDao {
         var lastUpserted: YarnCardEntity? = null
+        var clearedProjectId: Long? = null
+        var deletedIds: List<Long> = emptyList()
 
         override fun getAllCards(): Flow<List<YarnCardEntity>> = flowOf(yarnCards)
 
@@ -259,9 +319,200 @@ class RepositoryDomainApiTest {
             projectId: Long?,
         ) = Unit
 
+        override suspend fun clearLinkedProject(projectId: Long) {
+            clearedProjectId = projectId
+        }
+
+        override suspend fun delete(id: Long) {
+            deletedIds = listOf(id)
+        }
+
+        override suspend fun deleteByIds(ids: List<Long>) {
+            deletedIds = ids
+        }
+    }
+
+    private class FakeCounterProjectDao(
+        private val projects: List<CounterProjectEntity> = emptyList(),
+    ) : CounterProjectDao {
+        val updatedYarnCardIds = linkedMapOf<Long, String>()
+        var clearedPatternIds: List<Long> = emptyList()
+
+        override fun getAllProjects(): Flow<List<CounterProjectEntity>> = flowOf(projects)
+
+        override suspend fun getAllProjectsOnce(): List<CounterProjectEntity> = projects
+
+        override suspend fun getProject(id: Long): CounterProjectEntity? = projects.firstOrNull { it.id == id }
+
+        override fun observeProject(id: Long): Flow<CounterProjectEntity?> = flowOf(getProjectSync(id))
+
+        override suspend fun insert(project: CounterProjectEntity): Long = 0L
+
+        override suspend fun update(project: CounterProjectEntity) = Unit
+
+        override suspend fun adjustCount(
+            id: Long,
+            delta: Int,
+            updatedAt: Long,
+        ) = Unit
+
+        override suspend fun adjustCountAndStepSize(
+            id: Long,
+            delta: Int,
+            stepSize: Int,
+            updatedAt: Long,
+        ) = Unit
+
+        override suspend fun updateCounterState(
+            id: Long,
+            count: Int,
+            stepSize: Int,
+            updatedAt: Long,
+        ) = Unit
+
+        override suspend fun updateName(
+            id: Long,
+            name: String,
+            updatedAt: Long,
+        ) = Unit
+
+        override suspend fun updateNotes(
+            id: Long,
+            notes: String,
+            updatedAt: Long,
+        ) = Unit
+
+        override suspend fun updateSecondaryCount(
+            id: Long,
+            secondaryCount: Int,
+            updatedAt: Long,
+        ) = Unit
+
+        override suspend fun updateSectionName(
+            id: Long,
+            sectionName: String?,
+            updatedAt: Long,
+        ) = Unit
+
+        override suspend fun updateStitchCount(
+            id: Long,
+            stitchCount: Int?,
+            updatedAt: Long,
+        ) = Unit
+
+        override suspend fun updateCurrentStitch(
+            id: Long,
+            stitch: Int,
+            updatedAt: Long,
+        ) = Unit
+
+        override suspend fun updateStitchTrackingEnabled(
+            id: Long,
+            enabled: Boolean,
+            updatedAt: Long,
+        ) = Unit
+
+        override suspend fun updatePattern(
+            id: Long,
+            patternUri: String?,
+            patternName: String?,
+            currentPatternPage: Int,
+            patternRowMapping: String?,
+            updatedAt: Long,
+        ) = Unit
+
+        override suspend fun updateCurrentPatternPage(
+            id: Long,
+            page: Int,
+            updatedAt: Long,
+        ) = Unit
+
+        override suspend fun updatePatternRowMapping(
+            id: Long,
+            mapping: String?,
+            updatedAt: Long,
+        ) = Unit
+
+        override suspend fun updateStepSize(
+            id: Long,
+            stepSize: Int,
+            updatedAt: Long,
+        ) = Unit
+
+        override suspend fun updateYarnCardIds(
+            id: Long,
+            yarnCardIds: String,
+            updatedAt: Long,
+        ) {
+            updatedYarnCardIds[id] = yarnCardIds
+        }
+
+        override suspend fun clearLinkedPatternIds(
+            patternIds: List<Long>,
+            updatedAt: Long,
+        ) {
+            clearedPatternIds = patternIds
+        }
+
+        override suspend fun countProjectsUsingPatternUri(patternUri: String): Int =
+            projects.count { it.patternUri == patternUri }
+
+        override suspend fun archiveProject(
+            id: Long,
+            totalRows: Int,
+            completedAt: Long,
+            updatedAt: Long,
+        ) = Unit
+
+        override suspend fun reactivateProject(
+            id: Long,
+            updatedAt: Long,
+        ) = Unit
+
         override suspend fun delete(id: Long) = Unit
 
-        override suspend fun deleteByIds(ids: List<Long>) = Unit
+        override suspend fun getProjectCount(): Int = projects.size
+
+        override suspend fun getLatestActiveProject(): CounterProjectEntity? = projects.firstOrNull()
+
+        override suspend fun insertHistory(entry: com.finnvek.knittools.data.local.CounterHistoryEntity) = Unit
+
+        override suspend fun deleteHistoryBefore(
+            projectId: Long,
+            before: Long,
+        ) = Unit
+
+        override suspend fun getLatestHistory(projectId: Long): com.finnvek.knittools.data.local.CounterHistoryEntity? = null
+
+        override suspend fun deleteHistoryById(id: Long) = Unit
+
+        override suspend fun updateCount(
+            id: Long,
+            count: Int,
+            updatedAt: Long,
+        ) = Unit
+
+        override fun getActiveProjects(): Flow<List<CounterProjectEntity>> = flowOf(projects)
+
+        override fun getActiveProjectsByName(): Flow<List<CounterProjectEntity>> = flowOf(projects)
+
+        override fun getActiveProjectsByCreated(): Flow<List<CounterProjectEntity>> = flowOf(projects)
+
+        override fun getCompletedProjects(): Flow<List<CounterProjectEntity>> = flowOf(emptyList())
+
+        override fun getCompletedProjectsByName(): Flow<List<CounterProjectEntity>> = flowOf(emptyList())
+
+        override fun getCompletedProjectsByCreated(): Flow<List<CounterProjectEntity>> = flowOf(emptyList())
+
+        override suspend fun getActiveProjectCount(): Int = projects.size
+
+        override suspend fun updateTargetRows(
+            id: Long,
+            targetRows: Int?,
+            updatedAt: Long,
+        ) = Unit
+
+        private fun getProjectSync(id: Long): CounterProjectEntity? = projects.firstOrNull { it.id == id }
     }
 
     private class FakeProgressPhotoDao(

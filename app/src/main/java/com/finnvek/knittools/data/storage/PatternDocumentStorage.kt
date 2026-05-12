@@ -6,6 +6,7 @@ import android.graphics.BitmapFactory
 import android.graphics.pdf.PdfDocument
 import android.net.Uri
 import androidx.core.content.FileProvider
+import androidx.core.graphics.scale
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -77,7 +78,7 @@ class PatternDocumentStorage
             val ratio = maxDimension.toFloat() / maxOf(width, height)
             val newWidth = (width * ratio).toInt().coerceAtLeast(1)
             val newHeight = (height * ratio).toInt().coerceAtLeast(1)
-            return Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true)
+            return bitmap.scale(newWidth, newHeight)
         }
 
         /**

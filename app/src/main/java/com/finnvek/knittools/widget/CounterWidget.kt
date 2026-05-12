@@ -110,7 +110,7 @@ class CounterWidget : GlanceAppWidget() {
             }
 
             widgetData.projectId == 0L -> {
-                entryPoint.counterRepository().getFirstProject()?.let { project ->
+                entryPoint.counterRepository().getLatestActiveProject()?.let { project ->
                     val initialData = project.toWidgetData()
                     CounterWidgetState.save(context, initialData)
                     CounterWidgetState.saveGlance(context, id, initialData)

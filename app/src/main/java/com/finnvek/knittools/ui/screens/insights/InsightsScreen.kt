@@ -41,7 +41,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
@@ -72,7 +71,6 @@ fun InsightsScreen(
     val dailyActivity by viewModel.dailyActivity.collectAsStateWithLifecycle()
     val timeRange by viewModel.timeRange.collectAsStateWithLifecycle()
     val hasSessionData by viewModel.hasSessionData.collectAsStateWithLifecycle()
-    val context = LocalContext.current
     val resources = LocalResources.current
 
     var showProjectPicker by remember { mutableStateOf(false) }

@@ -143,7 +143,6 @@ fun YarnCardReviewScreen(
                 val cardId = form.editingCardId
                 if (cardId != null) {
                     viewModel.deleteCard(cardId) {
-                        viewModel.deletePhotoFile(form.photoUri)
                         showDeleteDialog = false
                         onBack()
                     }

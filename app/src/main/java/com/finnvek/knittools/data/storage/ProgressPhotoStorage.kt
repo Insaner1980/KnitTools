@@ -5,6 +5,8 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.core.content.FileProvider
+import androidx.core.graphics.scale
+import androidx.core.net.toUri
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -33,11 +35,9 @@ class ProgressPhotoStorage
             context: Context,
             sourceUri: Uri,
             targetFile: File,
-        ) {
-            val inputStream = context.contentResolver.openInputStream(sourceUri) ?: return
-            val original = BitmapFactory.decodeStream(inputStream)
-            inputStream.close()
-            original ?: return
+        ): Boolean {
+            val inputStream = context.contentResolver.openInputStream(sourceUri) ?: return false
+            val original = inputStream.use(BitmapFactory::decodeStream) ?: return false
 
             val scaled = scaleDown(original, MAX_DIMENSION)
             targetFile.outputStream().use { out ->
@@ -45,6 +45,7 @@ class ProgressPhotoStorage
             }
             if (scaled !== original) scaled.recycle()
             original.recycle()
+            return true
         }
 
         fun deleteProjectPhotos(
@@ -56,8 +57,19 @@ class ProgressPhotoStorage
         }
 
         fun deletePhoto(photoUri: String) {
-            val file = File(Uri.parse(photoUri).path ?: return)
-            if (file.exists()) file.delete()
+            deleteFileUri(photoUri.toUri())
+        }
+
+        fun deleteTemporarySource(
+            context: Context,
+            sourceUri: Uri,
+        ) {
+            AppFileStorage.deleteIfAppOwned(context, sourceUri)
+        }
+
+        private fun deleteFileUri(uri: Uri) {
+            val file = File(uri.path ?: return)
+            if (file.exists() && !file.delete()) file.deleteOnExit()
         }
 
         private fun scaleDown(
@@ -71,7 +83,7 @@ class ProgressPhotoStorage
             val ratio = maxDimension.toFloat() / maxOf(width, height)
             val newWidth = (width * ratio).toInt()
             val newHeight = (height * ratio).toInt()
-            return Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true)
+            return bitmap.scale(newWidth, newHeight)
         }
 
         private companion object {

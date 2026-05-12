@@ -1,6 +1,7 @@
 package com.finnvek.knittools.ui.screens.yarncard
 
 import android.content.Context
+import android.net.Uri
 import com.finnvek.knittools.ai.ParsedYarnLabel
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.YarnCard
@@ -13,10 +14,13 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -48,7 +52,6 @@ class YarnCardViewModelTest {
         context = mockk(relaxed = true)
 
         every { repository.getAllCards() } returns flowOf(emptyList())
-        coEvery { counterRepository.getFirstProject() } returns null
     }
 
     @After
@@ -113,6 +116,51 @@ class YarnCardViewModelTest {
     }
 
     @Test
+    fun `loadCardForDetail clears stale card state when card is missing`() =
+        runTest {
+            coEvery { repository.getCard(99L) } returns null
+            val vm = createViewModel()
+            vm.loadFromCard(YarnCard(id = 5L, brand = "Old", yarnName = "Card"))
+
+            var loaded: Boolean? = null
+            vm.loadCardForDetail(99L) { loaded = it }
+            advanceUntilIdle()
+
+            assertEquals(false, loaded)
+            assertNull(vm.formState.value.editingCardId)
+            assertEquals("", vm.formState.value.brand)
+            assertEquals("", vm.formState.value.yarnName)
+        }
+
+    @Test
+    fun `completed scan does not overwrite detail loaded after scan start`() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val parsed =
+                ParsedYarnLabel(
+                    brand = "Scan Brand",
+                    yarnName = "Scan Yarn",
+                    weightGrams = "100",
+                    lengthMeters = "200",
+                )
+            val photoUri = mockk<Uri>(relaxed = true)
+            coEvery { aiQuotaManager.hasQuota() } returns true
+            coEvery { scanRepository.scanLabel(photoUri) } returns parsed
+            every { proManager.hasFeature(ProFeature.OCR) } returns true
+            val vm = createViewModel()
+            var navigatedToReview = false
+
+            vm.scanWithGemini(photoUri) { navigatedToReview = true }
+            vm.loadFromCard(YarnCard(id = 7L, brand = "Detail Brand", yarnName = "Detail Yarn"))
+            advanceUntilIdle()
+
+            assertEquals(7L, vm.formState.value.editingCardId)
+            assertEquals("Detail Brand", vm.formState.value.brand)
+            assertEquals("Detail Yarn", vm.formState.value.yarnName)
+            assertEquals(false, navigatedToReview)
+        }
+
+    @Test
     fun `updateField modifies form state`() {
         val vm = createViewModel()
         vm.updateField { copy(brand = "Sandnes Garn") }
@@ -140,6 +188,39 @@ class YarnCardViewModelTest {
             vm.saveCard {}
 
             coVerify(exactly = 0) { repository.saveCard(any()) }
+        }
+
+    @Test
+    fun `scanWithGemini does not scan without pro`() =
+        runTest {
+            every { proManager.hasFeature(ProFeature.OCR) } returns false
+            val photoUri = mockk<Uri>(relaxed = true)
+            val vm = createViewModel()
+            var navigatedToReview = false
+
+            vm.scanWithGemini(photoUri) { navigatedToReview = true }
+            advanceUntilIdle()
+
+            assertEquals(false, vm.formState.value.isScanning)
+            assertEquals(false, navigatedToReview)
+            coVerify(exactly = 0) { aiQuotaManager.hasQuota() }
+            coVerify(exactly = 0) { scanRepository.scanLabel(any()) }
+        }
+
+    @Test
+    fun `failed scan deletes captured photo`() =
+        runTest {
+            every { proManager.hasFeature(ProFeature.OCR) } returns true
+            coEvery { aiQuotaManager.hasQuota() } returns true
+            val photoUri = mockk<Uri>()
+            every { photoUri.toString() } returns "content://scan/failed"
+            coEvery { scanRepository.scanLabel(photoUri) } returns null
+            val vm = createViewModel()
+
+            vm.scanWithGemini(photoUri) {}
+            advanceUntilIdle()
+
+            verify { scanRepository.deleteScanPhoto("content://scan/failed") }
         }
 
     @Test
@@ -189,6 +270,20 @@ class YarnCardViewModelTest {
         val form = vm.formState.value
         assertEquals("", form.brand)
         assertEquals("", form.yarnName)
+    }
+
+    @Test
+    fun `clearFormState resets form without deleting saved scan photo`() {
+        val vm = createViewModel()
+        vm.updateField { copy(brand = "Novita", yarnName = "Nalle", photoUri = "content://scan/1") }
+
+        vm.clearFormState()
+
+        val form = vm.formState.value
+        assertEquals("", form.brand)
+        assertEquals("", form.yarnName)
+        assertEquals("", form.photoUri)
+        verify(exactly = 0) { scanRepository.deleteScanPhoto(any()) }
     }
 
     @Test

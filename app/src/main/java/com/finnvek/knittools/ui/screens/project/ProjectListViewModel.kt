@@ -106,6 +106,9 @@ class ProjectListViewModel
         private val _navigateToProject = MutableSharedFlow<Long>()
         val navigateToProject: SharedFlow<Long> = _navigateToProject.asSharedFlow()
 
+        private val _upgradeToPro = MutableSharedFlow<Unit>()
+        val upgradeToPro: SharedFlow<Unit> = _upgradeToPro.asSharedFlow()
+
         init {
             viewModelScope.launch {
                 activeProjects.collect { projects ->
@@ -250,7 +253,10 @@ class ProjectListViewModel
 
         fun createProject() {
             viewModelScope.launch {
-                if (!isPro && repository.getActiveProjectCount() >= 1) return@launch
+                if (!isPro && repository.getActiveProjectCount() >= 1) {
+                    _upgradeToPro.emit(Unit)
+                    return@launch
+                }
                 val count = repository.getProjectCount()
                 val id =
                     repository.createProject(

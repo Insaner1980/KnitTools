@@ -33,20 +33,15 @@ class InAppReviewManager
         /**
          * Pyytää arvostelua jos ehdot täyttyvät:
          * - Arvostelua ei ole vielä pyydetty
-         * - Käyttäjä on Pro TAI toimintoja on kertynyt riittävästi
+         * - Toimintoja on kertynyt riittävästi
          *
-         * Google rajoittaa näyttötiheyttä omalla kiintiöllään,
-         * joten kutsu on turvallinen vaikka ehdot täyttyisivät usein.
+         * Google rajoittaa näyttötiheyttä omalla kiintiöllään, mutta sovelluksen
+         * oma käyttöraja estää liian aikaisen pyynnön ja turhat API-kutsut.
          */
-        suspend fun maybeRequestReview(
-            activity: Activity,
-            isPro: Boolean,
-        ) {
+        suspend fun maybeRequestReview(activity: Activity) {
             val prefs = context.reviewDataStore.data.first()
-            if (prefs[KEY_REVIEW_REQUESTED] == true) return
-
             val actions = prefs[KEY_ACTION_COUNT] ?: 0
-            if (!isPro && actions < ACTIONS_THRESHOLD) return
+            if (!shouldRequestReview(prefs[KEY_REVIEW_REQUESTED] == true, actions)) return
 
             context.reviewDataStore.edit { it[KEY_REVIEW_REQUESTED] = true }
 
@@ -64,5 +59,10 @@ class InAppReviewManager
             private val KEY_REVIEW_REQUESTED = booleanPreferencesKey("review_requested")
             private val KEY_ACTION_COUNT = intPreferencesKey("action_count")
             const val ACTIONS_THRESHOLD = 20
+
+            internal fun shouldRequestReview(
+                reviewRequested: Boolean,
+                actionCount: Int,
+            ): Boolean = !reviewRequested && actionCount >= ACTIONS_THRESHOLD
         }
     }

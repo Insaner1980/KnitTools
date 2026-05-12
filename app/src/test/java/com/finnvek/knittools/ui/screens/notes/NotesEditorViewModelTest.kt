@@ -7,6 +7,7 @@ import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.CounterRepository
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
@@ -104,5 +105,25 @@ class NotesEditorViewModelTest {
             assertEquals("hello", state.notes)
             assertTrue(state.isPro)
             assertTrue(state.isAiAvailable)
+        }
+
+    @Test
+    fun `missing project marks editor for fallback and skips saves`() =
+        runTest {
+            coEvery { repository.getProject(1L) } returns null
+            val viewModel =
+                NotesEditorViewModel(
+                    repository = repository,
+                    proManager = proManager,
+                    aiQuotaManager = quota,
+                    savedStateHandle = SavedStateHandle(mapOf("projectId" to 1L)),
+                )
+
+            assertTrue(viewModel.uiState.value.isMissingProject)
+
+            viewModel.onNotesChanged("Should not persist")
+            viewModel.saveImmediately()
+
+            coVerify(exactly = 0) { repository.updateProjectNotes(any(), any()) }
         }
 }

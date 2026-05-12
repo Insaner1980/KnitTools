@@ -85,14 +85,17 @@ fun AllPhotosScreen(
     actions: AllPhotosActions,
 ) {
     var selectedProjectId by rememberSaveable { mutableStateOf<Long?>(null) }
-    var viewingPhoto by remember { mutableStateOf<ProgressPhoto?>(null) }
+    var viewingPhotoId by rememberSaveable { mutableStateOf<Long?>(null) }
     var showDeleteConfirmDialog by rememberSaveable { mutableStateOf(false) }
+    val viewingPhoto = remember(viewingPhotoId, state.photos) { state.photos.firstOrNull { it.id == viewingPhotoId } }
 
     val filteredPhotos =
-        if (selectedProjectId != null) {
-            state.photos.filter { it.projectId == selectedProjectId }
-        } else {
-            state.photos
+        remember(selectedProjectId, state.photos) {
+            if (selectedProjectId != null) {
+                state.photos.filter { it.projectId == selectedProjectId }
+            } else {
+                state.photos
+            }
         }
 
     // Poistu valintamoodista back-painikkeella
@@ -105,10 +108,10 @@ fun AllPhotosScreen(
         viewingPhoto?.let { photo ->
             PhotoViewer(
                 photo = photo,
-                onDismiss = { viewingPhoto = null },
+                onDismiss = { viewingPhotoId = null },
                 onDelete = {
                     actions.onDeletePhoto(it)
-                    viewingPhoto = null
+                    viewingPhotoId = null
                 },
             )
         }
@@ -171,7 +174,7 @@ fun AllPhotosScreen(
                 filteredPhotos = filteredPhotos,
                 selectedProjectId = selectedProjectId,
                 onProjectFilterClick = { selectedProjectId = it },
-                onPhotoClick = { viewingPhoto = it },
+                onPhotoClick = { viewingPhotoId = it.id },
                 padding = padding,
             )
         }
@@ -266,8 +269,8 @@ private fun AllPhotosContent(
     onPhotoClick: (ProgressPhoto) -> Unit,
     padding: PaddingValues,
 ) {
-    val projectMap = state.projects.associateBy { it.id }
-    val projectsWithPhotos = state.photos.map { it.projectId }.distinct()
+    val projectMap = remember(state.projects) { state.projects.associateBy { it.id } }
+    val projectsWithPhotos = remember(state.photos) { state.photos.map { it.projectId }.distinct() }
 
     Column(modifier = Modifier.fillMaxSize().padding(padding)) {
         // Suodatinsiput piilotetaan valintamoodissa

@@ -55,6 +55,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -76,6 +77,7 @@ import com.finnvek.knittools.ui.components.ProjectCard
 fun ProjectListScreen(
     onProjectClick: (Long) -> Unit,
     onNotesEditor: (Long) -> Unit = {},
+    onUpgradeToPro: () -> Unit = {},
     viewModel: ProjectListViewModel = hiltViewModel(),
 ) {
     val active by viewModel.activeProjects.collectAsStateWithLifecycle()
@@ -89,11 +91,19 @@ fun ProjectListScreen(
     val isMultiSelectMode by viewModel.isMultiSelectMode.collectAsStateWithLifecycle()
     val selectedProjectIds by viewModel.selectedProjectIds.collectAsStateWithLifecycle()
     val sortOrder by viewModel.sortOrder.collectAsStateWithLifecycle()
+    val currentOnProjectClick by rememberUpdatedState(onProjectClick)
+    val currentOnUpgradeToPro by rememberUpdatedState(onUpgradeToPro)
 
     // FAB-luonnin jälkeen navigoi uuteen projektiin
-    LaunchedEffect(Unit) {
+    LaunchedEffect(viewModel) {
         viewModel.navigateToProject.collect { projectId ->
-            onProjectClick(projectId)
+            currentOnProjectClick(projectId)
+        }
+    }
+
+    LaunchedEffect(viewModel) {
+        viewModel.upgradeToPro.collect {
+            currentOnUpgradeToPro()
         }
     }
 

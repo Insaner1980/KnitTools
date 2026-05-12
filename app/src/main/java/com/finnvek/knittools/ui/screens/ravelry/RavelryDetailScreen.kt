@@ -1,7 +1,6 @@
 package com.finnvek.knittools.ui.screens.ravelry
 
 import android.content.Intent
-import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -27,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -36,6 +36,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
@@ -49,6 +50,7 @@ fun RavelryDetailScreen(
     patternId: Int,
     onBack: () -> Unit,
     onStartProject: (Long) -> Unit,
+    onUpgradeToPro: () -> Unit = {},
     viewModel: RavelryViewModel = hiltViewModel(),
 ) {
     val detail by viewModel.patternDetail.collectAsStateWithLifecycle()
@@ -57,14 +59,22 @@ fun RavelryDetailScreen(
     val hasDetailError by viewModel.hasDetailError.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val savedMessage = stringResource(R.string.pattern_saved_to_library)
+    val currentOnStartProject by rememberUpdatedState(onStartProject)
+    val currentOnUpgradeToPro by rememberUpdatedState(onUpgradeToPro)
 
-    LaunchedEffect(patternId) {
+    LaunchedEffect(viewModel, patternId) {
         viewModel.loadDetail(patternId)
     }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(viewModel) {
         viewModel.navigateToProject.collect { projectId ->
-            onStartProject(projectId)
+            currentOnStartProject(projectId)
+        }
+    }
+
+    LaunchedEffect(viewModel) {
+        viewModel.upgradeToPro.collect {
+            currentOnUpgradeToPro()
         }
     }
 
@@ -92,7 +102,7 @@ fun RavelryDetailScreen(
                     },
                     onOpenInRavelry = {
                         detail?.let {
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(it.ravelryUrl))
+                            val intent = Intent(Intent.ACTION_VIEW, it.ravelryUrl.toUri())
                             context.startActivity(intent)
                         }
                     },

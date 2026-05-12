@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <lint>
-    <issue id="InvalidPackage" severity="warning" />
+    <issue id="InvalidPackage" severity="warning">
+        <ignore regexp="Invalid package reference in io\.ktor:ktor-utils-jvm" />
+    </issue>
+    <issue id="OldTargetApi" severity="ignore" />
 </lint>

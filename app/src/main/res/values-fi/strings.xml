@@ -874,7 +874,7 @@
     <string name="tip_imperial_units_title">Imperiaaliset yksiköt</string>
     <string name="tip_imperial_units_desc">Kun asetus on käytössä, kaikki laskurit käyttävät senttimetrien sijasta tuumia ja metrien sijasta jaardeja. Tiheys ilmoitetaan silloin 4 tuumaa kohti 10 cm:n sijaan.</string>
 
-    <!-- Laskurinäytön redesign: bottom sheet (TODO_FINNISH_REVIEW) -->
+    <!-- Laskurinäytön redesign: bottom sheet -->
     <string name="project_actions_title">Projektin toiminnot</string>
     <string name="project_actions_section_this_project">TÄMÄ PROJEKTI</string>
     <string name="project_actions_section_counters">LASKURIT</string>

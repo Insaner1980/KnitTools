@@ -51,6 +51,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -289,6 +290,13 @@ private data class SearchTabState(
     val hasError: Boolean,
 )
 
+internal fun shouldRequestRavelryLoadMore(
+    shouldLoadMore: Boolean,
+    resultCount: Int,
+    isLoading: Boolean,
+    hasError: Boolean,
+): Boolean = shouldLoadMore && resultCount > 0 && !isLoading && !hasError
+
 @Composable
 private fun SearchTab(
     state: SearchTabState,
@@ -307,10 +315,18 @@ private fun SearchTab(
             lastVisibleItem >= listState.layoutInfo.totalItemsCount - 3
         }
     }
+    val currentOnLoadMore by rememberUpdatedState(onLoadMore)
 
-    LaunchedEffect(shouldLoadMore) {
-        if (shouldLoadMore && state.results.isNotEmpty()) {
-            onLoadMore()
+    LaunchedEffect(shouldLoadMore, state.results.size, state.isLoading, state.hasError) {
+        if (
+            shouldRequestRavelryLoadMore(
+                shouldLoadMore = shouldLoadMore,
+                resultCount = state.results.size,
+                isLoading = state.isLoading,
+                hasError = state.hasError,
+            )
+        ) {
+            currentOnLoadMore()
         }
     }
 

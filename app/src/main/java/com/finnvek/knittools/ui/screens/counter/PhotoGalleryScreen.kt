@@ -1,8 +1,6 @@
 package com.finnvek.knittools.ui.screens.counter
 
-import android.Manifest
 import android.net.Uri
-import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -51,6 +49,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import coil3.compose.AsyncImage
 import com.finnvek.knittools.R
 import com.finnvek.knittools.data.storage.ProgressPhotoStorage
@@ -72,9 +71,11 @@ fun PhotoGalleryScreen(
     val appContext = LocalContext.current.applicationContext
     val photoStorage = remember { ProgressPhotoStorage() }
     var pendingPhotoUriString by rememberSaveable { mutableStateOf<String?>(null) }
-    val pendingPhotoUri = pendingPhotoUriString?.let(Uri::parse)
-    var renamingPhoto by remember { mutableStateOf<ProgressPhoto?>(null) }
-    var viewingPhoto by remember { mutableStateOf<ProgressPhoto?>(null) }
+    val pendingPhotoUri = pendingPhotoUriString?.toUri()
+    var renamingPhotoId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var viewingPhotoId by rememberSaveable { mutableStateOf<Long?>(null) }
+    val renamingPhoto = remember(renamingPhotoId, photos) { photos.firstOrNull { it.id == renamingPhotoId } }
+    val viewingPhoto = remember(viewingPhotoId, photos) { photos.firstOrNull { it.id == viewingPhotoId } }
 
     val cameraLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
@@ -82,26 +83,11 @@ fun PhotoGalleryScreen(
             pendingPhotoUriString = null
         }
 
-    val permissionLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-            if (granted) {
-                projectId?.let { id ->
-                    val (_, uri) = photoStorage.createPhotoFile(appContext, id)
-                    pendingPhotoUriString = uri.toString()
-                    cameraLauncher.launch(uri)
-                }
-            }
-        }
-
     fun launchCamera() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            projectId?.let { id ->
-                val (_, uri) = photoStorage.createPhotoFile(appContext, id)
-                pendingPhotoUriString = uri.toString()
-                cameraLauncher.launch(uri)
-            }
-        } else {
-            permissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+        projectId?.let { id ->
+            val (_, uri) = photoStorage.createPhotoFile(appContext, id)
+            pendingPhotoUriString = uri.toString()
+            cameraLauncher.launch(uri)
         }
     }
 
@@ -109,7 +95,7 @@ fun PhotoGalleryScreen(
     viewingPhoto?.let { photo ->
         PhotoViewer(
             photo = photo,
-            onDismiss = { viewingPhoto = null },
+            onDismiss = { viewingPhotoId = null },
             onDelete = { onDeletePhoto(it) },
         )
     }
@@ -120,9 +106,9 @@ fun PhotoGalleryScreen(
             currentNote = photo.note ?: "",
             onConfirm = { newNote ->
                 onUpdateNote(photo.id, newNote.ifBlank { null })
-                renamingPhoto = null
+                renamingPhotoId = null
             },
-            onDismiss = { renamingPhoto = null },
+            onDismiss = { renamingPhotoId = null },
         )
     }
 
@@ -211,8 +197,8 @@ fun PhotoGalleryScreen(
                 items(photos, key = { it.id }) { photo ->
                     PhotoGridItem(
                         photo = photo,
-                        onClick = { viewingPhoto = photo },
-                        onLongClick = { renamingPhoto = photo },
+                        onClick = { viewingPhotoId = photo.id },
+                        onLongClick = { renamingPhotoId = photo.id },
                     )
                 }
             }
@@ -255,7 +241,7 @@ private fun PhotoGridItem(
                         .clip(MaterialTheme.shapes.medium),
             ) {
                 AsyncImage(
-                    model = Uri.parse(photo.photoUri),
+                    model = photo.photoUri.toUri(),
                     contentDescription = displayName,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,
@@ -287,7 +273,7 @@ private fun RenamePhotoDialog(
     onConfirm: (String) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    var text by remember { mutableStateOf(currentNote) }
+    var text by rememberSaveable(currentNote) { mutableStateOf(currentNote) }
 
     androidx.compose.material3.AlertDialog(
         onDismissRequest = onDismiss,

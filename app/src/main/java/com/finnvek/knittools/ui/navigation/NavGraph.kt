@@ -10,15 +10,18 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavBackStackEntry
+import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -64,7 +67,8 @@ import com.finnvek.knittools.ui.screens.yarn.YarnEstimatorScreen
 import com.finnvek.knittools.ui.screens.yarncard.YarnCardReviewScreen
 import com.finnvek.knittools.ui.screens.yarncard.YarnCardViewModel
 
-// Näytöt, joilla bottom bar piilossa
+// Piilota vain koko ruudun editointi-, review-, upgrade- ja PDF-katselunäkymissä;
+// pidä tabin sisäisissä list/detail-näkymissä näkyvissä.
 private val HIDE_BOTTOM_BAR_ROUTES =
     setOf(
         Screen.ProUpgrade.route,
@@ -75,6 +79,11 @@ private val HIDE_BOTTOM_BAR_ROUTES =
         Screen.LibraryPatternViewer.ROUTE,
         Screen.NotesEditor.ROUTE,
     )
+
+private const val ARG_PROJECT_ID = "projectId"
+private const val ARG_PATTERN_ID = "patternId"
+private const val ARG_SAVED_PATTERN_ID = "savedPatternId"
+private const val ARG_CARD_ID = "cardId"
 
 @Composable
 fun KnitToolsNavHost(
@@ -128,10 +137,10 @@ fun KnitToolsNavHost(
                     internalCounterLaunch = null
                 },
             )
-            toolsGraph(navController) { projectId ->
+            libraryGraph(navController) { projectId ->
                 internalCounterLaunch = CounterLaunchRequest(projectId = projectId)
             }
-            libraryGraph(navController) { projectId ->
+            toolsGraph(navController) { projectId ->
                 internalCounterLaunch = CounterLaunchRequest(projectId = projectId)
             }
             insightsGraph(navController)
@@ -148,6 +157,10 @@ fun KnitToolsNavHost(
     }
 }
 
+@Suppress(
+    "LongMethod",
+    "kotlin:S3776",
+) // Projects-graafi kokoaa välilehden reitit ja argumenttivarmistukset yhteen paikkaan.
 private fun NavGraphBuilder.projectsGraph(
     navController: NavHostController,
     counterLaunchRequest: CounterLaunchRequest?,
@@ -170,6 +183,9 @@ private fun NavGraphBuilder.projectsGraph(
                 },
                 onNotesEditor = { projectId ->
                     navController.navigateSingleTopTo(Screen.NotesEditor(projectId).route)
+                },
+                onUpgradeToPro = {
+                    navController.navigateSingleTopTo(Screen.ProUpgrade.route)
                 },
             )
         }
@@ -200,6 +216,9 @@ private fun NavGraphBuilder.projectsGraph(
                 onNotesEditor = { projectId ->
                     navController.navigateSingleTopTo(Screen.NotesEditor(projectId).route)
                 },
+                onUpgradeToPro = {
+                    navController.navigateSingleTopTo(Screen.ProUpgrade.route)
+                },
                 viewModel = counterViewModel,
             )
         }
@@ -222,20 +241,35 @@ private fun NavGraphBuilder.projectsGraph(
         }
         composable(
             Screen.PatternViewer.ROUTE,
-            arguments = listOf(navArgument("projectId") { type = NavType.LongType }),
+            arguments = listOf(navArgument(ARG_PROJECT_ID) { type = NavType.LongType }),
         ) { backStackEntry ->
-            val projectId = backStackEntry.arguments?.getLong("projectId") ?: return@composable
+            val projectId = backStackEntry.positiveLongArgument(ARG_PROJECT_ID)
+            if (projectId == null) {
+                RouteArgumentFallback(navController, TopLevelDestination.Projects)
+                return@composable
+            }
             val parentEntry =
                 remember(backStackEntry) {
                     navController.getBackStackEntry(TopLevelDestination.Projects.route)
                 }
             val counterViewModel: CounterViewModel = hiltViewModel(parentEntry)
             val counterState by counterViewModel.uiState.collectAsStateWithLifecycle()
+            var routeProjectReady by remember(projectId) { mutableStateOf(false) }
             LaunchedEffect(projectId, counterState.projectId) {
                 if (counterState.projectId != projectId) {
-                    counterViewModel.selectProjectById(projectId)
+                    routeProjectReady = false
+                    counterViewModel.selectProjectByIdForLaunch(projectId) { loaded ->
+                        if (!loaded) {
+                            navController.popBackStackOrNavigateToTopLevel(TopLevelDestination.Projects)
+                        } else {
+                            routeProjectReady = true
+                        }
+                    }
+                } else {
+                    routeProjectReady = true
                 }
             }
+            if (!routeProjectReady) return@composable
             PatternViewerScreen(
                 onBack = { navController.popBackStack() },
                 counterViewModel = counterViewModel,
@@ -243,16 +277,27 @@ private fun NavGraphBuilder.projectsGraph(
         }
         composable(
             Screen.SessionHistory.ROUTE,
-            arguments = listOf(navArgument("projectId") { type = NavType.LongType }),
-        ) {
+            arguments = listOf(navArgument(ARG_PROJECT_ID) { type = NavType.LongType }),
+        ) { backStackEntry ->
+            val projectId = backStackEntry.positiveLongArgument(ARG_PROJECT_ID)
+            if (projectId == null) {
+                RouteArgumentFallback(navController, TopLevelDestination.Projects)
+                return@composable
+            }
             SessionHistoryScreen(
                 onBack = { navController.popBackStack() },
+                onUpgradeToPro = { navController.navigateSingleTopTo(Screen.ProUpgrade.route) },
             )
         }
         composable(
             Screen.NotesEditor.ROUTE,
-            arguments = listOf(navArgument("projectId") { type = NavType.LongType }),
-        ) {
+            arguments = listOf(navArgument(ARG_PROJECT_ID) { type = NavType.LongType }),
+        ) { backStackEntry ->
+            val projectId = backStackEntry.positiveLongArgument(ARG_PROJECT_ID)
+            if (projectId == null) {
+                RouteArgumentFallback(navController, TopLevelDestination.Projects)
+                return@composable
+            }
             NotesEditorScreen(
                 onBack = { navController.popBackStack() },
                 onUpgradeToPro = { navController.navigateSingleTopTo(Screen.ProUpgrade.route) },
@@ -319,6 +364,7 @@ private fun NavGraphBuilder.toolsGraph(
                 viewModel = yarnCardViewModel,
                 onSaveAndUse = { w, l, n ->
                     yarnCardViewModel.setPendingCalcValues(w, l, n)
+                    yarnCardViewModel.clearFormState()
                     navController.popBackStack()
                 },
                 onDiscard = { _, _, _ ->
@@ -357,14 +403,21 @@ private fun NavGraphBuilder.toolsGraph(
         }
         composable(
             Screen.RavelryDetail.ROUTE,
-            arguments = listOf(navArgument("patternId") { type = NavType.IntType }),
+            arguments = listOf(navArgument(ARG_PATTERN_ID) { type = NavType.IntType }),
         ) { backStackEntry ->
-            val patternId = backStackEntry.arguments?.getInt("patternId") ?: return@composable
+            val patternId = backStackEntry.positiveIntArgument(ARG_PATTERN_ID)
+            if (patternId == null) {
+                RouteArgumentFallback(navController, TopLevelDestination.Tools)
+                return@composable
+            }
             RavelryDetailScreen(
                 patternId = patternId,
                 onBack = { navController.popBackStack() },
                 onStartProject = { projectId ->
                     onLaunchCounter(projectId)
+                },
+                onUpgradeToPro = {
+                    navController.navigateSingleTopTo(Screen.ProUpgrade.route)
                 },
             )
         }
@@ -423,6 +476,11 @@ private fun NavGraphBuilder.librarySavedPatternsRoute(navController: NavHostCont
                 navController.getBackStackEntry(TopLevelDestination.Library.route)
             }
         val libraryViewModel: LibraryViewModel = hiltViewModel(parentEntry)
+        ClearSelectionWhenLeavingRoute(
+            navController = navController,
+            route = Screen.SavedPatterns.route,
+            clearSelection = libraryViewModel::exitPatternSelectMode,
+        )
         val patterns by libraryViewModel.savedPatterns.collectAsStateWithLifecycle(initialValue = emptyList())
         val isPatternSelectMode by libraryViewModel.isPatternSelectMode.collectAsStateWithLifecycle()
         val selectedPatternIds by libraryViewModel.selectedPatternIds.collectAsStateWithLifecycle()
@@ -457,20 +515,33 @@ private fun NavGraphBuilder.librarySavedPatternsRoute(navController: NavHostCont
 private fun NavGraphBuilder.libraryPatternViewerRoute(navController: NavHostController) {
     composable(
         Screen.LibraryPatternViewer.ROUTE,
-        arguments = listOf(navArgument("savedPatternId") { type = NavType.LongType }),
+        arguments = listOf(navArgument(ARG_SAVED_PATTERN_ID) { type = NavType.LongType }),
     ) { backStackEntry ->
-        val savedPatternId = backStackEntry.arguments?.getLong("savedPatternId") ?: return@composable
+        val savedPatternId = backStackEntry.positiveLongArgument(ARG_SAVED_PATTERN_ID)
+        if (savedPatternId == null) {
+            RouteArgumentFallback(navController, TopLevelDestination.Library)
+            return@composable
+        }
         val parentEntry =
             remember(backStackEntry) {
                 navController.getBackStackEntry(TopLevelDestination.Library.route)
             }
         val libraryViewModel: LibraryViewModel = hiltViewModel(parentEntry)
-        val patterns by libraryViewModel.savedPatterns.collectAsStateWithLifecycle(initialValue = emptyList())
-        val pattern = patterns.firstOrNull { it.id == savedPatternId }
+        var patternRouteState by remember(savedPatternId) { mutableStateOf<Pair<String, String>?>(null) }
+        LaunchedEffect(savedPatternId) {
+            libraryViewModel.loadSavedPattern(savedPatternId) { pattern ->
+                if (pattern == null) {
+                    navController.popBackStackOrNavigateToTopLevel(TopLevelDestination.Library)
+                } else {
+                    patternRouteState = pattern.patternUrl to pattern.name
+                }
+            }
+        }
+        val pattern = patternRouteState ?: return@composable
 
         LibraryPatternViewerScreen(
-            patternUri = pattern?.patternUrl,
-            patternName = pattern?.name,
+            patternUri = pattern.first,
+            patternName = pattern.second,
             onBack = { navController.popBackStack() },
         )
     }
@@ -482,14 +553,21 @@ private fun NavGraphBuilder.libraryRavelryDetailRoute(
 ) {
     composable(
         Screen.LibraryRavelryDetail.ROUTE,
-        arguments = listOf(navArgument("patternId") { type = NavType.IntType }),
+        arguments = listOf(navArgument(ARG_PATTERN_ID) { type = NavType.IntType }),
     ) { backStackEntry ->
-        val patternId = backStackEntry.arguments?.getInt("patternId") ?: return@composable
+        val patternId = backStackEntry.positiveIntArgument(ARG_PATTERN_ID)
+        if (patternId == null) {
+            RouteArgumentFallback(navController, TopLevelDestination.Library)
+            return@composable
+        }
         RavelryDetailScreen(
             patternId = patternId,
             onBack = { navController.popBackStack() },
             onStartProject = { projectId ->
                 onLaunchCounter(projectId)
+            },
+            onUpgradeToPro = {
+                navController.navigateSingleTopTo(Screen.ProUpgrade.route)
             },
         )
     }
@@ -503,6 +581,11 @@ private fun NavGraphBuilder.libraryMyYarnRoute(navController: NavHostController)
             }
         val libraryViewModel: LibraryViewModel = hiltViewModel(parentEntry)
         val yarnCardViewModel: YarnCardViewModel = hiltViewModel(parentEntry)
+        ClearSelectionWhenLeavingRoute(
+            navController = navController,
+            route = Screen.MyYarn.route,
+            clearSelection = libraryViewModel::exitYarnSelectMode,
+        )
         val cards by libraryViewModel.yarnCards.collectAsStateWithLifecycle(initialValue = emptyList())
         val activeProjectNames by libraryViewModel.activeProjectNames.collectAsStateWithLifecycle(
             initialValue = emptyMap(),
@@ -510,6 +593,7 @@ private fun NavGraphBuilder.libraryMyYarnRoute(navController: NavHostController)
         val isYarnSelectMode by libraryViewModel.isYarnSelectMode.collectAsStateWithLifecycle()
         val selectedYarnIds by libraryViewModel.selectedYarnIds.collectAsStateWithLifecycle()
         val yarnFormState by yarnCardViewModel.formState.collectAsStateWithLifecycle()
+        val canScanYarnLabel = yarnCardViewModel.isPro
 
         MyYarnScreen(
             state =
@@ -522,29 +606,55 @@ private fun NavGraphBuilder.libraryMyYarnRoute(navController: NavHostController)
                     statusMessage = yarnFormState.scanError,
                 ),
             actions =
-                MyYarnActions(
-                    onCardClick = { cardId ->
-                        navController.navigateSingleTopTo(Screen.YarnCardDetail(cardId).route)
-                    },
-                    onEnterSelectMode = libraryViewModel::enterYarnSelectMode,
-                    onToggleSelection = libraryViewModel::toggleYarnSelection,
-                    onSelectAll = libraryViewModel::selectAllYarn,
-                    onDeleteSelected = libraryViewModel::deleteSelectedYarn,
-                    onExitSelectMode = libraryViewModel::exitYarnSelectMode,
-                    onScanLabel = {
-                        yarnCardViewModel.updateField { copy(scanError = null) }
-                    },
-                    onCreateScanPhotoUri = yarnCardViewModel::createScanPhotoUri,
-                    onScanPhoto = { uri ->
-                        yarnCardViewModel.scanWithGemini(uri) {
-                            navController.navigateSingleTopTo(Screen.LibraryYarnCardReview.route)
-                        }
-                    },
-                    onBack = { navController.popBackStack() },
+                myYarnActions(
+                    navController = navController,
+                    libraryViewModel = libraryViewModel,
+                    yarnCardViewModel = yarnCardViewModel,
+                    canScanYarnLabel = canScanYarnLabel,
                 ),
         )
     }
 }
+
+private fun myYarnActions(
+    navController: NavHostController,
+    libraryViewModel: LibraryViewModel,
+    yarnCardViewModel: YarnCardViewModel,
+    canScanYarnLabel: Boolean,
+) = MyYarnActions(
+    onCardClick = { cardId ->
+        navController.navigateSingleTopTo(Screen.YarnCardDetail(cardId).route)
+    },
+    onEnterSelectMode = libraryViewModel::enterYarnSelectMode,
+    onToggleSelection = libraryViewModel::toggleYarnSelection,
+    onSelectAll = libraryViewModel::selectAllYarn,
+    onDeleteSelected = libraryViewModel::deleteSelectedYarn,
+    onExitSelectMode = libraryViewModel::exitYarnSelectMode,
+    onScanLabel = {
+        if (canScanYarnLabel) {
+            yarnCardViewModel.updateField { copy(scanError = null) }
+        } else {
+            navController.navigateSingleTopTo(Screen.ProUpgrade.route)
+        }
+    },
+    onCreateScanPhotoUri =
+        if (canScanYarnLabel) {
+            yarnCardViewModel::createScanPhotoUri
+        } else {
+            null
+        },
+    onScanPhoto =
+        if (canScanYarnLabel) {
+            { uri ->
+                yarnCardViewModel.scanWithGemini(uri) {
+                    navController.navigateSingleTopTo(Screen.LibraryYarnCardReview.route)
+                }
+            }
+        } else {
+            null
+        },
+    onBack = { navController.popBackStack() },
+)
 
 private fun NavGraphBuilder.libraryYarnCardReviewRoute(navController: NavHostController) {
     composable(Screen.LibraryYarnCardReview.route) { backStackEntry ->
@@ -556,7 +666,10 @@ private fun NavGraphBuilder.libraryYarnCardReviewRoute(navController: NavHostCon
 
         YarnCardReviewScreen(
             viewModel = yarnCardViewModel,
-            onSaveAndUse = { _, _, _ -> navController.popBackStack() },
+            onSaveAndUse = { _, _, _ ->
+                yarnCardViewModel.clearFormState()
+                navController.popBackStack()
+            },
             onDiscard = { _, _, _ ->
                 yarnCardViewModel.discardScan()
                 navController.popBackStack()
@@ -575,23 +688,46 @@ private fun NavGraphBuilder.libraryYarnCardDetailRoute(
 ) {
     composable(
         Screen.YarnCardDetail.ROUTE,
-        arguments = listOf(navArgument("cardId") { type = NavType.LongType }),
+        arguments = listOf(navArgument(ARG_CARD_ID) { type = NavType.LongType }),
     ) { backStackEntry ->
+        val cardId = backStackEntry.positiveLongArgument(ARG_CARD_ID)
+        if (cardId == null) {
+            RouteArgumentFallback(navController, TopLevelDestination.Library)
+            return@composable
+        }
         val parentEntry =
             remember(backStackEntry) {
                 navController.getBackStackEntry(TopLevelDestination.Library.route)
             }
         val yarnCardViewModel: YarnCardViewModel = hiltViewModel(parentEntry)
-        val cardId = backStackEntry.arguments?.getLong("cardId") ?: return@composable
-        androidx.compose.runtime.LaunchedEffect(cardId) {
-            yarnCardViewModel.loadCardById(cardId)
+        var cardRouteReady by remember(cardId) { mutableStateOf(false) }
+        LaunchedEffect(cardId) {
+            cardRouteReady = false
+            yarnCardViewModel.loadCardForDetail(cardId) { loaded ->
+                if (!loaded) {
+                    navController.popBackStackOrNavigateToTopLevel(TopLevelDestination.Library)
+                } else {
+                    cardRouteReady = true
+                }
+            }
         }
+        if (!cardRouteReady) return@composable
         YarnCardReviewScreen(
             viewModel = yarnCardViewModel,
-            onSaveAndUse = { _, _, _ -> navController.popBackStack() },
-            onDiscard = { _, _, _ -> navController.popBackStack() },
-            onBack = { navController.popBackStack() },
+            onSaveAndUse = { _, _, _ ->
+                yarnCardViewModel.clearFormState()
+                navController.popBackStack()
+            },
+            onDiscard = { _, _, _ ->
+                yarnCardViewModel.clearFormState()
+                navController.popBackStack()
+            },
+            onBack = {
+                yarnCardViewModel.clearFormState()
+                navController.popBackStack()
+            },
             onOpenLinkedProject = { projectId ->
+                yarnCardViewModel.clearFormState()
                 onLaunchCounter(projectId)
             },
         )
@@ -605,6 +741,11 @@ private fun NavGraphBuilder.libraryAllPhotosRoute(navController: NavHostControll
                 navController.getBackStackEntry(TopLevelDestination.Library.route)
             }
         val libraryViewModel: LibraryViewModel = hiltViewModel(parentEntry)
+        ClearSelectionWhenLeavingRoute(
+            navController = navController,
+            route = Screen.AllPhotos.route,
+            clearSelection = libraryViewModel::exitPhotoSelectMode,
+        )
         val photos by libraryViewModel.allPhotos.collectAsStateWithLifecycle(initialValue = emptyList())
         val projects by libraryViewModel.allProjects.collectAsStateWithLifecycle(initialValue = emptyList())
         val isPhotoSelectMode by libraryViewModel.isPhotoSelectMode.collectAsStateWithLifecycle()
@@ -665,19 +806,44 @@ private fun NavHostController.navigateSingleTopTo(route: String) {
     }
 }
 
-private fun NavHostController.navigateToTopLevel(destination: TopLevelDestination) {
-    val currentTopLevelRoute =
-        currentBackStackEntry?.destination?.parent?.route
-            ?: currentBackStackEntry?.destination?.route
-    if (currentTopLevelRoute == destination.route || currentTopLevelRoute == destination.startRoute) {
-        return
-    }
-
-    navigate(destination.route) {
-        popUpTo(graph.findStartDestination().id) {
-            saveState = true
+@Composable
+private fun ClearSelectionWhenLeavingRoute(
+    navController: NavHostController,
+    route: String,
+    clearSelection: () -> Unit,
+) {
+    val currentClearSelection by rememberUpdatedState(clearSelection)
+    DisposableEffect(navController, route) {
+        val listener =
+            NavController.OnDestinationChangedListener { _, destination, _ ->
+                if (destination.route != route) {
+                    currentClearSelection()
+                }
+            }
+        navController.addOnDestinationChangedListener(listener)
+        onDispose {
+            navController.removeOnDestinationChangedListener(listener)
         }
-        launchSingleTop = true
-        restoreState = true
     }
+}
+
+private fun NavBackStackEntry.positiveLongArgument(name: String): Long? =
+    arguments?.getLong(name)?.toPositiveRouteIdOrNull()
+
+private fun NavBackStackEntry.positiveIntArgument(name: String): Int? =
+    arguments?.getInt(name)?.toPositiveRouteIdOrNull()
+
+@Composable
+private fun RouteArgumentFallback(
+    navController: NavHostController,
+    destination: TopLevelDestination,
+) {
+    LaunchedEffect(navController, destination) {
+        navController.popBackStackOrNavigateToTopLevel(destination)
+    }
+}
+
+private fun NavHostController.popBackStackOrNavigateToTopLevel(destination: TopLevelDestination) {
+    if (popBackStack()) return
+    navigateToTopLevel(destination)
 }

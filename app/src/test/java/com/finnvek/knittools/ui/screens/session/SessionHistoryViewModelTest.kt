@@ -5,6 +5,7 @@ import com.finnvek.knittools.domain.model.KnitSession
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.CounterRepository
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
@@ -64,6 +65,7 @@ class SessionHistoryViewModelTest {
     fun `pro user sees all sessions`() =
         runTest {
             val sessions = listOf(sessionAt(1), sessionAt(48), sessionAt(100))
+            coEvery { repository.getProject(projectId) } returns mockk()
             every { repository.getSessionsForProject(projectId) } returns flowOf(sessions)
             every { proManager.hasFeature(ProFeature.FULL_HISTORY) } returns true
 
@@ -78,6 +80,7 @@ class SessionHistoryViewModelTest {
         runTest {
             val recentSession = sessionAt(2)
             val oldSession = sessionAt(48)
+            coEvery { repository.getProject(projectId) } returns mockk()
             every { repository.getSessionsForProject(projectId) } returns flowOf(listOf(recentSession, oldSession))
             every { proManager.hasFeature(ProFeature.FULL_HISTORY) } returns false
 
@@ -92,6 +95,7 @@ class SessionHistoryViewModelTest {
     fun `free user with no recent sessions sees empty list`() =
         runTest {
             val oldSessions = listOf(sessionAt(48), sessionAt(72))
+            coEvery { repository.getProject(projectId) } returns mockk()
             every { repository.getSessionsForProject(projectId) } returns flowOf(oldSessions)
             every { proManager.hasFeature(ProFeature.FULL_HISTORY) } returns false
 
@@ -103,6 +107,7 @@ class SessionHistoryViewModelTest {
 
     @Test
     fun `isPro reflects proManager state`() {
+        coEvery { repository.getProject(projectId) } returns mockk()
         every { repository.getSessionsForProject(projectId) } returns flowOf(emptyList())
 
         every { proManager.hasFeature(ProFeature.FULL_HISTORY) } returns true
@@ -111,4 +116,16 @@ class SessionHistoryViewModelTest {
         every { proManager.hasFeature(ProFeature.FULL_HISTORY) } returns false
         assertFalse(createViewModel().isPro)
     }
+
+    @Test
+    fun `missing project marks history for fallback`() =
+        runTest {
+            coEvery { repository.getProject(projectId) } returns null
+            every { repository.getSessionsForProject(projectId) } returns flowOf(emptyList())
+            every { proManager.hasFeature(ProFeature.FULL_HISTORY) } returns true
+
+            val vm = createViewModel()
+
+            assertTrue(vm.projectMissing.value)
+        }
 }

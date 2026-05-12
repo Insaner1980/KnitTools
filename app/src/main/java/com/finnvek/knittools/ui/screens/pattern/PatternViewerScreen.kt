@@ -3,7 +3,6 @@ package com.finnvek.knittools.ui.screens.pattern
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.graphics.Bitmap
-import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -64,6 +63,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -84,13 +84,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.ai.CombinedInstructionResult
 import com.finnvek.knittools.data.storage.PdfPageRenderer
+import com.finnvek.knittools.di.AppDispatchers
 import com.finnvek.knittools.ui.screens.counter.CounterViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -235,7 +236,7 @@ fun LibraryPatternViewerScreen(
     patternName: String?,
     onBack: () -> Unit,
 ) {
-    var currentPage by rememberSaveable(patternUri) { mutableStateOf(0) }
+    var currentPage by rememberSaveable(patternUri) { mutableIntStateOf(0) }
     val renderState =
         rememberPatternRenderState(
             patternUri = patternUri,
@@ -308,8 +309,8 @@ private fun rememberPatternRenderState(
         rendererError = null
         if (patternUri == null) return@LaunchedEffect
         val createdRenderer =
-            withContext(Dispatchers.IO) {
-                runCatching { PdfPageRenderer(context, Uri.parse(patternUri)) }
+            withContext(AppDispatchers.IO) {
+                runCatching { PdfPageRenderer(context, patternUri.toUri()) }
             }
         createdRenderer
             .onSuccess { pdfRenderer ->
@@ -341,7 +342,7 @@ private fun rememberPatternRenderState(
                 return@produceState
             }
         value =
-            withContext(Dispatchers.IO) {
+            withContext(AppDispatchers.IO) {
                 runCatching {
                     activeRenderer.renderPage(currentPage, 1600)
                 }.getOrNull()

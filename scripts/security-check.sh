@@ -9,13 +9,14 @@ DEP_TEXT_REPORT="$REPORTS_DIR/security-deps.txt"
 DEP_RAW_REPORT="$REPORTS_DIR/security-deps-raw.txt"
 SEM_GREP_REMOTE_TIMEOUT_SECONDS="${SEM_GREP_REMOTE_TIMEOUT_SECONDS:-60}"
 SEM_GREP_USE_REMOTE_CONFIGS="${SEM_GREP_USE_REMOTE_CONFIGS:-false}"
-GRADLE_USER_HOME_DIR="$REPORTS_DIR/.gradle-home"
-DEPENDENCY_CHECK_DATA_DIR="$GRADLE_USER_HOME_DIR/dependency-check-data"
+GRADLE_USER_HOME_DIR="$ROOT_DIR/.gradle/security-check-home"
+DEPENDENCY_CHECK_DATA_DIR="$ROOT_DIR/.gradle/dependency-check-data"
 DEPENDENCY_CHECK_DB_FILE="$DEPENDENCY_CHECK_DATA_DIR/11.0/odc.mv.db"
-DEPENDENCY_CHECK_ENABLED="${DEPENDENCY_CHECK_ENABLED:-false}"
-DEPENDENCY_CHECK_REQUIRE_NVD_API_KEY="${DEPENDENCY_CHECK_REQUIRE_NVD_API_KEY:-true}"
+LEGACY_REPORTS_GRADLE_HOME="$REPORTS_DIR/.gradle-home"
+DEPENDENCY_CHECK_ENABLED="${DEPENDENCY_CHECK_ENABLED:-true}"
+DEPENDENCY_CHECK_REQUIRE_NVD_API_KEY="${DEPENDENCY_CHECK_REQUIRE_NVD_API_KEY:-false}"
 DEPENDENCY_CHECK_TIMEOUT_SECONDS="${DEPENDENCY_CHECK_TIMEOUT_SECONDS:-900}"
-DEPENDENCY_CHECK_AUTO_UPDATE="${DEPENDENCY_CHECK_AUTO_UPDATE:-false}"
+DEPENDENCY_CHECK_AUTO_UPDATE="${DEPENDENCY_CHECK_AUTO_UPDATE:-true}"
 DEPENDENCY_CHECK_TASK="${DEPENDENCY_CHECK_TASK:-:app:dependencyCheckAnalyze}"
 
 mkdir -p "$REPORTS_DIR"
@@ -98,7 +99,6 @@ run_semgrep() {
   local remote_status=0
 
   mkdir -p "$semgrep_home"
-  mkdir -p "$GRADLE_USER_HOME_DIR"
 
   printf '== Semgrep security scan ==\n' | tee "$SEM_GREP_TEXT_REPORT"
   if [[ "$SEM_GREP_USE_REMOTE_CONFIGS" == "true" ]]; then
@@ -169,8 +169,7 @@ run_dependency_check() {
   : > "$DEP_RAW_REPORT"
 
   if [[ "$DEPENDENCY_CHECK_ENABLED" != "true" ]]; then
-    printf 'Ohitetaan dependency-check oletuksena, jotta `sc` pysyy nopeana.\n' | tee -a "$DEP_TEXT_REPORT"
-    printf 'Aja tarvittaessa täysi riippuvuusskannaus: DEPENDENCY_CHECK_ENABLED=true sc\n' | tee -a "$DEP_TEXT_REPORT"
+    printf 'Ohitetaan dependency-check, koska DEPENDENCY_CHECK_ENABLED ei ole true.\n' | tee -a "$DEP_TEXT_REPORT"
     return 0
   fi
 
@@ -194,11 +193,17 @@ run_dependency_check() {
   fi
 
   local status=0
+  if [[ -d "$LEGACY_REPORTS_GRADLE_HOME" ]]; then
+    rm -rf "$LEGACY_REPORTS_GRADLE_HOME"
+  fi
+  mkdir -p "$GRADLE_USER_HOME_DIR"
+  mkdir -p "$DEPENDENCY_CHECK_DATA_DIR"
   set +e
   if [[ "$DEPENDENCY_CHECK_TIMEOUT_SECONDS" == "0" ]]; then
     (
       cd "$ROOT_DIR"
       GRADLE_USER_HOME="$GRADLE_USER_HOME_DIR" \
+        DEPENDENCY_CHECK_DATA_DIRECTORY="$DEPENDENCY_CHECK_DATA_DIR" \
         DEPENDENCY_CHECK_AUTO_UPDATE="$DEPENDENCY_CHECK_AUTO_UPDATE" \
         ./gradlew --no-daemon "$DEPENDENCY_CHECK_TASK" --no-configuration-cache --console=plain
     ) >"$DEP_RAW_REPORT" 2>&1
@@ -206,6 +211,7 @@ run_dependency_check() {
     (
       cd "$ROOT_DIR"
       GRADLE_USER_HOME="$GRADLE_USER_HOME_DIR" \
+        DEPENDENCY_CHECK_DATA_DIRECTORY="$DEPENDENCY_CHECK_DATA_DIR" \
         DEPENDENCY_CHECK_AUTO_UPDATE="$DEPENDENCY_CHECK_AUTO_UPDATE" \
         timeout "${DEPENDENCY_CHECK_TIMEOUT_SECONDS}s" ./gradlew --no-daemon "$DEPENDENCY_CHECK_TASK" --no-configuration-cache --console=plain
     ) >"$DEP_RAW_REPORT" 2>&1
@@ -234,6 +240,7 @@ run_dependency_check() {
       (
         cd "$ROOT_DIR"
         GRADLE_USER_HOME="$GRADLE_USER_HOME_DIR" \
+          DEPENDENCY_CHECK_DATA_DIRECTORY="$DEPENDENCY_CHECK_DATA_DIR" \
           DEPENDENCY_CHECK_AUTO_UPDATE="$DEPENDENCY_CHECK_AUTO_UPDATE" \
           ./gradlew --no-daemon "$DEPENDENCY_CHECK_TASK" --no-configuration-cache --console=plain
       ) >>"$DEP_RAW_REPORT" 2>&1
@@ -241,6 +248,7 @@ run_dependency_check() {
       (
         cd "$ROOT_DIR"
         GRADLE_USER_HOME="$GRADLE_USER_HOME_DIR" \
+          DEPENDENCY_CHECK_DATA_DIRECTORY="$DEPENDENCY_CHECK_DATA_DIR" \
           DEPENDENCY_CHECK_AUTO_UPDATE="$DEPENDENCY_CHECK_AUTO_UPDATE" \
           timeout "${DEPENDENCY_CHECK_TIMEOUT_SECONDS}s" ./gradlew --no-daemon "$DEPENDENCY_CHECK_TASK" --no-configuration-cache --console=plain
       ) >>"$DEP_RAW_REPORT" 2>&1

@@ -2,6 +2,7 @@ package com.finnvek.knittools.ui.screens.counter
 
 import android.content.Context
 import android.net.Uri
+import androidx.core.net.toUri
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
@@ -21,6 +22,7 @@ import com.finnvek.knittools.ai.live.VoiceLiveSession
 import com.finnvek.knittools.ai.nano.NanoAvailability
 import com.finnvek.knittools.data.datastore.PreferencesManager
 import com.finnvek.knittools.data.storage.PatternDocumentStorage
+import com.finnvek.knittools.di.IoDispatcher
 import com.finnvek.knittools.domain.calculator.CounterLogic
 import com.finnvek.knittools.domain.calculator.CounterState
 import com.finnvek.knittools.domain.calculator.ReminderLogic
@@ -53,8 +55,8 @@ import com.google.firebase.ai.type.FunctionCallPart
 import com.google.firebase.ai.type.FunctionResponsePart
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
@@ -136,6 +138,7 @@ class CounterViewModel
         private val networkStatusProvider: NetworkStatusProvider,
         private val savedStateHandle: SavedStateHandle,
         @param:ApplicationContext private val context: Context,
+        @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
     ) : ViewModel() {
         private val _uiState =
             MutableStateFlow(
@@ -169,6 +172,7 @@ class CounterViewModel
         private var counterCollectionJob: Job? = null
         private var photoCollectionJob: Job? = null
         private var allPhotosJob: Job? = null
+        private var summaryJob: Job? = null
         private var linkedYarnIdsCache: String = ""
         private var isForeground = true
         private var didRecoverPendingSession = false
@@ -246,7 +250,7 @@ class CounterViewModel
 
         private fun loadOrCreateProject() {
             viewModelScope.launch {
-                repository.getAllProjects().collect { list ->
+                repository.getActiveProjects().collect { list ->
                     if (list.isEmpty()) {
                         repository.createProject(context.getString(R.string.default_project_name))
                     } else {
@@ -441,6 +445,7 @@ class CounterViewModel
         }
 
         private suspend fun startProjectSession(project: CounterProject) {
+            clearSummary()
             sessionStartedAt = System.currentTimeMillis()
             sessionStartRow = project.count
             linkedYarnIdsCache = project.yarnCardIds
@@ -880,11 +885,11 @@ class CounterViewModel
             viewModelScope.launch {
                 // Kopioi PDF sisäiseen tallennustilaan — estää permission-ongelmat
                 val internalUri =
-                    withContext(Dispatchers.IO) {
+                    withContext(ioDispatcher) {
                         patternDocumentStorage.copyPdfToInternal(
                             context = context,
                             projectId = projectId,
-                            sourceUri = Uri.parse(uri),
+                            sourceUri = uri.toUri(),
                             fileName = sanitizedName,
                         )
                     } ?: uri
@@ -1075,57 +1080,70 @@ class CounterViewModel
         }
 
         fun selectProjectById(id: Long) {
+            selectProjectByIdForLaunch(id)
+        }
+
+        fun selectProjectByIdForLaunch(
+            id: Long,
+            onLoaded: (Boolean) -> Unit = {},
+        ) {
             viewModelScope.launch {
-                selectProjectByIdForLaunch(id)
+                onLoaded(loadProjectForLaunch(id))
             }
         }
 
-        suspend fun selectProjectByIdForLaunch(id: Long) {
-            repository.getProject(id)?.let {
-                persistCurrentSessionIfNeeded()
-                startProjectSession(it)
-            }
+        private suspend fun loadProjectForLaunch(id: Long): Boolean {
+            val project = repository.getProject(id) ?: return false
+            persistCurrentSessionIfNeeded()
+            startProjectSession(project)
+            return true
         }
 
         fun generateSummary() {
-            viewModelScope.launch {
-                val state = _uiState.value
-                state.projectId ?: return@launch
-                _uiState.update { it.copy(isSummaryLoading = true, projectSummary = null, summaryError = null) }
+            summaryJob?.cancel()
+            summaryJob =
+                viewModelScope.launch {
+                    val state = _uiState.value
+                    val requestProjectId = state.projectId ?: return@launch
+                    _uiState.update { it.copy(isSummaryLoading = true, projectSummary = null, summaryError = null) }
 
-                when (val result = counterSummaryGenerator.generate(state)) {
-                    is CounterSummaryResult.Success -> {
-                        _uiState.update {
-                            it.copy(projectSummary = result.summary, isSummaryLoading = false)
+                    val result = counterSummaryGenerator.generate(state)
+                    if (_uiState.value.projectId != requestProjectId) return@launch
+                    when (result) {
+                        is CounterSummaryResult.Success -> {
+                            _uiState.update {
+                                it.copy(projectSummary = result.summary, isSummaryLoading = false)
+                            }
+                            refreshAiAvailability()
                         }
-                        refreshAiAvailability()
-                    }
 
-                    is CounterSummaryResult.Fallback -> {
-                        _uiState.update {
-                            it.copy(
-                                projectSummary = result.summary,
-                                summaryError = result.error,
-                                isSummaryLoading = false,
-                            )
+                        is CounterSummaryResult.Fallback -> {
+                            _uiState.update {
+                                it.copy(
+                                    projectSummary = result.summary,
+                                    summaryError = result.error,
+                                    isSummaryLoading = false,
+                                )
+                            }
                         }
-                    }
 
-                    is CounterSummaryResult.Failure -> {
-                        _uiState.update {
-                            it.copy(
-                                projectSummary = null,
-                                summaryError = result.error,
-                                isSummaryLoading = false,
-                            )
+                        is CounterSummaryResult.Failure -> {
+                            _uiState.update {
+                                it.copy(
+                                    projectSummary = null,
+                                    summaryError = result.error,
+                                    isSummaryLoading = false,
+                                )
+                            }
                         }
                     }
                 }
-            }
         }
 
         fun clearSummary() {
-            _uiState.update { it.copy(projectSummary = null, summaryError = null) }
+            summaryJob?.cancel()
+            summaryJob = null
+            _uiState.update { it.copy(projectSummary = null, summaryError = null, isSummaryLoading = false) }
         }
 
         fun setSectionName(name: String?) {
@@ -2174,7 +2192,7 @@ class CounterViewModel
             clearPendingSessionState()
             super.onCleared()
             @Suppress("TooGenericExceptionCaught")
-            CoroutineScope(Dispatchers.IO + NonCancellable).launch {
+            CoroutineScope(ioDispatcher + NonCancellable).launch {
                 try {
                     voiceLiveSession.stop()
                     val projectId = state.projectId ?: return@launch

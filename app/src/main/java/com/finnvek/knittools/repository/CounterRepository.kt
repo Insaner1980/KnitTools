@@ -24,6 +24,7 @@ class CounterRepository
         private val sessionDao: SessionDao,
         private val photoStorage: ProgressPhotoStorage,
         @param:ApplicationContext private val context: Context,
+        private val yarnCardRepository: YarnCardRepository,
     ) {
         fun getAllProjects(): Flow<List<CounterProject>> =
             dao.getAllProjects().map { projects ->
@@ -179,13 +180,14 @@ class CounterRepository
         suspend fun reactivateProject(id: Long) = dao.reactivateProject(id, System.currentTimeMillis())
 
         suspend fun deleteProject(id: Long) {
+            yarnCardRepository.clearLinkedProject(id)
             photoStorage.deleteProjectPhotos(context, id)
             dao.delete(id) // CASCADE poistaa liittyvät rivit muista tauluista
         }
 
         suspend fun getProjectCount(): Int = dao.getProjectCount()
 
-        suspend fun getFirstProject(): CounterProject? = dao.getFirstProject()?.toDomain()
+        suspend fun getLatestActiveProject(): CounterProject? = dao.getLatestActiveProject()?.toDomain()
 
         suspend fun deleteHistoryBefore(
             projectId: Long,

@@ -76,6 +76,7 @@ private fun buildRepository(dao: FakeCounterProjectDao): CounterRepository =
         sessionDao = StubSessionDao(),
         photoStorage = mockk(relaxed = true),
         context = mockk<Context>(relaxed = true),
+        yarnCardRepository = mockk(relaxed = true),
     )
 
 private class FakeCounterProjectDao(
@@ -114,6 +115,8 @@ private class FakeCounterProjectDao(
     // --- muut DAO-metodit (ei käytetä näissä testeissä) ---
 
     override fun getAllProjects(): Flow<List<CounterProjectEntity>> = flowOf(emptyList())
+
+    override suspend fun getAllProjectsOnce(): List<CounterProjectEntity> = emptyList()
 
     override suspend fun getProject(id: Long): CounterProjectEntity? = null
 
@@ -218,6 +221,13 @@ private class FakeCounterProjectDao(
         updatedAt: Long,
     ) = Unit
 
+    override suspend fun clearLinkedPatternIds(
+        patternIds: List<Long>,
+        updatedAt: Long,
+    ) = Unit
+
+    override suspend fun countProjectsUsingPatternUri(patternUri: String): Int = 0
+
     override suspend fun archiveProject(
         id: Long,
         totalRows: Int,
@@ -234,7 +244,7 @@ private class FakeCounterProjectDao(
 
     override suspend fun getProjectCount(): Int = 0
 
-    override suspend fun getFirstProject(): CounterProjectEntity? = null
+    override suspend fun getLatestActiveProject(): CounterProjectEntity? = null
 
     override suspend fun insertHistory(entry: CounterHistoryEntity) = Unit
 

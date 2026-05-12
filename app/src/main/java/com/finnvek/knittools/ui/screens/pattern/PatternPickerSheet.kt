@@ -36,10 +36,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
+import androidx.core.net.toUri
 import com.finnvek.knittools.R
 import com.finnvek.knittools.data.storage.PatternDocumentStorage
+import com.finnvek.knittools.di.AppDispatchers
 import com.finnvek.knittools.domain.model.SavedPattern
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -240,11 +241,11 @@ private suspend fun handleCaptureResult(
     onDocumentSelected: (String, String) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val pendingUri = pendingImageUriString?.let(Uri::parse)
+    val pendingUri = pendingImageUriString?.toUri()
     if (!success || pendingUri == null || projectId == null) return
     val fileName = "pattern-scan-${System.currentTimeMillis()}.pdf"
     val converted =
-        withContext(Dispatchers.IO) {
+        withContext(AppDispatchers.IO) {
             patternStorage.convertImageToPdf(context, projectId, pendingUri, fileName)
         }
     if (converted != null) {

@@ -6,9 +6,10 @@ import com.finnvek.knittools.data.local.ProgressPhotoDao
 import com.finnvek.knittools.data.local.ProgressPhotoEntity
 import com.finnvek.knittools.data.local.toDomain
 import com.finnvek.knittools.data.storage.ProgressPhotoStorage
+import com.finnvek.knittools.di.IoDispatcher
 import com.finnvek.knittools.domain.model.ProgressPhoto
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
@@ -22,6 +23,7 @@ class ProgressPhotoRepository
         private val dao: ProgressPhotoDao,
         private val storage: ProgressPhotoStorage,
         @param:ApplicationContext private val context: Context,
+        @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
     ) {
         fun getAllPhotos(): Flow<List<ProgressPhoto>> =
             dao.getAllPhotos().map { photos ->
@@ -44,13 +46,23 @@ class ProgressPhotoRepository
             rowNumber: Int,
             note: String? = null,
         ): Long =
-            withContext(Dispatchers.IO) {
+            withContext(ioDispatcher) {
                 val (file, _) = storage.createPhotoFile(context, projectId)
-                storage.compressAndSave(context, sourceUri, file)
+                val targetUri = Uri.fromFile(file).toString()
+                val saved =
+                    try {
+                        storage.compressAndSave(context, sourceUri, file)
+                    } finally {
+                        storage.deleteTemporarySource(context, sourceUri)
+                    }
+                if (!saved) {
+                    storage.deletePhoto(targetUri)
+                    return@withContext 0L
+                }
                 dao.insert(
                     ProgressPhotoEntity(
                         projectId = projectId,
-                        photoUri = Uri.fromFile(file).toString(),
+                        photoUri = targetUri,
                         rowNumber = rowNumber,
                         note = note?.take(100),
                     ),
@@ -65,7 +77,7 @@ class ProgressPhotoRepository
         }
 
         suspend fun deletePhoto(photo: ProgressPhoto) {
-            withContext(Dispatchers.IO) {
+            withContext(ioDispatcher) {
                 storage.deletePhoto(photo.photoUri)
             }
             dao.delete(photo.id)
@@ -73,10 +85,10 @@ class ProgressPhotoRepository
 
         suspend fun deletePhotos(ids: List<Long>) {
             val photos = dao.getByIds(ids)
-            dao.deleteByIds(ids)
-            withContext(Dispatchers.IO) {
+            withContext(ioDispatcher) {
                 photos.forEach { storage.deletePhoto(it.photoUri) }
             }
+            dao.deleteByIds(ids)
         }
 
         fun deleteAllPhotosForProject(projectId: Long) {

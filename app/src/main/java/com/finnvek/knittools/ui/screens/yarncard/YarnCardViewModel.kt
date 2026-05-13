@@ -113,11 +113,6 @@ class YarnCardViewModel
             projectId: Long,
         ) {
             viewModelScope.launch {
-                val project = counterRepository.getProject(projectId) ?: return@launch
-                val currentIds = project.yarnCardIds.split(",").mapNotNull { it.trim().toLongOrNull() }
-                if (cardId in currentIds) return@launch
-                val newIds = (currentIds + cardId).joinToString(",")
-                counterRepository.updateProjectYarnCardIds(projectId, newIds)
                 repository.updateLinkedProjectId(cardId, projectId)
             }
         }
@@ -327,30 +322,6 @@ class YarnCardViewModel
             if (previousProjectId == projectId) return
 
             viewModelScope.launch {
-                previousProjectId?.let { oldProjectId ->
-                    counterRepository.getProject(oldProjectId)?.let { project ->
-                        val remainingIds =
-                            project.yarnCardIds
-                                .split(",")
-                                .mapNotNull { it.trim().toLongOrNull() }
-                                .filter { it != cardId }
-                                .joinToString(",")
-                        counterRepository.updateProjectYarnCardIds(oldProjectId, remainingIds)
-                    }
-                }
-
-                projectId?.let { newProjectId ->
-                    counterRepository.getProject(newProjectId)?.let { project ->
-                        val currentIds = project.yarnCardIds.split(",").mapNotNull { it.trim().toLongOrNull() }
-                        if (cardId !in currentIds) {
-                            counterRepository.updateProjectYarnCardIds(
-                                newProjectId,
-                                (currentIds + cardId).joinToString(","),
-                            )
-                        }
-                    }
-                }
-
                 repository.updateLinkedProjectId(cardId, projectId)
                 _formState.update { it.copy(linkedProjectId = projectId) }
             }

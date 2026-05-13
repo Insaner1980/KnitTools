@@ -4,11 +4,13 @@ import android.content.Context
 import com.finnvek.knittools.data.local.CounterHistoryEntity
 import com.finnvek.knittools.data.local.CounterProjectDao
 import com.finnvek.knittools.data.local.CounterProjectEntity
+import com.finnvek.knittools.data.local.ImmediateDatabaseTransactionRunner
 import com.finnvek.knittools.data.local.SessionDao
 import com.finnvek.knittools.data.local.SessionEntity
 import com.finnvek.knittools.data.local.SessionInsightsTotals
 import com.finnvek.knittools.data.local.SessionProjectSummary
 import io.mockk.mockk
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -77,6 +79,10 @@ private fun buildRepository(dao: FakeCounterProjectDao): CounterRepository =
         photoStorage = mockk(relaxed = true),
         context = mockk<Context>(relaxed = true),
         yarnCardRepository = mockk(relaxed = true),
+        savedPatternRepository = mockk(relaxed = true),
+        patternAnnotationRepository = mockk(relaxed = true),
+        transactionRunner = ImmediateDatabaseTransactionRunner,
+        ioDispatcher = Dispatchers.Unconfined,
     )
 
 private class FakeCounterProjectDao(

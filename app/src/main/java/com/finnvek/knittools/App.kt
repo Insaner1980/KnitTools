@@ -8,16 +8,11 @@ import com.google.firebase.FirebaseApp
 import com.google.firebase.appcheck.FirebaseAppCheck
 import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory
 import dagger.hilt.android.HiltAndroidApp
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 
 @HiltAndroidApp
 class App : Application() {
-    private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-
     @Inject
     lateinit var preferencesManager: dagger.Lazy<PreferencesManager>
 
@@ -30,7 +25,7 @@ class App : Application() {
     override fun onCreate() {
         super.onCreate()
         initializeFirebaseAppCheck()
-        appScope.launch {
+        runBlocking {
             preferencesManager.get().applyStoredAppLanguage()
         }
         billingManager.get().initialize()

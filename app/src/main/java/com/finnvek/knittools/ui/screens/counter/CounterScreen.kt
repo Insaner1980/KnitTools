@@ -142,6 +142,7 @@ fun CounterScreen(
     var previousOverlayProjectId by rememberSaveable { mutableStateOf<Long?>(null) }
     val savedYarnCards by viewModel.savedYarnCards.collectAsStateWithLifecycle()
     val savedPatterns by viewModel.savedPatterns.collectAsStateWithLifecycle()
+
     fun hideProjectScopedOverlays() {
         showResetDialog = false
         showProjectActionsSheet = false
@@ -339,20 +340,19 @@ fun CounterScreen(
         actions = dialogActions,
     )
 
-    if (showTargetDialog) {
-        TargetRowsDialog(
-            currentTarget = state.targetRows,
-            onDismiss = { showTargetDialog = false },
-            onConfirm = { target ->
-                viewModel.setTargetRows(target)
-                showTargetDialog = false
-            },
-            onRemove = {
-                viewModel.clearTarget()
-                showTargetDialog = false
-            },
-        )
-    }
+    CounterTargetRowsDialogHost(
+        showDialog = showTargetDialog,
+        currentTarget = state.targetRows,
+        onDismiss = { showTargetDialog = false },
+        onConfirm = { target ->
+            viewModel.setTargetRows(target)
+            showTargetDialog = false
+        },
+        onRemove = {
+            viewModel.clearTarget()
+            showTargetDialog = false
+        },
+    )
 
     CounterScreenSheets(
         state =
@@ -377,77 +377,75 @@ fun CounterScreen(
         actions = sheetActions,
     )
 
-    if (showProjectActionsSheet) {
-        ProjectActionsBottomSheet(
-            state =
-                ProjectActionsSheetState(
-                    linkedYarnCount = state.linkedYarns.size,
-                    projectCounterCount = state.projectCounters.size,
-                    stitchTrackingEnabled = state.stitchTrackingEnabled,
-                    isPro = state.isPro,
-                    isAiAvailable = state.isAiAvailable,
-                ),
-            callbacks =
-                ProjectActionsSheetCallbacks(
-                    onDismiss = { showProjectActionsSheet = false },
-                    onOpenYarnManagement = {
-                        showProjectActionsSheet = false
-                        showYarnManagementSheet = true
-                    },
-                    onOpenNotes = {
-                        showProjectActionsSheet = false
-                        state.projectId?.let(onNotesEditor)
-                    },
-                    onOpenSummary = {
-                        showProjectActionsSheet = false
-                        viewModel.generateSummary()
-                        showSummarySheet = true
-                    },
-                    onOpenPhotos = {
-                        showProjectActionsSheet = false
-                        requestPhotoGallery()
-                    },
-                    onOpenCountersList = {
-                        showProjectActionsSheet = false
-                        showCountersListSheet = true
-                    },
-                    onOpenAddCounter = {
-                        showProjectActionsSheet = false
-                        requestAddCounter()
-                    },
-                    onToggleStitchTracking = viewModel::setStitchTrackingEnabled,
-                    onOpenSessionHistory = {
-                        showProjectActionsSheet = false
-                        state.projectId?.let(onSessionHistory)
-                    },
-                    onStartRename = {
-                        showProjectActionsSheet = false
-                        startRename()
-                    },
-                    onShowResetDialog = {
-                        showProjectActionsSheet = false
-                        showResetDialog = true
-                    },
-                    onShowCompleteDialog = {
-                        showProjectActionsSheet = false
-                        showCompleteDialog = true
-                    },
-                    onShowDeleteDialog = {
-                        showProjectActionsSheet = false
-                        showDeleteDialog = true
-                    },
-                ),
-        )
-    }
+    CounterProjectActionsSheetHost(
+        showSheet = showProjectActionsSheet,
+        state =
+            ProjectActionsSheetState(
+                linkedYarnCount = state.linkedYarns.size,
+                projectCounterCount = state.projectCounters.size,
+                stitchTrackingEnabled = state.stitchTrackingEnabled,
+                isPro = state.isPro,
+                isAiAvailable = state.isAiAvailable,
+            ),
+        callbacks =
+            ProjectActionsSheetCallbacks(
+                onDismiss = { showProjectActionsSheet = false },
+                onOpenYarnManagement = {
+                    showProjectActionsSheet = false
+                    showYarnManagementSheet = true
+                },
+                onOpenNotes = {
+                    showProjectActionsSheet = false
+                    state.projectId?.let(onNotesEditor)
+                },
+                onOpenSummary = {
+                    showProjectActionsSheet = false
+                    viewModel.generateSummary()
+                    showSummarySheet = true
+                },
+                onOpenPhotos = {
+                    showProjectActionsSheet = false
+                    requestPhotoGallery()
+                },
+                onOpenCountersList = {
+                    showProjectActionsSheet = false
+                    showCountersListSheet = true
+                },
+                onOpenAddCounter = {
+                    showProjectActionsSheet = false
+                    requestAddCounter()
+                },
+                onToggleStitchTracking = viewModel::setStitchTrackingEnabled,
+                onOpenSessionHistory = {
+                    showProjectActionsSheet = false
+                    state.projectId?.let(onSessionHistory)
+                },
+                onStartRename = {
+                    showProjectActionsSheet = false
+                    startRename()
+                },
+                onShowResetDialog = {
+                    showProjectActionsSheet = false
+                    showResetDialog = true
+                },
+                onShowCompleteDialog = {
+                    showProjectActionsSheet = false
+                    showCompleteDialog = true
+                },
+                onShowDeleteDialog = {
+                    showProjectActionsSheet = false
+                    showDeleteDialog = true
+                },
+            ),
+    )
 
-    if (showCountersListSheet) {
-        CountersListSheet(
-            projectCounters = state.projectCounters,
-            mainRowCount = state.counter.count,
-            actions = projectCountersActions,
-            onDismiss = { showCountersListSheet = false },
-        )
-    }
+    CounterCountersListSheetHost(
+        showSheet = showCountersListSheet,
+        projectCounters = state.projectCounters,
+        mainRowCount = state.counter.count,
+        actions = projectCountersActions,
+        onDismiss = { showCountersListSheet = false },
+    )
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -475,6 +473,56 @@ fun CounterScreen(
             isEditingName = isEditingName,
             projectHeaderActions = projectHeaderActions,
             actions = mainContentActions,
+        )
+    }
+}
+
+@Composable
+private fun CounterTargetRowsDialogHost(
+    showDialog: Boolean,
+    currentTarget: Int?,
+    onDismiss: () -> Unit,
+    onConfirm: (Int?) -> Unit,
+    onRemove: () -> Unit,
+) {
+    if (showDialog) {
+        TargetRowsDialog(
+            currentTarget = currentTarget,
+            onDismiss = onDismiss,
+            onConfirm = onConfirm,
+            onRemove = onRemove,
+        )
+    }
+}
+
+@Composable
+private fun CounterProjectActionsSheetHost(
+    showSheet: Boolean,
+    state: ProjectActionsSheetState,
+    callbacks: ProjectActionsSheetCallbacks,
+) {
+    if (showSheet) {
+        ProjectActionsBottomSheet(
+            state = state,
+            callbacks = callbacks,
+        )
+    }
+}
+
+@Composable
+private fun CounterCountersListSheetHost(
+    showSheet: Boolean,
+    projectCounters: List<ProjectCounter>,
+    mainRowCount: Int,
+    actions: ProjectCountersSectionActions,
+    onDismiss: () -> Unit,
+) {
+    if (showSheet) {
+        CountersListSheet(
+            projectCounters = projectCounters,
+            mainRowCount = mainRowCount,
+            actions = actions,
+            onDismiss = onDismiss,
         )
     }
 }

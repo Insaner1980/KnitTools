@@ -40,6 +40,14 @@ class ProgressPhotoRepository
 
         fun getPhotoCount(projectId: Long): Flow<Int> = dao.getPhotoCount(projectId)
 
+        suspend fun getPhotoCountsByProjectIds(projectIds: List<Long>): Map<Long, Int> {
+            val distinctProjectIds = projectIds.distinct()
+            if (distinctProjectIds.isEmpty()) return emptyMap()
+            return dao
+                .getPhotoCountsByProjectIds(distinctProjectIds)
+                .associate { it.projectId to it.count }
+        }
+
         suspend fun savePhoto(
             projectId: Long,
             sourceUri: Uri,
@@ -59,14 +67,18 @@ class ProgressPhotoRepository
                     storage.deletePhoto(targetUri)
                     return@withContext 0L
                 }
-                dao.insert(
-                    ProgressPhotoEntity(
-                        projectId = projectId,
-                        photoUri = targetUri,
-                        rowNumber = rowNumber,
-                        note = note?.take(100),
-                    ),
-                )
+                runCatching {
+                    dao.insert(
+                        ProgressPhotoEntity(
+                            projectId = projectId,
+                            photoUri = targetUri,
+                            rowNumber = rowNumber,
+                            note = note?.take(100),
+                        ),
+                    )
+                }.onFailure {
+                    storage.deletePhoto(targetUri)
+                }.getOrThrow()
             }
 
         suspend fun updatePhotoNote(
@@ -77,18 +89,18 @@ class ProgressPhotoRepository
         }
 
         suspend fun deletePhoto(photo: ProgressPhoto) {
+            dao.delete(photo.id)
             withContext(ioDispatcher) {
                 storage.deletePhoto(photo.photoUri)
             }
-            dao.delete(photo.id)
         }
 
         suspend fun deletePhotos(ids: List<Long>) {
             val photos = dao.getByIds(ids)
+            dao.deleteByIds(ids)
             withContext(ioDispatcher) {
                 photos.forEach { storage.deletePhoto(it.photoUri) }
             }
-            dao.deleteByIds(ids)
         }
 
         fun deleteAllPhotosForProject(projectId: Long) {

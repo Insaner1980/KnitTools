@@ -21,6 +21,7 @@ import com.finnvek.knittools.ai.live.VoiceLiveQuotaManager
 import com.finnvek.knittools.ai.live.VoiceLiveSession
 import com.finnvek.knittools.ai.nano.NanoAvailability
 import com.finnvek.knittools.data.datastore.PreferencesManager
+import com.finnvek.knittools.data.storage.AppFileStorage
 import com.finnvek.knittools.data.storage.PatternDocumentStorage
 import com.finnvek.knittools.di.IoDispatcher
 import com.finnvek.knittools.domain.calculator.CounterLogic
@@ -42,7 +43,6 @@ import com.finnvek.knittools.pro.InAppReviewManager
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.CounterRepository
-import com.finnvek.knittools.repository.PatternAnnotationRepository
 import com.finnvek.knittools.repository.ProgressPhotoRepository
 import com.finnvek.knittools.repository.ProjectCounterRepository
 import com.finnvek.knittools.repository.ReminderRepository
@@ -123,7 +123,6 @@ class CounterViewModel
         private val reminderRepository: ReminderRepository,
         private val projectCounterRepository: ProjectCounterRepository,
         private val photoRepository: ProgressPhotoRepository,
-        private val patternAnnotationRepository: PatternAnnotationRepository,
         private val preferencesManager: PreferencesManager,
         private val proManager: ProManager,
         private val yarnCardRepository: YarnCardRepository,
@@ -322,33 +321,12 @@ class CounterViewModel
         fun linkYarnCard(cardId: Long) {
             viewModelScope.launch {
                 val id = _uiState.value.projectId ?: return@launch
-                val project = repository.getProject(id) ?: return@launch
-                val currentIds = project.yarnCardIds.split(",").mapNotNull { it.trim().toLongOrNull() }
-                if (cardId in currentIds) return@launch
-                yarnCardRepository.getCard(cardId)?.linkedProjectId?.takeIf { it != id }?.let { previousProjectId ->
-                    repository.getProject(previousProjectId)?.let { previousProject ->
-                        val previousIds =
-                            previousProject.yarnCardIds
-                                .split(",")
-                                .mapNotNull { it.trim().toLongOrNull() }
-                                .filter { it != cardId }
-                                .joinToString(",")
-                        repository.updateProjectYarnCardIds(previousProjectId, previousIds)
-                    }
-                }
-                val newIds = (currentIds + cardId).joinToString(",")
-                repository.updateProjectYarnCardIds(id, newIds)
                 yarnCardRepository.updateLinkedProjectId(cardId, id)
             }
         }
 
         fun unlinkYarnCard(cardId: Long) {
             viewModelScope.launch {
-                val id = _uiState.value.projectId ?: return@launch
-                val project = repository.getProject(id) ?: return@launch
-                val currentIds = project.yarnCardIds.split(",").mapNotNull { it.trim().toLongOrNull() }
-                val newIds = currentIds.filter { it != cardId }.joinToString(",")
-                repository.updateProjectYarnCardIds(id, newIds)
                 yarnCardRepository.updateLinkedProjectId(cardId, null)
             }
         }
@@ -893,6 +871,7 @@ class CounterViewModel
                             fileName = sanitizedName,
                         )
                     } ?: uri
+                val copiedUri = internalUri.takeIf { it != uri }
 
                 _uiState.update {
                     it.copy(
@@ -902,23 +881,22 @@ class CounterViewModel
                         patternRowMapping = null,
                     )
                 }
-                persistImportedPatternIfNeeded(internalUri, sanitizedName)
-                patternAnnotationRepository.clearProject(projectId)
-                repository.updatePattern(
-                    id = projectId,
-                    patternUri = internalUri,
-                    patternName = sanitizedName,
-                    currentPatternPage = 0,
-                    patternRowMapping = null,
-                )
+                runCatching {
+                    repository.attachPattern(
+                        id = projectId,
+                        patternUri = internalUri,
+                        patternName = sanitizedName,
+                        currentPatternPage = 0,
+                        patternRowMapping = null,
+                    )
+                }.onFailure {
+                    copiedUri?.let { failedUri ->
+                        withContext(ioDispatcher) {
+                            AppFileStorage.deleteIfAppOwned(context, failedUri)
+                        }
+                    }
+                }.getOrThrow()
             }
-        }
-
-        private suspend fun persistImportedPatternIfNeeded(
-            uri: String,
-            name: String,
-        ) {
-            savedPatternRepository.saveImportedPatternIfMissing(uri, name)
         }
 
         fun detachPattern() {
@@ -932,14 +910,7 @@ class CounterViewModel
                 )
             }
             viewModelScope.launch {
-                patternAnnotationRepository.clearProject(projectId)
-                repository.updatePattern(
-                    id = projectId,
-                    patternUri = null,
-                    patternName = null,
-                    currentPatternPage = 0,
-                    patternRowMapping = null,
-                )
+                repository.detachPattern(projectId)
             }
         }
 
@@ -1355,7 +1326,7 @@ class CounterViewModel
 
                 // Kiintiötarkistus
                 if (!aiQuotaManager.hasVoiceQuota()) {
-                    _voiceResponse.tryEmit(context.getString(R.string.voice_quota_daily_exhausted))
+                    _voiceResponse.tryEmit(context.getString(R.string.voice_quota_monthly_exhausted))
                     return@launch
                 }
 

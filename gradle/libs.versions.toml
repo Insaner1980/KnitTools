@@ -12,6 +12,7 @@ coroutines = "1.10.2"
 datastore = "1.2.1"
 coreKtx = "1.18.0"
 activityCompose = "1.12.4"
+appcompat = "1.7.1"
 junit = "4.13.2"
 orgJson = "20240303"
 mockk = "1.14.9"
@@ -86,6 +87,7 @@ datastore-preferences = { group = "androidx.datastore", name = "datastore-prefer
 # Core
 core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
+appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 
 # Serialization (required by Room 2.8.x)
 kotlinx-serialization-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-core", version.ref = "kotlinxSerialization" }

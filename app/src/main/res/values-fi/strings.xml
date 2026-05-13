@@ -758,7 +758,7 @@
     <string name="voice_commands">Äänikomennot</string>
     <string name="voice_mode_timeout">Äänitila päättyi toimettomuuden vuoksi</string>
     <string name="voice_offline_mode">Offline-tila, vain peruskomennot käytössä</string>
-    <string name="voice_quota_daily_exhausted">AI-komennot ovat tauolla tältä päivältä, mutta peruskomennot toimivat edelleen</string>
+    <string name="voice_quota_monthly_exhausted">AI-komentojen kuukausiraja on täynnä, mutta peruskomennot toimivat edelleen</string>
     <string name="voice_command_unknown">En ymmärtänyt</string>
     <string name="voice_note_saved">Muistiinpano tallennettu</string>
     <string name="voice_counter_reset">Laskuri nollattu</string>

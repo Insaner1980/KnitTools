@@ -4,15 +4,19 @@ import android.content.Context
 import androidx.core.net.toUri
 import com.finnvek.knittools.R
 import com.finnvek.knittools.data.local.CounterProjectDao
+import com.finnvek.knittools.data.local.DatabaseTransactionRunner
 import com.finnvek.knittools.data.local.SavedPatternDao
 import com.finnvek.knittools.data.local.SavedPatternEntity
 import com.finnvek.knittools.data.local.toDomain
 import com.finnvek.knittools.data.local.toEntity
 import com.finnvek.knittools.data.storage.AppFileStorage
+import com.finnvek.knittools.di.IoDispatcher
 import com.finnvek.knittools.domain.model.SavedPattern
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -23,6 +27,8 @@ class SavedPatternRepository
         private val dao: SavedPatternDao,
         @param:ApplicationContext private val context: Context,
         private val counterProjectDao: CounterProjectDao,
+        private val transactionRunner: DatabaseTransactionRunner,
+        @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
     ) {
         fun getAll(): Flow<List<SavedPattern>> = dao.getAll().map { patterns -> patterns.map { it.toDomain() } }
 
@@ -59,8 +65,10 @@ class SavedPatternRepository
         suspend fun deleteByIds(ids: List<Long>) {
             if (ids.isEmpty()) return
             val patterns = dao.getByIds(ids)
-            counterProjectDao.clearLinkedPatternIds(ids, System.currentTimeMillis())
-            dao.deleteByIds(ids)
+            transactionRunner.run {
+                counterProjectDao.clearLinkedPatternIds(ids, System.currentTimeMillis())
+                dao.deleteByIds(ids)
+            }
             deleteUnusedLocalPatternFiles(patterns)
         }
 
@@ -76,7 +84,9 @@ class SavedPatternRepository
                     val savedPatternStillReferencesFile = dao.getByPatternUrl(patternUrl) != null
                     val projectStillReferencesFile = counterProjectDao.countProjectsUsingPatternUri(patternUrl) > 0
                     if (!savedPatternStillReferencesFile && !projectStillReferencesFile) {
-                        AppFileStorage.deleteUri(context, uri)
+                        withContext(ioDispatcher) {
+                            AppFileStorage.deleteUri(context, uri)
+                        }
                     }
                 }
         }

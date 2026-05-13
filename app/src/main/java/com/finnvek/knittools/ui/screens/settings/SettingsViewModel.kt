@@ -48,8 +48,6 @@ class SettingsViewModel
 
         private val _messages = MutableSharedFlow<Int>()
         val messages: SharedFlow<Int> = _messages.asSharedFlow()
-        private val _languageChanged = MutableSharedFlow<Unit>()
-        val languageChanged: SharedFlow<Unit> = _languageChanged.asSharedFlow()
 
         fun setThemeMode(mode: ThemeMode) {
             viewModelScope.launch { preferencesManager.setThemeMode(mode) }
@@ -58,7 +56,6 @@ class SettingsViewModel
         fun setAppLanguage(language: AppLanguage) {
             viewModelScope.launch {
                 preferencesManager.setAppLanguage(language)
-                _languageChanged.emit(Unit)
             }
         }
 

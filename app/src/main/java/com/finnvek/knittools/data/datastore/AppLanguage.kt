@@ -33,5 +33,20 @@ enum class AppLanguage(
 
     companion object {
         fun fromValue(value: String?): AppLanguage = entries.firstOrNull { it.value == value } ?: SYSTEM
+
+        fun fromLanguageTag(languageTag: String?): AppLanguage {
+            val primaryTag =
+                languageTag
+                    ?.split(',')
+                    ?.firstOrNull()
+                    ?.trim()
+                    .orEmpty()
+            if (primaryTag.isBlank()) return SYSTEM
+
+            entries.firstOrNull { it.languageTag == primaryTag }?.let { return it }
+
+            val language = Locale.forLanguageTag(primaryTag).language
+            return entries.firstOrNull { it.languageTag == language } ?: SYSTEM
+        }
     }
 }

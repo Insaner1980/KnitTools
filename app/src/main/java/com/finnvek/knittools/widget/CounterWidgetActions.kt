@@ -42,8 +42,9 @@ class CounterWidgetActions : BroadcastReceiver() {
                 }
 
                 val project =
-                    repository.getProject(widgetData.projectId) ?: run {
-                        Log.w(TAG, "Widget action ignored — target not found")
+                    repository.getActiveWidgetProject(widgetData) ?: run {
+                        Log.w(TAG, "Widget action ignored — target not active")
+                        CounterWidgetState.syncAll(context, repository.resolveWidgetDisplayData(context, emptyList()))
                         return@launch
                     }
 
@@ -66,8 +67,9 @@ class CounterWidgetActions : BroadcastReceiver() {
                 Log.d(TAG, "Applying widget action: $action")
                 repository.adjustProjectCount(project.id, delta)
                 val updatedProject =
-                    repository.getProject(project.id) ?: run {
-                        Log.e(TAG, "Widget action target disappeared after update")
+                    repository.getActiveWidgetProject(project.toWidgetData()) ?: run {
+                        Log.e(TAG, "Widget action target disappeared or became inactive after update")
+                        CounterWidgetState.syncAll(context, repository.resolveWidgetDisplayData(context, emptyList()))
                         return@launch
                     }
                 Log.d(TAG, "Widget action applied successfully")

@@ -2,17 +2,21 @@ package com.finnvek.knittools.repository
 
 import android.content.Context
 import com.finnvek.knittools.data.local.CounterProjectDao
+import com.finnvek.knittools.data.local.DatabaseTransactionRunner
 import com.finnvek.knittools.data.local.SessionDao
 import com.finnvek.knittools.data.local.toDomain
 import com.finnvek.knittools.data.local.toEntity
 import com.finnvek.knittools.data.storage.ProgressPhotoStorage
+import com.finnvek.knittools.di.IoDispatcher
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.KnitSession
 import com.finnvek.knittools.domain.model.SessionInsightsSummary
 import com.finnvek.knittools.domain.model.SessionProjectTimeSummary
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -25,6 +29,10 @@ class CounterRepository
         private val photoStorage: ProgressPhotoStorage,
         @param:ApplicationContext private val context: Context,
         private val yarnCardRepository: YarnCardRepository,
+        private val savedPatternRepository: SavedPatternRepository,
+        private val patternAnnotationRepository: PatternAnnotationRepository,
+        private val transactionRunner: DatabaseTransactionRunner,
+        @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
     ) {
         fun getAllProjects(): Flow<List<CounterProject>> =
             dao.getAllProjects().map { projects ->
@@ -151,6 +159,39 @@ class CounterRepository
             updatedAt = System.currentTimeMillis(),
         )
 
+        suspend fun attachPattern(
+            id: Long,
+            patternUri: String,
+            patternName: String,
+            currentPatternPage: Int,
+            patternRowMapping: String?,
+        ) {
+            transactionRunner.run {
+                savedPatternRepository.saveImportedPatternIfMissing(patternUri, patternName)
+                patternAnnotationRepository.clearProject(id)
+                updatePattern(
+                    id = id,
+                    patternUri = patternUri,
+                    patternName = patternName,
+                    currentPatternPage = currentPatternPage,
+                    patternRowMapping = patternRowMapping,
+                )
+            }
+        }
+
+        suspend fun detachPattern(id: Long) {
+            transactionRunner.run {
+                patternAnnotationRepository.clearProject(id)
+                updatePattern(
+                    id = id,
+                    patternUri = null,
+                    patternName = null,
+                    currentPatternPage = 0,
+                    patternRowMapping = null,
+                )
+            }
+        }
+
         suspend fun updateCurrentPatternPage(
             id: Long,
             page: Int,
@@ -180,9 +221,13 @@ class CounterRepository
         suspend fun reactivateProject(id: Long) = dao.reactivateProject(id, System.currentTimeMillis())
 
         suspend fun deleteProject(id: Long) {
-            yarnCardRepository.clearLinkedProject(id)
-            photoStorage.deleteProjectPhotos(context, id)
-            dao.delete(id) // CASCADE poistaa liittyvät rivit muista tauluista
+            transactionRunner.run {
+                yarnCardRepository.clearLinkedProject(id)
+                dao.delete(id) // CASCADE poistaa liittyvät rivit muista tauluista
+            }
+            withContext(ioDispatcher) {
+                photoStorage.deleteProjectPhotos(context, id)
+            }
         }
 
         suspend fun getProjectCount(): Int = dao.getProjectCount()

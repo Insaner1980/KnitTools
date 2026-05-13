@@ -3,6 +3,7 @@ package com.finnvek.knittools.repository
 import android.content.Context
 import com.finnvek.knittools.data.local.CounterProjectDao
 import com.finnvek.knittools.data.local.CounterProjectEntity
+import com.finnvek.knittools.data.local.ImmediateDatabaseTransactionRunner
 import com.finnvek.knittools.data.local.SessionDao
 import com.finnvek.knittools.data.local.SessionEntity
 import com.finnvek.knittools.data.storage.ProgressPhotoStorage
@@ -14,6 +15,7 @@ import io.mockk.coVerifyOrder
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -40,6 +42,10 @@ class CounterRepositoryDomainApiTest {
                 photoStorage = mockk<ProgressPhotoStorage>(relaxed = true),
                 context = mockk<Context>(relaxed = true),
                 yarnCardRepository = yarnCardRepository,
+                savedPatternRepository = mockk(relaxed = true),
+                patternAnnotationRepository = mockk(relaxed = true),
+                transactionRunner = ImmediateDatabaseTransactionRunner,
+                ioDispatcher = Dispatchers.Unconfined,
             )
     }
 

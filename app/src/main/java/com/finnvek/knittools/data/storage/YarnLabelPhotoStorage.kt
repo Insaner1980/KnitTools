@@ -9,7 +9,7 @@ object YarnLabelPhotoStorage {
     fun createImageFile(context: Context): Pair<File, Uri> {
         val dir = File(context.filesDir, "yarn_photos")
         dir.mkdirs()
-        val file = File(dir, "scan_${System.currentTimeMillis()}.jpg")
+        val file = StorageFileNames.uniqueTimestampedFile(dir, "scan_", ".jpg")
         val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
         return file to uri
     }

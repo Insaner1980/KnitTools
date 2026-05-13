@@ -2,6 +2,7 @@ package com.finnvek.knittools.ui.screens.yarncard
 
 import android.content.Context
 import android.net.Uri
+import com.finnvek.knittools.R
 import com.finnvek.knittools.ai.ParsedYarnLabel
 import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.pro.ProFeature
@@ -142,7 +143,8 @@ class YarnCardViewModelTest {
                     weightGrams = "100",
                     lengthMeters = "200",
                 )
-            val photoUri = mockk<Uri>(relaxed = true)
+            val photoUri = mockk<Uri>()
+            every { photoUri.toString() } returns "content://scan/inactive-before"
             coEvery { aiQuotaManager.hasQuota() } returns true
             coEvery { scanRepository.scanLabel(photoUri) } returns parsed
             every { proManager.hasFeature(ProFeature.OCR) } returns true
@@ -157,6 +159,40 @@ class YarnCardViewModelTest {
             assertEquals("Detail Brand", vm.formState.value.brand)
             assertEquals("Detail Yarn", vm.formState.value.yarnName)
             assertEquals(false, navigatedToReview)
+            coVerify(exactly = 0) { scanRepository.scanLabel(photoUri) }
+            verify { scanRepository.deleteScanPhoto("content://scan/inactive-before") }
+        }
+
+    @Test
+    fun `scan invalidated after repository result deletes captured photo`() =
+        runTest {
+            val parsed =
+                ParsedYarnLabel(
+                    brand = "Scan Brand",
+                    yarnName = "Scan Yarn",
+                    weightGrams = "100",
+                    lengthMeters = "200",
+                )
+            val photoUri = mockk<Uri>()
+            every { photoUri.toString() } returns "content://scan/inactive-after"
+            coEvery { aiQuotaManager.hasQuota() } returns true
+            every { proManager.hasFeature(ProFeature.OCR) } returns true
+            lateinit var vm: YarnCardViewModel
+            coEvery { scanRepository.scanLabel(photoUri) } coAnswers {
+                vm.loadFromCard(YarnCard(id = 7L, brand = "Detail Brand", yarnName = "Detail Yarn"))
+                parsed
+            }
+            vm = createViewModel()
+            var navigatedToReview = false
+
+            vm.scanWithGemini(photoUri) { navigatedToReview = true }
+            advanceUntilIdle()
+
+            assertEquals(7L, vm.formState.value.editingCardId)
+            assertEquals("Detail Brand", vm.formState.value.brand)
+            assertEquals("Detail Yarn", vm.formState.value.yarnName)
+            assertEquals(false, navigatedToReview)
+            verify { scanRepository.deleteScanPhoto("content://scan/inactive-after") }
         }
 
     @Test
@@ -203,6 +239,23 @@ class YarnCardViewModelTest {
             assertEquals(false, vm.formState.value.isScanning)
             assertEquals(false, navigatedToReview)
             coVerify(exactly = 0) { aiQuotaManager.hasQuota() }
+            coVerify(exactly = 0) { scanRepository.scanLabel(any()) }
+        }
+
+    @Test
+    fun `quota exhausted deletes captured photo`() =
+        runTest {
+            every { proManager.hasFeature(ProFeature.OCR) } returns true
+            coEvery { aiQuotaManager.hasQuota() } returns false
+            every { context.getString(R.string.ai_quota_exhausted) } returns "Quota exhausted"
+            val photoUri = mockk<Uri>()
+            every { photoUri.toString() } returns "content://scan/quota"
+            val vm = createViewModel()
+
+            vm.scanWithGemini(photoUri) {}
+            advanceUntilIdle()
+
+            verify { scanRepository.deleteScanPhoto("content://scan/quota") }
             coVerify(exactly = 0) { scanRepository.scanLabel(any()) }
         }
 

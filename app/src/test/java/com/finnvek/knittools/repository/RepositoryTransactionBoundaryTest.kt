@@ -15,17 +15,23 @@ import com.finnvek.knittools.data.remote.PatternDetail
 import com.finnvek.knittools.data.storage.ProgressPhotoStorage
 import com.finnvek.knittools.domain.model.ProgressPhoto
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.coVerifyOrder
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
+import io.mockk.verify
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.io.IOException
+import java.nio.file.Files
 import kotlin.coroutines.CoroutineContext
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -86,7 +92,7 @@ class RepositoryTransactionBoundaryTest {
         }
 
     @Test
-    fun `project delete commits database cleanup before deleting photo files`() =
+    fun `project delete removes photo files before committing database cleanup`() =
         runTest {
             val runner = RecordingTransactionRunner()
             val events = mutableListOf<String>()
@@ -122,7 +128,7 @@ class RepositoryTransactionBoundaryTest {
             repository.deleteProject(7L)
 
             assertEquals(1, runner.runCount)
-            assertEquals(listOf("clear-yarn", "delete-project", "delete-files"), events)
+            assertEquals(listOf("delete-files", "clear-yarn", "delete-project"), events)
         }
 
     @Test
@@ -150,6 +156,35 @@ class RepositoryTransactionBoundaryTest {
             repository.deleteProject(7L)
 
             assertEquals(1, ioDispatcher.dispatchCount)
+        }
+
+    @Test
+    fun `project delete keeps database rows when photo directory delete fails`() =
+        runTest {
+            val projectDao = mockk<CounterProjectDao>(relaxed = true)
+            val sessionDao = mockk<SessionDao>(relaxed = true)
+            val yarnRepository = mockk<YarnCardRepository>(relaxed = true)
+            val photoStorage = mockk<ProgressPhotoStorage>(relaxed = true)
+            val context = mockk<Context>(relaxed = true)
+            every { photoStorage.deleteProjectPhotos(context, 7L) } throws IOException("delete failed")
+            val repository =
+                CounterRepository(
+                    dao = projectDao,
+                    sessionDao = sessionDao,
+                    photoStorage = photoStorage,
+                    context = context,
+                    yarnCardRepository = yarnRepository,
+                    savedPatternRepository = mockk(relaxed = true),
+                    patternAnnotationRepository = mockk(relaxed = true),
+                    transactionRunner = RecordingTransactionRunner(),
+                    ioDispatcher = UnconfinedTestDispatcher(testScheduler),
+                )
+
+            val thrown = runCatching { repository.deleteProject(7L) }.exceptionOrNull()
+
+            assertTrue(thrown is IOException)
+            coVerify(exactly = 0) { yarnRepository.clearLinkedProject(7L) }
+            coVerify(exactly = 0) { projectDao.delete(7L) }
         }
 
     @Test
@@ -199,8 +234,12 @@ class RepositoryTransactionBoundaryTest {
             val yarnDao = mockk<YarnCardDao>(relaxed = true)
             val projectDao = mockk<CounterProjectDao>(relaxed = true)
             val context = mockk<Context>(relaxed = true)
-            val photoUri = "content://com.finnvek.knittools.fileprovider/yarn.jpg"
+            val photoUri = "content://com.finnvek.knittools.fileprovider/yarn_photos/yarn.jpg"
             every { context.packageName } returns "com.finnvek.knittools"
+            every { context.filesDir } returns
+                Files
+                    .createTempDirectory("knittools-files")
+                    .toFile()
             every { context.contentResolver.delete(any(), null, null) } returns 1
             coEvery { yarnDao.getCards(listOf(5L)) } returns
                 listOf(
@@ -210,7 +249,7 @@ class RepositoryTransactionBoundaryTest {
                     ),
                 )
             coEvery { projectDao.getAllProjectsOnce() } returns emptyList()
-            withParsedAppUri(photoUri) {
+            withParsedAppUri(photoUri, listOf("yarn_photos", "yarn.jpg")) {
                 val repository =
                     YarnCardRepository(
                         dao = yarnDao,
@@ -234,8 +273,12 @@ class RepositoryTransactionBoundaryTest {
             val patternDao = mockk<SavedPatternDao>(relaxed = true)
             val projectDao = mockk<CounterProjectDao>(relaxed = true)
             val context = mockk<Context>(relaxed = true)
-            val patternUri = "content://com.finnvek.knittools.fileprovider/pattern.pdf"
+            val patternUri = "content://com.finnvek.knittools.fileprovider/patterns/4/pdf/pattern.pdf"
             every { context.packageName } returns "com.finnvek.knittools"
+            every { context.filesDir } returns
+                Files
+                    .createTempDirectory("knittools-files")
+                    .toFile()
             every { context.contentResolver.delete(any(), null, null) } returns 1
             coEvery { patternDao.getByIds(listOf(4L)) } returns
                 listOf(
@@ -249,7 +292,7 @@ class RepositoryTransactionBoundaryTest {
                 )
             coEvery { patternDao.getByPatternUrl(patternUri) } returns null
             coEvery { projectDao.countProjectsUsingPatternUri(patternUri) } returns 0
-            withParsedAppUri(patternUri) {
+            withParsedAppUri(patternUri, listOf("patterns", "4", "pdf", "pattern.pdf")) {
                 val repository =
                     SavedPatternRepository(
                         dao = patternDao,
@@ -266,7 +309,38 @@ class RepositoryTransactionBoundaryTest {
         }
 
     @Test
-    fun `progress photo delete removes database row before deleting file`() =
+    fun `saved pattern repository deletes unused local pattern file`() =
+        runTest {
+            val runner = RecordingTransactionRunner()
+            val patternDao = mockk<SavedPatternDao>(relaxed = true)
+            val projectDao = mockk<CounterProjectDao>(relaxed = true)
+            val context = mockk<Context>(relaxed = true)
+            val file =
+                Files
+                    .createTempFile("pattern", ".pdf")
+                    .toFile()
+            val patternUri = "file://${file.absolutePath.replace('\\', '/')}"
+            every { context.filesDir } returns file.parentFile
+            coEvery { patternDao.getByPatternUrl(patternUri) } returns null
+            coEvery { projectDao.countProjectsUsingPatternUri(patternUri) } returns 0
+            withParsedFileUri(patternUri, file.absolutePath) {
+                val repository =
+                    SavedPatternRepository(
+                        dao = patternDao,
+                        context = context,
+                        counterProjectDao = projectDao,
+                        transactionRunner = runner,
+                        ioDispatcher = UnconfinedTestDispatcher(testScheduler),
+                    )
+
+                repository.deleteLocalPatternFileIfUnused(patternUri)
+            }
+
+            assertFalse(file.exists())
+        }
+
+    @Test
+    fun `progress photo delete removes file before database row`() =
         runTest {
             val events = mutableListOf<String>()
             val dao = mockk<ProgressPhotoDao>(relaxed = true)
@@ -294,7 +368,72 @@ class RepositoryTransactionBoundaryTest {
                 ),
             )
 
-            assertEquals(listOf("delete-row", "delete-file"), events)
+            assertEquals(listOf("delete-file", "delete-row"), events)
+        }
+
+    @Test
+    fun `progress photo delete keeps database row when file delete fails`() =
+        runTest {
+            val dao = mockk<ProgressPhotoDao>(relaxed = true)
+            val storage = mockk<ProgressPhotoStorage>(relaxed = true)
+            every { storage.deletePhoto("file:///photo.jpg") } throws IOException("delete failed")
+            val repository =
+                ProgressPhotoRepository(
+                    dao = dao,
+                    storage = storage,
+                    context = mockk(relaxed = true),
+                    ioDispatcher = UnconfinedTestDispatcher(testScheduler),
+                )
+
+            val thrown =
+                runCatching {
+                    repository.deletePhoto(
+                        ProgressPhoto(
+                            id = 3L,
+                            projectId = 7L,
+                            photoUri = "file:///photo.jpg",
+                            rowNumber = 12,
+                        ),
+                    )
+                }.exceptionOrNull()
+
+            assertTrue(thrown is IOException)
+            coVerify(exactly = 0) { dao.delete(3L) }
+        }
+
+    @Test
+    fun `progress photo save deletes target file when compression throws`() =
+        runTest {
+            val dao = mockk<ProgressPhotoDao>(relaxed = true)
+            val storage = mockk<ProgressPhotoStorage>(relaxed = true)
+            val context = mockk<Context>(relaxed = true)
+            val sourceUri = mockk<Uri>()
+            val targetFile = java.io.File("photo.jpg")
+            val targetUri = mockk<Uri>()
+            mockkStatic(Uri::class)
+            try {
+                every { Uri.fromFile(targetFile) } returns targetUri
+                every { targetUri.toString() } returns "file:///photo.jpg"
+                every { storage.createPhotoFile(context, 7L) } returns (targetFile to mockk<Uri>())
+                every { storage.compressAndSave(context, sourceUri, targetFile) } throws IOException("write failed")
+                val repository =
+                    ProgressPhotoRepository(
+                        dao = dao,
+                        storage = storage,
+                        context = context,
+                        ioDispatcher = UnconfinedTestDispatcher(testScheduler),
+                    )
+
+                val thrown =
+                    runCatching {
+                        repository.savePhoto(7L, sourceUri, rowNumber = 12)
+                    }.exceptionOrNull()
+
+                assertTrue(thrown is IOException)
+                verify { storage.deletePhoto("file:///photo.jpg") }
+            } finally {
+                unmockkStatic(Uri::class)
+            }
         }
 
     @Test
@@ -344,6 +483,7 @@ class RepositoryTransactionBoundaryTest {
 
     private suspend inline fun withParsedAppUri(
         uriString: String,
+        pathSegments: List<String>,
         block: suspend () -> Unit,
     ) {
         mockkStatic(Uri::class)
@@ -352,6 +492,24 @@ class RepositoryTransactionBoundaryTest {
             every { Uri.parse(uriString) } returns uri
             every { uri.scheme } returns "content"
             every { uri.authority } returns "com.finnvek.knittools.fileprovider"
+            every { uri.pathSegments } returns pathSegments
+            block()
+        } finally {
+            unmockkStatic(Uri::class)
+        }
+    }
+
+    private suspend inline fun withParsedFileUri(
+        uriString: String,
+        path: String,
+        block: suspend () -> Unit,
+    ) {
+        mockkStatic(Uri::class)
+        try {
+            val uri = mockk<Uri>(relaxed = true)
+            every { Uri.parse(uriString) } returns uri
+            every { uri.scheme } returns "file"
+            every { uri.path } returns path
             block()
         } finally {
             unmockkStatic(Uri::class)

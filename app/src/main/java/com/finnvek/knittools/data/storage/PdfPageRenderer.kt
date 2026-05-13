@@ -13,7 +13,7 @@ class PdfPageRenderer(
     uri: Uri,
 ) : Closeable {
     private val fileDescriptor: ParcelFileDescriptor =
-        requireNotNull(context.contentResolver.openFileDescriptor(uri, "r")) {
+        requireNotNull(AppFileStorage.openReadDescriptor(context, uri)) {
             "PDF could not be opened"
         }
     private val renderer = PdfRenderer(fileDescriptor)

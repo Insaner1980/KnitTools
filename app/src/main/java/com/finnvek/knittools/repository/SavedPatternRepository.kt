@@ -72,22 +72,25 @@ class SavedPatternRepository
             deleteUnusedLocalPatternFiles(patterns)
         }
 
+        suspend fun deleteLocalPatternFileIfUnused(patternUrl: String) {
+            if (patternUrl.isBlank()) return
+            val uri = patternUrl.toUri()
+            if (!AppFileStorage.isAppOwnedUri(context, uri)) return
+
+            val savedPatternStillReferencesFile = dao.getByPatternUrl(patternUrl) != null
+            val projectStillReferencesFile = counterProjectDao.countProjectsUsingPatternUri(patternUrl) > 0
+            if (!savedPatternStillReferencesFile && !projectStillReferencesFile) {
+                withContext(ioDispatcher) {
+                    AppFileStorage.deleteUri(context, uri)
+                }
+            }
+        }
+
         private suspend fun deleteUnusedLocalPatternFiles(patterns: List<SavedPatternEntity>) {
             patterns
                 .map { it.patternUrl }
                 .filter { it.isNotBlank() }
                 .distinct()
-                .forEach { patternUrl ->
-                    val uri = patternUrl.toUri()
-                    if (!AppFileStorage.isAppOwnedUri(context, uri)) return@forEach
-
-                    val savedPatternStillReferencesFile = dao.getByPatternUrl(patternUrl) != null
-                    val projectStillReferencesFile = counterProjectDao.countProjectsUsingPatternUri(patternUrl) > 0
-                    if (!savedPatternStillReferencesFile && !projectStillReferencesFile) {
-                        withContext(ioDispatcher) {
-                            AppFileStorage.deleteUri(context, uri)
-                        }
-                    }
-                }
+                .forEach { patternUrl -> deleteLocalPatternFileIfUnused(patternUrl) }
         }
     }

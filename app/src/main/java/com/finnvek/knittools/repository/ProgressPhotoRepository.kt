@@ -13,6 +13,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -60,11 +61,14 @@ class ProgressPhotoRepository
                 val saved =
                     try {
                         storage.compressAndSave(context, sourceUri, file)
+                    } catch (throwable: IOException) {
+                        runCatching { storage.deletePhoto(targetUri) }
+                        throw throwable
                     } finally {
                         storage.deleteTemporarySource(context, sourceUri)
                     }
                 if (!saved) {
-                    storage.deletePhoto(targetUri)
+                    runCatching { storage.deletePhoto(targetUri) }
                     return@withContext 0L
                 }
                 runCatching {
@@ -89,17 +93,19 @@ class ProgressPhotoRepository
         }
 
         suspend fun deletePhoto(photo: ProgressPhoto) {
-            dao.delete(photo.id)
             withContext(ioDispatcher) {
                 storage.deletePhoto(photo.photoUri)
             }
+            dao.delete(photo.id)
         }
 
         suspend fun deletePhotos(ids: List<Long>) {
             val photos = dao.getByIds(ids)
-            dao.deleteByIds(ids)
-            withContext(ioDispatcher) {
-                photos.forEach { storage.deletePhoto(it.photoUri) }
+            photos.forEach { photo ->
+                withContext(ioDispatcher) {
+                    storage.deletePhoto(photo.photoUri)
+                }
+                dao.delete(photo.id)
             }
         }
 

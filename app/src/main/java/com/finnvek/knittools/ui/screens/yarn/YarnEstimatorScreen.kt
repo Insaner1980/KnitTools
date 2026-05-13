@@ -62,6 +62,7 @@ import com.finnvek.knittools.ui.components.ResultCard
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
 import com.finnvek.knittools.ui.screens.home.HomeViewModel
 import com.finnvek.knittools.ui.screens.yarncard.YarnCardViewModel
+import com.finnvek.knittools.ui.screens.yarncard.handleYarnLabelCaptureResult
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -233,12 +234,17 @@ private fun ProActionBar(
 
     val cameraLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
-            if (success && pendingPhotoUri != null) {
-                yarnCardViewModel.scanWithGemini(pendingPhotoUri) {
-                    pendingPhotoUriString = null
-                    onScanLabel()
-                }
-            }
+            handleYarnLabelCaptureResult(
+                success = success,
+                pendingPhotoUri = pendingPhotoUri,
+                onCaptured = { uri ->
+                    yarnCardViewModel.scanWithGemini(uri) {
+                        onScanLabel()
+                    }
+                },
+                onDeleteUnusedPhoto = yarnCardViewModel::deletePhotoFile,
+                clearPendingPhoto = { pendingPhotoUriString = null },
+            )
         }
 
     val permissionLauncher =

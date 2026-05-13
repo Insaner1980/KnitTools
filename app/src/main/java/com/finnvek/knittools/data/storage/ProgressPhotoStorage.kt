@@ -8,6 +8,7 @@ import androidx.core.content.FileProvider
 import androidx.core.graphics.scale
 import androidx.core.net.toUri
 import java.io.File
+import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -21,7 +22,7 @@ class ProgressPhotoStorage
         ): Pair<File, Uri> {
             val dir = File(context.filesDir, "progress_photos/$projectId")
             dir.mkdirs()
-            val file = File(dir, "${System.currentTimeMillis()}.jpg")
+            val file = createUniquePhotoFile(dir)
             val uri =
                 FileProvider.getUriForFile(
                     context,
@@ -36,16 +37,22 @@ class ProgressPhotoStorage
             sourceUri: Uri,
             targetFile: File,
         ): Boolean {
-            val inputStream = context.contentResolver.openInputStream(sourceUri) ?: return false
-            val original = inputStream.use(BitmapFactory::decodeStream) ?: return false
+            val original =
+                runCatching {
+                    context.contentResolver.openInputStream(sourceUri)?.use(BitmapFactory::decodeStream)
+                }.getOrNull() ?: return false
 
             val scaled = scaleDown(original, MAX_DIMENSION)
-            targetFile.outputStream().use { out ->
-                scaled.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, out)
+            return try {
+                runCatching {
+                    targetFile.outputStream().use { out ->
+                        scaled.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, out)
+                    }
+                }.getOrDefault(false)
+            } finally {
+                if (scaled !== original) scaled.recycle()
+                original.recycle()
             }
-            if (scaled !== original) scaled.recycle()
-            original.recycle()
-            return true
         }
 
         fun deleteProjectPhotos(
@@ -53,7 +60,11 @@ class ProgressPhotoStorage
             projectId: Long,
         ) {
             val dir = File(context.filesDir, "progress_photos/$projectId")
-            if (dir.exists()) dir.deleteRecursively()
+            if (dir.exists()) deleteFileOrDirectory(dir)
+        }
+
+        private fun createUniquePhotoFile(dir: File): File {
+            return StorageFileNames.uniqueTimestampedFile(dir, "", ".jpg")
         }
 
         fun deletePhoto(photoUri: String) {
@@ -69,7 +80,28 @@ class ProgressPhotoStorage
 
         private fun deleteFileUri(uri: Uri) {
             val file = File(uri.path ?: return)
-            if (file.exists() && !file.delete()) file.deleteOnExit()
+            deleteFileOrDirectory(file)
+        }
+
+        private fun deleteFileOrDirectory(file: File) {
+            if (!file.exists()) return
+            val deleted =
+                if (file.isDirectory) {
+                    file.deleteRecursively()
+                } else {
+                    file.delete()
+                }
+            if (!deleted && file.exists()) {
+                scheduleDeleteOnExit(file)
+                throw IOException("Progress photo file delete failed: ${file.absolutePath}")
+            }
+        }
+
+        private fun scheduleDeleteOnExit(file: File) {
+            if (file.isDirectory) {
+                file.listFiles()?.forEach(::scheduleDeleteOnExit)
+            }
+            file.deleteOnExit()
         }
 
         private fun scaleDown(

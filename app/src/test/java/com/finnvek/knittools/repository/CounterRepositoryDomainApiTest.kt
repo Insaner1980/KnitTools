@@ -28,6 +28,7 @@ class CounterRepositoryDomainApiTest {
     private lateinit var projectDao: CounterProjectDao
     private lateinit var sessionDao: SessionDao
     private lateinit var yarnCardRepository: YarnCardRepository
+    private lateinit var savedPatternRepository: SavedPatternRepository
     private lateinit var repository: CounterRepository
 
     @Before
@@ -35,6 +36,7 @@ class CounterRepositoryDomainApiTest {
         projectDao = mockk(relaxed = true)
         sessionDao = mockk(relaxed = true)
         yarnCardRepository = mockk(relaxed = true)
+        savedPatternRepository = mockk(relaxed = true)
         repository =
             CounterRepository(
                 dao = projectDao,
@@ -42,7 +44,7 @@ class CounterRepositoryDomainApiTest {
                 photoStorage = mockk<ProgressPhotoStorage>(relaxed = true),
                 context = mockk<Context>(relaxed = true),
                 yarnCardRepository = yarnCardRepository,
-                savedPatternRepository = mockk(relaxed = true),
+                savedPatternRepository = savedPatternRepository,
                 patternAnnotationRepository = mockk(relaxed = true),
                 transactionRunner = ImmediateDatabaseTransactionRunner,
                 ioDispatcher = Dispatchers.Unconfined,
@@ -184,6 +186,42 @@ class CounterRepositoryDomainApiTest {
             coVerifyOrder {
                 yarnCardRepository.clearLinkedProject(7L)
                 projectDao.delete(7L)
+            }
+        }
+
+    @Test
+    fun `deleteProject asks saved pattern repository to clean detached local PDF`() =
+        runTest {
+            val patternUri = "file:///data/user/0/com.finnvek.knittools/files/pattern_pdfs/7/pattern.pdf"
+            coEvery { projectDao.getProject(7L) } returns CounterProjectEntity(id = 7L, patternUri = patternUri)
+
+            repository.deleteProject(7L)
+
+            coVerifyOrder {
+                yarnCardRepository.clearLinkedProject(7L)
+                projectDao.delete(7L)
+                savedPatternRepository.deleteLocalPatternFileIfUnused(patternUri)
+            }
+        }
+
+    @Test
+    fun `detachPattern asks saved pattern repository to clean detached local PDF`() =
+        runTest {
+            val patternUri = "file:///data/user/0/com.finnvek.knittools/files/pattern_pdfs/7/pattern.pdf"
+            coEvery { projectDao.getProject(7L) } returns CounterProjectEntity(id = 7L, patternUri = patternUri)
+
+            repository.detachPattern(7L)
+
+            coVerifyOrder {
+                projectDao.updatePattern(
+                    id = 7L,
+                    patternUri = null,
+                    patternName = null,
+                    currentPatternPage = 0,
+                    patternRowMapping = null,
+                    updatedAt = any(),
+                )
+                savedPatternRepository.deleteLocalPatternFileIfUnused(patternUri)
             }
         }
 }

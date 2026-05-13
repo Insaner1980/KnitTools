@@ -223,10 +223,15 @@ dependencyCheck {
     formats = listOf("HTML", "JSON")
     outputDirectory = rootProject.layout.projectDirectory.dir("reports")
     data {
+        val defaultDataDirectory =
+            rootProject.layout.projectDirectory
+                .dir(".gradle/dependency-check-data")
+                .asFile.absolutePath
+
         directory =
             providers
                 .environmentVariable("DEPENDENCY_CHECK_DATA_DIRECTORY")
-                .orElse(rootProject.layout.projectDirectory.dir(".gradle/dependency-check-data").asFile.absolutePath)
+                .orElse(defaultDataDirectory)
                 .get()
     }
     autoUpdate =
@@ -395,6 +400,7 @@ dependencies {
     // Core
     implementation(libs.core.ktx)
     implementation(libs.activity.compose)
+    implementation(libs.appcompat)
 
     // SplashScreen
     implementation(libs.splashscreen)

@@ -209,7 +209,7 @@ class LibraryViewModel
                 val current = selectedIds.value
                 if (current.isEmpty()) return@onEach
 
-                val existingIds = items.mapTo(mutableSetOf(), itemId)
+                val existingIds = items.map(itemId).toSet()
                 val next = current.intersect(existingIds)
                 if (next != current) {
                     selectedIds.value = next
@@ -230,8 +230,10 @@ class LibraryViewModel
                     if (ids.isNotEmpty()) {
                         deleteByIds(ids)
                     }
-                } catch (exception: Exception) {
-                    if (exception is CancellationException) throw exception
+                } catch (cancellation: CancellationException) {
+                    throw cancellation
+                } catch (_: Exception) {
+                    // Poistovirhe ei saa jättää kirjastoa valintatilaan.
                 } finally {
                     exitSelectMode()
                 }

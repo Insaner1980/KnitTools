@@ -515,7 +515,7 @@
     <string name="voice_commands">Röstkommandon</string>
     <string name="voice_mode_timeout">Röstläget avslutades på grund av inaktivitet</string>
     <string name="voice_offline_mode">Offlineläge, bara grundkommandon</string>
-    <string name="voice_quota_daily_exhausted">AI-kommandon pausade för idag, grundkommandon fungerar fortfarande</string>
+    <string name="voice_quota_monthly_exhausted">Månadens gräns för AI-kommandon har nåtts, grundkommandon fungerar fortfarande</string>
     <string name="voice_command_unknown">Jag förstod inte</string>
     <string name="voice_note_saved">Anteckning sparad</string>
     <string name="voice_counter_reset">Räknare nollställd</string>

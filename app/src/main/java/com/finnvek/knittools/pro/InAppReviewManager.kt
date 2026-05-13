@@ -4,10 +4,11 @@ import android.app.Activity
 import android.content.Context
 import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.booleanPreferencesKey
-import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.finnvek.knittools.data.datastore.editPreferencesSafely
+import com.finnvek.knittools.data.datastore.safePreferencesData
 import com.google.android.play.core.review.ReviewManagerFactory
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.first
@@ -25,7 +26,7 @@ class InAppReviewManager
          * Kun raja ylittyy, arvostelu voidaan pyytää.
          */
         suspend fun recordAction() {
-            context.reviewDataStore.edit { prefs ->
+            context.reviewDataStore.editPreferencesSafely("Arvostelulaskurin tallennus") { prefs ->
                 prefs[KEY_ACTION_COUNT] = (prefs[KEY_ACTION_COUNT] ?: 0) + 1
             }
         }
@@ -39,11 +40,15 @@ class InAppReviewManager
          * oma käyttöraja estää liian aikaisen pyynnön ja turhat API-kutsut.
          */
         suspend fun maybeRequestReview(activity: Activity) {
-            val prefs = context.reviewDataStore.data.first()
+            val prefs = context.reviewDataStore.safePreferencesData.first()
             val actions = prefs[KEY_ACTION_COUNT] ?: 0
             if (!shouldRequestReview(prefs[KEY_REVIEW_REQUESTED] == true, actions)) return
 
-            context.reviewDataStore.edit { it[KEY_REVIEW_REQUESTED] = true }
+            val saved =
+                context.reviewDataStore.editPreferencesSafely("Arvostelupyynnön tallennus") {
+                    it[KEY_REVIEW_REQUESTED] = true
+                }
+            if (!saved) return
 
             val manager = ReviewManagerFactory.create(context)
             manager.requestReviewFlow().addOnSuccessListener { reviewInfo ->

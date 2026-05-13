@@ -3,7 +3,6 @@ package com.finnvek.knittools.ui.screens.yarncard
 import android.content.Context
 import android.net.Uri
 import com.finnvek.knittools.ai.ParsedYarnLabel
-import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
@@ -287,28 +286,21 @@ class YarnCardViewModelTest {
     }
 
     @Test
-    fun `linkCardToProject updates yarn card ids`() =
+    fun `linkCardToProject delegates consistent project link update`() =
         runTest {
-            val project =
-                CounterProject(id = 1L, name = "Test", yarnCardIds = "")
-            coEvery { counterRepository.getProject(1L) } returns project
-
             val vm = createViewModel()
             vm.linkCardToProject(5L, 1L)
 
-            coVerify { counterRepository.updateProjectYarnCardIds(1L, "5") }
+            coVerify { repository.updateLinkedProjectId(5L, 1L) }
         }
 
     @Test
-    fun `linkCardToProject skips duplicate`() =
+    fun `linkCardToProject does not bypass yarn repository for duplicate checks`() =
         runTest {
-            val project =
-                CounterProject(id = 1L, name = "Test", yarnCardIds = "5")
-            coEvery { counterRepository.getProject(1L) } returns project
-
             val vm = createViewModel()
             vm.linkCardToProject(5L, 1L)
 
             coVerify(exactly = 0) { counterRepository.updateProjectYarnCardIds(any(), any()) }
+            coVerify { repository.updateLinkedProjectId(5L, 1L) }
         }
 }

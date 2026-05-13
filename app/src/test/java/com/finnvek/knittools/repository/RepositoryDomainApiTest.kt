@@ -4,10 +4,12 @@ import android.content.Context
 import com.finnvek.knittools.R
 import com.finnvek.knittools.data.local.CounterProjectDao
 import com.finnvek.knittools.data.local.CounterProjectEntity
+import com.finnvek.knittools.data.local.ImmediateDatabaseTransactionRunner
 import com.finnvek.knittools.data.local.PatternAnnotationDao
 import com.finnvek.knittools.data.local.PatternAnnotationEntity
 import com.finnvek.knittools.data.local.ProgressPhotoDao
 import com.finnvek.knittools.data.local.ProgressPhotoEntity
+import com.finnvek.knittools.data.local.ProjectPhotoCount
 import com.finnvek.knittools.data.local.SavedPatternDao
 import com.finnvek.knittools.data.local.SavedPatternEntity
 import com.finnvek.knittools.data.local.YarnCardDao
@@ -57,7 +59,14 @@ class RepositoryDomainApiTest {
                             ),
                         ),
                 )
-            val repository = SavedPatternRepository(dao, context, FakeCounterProjectDao())
+            val repository =
+                SavedPatternRepository(
+                    dao,
+                    context,
+                    FakeCounterProjectDao(),
+                    ImmediateDatabaseTransactionRunner,
+                    UnconfinedTestDispatcher(testScheduler),
+                )
 
             val patterns: List<SavedPattern> = repository.getAll().first()
             val byId: SavedPattern? = repository.getById(1L)
@@ -91,7 +100,14 @@ class RepositoryDomainApiTest {
     fun `saved pattern repository creates imported pattern as domain id without exposing entity`() =
         runTest {
             val dao = FakeSavedPatternDao()
-            val repository = SavedPatternRepository(dao, context, FakeCounterProjectDao())
+            val repository =
+                SavedPatternRepository(
+                    dao,
+                    context,
+                    FakeCounterProjectDao(),
+                    ImmediateDatabaseTransactionRunner,
+                    UnconfinedTestDispatcher(testScheduler),
+                )
 
             val importedId = repository.saveImportedPatternIfMissing("content://pattern", "Local pattern")
             val ignoredId = repository.saveImportedPatternIfMissing("https://example.com/pattern", "Remote pattern")
@@ -117,7 +133,14 @@ class RepositoryDomainApiTest {
                             ),
                         ),
                 )
-            val repository = YarnCardRepository(dao, FakeCounterProjectDao(), context)
+            val repository =
+                YarnCardRepository(
+                    dao,
+                    FakeCounterProjectDao(),
+                    context,
+                    ImmediateDatabaseTransactionRunner,
+                    UnconfinedTestDispatcher(testScheduler),
+                )
 
             val cards: List<YarnCard> = repository.getAllCards().first()
             val card: YarnCard? = repository.getCard(2L)
@@ -165,7 +188,14 @@ class RepositoryDomainApiTest {
                             CounterProjectEntity(id = 11L, yarnCardIds = "2"),
                         ),
                 )
-            val repository = YarnCardRepository(yarnDao, projectDao, context)
+            val repository =
+                YarnCardRepository(
+                    yarnDao,
+                    projectDao,
+                    context,
+                    ImmediateDatabaseTransactionRunner,
+                    UnconfinedTestDispatcher(testScheduler),
+                )
 
             repository.deleteCards(listOf(2L))
 
@@ -184,7 +214,14 @@ class RepositoryDomainApiTest {
                         ),
                 )
             val projectDao = FakeCounterProjectDao()
-            val repository = SavedPatternRepository(dao, context, projectDao)
+            val repository =
+                SavedPatternRepository(
+                    dao,
+                    context,
+                    projectDao,
+                    ImmediateDatabaseTransactionRunner,
+                    UnconfinedTestDispatcher(testScheduler),
+                )
 
             repository.deleteByIds(listOf(4L))
 
@@ -219,6 +256,32 @@ class RepositoryDomainApiTest {
             assertEquals("Sleeve split", photos.single().note)
             assertEquals(12, projectPhotos.single().rowNumber)
             assertEquals(3L, dao.lastDeletedId)
+        }
+
+    @Test
+    fun `progress photo repository loads photo counts for projects in one dao call`() =
+        runTest {
+            val dao =
+                FakeProgressPhotoDao(
+                    progressPhotos =
+                        listOf(
+                            ProgressPhotoEntity(id = 1L, projectId = 7L, photoUri = "file:///a.jpg", rowNumber = 1),
+                            ProgressPhotoEntity(id = 2L, projectId = 7L, photoUri = "file:///b.jpg", rowNumber = 2),
+                            ProgressPhotoEntity(id = 3L, projectId = 8L, photoUri = "file:///c.jpg", rowNumber = 3),
+                        ),
+                )
+            val repository =
+                ProgressPhotoRepository(
+                    dao,
+                    mockk(relaxed = true),
+                    context,
+                    UnconfinedTestDispatcher(testScheduler),
+                )
+
+            val counts = repository.getPhotoCountsByProjectIds(listOf(7L, 8L, 7L, 9L))
+
+            assertEquals(mapOf(7L to 2, 8L to 1), counts)
+            assertEquals(listOf(7L, 8L, 9L), dao.lastCountProjectIds)
         }
 
     @Test
@@ -265,8 +328,7 @@ class RepositoryDomainApiTest {
         override suspend fun getByPatternUrl(patternUrl: String): SavedPatternEntity? =
             savedPatterns.firstOrNull { it.patternUrl == patternUrl }
 
-        override suspend fun getByIds(ids: List<Long>): List<SavedPatternEntity> =
-            savedPatterns.filter { it.id in ids }
+        override suspend fun getByIds(ids: List<Long>): List<SavedPatternEntity> = savedPatterns.filter { it.id in ids }
 
         override suspend fun insert(pattern: SavedPatternEntity): Long {
             lastInserted = pattern
@@ -482,7 +544,9 @@ class RepositoryDomainApiTest {
             before: Long,
         ) = Unit
 
-        override suspend fun getLatestHistory(projectId: Long): com.finnvek.knittools.data.local.CounterHistoryEntity? = null
+        override suspend fun getLatestHistory(
+            projectId: Long,
+        ): com.finnvek.knittools.data.local.CounterHistoryEntity? = null
 
         override suspend fun deleteHistoryById(id: Long) = Unit
 
@@ -519,6 +583,7 @@ class RepositoryDomainApiTest {
         private val progressPhotos: List<ProgressPhotoEntity> = emptyList(),
     ) : ProgressPhotoDao {
         var lastDeletedId: Long? = null
+        var lastCountProjectIds: List<Long> = emptyList()
 
         override fun getPhotosForProject(projectId: Long): Flow<List<ProgressPhotoEntity>> =
             flowOf(progressPhotos.filter { it.projectId == projectId })
@@ -534,6 +599,15 @@ class RepositoryDomainApiTest {
         override fun getAllPhotos(): Flow<List<ProgressPhotoEntity>> = flowOf(progressPhotos)
 
         override fun getAllPhotoCount(): Flow<Int> = flowOf(progressPhotos.size)
+
+        override suspend fun getPhotoCountsByProjectIds(projectIds: List<Long>): List<ProjectPhotoCount> {
+            lastCountProjectIds = projectIds
+            return progressPhotos
+                .filter { it.projectId in projectIds }
+                .groupingBy { it.projectId }
+                .eachCount()
+                .map { (projectId, count) -> ProjectPhotoCount(projectId, count) }
+        }
 
         override suspend fun insert(photo: ProgressPhotoEntity): Long = 66L
 

@@ -1,8 +1,5 @@
 package com.finnvek.knittools.ui.screens.settings
 
-import android.app.Activity
-import android.content.Context
-import android.content.ContextWrapper
 import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -69,12 +66,6 @@ fun SettingsScreen(
     LaunchedEffect(viewModel, context, resources) {
         viewModel.messages.collect { messageRes ->
             Toast.makeText(context, resources.getString(messageRes), Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    LaunchedEffect(viewModel, context) {
-        viewModel.languageChanged.collect {
-            context.findActivity()?.recreate()
         }
     }
 
@@ -223,13 +214,6 @@ fun SettingsScreen(
         )
     }
 }
-
-private tailrec fun Context.findActivity(): Activity? =
-    when (this) {
-        is Activity -> this
-        is ContextWrapper -> baseContext.findActivity()
-        else -> null
-    }
 
 @Composable
 private fun SectionHeader(title: String) {

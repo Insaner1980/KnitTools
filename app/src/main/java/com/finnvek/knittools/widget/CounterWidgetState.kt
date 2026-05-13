@@ -15,6 +15,8 @@ import androidx.glance.appwidget.state.getAppWidgetState
 import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.glance.state.PreferencesGlanceStateDefinition
 import com.finnvek.knittools.R
+import com.finnvek.knittools.data.datastore.safePreferencesData
+import com.finnvek.knittools.data.datastore.updatePreferencesSafely
 import com.finnvek.knittools.domain.model.CounterProject
 import kotlinx.coroutines.flow.first
 
@@ -47,8 +49,11 @@ object CounterWidgetState {
     val KEY_STITCH_TRACKING = booleanPreferencesKey("stitch_tracking")
     private val KEY_REVISION = intPreferencesKey("rev")
 
+    fun defaultData(context: Context): WidgetData =
+        WidgetData(projectName = context.getString(R.string.default_project_name))
+
     suspend fun load(context: Context): WidgetData {
-        val prefs = context.widgetDataStore.data.first()
+        val prefs = context.widgetDataStore.safePreferencesData.first()
         return fromPreferences(context, prefs)
     }
 
@@ -56,17 +61,8 @@ object CounterWidgetState {
         context: Context,
         data: WidgetData,
     ) {
-        context.widgetDataStore.updateData { prefs ->
-            prefs.toMutablePreferences().apply {
-                this[KEY_PROJECT_NAME] = data.projectName
-                this[KEY_COUNT] = data.count
-                this[KEY_PROJECT_ID] = data.projectId
-                data.targetRows?.let { this[KEY_TARGET_ROWS] = it } ?: remove(KEY_TARGET_ROWS)
-                data.sectionName?.let { this[KEY_SECTION_NAME] = it } ?: remove(KEY_SECTION_NAME)
-                this[KEY_CURRENT_STITCH] = data.currentStitch
-                data.totalStitches?.let { this[KEY_TOTAL_STITCHES] = it } ?: remove(KEY_TOTAL_STITCHES)
-                this[KEY_STITCH_TRACKING] = data.stitchTrackingEnabled
-            }
+        context.widgetDataStore.updatePreferencesSafely("Widget-tilan tallennus") {
+            applyWidgetData(data)
         }
     }
 
@@ -152,7 +148,7 @@ fun CounterProject.toWidgetData(): WidgetData =
         projectName = name,
         count = count,
         projectId = id,
-        targetRows = totalRows,
+        targetRows = this.targetRows,
         sectionName = sectionName,
         currentStitch = currentStitch,
         totalStitches = stitchCount,

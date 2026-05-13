@@ -19,6 +19,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -104,7 +105,7 @@ class MainActivity : AppCompatActivity() {
             val downloadedUpdatePromptId by
                 inAppUpdateManager.downloadedUpdatePromptId.collectAsStateWithLifecycle()
             val snackbarHostState = remember { SnackbarHostState() }
-            var lastShownDownloadedUpdatePromptId by rememberSaveable { mutableStateOf(0L) }
+            var lastShownDownloadedUpdatePromptId by rememberSaveable { mutableLongStateOf(0L) }
             val updateMessage = stringResource(R.string.update_downloaded)
             val restartLabel = stringResource(R.string.restart)
             LaunchedEffect(downloadedUpdatePromptId) {
@@ -176,6 +177,9 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         inAppUpdateManager.checkDownloadedOnResume()
+        lifecycleScope.launch {
+            preferencesManager.syncAppLanguageFromSystem()
+        }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {

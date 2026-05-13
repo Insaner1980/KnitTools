@@ -515,7 +515,7 @@
     <string name="voice_commands">Talekommandoer</string>
     <string name="voice_mode_timeout">Talemodus avsluttet på grunn av inaktivitet</string>
     <string name="voice_offline_mode">Frakoblet modus, bare grunnleggende kommandoer</string>
-    <string name="voice_quota_daily_exhausted">AI-kommandoer er satt på pause for i dag, men grunnleggende kommandoer virker fortsatt</string>
+    <string name="voice_quota_monthly_exhausted">Månedlig grense for AI-kommandoer er nådd, men grunnleggende kommandoer virker fortsatt</string>
     <string name="voice_command_unknown">Jeg forsto ikke</string>
     <string name="voice_note_saved">Notat lagret</string>
     <string name="voice_counter_reset">Teller tilbakestilt</string>

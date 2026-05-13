@@ -767,7 +767,7 @@
     <string name="voice_commands">Voice commands</string>
     <string name="voice_mode_timeout">Voice mode ended due to inactivity</string>
     <string name="voice_offline_mode">Offline mode, basic commands only</string>
-    <string name="voice_quota_daily_exhausted">AI commands paused for today, basic commands still work</string>
+    <string name="voice_quota_monthly_exhausted">Monthly AI command limit reached; basic commands still work</string>
     <string name="voice_command_unknown">I didn\'t understand</string>
     <string name="voice_note_saved">Note saved</string>
     <string name="voice_counter_reset">Counter reset</string>

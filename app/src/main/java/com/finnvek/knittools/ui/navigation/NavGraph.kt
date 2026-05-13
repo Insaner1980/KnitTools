@@ -653,6 +653,12 @@ private fun myYarnActions(
         } else {
             null
         },
+    onDeleteScanPhoto =
+        if (canScanYarnLabel) {
+            yarnCardViewModel::deletePhotoFile
+        } else {
+            null
+        },
     onBack = { navController.popBackStack() },
 )
 

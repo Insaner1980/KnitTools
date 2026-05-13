@@ -1,6 +1,9 @@
 package com.finnvek.knittools.ui.screens.counter
 
+import android.Manifest
+import android.app.Activity
 import android.net.Uri
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -49,11 +52,13 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.core.app.ActivityCompat
 import androidx.core.net.toUri
 import coil3.compose.AsyncImage
 import com.finnvek.knittools.R
 import com.finnvek.knittools.data.storage.ProgressPhotoStorage
 import com.finnvek.knittools.domain.model.ProgressPhoto
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -68,27 +73,60 @@ fun PhotoGalleryScreen(
     onDeletePhoto: (ProgressPhoto) -> Unit,
     onUpdateNote: (Long, String?) -> Unit = { _, _ -> },
 ) {
-    val appContext = LocalContext.current.applicationContext
+    val context = LocalContext.current
+    val appContext = context.applicationContext
     val photoStorage = remember { ProgressPhotoStorage() }
     var pendingPhotoUriString by rememberSaveable { mutableStateOf<String?>(null) }
+    var pendingPhotoFilePath by rememberSaveable { mutableStateOf<String?>(null) }
     val pendingPhotoUri = pendingPhotoUriString?.toUri()
     var renamingPhotoId by rememberSaveable { mutableStateOf<Long?>(null) }
     var viewingPhotoId by rememberSaveable { mutableStateOf<Long?>(null) }
     val renamingPhoto = remember(renamingPhotoId, photos) { photos.firstOrNull { it.id == renamingPhotoId } }
     val viewingPhoto = remember(viewingPhotoId, photos) { photos.firstOrNull { it.id == viewingPhotoId } }
+    val cameraPermissionDeniedMessage = stringResource(R.string.camera_permission_denied)
+    val cameraPermissionDeniedPermanentMessage = stringResource(R.string.camera_permission_denied_permanent)
 
     val cameraLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
             if (success) pendingPhotoUri?.let { onSavePhoto(it) }
+            if (!success) deletePendingPhotoFile(pendingPhotoFilePath)
             pendingPhotoUriString = null
+            pendingPhotoFilePath = null
+        }
+
+    fun startCameraCapture() {
+        projectId?.let { id ->
+            val (file, uri) = photoStorage.createPhotoFile(appContext, id)
+            pendingPhotoUriString = uri.toString()
+            pendingPhotoFilePath = file.absolutePath
+            cameraLauncher.launch(uri)
+        }
+    }
+
+    val permissionLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (granted) {
+                startCameraCapture()
+            } else {
+                val activity = context as? Activity
+                val permanentlyDenied =
+                    activity != null &&
+                        !ActivityCompat.shouldShowRequestPermissionRationale(activity, Manifest.permission.CAMERA)
+                Toast
+                    .makeText(
+                        context,
+                        if (permanentlyDenied) {
+                            cameraPermissionDeniedPermanentMessage
+                        } else {
+                            cameraPermissionDeniedMessage
+                        },
+                        Toast.LENGTH_SHORT,
+                    ).show()
+            }
         }
 
     fun launchCamera() {
-        projectId?.let { id ->
-            val (_, uri) = photoStorage.createPhotoFile(appContext, id)
-            pendingPhotoUriString = uri.toString()
-            cameraLauncher.launch(uri)
-        }
+        permissionLauncher.launch(Manifest.permission.CAMERA)
     }
 
     // Koko näytön kuvankatselija
@@ -203,6 +241,13 @@ fun PhotoGalleryScreen(
                 }
             }
         }
+    }
+}
+
+internal fun deletePendingPhotoFile(filePath: String?) {
+    val file = filePath?.let(::File) ?: return
+    if (file.exists() && !file.delete()) {
+        file.deleteOnExit()
     }
 }
 

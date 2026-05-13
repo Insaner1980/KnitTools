@@ -208,13 +208,17 @@ class YarnCardViewModel
             }
             val scanRequestId = startScanRequest()
             viewModelScope.launch {
-                if (!isActiveScan(scanRequestId)) return@launch
+                if (!isActiveScanOrDeletePhoto(scanRequestId, photoUri)) return@launch
                 _formState.update { it.copy(isScanning = true, scanError = null) }
 
-                if (!hasQuotaForActiveScan(scanRequestId)) return@launch
+                if (!hasQuotaForActiveScan(scanRequestId)) {
+                    deletePhotoFile(photoUri.toString())
+                    return@launch
+                }
+                if (!isActiveScanOrDeletePhoto(scanRequestId, photoUri)) return@launch
 
                 val parsed = scanRepository.scanLabel(photoUri)
-                if (!isActiveScan(scanRequestId)) return@launch
+                if (!isActiveScanOrDeletePhoto(scanRequestId, photoUri)) return@launch
                 finishActiveScan(scanRequestId, parsed, photoUri, onSuccess)
             }
         }
@@ -225,8 +229,9 @@ class YarnCardViewModel
         }
 
         private suspend fun hasQuotaForActiveScan(scanRequestId: Long): Boolean {
-            if (aiQuotaManager.hasQuota()) return true
+            val hasQuota = aiQuotaManager.hasQuota()
             if (!isActiveScan(scanRequestId)) return false
+            if (hasQuota) return true
             _formState.update {
                 it.copy(
                     isScanning = false,
@@ -254,7 +259,7 @@ class YarnCardViewModel
             }
 
             aiQuotaManager.recordCall()
-            if (!isActiveScan(scanRequestId)) return
+            if (!isActiveScanOrDeletePhoto(scanRequestId, photoUri)) return
             loadFromScan(parsed, photoUri)
             onSuccess()
         }
@@ -358,4 +363,13 @@ class YarnCardViewModel
         }
 
         private fun isActiveScan(scanRequestId: Long): Boolean = activeScanRequestId == scanRequestId
+
+        private fun isActiveScanOrDeletePhoto(
+            scanRequestId: Long,
+            photoUri: Uri,
+        ): Boolean {
+            if (isActiveScan(scanRequestId)) return true
+            deletePhotoFile(photoUri.toString())
+            return false
+        }
     }

@@ -63,6 +63,7 @@ import com.finnvek.knittools.ui.components.BadgePill
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.StatusMessage
 import com.finnvek.knittools.ui.components.StatusMessageType
+import com.finnvek.knittools.ui.screens.yarncard.handleYarnLabelCaptureResult
 import com.finnvek.knittools.ui.theme.knitToolsColors
 
 // Data-luokat MyYarnScreen-parametrien ryhmittelyyn (S107)
@@ -86,6 +87,7 @@ data class MyYarnActions(
     val onScanLabel: (() -> Unit)? = null,
     val onCreateScanPhotoUri: (() -> Uri?)? = null,
     val onScanPhoto: ((Uri) -> Unit)? = null,
+    val onDeleteScanPhoto: ((String) -> Unit)? = null,
     val onStatusAction: (() -> Unit)? = null,
     val onBack: () -> Unit,
 )
@@ -104,11 +106,16 @@ fun MyYarnScreen(
 
     val cameraLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
-            if (success && pendingPhotoUri != null) {
-                actions.onScanPhoto?.invoke(pendingPhotoUri)
-                pendingPhotoUriString = null
-                scanPermissionMessageRes = null
-            }
+            handleYarnLabelCaptureResult(
+                success = success,
+                pendingPhotoUri = pendingPhotoUri,
+                onCaptured = { uri ->
+                    actions.onScanPhoto?.invoke(uri)
+                    scanPermissionMessageRes = null
+                },
+                onDeleteUnusedPhoto = { uriString -> actions.onDeleteScanPhoto?.invoke(uriString) },
+                clearPendingPhoto = { pendingPhotoUriString = null },
+            )
         }
 
     val permissionLauncher =

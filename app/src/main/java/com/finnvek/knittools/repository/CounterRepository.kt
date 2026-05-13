@@ -180,6 +180,7 @@ class CounterRepository
         }
 
         suspend fun detachPattern(id: Long) {
+            val patternUri = dao.getProject(id)?.patternUri
             transactionRunner.run {
                 patternAnnotationRepository.clearProject(id)
                 updatePattern(
@@ -190,6 +191,7 @@ class CounterRepository
                     patternRowMapping = null,
                 )
             }
+            patternUri?.let { savedPatternRepository.deleteLocalPatternFileIfUnused(it) }
         }
 
         suspend fun updateCurrentPatternPage(
@@ -221,13 +223,15 @@ class CounterRepository
         suspend fun reactivateProject(id: Long) = dao.reactivateProject(id, System.currentTimeMillis())
 
         suspend fun deleteProject(id: Long) {
+            withContext(ioDispatcher) {
+                photoStorage.deleteProjectPhotos(context, id)
+            }
+            val patternUri = dao.getProject(id)?.patternUri
             transactionRunner.run {
                 yarnCardRepository.clearLinkedProject(id)
                 dao.delete(id) // CASCADE poistaa liittyvät rivit muista tauluista
             }
-            withContext(ioDispatcher) {
-                photoStorage.deleteProjectPhotos(context, id)
-            }
+            patternUri?.let { savedPatternRepository.deleteLocalPatternFileIfUnused(it) }
         }
 
         suspend fun getProjectCount(): Int = dao.getProjectCount()

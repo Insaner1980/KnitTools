@@ -515,7 +515,7 @@
     <string name="voice_commands">Stemmekommandoer</string>
     <string name="voice_mode_timeout">Stemmetilstand afsluttet på grund af inaktivitet</string>
     <string name="voice_offline_mode">Offline-tilstand, kun grundlæggende kommandoer</string>
-    <string name="voice_quota_daily_exhausted">AI-kommandoer er sat på pause for i dag, men grundlæggende kommandoer virker stadig</string>
+    <string name="voice_quota_monthly_exhausted">Månedens AI-kommandogrænse er nået, men grundlæggende kommandoer virker stadig</string>
     <string name="voice_command_unknown">Det forstod jeg ikke</string>
     <string name="voice_note_saved">Note gemt</string>
     <string name="voice_counter_reset">Tæller nulstillet</string>

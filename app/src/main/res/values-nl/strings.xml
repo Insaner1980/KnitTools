@@ -515,7 +515,7 @@
     <string name="voice_commands">Spraakopdrachten</string>
     <string name="voice_mode_timeout">Spraakmodus is beëindigd door inactiviteit</string>
     <string name="voice_offline_mode">Offline modus, alleen basisopdrachten</string>
-    <string name="voice_quota_daily_exhausted">AI-opdrachten zijn voor vandaag gepauzeerd, basisopdrachten werken nog wel</string>
+    <string name="voice_quota_monthly_exhausted">Maandelijkse limiet voor AI-opdrachten bereikt, basisopdrachten werken nog wel</string>
     <string name="voice_command_unknown">Ik begreep dat niet</string>
     <string name="voice_note_saved">Notitie opgeslagen</string>
     <string name="voice_counter_reset">Teller gereset</string>

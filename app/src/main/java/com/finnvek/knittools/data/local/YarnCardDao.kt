@@ -40,6 +40,9 @@ interface YarnCardDao {
         projectId: Long?,
     )
 
+    @Query("UPDATE yarn_cards SET linkedProjectId = NULL WHERE linkedProjectId = :projectId")
+    suspend fun clearLinkedProject(projectId: Long)
+
     @Query("DELETE FROM yarn_cards WHERE id = :id")
     suspend fun delete(id: Long)
 

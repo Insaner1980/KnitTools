@@ -55,7 +55,7 @@ abstract class KnitToolsDatabase : RoomDatabase() {
                             `targetRow` INTEGER NOT NULL,
                             `repeatInterval` INTEGER,
                             `message` TEXT NOT NULL,
-                            `isCompleted` INTEGER NOT NULL DEFAULT 0,
+                            `isCompleted` INTEGER NOT NULL,
                             `createdAt` INTEGER NOT NULL,
                             FOREIGN KEY(`projectId`) REFERENCES `counter_projects`(`id`)
                                 ON UPDATE NO ACTION ON DELETE CASCADE
@@ -90,10 +90,10 @@ abstract class KnitToolsDatabase : RoomDatabase() {
                             `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                             `projectId` INTEGER NOT NULL,
                             `name` TEXT NOT NULL,
-                            `count` INTEGER NOT NULL DEFAULT 0,
-                            `stepSize` INTEGER NOT NULL DEFAULT 1,
+                            `count` INTEGER NOT NULL,
+                            `stepSize` INTEGER NOT NULL,
                             `repeatAt` INTEGER,
-                            `sortOrder` INTEGER NOT NULL DEFAULT 0,
+                            `sortOrder` INTEGER NOT NULL,
                             `createdAt` INTEGER NOT NULL,
                             FOREIGN KEY(`projectId`) REFERENCES `counter_projects`(`id`)
                                 ON UPDATE NO ACTION ON DELETE CASCADE
@@ -133,8 +133,8 @@ abstract class KnitToolsDatabase : RoomDatabase() {
                             `needleSize` TEXT,
                             `yarnWeight` TEXT,
                             `yardage` INTEGER,
-                            `isFree` INTEGER NOT NULL DEFAULT 1,
-                            `patternUrl` TEXT NOT NULL DEFAULT '',
+                            `isFree` INTEGER NOT NULL,
+                            `patternUrl` TEXT NOT NULL,
                             `savedAt` INTEGER NOT NULL
                         )
                         """.trimIndent(),

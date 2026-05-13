@@ -16,8 +16,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.concurrent.CancellationException
 import javax.inject.Inject
 
 @HiltViewModel
@@ -29,15 +31,48 @@ class LibraryViewModel
         private val progressPhotoRepository: ProgressPhotoRepository,
         counterRepository: CounterRepository,
     ) : ViewModel() {
+        private val _isPhotoSelectMode = MutableStateFlow(false)
+        val isPhotoSelectMode: StateFlow<Boolean> = _isPhotoSelectMode.asStateFlow()
+
+        private val _selectedPhotoIds = MutableStateFlow<Set<Long>>(emptySet())
+        val selectedPhotoIds: StateFlow<Set<Long>> = _selectedPhotoIds.asStateFlow()
+
+        private val _isPatternSelectMode = MutableStateFlow(false)
+        val isPatternSelectMode: StateFlow<Boolean> = _isPatternSelectMode.asStateFlow()
+
+        private val _selectedPatternIds = MutableStateFlow<Set<Long>>(emptySet())
+        val selectedPatternIds: StateFlow<Set<Long>> = _selectedPatternIds.asStateFlow()
+
+        private val _isYarnSelectMode = MutableStateFlow(false)
+        val isYarnSelectMode: StateFlow<Boolean> = _isYarnSelectMode.asStateFlow()
+
+        private val _selectedYarnIds = MutableStateFlow<Set<Long>>(emptySet())
+        val selectedYarnIds: StateFlow<Set<Long>> = _selectedYarnIds.asStateFlow()
+
         // Countit Library-hubille
         val savedPatternCount: Flow<Int> = savedPatternRepository.getCount()
         val yarnCardCount: Flow<Int> = yarnCardRepository.getCardCount()
         val photoCount: Flow<Int> = progressPhotoRepository.getAllPhotoCount()
 
         // Listat alanäytöille
-        val savedPatterns: Flow<List<SavedPattern>> = savedPatternRepository.getAll()
-        val yarnCards: Flow<List<YarnCard>> = yarnCardRepository.getAllCards()
-        val allPhotos: Flow<List<ProgressPhoto>> = progressPhotoRepository.getAllPhotos()
+        val savedPatterns: Flow<List<SavedPattern>> =
+            savedPatternRepository.getAll().syncSelectionWithItems(
+                selectedIds = _selectedPatternIds,
+                selectMode = _isPatternSelectMode,
+                itemId = SavedPattern::id,
+            )
+        val yarnCards: Flow<List<YarnCard>> =
+            yarnCardRepository.getAllCards().syncSelectionWithItems(
+                selectedIds = _selectedYarnIds,
+                selectMode = _isYarnSelectMode,
+                itemId = YarnCard::id,
+            )
+        val allPhotos: Flow<List<ProgressPhoto>> =
+            progressPhotoRepository.getAllPhotos().syncSelectionWithItems(
+                selectedIds = _selectedPhotoIds,
+                selectMode = _isPhotoSelectMode,
+                itemId = ProgressPhoto::id,
+            )
         val allProjects: Flow<List<CounterProject>> = counterRepository.getAllProjects()
         val activeProjectNames: Flow<Map<Long, String>> =
             counterRepository
@@ -48,6 +83,15 @@ class LibraryViewModel
                         .associate { it.id to it.name }
                 }
 
+        fun loadSavedPattern(
+            id: Long,
+            onLoaded: (SavedPattern?) -> Unit,
+        ) {
+            viewModelScope.launch {
+                onLoaded(savedPatternRepository.getById(id))
+            }
+        }
+
         fun deletePhoto(photo: ProgressPhoto) {
             viewModelScope.launch {
                 progressPhotoRepository.deletePhoto(photo)
@@ -55,12 +99,6 @@ class LibraryViewModel
         }
 
         // === Multi-select (AllPhotosScreen) ===
-
-        private val _isPhotoSelectMode = MutableStateFlow(false)
-        val isPhotoSelectMode: StateFlow<Boolean> = _isPhotoSelectMode.asStateFlow()
-
-        private val _selectedPhotoIds = MutableStateFlow<Set<Long>>(emptySet())
-        val selectedPhotoIds: StateFlow<Set<Long>> = _selectedPhotoIds.asStateFlow()
 
         fun enterPhotoSelectMode(initialPhotoId: Long) {
             _isPhotoSelectMode.value = true
@@ -87,20 +125,14 @@ class LibraryViewModel
         }
 
         fun deleteSelectedPhotos() {
-            viewModelScope.launch {
-                val ids = _selectedPhotoIds.value.toList()
-                progressPhotoRepository.deletePhotos(ids)
-                exitPhotoSelectMode()
-            }
+            deleteSelected(
+                selectedIds = _selectedPhotoIds,
+                exitSelectMode = ::exitPhotoSelectMode,
+                deleteByIds = progressPhotoRepository::deletePhotos,
+            )
         }
 
         // === Multi-select (SavedPatternsScreen) ===
-
-        private val _isPatternSelectMode = MutableStateFlow(false)
-        val isPatternSelectMode: StateFlow<Boolean> = _isPatternSelectMode.asStateFlow()
-
-        private val _selectedPatternIds = MutableStateFlow<Set<Long>>(emptySet())
-        val selectedPatternIds: StateFlow<Set<Long>> = _selectedPatternIds.asStateFlow()
 
         fun enterPatternSelectMode(initialPatternId: Long) {
             _isPatternSelectMode.value = true
@@ -127,20 +159,14 @@ class LibraryViewModel
         }
 
         fun deleteSelectedPatterns() {
-            viewModelScope.launch {
-                val ids = _selectedPatternIds.value.toList()
-                savedPatternRepository.deleteByIds(ids)
-                exitPatternSelectMode()
-            }
+            deleteSelected(
+                selectedIds = _selectedPatternIds,
+                exitSelectMode = ::exitPatternSelectMode,
+                deleteByIds = savedPatternRepository::deleteByIds,
+            )
         }
 
         // === Multi-select (MyYarnScreen) ===
-
-        private val _isYarnSelectMode = MutableStateFlow(false)
-        val isYarnSelectMode: StateFlow<Boolean> = _isYarnSelectMode.asStateFlow()
-
-        private val _selectedYarnIds = MutableStateFlow<Set<Long>>(emptySet())
-        val selectedYarnIds: StateFlow<Set<Long>> = _selectedYarnIds.asStateFlow()
 
         fun enterYarnSelectMode(initialYarnId: Long) {
             _isYarnSelectMode.value = true
@@ -167,10 +193,50 @@ class LibraryViewModel
         }
 
         fun deleteSelectedYarn() {
+            deleteSelected(
+                selectedIds = _selectedYarnIds,
+                exitSelectMode = ::exitYarnSelectMode,
+                deleteByIds = yarnCardRepository::deleteCards,
+            )
+        }
+
+        private fun <T> Flow<List<T>>.syncSelectionWithItems(
+            selectedIds: MutableStateFlow<Set<Long>>,
+            selectMode: MutableStateFlow<Boolean>,
+            itemId: (T) -> Long,
+        ): Flow<List<T>> =
+            onEach { items ->
+                val current = selectedIds.value
+                if (current.isEmpty()) return@onEach
+
+                val existingIds = items.map(itemId).toSet()
+                val next = current.intersect(existingIds)
+                if (next != current) {
+                    selectedIds.value = next
+                }
+                if (next.isEmpty()) {
+                    selectMode.value = false
+                }
+            }
+
+        private fun deleteSelected(
+            selectedIds: StateFlow<Set<Long>>,
+            exitSelectMode: () -> Unit,
+            deleteByIds: suspend (List<Long>) -> Unit,
+        ) {
             viewModelScope.launch {
-                val ids = _selectedYarnIds.value.toList()
-                yarnCardRepository.deleteCards(ids)
-                exitYarnSelectMode()
+                try {
+                    val ids = selectedIds.value.toList()
+                    if (ids.isNotEmpty()) {
+                        deleteByIds(ids)
+                    }
+                } catch (cancellation: CancellationException) {
+                    throw cancellation
+                } catch (_: Exception) {
+                    // Poistovirhe ei saa jättää kirjastoa valintatilaan.
+                } finally {
+                    exitSelectMode()
+                }
             }
         }
     }

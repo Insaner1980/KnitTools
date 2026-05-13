@@ -515,7 +515,7 @@
     <string name="voice_commands">Comandos de voz</string>
     <string name="voice_mode_timeout">O modo de voz terminou por inatividade</string>
     <string name="voice_offline_mode">Modo offline, apenas comandos básicos</string>
-    <string name="voice_quota_daily_exhausted">Os comandos de IA estão em pausa por hoje, mas os comandos básicos continuam a funcionar</string>
+    <string name="voice_quota_monthly_exhausted">Limite mensal de comandos de IA atingido; os comandos básicos continuam a funcionar</string>
     <string name="voice_command_unknown">Não percebi</string>
     <string name="voice_note_saved">Nota guardada</string>
     <string name="voice_counter_reset">Contador reposto</string>

@@ -26,7 +26,6 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.finnvek.knittools.ui.theme.knitToolsColors
 
@@ -80,13 +79,7 @@ fun KnitToolsBottomBar(navController: NavController) {
                         selected = selected,
                         onClick = {
                             if (!selected) {
-                                navController.navigate(destination.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
-                                    }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
+                                navController.navigateToTopLevel(destination)
                             }
                         },
                         icon = {

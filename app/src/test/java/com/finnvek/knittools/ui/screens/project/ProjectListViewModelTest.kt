@@ -1,6 +1,7 @@
 package com.finnvek.knittools.ui.screens.project
 
 import android.content.Context
+import com.finnvek.knittools.data.datastore.AppPreferences
 import com.finnvek.knittools.data.datastore.PreferencesManager
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.pro.ProFeature
@@ -13,13 +14,18 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -73,8 +79,15 @@ class ProjectListViewModelTest {
             coEvery { repository.getActiveProjectCount() } returns 1
 
             val vm = createViewModel()
+            var upgradeEvents = 0
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                vm.upgradeToPro.collect {
+                    upgradeEvents += 1
+                }
+            }
             vm.createProject()
 
+            assertEquals(1, upgradeEvents)
             coVerify(exactly = 0) { repository.createProject(any()) }
         }
 
@@ -125,6 +138,26 @@ class ProjectListViewModelTest {
             vm.deleteProject(3L)
 
             coVerify { repository.deleteProject(3L) }
+        }
+
+    @Test
+    fun `project photo badges use one bulk count query`() =
+        runTest {
+            every { preferencesManager.preferences } returns flowOf(AppPreferences())
+            every { repository.getActiveProjects("updated") } returns
+                flowOf(
+                    listOf(
+                        CounterProject(id = 1L, name = "Sukat"),
+                        CounterProject(id = 2L, name = "Pipo"),
+                    ),
+                )
+            coEvery { photoRepository.getPhotoCountsByProjectIds(listOf(1L, 2L)) } returns mapOf(1L to 2)
+
+            val vm = createViewModel()
+
+            assertEquals(mapOf(1L to 2), vm.projectPhotoCounts.value)
+            coVerify(exactly = 1) { photoRepository.getPhotoCountsByProjectIds(listOf(1L, 2L)) }
+            verify(exactly = 0) { photoRepository.getPhotoCount(any()) }
         }
 
     @Test

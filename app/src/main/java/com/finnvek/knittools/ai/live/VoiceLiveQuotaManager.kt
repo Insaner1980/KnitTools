@@ -1,10 +1,13 @@
 package com.finnvek.knittools.ai.live
 
 import android.content.Context
-import androidx.datastore.preferences.core.edit
+import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
+import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.finnvek.knittools.data.datastore.editPreferencesSafely
+import com.finnvek.knittools.data.datastore.safePreferencesData
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -13,7 +16,10 @@ import java.time.YearMonth
 import javax.inject.Inject
 import javax.inject.Singleton
 
-private val Context.voiceLiveQuotaStore by preferencesDataStore(name = "voice_live_quota")
+private val Context.voiceLiveQuotaStore by preferencesDataStore(
+    name = "voice_live_quota",
+    corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() },
+)
 
 /**
  * Seuraa kuukausittaista Live API ääni-minuuttikiintiötä.
@@ -27,21 +33,21 @@ class VoiceLiveQuotaManager
     ) {
         suspend fun hasQuota(): Boolean {
             ensureMonthCurrent()
-            val prefs = context.voiceLiveQuotaStore.data.first()
+            val prefs = context.voiceLiveQuotaStore.safePreferencesData.first()
             val used = prefs[KEY_MINUTES_THIS_MONTH] ?: 0f
             return used < MONTHLY_ALLOWANCE
         }
 
         suspend fun recordMinutes(minutes: Float) {
             ensureMonthCurrent()
-            context.voiceLiveQuotaStore.edit { prefs ->
+            context.voiceLiveQuotaStore.editPreferencesSafely("Live-äänen minuuttikiintiön tallennus") { prefs ->
                 val current = prefs[KEY_MINUTES_THIS_MONTH] ?: 0f
                 prefs[KEY_MINUTES_THIS_MONTH] = current + minutes
             }
         }
 
         val usage: Flow<VoiceLiveUsage> =
-            context.voiceLiveQuotaStore.data.map { prefs ->
+            context.voiceLiveQuotaStore.safePreferencesData.map { prefs ->
                 val monthKey = prefs[KEY_MONTH_KEY] ?: ""
                 val currentMonth = YearMonth.now().toString()
                 val used = if (monthKey == currentMonth) prefs[KEY_MINUTES_THIS_MONTH] ?: 0f else 0f
@@ -53,7 +59,7 @@ class VoiceLiveQuotaManager
 
         private suspend fun ensureMonthCurrent() {
             val currentMonth = YearMonth.now().toString()
-            context.voiceLiveQuotaStore.edit { prefs ->
+            context.voiceLiveQuotaStore.editPreferencesSafely("Live-äänen kiintiökuukauden tallennus") { prefs ->
                 val storedMonth = prefs[KEY_MONTH_KEY]
                 if (storedMonth != currentMonth) {
                     prefs[KEY_MONTH_KEY] = currentMonth

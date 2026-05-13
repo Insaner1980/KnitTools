@@ -1,10 +1,13 @@
 package com.finnvek.knittools.ai
 
 import android.content.Context
-import androidx.datastore.preferences.core.edit
+import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
+import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.finnvek.knittools.data.datastore.editPreferencesSafely
+import com.finnvek.knittools.data.datastore.safePreferencesData
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -13,7 +16,10 @@ import java.time.YearMonth
 import javax.inject.Inject
 import javax.inject.Singleton
 
-private val Context.aiQuotaStore by preferencesDataStore(name = "ai_quota")
+private val Context.aiQuotaStore by preferencesDataStore(
+    name = "ai_quota",
+    corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() },
+)
 
 /**
  * Seuraa kuukausittaista AI-käyttöä credit-järjestelmää varten.
@@ -31,7 +37,7 @@ class AiQuotaManager
          */
         suspend fun hasQuota(): Boolean {
             ensureMonthCurrent()
-            val prefs = context.aiQuotaStore.data.first()
+            val prefs = context.aiQuotaStore.safePreferencesData.first()
             val used = prefs[KEY_CALLS_THIS_MONTH] ?: 0
             val extras = prefs[KEY_EXTRA_CREDITS] ?: 0
             return used < (MONTHLY_ALLOWANCE + extras)
@@ -42,7 +48,7 @@ class AiQuotaManager
          */
         suspend fun recordCall() {
             ensureMonthCurrent()
-            context.aiQuotaStore.edit { prefs ->
+            context.aiQuotaStore.editPreferencesSafely("AI-kiintiön tallennus") { prefs ->
                 val current = prefs[KEY_CALLS_THIS_MONTH] ?: 0
                 prefs[KEY_CALLS_THIS_MONTH] = current + 1
             }
@@ -52,7 +58,7 @@ class AiQuotaManager
          * Palauttaa kuluvan kuukauden käyttötiedot näytettäväksi Asetuksissa.
          */
         val usage: Flow<AiUsage> =
-            context.aiQuotaStore.data.map { prefs ->
+            context.aiQuotaStore.safePreferencesData.map { prefs ->
                 val monthKey = prefs[KEY_MONTH_KEY] ?: ""
                 val currentMonth = YearMonth.now().toString()
                 val used = if (monthKey == currentMonth) prefs[KEY_CALLS_THIS_MONTH] ?: 0 else 0
@@ -68,7 +74,7 @@ class AiQuotaManager
          * Lisää ostettuja lisäkredittejä (consumable IAP).
          */
         suspend fun addExtraCredits(amount: Int) {
-            context.aiQuotaStore.edit { prefs ->
+            context.aiQuotaStore.editPreferencesSafely("AI-lisäkrediittien tallennus") { prefs ->
                 val current = prefs[KEY_EXTRA_CREDITS] ?: 0
                 prefs[KEY_EXTRA_CREDITS] = current + amount
             }
@@ -86,7 +92,7 @@ class AiQuotaManager
 
         private suspend fun ensureMonthCurrent() {
             val currentMonth = YearMonth.now().toString()
-            context.aiQuotaStore.edit { prefs ->
+            context.aiQuotaStore.editPreferencesSafely("AI-kiintiökuukauden tallennus") { prefs ->
                 val storedMonth = prefs[KEY_MONTH_KEY]
                 if (storedMonth != currentMonth) {
                     prefs[KEY_MONTH_KEY] = currentMonth

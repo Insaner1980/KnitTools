@@ -3,6 +3,7 @@ package com.finnvek.knittools.repository
 import android.content.Context
 import com.finnvek.knittools.data.local.CounterProjectDao
 import com.finnvek.knittools.data.local.CounterProjectEntity
+import com.finnvek.knittools.data.local.ImmediateDatabaseTransactionRunner
 import com.finnvek.knittools.data.local.SessionDao
 import com.finnvek.knittools.data.local.SessionEntity
 import com.finnvek.knittools.data.storage.ProgressPhotoStorage
@@ -10,9 +11,11 @@ import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.KnitSession
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.coVerifyOrder
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -24,18 +27,25 @@ import org.junit.Test
 class CounterRepositoryDomainApiTest {
     private lateinit var projectDao: CounterProjectDao
     private lateinit var sessionDao: SessionDao
+    private lateinit var yarnCardRepository: YarnCardRepository
     private lateinit var repository: CounterRepository
 
     @Before
     fun setup() {
         projectDao = mockk(relaxed = true)
         sessionDao = mockk(relaxed = true)
+        yarnCardRepository = mockk(relaxed = true)
         repository =
             CounterRepository(
                 dao = projectDao,
                 sessionDao = sessionDao,
                 photoStorage = mockk<ProgressPhotoStorage>(relaxed = true),
                 context = mockk<Context>(relaxed = true),
+                yarnCardRepository = yarnCardRepository,
+                savedPatternRepository = mockk(relaxed = true),
+                patternAnnotationRepository = mockk(relaxed = true),
+                transactionRunner = ImmediateDatabaseTransactionRunner,
+                ioDispatcher = Dispatchers.Unconfined,
             )
     }
 
@@ -164,5 +174,16 @@ class CounterRepositoryDomainApiTest {
             assertEquals(12, insertedSession.captured.startRow)
             assertEquals(18, insertedSession.captured.endRow)
             assertEquals(30, insertedSession.captured.durationMinutes)
+        }
+
+    @Test
+    fun `deleteProject clears yarn card project links before deleting project`() =
+        runTest {
+            repository.deleteProject(7L)
+
+            coVerifyOrder {
+                yarnCardRepository.clearLinkedProject(7L)
+                projectDao.delete(7L)
+            }
         }
 }

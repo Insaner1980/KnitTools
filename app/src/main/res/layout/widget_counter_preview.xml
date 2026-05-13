@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="#FFD2CDB5"
     android:paddingHorizontal="16dp"
-    android:paddingVertical="12dp">
+    android:paddingVertical="12dp"
+    tools:ignore="Overdraw">
 
     <TextView
         android:layout_width="wrap_content"
@@ -21,14 +23,15 @@
         android:layout_height="0dp"
         android:layout_weight="1"
         android:gravity="center_vertical"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        tools:ignore="NestedWeights">
 
         <TextView
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:background="#FFC45100"
             android:gravity="center"
-            android:text="−"
+            android:text="@string/widget_preview_decrement"
             android:textColor="#FFFFFFFF"
             android:textSize="20sp"
             android:textStyle="bold" />
@@ -38,7 +41,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:gravity="center"
-            android:text="42 / 100"
+            android:text="@string/widget_preview_count"
             android:textColor="#FF2E2A1E"
             android:textSize="34sp"
             android:textStyle="bold"
@@ -49,7 +52,7 @@
             android:layout_height="48dp"
             android:background="#FFC45100"
             android:gravity="center"
-            android:text="+"
+            android:text="@string/widget_preview_increment"
             android:textColor="#FFFFFFFF"
             android:textSize="20sp"
             android:textStyle="bold" />

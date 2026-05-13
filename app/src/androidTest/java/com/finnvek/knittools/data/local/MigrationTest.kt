@@ -1,6 +1,8 @@
 package com.finnvek.knittools.data.local
 
+import android.database.Cursor
 import androidx.room.testing.MigrationTestHelper
+import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.assertEquals
@@ -33,6 +35,46 @@ class MigrationTest {
             KnitToolsDatabase.MIGRATION_7_8,
             KnitToolsDatabase.MIGRATION_8_9,
         )
+
+    private val latestVersion = 9
+
+    private fun migrateToLatest(testDb: String): SupportSQLiteDatabase =
+        helper.runMigrationsAndValidate(
+            testDb,
+            latestVersion,
+            true,
+            *allMigrations,
+        )
+
+    private inline fun assertSingleRow(
+        db: SupportSQLiteDatabase,
+        sql: String,
+        verify: Cursor.() -> Unit,
+    ) {
+        val cursor = db.query(sql)
+        try {
+            assertTrue(cursor.moveToFirst())
+            cursor.verify()
+            assertFalse(cursor.moveToNext())
+        } finally {
+            cursor.close()
+        }
+    }
+
+    private fun assertStartedAtIndexExists(db: SupportSQLiteDatabase) {
+        val indexCursor = db.query("PRAGMA index_list('sessions')")
+        var hasStartedAtIndex = false
+        try {
+            while (indexCursor.moveToNext()) {
+                if (indexCursor.getString(1) == "index_sessions_startedAt") {
+                    hasStartedAtIndex = true
+                }
+            }
+        } finally {
+            indexCursor.close()
+        }
+        assertTrue(hasStartedAtIndex)
+    }
 
     @Test
     fun migrate1to2() {
@@ -680,7 +722,7 @@ class MigrationTest {
                     1, 'Indexed project', 10, 0, 1, '', 1000, 2000,
                     NULL, NULL, 0, NULL, NULL, '',
                     NULL, NULL, NULL, 0, NULL,
-                    0, 0, NULL
+                    0, 0, 72
                 )
                 """.trimIndent(),
             )
@@ -704,15 +746,497 @@ class MigrationTest {
                 KnitToolsDatabase.MIGRATION_8_9,
             )
 
-        val indexCursor = db.query("PRAGMA index_list('sessions')")
-        var hasStartedAtIndex = false
-        while (indexCursor.moveToNext()) {
-            if (indexCursor.getString(1) == "index_sessions_startedAt") {
-                hasStartedAtIndex = true
-            }
+        assertSingleRow(
+            db,
+            "SELECT name, targetRows FROM counter_projects WHERE id = 1",
+        ) {
+            assertEquals("Indexed project", getString(0))
+            assertEquals(72, getInt(1))
         }
-        indexCursor.close()
-        assertTrue(hasStartedAtIndex)
+        assertSingleRow(
+            db,
+            "SELECT projectId, startedAt, endedAt, startRow, endRow, durationMinutes FROM sessions WHERE id = 1",
+        ) {
+            assertEquals(1L, getLong(0))
+            assertEquals(1000L, getLong(1))
+            assertEquals(2000L, getLong(2))
+            assertEquals(1, getInt(3))
+            assertEquals(5, getInt(4))
+            assertEquals(30, getInt(5))
+        }
+        assertStartedAtIndexExists(db)
+
+        db.close()
+    }
+
+    @Test
+    fun migrate2to9PreservesYarnCards() {
+        val testDb = "migration-test-v2-to-v9"
+
+        helper.createDatabase(testDb, 2).apply {
+            execSQL(
+                "INSERT INTO counter_projects (id, name, count, secondaryCount, stepSize, notes, createdAt, updatedAt) VALUES (1, 'Yarn project', 12, 0, 1, 'notes', 1000, 2000)",
+            )
+            execSQL(
+                "INSERT INTO counter_history (id, projectId, action, previousValue, newValue, timestamp) VALUES (1, 1, 'increment', 11, 12, 3000)",
+            )
+            execSQL(
+                """
+                INSERT INTO yarn_cards (
+                    id, brand, yarnName, fiberContent, weightGrams, lengthMeters,
+                    needleSize, gaugeInfo, colorName, colorNumber, dyeLot,
+                    weightCategory, careSymbols, photoUri, createdAt
+                ) VALUES (
+                    1, 'Novita', 'Nalle', '75% wool 25% polyamide', '100', '260',
+                    '3.0', '22 sts', 'Blue', '170', 'A1',
+                    'Sport', 5, 'content://yarn/1', 1234
+                )
+                """.trimIndent(),
+            )
+            close()
+        }
+
+        val db = migrateToLatest(testDb)
+
+        assertSingleRow(
+            db,
+            """
+            SELECT brand, yarnName, fiberContent, weightGrams, lengthMeters,
+                needleSize, gaugeInfo, colorName, colorNumber, dyeLot,
+                weightCategory, careSymbols, photoUri, createdAt,
+                quantityInStash, status, linkedProjectId
+            FROM yarn_cards WHERE id = 1
+            """.trimIndent(),
+        ) {
+            assertEquals("Novita", getString(0))
+            assertEquals("Nalle", getString(1))
+            assertEquals("75% wool 25% polyamide", getString(2))
+            assertEquals("100", getString(3))
+            assertEquals("260", getString(4))
+            assertEquals("3.0", getString(5))
+            assertEquals("22 sts", getString(6))
+            assertEquals("Blue", getString(7))
+            assertEquals("170", getString(8))
+            assertEquals("A1", getString(9))
+            assertEquals("Sport", getString(10))
+            assertEquals(5L, getLong(11))
+            assertEquals("content://yarn/1", getString(12))
+            assertEquals(1234L, getLong(13))
+            assertEquals(1, getInt(14))
+            assertEquals("IN_STASH", getString(15))
+            assertTrue(isNull(16))
+        }
+        assertSingleRow(
+            db,
+            "SELECT action, previousValue, newValue, timestamp FROM counter_history WHERE id = 1",
+        ) {
+            assertEquals("increment", getString(0))
+            assertEquals(11, getInt(1))
+            assertEquals(12, getInt(2))
+            assertEquals(3000L, getLong(3))
+        }
+        assertStartedAtIndexExists(db)
+
+        db.close()
+    }
+
+    @Test
+    fun migrate3to9PreservesSessionsAndBackfilledCounters() {
+        val testDb = "migration-test-v3-to-v9"
+
+        helper.createDatabase(testDb, 3).apply {
+            execSQL(
+                """
+                INSERT INTO counter_projects (
+                    id, name, count, secondaryCount, stepSize, notes, createdAt, updatedAt,
+                    sectionName, stitchCount, isCompleted, totalRows, completedAt, yarnCardIds
+                ) VALUES (
+                    1, 'Session project', 44, 2, 6, 'session notes', 1000, 2000,
+                    'Body', 88, 1, 120, 3000, '4,5'
+                )
+                """.trimIndent(),
+            )
+            execSQL(
+                """
+                INSERT INTO sessions (
+                    id, projectId, startedAt, endedAt, startRow, endRow, durationMinutes
+                ) VALUES (
+                    1, 1, 4000, 4600, 12, 18, 10
+                )
+                """.trimIndent(),
+            )
+            close()
+        }
+
+        val db = migrateToLatest(testDb)
+
+        assertSingleRow(
+            db,
+            """
+            SELECT sectionName, stitchCount, isCompleted, totalRows, completedAt,
+                yarnCardIds, targetRows
+            FROM counter_projects WHERE id = 1
+            """.trimIndent(),
+        ) {
+            assertEquals("Body", getString(0))
+            assertEquals(88, getInt(1))
+            assertEquals(1, getInt(2))
+            assertEquals(120, getInt(3))
+            assertEquals(3000L, getLong(4))
+            assertEquals("4,5", getString(5))
+            assertTrue(isNull(6))
+        }
+        assertSingleRow(
+            db,
+            "SELECT projectId, startedAt, endedAt, startRow, endRow, durationMinutes FROM sessions WHERE id = 1",
+        ) {
+            assertEquals(1L, getLong(0))
+            assertEquals(4000L, getLong(1))
+            assertEquals(4600L, getLong(2))
+            assertEquals(12, getInt(3))
+            assertEquals(18, getInt(4))
+            assertEquals(10, getInt(5))
+        }
+        assertSingleRow(
+            db,
+            "SELECT name, count, stepSize, repeatAt, counterType FROM project_counters WHERE projectId = 1",
+        ) {
+            assertEquals("Pattern repeat", getString(0))
+            assertEquals(2, getInt(1))
+            assertEquals(6, getInt(2))
+            assertEquals(6, getInt(3))
+            assertEquals("REPEATING", getString(4))
+        }
+        assertStartedAtIndexExists(db)
+
+        db.close()
+    }
+
+    @Test
+    fun migrate4to9PreservesReminderPhotoAndCounterRows() {
+        val testDb = "migration-test-v4-to-v9"
+
+        helper.createDatabase(testDb, 4).apply {
+            execSQL(
+                """
+                INSERT INTO counter_projects (
+                    id, name, count, secondaryCount, stepSize, notes, createdAt, updatedAt,
+                    sectionName, stitchCount, isCompleted, totalRows, completedAt, yarnCardIds
+                ) VALUES (
+                    1, 'Feature project', 20, 0, 2, 'feature notes', 1000, 2000,
+                    NULL, NULL, 0, NULL, NULL, ''
+                )
+                """.trimIndent(),
+            )
+            execSQL(
+                """
+                INSERT INTO row_reminders (
+                    id, projectId, targetRow, repeatInterval, message, isCompleted, createdAt
+                ) VALUES (
+                    1, 1, 25, 5, 'Check cable', 0, 3000
+                )
+                """.trimIndent(),
+            )
+            execSQL(
+                """
+                INSERT INTO progress_photos (
+                    id, projectId, photoUri, rowNumber, note, createdAt
+                ) VALUES (
+                    1, 1, 'content://photos/1', 24, 'Front panel', 4000
+                )
+                """.trimIndent(),
+            )
+            execSQL(
+                """
+                INSERT INTO project_counters (
+                    id, projectId, name, count, stepSize, repeatAt, sortOrder, createdAt
+                ) VALUES (
+                    1, 1, 'Sleeve repeats', 6, 2, 12, 3, 5000
+                )
+                """.trimIndent(),
+            )
+            close()
+        }
+
+        val db = migrateToLatest(testDb)
+
+        assertSingleRow(
+            db,
+            "SELECT targetRow, repeatInterval, message, isCompleted, createdAt FROM row_reminders WHERE id = 1",
+        ) {
+            assertEquals(25, getInt(0))
+            assertEquals(5, getInt(1))
+            assertEquals("Check cable", getString(2))
+            assertEquals(0, getInt(3))
+            assertEquals(3000L, getLong(4))
+        }
+        assertSingleRow(
+            db,
+            "SELECT photoUri, rowNumber, note, createdAt FROM progress_photos WHERE id = 1",
+        ) {
+            assertEquals("content://photos/1", getString(0))
+            assertEquals(24, getInt(1))
+            assertEquals("Front panel", getString(2))
+            assertEquals(4000L, getLong(3))
+        }
+        assertSingleRow(
+            db,
+            """
+            SELECT name, count, stepSize, repeatAt, sortOrder, createdAt,
+                counterType, startingStitches, stitchChange, shapeEveryN
+            FROM project_counters WHERE id = 1
+            """.trimIndent(),
+        ) {
+            assertEquals("Sleeve repeats", getString(0))
+            assertEquals(6, getInt(1))
+            assertEquals(2, getInt(2))
+            assertEquals(12, getInt(3))
+            assertEquals(3, getInt(4))
+            assertEquals(5000L, getLong(5))
+            assertEquals("REPEATING", getString(6))
+            assertTrue(isNull(7))
+            assertTrue(isNull(8))
+            assertTrue(isNull(9))
+        }
+        assertStartedAtIndexExists(db)
+
+        db.close()
+    }
+
+    @Test
+    fun migrate5to9PreservesSavedPatternsAndProjectLinks() {
+        val testDb = "migration-test-v5-to-v9"
+
+        helper.createDatabase(testDb, 5).apply {
+            execSQL(
+                """
+                INSERT INTO counter_projects (
+                    id, name, count, secondaryCount, stepSize, notes, createdAt, updatedAt,
+                    sectionName, stitchCount, isCompleted, totalRows, completedAt,
+                    yarnCardIds, linkedPatternId
+                ) VALUES (
+                    1, 'Saved pattern project', 30, 0, 1, 'pattern notes', 1000, 2000,
+                    NULL, NULL, 0, NULL, NULL, '', 1
+                )
+                """.trimIndent(),
+            )
+            execSQL(
+                """
+                INSERT INTO saved_patterns (
+                    id, ravelryId, name, designerName, thumbnailUrl, difficulty,
+                    gaugeStitches, gaugeRows, needleSize, yarnWeight, yardage,
+                    isFree, patternUrl, savedAt
+                ) VALUES (
+                    1, 9001, 'Cable Socks', 'Test Designer', 'https://example.test/thumb.jpg', 3.5,
+                    28.0, 36.0, '2.5 mm', 'Fingering', 420,
+                    0, 'https://example.test/pattern', 6000
+                )
+                """.trimIndent(),
+            )
+            close()
+        }
+
+        val db = migrateToLatest(testDb)
+
+        assertSingleRow(
+            db,
+            "SELECT name, linkedPatternId FROM counter_projects WHERE id = 1",
+        ) {
+            assertEquals("Saved pattern project", getString(0))
+            assertEquals(1L, getLong(1))
+        }
+        assertSingleRow(
+            db,
+            """
+            SELECT ravelryId, name, designerName, thumbnailUrl, difficulty,
+                gaugeStitches, gaugeRows, needleSize, yarnWeight, yardage,
+                isFree, patternUrl, savedAt
+            FROM saved_patterns WHERE id = 1
+            """.trimIndent(),
+        ) {
+            assertEquals(9001, getInt(0))
+            assertEquals("Cable Socks", getString(1))
+            assertEquals("Test Designer", getString(2))
+            assertEquals("https://example.test/thumb.jpg", getString(3))
+            assertEquals(3.5, getDouble(4), 0.0)
+            assertEquals(28.0, getDouble(5), 0.0)
+            assertEquals(36.0, getDouble(6), 0.0)
+            assertEquals("2.5 mm", getString(7))
+            assertEquals("Fingering", getString(8))
+            assertEquals(420, getInt(9))
+            assertEquals(0, getInt(10))
+            assertEquals("https://example.test/pattern", getString(11))
+            assertEquals(6000L, getLong(12))
+        }
+        assertStartedAtIndexExists(db)
+
+        db.close()
+    }
+
+    @Test
+    fun migrate6to9PreservesStashAndShapingValues() {
+        val testDb = "migration-test-v6-to-v9"
+
+        helper.createDatabase(testDb, 6).apply {
+            execSQL(
+                """
+                INSERT INTO counter_projects (
+                    id, name, count, secondaryCount, stepSize, notes, createdAt, updatedAt,
+                    sectionName, stitchCount, isCompleted, totalRows, completedAt,
+                    yarnCardIds, linkedPatternId
+                ) VALUES (
+                    1, 'Stash project', 18, 0, 1, '', 1000, 2000,
+                    NULL, NULL, 0, NULL, NULL, '', NULL
+                )
+                """.trimIndent(),
+            )
+            execSQL(
+                """
+                INSERT INTO yarn_cards (
+                    id, brand, yarnName, fiberContent, weightGrams, lengthMeters,
+                    needleSize, gaugeInfo, colorName, colorNumber, dyeLot,
+                    weightCategory, careSymbols, photoUri, createdAt,
+                    quantityInStash, status, linkedProjectId
+                ) VALUES (
+                    1, 'Istex', 'Lettlopi', '100% wool', '50', '100',
+                    '4.5', '18 sts', 'Moss', '9423', 'D2',
+                    'Aran', 9, 'content://yarn/6', 3000,
+                    7, 'ASSIGNED', 1
+                )
+                """.trimIndent(),
+            )
+            execSQL(
+                """
+                INSERT INTO project_counters (
+                    id, projectId, name, count, stepSize, repeatAt, sortOrder, createdAt,
+                    counterType, startingStitches, stitchChange, shapeEveryN
+                ) VALUES (
+                    1, 1, 'Waist shaping', 4, 1, NULL, 0, 4000,
+                    'SHAPING', 100, -2, 6
+                )
+                """.trimIndent(),
+            )
+            close()
+        }
+
+        val db = migrateToLatest(testDb)
+
+        assertSingleRow(
+            db,
+            "SELECT quantityInStash, status, linkedProjectId FROM yarn_cards WHERE id = 1",
+        ) {
+            assertEquals(7, getInt(0))
+            assertEquals("ASSIGNED", getString(1))
+            assertEquals(1L, getLong(2))
+        }
+        assertSingleRow(
+            db,
+            """
+            SELECT counterType, startingStitches, stitchChange, shapeEveryN,
+                repeatStartRow, repeatEndRow, totalRepeats, currentRepeat
+            FROM project_counters WHERE id = 1
+            """.trimIndent(),
+        ) {
+            assertEquals("SHAPING", getString(0))
+            assertEquals(100, getInt(1))
+            assertEquals(-2, getInt(2))
+            assertEquals(6, getInt(3))
+            assertTrue(isNull(4))
+            assertTrue(isNull(5))
+            assertTrue(isNull(6))
+            assertTrue(isNull(7))
+        }
+        assertStartedAtIndexExists(db)
+
+        db.close()
+    }
+
+    @Test
+    fun migrate7to9PreservesPatternViewerData() {
+        val testDb = "migration-test-v7-to-v9"
+
+        helper.createDatabase(testDb, 7).apply {
+            execSQL(
+                """
+                INSERT INTO counter_projects (
+                    id, name, count, secondaryCount, stepSize, notes, createdAt, updatedAt,
+                    sectionName, stitchCount, isCompleted, totalRows, completedAt, yarnCardIds,
+                    linkedPatternId, patternUri, patternName, currentPatternPage, patternRowMapping,
+                    stitchTrackingEnabled, currentStitch
+                ) VALUES (
+                    1, 'Pattern viewer project', 52, 0, 1, 'viewer notes', 1000, 2000,
+                    NULL, NULL, 0, NULL, NULL, '',
+                    NULL, 'content://patterns/socks.pdf', 'Socks.pdf', 3, '{"10":2}',
+                    1, 17
+                )
+                """.trimIndent(),
+            )
+            execSQL(
+                """
+                INSERT INTO project_counters (
+                    id, projectId, name, count, stepSize, repeatAt, sortOrder, createdAt,
+                    counterType, startingStitches, stitchChange, shapeEveryN,
+                    repeatStartRow, repeatEndRow, totalRepeats, currentRepeat
+                ) VALUES (
+                    1, 1, 'Chart repeat', 5, 1, NULL, 0, 3000,
+                    'REPEATING', NULL, NULL, NULL,
+                    10, 20, 4, 2
+                )
+                """.trimIndent(),
+            )
+            execSQL(
+                """
+                INSERT INTO pattern_annotations (
+                    id, projectId, page, pathData, color, strokeWidth, createdAt
+                ) VALUES (
+                    1, 1, 3, 'M 0 0 L 10 10', '#FF0000', 2.5, 4000
+                )
+                """.trimIndent(),
+            )
+            close()
+        }
+
+        val db = migrateToLatest(testDb)
+
+        assertSingleRow(
+            db,
+            """
+            SELECT patternUri, patternName, currentPatternPage, patternRowMapping,
+                stitchTrackingEnabled, currentStitch, targetRows
+            FROM counter_projects WHERE id = 1
+            """.trimIndent(),
+        ) {
+            assertEquals("content://patterns/socks.pdf", getString(0))
+            assertEquals("Socks.pdf", getString(1))
+            assertEquals(3, getInt(2))
+            assertEquals("""{"10":2}""", getString(3))
+            assertEquals(1, getInt(4))
+            assertEquals(17, getInt(5))
+            assertTrue(isNull(6))
+        }
+        assertSingleRow(
+            db,
+            """
+            SELECT repeatStartRow, repeatEndRow, totalRepeats, currentRepeat
+            FROM project_counters WHERE id = 1
+            """.trimIndent(),
+        ) {
+            assertEquals(10, getInt(0))
+            assertEquals(20, getInt(1))
+            assertEquals(4, getInt(2))
+            assertEquals(2, getInt(3))
+        }
+        assertSingleRow(
+            db,
+            "SELECT page, pathData, color, strokeWidth, createdAt FROM pattern_annotations WHERE id = 1",
+        ) {
+            assertEquals(3, getInt(0))
+            assertEquals("M 0 0 L 10 10", getString(1))
+            assertEquals("#FF0000", getString(2))
+            assertEquals(2.5, getDouble(3), 0.0)
+            assertEquals(4000L, getLong(4))
+        }
+        assertStartedAtIndexExists(db)
 
         db.close()
     }
@@ -742,15 +1266,7 @@ class MigrationTest {
         assertTrue(projectCursor.isNull(1))
         projectCursor.close()
 
-        val indexCursor = db.query("PRAGMA index_list('sessions')")
-        var hasStartedAtIndex = false
-        while (indexCursor.moveToNext()) {
-            if (indexCursor.getString(1) == "index_sessions_startedAt") {
-                hasStartedAtIndex = true
-            }
-        }
-        indexCursor.close()
-        assertTrue(hasStartedAtIndex)
+        assertStartedAtIndexExists(db)
 
         db.close()
     }

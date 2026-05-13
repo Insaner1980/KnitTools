@@ -2,6 +2,7 @@ package com.finnvek.knittools.repository
 
 import com.finnvek.knittools.data.local.CounterProjectDao
 import com.finnvek.knittools.data.local.CounterProjectEntity
+import com.finnvek.knittools.data.local.DatabaseTransactionRunner
 import com.finnvek.knittools.data.remote.PatternDetail
 import com.finnvek.knittools.data.remote.PatternSearchParams
 import com.finnvek.knittools.data.remote.PatternSearchResponse
@@ -18,6 +19,7 @@ class RavelryRepository
         private val api: RavelryApiService,
         private val savedPatternRepository: SavedPatternRepository,
         private val counterProjectDao: CounterProjectDao,
+        private val transactionRunner: DatabaseTransactionRunner,
     ) {
         suspend fun searchPatterns(params: PatternSearchParams): PatternSearchResponse = api.searchPatterns(params)
 
@@ -49,13 +51,16 @@ class RavelryRepository
 
         suspend fun deleteSavedPattern(id: Long) = savedPatternRepository.deleteById(id)
 
-        suspend fun createProjectFromPattern(detail: PatternDetail): Long {
-            val savedId = savePattern(detail)
-            return counterProjectDao.insert(
-                CounterProjectEntity(
-                    name = detail.name,
-                    linkedPatternId = savedId,
-                ),
-            )
-        }
+        suspend fun getActiveProjectCount(): Int = counterProjectDao.getActiveProjectCount()
+
+        suspend fun createProjectFromPattern(detail: PatternDetail): Long =
+            transactionRunner.run {
+                val savedId = savePattern(detail)
+                counterProjectDao.insert(
+                    CounterProjectEntity(
+                        name = detail.name,
+                        linkedPatternId = savedId,
+                    ),
+                )
+            }
     }

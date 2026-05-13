@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.room)
     alias(libs.plugins.hilt)
     alias(libs.plugins.owasp.dependency.check)
     alias(libs.plugins.baselineprofile)
@@ -221,8 +222,20 @@ androidComponents {
 dependencyCheck {
     formats = listOf("HTML", "JSON")
     outputDirectory = rootProject.layout.projectDirectory.dir("reports")
+    data {
+        val defaultDataDirectory =
+            rootProject.layout.projectDirectory
+                .dir(".gradle/dependency-check-data")
+                .asFile.absolutePath
+
+        directory =
+            providers
+                .environmentVariable("DEPENDENCY_CHECK_DATA_DIRECTORY")
+                .orElse(defaultDataDirectory)
+                .get()
+    }
     autoUpdate =
-        (providers.environmentVariable("DEPENDENCY_CHECK_AUTO_UPDATE").orNull ?: "false")
+        (providers.environmentVariable("DEPENDENCY_CHECK_AUTO_UPDATE").orNull ?: "true")
             .toBoolean()
     failBuildOnCVSS =
         providers
@@ -300,8 +313,8 @@ gradle.taskGraph.whenReady {
     }
 }
 
-ksp {
-    arg("room.schemaLocation", "$projectDir/schemas")
+room {
+    schemaDirectory("$projectDir/schemas")
 }
 
 hilt {
@@ -387,6 +400,7 @@ dependencies {
     // Core
     implementation(libs.core.ktx)
     implementation(libs.activity.compose)
+    implementation(libs.appcompat)
 
     // SplashScreen
     implementation(libs.splashscreen)

@@ -80,12 +80,7 @@ class CounterWidget : GlanceAppWidget() {
         provideContent {
             val prefs = currentState<Preferences>()
             val storedData = CounterWidgetState.fromPreferences(context, prefs)
-            val data =
-                if (initialWidgetData.projectId > 0L && initialWidgetData != storedData) {
-                    initialWidgetData
-                } else {
-                    storedData
-                }
+            val data = if (initialWidgetData != storedData) initialWidgetData else storedData
             GlanceTheme(colors = ColorProviders(dark = WidgetDarkScheme, light = WidgetLightScheme)) {
                 WidgetSizedContent(context = context, data = data, isPro = isPro)
             }
@@ -100,28 +95,16 @@ class CounterWidget : GlanceAppWidget() {
     ): WidgetData {
         // Widgetit seuraavat samaa aktiivista projektia. Peilaa jaettu tila myös silloin,
         // kun Glance-instanssille on jäänyt vanha projekti aiemmasta renderöinnistä.
+        val repository = entryPoint.counterRepository()
         val sharedWidgetData = CounterWidgetState.load(context)
-        return when {
-            sharedWidgetData.projectId > 0L -> {
-                if (sharedWidgetData != widgetData) {
-                    CounterWidgetState.saveGlance(context, id, sharedWidgetData)
-                }
-                sharedWidgetData
-            }
-
-            widgetData.projectId == 0L -> {
-                entryPoint.counterRepository().getFirstProject()?.let { project ->
-                    val initialData = project.toWidgetData()
-                    CounterWidgetState.save(context, initialData)
-                    CounterWidgetState.saveGlance(context, id, initialData)
-                    initialData
-                } ?: widgetData
-            }
-
-            else -> {
-                widgetData
-            }
-        }
+        val resolvedData =
+            repository.resolveWidgetDisplayData(
+                context = context,
+                candidates = listOf(sharedWidgetData, widgetData),
+            )
+        if (resolvedData != sharedWidgetData) CounterWidgetState.save(context, resolvedData)
+        if (resolvedData != widgetData) CounterWidgetState.saveGlance(context, id, resolvedData)
+        return resolvedData
     }
 
     companion object {

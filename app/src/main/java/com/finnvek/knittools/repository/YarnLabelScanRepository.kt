@@ -8,9 +8,11 @@ import androidx.core.net.toUri
 import com.finnvek.knittools.ai.GeminiAiService
 import com.finnvek.knittools.ai.ParsedYarnLabel
 import com.finnvek.knittools.ai.YarnLabelGeminiScanner
+import com.finnvek.knittools.data.storage.AppFileStorage
 import com.finnvek.knittools.data.storage.YarnLabelPhotoStorage
+import com.finnvek.knittools.di.IoDispatcher
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -21,12 +23,13 @@ class YarnLabelScanRepository
     constructor(
         private val geminiAiService: GeminiAiService,
         @param:ApplicationContext private val context: Context,
+        @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
     ) {
         fun createScanPhotoUri(): Uri = YarnLabelPhotoStorage.createImageFile(context).second
 
         suspend fun scanLabel(photoUri: Uri): ParsedYarnLabel? {
             val bitmap =
-                withContext(Dispatchers.IO) {
+                withContext(ioDispatcher) {
                     loadBitmapFromUri(photoUri)
                 } ?: return null
             return YarnLabelGeminiScanner.scan(geminiAiService, bitmap)
@@ -35,7 +38,7 @@ class YarnLabelScanRepository
         fun deleteScanPhoto(uriString: String) {
             if (uriString.isBlank()) return
             try {
-                context.contentResolver.delete(uriString.toUri(), null, null)
+                AppFileStorage.deleteUri(context, uriString.toUri())
             } catch (_: Exception) {
                 // Tiedostoa ei löydy tai oikeutta ei enää ole.
             }

@@ -13,6 +13,7 @@ class CounterLaunchRequestTest {
                 shouldOpenCounter = true,
                 projectId = 42L,
                 launchId = "launch-1",
+                isTrustedCounterLaunch = true,
             )
 
         val request =
@@ -31,6 +32,7 @@ class CounterLaunchRequestTest {
                 shouldOpenCounter = true,
                 projectId = 42L,
                 launchId = "launch-2",
+                isTrustedCounterLaunch = true,
             )
 
         val request =
@@ -51,6 +53,7 @@ class CounterLaunchRequestTest {
                 shouldOpenCounter = true,
                 projectId = 42L,
                 launchId = null,
+                isTrustedCounterLaunch = true,
             )
         val firstRequest =
             CounterLaunchRequest.fromIntentData(
@@ -77,6 +80,41 @@ class CounterLaunchRequestTest {
                         shouldOpenCounter = false,
                         projectId = 42L,
                         launchId = "launch-1",
+                    ),
+                consumedRequestId = null,
+            )
+
+        assertNull(request)
+    }
+
+    @Test
+    fun `untrusted counter launch does not create counter launch request`() {
+        val request =
+            CounterLaunchRequest.fromIntentData(
+                intentData =
+                    CounterLaunchIntentData(
+                        shouldOpenCounter = true,
+                        projectId = 42L,
+                        launchId = "launch-1",
+                        isTrustedCounterLaunch = false,
+                    ),
+                consumedRequestId = null,
+            )
+
+        assertNull(request)
+    }
+
+    @Test
+    fun `oauth callback launch does not create counter launch request even with counter extras`() {
+        val request =
+            CounterLaunchRequest.fromIntentData(
+                intentData =
+                    CounterLaunchIntentData(
+                        shouldOpenCounter = true,
+                        projectId = 42L,
+                        launchId = "launch-1",
+                        isTrustedCounterLaunch = false,
+                        isOAuthCallback = true,
                     ),
                 consumedRequestId = null,
             )

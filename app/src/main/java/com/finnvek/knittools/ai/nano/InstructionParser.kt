@@ -320,6 +320,11 @@ object InstructionParser {
 
     // --- Increase/Decrease -patternien tunnistus ---
 
+    @Suppress(
+        "CyclomaticComplexMethod",
+        "ReturnCount",
+        "kotlin:S5843",
+    ) // Fallback-parseri tunnistaa useita neuleohjeiden kirjoitusasuja yhdellä lausekkeella.
     private fun parseIncreaseDecrease(upper: String): ParsedInstruction? {
         val incEveryNth =
             Regex(
@@ -394,6 +399,7 @@ object InstructionParser {
             ?: parseGaugeFallback(upper)
 
     // "X stitches/sts and Y rows per 10cm/4in" tai "X sts, Y rows = 10cm"
+    @Suppress("kotlin:S5843") // Gauge-fallback hyväksyy useita "sts/rows per 10 cm / 4 in" -muotoja.
     private fun parseGaugeStandard(upper: String): ParsedInstruction.Gauge? {
         val pattern =
             Regex(
@@ -410,6 +416,7 @@ object InstructionParser {
     }
 
     // "tension/gauge: X sts x Y rows to 10cm on Xmm needles"
+    @Suppress("kotlin:S5843") // Tension/gauge-teksti vaihtelee lähteittäin, joten regex on tarkoituksella salliva.
     private fun parseGaugeTension(upper: String): ParsedInstruction.Gauge? {
         val pattern =
             Regex(

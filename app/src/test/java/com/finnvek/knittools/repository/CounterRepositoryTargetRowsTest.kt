@@ -4,11 +4,13 @@ import android.content.Context
 import com.finnvek.knittools.data.local.CounterHistoryEntity
 import com.finnvek.knittools.data.local.CounterProjectDao
 import com.finnvek.knittools.data.local.CounterProjectEntity
+import com.finnvek.knittools.data.local.ImmediateDatabaseTransactionRunner
 import com.finnvek.knittools.data.local.SessionDao
 import com.finnvek.knittools.data.local.SessionEntity
 import com.finnvek.knittools.data.local.SessionInsightsTotals
 import com.finnvek.knittools.data.local.SessionProjectSummary
 import io.mockk.mockk
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -76,6 +78,11 @@ private fun buildRepository(dao: FakeCounterProjectDao): CounterRepository =
         sessionDao = StubSessionDao(),
         photoStorage = mockk(relaxed = true),
         context = mockk<Context>(relaxed = true),
+        yarnCardRepository = mockk(relaxed = true),
+        savedPatternRepository = mockk(relaxed = true),
+        patternAnnotationRepository = mockk(relaxed = true),
+        transactionRunner = ImmediateDatabaseTransactionRunner,
+        ioDispatcher = Dispatchers.Unconfined,
     )
 
 private class FakeCounterProjectDao(
@@ -114,6 +121,8 @@ private class FakeCounterProjectDao(
     // --- muut DAO-metodit (ei käytetä näissä testeissä) ---
 
     override fun getAllProjects(): Flow<List<CounterProjectEntity>> = flowOf(emptyList())
+
+    override suspend fun getAllProjectsOnce(): List<CounterProjectEntity> = emptyList()
 
     override suspend fun getProject(id: Long): CounterProjectEntity? = null
 
@@ -218,6 +227,13 @@ private class FakeCounterProjectDao(
         updatedAt: Long,
     ) = Unit
 
+    override suspend fun clearLinkedPatternIds(
+        patternIds: List<Long>,
+        updatedAt: Long,
+    ) = Unit
+
+    override suspend fun countProjectsUsingPatternUri(patternUri: String): Int = 0
+
     override suspend fun archiveProject(
         id: Long,
         totalRows: Int,
@@ -234,7 +250,7 @@ private class FakeCounterProjectDao(
 
     override suspend fun getProjectCount(): Int = 0
 
-    override suspend fun getFirstProject(): CounterProjectEntity? = null
+    override suspend fun getLatestActiveProject(): CounterProjectEntity? = null
 
     override suspend fun insertHistory(entry: CounterHistoryEntity) = Unit
 

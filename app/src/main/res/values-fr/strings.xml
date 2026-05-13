@@ -515,7 +515,7 @@
     <string name="voice_commands">Commandes vocales</string>
     <string name="voice_mode_timeout">Le mode vocal s’est arrêté pour cause d’inactivité</string>
     <string name="voice_offline_mode">Mode hors ligne, commandes de base uniquement</string>
-    <string name="voice_quota_daily_exhausted">Les commandes IA sont suspendues pour aujourd’hui, les commandes de base fonctionnent toujours</string>
+    <string name="voice_quota_monthly_exhausted">Limite mensuelle des commandes IA atteinte, les commandes de base fonctionnent toujours</string>
     <string name="voice_command_unknown">Je n’ai pas compris</string>
     <string name="voice_note_saved">Note enregistrée</string>
     <string name="voice_counter_reset">Compteur réinitialisé</string>

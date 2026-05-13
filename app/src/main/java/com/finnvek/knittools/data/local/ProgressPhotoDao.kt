@@ -5,6 +5,11 @@ import androidx.room.Insert
 import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
 
+data class ProjectPhotoCount(
+    val projectId: Long,
+    val count: Int,
+)
+
 @Dao
 interface ProgressPhotoDao {
     @Query("SELECT * FROM progress_photos WHERE projectId = :projectId ORDER BY createdAt DESC")
@@ -20,6 +25,12 @@ interface ProgressPhotoDao {
 
     @Query("SELECT COUNT(*) FROM progress_photos WHERE projectId = :projectId")
     fun getPhotoCount(projectId: Long): Flow<Int>
+
+    @Query(
+        "SELECT projectId, COUNT(*) AS count FROM progress_photos " +
+            "WHERE projectId IN (:projectIds) GROUP BY projectId",
+    )
+    suspend fun getPhotoCountsByProjectIds(projectIds: List<Long>): List<ProjectPhotoCount>
 
     @Query("SELECT * FROM progress_photos ORDER BY createdAt DESC")
     fun getAllPhotos(): Flow<List<ProgressPhotoEntity>>

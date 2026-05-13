@@ -9,15 +9,14 @@ import com.finnvek.knittools.ai.speech.SimpleSpeechRecognizer
 import com.finnvek.knittools.ai.speech.SpeechError
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -30,6 +29,7 @@ data class JournalEntryUiState(
     val isListening: Boolean = false,
     val errorMessage: Int? = null,
     val speechAvailable: Boolean = true,
+    val pendingEntry: JournalEvent.EntryReady? = null,
 )
 
 sealed class JournalEvent {
@@ -49,12 +49,10 @@ class JournalEntryViewModel
         private val processor: JournalEntryProcessor,
     ) : ViewModel() {
         private val speechRecognizer = SimpleSpeechRecognizer(context)
+        private var processingJob: Job? = null
 
         private val _uiState = MutableStateFlow(JournalEntryUiState(speechAvailable = speechRecognizer.isAvailable()))
         val uiState: StateFlow<JournalEntryUiState> = _uiState.asStateFlow()
-
-        private val _events = MutableSharedFlow<JournalEvent>(extraBufferCapacity = 1)
-        val events: SharedFlow<JournalEvent> = _events.asSharedFlow()
 
         init {
             speechRecognizer.isListening
@@ -116,20 +114,42 @@ class JournalEntryViewModel
                 _uiState.update { it.copy(errorMessage = com.finnvek.knittools.R.string.journal_empty_error) }
                 return
             }
-            _uiState.update { it.copy(mode = JournalMode.Processing, errorMessage = null) }
-            viewModelScope.launch {
-                val result = processor.process(raw)
-                val event =
-                    when (result) {
-                        is JournalProcessResult.Success -> {
-                            JournalEvent.EntryReady(result.cleaned, aiUsed = true)
-                        }
+            processingJob?.cancel()
+            _uiState.update { it.copy(mode = JournalMode.Processing, errorMessage = null, pendingEntry = null) }
+            processingJob =
+                viewModelScope.launch {
+                    val result = processor.process(raw)
+                    if (!isActive) return@launch
+                    val entry =
+                        when (result) {
+                            is JournalProcessResult.Success -> {
+                                JournalEvent.EntryReady(result.cleaned, aiUsed = true)
+                            }
 
-                        is JournalProcessResult.Fallback -> {
-                            JournalEvent.EntryReady(result.raw, aiUsed = false, reason = result.reason)
+                            is JournalProcessResult.Fallback -> {
+                                JournalEvent.EntryReady(result.raw, aiUsed = false, reason = result.reason)
+                            }
                         }
-                    }
-                _events.tryEmit(event)
+                    _uiState.update { it.copy(pendingEntry = entry) }
+                }
+        }
+
+        fun consumePendingEntry() {
+            speechRecognizer.stop()
+            processingJob = null
+            resetEntryState()
+        }
+
+        fun dismissEntry() {
+            processingJob?.cancel()
+            processingJob = null
+            speechRecognizer.stop()
+            resetEntryState()
+        }
+
+        private fun resetEntryState() {
+            _uiState.update {
+                JournalEntryUiState(speechAvailable = it.speechAvailable)
             }
         }
 

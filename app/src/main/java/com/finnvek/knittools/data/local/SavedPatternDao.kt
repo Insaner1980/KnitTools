@@ -13,10 +13,13 @@ interface SavedPatternDao {
     @Query("SELECT * FROM saved_patterns WHERE id = :id")
     suspend fun getById(id: Long): SavedPatternEntity?
 
-    @Query("SELECT * FROM saved_patterns WHERE ravelryId = :ravelryId")
+    @Query("SELECT * FROM saved_patterns WHERE id IN (:ids)")
+    suspend fun getByIds(ids: List<Long>): List<SavedPatternEntity>
+
+    @Query("SELECT * FROM saved_patterns WHERE ravelryId = :ravelryId ORDER BY savedAt DESC, id DESC LIMIT 1")
     suspend fun getByRavelryId(ravelryId: Int): SavedPatternEntity?
 
-    @Query("SELECT * FROM saved_patterns WHERE patternUrl = :patternUrl LIMIT 1")
+    @Query("SELECT * FROM saved_patterns WHERE patternUrl = :patternUrl ORDER BY savedAt DESC, id DESC LIMIT 1")
     suspend fun getByPatternUrl(patternUrl: String): SavedPatternEntity?
 
     @Insert

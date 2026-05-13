@@ -42,7 +42,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
@@ -56,13 +55,11 @@ import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
-import com.finnvek.knittools.ai.journal.JournalProcessResult
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun JournalEntryBottomSheet(
     onDismiss: () -> Unit,
-    onEntryReady: (text: String, aiUsed: Boolean, fallbackReason: JournalProcessResult.Fallback.Reason?) -> Unit,
     viewModel: JournalEntryViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -74,17 +71,9 @@ fun JournalEntryBottomSheet(
             if (granted) viewModel.startListening()
         }
 
-    LaunchedEffect(Unit) {
-        viewModel.events.collect { event ->
-            if (event is JournalEvent.EntryReady) {
-                onEntryReady(event.text, event.aiUsed, event.reason)
-            }
-        }
-    }
-
     ModalBottomSheet(
         onDismissRequest = {
-            viewModel.stopListening()
+            viewModel.dismissEntry()
             onDismiss()
         },
         sheetState = sheetState,

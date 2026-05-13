@@ -88,8 +88,8 @@
 
     <!-- Counter Screen -->
     <string name="current_row">CURRENT ROW</string>
-    <string name="stitch_count_format">%s st</string>
-    <string name="set_stitches">Set stitches</string>
+    <string name="stitch_count_format" tools:ignore="UnusedResources">%s st</string>
+    <string name="set_stitches" tools:ignore="UnusedResources">Set stitches</string>
     <string name="stitches_per_row">Stitches per row</string>
     <string name="track_stitches">Track stitches</string>
     <string name="stitch_counter_compact_format">%1$d/%2$d</string>
@@ -103,7 +103,7 @@
     <string name="pattern_pdf_fallback_name">Pattern PDF</string>
     <string name="pattern_loading">Loading pattern…</string>
     <string name="pattern_open_failed">Pattern could not be opened.</string>
-    <string name="pattern_row_highlight_description">Row %1$d highlighted about %2$d percent down the page</string>
+    <string name="pattern_row_highlight_description" tools:ignore="PluralsCandidate">Row %1$d highlighted about %2$d percent down the page</string>
     <string name="pattern_page_jump">Page jump</string>
     <string name="pattern_page_number">Page number</string>
     <string name="pattern_page_indicator">Page %1$d of %2$d</string>
@@ -129,7 +129,7 @@
     <string name="add_yarn">Add yarn</string>
     <string name="linked_yarn_title">LINKED YARN</string>
     <string name="no_linked_yarn">No yarn linked yet</string>
-    <string name="yarn_count_format" tools:ignore="PluralsCandidate">%1$d yarns</string>
+    <string name="yarn_count_format" tools:ignore="PluralsCandidate,UnusedResources">%1$d yarns</string>
     <string name="linked_project_label">Linked project</string>
     <string name="link_to_project_label">Link to project</string>
     <string name="change_project_link">Change</string>
@@ -157,7 +157,7 @@
     <!-- Settings -->
     <string name="show_knitting_tips">Show knitting tips</string>
     <string name="project_summary">Project Summary</string>
-    <string name="view_ai_summary">View AI summary</string>
+    <string name="view_ai_summary" tools:ignore="UnusedResources">View AI summary</string>
     <string name="generating_summary">Generating summary\u2026</string>
     <string name="ai_quota_exhausted">Monthly AI limit reached</string>
     <string name="ai_summary_fallback">Could not generate AI summary — showing basic stats instead</string>
@@ -166,7 +166,7 @@
     <string name="default_project_name">My Project</string>
     <string name="reset_counter">Reset Counter</string>
     <string name="reset_counter_message">Reset the counter to 0?</string>
-    <string name="pattern_repeat">Pattern repeat</string>
+    <string name="pattern_repeat" tools:ignore="UnusedResources">Pattern repeat</string>
     <string name="notes">Notes</string>
     <string name="open_notes_editor">Open notes editor</string>
     <string name="add_note">Add note\u2026</string>
@@ -355,17 +355,20 @@
     <string name="widget_name">Row Counter</string>
     <string name="widget_description">Row counter widget for active project</string>
     <string name="widget_pro_required">Upgrade to Pro to use the widget</string>
-    <string name="widget_rows_remaining_format">%d rows left</string>
-    <string name="widget_target_reached">Target reached</string>
-    <string name="widget_stitches_format">Stitches: %1$d / %2$d</string>
+    <string name="widget_rows_remaining_format" tools:ignore="PluralsCandidate,UnusedResources">%d rows left</string>
+    <string name="widget_target_reached" tools:ignore="UnusedResources">Target reached</string>
+    <string name="widget_stitches_format" tools:ignore="UnusedResources">Stitches: %1$d / %2$d</string>
     <string name="target_rows_dialog_title">Set target rows</string>
-    <string name="target_rows_set">Set target…</string>
-    <string name="target_rows_edit">Edit target</string>
+    <string name="target_rows_set" tools:ignore="UnusedResources">Set target…</string>
+    <string name="target_rows_edit" tools:ignore="UnusedResources">Edit target</string>
     <string name="target_rows_remove">Remove target</string>
     <string name="target_rows_hint">Number of rows</string>
     <string name="row_label_with_target">Row %1$d / %2$d</string>
-    <string name="widget_undo_action">Undo</string>
-    <string name="widget_undo_content_description">Undo last change</string>
+    <string name="widget_undo_action" tools:ignore="UnusedResources">Undo</string>
+    <string name="widget_undo_content_description" tools:ignore="UnusedResources">Undo last change</string>
+    <string name="widget_preview_decrement" translatable="false">−</string>
+    <string name="widget_preview_count" translatable="false">42 / 100</string>
+    <string name="widget_preview_increment" translatable="false">+</string>
 
     <!-- Hubs -->
     <string name="desc_increase_decrease">Evenly space increases or decreases across a row</string>
@@ -764,7 +767,7 @@
     <string name="voice_commands">Voice commands</string>
     <string name="voice_mode_timeout">Voice mode ended due to inactivity</string>
     <string name="voice_offline_mode">Offline mode, basic commands only</string>
-    <string name="voice_quota_daily_exhausted">AI commands paused for today, basic commands still work</string>
+    <string name="voice_quota_monthly_exhausted">Monthly AI command limit reached; basic commands still work</string>
     <string name="voice_command_unknown">I didn\'t understand</string>
     <string name="voice_note_saved">Note saved</string>
     <string name="voice_counter_reset">Counter reset</string>

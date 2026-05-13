@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.pdf.PdfRenderer
 import android.net.Uri
 import android.os.ParcelFileDescriptor
+import androidx.core.graphics.createBitmap
 import java.io.Closeable
 
 class PdfPageRenderer(
@@ -29,7 +30,7 @@ class PdfPageRenderer(
             val width = targetWidth.coerceAtLeast(1)
             val ratio = page.height.toFloat() / page.width.toFloat()
             val height = (width * ratio).toInt().coerceAtLeast(1)
-            return Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).also { bitmap ->
+            return createBitmap(width, height).also { bitmap ->
                 page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
             }
         }

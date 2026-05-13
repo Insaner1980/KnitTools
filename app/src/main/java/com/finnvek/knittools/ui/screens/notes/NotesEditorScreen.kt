@@ -27,6 +27,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -49,13 +51,36 @@ fun NotesEditorScreen(
     viewModel: NotesEditorViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val journalEntryViewModel: JournalEntryViewModel = hiltViewModel()
+    val journalEntryState by journalEntryViewModel.uiState.collectAsStateWithLifecycle()
     val focusRequester = remember { FocusRequester() }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
-    val showJournalSheet = remember { mutableStateOf(false) }
+    var showJournalSheet by rememberSaveable { mutableStateOf(false) }
 
     val offlineMessage = stringResource(R.string.journal_offline_notice)
     val quotaMessage = stringResource(R.string.ai_quota_exhausted)
+
+    LaunchedEffect(state.isMissingProject) {
+        if (state.isMissingProject) {
+            onBack()
+        }
+    }
+
+    LaunchedEffect(journalEntryState.pendingEntry) {
+        val entry = journalEntryState.pendingEntry ?: return@LaunchedEffect
+        viewModel.appendJournalEntry(entry.text)
+        showJournalSheet = false
+        if (!entry.aiUsed) {
+            val message =
+                when (entry.reason) {
+                    JournalProcessResult.Fallback.Reason.QuotaExhausted -> quotaMessage
+                    else -> offlineMessage
+                }
+            scope.launch { snackbarHostState.showSnackbar(message) }
+        }
+        journalEntryViewModel.consumePendingEntry()
+    }
 
     BackHandler {
         viewModel.saveImmediately()
@@ -91,7 +116,7 @@ fun NotesEditorScreen(
                                 viewModel.saveImmediately()
                                 onUpgradeToPro()
                             } else {
-                                showJournalSheet.value = true
+                                showJournalSheet = true
                             }
                         },
                         shape = RoundedCornerShape(8.dp),
@@ -142,21 +167,10 @@ fun NotesEditorScreen(
         }
     }
 
-    if (showJournalSheet.value) {
+    if (showJournalSheet) {
         JournalEntryBottomSheet(
-            onDismiss = { showJournalSheet.value = false },
-            onEntryReady = { text, aiUsed, reason ->
-                viewModel.appendJournalEntry(text)
-                showJournalSheet.value = false
-                if (!aiUsed) {
-                    val message =
-                        when (reason) {
-                            JournalProcessResult.Fallback.Reason.QuotaExhausted -> quotaMessage
-                            else -> offlineMessage
-                        }
-                    scope.launch { snackbarHostState.showSnackbar(message) }
-                }
-            },
+            onDismiss = { showJournalSheet = false },
+            viewModel = journalEntryViewModel,
         )
     }
 

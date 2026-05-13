@@ -7,6 +7,8 @@ import android.content.SharedPreferences
 import android.net.Uri
 import android.util.Log
 import androidx.browser.customtabs.CustomTabsIntent
+import androidx.core.content.edit
+import androidx.core.net.toUri
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import com.finnvek.knittools.BuildConfig
@@ -95,8 +97,8 @@ class RavelryAuthManager
             val state = generateState()
             savePendingState(state)
 
-            return Uri
-                .parse(AUTH_URL)
+            return AUTH_URL
+                .toUri()
                 .buildUpon()
                 .appendQueryParameter("response_type", "code")
                 .appendQueryParameter("client_id", BuildConfig.RAVELRY_OAUTH2_CLIENT_ID)
@@ -175,19 +177,19 @@ class RavelryAuthManager
         }
 
         fun signOut() {
-            prefs.edit().clear().apply()
+            prefs.edit { clear() }
             pendingState = null
             _isAuthenticated.value = false
         }
 
         private fun savePendingState(state: String) {
             pendingState = state
-            prefs.edit().putString(KEY_PENDING_STATE, state).apply()
+            prefs.edit { putString(KEY_PENDING_STATE, state) }
         }
 
         private fun clearPendingState() {
             pendingState = null
-            prefs.edit().remove(KEY_PENDING_STATE).apply()
+            prefs.edit { remove(KEY_PENDING_STATE) }
         }
 
         private suspend fun exchangeCodeForTokens(
@@ -234,14 +236,12 @@ class RavelryAuthManager
             val newAccessToken = jsonObj["access_token"]?.jsonPrimitive?.content ?: return false
             val newRefreshToken = jsonObj["refresh_token"]?.jsonPrimitive?.content
 
-            prefs
-                .edit()
-                .putString(KEY_ACCESS_TOKEN, newAccessToken)
-                .apply {
-                    if (newRefreshToken != null) {
-                        putString(KEY_REFRESH_TOKEN, newRefreshToken)
-                    }
-                }.apply()
+            prefs.edit {
+                putString(KEY_ACCESS_TOKEN, newAccessToken)
+                if (newRefreshToken != null) {
+                    putString(KEY_REFRESH_TOKEN, newRefreshToken)
+                }
+            }
 
             _isAuthenticated.value = true
             return true

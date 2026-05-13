@@ -515,7 +515,7 @@
     <string name="voice_commands">Sprachbefehle</string>
     <string name="voice_mode_timeout">Sprachmodus wegen Inaktivität beendet</string>
     <string name="voice_offline_mode">Offline-Modus, nur einfache Befehle</string>
-    <string name="voice_quota_daily_exhausted">KI-Befehle für heute pausiert, einfache Befehle funktionieren weiterhin</string>
+    <string name="voice_quota_monthly_exhausted">Monatliches Limit für KI-Befehle erreicht, einfache Befehle funktionieren weiterhin</string>
     <string name="voice_command_unknown">Ich habe das nicht verstanden</string>
     <string name="voice_note_saved">Notiz gespeichert</string>
     <string name="voice_counter_reset">Zähler zurückgesetzt</string>

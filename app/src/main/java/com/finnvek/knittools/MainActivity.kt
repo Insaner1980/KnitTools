@@ -19,8 +19,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -30,27 +32,22 @@ import androidx.lifecycle.lifecycleScope
 import com.finnvek.knittools.auth.RavelryAuthManager
 import com.finnvek.knittools.billing.BillingManager
 import com.finnvek.knittools.data.datastore.PreferencesManager
+import com.finnvek.knittools.data.storage.CounterLaunchTokenStore
 import com.finnvek.knittools.pro.InAppReviewManager
 import com.finnvek.knittools.pro.InAppUpdateManager
-import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.ui.navigation.CounterLaunchIntentData
 import com.finnvek.knittools.ui.navigation.CounterLaunchRequest
 import com.finnvek.knittools.ui.navigation.KnitToolsNavHost
 import com.finnvek.knittools.ui.navigation.TopLevelDestination
 import com.finnvek.knittools.ui.theme.KnitToolsTheme
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import java.util.UUID
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
     @Inject
     lateinit var inAppReviewManager: InAppReviewManager
-
-    @Inject
-    lateinit var proManager: ProManager
 
     @Inject
     lateinit var inAppUpdateManager: InAppUpdateManager
@@ -70,8 +67,8 @@ class MainActivity : AppCompatActivity() {
     private val updateResultLauncher =
         registerForActivityResult(
             ActivityResultContracts.StartIntentSenderForResult(),
-        ) {
-            inAppUpdateManager.onUpdateFlowResult()
+        ) { result ->
+            inAppUpdateManager.onUpdateFlowResult(result.resultCode)
             // Flexible mode — lataustulos käsitellään installStateListenerissa
         }
 
@@ -86,7 +83,7 @@ class MainActivity : AppCompatActivity() {
         splashScreen.setKeepOnScreenCondition { !startupThemeLoaded }
         restoreCounterLaunchRequest(savedInstanceState)
         handleOAuthCallbackIfNeeded(intent)
-        inAppUpdateManager.checkForUpdate(updateResultLauncher)
+        checkForInAppUpdate()
         setContent {
             val prefs by preferencesManager.preferences.collectAsStateWithLifecycle(initialValue = null)
             val isDarkTheme = prefs.resolveStartupDarkTheme(isSystemInDarkTheme())
@@ -101,17 +98,19 @@ class MainActivity : AppCompatActivity() {
 
             val activity = this@MainActivity
             LaunchedEffect(Unit) {
-                val proState = proManager.proState.first { it.trialStartTimestamp > 0L }
-                inAppReviewManager.maybeRequestReview(activity, isPro = proState.isPro)
+                inAppReviewManager.maybeRequestReview(activity)
             }
 
-            // In-App Update: näytä snackbar kun päivitys on ladattu
-            val updateDownloaded by inAppUpdateManager.updateDownloaded.collectAsStateWithLifecycle()
+            // In-App Update: näytä snackbar aina kun ladattu päivitys havaitaan.
+            val downloadedUpdatePromptId by
+                inAppUpdateManager.downloadedUpdatePromptId.collectAsStateWithLifecycle()
             val snackbarHostState = remember { SnackbarHostState() }
+            var lastShownDownloadedUpdatePromptId by rememberSaveable { mutableLongStateOf(0L) }
             val updateMessage = stringResource(R.string.update_downloaded)
             val restartLabel = stringResource(R.string.restart)
-            LaunchedEffect(updateDownloaded) {
-                if (updateDownloaded) {
+            LaunchedEffect(downloadedUpdatePromptId) {
+                if (downloadedUpdatePromptId > lastShownDownloadedUpdatePromptId) {
+                    lastShownDownloadedUpdatePromptId = downloadedUpdatePromptId
                     val result =
                         snackbarHostState.showSnackbar(
                             message = updateMessage,
@@ -144,6 +143,13 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun checkForInAppUpdate() {
+        inAppUpdateManager.checkForUpdate(
+            resultLauncher = updateResultLauncher,
+            canStartUpdateFlow = { !isFinishing && !isDestroyed },
+        )
+    }
+
     private fun restoreCounterLaunchRequest(savedInstanceState: Bundle?) {
         consumedCounterLaunchRequestId = savedInstanceState?.getString(STATE_CONSUMED_COUNTER_LAUNCH_REQUEST_ID)
         counterLaunchRequest =
@@ -171,6 +177,9 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         inAppUpdateManager.checkDownloadedOnResume()
+        lifecycleScope.launch {
+            preferencesManager.syncAppLanguageFromSystem()
+        }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -188,20 +197,26 @@ class MainActivity : AppCompatActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        handleOAuthCallbackIfNeeded(intent)
-        counterLaunchRequest = intent.toCounterLaunchRequest(consumedRequestId = null)
+        val isOAuthCallback = handleOAuthCallbackIfNeeded(intent)
+        counterLaunchRequest =
+            if (isOAuthCallback) {
+                null
+            } else {
+                intent.toCounterLaunchRequest(consumedRequestId = null)
+            }
     }
 
-    private fun handleOAuthCallbackIfNeeded(intent: Intent?) {
-        val uri = intent?.data ?: return
-        if (ravelryAuthManager.isOAuthCallback(uri)) {
-            lifecycleScope.launch {
-                val handled = ravelryAuthManager.handleCallback(httpClient, uri)
-                if (handled) {
-                    clearOAuthCallbackIntent(uri)
-                }
+    private fun handleOAuthCallbackIfNeeded(intent: Intent?): Boolean {
+        val uri = intent?.data ?: return false
+        if (!ravelryAuthManager.isOAuthCallback(uri)) return false
+        clearCounterLaunchIntent()
+        lifecycleScope.launch {
+            val handled = ravelryAuthManager.handleCallback(httpClient, uri)
+            if (handled) {
+                clearOAuthCallbackIntent(uri)
             }
         }
+        return true
     }
 
     private fun clearOAuthCallbackIntent(uri: Uri) {
@@ -218,12 +233,17 @@ class MainActivity : AppCompatActivity() {
 
     private fun Intent?.toCounterLaunchRequest(consumedRequestId: String?): CounterLaunchRequest? {
         if (this == null) return null
+        val isOAuthCallback = data?.let(ravelryAuthManager::isOAuthCallback) == true
+        val launchId = getStringExtra(EXTRA_COUNTER_LAUNCH_ID)
         return CounterLaunchRequest.fromIntentData(
             intentData =
                 CounterLaunchIntentData(
                     shouldOpenCounter = getBooleanExtra(EXTRA_OPEN_COUNTER, false),
                     projectId = getLongExtra(EXTRA_PROJECT_ID, 0L).takeIf { it > 0L },
-                    launchId = getStringExtra(EXTRA_COUNTER_LAUNCH_ID),
+                    launchId = launchId,
+                    isTrustedCounterLaunch =
+                        CounterLaunchTokenStore.isKnownLaunchId(this@MainActivity, launchId),
+                    isOAuthCallback = isOAuthCallback,
                 ),
             consumedRequestId = consumedRequestId,
         )
@@ -243,7 +263,7 @@ class MainActivity : AppCompatActivity() {
             Intent(context, MainActivity::class.java).apply {
                 putExtra(EXTRA_OPEN_COUNTER, true)
                 projectId?.let { putExtra(EXTRA_PROJECT_ID, it) }
-                putExtra(EXTRA_COUNTER_LAUNCH_ID, UUID.randomUUID().toString())
+                putExtra(EXTRA_COUNTER_LAUNCH_ID, CounterLaunchTokenStore.issueLaunchId(context))
                 addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
             }
     }

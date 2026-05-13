@@ -71,6 +71,9 @@ class RavelryViewModel
         private val _navigateToProject = MutableSharedFlow<Long>()
         val navigateToProject = _navigateToProject.asSharedFlow()
 
+        private val _upgradeToPro = MutableSharedFlow<Unit>()
+        val upgradeToPro = _upgradeToPro.asSharedFlow()
+
         val savedPatterns: StateFlow<List<SavedPattern>> =
             repository.getSavedPatterns().stateIn(
                 viewModelScope,
@@ -220,6 +223,10 @@ class RavelryViewModel
         fun createProjectFromPattern() {
             val detail = _patternDetail.value ?: return
             viewModelScope.launch {
+                if (!isPro && repository.getActiveProjectCount() >= 1) {
+                    _upgradeToPro.emit(Unit)
+                    return@launch
+                }
                 val projectId = repository.createProjectFromPattern(detail)
                 _navigateToProject.emit(projectId)
             }

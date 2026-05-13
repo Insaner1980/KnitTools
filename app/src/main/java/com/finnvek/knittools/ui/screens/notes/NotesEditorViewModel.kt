@@ -7,6 +7,7 @@ import com.finnvek.knittools.ai.AiQuotaManager
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.CounterRepository
+import com.finnvek.knittools.ui.navigation.toPositiveRouteIdOrNull
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -27,6 +28,7 @@ data class NotesEditorUiState(
     val currentRow: Int = 0,
     val isPro: Boolean = false,
     val isAiAvailable: Boolean = false,
+    val isMissingProject: Boolean = false,
 )
 
 @HiltViewModel
@@ -38,7 +40,7 @@ class NotesEditorViewModel
         private val aiQuotaManager: AiQuotaManager,
         savedStateHandle: SavedStateHandle,
     ) : ViewModel() {
-        private val projectId: Long = checkNotNull(savedStateHandle["projectId"])
+        private val projectId: Long? = savedStateHandle.get<Long>("projectId")?.toPositiveRouteIdOrNull()
 
         private val _uiState = MutableStateFlow(NotesEditorUiState())
         val uiState: StateFlow<NotesEditorUiState> = _uiState.asStateFlow()
@@ -47,7 +49,16 @@ class NotesEditorViewModel
 
         init {
             viewModelScope.launch {
-                val project = repository.getProject(projectId) ?: return@launch
+                val loadedProjectId = projectId
+                if (loadedProjectId == null) {
+                    _uiState.update { it.copy(isMissingProject = true) }
+                    return@launch
+                }
+                val project =
+                    repository.getProject(loadedProjectId) ?: run {
+                        _uiState.update { it.copy(isMissingProject = true) }
+                        return@launch
+                    }
                 val isPro = proManager.hasFeature(ProFeature.AI_FEATURES)
                 val hasQuota = isPro && aiQuotaManager.hasQuota()
                 _uiState.value =
@@ -63,19 +74,23 @@ class NotesEditorViewModel
         }
 
         fun onNotesChanged(text: String) {
+            val loadedProjectId = projectId ?: return
+            if (_uiState.value.isMissingProject) return
             _uiState.update { it.copy(notes = text) }
             saveJob?.cancel()
             saveJob =
                 viewModelScope.launch {
                     delay(DEBOUNCE_MS)
-                    repository.updateProjectNotes(projectId, text)
+                    repository.updateProjectNotes(loadedProjectId, text)
                 }
         }
 
         fun saveImmediately() {
+            val loadedProjectId = projectId ?: return
+            if (_uiState.value.isMissingProject) return
             saveJob?.cancel()
             viewModelScope.launch {
-                repository.updateProjectNotes(projectId, _uiState.value.notes)
+                repository.updateProjectNotes(loadedProjectId, _uiState.value.notes)
             }
         }
 
@@ -86,6 +101,7 @@ class NotesEditorViewModel
          */
         fun appendJournalEntry(cleanedText: String) {
             val state = _uiState.value
+            if (state.isMissingProject) return
             val date = DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT).format(LocalDate.now())
             val rowPart = if (state.currentRow > 0) " · Row ${state.currentRow}" else ""
             val header = "$date$rowPart"

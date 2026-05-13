@@ -3,10 +3,11 @@ package com.finnvek.knittools.pro
 import android.content.Context
 import androidx.annotation.VisibleForTesting
 import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
-import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.finnvek.knittools.data.datastore.editPreferencesSafely
+import com.finnvek.knittools.data.datastore.safePreferencesData
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -34,17 +35,21 @@ class TrialManager
         val trialState: StateFlow<TrialState> = _trialState.asStateFlow()
 
         suspend fun initialize() {
-            val prefs = context.trialDataStore.data.first()
+            val prefs = context.trialDataStore.safePreferencesData.first()
             val startTimestamp = prefs[KEY_TRIAL_START] ?: 0L
             val lastKnown = prefs[KEY_LAST_KNOWN_TIMESTAMP] ?: 0L
             val now = System.currentTimeMillis()
 
-            context.trialDataStore.edit { it[KEY_LAST_KNOWN_TIMESTAMP] = now }
+            context.trialDataStore.editPreferencesSafely("Kokeilujakson aikaleiman tallennus") {
+                it[KEY_LAST_KNOWN_TIMESTAMP] = now
+            }
 
             val isFirstLaunch = startTimestamp == 0L
             val actualStart =
                 if (isFirstLaunch) {
-                    context.trialDataStore.edit { it[KEY_TRIAL_START] = now }
+                    context.trialDataStore.editPreferencesSafely("Kokeilujakson aloituksen tallennus") {
+                        it[KEY_TRIAL_START] = now
+                    }
                     now
                 } else {
                     startTimestamp
@@ -54,7 +59,7 @@ class TrialManager
         }
 
         suspend fun updateTimestamp() {
-            context.trialDataStore.edit {
+            context.trialDataStore.editPreferencesSafely("Kokeilujakson aikaleiman päivitys") {
                 it[KEY_LAST_KNOWN_TIMESTAMP] = System.currentTimeMillis()
             }
         }

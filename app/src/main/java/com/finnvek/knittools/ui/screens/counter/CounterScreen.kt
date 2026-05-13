@@ -67,9 +67,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -105,70 +107,20 @@ import com.finnvek.knittools.ui.theme.YarnColors
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@Suppress("ViewModelForwarding")
 fun CounterScreen(
     onBack: () -> Unit = {},
     onSessionHistory: (Long) -> Unit = {},
     onPhotoGallery: () -> Unit = {},
     onPatternViewer: (Long) -> Unit = {},
     onNotesEditor: (Long) -> Unit = {},
+    onUpgradeToPro: () -> Unit = {},
     viewModel: CounterViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
-    val voiceCommandHandler =
-        remember(context, coroutineScope) {
-            VoiceCommandHandler(context, coroutineScope)
-        }
-    val voiceResponseManager =
-        remember(context, voiceCommandHandler) {
-            VoiceResponseManager(context, voiceCommandHandler)
-        }
-    val isVoiceListening by voiceCommandHandler.isListening.collectAsStateWithLifecycle()
-    val isContinuousMode by voiceCommandHandler.isContinuousMode.collectAsStateWithLifecycle()
+    val voiceControls = rememberCounterVoiceControls(state, viewModel)
     val snackbarHostState = remember { SnackbarHostState() }
 
-    val micPermissionLauncher =
-        rememberLauncherForActivityResult(
-            ActivityResultContracts.RequestPermission(),
-        ) { granted ->
-            if (granted) {
-                if (state.voiceLiveEnabled) {
-                    viewModel.startLiveVoice()
-                } else {
-                    voiceCommandHandler.startContinuousListening()
-                }
-            }
-        }
-    // TopBar mic: toggle live (v3) tai continuous (v2)
-    val toggleVoice = {
-        when {
-            // Live API aktiivinen → pysäytä
-            state.isLiveSessionActive -> {
-                viewModel.stopLiveVoice()
-            }
-
-            // V2 continuous aktiivinen → pysäytä
-            voiceCommandHandler.isContinuousMode.value -> {
-                voiceCommandHandler.stopContinuousListening()
-            }
-
-            // Live API käytössä → käynnistä live
-            state.voiceLiveEnabled && hasAudioPermission(context) -> {
-                viewModel.startLiveVoice()
-            }
-
-            // V2 fallback → käynnistä continuous
-            !state.voiceLiveEnabled && hasAudioPermission(context) -> {
-                voiceCommandHandler.startContinuousListening()
-            }
-
-            // Ei lupaa → pyydä
-            else -> {
-                micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-            }
-        }
-    }
     var showResetDialog by rememberSaveable { mutableStateOf(false) }
     var showProjectActionsSheet by rememberSaveable { mutableStateOf(false) }
     var showCountersListSheet by rememberSaveable { mutableStateOf(false) }
@@ -187,16 +139,67 @@ fun CounterScreen(
     var showPatternInfoSheet by rememberSaveable { mutableStateOf(false) }
     var showPatternPicker by rememberSaveable { mutableStateOf(false) }
     var showTargetDialog by rememberSaveable { mutableStateOf(false) }
+    var previousOverlayProjectId by rememberSaveable { mutableStateOf<Long?>(null) }
     val savedYarnCards by viewModel.savedYarnCards.collectAsStateWithLifecycle()
     val savedPatterns by viewModel.savedPatterns.collectAsStateWithLifecycle()
+
+    fun hideProjectScopedOverlays() {
+        showResetDialog = false
+        showProjectActionsSheet = false
+        showCountersListSheet = false
+        showCompleteDialog = false
+        showDeleteDialog = false
+        showRenameDialog = false
+        renameText = ""
+        isEditingName = false
+        showNotesSheet = false
+        showYarnPicker = false
+        showYarnManagementSheet = false
+        showSummarySheet = false
+        showAddReminder = false
+        showAddCounter = false
+        showStitchDialog = false
+        showPatternInfoSheet = false
+        showPatternPicker = false
+        showTargetDialog = false
+        viewModel.clearSummary()
+    }
+
+    LaunchedEffect(state.projectId) {
+        val previousProjectId = previousOverlayProjectId
+        if (previousProjectId != null && previousProjectId != state.projectId) {
+            hideProjectScopedOverlays()
+        }
+        previousOverlayProjectId = state.projectId
+    }
+
+    val openProUpgrade = {
+        showProjectActionsSheet = false
+        showCountersListSheet = false
+        onUpgradeToPro()
+    }
+    val requestPhotoGallery = {
+        if (state.isPro || BuildConfig.DEBUG) {
+            onPhotoGallery()
+        } else {
+            openProUpgrade()
+        }
+    }
+    val requestAddCounter = {
+        if (state.isPro) {
+            showAddCounter = true
+        } else {
+            openProUpgrade()
+        }
+    }
 
     LaunchedEffect(Unit) {
         viewModel.refreshNanoAvailability()
     }
 
     VoiceCommandEffects(
-        voiceCommandHandler = voiceCommandHandler,
-        voiceResponseManager = voiceResponseManager,
+        voiceCommandHandler = voiceControls.commandHandler,
+        voiceResponseManager = voiceControls.responseManager,
         viewModel = viewModel,
         snackbarHostState = snackbarHostState,
     )
@@ -214,7 +217,7 @@ fun CounterScreen(
 
     KeepScreenAwake(state.keepScreenAwake)
     HandleVoiceCommands(
-        voiceCommandHandler = voiceCommandHandler,
+        voiceCommandHandler = voiceControls.commandHandler,
         viewModel = viewModel,
         performHaptic = performHaptic,
     )
@@ -239,7 +242,7 @@ fun CounterScreen(
         rememberProjectCountersSectionActions(
             viewModel = viewModel,
             performHaptic = performHaptic,
-            onShowAddCounter = { showAddCounter = true },
+            onShowAddCounter = requestAddCounter,
         )
     val dialogActionDependencies =
         CounterDialogActionDependencies(
@@ -259,7 +262,7 @@ fun CounterScreen(
     val topBarActionDependencies =
         CounterTopBarActionDependencies(
             onBack = onBack,
-            onPhotoGallery = onPhotoGallery,
+            onPhotoGallery = requestPhotoGallery,
             projectId = state.projectId,
             onPatternViewer = onPatternViewer,
             onShowProjectActions = { showProjectActionsSheet = true },
@@ -337,20 +340,19 @@ fun CounterScreen(
         actions = dialogActions,
     )
 
-    if (showTargetDialog) {
-        TargetRowsDialog(
-            currentTarget = state.targetRows,
-            onDismiss = { showTargetDialog = false },
-            onConfirm = { target ->
-                viewModel.setTargetRows(target)
-                showTargetDialog = false
-            },
-            onRemove = {
-                viewModel.clearTarget()
-                showTargetDialog = false
-            },
-        )
-    }
+    CounterTargetRowsDialogHost(
+        showDialog = showTargetDialog,
+        currentTarget = state.targetRows,
+        onDismiss = { showTargetDialog = false },
+        onConfirm = { target ->
+            viewModel.setTargetRows(target)
+            showTargetDialog = false
+        },
+        onRemove = {
+            viewModel.clearTarget()
+            showTargetDialog = false
+        },
+    )
 
     CounterScreenSheets(
         state =
@@ -375,77 +377,75 @@ fun CounterScreen(
         actions = sheetActions,
     )
 
-    if (showProjectActionsSheet) {
-        ProjectActionsBottomSheet(
-            state =
-                ProjectActionsSheetState(
-                    linkedYarnCount = state.linkedYarns.size,
-                    projectCounterCount = state.projectCounters.size,
-                    stitchTrackingEnabled = state.stitchTrackingEnabled,
-                    isPro = state.isPro,
-                    isAiAvailable = state.isAiAvailable,
-                ),
-            callbacks =
-                ProjectActionsSheetCallbacks(
-                    onDismiss = { showProjectActionsSheet = false },
-                    onOpenYarnManagement = {
-                        showProjectActionsSheet = false
-                        showYarnManagementSheet = true
-                    },
-                    onOpenNotes = {
-                        showProjectActionsSheet = false
-                        state.projectId?.let(onNotesEditor)
-                    },
-                    onOpenSummary = {
-                        showProjectActionsSheet = false
-                        viewModel.generateSummary()
-                        showSummarySheet = true
-                    },
-                    onOpenPhotos = {
-                        showProjectActionsSheet = false
-                        onPhotoGallery()
-                    },
-                    onOpenCountersList = {
-                        showProjectActionsSheet = false
-                        showCountersListSheet = true
-                    },
-                    onOpenAddCounter = {
-                        showProjectActionsSheet = false
-                        showAddCounter = true
-                    },
-                    onToggleStitchTracking = viewModel::setStitchTrackingEnabled,
-                    onOpenSessionHistory = {
-                        showProjectActionsSheet = false
-                        state.projectId?.let(onSessionHistory)
-                    },
-                    onStartRename = {
-                        showProjectActionsSheet = false
-                        startRename()
-                    },
-                    onShowResetDialog = {
-                        showProjectActionsSheet = false
-                        showResetDialog = true
-                    },
-                    onShowCompleteDialog = {
-                        showProjectActionsSheet = false
-                        showCompleteDialog = true
-                    },
-                    onShowDeleteDialog = {
-                        showProjectActionsSheet = false
-                        showDeleteDialog = true
-                    },
-                ),
-        )
-    }
+    CounterProjectActionsSheetHost(
+        showSheet = showProjectActionsSheet,
+        state =
+            ProjectActionsSheetState(
+                linkedYarnCount = state.linkedYarns.size,
+                projectCounterCount = state.projectCounters.size,
+                stitchTrackingEnabled = state.stitchTrackingEnabled,
+                isPro = state.isPro,
+                isAiAvailable = state.isAiAvailable,
+            ),
+        callbacks =
+            ProjectActionsSheetCallbacks(
+                onDismiss = { showProjectActionsSheet = false },
+                onOpenYarnManagement = {
+                    showProjectActionsSheet = false
+                    showYarnManagementSheet = true
+                },
+                onOpenNotes = {
+                    showProjectActionsSheet = false
+                    state.projectId?.let(onNotesEditor)
+                },
+                onOpenSummary = {
+                    showProjectActionsSheet = false
+                    viewModel.generateSummary()
+                    showSummarySheet = true
+                },
+                onOpenPhotos = {
+                    showProjectActionsSheet = false
+                    requestPhotoGallery()
+                },
+                onOpenCountersList = {
+                    showProjectActionsSheet = false
+                    showCountersListSheet = true
+                },
+                onOpenAddCounter = {
+                    showProjectActionsSheet = false
+                    requestAddCounter()
+                },
+                onToggleStitchTracking = viewModel::setStitchTrackingEnabled,
+                onOpenSessionHistory = {
+                    showProjectActionsSheet = false
+                    state.projectId?.let(onSessionHistory)
+                },
+                onStartRename = {
+                    showProjectActionsSheet = false
+                    startRename()
+                },
+                onShowResetDialog = {
+                    showProjectActionsSheet = false
+                    showResetDialog = true
+                },
+                onShowCompleteDialog = {
+                    showProjectActionsSheet = false
+                    showCompleteDialog = true
+                },
+                onShowDeleteDialog = {
+                    showProjectActionsSheet = false
+                    showDeleteDialog = true
+                },
+            ),
+    )
 
-    if (showCountersListSheet) {
-        CountersListSheet(
-            projectCounters = state.projectCounters,
-            mainRowCount = state.counter.count,
-            actions = projectCountersActions,
-            onDismiss = { showCountersListSheet = false },
-        )
-    }
+    CounterCountersListSheetHost(
+        showSheet = showCountersListSheet,
+        projectCounters = state.projectCounters,
+        mainRowCount = state.counter.count,
+        actions = projectCountersActions,
+        onDismiss = { showCountersListSheet = false },
+    )
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -458,11 +458,11 @@ fun CounterScreen(
                         state.patternUri != null,
                 micState =
                     CounterTopBarMicState(
-                        isVoiceListening = isVoiceListening,
-                        isContinuousMode = isContinuousMode,
+                        isVoiceListening = voiceControls.isListening,
+                        isContinuousMode = voiceControls.isContinuousMode,
                         isLiveSessionActive = state.isLiveSessionActive,
                     ),
-                onMicClick = toggleVoice,
+                onMicClick = voiceControls.onToggle,
                 actions = topBarActions,
             )
         },
@@ -478,30 +478,139 @@ fun CounterScreen(
 }
 
 @Composable
+private fun CounterTargetRowsDialogHost(
+    showDialog: Boolean,
+    currentTarget: Int?,
+    onDismiss: () -> Unit,
+    onConfirm: (Int?) -> Unit,
+    onRemove: () -> Unit,
+) {
+    if (showDialog) {
+        TargetRowsDialog(
+            currentTarget = currentTarget,
+            onDismiss = onDismiss,
+            onConfirm = onConfirm,
+            onRemove = onRemove,
+        )
+    }
+}
+
+@Composable
+private fun CounterProjectActionsSheetHost(
+    showSheet: Boolean,
+    state: ProjectActionsSheetState,
+    callbacks: ProjectActionsSheetCallbacks,
+) {
+    if (showSheet) {
+        ProjectActionsBottomSheet(
+            state = state,
+            callbacks = callbacks,
+        )
+    }
+}
+
+@Composable
+private fun CounterCountersListSheetHost(
+    showSheet: Boolean,
+    projectCounters: List<ProjectCounter>,
+    mainRowCount: Int,
+    actions: ProjectCountersSectionActions,
+    onDismiss: () -> Unit,
+) {
+    if (showSheet) {
+        CountersListSheet(
+            projectCounters = projectCounters,
+            mainRowCount = mainRowCount,
+            actions = actions,
+            onDismiss = onDismiss,
+        )
+    }
+}
+
+private data class CounterVoiceControls(
+    val commandHandler: VoiceCommandHandler,
+    val responseManager: VoiceResponseManager,
+    val isListening: Boolean,
+    val isContinuousMode: Boolean,
+    val onToggle: () -> Unit,
+)
+
+@Composable
+private fun rememberCounterVoiceControls(
+    state: CounterUiState,
+    viewModel: CounterViewModel,
+): CounterVoiceControls {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val voiceCommandHandler =
+        remember(context, coroutineScope) {
+            VoiceCommandHandler(context, coroutineScope)
+        }
+    val voiceResponseManager =
+        remember(context, voiceCommandHandler) {
+            VoiceResponseManager(context, voiceCommandHandler)
+        }
+    val isVoiceListening by voiceCommandHandler.isListening.collectAsStateWithLifecycle()
+    val isContinuousMode by voiceCommandHandler.isContinuousMode.collectAsStateWithLifecycle()
+    val currentVoiceLiveEnabled by rememberUpdatedState(state.voiceLiveEnabled)
+    val micPermissionLauncher =
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.RequestPermission(),
+        ) { granted ->
+            if (granted) {
+                if (currentVoiceLiveEnabled) {
+                    viewModel.startLiveVoice()
+                } else {
+                    voiceCommandHandler.startContinuousListening()
+                }
+            }
+        }
+    val toggleVoice = {
+        when {
+            state.isLiveSessionActive -> viewModel.stopLiveVoice()
+            voiceCommandHandler.isContinuousMode.value -> voiceCommandHandler.stopContinuousListening()
+            state.voiceLiveEnabled && hasAudioPermission(context) -> viewModel.startLiveVoice()
+            !state.voiceLiveEnabled && hasAudioPermission(context) -> voiceCommandHandler.startContinuousListening()
+            else -> micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+        }
+    }
+    return CounterVoiceControls(
+        commandHandler = voiceCommandHandler,
+        responseManager = voiceResponseManager,
+        isListening = isVoiceListening,
+        isContinuousMode = isContinuousMode,
+        onToggle = toggleVoice,
+    )
+}
+
+@Composable
+@Suppress("ViewModelForwarding")
 private fun HandleVoiceCommands(
     voiceCommandHandler: VoiceCommandHandler,
     viewModel: CounterViewModel,
     performHaptic: () -> Unit,
 ) {
-    LaunchedEffect(voiceCommandHandler) {
+    val currentPerformHaptic by rememberUpdatedState(performHaptic)
+
+    LaunchedEffect(voiceCommandHandler, viewModel) {
         voiceCommandHandler.recognizedCommand.collect { command ->
             when (command) {
                 is VoiceCommand.Increment -> {
                     repeat(command.count) {
-                        performHaptic()
+                        currentPerformHaptic()
                         viewModel.increment()
                     }
                 }
 
                 is VoiceCommand.Decrement -> {
                     repeat(command.count) {
-                        performHaptic()
+                        currentPerformHaptic()
                         viewModel.decrement()
                     }
                 }
 
                 VoiceCommand.Undo -> {
-                    performHaptic()
+                    currentPerformHaptic()
                     viewModel.undo()
                 }
 
@@ -510,12 +619,12 @@ private fun HandleVoiceCommands(
                 }
 
                 VoiceCommand.StitchIncrement -> {
-                    performHaptic()
+                    currentPerformHaptic()
                     viewModel.incrementStitch()
                 }
 
                 VoiceCommand.StitchDecrement -> {
-                    performHaptic()
+                    currentPerformHaptic()
                     viewModel.decrementStitch()
                 }
 
@@ -534,6 +643,7 @@ private fun HandleVoiceCommands(
 }
 
 @Composable
+@Suppress("ViewModelForwarding")
 private fun VoiceCommandEffects(
     voiceCommandHandler: VoiceCommandHandler,
     voiceResponseManager: VoiceResponseManager,
@@ -1525,25 +1635,27 @@ private fun CountersListSheet(
                 )
             } else {
                 projectCounters.forEach { counter ->
-                    if (counter.counterType == "REPEAT_SECTION") {
-                        RepeatSectionItem(
-                            counter = counter,
-                            mainRowCount = mainRowCount,
-                            onDelete = { actions.onDeleteCounter(counter.id) },
-                        )
-                    } else {
-                        CounterListItem(
-                            counter = counter,
-                            actions =
-                                CounterItemActions(
-                                    onIncrement = { actions.onIncrementCounter(counter) },
-                                    onDecrement = { actions.onDecrementCounter(counter) },
-                                    onRename = { actions.onRenameCounter(counter.id, it) },
-                                    onReset = { actions.onResetCounter(counter.id) },
-                                    onDelete = { actions.onDeleteCounter(counter.id) },
-                                    performHaptic = actions.performHaptic,
-                                ),
-                        )
+                    key(counter.id) {
+                        if (counter.counterType == "REPEAT_SECTION") {
+                            RepeatSectionItem(
+                                counter = counter,
+                                mainRowCount = mainRowCount,
+                                onDelete = { actions.onDeleteCounter(counter.id) },
+                            )
+                        } else {
+                            CounterListItem(
+                                counter = counter,
+                                actions =
+                                    CounterItemActions(
+                                        onIncrement = { actions.onIncrementCounter(counter) },
+                                        onDecrement = { actions.onDecrementCounter(counter) },
+                                        onRename = { actions.onRenameCounter(counter.id, it) },
+                                        onReset = { actions.onResetCounter(counter.id) },
+                                        onDelete = { actions.onDeleteCounter(counter.id) },
+                                        performHaptic = actions.performHaptic,
+                                    ),
+                            )
+                        }
                     }
                 }
             }

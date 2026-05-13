@@ -3,10 +3,12 @@ package com.finnvek.knittools.di
 import android.content.Context
 import androidx.room.Room
 import com.finnvek.knittools.data.local.CounterProjectDao
+import com.finnvek.knittools.data.local.DatabaseTransactionRunner
 import com.finnvek.knittools.data.local.KnitToolsDatabase
 import com.finnvek.knittools.data.local.PatternAnnotationDao
 import com.finnvek.knittools.data.local.ProgressPhotoDao
 import com.finnvek.knittools.data.local.ProjectCounterDao
+import com.finnvek.knittools.data.local.RoomDatabaseTransactionRunner
 import com.finnvek.knittools.data.local.RowReminderDao
 import com.finnvek.knittools.data.local.SavedPatternDao
 import com.finnvek.knittools.data.local.SessionDao
@@ -38,6 +40,11 @@ object DatabaseModule {
                 KnitToolsDatabase.MIGRATION_7_8,
                 KnitToolsDatabase.MIGRATION_8_9,
             ).build()
+
+    @Provides
+    @Singleton
+    fun provideDatabaseTransactionRunner(database: KnitToolsDatabase): DatabaseTransactionRunner =
+        RoomDatabaseTransactionRunner(database)
 
     @Provides
     fun provideCounterProjectDao(db: KnitToolsDatabase): CounterProjectDao = db.counterProjectDao()

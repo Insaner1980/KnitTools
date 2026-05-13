@@ -22,7 +22,6 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -105,6 +104,9 @@ class ProjectListViewModel
 
         private val _navigateToProject = MutableSharedFlow<Long>()
         val navigateToProject: SharedFlow<Long> = _navigateToProject.asSharedFlow()
+
+        private val _upgradeToPro = MutableSharedFlow<Unit>()
+        val upgradeToPro: SharedFlow<Unit> = _upgradeToPro.asSharedFlow()
 
         init {
             viewModelScope.launch {
@@ -223,12 +225,10 @@ class ProjectListViewModel
         }
 
         private suspend fun updatePhotoCounts(projects: List<CounterProject>) {
-            val countMap = mutableMapOf<Long, Int>()
-            projects.forEach { p ->
-                val count = photoRepository.getPhotoCount(p.id).first()
-                if (count > 0) countMap[p.id] = count
-            }
-            _projectPhotoCounts.value = countMap
+            _projectPhotoCounts.value =
+                photoRepository
+                    .getPhotoCountsByProjectIds(projects.map { it.id })
+                    .filterValues { it > 0 }
         }
 
         private suspend fun updatePatternNames(projects: List<CounterProject>) {
@@ -250,7 +250,10 @@ class ProjectListViewModel
 
         fun createProject() {
             viewModelScope.launch {
-                if (!isPro && repository.getActiveProjectCount() >= 1) return@launch
+                if (!isPro && repository.getActiveProjectCount() >= 1) {
+                    _upgradeToPro.emit(Unit)
+                    return@launch
+                }
                 val count = repository.getProjectCount()
                 val id =
                     repository.createProject(

@@ -12,6 +12,9 @@ interface CounterProjectDao {
     @Query("SELECT * FROM counter_projects ORDER BY updatedAt DESC")
     fun getAllProjects(): Flow<List<CounterProjectEntity>>
 
+    @Query("SELECT * FROM counter_projects")
+    suspend fun getAllProjectsOnce(): List<CounterProjectEntity>
+
     @Query("SELECT * FROM counter_projects WHERE id = :id")
     suspend fun getProject(id: Long): CounterProjectEntity?
 
@@ -219,6 +222,22 @@ interface CounterProjectDao {
     @Query(
         """
         UPDATE counter_projects
+        SET linkedPatternId = NULL,
+            updatedAt = :updatedAt
+        WHERE linkedPatternId IN (:patternIds)
+        """,
+    )
+    suspend fun clearLinkedPatternIds(
+        patternIds: List<Long>,
+        updatedAt: Long,
+    )
+
+    @Query("SELECT COUNT(*) FROM counter_projects WHERE patternUri = :patternUri")
+    suspend fun countProjectsUsingPatternUri(patternUri: String): Int
+
+    @Query(
+        """
+        UPDATE counter_projects
         SET targetRows = :targetRows,
             updatedAt = :updatedAt
         WHERE id = :id
@@ -268,8 +287,8 @@ interface CounterProjectDao {
     @Query("SELECT COUNT(*) FROM counter_projects")
     suspend fun getProjectCount(): Int
 
-    @Query("SELECT * FROM counter_projects ORDER BY updatedAt DESC LIMIT 1")
-    suspend fun getFirstProject(): CounterProjectEntity?
+    @Query("SELECT * FROM counter_projects WHERE isCompleted = 0 ORDER BY updatedAt DESC, id DESC LIMIT 1")
+    suspend fun getLatestActiveProject(): CounterProjectEntity?
 
     @Insert
     suspend fun insertHistory(entry: CounterHistoryEntity)
@@ -348,22 +367,22 @@ interface CounterProjectDao {
         deleteHistoryById(entry.id)
     }
 
-    @Query("SELECT * FROM counter_projects WHERE isCompleted = 0 ORDER BY updatedAt DESC")
+    @Query("SELECT * FROM counter_projects WHERE isCompleted = 0 ORDER BY updatedAt DESC, id DESC")
     fun getActiveProjects(): Flow<List<CounterProjectEntity>>
 
     @Query("SELECT * FROM counter_projects WHERE isCompleted = 0 ORDER BY name COLLATE NOCASE ASC")
     fun getActiveProjectsByName(): Flow<List<CounterProjectEntity>>
 
-    @Query("SELECT * FROM counter_projects WHERE isCompleted = 0 ORDER BY id DESC")
+    @Query("SELECT * FROM counter_projects WHERE isCompleted = 0 ORDER BY createdAt DESC, id DESC")
     fun getActiveProjectsByCreated(): Flow<List<CounterProjectEntity>>
 
-    @Query("SELECT * FROM counter_projects WHERE isCompleted = 1 ORDER BY completedAt DESC")
+    @Query("SELECT * FROM counter_projects WHERE isCompleted = 1 ORDER BY completedAt DESC, id DESC")
     fun getCompletedProjects(): Flow<List<CounterProjectEntity>>
 
     @Query("SELECT * FROM counter_projects WHERE isCompleted = 1 ORDER BY name COLLATE NOCASE ASC")
     fun getCompletedProjectsByName(): Flow<List<CounterProjectEntity>>
 
-    @Query("SELECT * FROM counter_projects WHERE isCompleted = 1 ORDER BY id DESC")
+    @Query("SELECT * FROM counter_projects WHERE isCompleted = 1 ORDER BY createdAt DESC, id DESC")
     fun getCompletedProjectsByCreated(): Flow<List<CounterProjectEntity>>
 
     @Query("SELECT COUNT(*) FROM counter_projects WHERE isCompleted = 0")

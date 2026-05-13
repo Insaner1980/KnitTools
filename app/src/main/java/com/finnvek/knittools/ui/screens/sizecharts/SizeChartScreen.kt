@@ -35,6 +35,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.SizeChartData
 import com.finnvek.knittools.domain.model.SizeChartEntry
+import com.finnvek.knittools.domain.model.SizeLabel
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
 import com.finnvek.knittools.ui.screens.home.HomeViewModel
 
@@ -118,12 +119,22 @@ fun SizeChartScreen(
             item { SizeChartHeaderRow(headers) }
 
             // Data-rivit
-            items(entries) { entry ->
+            items(entries, key = { entry -> entry.lazyListKey(selectedCategory) }) { entry ->
                 SizeChartDataRow(entry, useImperial)
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             }
         }
     }
+}
+
+private fun SizeChartEntry.lazyListKey(category: SizeChartData.Category): String {
+    val labelKey =
+        when (val label = sizeLabel) {
+            is SizeLabel.Literal -> "literal:${label.text}"
+            is SizeLabel.Resource -> "res:${label.resId}"
+        }
+
+    return "${category.name}:$labelKey"
 }
 
 @Composable

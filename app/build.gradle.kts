@@ -261,7 +261,25 @@ dependencyCheck {
         }
     }
     nvd {
-        apiKey = providers.environmentVariable("NVD_API_KEY").orNull
+        providers.environmentVariable("NVD_API_KEY").orNull?.let { apiKey = it }
+        delay =
+            providers
+                .environmentVariable("NVD_API_DELAY_MS")
+                .orNull
+                ?.toIntOrNull()
+                ?: 6_000
+        maxRetryCount =
+            providers
+                .environmentVariable("NVD_API_MAX_RETRY_COUNT")
+                .orNull
+                ?.toIntOrNull()
+                ?: 20
+        validForHours =
+            providers
+                .environmentVariable("NVD_VALID_FOR_HOURS")
+                .orNull
+                ?.toIntOrNull()
+                ?: 24
     }
 }
 

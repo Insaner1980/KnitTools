@@ -1,5 +1,6 @@
 package com.finnvek.knittools.ui.screens.counter
 
+import android.content.ClipData
 import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -150,6 +151,7 @@ fun PhotoViewer(
                             Intent(Intent.ACTION_SEND).apply {
                                 type = "image/jpeg"
                                 putExtra(Intent.EXTRA_STREAM, contentUri)
+                                clipData = ClipData.newUri(context.contentResolver, "photo", contentUri)
                                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                             }
                         context.startActivity(Intent.createChooser(shareIntent, null))

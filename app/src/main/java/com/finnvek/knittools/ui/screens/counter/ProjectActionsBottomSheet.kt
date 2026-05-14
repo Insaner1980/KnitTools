@@ -52,6 +52,7 @@ data class ProjectActionsSheetCallbacks(
     val onOpenCountersList: () -> Unit,
     val onOpenAddCounter: () -> Unit,
     val onToggleStitchTracking: (Boolean) -> Unit,
+    val onOpenStitchCount: () -> Unit,
     val onOpenSessionHistory: () -> Unit,
     val onStartRename: () -> Unit,
     val onShowResetDialog: () -> Unit,
@@ -63,6 +64,7 @@ data class ProjectActionsSheetState(
     val linkedYarnCount: Int,
     val projectCounterCount: Int,
     val stitchTrackingEnabled: Boolean,
+    val stitchCount: Int?,
     val isPro: Boolean,
     val isAiAvailable: Boolean,
 )
@@ -121,11 +123,18 @@ fun ProjectActionsBottomSheet(
                     onClick = callbacks.onOpenAddCounter,
                     showChevron = false,
                 )
+                ActionRow(
+                    icon = Icons.Outlined.Numbers,
+                    label = stringResource(R.string.stitches_per_row),
+                    trailingCount = state.stitchCount?.takeIf { it > 0 },
+                    onClick = callbacks.onOpenStitchCount,
+                )
                 SwitchRow(
                     icon = Icons.Outlined.Numbers,
                     label = stringResource(R.string.track_stitches),
                     checked = state.stitchTrackingEnabled,
                     onCheckedChange = callbacks.onToggleStitchTracking,
+                    enabled = (state.stitchCount ?: 0) > 0,
                 )
             }
 
@@ -256,14 +265,20 @@ private fun SwitchRow(
     label: String,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
+    enabled: Boolean = true,
 ) {
-    val contentColor = MaterialTheme.colorScheme.onSurface
+    val contentColor =
+        if (enabled) {
+            MaterialTheme.colorScheme.onSurface
+        } else {
+            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+        }
     Row(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .defaultMinSize(minHeight = 48.dp)
-                .clickable { onCheckedChange(!checked) }
+                .clickable(enabled = enabled) { onCheckedChange(!checked) }
                 .padding(horizontal = 22.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -283,6 +298,7 @@ private fun SwitchRow(
         Switch(
             checked = checked,
             onCheckedChange = onCheckedChange,
+            enabled = enabled,
         )
     }
 }

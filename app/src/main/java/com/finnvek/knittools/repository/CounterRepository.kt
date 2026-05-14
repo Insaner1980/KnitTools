@@ -6,8 +6,11 @@ import com.finnvek.knittools.data.local.DatabaseTransactionRunner
 import com.finnvek.knittools.data.local.SessionDao
 import com.finnvek.knittools.data.local.toDomain
 import com.finnvek.knittools.data.local.toEntity
+import com.finnvek.knittools.data.storage.PatternDocumentStorage
 import com.finnvek.knittools.data.storage.ProgressPhotoStorage
 import com.finnvek.knittools.di.IoDispatcher
+import com.finnvek.knittools.domain.calculator.CounterLogic
+import com.finnvek.knittools.domain.calculator.CounterState
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.KnitSession
 import com.finnvek.knittools.domain.model.SessionInsightsSummary
@@ -27,6 +30,7 @@ class CounterRepository
         private val dao: CounterProjectDao,
         private val sessionDao: SessionDao,
         private val photoStorage: ProgressPhotoStorage,
+        private val patternDocumentStorage: PatternDocumentStorage,
         @param:ApplicationContext private val context: Context,
         private val yarnCardRepository: YarnCardRepository,
         private val savedPatternRepository: SavedPatternRepository,
@@ -65,10 +69,16 @@ class CounterRepository
 
         fun observeProject(id: Long): Flow<CounterProject?> = dao.observeProject(id).map { it?.toDomain() }
 
-        suspend fun createProject(name: String): Long = dao.insert(CounterProject(name = name).toEntity())
+        suspend fun createProject(name: String): Long? {
+            val projectName = uniqueProjectName(name) ?: return null
+            val now = System.currentTimeMillis()
+            return dao.insert(CounterProject(name = projectName, createdAt = now, updatedAt = now).toEntity())
+        }
 
-        suspend fun updateProject(project: CounterProject) =
-            dao.update(project.copy(updatedAt = System.currentTimeMillis()).toEntity())
+        suspend fun updateProject(project: CounterProject) {
+            val projectName = uniqueProjectName(project.name, excludedProjectId = project.id) ?: return
+            dao.update(project.copy(name = projectName, updatedAt = System.currentTimeMillis()).toEntity())
+        }
 
         suspend fun adjustProjectCount(
             id: Long,
@@ -109,10 +119,48 @@ class CounterRepository
             updatedAt = System.currentTimeMillis(),
         )
 
+        suspend fun applyWidgetCountChange(
+            id: Long,
+            increment: Boolean,
+        ): Boolean =
+            transactionRunner.run {
+                val project = dao.getProject(id)?.toDomain() ?: return@run false
+                if (project.isCompleted) return@run false
+
+                val before = CounterState(count = project.count, stepSize = project.stepSize)
+                val after =
+                    if (increment) {
+                        CounterLogic.increment(before)
+                    } else {
+                        CounterLogic.decrement(before)
+                    }
+                if (after.count == before.count) return@run false
+
+                val updatedAt = System.currentTimeMillis()
+                val action = if (increment) "increment" else "decrement"
+                dao.updateCounterStateWithHistory(
+                    projectId = id,
+                    count = after.count,
+                    stepSize = after.stepSize,
+                    action = action,
+                    previousValue = before.count,
+                    newValue = after.count,
+                    updatedAt = updatedAt,
+                )
+                if (project.stitchTrackingEnabled) {
+                    dao.updateCurrentStitch(id, 0, updatedAt)
+                }
+                true
+            }
+
         suspend fun updateProjectName(
             id: Long,
             name: String,
-        ) = dao.updateName(id, name, System.currentTimeMillis())
+        ): String? {
+            val projectName = uniqueProjectName(name, excludedProjectId = id) ?: return null
+            dao.updateName(id, projectName, System.currentTimeMillis())
+            return projectName
+        }
 
         suspend fun updateProjectNotes(
             id: Long,
@@ -225,6 +273,7 @@ class CounterRepository
         suspend fun deleteProject(id: Long) {
             withContext(ioDispatcher) {
                 photoStorage.deleteProjectPhotos(context, id)
+                patternDocumentStorage.deleteProjectCaptureImages(context, id)
             }
             val patternUri = dao.getProject(id)?.patternUri
             transactionRunner.run {
@@ -237,6 +286,20 @@ class CounterRepository
         suspend fun getProjectCount(): Int = dao.getProjectCount()
 
         suspend fun getLatestActiveProject(): CounterProject? = dao.getLatestActiveProject()?.toDomain()
+
+        private suspend fun uniqueProjectName(
+            name: String,
+            excludedProjectId: Long? = null,
+        ): String? {
+            val existingNames =
+                dao
+                    .getAllProjectsOnce()
+                    .asSequence()
+                    .filter { project -> excludedProjectId == null || project.id != excludedProjectId }
+                    .map { it.name }
+                    .toList()
+            return ProjectNameRules.uniqueName(name, existingNames)
+        }
 
         suspend fun deleteHistoryBefore(
             projectId: Long,

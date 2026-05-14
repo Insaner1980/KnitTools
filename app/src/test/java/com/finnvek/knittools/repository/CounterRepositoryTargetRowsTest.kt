@@ -77,6 +77,7 @@ private fun buildRepository(dao: FakeCounterProjectDao): CounterRepository =
         dao = dao,
         sessionDao = StubSessionDao(),
         photoStorage = mockk(relaxed = true),
+        patternDocumentStorage = mockk(relaxed = true),
         context = mockk<Context>(relaxed = true),
         yarnCardRepository = mockk(relaxed = true),
         savedPatternRepository = mockk(relaxed = true),

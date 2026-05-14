@@ -35,6 +35,19 @@ class PatternDocumentStorage
             return file to uri
         }
 
+        fun deleteProjectCaptureImages(
+            context: Context,
+            projectId: Long,
+        ) {
+            val dir = File(context.filesDir, "pattern_captures/$projectId")
+            if (dir.exists()) {
+                AppFileStorage.deleteFileOrDirectory(
+                    file = dir,
+                    failureMessagePrefix = "Pattern capture file delete failed",
+                )
+            }
+        }
+
         fun convertImageToPdf(
             context: Context,
             projectId: Long,
@@ -186,7 +199,8 @@ internal object PatternDocumentFiles {
         fileName: String,
     ): File {
         val prefix =
-            fileName.substringBeforeLast(PDF_EXTENSION)
+            fileName
+                .substringBeforeLast(PDF_EXTENSION)
                 .take(16)
                 .ifBlank { FALLBACK_NAME }
                 .padEnd(3, '_')

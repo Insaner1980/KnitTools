@@ -433,7 +433,7 @@ private fun isAddCounterFormValid(params: AddCounterFormParams): Boolean =
                     params.repeatStartRow != null &&
                         params.repeatEndRow != null &&
                         params.totalRepeats != null &&
-                        params.repeatStartRow < params.repeatEndRow &&
+                        params.repeatStartRow <= params.repeatEndRow &&
                         params.totalRepeats > 0
                 )
         )
@@ -563,6 +563,7 @@ private fun ShapingFields(
         value = stitchChangeText,
         onValueChange = onStitchChangeChange,
         label = stringResource(R.string.stitch_change),
+        allowNegative = true,
     )
     NumberInputField(
         value = shapeEveryNText,

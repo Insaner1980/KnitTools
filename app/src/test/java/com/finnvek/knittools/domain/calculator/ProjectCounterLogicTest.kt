@@ -61,6 +61,12 @@ class ProjectCounterLogicTest {
     }
 
     @Test
+    fun `repeat cycling preserves overflow when step skips boundary`() {
+        val result = ProjectCounterLogic.increment(counter(count = 7, stepSize = 2, repeatAt = 8))
+        assertEquals(1, result.count)
+    }
+
+    @Test
     fun `no repeat cycling when below repeatAt`() {
         val result = ProjectCounterLogic.increment(counter(count = 5, stepSize = 1, repeatAt = 8))
         assertEquals(6, result.count)

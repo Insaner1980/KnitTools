@@ -33,6 +33,7 @@ fun NumberInputField(
     label: String,
     modifier: Modifier = Modifier,
     isDecimal: Boolean = false,
+    allowNegative: Boolean = false,
     suffix: String? = null,
     isLast: Boolean = false,
 ) {
@@ -51,7 +52,7 @@ fun NumberInputField(
         TextField(
             value = value,
             onValueChange = { newValue ->
-                onValueChange(filterNumericInput(newValue, isDecimal))
+                onValueChange(filterNumericInput(newValue, isDecimal, allowNegative))
             },
             modifier =
                 Modifier
@@ -71,7 +72,7 @@ fun NumberInputField(
             textStyle = MaterialTheme.typography.titleSmall,
             keyboardOptions =
                 KeyboardOptions(
-                    keyboardType = if (isDecimal) KeyboardType.Decimal else KeyboardType.Number,
+                    keyboardType = numericKeyboardType(isDecimal, allowNegative),
                     imeAction = if (isLast) ImeAction.Done else ImeAction.Next,
                 ),
             keyboardActions =
@@ -104,14 +105,22 @@ fun NumberInputField(
     }
 }
 
+private fun numericKeyboardType(
+    isDecimal: Boolean,
+    allowNegative: Boolean,
+): KeyboardType =
+    when {
+        isDecimal && allowNegative -> KeyboardType.Text
+        isDecimal -> KeyboardType.Decimal
+        allowNegative -> KeyboardType.Text
+        else -> KeyboardType.Number
+    }
+
 private fun filterNumericInput(
     value: String,
     isDecimal: Boolean,
+    allowNegative: Boolean,
 ): String {
-    if (!isDecimal) {
-        return value.filter(Char::isDigit)
-    }
-
     val result = StringBuilder()
     var hasDecimalSeparator = false
 
@@ -121,9 +130,15 @@ private fun filterNumericInput(
                 result.append(char)
             }
 
+            allowNegative && char == '-' && result.isEmpty() -> {
+                result.append(char)
+            }
+
             (char == '.' || char == ',') && !hasDecimalSeparator -> {
-                result.append('.')
-                hasDecimalSeparator = true
+                if (isDecimal) {
+                    result.append('.')
+                    hasDecimalSeparator = true
+                }
             }
         }
     }

@@ -40,6 +40,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MoreVert
@@ -102,6 +103,7 @@ import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.RollingCounter
+import com.finnvek.knittools.ui.components.StitchCounter
 import com.finnvek.knittools.ui.screens.pattern.PatternPickerSheet
 import com.finnvek.knittools.ui.theme.YarnColors
 
@@ -179,18 +181,18 @@ fun CounterScreen(
         onUpgradeToPro()
     }
     val requestPhotoGallery = {
-        if (state.isPro || BuildConfig.DEBUG) {
-            onPhotoGallery()
-        } else {
-            openProUpgrade()
-        }
+        requestCounterFeature(
+            hasAccess = state.isPro || BuildConfig.DEBUG,
+            onOpenFeature = onPhotoGallery,
+            onOpenUpgrade = openProUpgrade,
+        )
     }
     val requestAddCounter = {
-        if (state.isPro) {
-            showAddCounter = true
-        } else {
-            openProUpgrade()
-        }
+        requestCounterFeature(
+            hasAccess = state.isPro,
+            onOpenFeature = { showAddCounter = true },
+            onOpenUpgrade = openProUpgrade,
+        )
     }
 
     LaunchedEffect(Unit) {
@@ -384,6 +386,7 @@ fun CounterScreen(
                 linkedYarnCount = state.linkedYarns.size,
                 projectCounterCount = state.projectCounters.size,
                 stitchTrackingEnabled = state.stitchTrackingEnabled,
+                stitchCount = state.stitchCount,
                 isPro = state.isPro,
                 isAiAvailable = state.isAiAvailable,
             ),
@@ -415,7 +418,21 @@ fun CounterScreen(
                     showProjectActionsSheet = false
                     requestAddCounter()
                 },
-                onToggleStitchTracking = viewModel::setStitchTrackingEnabled,
+                onOpenStitchCount = {
+                    showProjectActionsSheet = false
+                    showStitchDialog = true
+                },
+                onToggleStitchTracking = { enabled ->
+                    handleStitchTrackingToggle(
+                        enabled = enabled,
+                        stitchCount = state.stitchCount,
+                        onRequestStitchCount = {
+                            showProjectActionsSheet = false
+                            showStitchDialog = true
+                        },
+                        onSetStitchTrackingEnabled = viewModel::setStitchTrackingEnabled,
+                    )
+                },
                 onOpenSessionHistory = {
                     showProjectActionsSheet = false
                     state.projectId?.let(onSessionHistory)
@@ -1156,7 +1173,7 @@ private fun rememberVibrator(): Vibrator? {
 }
 
 data class ProjectHeaderActions(
-    val onNameChange: (String) -> Unit,
+    val onNameSave: (String) -> Unit,
     val onEditingNameChange: (Boolean) -> Unit,
     val onShowPatternInfo: () -> Unit,
     val onShowPatternPicker: () -> Unit,
@@ -1274,6 +1291,7 @@ private fun CounterScreenContent(
                     CounterTargetProgressBar(state = state, onShowTargetDialog = actions.onShowTargetDialog)
                 }
             }
+            CounterStitchTracker(state = state, actions = actions)
             CounterButtons(
                 onDecrement = actions.onDecrement,
                 onIncrement = actions.onIncrement,
@@ -1282,6 +1300,23 @@ private fun CounterScreenContent(
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
+}
+
+@Composable
+private fun CounterStitchTracker(
+    state: CounterUiState,
+    actions: CounterMainContentActions,
+) {
+    val totalStitches = state.stitchCount?.takeIf { it > 0 } ?: return
+    if (!state.stitchTrackingEnabled) return
+
+    StitchCounter(
+        currentStitch = state.currentStitch.coerceIn(0, totalStitches),
+        totalStitches = totalStitches,
+        onIncrement = actions.onIncrementStitch,
+        onDecrement = actions.onDecrementStitch,
+        modifier = Modifier.padding(bottom = 12.dp),
+    )
 }
 
 @Composable
@@ -1364,10 +1399,18 @@ private fun ProjectHeader(
     isEditingName: Boolean,
     actions: ProjectHeaderActions,
 ) {
+    var draftName by rememberSaveable(state.projectId) { mutableStateOf(state.projectName) }
+
+    LaunchedEffect(isEditingName, state.projectName) {
+        if (!isEditingName) {
+            draftName = state.projectName
+        }
+    }
+
     if (isEditingName) {
         TextField(
-            value = state.projectName,
-            onValueChange = actions.onNameChange,
+            value = draftName,
+            onValueChange = { draftName = it },
             modifier = Modifier.fillMaxWidth(),
             placeholder = { Text(stringResource(R.string.default_project_name)) },
             singleLine = true,
@@ -1380,9 +1423,15 @@ private fun ProjectHeader(
                     unfocusedIndicatorColor = Color.Transparent,
                 ),
             trailingIcon = {
-                IconButton(onClick = { actions.onEditingNameChange(false) }) {
+                IconButton(
+                    onClick = {
+                        actions.onNameSave(draftName)
+                        actions.onEditingNameChange(false)
+                    },
+                    enabled = draftName.isNotBlank(),
+                ) {
                     Icon(
-                        Icons.Filled.Add,
+                        Icons.Filled.Check,
                         contentDescription = stringResource(R.string.save),
                         modifier = Modifier.size(20.dp),
                         tint = MaterialTheme.colorScheme.primary,
@@ -2096,7 +2145,7 @@ private fun rememberCounterTopBarActions(dependencies: CounterTopBarActionDepend
 private fun rememberProjectHeaderActions(dependencies: ProjectHeaderActionDependencies): ProjectHeaderActions =
     remember(dependencies) {
         ProjectHeaderActions(
-            onNameChange = dependencies.viewModel::setProjectName,
+            onNameSave = dependencies.viewModel::setProjectName,
             onEditingNameChange = dependencies.onEditingNameChange,
             onShowPatternInfo = dependencies.onShowPatternInfo,
             onShowPatternPicker = dependencies.onShowPatternPicker,

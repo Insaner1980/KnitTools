@@ -1,0 +1,8 @@
+node_modules/
+data/*/project.json
+data/*/tech.json
+data/*/files/
+data/*/runs/
+data/*/reports/
+findings/
+comment.md

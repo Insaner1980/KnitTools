@@ -15,6 +15,7 @@ import com.finnvek.knittools.ai.AiQuotaManager
 import com.finnvek.knittools.ai.AiVoiceAction
 import com.finnvek.knittools.ai.GeminiAiService
 import com.finnvek.knittools.ai.VoiceCommandInterpreter
+import com.finnvek.knittools.ai.live.LiveVoiceFunctionCallMapper
 import com.finnvek.knittools.ai.live.LiveVoiceState
 import com.finnvek.knittools.ai.live.ProjectVoiceContext
 import com.finnvek.knittools.ai.live.VoiceLiveQuotaManager
@@ -73,8 +74,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonPrimitive
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
@@ -291,23 +290,10 @@ class CounterViewModel
                             return@collect
                         }
 
-                        _uiState.update { state ->
-                            state.copy(
-                                projectName = project.name,
-                                counter = state.counter.copy(count = project.count),
-                                secondaryCount = project.secondaryCount,
-                                notes = project.notes,
-                                sectionName = project.sectionName,
-                                stitchCount = project.stitchCount,
-                                stitchTrackingEnabled = project.stitchTrackingEnabled,
-                                currentStitch = project.currentStitch,
-                                patternUri = project.patternUri,
-                                patternName = project.patternName,
-                                currentPatternPage = project.currentPatternPage,
-                                patternRowMapping = project.patternRowMapping,
-                                totalRows = project.totalRows,
-                                targetRows = project.targetRows,
-                            )
+                        val countChanged = _uiState.value.counter.count != project.count
+                        _uiState.update { state -> state.withObservedProject(project) }
+                        if (countChanged) {
+                            syncRepeatSectionCounters(project.count, _uiState.value.projectCounters, persist = true)
                         }
 
                         if (linkedYarnIdsCache != project.yarnCardIds) {
@@ -431,24 +417,7 @@ class CounterViewModel
             saveSelectedProject(project.id)
             savePendingSessionState(project.id, 0L)
 
-            _uiState.update {
-                it.copy(
-                    projectId = project.id,
-                    projectName = project.name,
-                    counter = CounterState(count = project.count, stepSize = project.stepSize),
-                    secondaryCount = project.secondaryCount,
-                    notes = project.notes,
-                    sectionName = project.sectionName,
-                    stitchCount = project.stitchCount,
-                    stitchTrackingEnabled = project.stitchTrackingEnabled,
-                    currentStitch = project.currentStitch,
-                    patternUri = project.patternUri,
-                    patternName = project.patternName,
-                    currentPatternPage = project.currentPatternPage,
-                    patternRowMapping = project.patternRowMapping,
-                    sessionSeconds = 0,
-                )
-            }
+            _uiState.update { it.withStartedProject(project) }
             observeSelectedProject(project.id)
             observeReminders(project.id)
             observeProjectCounters(project.id)
@@ -484,12 +453,13 @@ class CounterViewModel
         }
 
         fun createNewProject(name: String): Boolean {
+            if (name.isBlank()) return false
             if (!proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS)) {
                 val count = _uiState.value.projects.size
                 if (count >= 1) return false
             }
             viewModelScope.launch {
-                val id = repository.createProject(name)
+                val id = repository.createProject(name) ?: return@launch
                 repository.getProject(id)?.let { selectProject(it) }
             }
             return true
@@ -540,14 +510,9 @@ class CounterViewModel
             val state = _uiState.value
             state.projectId ?: return
             val updatedCounter = CounterLogic.increment(state.counter)
+            if (updatedCounter.count == state.counter.count) return
             val resetStitch = state.stitchTrackingEnabled && updatedCounter.count != state.counter.count
-            _uiState.update {
-                it.copy(
-                    counter = updatedCounter,
-                    currentStitch = if (resetStitch) 0 else it.currentStitch,
-                )
-            }
-            recomputeActiveAlert(updatedCounter.count)
+            _uiState.update { it.withCounterChange(updatedCounter, resetStitch) }
             syncRepeatSectionCounters(updatedCounter.count, state.projectCounters, persist = true)
             persistCurrentStitchIfNeeded(resetStitch)
             persistCount(
@@ -555,7 +520,7 @@ class CounterViewModel
                 previousValue = state.counter.count,
                 newValue = updatedCounter.count,
                 stepSize = updatedCounter.stepSize,
-                delta = updatedCounter.stepSize,
+                delta = updatedCounter.count - state.counter.count,
             )
         }
 
@@ -563,14 +528,9 @@ class CounterViewModel
             val state = _uiState.value
             state.projectId ?: return
             val updatedCounter = CounterLogic.decrement(state.counter)
+            if (updatedCounter.count == state.counter.count) return
             val resetStitch = state.stitchTrackingEnabled && updatedCounter.count != state.counter.count
-            _uiState.update {
-                it.copy(
-                    counter = updatedCounter,
-                    currentStitch = if (resetStitch) 0 else it.currentStitch,
-                )
-            }
-            recomputeActiveAlert(updatedCounter.count)
+            _uiState.update { it.withCounterChange(updatedCounter, resetStitch) }
             syncRepeatSectionCounters(updatedCounter.count, state.projectCounters, persist = true)
             persistCurrentStitchIfNeeded(resetStitch)
             persistCount(
@@ -578,7 +538,7 @@ class CounterViewModel
                 previousValue = state.counter.count,
                 newValue = updatedCounter.count,
                 stepSize = updatedCounter.stepSize,
-                delta = -updatedCounter.stepSize,
+                delta = updatedCounter.count - state.counter.count,
             )
         }
 
@@ -587,14 +547,9 @@ class CounterViewModel
             state.projectId ?: return
             val previousValue = state.counter.previousCount ?: return
             val updatedCounter = CounterLogic.undo(state.counter)
+            if (updatedCounter.count == state.counter.count) return
             val resetStitch = state.stitchTrackingEnabled && updatedCounter.count != state.counter.count
-            _uiState.update {
-                it.copy(
-                    counter = updatedCounter,
-                    currentStitch = if (resetStitch) 0 else it.currentStitch,
-                )
-            }
-            recomputeActiveAlert(updatedCounter.count)
+            _uiState.update { it.withCounterChange(updatedCounter, resetStitch) }
             syncRepeatSectionCounters(updatedCounter.count, state.projectCounters, persist = true)
             persistCurrentStitchIfNeeded(resetStitch)
             persistCount(
@@ -609,13 +564,9 @@ class CounterViewModel
             val state = _uiState.value
             state.projectId ?: return
             val updatedCounter = CounterLogic.reset(state.counter)
+            if (updatedCounter.count == state.counter.count) return
             val resetStitch = state.stitchTrackingEnabled && updatedCounter.count != state.counter.count
-            _uiState.update {
-                it.copy(
-                    counter = updatedCounter,
-                    currentStitch = if (resetStitch) 0 else it.currentStitch,
-                )
-            }
+            _uiState.update { it.withCounterChange(updatedCounter, resetStitch) }
             syncRepeatSectionCounters(updatedCounter.count, state.projectCounters, persist = true)
             persistCurrentStitchIfNeeded(resetStitch)
             persistCount(
@@ -738,11 +689,6 @@ class CounterViewModel
                 }
         }
 
-        private fun recomputeActiveAlert(currentRow: Int) {
-            val active = ReminderLogic.activeReminders(_uiState.value.reminders, currentRow).firstOrNull()
-            _uiState.update { it.copy(activeAlert = active) }
-        }
-
         fun addReminder(
             targetRow: Int,
             repeatInterval: Int?,
@@ -833,11 +779,19 @@ class CounterViewModel
         }
 
         fun setProjectName(name: String) {
-            _uiState.update { it.copy(projectName = name) }
+            val projectName = name.trim()
+            if (projectName.isEmpty()) return
             viewModelScope.launch {
                 val id = _uiState.value.projectId ?: return@launch
-                repository.updateProjectName(id, name)
-                syncWidget()
+                val savedName = repository.updateProjectName(id, projectName) ?: return@launch
+                _uiState.update { state ->
+                    if (state.projectId == id) {
+                        state.copy(projectName = savedName)
+                    } else {
+                        state
+                    }
+                }
+                syncWidget(projectName = savedName)
             }
         }
 
@@ -969,6 +923,7 @@ class CounterViewModel
             stepSize: Int,
             delta: Int? = null,
         ) {
+            if (newValue == previousValue) return
             val state = _uiState.value
             val projectId = state.projectId ?: return
             viewModelScope.launch {
@@ -1505,128 +1460,7 @@ class CounterViewModel
         @Suppress("CyclomaticComplexMethod") // Dispatch map — jokainen haara on yksinkertainen
         private fun buildFunctionCallHandler(): (FunctionCallPart) -> FunctionResponsePart =
             { functionCall ->
-                val args = functionCall.args
-                val action =
-                    when (functionCall.name) {
-                        "increment" -> {
-                            AiVoiceAction.Increment(args["count"]?.jsonPrimitive?.intOrNull ?: 1)
-                        }
-
-                        "decrement" -> {
-                            AiVoiceAction.Decrement(args["count"]?.jsonPrimitive?.intOrNull ?: 1)
-                        }
-
-                        "undo" -> {
-                            AiVoiceAction.Undo
-                        }
-
-                        "reset" -> {
-                            AiVoiceAction.Reset
-                        }
-
-                        "stitch_increment" -> {
-                            AiVoiceAction.StitchIncrement
-                        }
-
-                        "stitch_decrement" -> {
-                            AiVoiceAction.StitchDecrement
-                        }
-
-                        "add_note" -> {
-                            AiVoiceAction.AddNote(args["text"]?.jsonPrimitive?.content ?: "")
-                        }
-
-                        "dismiss_reminder" -> {
-                            AiVoiceAction.DismissReminder
-                        }
-
-                        "add_reminder" -> {
-                            AiVoiceAction.AddReminder(
-                                row = args["row"]?.jsonPrimitive?.intOrNull ?: 0,
-                                message = args["message"]?.jsonPrimitive?.content ?: "",
-                            )
-                        }
-
-                        "counter_change" -> {
-                            val name = args["name"]?.jsonPrimitive?.content ?: ""
-                            when (args["operation"]?.jsonPrimitive?.content) {
-                                "increment" -> AiVoiceAction.IncrementCounter(name)
-                                "decrement" -> AiVoiceAction.DecrementCounter(name)
-                                "reset" -> AiVoiceAction.ResetCounter(name)
-                                else -> AiVoiceAction.Unknown
-                            }
-                        }
-
-                        "set_section" -> {
-                            AiVoiceAction.SetSection(args["name"]?.jsonPrimitive?.content ?: "")
-                        }
-
-                        "configure_counter" -> {
-                            val value = args["value"]?.jsonPrimitive?.content ?: ""
-                            when (args["setting"]?.jsonPrimitive?.content) {
-                                "step_size" -> {
-                                    AiVoiceAction.SetStepSize(value.toIntOrNull() ?: 1)
-                                }
-
-                                "stitch_count" -> {
-                                    AiVoiceAction.SetStitchCount(value.toIntOrNull() ?: 0)
-                                }
-
-                                "stitch_tracking" -> {
-                                    AiVoiceAction.ToggleStitchTracking(value.toBooleanStrictOrNull() ?: false)
-                                }
-
-                                else -> {
-                                    AiVoiceAction.Unknown
-                                }
-                            }
-                        }
-
-                        "page_navigation" -> {
-                            when (args["direction"]?.jsonPrimitive?.content) {
-                                "next" -> AiVoiceAction.NextPage
-                                "previous" -> AiVoiceAction.PreviousPage
-                                "goto" -> AiVoiceAction.GoToPage(args["page"]?.jsonPrimitive?.intOrNull ?: 1)
-                                else -> AiVoiceAction.Unknown
-                            }
-                        }
-
-                        "complete_project" -> {
-                            AiVoiceAction.CompleteProject
-                        }
-
-                        "generate_summary" -> {
-                            AiVoiceAction.GenerateSummary
-                        }
-
-                        "query_project" -> {
-                            when (args["topic"]?.jsonPrimitive?.content) {
-                                "progress" -> AiVoiceAction.QueryProgress
-                                "remaining" -> AiVoiceAction.QueryRemaining
-                                "session_time" -> AiVoiceAction.QuerySessionTime
-                                "total_time" -> AiVoiceAction.QueryTotalTime
-                                "yarn" -> AiVoiceAction.QueryYarn
-                                "instruction" -> AiVoiceAction.QueryInstruction
-                                "shaping" -> AiVoiceAction.QueryShaping
-                                "stitches" -> AiVoiceAction.QueryStitches
-                                "reminders" -> AiVoiceAction.QueryReminders
-                                "counters" -> AiVoiceAction.QueryCounters
-                                "notes" -> AiVoiceAction.QueryNotes
-                                "summary" -> AiVoiceAction.QuerySummary
-                                "project" -> AiVoiceAction.QueryProject
-                                "section" -> AiVoiceAction.QuerySection
-                                else -> AiVoiceAction.Unknown
-                            }
-                        }
-
-                        "help" -> {
-                            AiVoiceAction.Help
-                        }
-
-                        else -> {
-                            AiVoiceAction.Unknown
-                        }
-                    }
+                val action = LiveVoiceFunctionCallMapper.toAction(functionCall.name, functionCall.args)
                 val response = executeVoiceAction(action)
                 FunctionResponsePart(
                     functionCall.name,
@@ -1689,6 +1523,7 @@ class CounterViewModel
                 }
 
                 is AiVoiceAction.Reset -> {
+                    reset()
                     context.getString(R.string.voice_counter_reset)
                 }
 

@@ -22,8 +22,19 @@ class ProgressPhotoGallerySourceTest {
         assertTrue(source.contains("if (!success)"))
     }
 
+    @Test
+    fun `photo share grants URI access through ClipData`() {
+        val source = ProjectSourceFiles.read(PHOTO_COMPONENTS)
+
+        assertTrue(source.contains("ClipData.newUri"))
+        assertTrue(source.contains("clipData ="))
+        assertTrue(source.contains("Intent.FLAG_GRANT_READ_URI_PERMISSION"))
+    }
+
     private companion object {
         private const val PHOTO_GALLERY_SCREEN =
             "app/src/main/java/com/finnvek/knittools/ui/screens/counter/PhotoGalleryScreen.kt"
+        private const val PHOTO_COMPONENTS =
+            "app/src/main/java/com/finnvek/knittools/ui/screens/counter/PhotoComponents.kt"
     }
 }

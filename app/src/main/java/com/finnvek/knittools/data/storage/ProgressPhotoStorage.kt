@@ -8,7 +8,6 @@ import androidx.core.content.FileProvider
 import androidx.core.graphics.scale
 import androidx.core.net.toUri
 import java.io.File
-import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -60,12 +59,15 @@ class ProgressPhotoStorage
             projectId: Long,
         ) {
             val dir = File(context.filesDir, "progress_photos/$projectId")
-            if (dir.exists()) deleteFileOrDirectory(dir)
+            if (dir.exists()) {
+                AppFileStorage.deleteFileOrDirectory(
+                    file = dir,
+                    failureMessagePrefix = "Progress photo file delete failed",
+                )
+            }
         }
 
-        private fun createUniquePhotoFile(dir: File): File {
-            return StorageFileNames.uniqueTimestampedFile(dir, "", ".jpg")
-        }
+        private fun createUniquePhotoFile(dir: File): File = StorageFileNames.uniqueTimestampedFile(dir, "", ".jpg")
 
         fun deletePhoto(photoUri: String) {
             deleteFileUri(photoUri.toUri())
@@ -80,28 +82,10 @@ class ProgressPhotoStorage
 
         private fun deleteFileUri(uri: Uri) {
             val file = File(uri.path ?: return)
-            deleteFileOrDirectory(file)
-        }
-
-        private fun deleteFileOrDirectory(file: File) {
-            if (!file.exists()) return
-            val deleted =
-                if (file.isDirectory) {
-                    file.deleteRecursively()
-                } else {
-                    file.delete()
-                }
-            if (!deleted && file.exists()) {
-                scheduleDeleteOnExit(file)
-                throw IOException("Progress photo file delete failed: ${file.absolutePath}")
-            }
-        }
-
-        private fun scheduleDeleteOnExit(file: File) {
-            if (file.isDirectory) {
-                file.listFiles()?.forEach(::scheduleDeleteOnExit)
-            }
-            file.deleteOnExit()
+            AppFileStorage.deleteFileOrDirectory(
+                file = file,
+                failureMessagePrefix = "Progress photo file delete failed",
+            )
         }
 
         private fun scaleDown(

@@ -8,6 +8,88 @@ rules:
       - pattern: |
           <application ... android:allowBackup="true" ...>
 
+  - id: knittools-android-cleartext-enabled
+    languages:
+      - xml
+    severity: ERROR
+    message: android:usesCleartextTraffic="true" sallii selkokielisen HTTP-liikenteen. Pidä se pois päältä ellei poikkeusta ole erikseen dokumentoitu.
+    patterns:
+      - pattern: |
+          <application ... android:usesCleartextTraffic="true" ...>
+
+  - id: knittools-exported-component-review
+    languages:
+      - xml
+    severity: WARNING
+    message: Exported Android-komponentti on julkinen sisääntulopinta. Varmista, että intent-data ja callback-parametrit validoidaan ennen toimintaa.
+    patterns:
+      - pattern-either:
+          - pattern: |
+              <activity ... android:exported="true" ...>
+          - pattern: |
+              <service ... android:exported="true" ...>
+          - pattern: |
+              <receiver ... android:exported="true" ...>
+
+  - id: knittools-fileprovider-broad-path
+    languages:
+      - xml
+    severity: ERROR
+    message: FileProvider-polku näyttää liian leveältä. Käytä vain sovelluksen rajattuja alihakemistoja, älä root/external/path="." -polkuja.
+    patterns:
+      - pattern-either:
+          - pattern: |
+              <root-path ...>
+          - pattern: |
+              <external-path ...>
+          - pattern: |
+              <files-path ... path="." ...>
+          - pattern: |
+              <cache-path ... path="." ...>
+          - pattern: |
+              <external-files-path ... path="." ...>
+          - pattern: |
+              <external-cache-path ... path="." ...>
+
+  - id: knittools-content-uri-share-without-clipdata
+    languages:
+      - kotlin
+    severity: WARNING
+    message: ACTION_SEND-jako lisää content-URI:n EXTRA_STREAMiin ilman ClipDataa samassa Intent-rakenteessa. Lisää ClipData ja lukuoikeus, jotta vastaanottaja saa URI-oikeuden luotettavasti.
+    patterns:
+      - pattern-inside: |
+          Intent(Intent.ACTION_SEND).apply {
+            ...
+          }
+      - pattern: putExtra(Intent.EXTRA_STREAM, ...)
+      - pattern-not-inside: |
+          Intent(Intent.ACTION_SEND).apply {
+            ...
+            clipData = ...
+            ...
+          }
+
+  - id: knittools-ravelry-credential-surface
+    languages:
+      - kotlin
+    severity: WARNING
+    message: Ravelry-credential tai OAuth-salaisuus kulkee BuildConfigin kautta. Varmista, ettei release-build upota salaisuuksia ilman tietoista poikkeusta.
+    patterns:
+      - pattern-either:
+          - pattern: BuildConfig.RAVELRY_BASIC_AUTH_PASSWORD
+          - pattern: BuildConfig.RAVELRY_OAUTH2_CLIENT_SECRET
+
+  - id: knittools-ravelry-gradle-secret-gate
+    languages:
+      - generic
+    severity: WARNING
+    message: Gradle-buildissä on Ravelry-secretien upotusta ohjaava portti. Pidä tämä release-riskinä ja tarkista, ettei arvoja commitoida tai lokiteta.
+    paths:
+      include:
+        - app/build.gradle.kts
+    patterns:
+      - pattern-regex: 'KNITTOOLS_(ALLOW_EMBEDDED_RAVELRY_SECRETS|RAVELRY_(BASIC_AUTH_PASSWORD|OAUTH2_CLIENT_SECRET))'
+
   - id: knittools-log-user-project-state
     languages:
       - kotlin
@@ -27,4 +109,4 @@ rules:
           - pattern: android.util.Log.e(..., $MSG)
       - metavariable-regex:
           metavariable: $MSG
-          regex: (?i).*(project|projectId|count|counter|before=|after=).*
+          regex: (?i).*(project|projectId|count|counter|before=|after=|ravelry|oauth|token|credential|secret|password|billing|purchase|pattern|instruction|ocr|prompt|voice|ai).*

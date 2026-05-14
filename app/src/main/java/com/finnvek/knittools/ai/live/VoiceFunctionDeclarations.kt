@@ -6,7 +6,8 @@ import com.google.firebase.ai.type.Tool
 
 /**
  * Live API -funktioiden määrittelyt äänikomennoille.
- * 36 AiVoiceAction-tyyppiä ryhmitelty 17 funktioksi.
+ * Destruktiiviset reset/complete-toiminnot eivät ole Live-työkaluja,
+ * koska projektikonteksti sisältää käyttäjän ja etälähteiden dataa.
  */
 object VoiceFunctionDeclarations {
     private val increment =
@@ -45,15 +46,6 @@ object VoiceFunctionDeclarations {
             description =
                 "Undo the last row change. " +
                     "User says 'undo', 'oops', 'that was wrong'.",
-            parameters = emptyMap(),
-        )
-
-    private val reset =
-        FunctionDeclaration(
-            name = "reset",
-            description =
-                "Reset the main row counter to zero. " +
-                    "User says 'reset', 'start over', 'zero'.",
             parameters = emptyMap(),
         )
 
@@ -160,15 +152,6 @@ object VoiceFunctionDeclarations {
                 ),
         )
 
-    private val completeProject =
-        FunctionDeclaration(
-            name = "complete_project",
-            description =
-                "Mark the current project as complete. " +
-                    "User says 'I\'m done', 'finish project', 'mark complete'.",
-            parameters = emptyMap(),
-        )
-
     private val generateSummary =
         FunctionDeclaration(
             name = "generate_summary",
@@ -210,7 +193,6 @@ object VoiceFunctionDeclarations {
                 increment,
                 decrement,
                 undo,
-                reset,
                 stitchIncrement,
                 stitchDecrement,
                 addNote,
@@ -220,7 +202,6 @@ object VoiceFunctionDeclarations {
                 setSection,
                 configureCounter,
                 pageNavigation,
-                completeProject,
                 generateSummary,
                 queryProject,
                 help,

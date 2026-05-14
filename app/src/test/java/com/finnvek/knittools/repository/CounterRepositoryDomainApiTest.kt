@@ -6,6 +6,7 @@ import com.finnvek.knittools.data.local.CounterProjectEntity
 import com.finnvek.knittools.data.local.ImmediateDatabaseTransactionRunner
 import com.finnvek.knittools.data.local.SessionDao
 import com.finnvek.knittools.data.local.SessionEntity
+import com.finnvek.knittools.data.storage.PatternDocumentStorage
 import com.finnvek.knittools.data.storage.ProgressPhotoStorage
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.KnitSession
@@ -37,11 +38,13 @@ class CounterRepositoryDomainApiTest {
         sessionDao = mockk(relaxed = true)
         yarnCardRepository = mockk(relaxed = true)
         savedPatternRepository = mockk(relaxed = true)
+        coEvery { projectDao.getAllProjectsOnce() } returns emptyList()
         repository =
             CounterRepository(
                 dao = projectDao,
                 sessionDao = sessionDao,
                 photoStorage = mockk<ProgressPhotoStorage>(relaxed = true),
+                patternDocumentStorage = mockk<PatternDocumentStorage>(relaxed = true),
                 context = mockk<Context>(relaxed = true),
                 yarnCardRepository = yarnCardRepository,
                 savedPatternRepository = savedPatternRepository,
@@ -124,6 +127,69 @@ class CounterRepositoryDomainApiTest {
             assertEquals("content://pattern", updatedEntity.captured.patternUri)
             assertTrue(updatedEntity.captured.stitchTrackingEnabled)
             assertTrue(updatedEntity.captured.updatedAt >= beforeUpdate)
+        }
+
+    @Test
+    fun `createProject normalisoi nimen ja kayttaa samaa aikaleimaa`() =
+        runTest {
+            val insertedProject = slot<CounterProjectEntity>()
+            coEvery { projectDao.getAllProjectsOnce() } returns emptyList()
+            coEvery { projectDao.insert(capture(insertedProject)) } returns 9L
+
+            val id = repository.createProject("  Sukat  ")
+
+            assertEquals(9L, id)
+            assertEquals("Sukat", insertedProject.captured.name)
+            assertEquals(insertedProject.captured.createdAt, insertedProject.captured.updatedAt)
+        }
+
+    @Test
+    fun `createProject tekee nimestä uniikin jos nimi on jo kaytossa`() =
+        runTest {
+            val insertedProject = slot<CounterProjectEntity>()
+            coEvery { projectDao.getAllProjectsOnce() } returns
+                listOf(
+                    CounterProjectEntity(id = 1L, name = "Project 3"),
+                    CounterProjectEntity(id = 2L, name = "Project 3 (2)"),
+                )
+            coEvery { projectDao.insert(capture(insertedProject)) } returns 9L
+
+            repository.createProject("Project 3")
+
+            assertEquals("Project 3 (3)", insertedProject.captured.name)
+        }
+
+    @Test
+    fun `createProject hylkaa tyhjan nimen ennen tietokantakirjoitusta`() =
+        runTest {
+            val result = repository.createProject("   ")
+
+            assertEquals(null, result)
+            coVerify(exactly = 0) { projectDao.insert(any()) }
+        }
+
+    @Test
+    fun `updateProjectName hylkaa tyhjan nimen ennen tietokantakirjoitusta`() =
+        runTest {
+            val result = repository.updateProjectName(7L, "   ")
+
+            assertEquals(null, result)
+            coVerify(exactly = 0) { projectDao.updateName(any(), any(), any()) }
+        }
+
+    @Test
+    fun `updateProjectName tekee nimestä uniikin muita projekteja vasten`() =
+        runTest {
+            coEvery { projectDao.getAllProjectsOnce() } returns
+                listOf(
+                    CounterProjectEntity(id = 1L, name = "Sukat"),
+                    CounterProjectEntity(id = 7L, name = "Pipo"),
+                )
+
+            val savedName = repository.updateProjectName(7L, "Sukat")
+
+            assertEquals("Sukat (2)", savedName)
+            coVerify { projectDao.updateName(7L, "Sukat (2)", any()) }
         }
 
     @Test

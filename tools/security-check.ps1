@@ -21,7 +21,7 @@ $ProjectRootFromScript = Split-Path -Parent $PSScriptRoot
 $DependencyCheckTask = if ($env:DEPENDENCY_CHECK_TASK) { $env:DEPENDENCY_CHECK_TASK } else { ":app:dependencyCheckAnalyze" }
 $SecurityCheckGradleHome = Join-Path $ProjectRootFromScript ".gradle\security-check-home"
 $DependencyCheckDataDir = Join-Path $ProjectRootFromScript ".gradle\dependency-check-data"
-$DependencyCheckDbFile = Join-Path $DependencyCheckDataDir "11.0\odc.mv.db"
+$DependencyCheckDbFile = Join-Path $DependencyCheckDataDir "odc.mv.db"
 $LegacyReportsGradleHome = Join-Path $ProjectRootFromScript "reports\.gradle-home"
 
 function Get-RepositoryRoot {
@@ -153,6 +153,10 @@ function Invoke-Semgrep {
         Pop-Location
     }
 
+    if ($code -eq 1 -and (Test-Path -LiteralPath $jsonPath)) {
+        $code = 0
+    }
+
     if ($code -ne 0 -or -not (Test-Path -LiteralPath $jsonPath)) {
         Add-Content -LiteralPath $reportPath -Encoding utf8 -Value "Semgrep-skannaus epäonnistui."
         Add-CheckResult -Name "semgrep" -ReportName "security-code.txt" -ExitCode $code
@@ -195,7 +199,8 @@ function Invoke-DependencyAudit {
     $jsonReportPath = Join-Path $script:ReportsDir "dependency-check-report.json"
     $gradle = Join-Path $script:RepoRoot "gradlew.bat"
     $enabled = $WithDeps -or (Test-EnvFlag -Value $env:DEPENDENCY_CHECK_ENABLED -Default $true)
-    $autoUpdate = Test-EnvFlag -Value $env:DEPENDENCY_CHECK_AUTO_UPDATE -Default $true
+    $dependencyCheckDbExists = Test-Path -LiteralPath $DependencyCheckDbFile
+    $autoUpdate = Test-EnvFlag -Value $env:DEPENDENCY_CHECK_AUTO_UPDATE -Default (-not $dependencyCheckDbExists)
     $requireNvdApiKey = Test-EnvFlag -Value $env:DEPENDENCY_CHECK_REQUIRE_NVD_API_KEY
     Write-ReportHeader -Path $reportPath -Title "dependency audit" -Command "reports/security-deps.txt :: OWASP dependency-check"
     Set-Content -LiteralPath $rawReportPath -Encoding utf8 -Value @()
@@ -220,10 +225,10 @@ function Invoke-DependencyAudit {
     }
 
     if (-not $autoUpdate -and -not (Test-Path -LiteralPath $DependencyCheckDbFile)) {
-        Add-Content -LiteralPath $reportPath -Encoding utf8 -Value "SKIPPED: dependency-checkin paikallinen CVE-tietokanta puuttuu."
+        Add-Content -LiteralPath $reportPath -Encoding utf8 -Value "FAILED: dependency-checkin paikallinen CVE-tietokanta puuttuu."
         Add-Content -LiteralPath $reportPath -Encoding utf8 -Value "Alusta se tarvittaessa: `$env:DEPENDENCY_CHECK_AUTO_UPDATE=`"true`"; `$env:DEPENDENCY_CHECK_ENABLED=`"true`"; sc"
-        Add-CheckResult -Name "dependency audit" -ReportName "security-deps.txt" -ExitCode 0 -SkipReason "paikallinen CVE-tietokanta puuttuu."
-        return 0
+        Add-CheckResult -Name "dependency audit" -ReportName "security-deps.txt" -ExitCode 1
+        return 1
     }
 
     Push-Location -LiteralPath $script:RepoRoot
@@ -246,16 +251,14 @@ function Invoke-DependencyAudit {
     }
 
     if ($code -ne 0) {
-        Add-Content -LiteralPath $reportPath -Encoding utf8 -Value "Dependency-check epäonnistui. Raakaloki: $rawReportPath"
-        Add-CheckResult -Name "dependency audit" -ReportName "security-deps.txt" -ExitCode $code
-        return $code
+        Add-Content -LiteralPath $reportPath -Encoding utf8 -Value "Dependency-check palautti virhekoodin $code. Raakaloki: $rawReportPath"
     }
 
     if (-not (Test-Path -LiteralPath $jsonReportPath)) {
         Add-Content -LiteralPath $reportPath -Encoding utf8 -Value "Yhteenvetoa ei voitu muodostaa: dependency-check-report.json puuttuu."
         Add-Content -LiteralPath $reportPath -Encoding utf8 -Value "Raakaloki: $rawReportPath"
-        Add-CheckResult -Name "dependency audit" -ReportName "security-deps.txt" -ExitCode 0
-        return 0
+        Add-CheckResult -Name "dependency audit" -ReportName "security-deps.txt" -ExitCode $code
+        return $code
     }
 
     try {
@@ -302,8 +305,8 @@ function Invoke-DependencyAudit {
 
         Add-Content -LiteralPath $reportPath -Encoding utf8 -Value $lines
         $lines | ForEach-Object { Write-Host $_ }
-        Add-CheckResult -Name "dependency audit" -ReportName "security-deps.txt" -ExitCode 0
-        return 0
+        Add-CheckResult -Name "dependency audit" -ReportName "security-deps.txt" -ExitCode $code
+        return $code
     }
     catch {
         Add-Content -LiteralPath $reportPath -Encoding utf8 -Value "Raportin parsinta epäonnistui: $($_.Exception.Message)"

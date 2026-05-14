@@ -53,12 +53,20 @@ class RavelryRepository
 
         suspend fun getActiveProjectCount(): Int = counterProjectDao.getActiveProjectCount()
 
-        suspend fun createProjectFromPattern(detail: PatternDetail): Long =
+        suspend fun createProjectFromPattern(detail: PatternDetail): Long? =
             transactionRunner.run {
+                val projectName =
+                    ProjectNameRules.uniqueName(
+                        requestedName = detail.name,
+                        existingNames = counterProjectDao.getAllProjectsOnce().map { it.name },
+                    ) ?: return@run null
+                val now = System.currentTimeMillis()
                 val savedId = savePattern(detail)
                 counterProjectDao.insert(
                     CounterProjectEntity(
-                        name = detail.name,
+                        name = projectName,
+                        createdAt = now,
+                        updatedAt = now,
                         linkedPatternId = savedId,
                     ),
                 )

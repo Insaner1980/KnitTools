@@ -61,3 +61,6 @@ app/google-services.json
 
 # Eksynyt npm-lockfile (ei käytössä)
 /package-lock.json
+
+# Paikallinen pnpm-asennuskansio
+/node_modules/

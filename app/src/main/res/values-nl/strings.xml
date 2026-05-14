@@ -561,6 +561,7 @@
     <string name="voice_counter_incremented">%1$s staat nu op %2$d</string>
     <string name="voice_counter_decremented">%1$s terug naar %2$d</string>
     <string name="voice_counter_not_found">Geen teller met de naam %1$s gevonden</string>
+    <string name="voice_counter_ambiguous">Meerdere tellers heten %1$s. Geef er één een andere naam voordat je spraakopdrachten gebruikt.</string>
     <string name="voice_step_size_set">Stapgrootte ingesteld op %1$d</string>
     <string name="voice_counter_reset_named">%1$s is teruggezet naar nul</string>
     <string name="voice_page_current">Pagina %1$d</string>

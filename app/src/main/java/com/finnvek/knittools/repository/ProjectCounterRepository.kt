@@ -3,7 +3,6 @@ package com.finnvek.knittools.repository
 import com.finnvek.knittools.data.local.ProjectCounterDao
 import com.finnvek.knittools.data.local.toDomain
 import com.finnvek.knittools.data.local.toEntity
-import com.finnvek.knittools.domain.calculator.ProjectCounterLogic
 import com.finnvek.knittools.domain.model.ProjectCounter
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -22,15 +21,9 @@ class ProjectCounterRepository
         suspend fun addCounter(counter: ProjectCounter): Long =
             dao.insert(counter.copy(name = counter.name.take(50)).toEntity())
 
-        suspend fun incrementCounter(counter: ProjectCounter) {
-            val updated = ProjectCounterLogic.increment(counter)
-            dao.updateCount(counter.id, updated.count)
-        }
+        suspend fun incrementCounter(counter: ProjectCounter) = dao.incrementCount(counter.id)
 
-        suspend fun decrementCounter(counter: ProjectCounter) {
-            val updated = ProjectCounterLogic.decrement(counter)
-            dao.updateCount(counter.id, updated.count)
-        }
+        suspend fun decrementCounter(counter: ProjectCounter) = dao.decrementCount(counter.id)
 
         suspend fun resetCounter(id: Long) = dao.updateCount(id, 0)
 

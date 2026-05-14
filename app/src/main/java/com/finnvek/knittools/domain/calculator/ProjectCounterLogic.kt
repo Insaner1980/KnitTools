@@ -14,7 +14,7 @@ object ProjectCounterLogic {
         }
         val repeatAt = counter.repeatAt
         return if (repeatAt != null && repeatAt > 0 && newCount >= repeatAt) {
-            counter.copy(count = 0)
+            counter.copy(count = newCount % repeatAt)
         } else {
             counter.copy(count = newCount)
         }

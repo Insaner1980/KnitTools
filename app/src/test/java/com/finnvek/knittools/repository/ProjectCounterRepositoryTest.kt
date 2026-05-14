@@ -2,6 +2,9 @@ package com.finnvek.knittools.repository
 
 import com.finnvek.knittools.data.local.ProjectCounterDao
 import com.finnvek.knittools.data.local.ProjectCounterEntity
+import com.finnvek.knittools.data.local.toDomain
+import com.finnvek.knittools.data.local.toEntity
+import com.finnvek.knittools.domain.calculator.ProjectCounterLogic
 import com.finnvek.knittools.domain.model.ProjectCounter
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
@@ -47,9 +50,10 @@ class ProjectCounterRepositoryTest {
         }
 
     @Test
-    fun `incrementCounter delegates to ProjectCounterLogic`() =
+    fun `incrementCounter applies counter increment rules`() =
         runTest {
             val counter = ProjectCounter(id = 1, projectId = 1, name = "Test", count = 5, stepSize = 2)
+            fakeDao.store(counter)
             repository.incrementCounter(counter)
 
             // ProjectCounterLogic.increment: 5 + 2 = 7
@@ -62,6 +66,7 @@ class ProjectCounterRepositoryTest {
         runTest {
             val counter =
                 ProjectCounter(id = 1, projectId = 1, name = "Test", count = 9, stepSize = 1, repeatAt = 10)
+            fakeDao.store(counter)
             repository.incrementCounter(counter)
 
             // ProjectCounterLogic.increment: 9 + 1 = 10 >= repeatAt(10) -> reset to 0
@@ -72,10 +77,48 @@ class ProjectCounterRepositoryTest {
     fun `decrementCounter does not go below zero`() =
         runTest {
             val counter = ProjectCounter(id = 1, projectId = 1, name = "Test", count = 1, stepSize = 3)
+            fakeDao.store(counter)
             repository.decrementCounter(counter)
 
             // ProjectCounterLogic.decrement: (1 - 3).coerceAtLeast(0) = 0
             assertEquals(0, fakeDao.lastUpdatedCount)
+        }
+
+    @Test
+    fun `consecutive increments use latest stored count`() =
+        runTest {
+            val counter = ProjectCounter(id = 1, projectId = 1, name = "Sleeve", count = 5, stepSize = 1)
+            fakeDao.store(counter)
+
+            repository.incrementCounter(counter)
+            repository.incrementCounter(counter)
+
+            assertEquals(7, fakeDao.storedCount(1L))
+        }
+
+    @Test
+    fun `consecutive decrements use latest stored count`() =
+        runTest {
+            val counter = ProjectCounter(id = 1, projectId = 1, name = "Sleeve", count = 5, stepSize = 2)
+            fakeDao.store(counter)
+
+            repository.decrementCounter(counter)
+            repository.decrementCounter(counter)
+
+            assertEquals(1, fakeDao.storedCount(1L))
+        }
+
+    @Test
+    fun `consecutive repeating increments continue after reset`() =
+        runTest {
+            val counter =
+                ProjectCounter(id = 1, projectId = 1, name = "Repeat", count = 7, stepSize = 1, repeatAt = 8)
+            fakeDao.store(counter)
+
+            repository.incrementCounter(counter)
+            repository.incrementCounter(counter)
+
+            assertEquals(1, fakeDao.storedCount(1L))
         }
 
     @Test
@@ -106,6 +149,7 @@ class ProjectCounterRepositoryTest {
     // -- Fake DAO --
 
     private class FakeProjectCounterDao : ProjectCounterDao {
+        private val storedCounters = mutableMapOf<Long, ProjectCounterEntity>()
         var lastInserted: ProjectCounterEntity? = null
         var lastUpdatedId: Long = -1
         var lastUpdatedCount: Int = -1
@@ -114,6 +158,12 @@ class ProjectCounterRepositoryTest {
         var lastRenamedName: String? = null
 
         override fun getCountersForProject(projectId: Long): Flow<List<ProjectCounterEntity>> = flowOf(emptyList())
+
+        fun store(counter: ProjectCounter) {
+            storedCounters[counter.id] = counter.toEntity()
+        }
+
+        fun storedCount(id: Long): Int = storedCounters.getValue(id).count
 
         override suspend fun insert(counter: ProjectCounterEntity): Long {
             lastInserted = counter
@@ -130,8 +180,17 @@ class ProjectCounterRepositoryTest {
             id: Long,
             count: Int,
         ) {
+            storedCounters[id]?.let { storedCounters[id] = it.copy(count = count) }
             lastUpdatedId = id
             lastUpdatedCount = count
+        }
+
+        override suspend fun incrementCount(id: Long) {
+            updateStoredCounter(id, ProjectCounterLogic::increment)
+        }
+
+        override suspend fun decrementCount(id: Long) {
+            updateStoredCounter(id, ProjectCounterLogic::decrement)
         }
 
         override suspend fun updateName(
@@ -149,6 +208,16 @@ class ProjectCounterRepositoryTest {
         ) {
             lastUpdatedId = id
             lastUpdatedCount = count
+        }
+
+        private fun updateStoredCounter(
+            id: Long,
+            update: (ProjectCounter) -> ProjectCounter,
+        ) {
+            val updated = update(storedCounters.getValue(id).toDomain())
+            storedCounters[id] = updated.toEntity()
+            lastUpdatedId = id
+            lastUpdatedCount = updated.count
         }
     }
 }

@@ -561,6 +561,7 @@
     <string name="voice_counter_incremented">%1$s jetzt bei %2$d</string>
     <string name="voice_counter_decremented">%1$s zurück auf %2$d</string>
     <string name="voice_counter_not_found">Kein Zähler mit dem Namen %1$s gefunden</string>
+    <string name="voice_counter_ambiguous">Mehrere Zähler heißen %1$s. Benenne einen um, bevor du Sprachbefehle verwendest.</string>
     <string name="voice_step_size_set">Schrittweite auf %1$d gesetzt</string>
     <string name="voice_counter_reset_named">%1$s auf null zurückgesetzt</string>
     <string name="voice_page_current">Seite %1$d</string>

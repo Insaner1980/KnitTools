@@ -2,9 +2,11 @@ package com.finnvek.knittools.ui.screens.counter
 
 import com.finnvek.knittools.domain.calculator.CounterState
 import com.finnvek.knittools.domain.model.CounterProject
+import com.finnvek.knittools.domain.model.ProjectCounter
 import com.finnvek.knittools.domain.model.RowReminder
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CounterUiStateReducersTest {
@@ -26,6 +28,17 @@ class CounterUiStateReducersTest {
         assertEquals(60, result.totalRows)
         assertEquals(CounterState(count = 8, stepSize = 2), result.counter)
         assertNull(result.activeAlert)
+    }
+
+    @Test
+    fun `started project clears counters from previous project`() {
+        val previousCounter = ProjectCounter(id = 10L, projectId = 1L, name = "Old sleeve")
+        val result =
+            CounterUiState(projectCounters = listOf(previousCounter)).withStartedProject(
+                CounterProject(id = 2L, name = "New project", count = 1),
+            )
+
+        assertTrue(result.projectCounters.isEmpty())
     }
 
     @Test

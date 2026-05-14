@@ -31,11 +31,13 @@ class VoiceLiveQuotaManager
     constructor(
         @param:ApplicationContext private val context: Context,
     ) {
-        suspend fun hasQuota(): Boolean {
+        suspend fun hasQuota(): Boolean = remainingMinutes() > 0f
+
+        suspend fun remainingMinutes(): Float {
             ensureMonthCurrent()
             val prefs = context.voiceLiveQuotaStore.safePreferencesData.first()
             val used = prefs[KEY_MINUTES_THIS_MONTH] ?: 0f
-            return used < MONTHLY_ALLOWANCE
+            return (MONTHLY_ALLOWANCE - used).coerceAtLeast(0f)
         }
 
         suspend fun recordMinutes(minutes: Float) {

@@ -14,10 +14,16 @@ object CounterLogic {
         )
 
     fun decrement(state: CounterState): CounterState =
-        state.copy(
-            count = maxOf(0, state.count - state.stepSize),
-            previousCount = state.count,
-        )
+        maxOf(0, state.count - state.stepSize).let { newCount ->
+            if (newCount == state.count) {
+                state
+            } else {
+                state.copy(
+                    count = newCount,
+                    previousCount = state.count,
+                )
+            }
+        }
 
     fun undo(state: CounterState): CounterState =
         if (state.previousCount != null) {

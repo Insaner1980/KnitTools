@@ -35,6 +35,13 @@ class CounterLogicTest {
     }
 
     @Test
+    fun `decrement at zero keeps undo state unchanged`() {
+        val state = CounterState(count = 0, previousCount = 5, stepSize = 3)
+        val result = CounterLogic.decrement(state)
+        assertEquals(state, result)
+    }
+
+    @Test
     fun `undo restores previous count`() {
         val state = CounterState(count = 6, previousCount = 5)
         val result = CounterLogic.undo(state)

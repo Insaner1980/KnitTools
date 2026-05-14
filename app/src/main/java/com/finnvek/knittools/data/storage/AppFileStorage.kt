@@ -5,6 +5,7 @@ import android.net.Uri
 import android.os.ParcelFileDescriptor
 import androidx.core.net.toUri
 import java.io.File
+import java.io.IOException
 
 object AppFileStorage {
     fun openReadDescriptor(
@@ -62,6 +63,23 @@ object AppFileStorage {
         uri: Uri,
     ): Boolean = resolveAppOwnedFile(context, uri) != null
 
+    internal fun deleteFileOrDirectory(
+        file: File,
+        failureMessagePrefix: String,
+    ) {
+        if (!file.exists()) return
+        val deleted =
+            if (file.isDirectory) {
+                file.deleteRecursively()
+            } else {
+                file.delete()
+            }
+        if (!deleted && file.exists()) {
+            scheduleDeleteOnExit(file)
+            throw IOException("$failureMessagePrefix: ${file.absolutePath}")
+        }
+    }
+
     fun resolveAppOwnedFile(
         context: Context,
         uri: Uri,
@@ -79,7 +97,7 @@ object AppFileStorage {
         uri: Uri,
     ): File? {
         if (uri.authority != "${context.packageName}.fileprovider") return null
-        val segments = uri.pathSegments
+        val segments: List<String> = uri.pathSegments
         val root = segments.firstOrNull() ?: return null
         val rootDir =
             when (root) {
@@ -98,6 +116,13 @@ object AppFileStorage {
         if (file.exists() && !file.delete()) {
             file.deleteOnExit()
         }
+    }
+
+    private fun scheduleDeleteOnExit(file: File) {
+        if (file.isDirectory) {
+            file.listFiles()?.forEach(::scheduleDeleteOnExit)
+        }
+        file.deleteOnExit()
     }
 
     private fun File.isInside(root: File): Boolean {

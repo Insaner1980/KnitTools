@@ -258,7 +258,7 @@ class ProjectListViewModel
                 val id =
                     repository.createProject(
                         context.getString(R.string.new_project_name_format, count + 1),
-                    )
+                    ) ?: return@launch
                 _navigateToProject.emit(id)
             }
         }

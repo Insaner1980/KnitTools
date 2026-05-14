@@ -1,0 +1,12 @@
+{
+  "private": true,
+  "scripts": {
+    "deepsec:scan": "pnpm --dir .deepsec deepsec:scan",
+    "deepsec:scan:custom": "pnpm --dir .deepsec deepsec:scan:custom",
+    "deepsec:process": "pnpm --dir .deepsec deepsec:process",
+    "deepsec:revalidate": "pnpm --dir .deepsec deepsec:revalidate",
+    "deepsec:export": "pnpm --dir .deepsec deepsec:export",
+    "deepsec:report": "pnpm --dir .deepsec deepsec:report",
+    "deepsec:report:custom": "pnpm --dir .deepsec deepsec:report:custom"
+  }
+}

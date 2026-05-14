@@ -1,0 +1,21 @@
+{
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "deepsec": "deepsec",
+    "deepsec:scan": "deepsec scan --project-id knittools",
+    "deepsec:scan:custom": "deepsec scan --project-id knittools --matchers android-exported-component,fileprovider-broad-path,android-uri-share-without-clipdata,ravelry-credential-surface,firebase-ai-without-appcheck,sensitive-android-log",
+    "deepsec:process": "deepsec process --project-id knittools",
+    "deepsec:revalidate": "deepsec revalidate --project-id knittools --min-severity HIGH",
+    "deepsec:export": "deepsec export --project-id knittools --format md-dir --out ./findings",
+    "deepsec:report": "pnpm run deepsec:scan && pnpm run deepsec:process && pnpm run deepsec:export",
+    "deepsec:report:custom": "pnpm run deepsec:scan:custom && pnpm run deepsec:process && pnpm run deepsec:export"
+  },
+  "dependencies": {
+    "deepsec": "2.0.8"
+  },
+  "devDependencies": {
+    "@types/node": "^25.7.0",
+    "typescript": "^5.9.3"
+  }
+}

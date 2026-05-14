@@ -227,8 +227,9 @@ class RavelryViewModel
                     _upgradeToPro.emit(Unit)
                     return@launch
                 }
-                val projectId = repository.createProjectFromPattern(detail)
-                _navigateToProject.emit(projectId)
+                repository.createProjectFromPattern(detail)?.let { projectId ->
+                    _navigateToProject.emit(projectId)
+                }
             }
         }
     }

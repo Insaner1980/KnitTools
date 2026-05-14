@@ -51,6 +51,14 @@ class UiStateRetentionSourceTest {
     }
 
     @Test
+    fun `voice counter commands require unique counter name matches`() {
+        val viewModel = ProjectSourceFiles.read(COUNTER_VIEW_MODEL)
+
+        assertTrue(viewModel.contains("findUniqueProjectCounterByName(name)"))
+        assertFalse(viewModel.contains("firstOrNull { it.name.equals(name, ignoreCase = true) }"))
+    }
+
+    @Test
     fun `target row dialog preserves in-progress numeric input`() {
         val dialog = ProjectSourceFiles.read(TARGET_ROWS_DIALOG)
 

@@ -21,6 +21,7 @@ internal fun CounterUiState.withStartedProject(project: CounterProject): Counter
         patternRowMapping = project.patternRowMapping,
         totalRows = project.totalRows,
         targetRows = project.targetRows,
+        projectCounters = emptyList(),
         activeAlert = null,
         sessionSeconds = 0,
     )

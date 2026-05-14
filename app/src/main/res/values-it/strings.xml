@@ -561,6 +561,7 @@
     <string name="voice_counter_incremented">%1$s ora è a %2$d</string>
     <string name="voice_counter_decremented">%1$s torna a %2$d</string>
     <string name="voice_counter_not_found">Nessun contatore chiamato %1$s</string>
+    <string name="voice_counter_ambiguous">Più contatori si chiamano %1$s. Rinomina uno di essi prima di usare i comandi vocali.</string>
     <string name="voice_step_size_set">Passo impostato a %1$d</string>
     <string name="voice_counter_reset_named">%1$s reimpostato a zero</string>
     <string name="voice_page_current">Pagina %1$d</string>

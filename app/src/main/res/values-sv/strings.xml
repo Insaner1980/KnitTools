@@ -561,6 +561,7 @@
     <string name="voice_counter_incremented">%1$s är nu på %2$d</string>
     <string name="voice_counter_decremented">%1$s tillbaka på %2$d</string>
     <string name="voice_counter_not_found">Ingen räknare med namnet %1$s</string>
+    <string name="voice_counter_ambiguous">Flera räknare heter %1$s. Byt namn på en av dem innan du använder röstkommandon.</string>
     <string name="voice_step_size_set">Steglängd satt till %1$d</string>
     <string name="voice_counter_reset_named">%1$s nollställd till noll</string>
     <string name="voice_page_current">Sida %1$d</string>

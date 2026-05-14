@@ -1750,8 +1750,12 @@ class CounterViewModel
             delta: Int,
         ): String {
             val counter =
-                state.projectCounters.firstOrNull { it.name.equals(name, ignoreCase = true) }
-                    ?: return context.getString(R.string.voice_counter_not_found, name)
+                when (val match = state.projectCounters.findUniqueProjectCounterByName(name)) {
+                    is ProjectCounterNameMatch.Found -> match.counter
+                    ProjectCounterNameMatch.Ambiguous ->
+                        return context.getString(R.string.voice_counter_ambiguous, name)
+                    ProjectCounterNameMatch.NotFound -> return context.getString(R.string.voice_counter_not_found, name)
+                }
             if (delta > 0) incrementProjectCounter(counter) else decrementProjectCounter(counter)
             val newCount =
                 if (delta >
@@ -1779,8 +1783,12 @@ class CounterViewModel
             name: String,
         ): String {
             val counter =
-                state.projectCounters.firstOrNull { it.name.equals(name, ignoreCase = true) }
-                    ?: return context.getString(R.string.voice_counter_not_found, name)
+                when (val match = state.projectCounters.findUniqueProjectCounterByName(name)) {
+                    is ProjectCounterNameMatch.Found -> match.counter
+                    ProjectCounterNameMatch.Ambiguous ->
+                        return context.getString(R.string.voice_counter_ambiguous, name)
+                    ProjectCounterNameMatch.NotFound -> return context.getString(R.string.voice_counter_not_found, name)
+                }
             resetProjectCounter(counter.id)
             return context.getString(R.string.voice_counter_reset_named, counter.name)
         }
@@ -1898,7 +1906,7 @@ class CounterViewModel
                     context.getString(
                         R.string.voice_shaping_next,
                         shaping.name,
-                        shaping.shapeEveryN - (state.counter.count % shaping.shapeEveryN),
+                        shaping.shapeEveryN - (shaping.count % shaping.shapeEveryN),
                     )
                 }
 
@@ -2024,3 +2032,20 @@ class CounterViewModel
             const val MAX_VOICE_NOTES_LENGTH = 200
         }
     }
+
+private sealed interface ProjectCounterNameMatch {
+    data class Found(val counter: ProjectCounter) : ProjectCounterNameMatch
+
+    data object Ambiguous : ProjectCounterNameMatch
+
+    data object NotFound : ProjectCounterNameMatch
+}
+
+private fun List<ProjectCounter>.findUniqueProjectCounterByName(name: String): ProjectCounterNameMatch {
+    val matches = filter { it.name.equals(name, ignoreCase = true) }
+    return when (matches.size) {
+        0 -> ProjectCounterNameMatch.NotFound
+        1 -> ProjectCounterNameMatch.Found(matches.single())
+        else -> ProjectCounterNameMatch.Ambiguous
+    }
+}

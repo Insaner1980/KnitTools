@@ -25,6 +25,14 @@ class UiStateRetentionSourceTest {
     }
 
     @Test
+    fun `project actions notes opens notes bottom sheet before full editor`() {
+        val screen = ProjectSourceFiles.read(COUNTER_SCREEN)
+
+        assertTrue(screen.contains("showNotesSheet = true"))
+        assertTrue(screen.contains("onExpandNotes = { state.projectId?.let(onNotesEditor) }"))
+    }
+
+    @Test
     fun `counter summary and project overlays are cleared when owning project changes`() {
         val screen = ProjectSourceFiles.read(COUNTER_SCREEN)
         val viewModel = ProjectSourceFiles.read(COUNTER_VIEW_MODEL)

@@ -151,6 +151,8 @@
     <string name="no_sessions">Aún no hay sesiones registradas. Empieza a tejer para ver tu historial aquí.</string>
     <string name="session_row_range">Vueltas %1$d \u2192 %2$d</string>
     <string name="session_duration_format">%1$dh %2$dm</string>
+    <string name="delete_session_title">¿Eliminar sesión?</string>
+    <string name="delete_session_message">¿Eliminar esta sesión del historial? Esto no se puede deshacer.</string>
     <string name="pro_full_history_hint">Actualiza a Pro para ver el historial completo de sesiones</string>
 
     <!-- Settings -->
@@ -472,7 +474,10 @@
     <string name="restart">Reiniciar</string>
 
     <!-- Row Reminders -->
+    <string name="reminders">Recordatorios</string>
     <string name="add_reminder">Añadir recordatorio</string>
+    <string name="edit_reminder">Editar recordatorio</string>
+    <string name="no_reminders">Aún no hay recordatorios</string>
     <string name="delete_reminder_title">¿Eliminar recordatorio?</string>
     <string name="delete_reminder_confirm">¿Eliminar el recordatorio "%1$s"?</string>
     <string name="row_number">Número de vuelta</string>

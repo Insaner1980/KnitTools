@@ -28,6 +28,13 @@ class RepeatSectionLogicTest {
     }
 
     @Test
+    fun `currentRowInRepeat returns first row before repeat section starts`() {
+        val result = RepeatSectionLogic.currentRowInRepeat(repeatSectionCounter(), mainRowCount = 9)
+
+        assertEquals(1, result)
+    }
+
+    @Test
     fun `isComplete is true at final tracked row`() {
         assertTrue(RepeatSectionLogic.isComplete(repeatSectionCounter(), mainRowCount = 21))
     }

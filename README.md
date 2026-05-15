@@ -46,7 +46,7 @@ export KNITTOOLS_KEY_ALIAS=alias
 export KNITTOOLS_KEY_PASSWORD=password
 ```
 
-Release Ravelry credentials are also read from environment variables:
+Ravelry is intentionally backendless. Release builds embed Ravelry credentials only after an explicit accepted-risk opt-in:
 
 ```bash
 export KNITTOOLS_RAVELRY_BASIC_AUTH_USER=user

@@ -22,6 +22,7 @@ import androidx.compose.material.icons.outlined.EditNote
 import androidx.compose.material.icons.outlined.FormatListNumbered
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Inventory2
+import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Numbers
 import androidx.compose.material.icons.outlined.PhotoLibrary
 import androidx.compose.material.icons.outlined.Restore
@@ -49,6 +50,7 @@ data class ProjectActionsSheetCallbacks(
     val onOpenNotes: () -> Unit,
     val onOpenSummary: () -> Unit,
     val onOpenPhotos: () -> Unit,
+    val onOpenReminders: () -> Unit,
     val onOpenCountersList: () -> Unit,
     val onOpenAddCounter: () -> Unit,
     val onToggleStitchTracking: (Boolean) -> Unit,
@@ -62,6 +64,7 @@ data class ProjectActionsSheetCallbacks(
 
 data class ProjectActionsSheetState(
     val linkedYarnCount: Int,
+    val reminderCount: Int,
     val projectCounterCount: Int,
     val stitchTrackingEnabled: Boolean,
     val stitchCount: Int?,
@@ -105,6 +108,12 @@ fun ProjectActionsBottomSheet(
                     icon = Icons.Outlined.PhotoLibrary,
                     label = stringResource(R.string.project_actions_photos),
                     onClick = callbacks.onOpenPhotos,
+                )
+                ActionRow(
+                    icon = Icons.Outlined.Notifications,
+                    label = stringResource(R.string.reminders),
+                    trailingCount = state.reminderCount.takeIf { it > 0 },
+                    onClick = callbacks.onOpenReminders,
                 )
             }
 

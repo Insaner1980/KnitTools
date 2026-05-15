@@ -37,6 +37,7 @@ import com.finnvek.knittools.ui.components.AnimatedResultNumber
 import com.finnvek.knittools.ui.components.BadgePill
 import com.finnvek.knittools.ui.components.InfoTip
 import com.finnvek.knittools.ui.components.NumberInputField
+import com.finnvek.knittools.ui.components.NumberInputOptions
 import com.finnvek.knittools.ui.components.PasteInstructionButton
 import com.finnvek.knittools.ui.components.ResultCard
 import com.finnvek.knittools.ui.components.ResultNumberInset
@@ -127,16 +128,19 @@ fun IncreaseDecreaseScreen(
                         value = currentStitches,
                         onValueChange = { currentStitches = it },
                         label = stringResource(R.string.current_stitches),
-                        suffix = stringResource(R.string.unit_st),
                         modifier = Modifier.fillMaxWidth(),
+                        options = NumberInputOptions(suffix = stringResource(R.string.unit_st)),
                     )
                     NumberInputField(
                         value = changeBy,
                         onValueChange = { changeBy = it },
                         label = stringResource(mode.labelRes()),
-                        suffix = stringResource(R.string.unit_st),
                         modifier = Modifier.fillMaxWidth(),
-                        isLast = true,
+                        options =
+                            NumberInputOptions(
+                                suffix = stringResource(R.string.unit_st),
+                                isLast = true,
+                            ),
                     )
                 }
             }

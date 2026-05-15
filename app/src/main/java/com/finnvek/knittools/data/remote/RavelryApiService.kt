@@ -62,8 +62,8 @@ class RavelryApiService
         /**
          * GET-pyyntö autentikointi- ja retry-logiikalla:
          * 1. Bearer-token jos saatavilla
-         * 2. Jos 401/403 → refresh token
-         * 3. Jos refresh epäonnistuu → fallback Basic Auth
+         * 2. Jos 401/403 -> refresh token
+         * 3. Jos refresh epäonnistuu -> fallback Basic Auth
          * 4. Transientit verkkovirheet ja 5xx-vastaukset yritetään rajatusti uudelleen
          */
         private suspend inline fun <reified T> authenticatedGet(
@@ -94,7 +94,6 @@ class RavelryApiService
         ): T {
             val token = authManager.accessToken
 
-            // 1. Yritä Bearer-tokenilla jos saatavilla
             if (token != null) {
                 val response =
                     client.get(url) {
@@ -110,7 +109,6 @@ class RavelryApiService
                     return response.body()
                 }
 
-                // 2. Token vanhentunut → yritä refreshata
                 if (authManager.refreshAccessToken(client)) {
                     val retryResponse =
                         client.get(url) {
@@ -125,11 +123,9 @@ class RavelryApiService
                     }
                 }
 
-                // 3. Refresh epäonnistui → kirjaa ulos ja fallback Basic Auth:iin
                 authManager.signOut()
             }
 
-            // Basic Auth -fallback
             return client
                 .get(url) {
                     header(HttpHeaders.Authorization, basicAuthHeader())
@@ -144,6 +140,10 @@ class RavelryApiService
             }
         }
 
+        private class TransientRavelryException(
+            statusCode: Int,
+        ) : IOException("Ravelry returned HTTP $statusCode")
+
         @OptIn(ExperimentalEncodingApi::class)
         private fun basicAuthHeader(): String {
             val credentials =
@@ -153,8 +153,4 @@ class RavelryApiService
                 )
             return "Basic $credentials"
         }
-
-        private class TransientRavelryException(
-            statusCode: Int,
-        ) : IOException("Ravelry returned HTTP $statusCode")
     }

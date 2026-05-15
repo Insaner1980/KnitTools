@@ -42,12 +42,16 @@ class LibraryViewModel
 
         private val _selectedPatternIds = MutableStateFlow<Set<Long>>(emptySet())
         val selectedPatternIds: StateFlow<Set<Long>> = _selectedPatternIds.asStateFlow()
+        private val _patternDeleteErrorId = MutableStateFlow(0L)
+        val patternDeleteErrorId: StateFlow<Long> = _patternDeleteErrorId.asStateFlow()
 
         private val _isYarnSelectMode = MutableStateFlow(false)
         val isYarnSelectMode: StateFlow<Boolean> = _isYarnSelectMode.asStateFlow()
 
         private val _selectedYarnIds = MutableStateFlow<Set<Long>>(emptySet())
         val selectedYarnIds: StateFlow<Set<Long>> = _selectedYarnIds.asStateFlow()
+        private val _yarnDeleteErrorId = MutableStateFlow(0L)
+        val yarnDeleteErrorId: StateFlow<Long> = _yarnDeleteErrorId.asStateFlow()
 
         // Countit Library-hubille
         val savedPatternCount: Flow<Int> = savedPatternRepository.getCount()
@@ -88,7 +92,7 @@ class LibraryViewModel
             onLoaded: (SavedPattern?) -> Unit,
         ) {
             viewModelScope.launch {
-                onLoaded(savedPatternRepository.getById(id))
+                onLoaded(savedPatternRepository.getByIdIfAvailable(id))
             }
         }
 
@@ -163,6 +167,7 @@ class LibraryViewModel
                 selectedIds = _selectedPatternIds,
                 exitSelectMode = ::exitPatternSelectMode,
                 deleteByIds = savedPatternRepository::deleteByIds,
+                onError = { _patternDeleteErrorId.value += 1 },
             )
         }
 
@@ -197,6 +202,7 @@ class LibraryViewModel
                 selectedIds = _selectedYarnIds,
                 exitSelectMode = ::exitYarnSelectMode,
                 deleteByIds = yarnCardRepository::deleteCards,
+                onError = { _yarnDeleteErrorId.value += 1 },
             )
         }
 
@@ -223,6 +229,7 @@ class LibraryViewModel
             selectedIds: StateFlow<Set<Long>>,
             exitSelectMode: () -> Unit,
             deleteByIds: suspend (List<Long>) -> Unit,
+            onError: () -> Unit = {},
         ) {
             viewModelScope.launch {
                 try {
@@ -233,7 +240,7 @@ class LibraryViewModel
                 } catch (cancellation: CancellationException) {
                     throw cancellation
                 } catch (_: Exception) {
-                    // Poistovirhe ei saa jättää kirjastoa valintatilaan.
+                    onError()
                 } finally {
                     exitSelectMode()
                 }

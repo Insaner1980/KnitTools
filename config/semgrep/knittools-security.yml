@@ -73,7 +73,7 @@ rules:
     languages:
       - kotlin
     severity: WARNING
-    message: Ravelry-credential tai OAuth-salaisuus kulkee BuildConfigin kautta. Varmista, ettei release-build upota salaisuuksia ilman tietoista poikkeusta.
+    message: Ravelry-salaisuus tai Basic Auth -credential kulkee BuildConfigin kautta hyväksyttynä riskinä. Varmista, että config/security-decisions.md pysyy ajan tasalla.
     patterns:
       - pattern-either:
           - pattern: BuildConfig.RAVELRY_BASIC_AUTH_PASSWORD
@@ -83,12 +83,12 @@ rules:
     languages:
       - generic
     severity: WARNING
-    message: Gradle-buildissä on Ravelry-secretien upotusta ohjaava portti. Pidä tämä release-riskinä ja tarkista, ettei arvoja commitoida tai lokiteta.
+    message: Gradle-buildissä on tietoinen Ravelry-secretien upotusportti. Pidä release-riskipäätös dokumentoituna.
     paths:
       include:
         - app/build.gradle.kts
     patterns:
-      - pattern-regex: 'KNITTOOLS_(ALLOW_EMBEDDED_RAVELRY_SECRETS|RAVELRY_(BASIC_AUTH_PASSWORD|OAUTH2_CLIENT_SECRET))'
+      - pattern-regex: 'KNITTOOLS_(ALLOW_EMBEDDED_RAVELRY_SECRETS|RAVELRY_(BASIC_AUTH_(USER|PASSWORD)|OAUTH2_CLIENT_SECRET))'
 
   - id: knittools-log-user-project-state
     languages:

@@ -16,6 +16,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -23,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
+import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.SessionItem
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
 
@@ -34,11 +38,26 @@ fun SessionHistoryScreen(
 ) {
     val sessions by viewModel.sessions.collectAsStateWithLifecycle()
     val projectMissing by viewModel.projectMissing.collectAsStateWithLifecycle()
+    var pendingDeleteSessionId by rememberSaveable { mutableStateOf<Long?>(null) }
 
     LaunchedEffect(projectMissing) {
         if (projectMissing) {
             onBack()
         }
+    }
+
+    pendingDeleteSessionId?.let { sessionId ->
+        ConfirmationDialog(
+            title = stringResource(R.string.delete_session_title),
+            message = stringResource(R.string.delete_session_message),
+            confirmText = stringResource(R.string.delete),
+            isDestructive = true,
+            onConfirm = {
+                viewModel.deleteSession(sessionId)
+                pendingDeleteSessionId = null
+            },
+            onDismiss = { pendingDeleteSessionId = null },
+        )
     }
 
     ToolScreenScaffold(
@@ -99,6 +118,7 @@ fun SessionHistoryScreen(
                             durationMinutes = session.durationMinutes,
                             startRow = session.startRow,
                             endRow = session.endRow,
+                            onDelete = { pendingDeleteSessionId = session.id },
                         )
                     }
                 }

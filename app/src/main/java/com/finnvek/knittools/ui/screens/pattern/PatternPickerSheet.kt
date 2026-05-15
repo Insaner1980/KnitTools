@@ -283,5 +283,3 @@ private fun resolvePatternName(
     }
     return uri.lastPathSegment ?: context.getString(R.string.pattern_pdf_fallback_name)
 }
-
-private fun String.isLocalPatternUri(): Boolean = startsWith("content://") || startsWith("file://")

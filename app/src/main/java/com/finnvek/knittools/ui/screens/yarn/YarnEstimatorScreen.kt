@@ -58,6 +58,7 @@ import com.finnvek.knittools.ui.components.AnimatedResultNumber
 import com.finnvek.knittools.ui.components.BadgePill
 import com.finnvek.knittools.ui.components.InfoNote
 import com.finnvek.knittools.ui.components.NumberInputField
+import com.finnvek.knittools.ui.components.NumberInputOptions
 import com.finnvek.knittools.ui.components.ResultCard
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
 import com.finnvek.knittools.ui.screens.home.HomeViewModel
@@ -306,26 +307,27 @@ private fun YarnInputFields(
         value = totalYarn,
         onValueChange = onTotalYarnChange,
         label = stringResource(R.string.total_yarn_needed),
-        isDecimal = true,
-        suffix = lengthUnit,
         modifier = Modifier.fillMaxWidth(),
+        options = NumberInputOptions(isDecimal = true, suffix = lengthUnit),
     )
     NumberInputField(
         value = yarnPerSkein,
         onValueChange = onYarnPerSkeinChange,
         label = stringResource(R.string.yarn_per_skein, lengthUnit),
-        isDecimal = true,
-        suffix = lengthUnit,
         modifier = Modifier.fillMaxWidth(),
+        options = NumberInputOptions(isDecimal = true, suffix = lengthUnit),
     )
     NumberInputField(
         value = weightPerSkein,
         onValueChange = onWeightPerSkeinChange,
         label = stringResource(R.string.weight_per_skein),
-        isDecimal = true,
-        suffix = stringResource(R.string.unit_g),
         modifier = Modifier.fillMaxWidth(),
-        isLast = true,
+        options =
+            NumberInputOptions(
+                isDecimal = true,
+                suffix = stringResource(R.string.unit_g),
+                isLast = true,
+            ),
     )
 }
 

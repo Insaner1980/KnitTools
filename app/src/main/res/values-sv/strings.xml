@@ -151,6 +151,8 @@
     <string name="no_sessions">Inga sessioner registrerade ännu. Börja sticka för att se din historik här.</string>
     <string name="session_row_range">Varv %1$d \u2192 %2$d</string>
     <string name="session_duration_format">%1$dt %2$dm</string>
+    <string name="delete_session_title">Ta bort pass?</string>
+    <string name="delete_session_message">Ta bort det här passet från historiken? Detta kan inte ångras.</string>
     <string name="pro_full_history_hint">Uppgradera till Pro för full sessionshistorik</string>
 
     <!-- Settings -->
@@ -472,7 +474,10 @@
     <string name="restart">Starta om</string>
 
     <!-- Row Reminders -->
+    <string name="reminders">Påminnelser</string>
     <string name="add_reminder">Lägg till påminnelse</string>
+    <string name="edit_reminder">Redigera påminnelse</string>
+    <string name="no_reminders">Inga påminnelser ännu</string>
     <string name="delete_reminder_title">Ta bort påminnelse?</string>
     <string name="delete_reminder_confirm">Ta bort påminnelsen "%1$s"?</string>
     <string name="row_number">Varvnummer</string>

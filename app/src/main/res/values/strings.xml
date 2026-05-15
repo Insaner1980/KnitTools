@@ -152,6 +152,8 @@
     <string name="no_sessions">No sessions recorded yet. Start knitting to see your history here.</string>
     <string name="session_row_range">Rows %1$d \u2192 %2$d</string>
     <string name="session_duration_format">%1$dh %2$dm</string>
+    <string name="delete_session_title">Delete session?</string>
+    <string name="delete_session_message">Delete this session from history? This cannot be undone.</string>
     <string name="pro_full_history_hint">Upgrade to Pro for full session history</string>
 
     <!-- Settings -->
@@ -724,7 +726,10 @@
     <string name="restart">Restart</string>
 
     <!-- Row Reminders -->
+    <string name="reminders">Reminders</string>
     <string name="add_reminder">Add reminder</string>
+    <string name="edit_reminder">Edit reminder</string>
+    <string name="no_reminders">No reminders yet</string>
     <string name="delete_reminder_title">Delete reminder?</string>
     <string name="delete_reminder_confirm">Delete reminder \"%1$s\"?</string>
     <string name="row_number">Row number</string>

@@ -32,14 +32,18 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -58,6 +62,7 @@ data class SavedPatternsState(
     val patterns: List<SavedPattern>,
     val isSelectMode: Boolean,
     val selectedPatternIds: Set<Long>,
+    val deleteErrorId: Long,
 )
 
 data class SavedPatternsActions(
@@ -78,9 +83,17 @@ fun SavedPatternsScreen(
     actions: SavedPatternsActions,
 ) {
     var showDeleteConfirmDialog by rememberSaveable { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val deleteFailedMessage = stringResource(R.string.ai_error_unknown)
 
     BackHandler(enabled = state.isSelectMode) {
         actions.onExitSelectMode()
+    }
+
+    LaunchedEffect(state.deleteErrorId) {
+        if (state.deleteErrorId > 0) {
+            snackbarHostState.showSnackbar(deleteFailedMessage)
+        }
     }
 
     if (showDeleteConfirmDialog) {
@@ -104,6 +117,7 @@ fun SavedPatternsScreen(
                 onBack = actions.onBack,
             )
         },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         bottomBar = {
             SelectModeDeleteBar(
                 visible = state.isSelectMode && state.selectedPatternIds.isNotEmpty(),
@@ -149,10 +163,16 @@ private fun SavedPatternsList(
                 onClick = {
                     if (state.isSelectMode) {
                         actions.onToggleSelection(pattern.id)
-                    } else if (pattern.ravelryId > 0) {
-                        actions.onPatternClick(pattern.ravelryId)
                     } else {
-                        actions.onLocalPatternClick(pattern.id)
+                        when (val target = pattern.routeTarget()) {
+                            is SavedPatternRouteTarget.LocalPattern -> {
+                                actions.onLocalPatternClick(target.savedPatternId)
+                            }
+
+                            is SavedPatternRouteTarget.RavelryPattern -> {
+                                actions.onPatternClick(target.ravelryId)
+                            }
+                        }
                     }
                 },
                 onLongClick = {

@@ -15,7 +15,7 @@
 - `security-check-full` (alias `sc-full`) — compatibility alias täydelle security-ajolle
 - Don't run these scripts yourself — user runs them via `! lc` / `! sc`
 - `reports/` is gitignored, never commit it
-- Security risk decisions and temporary exceptions are documented in `docs/security-decisions.md`
+- Security risk decisions and temporary exceptions are documented in `config/security-decisions.md`
 - `sc` käyttää tässä repossa paikallisia Semgrep-sääntöjä ja ajaa myös OWASP dependency-checkin.
 - Dependency-checkin voi ohittaa vain erikseen: `DEPENDENCY_CHECK_ENABLED=false sc`
 - Ensimmäinen OWASP dependency-check -ajo voi olla hidas, koska se alustaa CVE-tietokannan automaattisesti. `NVD_API_KEY` nopeuttaa NVD-päivitystä, jos sellainen on käytössä.
@@ -45,7 +45,7 @@
 - Multi-select UI: `SelectionIndicator` ja `SelectModeDeleteBar` jaetut internal composablet `SavedPatternsScreen.kt`:ssä
 - Notes: bottom sheet + full-screen editor (`notes_editor/{projectId}`), `NotesEditorViewModel` (debounced auto-save). Full-screen editorin TopAppBarissa `+ AI` -nappi avaa `JournalEntryBottomSheet` (Speak/Type) → `JournalEntryProcessor` (Gemini 2.5 Flash Lite siivoaa välimerkit) → `NotesEditorViewModel.appendJournalEntry()` lisää päivättyyn + rivi-headeriin. Fallback (offline/quota/ei-Pro) säilyttää raakatekstin. Pro-gate: `ProFeature.AI_FEATURES`.
 - Simple speech-to-text: `ai/speech/SimpleSpeechRecognizer` — kevyt raakatranskriptio-wrapper (erillään `VoiceCommandHandler`ista joka on kytketty keyword-parsingiin). Journal käyttää tätä.
-- Ravelry API: debug lukee avaimet `local.properties`:sta (`ravelry.basicAuthUser`, `ravelry.basicAuthPassword`, `ravelry.oauth2ClientId`, `ravelry.oauth2ClientSecret`) → BuildConfig; release lukee `KNITTOOLS_RAVELRY_*`-ympäristömuuttujista ja vaatii `KNITTOOLS_ALLOW_EMBEDDED_RAVELRY_SECRETS=true`
+- Ravelry API: backendia ei ole eikä tule. Debug lukee ignored `debug.credentials.properties` -tiedostosta `ravelry.basicAuthUser`, `ravelry.basicAuthPassword`, `ravelry.oauth2ClientId` ja `ravelry.oauth2ClientSecret`; release lukee vastaavat `KNITTOOLS_RAVELRY_*`-ympäristömuuttujista ja vaatii `KNITTOOLS_ALLOW_EMBEDDED_RAVELRY_SECRETS=true`. OAuth käyttää PKCE:tä, mutta credentialien upotus on tietoinen riski.
 
 ## Google Play
 

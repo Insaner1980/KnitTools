@@ -18,7 +18,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         SavedPatternEntity::class,
         PatternAnnotationEntity::class,
     ],
-    version = 9,
+    version = 10,
     exportSchema = true,
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
@@ -104,15 +104,7 @@ abstract class KnitToolsDatabase : RoomDatabase() {
                         "CREATE INDEX IF NOT EXISTS `index_project_counters_projectId` ON `project_counters` (`projectId`)",
                     )
 
-                    // Backfill: siirretään secondaryCount-data project_counters-tauluun
-                    db.execSQL(
-                        """
-                        INSERT INTO project_counters (projectId, name, count, stepSize, repeatAt, sortOrder, createdAt)
-                        SELECT id, 'Pattern repeat', secondaryCount, stepSize, stepSize, 0, updatedAt
-                        FROM counter_projects
-                        WHERE secondaryCount > 0
-                        """.trimIndent(),
-                    )
+                    // Legacy secondaryCount pysyy counter_projects-taulun omana kenttänä.
                 }
             }
 
@@ -227,6 +219,24 @@ abstract class KnitToolsDatabase : RoomDatabase() {
             object : Migration(8, 9) {
                 override fun migrate(db: SupportSQLiteDatabase) {
                     db.execSQL("CREATE INDEX IF NOT EXISTS `index_sessions_startedAt` ON `sessions` (`startedAt`)")
+                }
+            }
+
+        val MIGRATION_9_10 =
+            object : Migration(9, 10) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL("ALTER TABLE sessions ADD COLUMN durationSeconds INTEGER NOT NULL DEFAULT 0")
+                    db.execSQL("ALTER TABLE sessions ADD COLUMN rowsWorked INTEGER NOT NULL DEFAULT 0")
+                    db.execSQL("UPDATE sessions SET durationSeconds = durationMinutes * 60")
+                    db.execSQL(
+                        """
+                        UPDATE sessions
+                        SET rowsWorked = CASE
+                            WHEN endRow > startRow THEN endRow - startRow
+                            ELSE 0
+                        END
+                        """.trimIndent(),
+                    )
                 }
             }
     }

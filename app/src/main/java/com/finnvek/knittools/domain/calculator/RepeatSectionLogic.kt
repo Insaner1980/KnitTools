@@ -49,7 +49,17 @@ object RepeatSectionLogic {
     fun currentRowInRepeat(
         counter: ProjectCounter,
         mainRowCount: Int,
-    ): Int = updatePosition(counter, mainRowCount).count
+    ): Int {
+        val updated = updatePosition(counter, mainRowCount)
+        val startRow = counter.repeatStartRow ?: return updated.count
+        val endRow = counter.repeatEndRow ?: return updated.count
+        if (counter.counterType != "REPEAT_SECTION" || endRow < startRow) {
+            return updated.count
+        }
+
+        val rowRange = endRow - startRow + 1
+        return updated.count.coerceIn(1, rowRange)
+    }
 
     fun progress(
         counter: ProjectCounter,

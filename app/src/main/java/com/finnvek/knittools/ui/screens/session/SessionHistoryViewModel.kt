@@ -25,7 +25,7 @@ class SessionHistoryViewModel
     @Inject
     constructor(
         savedStateHandle: SavedStateHandle,
-        repository: CounterRepository,
+        private val repository: CounterRepository,
         private val proManager: ProManager,
     ) : ViewModel() {
         private val projectId: Long? = savedStateHandle.get<Long>("projectId")?.toPositiveRouteIdOrNull()
@@ -45,15 +45,26 @@ class SessionHistoryViewModel
         val sessions: StateFlow<List<KnitSession>> =
             (projectId?.let { repository.getSessionsForProject(it) } ?: flowOf(emptyList()))
                 .map { sessions ->
-                    if (proManager.hasFeature(ProFeature.FULL_HISTORY)) {
-                        // Pro: koko historia
-                        sessions
-                    } else {
-                        // Free: vain viimeiset 24h
-                        val cutoff = System.currentTimeMillis() - TimeUnit.HOURS.toMillis(24)
-                        sessions.filter { it.startedAt >= cutoff }
-                    }
+                    val visibleSessions =
+                        if (proManager.hasFeature(ProFeature.FULL_HISTORY)) {
+                            // Pro: koko historia
+                            sessions
+                        } else {
+                            // Free: vain viimeiset 24h
+                            val cutoff = System.currentTimeMillis() - TimeUnit.HOURS.toMillis(24)
+                            sessions.filter { it.startedAt >= cutoff }
+                        }
+                    visibleSessions.sortedWith(
+                        compareByDescending<KnitSession> { it.startedAt }
+                            .thenByDescending { it.id },
+                    )
                 }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
         val isPro: Boolean get() = proManager.hasFeature(ProFeature.FULL_HISTORY)
+
+        fun deleteSession(sessionId: Long) {
+            viewModelScope.launch {
+                repository.deleteSession(sessionId)
+            }
+        }
     }

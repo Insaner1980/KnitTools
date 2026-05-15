@@ -55,3 +55,22 @@ sonar {
         }
     }
 }
+
+project(":app") {
+    sonar {
+        properties {
+            property(
+                "sonar.coverage.jacoco.xmlReportPaths",
+                layout.buildDirectory
+                    .file("reports/jacoco/jacocoDebugUnitTestReport/jacocoDebugUnitTestReport.xml")
+                    .get()
+                    .asFile
+                    .absolutePath,
+            )
+        }
+    }
+}
+
+tasks.named("sonar") {
+    dependsOn(":app:jacocoDebugUnitTestReport")
+}

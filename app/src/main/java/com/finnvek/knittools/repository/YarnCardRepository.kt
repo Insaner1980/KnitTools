@@ -10,6 +10,7 @@ import com.finnvek.knittools.data.local.toEntity
 import com.finnvek.knittools.data.storage.AppFileStorage
 import com.finnvek.knittools.di.IoDispatcher
 import com.finnvek.knittools.domain.model.YarnCard
+import com.finnvek.knittools.domain.model.YarnCardStatus
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
@@ -30,32 +31,59 @@ class YarnCardRepository
     ) {
         fun getAllCards(): Flow<List<YarnCard>> = dao.getAllCards().map { cards -> cards.map { it.toDomain() } }
 
+        fun observeCard(id: Long): Flow<YarnCard?> = dao.observeCard(id).map { it?.toDomain() }
+
         suspend fun getCard(id: Long): YarnCard? = dao.getCard(id)?.toDomain()
 
         suspend fun getCards(ids: List<Long>): List<YarnCard> = dao.getCards(ids).map { it.toDomain() }
 
-        suspend fun saveCard(card: YarnCard): Long = dao.upsert(card.toEntity())
+        suspend fun saveCard(card: YarnCard): Long =
+            transactionRunner.run {
+                val existingCard = card.id.takeIf { it != 0L }?.let { dao.getCard(it) }
+                val projects = counterProjectDao.getAllProjectsOnce()
+                val linkedProjectId =
+                    card.linkedProjectId?.takeIf { projectId ->
+                        projects.any { it.id == projectId }
+                    }
+                val normalizedCard =
+                    card.copy(
+                        status = YarnCardStatus.normalize(card.status),
+                        linkedProjectId = linkedProjectId,
+                    )
+                val upsertedId = dao.upsert(normalizedCard.toEntity())
+                val savedId = normalizedCard.id.takeIf { it != 0L } ?: upsertedId
+                val linkChanged = existingCard?.linkedProjectId != linkedProjectId
+                if (linkedProjectId != null || linkChanged) {
+                    updateProjectYarnLinks(
+                        projects = projects,
+                        cardId = savedId,
+                        projectId = linkedProjectId,
+                        updatedAt = System.currentTimeMillis(),
+                    )
+                }
+                savedId
+            }
 
         fun getCardCount() = dao.getCardCount()
 
         suspend fun updateQuantity(
             id: Long,
             quantity: Int,
-        ) = dao.updateQuantity(id, quantity)
+        ): Boolean = dao.updateQuantity(id, quantity) > 0
 
         suspend fun updateStatus(
             id: Long,
             status: String,
-        ) = dao.updateStatus(id, status)
+        ): Boolean = dao.updateStatus(id, status) > 0
 
         suspend fun updateLinkedProjectId(
             id: Long,
             projectId: Long?,
-        ) {
+        ): Boolean =
             transactionRunner.run {
-                if (dao.getCard(id) == null) return@run
+                if (dao.getCard(id) == null) return@run false
                 val projects = counterProjectDao.getAllProjectsOnce()
-                if (projectId != null && projects.none { it.id == projectId }) return@run
+                if (projectId != null && projects.none { it.id == projectId }) return@run false
 
                 updateProjectYarnLinks(
                     projects = projects,
@@ -63,9 +91,8 @@ class YarnCardRepository
                     projectId = projectId,
                     updatedAt = System.currentTimeMillis(),
                 )
-                dao.updateLinkedProjectId(id, projectId)
+                dao.updateLinkedProjectId(id, projectId) > 0
             }
-        }
 
         suspend fun clearLinkedProject(projectId: Long) = dao.clearLinkedProject(projectId)
 

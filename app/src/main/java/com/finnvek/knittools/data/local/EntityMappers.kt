@@ -232,6 +232,8 @@ fun SessionEntity.toDomain(): KnitSession =
         startRow = startRow,
         endRow = endRow,
         durationMinutes = durationMinutes,
+        durationSeconds = durationSeconds,
+        rowsWorked = rowsWorked,
     )
 
 fun KnitSession.toEntity(): SessionEntity =
@@ -243,6 +245,8 @@ fun KnitSession.toEntity(): SessionEntity =
         startRow = startRow,
         endRow = endRow,
         durationMinutes = durationMinutes,
+        durationSeconds = durationSeconds,
+        rowsWorked = rowsWorked,
     )
 
 fun PatternAnnotationEntity.toDomain(): PatternAnnotation =

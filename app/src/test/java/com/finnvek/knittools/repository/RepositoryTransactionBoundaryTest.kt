@@ -452,7 +452,7 @@ class RepositoryTransactionBoundaryTest {
             val runner = RecordingTransactionRunner()
             val savedPatternRepository = mockk<SavedPatternRepository>(relaxed = true)
             val projectDao = mockk<CounterProjectDao>(relaxed = true)
-            coEvery { savedPatternRepository.save(any()) } returns 12L
+            coEvery { savedPatternRepository.saveRavelryPatternIfMissing(any()) } returns 12L
             coEvery { projectDao.getAllProjectsOnce() } returns emptyList()
             val repository =
                 RavelryRepository(
@@ -466,7 +466,7 @@ class RepositoryTransactionBoundaryTest {
 
             assertEquals(1, runner.runCount)
             coVerifyOrder {
-                savedPatternRepository.save(any())
+                savedPatternRepository.saveRavelryPatternIfMissing(any())
                 projectDao.insert(match { it.name == "Cardigan" && it.linkedPatternId == 12L })
             }
         }
@@ -476,7 +476,7 @@ class RepositoryTransactionBoundaryTest {
         runTest {
             val savedPatternRepository = mockk<SavedPatternRepository>(relaxed = true)
             val projectDao = mockk<CounterProjectDao>(relaxed = true)
-            coEvery { savedPatternRepository.save(any()) } returns 12L
+            coEvery { savedPatternRepository.saveRavelryPatternIfMissing(any()) } returns 12L
             coEvery { projectDao.getAllProjectsOnce() } returns
                 listOf(CounterProjectEntity(id = 1L, name = "Cardigan"))
             val repository =

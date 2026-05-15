@@ -9,6 +9,7 @@ import com.finnvek.knittools.ai.AiQuotaManager
 import com.finnvek.knittools.ai.ParsedYarnLabel
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.YarnCard
+import com.finnvek.knittools.domain.model.YarnCardStatus
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.CounterRepository
@@ -16,6 +17,7 @@ import com.finnvek.knittools.repository.YarnCardRepository
 import com.finnvek.knittools.repository.YarnLabelScanRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -44,7 +46,7 @@ data class YarnCardFormState(
     val isScanning: Boolean = false,
     val scanError: String? = null,
     val quantityInStash: Int = 1,
-    val status: String = "IN_STASH",
+    val status: String = YarnCardStatus.IN_STASH,
     val linkedProjectId: Long? = null,
 )
 
@@ -142,6 +144,8 @@ class YarnCardViewModel
         fun loadCardById(id: Long) {
             loadCardForDetail(id)
         }
+
+        fun observeCardForDetail(id: Long): Flow<YarnCard?> = repository.observeCard(id)
 
         fun loadCardForDetail(
             id: Long,
@@ -269,7 +273,9 @@ class YarnCardViewModel
         fun saveCard(onSaved: (Long) -> Unit) {
             if (!proManager.hasFeature(ProFeature.OCR)) return
             viewModelScope.launch {
-                val form = _formState.value
+                val form = _formState.value.normalizedForPersistence()
+                if (!form.canPersistYarnCard()) return@launch
+                _formState.value = form
                 val id = repository.saveCard(form.toDomain())
                 onSaved(id)
             }
@@ -311,13 +317,12 @@ class YarnCardViewModel
         fun updateQuantity(delta: Int) {
             val cardId = _formState.value.editingCardId ?: return
             val newQty = (_formState.value.quantityInStash + delta).coerceAtLeast(0)
-            _formState.update { it.copy(quantityInStash = newQty) }
             viewModelScope.launch { repository.updateQuantity(cardId, newQty) }
         }
 
         fun updateStatus(status: String) {
+            if (!YarnCardStatus.isSupported(status)) return
             val cardId = _formState.value.editingCardId ?: return
-            _formState.update { it.copy(status = status) }
             viewModelScope.launch { repository.updateStatus(cardId, status) }
         }
 
@@ -328,7 +333,6 @@ class YarnCardViewModel
 
             viewModelScope.launch {
                 repository.updateLinkedProjectId(cardId, projectId)
-                _formState.update { it.copy(linkedProjectId = projectId) }
             }
         }
 
@@ -373,3 +377,30 @@ class YarnCardViewModel
             return false
         }
     }
+
+internal fun YarnCardFormState.canPersistYarnCard(): Boolean =
+    hasYarnIdentity() &&
+        weightGrams.isBlankOrPositiveInt() &&
+        lengthMeters.isBlankOrPositiveInt()
+
+internal fun YarnCardFormState.normalizedForPersistence(): YarnCardFormState =
+    copy(
+        brand = brand.trim(),
+        yarnName = yarnName.trim(),
+        fiberContent = fiberContent.trim(),
+        weightGrams = weightGrams.trim(),
+        lengthMeters = lengthMeters.trim(),
+        needleSize = needleSize.trim(),
+        gaugeInfo = gaugeInfo.trim(),
+        colorName = colorName.trim(),
+        colorNumber = colorNumber.trim(),
+        dyeLot = dyeLot.trim(),
+        weightCategory = weightCategory.trim(),
+        photoUri = photoUri.trim(),
+        quantityInStash = quantityInStash.coerceAtLeast(0),
+        status = YarnCardStatus.normalize(status),
+    )
+
+private fun YarnCardFormState.hasYarnIdentity(): Boolean = brand.isNotBlank() || yarnName.isNotBlank()
+
+private fun String.isBlankOrPositiveInt(): Boolean = isBlank() || toIntOrNull()?.let { it > 0 } == true

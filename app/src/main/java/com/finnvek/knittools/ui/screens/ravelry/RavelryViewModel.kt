@@ -83,6 +83,7 @@ class RavelryViewModel
 
         private var currentPage = 1
         private var totalPages = 1
+        private var isSaveInFlight = false
 
         val isPro: Boolean get() = proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS)
 
@@ -168,9 +169,15 @@ class RavelryViewModel
 
         fun savePattern() {
             val detail = _patternDetail.value ?: return
+            if (_isPatternSaved.value || isSaveInFlight) return
             viewModelScope.launch {
-                repository.savePattern(detail)
-                _isPatternSaved.value = true
+                isSaveInFlight = true
+                try {
+                    repository.savePattern(detail)
+                    _isPatternSaved.value = true
+                } finally {
+                    isSaveInFlight = false
+                }
             }
         }
 

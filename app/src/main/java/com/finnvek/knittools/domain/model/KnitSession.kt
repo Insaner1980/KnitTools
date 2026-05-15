@@ -8,4 +8,6 @@ data class KnitSession(
     val startRow: Int,
     val endRow: Int,
     val durationMinutes: Int,
+    val durationSeconds: Long = durationMinutes.toLong() * 60L,
+    val rowsWorked: Int = (endRow - startRow).coerceAtLeast(0),
 )

@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.KnitSession
-import com.finnvek.knittools.domain.model.SessionInsightsSummary
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.CounterRepository
@@ -76,18 +75,21 @@ class InsightsViewModel
                     counterRepository.getSessionsForInsights(params.projectId, params.startMillis)
                 }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-        private val totals: StateFlow<SessionInsightsSummary> =
-            queryParams
-                .flatMapLatest { params ->
-                    counterRepository.getInsightsTotals(params.projectId, params.startMillis)
-                }.stateIn(
-                    viewModelScope,
-                    SharingStarted.WhileSubscribed(5000),
-                    SessionInsightsSummary(0, 0, 0),
+        private val metrics: StateFlow<SessionMetricSummary> =
+            combine(insightSessions, queryParams) { sessions, params ->
+                SessionMetrics.summarize(
+                    sessions = sessions,
+                    rangeStartMillis = params.startMillis,
+                    zone = systemDefault(),
                 )
+            }.stateIn(
+                viewModelScope,
+                SharingStarted.WhileSubscribed(5000),
+                SessionMetricSummary(0L, 0, 0),
+            )
 
         val hasSessionData: StateFlow<Boolean> =
-            totals
+            metrics
                 .map { it.sessionCount > 0 }
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
@@ -102,19 +104,14 @@ class InsightsViewModel
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
         val totalMinutes: StateFlow<Int> =
-            totals
+            metrics
                 .map { it.totalMinutes }
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
         val avgPace: StateFlow<Float> =
-            totals
-                .map { summary ->
-                    if (summary.totalMinutes <= 0) {
-                        0f
-                    } else {
-                        summary.totalRows / (summary.totalMinutes / 60f)
-                    }
-                }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0f)
+            metrics
+                .map { it.rowsPerHour }
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0f)
 
         val bestStreak: StateFlow<Int> =
             insightSessions
@@ -131,32 +128,39 @@ class InsightsViewModel
         val dailyActivity: StateFlow<Map<LocalDate, Int>> =
             insightSessions
                 .map { sessions ->
-                    val cutoff = LocalDate.now().minusDays(55)
                     val zone = ZoneId.systemDefault()
-                    sessions
-                        .map { session ->
-                            val date = Instant.ofEpochMilli(session.startedAt).atZone(zone).toLocalDate()
-                            date to session.durationMinutes
-                        }.filter { (date, _) -> !date.isBefore(cutoff) }
-                        .groupBy({ it.first }, { it.second })
-                        .mapValues { (_, minutes) -> minutes.sum() }
+                    SessionMetrics.dailyActivityMinutes(
+                        sessions = sessions,
+                        earliestDate = LocalDate.now(zone).minusDays(55),
+                        zone = zone,
+                    )
                 }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
         val timePerProject: StateFlow<List<ProjectTime>> =
-            queryParams
-                .flatMapLatest { params ->
-                    counterRepository.getProjectTimeSummaries(params.projectId, params.startMillis)
-                }.map { summaries ->
-                    summaries.map { summary ->
+            combine(insightSessions, projects, queryParams) { sessions, projectList, params ->
+                val projectNames = projectList.associate { it.id to it.name }
+                sessions
+                    .groupBy { it.projectId }
+                    .mapNotNull { (projectId, projectSessions) ->
+                        val summary =
+                            SessionMetrics.summarize(
+                                sessions = projectSessions,
+                                rangeStartMillis = params.startMillis,
+                                zone = systemDefault(),
+                            )
+                        if (summary.sessionCount == 0) return@mapNotNull null
                         ProjectTime(
-                            projectId = summary.projectId,
-                            projectName = summary.projectName,
+                            projectId = projectId,
+                            projectName = projectNames[projectId] ?: "Project $projectId",
                             totalMinutes = summary.totalMinutes,
                             totalRows = summary.totalRows,
-                            lastSessionAt = summary.lastSessionAt,
+                            lastSessionAt = projectSessions.maxOf { it.startedAt },
                         )
-                    }
-                }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+                    }.sortedWith(
+                        compareByDescending<ProjectTime> { it.totalMinutes }
+                            .thenByDescending { it.lastSessionAt },
+                    )
+            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
         fun selectProject(projectId: Long?) {
             _selectedProjectId.value = projectId

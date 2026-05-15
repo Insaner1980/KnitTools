@@ -17,6 +17,6 @@ data class YarnCard(
     val photoUri: String = "",
     val createdAt: Long = System.currentTimeMillis(),
     val quantityInStash: Int = 1,
-    val status: String = "IN_STASH",
+    val status: String = YarnCardStatus.IN_STASH,
     val linkedProjectId: Long? = null,
 )

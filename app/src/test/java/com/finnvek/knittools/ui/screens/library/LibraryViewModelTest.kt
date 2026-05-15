@@ -91,6 +91,7 @@ class LibraryViewModelTest {
 
             assertFalse(viewModel.isPatternSelectMode.value)
             assertTrue(viewModel.selectedPatternIds.value.isEmpty())
+            assertEquals(1L, viewModel.patternDeleteErrorId.value)
         }
 
     @Test
@@ -105,6 +106,7 @@ class LibraryViewModelTest {
 
             assertFalse(viewModel.isYarnSelectMode.value)
             assertTrue(viewModel.selectedYarnIds.value.isEmpty())
+            assertEquals(1L, viewModel.yarnDeleteErrorId.value)
         }
 
     @Test

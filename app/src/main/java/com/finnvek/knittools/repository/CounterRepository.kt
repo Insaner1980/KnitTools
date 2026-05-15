@@ -13,8 +13,6 @@ import com.finnvek.knittools.domain.calculator.CounterLogic
 import com.finnvek.knittools.domain.calculator.CounterState
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.KnitSession
-import com.finnvek.knittools.domain.model.SessionInsightsSummary
-import com.finnvek.knittools.domain.model.SessionProjectTimeSummary
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
@@ -167,6 +165,24 @@ class CounterRepository
             notes: String,
         ) = dao.updateNotes(id, notes, System.currentTimeMillis())
 
+        suspend fun saveProjectNotes(
+            id: Long,
+            baseNotes: String,
+            requestedNotes: String,
+        ): CounterProject? =
+            transactionRunner.run {
+                val current = dao.getProject(id)?.toDomain() ?: return@run null
+                val notesToSave =
+                    mergeProjectNotes(
+                        baseNotes = baseNotes,
+                        requestedNotes = requestedNotes,
+                        currentNotes = current.notes,
+                    )
+                val updatedAt = System.currentTimeMillis()
+                dao.updateNotes(id, notesToSave, updatedAt)
+                current.copy(notes = notesToSave, updatedAt = updatedAt)
+            }
+
         suspend fun updateProjectSecondaryCount(
             id: Long,
             secondaryCount: Int,
@@ -214,6 +230,7 @@ class CounterRepository
             currentPatternPage: Int,
             patternRowMapping: String?,
         ) {
+            val previousPatternUri = dao.getProject(id)?.patternUri
             transactionRunner.run {
                 savedPatternRepository.saveImportedPatternIfMissing(patternUri, patternName)
                 patternAnnotationRepository.clearProject(id)
@@ -225,6 +242,9 @@ class CounterRepository
                     patternRowMapping = patternRowMapping,
                 )
             }
+            previousPatternUri
+                ?.takeIf { it != patternUri }
+                ?.let { savedPatternRepository.deleteLocalPatternFileIfUnused(it) }
         }
 
         suspend fun detachPattern(id: Long) {
@@ -322,43 +342,15 @@ class CounterRepository
 
         fun getCompletedProjectCount(): Flow<Int> = sessionDao.getCompletedProjectCount()
 
-        fun getTotalDurationMinutes(projectId: Long?): Flow<Int> = sessionDao.getTotalDurationMinutes(projectId)
-
-        fun getInsightsTotals(
-            projectId: Long?,
-            start: Long?,
-        ): Flow<SessionInsightsSummary> =
-            sessionDao.getInsightsTotals(projectId, start).map { totals ->
-                SessionInsightsSummary(
-                    totalMinutes = totals.totalMinutes,
-                    totalRows = totals.totalRows,
-                    sessionCount = totals.sessionCount,
-                )
-            }
-
         fun getSessionsForInsights(
             projectId: Long?,
             start: Long?,
         ): Flow<List<KnitSession>> =
             sessionDao.getSessionsForInsights(projectId, start).map { sessions -> sessions.map { it.toDomain() } }
 
-        fun getProjectTimeSummaries(
-            projectId: Long?,
-            start: Long?,
-        ): Flow<List<SessionProjectTimeSummary>> =
-            sessionDao.getProjectTimeSummaries(projectId, start).map { summaries ->
-                summaries.map {
-                    SessionProjectTimeSummary(
-                        projectId = it.projectId,
-                        projectName = it.projectName,
-                        totalMinutes = it.totalMinutes,
-                        totalRows = it.totalRows,
-                        lastSessionAt = it.lastSessionAt,
-                    )
-                }
-            }
-
         suspend fun insertSession(session: KnitSession): Long = sessionDao.insert(session.toEntity())
+
+        suspend fun deleteSession(id: Long) = sessionDao.deleteById(id)
 
         suspend fun deleteSessionsBefore(
             projectId: Long,
@@ -368,4 +360,41 @@ class CounterRepository
         suspend fun getTotalMinutesForProject(projectId: Long): Int = sessionDao.getTotalMinutes(projectId)
 
         suspend fun getLatestSession(projectId: Long): KnitSession? = sessionDao.getLatestSession(projectId)?.toDomain()
+    }
+
+internal fun mergeProjectNotes(
+    baseNotes: String,
+    requestedNotes: String,
+    currentNotes: String,
+): String {
+    if (currentNotes == baseNotes || currentNotes == requestedNotes) return requestedNotes
+    if (requestedNotes == baseNotes) return currentNotes
+    if (baseNotes.isEmpty()) return combineNoteBlocks(requestedNotes, currentNotes)
+
+    val requestedSuffix = requestedNotes.removeKnownPrefix(baseNotes)
+    val currentSuffix = currentNotes.removeKnownPrefix(baseNotes)
+
+    return when {
+        requestedSuffix != null && currentSuffix != null -> currentNotes + requestedSuffix
+        requestedSuffix != null -> currentNotes + requestedSuffix
+        currentSuffix != null -> requestedNotes + currentSuffix
+        else -> combineNoteBlocks(requestedNotes, currentNotes)
+    }
+}
+
+private fun String.removeKnownPrefix(prefix: String): String? =
+    if (startsWith(prefix)) {
+        removePrefix(prefix)
+    } else {
+        null
+    }
+
+private fun combineNoteBlocks(
+    primary: String,
+    secondary: String,
+): String =
+    when {
+        primary.isBlank() -> secondary
+        secondary.isBlank() -> primary
+        else -> "${primary.trimEnd()}\n\n---\n\n${secondary.trimStart()}"
     }

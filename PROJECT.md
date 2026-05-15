@@ -114,8 +114,8 @@ Build-huomiot:
 - release signing on ympäristömuuttujapohjainen
 - release-artifaktit estetään ilman signing-muuttujia
 - release-artifaktit estetään ilman Ravelry-credentialeja
-- release-artifaktit estetään myös ilman eksplisiittistä opt-in-lippua `KNITTOOLS_ALLOW_EMBEDDED_RAVELRY_SECRETS=true`, koska release upottaa Ravelry-arvot `BuildConfig`iin
-- debug lukee Ravelry-avaimet `local.properties`:sta
+- release-artifaktit estetään ilman eksplisiittistä opt-in-lippua `KNITTOOLS_ALLOW_EMBEDDED_RAVELRY_SECRETS=true`, koska release upottaa Ravelry-arvot `BuildConfig`iin tietoisena no-backend-riskinä
+- debug lukee Ravelry-avaimet ignored `debug.credentials.properties` -tiedostosta
 
 ### `:baselineprofile`
 
@@ -443,7 +443,7 @@ Nykyiset locale-resurssihakemistot:
 
 Nykyinen toteutus:
 
-- OAuth2 Authorization Code -flow
+- OAuth2 Authorization Code -flow Chrome Custom Tabilla; PKCE-parametrit lähetetään lisäsuojana, jos Ravelry hyväksyy ne
 - Chrome Custom Tabs autentikointiin
 - tokenit `EncryptedSharedPreferences`iin
 - Ktor-pohjainen HTTP-client
@@ -456,8 +456,8 @@ BuildConfig-kentät:
 - `RAVELRY_OAUTH2_CLIENT_ID`
 - `RAVELRY_OAUTH2_CLIENT_SECRET`
 
-Debug lukee nämä `local.properties`:sta.
-Release lukee ne ympäristömuuttujista.
+Debug lukee nämä `debug.credentials.properties`:sta.
+Release lukee ne ympäristömuuttujista ja vaatii accepted-risk opt-in -lipun.
 
 ### Pro / Billing / Trial
 

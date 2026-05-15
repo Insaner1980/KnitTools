@@ -75,6 +75,7 @@ fun YarnCardReviewScreen(
     initialLinkProjectId: Long? = null,
     onLinkToProject: ((cardId: Long, projectId: Long) -> Unit)? = null,
     onOpenLinkedProject: ((Long) -> Unit)? = null,
+    onDeleteCard: ((Long) -> Unit)? = null,
 ) {
     val form by viewModel.formState.collectAsStateWithLifecycle()
     val linkedProjectName by viewModel.linkedProjectName.collectAsStateWithLifecycle()
@@ -142,9 +143,14 @@ fun YarnCardReviewScreen(
             onConfirm = {
                 val cardId = form.editingCardId
                 if (cardId != null) {
-                    viewModel.deleteCard(cardId) {
+                    if (onDeleteCard != null) {
                         showDeleteDialog = false
-                        onBack()
+                        onDeleteCard(cardId)
+                    } else {
+                        viewModel.deleteCard(cardId) {
+                            showDeleteDialog = false
+                            onBack()
+                        }
                     }
                 } else {
                     showDeleteDialog = false
@@ -281,6 +287,7 @@ private fun YarnCardScanContent(
 
         ReviewActionButtons(
             isPro = viewModel.isPro,
+            saveEnabled = !viewModel.isPro || form.normalizedForPersistence().canPersistYarnCard(),
             onDiscardClick = {
                 val (w, l, n) = viewModel.getCalculatorValues()
                 onDiscard(w, l, n)
@@ -766,6 +773,7 @@ private fun LinkYarnDialog(
 @Composable
 private fun ReviewActionButtons(
     isPro: Boolean,
+    saveEnabled: Boolean,
     onDiscardClick: () -> Unit,
     onSaveClick: () -> Unit,
 ) {
@@ -781,6 +789,7 @@ private fun ReviewActionButtons(
         }
         Button(
             onClick = onSaveClick,
+            enabled = saveEnabled,
             modifier = Modifier.weight(1f),
         ) {
             Text(

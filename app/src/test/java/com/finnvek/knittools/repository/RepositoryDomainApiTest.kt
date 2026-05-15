@@ -1,6 +1,7 @@
 package com.finnvek.knittools.repository
 
 import android.content.Context
+import android.net.Uri
 import com.finnvek.knittools.R
 import com.finnvek.knittools.data.local.CounterProjectDao
 import com.finnvek.knittools.data.local.CounterProjectEntity
@@ -21,6 +22,8 @@ import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.YarnCard
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -118,6 +121,129 @@ class RepositoryDomainApiTest {
         }
 
     @Test
+    fun `saved pattern repository reuses existing ravelry pattern`() =
+        runTest {
+            val dao =
+                FakeSavedPatternDao(
+                    savedPatterns =
+                        listOf(
+                            SavedPatternEntity(
+                                id = 7L,
+                                ravelryId = 42,
+                                name = "Old name",
+                                designerName = "Designer",
+                            ),
+                        ),
+                )
+            val repository =
+                SavedPatternRepository(
+                    dao,
+                    context,
+                    FakeCounterProjectDao(),
+                    ImmediateDatabaseTransactionRunner,
+                    UnconfinedTestDispatcher(testScheduler),
+                )
+
+            val savedId =
+                repository.saveRavelryPatternIfMissing(
+                    SavedPattern(
+                        ravelryId = 42,
+                        name = "New name",
+                        designerName = "Designer",
+                    ),
+                )
+
+            assertEquals(7L, savedId)
+            assertEquals(0, dao.insertCount)
+        }
+
+    @Test
+    fun `saved pattern repository prunes missing app owned pattern on viewer load`() =
+        runTest {
+            val missingUri = "file:///data/data/com.finnvek.knittools/files/pattern_pdfs/1/missing.pdf"
+            val filesDir =
+                java.nio.file.Files
+                    .createTempDirectory("knittools-files")
+                    .toFile()
+            val dao =
+                FakeSavedPatternDao(
+                    savedPatterns =
+                        listOf(
+                            SavedPatternEntity(
+                                id = 7L,
+                                ravelryId = 0,
+                                name = "Missing",
+                                designerName = "Imported",
+                                patternUrl = missingUri,
+                            ),
+                        ),
+                )
+            every { context.filesDir } returns filesDir
+            withParsedFileUri(missingUri, java.io.File(filesDir, "pattern_pdfs/1/missing.pdf").absolutePath) {
+                val repository =
+                    SavedPatternRepository(
+                        dao,
+                        context,
+                        FakeCounterProjectDao(),
+                        ImmediateDatabaseTransactionRunner,
+                        UnconfinedTestDispatcher(testScheduler),
+                    )
+
+                val pattern = repository.getByIdIfAvailable(7L)
+
+                assertNull(pattern)
+                assertEquals(listOf(7L), dao.deletedIds)
+            }
+        }
+
+    @Test
+    fun `saved pattern repository finds reusable imported PDF with same content`() =
+        runTest {
+            val filesDir =
+                java.nio.file.Files
+                    .createTempDirectory("knittools-files")
+                    .toFile()
+            val existingFile = java.io.File(filesDir, "pattern_pdfs/1/pattern.pdf")
+            val candidateFile = java.io.File(filesDir, "pattern_pdfs/1/pattern-1.pdf")
+            requireNotNull(existingFile.parentFile).mkdirs()
+            existingFile.writeText("pdf bytes")
+            candidateFile.writeText("pdf bytes")
+            val existingUri = "file://${existingFile.absolutePath.replace('\\', '/')}"
+            val candidateUri = "file://${candidateFile.absolutePath.replace('\\', '/')}"
+            val dao =
+                FakeSavedPatternDao(
+                    savedPatterns =
+                        listOf(
+                            SavedPatternEntity(
+                                id = 7L,
+                                ravelryId = 0,
+                                name = "Pattern.pdf",
+                                designerName = "Imported",
+                                patternUrl = existingUri,
+                            ),
+                        ),
+                )
+            every { context.filesDir } returns filesDir
+            withParsedFileUris(
+                existingUri to existingFile.absolutePath,
+                candidateUri to candidateFile.absolutePath,
+            ) {
+                val repository =
+                    SavedPatternRepository(
+                        dao,
+                        context,
+                        FakeCounterProjectDao(),
+                        ImmediateDatabaseTransactionRunner,
+                        UnconfinedTestDispatcher(testScheduler),
+                    )
+
+                val reusableUri = repository.findReusableImportedPatternUrl(candidateUri, "Pattern.pdf")
+
+                assertEquals(existingUri, reusableUri)
+            }
+        }
+
+    @Test
     fun `yarn card repository exposes domain models and writes entities`() =
         runTest {
             val dao =
@@ -201,6 +327,100 @@ class RepositoryDomainApiTest {
 
             assertEquals(mapOf(10L to "1,3", 11L to ""), projectDao.updatedYarnCardIds)
             assertEquals(listOf(2L), yarnDao.deletedIds)
+        }
+
+    @Test
+    fun `yarn card repository reports rejected detail updates`() =
+        runTest {
+            val yarnDao = FakeYarnCardDao()
+            val repository =
+                YarnCardRepository(
+                    yarnDao,
+                    FakeCounterProjectDao(),
+                    context,
+                    ImmediateDatabaseTransactionRunner,
+                    UnconfinedTestDispatcher(testScheduler),
+                )
+
+            assertEquals(false, repository.updateQuantity(99L, 4))
+            assertEquals(false, repository.updateStatus(99L, "USED_UP"))
+            assertEquals(false, repository.updateLinkedProjectId(99L, null))
+        }
+
+    @Test
+    fun `yarn card save keeps linked project ids consistent`() =
+        runTest {
+            val yarnDao = FakeYarnCardDao()
+            val projectDao =
+                FakeCounterProjectDao(
+                    projects =
+                        listOf(
+                            CounterProjectEntity(id = 10L, yarnCardIds = "1,2"),
+                            CounterProjectEntity(id = 11L, yarnCardIds = "3"),
+                        ),
+                )
+            val repository =
+                YarnCardRepository(
+                    yarnDao,
+                    projectDao,
+                    context,
+                    ImmediateDatabaseTransactionRunner,
+                    UnconfinedTestDispatcher(testScheduler),
+                )
+
+            val savedId =
+                repository.saveCard(
+                    YarnCard(
+                        brand = "Novita",
+                        yarnName = "Nalle",
+                        linkedProjectId = 10L,
+                    ),
+                )
+
+            assertEquals(88L, savedId)
+            assertEquals(10L, yarnDao.lastUpserted?.linkedProjectId)
+            assertEquals(mapOf(10L to "1,2,88"), projectDao.updatedYarnCardIds)
+        }
+
+    @Test
+    fun `yarn card save removes stale project link when saved unlinked`() =
+        runTest {
+            val yarnDao =
+                FakeYarnCardDao(
+                    yarnCards =
+                        listOf(
+                            YarnCardEntity(id = 5L, yarnName = "Sock", linkedProjectId = 10L),
+                        ),
+                )
+            val projectDao =
+                FakeCounterProjectDao(
+                    projects =
+                        listOf(
+                            CounterProjectEntity(id = 10L, yarnCardIds = "1,5"),
+                        ),
+                )
+            val repository =
+                YarnCardRepository(
+                    yarnDao,
+                    projectDao,
+                    context,
+                    ImmediateDatabaseTransactionRunner,
+                    UnconfinedTestDispatcher(testScheduler),
+                )
+
+            val savedId =
+                repository.saveCard(
+                    YarnCard(
+                        id = 5L,
+                        brand = "Novita",
+                        yarnName = "Nalle",
+                        linkedProjectId = null,
+                    ),
+                )
+
+            assertEquals(5L, savedId)
+            assertEquals(null, yarnDao.lastUpserted?.linkedProjectId)
+            assertEquals(mapOf(10L to "1"), projectDao.updatedYarnCardIds)
         }
 
     @Test
@@ -317,6 +537,7 @@ class RepositoryDomainApiTest {
     ) : SavedPatternDao {
         var lastInserted: SavedPatternEntity? = null
         var deletedIds: List<Long> = emptyList()
+        var insertCount: Int = 0
 
         override fun getAll(): Flow<List<SavedPatternEntity>> = flowOf(savedPatterns)
 
@@ -328,9 +549,13 @@ class RepositoryDomainApiTest {
         override suspend fun getByPatternUrl(patternUrl: String): SavedPatternEntity? =
             savedPatterns.firstOrNull { it.patternUrl == patternUrl }
 
+        override suspend fun getImportedPatternsOnce(): List<SavedPatternEntity> =
+            savedPatterns.filter { it.ravelryId == 0 && it.patternUrl.isNotBlank() }
+
         override suspend fun getByIds(ids: List<Long>): List<SavedPatternEntity> = savedPatterns.filter { it.id in ids }
 
         override suspend fun insert(pattern: SavedPatternEntity): Long {
+            insertCount += 1
             lastInserted = pattern
             return 99L
         }
@@ -357,6 +582,8 @@ class RepositoryDomainApiTest {
 
         override suspend fun getCard(id: Long): YarnCardEntity? = yarnCards.firstOrNull { it.id == id }
 
+        override fun observeCard(id: Long): Flow<YarnCardEntity?> = flowOf(yarnCards.firstOrNull { it.id == id })
+
         override suspend fun getCards(ids: List<Long>): List<YarnCardEntity> = yarnCards.filter { it.id in ids }
 
         override suspend fun upsert(card: YarnCardEntity): Long {
@@ -369,17 +596,17 @@ class RepositoryDomainApiTest {
         override suspend fun updateQuantity(
             id: Long,
             quantity: Int,
-        ) = Unit
+        ): Int = if (yarnCards.any { it.id == id }) 1 else 0
 
         override suspend fun updateStatus(
             id: Long,
             status: String,
-        ) = Unit
+        ): Int = if (yarnCards.any { it.id == id }) 1 else 0
 
         override suspend fun updateLinkedProjectId(
             id: Long,
             projectId: Long?,
-        ) = Unit
+        ): Int = if (yarnCards.any { it.id == id }) 1 else 0
 
         override suspend fun clearLinkedProject(projectId: Long) {
             clearedProjectId = projectId
@@ -650,5 +877,31 @@ class RepositoryDomainApiTest {
         ) = Unit
 
         override suspend fun deleteById(id: Long) = Unit
+    }
+
+    private suspend inline fun withParsedFileUri(
+        uriString: String,
+        path: String,
+        block: suspend () -> Unit,
+    ) {
+        withParsedFileUris(uriString to path, block = block)
+    }
+
+    private suspend inline fun withParsedFileUris(
+        vararg mappings: Pair<String, String>,
+        block: suspend () -> Unit,
+    ) {
+        mockkStatic(Uri::class)
+        mappings.forEach { (uriString, path) ->
+            val uri = mockk<Uri>()
+            every { Uri.parse(uriString) } returns uri
+            every { uri.scheme } returns "file"
+            every { uri.path } returns path
+        }
+        try {
+            block()
+        } finally {
+            unmockkStatic(Uri::class)
+        }
     }
 }

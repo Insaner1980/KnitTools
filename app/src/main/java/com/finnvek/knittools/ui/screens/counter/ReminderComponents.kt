@@ -10,20 +10,31 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.outlined.AddCircle
+import androidx.compose.material.icons.outlined.DeleteOutline
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -41,7 +52,71 @@ import com.finnvek.knittools.domain.calculator.ReminderLogic
 import com.finnvek.knittools.domain.model.RowReminder
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.NumberInputField
+import com.finnvek.knittools.ui.components.NumberInputOptions
 import com.finnvek.knittools.ui.components.SegmentedToggle
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun RemindersSheet(
+    reminders: List<RowReminder>,
+    currentRow: Int,
+    onAdd: () -> Unit,
+    onEdit: (RowReminder) -> Unit,
+    onDelete: (Long) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.background,
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(start = 24.dp, end = 24.dp, bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = stringResource(R.string.reminders),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                TextButton(onClick = onAdd) {
+                    Icon(
+                        imageVector = Icons.Outlined.AddCircle,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(stringResource(R.string.add_reminder))
+                }
+            }
+            if (reminders.isEmpty()) {
+                Text(
+                    text = stringResource(R.string.no_reminders),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = 12.dp),
+                )
+            } else {
+                ReminderList(
+                    reminders = reminders,
+                    currentRow = currentRow,
+                    onEdit = onEdit,
+                    onDelete = onDelete,
+                )
+            }
+        }
+    }
+}
 
 @Composable
 fun ReminderAlertCard(
@@ -105,17 +180,19 @@ fun ReminderAlertCard(
 fun ReminderList(
     reminders: List<RowReminder>,
     currentRow: Int,
+    onEdit: (RowReminder) -> Unit,
     onDelete: (Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var deleteTarget by rememberSaveable { mutableStateOf<Long?>(null) }
 
-    Column(modifier = modifier.fillMaxWidth()) {
-        reminders.forEach { reminder ->
+    LazyColumn(modifier = modifier.fillMaxWidth().heightIn(max = 320.dp)) {
+        items(items = reminders, key = { it.id }) { reminder ->
             ReminderListItem(
                 reminder = reminder,
                 currentRow = currentRow,
-                onLongClick = { deleteTarget = reminder.id },
+                onClick = { onEdit(reminder) },
+                onDeleteClick = { deleteTarget = reminder.id },
             )
         }
     }
@@ -142,7 +219,8 @@ private fun ReminderListItem(
     reminder: RowReminder,
     currentRow: Int,
     modifier: Modifier = Modifier,
-    onLongClick: () -> Unit = {},
+    onClick: () -> Unit = {},
+    onDeleteClick: () -> Unit = {},
 ) {
     val isUpcoming = !reminder.isCompleted && reminder.targetRow <= currentRow + 5
     val dotColor =
@@ -157,8 +235,8 @@ private fun ReminderListItem(
             modifier
                 .fillMaxWidth()
                 .combinedClickable(
-                    onClick = {},
-                    onLongClick = onLongClick,
+                    onClick = onClick,
+                    onLongClick = onDeleteClick,
                 ).background(MaterialTheme.colorScheme.surface)
                 .padding(horizontal = 4.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -193,86 +271,190 @@ private fun ReminderListItem(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.weight(1f),
         )
+        IconButton(onClick = onClick) {
+            Icon(
+                imageVector = Icons.Outlined.Edit,
+                contentDescription = stringResource(R.string.edit_reminder),
+                modifier = Modifier.size(18.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        IconButton(onClick = onDeleteClick) {
+            Icon(
+                imageVector = Icons.Outlined.DeleteOutline,
+                contentDescription = stringResource(R.string.delete),
+                modifier = Modifier.size(18.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 
 @Composable
 fun AddReminderDialog(
+    reminder: RowReminder? = null,
     onSave: (targetRow: Int, repeatInterval: Int?, message: String) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    var rowText by rememberSaveable { mutableStateOf("") }
-    var selectedType by rememberSaveable { mutableIntStateOf(0) } // 0 = one-time, 1 = repeating
-    var intervalText by rememberSaveable { mutableStateOf("") }
-    var message by rememberSaveable { mutableStateOf("") }
+    var rowText by rememberSaveable(reminder?.id) {
+        mutableStateOf(reminder?.targetRow?.toString().orEmpty())
+    }
+    var selectedType by rememberSaveable(reminder?.id) {
+        mutableIntStateOf(if (reminder?.repeatInterval != null) 1 else 0)
+    }
+    var intervalText by rememberSaveable(reminder?.id) {
+        mutableStateOf(reminder?.repeatInterval?.toString().orEmpty())
+    }
+    var message by rememberSaveable(reminder?.id) { mutableStateOf(reminder?.message.orEmpty()) }
 
     val isRepeating = selectedType == 1
-    val rowNumber = rowText.toIntOrNull()
-    val interval = intervalText.toIntOrNull()
-    val canSave =
-        rowNumber != null &&
-            rowNumber > 0 &&
-            message.isNotBlank() &&
-            (!isRepeating || (interval != null && interval > 0))
+    val form =
+        ReminderDialogForm(
+            rowText = rowText,
+            selectedType = selectedType,
+            intervalText = intervalText,
+            message = message,
+        )
+    val validation = form.validation
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.add_reminder)) },
+        title = { ReminderDialogTitle(reminder = reminder) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                NumberInputField(
-                    value = rowText,
-                    onValueChange = { rowText = it },
-                    label = stringResource(R.string.row_number),
-                )
-                SegmentedToggle(
-                    options =
-                        listOf(
-                            stringResource(R.string.one_time),
-                            stringResource(R.string.repeating),
-                        ),
-                    selectedIndex = selectedType,
-                    onSelect = { selectedType = it },
-                )
-                if (isRepeating) {
-                    NumberInputField(
-                        value = intervalText,
-                        onValueChange = { intervalText = it },
-                        label = stringResource(R.string.repeat_every),
-                        suffix = stringResource(R.string.repeat_every_rows),
-                    )
-                }
-                TextField(
-                    value = message,
-                    onValueChange = { if (it.length <= 200) message = it },
-                    label = { Text(stringResource(R.string.reminder_message)) },
-                    placeholder = { Text(stringResource(R.string.reminder_message_hint)) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors =
-                        TextFieldDefaults.colors(
-                            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        ),
-                )
-            }
+            ReminderDialogFields(
+                form = form,
+                onRowTextChange = { rowText = it },
+                onSelectedTypeChange = { selectedType = it },
+                onIntervalTextChange = { intervalText = it },
+                onMessageChange = { message = limitReminderMessage(message, it) },
+            )
         },
         confirmButton = {
-            TextButton(
-                onClick = {
-                    rowNumber?.let { row ->
-                        onSave(row, if (isRepeating) interval else null, message.trim())
-                    }
-                },
-                enabled = canSave,
-            ) {
-                Text(stringResource(R.string.save))
-            }
+            ReminderDialogConfirmButton(
+                validation = validation,
+                isRepeating = isRepeating,
+                message = message,
+                onSave = onSave,
+            )
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cancel))
-            }
+            ReminderDialogDismissButton(onDismiss = onDismiss)
         },
     )
 }
+
+private const val REMINDER_MESSAGE_MAX_LENGTH = 200
+
+private data class ReminderDialogForm(
+    val rowText: String,
+    val selectedType: Int,
+    val intervalText: String,
+    val message: String,
+) {
+    val isRepeating: Boolean
+        get() = selectedType == 1
+
+    val validation: ReminderDialogValidation
+        get() {
+            val rowNumber = rowText.toIntOrNull()
+            val interval = intervalText.toIntOrNull()
+            return ReminderDialogValidation(
+                rowNumber = rowNumber,
+                interval = interval,
+                canSave =
+                    rowNumber != null &&
+                        rowNumber > 0 &&
+                        message.isNotBlank() &&
+                        (!isRepeating || (interval != null && interval > 0)),
+            )
+        }
+}
+
+private data class ReminderDialogValidation(
+    val rowNumber: Int?,
+    val interval: Int?,
+    val canSave: Boolean,
+)
+
+@Composable
+private fun ReminderDialogTitle(reminder: RowReminder?) {
+    Text(stringResource(if (reminder == null) R.string.add_reminder else R.string.edit_reminder))
+}
+
+@Composable
+private fun ReminderDialogFields(
+    form: ReminderDialogForm,
+    onRowTextChange: (String) -> Unit,
+    onSelectedTypeChange: (Int) -> Unit,
+    onIntervalTextChange: (String) -> Unit,
+    onMessageChange: (String) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        NumberInputField(
+            value = form.rowText,
+            onValueChange = onRowTextChange,
+            label = stringResource(R.string.row_number),
+        )
+        SegmentedToggle(
+            options =
+                listOf(
+                    stringResource(R.string.one_time),
+                    stringResource(R.string.repeating),
+                ),
+            selectedIndex = form.selectedType,
+            onSelect = onSelectedTypeChange,
+        )
+        if (form.isRepeating) {
+            NumberInputField(
+                value = form.intervalText,
+                onValueChange = onIntervalTextChange,
+                label = stringResource(R.string.repeat_every),
+                options = NumberInputOptions(suffix = stringResource(R.string.repeat_every_rows)),
+            )
+        }
+        TextField(
+            value = form.message,
+            onValueChange = onMessageChange,
+            label = { Text(stringResource(R.string.reminder_message)) },
+            placeholder = { Text(stringResource(R.string.reminder_message_hint)) },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+            colors =
+                TextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                ),
+        )
+    }
+}
+
+@Composable
+private fun ReminderDialogConfirmButton(
+    validation: ReminderDialogValidation,
+    isRepeating: Boolean,
+    message: String,
+    onSave: (targetRow: Int, repeatInterval: Int?, message: String) -> Unit,
+) {
+    TextButton(
+        onClick = {
+            validation.rowNumber?.let { row ->
+                onSave(row, if (isRepeating) validation.interval else null, message.trim())
+            }
+        },
+        enabled = validation.canSave,
+    ) {
+        Text(stringResource(R.string.save))
+    }
+}
+
+@Composable
+private fun ReminderDialogDismissButton(onDismiss: () -> Unit) {
+    TextButton(onClick = onDismiss) {
+        Text(stringResource(R.string.cancel))
+    }
+}
+
+private fun limitReminderMessage(
+    current: String,
+    next: String,
+): String = if (next.length <= REMINDER_MESSAGE_MAX_LENGTH) next else current

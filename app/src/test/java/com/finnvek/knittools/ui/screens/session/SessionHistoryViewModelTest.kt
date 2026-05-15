@@ -52,12 +52,15 @@ class SessionHistoryViewModelTest {
     private fun sessionAt(hoursAgo: Long): KnitSession {
         val time = System.currentTimeMillis() - TimeUnit.HOURS.toMillis(hoursAgo)
         return KnitSession(
+            id = hoursAgo,
             projectId = projectId,
             startedAt = time,
             endedAt = time + TimeUnit.MINUTES.toMillis(30),
             startRow = 0,
             endRow = 10,
             durationMinutes = 30,
+            durationSeconds = TimeUnit.MINUTES.toSeconds(30),
+            rowsWorked = 10,
         )
     }
 
@@ -103,6 +106,46 @@ class SessionHistoryViewModelTest {
             val result = vm.sessions.first()
 
             assertTrue(result.isEmpty())
+        }
+
+    @Test
+    fun `sessions are sorted newest first with id tie breaker`() =
+        runTest {
+            val timestamp = System.currentTimeMillis()
+            val older =
+                KnitSession(
+                    id = 1L,
+                    projectId = projectId,
+                    startedAt = timestamp - 1_000L,
+                    endedAt = timestamp,
+                    startRow = 0,
+                    endRow = 2,
+                    durationMinutes = 5,
+                    durationSeconds = TimeUnit.MINUTES.toSeconds(5),
+                    rowsWorked = 2,
+                )
+            val tieLowId = older.copy(id = 2L, startedAt = timestamp)
+            val tieHighId = older.copy(id = 3L, startedAt = timestamp)
+            coEvery { repository.getProject(projectId) } returns mockk()
+            every { repository.getSessionsForProject(projectId) } returns flowOf(listOf(older, tieLowId, tieHighId))
+            every { proManager.hasFeature(ProFeature.FULL_HISTORY) } returns true
+
+            val result = createViewModel().sessions.first()
+
+            assertEquals(listOf(3L, 2L, 1L), result.map { it.id })
+        }
+
+    @Test
+    fun `deleteSession delegates to repository`() =
+        runTest {
+            coEvery { repository.getProject(projectId) } returns mockk()
+            every { repository.getSessionsForProject(projectId) } returns flowOf(emptyList())
+            every { proManager.hasFeature(ProFeature.FULL_HISTORY) } returns true
+            coEvery { repository.deleteSession(7L) } returns Unit
+
+            createViewModel().deleteSession(7L)
+
+            io.mockk.coVerify { repository.deleteSession(7L) }
         }
 
     @Test

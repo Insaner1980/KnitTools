@@ -36,14 +36,18 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -59,6 +63,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.YarnCard
+import com.finnvek.knittools.domain.model.YarnCardStatus
 import com.finnvek.knittools.ui.components.BadgePill
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.StatusMessage
@@ -75,6 +80,7 @@ data class MyYarnState(
     val isScanning: Boolean = false,
     val statusMessage: String? = null,
     val statusActionLabel: String? = null,
+    val deleteErrorId: Long = 0L,
 )
 
 data class MyYarnActions(
@@ -101,8 +107,16 @@ fun MyYarnScreen(
     var showDeleteConfirmDialog by rememberSaveable { mutableStateOf(false) }
     var pendingPhotoUriString by rememberSaveable { mutableStateOf<String?>(null) }
     var scanPermissionMessageRes by rememberSaveable { mutableStateOf<Int?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val deleteFailedMessage = stringResource(R.string.ai_error_unknown)
     val context = LocalContext.current
     val pendingPhotoUri = pendingPhotoUriString?.let(Uri::parse)
+
+    LaunchedEffect(state.deleteErrorId) {
+        if (state.deleteErrorId > 0) {
+            snackbarHostState.showSnackbar(deleteFailedMessage)
+        }
+    }
 
     val cameraLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
@@ -192,6 +206,7 @@ fun MyYarnScreen(
                 onBack = displayActions.onBack,
             )
         },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         bottomBar = {
             SelectModeDeleteBar(
                 visible = displayState.isSelectMode && displayState.selectedYarnIds.isNotEmpty(),
@@ -583,7 +598,7 @@ private fun YarnCardContent(
             StatusPill(status = status)
             QuantityPill(quantity = card.quantityInStash)
         }
-        if (card.status == "IN_USE" && !linkedProjectName.isNullOrBlank()) {
+        if (card.status == YarnCardStatus.IN_USE && !linkedProjectName.isNullOrBlank()) {
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = stringResource(R.string.linked_project_arrow, linkedProjectName),

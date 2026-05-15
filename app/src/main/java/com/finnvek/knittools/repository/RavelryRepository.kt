@@ -32,7 +32,7 @@ class RavelryRepository
         suspend fun isPatternSaved(ravelryId: Int): Boolean = savedPatternRepository.getByRavelryId(ravelryId) != null
 
         suspend fun savePattern(detail: PatternDetail): Long =
-            savedPatternRepository.save(
+            savedPatternRepository.saveRavelryPatternIfMissing(
                 SavedPattern(
                     ravelryId = detail.id,
                     name = detail.name,

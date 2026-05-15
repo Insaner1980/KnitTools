@@ -226,6 +226,58 @@ class YarnCardViewModelTest {
         }
 
     @Test
+    fun `saveCard rejects blank yarn identity`() =
+        runTest {
+            every { proManager.hasFeature(ProFeature.OCR) } returns true
+            val vm = createViewModel()
+
+            var savedId: Long? = null
+            vm.saveCard { savedId = it }
+
+            coVerify(exactly = 0) { repository.saveCard(any()) }
+            assertNull(savedId)
+        }
+
+    @Test
+    fun `saveCard trims text fields before persisting`() =
+        runTest {
+            every { proManager.hasFeature(ProFeature.OCR) } returns true
+            coEvery { repository.saveCard(any()) } returns 1L
+            val vm = createViewModel()
+            vm.updateField {
+                copy(
+                    brand = "  Novita  ",
+                    yarnName = "  Nalle  ",
+                    weightGrams = "  100  ",
+                )
+            }
+
+            vm.saveCard {}
+
+            coVerify {
+                repository.saveCard(
+                    match {
+                        it.brand == "Novita" &&
+                            it.yarnName == "Nalle" &&
+                            it.weightGrams == "100"
+                    },
+                )
+            }
+        }
+
+    @Test
+    fun `saveCard rejects invalid numeric yarn values`() =
+        runTest {
+            every { proManager.hasFeature(ProFeature.OCR) } returns true
+            val vm = createViewModel()
+            vm.updateField { copy(yarnName = "Nalle", weightGrams = "heavy") }
+
+            vm.saveCard {}
+
+            coVerify(exactly = 0) { repository.saveCard(any()) }
+        }
+
+    @Test
     fun `scanWithGemini does not scan without pro`() =
         runTest {
             every { proManager.hasFeature(ProFeature.OCR) } returns false
@@ -289,6 +341,57 @@ class YarnCardViewModelTest {
 
             coVerify { repository.saveCard(any()) }
             assertEquals(1L, savedId)
+        }
+
+    @Test
+    fun `updateStatus ignores unsupported values`() =
+        runTest {
+            val vm = createViewModel()
+            vm.loadFromCard(YarnCard(id = 7L, status = "IN_STASH"))
+
+            vm.updateStatus("BROKEN")
+
+            assertEquals("IN_STASH", vm.formState.value.status)
+            coVerify(exactly = 0) { repository.updateStatus(any(), any()) }
+        }
+
+    @Test
+    fun `updateQuantity leaves detail state unchanged when card update is rejected`() =
+        runTest {
+            coEvery { repository.updateQuantity(7L, 4) } returns false
+            val vm = createViewModel()
+            vm.loadFromCard(YarnCard(id = 7L, quantityInStash = 3))
+
+            vm.updateQuantity(1)
+            advanceUntilIdle()
+
+            assertEquals(3, vm.formState.value.quantityInStash)
+        }
+
+    @Test
+    fun `updateStatus leaves detail state unchanged when card update is rejected`() =
+        runTest {
+            coEvery { repository.updateStatus(7L, "USED_UP") } returns false
+            val vm = createViewModel()
+            vm.loadFromCard(YarnCard(id = 7L, status = "IN_STASH"))
+
+            vm.updateStatus("USED_UP")
+            advanceUntilIdle()
+
+            assertEquals("IN_STASH", vm.formState.value.status)
+        }
+
+    @Test
+    fun `setLinkedProject leaves detail state unchanged when relink is rejected`() =
+        runTest {
+            coEvery { repository.updateLinkedProjectId(7L, 99L) } returns false
+            val vm = createViewModel()
+            vm.loadFromCard(YarnCard(id = 7L, linkedProjectId = null))
+
+            vm.setLinkedProject(99L)
+            advanceUntilIdle()
+
+            assertNull(vm.formState.value.linkedProjectId)
         }
 
     @Test

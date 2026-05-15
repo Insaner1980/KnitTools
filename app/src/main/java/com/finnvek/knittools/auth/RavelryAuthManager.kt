@@ -27,6 +27,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import java.io.IOException
+import java.security.MessageDigest
 import java.security.SecureRandom
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -57,6 +58,7 @@ class RavelryAuthManager
             private const val KEY_ACCESS_TOKEN = "access_token"
             private const val KEY_REFRESH_TOKEN = "refresh_token"
             private const val KEY_PENDING_STATE = "pending_state"
+            private const val KEY_PENDING_CODE_VERIFIER = "pending_code_verifier"
             private const val TAG = "RavelryAuthManager"
         }
 
@@ -84,6 +86,7 @@ class RavelryAuthManager
 
         // CSRF-suojaus: tallennetaan state OAuth-pyynnön ajaksi
         private var pendingState: String? = prefs.getString(KEY_PENDING_STATE, null)
+        private var pendingCodeVerifier: String? = prefs.getString(KEY_PENDING_CODE_VERIFIER, null)
 
         val accessToken: String? get() = prefs.getString(KEY_ACCESS_TOKEN, null)
         private val refreshToken: String? get() = prefs.getString(KEY_REFRESH_TOKEN, null)
@@ -95,7 +98,8 @@ class RavelryAuthManager
          */
         fun createOAuthUri(): Uri {
             val state = generateState()
-            savePendingState(state)
+            val codeVerifier = generateCodeVerifier()
+            savePendingGrant(state, codeVerifier)
 
             return AUTH_URL
                 .toUri()
@@ -105,6 +109,8 @@ class RavelryAuthManager
                 .appendQueryParameter("redirect_uri", REDIRECT_URI)
                 .appendQueryParameter("scope", SCOPE)
                 .appendQueryParameter("state", state)
+                .appendQueryParameter("code_challenge", codeVerifier.toCodeChallenge())
+                .appendQueryParameter("code_challenge_method", "S256")
                 .build()
         }
 
@@ -126,8 +132,14 @@ class RavelryAuthManager
             if (!isOAuthCallback(uri)) return false
 
             val expectedState = pendingState ?: prefs.getString(KEY_PENDING_STATE, null)
+            val codeVerifier = pendingCodeVerifier ?: prefs.getString(KEY_PENDING_CODE_VERIFIER, null)
             val state = uri.getQueryParameter("state")
-            if (state.isNullOrEmpty() || expectedState.isNullOrEmpty() || state != expectedState) {
+            if (
+                state.isNullOrEmpty() ||
+                expectedState.isNullOrEmpty() ||
+                codeVerifier.isNullOrEmpty() ||
+                state != expectedState
+            ) {
                 return true
             }
 
@@ -143,7 +155,7 @@ class RavelryAuthManager
             }
 
             try {
-                exchangeCodeForTokens(httpClient, code)
+                exchangeCodeForTokens(httpClient, code, codeVerifier)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: IOException) {
@@ -179,22 +191,35 @@ class RavelryAuthManager
         fun signOut() {
             prefs.edit { clear() }
             pendingState = null
+            pendingCodeVerifier = null
             _isAuthenticated.value = false
         }
 
-        private fun savePendingState(state: String) {
+        private fun savePendingGrant(
+            state: String,
+            codeVerifier: String,
+        ) {
             pendingState = state
-            prefs.edit { putString(KEY_PENDING_STATE, state) }
+            pendingCodeVerifier = codeVerifier
+            prefs.edit {
+                putString(KEY_PENDING_STATE, state)
+                putString(KEY_PENDING_CODE_VERIFIER, codeVerifier)
+            }
         }
 
         private fun clearPendingState() {
             pendingState = null
-            prefs.edit { remove(KEY_PENDING_STATE) }
+            pendingCodeVerifier = null
+            prefs.edit {
+                remove(KEY_PENDING_STATE)
+                remove(KEY_PENDING_CODE_VERIFIER)
+            }
         }
 
         private suspend fun exchangeCodeForTokens(
             httpClient: HttpClient,
             code: String,
+            codeVerifier: String,
         ): Boolean =
             requestTokens(
                 httpClient,
@@ -202,12 +227,13 @@ class RavelryAuthManager
                     "grant_type" to "authorization_code",
                     "code" to code,
                     "redirect_uri" to REDIRECT_URI,
+                    "code_verifier" to codeVerifier,
                 ),
             )
 
         /**
          * Lähettää token-pyynnön Ravelrylle.
-         * Client credentials lähetetään Basic Auth -headerissa (Ravelryn vaatimus).
+         * Ravelrylle ei ole backendia, joten client secret kulkee tietoisena client-riskinä.
          */
         @OptIn(ExperimentalEncodingApi::class)
         private suspend fun requestTokens(
@@ -245,6 +271,19 @@ class RavelryAuthManager
 
             _isAuthenticated.value = true
             return true
+        }
+
+        @OptIn(ExperimentalEncodingApi::class)
+        private fun generateCodeVerifier(): String {
+            val bytes = ByteArray(32)
+            SecureRandom().nextBytes(bytes)
+            return Base64.UrlSafe.encode(bytes).trimEnd('=')
+        }
+
+        @OptIn(ExperimentalEncodingApi::class)
+        private fun String.toCodeChallenge(): String {
+            val digest = MessageDigest.getInstance("SHA-256").digest(toByteArray())
+            return Base64.UrlSafe.encode(digest).trimEnd('=')
         }
 
         @OptIn(ExperimentalEncodingApi::class)

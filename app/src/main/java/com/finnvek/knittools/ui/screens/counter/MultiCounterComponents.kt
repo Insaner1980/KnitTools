@@ -46,6 +46,7 @@ import com.finnvek.knittools.domain.model.ProjectCounter
 import com.finnvek.knittools.domain.model.ProjectCounterDraft
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.NumberInputField
+import com.finnvek.knittools.ui.components.NumberInputOptions
 import com.finnvek.knittools.ui.components.SegmentedToggle
 
 data class CounterItemActions(
@@ -433,6 +434,7 @@ private fun isAddCounterFormValid(params: AddCounterFormParams): Boolean =
                     params.repeatStartRow != null &&
                         params.repeatEndRow != null &&
                         params.totalRepeats != null &&
+                        params.repeatStartRow > 0 &&
                         params.repeatStartRow <= params.repeatEndRow &&
                         params.totalRepeats > 0
                 )
@@ -540,7 +542,7 @@ private fun AddCounterDialogContent(
             value = state.stepSizeText,
             onValueChange = actions.onStepSizeChange,
             label = stringResource(R.string.step_size),
-            isLast = true,
+            options = NumberInputOptions(isLast = true),
         )
     }
 }
@@ -563,7 +565,7 @@ private fun ShapingFields(
         value = stitchChangeText,
         onValueChange = onStitchChangeChange,
         label = stringResource(R.string.stitch_change),
-        allowNegative = true,
+        options = NumberInputOptions(allowNegative = true),
     )
     NumberInputField(
         value = shapeEveryNText,

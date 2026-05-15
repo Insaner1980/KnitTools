@@ -99,6 +99,7 @@ import com.finnvek.knittools.BuildConfig
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.ProjectCounter
 import com.finnvek.knittools.domain.model.ProjectCounterDraft
+import com.finnvek.knittools.domain.model.RowReminder
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.ui.components.ConfirmationDialog
@@ -135,7 +136,9 @@ fun CounterScreen(
     var showYarnPicker by rememberSaveable { mutableStateOf(false) }
     var showYarnManagementSheet by rememberSaveable { mutableStateOf(false) }
     var showSummarySheet by rememberSaveable { mutableStateOf(false) }
+    var showRemindersSheet by rememberSaveable { mutableStateOf(false) }
     var showAddReminder by rememberSaveable { mutableStateOf(false) }
+    var editingReminderId by rememberSaveable { mutableStateOf<Long?>(null) }
     var showAddCounter by rememberSaveable { mutableStateOf(false) }
     var showStitchDialog by rememberSaveable { mutableStateOf(false) }
     var showPatternInfoSheet by rememberSaveable { mutableStateOf(false) }
@@ -158,7 +161,9 @@ fun CounterScreen(
         showYarnPicker = false
         showYarnManagementSheet = false
         showSummarySheet = false
+        showRemindersSheet = false
         showAddReminder = false
+        editingReminderId = null
         showAddCounter = false
         showStitchDialog = false
         showPatternInfoSheet = false
@@ -191,6 +196,13 @@ fun CounterScreen(
         requestCounterFeature(
             hasAccess = state.isPro,
             onOpenFeature = { showAddCounter = true },
+            onOpenUpgrade = openProUpgrade,
+        )
+    }
+    val requestRowReminders = {
+        requestCounterFeature(
+            hasAccess = state.isPro,
+            onOpenFeature = { showRemindersSheet = true },
             onOpenUpgrade = openProUpgrade,
         )
     }
@@ -250,10 +262,14 @@ fun CounterScreen(
         CounterDialogActionDependencies(
             viewModel = viewModel,
             projectId = state.projectId,
+            editingReminderId = editingReminderId,
             renameText = renameText,
             onRenameTextChange = { renameText = it },
             onBack = onBack,
-            onHideAddReminder = { showAddReminder = false },
+            onHideAddReminder = {
+                showAddReminder = false
+                editingReminderId = null
+            },
             onHideAddCounter = { showAddCounter = false },
             onHideResetDialog = { showResetDialog = false },
             onHideCompleteDialog = { showCompleteDialog = false },
@@ -322,13 +338,19 @@ fun CounterScreen(
                     viewModel.incrementStitch()
                 },
                 onShowTargetDialog = { showTargetDialog = true },
+                onDismissReminder = viewModel::dismissReminder,
             )
+        }
+    val reminderBeingEdited =
+        remember(editingReminderId, state.reminders) {
+            state.reminders.find { it.id == editingReminderId }
         }
 
     CounterScreenDialogs(
         state =
             CounterDialogState(
                 showAddReminder = showAddReminder,
+                editingReminder = reminderBeingEdited,
                 showAddCounter = showAddCounter,
                 showResetDialog = showResetDialog,
                 showCompleteDialog = showCompleteDialog,
@@ -384,6 +406,7 @@ fun CounterScreen(
         state =
             ProjectActionsSheetState(
                 linkedYarnCount = state.linkedYarns.size,
+                reminderCount = state.reminders.count { !it.isCompleted },
                 projectCounterCount = state.projectCounters.size,
                 stitchTrackingEnabled = state.stitchTrackingEnabled,
                 stitchCount = state.stitchCount,
@@ -399,7 +422,11 @@ fun CounterScreen(
                 },
                 onOpenNotes = {
                     showProjectActionsSheet = false
-                    state.projectId?.let(onNotesEditor)
+                    if (state.isPro) {
+                        showNotesSheet = true
+                    } else {
+                        openProUpgrade()
+                    }
                 },
                 onOpenSummary = {
                     showProjectActionsSheet = false
@@ -409,6 +436,10 @@ fun CounterScreen(
                 onOpenPhotos = {
                     showProjectActionsSheet = false
                     requestPhotoGallery()
+                },
+                onOpenReminders = {
+                    showProjectActionsSheet = false
+                    requestRowReminders()
                 },
                 onOpenCountersList = {
                     showProjectActionsSheet = false
@@ -435,7 +466,7 @@ fun CounterScreen(
                 },
                 onOpenSessionHistory = {
                     showProjectActionsSheet = false
-                    state.projectId?.let(onSessionHistory)
+                    viewModel.openSessionHistory(onSessionHistory)
                 },
                 onStartRename = {
                     showProjectActionsSheet = false
@@ -463,6 +494,25 @@ fun CounterScreen(
         actions = projectCountersActions,
         onDismiss = { showCountersListSheet = false },
     )
+
+    if (showRemindersSheet) {
+        RemindersSheet(
+            reminders = state.reminders,
+            currentRow = state.counter.count,
+            onAdd = {
+                showRemindersSheet = false
+                editingReminderId = null
+                showAddReminder = true
+            },
+            onEdit = { reminder ->
+                showRemindersSheet = false
+                editingReminderId = reminder.id
+                showAddReminder = true
+            },
+            onDelete = { reminderId -> viewModel.deleteReminder(reminderId) },
+            onDismiss = { showRemindersSheet = false },
+        )
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -740,6 +790,7 @@ private fun TriggerAlertHaptic(
 // Data-luokat CounterScreenDialogs-parametrien ryhmittelyyn (S107)
 data class CounterDialogState(
     val showAddReminder: Boolean,
+    val editingReminder: RowReminder?,
     val showAddCounter: Boolean,
     val showResetDialog: Boolean,
     val showCompleteDialog: Boolean,
@@ -776,6 +827,7 @@ private fun CounterScreenDialogs(
 ) {
     if (state.showAddReminder) {
         AddReminderDialog(
+            reminder = state.editingReminder,
             onSave = actions.onAddReminderSave,
             onDismiss = actions.onAddReminderDismiss,
         )
@@ -1193,6 +1245,7 @@ data class ProjectCountersSectionActions(
 private data class CounterDialogActionDependencies(
     val viewModel: CounterViewModel,
     val projectId: Long?,
+    val editingReminderId: Long?,
     val renameText: String,
     val onRenameTextChange: (String) -> Unit,
     val onBack: () -> Unit,
@@ -1233,6 +1286,7 @@ private data class CounterMainContentActions(
     val onDecrementStitch: () -> Unit,
     val onIncrementStitch: () -> Unit,
     val onShowTargetDialog: () -> Unit,
+    val onDismissReminder: (Long) -> Unit,
 )
 
 @Composable
@@ -1290,6 +1344,14 @@ private fun CounterScreenContent(
                     CounterMainNumber(state = state)
                     CounterTargetProgressBar(state = state, onShowTargetDialog = actions.onShowTargetDialog)
                 }
+            }
+            state.activeAlert?.let { reminder ->
+                ReminderAlertCard(
+                    reminder = reminder,
+                    currentRow = state.counter.count,
+                    onDismiss = actions.onDismissReminder,
+                    modifier = Modifier.padding(bottom = 12.dp),
+                )
             }
             CounterStitchTracker(state = state, actions = actions)
             CounterButtons(
@@ -2041,7 +2103,12 @@ private fun rememberCounterDialogActions(dependencies: CounterDialogActionDepend
     ) {
         CounterDialogActions(
             onAddReminderSave = { targetRow, repeatInterval, message ->
-                dependencies.viewModel.addReminder(targetRow, repeatInterval, message)
+                val editingReminderId = dependencies.editingReminderId
+                if (editingReminderId != null) {
+                    dependencies.viewModel.updateReminder(editingReminderId, targetRow, repeatInterval, message)
+                } else {
+                    dependencies.viewModel.addReminder(targetRow, repeatInterval, message)
+                }
                 dependencies.onHideAddReminder()
             },
             onAddReminderDismiss = dependencies.onHideAddReminder,

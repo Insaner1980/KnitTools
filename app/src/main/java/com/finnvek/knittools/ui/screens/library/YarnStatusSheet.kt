@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
+import com.finnvek.knittools.domain.model.YarnCardStatus
 import com.finnvek.knittools.ui.theme.knitToolsColors
 
 data class YarnStatusUi(
@@ -89,7 +90,7 @@ fun YarnStatusSheet(
 @Composable
 fun yarnStatusUi(status: String): YarnStatusUi =
     when (status) {
-        "IN_USE" -> {
+        YarnCardStatus.IN_USE -> {
             YarnStatusUi(
                 key = status,
                 label = stringResource(R.string.status_in_use),
@@ -98,7 +99,7 @@ fun yarnStatusUi(status: String): YarnStatusUi =
             )
         }
 
-        "FINISHED" -> {
+        YarnCardStatus.FINISHED -> {
             YarnStatusUi(
                 key = status,
                 label = stringResource(R.string.status_finished),
@@ -109,7 +110,7 @@ fun yarnStatusUi(status: String): YarnStatusUi =
 
         else -> {
             YarnStatusUi(
-                key = "IN_STASH",
+                key = YarnCardStatus.IN_STASH,
                 label = stringResource(R.string.status_in_stash),
                 containerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.15f),
                 contentColor = MaterialTheme.colorScheme.secondary,
@@ -120,7 +121,7 @@ fun yarnStatusUi(status: String): YarnStatusUi =
 @Composable
 fun yarnStatusOptions(): List<YarnStatusUi> =
     listOf(
-        yarnStatusUi("IN_STASH"),
-        yarnStatusUi("IN_USE"),
-        yarnStatusUi("FINISHED"),
+        yarnStatusUi(YarnCardStatus.IN_STASH),
+        yarnStatusUi(YarnCardStatus.IN_USE),
+        yarnStatusUi(YarnCardStatus.FINISHED),
     )

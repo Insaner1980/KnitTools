@@ -290,4 +290,26 @@ class CounterRepositoryDomainApiTest {
                 savedPatternRepository.deleteLocalPatternFileIfUnused(patternUri)
             }
         }
+
+    @Test
+    fun `attachPattern asks saved pattern repository to clean replaced local PDF`() =
+        runTest {
+            val oldPatternUri = "file:///data/user/0/com.finnvek.knittools/files/pattern_pdfs/7/old.pdf"
+            val newPatternUri = "file:///data/user/0/com.finnvek.knittools/files/pattern_pdfs/7/new.pdf"
+            coEvery { projectDao.getProject(7L) } returns CounterProjectEntity(id = 7L, patternUri = oldPatternUri)
+
+            repository.attachPattern(7L, newPatternUri, "New pattern", 0, null)
+
+            coVerifyOrder {
+                projectDao.updatePattern(
+                    id = 7L,
+                    patternUri = newPatternUri,
+                    patternName = "New pattern",
+                    currentPatternPage = 0,
+                    patternRowMapping = null,
+                    updatedAt = any(),
+                )
+                savedPatternRepository.deleteLocalPatternFileIfUnused(oldPatternUri)
+            }
+        }
 }

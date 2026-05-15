@@ -26,16 +26,20 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 
+data class NumberInputOptions(
+    val isDecimal: Boolean = false,
+    val allowNegative: Boolean = false,
+    val suffix: String? = null,
+    val isLast: Boolean = false,
+)
+
 @Composable
 fun NumberInputField(
     value: String,
     onValueChange: (String) -> Unit,
     label: String,
     modifier: Modifier = Modifier,
-    isDecimal: Boolean = false,
-    allowNegative: Boolean = false,
-    suffix: String? = null,
-    isLast: Boolean = false,
+    options: NumberInputOptions = NumberInputOptions(),
 ) {
     val focusManager = LocalFocusManager.current
     val interactionSource = remember { MutableInteractionSource() }
@@ -52,7 +56,7 @@ fun NumberInputField(
         TextField(
             value = value,
             onValueChange = { newValue ->
-                onValueChange(filterNumericInput(newValue, isDecimal, allowNegative))
+                onValueChange(filterNumericInput(newValue, options.isDecimal, options.allowNegative))
             },
             modifier =
                 Modifier
@@ -72,8 +76,8 @@ fun NumberInputField(
             textStyle = MaterialTheme.typography.titleSmall,
             keyboardOptions =
                 KeyboardOptions(
-                    keyboardType = numericKeyboardType(isDecimal, allowNegative),
-                    imeAction = if (isLast) ImeAction.Done else ImeAction.Next,
+                    keyboardType = numericKeyboardType(options.isDecimal, options.allowNegative),
+                    imeAction = if (options.isLast) ImeAction.Done else ImeAction.Next,
                 ),
             keyboardActions =
                 KeyboardActions(
@@ -82,7 +86,7 @@ fun NumberInputField(
                 ),
             singleLine = true,
             suffix =
-                suffix?.let {
+                options.suffix?.let {
                     {
                         Text(
                             text = it,

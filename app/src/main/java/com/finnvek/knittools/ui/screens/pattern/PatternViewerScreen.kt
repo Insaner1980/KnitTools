@@ -300,6 +300,7 @@ private fun rememberPatternRenderState(
     onPageClamped: (Int) -> Unit,
 ): PatternRenderState {
     val context = LocalContext.current
+    val patternOpenFailed = stringResource(R.string.pattern_open_failed)
     var renderer by remember(patternUri) { mutableStateOf<PdfPageRenderer?>(null) }
     var rendererError by remember(patternUri) { mutableStateOf<String?>(null) }
 
@@ -319,8 +320,8 @@ private fun rememberPatternRenderState(
                 if (currentPage > maxPage) {
                     onPageClamped(maxPage)
                 }
-            }.onFailure { error ->
-                rendererError = error.message
+            }.onFailure {
+                rendererError = patternOpenFailed
             }
     }
 

@@ -44,7 +44,8 @@ class ShapingCounterSourceTest {
     fun `voice shaping query uses shaping counter row instead of main project row`() {
         val source = ProjectSourceFiles.read(COUNTER_VIEW_MODEL)
         val voiceQuery =
-            source.substringAfter("private fun voiceQueryShaping")
+            source
+                .substringAfter("private fun voiceQueryShaping")
                 .substringBefore("private fun voiceQueryCounters")
 
         assertTrue(voiceQuery.contains("shaping.count % shaping.shapeEveryN"))

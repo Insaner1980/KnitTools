@@ -70,7 +70,9 @@ import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.StatusMessage
 import com.finnvek.knittools.ui.components.StatusMessageType
+import com.finnvek.knittools.ui.screens.library.SavedPatternRouteTarget
 import com.finnvek.knittools.ui.screens.library.SelectionIndicator
+import com.finnvek.knittools.ui.screens.library.routeTarget
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Suppress("UNUSED_PARAMETER")
@@ -481,6 +483,17 @@ private fun SavedPatternItem(
         } else {
             MaterialTheme.colorScheme.surfaceVariant
         }
+    val openPattern = {
+        when (val target = pattern.routeTarget()) {
+            is SavedPatternRouteTarget.LocalPattern -> {
+                onLocalPatternClick(target.savedPatternId)
+            }
+
+            is SavedPatternRouteTarget.RavelryPattern -> {
+                onPatternClick(target.ravelryId)
+            }
+        }
+    }
 
     Box(
         modifier =
@@ -490,10 +503,8 @@ private fun SavedPatternItem(
                     onClick = {
                         if (isSelectMode) {
                             onToggleSelection(pattern.id)
-                        } else if (pattern.ravelryId > 0) {
-                            onPatternClick(pattern.ravelryId)
                         } else {
-                            onLocalPatternClick(pattern.id)
+                            openPattern()
                         }
                     },
                     onLongClick = {
@@ -512,10 +523,8 @@ private fun SavedPatternItem(
             onClick = {
                 if (isSelectMode) {
                     onToggleSelection(pattern.id)
-                } else if (pattern.ravelryId > 0) {
-                    onPatternClick(pattern.ravelryId)
                 } else {
-                    onLocalPatternClick(pattern.id)
+                    openPattern()
                 }
             },
             modifier = Modifier.background(backgroundColor, MaterialTheme.shapes.large),

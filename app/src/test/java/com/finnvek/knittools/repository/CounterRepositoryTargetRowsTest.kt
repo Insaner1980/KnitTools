@@ -7,8 +7,6 @@ import com.finnvek.knittools.data.local.CounterProjectEntity
 import com.finnvek.knittools.data.local.ImmediateDatabaseTransactionRunner
 import com.finnvek.knittools.data.local.SessionDao
 import com.finnvek.knittools.data.local.SessionEntity
-import com.finnvek.knittools.data.local.SessionInsightsTotals
-import com.finnvek.knittools.data.local.SessionProjectSummary
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -280,19 +278,14 @@ private class StubSessionDao : SessionDao {
 
     override suspend fun insert(session: SessionEntity): Long = 0L
 
+    override suspend fun deleteById(id: Long) = Unit
+
     override suspend fun deleteSessionsBefore(
         projectId: Long,
         before: Long,
     ) = Unit
 
     override suspend fun getTotalMinutes(projectId: Long): Int = 0
-
-    override fun getTotalDurationMinutes(projectId: Long?): Flow<Int> = flowOf(0)
-
-    override fun getInsightsTotals(
-        projectId: Long?,
-        start: Long?,
-    ): Flow<SessionInsightsTotals> = flowOf(SessionInsightsTotals(0, 0, 0))
 
     override fun getSessionsInRange(
         start: Long,
@@ -306,11 +299,6 @@ private class StubSessionDao : SessionDao {
         projectId: Long?,
         start: Long?,
     ): Flow<List<SessionEntity>> = flowOf(emptyList())
-
-    override fun getProjectTimeSummaries(
-        projectId: Long?,
-        start: Long?,
-    ): Flow<List<SessionProjectSummary>> = flowOf(emptyList())
 
     override suspend fun getLatestSession(projectId: Long): SessionEntity? = null
 

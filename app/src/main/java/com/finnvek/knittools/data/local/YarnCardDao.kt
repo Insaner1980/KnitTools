@@ -7,11 +7,14 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface YarnCardDao {
-    @Query("SELECT * FROM yarn_cards ORDER BY createdAt DESC")
+    @Query("SELECT * FROM yarn_cards ORDER BY createdAt DESC, id DESC")
     fun getAllCards(): Flow<List<YarnCardEntity>>
 
     @Query("SELECT * FROM yarn_cards WHERE id = :id")
     suspend fun getCard(id: Long): YarnCardEntity?
+
+    @Query("SELECT * FROM yarn_cards WHERE id = :id")
+    fun observeCard(id: Long): Flow<YarnCardEntity?>
 
     @Query("SELECT * FROM yarn_cards WHERE id IN (:ids)")
     suspend fun getCards(ids: List<Long>): List<YarnCardEntity>
@@ -26,19 +29,19 @@ interface YarnCardDao {
     suspend fun updateQuantity(
         id: Long,
         quantity: Int,
-    )
+    ): Int
 
     @Query("UPDATE yarn_cards SET status = :status WHERE id = :id")
     suspend fun updateStatus(
         id: Long,
         status: String,
-    )
+    ): Int
 
     @Query("UPDATE yarn_cards SET linkedProjectId = :projectId WHERE id = :id")
     suspend fun updateLinkedProjectId(
         id: Long,
         projectId: Long?,
-    )
+    ): Int
 
     @Query("UPDATE yarn_cards SET linkedProjectId = NULL WHERE linkedProjectId = :projectId")
     suspend fun clearLinkedProject(projectId: Long)

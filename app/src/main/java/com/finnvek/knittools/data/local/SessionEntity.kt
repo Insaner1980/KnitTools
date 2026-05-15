@@ -1,5 +1,6 @@
 package com.finnvek.knittools.data.local
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -29,4 +30,8 @@ data class SessionEntity(
     val startRow: Int,
     val endRow: Int,
     val durationMinutes: Int,
+    @ColumnInfo(defaultValue = "0")
+    val durationSeconds: Long = durationMinutes.toLong() * 60L,
+    @ColumnInfo(defaultValue = "0")
+    val rowsWorked: Int = (endRow - startRow).coerceAtLeast(0),
 )

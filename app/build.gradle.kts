@@ -1,4 +1,5 @@
 import com.android.build.api.variant.BuildConfigField
+import org.gradle.testing.jacoco.tasks.JacocoReport
 import java.io.StringReader
 import java.util.Properties
 
@@ -14,6 +15,7 @@ plugins {
     alias(libs.plugins.detekt)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.google.services)
+    jacoco
 }
 
 val releaseSigningEnvPrefix = "KNITTOOLS" // Change to your app name, e.g. "KNITTOOLS"
@@ -310,7 +312,7 @@ gradle.taskGraph.whenReady {
                 }
                 if (!embeddedRavelryCredentialsAllowed) {
                     add(
-                        "Release build upottaa Ravelry-credentialit BuildConfigiin. " +
+                        "Release build upottaa Ravelry-credentialit BuildConfigiin tietoisena riskinä. " +
                             "Aseta KNITTOOLS_ALLOW_EMBEDDED_RAVELRY_SECRETS=true jatkaaksesi.",
                     )
                 }
@@ -360,6 +362,57 @@ tasks.configureEach {
     if (name.startsWith("hiltJavaCompile") && name.endsWith("UnitTest")) {
         enabled = false
     }
+}
+
+tasks.register<JacocoReport>("jacocoDebugUnitTestReport") {
+    group = "verification"
+    description = "Luo debug-unit-testien JaCoCo XML- ja HTML-kattavuusraportit."
+
+    dependsOn("testDebugUnitTest")
+
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+    }
+
+    sourceDirectories.setFrom(files("src/main/java"))
+    classDirectories.setFrom(
+        files(
+            fileTree(layout.buildDirectory.dir("intermediates/built_in_kotlinc/debug/compileDebugKotlin/classes")) {
+                exclude(
+                    "**/BuildConfig.*",
+                    "**/R.class",
+                    "**/R$*.class",
+                    "**/*Test*.*",
+                    "**/*ComposableSingletons*.*",
+                    "**/*_Factory.*",
+                    "**/*_HiltModules*.*",
+                    "**/*Hilt*.*",
+                    "**/*Dagger*.*",
+                )
+            },
+            fileTree(layout.buildDirectory.dir("intermediates/javac/debug/classes")) {
+                exclude(
+                    "**/BuildConfig.*",
+                    "**/R.class",
+                    "**/R$*.class",
+                    "**/*Test*.*",
+                    "**/*_Factory.*",
+                    "**/*_HiltModules*.*",
+                    "**/*Hilt*.*",
+                    "**/*Dagger*.*",
+                )
+            },
+        ),
+    )
+    executionData.setFrom(
+        fileTree(layout.buildDirectory) {
+            include(
+                "jacoco/testDebugUnitTest.exec",
+                "outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec",
+            )
+        },
+    )
 }
 
 dependencies {

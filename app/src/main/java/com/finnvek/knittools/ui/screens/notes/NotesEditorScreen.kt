@@ -83,8 +83,7 @@ fun NotesEditorScreen(
     }
 
     BackHandler {
-        viewModel.saveImmediately()
-        onBack()
+        viewModel.saveImmediately(onBack)
     }
 
     Scaffold(
@@ -100,8 +99,7 @@ fun NotesEditorScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = {
-                        viewModel.saveImmediately()
-                        onBack()
+                        viewModel.saveImmediately(onBack)
                     }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -113,8 +111,7 @@ fun NotesEditorScreen(
                     TextButton(
                         onClick = {
                             if (!state.isPro) {
-                                viewModel.saveImmediately()
-                                onUpgradeToPro()
+                                viewModel.saveImmediately(onUpgradeToPro)
                             } else {
                                 showJournalSheet = true
                             }
@@ -140,6 +137,7 @@ fun NotesEditorScreen(
             TextField(
                 value = state.notes,
                 onValueChange = viewModel::onNotesChanged,
+                enabled = state.isPro,
                 modifier =
                     Modifier
                         .fillMaxSize()

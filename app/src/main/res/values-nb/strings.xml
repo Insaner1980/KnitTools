@@ -151,6 +151,8 @@
     <string name="no_sessions">Ingen økter registrert ennå. Begynn å strikke for å se historikken her.</string>
     <string name="session_row_range">Rader %1$d \u2192 %2$d</string>
     <string name="session_duration_format">%1$dt %2$dm</string>
+    <string name="delete_session_title">Slette økt?</string>
+    <string name="delete_session_message">Slette denne økten fra historikken? Dette kan ikke angres.</string>
     <string name="pro_full_history_hint">Oppgrader til Pro for full økthistorikk</string>
 
     <!-- Settings -->
@@ -472,7 +474,10 @@
     <string name="restart">Start på nytt</string>
 
     <!-- Row Reminders -->
+    <string name="reminders">Påminnelser</string>
     <string name="add_reminder">Legg til påminnelse</string>
+    <string name="edit_reminder">Rediger påminnelse</string>
+    <string name="no_reminders">Ingen påminnelser ennå</string>
     <string name="delete_reminder_title">Slette påminnelse?</string>
     <string name="delete_reminder_confirm">Slette påminnelsen \"%1$s\"?</string>
     <string name="row_number">Radnummer</string>

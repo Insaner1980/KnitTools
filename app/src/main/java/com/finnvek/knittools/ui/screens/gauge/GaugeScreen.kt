@@ -42,6 +42,7 @@ import com.finnvek.knittools.ui.components.AnimatedResultNumber
 import com.finnvek.knittools.ui.components.BadgePill
 import com.finnvek.knittools.ui.components.InfoTip
 import com.finnvek.knittools.ui.components.NumberInputField
+import com.finnvek.knittools.ui.components.NumberInputOptions
 import com.finnvek.knittools.ui.components.PasteInstructionButton
 import com.finnvek.knittools.ui.components.ResultCard
 import com.finnvek.knittools.ui.components.SectionHeader
@@ -306,15 +307,15 @@ private fun YourGaugeSection(
                     value = state.yourSt,
                     onValueChange = actions.onYourStChange,
                     label = stringResource(R.string.stitches_gauge, state.gaugeUnit),
-                    isDecimal = true,
                     modifier = Modifier.fillMaxWidth(),
+                    options = NumberInputOptions(isDecimal = true),
                 )
                 NumberInputField(
                     value = state.yourRows,
                     onValueChange = actions.onYourRowsChange,
                     label = stringResource(R.string.rows_gauge, state.gaugeUnit),
-                    isDecimal = true,
                     modifier = Modifier.fillMaxWidth(),
+                    options = NumberInputOptions(isDecimal = true),
                 )
             }
         }
@@ -348,31 +349,29 @@ private fun SwatchMeasurementFields(
         value = state.swatchWidth,
         onValueChange = actions.onSwatchWidthChange,
         label = stringResource(R.string.measured_width),
-        isDecimal = true,
-        suffix = state.unit,
         modifier = Modifier.fillMaxWidth(),
+        options = NumberInputOptions(isDecimal = true, suffix = state.unit),
     )
     NumberInputField(
         value = state.swatchStitches,
         onValueChange = actions.onSwatchStitchesChange,
         label = stringResource(R.string.stitch_count_in_swatch),
-        suffix = stringResource(R.string.unit_st),
         modifier = Modifier.fillMaxWidth(),
+        options = NumberInputOptions(suffix = stringResource(R.string.unit_st)),
     )
     NumberInputField(
         value = state.swatchHeight,
         onValueChange = actions.onSwatchHeightChange,
         label = stringResource(R.string.measured_height),
-        isDecimal = true,
-        suffix = state.unit,
         modifier = Modifier.fillMaxWidth(),
+        options = NumberInputOptions(isDecimal = true, suffix = state.unit),
     )
     NumberInputField(
         value = state.swatchRows,
         onValueChange = actions.onSwatchRowsChange,
         label = stringResource(R.string.row_count_in_swatch),
-        suffix = stringResource(R.string.unit_rows),
         modifier = Modifier.fillMaxWidth(),
+        options = NumberInputOptions(suffix = stringResource(R.string.unit_rows)),
     )
     state.swatchResult?.let { sr ->
         Text(
@@ -437,15 +436,15 @@ private fun GaugeSection(
         value = stitches,
         onValueChange = onStitchesChange,
         label = stringResource(R.string.stitches_gauge, gaugeUnit),
-        isDecimal = true,
         modifier = Modifier.fillMaxWidth(),
+        options = NumberInputOptions(isDecimal = true),
     )
     NumberInputField(
         value = rows,
         onValueChange = onRowsChange,
         label = stringResource(R.string.rows_gauge, gaugeUnit),
-        isDecimal = true,
         modifier = Modifier.fillMaxWidth(),
+        options = NumberInputOptions(isDecimal = true),
     )
 }
 
@@ -466,16 +465,19 @@ private fun PatternInputSection(
         value = stitchCount,
         onValueChange = onStitchCountChange,
         label = stringResource(R.string.stitches_in_pattern),
-        suffix = stringResource(R.string.unit_st),
         modifier = Modifier.fillMaxWidth(),
+        options = NumberInputOptions(suffix = stringResource(R.string.unit_st)),
     )
     NumberInputField(
         value = rowCount,
         onValueChange = onRowCountChange,
         label = stringResource(R.string.rows_in_pattern),
-        suffix = stringResource(R.string.unit_rows),
         modifier = Modifier.fillMaxWidth(),
-        isLast = true,
+        options =
+            NumberInputOptions(
+                suffix = stringResource(R.string.unit_rows),
+                isLast = true,
+            ),
     )
 }
 

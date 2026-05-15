@@ -74,7 +74,6 @@ private val HIDE_BOTTOM_BAR_ROUTES =
         Screen.ProUpgrade.route,
         Screen.YarnCardReview.route,
         Screen.LibraryYarnCardReview.route,
-        Screen.YarnCardDetail.ROUTE,
         Screen.PatternViewer.ROUTE,
         Screen.LibraryPatternViewer.ROUTE,
         Screen.NotesEditor.ROUTE,
@@ -484,12 +483,14 @@ private fun NavGraphBuilder.librarySavedPatternsRoute(navController: NavHostCont
         val patterns by libraryViewModel.savedPatterns.collectAsStateWithLifecycle(initialValue = emptyList())
         val isPatternSelectMode by libraryViewModel.isPatternSelectMode.collectAsStateWithLifecycle()
         val selectedPatternIds by libraryViewModel.selectedPatternIds.collectAsStateWithLifecycle()
+        val patternDeleteErrorId by libraryViewModel.patternDeleteErrorId.collectAsStateWithLifecycle()
         SavedPatternsScreen(
             state =
                 SavedPatternsState(
                     patterns = patterns,
                     isSelectMode = isPatternSelectMode,
                     selectedPatternIds = selectedPatternIds,
+                    deleteErrorId = patternDeleteErrorId,
                 ),
             actions =
                 SavedPatternsActions(
@@ -592,6 +593,7 @@ private fun NavGraphBuilder.libraryMyYarnRoute(navController: NavHostController)
         )
         val isYarnSelectMode by libraryViewModel.isYarnSelectMode.collectAsStateWithLifecycle()
         val selectedYarnIds by libraryViewModel.selectedYarnIds.collectAsStateWithLifecycle()
+        val yarnDeleteErrorId by libraryViewModel.yarnDeleteErrorId.collectAsStateWithLifecycle()
         val yarnFormState by yarnCardViewModel.formState.collectAsStateWithLifecycle()
         val canScanYarnLabel = yarnCardViewModel.isPro
 
@@ -604,6 +606,7 @@ private fun NavGraphBuilder.libraryMyYarnRoute(navController: NavHostController)
                     selectedYarnIds = selectedYarnIds,
                     isScanning = yarnFormState.isScanning,
                     statusMessage = yarnFormState.scanError,
+                    deleteErrorId = yarnDeleteErrorId,
                 ),
             actions =
                 myYarnActions(
@@ -707,12 +710,19 @@ private fun NavGraphBuilder.libraryYarnCardDetailRoute(
             }
         val yarnCardViewModel: YarnCardViewModel = hiltViewModel(parentEntry)
         var cardRouteReady by remember(cardId) { mutableStateOf(false) }
+        var localDeleteInProgress by remember(cardId) { mutableStateOf(false) }
         LaunchedEffect(cardId) {
             cardRouteReady = false
-            yarnCardViewModel.loadCardForDetail(cardId) { loaded ->
-                if (!loaded) {
-                    navController.popBackStackOrNavigateToTopLevel(TopLevelDestination.Library)
+            localDeleteInProgress = false
+            yarnCardViewModel.observeCardForDetail(cardId).collect { card ->
+                if (card == null) {
+                    cardRouteReady = false
+                    yarnCardViewModel.clearFormState()
+                    if (!localDeleteInProgress) {
+                        navController.popBackStackOrNavigateToTopLevel(TopLevelDestination.Library)
+                    }
                 } else {
+                    yarnCardViewModel.loadFromCard(card)
                     cardRouteReady = true
                 }
             }
@@ -735,6 +745,13 @@ private fun NavGraphBuilder.libraryYarnCardDetailRoute(
             onOpenLinkedProject = { projectId ->
                 yarnCardViewModel.clearFormState()
                 onLaunchCounter(projectId)
+            },
+            onDeleteCard = { deletedCardId ->
+                localDeleteInProgress = true
+                yarnCardViewModel.deleteCard(deletedCardId) {
+                    yarnCardViewModel.clearFormState()
+                    navController.popBackStackOrNavigateToTopLevel(TopLevelDestination.Library)
+                }
             },
         )
     }

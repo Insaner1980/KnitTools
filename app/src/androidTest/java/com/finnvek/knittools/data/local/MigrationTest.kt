@@ -14,8 +14,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Testaa Room-migraatiot v1→v9.
- * v1→v3: AutoMigration. v3→v9: manuaaliset muutokset.
+ * Testaa Room-migraatiot v1→v10.
+ * v1→v3: AutoMigration. v3→v10: manuaaliset muutokset.
  */
 @RunWith(AndroidJUnit4::class)
 class MigrationTest {
@@ -34,9 +34,10 @@ class MigrationTest {
             KnitToolsDatabase.MIGRATION_6_7,
             KnitToolsDatabase.MIGRATION_7_8,
             KnitToolsDatabase.MIGRATION_8_9,
+            KnitToolsDatabase.MIGRATION_9_10,
         )
 
-    private val latestVersion = 9
+    private val latestVersion = 10
 
     private fun migrateToLatest(testDb: String): SupportSQLiteDatabase =
         helper.runMigrationsAndValidate(
@@ -290,20 +291,12 @@ class MigrationTest {
         assertEquals(0, photoCursor.getInt(0))
         photoCursor.close()
 
-        // Varmista backfill: projekti 1 (secondaryCount=4) tuotti project_counters-rivin
+        // Legacy secondaryCount säilyy vain counter_projects-taulussa.
         val counterCursor =
             db.query(
                 "SELECT projectId, name, count, stepSize, repeatAt, sortOrder FROM project_counters ORDER BY projectId",
             )
-        assertTrue(counterCursor.moveToFirst())
-        assertEquals(1L, counterCursor.getLong(0)) // projectId
-        assertEquals("Pattern repeat", counterCursor.getString(1)) // name
-        assertEquals(4, counterCursor.getInt(2)) // count = secondaryCount
-        assertEquals(8, counterCursor.getInt(3)) // stepSize
-        assertEquals(8, counterCursor.getInt(4)) // repeatAt = stepSize
-        assertEquals(0, counterCursor.getInt(5)) // sortOrder
-        // Ei toista riviä — projekti 2 (secondaryCount=0) ei tuottanut backfilliä
-        assertFalse(counterCursor.moveToNext())
+        assertFalse(counterCursor.moveToFirst())
         counterCursor.close()
 
         // Alkuperäinen data säilyi
@@ -349,13 +342,10 @@ class MigrationTest {
         assertEquals("", projectCursor.getString(4))
         projectCursor.close()
 
-        // Backfill tuotti laskurin
+        // Legacy secondaryCount ei tuota erillistä project_counters-riviä.
         val counterCursor =
             db.query("SELECT name, count, repeatAt FROM project_counters WHERE projectId = 1")
-        assertTrue(counterCursor.moveToFirst())
-        assertEquals("Pattern repeat", counterCursor.getString(0))
-        assertEquals(3, counterCursor.getInt(1))
-        assertEquals(4, counterCursor.getInt(2))
+        assertFalse(counterCursor.moveToFirst())
         counterCursor.close()
 
         // Kaikki uudet taulut olemassa
@@ -506,13 +496,10 @@ class MigrationTest {
         assertTrue(projectCursor.isNull(2)) // linkedPatternId = NULL (v4→v5)
         projectCursor.close()
 
-        // Backfill v3→v4 tuotti laskurin, v5→v6 asetti sen REPEATING-tyypiksi
+        // Legacy secondaryCount ei tuota erillistä project_counters-riviä.
         val counterCursor =
             db.query("SELECT name, count, counterType FROM project_counters WHERE projectId = 1")
-        assertTrue(counterCursor.moveToFirst())
-        assertEquals("Pattern repeat", counterCursor.getString(0))
-        assertEquals(3, counterCursor.getInt(1))
-        assertEquals("REPEATING", counterCursor.getString(2))
+        assertFalse(counterCursor.moveToFirst())
         counterCursor.close()
 
         // yarn_cards uudet kentät olemassa
@@ -650,12 +637,7 @@ class MigrationTest {
                 FROM project_counters WHERE projectId = 1
                 """.trimIndent(),
             )
-        assertTrue(counterCursor.moveToFirst())
-        assertEquals("Pattern repeat", counterCursor.getString(0))
-        assertEquals(3, counterCursor.getInt(1))
-        assertEquals("REPEATING", counterCursor.getString(2))
-        assertTrue(counterCursor.isNull(3))
-        assertTrue(counterCursor.isNull(4))
+        assertFalse(counterCursor.moveToFirst())
         counterCursor.close()
 
         val annotationCursor = db.query("SELECT COUNT(*) FROM pattern_annotations")
@@ -770,8 +752,59 @@ class MigrationTest {
     }
 
     @Test
-    fun migrate2to9PreservesYarnCards() {
-        val testDb = "migration-test-v2-to-v9"
+    fun migrate9to10BackfillsSessionSecondsAndRowsWorked() {
+        val testDb = "migration-test-v9-to-v10"
+
+        helper.createDatabase(testDb, 9).apply {
+            execSQL(
+                """
+                INSERT INTO counter_projects (
+                    id, name, count, secondaryCount, stepSize, notes, createdAt, updatedAt,
+                    sectionName, stitchCount, isCompleted, totalRows, completedAt, yarnCardIds,
+                    linkedPatternId, patternUri, patternName, currentPatternPage, patternRowMapping,
+                    stitchTrackingEnabled, currentStitch, targetRows
+                ) VALUES (
+                    1, 'Session timing project', 10, 0, 1, '', 1000, 2000,
+                    NULL, NULL, 0, NULL, NULL, '',
+                    NULL, NULL, NULL, 0, NULL,
+                    0, 0, 72
+                )
+                """.trimIndent(),
+            )
+            execSQL(
+                """
+                INSERT INTO sessions (
+                    id, projectId, startedAt, endedAt, startRow, endRow, durationMinutes
+                ) VALUES (
+                    1, 1, 1000, 2000, 4, 9, 12
+                )
+                """.trimIndent(),
+            )
+            close()
+        }
+
+        val db =
+            helper.runMigrationsAndValidate(
+                testDb,
+                10,
+                true,
+                KnitToolsDatabase.MIGRATION_9_10,
+            )
+
+        assertSingleRow(
+            db,
+            "SELECT durationSeconds, rowsWorked FROM sessions WHERE id = 1",
+        ) {
+            assertEquals(720L, getLong(0))
+            assertEquals(5, getInt(1))
+        }
+
+        db.close()
+    }
+
+    @Test
+    fun migrate2toLatestPreservesYarnCards() {
+        val testDb = "migration-test-v2-to-latest"
 
         helper.createDatabase(testDb, 2).apply {
             execSQL(
@@ -841,8 +874,8 @@ class MigrationTest {
     }
 
     @Test
-    fun migrate3to9PreservesSessionsAndBackfilledCounters() {
-        val testDb = "migration-test-v3-to-v9"
+    fun migrate3toLatestPreservesSessionsAndLegacySecondaryCounter() {
+        val testDb = "migration-test-v3-to-latest"
 
         helper.createDatabase(testDb, 3).apply {
             execSQL(
@@ -888,7 +921,11 @@ class MigrationTest {
         }
         assertSingleRow(
             db,
-            "SELECT projectId, startedAt, endedAt, startRow, endRow, durationMinutes FROM sessions WHERE id = 1",
+            """
+            SELECT projectId, startedAt, endedAt, startRow, endRow, durationMinutes,
+                durationSeconds, rowsWorked
+            FROM sessions WHERE id = 1
+            """.trimIndent(),
         ) {
             assertEquals(1L, getLong(0))
             assertEquals(4000L, getLong(1))
@@ -896,25 +933,23 @@ class MigrationTest {
             assertEquals(12, getInt(3))
             assertEquals(18, getInt(4))
             assertEquals(10, getInt(5))
+            assertEquals(600L, getLong(6))
+            assertEquals(6, getInt(7))
         }
-        assertSingleRow(
-            db,
-            "SELECT name, count, stepSize, repeatAt, counterType FROM project_counters WHERE projectId = 1",
-        ) {
-            assertEquals("Pattern repeat", getString(0))
-            assertEquals(2, getInt(1))
-            assertEquals(6, getInt(2))
-            assertEquals(6, getInt(3))
-            assertEquals("REPEATING", getString(4))
-        }
+        val counterCursor =
+            db.query(
+                "SELECT name, count, stepSize, repeatAt, counterType FROM project_counters WHERE projectId = 1",
+            )
+        assertFalse(counterCursor.moveToFirst())
+        counterCursor.close()
         assertStartedAtIndexExists(db)
 
         db.close()
     }
 
     @Test
-    fun migrate4to9PreservesReminderPhotoAndCounterRows() {
-        val testDb = "migration-test-v4-to-v9"
+    fun migrate4toLatestPreservesReminderPhotoAndCounterRows() {
+        val testDb = "migration-test-v4-to-latest"
 
         helper.createDatabase(testDb, 4).apply {
             execSQL(
@@ -1004,8 +1039,8 @@ class MigrationTest {
     }
 
     @Test
-    fun migrate5to9PreservesSavedPatternsAndProjectLinks() {
-        val testDb = "migration-test-v5-to-v9"
+    fun migrate5toLatestPreservesSavedPatternsAndProjectLinks() {
+        val testDb = "migration-test-v5-to-latest"
 
         helper.createDatabase(testDb, 5).apply {
             execSQL(
@@ -1074,8 +1109,8 @@ class MigrationTest {
     }
 
     @Test
-    fun migrate6to9PreservesStashAndShapingValues() {
-        val testDb = "migration-test-v6-to-v9"
+    fun migrate6toLatestPreservesStashAndShapingValues() {
+        val testDb = "migration-test-v6-to-latest"
 
         helper.createDatabase(testDb, 6).apply {
             execSQL(
@@ -1152,8 +1187,8 @@ class MigrationTest {
     }
 
     @Test
-    fun migrate7to9PreservesPatternViewerData() {
-        val testDb = "migration-test-v7-to-v9"
+    fun migrate7toLatestPreservesPatternViewerData() {
+        val testDb = "migration-test-v7-to-latest"
 
         helper.createDatabase(testDb, 7).apply {
             execSQL(
@@ -1242,12 +1277,12 @@ class MigrationTest {
     }
 
     @Test
-    fun migrate1to9() {
-        val testDb = "migration-test-v1-to-v9"
+    fun migrate1toLatest() {
+        val testDb = "migration-test-v1-to-latest"
 
         helper.createDatabase(testDb, 1).apply {
             execSQL(
-                "INSERT INTO counter_projects (id, name, count, secondaryCount, stepSize, notes, createdAt, updatedAt) VALUES (1, 'Full Chain v9', 50, 3, 4, 'test', 1000, 2000)",
+                "INSERT INTO counter_projects (id, name, count, secondaryCount, stepSize, notes, createdAt, updatedAt) VALUES (1, 'Full Chain latest', 50, 3, 4, 'test', 1000, 2000)",
             )
             close()
         }
@@ -1262,7 +1297,7 @@ class MigrationTest {
 
         val projectCursor = db.query("SELECT name, targetRows FROM counter_projects WHERE id = 1")
         assertTrue(projectCursor.moveToFirst())
-        assertEquals("Full Chain v9", projectCursor.getString(0))
+        assertEquals("Full Chain latest", projectCursor.getString(0))
         assertTrue(projectCursor.isNull(1))
         projectCursor.close()
 

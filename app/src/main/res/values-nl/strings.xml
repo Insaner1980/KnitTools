@@ -151,6 +151,8 @@
     <string name="no_sessions">Nog geen sessies geregistreerd. Begin met breien om hier je geschiedenis te zien.</string>
     <string name="session_row_range">Toeren %1$d \u2192 %2$d</string>
     <string name="session_duration_format">%1$du %2$dm</string>
+    <string name="delete_session_title">Sessie verwijderen?</string>
+    <string name="delete_session_message">Deze sessie uit de geschiedenis verwijderen? Dit kan niet ongedaan worden gemaakt.</string>
     <string name="pro_full_history_hint">Upgrade naar Pro voor volledige sessiegeschiedenis</string>
 
     <!-- Settings -->
@@ -472,7 +474,10 @@
     <string name="restart">Herstarten</string>
 
     <!-- Row Reminders -->
+    <string name="reminders">Herinneringen</string>
     <string name="add_reminder">Herinnering toevoegen</string>
+    <string name="edit_reminder">Herinnering bewerken</string>
+    <string name="no_reminders">Nog geen herinneringen</string>
     <string name="delete_reminder_title">Herinnering verwijderen?</string>
     <string name="delete_reminder_confirm">Herinnering \"%1$s\" verwijderen?</string>
     <string name="row_number">Toernummer</string>

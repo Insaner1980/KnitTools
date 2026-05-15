@@ -22,6 +22,9 @@ interface SavedPatternDao {
     @Query("SELECT * FROM saved_patterns WHERE patternUrl = :patternUrl ORDER BY savedAt DESC, id DESC LIMIT 1")
     suspend fun getByPatternUrl(patternUrl: String): SavedPatternEntity?
 
+    @Query("SELECT * FROM saved_patterns WHERE ravelryId = 0 AND patternUrl != ''")
+    suspend fun getImportedPatternsOnce(): List<SavedPatternEntity>
+
     @Insert
     suspend fun insert(pattern: SavedPatternEntity): Long
 

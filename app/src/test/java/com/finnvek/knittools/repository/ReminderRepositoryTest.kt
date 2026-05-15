@@ -56,7 +56,12 @@ class ReminderRepositoryTest {
                 )
 
             assertEquals(55L, id)
-            assertEquals(RowReminderEntity(projectId = 1L, targetRow = 20, message = "Bind off"), fakeDao.lastInserted)
+            val inserted = fakeDao.lastInserted ?: error("Reminder was not inserted")
+            assertEquals(1L, inserted.projectId)
+            assertEquals(20, inserted.targetRow)
+            assertEquals(null, inserted.repeatInterval)
+            assertEquals("Bind off", inserted.message)
+            assertEquals(false, inserted.isCompleted)
         }
 
     @Test

@@ -35,6 +35,7 @@ import com.finnvek.knittools.ui.components.AnimatedResultNumber
 import com.finnvek.knittools.ui.components.InfoNote
 import com.finnvek.knittools.ui.components.InfoTip
 import com.finnvek.knittools.ui.components.NumberInputField
+import com.finnvek.knittools.ui.components.NumberInputOptions
 import com.finnvek.knittools.ui.components.ResultCard
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
 import com.finnvek.knittools.ui.screens.home.HomeViewModel
@@ -99,25 +100,23 @@ fun CastOnScreen(
                         value = width,
                         onValueChange = { width = it },
                         label = stringResource(R.string.desired_width),
-                        isDecimal = true,
-                        suffix = unit,
                         modifier = Modifier.fillMaxWidth(),
+                        options = NumberInputOptions(isDecimal = true, suffix = unit),
                     )
                     NumberInputField(
                         value = gauge,
                         onValueChange = { gauge = it },
                         label = stringResource(R.string.stitch_gauge),
-                        isDecimal = true,
-                        suffix = gaugeUnit,
                         modifier = Modifier.fillMaxWidth(),
+                        options = NumberInputOptions(isDecimal = true, suffix = gaugeUnit),
                     )
                     Row(verticalAlignment = Alignment.Bottom) {
                         NumberInputField(
                             value = patternRepeat,
                             onValueChange = { patternRepeat = it },
                             label = stringResource(R.string.pattern_repeat_optional),
-                            suffix = stringResource(R.string.unit_st),
                             modifier = Modifier.weight(1f),
+                            options = NumberInputOptions(suffix = stringResource(R.string.unit_st)),
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         InfoTip(
@@ -131,9 +130,12 @@ fun CastOnScreen(
                             value = edgeStitches,
                             onValueChange = { edgeStitches = it },
                             label = stringResource(R.string.edge_stitches_optional),
-                            suffix = stringResource(R.string.unit_st),
                             modifier = Modifier.weight(1f),
-                            isLast = true,
+                            options =
+                                NumberInputOptions(
+                                    suffix = stringResource(R.string.unit_st),
+                                    isLast = true,
+                                ),
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         InfoTip(

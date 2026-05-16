@@ -210,6 +210,12 @@
     <string name="easy_to_remember">Lett å huske</string>
     <string name="balanced">Balansert</string>
     <string name="total_stitches_format">TOTALT: %1$d %2$s</string>
+    <string name="increase_decrease_error_current_positive">Nåværende masker må være større enn 0</string>
+    <string name="increase_decrease_error_change_positive">Antall masker som endres må være større enn 0</string>
+    <string name="increase_decrease_error_cannot_decrease">Tilgjengelig maskeantall: %2$d. Ønsket felling: %1$d.</string>
+    <string name="increase_decrease_error_not_enough_decrease">Nødvendig maskeantall: %1$d. Ønskede fellinger: %2$d.</string>
+    <string name="increase_decrease_error_total_out_of_range">Resultatet er for stort. Bruk lavere masketall.</string>
+    <string name="increase_decrease_warning_increase_more_than_current">Du øker mer enn nåværende masketall - noen seksjoner får ingen strikkede masker mellom økningene</string>
 
     <!-- Gauge Converter -->
     <string name="pattern_gauge">Oppskriftens fasthet</string>
@@ -222,6 +228,7 @@
     <string name="adjusted_result">%1$d masker, %2$d rader</string>
     <string name="exact_result">Nøyaktig: %1$s m, %2$s rader</string>
     <string name="stitch_gauge_diff">Maskefasthet: %s%%</string>
+    <string name="row_gauge_diff">Radfasthet: %s%%</string>
 
     <!-- Cast On Calculator -->
     <string name="desired_width">Ønsket bredde</string>

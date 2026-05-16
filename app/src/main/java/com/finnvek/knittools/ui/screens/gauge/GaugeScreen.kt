@@ -417,9 +417,13 @@ private fun parseAndConvert(
     val yR = yourRows.toDoubleOrNull() ?: return null
     val sc = stitchCount.toIntOrNull() ?: return null
     val rc = rowCount.toIntOrNull() ?: return null
-    if (pSt <= 0 || pR <= 0) return null
+    if (hasInvalidGaugeInput(pSt, pR, ySt, yR) || hasInvalidPatternInstructionCount(sc, rc)) return null
     return GaugeConverter.convert(pSt, pR, ySt, yR, sc, rc)
 }
+
+private fun hasInvalidGaugeInput(vararg values: Double): Boolean = values.any { it <= 0.0 }
+
+private fun hasInvalidPatternInstructionCount(vararg values: Int): Boolean = values.any { it <= 0 }
 
 @Composable
 private fun GaugeSection(
@@ -504,15 +508,26 @@ private fun GaugeResultCard(result: GaugeConversionResult) {
             style = MaterialTheme.typography.bodySmall,
         )
         Spacer(modifier = Modifier.height(8.dp))
-        val sign = if (result.stitchPercentDifference >= 0) "+" else ""
         BadgePill(
             text =
                 stringResource(
                     R.string.stitch_gauge_diff,
-                    "$sign${"%.1f".format(result.stitchPercentDifference)}",
+                    formatPercentDifference(result.stitchPercentDifference),
+                ),
+        )
+        BadgePill(
+            text =
+                stringResource(
+                    R.string.row_gauge_diff,
+                    formatPercentDifference(result.rowPercentDifference),
                 ),
         )
     }
+}
+
+private fun formatPercentDifference(value: Double): String {
+    val sign = if (value >= 0) "+" else ""
+    return "$sign${"%.1f".format(value)}"
 }
 
 internal data class GaugeFields(

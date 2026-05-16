@@ -210,6 +210,12 @@
     <string name="easy_to_remember">Lätt att komma ihåg</string>
     <string name="balanced">Jämn</string>
     <string name="total_stitches_format">TOTALT: %1$d %2$s</string>
+    <string name="increase_decrease_error_current_positive">Nuvarande maskantal måste vara större än 0</string>
+    <string name="increase_decrease_error_change_positive">Antalet maskor som ändras måste vara större än 0</string>
+    <string name="increase_decrease_error_cannot_decrease">Tillgängligt maskantal: %2$d. Begärd minskning: %1$d.</string>
+    <string name="increase_decrease_error_not_enough_decrease">Nödvändigt maskantal: %1$d. Begärda minskningar: %2$d.</string>
+    <string name="increase_decrease_error_total_out_of_range">Resultatet är för stort. Använd mindre maskantal.</string>
+    <string name="increase_decrease_warning_increase_more_than_current">Du ökar mer än nuvarande maskantal - vissa sektioner har inga stickade maskor mellan ökningarna</string>
 
     <!-- Gauge Converter -->
     <string name="pattern_gauge">Mönstrets stickfasthet</string>
@@ -222,6 +228,7 @@
     <string name="adjusted_result">%1$d maskor, %2$d varv</string>
     <string name="exact_result">Exakt: %1$s m, %2$s varv</string>
     <string name="stitch_gauge_diff">Masktäthet: %s%%</string>
+    <string name="row_gauge_diff">Varvtäthet: %s%%</string>
 
     <!-- Cast On Calculator -->
     <string name="desired_width">Önskad bredd</string>

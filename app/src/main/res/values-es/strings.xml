@@ -210,6 +210,12 @@
     <string name="easy_to_remember">Fácil de recordar</string>
     <string name="balanced">Equilibrado</string>
     <string name="total_stitches_format">TOTAL: %1$d %2$s</string>
+    <string name="increase_decrease_error_current_positive">Los puntos actuales deben ser mayores que 0</string>
+    <string name="increase_decrease_error_change_positive">El número de puntos a cambiar debe ser mayor que 0</string>
+    <string name="increase_decrease_error_cannot_decrease">Cantidad de puntos disponible: %2$d. Disminución solicitada: %1$d.</string>
+    <string name="increase_decrease_error_not_enough_decrease">Cantidad de puntos requerida: %1$d. Disminuciones solicitadas: %2$d.</string>
+    <string name="increase_decrease_error_total_out_of_range">El resultado es demasiado grande. Usa cantidades de puntos más pequeñas.</string>
+    <string name="increase_decrease_warning_increase_more_than_current">Se aumentan más puntos que los actuales - algunas secciones no tendrán puntos tejidos entre aumentos</string>
 
     <!-- Gauge Converter -->
     <string name="pattern_gauge">Muestra del patrón</string>
@@ -222,6 +228,7 @@
     <string name="adjusted_result">%1$d puntos, %2$d vueltas</string>
     <string name="exact_result">Exacto: %1$s p, %2$s vueltas</string>
     <string name="stitch_gauge_diff">Densidad de puntos: %s%%</string>
+    <string name="row_gauge_diff">Densidad de vueltas: %s%%</string>
 
     <!-- Cast On Calculator -->
     <string name="desired_width">Ancho deseado</string>

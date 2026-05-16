@@ -28,16 +28,16 @@ class ProgressPhotoRepository
     ) {
         fun getAllPhotos(): Flow<List<ProgressPhoto>> =
             dao.getAllPhotos().map { photos ->
-                photos.map { it.toDomain() }
+                availablePhotos(photos)
             }
 
         fun getAllPhotoCount(): Flow<Int> = dao.getAllPhotoCount()
 
         fun getPhotosForProject(projectId: Long): Flow<List<ProgressPhoto>> =
-            dao.getPhotosForProject(projectId).map { photos -> photos.map { it.toDomain() } }
+            dao.getPhotosForProject(projectId).map { photos -> availablePhotos(photos) }
 
         fun getLatestPhotos(projectId: Long): Flow<List<ProgressPhoto>> =
-            dao.getLatestPhotos(projectId).map { photos -> photos.map { it.toDomain() } }
+            dao.getLatestPhotos(projectId).map { photos -> availablePhotos(photos) }
 
         fun getPhotoCount(projectId: Long): Flow<Int> = dao.getPhotoCount(projectId)
 
@@ -112,4 +112,16 @@ class ProgressPhotoRepository
         fun deleteAllPhotosForProject(projectId: Long) {
             storage.deleteProjectPhotos(context, projectId)
         }
+
+        private suspend fun availablePhotos(photos: List<ProgressPhotoEntity>): List<ProgressPhoto> =
+            withContext(ioDispatcher) {
+                photos.mapNotNull { photo ->
+                    if (storage.isPhotoAvailable(context, photo.photoUri)) {
+                        photo.toDomain()
+                    } else {
+                        dao.delete(photo.id)
+                        null
+                    }
+                }
+            }
     }

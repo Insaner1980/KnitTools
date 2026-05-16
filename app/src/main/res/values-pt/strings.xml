@@ -210,6 +210,12 @@
     <string name="easy_to_remember">Fácil de memorizar</string>
     <string name="balanced">Equilibrado</string>
     <string name="total_stitches_format">TOTAL: %1$d %2$s</string>
+    <string name="increase_decrease_error_current_positive">Os pontos atuais devem ser maiores que 0</string>
+    <string name="increase_decrease_error_change_positive">O número de pontos a alterar deve ser maior que 0</string>
+    <string name="increase_decrease_error_cannot_decrease">Contagem de pontos disponível: %2$d. Diminuição solicitada: %1$d.</string>
+    <string name="increase_decrease_error_not_enough_decrease">Contagem de pontos necessária: %1$d. Diminuições solicitadas: %2$d.</string>
+    <string name="increase_decrease_error_total_out_of_range">O resultado é demasiado grande. Use contagens de pontos menores.</string>
+    <string name="increase_decrease_warning_increase_more_than_current">Está a aumentar mais do que os pontos atuais - algumas secções não terão pontos tricotados entre aumentos</string>
 
     <!-- Gauge Converter -->
     <string name="pattern_gauge">Tensão da receita</string>
@@ -222,6 +228,7 @@
     <string name="adjusted_result">%1$d pontos, %2$d carreiras</string>
     <string name="exact_result">Exato: %1$s pts, %2$s carreiras</string>
     <string name="stitch_gauge_diff">Densidade de pontos: %s%%</string>
+    <string name="row_gauge_diff">Densidade de carreiras: %s%%</string>
 
     <!-- Cast On Calculator -->
     <string name="desired_width">Largura pretendida</string>

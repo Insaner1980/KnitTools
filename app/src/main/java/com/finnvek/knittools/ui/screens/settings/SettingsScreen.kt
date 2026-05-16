@@ -233,14 +233,7 @@ private fun SettingsActionRow(
     label: String,
     onClick: () -> Unit,
 ) {
-    Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .clickable(onClick = onClick)
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
+    SettingsClickableRow(onClick = onClick) {
         Text(label)
     }
 }
@@ -339,6 +332,18 @@ private fun ThemeRow(
     selected: Boolean,
     onClick: () -> Unit,
 ) {
+    SettingsClickableRow(onClick = onClick) {
+        RadioButton(selected = selected, onClick = onClick)
+        Spacer(modifier = Modifier.width(12.dp))
+        Text(label)
+    }
+}
+
+@Composable
+private fun SettingsClickableRow(
+    onClick: () -> Unit,
+    content: @Composable () -> Unit,
+) {
     Row(
         modifier =
             Modifier
@@ -347,9 +352,7 @@ private fun ThemeRow(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        RadioButton(selected = selected, onClick = onClick)
-        Spacer(modifier = Modifier.width(12.dp))
-        Text(label)
+        content()
     }
 }
 

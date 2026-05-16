@@ -1,10 +1,12 @@
 package com.finnvek.knittools.domain.calculator
 
+import com.finnvek.knittools.domain.model.IncreaseDecreaseMessage
 import com.finnvek.knittools.domain.model.IncreaseDecreaseMode
 import com.finnvek.knittools.domain.model.KnittingStyle
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -80,7 +82,8 @@ class IncreaseDecreaseCalculatorTest {
     fun `decrease all stitches is invalid`() {
         val result = IncreaseDecreaseCalculator.calculate(10, 10, IncreaseDecreaseMode.DECREASE)
         assertFalse(result.isValid)
-        assertNotNull(result.errorMessage)
+        assertEquals(IncreaseDecreaseMessage.CannotDecreaseBy(10, 10), result.message)
+        assertNull(result.errorMessage)
     }
 
     @Test
@@ -110,6 +113,22 @@ class IncreaseDecreaseCalculatorTest {
     }
 
     @Test
+    fun `balanced pattern respects flat and circular style`() {
+        val flat = IncreaseDecreaseCalculator.calculate(100, 7, IncreaseDecreaseMode.INCREASE, KnittingStyle.FLAT)
+        val circular =
+            IncreaseDecreaseCalculator.calculate(
+                100,
+                7,
+                IncreaseDecreaseMode.INCREASE,
+                KnittingStyle.CIRCULAR,
+            )
+
+        assertTrue(flat.isValid)
+        assertTrue(circular.isValid)
+        assertNotEquals(flat.balancedPattern, circular.balancedPattern)
+    }
+
+    @Test
     fun `decrease uses K2tog notation`() {
         val result = IncreaseDecreaseCalculator.calculate(120, 8, IncreaseDecreaseMode.DECREASE)
         assertTrue(result.easyPattern.contains("K2tog"))
@@ -129,8 +148,8 @@ class IncreaseDecreaseCalculatorTest {
     fun `increase more than current warns but still valid`() {
         val result = IncreaseDecreaseCalculator.calculate(35, 68, IncreaseDecreaseMode.INCREASE)
         assertTrue(result.isValid)
-        assertNotNull(result.errorMessage)
-        assertTrue(result.errorMessage!!.contains("Warning"))
+        assertEquals(IncreaseDecreaseMessage.IncreaseMoreThanCurrent, result.message)
+        assertNull(result.errorMessage)
     }
 
     @Test
@@ -138,5 +157,67 @@ class IncreaseDecreaseCalculatorTest {
         // 10 stitches, decrease 6: would need 6 K2tog (12 stitches) + some K, but only 10 available
         val result = IncreaseDecreaseCalculator.calculate(10, 6, IncreaseDecreaseMode.DECREASE)
         assertFalse(result.isValid)
+    }
+
+    @Test
+    fun `decrease one from two is valid without zero-knit instructions`() {
+        val result = IncreaseDecreaseCalculator.calculate(2, 1, IncreaseDecreaseMode.DECREASE)
+        assertTrue(result.isValid)
+        assertEquals(1, result.totalStitches)
+        assertEquals("K2tog — total: 1 stitches", result.easyPattern)
+        assertFalse(result.easyPattern.contains("K0"))
+        assertFalse(result.balancedPattern.contains("K0"))
+    }
+
+    @Test
+    fun `decrease two from four is valid without zero-knit instructions`() {
+        val result = IncreaseDecreaseCalculator.calculate(4, 2, IncreaseDecreaseMode.DECREASE, KnittingStyle.CIRCULAR)
+        assertTrue(result.isValid)
+        assertEquals(2, result.totalStitches)
+        assertEquals("K2tog × 2 — total: 2 stitches", result.easyPattern)
+        assertFalse(result.easyPattern.contains("K0"))
+        assertFalse(result.balancedPattern.contains("K0"))
+    }
+
+    @Test
+    fun `valid edge decrease does not show zero-knit sections`() {
+        val result = IncreaseDecreaseCalculator.calculate(5, 2, IncreaseDecreaseMode.DECREASE, KnittingStyle.FLAT)
+        assertTrue(result.isValid)
+        assertEquals(3, result.totalStitches)
+        assertFalse(result.easyPattern.contains("K0"))
+        assertFalse(result.balancedPattern.contains("K0"))
+    }
+
+    @Test
+    fun `increase more than current does not show zero-knit sections`() {
+        val result = IncreaseDecreaseCalculator.calculate(3, 5, IncreaseDecreaseMode.INCREASE, KnittingStyle.CIRCULAR)
+        assertTrue(result.isValid)
+        assertEquals(8, result.totalStitches)
+        assertEquals(IncreaseDecreaseMessage.IncreaseMoreThanCurrent, result.message)
+        assertFalse(result.easyPattern.contains("K0"))
+        assertFalse(result.balancedPattern.contains("K0"))
+    }
+
+    @Test
+    fun `increase total overflow is invalid`() {
+        val result = IncreaseDecreaseCalculator.calculate(Int.MAX_VALUE, 1, IncreaseDecreaseMode.INCREASE)
+        assertFalse(result.isValid)
+        assertEquals(IncreaseDecreaseMessage.TotalStitchesOutOfRange, result.message)
+        assertNull(result.errorMessage)
+    }
+
+    @Test
+    fun `decrease validation does not overflow`() {
+        val result =
+            IncreaseDecreaseCalculator.calculate(
+                Int.MAX_VALUE,
+                Int.MAX_VALUE - 1,
+                IncreaseDecreaseMode.DECREASE,
+            )
+        assertFalse(result.isValid)
+        assertEquals(
+            IncreaseDecreaseMessage.NotEnoughStitchesForDecrease(Int.MAX_VALUE - 1, 4_294_967_292L),
+            result.message,
+        )
     }
 }

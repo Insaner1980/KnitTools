@@ -64,18 +64,22 @@ import com.finnvek.knittools.ui.theme.knitToolsColors
 // Historiallisesta nimestä huolimatta ruutu toimii kahdessa tilassa:
 // 1) skannatun yarn cardin review/tallennus
 // 2) tallennetun yarn cardin detail/editointi Library-flow’ssa
+data class YarnCardReviewActions(
+    val onSaveAndUse: (weightGrams: String, lengthMeters: String, needleSize: String) -> Unit,
+    val onDiscard: (weightGrams: String, lengthMeters: String, needleSize: String) -> Unit,
+    val onBack: () -> Unit,
+    val onLinkToProject: ((cardId: Long, projectId: Long) -> Unit)? = null,
+    val onOpenLinkedProject: ((Long) -> Unit)? = null,
+    val onDeleteCard: ((Long) -> Unit)? = null,
+)
+
 @Composable
 // Compose-modal-state ja ruudun orkestrointi tuottavat Sonarille vääriä osumia.
 @Suppress("kotlin:S6615", "kotlin:S3776")
 fun YarnCardReviewScreen(
     viewModel: YarnCardViewModel,
-    onSaveAndUse: (weightGrams: String, lengthMeters: String, needleSize: String) -> Unit,
-    onDiscard: (weightGrams: String, lengthMeters: String, needleSize: String) -> Unit,
-    onBack: () -> Unit,
+    actions: YarnCardReviewActions,
     initialLinkProjectId: Long? = null,
-    onLinkToProject: ((cardId: Long, projectId: Long) -> Unit)? = null,
-    onOpenLinkedProject: ((Long) -> Unit)? = null,
-    onDeleteCard: ((Long) -> Unit)? = null,
 ) {
     val form by viewModel.formState.collectAsStateWithLifecycle()
     val linkedProjectName by viewModel.linkedProjectName.collectAsStateWithLifecycle()
@@ -88,21 +92,21 @@ fun YarnCardReviewScreen(
     var showProjectSheet by rememberSaveable { mutableStateOf(false) }
     var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
 
-    if (showLinkDialog && initialLinkProjectId != null && onLinkToProject != null) {
+    if (showLinkDialog && initialLinkProjectId != null && actions.onLinkToProject != null) {
         LinkYarnDialog(
             savedCardId = savedCardId,
             projects = availableProjects,
             initialProjectId = initialLinkProjectId,
             onLink = { cardId, projectId ->
-                onLinkToProject(cardId, projectId)
+                actions.onLinkToProject.invoke(cardId, projectId)
                 showLinkDialog = false
                 val (w, l, n) = viewModel.getCalculatorValues()
-                onSaveAndUse(w, l, n)
+                actions.onSaveAndUse(w, l, n)
             },
             onDismiss = {
                 showLinkDialog = false
                 val (w, l, n) = viewModel.getCalculatorValues()
-                onSaveAndUse(w, l, n)
+                actions.onSaveAndUse(w, l, n)
             },
         )
     }
@@ -143,13 +147,13 @@ fun YarnCardReviewScreen(
             onConfirm = {
                 val cardId = form.editingCardId
                 if (cardId != null) {
-                    if (onDeleteCard != null) {
+                    if (actions.onDeleteCard != null) {
                         showDeleteDialog = false
-                        onDeleteCard(cardId)
+                        actions.onDeleteCard.invoke(cardId)
                     } else {
                         viewModel.deleteCard(cardId) {
                             showDeleteDialog = false
-                            onBack()
+                            actions.onBack()
                         }
                     }
                 } else {
@@ -167,7 +171,7 @@ fun YarnCardReviewScreen(
             } else {
                 stringResource(R.string.scanned_yarn)
             },
-        onBack = onBack,
+        onBack = actions.onBack,
     ) { padding ->
         if (isDetailMode) {
             YarnCardDetailContent(
@@ -177,8 +181,8 @@ fun YarnCardReviewScreen(
                 onQuantityChange = viewModel::updateQuantity,
                 onLinkedProjectClick = {
                     form.linkedProjectId?.let { projectId ->
-                        if (linkedProjectName != null && onOpenLinkedProject != null) {
-                            onOpenLinkedProject(projectId)
+                        if (linkedProjectName != null && actions.onOpenLinkedProject != null) {
+                            actions.onOpenLinkedProject.invoke(projectId)
                         } else {
                             showProjectSheet = true
                         }
@@ -198,16 +202,20 @@ fun YarnCardReviewScreen(
         } else {
             YarnCardScanContent(
                 form = form,
-                viewModel = viewModel,
-                onDiscard = onDiscard,
-                onSaveAndUse = onSaveAndUse,
+                isPro = viewModel.isPro,
+                onUpdateField = viewModel::updateField,
+                onDiscard = actions.onDiscard,
+                onSaveAndUse = actions.onSaveAndUse,
                 onShowLinkDialog = { id ->
                     savedCardId = id
                     showLinkDialog = true
                 },
                 initialLinkProjectId = initialLinkProjectId,
                 availableProjects = availableProjects,
-                onLinkToProject = onLinkToProject,
+                onLinkToProject = actions.onLinkToProject,
+                getCalculatorValues = viewModel::getCalculatorValues,
+                onDiscardScan = viewModel::discardScan,
+                onSaveCard = viewModel::saveCard,
                 toastContext = toastContext,
                 modifier =
                     Modifier
@@ -224,13 +232,17 @@ fun YarnCardReviewScreen(
 @Suppress("kotlin:S107") // Compose-komponentti välittää eksplisiittiset callbackit ilman keinotekoista wrapper-oliota
 private fun YarnCardScanContent(
     form: YarnCardFormState,
-    viewModel: YarnCardViewModel,
+    isPro: Boolean,
+    onUpdateField: (YarnCardFormState.() -> YarnCardFormState) -> Unit,
     onDiscard: (String, String, String) -> Unit,
     onSaveAndUse: (String, String, String) -> Unit,
     onShowLinkDialog: (Long) -> Unit,
     initialLinkProjectId: Long?,
     availableProjects: List<CounterProject>,
     onLinkToProject: ((cardId: Long, projectId: Long) -> Unit)?,
+    getCalculatorValues: () -> Triple<String, String, String>,
+    onDiscardScan: () -> Unit,
+    onSaveCard: ((Long) -> Unit) -> Unit,
     toastContext: android.content.Context,
     modifier: Modifier = Modifier,
 ) {
@@ -239,22 +251,22 @@ private fun YarnCardScanContent(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         LabelField(stringResource(R.string.brand), form.brand) {
-            viewModel.updateField { copy(brand = it) }
+            onUpdateField { copy(brand = it) }
         }
         LabelField(stringResource(R.string.yarn_name), form.yarnName) {
-            viewModel.updateField { copy(yarnName = it) }
+            onUpdateField { copy(yarnName = it) }
         }
         LabelField(stringResource(R.string.fiber_content), form.fiberContent) {
-            viewModel.updateField { copy(fiberContent = it) }
+            onUpdateField { copy(fiberContent = it) }
         }
         LabelField(stringResource(R.string.color_name), form.colorName) {
-            viewModel.updateField { copy(colorName = it) }
+            onUpdateField { copy(colorName = it) }
         }
         LabelField(stringResource(R.string.color_number), form.colorNumber) {
-            viewModel.updateField { copy(colorNumber = it) }
+            onUpdateField { copy(colorNumber = it) }
         }
         LabelField(stringResource(R.string.dye_lot), form.dyeLot) {
-            viewModel.updateField { copy(dyeLot = it) }
+            onUpdateField { copy(dyeLot = it) }
         }
 
         Text(
@@ -263,42 +275,45 @@ private fun YarnCardScanContent(
             color = MaterialTheme.colorScheme.primary,
         )
         LabelField(stringResource(R.string.weight_grams), form.weightGrams) {
-            viewModel.updateField { copy(weightGrams = it) }
+            onUpdateField { copy(weightGrams = it) }
         }
         LabelField(stringResource(R.string.length_meters), form.lengthMeters) {
-            viewModel.updateField { copy(lengthMeters = it) }
+            onUpdateField { copy(lengthMeters = it) }
         }
         LabelField(stringResource(R.string.needle_size_label), form.needleSize) {
-            viewModel.updateField { copy(needleSize = it) }
+            onUpdateField { copy(needleSize = it) }
         }
         LabelField(stringResource(R.string.gauge_label), form.gaugeInfo) {
-            viewModel.updateField { copy(gaugeInfo = it) }
+            onUpdateField { copy(gaugeInfo = it) }
         }
         LabelField(stringResource(R.string.weight_category), form.weightCategory) {
-            viewModel.updateField { copy(weightCategory = it) }
+            onUpdateField { copy(weightCategory = it) }
         }
 
         CareSymbolPicker(
             careSymbols = form.careSymbols,
             onToggle = { symbol ->
-                viewModel.updateField { copy(careSymbols = careSymbols.toggleCareSymbol(symbol)) }
+                onUpdateField { copy(careSymbols = careSymbols.toggleCareSymbol(symbol)) }
             },
         )
 
         ReviewActionButtons(
-            isPro = viewModel.isPro,
-            saveEnabled = !viewModel.isPro || form.normalizedForPersistence().canPersistYarnCard(),
+            isPro = isPro,
+            saveEnabled = !isPro || form.normalizedForPersistence().canPersistYarnCard(),
             onDiscardClick = {
-                val (w, l, n) = viewModel.getCalculatorValues()
+                val (w, l, n) = getCalculatorValues()
                 onDiscard(w, l, n)
             },
             onSaveClick = {
                 handleSaveClick(
-                    viewModel = viewModel,
+                    isPro = isPro,
                     canLink =
                         initialLinkProjectId != null &&
                             onLinkToProject != null &&
                             availableProjects.any { it.id == initialLinkProjectId },
+                    getCalculatorValues = getCalculatorValues,
+                    onDiscardScan = onDiscardScan,
+                    onSaveCard = onSaveCard,
                     onSaveAndUse = onSaveAndUse,
                     onShowLinkDialog = onShowLinkDialog,
                     onSaved = {
@@ -812,24 +827,27 @@ private fun ReviewActionButtons(
 }
 
 private fun handleSaveClick(
-    viewModel: YarnCardViewModel,
+    isPro: Boolean,
     canLink: Boolean,
+    getCalculatorValues: () -> Triple<String, String, String>,
+    onDiscardScan: () -> Unit,
+    onSaveCard: ((Long) -> Unit) -> Unit,
     onSaveAndUse: (String, String, String) -> Unit,
     onShowLinkDialog: (Long) -> Unit,
     onSaved: () -> Unit = {},
 ) {
-    if (!viewModel.isPro) {
-        val (w, l, n) = viewModel.getCalculatorValues()
-        viewModel.discardScan()
+    if (!isPro) {
+        val (w, l, n) = getCalculatorValues()
+        onDiscardScan()
         onSaveAndUse(w, l, n)
         return
     }
-    viewModel.saveCard { id ->
+    onSaveCard { id ->
         onSaved()
         if (canLink) {
             onShowLinkDialog(id)
         } else {
-            val (w, l, n) = viewModel.getCalculatorValues()
+            val (w, l, n) = getCalculatorValues()
             onSaveAndUse(w, l, n)
         }
     }

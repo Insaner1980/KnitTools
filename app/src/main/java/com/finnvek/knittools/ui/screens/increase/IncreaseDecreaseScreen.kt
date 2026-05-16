@@ -30,6 +30,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.ai.nano.ParsedInstruction
 import com.finnvek.knittools.domain.calculator.IncreaseDecreaseCalculator
+import com.finnvek.knittools.domain.model.IncreaseDecreaseMessage
 import com.finnvek.knittools.domain.model.IncreaseDecreaseMode
 import com.finnvek.knittools.domain.model.IncreaseDecreaseResult
 import com.finnvek.knittools.domain.model.KnittingStyle
@@ -154,13 +155,13 @@ fun IncreaseDecreaseScreen(
 private fun IncreaseDecreaseResultSection(result: IncreaseDecreaseResult) {
     if (!result.isValid) {
         Text(
-            text = result.errorMessage ?: stringResource(R.string.invalid_input),
+            text = result.message?.localizedMessage() ?: stringResource(R.string.invalid_input),
             color = MaterialTheme.colorScheme.error,
         )
     } else {
-        result.errorMessage?.let {
+        result.message?.let {
             Text(
-                text = it,
+                text = it.localizedMessage(),
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodySmall,
             )
@@ -215,4 +216,26 @@ private fun IncreaseDecreaseMode.labelRes(): Int =
     when (this) {
         IncreaseDecreaseMode.INCREASE -> R.string.increase_by
         IncreaseDecreaseMode.DECREASE -> R.string.decrease_by
+    }
+
+@Composable
+private fun IncreaseDecreaseMessage.localizedMessage(): String =
+    when (this) {
+        IncreaseDecreaseMessage.CurrentStitchesMustBePositive ->
+            stringResource(R.string.increase_decrease_error_current_positive)
+
+        IncreaseDecreaseMessage.ChangeMustBePositive ->
+            stringResource(R.string.increase_decrease_error_change_positive)
+
+        is IncreaseDecreaseMessage.CannotDecreaseBy ->
+            stringResource(R.string.increase_decrease_error_cannot_decrease, changeBy, currentStitches)
+
+        is IncreaseDecreaseMessage.NotEnoughStitchesForDecrease ->
+            stringResource(R.string.increase_decrease_error_not_enough_decrease, requiredStitches, changeBy)
+
+        IncreaseDecreaseMessage.TotalStitchesOutOfRange ->
+            stringResource(R.string.increase_decrease_error_total_out_of_range)
+
+        IncreaseDecreaseMessage.IncreaseMoreThanCurrent ->
+            stringResource(R.string.increase_decrease_warning_increase_more_than_current)
     }

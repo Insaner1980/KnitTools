@@ -81,8 +81,28 @@ class YarnLabelGeminiScannerTest {
     }
 
     @Test
-    fun `parseResponse returns empty label for garbage input`() {
-        assertEquals(ParsedYarnLabel(), YarnLabelGeminiScanner.parseResponse("this is not json"))
+    fun `parseResponse returns null for garbage input`() {
+        assertNull(YarnLabelGeminiScanner.parseResponse("this is not json"))
+    }
+
+    @Test
+    fun `parseResponse returns null for malformed JSON`() {
+        assertNull(YarnLabelGeminiScanner.parseResponse("""{"brand": """))
+    }
+
+    @Test
+    fun `parseResponse ignores unsupported weight category`() {
+        val json =
+            """
+            {
+              "brand": "Test",
+              "name": "Yarn",
+              "weightCategory": "UNKNOWN"
+            }
+            """.trimIndent()
+
+        val result = YarnLabelGeminiScanner.parseResponse(json)
+        assertEquals("", result!!.weightCategory)
     }
 
     @Test
@@ -142,4 +162,75 @@ class YarnLabelGeminiScannerTest {
         val result = YarnLabelGeminiScanner.parseResponse(json)
         assertEquals("3.5mm", result!!.needleSize)
     }
+
+    @Test
+    fun `parseResponse maps prohibitive care instructions`() {
+        val result =
+            YarnLabelGeminiScanner.parseResponse(
+                yarnLabelJson(
+                    careInstructions = "Do not wash. Do not bleach. Do not tumble dry. Do not iron. Do not dry clean.",
+                ),
+            )
+
+        assertEquals(bits(4, 7, 11, 15, 19), result!!.careSymbols)
+    }
+
+    @Test
+    fun `parseResponse maps gentle care instructions`() {
+        val result =
+            YarnLabelGeminiScanner.parseResponse(
+                yarnLabelJson(
+                    careInstructions = "Machine wash 60. Non-chlorine bleach. Dry flat. Iron high. Dry clean P.",
+                ),
+            )
+
+        assertEquals(bits(2, 6, 10, 14, 17), result!!.careSymbols)
+    }
+
+    @Test
+    fun `parseResponse maps standard care instructions`() {
+        val result =
+            YarnLabelGeminiScanner.parseResponse(
+                yarnLabelJson(
+                    careInstructions = "Machine wash 40. Bleach allowed. Tumble dry low. Iron medium. Dry clean F.",
+                ),
+            )
+
+        assertEquals(bits(1, 5, 8, 13, 18), result!!.careSymbols)
+    }
+
+    @Test
+    fun `parseResponse maps basic care instructions`() {
+        val result =
+            YarnLabelGeminiScanner.parseResponse(
+                yarnLabelJson(
+                    careInstructions = "Machine wash 30. Tumble dry. Dry clean.",
+                ),
+            )
+
+        assertEquals(bits(0, 9, 16), result!!.careSymbols)
+    }
+
+    @Test
+    fun `parseResponse maps low iron instruction`() {
+        val result =
+            YarnLabelGeminiScanner.parseResponse(
+                yarnLabelJson(
+                    careInstructions = "Iron low.",
+                ),
+            )
+
+        assertEquals(bits(12), result!!.careSymbols)
+    }
+
+    private fun yarnLabelJson(careInstructions: String): String =
+        """
+        {
+          "brand": "Test",
+          "name": "Yarn",
+          "careInstructions": "$careInstructions"
+        }
+        """.trimIndent()
+
+    private fun bits(vararg indexes: Int): Long = indexes.fold(0L) { mask, index -> mask or (1L shl index) }
 }

@@ -64,6 +64,7 @@ import com.finnvek.knittools.ui.screens.session.SessionHistoryScreen
 import com.finnvek.knittools.ui.screens.settings.SettingsScreen
 import com.finnvek.knittools.ui.screens.sizecharts.SizeChartScreen
 import com.finnvek.knittools.ui.screens.yarn.YarnEstimatorScreen
+import com.finnvek.knittools.ui.screens.yarncard.YarnCardReviewActions
 import com.finnvek.knittools.ui.screens.yarncard.YarnCardReviewScreen
 import com.finnvek.knittools.ui.screens.yarncard.YarnCardViewModel
 
@@ -361,28 +362,31 @@ private fun NavGraphBuilder.toolsGraph(
 
             YarnCardReviewScreen(
                 viewModel = yarnCardViewModel,
-                onSaveAndUse = { w, l, n ->
-                    yarnCardViewModel.setPendingCalcValues(w, l, n)
-                    yarnCardViewModel.clearFormState()
-                    navController.popBackStack()
-                },
-                onDiscard = { _, _, _ ->
-                    yarnCardViewModel.discardScan()
-                    navController.popBackStack()
-                },
-                onBack = {
-                    yarnCardViewModel.discardScan()
-                    navController.popBackStack()
-                },
+                actions =
+                    YarnCardReviewActions(
+                        onSaveAndUse = { w, l, n ->
+                            yarnCardViewModel.setPendingCalcValues(w, l, n)
+                            yarnCardViewModel.clearFormState()
+                            navController.popBackStack()
+                        },
+                        onDiscard = { _, _, _ ->
+                            yarnCardViewModel.discardScan()
+                            navController.popBackStack()
+                        },
+                        onBack = {
+                            yarnCardViewModel.discardScan()
+                            navController.popBackStack()
+                        },
+                        onLinkToProject =
+                            if (activeProjectId != null) {
+                                { cardId: Long, projectId: Long ->
+                                    yarnCardViewModel.linkCardToProject(cardId, projectId)
+                                }
+                            } else {
+                                null
+                            },
+                    ),
                 initialLinkProjectId = activeProjectId,
-                onLinkToProject =
-                    if (activeProjectId != null) {
-                        { cardId: Long, projectId: Long ->
-                            yarnCardViewModel.linkCardToProject(cardId, projectId)
-                        }
-                    } else {
-                        null
-                    },
             )
         }
         // Ravelry
@@ -675,18 +679,21 @@ private fun NavGraphBuilder.libraryYarnCardReviewRoute(navController: NavHostCon
 
         YarnCardReviewScreen(
             viewModel = yarnCardViewModel,
-            onSaveAndUse = { _, _, _ ->
-                yarnCardViewModel.clearFormState()
-                navController.popBackStack()
-            },
-            onDiscard = { _, _, _ ->
-                yarnCardViewModel.discardScan()
-                navController.popBackStack()
-            },
-            onBack = {
-                yarnCardViewModel.discardScan()
-                navController.popBackStack()
-            },
+            actions =
+                YarnCardReviewActions(
+                    onSaveAndUse = { _, _, _ ->
+                        yarnCardViewModel.clearFormState()
+                        navController.popBackStack()
+                    },
+                    onDiscard = { _, _, _ ->
+                        yarnCardViewModel.discardScan()
+                        navController.popBackStack()
+                    },
+                    onBack = {
+                        yarnCardViewModel.discardScan()
+                        navController.popBackStack()
+                    },
+                ),
         )
     }
 }
@@ -709,52 +716,74 @@ private fun NavGraphBuilder.libraryYarnCardDetailRoute(
                 navController.getBackStackEntry(TopLevelDestination.Library.route)
             }
         val yarnCardViewModel: YarnCardViewModel = hiltViewModel(parentEntry)
-        var cardRouteReady by remember(cardId) { mutableStateOf(false) }
         var localDeleteInProgress by remember(cardId) { mutableStateOf(false) }
-        LaunchedEffect(cardId) {
-            cardRouteReady = false
-            localDeleteInProgress = false
-            yarnCardViewModel.observeCardForDetail(cardId).collect { card ->
-                if (card == null) {
-                    cardRouteReady = false
-                    yarnCardViewModel.clearFormState()
-                    if (!localDeleteInProgress) {
-                        navController.popBackStackOrNavigateToTopLevel(TopLevelDestination.Library)
-                    }
-                } else {
-                    yarnCardViewModel.loadFromCard(card)
-                    cardRouteReady = true
-                }
-            }
-        }
+        val cardRouteReady =
+            rememberLibraryYarnCardDetailReady(
+                cardId = cardId,
+                navController = navController,
+                yarnCardViewModel = yarnCardViewModel,
+                isDeleteInProgress = localDeleteInProgress,
+            )
         if (!cardRouteReady) return@composable
         YarnCardReviewScreen(
             viewModel = yarnCardViewModel,
-            onSaveAndUse = { _, _, _ ->
-                yarnCardViewModel.clearFormState()
-                navController.popBackStack()
-            },
-            onDiscard = { _, _, _ ->
-                yarnCardViewModel.clearFormState()
-                navController.popBackStack()
-            },
-            onBack = {
-                yarnCardViewModel.clearFormState()
-                navController.popBackStack()
-            },
-            onOpenLinkedProject = { projectId ->
-                yarnCardViewModel.clearFormState()
-                onLaunchCounter(projectId)
-            },
-            onDeleteCard = { deletedCardId ->
-                localDeleteInProgress = true
-                yarnCardViewModel.deleteCard(deletedCardId) {
-                    yarnCardViewModel.clearFormState()
-                    navController.popBackStackOrNavigateToTopLevel(TopLevelDestination.Library)
-                }
-            },
+            actions =
+                YarnCardReviewActions(
+                    onSaveAndUse = { _, _, _ ->
+                        yarnCardViewModel.clearFormState()
+                        navController.popBackStack()
+                    },
+                    onDiscard = { _, _, _ ->
+                        yarnCardViewModel.clearFormState()
+                        navController.popBackStack()
+                    },
+                    onBack = {
+                        yarnCardViewModel.clearFormState()
+                        navController.popBackStack()
+                    },
+                    onOpenLinkedProject = { projectId ->
+                        yarnCardViewModel.clearFormState()
+                        onLaunchCounter(projectId)
+                    },
+                    onDeleteCard = { deletedCardId ->
+                        localDeleteInProgress = true
+                        yarnCardViewModel.deleteCard(deletedCardId) {
+                            yarnCardViewModel.clearFormState()
+                            navController.popBackStackOrNavigateToTopLevel(TopLevelDestination.Library)
+                        }
+                    },
+                ),
         )
     }
+}
+
+@Composable
+private fun rememberLibraryYarnCardDetailReady(
+    cardId: Long,
+    navController: NavHostController,
+    yarnCardViewModel: YarnCardViewModel,
+    isDeleteInProgress: Boolean,
+): Boolean {
+    var cardRouteReady by remember(cardId) { mutableStateOf(false) }
+    val currentDeleteInProgress by rememberUpdatedState(isDeleteInProgress)
+
+    LaunchedEffect(cardId) {
+        cardRouteReady = false
+        yarnCardViewModel.observeCardForDetail(cardId).collect { card ->
+            if (card == null) {
+                cardRouteReady = false
+                yarnCardViewModel.clearFormState()
+                if (!currentDeleteInProgress) {
+                    navController.popBackStackOrNavigateToTopLevel(TopLevelDestination.Library)
+                }
+            } else {
+                yarnCardViewModel.loadFromCard(card)
+                cardRouteReady = true
+            }
+        }
+    }
+
+    return cardRouteReady
 }
 
 private fun NavGraphBuilder.libraryAllPhotosRoute(navController: NavHostController) {
@@ -773,6 +802,7 @@ private fun NavGraphBuilder.libraryAllPhotosRoute(navController: NavHostControll
         val projects by libraryViewModel.allProjects.collectAsStateWithLifecycle(initialValue = emptyList())
         val isPhotoSelectMode by libraryViewModel.isPhotoSelectMode.collectAsStateWithLifecycle()
         val selectedPhotoIds by libraryViewModel.selectedPhotoIds.collectAsStateWithLifecycle()
+        val photoDeleteErrorId by libraryViewModel.photoDeleteErrorId.collectAsStateWithLifecycle()
         AllPhotosScreen(
             state =
                 AllPhotosState(
@@ -780,6 +810,7 @@ private fun NavGraphBuilder.libraryAllPhotosRoute(navController: NavHostControll
                     projects = projects,
                     isSelectMode = isPhotoSelectMode,
                     selectedPhotoIds = selectedPhotoIds,
+                    deleteErrorId = photoDeleteErrorId,
                 ),
             actions =
                 AllPhotosActions(

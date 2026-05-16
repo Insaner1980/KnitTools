@@ -1,6 +1,7 @@
 package com.finnvek.knittools.ui.screens.counter
 
 import com.finnvek.knittools.ProjectSourceFiles
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -31,10 +32,21 @@ class ProgressPhotoGallerySourceTest {
         assertTrue(source.contains("Intent.FLAG_GRANT_READ_URI_PERMISSION"))
     }
 
+    @Test
+    fun `all photos uses localized project fallback names`() {
+        val source = ProjectSourceFiles.read(ALL_PHOTOS_SCREEN)
+
+        assertTrue(source.contains("stringResource(R.string.new_project_name_format, projectId)"))
+        assertTrue(source.contains("stringResource(R.string.new_project_name_format, photo.projectId)"))
+        assertFalse(source.contains("\"Project \$projectId\""))
+    }
+
     private companion object {
         private const val PHOTO_GALLERY_SCREEN =
             "app/src/main/java/com/finnvek/knittools/ui/screens/counter/PhotoGalleryScreen.kt"
         private const val PHOTO_COMPONENTS =
             "app/src/main/java/com/finnvek/knittools/ui/screens/counter/PhotoComponents.kt"
+        private const val ALL_PHOTOS_SCREEN =
+            "app/src/main/java/com/finnvek/knittools/ui/screens/library/AllPhotosScreen.kt"
     }
 }

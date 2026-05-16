@@ -127,6 +127,16 @@ class InstructionParserTest {
     }
 
     @Test
+    fun `regex - contradictory increase target returns failure`() {
+        assertTrue(InstructionParser.parseWithRegex("INCREASE TO 96 FROM 108") is ParsedInstruction.Failure)
+    }
+
+    @Test
+    fun `regex - contradictory decrease target returns failure`() {
+        assertTrue(InstructionParser.parseWithRegex("DECREASE TO 108 FROM 96") is ParsedInstruction.Failure)
+    }
+
+    @Test
     fun `regex - k2tog every 12th st 96 sts`() {
         val result = InstructionParser.parseWithRegex("K2TOG EVERY 12TH STITCH (96 STS)")
         assertTrue(result is ParsedInstruction.IncreaseDecrease)
@@ -154,6 +164,26 @@ class InstructionParserTest {
         assertEquals(80, inc.currentStitches)
         assertEquals(10, inc.changeBy)
         assertTrue(inc.isIncrease)
+    }
+
+    @Test
+    fun `regex - reverse increase form`() {
+        val result = InstructionParser.parseWithRegex("96 STITCHES INCREASE 12")
+        assertTrue(result is ParsedInstruction.IncreaseDecrease)
+        val inc = result as ParsedInstruction.IncreaseDecrease
+        assertEquals(96, inc.currentStitches)
+        assertEquals(12, inc.changeBy)
+        assertTrue(inc.isIncrease)
+    }
+
+    @Test
+    fun `regex - reverse decrease form`() {
+        val result = InstructionParser.parseWithRegex("120 STITCHES DECREASE 8")
+        assertTrue(result is ParsedInstruction.IncreaseDecrease)
+        val dec = result as ParsedInstruction.IncreaseDecrease
+        assertEquals(120, dec.currentStitches)
+        assertEquals(8, dec.changeBy)
+        assertTrue(!dec.isIncrease)
     }
 
     // === parseWithRegex: Gauge ===

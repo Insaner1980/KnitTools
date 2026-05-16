@@ -210,6 +210,12 @@
     <string name="easy_to_remember">Facile da ricordare</string>
     <string name="balanced">Bilanciato</string>
     <string name="total_stitches_format">TOTALE: %1$d %2$s</string>
+    <string name="increase_decrease_error_current_positive">Le maglie attuali devono essere maggiori di 0</string>
+    <string name="increase_decrease_error_change_positive">Il numero di maglie da modificare deve essere maggiore di 0</string>
+    <string name="increase_decrease_error_cannot_decrease">Numero di maglie disponibile: %2$d. Diminuzione richiesta: %1$d.</string>
+    <string name="increase_decrease_error_not_enough_decrease">Numero di maglie richiesto: %1$d. Diminuzioni richieste: %2$d.</string>
+    <string name="increase_decrease_error_total_out_of_range">Il risultato è troppo grande. Usa numeri di maglie più piccoli.</string>
+    <string name="increase_decrease_warning_increase_more_than_current">Stai aumentando più delle maglie attuali - alcune sezioni non avranno maglie lavorate tra gli aumenti</string>
 
     <!-- Gauge Converter -->
     <string name="pattern_gauge">Campione del modello</string>
@@ -222,6 +228,7 @@
     <string name="adjusted_result">%1$d maglie, %2$d ferri</string>
     <string name="exact_result">Esatto: %1$s m, %2$s ferri</string>
     <string name="stitch_gauge_diff">Campione maglie: %s%%</string>
+    <string name="row_gauge_diff">Campione ferri: %s%%</string>
 
     <!-- Cast On Calculator -->
     <string name="desired_width">Larghezza desiderata</string>

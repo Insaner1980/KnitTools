@@ -210,6 +210,12 @@
     <string name="easy_to_remember">Facile à mémoriser</string>
     <string name="balanced">Équilibré</string>
     <string name="total_stitches_format">TOTAL : %1$d %2$s</string>
+    <string name="increase_decrease_error_current_positive">Le nombre de mailles actuel doit être supérieur à 0</string>
+    <string name="increase_decrease_error_change_positive">Le nombre de mailles à modifier doit être supérieur à 0</string>
+    <string name="increase_decrease_error_cannot_decrease">Nombre de mailles disponible : %2$d. Diminution demandée : %1$d.</string>
+    <string name="increase_decrease_error_not_enough_decrease">Nombre de mailles requis : %1$d. Diminutions demandées : %2$d.</string>
+    <string name="increase_decrease_error_total_out_of_range">Le résultat est trop grand. Utilisez des nombres de mailles plus petits.</string>
+    <string name="increase_decrease_warning_increase_more_than_current">Vous augmentez plus que le nombre de mailles actuel - certaines sections n’auront aucune maille tricotée entre les augmentations</string>
 
     <!-- Gauge Converter -->
     <string name="pattern_gauge">Échantillon du modèle</string>
@@ -222,6 +228,7 @@
     <string name="adjusted_result">%1$d mailles, %2$d rangs</string>
     <string name="exact_result">Exact : %1$s m, %2$s rangs</string>
     <string name="stitch_gauge_diff">Densité en mailles : %s%%</string>
+    <string name="row_gauge_diff">Densité en rangs : %s%%</string>
 
     <!-- Cast On Calculator -->
     <string name="desired_width">Largeur souhaitée</string>

@@ -1,5 +1,7 @@
 package com.finnvek.knittools.util.extensions
 
+import java.util.Locale
+
 private const val CM_PER_INCH = 2.54
 private const val METERS_PER_YARD = 0.9144
 
@@ -24,7 +26,7 @@ fun convertFieldValue(
         } else {
             if (toImperial) metersToYards(num) else yardsToMeters(num)
         }
-    return "%.1f".format(converted)
+    return String.format(Locale.US, "%.1f", converted)
 }
 
 fun convertGaugeValue(
@@ -51,5 +53,5 @@ fun convertGaugeValue(
         } else {
             num * 10.0 / (4.0 * CM_PER_INCH)
         }
-    return "%.1f".format(converted)
+    return String.format(Locale.US, "%.1f", converted)
 }

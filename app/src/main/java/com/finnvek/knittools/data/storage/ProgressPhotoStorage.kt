@@ -73,6 +73,24 @@ class ProgressPhotoStorage
             deleteFileUri(photoUri.toUri())
         }
 
+        fun isPhotoAvailable(
+            context: Context,
+            photoUri: String,
+        ): Boolean {
+            if (photoUri.isBlank()) return false
+            val uri = photoUri.toUri()
+            val appOwnedFile = AppFileStorage.resolveAppOwnedFile(context, uri)
+            if (appOwnedFile != null) return appOwnedFile.exists()
+            return when (uri.scheme) {
+                "file" -> uri.path?.let(::File)?.exists() == true
+                "content" ->
+                    runCatching {
+                        context.contentResolver.openFileDescriptor(uri, "r")?.use { true } ?: false
+                    }.getOrDefault(false)
+                else -> false
+            }
+        }
+
         fun deleteTemporarySource(
             context: Context,
             sourceUri: Uri,

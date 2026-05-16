@@ -121,6 +121,20 @@ class LibraryViewModelTest {
 
             assertFalse(viewModel.isPhotoSelectMode.value)
             assertTrue(viewModel.selectedPhotoIds.value.isEmpty())
+            assertEquals(1L, viewModel.photoDeleteErrorId.value)
+        }
+
+    @Test
+    fun `failed single photo delete emits error state`() =
+        runTest {
+            val photo = progressPhoto(4L)
+            coEvery { progressPhotoRepository.deletePhoto(photo) } throws RuntimeException("delete failed")
+            val viewModel = createViewModel()
+
+            viewModel.deletePhoto(photo)
+            advanceUntilIdle()
+
+            assertEquals(1L, viewModel.photoDeleteErrorId.value)
         }
 
     @Test

@@ -8,16 +8,11 @@ import com.finnvek.knittools.data.local.CounterProjectEntity
 import com.finnvek.knittools.data.local.ImmediateDatabaseTransactionRunner
 import com.finnvek.knittools.data.local.PatternAnnotationDao
 import com.finnvek.knittools.data.local.PatternAnnotationEntity
-import com.finnvek.knittools.data.local.ProgressPhotoDao
-import com.finnvek.knittools.data.local.ProgressPhotoEntity
-import com.finnvek.knittools.data.local.ProjectPhotoCount
 import com.finnvek.knittools.data.local.SavedPatternDao
 import com.finnvek.knittools.data.local.SavedPatternEntity
 import com.finnvek.knittools.data.local.YarnCardDao
 import com.finnvek.knittools.data.local.YarnCardEntity
-import com.finnvek.knittools.data.storage.ProgressPhotoStorage
 import com.finnvek.knittools.domain.model.PatternAnnotation
-import com.finnvek.knittools.domain.model.ProgressPhoto
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.YarnCard
 import io.mockk.every
@@ -450,61 +445,6 @@ class RepositoryDomainApiTest {
         }
 
     @Test
-    fun `progress photo repository exposes domain models and deletes by domain photo`() =
-        runTest {
-            val dao =
-                FakeProgressPhotoDao(
-                    progressPhotos =
-                        listOf(
-                            ProgressPhotoEntity(
-                                id = 3L,
-                                projectId = 7L,
-                                photoUri = "file:///photo.jpg",
-                                rowNumber = 12,
-                                note = "Sleeve split",
-                                createdAt = 300L,
-                            ),
-                        ),
-                )
-            val storage = mockk<ProgressPhotoStorage>(relaxed = true)
-            val repository = ProgressPhotoRepository(dao, storage, context, UnconfinedTestDispatcher(testScheduler))
-
-            val photos: List<ProgressPhoto> = repository.getAllPhotos().first()
-            val projectPhotos: List<ProgressPhoto> = repository.getPhotosForProject(7L).first()
-            repository.deletePhoto(photos.single())
-
-            assertEquals("Sleeve split", photos.single().note)
-            assertEquals(12, projectPhotos.single().rowNumber)
-            assertEquals(3L, dao.lastDeletedId)
-        }
-
-    @Test
-    fun `progress photo repository loads photo counts for projects in one dao call`() =
-        runTest {
-            val dao =
-                FakeProgressPhotoDao(
-                    progressPhotos =
-                        listOf(
-                            ProgressPhotoEntity(id = 1L, projectId = 7L, photoUri = "file:///a.jpg", rowNumber = 1),
-                            ProgressPhotoEntity(id = 2L, projectId = 7L, photoUri = "file:///b.jpg", rowNumber = 2),
-                            ProgressPhotoEntity(id = 3L, projectId = 8L, photoUri = "file:///c.jpg", rowNumber = 3),
-                        ),
-                )
-            val repository =
-                ProgressPhotoRepository(
-                    dao,
-                    mockk(relaxed = true),
-                    context,
-                    UnconfinedTestDispatcher(testScheduler),
-                )
-
-            val counts = repository.getPhotoCountsByProjectIds(listOf(7L, 8L, 7L, 9L))
-
-            assertEquals(mapOf(7L to 2, 8L to 1), counts)
-            assertEquals(listOf(7L, 8L, 9L), dao.lastCountProjectIds)
-        }
-
-    @Test
     fun `pattern annotation repository exposes domain models`() =
         runTest {
             val dao =
@@ -804,53 +744,6 @@ class RepositoryDomainApiTest {
         ) = Unit
 
         private fun getProjectSync(id: Long): CounterProjectEntity? = projects.firstOrNull { it.id == id }
-    }
-
-    private class FakeProgressPhotoDao(
-        private val progressPhotos: List<ProgressPhotoEntity> = emptyList(),
-    ) : ProgressPhotoDao {
-        var lastDeletedId: Long? = null
-        var lastCountProjectIds: List<Long> = emptyList()
-
-        override fun getPhotosForProject(projectId: Long): Flow<List<ProgressPhotoEntity>> =
-            flowOf(progressPhotos.filter { it.projectId == projectId })
-
-        override fun getLatestPhotos(
-            projectId: Long,
-            limit: Int,
-        ): Flow<List<ProgressPhotoEntity>> = flowOf(progressPhotos.filter { it.projectId == projectId }.take(limit))
-
-        override fun getPhotoCount(projectId: Long): Flow<Int> =
-            flowOf(progressPhotos.count { it.projectId == projectId })
-
-        override fun getAllPhotos(): Flow<List<ProgressPhotoEntity>> = flowOf(progressPhotos)
-
-        override fun getAllPhotoCount(): Flow<Int> = flowOf(progressPhotos.size)
-
-        override suspend fun getPhotoCountsByProjectIds(projectIds: List<Long>): List<ProjectPhotoCount> {
-            lastCountProjectIds = projectIds
-            return progressPhotos
-                .filter { it.projectId in projectIds }
-                .groupingBy { it.projectId }
-                .eachCount()
-                .map { (projectId, count) -> ProjectPhotoCount(projectId, count) }
-        }
-
-        override suspend fun insert(photo: ProgressPhotoEntity): Long = 66L
-
-        override suspend fun updateNote(
-            id: Long,
-            note: String?,
-        ) = Unit
-
-        override suspend fun delete(id: Long) {
-            lastDeletedId = id
-        }
-
-        override suspend fun deleteByIds(ids: List<Long>) = Unit
-
-        override suspend fun getByIds(ids: List<Long>): List<ProgressPhotoEntity> =
-            progressPhotos.filter { it.id in ids }
     }
 
     private class FakePatternAnnotationDao(

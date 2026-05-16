@@ -210,6 +210,12 @@
     <string name="easy_to_remember">Makkelijk te onthouden</string>
     <string name="balanced">Gebalanceerd</string>
     <string name="total_stitches_format">TOTAAL: %1$d %2$s</string>
+    <string name="increase_decrease_error_current_positive">Het huidige aantal steken moet groter zijn dan 0</string>
+    <string name="increase_decrease_error_change_positive">Het aantal te wijzigen steken moet groter zijn dan 0</string>
+    <string name="increase_decrease_error_cannot_decrease">Beschikbaar aantal steken: %2$d. Gevraagde mindering: %1$d.</string>
+    <string name="increase_decrease_error_not_enough_decrease">Vereist aantal steken: %1$d. Gevraagde minderingen: %2$d.</string>
+    <string name="increase_decrease_error_total_out_of_range">Het resultaat is te groot. Gebruik kleinere steekenaantallen.</string>
+    <string name="increase_decrease_warning_increase_more_than_current">Je meerdert meer dan het huidige aantal steken - sommige secties hebben geen gebreide steken tussen meerderingen</string>
 
     <!-- Gauge Converter -->
     <string name="pattern_gauge">Stekenproef van patroon</string>
@@ -222,6 +228,7 @@
     <string name="adjusted_result">%1$d steken, %2$d toeren</string>
     <string name="exact_result">Exact: %1$s st, %2$s toeren</string>
     <string name="stitch_gauge_diff">Stekenproef steken: %s%%</string>
+    <string name="row_gauge_diff">Stekenproef toeren: %s%%</string>
 
     <!-- Cast On Calculator -->
     <string name="desired_width">Gewenste breedte</string>

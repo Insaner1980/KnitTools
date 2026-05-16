@@ -14,3 +14,4 @@ Mitigations:
 - Release builds fail unless all Ravelry values are present and the explicit embedded-secret opt-in is set.
 - Credentials must come from environment variables or ignored `debug.credentials.properties`; they must not be committed or logged.
 - Ravelry credential extraction from the APK remains possible and is accepted as the tradeoff for a no-backend architecture.
+- DeepSec report generation marks only these documented Ravelry credential findings as `accepted-risk` after revalidation; it must not suppress unrelated security findings.

@@ -1,21 +1,11 @@
 package com.finnvek.knittools.ai.live
 
 import android.Manifest
-import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
-import com.google.firebase.Firebase
-import com.google.firebase.ai.ai
 import com.google.firebase.ai.type.FunctionCallPart
 import com.google.firebase.ai.type.FunctionResponsePart
-import com.google.firebase.ai.type.GenerativeBackend
-import com.google.firebase.ai.type.LiveSession
 import com.google.firebase.ai.type.PublicPreviewAPI
-import com.google.firebase.ai.type.ResponseModality
-import com.google.firebase.ai.type.SpeechConfig
-import com.google.firebase.ai.type.Voice
-import com.google.firebase.ai.type.content
-import com.google.firebase.ai.type.liveGenerationConfig
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -72,6 +62,7 @@ class VoiceLiveSession internal constructor(
     private var sessionStartTimeMs: Long = 0L
     private var timeoutJob: Job? = null
     private var quotaDeadlineJob: Job? = null
+    private var stopRequestedWhileConnecting: Boolean = false
 
     private val _state = MutableStateFlow(LiveVoiceState.IDLE)
     val state: StateFlow<LiveVoiceState> = _state.asStateFlow()
@@ -90,14 +81,26 @@ class VoiceLiveSession internal constructor(
     ) {
         val remainingMinutes = beginConnecting() ?: return
         var terminalState = LiveVoiceState.IDLE
+        var pendingConnectionToClose: VoiceLiveConnection? = null
         try {
             val liveConnection = connector.connect(buildSystemInstruction(context))
-            lifecycleMutex.withLock {
-                session = liveConnection
-                sessionStartTimeMs = clock()
-                _state.value = LiveVoiceState.ACTIVE
-                scheduleQuotaDeadlineLocked(remainingMinutes)
-                resetTimeoutLocked()
+            val shouldClosePendingConnection =
+                lifecycleMutex.withLock {
+                    if (stopRequestedWhileConnecting) {
+                        stopRequestedWhileConnecting = false
+                        true
+                    } else {
+                        session = liveConnection
+                        sessionStartTimeMs = clock()
+                        _state.value = LiveVoiceState.ACTIVE
+                        scheduleQuotaDeadlineLocked(remainingMinutes)
+                        resetTimeoutLocked()
+                        false
+                    }
+                }
+            if (shouldClosePendingConnection) {
+                pendingConnectionToClose = liveConnection
+                return
             }
             val wrappedHandler: (FunctionCallPart) -> FunctionResponsePart = { call ->
                 resetTimeout()
@@ -105,11 +108,25 @@ class VoiceLiveSession internal constructor(
             }
             liveConnection.startAudioConversation(wrappedHandler)
         } catch (e: Exception) {
-            android.util.Log.e(TAG, "Live API error: ${e.javaClass.simpleName}")
-            lastError = "${e.javaClass.simpleName}: ${e.message}"
-            terminalState = LiveVoiceState.ERROR
+            val stoppedWhileConnecting =
+                lifecycleMutex.withLock {
+                    if (_state.value == LiveVoiceState.CONNECTING && stopRequestedWhileConnecting) {
+                        stopRequestedWhileConnecting = false
+                        true
+                    } else {
+                        false
+                    }
+                }
+            if (stoppedWhileConnecting) {
+                terminalState = LiveVoiceState.IDLE
+            } else {
+                android.util.Log.e(TAG, "Live API error: ${e.javaClass.simpleName}")
+                lastError = "${e.javaClass.simpleName}: ${e.message}"
+                terminalState = LiveVoiceState.ERROR
+            }
         } finally {
             withContext(NonCancellable) {
+                pendingConnectionToClose?.closeQuietly()
                 finishSession(terminalState)
             }
         }
@@ -120,7 +137,18 @@ class VoiceLiveSession internal constructor(
      * Kirjaa käytetyt minuutit kiintiöön.
      */
     suspend fun stop() {
-        finishSession(LiveVoiceState.IDLE)
+        val shouldFinish =
+            lifecycleMutex.withLock {
+                if (_state.value == LiveVoiceState.CONNECTING) {
+                    stopRequestedWhileConnecting = true
+                    false
+                } else {
+                    true
+                }
+            }
+        if (shouldFinish) {
+            finishSession(LiveVoiceState.IDLE)
+        }
     }
 
     fun isActive(): Boolean = _state.value == LiveVoiceState.ACTIVE
@@ -190,6 +218,7 @@ class VoiceLiveSession internal constructor(
                 quotaDeadlineJob = null
                 session = null
                 sessionStartTimeMs = 0L
+                stopRequestedWhileConnecting = false
                 _state.value = nextState
                 FinishedSession(activeSession, elapsedMs)
             }
@@ -199,8 +228,12 @@ class VoiceLiveSession internal constructor(
             quotaManager.recordMinutes(elapsedMinutes)
         }
 
+        finishedSession.connection?.closeQuietly()
+    }
+
+    private suspend fun VoiceLiveConnection.closeQuietly() {
         try {
-            finishedSession.connection?.stopAudioConversation()
+            stopAudioConversation()
         } catch (_: Exception) {
             // Sessio voi olla jo suljettu.
         }
@@ -228,45 +261,4 @@ internal interface VoiceLiveConnection {
     suspend fun startAudioConversation(handler: (FunctionCallPart) -> FunctionResponsePart)
 
     suspend fun stopAudioConversation()
-}
-
-@OptIn(PublicPreviewAPI::class)
-private class FirebaseVoiceLiveConnector : VoiceLiveConnector {
-    override suspend fun connect(systemInstruction: String): VoiceLiveConnection {
-        val liveModel =
-            Firebase
-                .ai(
-                    backend = GenerativeBackend.googleAI(),
-                    useLimitedUseAppCheckTokens = true,
-                ).liveModel(
-                    modelName = MODEL_NAME,
-                    generationConfig =
-                        liveGenerationConfig {
-                            responseModality = ResponseModality.AUDIO
-                            speechConfig = SpeechConfig(voice = Voice(VOICE_NAME))
-                        },
-                    systemInstruction = content { text(systemInstruction) },
-                    tools = listOf(VoiceFunctionDeclarations.tool),
-                )
-        return FirebaseVoiceLiveConnection(liveModel.connect())
-    }
-
-    private companion object {
-        private const val MODEL_NAME = "gemini-2.5-flash-native-audio-preview-12-2025"
-        private const val VOICE_NAME = "Despina"
-    }
-}
-
-@OptIn(PublicPreviewAPI::class)
-private class FirebaseVoiceLiveConnection(
-    private val session: LiveSession,
-) : VoiceLiveConnection {
-    @SuppressLint("MissingPermission") // Lupa tarkistetaan VoiceLiveSession.beginConnecting()-rajalla.
-    override suspend fun startAudioConversation(handler: (FunctionCallPart) -> FunctionResponsePart) {
-        session.startAudioConversation(handler)
-    }
-
-    override suspend fun stopAudioConversation() {
-        session.stopAudioConversation()
-    }
 }

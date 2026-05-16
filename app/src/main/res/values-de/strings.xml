@@ -210,6 +210,12 @@
     <string name="easy_to_remember">Leicht zu merken</string>
     <string name="balanced">Ausgewogen</string>
     <string name="total_stitches_format">GESAMT: %1$d %2$s</string>
+    <string name="increase_decrease_error_current_positive">Die aktuelle Maschenzahl muss größer als 0 sein</string>
+    <string name="increase_decrease_error_change_positive">Die Anzahl der zu ändernden Maschen muss größer als 0 sein</string>
+    <string name="increase_decrease_error_cannot_decrease">Verfügbare Maschenzahl: %2$d. Angeforderte Abnahme: %1$d.</string>
+    <string name="increase_decrease_error_not_enough_decrease">Erforderliche Maschenzahl: %1$d. Angeforderte Abnahmen: %2$d.</string>
+    <string name="increase_decrease_error_total_out_of_range">Das Ergebnis ist zu groß. Verwende kleinere Maschenzahlen.</string>
+    <string name="increase_decrease_warning_increase_more_than_current">Es werden mehr Maschen zugenommen als aktuell vorhanden - einige Abschnitte haben keine Maschen zwischen den Zunahmen</string>
 
     <!-- Gauge Converter -->
     <string name="pattern_gauge">Maschenprobe der Anleitung</string>
@@ -222,6 +228,7 @@
     <string name="adjusted_result">%1$d Maschen, %2$d Reihen</string>
     <string name="exact_result">Exakt: %1$s M, %2$s Reihen</string>
     <string name="stitch_gauge_diff">Maschendichte: %s%%</string>
+    <string name="row_gauge_diff">Reihendichte: %s%%</string>
 
     <!-- Cast On Calculator -->
     <string name="desired_width">Gewünschte Breite</string>

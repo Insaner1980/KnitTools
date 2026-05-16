@@ -210,6 +210,12 @@
     <string name="easy_to_remember">Let at huske</string>
     <string name="balanced">Balanceret</string>
     <string name="total_stitches_format">I ALT: %1$d %2$s</string>
+    <string name="increase_decrease_error_current_positive">Nuværende masker skal være større end 0</string>
+    <string name="increase_decrease_error_change_positive">Antallet af masker der ændres skal være større end 0</string>
+    <string name="increase_decrease_error_cannot_decrease">Tilgængeligt maskeantal: %2$d. Ønsket indtagning: %1$d.</string>
+    <string name="increase_decrease_error_not_enough_decrease">Påkrævet maskeantal: %1$d. Ønskede indtagninger: %2$d.</string>
+    <string name="increase_decrease_error_total_out_of_range">Resultatet er for stort. Brug mindre masketal.</string>
+    <string name="increase_decrease_warning_increase_more_than_current">Der tages flere masker ud end det nuværende masketal - nogle sektioner har ingen retmasker mellem udtagninger</string>
 
     <!-- Gauge Converter -->
     <string name="pattern_gauge">Opskriftens strikkefasthed</string>
@@ -222,6 +228,7 @@
     <string name="adjusted_result">%1$d masker, %2$d pinde</string>
     <string name="exact_result">Præcist: %1$s m, %2$s pinde</string>
     <string name="stitch_gauge_diff">Maskefasthed: %s%%</string>
+    <string name="row_gauge_diff">Pindefasthed: %s%%</string>
 
     <!-- Cast On Calculator -->
     <string name="desired_width">Ønsket bredde</string>

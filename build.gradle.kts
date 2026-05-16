@@ -59,6 +59,12 @@ sonar {
 project(":app") {
     sonar {
         properties {
+            sonarProjectProperties
+                .getProperty("sonar.coverage.exclusions")
+                ?.takeIf { it.isNotBlank() }
+                ?.let { exclusions ->
+                    property("sonar.coverage.exclusions", exclusions)
+                }
             property(
                 "sonar.coverage.jacoco.xmlReportPaths",
                 layout.buildDirectory

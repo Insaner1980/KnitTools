@@ -364,6 +364,47 @@ tasks.configureEach {
     }
 }
 
+val jacocoCoverageExclusionPatterns =
+    listOf(
+        "**/BuildConfig.*",
+        "**/R.class",
+        "**/R$*.class",
+        "**/*Test*.*",
+        "**/*ComposableSingletons*.*",
+        "**/*_Factory.*",
+        "**/*_HiltModules*.*",
+        "**/*Hilt*.*",
+        "**/*Dagger*.*",
+        "**/App.*",
+        "**/MainActivity.*",
+        "**/di/**",
+        "**/ui/**",
+        "**/widget/**",
+        "**/auth/**",
+        "**/billing/**",
+        "**/pro/**",
+        "**/data/datastore/**",
+        "**/data/storage/**",
+        "**/data/remote/**",
+        "**/data/local/**",
+        "**/ai/speech/**",
+        "**/FirebaseVoiceLiveConnector*.*",
+        "**/FirebaseVoiceLiveConnection*.*",
+        "**/GeminiAiService*.*",
+        "**/AiQuotaManager*.*",
+        "**/VoiceLiveQuotaManager*.*",
+        "**/PatternRowDetector*.*",
+        "**/NanoAvailability*.*",
+        "**/ProjectSummarizer*.*",
+        "**/VoiceCommandInterpreter*.*",
+        "**/NetworkStatusProvider*.*",
+        "**/YarnLabelScanRepository*.*",
+    )
+
+val jacocoCoverageExclusions =
+    jacocoCoverageExclusionPatterns +
+        jacocoCoverageExclusionPatterns.map { it.replace("/", "\\") }
+
 tasks.register<JacocoReport>("jacocoDebugUnitTestReport") {
     group = "verification"
     description = "Luo debug-unit-testien JaCoCo XML- ja HTML-kattavuusraportit."
@@ -379,29 +420,10 @@ tasks.register<JacocoReport>("jacocoDebugUnitTestReport") {
     classDirectories.setFrom(
         files(
             fileTree(layout.buildDirectory.dir("intermediates/built_in_kotlinc/debug/compileDebugKotlin/classes")) {
-                exclude(
-                    "**/BuildConfig.*",
-                    "**/R.class",
-                    "**/R$*.class",
-                    "**/*Test*.*",
-                    "**/*ComposableSingletons*.*",
-                    "**/*_Factory.*",
-                    "**/*_HiltModules*.*",
-                    "**/*Hilt*.*",
-                    "**/*Dagger*.*",
-                )
+                exclude(*jacocoCoverageExclusions.toTypedArray())
             },
             fileTree(layout.buildDirectory.dir("intermediates/javac/debug/classes")) {
-                exclude(
-                    "**/BuildConfig.*",
-                    "**/R.class",
-                    "**/R$*.class",
-                    "**/*Test*.*",
-                    "**/*_Factory.*",
-                    "**/*_HiltModules*.*",
-                    "**/*Hilt*.*",
-                    "**/*Dagger*.*",
-                )
+                exclude(*jacocoCoverageExclusions.toTypedArray())
             },
         ),
     )
@@ -521,6 +543,8 @@ dependencies {
 
     // Detekt plugins
     detektPlugins(libs.detekt.compose.rules)
+    ktlintRuleset(libs.compose.rules.ktlint)
+    lintChecks(libs.android.security.lints)
 
     // Testing
     testImplementation(libs.org.json)

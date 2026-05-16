@@ -1,7 +1,9 @@
 package com.finnvek.knittools.ui.screens.gauge
 
 import com.finnvek.knittools.ai.nano.ParsedInstruction
+import com.finnvek.knittools.domain.model.GaugeConversionResult
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 class GaugeScreenParsingTest {
@@ -58,5 +60,52 @@ class GaugeScreenParsingTest {
 
         assertEquals("21.7", fields?.yourSt)
         assertEquals("27.6", fields?.yourRows)
+    }
+
+    @Test
+    fun `conversion rejects zero or negative personal gauge`() {
+        assertNull(parseAndConvertForTest(patternSt = "20", patternRows = "30", yourSt = "0", yourRows = "30"))
+        assertNull(parseAndConvertForTest(patternSt = "20", patternRows = "30", yourSt = "20", yourRows = "0"))
+        assertNull(parseAndConvertForTest(patternSt = "20", patternRows = "30", yourSt = "-1", yourRows = "30"))
+    }
+
+    @Test
+    fun `conversion rejects zero or negative pattern instruction counts`() {
+        assertNull(parseAndConvertForTest(stitchCount = "0", rowCount = "80"))
+        assertNull(parseAndConvertForTest(stitchCount = "100", rowCount = "0"))
+        assertNull(parseAndConvertForTest(stitchCount = "-1", rowCount = "80"))
+    }
+
+    private fun parseAndConvertForTest(
+        patternSt: String = "20",
+        patternRows: String = "30",
+        yourSt: String = "22",
+        yourRows: String = "32",
+        stitchCount: String = "100",
+        rowCount: String = "80",
+    ): GaugeConversionResult? =
+        parseAndConvertMethod.invoke(
+            null,
+            patternSt,
+            patternRows,
+            yourSt,
+            yourRows,
+            stitchCount,
+            rowCount,
+        ) as GaugeConversionResult?
+
+    private companion object {
+        private val parseAndConvertMethod =
+            Class
+                .forName("com.finnvek.knittools.ui.screens.gauge.GaugeScreenKt")
+                .getDeclaredMethod(
+                    "parseAndConvert",
+                    String::class.java,
+                    String::class.java,
+                    String::class.java,
+                    String::class.java,
+                    String::class.java,
+                    String::class.java,
+                ).apply { isAccessible = true }
     }
 }

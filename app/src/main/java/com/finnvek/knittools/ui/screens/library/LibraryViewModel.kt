@@ -36,6 +36,8 @@ class LibraryViewModel
 
         private val _selectedPhotoIds = MutableStateFlow<Set<Long>>(emptySet())
         val selectedPhotoIds: StateFlow<Set<Long>> = _selectedPhotoIds.asStateFlow()
+        private val _photoDeleteErrorId = MutableStateFlow(0L)
+        val photoDeleteErrorId: StateFlow<Long> = _photoDeleteErrorId.asStateFlow()
 
         private val _isPatternSelectMode = MutableStateFlow(false)
         val isPatternSelectMode: StateFlow<Boolean> = _isPatternSelectMode.asStateFlow()
@@ -98,7 +100,13 @@ class LibraryViewModel
 
         fun deletePhoto(photo: ProgressPhoto) {
             viewModelScope.launch {
-                progressPhotoRepository.deletePhoto(photo)
+                try {
+                    progressPhotoRepository.deletePhoto(photo)
+                } catch (cancellation: CancellationException) {
+                    throw cancellation
+                } catch (_: Exception) {
+                    _photoDeleteErrorId.value += 1
+                }
             }
         }
 
@@ -133,6 +141,7 @@ class LibraryViewModel
                 selectedIds = _selectedPhotoIds,
                 exitSelectMode = ::exitPhotoSelectMode,
                 deleteByIds = progressPhotoRepository::deletePhotos,
+                onError = { _photoDeleteErrorId.value += 1 },
             )
         }
 

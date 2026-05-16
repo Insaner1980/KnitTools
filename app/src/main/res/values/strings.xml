@@ -212,6 +212,12 @@
     <string name="easy_to_remember">Easy to remember</string>
     <string name="balanced">Balanced</string>
     <string name="total_stitches_format">TOTAL: %1$d %2$s</string>
+    <string name="increase_decrease_error_current_positive">Current stitches must be greater than 0</string>
+    <string name="increase_decrease_error_change_positive">Number of stitches to change must be greater than 0</string>
+    <string name="increase_decrease_error_cannot_decrease">Available stitch count: %2$d. Requested decrease: %1$d.</string>
+    <string name="increase_decrease_error_not_enough_decrease">Required stitch count: %1$d. Requested decreases: %2$d.</string>
+    <string name="increase_decrease_error_total_out_of_range">Result is too large. Use smaller stitch counts.</string>
+    <string name="increase_decrease_warning_increase_more_than_current">Increasing more than current stitch count - some sections will have no knit stitches between increases</string>
 
     <!-- Gauge Converter -->
     <string name="pattern_gauge">Pattern gauge</string>
@@ -224,6 +230,7 @@
     <string name="adjusted_result" tools:ignore="PluralsCandidate">%1$d stitches, %2$d rows</string>
     <string name="exact_result">Exact: %1$s st, %2$s rows</string>
     <string name="stitch_gauge_diff">Stitch gauge: %s%%</string>
+    <string name="row_gauge_diff">Row gauge: %s%%</string>
 
     <!-- Cast On Calculator -->
     <string name="desired_width">Desired width</string>

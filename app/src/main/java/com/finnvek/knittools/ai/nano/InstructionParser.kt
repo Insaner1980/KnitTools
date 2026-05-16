@@ -325,68 +325,71 @@ object InstructionParser {
         "ReturnCount",
         "kotlin:S5843",
     ) // Fallback-parseri tunnistaa useita neuleohjeiden kirjoitusasuja yhdellä lausekkeella.
-    private fun parseIncreaseDecrease(upper: String): ParsedInstruction? {
+    private fun parseIncreaseDecrease(upper: String): ParsedInstruction? =
+        parseIncreaseEveryNth(upper)
+            ?: parseIncreaseDecreaseAcross(upper)
+            ?: parseIncreaseDecreaseToTarget(upper)
+            ?: parseIncreaseDecreaseReverse(upper)
+            ?: parseImplicitDecreaseEveryNth(upper)
+
+    private fun parseIncreaseEveryNth(upper: String): ParsedInstruction.IncreaseDecrease? {
         val incEveryNth =
             Regex(
                 """(?:INCREASE|INC)\s+1\s*(?:STITCH|ST|STS?)\s+(?:IN|ON)\s+EVERY\s+(\d+)\w*\s+(?:ST|STITCH).*?(?:ACROSS|OVER)\s+(\d+)""",
             )
-        incEveryNth.find(upper)?.let { m ->
-            val every = m.groupValues[1].toIntOrNull()
-            val total = m.groupValues[2].toIntOrNull()
-            if (every != null && total != null && every > 0) {
-                val increases = total / every
-                return ParsedInstruction.IncreaseDecrease(total, increases, true)
-            }
-        }
+        val match = incEveryNth.find(upper) ?: return null
+        val every = match.groupValues[1].toIntOrNull()
+        val total = match.groupValues[2].toIntOrNull()
+        if (every == null || total == null || every <= 0) return null
+        return ParsedInstruction.IncreaseDecrease(total, total / every, true)
+    }
 
+    private fun parseIncreaseDecreaseAcross(upper: String): ParsedInstruction.IncreaseDecrease? {
         // "increase/decrease X stitches evenly across/over Y stitches"
         val incDecAcross =
-            Regex("""(INCREASE|DECREASE|INC|DEC)\s+(\d+)\s*(?:STITCHES?|STS?)?.*?(?:ACROSS|OVER|FROM|IN|ON)\s+(\d+)""")
-        incDecAcross.find(upper)?.let { m ->
-            val isInc = m.groupValues[1].startsWith("INC")
-            val change = m.groupValues[2].toIntOrNull()
-            val current = m.groupValues[3].toIntOrNull()
-            if (change != null && current != null) return ParsedInstruction.IncreaseDecrease(current, change, isInc)
-        }
+            Regex("""(INCREASE|DECREASE|INC|DEC)\s+(\d+).*?(?:ACROSS|OVER|FROM|IN|ON)\s+(\d+)""")
+        val match = incDecAcross.find(upper) ?: return null
+        val isIncrease = match.groupValues[1].startsWith("INC")
+        val change = match.groupValues[2].toIntOrNull() ?: return null
+        val current = match.groupValues[3].toIntOrNull() ?: return null
+        return ParsedInstruction.IncreaseDecrease(current, change, isIncrease)
+    }
 
+    private fun parseIncreaseDecreaseToTarget(upper: String): ParsedInstruction.IncreaseDecrease? {
         // "increase/decrease to X from Y" tai "increase to X stitches (currently Y)"
         val incDecTo =
             Regex("""(INCREASE|DECREASE|INC|DEC)\s+(?:EVENLY\s+)?TO\s+(\d+).*?(?:FROM|CURRENTLY|NOW)\s+(\d+)""")
-        incDecTo.find(upper)?.let { m ->
-            val isInc = m.groupValues[1].startsWith("INC")
-            val target = m.groupValues[2].toIntOrNull()
-            val current = m.groupValues[3].toIntOrNull()
-            if (target != null && current != null) {
-                val change = kotlin.math.abs(target - current)
-                return ParsedInstruction.IncreaseDecrease(current, change, isInc)
-            }
-        }
+        val match = incDecTo.find(upper) ?: return null
+        val isIncrease = match.groupValues[1].startsWith("INC")
+        val target = match.groupValues[2].toIntOrNull() ?: return null
+        val current = match.groupValues[3].toIntOrNull() ?: return null
+        val delta = target - current
+        if (delta == 0 || (delta > 0) != isIncrease) return null
+        return ParsedInstruction.IncreaseDecrease(current, kotlin.math.abs(delta), isIncrease)
+    }
 
+    private fun parseIncreaseDecreaseReverse(upper: String): ParsedInstruction.IncreaseDecrease? {
         // "Y stitches, increase/decrease X" (käänteinen)
         val incDecReverse =
             Regex("""(\d+)\s*(?:STITCHES?|STS?).*?(INCREASE|DECREASE|INC|DEC)\s+(\d+)""")
-        incDecReverse.find(upper)?.let { m ->
-            val current = m.groupValues[1].toIntOrNull()
-            val isInc = m.groupValues[2].startsWith("INC")
-            val change = m.groupValues[3].toIntOrNull()
-            if (current != null && change != null) return ParsedInstruction.IncreaseDecrease(current, change, isInc)
-        }
+        val match = incDecReverse.find(upper) ?: return null
+        val current = match.groupValues[1].toIntOrNull() ?: return null
+        val isIncrease = match.groupValues[2].startsWith("INC")
+        val change = match.groupValues[3].toIntOrNull() ?: return null
+        return ParsedInstruction.IncreaseDecrease(current, change, isIncrease)
+    }
 
+    private fun parseImplicitDecreaseEveryNth(upper: String): ParsedInstruction.IncreaseDecrease? {
         // "k2tog every Nth stitch (Y sts)" — implisiittinen decrease
         val k2togPattern =
             Regex(
                 """(?:K2TOG|SSK|P2TOG|SK2P|S2KP)\s+(?:EVERY|EACH)\s+(\d+)\w*\s+(?:ST|STITCH).*?(\d+)\s*(?:STS?|STITCHES?)""",
             )
-        k2togPattern.find(upper)?.let { m ->
-            val every = m.groupValues[1].toIntOrNull()
-            val total = m.groupValues[2].toIntOrNull()
-            if (every != null && total != null && every > 0) {
-                val decreases = total / every
-                return ParsedInstruction.IncreaseDecrease(total, decreases, false)
-            }
-        }
-
-        return null
+        val match = k2togPattern.find(upper) ?: return null
+        val every = match.groupValues[1].toIntOrNull()
+        val total = match.groupValues[2].toIntOrNull()
+        if (every == null || total == null || every <= 0) return null
+        return ParsedInstruction.IncreaseDecrease(total, total / every, false)
     }
 
     // --- Gauge-patternien tunnistus ---

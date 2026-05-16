@@ -20,6 +20,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.InputStream
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -165,20 +166,34 @@ class SavedPatternRepository
             second: File,
         ): Boolean {
             if (first.length() != second.length()) return false
-            first.inputStream().use { firstInput ->
+            return first.inputStream().use { firstInput ->
                 second.inputStream().use { secondInput ->
-                    val firstBuffer = ByteArray(DEFAULT_BUFFER_SIZE)
-                    val secondBuffer = ByteArray(DEFAULT_BUFFER_SIZE)
-                    while (true) {
-                        val firstRead = firstInput.read(firstBuffer)
-                        val secondRead = secondInput.read(secondBuffer)
-                        if (firstRead != secondRead) return false
-                        if (firstRead == -1) return true
-                        for (index in 0 until firstRead) {
-                            if (firstBuffer[index] != secondBuffer[index]) return false
-                        }
-                    }
+                    streamsHaveSameContent(firstInput, secondInput)
                 }
             }
         }
+
+        private fun streamsHaveSameContent(
+            firstInput: InputStream,
+            secondInput: InputStream,
+        ): Boolean {
+            val firstBuffer = ByteArray(DEFAULT_BUFFER_SIZE)
+            val secondBuffer = ByteArray(DEFAULT_BUFFER_SIZE)
+            while (true) {
+                val firstRead = firstInput.read(firstBuffer)
+                val secondRead = secondInput.read(secondBuffer)
+                if (firstRead != secondRead) return false
+                if (firstRead == -1) return true
+                if (!buffersHaveSameContent(firstBuffer, secondBuffer, firstRead)) return false
+            }
+        }
+
+        private fun buffersHaveSameContent(
+            first: ByteArray,
+            second: ByteArray,
+            byteCount: Int,
+        ): Boolean =
+            (0 until byteCount).all { index ->
+                first[index] == second[index]
+            }
     }

@@ -34,7 +34,7 @@ object YarnLabelGeminiScanner {
 
         Important:
         - If the label shows yards instead of meters, convert to meters (1 yard = 0.9144 meters) and return meters
-        - For weight category, infer from needle size and meters/gram if not explicitly stated
+        - For weightCategory, return one of the listed enum values only when the category is printed on the label; otherwise return null
         - Preserve the original brand and color names exactly as printed
         - Do not translate anything
         """.trimIndent()
@@ -52,7 +52,7 @@ object YarnLabelGeminiScanner {
     }
 
     internal fun parseResponse(response: String): ParsedYarnLabel? {
-        val jsonText = extractJson(response) ?: return ParsedYarnLabel()
+        val jsonText = extractJson(response) ?: return null
         return try {
             val json = JSONObject(jsonText)
             if (json.has("error")) return null
@@ -61,7 +61,7 @@ object YarnLabelGeminiScanner {
                 brand = json.optStringOrEmpty("brand"),
                 yarnName = json.optStringOrEmpty("name"),
                 fiberContent = json.optStringOrEmpty("fiberContent"),
-                weightCategory = json.optStringOrEmpty("weightCategory"),
+                weightCategory = json.optSupportedWeightCategory("weightCategory"),
                 weightGrams = json.optNullableInt("gramsPerSkein")?.toString() ?: "",
                 lengthMeters = json.optNullableInt("metersPerSkein")?.toString() ?: "",
                 needleSize = json.optNullableDouble("recommendedNeedleMm")?.let { formatNeedle(it) } ?: "",
@@ -76,7 +76,7 @@ object YarnLabelGeminiScanner {
                 careSymbols = parseCareSymbols(json.optStringOrEmpty("careInstructions")),
             )
         } catch (_: Exception) {
-            ParsedYarnLabel()
+            null
         }
     }
 
@@ -118,6 +118,17 @@ object YarnLabelGeminiScanner {
     private fun formatNeedle(mm: Double): String = if (mm == mm.toLong().toDouble()) "${mm.toLong()}mm" else "${mm}mm"
 
     private const val DRY_CLEAN = "dry clean"
+    private val SUPPORTED_WEIGHT_CATEGORIES =
+        setOf(
+            "LACE",
+            "FINGERING",
+            "SPORT",
+            "DK",
+            "WORSTED",
+            "ARAN",
+            "BULKY",
+            "SUPER_BULKY",
+        )
 
     private fun parseCareSymbols(instructions: String): Long {
         val text = instructions.lowercase()
@@ -201,6 +212,11 @@ object YarnLabelGeminiScanner {
     private fun JSONObject.optStringOrEmpty(key: String): String {
         if (isNull(key)) return ""
         return optString(key, "").takeIf { it != "null" } ?: ""
+    }
+
+    private fun JSONObject.optSupportedWeightCategory(key: String): String {
+        val value = optStringOrEmpty(key).trim()
+        return value.takeIf { it in SUPPORTED_WEIGHT_CATEGORIES } ?: ""
     }
 
     private fun JSONObject.optNullableInt(key: String): Int? {

@@ -29,12 +29,15 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -66,6 +69,7 @@ data class AllPhotosState(
     val projects: List<CounterProject>,
     val isSelectMode: Boolean,
     val selectedPhotoIds: Set<Long>,
+    val deleteErrorId: Long = 0L,
 )
 
 data class AllPhotosActions(
@@ -87,6 +91,8 @@ fun AllPhotosScreen(
     var selectedProjectId by rememberSaveable { mutableStateOf<Long?>(null) }
     var viewingPhotoId by rememberSaveable { mutableStateOf<Long?>(null) }
     var showDeleteConfirmDialog by rememberSaveable { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val deleteFailedMessage = stringResource(R.string.ai_error_unknown)
     val viewingPhoto = remember(viewingPhotoId, state.photos) { state.photos.firstOrNull { it.id == viewingPhotoId } }
 
     val filteredPhotos =
@@ -101,6 +107,12 @@ fun AllPhotosScreen(
     // Poistu valintamoodista back-painikkeella
     BackHandler(enabled = state.isSelectMode) {
         actions.onExitSelectMode()
+    }
+
+    LaunchedEffect(state.deleteErrorId) {
+        if (state.deleteErrorId > 0) {
+            snackbarHostState.showSnackbar(deleteFailedMessage)
+        }
     }
 
     // PhotoViewer (vain normaalimoodissa)
@@ -140,6 +152,7 @@ fun AllPhotosScreen(
                 onBack = actions.onBack,
             )
         },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         bottomBar = {
             SelectModeDeleteBar(
                 visible = state.isSelectMode && state.selectedPhotoIds.isNotEmpty(),
@@ -312,7 +325,7 @@ private fun ProjectFilterChips(
             )
         }
         items(projectsWithPhotos, key = { it }) { projectId ->
-            val name = projectMap[projectId]?.name ?: "Project $projectId"
+            val name = projectMap[projectId]?.name ?: stringResource(R.string.new_project_name_format, projectId)
             FilterChip(
                 selected = selectedProjectId == projectId,
                 onClick = { onProjectFilterClick(projectId) },
@@ -343,9 +356,11 @@ private fun PhotoGrid(
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         items(filteredPhotos, key = { it.id }) { photo ->
+            val projectName =
+                projectMap[photo.projectId]?.name ?: stringResource(R.string.new_project_name_format, photo.projectId)
             PhotoGridItem(
                 photo = photo,
-                projectName = projectMap[photo.projectId]?.name,
+                projectName = projectName,
                 isSelectMode = state.isSelectMode,
                 isSelected = photo.id in state.selectedPhotoIds,
                 onClick = {
@@ -369,7 +384,7 @@ private fun PhotoGrid(
 @Composable
 private fun PhotoGridItem(
     photo: ProgressPhoto,
-    projectName: String?,
+    projectName: String,
     isSelectMode: Boolean,
     isSelected: Boolean,
     onClick: () -> Unit,
@@ -407,15 +422,13 @@ private fun PhotoGridItem(
                     contentScale = ContentScale.Crop,
                 )
                 Column(modifier = Modifier.padding(8.dp)) {
-                    if (projectName != null) {
-                        Text(
-                            text = projectName,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
+                    Text(
+                        text = projectName,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                     Text(
                         text = photo.note ?: stringResource(R.string.row_label_format, photo.rowNumber),
                         style = MaterialTheme.typography.bodySmall,

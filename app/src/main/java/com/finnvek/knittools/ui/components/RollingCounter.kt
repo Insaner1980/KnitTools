@@ -45,9 +45,9 @@ fun RollingCounter(
             },
     ) {
         countStr.forEachIndexed { index, char ->
-            val key = "${countStr.length}-$index-$char"
+            val digit = RollingCounterDigit(countStr.length, index, char)
             AnimatedContent(
-                targetState = key,
+                targetState = digit,
                 transitionSpec = {
                     val direction = if (goingUp) 1 else -1
                     slideInVertically(
@@ -60,11 +60,9 @@ fun RollingCounter(
                         )
                 },
                 label = "digit_$index",
-            ) { targetKey ->
-                // Uutetaan näytettävä merkki avaimesta ("length-index-char")
-                val displayChar = targetKey.substringAfterLast('-')
+            ) { targetDigit ->
                 Text(
-                    text = displayChar,
+                    text = targetDigit.char.toString(),
                     style = textStyle,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
@@ -72,3 +70,9 @@ fun RollingCounter(
         }
     }
 }
+
+private data class RollingCounterDigit(
+    val length: Int,
+    val index: Int,
+    val char: Char,
+)

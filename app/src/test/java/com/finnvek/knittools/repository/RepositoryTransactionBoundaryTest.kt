@@ -519,31 +519,39 @@ class RepositoryTransactionBoundaryTest {
         uriString: String,
         pathSegments: List<String>,
         block: suspend () -> Unit,
-    ) {
-        mockkStatic(Uri::class)
-        try {
-            val uri = mockk<Uri>(relaxed = true)
-            every { Uri.parse(uriString) } returns uri
+    ) = withParsedUri(
+        uriString = uriString,
+        configure = { uri ->
             every { uri.scheme } returns "content"
             every { uri.authority } returns "com.finnvek.knittools.fileprovider"
             every { uri.pathSegments } returns pathSegments
-            block()
-        } finally {
-            unmockkStatic(Uri::class)
-        }
-    }
+        },
+        block = block,
+    )
 
     private suspend inline fun withParsedFileUri(
         uriString: String,
         path: String,
+        block: suspend () -> Unit,
+    ) = withParsedUri(
+        uriString = uriString,
+        configure = { uri ->
+            every { uri.scheme } returns "file"
+            every { uri.path } returns path
+        },
+        block = block,
+    )
+
+    private suspend inline fun withParsedUri(
+        uriString: String,
+        configure: (Uri) -> Unit,
         block: suspend () -> Unit,
     ) {
         mockkStatic(Uri::class)
         try {
             val uri = mockk<Uri>(relaxed = true)
             every { Uri.parse(uriString) } returns uri
-            every { uri.scheme } returns "file"
-            every { uri.path } returns path
+            configure(uri)
             block()
         } finally {
             unmockkStatic(Uri::class)

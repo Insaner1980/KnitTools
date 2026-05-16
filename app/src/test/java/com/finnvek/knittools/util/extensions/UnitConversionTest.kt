@@ -2,6 +2,7 @@ package com.finnvek.knittools.util.extensions
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import java.util.Locale
 
 class UnitConversionTest {
     private val delta = 0.01
@@ -70,6 +71,16 @@ class UnitConversionTest {
         assertEquals("0.0", convertFieldValue("0.0", toImperial = false))
     }
 
+    @Test
+    fun `convertFieldValue returns parser-safe decimals under Finnish locale`() {
+        withDefaultLocale(Locale.forLanguageTag("fi-FI")) {
+            val converted = convertFieldValue("10", toImperial = true, isLength = true)
+
+            assertEquals("3.9", converted)
+            assertEquals(3.9, converted.toDouble(), delta)
+        }
+    }
+
     // --- convertGaugeValue ---
 
     @Test
@@ -101,5 +112,28 @@ class UnitConversionTest {
     @Test
     fun `convertGaugeValue returns original for zero`() {
         assertEquals("0", convertGaugeValue("0", toImperial = true))
+    }
+
+    @Test
+    fun `convertGaugeValue returns parser-safe decimals under Finnish locale`() {
+        withDefaultLocale(Locale.forLanguageTag("fi-FI")) {
+            val converted = convertGaugeValue("22", toImperial = true)
+
+            assertEquals("22.4", converted)
+            assertEquals(22.4, converted.toDouble(), delta)
+        }
+    }
+
+    private fun withDefaultLocale(
+        locale: Locale,
+        block: () -> Unit,
+    ) {
+        val originalLocale = Locale.getDefault()
+        Locale.setDefault(locale)
+        try {
+            block()
+        } finally {
+            Locale.setDefault(originalLocale)
+        }
     }
 }

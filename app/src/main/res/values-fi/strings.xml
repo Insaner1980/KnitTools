@@ -210,6 +210,12 @@
     <string name="easy_to_remember">Helppo muistaa</string>
     <string name="balanced">Tasainen</string>
     <string name="total_stitches_format">YHTEENSÄ: %1$d %2$s</string>
+    <string name="increase_decrease_error_current_positive">Nykyisen silmukkamäärän on oltava suurempi kuin 0</string>
+    <string name="increase_decrease_error_change_positive">Muutettavien silmukoiden määrän on oltava suurempi kuin 0</string>
+    <string name="increase_decrease_error_cannot_decrease">Käytettävissä oleva silmukkamäärä: %2$d. Pyydetty kavennus: %1$d.</string>
+    <string name="increase_decrease_error_not_enough_decrease">Tarvittava silmukkamäärä: %1$d. Pyydetyt kavennukset: %2$d.</string>
+    <string name="increase_decrease_error_total_out_of_range">Tulos on liian suuri. Käytä pienempiä silmukkamääriä.</string>
+    <string name="increase_decrease_warning_increase_more_than_current">Lisäyksiä on enemmän kuin nykyisiä silmukoita - joissakin kohdissa ei ole neulottavia silmukoita lisäysten välissä</string>
 
     <!-- Tiheyslaskuri -->
     <string name="pattern_gauge">Ohjeen tiheys</string>
@@ -222,6 +228,7 @@
     <string name="adjusted_result">%1$d silmukkaa, %2$d kerrosta</string>
     <string name="exact_result">Tarkka: %1$s s, %2$s krs</string>
     <string name="stitch_gauge_diff">Silmukkatiheys: %s%%</string>
+    <string name="row_gauge_diff">Kerrostiheys: %s%%</string>
 
     <!-- Luomislaskuri -->
     <string name="desired_width">Haluttu leveys</string>

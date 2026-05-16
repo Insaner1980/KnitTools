@@ -159,9 +159,9 @@ class RavelryAuthManager
             } catch (e: CancellationException) {
                 throw e
             } catch (e: IOException) {
-                Log.w(TAG, "Ravelry OAuth token exchange failed", e)
+                logOAuthTokenExchangeFailure(e)
             } catch (e: SerializationException) {
-                Log.w(TAG, "Ravelry OAuth token exchange failed", e)
+                logOAuthTokenExchangeFailure(e)
             }
 
             clearPendingState()
@@ -172,6 +172,10 @@ class RavelryAuthManager
             uri.scheme == REDIRECT_SCHEME &&
                 uri.host == REDIRECT_HOST &&
                 uri.path == REDIRECT_PATH
+
+        private fun logOAuthTokenExchangeFailure(error: Throwable) {
+            Log.w(TAG, "Ravelry OAuth token exchange failed: ${error.javaClass.simpleName}")
+        }
 
         /**
          * Päivittää access tokenin refresh tokenilla.

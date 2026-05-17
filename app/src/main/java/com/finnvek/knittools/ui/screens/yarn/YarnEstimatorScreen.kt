@@ -61,12 +61,16 @@ import com.finnvek.knittools.ui.components.NumberInputField
 import com.finnvek.knittools.ui.components.NumberInputOptions
 import com.finnvek.knittools.ui.components.ResultCard
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
+import com.finnvek.knittools.ui.components.skeinCountText
 import com.finnvek.knittools.ui.screens.home.HomeViewModel
 import com.finnvek.knittools.ui.screens.yarncard.YarnCardViewModel
 import com.finnvek.knittools.ui.screens.yarncard.handleYarnLabelCaptureResult
+import com.finnvek.knittools.util.extensions.convertFieldValue
+import java.util.Locale
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlin.math.ceil
 
 @Composable
 fun YarnEstimatorScreen(
@@ -113,7 +117,7 @@ private fun YarnEstimatorContent(
 
     // Täytä kentät skannatuista arvoista (Save and Use / Use in Calculator)
     if (yarnCardViewModel != null) {
-        ApplyPendingCalcValues(yarnCardViewModel) { w, l ->
+        ApplyPendingCalcValues(yarnCardViewModel, useImperial) { w, l ->
             if (l.isNotBlank()) yarnPerSkein = l
             if (w.isNotBlank()) weightPerSkein = w
         }
@@ -192,12 +196,14 @@ private fun YarnEstimatorContent(
 @Composable
 private fun ApplyPendingCalcValues(
     yarnCardViewModel: YarnCardViewModel,
+    useImperial: Boolean,
     onApply: (weight: String, length: String) -> Unit,
 ) {
     val pending by yarnCardViewModel.pendingCalcValues.collectAsStateWithLifecycle()
-    LaunchedEffect(pending) {
+    LaunchedEffect(pending, useImperial) {
         val (w, l, _) = pending ?: return@LaunchedEffect
-        onApply(w, l)
+        val (weight, length) = pendingCalculatorInputValues(w, l, useImperial)
+        onApply(weight, length)
         yarnCardViewModel.clearPendingCalcValues()
     }
 }
@@ -335,7 +341,7 @@ private fun YarnInputFields(
 private fun YarnResultCard(result: YarnEstimate) {
     ResultCard(title = stringResource(R.string.result)) {
         AnimatedResultNumber(
-            targetValue = stringResource(R.string.skeins_result, result.skeinsNeeded),
+            targetValue = skeinCountText(result.skeinsNeeded),
         ) { value ->
             Text(
                 text = value,
@@ -349,7 +355,7 @@ private fun YarnResultCard(result: YarnEstimate) {
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = stringResource(R.string.exact_skeins, "%.2f".format(result.exactSkeins)),
+            text = stringResource(R.string.estimated_skeins, formatSkeinsEstimateForDisplay(result.exactSkeins)),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -369,6 +375,25 @@ private fun calculateYarnEstimate(
     if (total <= 0 || perSkein <= 0 || weight <= 0) return null
     return YarnEstimator.estimate(total, perSkein, weight)
 }
+
+private fun pendingCalculatorInputValues(
+    weightGrams: String,
+    lengthMeters: String,
+    useImperial: Boolean,
+): Pair<String, String> =
+    weightGrams to
+        if (useImperial) {
+            convertFieldValue(lengthMeters, toImperial = true, isLength = false)
+        } else {
+            lengthMeters
+        }
+
+private fun formatSkeinsEstimateForDisplay(exactSkeins: Double): String {
+    val roundedUp = ceil(exactSkeins * 100.0 - DISPLAY_ROUNDING_EPSILON) / 100.0
+    return String.format(Locale.US, "%.2f", roundedUp)
+}
+
+private const val DISPLAY_ROUNDING_EPSILON = 1e-9
 
 private suspend fun showPermissionDeniedSnackbar(
     snackbarHostState: SnackbarHostState,

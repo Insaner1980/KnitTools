@@ -68,6 +68,7 @@ import com.finnvek.knittools.ui.components.BadgePill
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.StatusMessage
 import com.finnvek.knittools.ui.components.StatusMessageType
+import com.finnvek.knittools.ui.components.skeinCountText
 import com.finnvek.knittools.ui.screens.yarncard.handleYarnLabelCaptureResult
 import com.finnvek.knittools.ui.theme.knitToolsColors
 
@@ -253,7 +254,6 @@ private fun MyYarnState.withPermissionStatus(
             },
     )
 }
-
 private fun MyYarnActions.withScanLaunchers(
     onLaunchScan: () -> Unit,
     onStatusAction: () -> Unit,
@@ -643,11 +643,3 @@ private fun QuantityPill(quantity: Int) {
                 ).padding(horizontal = 8.dp, vertical = 4.dp),
     )
 }
-
-@Composable
-private fun skeinCountText(quantity: Int): String =
-    if (quantity == 1) {
-        stringResource(R.string.skein_count_one, quantity)
-    } else {
-        stringResource(R.string.skein_count_many, quantity)
-    }

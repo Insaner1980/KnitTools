@@ -4,6 +4,11 @@ import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.ChartSymbol
 import com.finnvek.knittools.domain.model.ChartSymbolCategory
 
+/**
+ * Lähteet: Craft Yarn Council knit chart symbols ja cable symbols:
+ * https://www.craftyarncouncil.com/standards/knit-chart-symbols
+ * https://www.craftyarncouncil.com/standards/cable-symbols
+ */
 object ChartSymbolData {
     val symbols: List<ChartSymbol> =
         listOf(

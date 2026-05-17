@@ -1,6 +1,7 @@
 package com.finnvek.knittools.data.local
 
 import com.finnvek.knittools.ProjectSourceFiles
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -75,6 +76,14 @@ class DaoQuerySourceTest {
         assertTrue(dao.contains("suspend fun getPhotoCountsByProjectIds(projectIds: List<Long>)"))
     }
 
+    @Test
+    fun `project total minutes use exact session seconds`() {
+        val dao = ProjectSourceFiles.read(SESSION_DAO)
+
+        assertTrue(dao.contains("SUM(durationSeconds)"))
+        assertFalse(dao.contains("SUM(durationMinutes)"))
+    }
+
     private companion object {
         private const val COUNTER_PROJECT_DAO =
             "app/src/main/java/com/finnvek/knittools/data/local/CounterProjectDao.kt"
@@ -82,6 +91,8 @@ class DaoQuerySourceTest {
             "app/src/main/java/com/finnvek/knittools/data/local/SavedPatternDao.kt"
         private const val PROGRESS_PHOTO_DAO =
             "app/src/main/java/com/finnvek/knittools/data/local/ProgressPhotoDao.kt"
+        private const val SESSION_DAO =
+            "app/src/main/java/com/finnvek/knittools/data/local/SessionDao.kt"
         private const val COUNTER_REPOSITORY =
             "app/src/main/java/com/finnvek/knittools/repository/CounterRepository.kt"
         private const val COUNTER_VIEW_MODEL =

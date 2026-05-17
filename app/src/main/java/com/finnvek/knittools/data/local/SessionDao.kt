@@ -22,7 +22,13 @@ interface SessionDao {
         before: Long,
     )
 
-    @Query("SELECT COALESCE(SUM(durationMinutes), 0) FROM sessions WHERE projectId = :projectId")
+    @Query(
+        """
+        SELECT CAST((COALESCE(SUM(durationSeconds), 0) + 59) / 60 AS INTEGER)
+        FROM sessions
+        WHERE projectId = :projectId
+        """,
+    )
     suspend fun getTotalMinutes(projectId: Long): Int
 
     // Insights-queryt

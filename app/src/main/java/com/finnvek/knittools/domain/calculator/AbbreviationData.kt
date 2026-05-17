@@ -4,6 +4,10 @@ import android.content.Context
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.KnittingAbbreviation
 
+/**
+ * Lähde: Craft Yarn Council knitting abbreviations:
+ * https://www.craftyarncouncil.com/standards/knitting-abbreviations
+ */
 object AbbreviationData {
     val abbreviations: List<KnittingAbbreviation> =
         listOf(
@@ -100,7 +104,7 @@ object AbbreviationData {
             KnittingAbbreviation("Frog", R.string.abbr_frog_meaning, R.string.abbr_frog_desc),
             KnittingAbbreviation("Tink", R.string.abbr_tink_meaning, R.string.abbr_tink_desc),
             KnittingAbbreviation("LYS", R.string.abbr_lys_meaning, R.string.abbr_lys_desc),
-        )
+        ).sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.abbreviation })
 
     fun search(
         context: Context,
@@ -110,7 +114,8 @@ object AbbreviationData {
         if (trimmed.isEmpty()) return abbreviations
         return abbreviations.filter {
             it.abbreviation.lowercase().contains(trimmed) ||
-                context.getString(it.meaningResId).lowercase().contains(trimmed)
+                context.getString(it.meaningResId).lowercase().contains(trimmed) ||
+                context.getString(it.descriptionResId).lowercase().contains(trimmed)
         }
     }
 }

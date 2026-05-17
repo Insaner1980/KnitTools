@@ -83,6 +83,30 @@ class SessionMetricsTest {
         assertEquals(20, activity[LocalDate.of(2026, 1, 2)])
     }
 
+    @Test
+    fun `range summary ignores overlap too small to contribute rounded seconds or rows`() {
+        val zone = ZoneId.of("UTC")
+        val session =
+            KnitSession(
+                id = 1L,
+                projectId = 1L,
+                startedAt = -3_600_000L,
+                endedAt = 1L,
+                startRow = 0,
+                endRow = 3_600,
+                durationMinutes = 60,
+                durationSeconds = 3_600L,
+                rowsWorked = 3_600,
+            )
+
+        val summary = SessionMetrics.summarize(listOf(session), rangeStartMillis = 0L, zone = zone)
+
+        assertEquals(0L, summary.totalSeconds)
+        assertEquals(0, summary.totalRows)
+        assertEquals(0, summary.sessionCount)
+        assertEquals(0f, summary.rowsPerHour, 0.01f)
+    }
+
     private fun instantMillis(
         year: Int,
         month: Int,

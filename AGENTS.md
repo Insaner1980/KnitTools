@@ -103,30 +103,17 @@ Use [`CLAUDE.md`](/home/emma/dev/KnitTools/CLAUDE.md) when product wording, visu
 <claude-mem-context>
 # Memory Context
 
-# [KnitTools] recent context, 2026-05-17 1:14pm GMT+3
+# [KnitTools] recent context, 2026-05-17 9:52pm GMT+3
 
 Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision 🚨security_alert 🔐security_note
 Format: ID TIME TYPE TITLE
 Fetch details: get_observations([IDs]) | Search: mem-search skill
 
-Stats: 50 obs (18,324t read) | 2,391,109t work | 99% savings
+Stats: 50 obs (17,882t read) | 3,153,869t work | 99% savings
 
 ### Apr 30, 2026
-4618 11:16p 🔵 Lint-Check Script Reporting False Success on Windows
-4620 11:18p 🔵 Lint Issues Breakdown: 236 Missing Translations Dominate Error Count
 S448 Investigating lint-check script failures on Windows and discovering hidden Android Lint issues (Apr 30, 11:19 PM)
-4621 11:45p 🔵 Translation Gap Identified: 236 Strings Missing from Non-Finnish Locales
-4622 11:49p 🔴 Fixed ktlint Path Pattern for Windows Compatibility
-4623 11:50p 🔴 Fixed Android Lint Report Parsing to Read Full Text Report
-4624 11:51p 🔴 Fixed WrongConstant Error in URI Permission Flags
 ### May 4, 2026
-4959 4:08p 🔵 Knitting App Offline Capability Analysis Requested
-4960 " 🔵 Speech Recognition Architecture Confirmed Network-Dependent
-4961 " 🔵 Dual Voice Command Architecture Revealed
-4962 4:10p 🔵 On-Device AI Capabilities Found Using ML Kit and Gemini Nano
-4963 " 🔵 GeminiAiService Centralizes All Cloud AI Features
-4964 4:11p 🔵 Dual Yarn Label Scanning Architecture with On-Device and Cloud Options
-4965 " 🟣 Offline-Friendly Voice Commands Implemented with Local Parsing and TTS
 4966 4:12p 🔵 Triple Voice Command Architecture with Local Parsing and AI Fallback
 S679 Document KnitTools app online/offline capabilities after discovering user's assumption about voice commands was incorrect (May 4, 4:12 PM)
 ### May 8, 2026
@@ -161,29 +148,46 @@ S679 Document KnitTools app online/offline capabilities after discovering user's
 5334 " 🔄 Replaced mutableStateOf with Primitive-Specific State Functions
 5344 3:09p 🔵 Snackbar Event Handling Patterns Verified Across Configuration Changes
 ### May 17, 2026
-**5371** 8:09a 🔵 **Windows Sandbox Blocks Skill File Access with Permission Error**
-During cast-on calculator inspection session startup, the system attempted to load the using-superpowers skill file from the plugin cache. Both attempts to read C:\Users\emmah\.codex\plugins\cache\openai-curated\superpowers\dc902811\skills\using-superpowers\SKILL.md failed with Windows sandbox error "CreateProcessAsUserW failed: 5". Error code 5 indicates ACCESS_DENIED in Windows, suggesting the sandbox lacks permissions to execute PowerShell commands accessing user profile directories. This blocks skill system initialization and may affect other plugin-cached resources.
-~268t 🔍 343
-
+5371 8:09a 🔵 Windows Sandbox Blocks Skill File Access with Permission Error
 5373 " 🔵 Cast-on calculator edge case identified via TDD
 5374 " 🔴 Fixed cast-on calculator to handle pattern repeat larger than body stitches
 5375 " 🔵 Cast-on calculator validation analysis shows consistent pattern
-**5376** 8:16a 🔵 **Cast-on calculator changes appear to have been reverted**
-After successfully applying and testing the cast-on calculator edge case fix, a subsequent file read approximately 2 minutes later shows the original unfixed code. The earlier patch changed line 34 to handle nearestDown==0 case and made totalDown nullable at line 36, and tests passed confirming the fix worked. However, the file now shows the pre-fix state with non-nullable totalDown and simple nearestUp calculation. No git operations were observed that would explain this reversion. This suggests either a workspace issue, file system problem, unsaved changes, or manual revert by the user between tool executions.
-~320t 🔍 3,462
+5376 8:16a 🔵 Cast-on calculator changes appear to have been reverted
+5381 8:39a 🔵 Cast-on calculator fix applied three times due to persistent file reversion
+5378 12:39p 🔴 Cast-on calculator edge case fixed via TDD red-green cycle
+5379 " 🔵 Cast-on calculator inspection completed with no additional issues found
+5382 1:14p 🟣 CodeQL workflow restored for KnitTools project
+5383 " 🔴 Fixed Gradle dependency verification failures in CI
+5384 " 🔴 Git worktree used for safe main branch operations
+5385 1:32p 🟣 CodeQL Security Scanning Restored for KnitTools Android Project
+5386 " 🔴 Platform-Specific Gradle Dependency Verification Fixed for CI
+5387 " 🔴 ktlint Code Style Violations Fixed in Three UI Screen Files
+5388 " 🔴 Git Worktree Used for Safe Main Branch Operations
+**5389** 2:23p 🟣 **CodeQL workflow restored for KnitTools CI security scanning**
+CodeQL security scanning workflow was restored to the KnitTools repository after being removed yesterday due to CI difficulties. The configuration was modeled after the dBcheck project's successful setup, adapting for KnitTools' Java 17 environment (vs dBcheck's Java 21). The workflow uses Android Gradle Plugin 9.1.0 and sets up the Android SDK before running CodeQL analysis in manual build mode. All GitHub Actions are pinned to specific commit SHAs for reproducibility and security.
+~293t 🛠️ 158,251
 
-**5381** 8:39a 🔵 **Cast-on calculator fix applied three times due to persistent file reversion**
-Cast-on calculator edge case fix underwent three complete TDD cycles due to mysterious file reversions. First round at 09:36:33 successfully added test for pattern repeat > body stitches, saw it fail, implemented nullable totalDown fix, verified all tests pass. Git status confirmed both files modified. Second round at 09:38:24 began with files showing original unfixed code despite no observed revert operations; git status showed only AGENTS.md modified. Process repeated: test added, failed correctly (RED), fix applied, tests passed (GREEN). Third round at 09:41:25 started again with original code, repeated full cycle, achieved BUILD SUCCESSFUL. No tool executions show git operations, file overwrites, or other mechanisms that would explain the reversions. Each iteration proved the fix works identically.
-~409t 🔍 36,028
+**5390** " 🔴 **Dependency verification extended with 18 missing artifacts for CI compatibility**
+GitHub Actions CI builds were failing with dependency verification errors because gradle/verification-metadata.xml only contained Windows platform artifacts and was missing transitive parent POM hashes needed during CI dependency resolution. The fix involved downloading each missing artifact from Maven Central, computing SHA256 hashes using PowerShell HttpClient and System.Security.Cryptography, and adding all 92 lines of verification entries. The Linux aapt2 hash was obtained from Google Maven's published .sha256 file. After three iterative commits to fix cascading dependency verification failures, the Build & Test workflow finally passed all verification checks.
+~388t 🛠️ 158,251
 
-**5378** 12:39p 🔴 **Cast-on calculator edge case fixed via TDD red-green cycle**
-Cast-on calculator edge case successfully fixed following strict TDD methodology. The session wrote the failing test first for the scenario where pattern repeat (10 stitches) exceeds body stitches (4 from 2cm at 22st/10cm gauge). Test failed with AssertionError as expected, proving it catches the bug. Implementation then applied the fix: when nearestDown computes to zero, nearestUp uses patternRepeat directly instead of nearestDown + patternRepeat; totalDown becomes nullable via takeIf guard; adjustedDownWidth handles null totalDown. All 14 tests (13 original + 1 new) now pass. Git status confirms both files modified and ready to commit. This demonstrates proper red-green TDD cycle with verification before completion.
-~351t 🛠️ 50,915
+**5391** " 🔴 **Ktlint formatting violations fixed for CI compliance**
+GitHub Actions CI workflow failed at the ktlint check step due to missing blank lines between declarations and incorrect import ordering. The ktlint rules require blank lines before function declarations and lexicographic import ordering with java/javax/kotlin packages at the end. After fixing the formatting violations, the ktlint check task completed successfully in the worktree before pushing to main.
+~241t 🛠️ 158,251
 
-**5379** " 🔵 **Cast-on calculator inspection completed with no additional issues found**
-Comprehensive inspection of cast-on calculator found no issues beyond the pattern-repeat edge case. Mathematical formulas are correct for both metric (10cm gauge reference) and imperial (4in) systems. Pattern repeat logic properly treats edge stitches as outside the repeat—snapping body stitches to nearest multiple, then adding edges on top. Validation follows the established pattern: NumberInputField filters input at component level, CastOnScreen validates at derivedStateOf layer (null check + range check), calculator assumes valid inputs. Terminology is accurate and consistent across all 11 supported languages. UI correctly handles nullable adjustedDown/adjustedUp/adjustedDownWidth fields using safe-call operators. The only gap is lack of UI-layer tests for CastOnScreen, though domain logic has comprehensive coverage with 14 unit tests.
-~439t 🔍 50,915
+5392 " 🔵 dBcheck CodeQL configuration pattern identified for Android projects
+**5394** 4:40p 🔴 **Fixed session tracking accuracy and lifecycle handling**
+KnitTools session tracking had two related bugs affecting data accuracy after the v9→10 database migration. The migration correctly added durationSeconds and rowsWorked columns with proper backfill logic (converting durationMinutes * 60 → durationSeconds, computing endRow - startRow → rowsWorked), but the getTotalMinutes() query still summed the old durationMinutes field instead of the new authoritative durationSeconds field. This caused session time totals to be inaccurate after migration.
+
+The second bug was in the ProcessLifecycleOwner observer in CounterViewModel. The onPause callback correctly persisted the current session snapshot before backgrounding, but the onResume callback only set isForeground=true without calling restartSessionSegment(). This meant that when the app returned to foreground, the session timer would continue from the backgrounded state instead of starting a fresh segment anchored to the current row count.
+
+Fixed both issues: SessionDao now uses CAST((COALESCE(SUM(durationSeconds), 0) + 59) / 60 AS INTEGER) to sum seconds with ceiling rounding, and onResume now calls restartSessionSegment(projectId, state.counter.count) to properly restart session tracking. Added source-verification tests to prevent regression—DaoQuerySourceTest checks that the query uses durationSeconds and not durationMinutes, and UiStateRetentionSourceTest verifies that onResume contains the restartSessionSegment call by substring-checking the code between the two lifecycle methods.
+~633t 🛠️ 119,295
+
+**5396** 7:40p 🔵 **Pace calculation logic verified with comprehensive edge-case guards**
+Code review of KnitTools pace calculation logic confirmed the formula and edge-case handling are correct. The rows-per-hour metric is computed from exact `durationSeconds` and `rowsWorked` fields introduced in schema v10. Division-by-zero is guarded in `SessionMetrics.rowsPerHour`, returning 0f when duration is zero or negative. Very short sessions (under 1 second with no row progress) are filtered before database insertion to avoid noise. Session row tracking maintains a separate `sessionRowsWorked` counter that handles increment, decrement, and undo actions, preventing negative deltas from corrupting pace calculations. The `trackSessionRows` method explicitly handles undo by computing `-(previousValue - newValue).coerceAtLeast(0)`, ensuring rowsWorked cannot decrease incorrectly. Two active changes in the working tree improve accuracy: (1) total minutes aggregation now sums exact seconds with round-up rounding `(sum + 59) / 60`, and (2) foreground resume restarts session segments to maintain timing across app pauses. All unit tests pass, including edge cases for midnight-crossing sessions and timezone-aware daily activity splits.
+~564t 🔍 98,543
 
 
-Access 2391k tokens of past work via get_observations([IDs]) or mem-search skill.
+Access 3154k tokens of past work via get_observations([IDs]) or mem-search skill.
 </claude-mem-context>

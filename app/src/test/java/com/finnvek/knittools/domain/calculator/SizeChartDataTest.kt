@@ -2,9 +2,11 @@ package com.finnvek.knittools.domain.calculator
 
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.SizeLabel
+import com.finnvek.knittools.domain.model.SizeMeasurement
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.util.Locale
 
 class SizeChartDataTest {
     @Test
@@ -100,13 +102,25 @@ class SizeChartDataTest {
     }
 
     @Test
+    fun `all size labels are resource backed`() {
+        SizeChartData.Category.entries.forEach { category ->
+            SizeChartData.entries(category).forEach { entry ->
+                assertTrue(
+                    "$category / ${entry.sizeLabel}: label ohittaa resurssit",
+                    entry.sizeLabel is SizeLabel.Resource,
+                )
+            }
+        }
+    }
+
+    @Test
     fun `women sizes include XS through 5XL`() {
         val sizes =
             SizeChartData
                 .entries(SizeChartData.Category.WOMEN)
-                .mapNotNull { (it.sizeLabel as? SizeLabel.Literal)?.text }
-        assertTrue("XS puuttuu", sizes.any { it.contains("XS") })
-        assertTrue("5XL puuttuu", sizes.any { it.contains("5XL") })
+                .map { it.sizeLabel }
+        assertTrue("XS puuttuu", SizeLabel.Resource(R.string.size_row_women_xs_2_4) in sizes)
+        assertTrue("5XL puuttuu", SizeLabel.Resource(R.string.size_row_women_5xl_34_36) in sizes)
     }
 
     @Test
@@ -114,5 +128,31 @@ class SizeChartDataTest {
         val sizes = SizeChartData.entries(SizeChartData.Category.BABY).map { it.sizeLabel }
         assertEquals(SizeLabel.Resource(R.string.size_row_preemie), sizes.first())
         assertEquals(SizeLabel.Resource(R.string.size_row_age_18_24m), sizes.last())
+    }
+
+    @Test
+    fun `measurement formatter appends selected unit`() {
+        val measurement = SizeMeasurement(cm = 10.0, inches = 3.937)
+
+        assertEquals(
+            "10 cm",
+            SizeChartData.formatMeasurement(
+                measurement,
+                useImperial = false,
+                cmUnit = "cm",
+                inchUnit = "in",
+                locale = Locale.US,
+            ),
+        )
+        assertEquals(
+            "3.9 in",
+            SizeChartData.formatMeasurement(
+                measurement,
+                useImperial = true,
+                cmUnit = "cm",
+                inchUnit = "in",
+                locale = Locale.US,
+            ),
+        )
     }
 }

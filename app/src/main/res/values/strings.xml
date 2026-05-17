@@ -450,193 +450,219 @@
     <string name="category_head">Head</string>
     <string name="category_hand">Hand</string>
     <!-- Size chart headers -->
-    <string name="size_col_size" tools:ignore="MissingTranslation">Size</string>
-    <string name="size_col_chest" tools:ignore="MissingTranslation">Chest</string>
-    <string name="size_col_waist" tools:ignore="MissingTranslation">Waist</string>
-    <string name="size_col_hips" tools:ignore="MissingTranslation">Hips</string>
-    <string name="size_col_head" tools:ignore="MissingTranslation">Head</string>
-    <string name="size_col_length" tools:ignore="MissingTranslation">Length</string>
-    <string name="size_col_height" tools:ignore="MissingTranslation">Height</string>
-    <string name="size_col_arm" tools:ignore="MissingTranslation">Arm</string>
-    <string name="size_col_bust" tools:ignore="MissingTranslation">Bust</string>
-    <string name="size_col_circumference" tools:ignore="MissingTranslation">Circumference</string>
+    <string name="size_col_size">Size</string>
+    <string name="size_col_chest">Chest</string>
+    <string name="size_col_waist">Waist</string>
+    <string name="size_col_hips">Hips</string>
+    <string name="size_col_head">Head</string>
+    <string name="size_col_length">Length</string>
+    <string name="size_col_height">Height</string>
+    <string name="size_col_arm">Arm</string>
+    <string name="size_col_bust">Bust</string>
+    <string name="size_col_circumference">Circumference</string>
     <!-- Size chart row labels -->
-    <string name="size_row_preemie" tools:ignore="MissingTranslation">Preemie</string>
-    <string name="size_row_baby" tools:ignore="MissingTranslation">Baby</string>
-    <string name="size_row_toddler" tools:ignore="MissingTranslation">Toddler</string>
-    <string name="size_row_child" tools:ignore="MissingTranslation">Child</string>
-    <string name="size_row_adult_s" tools:ignore="MissingTranslation">Adult S</string>
-    <string name="size_row_adult_m" tools:ignore="MissingTranslation">Adult M</string>
-    <string name="size_row_adult_l" tools:ignore="MissingTranslation">Adult L</string>
-    <string name="size_row_adult_xl" tools:ignore="MissingTranslation">Adult XL</string>
-    <string name="size_row_child_s" tools:ignore="MissingTranslation">Child S</string>
-    <string name="size_row_child_m" tools:ignore="MissingTranslation">Child M</string>
-    <string name="size_row_child_l" tools:ignore="MissingTranslation">Child L</string>
-    <string name="size_row_age_0_3m" tools:ignore="MissingTranslation">0–3m</string>
-    <string name="size_row_age_3_6m" tools:ignore="MissingTranslation">3–6m</string>
-    <string name="size_row_age_6_12m" tools:ignore="MissingTranslation">6–12m</string>
-    <string name="size_row_age_12_18m" tools:ignore="MissingTranslation">12–18m</string>
-    <string name="size_row_age_18_24m" tools:ignore="MissingTranslation">18–24m</string>
+    <string name="size_row_preemie">Preemie</string>
+    <string name="size_row_baby">Baby</string>
+    <string name="size_row_toddler">Toddler</string>
+    <string name="size_row_child">Child</string>
+    <string name="size_row_adult_s">Adult S</string>
+    <string name="size_row_adult_m">Adult M</string>
+    <string name="size_row_adult_l">Adult L</string>
+    <string name="size_row_adult_xl">Adult XL</string>
+    <string name="size_row_child_s">Child S</string>
+    <string name="size_row_child_m">Child M</string>
+    <string name="size_row_child_l">Child L</string>
+    <string name="size_row_age_0_3m">0–3m</string>
+    <string name="size_row_age_3_6m">3–6m</string>
+    <string name="size_row_age_6_12m">6–12m</string>
+    <string name="size_row_age_12_18m">12–18m</string>
+    <string name="size_row_age_18_24m">18–24m</string>
+    <string name="size_row_child_2">2</string>
+    <string name="size_row_child_4">4</string>
+    <string name="size_row_child_6">6</string>
+    <string name="size_row_child_8">8</string>
+    <string name="size_row_child_10">10</string>
+    <string name="size_row_child_12">12</string>
+    <string name="size_row_child_14">14</string>
+    <string name="size_row_child_16">16</string>
+    <string name="size_row_women_xs_2_4">XS (2–4)</string>
+    <string name="size_row_women_s_6_8">S (6–8)</string>
+    <string name="size_row_women_m_10_12">M (10–12)</string>
+    <string name="size_row_women_l_14_16">L (14–16)</string>
+    <string name="size_row_women_xl_18_20">XL (18–20)</string>
+    <string name="size_row_women_2xl_22_24">2XL (22–24)</string>
+    <string name="size_row_women_3xl_26_28">3XL (26–28)</string>
+    <string name="size_row_women_4xl_30_32">4XL (30–32)</string>
+    <string name="size_row_women_5xl_34_36">5XL (34–36)</string>
+    <string name="size_row_men_xs_30_32">XS (30–32)</string>
+    <string name="size_row_men_s_34_36">S (34–36)</string>
+    <string name="size_row_men_m_38_40">M (38–40)</string>
+    <string name="size_row_men_l_42_44">L (42–44)</string>
+    <string name="size_row_men_xl_46_48">XL (46–48)</string>
+    <string name="size_row_men_2xl_50_52">2XL (50–52)</string>
+    <string name="size_row_men_3xl_54_56">3XL (54–56)</string>
+    <string name="size_row_men_4xl_58_60">4XL (58–60)</string>
+    <string name="size_row_men_5xl_62_64">5XL (62–64)</string>
 
     <!-- Abbreviations -->
     <string name="abbreviations_title">Abbreviations</string>
     <string name="search_abbreviation">Search abbreviations…</string>
     <string name="no_results_found">No results found</string>
     <!-- Abbreviation definitions -->
-    <string name="abbr_k_meaning" tools:ignore="MissingTranslation">Knit</string>
-    <string name="abbr_k_desc" tools:ignore="MissingTranslation">Insert needle knitwise, wrap yarn, pull through</string>
-    <string name="abbr_p_meaning" tools:ignore="MissingTranslation">Purl</string>
-    <string name="abbr_p_desc" tools:ignore="MissingTranslation">Insert needle purlwise, wrap yarn, pull through</string>
-    <string name="abbr_sts_meaning" tools:ignore="MissingTranslation">Stitch(es)</string>
-    <string name="abbr_sts_desc" tools:ignore="MissingTranslation">One or more loops on the needle</string>
-    <string name="abbr_rs_meaning" tools:ignore="MissingTranslation">Right side</string>
-    <string name="abbr_rs_desc" tools:ignore="MissingTranslation">The public-facing side of the work</string>
-    <string name="abbr_ws_meaning" tools:ignore="MissingTranslation">Wrong side</string>
-    <string name="abbr_ws_desc" tools:ignore="MissingTranslation">The private/back side of the work</string>
-    <string name="abbr_yo_meaning" tools:ignore="MissingTranslation">Yarn over</string>
-    <string name="abbr_yo_desc" tools:ignore="MissingTranslation">Wrap yarn around needle to create a new stitch and decorative hole</string>
-    <string name="abbr_kwise_meaning" tools:ignore="MissingTranslation">Knitwise</string>
-    <string name="abbr_kwise_desc" tools:ignore="MissingTranslation">Insert needle as if to knit</string>
-    <string name="abbr_pwise_meaning" tools:ignore="MissingTranslation">Purlwise</string>
-    <string name="abbr_pwise_desc" tools:ignore="MissingTranslation">Insert needle as if to purl</string>
-    <string name="abbr_k2tog_meaning" tools:ignore="MissingTranslation">Knit 2 together</string>
-    <string name="abbr_k2tog_desc" tools:ignore="MissingTranslation">Right-leaning decrease: knit two stitches as one</string>
-    <string name="abbr_p2tog_meaning" tools:ignore="MissingTranslation">Purl 2 together</string>
-    <string name="abbr_p2tog_desc" tools:ignore="MissingTranslation">Purl two stitches together as one</string>
-    <string name="abbr_ssk_meaning" tools:ignore="MissingTranslation">Slip, slip, knit</string>
-    <string name="abbr_ssk_desc" tools:ignore="MissingTranslation">Left-leaning decrease: slip 2 stitches knitwise, knit them together through back loops</string>
-    <string name="abbr_ssp_meaning" tools:ignore="MissingTranslation">Slip, slip, purl</string>
-    <string name="abbr_ssp_desc" tools:ignore="MissingTranslation">Left-leaning purl decrease</string>
-    <string name="abbr_skp_meaning" tools:ignore="MissingTranslation">Slip, knit, pass slipped stitch over</string>
-    <string name="abbr_skp_desc" tools:ignore="MissingTranslation">Left-leaning decrease, alternative to SSK</string>
-    <string name="abbr_k3tog_meaning" tools:ignore="MissingTranslation">Knit 3 together</string>
-    <string name="abbr_k3tog_desc" tools:ignore="MissingTranslation">Right-leaning double decrease</string>
-    <string name="abbr_p3tog_meaning" tools:ignore="MissingTranslation">Purl 3 together</string>
-    <string name="abbr_p3tog_desc" tools:ignore="MissingTranslation">Purl three stitches together</string>
-    <string name="abbr_s2kp_meaning" tools:ignore="MissingTranslation">Slip 2, knit 1, pass slipped stitches over</string>
-    <string name="abbr_s2kp_desc" tools:ignore="MissingTranslation">Centered double decrease</string>
-    <string name="abbr_sk2p_meaning" tools:ignore="MissingTranslation">Slip 1, knit 2 together, pass slipped stitch over</string>
-    <string name="abbr_sk2p_desc" tools:ignore="MissingTranslation">Left-leaning double decrease</string>
-    <string name="abbr_cdd_meaning" tools:ignore="MissingTranslation">Central double decrease</string>
-    <string name="abbr_cdd_desc" tools:ignore="MissingTranslation">Slip 2 together knitwise, K1, pass slipped stitches over</string>
-    <string name="abbr_psso_meaning" tools:ignore="MissingTranslation">Pass slipped stitch over</string>
-    <string name="abbr_psso_desc" tools:ignore="MissingTranslation">Lift slipped stitch over the last worked stitch</string>
-    <string name="abbr_dec_meaning" tools:ignore="MissingTranslation">Decrease</string>
-    <string name="abbr_dec_desc" tools:ignore="MissingTranslation">Reduce the number of stitches</string>
-    <string name="abbr_m1_meaning" tools:ignore="MissingTranslation">Make 1</string>
-    <string name="abbr_m1_desc" tools:ignore="MissingTranslation">Pick up bar between stitches and knit through back loop to increase</string>
-    <string name="abbr_m1l_meaning" tools:ignore="MissingTranslation">Make 1 left</string>
-    <string name="abbr_m1l_desc" tools:ignore="MissingTranslation">Left-leaning increase using the bar between stitches</string>
-    <string name="abbr_m1r_meaning" tools:ignore="MissingTranslation">Make 1 right</string>
-    <string name="abbr_m1r_desc" tools:ignore="MissingTranslation">Right-leaning increase using the bar between stitches</string>
-    <string name="abbr_kfb_meaning" tools:ignore="MissingTranslation">Knit front and back</string>
-    <string name="abbr_kfb_desc" tools:ignore="MissingTranslation">Knit into front and back of same stitch to increase</string>
-    <string name="abbr_pfb_meaning" tools:ignore="MissingTranslation">Purl front and back</string>
-    <string name="abbr_pfb_desc" tools:ignore="MissingTranslation">Purl into front and back of same stitch to increase</string>
-    <string name="abbr_inc_meaning" tools:ignore="MissingTranslation">Increase</string>
-    <string name="abbr_inc_desc" tools:ignore="MissingTranslation">Add stitches to the work</string>
-    <string name="abbr_sl_meaning" tools:ignore="MissingTranslation">Slip</string>
-    <string name="abbr_sl_desc" tools:ignore="MissingTranslation">Move stitch from left to right needle without working it</string>
-    <string name="abbr_sl1k_meaning" tools:ignore="MissingTranslation">Slip 1 knitwise</string>
-    <string name="abbr_sl1k_desc" tools:ignore="MissingTranslation">Slip one stitch as if to knit</string>
-    <string name="abbr_sl1p_meaning" tools:ignore="MissingTranslation">Slip 1 purlwise</string>
-    <string name="abbr_sl1p_desc" tools:ignore="MissingTranslation">Slip one stitch as if to purl</string>
-    <string name="abbr_co_meaning" tools:ignore="MissingTranslation">Cast on</string>
-    <string name="abbr_co_desc" tools:ignore="MissingTranslation">Create initial stitches on the needle</string>
-    <string name="abbr_bo_meaning" tools:ignore="MissingTranslation">Bind off</string>
-    <string name="abbr_bo_desc" tools:ignore="MissingTranslation">Secure stitches to prevent unraveling</string>
-    <string name="abbr_pu_meaning" tools:ignore="MissingTranslation">Pick up</string>
-    <string name="abbr_pu_desc" tools:ignore="MissingTranslation">Pick up stitches along an edge</string>
-    <string name="abbr_pm_meaning" tools:ignore="MissingTranslation">Place marker</string>
-    <string name="abbr_pm_desc" tools:ignore="MissingTranslation">Place a stitch marker on the needle</string>
-    <string name="abbr_sm_meaning" tools:ignore="MissingTranslation">Slip marker</string>
-    <string name="abbr_sm_desc" tools:ignore="MissingTranslation">Move marker from left to right needle</string>
-    <string name="abbr_rep_meaning" tools:ignore="MissingTranslation">Repeat</string>
-    <string name="abbr_rep_desc" tools:ignore="MissingTranslation">Work the specified section again</string>
-    <string name="abbr_rnd_meaning" tools:ignore="MissingTranslation">Round</string>
-    <string name="abbr_rnd_desc" tools:ignore="MissingTranslation">One complete circuit in circular knitting</string>
-    <string name="abbr_eor_meaning" tools:ignore="MissingTranslation">Every other row</string>
-    <string name="abbr_eor_desc" tools:ignore="MissingTranslation">Work on alternate rows</string>
-    <string name="abbr_dpn_meaning" tools:ignore="MissingTranslation">Double-pointed needles</string>
-    <string name="abbr_dpn_desc" tools:ignore="MissingTranslation">Short needles pointed at both ends, used for small circumference knitting</string>
-    <string name="abbr_cn_meaning" tools:ignore="MissingTranslation">Cable needle</string>
-    <string name="abbr_cn_desc" tools:ignore="MissingTranslation">Short needle used to hold stitches when working cables</string>
-    <string name="abbr_circ_meaning" tools:ignore="MissingTranslation">Circular needle</string>
-    <string name="abbr_circ_desc" tools:ignore="MissingTranslation">Two needle tips connected by a cable</string>
-    <string name="abbr_tbl_meaning" tools:ignore="MissingTranslation">Through back loop</string>
-    <string name="abbr_tbl_desc" tools:ignore="MissingTranslation">Work into the back leg of the stitch</string>
-    <string name="abbr_ktbl_meaning" tools:ignore="MissingTranslation">Knit through back loop</string>
-    <string name="abbr_ktbl_desc" tools:ignore="MissingTranslation">Twisted knit stitch</string>
-    <string name="abbr_ptbl_meaning" tools:ignore="MissingTranslation">Purl through back loop</string>
-    <string name="abbr_ptbl_desc" tools:ignore="MissingTranslation">Twisted purl stitch</string>
-    <string name="abbr_c4f_meaning" tools:ignore="MissingTranslation">Cable 4 front</string>
-    <string name="abbr_c4f_desc" tools:ignore="MissingTranslation">Slip 2 to CN and hold in front, K2, K2 from CN</string>
-    <string name="abbr_c4b_meaning" tools:ignore="MissingTranslation">Cable 4 back</string>
-    <string name="abbr_c4b_desc" tools:ignore="MissingTranslation">Slip 2 to CN and hold in back, K2, K2 from CN</string>
-    <string name="abbr_c6f_meaning" tools:ignore="MissingTranslation">Cable 6 front</string>
-    <string name="abbr_c6f_desc" tools:ignore="MissingTranslation">Slip 3 to CN and hold in front, K3, K3 from CN</string>
-    <string name="abbr_c6b_meaning" tools:ignore="MissingTranslation">Cable 6 back</string>
-    <string name="abbr_c6b_desc" tools:ignore="MissingTranslation">Slip 3 to CN and hold in back, K3, K3 from CN</string>
-    <string name="abbr_wyif_meaning" tools:ignore="MissingTranslation">With yarn in front</string>
-    <string name="abbr_wyif_desc" tools:ignore="MissingTranslation">Hold yarn to the front (purl side) of work</string>
-    <string name="abbr_wyib_meaning" tools:ignore="MissingTranslation">With yarn in back</string>
-    <string name="abbr_wyib_desc" tools:ignore="MissingTranslation">Hold yarn to the back (knit side) of work</string>
-    <string name="abbr_wt_meaning" tools:ignore="MissingTranslation">Wrap and turn</string>
-    <string name="abbr_wt_desc" tools:ignore="MissingTranslation">Wrap the next stitch and turn work for short row shaping</string>
-    <string name="abbr_st_st_meaning" tools:ignore="MissingTranslation">Stockinette stitch</string>
-    <string name="abbr_st_st_desc" tools:ignore="MissingTranslation">Knit on RS, purl on WS (or knit every round in circular)</string>
-    <string name="abbr_rev_st_st_meaning" tools:ignore="MissingTranslation">Reverse stockinette</string>
-    <string name="abbr_rev_st_st_desc" tools:ignore="MissingTranslation">Purl on RS, knit on WS</string>
-    <string name="abbr_g_st_meaning" tools:ignore="MissingTranslation">Garter stitch</string>
-    <string name="abbr_g_st_desc" tools:ignore="MissingTranslation">Knit every row (or knit/purl alternate rounds in circular)</string>
-    <string name="abbr_seed_st_meaning" tools:ignore="MissingTranslation">Seed stitch</string>
-    <string name="abbr_seed_st_desc" tools:ignore="MissingTranslation">Alternating K1, P1 with offset each row</string>
-    <string name="abbr_tog_meaning" tools:ignore="MissingTranslation">Together</string>
-    <string name="abbr_tog_desc" tools:ignore="MissingTranslation">Work stitches together as one</string>
-    <string name="abbr_rem_meaning" tools:ignore="MissingTranslation">Remaining</string>
-    <string name="abbr_rem_desc" tools:ignore="MissingTranslation">Stitches left on the needle</string>
-    <string name="abbr_beg_meaning" tools:ignore="MissingTranslation">Beginning</string>
-    <string name="abbr_beg_desc" tools:ignore="MissingTranslation">Start of the row or round</string>
-    <string name="abbr_alt_meaning" tools:ignore="MissingTranslation">Alternate</string>
-    <string name="abbr_alt_desc" tools:ignore="MissingTranslation">Every other row or stitch</string>
-    <string name="abbr_approx_meaning" tools:ignore="MissingTranslation">Approximately</string>
-    <string name="abbr_approx_desc" tools:ignore="MissingTranslation">Close to but not exact</string>
-    <string name="abbr_cont_meaning" tools:ignore="MissingTranslation">Continue</string>
-    <string name="abbr_cont_desc" tools:ignore="MissingTranslation">Keep working as established</string>
-    <string name="abbr_foll_meaning" tools:ignore="MissingTranslation">Following</string>
-    <string name="abbr_foll_desc" tools:ignore="MissingTranslation">The next row, round, or instruction</string>
-    <string name="abbr_prev_meaning" tools:ignore="MissingTranslation">Previous</string>
-    <string name="abbr_prev_desc" tools:ignore="MissingTranslation">The row, round, or stitch before the current one</string>
-    <string name="abbr_patt_meaning" tools:ignore="MissingTranslation">Pattern</string>
-    <string name="abbr_patt_desc" tools:ignore="MissingTranslation">Continue in established pattern</string>
-    <string name="abbr_sk_meaning" tools:ignore="MissingTranslation">Skip</string>
-    <string name="abbr_sk_desc" tools:ignore="MissingTranslation">Miss the next stitch</string>
-    <string name="abbr_selvage_meaning" tools:ignore="MissingTranslation">Selvage/selvedge stitch</string>
-    <string name="abbr_selvage_desc" tools:ignore="MissingTranslation">Edge stitch worked differently for a neat border</string>
-    <string name="abbr_lh_meaning" tools:ignore="MissingTranslation">Left hand</string>
-    <string name="abbr_lh_desc" tools:ignore="MissingTranslation">Left needle or left side</string>
-    <string name="abbr_rh_meaning" tools:ignore="MissingTranslation">Right hand</string>
-    <string name="abbr_rh_desc" tools:ignore="MissingTranslation">Right needle or right side</string>
-    <string name="abbr_mc_meaning" tools:ignore="MissingTranslation">Main color</string>
-    <string name="abbr_mc_desc" tools:ignore="MissingTranslation">The primary yarn color in a project</string>
-    <string name="abbr_cc_meaning" tools:ignore="MissingTranslation">Contrast color</string>
-    <string name="abbr_cc_desc" tools:ignore="MissingTranslation">The secondary yarn color</string>
-    <string name="abbr_wpi_meaning" tools:ignore="MissingTranslation">Wraps per inch</string>
-    <string name="abbr_wpi_desc" tools:ignore="MissingTranslation">Yarn thickness measurement: wraps around a ruler per inch</string>
-    <string name="abbr_gauge_meaning" tools:ignore="MissingTranslation">Gauge/tension</string>
-    <string name="abbr_gauge_desc" tools:ignore="MissingTranslation">Number of stitches and rows per unit of measurement</string>
-    <string name="abbr_fo_meaning" tools:ignore="MissingTranslation">Finished object</string>
-    <string name="abbr_fo_desc" tools:ignore="MissingTranslation">A completed knitting project</string>
-    <string name="abbr_wip_meaning" tools:ignore="MissingTranslation">Work in progress</string>
-    <string name="abbr_wip_desc" tools:ignore="MissingTranslation">A project currently being knitted</string>
-    <string name="abbr_ufo_meaning" tools:ignore="MissingTranslation">Unfinished object</string>
-    <string name="abbr_ufo_desc" tools:ignore="MissingTranslation">An abandoned or paused project</string>
-    <string name="abbr_frog_meaning" tools:ignore="MissingTranslation">Frog/frogging</string>
-    <string name="abbr_frog_desc" tools:ignore="MissingTranslation">Rip out knitting (rip-it, rip-it — like a frog)</string>
-    <string name="abbr_tink_meaning" tools:ignore="MissingTranslation">Tink</string>
-    <string name="abbr_tink_desc" tools:ignore="MissingTranslation">Unknit stitch by stitch (knit spelled backwards)</string>
-    <string name="abbr_lys_meaning" tools:ignore="MissingTranslation">Local yarn store</string>
-    <string name="abbr_lys_desc" tools:ignore="MissingTranslation">A neighborhood yarn shop</string>
+    <string name="abbr_k_meaning">Knit</string>
+    <string name="abbr_k_desc">Insert needle knitwise, wrap yarn, pull through</string>
+    <string name="abbr_p_meaning">Purl</string>
+    <string name="abbr_p_desc">Insert needle purlwise, wrap yarn, pull through</string>
+    <string name="abbr_sts_meaning">Stitch(es)</string>
+    <string name="abbr_sts_desc">One or more loops on the needle</string>
+    <string name="abbr_rs_meaning">Right side</string>
+    <string name="abbr_rs_desc">The public-facing side of the work</string>
+    <string name="abbr_ws_meaning">Wrong side</string>
+    <string name="abbr_ws_desc">The private/back side of the work</string>
+    <string name="abbr_yo_meaning">Yarn over</string>
+    <string name="abbr_yo_desc">Wrap yarn around needle to create a new stitch and decorative hole</string>
+    <string name="abbr_kwise_meaning">Knitwise</string>
+    <string name="abbr_kwise_desc">Insert needle as if to knit</string>
+    <string name="abbr_pwise_meaning">Purlwise</string>
+    <string name="abbr_pwise_desc">Insert needle as if to purl</string>
+    <string name="abbr_k2tog_meaning">Knit 2 together</string>
+    <string name="abbr_k2tog_desc">Right-leaning decrease: knit two stitches as one</string>
+    <string name="abbr_p2tog_meaning">Purl 2 together</string>
+    <string name="abbr_p2tog_desc">Purl two stitches together as one</string>
+    <string name="abbr_ssk_meaning">Slip, slip, knit</string>
+    <string name="abbr_ssk_desc">Left-leaning decrease: slip 2 stitches knitwise, knit them together through back loops</string>
+    <string name="abbr_ssp_meaning">Slip, slip, purl</string>
+    <string name="abbr_ssp_desc">Left-leaning purl decrease</string>
+    <string name="abbr_skp_meaning">Slip, knit, pass slipped stitch over</string>
+    <string name="abbr_skp_desc">Left-leaning decrease, alternative to SSK</string>
+    <string name="abbr_k3tog_meaning">Knit 3 together</string>
+    <string name="abbr_k3tog_desc">Right-leaning double decrease</string>
+    <string name="abbr_p3tog_meaning">Purl 3 together</string>
+    <string name="abbr_p3tog_desc">Purl three stitches together</string>
+    <string name="abbr_s2kp_meaning">Slip 2, knit 1, pass slipped stitches over</string>
+    <string name="abbr_s2kp_desc">Centered double decrease</string>
+    <string name="abbr_sk2p_meaning">Slip 1, knit 2 together, pass slipped stitch over</string>
+    <string name="abbr_sk2p_desc">Left-leaning double decrease</string>
+    <string name="abbr_cdd_meaning">Central double decrease</string>
+    <string name="abbr_cdd_desc">Slip 2 together knitwise, K1, pass slipped stitches over</string>
+    <string name="abbr_psso_meaning">Pass slipped stitch over</string>
+    <string name="abbr_psso_desc">Lift slipped stitch over the last worked stitch</string>
+    <string name="abbr_dec_meaning">Decrease</string>
+    <string name="abbr_dec_desc">Reduce the number of stitches</string>
+    <string name="abbr_m1_meaning">Make 1</string>
+    <string name="abbr_m1_desc">Pick up bar between stitches and knit through back loop to increase</string>
+    <string name="abbr_m1l_meaning">Make 1 left</string>
+    <string name="abbr_m1l_desc">Left-leaning increase using the bar between stitches</string>
+    <string name="abbr_m1r_meaning">Make 1 right</string>
+    <string name="abbr_m1r_desc">Right-leaning increase using the bar between stitches</string>
+    <string name="abbr_kfb_meaning">Knit front and back</string>
+    <string name="abbr_kfb_desc">Knit into front and back of same stitch to increase</string>
+    <string name="abbr_pfb_meaning">Purl front and back</string>
+    <string name="abbr_pfb_desc">Purl into front and back of same stitch to increase</string>
+    <string name="abbr_inc_meaning">Increase</string>
+    <string name="abbr_inc_desc">Add stitches to the work</string>
+    <string name="abbr_sl_meaning">Slip</string>
+    <string name="abbr_sl_desc">Move stitch from left to right needle without working it</string>
+    <string name="abbr_sl1k_meaning">Slip 1 knitwise</string>
+    <string name="abbr_sl1k_desc">Slip one stitch as if to knit</string>
+    <string name="abbr_sl1p_meaning">Slip 1 purlwise</string>
+    <string name="abbr_sl1p_desc">Slip one stitch as if to purl</string>
+    <string name="abbr_co_meaning">Cast on</string>
+    <string name="abbr_co_desc">Create initial stitches on the needle</string>
+    <string name="abbr_bo_meaning">Bind off</string>
+    <string name="abbr_bo_desc">Secure stitches to prevent unraveling</string>
+    <string name="abbr_pu_meaning">Pick up</string>
+    <string name="abbr_pu_desc">Pick up stitches along an edge</string>
+    <string name="abbr_pm_meaning">Place marker</string>
+    <string name="abbr_pm_desc">Place a stitch marker on the needle</string>
+    <string name="abbr_sm_meaning">Slip marker</string>
+    <string name="abbr_sm_desc">Move marker from left to right needle</string>
+    <string name="abbr_rep_meaning">Repeat</string>
+    <string name="abbr_rep_desc">Work the specified section again</string>
+    <string name="abbr_rnd_meaning">Round</string>
+    <string name="abbr_rnd_desc">One complete circuit in circular knitting</string>
+    <string name="abbr_eor_meaning">Every other row</string>
+    <string name="abbr_eor_desc">Work on alternate rows</string>
+    <string name="abbr_dpn_meaning">Double-pointed needles</string>
+    <string name="abbr_dpn_desc">Short needles pointed at both ends, used for small circumference knitting</string>
+    <string name="abbr_cn_meaning">Cable needle</string>
+    <string name="abbr_cn_desc">Short needle used to hold stitches when working cables</string>
+    <string name="abbr_circ_meaning">Circular needle</string>
+    <string name="abbr_circ_desc">Two needle tips connected by a cable</string>
+    <string name="abbr_tbl_meaning">Through back loop</string>
+    <string name="abbr_tbl_desc">Work into the back leg of the stitch</string>
+    <string name="abbr_ktbl_meaning">Knit through back loop</string>
+    <string name="abbr_ktbl_desc">Twisted knit stitch</string>
+    <string name="abbr_ptbl_meaning">Purl through back loop</string>
+    <string name="abbr_ptbl_desc">Twisted purl stitch</string>
+    <string name="abbr_c4f_meaning">Cable 4 front</string>
+    <string name="abbr_c4f_desc">Slip 2 to CN and hold in front, K2, K2 from CN</string>
+    <string name="abbr_c4b_meaning">Cable 4 back</string>
+    <string name="abbr_c4b_desc">Slip 2 to CN and hold in back, K2, K2 from CN</string>
+    <string name="abbr_c6f_meaning">Cable 6 front</string>
+    <string name="abbr_c6f_desc">Slip 3 to CN and hold in front, K3, K3 from CN</string>
+    <string name="abbr_c6b_meaning">Cable 6 back</string>
+    <string name="abbr_c6b_desc">Slip 3 to CN and hold in back, K3, K3 from CN</string>
+    <string name="abbr_wyif_meaning">With yarn in front</string>
+    <string name="abbr_wyif_desc">Hold yarn to the front (purl side) of work</string>
+    <string name="abbr_wyib_meaning">With yarn in back</string>
+    <string name="abbr_wyib_desc">Hold yarn to the back (knit side) of work</string>
+    <string name="abbr_wt_meaning">Wrap and turn</string>
+    <string name="abbr_wt_desc">Wrap the next stitch and turn work for short row shaping</string>
+    <string name="abbr_st_st_meaning">Stockinette stitch</string>
+    <string name="abbr_st_st_desc">Knit on RS, purl on WS (or knit every round in circular)</string>
+    <string name="abbr_rev_st_st_meaning">Reverse stockinette</string>
+    <string name="abbr_rev_st_st_desc">Purl on RS, knit on WS</string>
+    <string name="abbr_g_st_meaning">Garter stitch</string>
+    <string name="abbr_g_st_desc">Knit every row (or knit/purl alternate rounds in circular)</string>
+    <string name="abbr_seed_st_meaning">Seed stitch</string>
+    <string name="abbr_seed_st_desc">Alternating K1, P1 with offset each row</string>
+    <string name="abbr_tog_meaning">Together</string>
+    <string name="abbr_tog_desc">Work stitches together as one</string>
+    <string name="abbr_rem_meaning">Remaining</string>
+    <string name="abbr_rem_desc">Stitches left on the needle</string>
+    <string name="abbr_beg_meaning">Beginning</string>
+    <string name="abbr_beg_desc">Start of the row or round</string>
+    <string name="abbr_alt_meaning">Alternate</string>
+    <string name="abbr_alt_desc">Every other row or stitch</string>
+    <string name="abbr_approx_meaning">Approximately</string>
+    <string name="abbr_approx_desc">Close to but not exact</string>
+    <string name="abbr_cont_meaning">Continue</string>
+    <string name="abbr_cont_desc">Keep working as established</string>
+    <string name="abbr_foll_meaning">Following</string>
+    <string name="abbr_foll_desc">The next row, round, or instruction</string>
+    <string name="abbr_prev_meaning">Previous</string>
+    <string name="abbr_prev_desc">The row, round, or stitch before the current one</string>
+    <string name="abbr_patt_meaning">Pattern</string>
+    <string name="abbr_patt_desc">Continue in established pattern</string>
+    <string name="abbr_sk_meaning">Skip</string>
+    <string name="abbr_sk_desc">Miss the next stitch</string>
+    <string name="abbr_selvage_meaning">Selvage/selvedge stitch</string>
+    <string name="abbr_selvage_desc">Edge stitch worked differently for a neat border</string>
+    <string name="abbr_lh_meaning">Left hand</string>
+    <string name="abbr_lh_desc">Left needle or left side</string>
+    <string name="abbr_rh_meaning">Right hand</string>
+    <string name="abbr_rh_desc">Right needle or right side</string>
+    <string name="abbr_mc_meaning">Main color</string>
+    <string name="abbr_mc_desc">The primary yarn color in a project</string>
+    <string name="abbr_cc_meaning">Contrast color</string>
+    <string name="abbr_cc_desc">The secondary yarn color</string>
+    <string name="abbr_wpi_meaning">Wraps per inch</string>
+    <string name="abbr_wpi_desc">Yarn thickness measurement: wraps around a ruler per inch</string>
+    <string name="abbr_gauge_meaning">Gauge/tension</string>
+    <string name="abbr_gauge_desc">Number of stitches and rows per unit of measurement</string>
+    <string name="abbr_fo_meaning">Finished object</string>
+    <string name="abbr_fo_desc">A completed knitting project</string>
+    <string name="abbr_wip_meaning">Work in progress</string>
+    <string name="abbr_wip_desc">A project currently being knitted</string>
+    <string name="abbr_ufo_meaning">Unfinished object</string>
+    <string name="abbr_ufo_desc">An abandoned or paused project</string>
+    <string name="abbr_frog_meaning">Frog/frogging</string>
+    <string name="abbr_frog_desc">Rip out knitting (rip-it, rip-it — like a frog)</string>
+    <string name="abbr_tink_meaning">Tink</string>
+    <string name="abbr_tink_desc">Unknit stitch by stitch (knit spelled backwards)</string>
+    <string name="abbr_lys_meaning">Local yarn store</string>
+    <string name="abbr_lys_desc">A neighborhood yarn shop</string>
 
     <!-- Chart Symbols -->
     <string name="chart_symbols_title">Chart Symbols</string>
@@ -647,56 +673,56 @@
     <string name="category_cables">Cables</string>
     <string name="category_other">Other</string>
     <!-- Chart symbol definitions -->
-    <string name="sym_knit_name" tools:ignore="MissingTranslation">Knit</string>
-    <string name="sym_knit_desc" tools:ignore="MissingTranslation">Knit on RS, purl on WS</string>
-    <string name="sym_purl_name" tools:ignore="MissingTranslation">Purl</string>
-    <string name="sym_purl_desc" tools:ignore="MissingTranslation">Purl on RS, knit on WS</string>
-    <string name="sym_yarn_over_name" tools:ignore="MissingTranslation">Yarn Over</string>
-    <string name="sym_yarn_over_desc" tools:ignore="MissingTranslation">Wrap yarn around needle to create a hole</string>
-    <string name="sym_knit_tbl_name" tools:ignore="MissingTranslation">Knit TBL</string>
-    <string name="sym_knit_tbl_desc" tools:ignore="MissingTranslation">Knit through the back loop (twisted)</string>
-    <string name="sym_purl_tbl_name" tools:ignore="MissingTranslation">Purl TBL</string>
-    <string name="sym_purl_tbl_desc" tools:ignore="MissingTranslation">Purl through the back loop (twisted)</string>
-    <string name="sym_slip_knitwise_name" tools:ignore="MissingTranslation">Slip Knitwise</string>
-    <string name="sym_slip_knitwise_desc" tools:ignore="MissingTranslation">Slip stitch as if to knit</string>
-    <string name="sym_slip_purlwise_name" tools:ignore="MissingTranslation">Slip Purlwise</string>
-    <string name="sym_slip_purlwise_desc" tools:ignore="MissingTranslation">Slip stitch as if to purl</string>
-    <string name="sym_k2tog_name" tools:ignore="MissingTranslation">K2tog</string>
-    <string name="sym_k2tog_desc" tools:ignore="MissingTranslation">Knit 2 together — right-leaning decrease</string>
-    <string name="sym_ssk_name" tools:ignore="MissingTranslation">SSK</string>
-    <string name="sym_ssk_desc" tools:ignore="MissingTranslation">Slip, slip, knit — left-leaning decrease</string>
-    <string name="sym_p2tog_name" tools:ignore="MissingTranslation">P2tog</string>
-    <string name="sym_p2tog_desc" tools:ignore="MissingTranslation">Purl 2 together</string>
-    <string name="sym_s2kp_name" tools:ignore="MissingTranslation">S2KP / CDD</string>
-    <string name="sym_s2kp_desc" tools:ignore="MissingTranslation">Centered double decrease</string>
-    <string name="sym_k3tog_name" tools:ignore="MissingTranslation">K3tog</string>
-    <string name="sym_k3tog_desc" tools:ignore="MissingTranslation">Knit 3 together — double decrease</string>
-    <string name="sym_sk2p_name" tools:ignore="MissingTranslation">SK2P</string>
-    <string name="sym_sk2p_desc" tools:ignore="MissingTranslation">Slip 1, K2tog, pass slipped stitch over</string>
-    <string name="sym_m1l_name" tools:ignore="MissingTranslation">M1L</string>
-    <string name="sym_m1l_desc" tools:ignore="MissingTranslation">Make 1 left — left-leaning increase</string>
-    <string name="sym_m1r_name" tools:ignore="MissingTranslation">M1R</string>
-    <string name="sym_m1r_desc" tools:ignore="MissingTranslation">Make 1 right — right-leaning increase</string>
-    <string name="sym_kfb_name" tools:ignore="MissingTranslation">KFB</string>
-    <string name="sym_kfb_desc" tools:ignore="MissingTranslation">Knit front and back — increase</string>
-    <string name="sym_lifted_inc_left_name" tools:ignore="MissingTranslation">Lifted Inc Left</string>
-    <string name="sym_lifted_inc_left_desc" tools:ignore="MissingTranslation">Left-leaning lifted increase</string>
-    <string name="sym_lifted_inc_right_name" tools:ignore="MissingTranslation">Lifted Inc Right</string>
-    <string name="sym_lifted_inc_right_desc" tools:ignore="MissingTranslation">Right-leaning lifted increase</string>
-    <string name="sym_cable_2_2_left_name" tools:ignore="MissingTranslation">Cable 2/2 Left</string>
-    <string name="sym_cable_2_2_left_desc" tools:ignore="MissingTranslation">2-over-2 left cross cable</string>
-    <string name="sym_cable_2_2_right_name" tools:ignore="MissingTranslation">Cable 2/2 Right</string>
-    <string name="sym_cable_2_2_right_desc" tools:ignore="MissingTranslation">2-over-2 right cross cable</string>
-    <string name="sym_cable_3_3_left_name" tools:ignore="MissingTranslation">Cable 3/3 Left</string>
-    <string name="sym_cable_3_3_left_desc" tools:ignore="MissingTranslation">3-over-3 left cross cable</string>
-    <string name="sym_cable_3_3_right_name" tools:ignore="MissingTranslation">Cable 3/3 Right</string>
-    <string name="sym_cable_3_3_right_desc" tools:ignore="MissingTranslation">3-over-3 right cross cable</string>
-    <string name="sym_no_stitch_name" tools:ignore="MissingTranslation">No Stitch</string>
-    <string name="sym_no_stitch_desc" tools:ignore="MissingTranslation">Gray box — placeholder for shaping</string>
-    <string name="sym_marker_name" tools:ignore="MissingTranslation">Marker</string>
-    <string name="sym_marker_desc" tools:ignore="MissingTranslation">Stitch marker position</string>
-    <string name="sym_repeat_name" tools:ignore="MissingTranslation">Repeat</string>
-    <string name="sym_repeat_desc" tools:ignore="MissingTranslation">Pattern repeat bracket</string>
+    <string name="sym_knit_name">Knit</string>
+    <string name="sym_knit_desc">Knit on RS, purl on WS</string>
+    <string name="sym_purl_name">Purl</string>
+    <string name="sym_purl_desc">Purl on RS, knit on WS</string>
+    <string name="sym_yarn_over_name">Yarn Over</string>
+    <string name="sym_yarn_over_desc">Wrap yarn around needle to create a hole</string>
+    <string name="sym_knit_tbl_name">Knit TBL</string>
+    <string name="sym_knit_tbl_desc">Knit through the back loop (twisted)</string>
+    <string name="sym_purl_tbl_name">Purl TBL</string>
+    <string name="sym_purl_tbl_desc">Purl through the back loop (twisted)</string>
+    <string name="sym_slip_knitwise_name">Slip Knitwise</string>
+    <string name="sym_slip_knitwise_desc">Slip stitch as if to knit</string>
+    <string name="sym_slip_purlwise_name">Slip Purlwise</string>
+    <string name="sym_slip_purlwise_desc">Slip stitch as if to purl</string>
+    <string name="sym_k2tog_name">K2tog</string>
+    <string name="sym_k2tog_desc">Knit 2 together — right-leaning decrease</string>
+    <string name="sym_ssk_name">SSK</string>
+    <string name="sym_ssk_desc">Slip, slip, knit — left-leaning decrease</string>
+    <string name="sym_p2tog_name">P2tog</string>
+    <string name="sym_p2tog_desc">Purl 2 together</string>
+    <string name="sym_s2kp_name">S2KP / CDD</string>
+    <string name="sym_s2kp_desc">Centered double decrease</string>
+    <string name="sym_k3tog_name">K3tog</string>
+    <string name="sym_k3tog_desc">Knit 3 together — double decrease</string>
+    <string name="sym_sk2p_name">SK2P</string>
+    <string name="sym_sk2p_desc">Slip 1, K2tog, pass slipped stitch over</string>
+    <string name="sym_m1l_name">M1L</string>
+    <string name="sym_m1l_desc">Make 1 left — left-leaning increase</string>
+    <string name="sym_m1r_name">M1R</string>
+    <string name="sym_m1r_desc">Make 1 right — right-leaning increase</string>
+    <string name="sym_kfb_name">KFB</string>
+    <string name="sym_kfb_desc">Knit front and back — increase</string>
+    <string name="sym_lifted_inc_left_name">Lifted Inc Left</string>
+    <string name="sym_lifted_inc_left_desc">Left-leaning lifted increase</string>
+    <string name="sym_lifted_inc_right_name">Lifted Inc Right</string>
+    <string name="sym_lifted_inc_right_desc">Right-leaning lifted increase</string>
+    <string name="sym_cable_2_2_left_name">Cable 2/2 Left</string>
+    <string name="sym_cable_2_2_left_desc">2-over-2 left cross cable</string>
+    <string name="sym_cable_2_2_right_name">Cable 2/2 Right</string>
+    <string name="sym_cable_2_2_right_desc">2-over-2 right cross cable</string>
+    <string name="sym_cable_3_3_left_name">Cable 3/3 Left</string>
+    <string name="sym_cable_3_3_left_desc">3-over-3 left cross cable</string>
+    <string name="sym_cable_3_3_right_name">Cable 3/3 Right</string>
+    <string name="sym_cable_3_3_right_desc">3-over-3 right cross cable</string>
+    <string name="sym_no_stitch_name">No Stitch</string>
+    <string name="sym_no_stitch_desc">Gray box — placeholder for shaping</string>
+    <string name="sym_marker_name">Marker</string>
+    <string name="sym_marker_desc">Stitch marker position</string>
+    <string name="sym_repeat_name">Repeat</string>
+    <string name="sym_repeat_desc">Pattern repeat bracket</string>
 
     <!-- Quick Tips -->
     <string-array name="knitting_tips">

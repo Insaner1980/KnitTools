@@ -67,6 +67,19 @@ class UiStateRetentionSourceTest {
     }
 
     @Test
+    fun `foreground resume starts a fresh active session segment`() {
+        val viewModel = ProjectSourceFiles.read(COUNTER_VIEW_MODEL)
+        val onResume =
+            viewModel.substring(
+                viewModel.indexOf("override fun onResume"),
+                viewModel.indexOf("override fun onPause"),
+            )
+
+        assertTrue(onResume.contains("val state = _uiState.value"))
+        assertTrue(onResume.contains("restartSessionSegment(projectId, state.counter.count)"))
+    }
+
+    @Test
     fun `target row dialog preserves in-progress numeric input`() {
         val dialog = ProjectSourceFiles.read(TARGET_ROWS_DIALOG)
 

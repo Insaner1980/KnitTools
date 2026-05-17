@@ -88,8 +88,10 @@ internal object SessionMetrics {
         if (overlapEnd <= overlapStart) return null
 
         val fraction = (overlapEnd - overlapStart).toDouble() / (ended - started).coerceAtLeast(1L)
+        val seconds = scaledSeconds(activeSeconds, fraction)
+        if (seconds <= 0L) return null
         return SessionContribution(
-            seconds = scaledSeconds(activeSeconds, fraction),
+            seconds = seconds,
             rows = scaledRows(workedRows(), fraction),
         )
     }
@@ -118,7 +120,9 @@ internal object SessionMetrics {
             if (!date.isBefore(earliestDate)) {
                 val fraction = (segmentEnd - cursor).toDouble() / (ended - started).coerceAtLeast(1L)
                 val seconds = scaledSeconds(activeSeconds, fraction)
-                contributions[date] = (contributions[date] ?: 0L) + seconds
+                if (seconds > 0L) {
+                    contributions[date] = (contributions[date] ?: 0L) + seconds
+                }
             }
             cursor = segmentEnd
         }
@@ -155,7 +159,7 @@ private fun scaledSeconds(
     fraction: Double,
 ): Long {
     if (activeSeconds <= 0L || fraction <= 0.0) return 0L
-    return (activeSeconds * fraction).roundToLong().coerceAtLeast(1L)
+    return (activeSeconds * fraction).roundToLong().coerceAtLeast(0L)
 }
 
 private fun scaledRows(
@@ -163,7 +167,7 @@ private fun scaledRows(
     fraction: Double,
 ): Int {
     if (rows <= 0 || fraction <= 0.0) return 0
-    return (rows * fraction).roundToInt().coerceAtLeast(1)
+    return (rows * fraction).roundToInt().coerceAtLeast(0)
 }
 
 internal fun secondsToDisplayMinutes(seconds: Long): Int =

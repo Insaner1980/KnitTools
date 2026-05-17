@@ -2,6 +2,13 @@ package com.finnvek.knittools.domain.calculator
 
 import com.finnvek.knittools.domain.model.NeedleSize
 
+/**
+ * Lähde: Craft Yarn Council hooks & needles -standardit:
+ * https://www.craftyarncouncil.com/standards/hooks-and-needles
+ *
+ * CYC muistuttaa, että numerojärjestelmät vaihtelevat valmistajittain; millimetrikoko on
+ * tarkin vertailuarvo. UK/Canadian- ja Japanese-sarakkeet ovat likimääräisiä viitearvoja.
+ */
 object NeedleSizeData {
     val sizes: List<NeedleSize> =
         listOf(

@@ -189,6 +189,9 @@ class CounterViewModel
             object : DefaultLifecycleObserver {
                 override fun onResume(owner: LifecycleOwner) {
                     isForeground = true
+                    val state = _uiState.value
+                    val projectId = state.projectId ?: return
+                    restartSessionSegment(projectId, state.counter.count)
                 }
 
                 override fun onPause(owner: LifecycleOwner) {
@@ -397,14 +400,14 @@ class CounterViewModel
             endRow: Int,
             sessionSeconds: Long,
         ): Boolean {
-            val hasRowProgress = sessionRowsWorked > 0 || endRow != sessionStartRow
+            val now = System.currentTimeMillis()
             val durationSeconds =
-                when {
-                    sessionSeconds > 0L -> sessionSeconds
-                    hasRowProgress -> 1L
-                    else -> 0L
-                }
-            if (durationSeconds < 1L && !hasRowProgress) return false
+                SessionProgress.resolveDurationSeconds(
+                    recordedSeconds = sessionSeconds,
+                    startedAt = sessionStartedAt,
+                    nowMillis = now,
+                )
+            if (durationSeconds < 1L) return false
             val durationMinutes = ((durationSeconds + 59L) / 60L).toInt().coerceAtLeast(1)
             val rowsWorked = sessionRowsWorked.takeIf { it > 0 } ?: (endRow - sessionStartRow).coerceAtLeast(0)
 
@@ -412,7 +415,7 @@ class CounterViewModel
                 KnitSession(
                     projectId = projectId,
                     startedAt = sessionStartedAt,
-                    endedAt = System.currentTimeMillis(),
+                    endedAt = now,
                     startRow = sessionStartRow,
                     endRow = endRow,
                     durationMinutes = durationMinutes,
@@ -1156,14 +1159,13 @@ class CounterViewModel
             previousValue: Int,
             newValue: Int,
         ) {
-            val delta =
-                when (action) {
-                    "increment" -> (newValue - previousValue).coerceAtLeast(0)
-                    "undo" -> -(previousValue - newValue).coerceAtLeast(0)
-                    else -> 0
-                }
-            if (delta == 0) return
-            sessionRowsWorked = (sessionRowsWorked + delta).coerceAtLeast(0)
+            sessionRowsWorked =
+                SessionProgress.adjustRowsWorked(
+                    currentRowsWorked = sessionRowsWorked,
+                    action = action,
+                    previousValue = previousValue,
+                    newValue = newValue,
+                )
         }
 
         private fun pruneHistoryForFree() {

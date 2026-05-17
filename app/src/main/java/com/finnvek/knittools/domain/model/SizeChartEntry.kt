@@ -9,17 +9,12 @@ data class SizeMeasurement(
 )
 
 sealed class SizeLabel {
-    data class Literal(
-        val text: String,
-    ) : SizeLabel()
-
     data class Resource(
         @param:StringRes val resId: Int,
     ) : SizeLabel()
 
     fun resolve(context: Context): String =
         when (this) {
-            is Literal -> text
             is Resource -> context.getString(resId)
         }
 }

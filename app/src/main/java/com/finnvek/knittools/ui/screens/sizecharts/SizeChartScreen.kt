@@ -130,7 +130,6 @@ fun SizeChartScreen(
 private fun SizeChartEntry.lazyListKey(category: SizeChartData.Category): String {
     val labelKey =
         when (val label = sizeLabel) {
-            is SizeLabel.Literal -> "literal:${label.text}"
             is SizeLabel.Resource -> "res:${label.resId}"
         }
 
@@ -163,6 +162,9 @@ private fun SizeChartDataRow(
     useImperial: Boolean,
 ) {
     val context = LocalContext.current
+    val cmUnit = stringResource(R.string.unit_cm)
+    val inchUnit = stringResource(R.string.unit_inches)
+
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
     ) {
@@ -175,15 +177,14 @@ private fun SizeChartDataRow(
         )
         // Loput sarakkeet = mitat
         entry.measurements.forEach { measurement ->
-            val value = if (useImperial) measurement.inches else measurement.cm
-            val formatted =
-                if (value == value.toLong().toDouble()) {
-                    value.toLong().toString()
-                } else {
-                    "%.1f".format(value)
-                }
             Text(
-                text = formatted,
+                text =
+                    SizeChartData.formatMeasurement(
+                        measurement = measurement,
+                        useImperial = useImperial,
+                        cmUnit = cmUnit,
+                        inchUnit = inchUnit,
+                    ),
                 modifier = Modifier.weight(1f),
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center,

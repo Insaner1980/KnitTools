@@ -234,7 +234,7 @@
     <string name="desired_width">Ønsket bredde</string>
     <string name="stitch_gauge">Maskefasthed</string>
     <string name="pattern_repeat_optional">Mønsterrapport (valgfrit)</string>
-    <string name="edge_stitches_optional">Kantmasker (valgfrit)</string>
+    <string name="edge_stitches_optional">Kantmasker i alt</string>
     <string name="stitches_result">%d masker</string>
     <string name="actual_width">Faktisk bredde: %1$s %2$s</string>
     <string name="adjusted_down">Justeret ned: %1$d m (%2$s %3$s)</string>
@@ -244,9 +244,8 @@
     <string name="total_yarn_needed">Samlet garnbehov</string>
     <string name="yarn_per_skein">%s pr. nøgle</string>
     <string name="weight_per_skein">Vægt pr. nøgle</string>
-    <string name="skeins_result">%d nøgler</string>
     <string name="total_weight">Samlet vægt: %s g</string>
-    <string name="exact_skeins">Præcist: %s nøgler</string>
+    <string name="estimated_skeins">Estimat: ca. %s nøgler</string>
     <string name="extra_skein_note">Køb altid et ekstra nøgle — farvepartier kan variere</string>
 
     <!-- Needle Sizes -->
@@ -628,9 +627,9 @@
     <string name="tip_your_gauge_title">Hvad er strikkefasthed?</string>
     <string name="tip_your_gauge_desc">Strikkefasthed fortæller, hvor mange masker og pinde der passer inden for et målt område. Strik en lille prøve og mål den for at finde din personlige strikkefasthed. Det sikrer, at dit færdige arbejde passer til opskriftens tilsigtede størrelse.</string>
     <string name="tip_pattern_repeat_title">Mønsterrapport</string>
-    <string name="tip_pattern_repeat_desc">Hvis dit mønster gentager sig for hver X masker (f.eks. en snoning for hver 8 masker), skal du indtaste tallet her. Beregneren runder opslagningen til nærmeste multiplum, så mønsteret passer perfekt.</string>
+    <string name="tip_pattern_repeat_desc">Hvis dit mønster gentager sig for hver X masker (f.eks. en snoning for hver 8 masker), skal du indtaste tallet her. Beregneren runder maskerne i selve mønsteret, før kantmasker, til nærmeste multiplum, så mønsteret passer.</string>
     <string name="tip_edge_stitches_title">Kantmasker</string>
-    <string name="tip_edge_stitches_desc">Kantmasker er ekstra masker i hver side for en pæn kant. De er ikke en del af mønsterrapporten. Almindelige værdier er 1–2 masker pr. side.</string>
+    <string name="tip_edge_stitches_desc">Kantmasker er ekstra masker uden for mønsterrapporten. Indtast det samlede antal kantmasker, der skal slås op; beregneren lægger dem til efter beregningen af den ønskede bredde, f.eks. 2 for én maske i hver side.</string>
     <string name="tip_flat_vs_circular_title">Fladstrik vs. rundstrik</string>
     <string name="tip_flat_vs_circular_desc">Ved fladstrik arbejder du frem og tilbage på lige eller rundpinde og vender ved slutningen af hver pind. Udtagninger og indtagninger sker i begge sider.\n\nVed rundstrik arbejder du i en sammenhængende omgang. Udtagninger og indtagninger fordeles jævnt rundt på omgangen.</string>
     <string name="tip_needle_sizes_title">Systemer for pindestørrelser</string>

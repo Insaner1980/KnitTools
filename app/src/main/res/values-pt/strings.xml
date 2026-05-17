@@ -234,7 +234,7 @@
     <string name="desired_width">Largura pretendida</string>
     <string name="stitch_gauge">Densidade de pontos</string>
     <string name="pattern_repeat_optional">Repetição do motivo (opcional)</string>
-    <string name="edge_stitches_optional">Pontos de ourela (opcional)</string>
+    <string name="edge_stitches_optional">Total de pontos de ourela</string>
     <string name="stitches_result">%d pontos</string>
     <string name="actual_width">Largura real: %1$s %2$s</string>
     <string name="adjusted_down">Ajustado para baixo: %1$d pts (%2$s %3$s)</string>
@@ -244,9 +244,8 @@
     <string name="total_yarn_needed">Quantidade total de fio necessária</string>
     <string name="yarn_per_skein">%s por novelo</string>
     <string name="weight_per_skein">Peso por novelo</string>
-    <string name="skeins_result">%d novelos</string>
     <string name="total_weight">Peso total: %s g</string>
-    <string name="exact_skeins">Exato: %s novelos</string>
+    <string name="estimated_skeins">Estimativa: cerca de %s novelos</string>
     <string name="extra_skein_note">Compre sempre um novelo extra — os lotes de tingimento podem variar</string>
 
     <!-- Needle Sizes -->
@@ -628,9 +627,9 @@
     <string name="tip_your_gauge_title">O que é a tensão?</string>
     <string name="tip_your_gauge_desc">A tensão mostra quantos pontos e carreiras cabem numa área medida. Tricote uma pequena amostra e meça-a para descobrir a sua tensão pessoal. Isso garante que a peça final corresponde ao tamanho previsto na receita.</string>
     <string name="tip_pattern_repeat_title">Repetição do motivo</string>
-    <string name="tip_pattern_repeat_desc">Se o seu motivo se repete a cada X pontos (por exemplo, um torcido a cada 8 pontos), introduza esse número aqui. A calculadora arredondará o número de pontos montados para o múltiplo mais próximo, para que o motivo fique alinhado na perfeição.</string>
+    <string name="tip_pattern_repeat_desc">Se o seu motivo se repete a cada X pontos (por exemplo, um torcido a cada 8 pontos), introduza esse número aqui. A calculadora arredonda os pontos do corpo, antes dos pontos de ourela, para o múltiplo mais próximo para que o motivo fique alinhado.</string>
     <string name="tip_edge_stitches_title">Pontos de ourela</string>
-    <string name="tip_edge_stitches_desc">Os pontos de ourela são pontos extra adicionados em cada lado para uma borda limpa. Não fazem parte da repetição do motivo. Valores comuns: 1–2 pontos por lado.</string>
+    <string name="tip_edge_stitches_desc">Os pontos de ourela são pontos extra fora da repetição do motivo. Introduza o total de pontos de ourela a montar; a calculadora adiciona-os depois de calcular a largura pretendida, por exemplo 2 para um ponto em cada lado.</string>
     <string name="tip_flat_vs_circular_title">Plano vs. circular</string>
     <string name="tip_flat_vs_circular_desc">Tricô plano: trabalha de ida e volta em agulhas direitas ou circulares, virando no fim de cada carreira. Os aumentos/diminuições acontecem em ambas as bordas.\n\nTricô circular: trabalha numa volta contínua. Os aumentos/diminuições distribuem-se uniformemente ao longo da volta.</string>
     <string name="tip_needle_sizes_title">Sistemas de tamanhos de agulhas</string>

@@ -254,6 +254,7 @@ private fun MyYarnState.withPermissionStatus(
             },
     )
 }
+
 private fun MyYarnActions.withScanLaunchers(
     onLaunchScan: () -> Unit,
     onStatusAction: () -> Unit,

@@ -66,10 +66,10 @@ import com.finnvek.knittools.ui.screens.home.HomeViewModel
 import com.finnvek.knittools.ui.screens.yarncard.YarnCardViewModel
 import com.finnvek.knittools.ui.screens.yarncard.handleYarnLabelCaptureResult
 import com.finnvek.knittools.util.extensions.convertFieldValue
-import java.util.Locale
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import java.util.Locale
 import kotlin.math.ceil
 
 @Composable

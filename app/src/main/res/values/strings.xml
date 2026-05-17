@@ -236,7 +236,7 @@
     <string name="desired_width">Desired width</string>
     <string name="stitch_gauge">Stitch gauge</string>
     <string name="pattern_repeat_optional">Pattern repeat (optional)</string>
-    <string name="edge_stitches_optional">Edge stitches (optional)</string>
+    <string name="edge_stitches_optional">Edge stitches total</string>
     <string name="stitches_result" tools:ignore="PluralsCandidate">%d stitches</string>
     <string name="actual_width">Actual width: %1$s %2$s</string>
     <string name="adjusted_down">Adjusted down: %1$d st (%2$s %3$s)</string>
@@ -246,9 +246,8 @@
     <string name="total_yarn_needed">Total yarn needed</string>
     <string name="yarn_per_skein">%s per skein</string>
     <string name="weight_per_skein">Weight per skein</string>
-    <string name="skeins_result" tools:ignore="PluralsCandidate">%d skeins</string>
     <string name="total_weight">Total weight: %s g</string>
-    <string name="exact_skeins">Exact: %s skeins</string>
+    <string name="estimated_skeins">Estimated: about %s skeins</string>
     <string name="extra_skein_note">Always buy one extra skein — dye lots may vary</string>
 
     <!-- Needle Sizes -->
@@ -888,9 +887,9 @@
     <string name="tip_your_gauge_title">What is gauge?</string>
     <string name="tip_your_gauge_desc">Gauge tells you how many stitches and rows fit in a measured area. Knit a small sample (swatch) and measure it to find your personal gauge. This ensures your finished piece matches the pattern\'s intended size.</string>
     <string name="tip_pattern_repeat_title">Pattern repeat</string>
-    <string name="tip_pattern_repeat_desc">If your stitch pattern repeats every X stitches (e.g. a cable every 8 stitches), enter that number here. The calculator will round the cast-on count to the nearest multiple so your pattern aligns perfectly.</string>
+    <string name="tip_pattern_repeat_desc">If your stitch pattern repeats every X stitches (e.g. a cable every 8 stitches), enter that number here. The calculator rounds the body stitches, before edge stitches, to the nearest multiple so your pattern aligns.</string>
     <string name="tip_edge_stitches_title">Edge stitches</string>
-    <string name="tip_edge_stitches_desc">Edge stitches are extra stitches added at each side for a clean selvedge. They\'re not part of the pattern repeat. Common values: 1–2 stitches per side.</string>
+    <string name="tip_edge_stitches_desc">Edge stitches are extra stitches outside the pattern repeat. Enter the total edge stitches to cast on; the calculator adds them after calculating the desired width, for example 2 for one stitch on each side.</string>
     <string name="tip_flat_vs_circular_title">Flat vs. circular</string>
     <string name="tip_flat_vs_circular_desc">Flat knitting: you work back and forth on straight or circular needles, turning at the end of each row. Increases/decreases happen at both edges.\n\nCircular knitting: you work in a continuous round. Increases/decreases are evenly spaced around the round.</string>
     <string name="tip_needle_sizes_title">Needle size systems</string>

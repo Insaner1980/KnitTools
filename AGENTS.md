@@ -103,18 +103,16 @@ Use [`CLAUDE.md`](/home/emma/dev/KnitTools/CLAUDE.md) when product wording, visu
 <claude-mem-context>
 # Memory Context
 
-# [KnitTools] recent context, 2026-05-16 5:12pm GMT+3
+# [KnitTools] recent context, 2026-05-17 1:14pm GMT+3
 
 Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision 🚨security_alert 🔐security_note
 Format: ID TIME TYPE TITLE
 Fetch details: get_observations([IDs]) | Search: mem-search skill
 
-Stats: 44 obs (16,169t read) | 2,115,861t work | 99% savings
+Stats: 50 obs (18,324t read) | 2,391,109t work | 99% savings
 
 ### Apr 30, 2026
-4617 11:16p ✅ Lint and Security Check Scripts Ported to Windows
-4619 " 🔵 Android Lint Found 246 Errors and 115 Warnings
-4618 " 🔵 Lint-Check Script Reporting False Success on Windows
+4618 11:16p 🔵 Lint-Check Script Reporting False Success on Windows
 4620 11:18p 🔵 Lint Issues Breakdown: 236 Missing Translations Dominate Error Count
 S448 Investigating lint-check script failures on Windows and discovering hidden Android Lint issues (Apr 30, 11:19 PM)
 4621 11:45p 🔵 Translation Gap Identified: 236 Strings Missing from Non-Finnish Locales
@@ -156,27 +154,36 @@ S679 Document KnitTools app online/offline capabilities after discovering user's
 5327 10:30a 🔵 SonarQube Issues Statistical Breakdown Reveals Key Problem Areas
 5329 " 🔵 SonarQube Analysis Identified 67 Code Quality Issues
 5328 10:31a 🔵 SonarQube Identifies One Vulnerability and One Bug Among Code Smells
-**5330** 10:34a 🔄 **Injected IO Dispatcher to Fix Hardcoded Dispatchers Issues**
-Fixed SonarQube kotlin:S6310 rule violations by introducing dependency injection for coroutine dispatchers. Created app/src/main/java/com/finnvek/knittools/di/DispatchersModule.kt with an AppDispatchers object and @IoDispatcher qualifier. Injected the dispatcher into ProgressPhotoRepository, YarnLabelScanRepository, and CounterViewModel constructors. Updated PatternViewerScreen and PatternPickerSheet to reference AppDispatchers.IO instead of Dispatchers.IO directly. This makes dispatcher selection testable and centralizes the suppression of the hardcoded dispatcher warning to a single location.
-~324t 🛠️ 185,615
-
-**5331** " 🔄 **Replaced Uri.parse with toUri KTX Extension**
-Replaced all Uri.parse() calls with the AndroidX Core KTX extension .toUri() to address Android lint UseKtx warnings. The extension provides a more Kotlin-idiomatic approach and is recommended by Android best practices. Changes span authentication flows (RavelryAuthManager OAuth callback), photo handling (PhotoGalleryScreen camera captures), external browser launches (RavelryDetailScreen, SettingsScreen), and PDF pattern viewing (PatternViewerScreen, PatternPickerSheet, CounterViewModel).
-~264t 🛠️ 185,615
-
-**5332** " 🔄 **Replaced Bitmap and SharedPreferences APIs with KTX Extensions**
-Replaced deprecated or non-idiomatic Android APIs with AndroidX KTX extensions to address Android lint UseKtx warnings. Bitmap operations now use the androidx.core.graphics.scale extension and createBitmap function, which are more concise and handle edge cases better. SharedPreferences editing now uses the androidx.core.content.edit { } extension with automatic apply()/commit() handling. Also fixed SonarQube kotlin:S899 issue by checking the Boolean return value of File.delete() and calling deleteOnExit() as a fallback in ProgressPhotoStorage.
-~303t 🛠️ 185,615
-
-**5333** " 🔄 **Converted ViewModel Suspend Functions to Callback-Based APIs**
-Fixed SonarQube kotlin:S6313 rule violations stating "Classes extending ViewModel should not expose suspending functions." Refactored CounterViewModel.selectProjectByIdForLaunch, LibraryViewModel.getSavedPattern, and YarnCardViewModel.loadCardForDetail from suspend functions returning values to regular functions accepting callbacks. Each method now launches its own coroutine in viewModelScope and invokes the callback with the result. This pattern aligns with Android ViewModel best practices where ViewModels should manage their own coroutine lifecycle and communicate results via callbacks or StateFlow. Updated navigation LaunchedEffect blocks in NavGraph to use the callback-based APIs for route argument validation and updated YarnCardViewModelTest to match the new API.
-~392t 🛠️ 185,615
-
+5330 10:34a 🔄 Injected IO Dispatcher to Fix Hardcoded Dispatchers Issues
+5331 " 🔄 Replaced Uri.parse with toUri KTX Extension
+5332 " 🔄 Replaced Bitmap and SharedPreferences APIs with KTX Extensions
+5333 " 🔄 Converted ViewModel Suspend Functions to Callback-Based APIs
 5334 " 🔄 Replaced mutableStateOf with Primitive-Specific State Functions
-**5344** 3:09p 🔵 **Snackbar Event Handling Patterns Verified Across Configuration Changes**
-Investigation of snackbar event handling across MainActivity, CounterScreen, YarnEstimatorScreen, NotesEditorScreen, and PatternViewerScreen revealed three intentional patterns for managing one-time vs. repeating snackbar events. In-app update prompts use an incrementing Long counter as the LaunchedEffect key, ensuring the snackbar re-appears after configuration changes until the user acts. One-time error messages (scanError, pendingEntry) use nullable StateFlow fields that are immediately cleared after display via updateField { copy(scanError = null) } or consumePendingEntry(), preventing replay. Voice command events use MutableSharedFlow with extraBufferCapacity=1, which does not buffer or replay events. Copy-to-clipboard snackbars launch from user gesture callbacks without LaunchedEffect wrapping, so they cannot replay. Test coverage confirms both the intentional replay behavior (downloadedUpdatePromptId increments on resume) and the consumption pattern (pendingEntry is consumed and state is reset). No unintended replay risks were found; all snackbar patterns match their intended lifecycle semantics.
-~535t 🔍 140,030
+5344 3:09p 🔵 Snackbar Event Handling Patterns Verified Across Configuration Changes
+### May 17, 2026
+**5371** 8:09a 🔵 **Windows Sandbox Blocks Skill File Access with Permission Error**
+During cast-on calculator inspection session startup, the system attempted to load the using-superpowers skill file from the plugin cache. Both attempts to read C:\Users\emmah\.codex\plugins\cache\openai-curated\superpowers\dc902811\skills\using-superpowers\SKILL.md failed with Windows sandbox error "CreateProcessAsUserW failed: 5". Error code 5 indicates ACCESS_DENIED in Windows, suggesting the sandbox lacks permissions to execute PowerShell commands accessing user profile directories. This blocks skill system initialization and may affect other plugin-cached resources.
+~268t 🔍 343
+
+5373 " 🔵 Cast-on calculator edge case identified via TDD
+5374 " 🔴 Fixed cast-on calculator to handle pattern repeat larger than body stitches
+5375 " 🔵 Cast-on calculator validation analysis shows consistent pattern
+**5376** 8:16a 🔵 **Cast-on calculator changes appear to have been reverted**
+After successfully applying and testing the cast-on calculator edge case fix, a subsequent file read approximately 2 minutes later shows the original unfixed code. The earlier patch changed line 34 to handle nearestDown==0 case and made totalDown nullable at line 36, and tests passed confirming the fix worked. However, the file now shows the pre-fix state with non-nullable totalDown and simple nearestUp calculation. No git operations were observed that would explain this reversion. This suggests either a workspace issue, file system problem, unsaved changes, or manual revert by the user between tool executions.
+~320t 🔍 3,462
+
+**5381** 8:39a 🔵 **Cast-on calculator fix applied three times due to persistent file reversion**
+Cast-on calculator edge case fix underwent three complete TDD cycles due to mysterious file reversions. First round at 09:36:33 successfully added test for pattern repeat > body stitches, saw it fail, implemented nullable totalDown fix, verified all tests pass. Git status confirmed both files modified. Second round at 09:38:24 began with files showing original unfixed code despite no observed revert operations; git status showed only AGENTS.md modified. Process repeated: test added, failed correctly (RED), fix applied, tests passed (GREEN). Third round at 09:41:25 started again with original code, repeated full cycle, achieved BUILD SUCCESSFUL. No tool executions show git operations, file overwrites, or other mechanisms that would explain the reversions. Each iteration proved the fix works identically.
+~409t 🔍 36,028
+
+**5378** 12:39p 🔴 **Cast-on calculator edge case fixed via TDD red-green cycle**
+Cast-on calculator edge case successfully fixed following strict TDD methodology. The session wrote the failing test first for the scenario where pattern repeat (10 stitches) exceeds body stitches (4 from 2cm at 22st/10cm gauge). Test failed with AssertionError as expected, proving it catches the bug. Implementation then applied the fix: when nearestDown computes to zero, nearestUp uses patternRepeat directly instead of nearestDown + patternRepeat; totalDown becomes nullable via takeIf guard; adjustedDownWidth handles null totalDown. All 14 tests (13 original + 1 new) now pass. Git status confirms both files modified and ready to commit. This demonstrates proper red-green TDD cycle with verification before completion.
+~351t 🛠️ 50,915
+
+**5379** " 🔵 **Cast-on calculator inspection completed with no additional issues found**
+Comprehensive inspection of cast-on calculator found no issues beyond the pattern-repeat edge case. Mathematical formulas are correct for both metric (10cm gauge reference) and imperial (4in) systems. Pattern repeat logic properly treats edge stitches as outside the repeat—snapping body stitches to nearest multiple, then adding edges on top. Validation follows the established pattern: NumberInputField filters input at component level, CastOnScreen validates at derivedStateOf layer (null check + range check), calculator assumes valid inputs. Terminology is accurate and consistent across all 11 supported languages. UI correctly handles nullable adjustedDown/adjustedUp/adjustedDownWidth fields using safe-call operators. The only gap is lack of UI-layer tests for CastOnScreen, though domain logic has comprehensive coverage with 14 unit tests.
+~439t 🔍 50,915
 
 
-Access 2116k tokens of past work via get_observations([IDs]) or mem-search skill.
+Access 2391k tokens of past work via get_observations([IDs]) or mem-search skill.
 </claude-mem-context>

@@ -31,13 +31,13 @@ object CastOnCalculator {
         // Edge stitches are added on top after snapping the body to the nearest repeat.
         val bodyStitches = rawStitches
         val nearestDown = (bodyStitches / patternRepeat) * patternRepeat
-        val nearestUp = nearestDown + patternRepeat
+        val nearestUp = if (nearestDown == 0) patternRepeat else nearestDown + patternRepeat
 
-        val totalDown = nearestDown + edgeStitches
+        val totalDown = nearestDown.takeIf { it > 0 }?.let { it + edgeStitches }
         val totalUp = nearestUp + edgeStitches
 
         val closerTotal =
-            if ((bodyStitches - nearestDown) <= (nearestUp - bodyStitches)) {
+            if (totalDown != null && (bodyStitches - nearestDown) <= (nearestUp - bodyStitches)) {
                 totalDown
             } else {
                 totalUp
@@ -48,7 +48,7 @@ object CastOnCalculator {
             actualWidth = closerTotal / stitchesPerUnit,
             adjustedDown = totalDown,
             adjustedUp = totalUp,
-            adjustedDownWidth = totalDown / stitchesPerUnit,
+            adjustedDownWidth = totalDown?.let { it / stitchesPerUnit },
             adjustedUpWidth = totalUp / stitchesPerUnit,
         )
     }

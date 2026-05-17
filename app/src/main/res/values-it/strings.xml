@@ -234,7 +234,7 @@
     <string name="desired_width">Larghezza desiderata</string>
     <string name="stitch_gauge">Campione maglie</string>
     <string name="pattern_repeat_optional">Ripetizione del motivo (facoltativa)</string>
-    <string name="edge_stitches_optional">Maglie di vivagno (facoltative)</string>
+    <string name="edge_stitches_optional">Maglie di vivagno totali</string>
     <string name="stitches_result">%d maglie</string>
     <string name="actual_width">Larghezza effettiva: %1$s %2$s</string>
     <string name="adjusted_down">Arrotondato per difetto: %1$d m (%2$s %3$s)</string>
@@ -244,9 +244,8 @@
     <string name="total_yarn_needed">Filato totale necessario</string>
     <string name="yarn_per_skein">%s per gomitolo</string>
     <string name="weight_per_skein">Peso per gomitolo</string>
-    <string name="skeins_result">%d gomitoli</string>
     <string name="total_weight">Peso totale: %s g</string>
-    <string name="exact_skeins">Esatto: %s gomitoli</string>
+    <string name="estimated_skeins">Stima: circa %s gomitoli</string>
     <string name="extra_skein_note">Acquista sempre un gomitolo in più — i bagni di tintura possono variare</string>
 
     <!-- Needle Sizes -->
@@ -628,9 +627,9 @@
     <string name="tip_your_gauge_title">Che cos\'è il campione?</string>
     <string name="tip_your_gauge_desc">Il campione indica quante maglie e quanti ferri entrano in un\'area misurata. Lavora un piccolo campione e misuralo per trovare il tuo campione personale. In questo modo il lavoro finito corrisponderà alla misura prevista dal modello.</string>
     <string name="tip_pattern_repeat_title">Ripetizione del motivo</string>
-    <string name="tip_pattern_repeat_desc">Se il motivo si ripete ogni X maglie (ad es. una treccia ogni 8 maglie), inserisci qui quel numero. Il calcolatore arrotonderà il numero di maglie da avviare al multiplo più vicino, così il motivo risulterà perfettamente allineato.</string>
+    <string name="tip_pattern_repeat_desc">Se il motivo si ripete ogni X maglie (ad es. una treccia ogni 8 maglie), inserisci qui quel numero. Il calcolatore arrotonda le maglie del corpo, prima delle maglie di vivagno, al multiplo più vicino, così il motivo risulta allineato.</string>
     <string name="tip_edge_stitches_title">Maglie di vivagno</string>
-    <string name="tip_edge_stitches_desc">Le maglie di vivagno sono maglie extra ai lati per un bordo pulito. Non fanno parte della ripetizione del motivo. Valori comuni: 1–2 maglie per lato.</string>
+    <string name="tip_edge_stitches_desc">Le maglie di vivagno sono maglie extra fuori dalla ripetizione del motivo. Inserisci il totale delle maglie di vivagno da avviare; il calcolatore le aggiunge dopo aver calcolato la larghezza desiderata, ad esempio 2 per una maglia su ciascun lato.</string>
     <string name="tip_flat_vs_circular_title">In piano vs. in tondo</string>
     <string name="tip_flat_vs_circular_desc">Nel lavoro in piano lavori avanti e indietro su ferri dritti o circolari, girando alla fine di ogni ferro. Aumenti e diminuzioni avvengono su entrambi i lati.\n\nNel lavoro in tondo lavori in modo continuo. Aumenti e diminuzioni sono distribuiti uniformemente lungo il giro.</string>
     <string name="tip_needle_sizes_title">Sistemi di misure dei ferri</string>

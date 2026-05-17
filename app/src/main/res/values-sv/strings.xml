@@ -234,7 +234,7 @@
     <string name="desired_width">Önskad bredd</string>
     <string name="stitch_gauge">Masktäthet</string>
     <string name="pattern_repeat_optional">Mönsterrapport (valfritt)</string>
-    <string name="edge_stitches_optional">Kantmaskor (valfritt)</string>
+    <string name="edge_stitches_optional">Kantmaskor totalt</string>
     <string name="stitches_result">%d maskor</string>
     <string name="actual_width">Faktisk bredd: %1$s %2$s</string>
     <string name="adjusted_down">Avrundat nedåt: %1$d m (%2$s %3$s)</string>
@@ -244,9 +244,8 @@
     <string name="total_yarn_needed">Total garnåtgång</string>
     <string name="yarn_per_skein">%s per nystan</string>
     <string name="weight_per_skein">Vikt per nystan</string>
-    <string name="skeins_result">%d nystan</string>
     <string name="total_weight">Total vikt: %s g</string>
-    <string name="exact_skeins">Exakt: %s nystan</string>
+    <string name="estimated_skeins">Uppskattat: cirka %s nystan</string>
     <string name="extra_skein_note">Köp alltid ett extra nystan — färgbad kan variera</string>
 
     <!-- Needle Sizes -->
@@ -628,9 +627,9 @@
     <string name="tip_your_gauge_title">Vad är stickfasthet?</string>
     <string name="tip_your_gauge_desc">Stickfastheten visar hur många maskor och varv som ryms inom ett uppmätt område. Sticka en liten provlapp och mät den för att ta reda på din personliga stickfasthet. Då får det färdiga arbetet den storlek som mönstret är tänkt att ha.</string>
     <string name="tip_pattern_repeat_title">Mönsterrapport</string>
-    <string name="tip_pattern_repeat_desc">Om ditt mönster upprepas var X:e maska (t.ex. en fläta var 8:e maska), ange det talet här. Räknaren avrundar uppläggningsantalet till närmaste passande multipel så att mönstret stämmer exakt.</string>
+    <string name="tip_pattern_repeat_desc">Om ditt mönster upprepas var X:e maska (t.ex. en fläta var 8:e maska), ange det talet här. Räknaren avrundar maskorna i själva mönstret, före kantmaskor, till närmaste passande multipel så att mönstret stämmer.</string>
     <string name="tip_edge_stitches_title">Kantmaskor</string>
-    <string name="tip_edge_stitches_desc">Kantmaskor är extra maskor som läggs till i varje sida för en snygg kant. De ingår inte i mönsterrapporten. Vanliga värden: 1–2 maskor per sida.</string>
+    <string name="tip_edge_stitches_desc">Kantmaskor är extra maskor utanför mönsterrapporten. Ange det totala antalet kantmaskor som ska läggas upp; räknaren lägger till dem efter att önskad bredd har beräknats, till exempel 2 för en maska i varje sida.</string>
     <string name="tip_flat_vs_circular_title">Platt vs. runt</string>
     <string name="tip_flat_vs_circular_desc">Platt stickning: du stickar fram och tillbaka på raka eller runda stickor och vänder i slutet av varje varv. Ökningar/minskningar sker i båda kanterna.\n\nRundstickning: du stickar i ett kontinuerligt varv. Ökningar/minskningar fördelas jämnt runt varvet.</string>
     <string name="tip_needle_sizes_title">System för stickstorlekar</string>

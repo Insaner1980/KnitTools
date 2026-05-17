@@ -234,7 +234,7 @@
     <string name="desired_width">Largeur souhaitée</string>
     <string name="stitch_gauge">Densité en mailles</string>
     <string name="pattern_repeat_optional">Répétition du motif (optionnel)</string>
-    <string name="edge_stitches_optional">Mailles lisière (optionnel)</string>
+    <string name="edge_stitches_optional">Mailles lisière au total</string>
     <string name="stitches_result">%d mailles</string>
     <string name="actual_width">Largeur réelle : %1$s %2$s</string>
     <string name="adjusted_down">Ajusté à la baisse : %1$d m (%2$s %3$s)</string>
@@ -244,9 +244,8 @@
     <string name="total_yarn_needed">Quantité totale de fil nécessaire</string>
     <string name="yarn_per_skein">%s par pelote</string>
     <string name="weight_per_skein">Poids par pelote</string>
-    <string name="skeins_result">%d pelotes</string>
     <string name="total_weight">Poids total : %s g</string>
-    <string name="exact_skeins">Exact : %s pelotes</string>
+    <string name="estimated_skeins">Estimation : environ %s pelotes</string>
     <string name="extra_skein_note">Achetez toujours une pelote supplémentaire ; les bains de teinture peuvent varier</string>
 
     <!-- Needle Sizes -->
@@ -628,9 +627,9 @@
     <string name="tip_your_gauge_title">Qu’est-ce que l’échantillon ?</string>
     <string name="tip_your_gauge_desc">L’échantillon indique combien de mailles et de rangs tiennent dans une zone mesurée. Tricotez un petit échantillon et mesurez-le pour connaître votre tension personnelle. Cela garantit que votre ouvrage fini correspondra à la taille prévue du modèle.</string>
     <string name="tip_pattern_repeat_title">Répétition du motif</string>
-    <string name="tip_pattern_repeat_desc">Si votre motif se répète toutes les X mailles (par exemple une torsade toutes les 8 mailles), indiquez ce nombre ici. Le calculateur arrondira le nombre de mailles montées au multiple le plus proche afin que le motif tombe parfaitement.</string>
+    <string name="tip_pattern_repeat_desc">Si votre motif se répète toutes les X mailles (par exemple une torsade toutes les 8 mailles), indiquez ce nombre ici. Le calculateur arrondit les mailles du corps, avant les mailles lisière, au multiple le plus proche afin que le motif tombe juste.</string>
     <string name="tip_edge_stitches_title">Mailles lisière</string>
-    <string name="tip_edge_stitches_desc">Les mailles lisière sont des mailles supplémentaires ajoutées de chaque côté pour obtenir un bord propre. Elles ne font pas partie de la répétition du motif. Valeurs courantes : 1 à 2 mailles par côté.</string>
+    <string name="tip_edge_stitches_desc">Les mailles lisière sont des mailles supplémentaires hors de la répétition du motif. Indiquez le total des mailles lisière à monter ; le calculateur les ajoute après avoir calculé la largeur souhaitée, par exemple 2 pour une maille de chaque côté.</string>
     <string name="tip_flat_vs_circular_title">À plat ou en rond</string>
     <string name="tip_flat_vs_circular_desc">Tricot à plat : vous travaillez en aller-retour sur des aiguilles droites ou circulaires en tournant à la fin de chaque rang. Les augmentations/diminutions se font sur les deux bords.\n\nTricot en rond : vous travaillez en continu. Les augmentations/diminutions sont réparties uniformément tout autour du rang.</string>
     <string name="tip_needle_sizes_title">Systèmes de tailles d’aiguilles</string>

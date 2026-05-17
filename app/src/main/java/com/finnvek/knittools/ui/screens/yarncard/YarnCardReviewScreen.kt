@@ -57,6 +57,7 @@ import com.finnvek.knittools.ui.components.care.CareSymbolIcon
 import com.finnvek.knittools.ui.components.care.CareSymbolPicker
 import com.finnvek.knittools.ui.components.care.hasCareSymbol
 import com.finnvek.knittools.ui.components.care.toggleCareSymbol
+import com.finnvek.knittools.ui.components.skeinCountText
 import com.finnvek.knittools.ui.screens.library.YarnStatusSheet
 import com.finnvek.knittools.ui.screens.library.yarnStatusUi
 import com.finnvek.knittools.ui.theme.knitToolsColors
@@ -784,7 +785,6 @@ private fun LinkYarnDialog(
         },
     )
 }
-
 @Composable
 private fun ReviewActionButtons(
     isPro: Boolean,
@@ -875,11 +875,3 @@ private fun LabelField(
             ),
     )
 }
-
-@Composable
-private fun skeinCountText(quantity: Int): String =
-    if (quantity == 1) {
-        stringResource(R.string.skein_count_one, quantity)
-    } else {
-        stringResource(R.string.skein_count_many, quantity)
-    }

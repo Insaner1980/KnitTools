@@ -234,7 +234,7 @@
     <string name="desired_width">Haluttu leveys</string>
     <string name="stitch_gauge">Silmukkatiheys</string>
     <string name="pattern_repeat_optional">Mallikerta (valinnainen)</string>
-    <string name="edge_stitches_optional">Reunasilmukat (valinnainen)</string>
+    <string name="edge_stitches_optional">Reunasilmukat yhteensä</string>
     <string name="stitches_result">%d silmukkaa</string>
     <string name="actual_width">Todellinen leveys: %1$s %2$s</string>
     <string name="adjusted_down">Pyöristetty alas: %1$d s (%2$s %3$s)</string>
@@ -244,9 +244,8 @@
     <string name="total_yarn_needed">Tarvittava lankamäärä yhteensä</string>
     <string name="yarn_per_skein">%s / kerä</string>
     <string name="weight_per_skein">Paino / kerä</string>
-    <string name="skeins_result">%d kerää</string>
     <string name="total_weight">Kokonaispaino: %s g</string>
-    <string name="exact_skeins">Tarkka määrä: %s kerää</string>
+    <string name="estimated_skeins">Arvio: noin %s kerää</string>
     <string name="extra_skein_note">Osta aina yksi ylimääräinen kerä — värjäyserät voivat vaihdella</string>
 
     <!-- Puikkokoot -->
@@ -877,9 +876,9 @@
     <string name="tip_your_gauge_title">Mitä tiheys tarkoittaa?</string>
     <string name="tip_your_gauge_desc">Tiheys kertoo, kuinka monta silmukkaa ja kerrosta mahtuu mitattuun alueeseen. Neulo pieni mallitilkku ja mittaa se, niin saat oman tiheytesi selville. Näin valmis työ vastaa ohjeen tarkoitettua kokoa.</string>
     <string name="tip_pattern_repeat_title">Mallikerta</string>
-    <string name="tip_pattern_repeat_desc">Jos mallikuviosi toistuu joka X silmukan välein (esim. palmikko joka 8. silmukka), syötä luku tähän. Laskuri pyöristää luotavan silmukkamäärän lähimpään sopivaan monikertaan, jotta kuvio asettuu oikein.</string>
+    <string name="tip_pattern_repeat_desc">Jos mallikuviosi toistuu joka X silmukan välein (esim. palmikko joka 8. silmukka), syötä luku tähän. Laskuri pyöristää rungon silmukat ennen reunasilmukoita lähimpään sopivaan monikertaan, jotta kuvio asettuu oikein.</string>
     <string name="tip_edge_stitches_title">Reunasilmukat</string>
-    <string name="tip_edge_stitches_desc">Reunasilmukat ovat ylimääräisiä silmukoita, jotka lisätään työn reunoihin siistiä reunaa varten. Ne eivät kuulu mallikertaan. Tavallisia arvoja ovat 1–2 silmukkaa per reuna.</string>
+    <string name="tip_edge_stitches_desc">Reunasilmukat ovat mallikerran ulkopuolisia lisäsilmukoita. Syötä luotavien reunasilmukoiden kokonaismäärä; laskuri lisää ne halutun leveyden laskemisen jälkeen. Esimerkiksi 2 tarkoittaa yhtä silmukkaa kummassakin reunassa.</string>
     <string name="tip_flat_vs_circular_title">Tasoneule vs. pyöröneule</string>
     <string name="tip_flat_vs_circular_desc">Tasoneule: neulot edestakaisin suorilla tai pyöröpuikoilla ja käännät työn jokaisen kerroksen lopussa. Lisäykset ja kavennukset tehdään molemmissa reunoissa.\n\nPyöröneule: neulot jatkuvaa kierrosta. Lisäykset ja kavennukset jaetaan tasaisesti koko kierrokselle.</string>
     <string name="tip_needle_sizes_title">Puikkokokojen järjestelmät</string>

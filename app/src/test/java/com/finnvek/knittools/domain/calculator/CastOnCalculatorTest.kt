@@ -58,6 +58,19 @@ class CastOnCalculatorTest {
     }
 
     @Test
+    fun `pattern repeat larger than body stitches chooses first usable repeat`() {
+        val result =
+            CastOnCalculator.calculate(
+                desiredWidth = 2.0,
+                stitchGauge = 22.0,
+                patternRepeat = 10,
+            )
+        assertEquals(10, result.stitches)
+        assertNull(result.adjustedDown)
+        assertEquals(10, result.adjustedUp)
+    }
+
+    @Test
     fun `imperial gauge calculation`() {
         val result =
             CastOnCalculator.calculate(

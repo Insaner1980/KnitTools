@@ -3,7 +3,6 @@ package com.finnvek.knittools.repository
 import android.content.Context
 import android.net.Uri
 import com.finnvek.knittools.R
-import com.finnvek.knittools.data.local.CounterProjectDao
 import com.finnvek.knittools.data.local.CounterProjectEntity
 import com.finnvek.knittools.data.local.ImmediateDatabaseTransactionRunner
 import com.finnvek.knittools.data.local.PatternAnnotationDao
@@ -562,111 +561,10 @@ class RepositoryDomainApiTest {
     }
 
     private class FakeCounterProjectDao(
-        private val projects: List<CounterProjectEntity> = emptyList(),
-    ) : CounterProjectDao {
+        projects: List<CounterProjectEntity> = emptyList(),
+    ) : StubCounterProjectDao(projects) {
         val updatedYarnCardIds = linkedMapOf<Long, String>()
         var clearedPatternIds: List<Long> = emptyList()
-
-        override fun getAllProjects(): Flow<List<CounterProjectEntity>> = flowOf(projects)
-
-        override suspend fun getAllProjectsOnce(): List<CounterProjectEntity> = projects
-
-        override suspend fun getProject(id: Long): CounterProjectEntity? = projects.firstOrNull { it.id == id }
-
-        override fun observeProject(id: Long): Flow<CounterProjectEntity?> = flowOf(getProjectSync(id))
-
-        override suspend fun insert(project: CounterProjectEntity): Long = 0L
-
-        override suspend fun update(project: CounterProjectEntity) = Unit
-
-        override suspend fun adjustCount(
-            id: Long,
-            delta: Int,
-            updatedAt: Long,
-        ) = Unit
-
-        override suspend fun adjustCountAndStepSize(
-            id: Long,
-            delta: Int,
-            stepSize: Int,
-            updatedAt: Long,
-        ) = Unit
-
-        override suspend fun updateCounterState(
-            id: Long,
-            count: Int,
-            stepSize: Int,
-            updatedAt: Long,
-        ) = Unit
-
-        override suspend fun updateName(
-            id: Long,
-            name: String,
-            updatedAt: Long,
-        ) = Unit
-
-        override suspend fun updateNotes(
-            id: Long,
-            notes: String,
-            updatedAt: Long,
-        ) = Unit
-
-        override suspend fun updateSecondaryCount(
-            id: Long,
-            secondaryCount: Int,
-            updatedAt: Long,
-        ) = Unit
-
-        override suspend fun updateSectionName(
-            id: Long,
-            sectionName: String?,
-            updatedAt: Long,
-        ) = Unit
-
-        override suspend fun updateStitchCount(
-            id: Long,
-            stitchCount: Int?,
-            updatedAt: Long,
-        ) = Unit
-
-        override suspend fun updateCurrentStitch(
-            id: Long,
-            stitch: Int,
-            updatedAt: Long,
-        ) = Unit
-
-        override suspend fun updateStitchTrackingEnabled(
-            id: Long,
-            enabled: Boolean,
-            updatedAt: Long,
-        ) = Unit
-
-        override suspend fun updatePattern(
-            id: Long,
-            patternUri: String?,
-            patternName: String?,
-            currentPatternPage: Int,
-            patternRowMapping: String?,
-            updatedAt: Long,
-        ) = Unit
-
-        override suspend fun updateCurrentPatternPage(
-            id: Long,
-            page: Int,
-            updatedAt: Long,
-        ) = Unit
-
-        override suspend fun updatePatternRowMapping(
-            id: Long,
-            mapping: String?,
-            updatedAt: Long,
-        ) = Unit
-
-        override suspend fun updateStepSize(
-            id: Long,
-            stepSize: Int,
-            updatedAt: Long,
-        ) = Unit
 
         override suspend fun updateYarnCardIds(
             id: Long,
@@ -682,68 +580,6 @@ class RepositoryDomainApiTest {
         ) {
             clearedPatternIds = patternIds
         }
-
-        override suspend fun countProjectsUsingPatternUri(patternUri: String): Int =
-            projects.count { it.patternUri == patternUri }
-
-        override suspend fun archiveProject(
-            id: Long,
-            totalRows: Int,
-            completedAt: Long,
-            updatedAt: Long,
-        ) = Unit
-
-        override suspend fun reactivateProject(
-            id: Long,
-            updatedAt: Long,
-        ) = Unit
-
-        override suspend fun delete(id: Long) = Unit
-
-        override suspend fun getProjectCount(): Int = projects.size
-
-        override suspend fun getLatestActiveProject(): CounterProjectEntity? = projects.firstOrNull()
-
-        override suspend fun insertHistory(entry: com.finnvek.knittools.data.local.CounterHistoryEntity) = Unit
-
-        override suspend fun deleteHistoryBefore(
-            projectId: Long,
-            before: Long,
-        ) = Unit
-
-        override suspend fun getLatestHistory(
-            projectId: Long,
-        ): com.finnvek.knittools.data.local.CounterHistoryEntity? = null
-
-        override suspend fun deleteHistoryById(id: Long) = Unit
-
-        override suspend fun updateCount(
-            id: Long,
-            count: Int,
-            updatedAt: Long,
-        ) = Unit
-
-        override fun getActiveProjects(): Flow<List<CounterProjectEntity>> = flowOf(projects)
-
-        override fun getActiveProjectsByName(): Flow<List<CounterProjectEntity>> = flowOf(projects)
-
-        override fun getActiveProjectsByCreated(): Flow<List<CounterProjectEntity>> = flowOf(projects)
-
-        override fun getCompletedProjects(): Flow<List<CounterProjectEntity>> = flowOf(emptyList())
-
-        override fun getCompletedProjectsByName(): Flow<List<CounterProjectEntity>> = flowOf(emptyList())
-
-        override fun getCompletedProjectsByCreated(): Flow<List<CounterProjectEntity>> = flowOf(emptyList())
-
-        override suspend fun getActiveProjectCount(): Int = projects.size
-
-        override suspend fun updateTargetRows(
-            id: Long,
-            targetRows: Int?,
-            updatedAt: Long,
-        ) = Unit
-
-        private fun getProjectSync(id: Long): CounterProjectEntity? = projects.firstOrNull { it.id == id }
     }
 
     private class FakePatternAnnotationDao(

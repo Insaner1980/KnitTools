@@ -29,6 +29,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class YarnCardFormState(
+    // CPD-OFF: Lomaketila peilaa lankakortin pysyvat kentat ja lisaa vain UI:n tilat.
     val editingCardId: Long? = null,
     val brand: String = "",
     val yarnName: String = "",
@@ -48,6 +49,7 @@ data class YarnCardFormState(
     val quantityInStash: Int = 1,
     val status: String = YarnCardStatus.IN_STASH,
     val linkedProjectId: Long? = null,
+    // CPD-ON
 )
 
 @HiltViewModel

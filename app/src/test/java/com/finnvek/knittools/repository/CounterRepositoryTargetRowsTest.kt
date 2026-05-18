@@ -2,8 +2,6 @@ package com.finnvek.knittools.repository
 
 import android.content.Context
 import com.finnvek.knittools.data.local.CounterHistoryEntity
-import com.finnvek.knittools.data.local.CounterProjectDao
-import com.finnvek.knittools.data.local.CounterProjectEntity
 import com.finnvek.knittools.data.local.ImmediateDatabaseTransactionRunner
 import com.finnvek.knittools.data.local.SessionDao
 import com.finnvek.knittools.data.local.SessionEntity
@@ -86,13 +84,11 @@ private fun buildRepository(dao: FakeCounterProjectDao): CounterRepository =
 
 private class FakeCounterProjectDao(
     private val latestHistory: CounterHistoryEntity?,
-) : CounterProjectDao {
+) : StubCounterProjectDao() {
     var lastUpdateCount: Int? = null
     var lastDeletedHistoryId: Long? = null
     var lastTargetRows: Int? = null
     var targetRowsWasSetToNull: Boolean = false
-
-    // --- uudet metodit joita testataan ---
 
     override suspend fun getLatestHistory(projectId: Long): CounterHistoryEntity? = latestHistory
 
@@ -116,161 +112,6 @@ private class FakeCounterProjectDao(
         lastTargetRows = targetRows
         if (targetRows == null) targetRowsWasSetToNull = true
     }
-
-    // --- muut DAO-metodit (ei käytetä näissä testeissä) ---
-
-    override fun getAllProjects(): Flow<List<CounterProjectEntity>> = flowOf(emptyList())
-
-    override suspend fun getAllProjectsOnce(): List<CounterProjectEntity> = emptyList()
-
-    override suspend fun getProject(id: Long): CounterProjectEntity? = null
-
-    override fun observeProject(id: Long): Flow<CounterProjectEntity?> = flowOf(null)
-
-    override suspend fun insert(project: CounterProjectEntity): Long = 0L
-
-    override suspend fun update(project: CounterProjectEntity) = Unit
-
-    override suspend fun adjustCount(
-        id: Long,
-        delta: Int,
-        updatedAt: Long,
-    ) = Unit
-
-    override suspend fun adjustCountAndStepSize(
-        id: Long,
-        delta: Int,
-        stepSize: Int,
-        updatedAt: Long,
-    ) = Unit
-
-    override suspend fun updateCounterState(
-        id: Long,
-        count: Int,
-        stepSize: Int,
-        updatedAt: Long,
-    ) = Unit
-
-    override suspend fun updateName(
-        id: Long,
-        name: String,
-        updatedAt: Long,
-    ) = Unit
-
-    override suspend fun updateNotes(
-        id: Long,
-        notes: String,
-        updatedAt: Long,
-    ) = Unit
-
-    override suspend fun updateSecondaryCount(
-        id: Long,
-        secondaryCount: Int,
-        updatedAt: Long,
-    ) = Unit
-
-    override suspend fun updateSectionName(
-        id: Long,
-        sectionName: String?,
-        updatedAt: Long,
-    ) = Unit
-
-    override suspend fun updateStitchCount(
-        id: Long,
-        stitchCount: Int?,
-        updatedAt: Long,
-    ) = Unit
-
-    override suspend fun updateCurrentStitch(
-        id: Long,
-        stitch: Int,
-        updatedAt: Long,
-    ) = Unit
-
-    override suspend fun updateStitchTrackingEnabled(
-        id: Long,
-        enabled: Boolean,
-        updatedAt: Long,
-    ) = Unit
-
-    override suspend fun updatePattern(
-        id: Long,
-        patternUri: String?,
-        patternName: String?,
-        currentPatternPage: Int,
-        patternRowMapping: String?,
-        updatedAt: Long,
-    ) = Unit
-
-    override suspend fun updateCurrentPatternPage(
-        id: Long,
-        page: Int,
-        updatedAt: Long,
-    ) = Unit
-
-    override suspend fun updatePatternRowMapping(
-        id: Long,
-        mapping: String?,
-        updatedAt: Long,
-    ) = Unit
-
-    override suspend fun updateStepSize(
-        id: Long,
-        stepSize: Int,
-        updatedAt: Long,
-    ) = Unit
-
-    override suspend fun updateYarnCardIds(
-        id: Long,
-        yarnCardIds: String,
-        updatedAt: Long,
-    ) = Unit
-
-    override suspend fun clearLinkedPatternIds(
-        patternIds: List<Long>,
-        updatedAt: Long,
-    ) = Unit
-
-    override suspend fun countProjectsUsingPatternUri(patternUri: String): Int = 0
-
-    override suspend fun archiveProject(
-        id: Long,
-        totalRows: Int,
-        completedAt: Long,
-        updatedAt: Long,
-    ) = Unit
-
-    override suspend fun reactivateProject(
-        id: Long,
-        updatedAt: Long,
-    ) = Unit
-
-    override suspend fun delete(id: Long) = Unit
-
-    override suspend fun getProjectCount(): Int = 0
-
-    override suspend fun getLatestActiveProject(): CounterProjectEntity? = null
-
-    override suspend fun insertHistory(entry: CounterHistoryEntity) = Unit
-
-    override suspend fun deleteHistoryBefore(
-        projectId: Long,
-        before: Long,
-    ) = Unit
-
-    override fun getActiveProjects(): Flow<List<CounterProjectEntity>> = flowOf(emptyList())
-
-    override fun getActiveProjectsByName(): Flow<List<CounterProjectEntity>> = flowOf(emptyList())
-
-    override fun getActiveProjectsByCreated(): Flow<List<CounterProjectEntity>> = flowOf(emptyList())
-
-    override fun getCompletedProjects(): Flow<List<CounterProjectEntity>> = flowOf(emptyList())
-
-    override fun getCompletedProjectsByName(): Flow<List<CounterProjectEntity>> = flowOf(emptyList())
-
-    override fun getCompletedProjectsByCreated(): Flow<List<CounterProjectEntity>> = flowOf(emptyList())
-
-    override suspend fun getActiveProjectCount(): Int = 0
 }
 
 private class StubSessionDao : SessionDao {

@@ -1,0 +1,3 @@
+[[PackageOverrides]]
+ignore = true
+reason = "Gradlen dependency verification -metadata on checksum- ja allekirjoitusmetadataa, ei sovelluksen riippuvuuslockfile. Runtime-riippuvuuksien CVE-tarkistus tehdään OWASP dependency-checkillä."

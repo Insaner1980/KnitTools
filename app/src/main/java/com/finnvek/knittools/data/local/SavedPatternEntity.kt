@@ -5,6 +5,7 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "saved_patterns")
 data class SavedPatternEntity(
+    // CPD-OFF: Room-entity peilaa domain-mallia ilman, etta DAO-raja vuotaa UI:hin.
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
     val ravelryId: Int,
@@ -20,4 +21,5 @@ data class SavedPatternEntity(
     val isFree: Boolean = true,
     val patternUrl: String = "",
     val savedAt: Long = System.currentTimeMillis(),
+    // CPD-ON
 )

@@ -1,5 +1,10 @@
 *.iml
 .gradle/
+/caches/
+/daemon/
+/kotlin-profile/
+/native/
+/notifications/
 /local.properties
 /debug.credentials.properties
 .idea/

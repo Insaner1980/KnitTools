@@ -103,6 +103,7 @@ import com.finnvek.knittools.domain.model.RowReminder
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.ui.components.ConfirmationDialog
+import com.finnvek.knittools.ui.components.RenameProjectDialog
 import com.finnvek.knittools.ui.components.RollingCounter
 import com.finnvek.knittools.ui.components.StitchCounter
 import com.finnvek.knittools.ui.screens.pattern.PatternPickerSheet
@@ -868,7 +869,7 @@ private fun CounterScreenDialogs(
         )
     }
     if (state.showRenameDialog) {
-        CounterRenameDialog(
+        RenameProjectDialog(
             renameText = state.renameText,
             onRenameTextChange = actions.onRenameTextChange,
             onConfirm = actions.onRenameConfirm,
@@ -885,48 +886,6 @@ private fun CounterScreenDialogs(
             onDismiss = actions.onStitchDismiss,
         )
     }
-}
-
-@Composable
-private fun CounterRenameDialog(
-    renameText: String,
-    onRenameTextChange: (String) -> Unit,
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.rename_project)) },
-        text = {
-            TextField(
-                value = renameText,
-                onValueChange = onRenameTextChange,
-                singleLine = true,
-                shape = MaterialTheme.shapes.medium,
-                colors =
-                    TextFieldDefaults.colors(
-                        focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                    ),
-                modifier = Modifier.fillMaxWidth(),
-            )
-        },
-        confirmButton = {
-            TextButton(
-                onClick = onConfirm,
-                enabled = renameText.isNotBlank(),
-            ) {
-                Text(stringResource(R.string.confirm))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cancel))
-            }
-        },
-    )
 }
 
 @Composable

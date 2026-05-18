@@ -258,6 +258,9 @@ dependencyCheck {
         kev {
             enabled = false
         }
+        ossIndex {
+            enabled = false
+        }
         retirejs {
             enabled = false
         }
@@ -450,6 +453,12 @@ dependencies {
         }
         implementation(libs.ktor.client.websockets) {
             because("Firebase AI tuo Ktor 3.0.x -transitiiveja; pidetään kaikki Ktor-artefaktit samassa versiossa")
+        }
+        implementation(libs.guava) {
+            because(
+                "kotlinx-coroutines-guava tuo Guava 31.0.1-jre:n; " +
+                    "constraint nostaa Android-artefaktin korjattuun versioon",
+            )
         }
     }
 

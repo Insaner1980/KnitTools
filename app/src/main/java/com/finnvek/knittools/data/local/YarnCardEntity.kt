@@ -7,6 +7,7 @@ import com.finnvek.knittools.domain.model.YarnCardStatus
 
 @Entity(tableName = "yarn_cards")
 data class YarnCardEntity(
+    // CPD-OFF: Room-entity peilaa domain- ja lomakekenttia, jotta kerrosrajat pysyvat selkeina.
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
     val brand: String = "",
@@ -29,4 +30,5 @@ data class YarnCardEntity(
     val status: String = YarnCardStatus.IN_STASH,
     @ColumnInfo(defaultValue = "NULL")
     val linkedProjectId: Long? = null,
+    // CPD-ON
 )

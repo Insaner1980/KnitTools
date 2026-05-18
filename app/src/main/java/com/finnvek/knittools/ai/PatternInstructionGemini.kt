@@ -47,7 +47,7 @@ object PatternInstructionGemini {
     }
 
     internal fun parseResponse(response: String): InstructionResult? {
-        val jsonText = extractJson(response) ?: return null
+        val jsonText = AiJsonExtractor.extractObject(response) ?: return null
         return try {
             val json = JSONObject(jsonText)
             val instruction =
@@ -72,19 +72,5 @@ object PatternInstructionGemini {
         } catch (_: Exception) {
             null
         }
-    }
-
-    private fun extractJson(response: String): String? {
-        val trimmed = response.trim()
-        if (trimmed.startsWith("{")) return trimmed
-
-        val codeBlockPattern = Regex("""```(?:json)?\s*\n?(.*?)\n?```""", RegexOption.DOT_MATCHES_ALL)
-        codeBlockPattern.find(trimmed)?.let { return it.groupValues[1].trim() }
-
-        val start = trimmed.indexOf('{')
-        val end = trimmed.lastIndexOf('}')
-        if (start >= 0 && end > start) return trimmed.substring(start, end + 1)
-
-        return null
     }
 }

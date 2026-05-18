@@ -262,7 +262,7 @@ object VoiceCommandInterpreter {
         }
 
     internal fun parseResponse(response: String): AiVoiceAction {
-        val jsonText = extractJson(response) ?: return AiVoiceAction.Unknown
+        val jsonText = AiJsonExtractor.extractObject(response) ?: return AiVoiceAction.Unknown
         return try {
             val json = JSONObject(jsonText)
             val action = json.optString("action")
@@ -308,18 +308,4 @@ object VoiceCommandInterpreter {
             "it" -> "avanti, aggiungi tre, indietro, annulla, reimposta, ferma, aiuto, maglia"
             else -> "next, add three, back, undo, reset, stop, help, stitch"
         }
-
-    private fun extractJson(response: String): String? {
-        val trimmed = response.trim()
-        if (trimmed.startsWith("{")) return trimmed
-
-        val codeBlockPattern = Regex("""```(?:json)?\s*\n?(.*?)\n?```""", RegexOption.DOT_MATCHES_ALL)
-        codeBlockPattern.find(trimmed)?.let { return it.groupValues[1].trim() }
-
-        val start = trimmed.indexOf('{')
-        val end = trimmed.lastIndexOf('}')
-        if (start >= 0 && end > start) return trimmed.substring(start, end + 1)
-
-        return null
-    }
 }

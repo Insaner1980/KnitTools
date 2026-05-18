@@ -83,26 +83,7 @@ object YarnLabelGeminiScanner {
     /**
      * Poimii JSON-objektin vastauksesta, joka voi sisältää markdown-koodiblokin.
      */
-    internal fun extractJson(response: String): String? {
-        val trimmed = response.trim()
-        // Yritä ensin suoraa JSON-parsintaa
-        if (trimmed.startsWith("{")) return trimmed
-
-        // Markdown-koodiblokki: ```json ... ``` tai ``` ... ```
-        val codeBlockPattern = Regex("""```(?:json)?\s*\n?(.*?)\n?```""", RegexOption.DOT_MATCHES_ALL)
-        codeBlockPattern.find(trimmed)?.let { match ->
-            return match.groupValues[1].trim()
-        }
-
-        // Etsi ensimmäinen { viimeiseen } asti
-        val start = trimmed.indexOf('{')
-        val end = trimmed.lastIndexOf('}')
-        if (start >= 0 && end > start) {
-            return trimmed.substring(start, end + 1)
-        }
-
-        return null
-    }
+    internal fun extractJson(response: String): String? = AiJsonExtractor.extractObject(response)
 
     private fun buildGaugeInfo(
         stitches: Int?,

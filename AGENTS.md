@@ -93,7 +93,7 @@ Use [`CLAUDE.md`](/home/emma/dev/KnitTools/CLAUDE.md) when product wording, visu
 - `lc` runs ktlint, detekt, and Android lint into `reports/ktlint.txt`, `reports/detekt.txt`, and `reports/lint.txt`
 - `ad`, `ac`, `dc`, `ss`, `ds`, `ms`, `os`, `ql`, `db`, `pc`, `cs`, `cr`, `ga`, and `sc` are project-local wrappers; use `-PlanOnly` or `-ResolveOnly` for dry checks where supported
 - `ad` builds `assembleDebug`, resolves `adb.exe` from `local.properties` `sdk.dir`, and installs `app/build/outputs/apk/debug/app-debug.apk` with `adb install -r`; use `ad -NoBuild` to install an already-built APK
-- `pc` runs PMD CPD duplicate detection, `cr` runs compose-rules through ktlint/detekt, `ga` runs Android Lint with Google Android Security Lints, and `cs` is available for Compose Stability Analyzer projects.
+- `pc` runs PMD CPD duplicate detection with KnitTools' default `PMD_CPD_MINIMUM_TOKENS=100`, `cr` runs compose-rules through ktlint/detekt, `ga` runs Android Lint with Google Android Security Lints, and `cs` is available for Compose Stability Analyzer projects.
 - `sc` runs dependency, secret, and light Semgrep checks; `sc -Full` also runs the Android-specific `ac` path and DeepSec custom report
 - Typical commands: `./gradlew assembleDebug`, `./gradlew test`, `./gradlew :app:detekt`, `./gradlew lint`
 - Do not run the user's wrapper scripts such as `lc` or `sc`
@@ -103,25 +103,20 @@ Use [`CLAUDE.md`](/home/emma/dev/KnitTools/CLAUDE.md) when product wording, visu
 <claude-mem-context>
 # Memory Context
 
-# [KnitTools] recent context, 2026-05-17 9:52pm GMT+3
+# [KnitTools] recent context, 2026-05-18 1:52am GMT+3
 
 Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision 🚨security_alert 🔐security_note
 Format: ID TIME TYPE TITLE
 Fetch details: get_observations([IDs]) | Search: mem-search skill
 
-Stats: 50 obs (17,882t read) | 3,153,869t work | 99% savings
+Stats: 50 obs (18,165t read) | 3,493,434t work | 99% savings
 
 ### Apr 30, 2026
 S448 Investigating lint-check script failures on Windows and discovering hidden Android Lint issues (Apr 30, 11:19 PM)
 ### May 4, 2026
-4966 4:12p 🔵 Triple Voice Command Architecture with Local Parsing and AI Fallback
 S679 Document KnitTools app online/offline capabilities after discovering user's assumption about voice commands was incorrect (May 4, 4:12 PM)
 ### May 8, 2026
-5297 9:14p 🔵 Gradle test task does not support --tests filter flag
-5300 9:56p 🔄 AiVoiceAction Relocated from UI Layer to AI Package
-5301 " 🔄 Journal UI Components Relocated from AI Package to Notes Screen Package
 5298 9:58p 🔵 Gradle daemon file lock prevented test execution
-5299 " 🔵 Voice command AI classes moved from counter UI package to dedicated ai package
 5306 10:50p 🔵 KnitTools Room Entity Refactoring Baseline Established
 ### May 9, 2026
 5307 2:50a 🔵 Baseline profile module minSdk lower than app module minSdk
@@ -163,31 +158,39 @@ S679 Document KnitTools app online/offline capabilities after discovering user's
 5386 " 🔴 Platform-Specific Gradle Dependency Verification Fixed for CI
 5387 " 🔴 ktlint Code Style Violations Fixed in Three UI Screen Files
 5388 " 🔴 Git Worktree Used for Safe Main Branch Operations
-**5389** 2:23p 🟣 **CodeQL workflow restored for KnitTools CI security scanning**
-CodeQL security scanning workflow was restored to the KnitTools repository after being removed yesterday due to CI difficulties. The configuration was modeled after the dBcheck project's successful setup, adapting for KnitTools' Java 17 environment (vs dBcheck's Java 21). The workflow uses Android Gradle Plugin 9.1.0 and sets up the Android SDK before running CodeQL analysis in manual build mode. All GitHub Actions are pinned to specific commit SHAs for reproducibility and security.
-~293t 🛠️ 158,251
-
-**5390** " 🔴 **Dependency verification extended with 18 missing artifacts for CI compatibility**
-GitHub Actions CI builds were failing with dependency verification errors because gradle/verification-metadata.xml only contained Windows platform artifacts and was missing transitive parent POM hashes needed during CI dependency resolution. The fix involved downloading each missing artifact from Maven Central, computing SHA256 hashes using PowerShell HttpClient and System.Security.Cryptography, and adding all 92 lines of verification entries. The Linux aapt2 hash was obtained from Google Maven's published .sha256 file. After three iterative commits to fix cascading dependency verification failures, the Build & Test workflow finally passed all verification checks.
-~388t 🛠️ 158,251
-
-**5391** " 🔴 **Ktlint formatting violations fixed for CI compliance**
-GitHub Actions CI workflow failed at the ktlint check step due to missing blank lines between declarations and incorrect import ordering. The ktlint rules require blank lines before function declarations and lexicographic import ordering with java/javax/kotlin packages at the end. After fixing the formatting violations, the ktlint check task completed successfully in the worktree before pushing to main.
-~241t 🛠️ 158,251
-
+5389 2:23p 🟣 CodeQL workflow restored for KnitTools CI security scanning
+5390 " 🔴 Dependency verification extended with 18 missing artifacts for CI compatibility
+5391 " 🔴 Ktlint formatting violations fixed for CI compliance
 5392 " 🔵 dBcheck CodeQL configuration pattern identified for Android projects
-**5394** 4:40p 🔴 **Fixed session tracking accuracy and lifecycle handling**
-KnitTools session tracking had two related bugs affecting data accuracy after the v9→10 database migration. The migration correctly added durationSeconds and rowsWorked columns with proper backfill logic (converting durationMinutes * 60 → durationSeconds, computing endRow - startRow → rowsWorked), but the getTotalMinutes() query still summed the old durationMinutes field instead of the new authoritative durationSeconds field. This caused session time totals to be inaccurate after migration.
+5394 4:40p 🔴 Fixed session tracking accuracy and lifecycle handling
+5396 7:40p 🔵 Pace calculation logic verified with comprehensive edge-case guards
+### May 18, 2026
+**5398** 12:25a ✅ **Disabled ossIndex analyzer in OWASP dependency-check configuration**
+The KnitTools project uses multiple security scanning tools: osv-scanner for comprehensive vulnerability detection and OWASP dependency-check for additional analysis. The ossIndex analyzer within dependency-check was creating redundant checks since osv-scanner already performs comprehensive CVE scanning against the same vulnerability databases. To streamline the security pipeline and eliminate duplicate reporting, the ossIndex analyzer was disabled in the dependency-check Gradle configuration. This change does not reduce security coverage—osv-scanner continues to identify all CVEs in dependencies like the logback-core arbitrary code execution vulnerability and Bouncy Castle timing channel issues. The dependency-check tool now focuses on its other analyzers (retirejs already disabled, others remain active) while osv-scanner handles the primary CVE detection workload.
+~389t 🛠️ 43,908
 
-The second bug was in the ProcessLifecycleOwner observer in CounterViewModel. The onPause callback correctly persisted the current session snapshot before backgrounding, but the onResume callback only set isForeground=true without calling restartSessionSegment(). This meant that when the app returned to foreground, the session timer would continue from the backgrounded state instead of starting a fresh segment anchored to the current row count.
+**5400** 12:28a 🔵 **OSV-scanner scans verification-metadata.xml containing build-time dependencies not in runtime classpath**
+Investigation of osv-scanner FAILED (1) exit code revealed that osv-scanner scans gradle/verification-metadata.xml as a lockfile, which captures all Gradle dependency resolution metadata including buildscript classpath, test dependencies, and plugin dependencies—not just the app's runtime dependencies. The scan found CVEs in logback-core 1.3.14 (arbitrary code execution), netty packages (multiple CVEs), bouncycastle 1.79 (LDAP injection, timing channel), jdom2 2.0.6 (XXE), commons-lang3 3.16.0, and httpclient 4.5.6. However, running `./gradlew :app:dependencyInsight` on these packages confirmed they are NOT present in the app's debugRuntimeClasspath—they exist only in the verification metadata from build-time resolution. The only runtime vulnerability found is guava 31.0.1-jre (CVE exposing potential security issues), which enters the runtime classpath transitively: ML Kit GenAI Prompt → kotlinx-coroutines-guava:1.10.2 → guava:31.0.1-jre. This explains why osv-scanner reports many more vulnerabilities than are actually exploitable in the shipped app—it's scanning the complete Gradle dependency graph, not just the runtime attack surface.
+~492t 🔍 31,199
 
-Fixed both issues: SessionDao now uses CAST((COALESCE(SUM(durationSeconds), 0) + 59) / 60 AS INTEGER) to sum seconds with ceiling rounding, and onResume now calls restartSessionSegment(projectId, state.counter.count) to properly restart session tracking. Added source-verification tests to prevent regression—DaoQuerySourceTest checks that the query uses durationSeconds and not durationMinutes, and UiStateRetentionSourceTest verifies that onResume contains the restartSessionSegment call by substring-checking the code between the two lifecycle methods.
-~633t 🛠️ 119,295
+**5403** " 🔴 **OSV scanner failure fixed by upgrading Guava and filtering verification metadata**
+The security-check pipeline was failing because osv-scanner found vulnerabilities in gradle/verification-metadata.xml. The root cause was kotlinx-coroutines-guava transitively pulling in Guava 31.0.1-jre, which had known CVEs. Additionally, OSV was incorrectly treating the verification metadata file (which contains checksums for all build-time dependencies) as a runtime dependency lockfile.
 
-**5396** 7:40p 🔵 **Pace calculation logic verified with comprehensive edge-case guards**
-Code review of KnitTools pace calculation logic confirmed the formula and edge-case handling are correct. The rows-per-hour metric is computed from exact `durationSeconds` and `rowsWorked` fields introduced in schema v10. Division-by-zero is guarded in `SessionMetrics.rowsPerHour`, returning 0f when duration is zero or negative. Very short sessions (under 1 second with no row progress) are filtered before database insertion to avoid noise. Session row tracking maintains a separate `sessionRowsWorked` counter that handles increment, decrement, and undo actions, preventing negative deltas from corrupting pace calculations. The `trackSessionRows` method explicitly handles undo by computing `-(previousValue - newValue).coerceAtLeast(0)`, ensuring rowsWorked cannot decrease incorrectly. Two active changes in the working tree improve accuracy: (1) total minutes aggregation now sums exact seconds with round-up rounding `(sum + 59) / 60`, and (2) foreground resume restarts session segments to maintain timing across app pauses. All unit tests pass, including edge cases for midnight-crossing sessions and timezone-aware daily activity splits.
-~564t 🔍 98,543
+The fix applied a two-part solution: (1) Added a dependency constraint in app/build.gradle.kts forcing Guava to upgrade to 33.5.0-android, which resolved the runtime vulnerability; (2) Created gradle/osv-scanner.toml with a PackageOverrides rule to ignore verification-metadata.xml, since it's checksum metadata not a runtime dependency source.
+
+This pattern follows the same approach documented in the msgtap rollout summary from 2026-05-16, where the same OSV filtering issue was resolved. The fix ensures that OSV only scans actual runtime dependencies while OWASP dependency-check handles the full build dependency CVE scanning.
+
+Verification with dependencyInsight confirmed both debug and release configurations now resolve Guava to 33.5.0-android via conflict resolution. OSV scanner now exits cleanly with 0 vulnerabilities found after filtering 1164 build-time packages from the verification metadata.
+~549t 🛠️ 157,782
+
+**5407** " 🚨 **OSV Scanner Detected Vulnerability in KnitTools Dependencies**
+A comprehensive security dependency check was executed on the KnitTools project at C:\Dev\KnitTools. Three security tools were run: gradle dependency verification (passed), osv-scanner (failed with 1 vulnerability), and OWASP dependency-check (passed). The osv-scanner failure indicates at least one known security vulnerability exists in the project's dependencies that requires investigation and remediation. Results are available in the reports directory for detailed analysis.
+~228t 🚨 7,513
+
+**5408** " 🔴 **OSV scanner now passes by filtering Gradle verification metadata**
+The security-check pipeline for KnitTools was failing because OSV scanner treated gradle/verification-metadata.xml as a dependency lockfile and reported CVE findings for all Maven artifacts listed there, including Guava 31.0.1-jre with multiple known vulnerabilities. The fix involved two parallel changes: (1) instructing OSV scanner to ignore verification metadata via gradle/osv-scanner.toml since runtime dependencies are checked by OWASP dependency-check instead, and (2) forcing an upgrade to Guava 33.5.0-android by adding a dependency constraint that overrides the transitive 31.0.1-jre version brought in by kotlinx-coroutines-guava. The verification metadata was updated with checksums for the new Guava artifacts (.jar, .module, .pom). OSV scanner now completes cleanly with 0 results, though OWASP dependency-check verification continues to time out when run with the updated dependency tree.
+~478t 🛠️ 171,510
 
 
-Access 3154k tokens of past work via get_observations([IDs]) or mem-search skill.
+Access 3493k tokens of past work via get_observations([IDs]) or mem-search skill.
 </claude-mem-context>

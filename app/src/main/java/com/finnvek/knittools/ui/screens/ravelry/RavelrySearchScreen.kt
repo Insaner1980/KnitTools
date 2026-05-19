@@ -85,9 +85,11 @@ fun RavelrySearchScreen(
     viewModel: RavelryViewModel = hiltViewModel(),
 ) {
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+    val submittedQuery by viewModel.submittedQuery.collectAsStateWithLifecycle()
+    val hasSubmittedSearch by viewModel.hasSubmittedSearch.collectAsStateWithLifecycle()
     val results by viewModel.searchResults.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
-    val hasError by viewModel.hasError.collectAsStateWithLifecycle()
+    val searchError by viewModel.searchError.collectAsStateWithLifecycle()
     val savedPatterns by viewModel.savedPatterns.collectAsStateWithLifecycle()
     val isAuthenticated by viewModel.isAuthenticated.collectAsStateWithLifecycle()
     val isSavedSelectMode by viewModel.isSavedSelectMode.collectAsStateWithLifecycle()
@@ -209,24 +211,14 @@ fun RavelrySearchScreen(
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
             // Kirjautumisbanneri
             if (!isAuthenticated && !isSavedSelectMode) {
-                Box(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Button(
-                        onClick = {
-                            CustomTabsIntent
-                                .Builder()
-                                .build()
-                                .launchUrl(context, viewModel.createSignInUri())
-                        },
-                    ) {
-                        Text(stringResource(R.string.ravelry_sign_in))
-                    }
-                }
+                RavelrySignInPrompt(
+                    onSignIn = {
+                        CustomTabsIntent
+                            .Builder()
+                            .build()
+                            .launchUrl(context, viewModel.createSignInUri())
+                    },
+                )
             }
 
             // Välilehdet (piilotetaan select-modessa)
@@ -255,9 +247,11 @@ fun RavelrySearchScreen(
                         state =
                             SearchTabState(
                                 searchQuery = searchQuery,
+                                submittedQuery = submittedQuery,
+                                hasSubmittedSearch = hasSubmittedSearch,
                                 results = results,
                                 isLoading = isLoading,
-                                hasError = hasError,
+                                searchError = searchError,
                             ),
                         onQueryChange = viewModel::updateQuery,
                         onSearch = {
@@ -287,9 +281,11 @@ fun RavelrySearchScreen(
 
 private data class SearchTabState(
     val searchQuery: String,
+    val submittedQuery: String,
+    val hasSubmittedSearch: Boolean,
     val results: List<com.finnvek.knittools.data.remote.PatternSearchResult>,
     val isLoading: Boolean,
-    val hasError: Boolean,
+    val searchError: RavelrySearchError?,
 )
 
 internal fun shouldRequestRavelryLoadMore(
@@ -297,7 +293,28 @@ internal fun shouldRequestRavelryLoadMore(
     resultCount: Int,
     isLoading: Boolean,
     hasError: Boolean,
-): Boolean = shouldLoadMore && resultCount > 0 && !isLoading && !hasError
+    isCurrentSubmittedSearch: Boolean,
+): Boolean = shouldLoadMore && resultCount > 0 && !isLoading && !hasError && isCurrentSubmittedSearch
+
+internal fun shouldShowRavelryEmptyState(
+    isLoading: Boolean,
+    hasError: Boolean,
+    resultCount: Int,
+    searchQuery: String,
+    submittedQuery: String,
+    hasSubmittedSearch: Boolean,
+): Boolean =
+    !isLoading &&
+        !hasError &&
+        resultCount == 0 &&
+        hasSubmittedSearch &&
+        searchQuery.trim() == submittedQuery &&
+        submittedQuery.isNotEmpty()
+
+private fun SearchTabState.isCurrentSubmittedSearch(): Boolean =
+    hasSubmittedSearch &&
+        searchQuery.trim() == submittedQuery &&
+        submittedQuery.isNotEmpty()
 
 @Composable
 private fun SearchTab(
@@ -318,14 +335,17 @@ private fun SearchTab(
         }
     }
     val currentOnLoadMore by rememberUpdatedState(onLoadMore)
+    val hasError = state.searchError != null
+    val isCurrentSubmittedSearch = state.isCurrentSubmittedSearch()
 
-    LaunchedEffect(shouldLoadMore, state.results.size, state.isLoading, state.hasError) {
+    LaunchedEffect(shouldLoadMore, state.results.size, state.isLoading, hasError, isCurrentSubmittedSearch) {
         if (
             shouldRequestRavelryLoadMore(
                 shouldLoadMore = shouldLoadMore,
                 resultCount = state.results.size,
                 isLoading = state.isLoading,
-                hasError = state.hasError,
+                hasError = hasError,
+                isCurrentSubmittedSearch = isCurrentSubmittedSearch,
             )
         ) {
             currentOnLoadMore()
@@ -380,10 +400,10 @@ private fun SearchTab(
             }
         }
 
-        if (state.hasError && state.results.isEmpty()) {
+        if (state.searchError != null && state.results.isEmpty()) {
             item {
                 StatusMessage(
-                    message = stringResource(R.string.search_error),
+                    message = stringResource(state.searchError.messageRes(isLoadMoreError = false)),
                     type = StatusMessageType.Error,
                     actionLabel = stringResource(R.string.retry),
                     onAction = onSearch,
@@ -392,10 +412,10 @@ private fun SearchTab(
             }
         }
 
-        if (state.hasError && state.results.isNotEmpty()) {
+        if (state.searchError != null && state.results.isNotEmpty()) {
             item {
                 StatusMessage(
-                    message = stringResource(R.string.search_more_error),
+                    message = stringResource(state.searchError.messageRes(isLoadMoreError = true)),
                     type = StatusMessageType.Error,
                     actionLabel = stringResource(R.string.retry),
                     onAction = onLoadMore,
@@ -403,7 +423,16 @@ private fun SearchTab(
             }
         }
 
-        if (!state.isLoading && !state.hasError && state.results.isEmpty() && state.searchQuery.isNotEmpty()) {
+        if (
+            shouldShowRavelryEmptyState(
+                isLoading = state.isLoading,
+                hasError = hasError,
+                resultCount = state.results.size,
+                searchQuery = state.searchQuery,
+                submittedQuery = state.submittedQuery,
+                hasSubmittedSearch = state.hasSubmittedSearch,
+            )
+        ) {
             item {
                 Text(
                     text = stringResource(R.string.no_results),
@@ -416,6 +445,20 @@ private fun SearchTab(
         }
     }
 }
+
+private fun RavelrySearchError.messageRes(isLoadMoreError: Boolean): Int =
+    when (this) {
+        RavelrySearchError.Network, RavelrySearchError.Unknown ->
+            if (isLoadMoreError) {
+                R.string.search_more_error
+            } else {
+                R.string.search_error
+            }
+
+        RavelrySearchError.RateLimited -> R.string.ravelry_search_rate_limited
+        RavelrySearchError.Authentication -> R.string.ravelry_search_auth_error
+        RavelrySearchError.ServiceUnavailable -> R.string.ravelry_search_service_error
+    }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable

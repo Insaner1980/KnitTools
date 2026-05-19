@@ -619,6 +619,9 @@
     <string name="paid">Betalt</string>
     <string name="no_results">Ingen opskrifter fundet</string>
     <string name="search_error">Kunne ikke indlæse opskrifter. Tjek din internetforbindelse.</string>
+    <string name="ravelry_search_rate_limited">Ravelry begrænser søgninger. Prøv igen senere.</string>
+    <string name="ravelry_search_auth_error">Ravelry-login kunne ikke bruges. Log ind igen og prøv igen.</string>
+    <string name="ravelry_search_service_error">Ravelry er midlertidigt utilgængelig. Prøv igen senere.</string>
     <string name="ravelry_sign_in">Log ind med Ravelry</string>
     <string name="difficulty_format">%.1f / 5</string>
     <string name="yardage_format">%d yard</string>

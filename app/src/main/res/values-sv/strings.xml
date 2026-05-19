@@ -619,6 +619,9 @@
     <string name="paid">Betald</string>
     <string name="no_results">Inga mönster hittades</string>
     <string name="search_error">Kunde inte ladda mönster. Kontrollera internetanslutningen.</string>
+    <string name="ravelry_search_rate_limited">Ravelry begränsar sökningar. Försök igen senare.</string>
+    <string name="ravelry_search_auth_error">Ravelry-inloggningen kunde inte användas. Logga in igen och försök igen.</string>
+    <string name="ravelry_search_service_error">Ravelry är tillfälligt otillgängligt. Försök igen senare.</string>
     <string name="ravelry_sign_in">Logga in med Ravelry</string>
     <string name="difficulty_format">%.1f / 5</string>
     <string name="yardage_format">%d yard</string>

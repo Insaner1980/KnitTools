@@ -619,6 +619,9 @@
     <string name="paid">De pago</string>
     <string name="no_results">No se encontraron patrones</string>
     <string name="search_error">No se pudieron cargar los patrones. Comprueba tu conexión a internet.</string>
+    <string name="ravelry_search_rate_limited">Ravelry está limitando las búsquedas. Inténtalo de nuevo más tarde.</string>
+    <string name="ravelry_search_auth_error">No se pudo usar el inicio de sesión de Ravelry. Vuelve a iniciar sesión e inténtalo de nuevo.</string>
+    <string name="ravelry_search_service_error">Ravelry no está disponible temporalmente. Inténtalo de nuevo más tarde.</string>
     <string name="ravelry_sign_in">Iniciar sesión con Ravelry</string>
     <string name="difficulty_format">%.1f / 5</string>
     <string name="yardage_format">%d yardas</string>

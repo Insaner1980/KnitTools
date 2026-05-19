@@ -104,26 +104,23 @@ Use [`CLAUDE.md`](/home/emma/dev/KnitTools/CLAUDE.md) when product wording, visu
 <claude-mem-context>
 # Memory Context
 
-# [KnitTools] recent context, 2026-05-19 10:21am GMT+3
+# [KnitTools] recent context, 2026-05-19 8:20pm GMT+3
 
 Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision 🚨security_alert 🔐security_note
 Format: ID TIME TYPE TITLE
 Fetch details: get_observations([IDs]) | Search: mem-search skill
 
-Stats: 50 obs (18,370t read) | 3,508,355t work | 99% savings
+Stats: 50 obs (18,509t read) | 3,634,977t work | 99% savings
 
 ### Apr 30, 2026
 S448 Investigating lint-check script failures on Windows and discovering hidden Android Lint issues (Apr 30, 11:19 PM)
 ### May 4, 2026
 S679 Document KnitTools app online/offline capabilities after discovering user's assumption about voice commands was incorrect (May 4, 4:12 PM)
-### May 8, 2026
-5306 10:50p 🔵 KnitTools Room Entity Refactoring Baseline Established
 ### May 9, 2026
 5307 2:50a 🔵 Baseline profile module minSdk lower than app module minSdk
 5310 " 🔵 Baseline Profile Module Has Lower minSdk Than App Module
 5311 " 🔵 All AndroidX and Firebase Dependencies Compatible with SDK 36
 5313 " 🔵 SDK Configuration and Library Compatibility Verification Complete
-5318 " ⚖️ Baselineprofile minSdk=28 and Library Version Strategy Decisions
 5319 2:56a ✅ Updated baselineprofile minSdk to match app minimum SDK level
 5320 " ✅ Updated Firebase BoM and ML Kit GenAI Prompt to newer releases
 ### May 12, 2026
@@ -166,10 +163,7 @@ S679 Document KnitTools app online/offline capabilities after discovering user's
 5396 7:40p 🔵 Pace calculation logic verified with comprehensive edge-case guards
 5418 10:27p 🚨 Removed Firebase config file from entire Git history
 ### May 18, 2026
-**5398** 12:25a ✅ **Disabled ossIndex analyzer in OWASP dependency-check configuration**
-The KnitTools project uses multiple security scanning tools: osv-scanner for comprehensive vulnerability detection and OWASP dependency-check for additional analysis. The ossIndex analyzer within dependency-check was creating redundant checks since osv-scanner already performs comprehensive CVE scanning against the same vulnerability databases. To streamline the security pipeline and eliminate duplicate reporting, the ossIndex analyzer was disabled in the dependency-check Gradle configuration. This change does not reduce security coverage—osv-scanner continues to identify all CVEs in dependencies like the logback-core arbitrary code execution vulnerability and Bouncy Castle timing channel issues. The dependency-check tool now focuses on its other analyzers (retirejs already disabled, others remain active) while osv-scanner handles the primary CVE detection workload.
-~389t 🛠️ 43,908
-
+5398 12:25a ✅ Disabled ossIndex analyzer in OWASP dependency-check configuration
 **5400** 12:28a 🔵 **OSV-scanner scans verification-metadata.xml containing build-time dependencies not in runtime classpath**
 Investigation of osv-scanner FAILED (1) exit code revealed that osv-scanner scans gradle/verification-metadata.xml as a lockfile, which captures all Gradle dependency resolution metadata including buildscript classpath, test dependencies, and plugin dependencies—not just the app's runtime dependencies. The scan found CVEs in logback-core 1.3.14 (arbitrary code execution), netty packages (multiple CVEs), bouncycastle 1.79 (LDAP injection, timing channel), jdom2 2.0.6 (XXE), commons-lang3 3.16.0, and httpclient 4.5.6. However, running `./gradlew :app:dependencyInsight` on these packages confirmed they are NOT present in the app's debugRuntimeClasspath—they exist only in the verification metadata from build-time resolution. The only runtime vulnerability found is guava 31.0.1-jre (CVE exposing potential security issues), which enters the runtime classpath transitively: ML Kit GenAI Prompt → kotlinx-coroutines-guava:1.10.2 → guava:31.0.1-jre. This explains why osv-scanner reports many more vulnerabilities than are actually exploitable in the shipped app—it's scanning the complete Gradle dependency graph, not just the runtime attack surface.
 ~492t 🔍 31,199
@@ -188,10 +182,24 @@ Verification with dependencyInsight confirmed both debug and release configurati
 A comprehensive security dependency check was executed on the KnitTools project at C:\Dev\KnitTools. Three security tools were run: gradle dependency verification (passed), osv-scanner (failed with 1 vulnerability), and OWASP dependency-check (passed). The osv-scanner failure indicates at least one known security vulnerability exists in the project's dependencies that requires investigation and remediation. Results are available in the reports directory for detailed analysis.
 ~228t 🚨 7,513
 
-**5408** " 🔴 **OSV scanner now passes by filtering Gradle verification metadata**
-The security-check pipeline for KnitTools was failing because OSV scanner treated gradle/verification-metadata.xml as a dependency lockfile and reported CVE findings for all Maven artifacts listed there, including Guava 31.0.1-jre with multiple known vulnerabilities. The fix involved two parallel changes: (1) instructing OSV scanner to ignore verification metadata via gradle/osv-scanner.toml since runtime dependencies are checked by OWASP dependency-check instead, and (2) forcing an upgrade to Guava 33.5.0-android by adding a dependency constraint that overrides the transitive 31.0.1-jre version brought in by kotlinx-coroutines-guava. The verification metadata was updated with checksums for the new Guava artifacts (.jar, .module, .pom). OSV scanner now completes cleanly with 0 results, though OWASP dependency-check verification continues to time out when run with the updated dependency tree.
-~478t 🛠️ 171,510
+5408 " 🔴 OSV scanner now passes by filtering Gradle verification metadata
+### May 19, 2026
+**5448** 2:54p 🔴 **Fixed Ravelry OAuth refresh failure handling and pattern save feedback**
+The Ravelry OAuth integration had two critical issues: token refresh failures caused crashes instead of falling back to Basic auth, and pattern save feedback was tightly coupled to the save action itself (Toast displayed inline with viewModel.savePattern() call).
+
+The fix introduced refreshAccessTokenOrFalse() that catches exceptions from authManager.refreshAccessToken() and returns false, allowing the auth flow to sign out and retry with Basic credentials. This prevents crashes when refresh tokens expire or network fails during refresh.
+
+For pattern save feedback, PatternSaveResult enum was added with Saved/Failed variants, emitted via patternSaveResults SharedFlow after repository operations complete. RavelryDetailScreen now observes this flow in LaunchedEffect and displays the appropriate Toast message. This decouples UI feedback from business logic and makes save success/failure testable.
+
+Additional safety was added for "Open in Ravelry" by checking permalink presence via ravelryUrlOrNull() and catching ActivityNotFoundException in openRavelryUrl(), preventing crashes when no browser is available or pattern data is incomplete.
+
+Tests were added for the OAuth fallback flow (expired bearer token signs out and falls back when refresh throws), save event emission timing (success only after repository succeeds, failure on exception), and source-level verification that the screen follows the event-driven pattern (no inline Toast with savePattern call).
+~602t 🛠️ 117,765
+
+**5449** 3:20p 🔵 **Ravelry token refresh failure signs user out and shows reconnect prompt**
+Traced Ravelry OAuth token refresh failure path through RavelryApiService, RavelryAuthManager, and UI layers. When an access token expires, RavelryApiService attempts automatic refresh using the stored refresh token. If refresh fails for any reason (network error, invalid token, HTTP error), the refresh wrapper returns false, and the service calls authManager.signOut() which clears all stored tokens from EncryptedSharedPreferences and updates the isAuthenticated state flow to false. The UI reacts by showing a "Sign in with Ravelry" button, and any in-flight search/detail requests that fail with 401/403 display an authentication error message prompting the user to sign in again. The user is not stuck in an error state—they are explicitly logged out and prompted to reconnect. After signOut(), the only recovery path is to complete a full OAuth authorization code flow with PKCE via Chrome Custom Tab.
+~466t 🔍 81,695
 
 
-Access 3508k tokens of past work via get_observations([IDs]) or mem-search skill.
+Access 3635k tokens of past work via get_observations([IDs]) or mem-search skill.
 </claude-mem-context>

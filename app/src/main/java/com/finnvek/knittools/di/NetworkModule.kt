@@ -15,15 +15,20 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
+    private const val CONNECT_TIMEOUT_SECONDS = 15L
+    private const val CALL_TIMEOUT_SECONDS = 45L
+    private const val READ_WRITE_TIMEOUT_SECONDS = 30L
+
     @Provides
     @Singleton
     fun provideHttpClient(): HttpClient =
         HttpClient(OkHttp) {
             engine {
                 config {
-                    connectTimeout(15, TimeUnit.SECONDS)
-                    readTimeout(30, TimeUnit.SECONDS)
-                    writeTimeout(30, TimeUnit.SECONDS)
+                    connectTimeout(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                    callTimeout(CALL_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                    readTimeout(READ_WRITE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                    writeTimeout(READ_WRITE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                 }
             }
             install(ContentNegotiation) {

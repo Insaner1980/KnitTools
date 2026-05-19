@@ -619,6 +619,9 @@
     <string name="paid">Pago</string>
     <string name="no_results">Nenhuma receita encontrada</string>
     <string name="search_error">Não foi possível carregar as receitas. Verifique a sua ligação à Internet.</string>
+    <string name="ravelry_search_rate_limited">O Ravelry está a limitar as pesquisas. Tente novamente mais tarde.</string>
+    <string name="ravelry_search_auth_error">Não foi possível usar o início de sessão no Ravelry. Inicie sessão novamente e tente outra vez.</string>
+    <string name="ravelry_search_service_error">O Ravelry está temporariamente indisponível. Tente novamente mais tarde.</string>
     <string name="ravelry_sign_in">Iniciar sessão com o Ravelry</string>
     <string name="difficulty_format">%.1f / 5</string>
     <string name="yardage_format">%d jardas</string>

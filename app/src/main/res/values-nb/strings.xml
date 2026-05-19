@@ -619,6 +619,9 @@
     <string name="paid">Betalt</string>
     <string name="no_results">Ingen oppskrifter funnet</string>
     <string name="search_error">Kunne ikke laste oppskrifter. Sjekk internettilkoblingen.</string>
+    <string name="ravelry_search_rate_limited">Ravelry begrenser søk. Prøv igjen senere.</string>
+    <string name="ravelry_search_auth_error">Ravelry-innloggingen kunne ikke brukes. Logg inn på nytt og prøv igjen.</string>
+    <string name="ravelry_search_service_error">Ravelry er midlertidig utilgjengelig. Prøv igjen senere.</string>
     <string name="ravelry_sign_in">Logg inn med Ravelry</string>
     <string name="difficulty_format">%.1f / 5</string>
     <string name="yardage_format">%d yard</string>

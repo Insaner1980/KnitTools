@@ -13,6 +13,7 @@ class RavelrySearchScreenTest {
                 resultCount = 12,
                 isLoading = false,
                 hasError = false,
+                isCurrentSubmittedSearch = true,
             ),
         )
     }
@@ -25,6 +26,7 @@ class RavelrySearchScreenTest {
                 resultCount = 0,
                 isLoading = false,
                 hasError = false,
+                isCurrentSubmittedSearch = true,
             ),
         )
     }
@@ -37,6 +39,7 @@ class RavelrySearchScreenTest {
                 resultCount = 12,
                 isLoading = true,
                 hasError = false,
+                isCurrentSubmittedSearch = true,
             ),
         )
 
@@ -46,6 +49,56 @@ class RavelrySearchScreenTest {
                 resultCount = 12,
                 isLoading = false,
                 hasError = true,
+                isCurrentSubmittedSearch = true,
+            ),
+        )
+    }
+
+    @Test
+    fun loadMoreNotRequestedWhenDraftQueryDoesNotMatchSubmittedSearch() {
+        assertFalse(
+            shouldRequestRavelryLoadMore(
+                shouldLoadMore = true,
+                resultCount = 12,
+                isLoading = false,
+                hasError = false,
+                isCurrentSubmittedSearch = false,
+            ),
+        )
+    }
+
+    @Test
+    fun emptyStateOnlyShownForSubmittedCurrentQuery() {
+        assertFalse(
+            shouldShowRavelryEmptyState(
+                isLoading = false,
+                hasError = false,
+                resultCount = 0,
+                searchQuery = "socks",
+                submittedQuery = "",
+                hasSubmittedSearch = false,
+            ),
+        )
+
+        assertFalse(
+            shouldShowRavelryEmptyState(
+                isLoading = false,
+                hasError = false,
+                resultCount = 0,
+                searchQuery = "hat",
+                submittedQuery = "socks",
+                hasSubmittedSearch = true,
+            ),
+        )
+
+        assertTrue(
+            shouldShowRavelryEmptyState(
+                isLoading = false,
+                hasError = false,
+                resultCount = 0,
+                searchQuery = "socks",
+                submittedQuery = "socks",
+                hasSubmittedSearch = true,
             ),
         )
     }

@@ -1,7 +1,10 @@
 package com.finnvek.knittools.ui.screens.ravelry
 
+import android.content.ActivityNotFoundException
+import android.content.Context
 import android.content.Intent
 import android.widget.Toast
+import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -56,9 +59,12 @@ fun RavelryDetailScreen(
     val detail by viewModel.patternDetail.collectAsStateWithLifecycle()
     val isLoading by viewModel.isDetailLoading.collectAsStateWithLifecycle()
     val isSaved by viewModel.isPatternSaved.collectAsStateWithLifecycle()
-    val hasDetailError by viewModel.hasDetailError.collectAsStateWithLifecycle()
+    val detailError by viewModel.detailError.collectAsStateWithLifecycle()
+    val isAuthenticated by viewModel.isAuthenticated.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val savedMessage = stringResource(R.string.pattern_saved_to_library)
+    val saveFailedMessage = stringResource(R.string.ai_error_unknown)
+    val openFailedMessage = stringResource(R.string.pattern_open_failed)
     val currentOnStartProject by rememberUpdatedState(onStartProject)
     val currentOnUpgradeToPro by rememberUpdatedState(onUpgradeToPro)
 
@@ -78,41 +84,109 @@ fun RavelryDetailScreen(
         }
     }
 
+    LaunchedEffect(viewModel, savedMessage, saveFailedMessage) {
+        viewModel.patternSaveResults.collect { result ->
+            val message =
+                when (result) {
+                    PatternSaveResult.Saved -> savedMessage
+                    PatternSaveResult.Failed -> saveFailedMessage
+                }
+            Toast
+                .makeText(
+                    context,
+                    message,
+                    Toast.LENGTH_SHORT,
+                ).show()
+        }
+    }
+
     ToolScreenScaffold(
         title = detail?.name ?: stringResource(R.string.tool_ravelry),
         onBack = onBack,
     ) { _ ->
-        PatternDetailBody(
-            detail = detail,
-            hasDetailError = hasDetailError,
-            isLoading = isLoading,
-            isSaved = isSaved,
-            actions =
-                PatternDetailActions(
-                    onRetry = { viewModel.loadDetail(patternId) },
-                    onStartProject = { viewModel.createProjectFromPattern() },
-                    onSave = {
-                        viewModel.savePattern()
-                        Toast
-                            .makeText(
-                                context,
-                                savedMessage,
-                                Toast.LENGTH_SHORT,
-                            ).show()
-                    },
-                    onOpenInRavelry = {
-                        detail?.let {
-                            val intent = Intent(Intent.ACTION_VIEW, it.ravelryUrl.toUri())
-                            context.startActivity(intent)
-                        }
-                    },
-                ),
+        val signInAction = {
+            CustomTabsIntent
+                .Builder()
+                .build()
+                .launchUrl(context, viewModel.createSignInUri())
+        }
+        Column(modifier = Modifier.fillMaxSize()) {
+            if (!isAuthenticated) {
+                RavelrySignInPrompt(onSignIn = signInAction)
+            }
+            PatternDetailBody(
+                detail = detail,
+                detailError = detailError,
+                isLoading = isLoading,
+                isSaved = isSaved,
+                modifier = Modifier.weight(1f),
+                actions =
+                    PatternDetailActions(
+                        onRetry = { viewModel.loadDetail(patternId) },
+                        onSignIn = signInAction,
+                        onStartProject = { viewModel.createProjectFromPattern() },
+                        onSave = { viewModel.savePattern() },
+                        onOpenInRavelry = {
+                            val url = detail?.ravelryUrlOrNull()
+                            if (url == null) {
+                                Toast
+                                    .makeText(
+                                        context,
+                                        openFailedMessage,
+                                        Toast.LENGTH_SHORT,
+                                    ).show()
+                            } else {
+                                openRavelryUrl(
+                                    context = context,
+                                    url = url,
+                                    failureMessage = openFailedMessage,
+                                )
+                            }
+                        },
+                    ),
+            )
+        }
+    }
+}
+
+internal fun PatternDetail.ravelryUrlOrNull(): String? =
+    if (permalink.isBlank()) {
+        null
+    } else {
+        ravelryUrl
+    }
+
+private fun openRavelryUrl(
+    context: Context,
+    url: String,
+    failureMessage: String,
+) {
+    val opened =
+        runCatching {
+            context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri()))
+        }.fold(
+            onSuccess = { true },
+            onFailure = { error ->
+                if (error is ActivityNotFoundException) {
+                    false
+                } else {
+                    throw error
+                }
+            },
         )
+    if (!opened) {
+        Toast
+            .makeText(
+                context,
+                failureMessage,
+                Toast.LENGTH_SHORT,
+            ).show()
     }
 }
 
 data class PatternDetailActions(
     val onRetry: () -> Unit,
+    val onSignIn: () -> Unit,
     val onStartProject: () -> Unit,
     val onSave: () -> Unit,
     val onOpenInRavelry: () -> Unit,
@@ -121,15 +195,16 @@ data class PatternDetailActions(
 @Composable
 private fun PatternDetailBody(
     detail: PatternDetail?,
-    hasDetailError: Boolean,
+    detailError: RavelrySearchError?,
     isLoading: Boolean,
     isSaved: Boolean,
+    modifier: Modifier = Modifier,
     actions: PatternDetailActions,
 ) {
     when {
         isLoading -> {
             Box(
-                modifier = Modifier.fillMaxSize(),
+                modifier = modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center,
             ) {
                 CircularProgressIndicator()
@@ -140,27 +215,49 @@ private fun PatternDetailBody(
             PatternDetailContent(
                 pattern = detail,
                 isSaved = isSaved,
+                modifier = modifier,
                 onStartProject = actions.onStartProject,
                 onSave = actions.onSave,
                 onOpenInRavelry = actions.onOpenInRavelry,
             )
         }
 
-        hasDetailError -> {
+        detailError != null -> {
+            val isAuthenticationError = detailError == RavelrySearchError.Authentication
             Box(
-                modifier = Modifier.fillMaxSize().padding(16.dp),
+                modifier = modifier.fillMaxSize().padding(16.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 com.finnvek.knittools.ui.components.StatusMessage(
-                    message = stringResource(R.string.pattern_detail_error),
+                    message = stringResource(detailError.detailMessageRes()),
                     type = com.finnvek.knittools.ui.components.StatusMessageType.Error,
-                    actionLabel = stringResource(R.string.retry),
-                    onAction = actions.onRetry,
+                    actionLabel =
+                        stringResource(
+                            if (isAuthenticationError) {
+                                R.string.ravelry_sign_in
+                            } else {
+                                R.string.retry
+                            },
+                        ),
+                    onAction =
+                        if (isAuthenticationError) {
+                            actions.onSignIn
+                        } else {
+                            actions.onRetry
+                        },
                 )
             }
         }
     }
 }
+
+private fun RavelrySearchError.detailMessageRes(): Int =
+    when (this) {
+        RavelrySearchError.Authentication -> R.string.ravelry_search_auth_error
+        RavelrySearchError.RateLimited -> R.string.ravelry_search_rate_limited
+        RavelrySearchError.ServiceUnavailable -> R.string.ravelry_search_service_error
+        RavelrySearchError.Network, RavelrySearchError.Unknown -> R.string.pattern_detail_error
+    }
 
 @Composable
 private fun PatternDetailContent(
@@ -169,10 +266,11 @@ private fun PatternDetailContent(
     onStartProject: () -> Unit,
     onSave: () -> Unit,
     onOpenInRavelry: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Column(
         modifier =
-            Modifier
+            modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp),

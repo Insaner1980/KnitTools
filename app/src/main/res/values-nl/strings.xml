@@ -619,6 +619,9 @@
     <string name="paid">Betaald</string>
     <string name="no_results">Geen patronen gevonden</string>
     <string name="search_error">Patronen konden niet worden geladen. Controleer je internetverbinding.</string>
+    <string name="ravelry_search_rate_limited">Ravelry beperkt zoekopdrachten. Probeer het later opnieuw.</string>
+    <string name="ravelry_search_auth_error">De Ravelry-inlog kon niet worden gebruikt. Log opnieuw in en probeer het opnieuw.</string>
+    <string name="ravelry_search_service_error">Ravelry is tijdelijk niet beschikbaar. Probeer het later opnieuw.</string>
     <string name="ravelry_sign_in">Inloggen met Ravelry</string>
     <string name="difficulty_format">%.1f / 5</string>
     <string name="yardage_format">%d yard</string>

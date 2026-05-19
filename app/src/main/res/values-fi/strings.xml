@@ -888,6 +888,9 @@
     <string name="paid">Maksullinen</string>
     <string name="no_results">Ohjeita ei löytynyt</string>
     <string name="search_error">Ohjeita ei voitu ladata. Tarkista internetyhteytesi.</string>
+    <string name="ravelry_search_rate_limited">Ravelry rajoittaa hakuja. Yritä myöhemmin uudelleen.</string>
+    <string name="ravelry_search_auth_error">Ravelry-kirjautumista ei voitu käyttää. Kirjaudu uudelleen ja yritä uudelleen.</string>
+    <string name="ravelry_search_service_error">Ravelry ei ole juuri nyt käytettävissä. Yritä myöhemmin uudelleen.</string>
     <string name="ravelry_sign_in">Kirjaudu Ravelryyn</string>
     <string name="difficulty_format">%.1f / 5</string>
     <string name="yardage_format">%d jaardia</string>

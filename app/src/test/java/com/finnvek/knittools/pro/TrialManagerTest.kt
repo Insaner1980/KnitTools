@@ -134,4 +134,54 @@ class TrialManagerTest {
         assertTrue(state.clockTampered)
         assertFalse(state.isActive)
     }
+
+    @Test
+    fun `persisted clock tamper keeps trial blocked after clock catches up`() {
+        val state =
+            TrialManager.calculateTrialState(
+                now = baseTime + 11 * day,
+                startTimestamp = baseTime,
+                lastKnownTimestamp = baseTime + 10 * day,
+                isFirstLaunch = false,
+                clockTamperedAlready = true,
+            )
+        assertTrue(state.clockTampered)
+        assertFalse(state.isActive)
+        assertEquals(3, state.daysRemaining)
+    }
+
+    @Test
+    fun `last known timestamp does not move backwards`() {
+        val futureLastKnown = baseTime + 10 * day
+
+        val nextLastKnown =
+            TrialManager.calculateNextLastKnownTimestamp(
+                now = baseTime + 3 * day,
+                lastKnownTimestamp = futureLastKnown,
+            )
+
+        assertEquals(futureLastKnown, nextLastKnown)
+    }
+
+    @Test
+    fun `trial refresh waits only until next day boundary when it is sooner than poll interval`() {
+        val delayMillis =
+            TrialManager.calculateTrialRefreshDelayMillis(
+                now = baseTime + 13 * day + 23 * hour + 59 * 60_000L,
+                startTimestamp = baseTime,
+            )
+
+        assertEquals(60_000L, delayMillis)
+    }
+
+    @Test
+    fun `trial refresh is capped by regular poll interval before next day boundary`() {
+        val delayMillis =
+            TrialManager.calculateTrialRefreshDelayMillis(
+                now = baseTime + 3 * day,
+                startTimestamp = baseTime,
+            )
+
+        assertEquals(TimeUnit.MINUTES.toMillis(15), delayMillis)
+    }
 }

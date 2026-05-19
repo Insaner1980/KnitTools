@@ -619,6 +619,9 @@
     <string name="paid">Payant</string>
     <string name="no_results">Aucun modèle trouvé</string>
     <string name="search_error">Impossible de charger les modèles. Vérifiez votre connexion Internet.</string>
+    <string name="ravelry_search_rate_limited">Ravelry limite les recherches. Réessayez plus tard.</string>
+    <string name="ravelry_search_auth_error">La connexion Ravelry n’a pas pu être utilisée. Connectez-vous à nouveau puis réessayez.</string>
+    <string name="ravelry_search_service_error">Ravelry est temporairement indisponible. Réessayez plus tard.</string>
     <string name="ravelry_sign_in">Se connecter avec Ravelry</string>
     <string name="difficulty_format">%.1f / 5</string>
     <string name="yardage_format">%d yards</string>

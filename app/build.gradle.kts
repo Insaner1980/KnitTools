@@ -559,6 +559,7 @@ dependencies {
     testImplementation(libs.org.json)
     testImplementation(libs.junit)
     testImplementation(libs.coroutines.test)
+    testImplementation(libs.ktor.client.mock)
     testImplementation(libs.mockk)
     testImplementation(libs.turbine)
     androidTestImplementation(libs.androidx.test.ext.junit)

@@ -619,6 +619,9 @@
     <string name="paid">Kostenpflichtig</string>
     <string name="no_results">Keine Anleitungen gefunden</string>
     <string name="search_error">Anleitungen konnten nicht geladen werden. Überprüfe deine Internetverbindung.</string>
+    <string name="ravelry_search_rate_limited">Ravelry begrenzt Suchanfragen. Versuche es später erneut.</string>
+    <string name="ravelry_search_auth_error">Die Ravelry-Anmeldung konnte nicht verwendet werden. Melde dich erneut an und versuche es wieder.</string>
+    <string name="ravelry_search_service_error">Ravelry ist vorübergehend nicht verfügbar. Versuche es später erneut.</string>
     <string name="ravelry_sign_in">Mit Ravelry anmelden</string>
     <string name="difficulty_format">%.1f / 5</string>
     <string name="yardage_format">%d Yard</string>

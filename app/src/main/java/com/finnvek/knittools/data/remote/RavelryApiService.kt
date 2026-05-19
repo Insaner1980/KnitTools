@@ -9,6 +9,7 @@ import io.ktor.client.request.header
 import io.ktor.client.request.parameter
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import java.io.IOException
 import javax.inject.Inject
@@ -27,6 +28,14 @@ data class PatternSearchParams(
     val page: Int = 1,
     val pageSize: Int = 20,
 )
+
+internal class TransientRavelryException(
+    val statusCode: Int,
+) : IOException("Ravelry returned HTTP $statusCode")
+
+internal class RavelryHttpException(
+    val statusCode: Int,
+) : RuntimeException("Ravelry returned HTTP $statusCode")
 
 @Singleton
 class RavelryApiService
@@ -106,10 +115,11 @@ class RavelryApiService
                 if (response.status != HttpStatusCode.Unauthorized &&
                     response.status != HttpStatusCode.Forbidden
                 ) {
+                    response.throwIfUnexpectedHttpStatus()
                     return response.body()
                 }
 
-                if (authManager.refreshAccessToken(client)) {
+                if (refreshAccessTokenOrFalse()) {
                     val retryResponse =
                         client.get(url) {
                             header(HttpHeaders.Authorization, "Bearer ${authManager.accessToken}")
@@ -119,6 +129,7 @@ class RavelryApiService
                     if (retryResponse.status != HttpStatusCode.Unauthorized &&
                         retryResponse.status != HttpStatusCode.Forbidden
                     ) {
+                        retryResponse.throwIfUnexpectedHttpStatus()
                         return retryResponse.body()
                     }
                 }
@@ -126,13 +137,24 @@ class RavelryApiService
                 authManager.signOut()
             }
 
-            return client
-                .get(url) {
+            val response =
+                client.get(url) {
                     header(HttpHeaders.Authorization, basicAuthHeader())
                     block()
-                }.also { response -> response.throwIfTransientServerError() }
-                .body()
+                }
+            response.throwIfTransientServerError()
+            response.throwIfUnexpectedHttpStatus()
+            return response.body()
         }
+
+        private suspend fun refreshAccessTokenOrFalse(): Boolean =
+            try {
+                authManager.refreshAccessToken(client)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                false
+            }
 
         private fun io.ktor.client.statement.HttpResponse.throwIfTransientServerError() {
             if (status.value in 500..599) {
@@ -140,9 +162,11 @@ class RavelryApiService
             }
         }
 
-        private class TransientRavelryException(
-            statusCode: Int,
-        ) : IOException("Ravelry returned HTTP $statusCode")
+        private fun io.ktor.client.statement.HttpResponse.throwIfUnexpectedHttpStatus() {
+            if (status.value !in 200..299) {
+                throw RavelryHttpException(status.value)
+            }
+        }
 
         @OptIn(ExperimentalEncodingApi::class)
         private fun basicAuthHeader(): String {

@@ -31,24 +31,6 @@ interface SessionDao {
     )
     suspend fun getTotalMinutes(projectId: Long): Int
 
-    // Insights-queryt
-
-    @Query(
-        """
-        SELECT *
-        FROM sessions
-        WHERE endedAt >= :start
-            AND startedAt <= :end
-            AND (:projectId IS NULL OR projectId = :projectId)
-        ORDER BY startedAt, id
-        """,
-    )
-    fun getSessionsInRange(
-        start: Long,
-        end: Long,
-        projectId: Long?,
-    ): Flow<List<SessionEntity>>
-
     @Query("SELECT * FROM sessions WHERE (:projectId IS NULL OR projectId = :projectId) ORDER BY startedAt, id")
     fun getAllSessions(projectId: Long?): Flow<List<SessionEntity>>
 
@@ -56,14 +38,39 @@ interface SessionDao {
         """
         SELECT *
         FROM sessions
-        WHERE (:projectId IS NULL OR projectId = :projectId)
-            AND (:start IS NULL OR endedAt >= :start)
-        ORDER BY startedAt, id
         """,
     )
-    fun getSessionsForInsights(
-        projectId: Long?,
-        start: Long?,
+    fun getAllSessionsForInsights(): Flow<List<SessionEntity>>
+
+    @Query(
+        """
+        SELECT *
+        FROM sessions
+        WHERE endedAt >= :start
+        """,
+    )
+    fun getAllSessionsForInsightsSince(start: Long): Flow<List<SessionEntity>>
+
+    @Query(
+        """
+        SELECT *
+        FROM sessions
+        WHERE projectId = :projectId
+        """,
+    )
+    fun getProjectSessionsForInsights(projectId: Long): Flow<List<SessionEntity>>
+
+    @Query(
+        """
+        SELECT *
+        FROM sessions
+        WHERE projectId = :projectId
+            AND endedAt >= :start
+        """,
+    )
+    fun getProjectSessionsForInsightsSince(
+        projectId: Long,
+        start: Long,
     ): Flow<List<SessionEntity>>
 
     @Query("SELECT * FROM sessions WHERE projectId = :projectId ORDER BY endedAt DESC LIMIT 1")

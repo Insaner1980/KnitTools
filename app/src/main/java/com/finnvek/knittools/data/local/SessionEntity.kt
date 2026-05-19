@@ -17,8 +17,10 @@ import androidx.room.PrimaryKey
         ),
     ],
     indices = [
-        Index("projectId"),
-        Index("startedAt"),
+        Index(value = ["projectId"]),
+        Index(value = ["startedAt"]),
+        Index(value = ["endedAt", "startedAt"]),
+        Index(value = ["projectId", "endedAt", "startedAt"]),
     ],
 )
 data class SessionEntity(

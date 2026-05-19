@@ -308,15 +308,20 @@ private fun YarnCardScanContent(
             onSaveClick = {
                 handleSaveClick(
                     isPro = isPro,
-                    canLink =
-                        initialLinkProjectId != null &&
-                            onLinkToProject != null &&
-                            availableProjects.any { it.id == initialLinkProjectId },
                     getCalculatorValues = getCalculatorValues,
                     onDiscardScan = onDiscardScan,
                     onSaveCard = onSaveCard,
                     onSaveAndUse = onSaveAndUse,
-                    onShowLinkDialog = onShowLinkDialog,
+                    onShowLinkDialog =
+                        if (
+                            initialLinkProjectId != null &&
+                            onLinkToProject != null &&
+                            availableProjects.any { it.id == initialLinkProjectId }
+                        ) {
+                            onShowLinkDialog
+                        } else {
+                            null
+                        },
                     onSaved = {
                         Toast
                             .makeText(
@@ -829,12 +834,11 @@ private fun ReviewActionButtons(
 
 private fun handleSaveClick(
     isPro: Boolean,
-    canLink: Boolean,
     getCalculatorValues: () -> Triple<String, String, String>,
     onDiscardScan: () -> Unit,
     onSaveCard: ((Long) -> Unit) -> Unit,
     onSaveAndUse: (String, String, String) -> Unit,
-    onShowLinkDialog: (Long) -> Unit,
+    onShowLinkDialog: ((Long) -> Unit)?,
     onSaved: () -> Unit = {},
 ) {
     if (!isPro) {
@@ -845,8 +849,9 @@ private fun handleSaveClick(
     }
     onSaveCard { id ->
         onSaved()
-        if (canLink) {
-            onShowLinkDialog(id)
+        val showLinkDialog = onShowLinkDialog
+        if (showLinkDialog != null) {
+            showLinkDialog(id)
         } else {
             val (w, l, n) = getCalculatorValues()
             onSaveAndUse(w, l, n)

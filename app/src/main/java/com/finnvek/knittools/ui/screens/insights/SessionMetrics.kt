@@ -24,6 +24,12 @@ internal data class SessionMetricSummary(
             }
 }
 
+internal data class PaceBucketMetric(
+    val totalSeconds: Long,
+    val totalRows: Int,
+    val rowsPerHour: Float,
+)
+
 internal object SessionMetrics {
     fun summarize(
         sessions: List<KnitSession>,
@@ -52,7 +58,62 @@ internal object SessionMetrics {
         sessions: List<KnitSession>,
         earliestDate: LocalDate,
         zone: ZoneId,
-    ): Map<LocalDate, Int> {
+    ): Map<LocalDate, Int> =
+        dailyActivitySeconds(
+            sessions = sessions,
+            earliestDate = earliestDate,
+            zone = zone,
+        ).mapValues { (_, seconds) -> secondsToDisplayMinutes(seconds) }
+
+    fun activityDates(
+        sessions: List<KnitSession>,
+        earliestDate: LocalDate,
+        zone: ZoneId,
+    ): Set<LocalDate> =
+        dailyActivitySeconds(
+            sessions = sessions,
+            earliestDate = earliestDate,
+            zone = zone,
+        ).keys
+
+    fun paceBuckets(
+        sessions: List<KnitSession>,
+        rangeStartMillis: Long?,
+        interval: PaceGroupingInterval,
+        zone: ZoneId,
+    ): Map<LocalDate, PaceBucketMetric> {
+        val buckets = mutableMapOf<LocalDate, MutablePaceBucket>()
+        sessions.forEach { session ->
+            session
+                .paceBucketContributions(rangeStartMillis, interval, zone)
+                .forEach { (bucketStart, contribution) ->
+                    val bucket = buckets.getOrPut(bucketStart) { MutablePaceBucket() }
+                    bucket.seconds += contribution.seconds
+                    bucket.rows += contribution.rows
+                }
+        }
+        return buckets.mapValues { (_, bucket) ->
+            val seconds = bucket.seconds.roundToLong().coerceAtLeast(0L)
+            val rows = bucket.rows.roundToInt().coerceAtLeast(0)
+            val rowsPerHour =
+                if (seconds <= 0L || bucket.rows <= 0.0) {
+                    0f
+                } else {
+                    (bucket.rows / (bucket.seconds / 3600.0)).toFloat().takeIf { it.isFinite() } ?: 0f
+                }
+            PaceBucketMetric(
+                totalSeconds = seconds,
+                totalRows = rows,
+                rowsPerHour = rowsPerHour,
+            )
+        }
+    }
+
+    private fun dailyActivitySeconds(
+        sessions: List<KnitSession>,
+        earliestDate: LocalDate,
+        zone: ZoneId,
+    ): Map<LocalDate, Long> {
         val secondsByDate = mutableMapOf<LocalDate, Long>()
         sessions.forEach { session ->
             session
@@ -61,7 +122,7 @@ internal object SessionMetrics {
                     secondsByDate[date] = (secondsByDate[date] ?: 0L) + seconds
                 }
         }
-        return secondsByDate.mapValues { (_, seconds) -> secondsToDisplayMinutes(seconds) }
+        return secondsByDate
     }
 
     private fun KnitSession.contributionFrom(
@@ -129,11 +190,65 @@ internal object SessionMetrics {
 
         return contributions
     }
+
+    private fun KnitSession.paceBucketContributions(
+        rangeStartMillis: Long?,
+        interval: PaceGroupingInterval,
+        zone: ZoneId,
+    ): Map<LocalDate, PaceBucketContribution> {
+        val activeSeconds = activeDurationSeconds()
+        val rows = workedRows()
+        if (activeSeconds <= 0L || rows <= 0) return emptyMap()
+
+        val started = startedAt
+        val ended = effectiveEndedAt()
+        var cursor = maxOf(started, rangeStartMillis ?: started)
+        val contributions = mutableMapOf<LocalDate, PaceBucketContribution>()
+
+        while (cursor < ended) {
+            val bucketStart =
+                Instant
+                    .ofEpochMilli(cursor)
+                    .atZone(zone)
+                    .toLocalDate()
+                    .bucketStart(interval)
+            val nextBucketStartMillis =
+                bucketStart
+                    .nextBucketStart(interval)
+                    .atStartOfDay(zone)
+                    .toInstant()
+                    .toEpochMilli()
+            val segmentEnd = minOf(ended, nextBucketStartMillis)
+            if (segmentEnd <= cursor) break
+
+            val fraction = (segmentEnd - cursor).toDouble() / (ended - started).coerceAtLeast(1L)
+            val seconds = activeSeconds * fraction
+            val bucketRows = rows * fraction
+            if (seconds > 0.0 && bucketRows > 0.0) {
+                val contribution = contributions.getOrPut(bucketStart) { PaceBucketContribution() }
+                contribution.seconds += seconds
+                contribution.rows += bucketRows
+            }
+            cursor = segmentEnd
+        }
+
+        return contributions
+    }
 }
 
 private data class SessionContribution(
     val seconds: Long,
     val rows: Int,
+)
+
+private data class PaceBucketContribution(
+    var seconds: Double = 0.0,
+    var rows: Double = 0.0,
+)
+
+private data class MutablePaceBucket(
+    var seconds: Double = 0.0,
+    var rows: Double = 0.0,
 )
 
 private fun KnitSession.activeDurationSeconds(): Long =

@@ -4,6 +4,7 @@ import android.content.Context
 import com.finnvek.knittools.data.local.CounterProjectDao
 import com.finnvek.knittools.data.local.DatabaseTransactionRunner
 import com.finnvek.knittools.data.local.SessionDao
+import com.finnvek.knittools.data.local.SessionEntity
 import com.finnvek.knittools.data.local.toDomain
 import com.finnvek.knittools.data.local.toEntity
 import com.finnvek.knittools.data.storage.PatternDocumentStorage
@@ -16,6 +17,8 @@ import com.finnvek.knittools.domain.model.KnitSession
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -335,18 +338,31 @@ class CounterRepository
 
         // Session-metodit
         fun getSessionsForProject(projectId: Long): Flow<List<KnitSession>> =
-            sessionDao.getSessionsForProject(projectId).map { sessions -> sessions.map { it.toDomain() } }
+            sessionDao.getSessionsForProject(projectId).toDomainSessions()
 
         fun getAllSessions(projectId: Long?): Flow<List<KnitSession>> =
-            sessionDao.getAllSessions(projectId).map { sessions -> sessions.map { it.toDomain() } }
+            sessionDao.getAllSessions(projectId).toDomainSessions()
 
         fun getCompletedProjectCount(): Flow<Int> = sessionDao.getCompletedProjectCount()
 
         fun getSessionsForInsights(
             projectId: Long?,
             start: Long?,
-        ): Flow<List<KnitSession>> =
-            sessionDao.getSessionsForInsights(projectId, start).map { sessions -> sessions.map { it.toDomain() } }
+        ): Flow<List<KnitSession>> {
+            val sessions =
+                when {
+                    projectId == null && start == null -> sessionDao.getAllSessionsForInsights()
+                    projectId == null && start != null -> sessionDao.getAllSessionsForInsightsSince(start)
+                    projectId != null && start == null -> sessionDao.getProjectSessionsForInsights(projectId)
+                    projectId != null && start != null ->
+                        sessionDao.getProjectSessionsForInsightsSince(
+                            projectId = projectId,
+                            start = start,
+                        )
+                    else -> sessionDao.getAllSessionsForInsights()
+                }
+            return sessions.toDomainSessions()
+        }
 
         suspend fun insertSession(session: KnitSession): Long = sessionDao.insert(session.toEntity())
 
@@ -360,6 +376,11 @@ class CounterRepository
         suspend fun getTotalMinutesForProject(projectId: Long): Int = sessionDao.getTotalMinutes(projectId)
 
         suspend fun getLatestSession(projectId: Long): KnitSession? = sessionDao.getLatestSession(projectId)?.toDomain()
+
+        private fun Flow<List<SessionEntity>>.toDomainSessions(): Flow<List<KnitSession>> =
+            distinctUntilChanged()
+                .map { sessions -> sessions.map { it.toDomain() } }
+                .flowOn(ioDispatcher)
     }
 
 internal fun mergeProjectNotes(

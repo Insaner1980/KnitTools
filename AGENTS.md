@@ -9,7 +9,7 @@ Use [`CLAUDE.md`](/home/emma/dev/KnitTools/CLAUDE.md) when product wording, visu
 - Android app in `app` plus `baselineprofile`
 - Kotlin + Jetpack Compose + Material 3
 - Hilt, Room, DataStore, Glance
-- Room schema version `10`
+- Room schema version `11`
 - AGP `9.1.0` + Kotlin Compose plugin `2.3.10`
 
 ## Architecture
@@ -23,6 +23,7 @@ Use [`CLAUDE.md`](/home/emma/dev/KnitTools/CLAUDE.md) when product wording, visu
 - Widget row count changes go through `CounterRepository.applyWidgetCountChange`, which reads the current project row and writes count, history, and current-stitch reset inside one repository transaction
 - Project note replacement writes go through `CounterRepository.saveProjectNotes`, which merges against the editor's base notes so concurrent appends from voice/journal/editor flows are preserved instead of overwritten
 - Session rows store both display minutes and exact `durationSeconds`/`rowsWorked`; insights pace calculations must use the exact fields and split cross-midnight sessions by the device local date
+- Insights screen state is aggregated in `InsightsUiState`; heavy session-history calculations should run upstream with `@IoDispatcher` before Compose collects the single UI state
 - Legacy secondary counter state lives in `counter_projects.secondaryCount`; `project_counters` is only for named extra, repeating, shaping, and repeat-section counters, migrations must not duplicate `secondaryCount` into `project_counters`, and old generated `Pattern repeat` backfill copies are ignored at the counter UI boundary
 - Yarn/project link writes go through `YarnCardRepository`: `saveCard` normalizes any persisted `linkedProjectId`, and `updateLinkedProjectId` is the canonical explicit relink writer for `yarn_cards.linkedProjectId` plus `counter_projects.yarnCardIds`
 - Yarn card detail routes observe the target card through `YarnCardRepository.observeCard`; the route must leave the detail screen if the row disappears, and detail edits should rely on repository write results plus the observed row instead of optimistic local-only state
@@ -103,20 +104,19 @@ Use [`CLAUDE.md`](/home/emma/dev/KnitTools/CLAUDE.md) when product wording, visu
 <claude-mem-context>
 # Memory Context
 
-# [KnitTools] recent context, 2026-05-18 1:52am GMT+3
+# [KnitTools] recent context, 2026-05-19 10:21am GMT+3
 
 Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision 🚨security_alert 🔐security_note
 Format: ID TIME TYPE TITLE
 Fetch details: get_observations([IDs]) | Search: mem-search skill
 
-Stats: 50 obs (18,165t read) | 3,493,434t work | 99% savings
+Stats: 50 obs (18,370t read) | 3,508,355t work | 99% savings
 
 ### Apr 30, 2026
 S448 Investigating lint-check script failures on Windows and discovering hidden Android Lint issues (Apr 30, 11:19 PM)
 ### May 4, 2026
 S679 Document KnitTools app online/offline capabilities after discovering user's assumption about voice commands was incorrect (May 4, 4:12 PM)
 ### May 8, 2026
-5298 9:58p 🔵 Gradle daemon file lock prevented test execution
 5306 10:50p 🔵 KnitTools Room Entity Refactoring Baseline Established
 ### May 9, 2026
 5307 2:50a 🔵 Baseline profile module minSdk lower than app module minSdk
@@ -164,6 +164,7 @@ S679 Document KnitTools app online/offline capabilities after discovering user's
 5392 " 🔵 dBcheck CodeQL configuration pattern identified for Android projects
 5394 4:40p 🔴 Fixed session tracking accuracy and lifecycle handling
 5396 7:40p 🔵 Pace calculation logic verified with comprehensive edge-case guards
+5418 10:27p 🚨 Removed Firebase config file from entire Git history
 ### May 18, 2026
 **5398** 12:25a ✅ **Disabled ossIndex analyzer in OWASP dependency-check configuration**
 The KnitTools project uses multiple security scanning tools: osv-scanner for comprehensive vulnerability detection and OWASP dependency-check for additional analysis. The ossIndex analyzer within dependency-check was creating redundant checks since osv-scanner already performs comprehensive CVE scanning against the same vulnerability databases. To streamline the security pipeline and eliminate duplicate reporting, the ossIndex analyzer was disabled in the dependency-check Gradle configuration. This change does not reduce security coverage—osv-scanner continues to identify all CVEs in dependencies like the logback-core arbitrary code execution vulnerability and Bouncy Castle timing channel issues. The dependency-check tool now focuses on its other analyzers (retirejs already disabled, others remain active) while osv-scanner handles the primary CVE detection workload.
@@ -192,5 +193,5 @@ The security-check pipeline for KnitTools was failing because OSV scanner treate
 ~478t 🛠️ 171,510
 
 
-Access 3493k tokens of past work via get_observations([IDs]) or mem-search skill.
+Access 3508k tokens of past work via get_observations([IDs]) or mem-search skill.
 </claude-mem-context>

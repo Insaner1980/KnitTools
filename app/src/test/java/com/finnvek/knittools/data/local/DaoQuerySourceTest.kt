@@ -84,6 +84,23 @@ class DaoQuerySourceTest {
         assertFalse(dao.contains("SUM(durationMinutes)"))
     }
 
+    @Test
+    fun `insights session queries use sargable range filters and matching indexes`() {
+        val dao = ProjectSourceFiles.read(SESSION_DAO)
+        val entity = ProjectSourceFiles.read(SESSION_ENTITY)
+        val database = ProjectSourceFiles.read(KNIT_TOOLS_DATABASE)
+
+        assertFalse(dao.contains("fun getSessionsForInsights("))
+        assertFalse(dao.contains("(:start IS NULL OR endedAt >= :start)"))
+        assertTrue(dao.contains("WHERE endedAt >= :start"))
+        assertTrue(dao.contains("WHERE projectId = :projectId"))
+        assertTrue(entity.contains("Index(value = [\"endedAt\", \"startedAt\"])"))
+        assertTrue(entity.contains("Index(value = [\"projectId\", \"endedAt\", \"startedAt\"])"))
+        assertTrue(database.contains("MIGRATION_10_11"))
+        assertTrue(database.contains("index_sessions_endedAt_startedAt"))
+        assertTrue(database.contains("index_sessions_projectId_endedAt_startedAt"))
+    }
+
     private companion object {
         private const val COUNTER_PROJECT_DAO =
             "app/src/main/java/com/finnvek/knittools/data/local/CounterProjectDao.kt"
@@ -93,6 +110,10 @@ class DaoQuerySourceTest {
             "app/src/main/java/com/finnvek/knittools/data/local/ProgressPhotoDao.kt"
         private const val SESSION_DAO =
             "app/src/main/java/com/finnvek/knittools/data/local/SessionDao.kt"
+        private const val SESSION_ENTITY =
+            "app/src/main/java/com/finnvek/knittools/data/local/SessionEntity.kt"
+        private const val KNIT_TOOLS_DATABASE =
+            "app/src/main/java/com/finnvek/knittools/data/local/KnitToolsDatabase.kt"
         private const val COUNTER_REPOSITORY =
             "app/src/main/java/com/finnvek/knittools/repository/CounterRepository.kt"
         private const val COUNTER_VIEW_MODEL =

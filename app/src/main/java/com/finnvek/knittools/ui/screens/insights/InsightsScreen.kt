@@ -4,7 +4,9 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -39,8 +41,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
@@ -53,6 +59,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.BuildConfig
 import com.finnvek.knittools.R
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.time.format.TextStyle
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -60,17 +68,20 @@ fun InsightsScreen(
     onProUpgrade: () -> Unit = {},
     viewModel: InsightsViewModel = hiltViewModel(),
 ) {
-    val totalMinutes by viewModel.totalMinutes.collectAsStateWithLifecycle()
-    val avgPace by viewModel.avgPace.collectAsStateWithLifecycle()
-    val completedCount by viewModel.completedCount.collectAsStateWithLifecycle()
-    val currentStreak by viewModel.currentStreak.collectAsStateWithLifecycle()
-    val bestStreak by viewModel.bestStreak.collectAsStateWithLifecycle()
-    val projects by viewModel.projects.collectAsStateWithLifecycle()
-    val selectedProjectId by viewModel.selectedProjectId.collectAsStateWithLifecycle()
-    val timePerProject by viewModel.timePerProject.collectAsStateWithLifecycle()
-    val dailyActivity by viewModel.dailyActivity.collectAsStateWithLifecycle()
-    val timeRange by viewModel.timeRange.collectAsStateWithLifecycle()
-    val hasSessionData by viewModel.hasSessionData.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val totalMinutes = uiState.totalMinutes
+    val avgPace = uiState.avgPace
+    val completedCount = uiState.completedCount
+    val currentStreak = uiState.currentStreak
+    val bestStreak = uiState.bestStreak
+    val projects = uiState.projects
+    val selectedProjectId = uiState.selectedProjectId
+    val timePerProject = uiState.timePerProject
+    val paceOverTime = uiState.paceOverTime
+    val dailyActivity = uiState.dailyActivity
+    val timeRange = uiState.timeRange
+    val hasSessionData = uiState.hasSessionData
+    val isPro = uiState.isPro
     val resources = LocalResources.current
 
     var showProjectPicker by remember { mutableStateOf(false) }
@@ -198,6 +209,25 @@ fun InsightsScreen(
             item {
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
+                    text = stringResource(R.string.avg_pace_label),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.secondary,
+                )
+            }
+
+            item {
+                PaceOverTimeChart(
+                    data = paceOverTime,
+                    isPro = isPro,
+                    onProUpgrade = onProUpgrade,
+                    primaryColor = MaterialTheme.colorScheme.secondary,
+                    animationKey = animationKey,
+                )
+            }
+
+            item {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
                     text = stringResource(R.string.insights_knitting_activity),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.secondary,
@@ -209,41 +239,28 @@ fun InsightsScreen(
                     dailyActivity = dailyActivity,
                     currentStreak = currentStreak,
                     bestStreak = bestStreak,
-                    isPro = viewModel.isPro,
+                    isPro = isPro,
                     onProUpgrade = onProUpgrade,
                 )
             }
 
-            val displayTimePerProject =
-                timePerProject.ifEmpty {
-                    if (BuildConfig.DEBUG) {
-                        listOf(
-                            ProjectTime(1, "Preview Sweater", 142, 86, System.currentTimeMillis()),
-                            ProjectTime(2, "Preview Socks", 55, 0, System.currentTimeMillis() - 86_400_000),
-                            ProjectTime(3, "Preview Scarf", 23, 41, System.currentTimeMillis() - 432_000_000),
-                        )
-                    } else {
-                        emptyList()
-                    }
-                }
+            item {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = stringResource(R.string.time_per_project),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.secondary,
+                )
+            }
 
-            if (displayTimePerProject.isNotEmpty()) {
-                item {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = stringResource(R.string.time_per_project),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.secondary,
-                    )
-                }
-
-                item {
-                    AnimatedTimePerProjectChart(
-                        data = displayTimePerProject,
-                        primaryColor = MaterialTheme.colorScheme.primary,
-                        animationKey = animationKey,
-                    )
-                }
+            item {
+                TimePerProjectChart(
+                    data = timePerProject,
+                    isPro = isPro,
+                    onProUpgrade = onProUpgrade,
+                    primaryColor = MaterialTheme.colorScheme.primary,
+                    animationKey = animationKey,
+                )
             }
 
             if (hasSessionData || BuildConfig.DEBUG) {
@@ -359,12 +376,150 @@ private fun AnimatedMetricCard(
 }
 
 @Composable
-private fun AnimatedTimePerProjectChart(
-    data: List<ProjectTime>,
+private fun PaceOverTimeChart(
+    data: List<PaceOverTimePoint>,
+    isPro: Boolean,
+    onProUpgrade: () -> Unit,
     primaryColor: Color,
     animationKey: Any,
 ) {
-    val maxMinutes = data.maxOf { it.totalMinutes }.coerceAtLeast(1)
+    Surface(
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceVariant,
+    ) {
+        when {
+            !isPro -> ChartProPlaceholder(onClick = onProUpgrade)
+            data.isEmpty() -> ChartEmptyState()
+            else -> AnimatedPaceLineChart(data = data, primaryColor = primaryColor, animationKey = animationKey)
+        }
+    }
+}
+
+@Composable
+private fun AnimatedPaceLineChart(
+    data: List<PaceOverTimePoint>,
+    primaryColor: Color,
+    animationKey: Any,
+) {
+    val animatable = remember { Animatable(0f) }
+    val maxPace =
+        data
+            .maxOf { point -> point.rowsPerHour.takeIf { it.isFinite() } ?: 0f }
+            .coerceAtLeast(1f)
+    val trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
+    val pointColor = MaterialTheme.colorScheme.onSurfaceVariant
+
+    LaunchedEffect(data, animationKey) {
+        animatable.snapTo(0f)
+        animatable.animateTo(
+            targetValue = 1f,
+            animationSpec =
+                tween(
+                    durationMillis = 550,
+                    delayMillis = 240,
+                    easing = FastOutSlowInEasing,
+                ),
+        )
+    }
+
+    Column(modifier = Modifier.padding(16.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = formatPaceBucketLabel(data.first()),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            Text(
+                text = stringResource(R.string.pace_format, data.last().rowsPerHour),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.weight(1f),
+            )
+            Text(
+                text = formatPaceBucketLabel(data.last()),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.End,
+                modifier = Modifier.weight(1f),
+            )
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Canvas(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(128.dp),
+        ) {
+            val chartHeight = size.height
+            val chartWidth = size.width
+            val zeroY = chartHeight
+            drawLine(
+                color = trackColor,
+                start = Offset(0f, zeroY),
+                end = Offset(chartWidth, zeroY),
+                strokeWidth = 1.dp.toPx(),
+            )
+
+            val points =
+                data.mapIndexed { index, point ->
+                    val x =
+                        if (data.size == 1) {
+                            chartWidth / 2f
+                        } else {
+                            chartWidth * (index / (data.size - 1).toFloat())
+                        }
+                    val valueFraction = (point.rowsPerHour / maxPace).coerceIn(0f, 1f)
+                    val y = chartHeight - (chartHeight * valueFraction * animatable.value)
+                    Offset(x, y)
+                }
+
+            if (points.size > 1) {
+                val path =
+                    Path().apply {
+                        moveTo(points.first().x, points.first().y)
+                        points.drop(1).forEach { point -> lineTo(point.x, point.y) }
+                    }
+                drawPath(
+                    path = path,
+                    color = primaryColor,
+                    style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round),
+                )
+            }
+
+            points.forEach { point ->
+                drawCircle(color = pointColor, radius = 3.dp.toPx(), center = point)
+                drawCircle(color = primaryColor, radius = 2.dp.toPx(), center = point)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+        PaceStatsRow(point = data.last())
+    }
+}
+
+@Composable
+private fun TimePerProjectChart(
+    data: List<ProjectTime>,
+    isPro: Boolean,
+    onProUpgrade: () -> Unit,
+    primaryColor: Color,
+    animationKey: Any,
+) {
     val barColors =
         listOf(
             primaryColor,
@@ -378,29 +533,106 @@ private fun AnimatedTimePerProjectChart(
         shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.surfaceVariant,
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            data.forEachIndexed { index, project ->
-                val targetFraction = project.totalMinutes / maxMinutes.toFloat()
-                val color = barColors[index % barColors.size]
+        when {
+            !isPro -> ChartProPlaceholder(onClick = onProUpgrade)
+            data.isEmpty() -> ChartEmptyState()
+            else -> {
+                val maxMinutes = data.maxOf { it.totalMinutes }.coerceAtLeast(1)
+                Column(modifier = Modifier.padding(16.dp)) {
+                    data.forEachIndexed { index, project ->
+                        val targetFraction = project.totalMinutes / maxMinutes.toFloat()
+                        val color = barColors[index % barColors.size]
 
-                AnimatedBar(
-                    state =
-                        AnimatedBarState(
-                            projectName = project.projectName,
-                            targetFraction = targetFraction,
-                            totalMinutes = project.totalMinutes,
-                            totalRows = project.totalRows,
-                            lastSessionAt = project.lastSessionAt,
-                            color = color,
-                            animationDelay = 400 + (index * 60),
-                            animationKey = animationKey,
-                        ),
-                )
+                        AnimatedBar(
+                            state =
+                                AnimatedBarState(
+                                    projectName = project.projectName,
+                                    targetFraction = targetFraction,
+                                    totalMinutes = project.totalMinutes,
+                                    totalRows = project.totalRows,
+                                    lastSessionAt = project.lastSessionAt,
+                                    color = color,
+                                    animationDelay = 400 + (index * 60),
+                                    animationKey = animationKey,
+                                ),
+                        )
 
-                if (index < data.size - 1) {
-                    Spacer(modifier = Modifier.height(12.dp))
+                        if (index < data.size - 1) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                        }
+                    }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun ChartProPlaceholder(onClick: () -> Unit) {
+    Box(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(148.dp)
+                .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = stringResource(R.string.pro_feature),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun ChartEmptyState() {
+    Box(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(148.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = stringResource(R.string.no_knitting),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun PaceStatsRow(point: PaceOverTimePoint) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            text = formatProjectTime(point.totalMinutes),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Text(
+            text = stringResource(R.string.insights_rows_count, point.totalRows),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+        )
+    }
+}
+
+@Composable
+private fun formatPaceBucketLabel(point: PaceOverTimePoint): String {
+    val locale = currentInsightsLocale()
+    return when (point.interval) {
+        PaceGroupingInterval.DAY -> {
+            val day = point.bucketStart.dayOfWeek.getDisplayName(TextStyle.SHORT, locale)
+            val formatter = remember(locale) { DateTimeFormatter.ofPattern("d.M.", locale) }
+            "$day ${point.bucketStart.format(formatter)}"
+        }
+
+        PaceGroupingInterval.MONTH -> {
+            val month = point.bucketStart.month.getDisplayName(TextStyle.SHORT, locale)
+            "$month ${point.bucketStart.year}"
         }
     }
 }

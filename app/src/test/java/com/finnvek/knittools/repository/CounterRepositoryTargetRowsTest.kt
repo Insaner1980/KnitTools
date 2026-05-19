@@ -128,17 +128,17 @@ private class StubSessionDao : SessionDao {
 
     override suspend fun getTotalMinutes(projectId: Long): Int = 0
 
-    override fun getSessionsInRange(
-        start: Long,
-        end: Long,
-        projectId: Long?,
-    ): Flow<List<SessionEntity>> = flowOf(emptyList())
-
     override fun getAllSessions(projectId: Long?): Flow<List<SessionEntity>> = flowOf(emptyList())
 
-    override fun getSessionsForInsights(
-        projectId: Long?,
-        start: Long?,
+    override fun getAllSessionsForInsights(): Flow<List<SessionEntity>> = flowOf(emptyList())
+
+    override fun getAllSessionsForInsightsSince(start: Long): Flow<List<SessionEntity>> = flowOf(emptyList())
+
+    override fun getProjectSessionsForInsights(projectId: Long): Flow<List<SessionEntity>> = flowOf(emptyList())
+
+    override fun getProjectSessionsForInsightsSince(
+        projectId: Long,
+        start: Long,
     ): Flow<List<SessionEntity>> = flowOf(emptyList())
 
     override suspend fun getLatestSession(projectId: Long): SessionEntity? = null

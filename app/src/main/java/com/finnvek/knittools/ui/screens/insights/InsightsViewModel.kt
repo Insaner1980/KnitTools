@@ -2,19 +2,23 @@ package com.finnvek.knittools.ui.screens.insights
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.finnvek.knittools.di.IoDispatcher
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.KnitSession
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.CounterRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import java.time.Instant
@@ -23,8 +27,9 @@ import java.time.ZoneId
 import java.time.ZoneId.systemDefault
 import java.time.temporal.TemporalAdjusters
 import java.time.temporal.WeekFields
-import java.util.Locale
 import javax.inject.Inject
+
+private const val HEATMAP_LOOKBACK_DAYS = 55L
 
 data class ProjectTime(
     val projectId: Long,
@@ -34,11 +39,40 @@ data class ProjectTime(
     val lastSessionAt: Long,
 )
 
+data class PaceOverTimePoint(
+    val bucketStart: LocalDate,
+    val interval: PaceGroupingInterval,
+    val rowsPerHour: Float,
+    val totalMinutes: Int,
+    val totalRows: Int,
+)
+
+enum class PaceGroupingInterval {
+    DAY,
+    MONTH,
+}
+
 enum class TimeRange {
     ALL_TIME,
     THIS_WEEK,
     THIS_MONTH,
 }
+
+data class InsightsUiState(
+    val totalMinutes: Int = 0,
+    val avgPace: Float = 0f,
+    val completedCount: Int = 0,
+    val currentStreak: Int = 0,
+    val bestStreak: Int = 0,
+    val projects: List<CounterProject> = emptyList(),
+    val selectedProjectId: Long? = null,
+    val timePerProject: List<ProjectTime> = emptyList(),
+    val paceOverTime: List<PaceOverTimePoint> = emptyList(),
+    val dailyActivity: Map<LocalDate, Int> = emptyMap(),
+    val timeRange: TimeRange = TimeRange.ALL_TIME,
+    val hasSessionData: Boolean = false,
+    val isPro: Boolean = false,
+)
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
@@ -47,24 +81,39 @@ class InsightsViewModel
     constructor(
         private val counterRepository: CounterRepository,
         private val proManager: ProManager,
+        @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
     ) : ViewModel() {
-        val isPro: Boolean get() = proManager.hasFeature(ProFeature.INSIGHTS_CHARTS)
+        val isPro: StateFlow<Boolean> =
+            proManager.proState
+                .map { it.hasFeature(ProFeature.INSIGHTS_CHARTS) }
+                .distinctUntilChanged()
+                .stateIn(
+                    viewModelScope,
+                    SharingStarted.WhileSubscribed(5000),
+                    proManager.proState.value.hasFeature(ProFeature.INSIGHTS_CHARTS),
+                )
+
         private val _selectedProjectId = MutableStateFlow<Long?>(null)
         private val _timeRange = MutableStateFlow(TimeRange.ALL_TIME)
         val selectedProjectId: StateFlow<Long?> = _selectedProjectId.asStateFlow()
         val timeRange: StateFlow<TimeRange> = _timeRange.asStateFlow()
 
         val projects: StateFlow<List<CounterProject>> =
-            counterRepository.getAllProjects().stateIn(
-                viewModelScope,
-                SharingStarted.WhileSubscribed(5000),
-                emptyList(),
-            )
+            counterRepository
+                .getAllProjects()
+                .distinctUntilChanged()
+                .flowOn(ioDispatcher)
+                .stateIn(
+                    viewModelScope,
+                    SharingStarted.WhileSubscribed(5000),
+                    emptyList(),
+                )
 
         private val queryParams: StateFlow<InsightsQueryParams> =
             combine(selectedProjectId, timeRange) { projectId, activeTimeRange ->
                 InsightsQueryParams(
                     projectId = projectId,
+                    timeRange = activeTimeRange,
                     startMillis = rangeStartMillis(activeTimeRange),
                 )
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), InsightsQueryParams())
@@ -73,94 +122,140 @@ class InsightsViewModel
             queryParams
                 .flatMapLatest { params ->
                     counterRepository.getSessionsForInsights(params.projectId, params.startMillis)
-                }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+                }.distinctUntilChanged()
+                .flowOn(ioDispatcher)
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-        private val metrics: StateFlow<SessionMetricSummary> =
-            combine(insightSessions, queryParams) { sessions, params ->
-                SessionMetrics.summarize(
+        private val heatmapSessions: StateFlow<List<KnitSession>> =
+            selectedProjectId
+                .flatMapLatest { projectId ->
+                    counterRepository.getSessionsForInsights(projectId, heatmapStartMillis())
+                }.distinctUntilChanged()
+                .flowOn(ioDispatcher)
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+        val uiState: StateFlow<InsightsUiState> =
+            combine(
+                insightSessions,
+                heatmapSessions,
+                projects,
+                queryParams,
+                isPro,
+            ) { sessions, heatmap, projectList, params, pro ->
+                buildUiState(
                     sessions = sessions,
-                    rangeStartMillis = params.startMillis,
-                    zone = systemDefault(),
+                    heatmapSessions = heatmap,
+                    projectList = projectList,
+                    params = params,
+                    isPro = pro,
                 )
-            }.stateIn(
-                viewModelScope,
-                SharingStarted.WhileSubscribed(5000),
-                SessionMetricSummary(0L, 0, 0),
-            )
+            }.distinctUntilChanged()
+                .flowOn(ioDispatcher)
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), InsightsUiState())
 
         val hasSessionData: StateFlow<Boolean> =
-            metrics
-                .map { it.sessionCount > 0 }
+            uiState
+                .map { it.hasSessionData }
+                .distinctUntilChanged()
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
         val completedCount: StateFlow<Int> =
-            combine(projects, selectedProjectId, timeRange) { projectList, projectId, activeTimeRange ->
-                projectList
-                    .asSequence()
-                    .filter { projectId == null || it.id == projectId }
-                    .count { project ->
-                        project.isCompleted && isProjectWithinTimeRange(project, activeTimeRange)
-                    }
-            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+            uiState
+                .map { it.completedCount }
+                .distinctUntilChanged()
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
         val totalMinutes: StateFlow<Int> =
-            metrics
+            uiState
                 .map { it.totalMinutes }
+                .distinctUntilChanged()
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
         val avgPace: StateFlow<Float> =
-            metrics
-                .map { it.rowsPerHour }
+            uiState
+                .map { it.avgPace }
+                .distinctUntilChanged()
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0f)
 
+        val paceOverTime: StateFlow<List<PaceOverTimePoint>> =
+            uiState
+                .map { it.paceOverTime }
+                .distinctUntilChanged()
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
         val bestStreak: StateFlow<Int> =
-            insightSessions
-                .map { sessions ->
-                    calculateStreak(sessions)
-                }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+            uiState
+                .map { it.bestStreak }
+                .distinctUntilChanged()
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
         val currentStreak: StateFlow<Int> =
-            insightSessions
-                .map { sessions ->
-                    calculateCurrentStreak(sessions)
-                }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+            uiState
+                .map { it.currentStreak }
+                .distinctUntilChanged()
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
         val dailyActivity: StateFlow<Map<LocalDate, Int>> =
-            insightSessions
-                .map { sessions ->
-                    val zone = ZoneId.systemDefault()
-                    SessionMetrics.dailyActivityMinutes(
-                        sessions = sessions,
-                        earliestDate = LocalDate.now(zone).minusDays(55),
-                        zone = zone,
-                    )
-                }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+            uiState
+                .map { it.dailyActivity }
+                .distinctUntilChanged()
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
         val timePerProject: StateFlow<List<ProjectTime>> =
-            combine(insightSessions, projects, queryParams) { sessions, projectList, params ->
-                val projectNames = projectList.associate { it.id to it.name }
-                sessions
-                    .groupBy { it.projectId }
-                    .mapNotNull { (projectId, projectSessions) ->
-                        val summary =
-                            SessionMetrics.summarize(
-                                sessions = projectSessions,
-                                rangeStartMillis = params.startMillis,
-                                zone = systemDefault(),
-                            )
-                        if (summary.sessionCount == 0) return@mapNotNull null
-                        ProjectTime(
-                            projectId = projectId,
-                            projectName = projectNames[projectId] ?: "Project $projectId",
-                            totalMinutes = summary.totalMinutes,
-                            totalRows = summary.totalRows,
-                            lastSessionAt = projectSessions.maxOf { it.startedAt },
-                        )
-                    }.sortedWith(
-                        compareByDescending<ProjectTime> { it.totalMinutes }
-                            .thenByDescending { it.lastSessionAt },
-                    )
-            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+            uiState
+                .map { it.timePerProject }
+                .distinctUntilChanged()
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+        private fun buildUiState(
+            sessions: List<KnitSession>,
+            heatmapSessions: List<KnitSession>,
+            projectList: List<CounterProject>,
+            params: InsightsQueryParams,
+            isPro: Boolean,
+        ): InsightsUiState {
+            val zone = systemDefault()
+            val metrics =
+                SessionMetrics.summarize(
+                    sessions = sessions,
+                    rangeStartMillis = params.startMillis,
+                    zone = zone,
+                )
+            val dailyActivity =
+                SessionMetrics.dailyActivityMinutes(
+                    sessions = heatmapSessions,
+                    earliestDate = heatmapEarliestDate(zone),
+                    zone = zone,
+                )
+
+            return InsightsUiState(
+                totalMinutes = metrics.totalMinutes,
+                avgPace = metrics.rowsPerHour,
+                completedCount = completedProjectCount(projectList, params),
+                currentStreak = calculateCurrentStreak(sessions, rangeStartMillis = params.startMillis),
+                bestStreak = calculateStreak(sessions, rangeStartMillis = params.startMillis),
+                projects = projectList,
+                selectedProjectId = params.projectId,
+                timePerProject =
+                    buildTimePerProject(
+                        sessions = sessions,
+                        projectList = projectList,
+                        rangeStartMillis = params.startMillis,
+                        zone = zone,
+                    ),
+                paceOverTime =
+                    buildPaceOverTime(
+                        sessions = sessions,
+                        timeRange = params.timeRange,
+                        rangeStartMillis = params.startMillis,
+                        zone = zone,
+                    ),
+                dailyActivity = dailyActivity,
+                timeRange = params.timeRange,
+                hasSessionData = metrics.sessionCount > 0,
+                isPro = isPro,
+            )
+        }
 
         fun selectProject(projectId: Long?) {
             _selectedProjectId.value = projectId
@@ -174,9 +269,12 @@ class InsightsViewModel
             /**
              * Laskee pisimmän peräkkäisten neulontapäivien ketjun.
              */
-            fun calculateStreak(sessions: List<KnitSession>): Int {
-                if (sessions.isEmpty()) return 0
-                val days = sessions.map { sessionToDayKey(it.startedAt) }.distinct().sorted()
+            fun calculateStreak(
+                sessions: List<KnitSession>,
+                rangeStartMillis: Long? = null,
+            ): Int {
+                val days = activityDayKeys(sessions, rangeStartMillis).sorted()
+                if (days.isEmpty()) return 0
                 var maxStreak = 1
                 var currentStreak = 1
                 for (i in 1 until days.size) {
@@ -190,13 +288,13 @@ class InsightsViewModel
                 return maxStreak
             }
 
-            fun calculateCurrentStreak(sessions: List<KnitSession>): Int {
-                if (sessions.isEmpty()) return 0
+            fun calculateCurrentStreak(
+                sessions: List<KnitSession>,
+                rangeStartMillis: Long? = null,
+            ): Int {
                 val zone = ZoneId.systemDefault()
-                val activeDates =
-                    sessions
-                        .map { Instant.ofEpochMilli(it.startedAt).atZone(zone).toLocalDate() }
-                        .toSet()
+                val activeDates = activityDates(sessions, rangeStartMillis, zone)
+                if (activeDates.isEmpty()) return 0
                 val today = LocalDate.now(zone)
                 val anchor =
                     when {
@@ -212,6 +310,91 @@ class InsightsViewModel
                     currentDate = currentDate.minusDays(1)
                 }
                 return streak
+            }
+
+            fun buildPaceOverTime(
+                sessions: List<KnitSession>,
+                timeRange: TimeRange,
+                rangeStartMillis: Long?,
+                zone: ZoneId,
+            ): List<PaceOverTimePoint> {
+                val interval = paceGroupingInterval(timeRange)
+                val buckets =
+                    SessionMetrics.paceBuckets(
+                        sessions = sessions,
+                        rangeStartMillis = rangeStartMillis,
+                        interval = interval,
+                        zone = zone,
+                    )
+                if (buckets.values.none { it.totalSeconds > 0L && it.totalRows > 0 }) return emptyList()
+
+                val sortedBucketStarts =
+                    if (timeRange == TimeRange.ALL_TIME) {
+                        buckets.keys.sorted()
+                    } else {
+                        val startDate =
+                            rangeStartMillis
+                                ?.let { Instant.ofEpochMilli(it).atZone(zone).toLocalDate() }
+                                ?: buckets.keys.minOrNull()
+                                ?: return emptyList()
+                        bucketStartsBetween(
+                            startDate = startDate,
+                            endDate = LocalDate.now(zone),
+                            interval = interval,
+                        )
+                    }
+
+                return sortedBucketStarts.map { bucketStart ->
+                    val bucket = buckets[bucketStart] ?: PaceBucketMetric(0L, 0, 0f)
+                    PaceOverTimePoint(
+                        bucketStart = bucketStart,
+                        interval = interval,
+                        rowsPerHour = bucket.rowsPerHour,
+                        totalMinutes = secondsToDisplayMinutes(bucket.totalSeconds),
+                        totalRows = bucket.totalRows,
+                    )
+                }
+            }
+
+            private fun completedProjectCount(
+                projectList: List<CounterProject>,
+                params: InsightsQueryParams,
+            ): Int =
+                projectList
+                    .asSequence()
+                    .filter { params.projectId == null || it.id == params.projectId }
+                    .count { project ->
+                        project.isCompleted && isProjectWithinTimeRange(project, params.timeRange)
+                    }
+
+            private fun buildTimePerProject(
+                sessions: List<KnitSession>,
+                projectList: List<CounterProject>,
+                rangeStartMillis: Long?,
+                zone: ZoneId,
+            ): List<ProjectTime> {
+                val projectNames = projectList.associate { it.id to it.name }
+                return sessions
+                    .groupBy { it.projectId }
+                    .mapNotNull { (projectId, projectSessions) ->
+                        val summary =
+                            SessionMetrics.summarize(
+                                sessions = projectSessions,
+                                rangeStartMillis = rangeStartMillis,
+                                zone = zone,
+                            )
+                        if (summary.sessionCount == 0) return@mapNotNull null
+                        ProjectTime(
+                            projectId = projectId,
+                            projectName = projectNames[projectId] ?: "Project $projectId",
+                            totalMinutes = summary.totalMinutes,
+                            totalRows = summary.totalRows,
+                            lastSessionAt = projectSessions.maxOf { it.startedAt },
+                        )
+                    }.sortedWith(
+                        compareByDescending<ProjectTime> { it.totalMinutes }
+                            .thenByDescending { it.lastSessionAt },
+                    )
             }
 
             private fun isProjectWithinTimeRange(
@@ -237,7 +420,7 @@ class InsightsViewModel
                     }
 
                     TimeRange.THIS_WEEK -> {
-                        val firstDayOfWeek = WeekFields.of(Locale.getDefault()).firstDayOfWeek
+                        val firstDayOfWeek = WeekFields.of(currentInsightsLocale()).firstDayOfWeek
                         today.with(TemporalAdjusters.previousOrSame(firstDayOfWeek))
                     }
 
@@ -253,16 +436,83 @@ class InsightsViewModel
                     ?.toInstant()
                     ?.toEpochMilli()
 
-            private fun sessionToDayKey(timestamp: Long): Long =
-                Instant
-                    .ofEpochMilli(timestamp)
-                    .atZone(ZoneId.systemDefault())
-                    .toLocalDate()
-                    .toEpochDay()
+            private fun heatmapStartMillis(): Long {
+                val zone = systemDefault()
+                return heatmapEarliestDate(zone)
+                    .atStartOfDay(zone)
+                    .toInstant()
+                    .toEpochMilli()
+            }
+
+            private fun heatmapEarliestDate(zone: ZoneId): LocalDate =
+                LocalDate.now(zone).minusDays(HEATMAP_LOOKBACK_DAYS)
+
+            private fun paceGroupingInterval(timeRange: TimeRange): PaceGroupingInterval =
+                when (timeRange) {
+                    TimeRange.ALL_TIME -> PaceGroupingInterval.MONTH
+                    TimeRange.THIS_WEEK,
+                    TimeRange.THIS_MONTH,
+                    -> PaceGroupingInterval.DAY
+                }
+
+            private fun bucketStartsBetween(
+                startDate: LocalDate,
+                endDate: LocalDate,
+                interval: PaceGroupingInterval,
+            ): List<LocalDate> {
+                val starts = mutableListOf<LocalDate>()
+                var cursor = startDate.bucketStart(interval)
+                val last = endDate.bucketStart(interval)
+                while (!cursor.isAfter(last)) {
+                    starts += cursor
+                    cursor = cursor.nextBucketStart(interval)
+                }
+                return starts
+            }
+
+            private fun activityDayKeys(
+                sessions: List<KnitSession>,
+                rangeStartMillis: Long?,
+            ): Set<Long> {
+                val zone = systemDefault()
+                return activityDates(sessions, rangeStartMillis, zone).map { it.toEpochDay() }.toSet()
+            }
+
+            private fun activityDates(
+                sessions: List<KnitSession>,
+                rangeStartMillis: Long?,
+                zone: ZoneId,
+            ): Set<LocalDate> =
+                SessionMetrics.activityDates(
+                    sessions = sessions,
+                    earliestDate = rangeStartDate(rangeStartMillis, zone),
+                    zone = zone,
+                )
+
+            private fun rangeStartDate(
+                rangeStartMillis: Long?,
+                zone: ZoneId,
+            ): LocalDate =
+                rangeStartMillis
+                    ?.let { Instant.ofEpochMilli(it).atZone(zone).toLocalDate() }
+                    ?: LocalDate.MIN
         }
     }
 
 private data class InsightsQueryParams(
     val projectId: Long? = null,
+    val timeRange: TimeRange = TimeRange.ALL_TIME,
     val startMillis: Long? = null,
 )
+
+internal fun LocalDate.bucketStart(interval: PaceGroupingInterval): LocalDate =
+    when (interval) {
+        PaceGroupingInterval.DAY -> this
+        PaceGroupingInterval.MONTH -> withDayOfMonth(1)
+    }
+
+internal fun LocalDate.nextBucketStart(interval: PaceGroupingInterval): LocalDate =
+    when (interval) {
+        PaceGroupingInterval.DAY -> plusDays(1)
+        PaceGroupingInterval.MONTH -> plusMonths(1)
+    }

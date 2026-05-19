@@ -90,7 +90,7 @@ private fun ActivityGridContent(
     currentStreak: Int,
     bestStreak: Int,
 ) {
-    val locale = Locale.getDefault()
+    val locale = currentInsightsLocale()
     val firstDayOfWeek = remember(locale) { WeekFields.of(locale).firstDayOfWeek }
     val dayOrder =
         remember(firstDayOfWeek) {
@@ -237,7 +237,7 @@ private fun ActivityGridTooltip(
 ) {
     tooltipState?.let { (date, minutes) ->
         Spacer(modifier = Modifier.height(8.dp))
-        val formatter = remember { DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM) }
+        val formatter = remember(locale) { DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale) }
         val dayName = date.dayOfWeek.getDisplayName(TextStyle.SHORT, locale)
         val dateStr = date.format(formatter)
         val minutesText =

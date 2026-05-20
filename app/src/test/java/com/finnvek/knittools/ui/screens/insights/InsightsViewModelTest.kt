@@ -80,8 +80,26 @@ class InsightsViewModelTest {
         }
 
     @Test
+    fun `chart data stays empty before insights charts feature is available`() =
+        runTest {
+            val zone = ZoneId.systemDefault()
+            val today = LocalDate.now(zone)
+            val session = sessionAt(date = today, hour = 10, minute = 0, rows = 12, minutes = 30, zone = zone)
+            every { repository.getSessionsForInsights(null, null) } returns flowOf(listOf(session))
+
+            val viewModel = createViewModel()
+            val state = viewModel.uiState.first { it.hasSessionData }
+
+            assertEquals(30, state.totalMinutes)
+            assertEquals(emptyList<ProjectTime>(), state.timePerProject)
+            assertEquals(emptyList<PaceOverTimePoint>(), state.paceOverTime)
+            assertEquals(emptyMap<LocalDate, Int>(), state.dailyActivity)
+        }
+
+    @Test
     fun `daily activity keeps heatmap lookback when time range changes`() =
         runTest {
+            proState.value = ProState(status = ProStatus.PRO_PURCHASED)
             val zone = ZoneId.systemDefault()
             val activityDate = LocalDate.now(zone).minusDays(30)
             val activityStart = instantMillis(activityDate, 10, 0, zone)

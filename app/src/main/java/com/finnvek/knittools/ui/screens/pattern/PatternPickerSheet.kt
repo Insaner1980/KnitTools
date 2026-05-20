@@ -29,6 +29,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -54,7 +55,7 @@ private data class PatternPickerActions(
 fun PatternPickerSheet(
     projectId: Long?,
     savedPatterns: List<SavedPattern>,
-    isPro: Boolean,
+    canUseCameraScan: Boolean,
     onSavedPatternSelected: (SavedPattern) -> Unit,
     onDocumentSelected: (String, String) -> Unit,
     onDismiss: () -> Unit,
@@ -63,6 +64,7 @@ fun PatternPickerSheet(
     val actions =
         rememberPatternPickerActions(
             projectId = projectId,
+            canUseCameraScan = canUseCameraScan,
             onDocumentSelected = onDocumentSelected,
             onDismiss = onDismiss,
         )
@@ -73,7 +75,7 @@ fun PatternPickerSheet(
     ) {
         PatternPickerSheetContent(
             attachablePatterns = attachablePatterns,
-            isPro = isPro,
+            canUseCameraScan = canUseCameraScan,
             projectId = projectId,
             actions = actions,
             onSavedPatternSelected = { pattern ->
@@ -87,12 +89,15 @@ fun PatternPickerSheet(
 @Composable
 private fun rememberPatternPickerActions(
     projectId: Long?,
+    canUseCameraScan: Boolean,
     onDocumentSelected: (String, String) -> Unit,
     onDismiss: () -> Unit,
 ): PatternPickerActions {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val patternStorage = remember { PatternDocumentStorage() }
+    val currentProjectId by rememberUpdatedState(projectId)
+    val currentCanUseCameraScan by rememberUpdatedState(canUseCameraScan)
     var pendingCaptureImageUriString by rememberSaveable { mutableStateOf<String?>(null) }
     var pendingCaptureFilePath by rememberSaveable { mutableStateOf<String?>(null) }
 
@@ -112,7 +117,8 @@ private fun rememberPatternPickerActions(
                 handleCaptureResult(
                     success = success,
                     context = context,
-                    projectId = projectId,
+                    projectId = currentProjectId,
+                    canUseCameraScan = currentCanUseCameraScan,
                     patternStorage = patternStorage,
                     pendingImageUriString = pendingCaptureImageUriString,
                     onDocumentSelected = onDocumentSelected,
@@ -129,7 +135,10 @@ private fun rememberPatternPickerActions(
                 showCameraPermissionDeniedToast(context)
                 return@rememberLauncherForActivityResult
             }
-            val pendingProjectId = projectId ?: return@rememberLauncherForActivityResult
+            val pendingProjectId = currentProjectId ?: return@rememberLauncherForActivityResult
+            if (!canStartPatternCameraScan(pendingProjectId, currentCanUseCameraScan)) {
+                return@rememberLauncherForActivityResult
+            }
             val (file, uri) = patternStorage.createCaptureImageFile(context, pendingProjectId)
             pendingCaptureImageUriString = uri.toString()
             pendingCaptureFilePath = file.absolutePath
@@ -139,7 +148,11 @@ private fun rememberPatternPickerActions(
     return remember(openDocumentLauncher, permissionLauncher) {
         PatternPickerActions(
             openDeviceFiles = { openDocumentLauncher.launch(arrayOf("application/pdf")) },
-            startCameraScan = { permissionLauncher.launch(Manifest.permission.CAMERA) },
+            startCameraScan = {
+                if (canStartPatternCameraScan(currentProjectId, currentCanUseCameraScan)) {
+                    permissionLauncher.launch(Manifest.permission.CAMERA)
+                }
+            },
         )
     }
 }
@@ -147,7 +160,7 @@ private fun rememberPatternPickerActions(
 @Composable
 private fun PatternPickerSheetContent(
     attachablePatterns: List<SavedPattern>,
-    isPro: Boolean,
+    canUseCameraScan: Boolean,
     projectId: Long?,
     actions: PatternPickerActions,
     onSavedPatternSelected: (SavedPattern) -> Unit,
@@ -175,7 +188,7 @@ private fun PatternPickerSheetContent(
 
         Button(
             onClick = actions.startCameraScan,
-            enabled = isPro && projectId != null,
+            enabled = canStartPatternCameraScan(projectId, canUseCameraScan),
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text(stringResource(R.string.pattern_picker_camera_scan))
@@ -236,17 +249,19 @@ private suspend fun handleCaptureResult(
     success: Boolean,
     context: android.content.Context,
     projectId: Long?,
+    canUseCameraScan: Boolean,
     patternStorage: PatternDocumentStorage,
     pendingImageUriString: String?,
     onDocumentSelected: (String, String) -> Unit,
     onDismiss: () -> Unit,
 ) {
     val pendingUri = pendingImageUriString?.toUri()
-    if (!success || pendingUri == null || projectId == null) return
+    if (!success || pendingUri == null || !canStartPatternCameraScan(projectId, canUseCameraScan)) return
+    val pendingProjectId = projectId ?: return
     val fileName = "pattern-scan-${System.currentTimeMillis()}.pdf"
     val converted =
         withContext(AppDispatchers.IO) {
-            patternStorage.convertImageToPdf(context, projectId, pendingUri, fileName)
+            patternStorage.convertImageToPdf(context, pendingProjectId, pendingUri, fileName)
         }
     if (converted != null) {
         onDocumentSelected(converted.first, converted.second)
@@ -255,6 +270,11 @@ private suspend fun handleCaptureResult(
         Toast.makeText(context, context.getString(R.string.pattern_scan_failed), Toast.LENGTH_SHORT).show()
     }
 }
+
+internal fun canStartPatternCameraScan(
+    projectId: Long?,
+    canUseCameraScan: Boolean,
+): Boolean = canUseCameraScan && projectId != null
 
 private fun showCameraPermissionDeniedToast(context: android.content.Context) {
     val activity = context as? Activity

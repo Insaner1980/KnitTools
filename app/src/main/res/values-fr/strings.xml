@@ -294,7 +294,14 @@
     <string name="pro_feature_full_history">Historique complet du compteur</string>
     <string name="pro_feature_notes">Notes par projet</string>
     <string name="pro_feature_secondary_counter">Compteur secondaire</string>
+    <string name="pro_feature_multiple_counters">Compteurs supplémentaires</string>
+    <string name="pro_feature_row_reminders">Rappels de rangs</string>
+    <string name="pro_feature_progress_photos">Photos d’avancement</string>
+    <string name="pro_feature_unlimited_yarn">Fiches de fil illimitées</string>
     <string name="pro_feature_ocr">Scan OCR des étiquettes de fil</string>
+    <string name="pro_feature_ai_features">Outils IA avec crédits mensuels</string>
+    <string name="pro_feature_voice_commands">Commandes vocales</string>
+    <string name="pro_feature_voice_live">Voix naturelle avec minutes mensuelles</string>
     <string name="pro_feature_widget">Widget d’écran d’accueil</string>
     <string name="pro_feature_pattern_camera_scan">Scan de modèle par caméra</string>
     <string name="pro_feature">Fonction Pro</string>
@@ -302,6 +309,12 @@
     <string name="one_time_purchase">Achat unique. Aucun abonnement.</string>
     <string name="loading_price">Chargement du prix…</string>
     <string name="price_loading_hint">Connexion à Google Play ; vérifiez votre connexion si cela prend du temps</string>
+    <string name="billing_purchase_cancelled">Achat annulé</string>
+    <string name="billing_purchase_unavailable_button">Achat indisponible</string>
+    <string name="billing_purchase_unavailable">Cet achat est indisponible sur Google Play pour le moment.</string>
+    <string name="billing_purchase_network_error">Impossible de joindre Google Play. Vérifiez votre connexion Internet et réessayez.</string>
+    <string name="billing_purchase_failed">Impossible de terminer l’achat. Réessayez.</string>
+    <string name="billing_already_owned_restore_failed">Google Play indique que vous possédez déjà cet achat, mais il n’a pas pu être restauré. Utilisez Restaurer les achats.</string>
 
     <!-- Yarn Card / OCR -->
     <string name="scan_yarn_label">Scanner l’étiquette du fil</string>
@@ -336,7 +349,7 @@
     <string name="instruction_parsed">Valeurs remplies à partir de l’instruction</string>
     <string name="instruction_parse_failed">Impossible de comprendre l’instruction ; essayez de la reformuler</string>
     <string name="ai_error_busy">L’IA est occupée ; réessayez dans un instant</string>
-    <string name="ai_error_quota">Limite de batterie atteinte ; réessayez plus tard</string>
+    <string name="ai_error_quota">Limite mensuelle d’IA atteinte ; réessayez plus tard</string>
     <string name="ai_error_unavailable">Fonction IA non disponible sur cet appareil</string>
     <string name="ai_error_unknown">Un problème est survenu ; réessayez</string>
 

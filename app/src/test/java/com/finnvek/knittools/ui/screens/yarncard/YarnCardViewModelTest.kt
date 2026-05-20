@@ -217,7 +217,7 @@ class YarnCardViewModelTest {
     @Test
     fun `saveCard does nothing without pro`() =
         runTest {
-            every { proManager.hasFeature(ProFeature.OCR) } returns false
+            every { proManager.hasFeature(ProFeature.UNLIMITED_YARN) } returns false
 
             val vm = createViewModel()
             vm.saveCard {}
@@ -228,7 +228,7 @@ class YarnCardViewModelTest {
     @Test
     fun `saveCard rejects blank yarn identity`() =
         runTest {
-            every { proManager.hasFeature(ProFeature.OCR) } returns true
+            every { proManager.hasFeature(ProFeature.UNLIMITED_YARN) } returns true
             val vm = createViewModel()
 
             var savedId: Long? = null
@@ -241,7 +241,7 @@ class YarnCardViewModelTest {
     @Test
     fun `saveCard trims text fields before persisting`() =
         runTest {
-            every { proManager.hasFeature(ProFeature.OCR) } returns true
+            every { proManager.hasFeature(ProFeature.UNLIMITED_YARN) } returns true
             coEvery { repository.saveCard(any()) } returns 1L
             val vm = createViewModel()
             vm.updateField {
@@ -268,7 +268,7 @@ class YarnCardViewModelTest {
     @Test
     fun `saveCard rejects invalid numeric yarn values`() =
         runTest {
-            every { proManager.hasFeature(ProFeature.OCR) } returns true
+            every { proManager.hasFeature(ProFeature.UNLIMITED_YARN) } returns true
             val vm = createViewModel()
             vm.updateField { copy(yarnName = "Nalle", weightGrams = "heavy") }
 
@@ -330,7 +330,7 @@ class YarnCardViewModelTest {
     @Test
     fun `saveCard saves with pro`() =
         runTest {
-            every { proManager.hasFeature(ProFeature.OCR) } returns true
+            every { proManager.hasFeature(ProFeature.UNLIMITED_YARN) } returns true
             coEvery { repository.saveCard(any()) } returns 1L
 
             val vm = createViewModel()

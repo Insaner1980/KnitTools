@@ -6,6 +6,8 @@ import com.finnvek.knittools.ai.CombinedInstructionResult
 import com.finnvek.knittools.ai.GeminiAiService
 import com.finnvek.knittools.ai.PatternInstructionGemini
 import com.finnvek.knittools.data.datastore.PreferencesManager
+import com.finnvek.knittools.pro.ProFeature
+import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.util.NetworkStatusProvider
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
@@ -17,6 +19,8 @@ sealed interface CombineInstructionsOutcome {
     ) : CombineInstructionsOutcome
 
     data object Offline : CombineInstructionsOutcome
+
+    data object FeatureUnavailable : CombineInstructionsOutcome
 
     data object QuotaExhausted : CombineInstructionsOutcome
 
@@ -31,11 +35,13 @@ class PatternInstructionRepository
         private val aiQuotaManager: AiQuotaManager,
         private val preferencesManager: PreferencesManager,
         private val networkStatusProvider: NetworkStatusProvider,
+        private val proManager: ProManager,
     ) {
         suspend fun getInstruction(
             pageBitmap: Bitmap,
             rowNumber: Int,
         ): PatternInstructionGemini.InstructionResult? {
+            if (!proManager.hasFeature(ProFeature.AI_FEATURES)) return null
             if (!aiQuotaManager.hasQuota()) return null
 
             val result =
@@ -51,6 +57,7 @@ class PatternInstructionRepository
         }
 
         suspend fun explainInstruction(instructionText: String): String? {
+            if (!proManager.hasFeature(ProFeature.AI_FEATURES)) return null
             if (!aiQuotaManager.hasQuota()) return null
 
             val language =
@@ -66,6 +73,7 @@ class PatternInstructionRepository
         }
 
         suspend fun combineInstructions(pageBitmap: Bitmap): CombineInstructionsOutcome {
+            if (!proManager.hasFeature(ProFeature.AI_FEATURES)) return CombineInstructionsOutcome.FeatureUnavailable
             if (!networkStatusProvider.isOnline()) return CombineInstructionsOutcome.Offline
             if (!aiQuotaManager.hasQuota()) return CombineInstructionsOutcome.QuotaExhausted
 

@@ -42,6 +42,7 @@ import androidx.glance.text.TextAlign
 import androidx.glance.text.TextStyle
 import com.finnvek.knittools.MainActivity
 import com.finnvek.knittools.R
+import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.ui.theme.LightSurface
 import com.finnvek.knittools.ui.theme.LightTextMuted
 import com.finnvek.knittools.ui.theme.LightTextPrimary
@@ -72,7 +73,7 @@ class CounterWidget : GlanceAppWidget() {
                 context.applicationContext,
                 WidgetEntryPoint::class.java,
             )
-        val isPro = entryPoint.proManager().isPro()
+        val isPro = entryPoint.proManager().hasFeature(ProFeature.WIDGET)
         val widgetData = CounterWidgetState.loadGlance(context, id)
         val initialWidgetData =
             if (isPro) resolveInitialWidgetData(context, id, entryPoint, widgetData) else widgetData

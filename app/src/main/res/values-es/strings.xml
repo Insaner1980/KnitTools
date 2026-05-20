@@ -294,7 +294,14 @@
     <string name="pro_feature_full_history">Historial completo del contador</string>
     <string name="pro_feature_notes">Notas por proyecto</string>
     <string name="pro_feature_secondary_counter">Contador secundario</string>
+    <string name="pro_feature_multiple_counters">Contadores adicionales</string>
+    <string name="pro_feature_row_reminders">Recordatorios de filas</string>
+    <string name="pro_feature_progress_photos">Fotos de progreso</string>
+    <string name="pro_feature_unlimited_yarn">Tarjetas de hilo ilimitadas</string>
     <string name="pro_feature_ocr">Escaneo OCR de etiquetas de hilo</string>
+    <string name="pro_feature_ai_features">Herramientas de IA con créditos mensuales</string>
+    <string name="pro_feature_voice_commands">Comandos de voz</string>
+    <string name="pro_feature_voice_live">Voz natural con minutos mensuales</string>
     <string name="pro_feature_widget">Widget de pantalla de inicio</string>
     <string name="pro_feature_pattern_camera_scan">Escaneo de patrones con cámara</string>
     <string name="pro_feature">Función Pro</string>
@@ -302,6 +309,12 @@
     <string name="one_time_purchase">Compra única. Sin suscripción.</string>
     <string name="loading_price">Cargando precio…</string>
     <string name="price_loading_hint">Conectando con Google Play; comprueba tu conexión si esto tarda mucho</string>
+    <string name="billing_purchase_cancelled">Compra cancelada</string>
+    <string name="billing_purchase_unavailable_button">Compra no disponible</string>
+    <string name="billing_purchase_unavailable">Esta compra no está disponible en Google Play ahora mismo.</string>
+    <string name="billing_purchase_network_error">No se pudo conectar con Google Play. Comprueba tu conexión e inténtalo de nuevo.</string>
+    <string name="billing_purchase_failed">No se pudo completar la compra. Inténtalo de nuevo.</string>
+    <string name="billing_already_owned_restore_failed">Google Play indica que ya tienes esta compra, pero no se pudo restaurar. Usa Restaurar compras.</string>
 
     <!-- Yarn Card / OCR -->
     <string name="scan_yarn_label">Escanear etiqueta del hilo</string>
@@ -336,7 +349,7 @@
     <string name="instruction_parsed">Valores rellenados a partir de la instrucción</string>
     <string name="instruction_parse_failed">No se pudo entender la instrucción; intenta reformularla</string>
     <string name="ai_error_busy">La IA está ocupada; inténtalo de nuevo en un momento</string>
-    <string name="ai_error_quota">Se alcanzó el límite de batería; inténtalo más tarde</string>
+    <string name="ai_error_quota">Se alcanzó el límite mensual de IA; inténtalo más tarde</string>
     <string name="ai_error_unavailable">La función de IA no está disponible en este dispositivo</string>
     <string name="ai_error_unknown">Algo salió mal; inténtalo de nuevo</string>
 

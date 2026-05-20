@@ -10,7 +10,7 @@ fun counterVoiceSummaryItems(
     secondaryCounterName: String,
 ): List<CounterVoiceSummaryItem> =
     buildList {
-        if (state.isPro) {
+        if (state.canUseSecondaryCounter) {
             add(CounterVoiceSummaryItem(secondaryCounterName, state.secondaryCount))
         }
         state.projectCounters.forEach { counter ->

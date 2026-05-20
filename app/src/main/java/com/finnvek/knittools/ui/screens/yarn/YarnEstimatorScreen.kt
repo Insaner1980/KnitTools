@@ -159,7 +159,7 @@ private fun YarnEstimatorContent(
         if (isScanning) {
             ScanningIndicator()
         }
-        yarnCardViewModel?.takeIf { it.isPro }?.let { vm ->
+        yarnCardViewModel?.takeIf { it.canScanYarnLabel }?.let { vm ->
             ProActionBar(
                 yarnCardViewModel = vm,
                 onScanLabel = onScanLabel,

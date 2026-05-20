@@ -203,7 +203,7 @@ fun YarnCardReviewScreen(
         } else {
             YarnCardScanContent(
                 form = form,
-                isPro = viewModel.isPro,
+                canSaveYarnCard = viewModel.canSaveYarnCards,
                 onUpdateField = viewModel::updateField,
                 onDiscard = actions.onDiscard,
                 onSaveAndUse = actions.onSaveAndUse,
@@ -233,7 +233,7 @@ fun YarnCardReviewScreen(
 @Suppress("kotlin:S107") // Compose-komponentti välittää eksplisiittiset callbackit ilman keinotekoista wrapper-oliota
 private fun YarnCardScanContent(
     form: YarnCardFormState,
-    isPro: Boolean,
+    canSaveYarnCard: Boolean,
     onUpdateField: (YarnCardFormState.() -> YarnCardFormState) -> Unit,
     onDiscard: (String, String, String) -> Unit,
     onSaveAndUse: (String, String, String) -> Unit,
@@ -299,15 +299,15 @@ private fun YarnCardScanContent(
         )
 
         ReviewActionButtons(
-            isPro = isPro,
-            saveEnabled = !isPro || form.normalizedForPersistence().canPersistYarnCard(),
+            canSaveYarnCard = canSaveYarnCard,
+            saveEnabled = !canSaveYarnCard || form.normalizedForPersistence().canPersistYarnCard(),
             onDiscardClick = {
                 val (w, l, n) = getCalculatorValues()
                 onDiscard(w, l, n)
             },
             onSaveClick = {
                 handleSaveClick(
-                    isPro = isPro,
+                    canSaveYarnCard = canSaveYarnCard,
                     getCalculatorValues = getCalculatorValues,
                     onDiscardScan = onDiscardScan,
                     onSaveCard = onSaveCard,
@@ -793,7 +793,7 @@ private fun LinkYarnDialog(
 
 @Composable
 private fun ReviewActionButtons(
-    isPro: Boolean,
+    canSaveYarnCard: Boolean,
     saveEnabled: Boolean,
     onDiscardClick: () -> Unit,
     onSaveClick: () -> Unit,
@@ -814,7 +814,7 @@ private fun ReviewActionButtons(
             modifier = Modifier.weight(1f),
         ) {
             Text(
-                if (isPro) {
+                if (canSaveYarnCard) {
                     stringResource(R.string.save_and_use)
                 } else {
                     stringResource(R.string.use_in_calculator)
@@ -823,7 +823,7 @@ private fun ReviewActionButtons(
         }
     }
 
-    if (!isPro) {
+    if (!canSaveYarnCard) {
         Text(
             text = stringResource(R.string.pro_required_save),
             style = MaterialTheme.typography.bodySmall,
@@ -833,7 +833,7 @@ private fun ReviewActionButtons(
 }
 
 private fun handleSaveClick(
-    isPro: Boolean,
+    canSaveYarnCard: Boolean,
     getCalculatorValues: () -> Triple<String, String, String>,
     onDiscardScan: () -> Unit,
     onSaveCard: ((Long) -> Unit) -> Unit,
@@ -841,7 +841,7 @@ private fun handleSaveClick(
     onShowLinkDialog: ((Long) -> Unit)?,
     onSaved: () -> Unit = {},
 ) {
-    if (!isPro) {
+    if (!canSaveYarnCard) {
         val (w, l, n) = getCalculatorValues()
         onDiscardScan()
         onSaveAndUse(w, l, n)

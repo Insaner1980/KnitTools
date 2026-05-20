@@ -10,6 +10,7 @@ class CounterVoiceSummaryTest {
         val state =
             CounterUiState(
                 isPro = true,
+                canUseSecondaryCounter = true,
                 secondaryCount = 4,
                 projectCounters =
                     listOf(

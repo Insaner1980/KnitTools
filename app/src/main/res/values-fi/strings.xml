@@ -294,7 +294,14 @@
     <string name="pro_feature_full_history">Täysi laskurihistoria</string>
     <string name="pro_feature_notes">Projektikohtaiset muistiinpanot</string>
     <string name="pro_feature_secondary_counter">Toinen laskuri</string>
+    <string name="pro_feature_multiple_counters">Lisälaskurit</string>
+    <string name="pro_feature_row_reminders">Rivimuistutukset</string>
+    <string name="pro_feature_progress_photos">Edistymiskuvat</string>
+    <string name="pro_feature_unlimited_yarn">Rajattomasti lankakortteja</string>
     <string name="pro_feature_ocr">Lankavyötteen OCR-skannaus</string>
+    <string name="pro_feature_ai_features">AI-työkalut kuukausikrediiteillä</string>
+    <string name="pro_feature_voice_commands">Äänikomennot</string>
+    <string name="pro_feature_voice_live">Luonnollinen puhe kuukausiminuuteilla</string>
     <string name="pro_feature_widget">Aloitusnäytön widget</string>
     <string name="pro_feature_pattern_camera_scan">Ohjeen kameraskannaus</string>
     <string name="pro_feature">Pro-ominaisuus</string>
@@ -302,6 +309,12 @@
     <string name="one_time_purchase">Kertaostos. Ei tilausta.</string>
     <string name="loading_price">Ladataan hintaa…</string>
     <string name="price_loading_hint">Yhdistetään Google Playhin — tarkista internetyhteys, jos tämä kestää pitkään</string>
+    <string name="billing_purchase_cancelled">Osto peruttu</string>
+    <string name="billing_purchase_unavailable_button">Osto ei saatavilla</string>
+    <string name="billing_purchase_unavailable">Tätä ostoa ei voi tehdä Google Playssa juuri nyt.</string>
+    <string name="billing_purchase_network_error">Google Playhin ei saatu yhteyttä. Tarkista internetyhteys ja yritä uudelleen.</string>
+    <string name="billing_purchase_failed">Ostoa ei voitu viimeistellä. Yritä uudelleen.</string>
+    <string name="billing_already_owned_restore_failed">Google Playn mukaan omistat jo tämän oston, mutta sitä ei voitu palauttaa. Kokeile Palauta ostot -toimintoa.</string>
 
     <!-- Lankakortti / OCR -->
     <string name="scan_yarn_label">Skannaa lankavyöte</string>
@@ -336,7 +349,7 @@
     <string name="instruction_parsed">Arvot täytetty ohjeesta</string>
     <string name="instruction_parse_failed">Ohjetta ei ymmärretty — kokeile muotoilla se toisin</string>
     <string name="ai_error_busy">AI on varattu — yritä hetken kuluttua uudelleen</string>
-    <string name="ai_error_quota">Akkuraja saavutettu — yritä myöhemmin uudelleen</string>
+    <string name="ai_error_quota">Kuukausittainen AI-raja saavutettu — yritä myöhemmin uudelleen</string>
     <string name="ai_error_unavailable">AI-ominaisuus ei ole käytettävissä tällä laitteella</string>
     <string name="ai_error_unknown">Jotain meni pieleen — yritä uudelleen</string>
 

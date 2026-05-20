@@ -47,6 +47,7 @@ import com.finnvek.knittools.BuildConfig
 import com.finnvek.knittools.R
 import com.finnvek.knittools.data.datastore.AppLanguage
 import com.finnvek.knittools.data.datastore.ThemeMode
+import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.ui.components.InfoTip
 import com.finnvek.knittools.ui.theme.knitToolsColors
 
@@ -144,7 +145,7 @@ fun SettingsScreen(
                 checked = prefs.showKnittingTips,
                 onCheckedChange = { viewModel.setShowKnittingTips(it) },
             )
-            if (proState.isPro || BuildConfig.DEBUG) {
+            if (proState.hasFeature(ProFeature.VOICE_LIVE) || BuildConfig.DEBUG) {
                 SwitchRow(
                     label = stringResource(R.string.voice_natural_response),
                     checked = prefs.voiceLiveEnabled,

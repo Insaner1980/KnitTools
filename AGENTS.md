@@ -104,13 +104,13 @@ Use [`CLAUDE.md`](/home/emma/dev/KnitTools/CLAUDE.md) when product wording, visu
 <claude-mem-context>
 # Memory Context
 
-# [KnitTools] recent context, 2026-05-19 8:20pm GMT+3
+# [KnitTools] recent context, 2026-05-20 6:10pm GMT+3
 
 Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision 🚨security_alert 🔐security_note
 Format: ID TIME TYPE TITLE
 Fetch details: get_observations([IDs]) | Search: mem-search skill
 
-Stats: 50 obs (18,509t read) | 3,634,977t work | 99% savings
+Stats: 50 obs (18,146t read) | 3,413,424t work | 99% savings
 
 ### Apr 30, 2026
 S448 Investigating lint-check script failures on Windows and discovering hidden Android Lint issues (Apr 30, 11:19 PM)
@@ -119,8 +119,6 @@ S679 Document KnitTools app online/offline capabilities after discovering user's
 ### May 9, 2026
 5307 2:50a 🔵 Baseline profile module minSdk lower than app module minSdk
 5310 " 🔵 Baseline Profile Module Has Lower minSdk Than App Module
-5311 " 🔵 All AndroidX and Firebase Dependencies Compatible with SDK 36
-5313 " 🔵 SDK Configuration and Library Compatibility Verification Complete
 5319 2:56a ✅ Updated baselineprofile minSdk to match app minimum SDK level
 5320 " ✅ Updated Firebase BoM and ML Kit GenAI Prompt to newer releases
 ### May 12, 2026
@@ -168,20 +166,8 @@ S679 Document KnitTools app online/offline capabilities after discovering user's
 Investigation of osv-scanner FAILED (1) exit code revealed that osv-scanner scans gradle/verification-metadata.xml as a lockfile, which captures all Gradle dependency resolution metadata including buildscript classpath, test dependencies, and plugin dependencies—not just the app's runtime dependencies. The scan found CVEs in logback-core 1.3.14 (arbitrary code execution), netty packages (multiple CVEs), bouncycastle 1.79 (LDAP injection, timing channel), jdom2 2.0.6 (XXE), commons-lang3 3.16.0, and httpclient 4.5.6. However, running `./gradlew :app:dependencyInsight` on these packages confirmed they are NOT present in the app's debugRuntimeClasspath—they exist only in the verification metadata from build-time resolution. The only runtime vulnerability found is guava 31.0.1-jre (CVE exposing potential security issues), which enters the runtime classpath transitively: ML Kit GenAI Prompt → kotlinx-coroutines-guava:1.10.2 → guava:31.0.1-jre. This explains why osv-scanner reports many more vulnerabilities than are actually exploitable in the shipped app—it's scanning the complete Gradle dependency graph, not just the runtime attack surface.
 ~492t 🔍 31,199
 
-**5403** " 🔴 **OSV scanner failure fixed by upgrading Guava and filtering verification metadata**
-The security-check pipeline was failing because osv-scanner found vulnerabilities in gradle/verification-metadata.xml. The root cause was kotlinx-coroutines-guava transitively pulling in Guava 31.0.1-jre, which had known CVEs. Additionally, OSV was incorrectly treating the verification metadata file (which contains checksums for all build-time dependencies) as a runtime dependency lockfile.
-
-The fix applied a two-part solution: (1) Added a dependency constraint in app/build.gradle.kts forcing Guava to upgrade to 33.5.0-android, which resolved the runtime vulnerability; (2) Created gradle/osv-scanner.toml with a PackageOverrides rule to ignore verification-metadata.xml, since it's checksum metadata not a runtime dependency source.
-
-This pattern follows the same approach documented in the msgtap rollout summary from 2026-05-16, where the same OSV filtering issue was resolved. The fix ensures that OSV only scans actual runtime dependencies while OWASP dependency-check handles the full build dependency CVE scanning.
-
-Verification with dependencyInsight confirmed both debug and release configurations now resolve Guava to 33.5.0-android via conflict resolution. OSV scanner now exits cleanly with 0 vulnerabilities found after filtering 1164 build-time packages from the verification metadata.
-~549t 🛠️ 157,782
-
-**5407** " 🚨 **OSV Scanner Detected Vulnerability in KnitTools Dependencies**
-A comprehensive security dependency check was executed on the KnitTools project at C:\Dev\KnitTools. Three security tools were run: gradle dependency verification (passed), osv-scanner (failed with 1 vulnerability), and OWASP dependency-check (passed). The osv-scanner failure indicates at least one known security vulnerability exists in the project's dependencies that requires investigation and remediation. Results are available in the reports directory for detailed analysis.
-~228t 🚨 7,513
-
+5403 " 🔴 OSV scanner failure fixed by upgrading Guava and filtering verification metadata
+5407 " 🚨 OSV Scanner Detected Vulnerability in KnitTools Dependencies
 5408 " 🔴 OSV scanner now passes by filtering Gradle verification metadata
 ### May 19, 2026
 **5448** 2:54p 🔴 **Fixed Ravelry OAuth refresh failure handling and pattern save feedback**
@@ -200,6 +186,15 @@ Tests were added for the OAuth fallback flow (expired bearer token signs out and
 Traced Ravelry OAuth token refresh failure path through RavelryApiService, RavelryAuthManager, and UI layers. When an access token expires, RavelryApiService attempts automatic refresh using the stored refresh token. If refresh fails for any reason (network error, invalid token, HTTP error), the refresh wrapper returns false, and the service calls authManager.signOut() which clears all stored tokens from EncryptedSharedPreferences and updates the isAuthenticated state flow to false. The UI reacts by showing a "Sign in with Ravelry" button, and any in-flight search/detail requests that fail with 401/403 display an authentication error message prompting the user to sign in again. The user is not stuck in an error state—they are explicitly logged out and prompted to reconnect. After signOut(), the only recovery path is to complete a full OAuth authorization code flow with PKCE via Chrome Custom Tab.
 ~466t 🔍 81,695
 
+### May 20, 2026
+**5479** 5:19p 🔵 **osv-scan Filters Gradle Dependency Verification Metadata**
+An osv-scan script was created to check dependencies but did not function as expected for the Gradle project. The tool reported "ok" but filtered out all packages with messages like "Package Maven/org.snakeyaml:snakeyaml-engine/2.10 has been filtered out because: Gradlen dependency verification -metadata on checksum- ja allekirjoitusmetadataa, ei sovelluksen riippuvuuslockfile." This revealed that osv-scan does not scan Gradle's dependency verification metadata (which contains only checksums and signatures) and expects actual dependency lockfiles instead. For Gradle projects, runtime dependency CVE checking should use OWASP dependency-check rather than osv-scan.
+~306t 🔍 7,727
 
-Access 3635k tokens of past work via get_observations([IDs]) or mem-search skill.
+**5480** " 🔵 **OSV-Scanner Gradle Verification Metadata Filtering is Documented Recurring Issue**
+Memory search revealed this osv-scanner filtering issue is a documented recurring pattern across multiple Android projects in this workspace. Previous KnitTools security-check work (Task 2 from 2026-05-17) fixed the same issue by creating gradle/osv-scanner.toml to exclude verification-metadata.xml entries and confirmed OWASP dependency-check as the appropriate tool for runtime dependency CVE scanning. The dBcheck project encountered identical behavior (2026-05-17 Task 2) where osv-scanner misread verification-metadata as application dependencies. The established solution pattern is: configure osv-scanner.toml to ignore Gradle metadata files, verify reports/osv.json shows results=0, and rely on OWASP dependency-check for actual runtime dependency scanning.
+~385t 🔍 7,436
+
+
+Access 3413k tokens of past work via get_observations([IDs]) or mem-search skill.
 </claude-mem-context>

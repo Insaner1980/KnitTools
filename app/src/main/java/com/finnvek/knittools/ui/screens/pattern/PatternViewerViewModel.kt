@@ -285,6 +285,14 @@ class PatternViewerViewModel
                                 )
                         }
 
+                        CombineInstructionsOutcome.FeatureUnavailable -> {
+                            _combineState.value =
+                                CombineState(
+                                    isVisible = true,
+                                    messageResId = R.string.pro_feature,
+                                )
+                        }
+
                         CombineInstructionsOutcome.QuotaExhausted -> {
                             _combineState.value =
                                 CombineState(

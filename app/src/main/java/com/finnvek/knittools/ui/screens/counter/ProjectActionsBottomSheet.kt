@@ -70,7 +70,6 @@ data class ProjectActionsSheetState(
     val projectCounterCount: Int,
     val stitchTrackingEnabled: Boolean,
     val stitchCount: Int?,
-    val isPro: Boolean,
     val isAiAvailable: Boolean,
 )
 
@@ -104,7 +103,7 @@ fun ProjectActionsBottomSheet(
                     icon = Icons.AutoMirrored.Outlined.Article,
                     label = stringResource(R.string.project_actions_ai_summary),
                     onClick = callbacks.onOpenSummary,
-                    enabled = state.isPro && state.isAiAvailable,
+                    enabled = state.isAiAvailable,
                 )
                 ActionRow(
                     icon = Icons.Outlined.PhotoLibrary,

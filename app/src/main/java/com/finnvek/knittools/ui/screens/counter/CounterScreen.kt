@@ -188,21 +188,21 @@ fun CounterScreen(
     }
     val requestPhotoGallery = {
         requestCounterFeature(
-            hasAccess = state.isPro || BuildConfig.DEBUG,
+            hasAccess = state.canUseProgressPhotos || BuildConfig.DEBUG,
             onOpenFeature = onPhotoGallery,
             onOpenUpgrade = openProUpgrade,
         )
     }
     val requestAddCounter = {
         requestCounterFeature(
-            hasAccess = state.isPro,
+            hasAccess = state.canUseMultipleCounters,
             onOpenFeature = { showAddCounter = true },
             onOpenUpgrade = openProUpgrade,
         )
     }
     val requestRowReminders = {
         requestCounterFeature(
-            hasAccess = state.isPro,
+            hasAccess = state.canUseRowReminders,
             onOpenFeature = { showRemindersSheet = true },
             onOpenUpgrade = openProUpgrade,
         )
@@ -395,7 +395,7 @@ fun CounterScreen(
                 showPatternPicker = showPatternPicker,
                 projectId = state.projectId,
                 savedPatterns = savedPatterns,
-                isPro = state.isPro,
+                canUseCameraScan = state.canUsePatternCameraScan,
                 showPatternInfoSheet = showPatternInfoSheet,
                 linkedPattern = state.linkedPattern,
             ),
@@ -411,7 +411,6 @@ fun CounterScreen(
                 projectCounterCount = state.projectCounters.size,
                 stitchTrackingEnabled = state.stitchTrackingEnabled,
                 stitchCount = state.stitchCount,
-                isPro = state.isPro,
                 isAiAvailable = state.isAiAvailable,
             ),
         callbacks =
@@ -520,7 +519,8 @@ fun CounterScreen(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             CounterTopBar(
-                isPro = state.isPro,
+                canUseProgressPhotos = state.canUseProgressPhotos,
+                canUseVoice = state.canUseVoiceCommands || state.canUseVoiceLive,
                 showPatternIcon =
                     state.projectId != null &&
                         state.patternUri != null,
@@ -628,7 +628,7 @@ private fun rememberCounterVoiceControls(
             if (granted) {
                 if (currentVoiceLiveEnabled) {
                     viewModel.startLiveVoice()
-                } else {
+                } else if (viewModel.canStartClassicVoice()) {
                     voiceCommandHandler.startContinuousListening()
                 }
             }
@@ -638,7 +638,9 @@ private fun rememberCounterVoiceControls(
             state.isLiveSessionActive -> viewModel.stopLiveVoice()
             voiceCommandHandler.isContinuousMode.value -> voiceCommandHandler.stopContinuousListening()
             state.voiceLiveEnabled && hasAudioPermission(context) -> viewModel.startLiveVoice()
-            !state.voiceLiveEnabled && hasAudioPermission(context) -> voiceCommandHandler.startContinuousListening()
+            !state.voiceLiveEnabled && hasAudioPermission(context) && viewModel.canStartClassicVoice() ->
+                voiceCommandHandler.startContinuousListening()
+            !state.voiceLiveEnabled && !viewModel.canStartClassicVoice() -> Unit
             else -> micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
         }
     }
@@ -770,7 +772,7 @@ private fun VoiceCommandEffects(
             if (errorMessage != null) {
                 snackbarHostState.showSnackbar(errorMessage)
             }
-            if (hasAudioPermission(context)) {
+            if (hasAudioPermission(context) && viewModel.canStartClassicVoice()) {
                 voiceCommandHandler.startContinuousListening()
             }
         }
@@ -957,7 +959,7 @@ data class CounterSheetState(
     val showPatternPicker: Boolean,
     val projectId: Long?,
     val savedPatterns: List<SavedPattern>,
-    val isPro: Boolean,
+    val canUseCameraScan: Boolean,
     val showPatternInfoSheet: Boolean,
     val linkedPattern: SavedPattern?,
 )
@@ -1018,7 +1020,7 @@ private fun CounterScreenSheets(
         PatternPickerSheet(
             projectId = state.projectId,
             savedPatterns = state.savedPatterns,
-            isPro = state.isPro,
+            canUseCameraScan = state.canUseCameraScan,
             onSavedPatternSelected = actions.onSavedPatternSelected,
             onDocumentSelected = actions.onPatternFileSelected,
             onDismiss = actions.onPatternPickerDismiss,
@@ -1049,7 +1051,8 @@ data class CounterTopBarMicState(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CounterTopBar(
-    isPro: Boolean,
+    canUseProgressPhotos: Boolean,
+    canUseVoice: Boolean,
     showPatternIcon: Boolean,
     micState: CounterTopBarMicState,
     onMicClick: () -> Unit,
@@ -1076,7 +1079,7 @@ private fun CounterTopBar(
                     )
                 }
             }
-            if (isPro || BuildConfig.DEBUG) {
+            if (canUseProgressPhotos || BuildConfig.DEBUG) {
                 IconButton(onClick = actions.onPhotoGallery) {
                     Icon(
                         imageVector = Icons.Filled.CameraAlt,
@@ -1084,6 +1087,8 @@ private fun CounterTopBar(
                         tint = MaterialTheme.colorScheme.primary,
                     )
                 }
+            }
+            if (canUseVoice || BuildConfig.DEBUG) {
                 IconButton(onClick = onMicClick) {
                     CounterTopBarMicAction(
                         isVoiceListening = micState.isVoiceListening,
@@ -1277,7 +1282,7 @@ private fun CounterScreenContent(
             )
             // Compact pattern-repeat -rivi on otsikon alapuolella; alla oleva
             // weight-Box pitää laskurin keskellä riippumatta tämän näkyvyydestä.
-            if (state.isPro) {
+            if (state.canUseSecondaryCounter) {
                 Spacer(modifier = Modifier.height(8.dp))
                 CompactPatternRepeatRow(
                     count = state.secondaryCount,

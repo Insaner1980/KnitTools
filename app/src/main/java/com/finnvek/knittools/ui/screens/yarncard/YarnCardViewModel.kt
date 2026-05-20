@@ -74,7 +74,9 @@ class YarnCardViewModel
                 initialValue = emptyList(),
             )
 
-        val isPro: Boolean get() = proManager.hasFeature(ProFeature.OCR)
+        val canScanYarnLabel: Boolean get() = proManager.hasFeature(ProFeature.OCR)
+
+        val canSaveYarnCards: Boolean get() = proManager.hasFeature(ProFeature.UNLIMITED_YARN)
 
         val availableProjects: StateFlow<List<CounterProject>> =
             counterRepository
@@ -208,7 +210,7 @@ class YarnCardViewModel
             photoUri: Uri,
             onSuccess: () -> Unit,
         ) {
-            if (!isPro) {
+            if (!canScanYarnLabel) {
                 rejectScanWithoutPro()
                 return
             }
@@ -273,7 +275,7 @@ class YarnCardViewModel
         fun createScanPhotoUri(): Uri = scanRepository.createScanPhotoUri()
 
         fun saveCard(onSaved: (Long) -> Unit) {
-            if (!proManager.hasFeature(ProFeature.OCR)) return
+            if (!canSaveYarnCards) return
             viewModelScope.launch {
                 val form = _formState.value.normalizedForPersistence()
                 if (!form.canPersistYarnCard()) return@launch

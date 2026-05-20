@@ -86,6 +86,13 @@ data class CounterUiState(
     val hapticFeedback: Boolean = true,
     val keepScreenAwake: Boolean = false,
     val isPro: Boolean = false,
+    val canUseSecondaryCounter: Boolean = false,
+    val canUseMultipleCounters: Boolean = false,
+    val canUseRowReminders: Boolean = false,
+    val canUseProgressPhotos: Boolean = false,
+    val canUsePatternCameraScan: Boolean = false,
+    val canUseVoiceCommands: Boolean = false,
+    val canUseVoiceLive: Boolean = false,
     val isNanoAvailable: Boolean = false,
     val projects: List<CounterProject> = emptyList(),
     val sectionName: String? = null,
@@ -238,7 +245,18 @@ class CounterViewModel
         private fun observeProState() {
             viewModelScope.launch {
                 proManager.proState.collect { proState ->
-                    _uiState.update { it.copy(isPro = proState.isPro) }
+                    _uiState.update {
+                        it.copy(
+                            isPro = proState.isPro,
+                            canUseSecondaryCounter = proState.hasFeature(ProFeature.SECONDARY_COUNTER),
+                            canUseMultipleCounters = proState.hasFeature(ProFeature.MULTIPLE_COUNTERS),
+                            canUseRowReminders = proState.hasFeature(ProFeature.ROW_REMINDERS),
+                            canUseProgressPhotos = proState.hasFeature(ProFeature.PROGRESS_PHOTOS),
+                            canUsePatternCameraScan = proState.hasFeature(ProFeature.PATTERN_CAMERA_SCAN),
+                            canUseVoiceCommands = proState.hasFeature(ProFeature.VOICE_COMMANDS),
+                            canUseVoiceLive = proState.hasFeature(ProFeature.VOICE_LIVE),
+                        )
+                    }
                     if (!proState.isPro) {
                         _uiState.update { it.copy(isNanoAvailable = false, isAiAvailable = false) }
                         pruneHistoryForFree()
@@ -652,11 +670,13 @@ class CounterViewModel
         }
 
         fun incrementSecondary() {
+            if (!proManager.hasFeature(ProFeature.SECONDARY_COUNTER)) return
             _uiState.update { it.copy(secondaryCount = it.secondaryCount + 1) }
             persistSecondary()
         }
 
         fun decrementSecondary() {
+            if (!proManager.hasFeature(ProFeature.SECONDARY_COUNTER)) return
             _uiState.update { it.copy(secondaryCount = maxOf(0, it.secondaryCount - 1)) }
             persistSecondary()
         }
@@ -687,7 +707,7 @@ class CounterViewModel
         }
 
         fun addProjectCounter(draft: ProjectCounterDraft) {
-            if (!proManager.hasFeature(ProFeature.MULTIPLE_COUNTERS)) return
+            if (!canAddProjectCounter(draft)) return
             viewModelScope.launch {
                 val projectId = _uiState.value.projectId ?: return@launch
                 val counter =
@@ -712,6 +732,15 @@ class CounterViewModel
                         counter
                     }
                 projectCounterRepository.addCounter(initialCounter)
+            }
+        }
+
+        private fun canAddProjectCounter(draft: ProjectCounterDraft): Boolean {
+            if (!proManager.hasFeature(ProFeature.MULTIPLE_COUNTERS)) return false
+            return when (draft.counterType) {
+                "SHAPING" -> proManager.hasFeature(ProFeature.SHAPING_COUNTER)
+                "REPEAT_SECTION" -> proManager.hasFeature(ProFeature.REPEAT_SECTION)
+                else -> true
             }
         }
 
@@ -1247,6 +1276,7 @@ class CounterViewModel
                 viewModelScope.launch {
                     val state = _uiState.value
                     val requestProjectId = state.projectId ?: return@launch
+                    if (!proManager.hasFeature(ProFeature.AI_FEATURES)) return@launch
                     _uiState.update { it.copy(isSummaryLoading = true, projectSummary = null, summaryError = null) }
 
                     val result = counterSummaryGenerator.generate(state)
@@ -1481,6 +1511,8 @@ class CounterViewModel
         // Live API on tästä erillinen putki, joka voi tarvittaessa fallbackata v2-tilaan.
         fun interpretVoiceCommand(recognizedText: String) {
             viewModelScope.launch {
+                if (!proManager.hasFeature(ProFeature.VOICE_COMMANDS)) return@launch
+
                 val normalizedText = recognizedText.lowercase().trim().replace(Regex("\\s+"), " ")
 
                 // Deduplikaatio: 3s ikkuna
@@ -1556,6 +1588,8 @@ class CounterViewModel
 
         // — Live API (v3) —
 
+        fun canStartClassicVoice(): Boolean = BuildConfig.DEBUG || proManager.hasFeature(ProFeature.VOICE_COMMANDS)
+
         fun startLiveVoice() {
             if (voiceLiveSession.isActive()) return
             viewModelScope.launch {
@@ -1582,7 +1616,6 @@ class CounterViewModel
 
         private suspend fun canStartLiveVoice(): Boolean {
             if (!BuildConfig.DEBUG && !proManager.hasFeature(ProFeature.VOICE_LIVE)) {
-                _fallbackToV2.tryEmit(null)
                 return false
             }
             if (!isOnline()) {

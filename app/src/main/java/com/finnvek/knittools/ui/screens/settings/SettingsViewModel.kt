@@ -91,6 +91,10 @@ class SettingsViewModel
                             com.finnvek.knittools.R.string.no_purchases_found,
                         )
                     }
+
+                    RestorePurchasesResult.FAILED -> {
+                        _messages.emit(com.finnvek.knittools.R.string.ai_error_unknown)
+                    }
                 }
             }
         }

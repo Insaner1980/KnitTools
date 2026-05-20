@@ -294,7 +294,14 @@
     <string name="pro_feature_full_history">Vollständiger Zählerverlauf</string>
     <string name="pro_feature_notes">Notizen pro Projekt</string>
     <string name="pro_feature_secondary_counter">Sekundärzähler</string>
+    <string name="pro_feature_multiple_counters">Zusätzliche Zähler</string>
+    <string name="pro_feature_row_reminders">Reihenerinnerungen</string>
+    <string name="pro_feature_progress_photos">Fortschrittsfotos</string>
+    <string name="pro_feature_unlimited_yarn">Unbegrenzte Garnkarten</string>
     <string name="pro_feature_ocr">OCR-Scan von Garnetiketten</string>
+    <string name="pro_feature_ai_features">KI-Werkzeuge mit Monatsguthaben</string>
+    <string name="pro_feature_voice_commands">Sprachbefehle</string>
+    <string name="pro_feature_voice_live">Natürliche Sprache mit Monatsminuten</string>
     <string name="pro_feature_widget">Startbildschirm-Widget</string>
     <string name="pro_feature_pattern_camera_scan">Kamera-Scan für Anleitungen</string>
     <string name="pro_feature">Pro-Funktion</string>
@@ -302,6 +309,12 @@
     <string name="one_time_purchase">Einmalkauf. Kein Abo.</string>
     <string name="loading_price">Preis wird geladen…</string>
     <string name="price_loading_hint">Verbindung zu Google Play wird hergestellt — überprüfe deine Internetverbindung, wenn dies lange dauert</string>
+    <string name="billing_purchase_cancelled">Kauf abgebrochen</string>
+    <string name="billing_purchase_unavailable_button">Kauf nicht verfügbar</string>
+    <string name="billing_purchase_unavailable">Dieser Kauf ist derzeit nicht bei Google Play verfügbar.</string>
+    <string name="billing_purchase_network_error">Google Play konnte nicht erreicht werden. Prüfe deine Internetverbindung und versuche es erneut.</string>
+    <string name="billing_purchase_failed">Der Kauf konnte nicht abgeschlossen werden. Versuche es erneut.</string>
+    <string name="billing_already_owned_restore_failed">Laut Google Play besitzt du diesen Kauf bereits, er konnte aber nicht wiederhergestellt werden. Versuche Käufe wiederherstellen.</string>
 
     <!-- Yarn Card / OCR -->
     <string name="scan_yarn_label">Garnetikett scannen</string>
@@ -336,7 +349,7 @@
     <string name="instruction_parsed">Werte aus der Anweisung übernommen</string>
     <string name="instruction_parse_failed">Die Anweisung konnte nicht verstanden werden — versuche eine andere Formulierung</string>
     <string name="ai_error_busy">Die KI ist beschäftigt — versuche es gleich noch einmal</string>
-    <string name="ai_error_quota">Akku-Limit erreicht — versuche es später erneut</string>
+    <string name="ai_error_quota">Monatliches KI-Limit erreicht — versuche es später erneut</string>
     <string name="ai_error_unavailable">KI-Funktion auf diesem Gerät nicht verfügbar</string>
     <string name="ai_error_unknown">Etwas ist schiefgelaufen — versuche es erneut</string>
 

@@ -297,7 +297,14 @@
     <string name="pro_feature_full_history">Full counter history</string>
     <string name="pro_feature_notes">Notes per project</string>
     <string name="pro_feature_secondary_counter">Secondary counter</string>
+    <string name="pro_feature_multiple_counters">Extra counters</string>
+    <string name="pro_feature_row_reminders">Row reminders</string>
+    <string name="pro_feature_progress_photos">Progress photos</string>
+    <string name="pro_feature_unlimited_yarn">Unlimited yarn cards</string>
     <string name="pro_feature_ocr">Yarn label OCR scanning</string>
+    <string name="pro_feature_ai_features">AI tools with monthly credits</string>
+    <string name="pro_feature_voice_commands">Voice commands</string>
+    <string name="pro_feature_voice_live">Natural voice with monthly minutes</string>
     <string name="pro_feature_widget">Home screen widget</string>
     <string name="pro_feature_pattern_camera_scan">Pattern camera scan</string>
     <string name="pro_feature">Pro feature</string>
@@ -305,6 +312,12 @@
     <string name="one_time_purchase">One-time purchase. No subscription.</string>
     <string name="loading_price">Loading price…</string>
     <string name="price_loading_hint">Connecting to Google Play — check your internet connection if this takes long</string>
+    <string name="billing_purchase_cancelled">Purchase cancelled</string>
+    <string name="billing_purchase_unavailable_button">Purchase unavailable</string>
+    <string name="billing_purchase_unavailable">This purchase is not available from Google Play right now.</string>
+    <string name="billing_purchase_network_error">Could not reach Google Play. Check your internet connection and try again.</string>
+    <string name="billing_purchase_failed">Purchase could not be completed. Try again.</string>
+    <string name="billing_already_owned_restore_failed">Google Play says you already own this purchase, but it could not be restored. Try Restore purchases.</string>
 
     <!-- Yarn Card / OCR -->
     <string name="scan_yarn_label">Scan yarn label</string>
@@ -339,7 +352,7 @@
     <string name="instruction_parsed">Values filled from instruction</string>
     <string name="instruction_parse_failed">Couldn\'t understand the instruction — try rephrasing</string>
     <string name="ai_error_busy">AI is busy — try again in a moment</string>
-    <string name="ai_error_quota">Battery limit reached — try again later</string>
+    <string name="ai_error_quota">Monthly AI limit reached — try again later</string>
     <string name="ai_error_unavailable">AI feature not available on this device</string>
     <string name="ai_error_unknown">Something went wrong — try again</string>
 

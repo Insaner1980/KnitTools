@@ -294,7 +294,14 @@
     <string name="pro_feature_full_history">Full tellerhistorikk</string>
     <string name="pro_feature_notes">Notater per prosjekt</string>
     <string name="pro_feature_secondary_counter">Sekundær teller</string>
+    <string name="pro_feature_multiple_counters">Ekstra tellere</string>
+    <string name="pro_feature_row_reminders">Radpåminnelser</string>
+    <string name="pro_feature_progress_photos">Framdriftsbilder</string>
+    <string name="pro_feature_unlimited_yarn">Ubegrenset antall garnkort</string>
     <string name="pro_feature_ocr">OCR-skanning av garnetiketter</string>
+    <string name="pro_feature_ai_features">AI-verktøy med månedlige kreditter</string>
+    <string name="pro_feature_voice_commands">Talekommandoer</string>
+    <string name="pro_feature_voice_live">Naturlig stemme med månedlige minutter</string>
     <string name="pro_feature_widget">Widget på startskjermen</string>
     <string name="pro_feature_pattern_camera_scan">Skann oppskrift med kamera</string>
     <string name="pro_feature">Pro-funksjon</string>
@@ -302,6 +309,12 @@
     <string name="one_time_purchase">Engangskjøp. Ingen abonnement.</string>
     <string name="loading_price">Laster pris…</string>
     <string name="price_loading_hint">Kobler til Google Play — sjekk internettilkoblingen hvis dette tar lang tid</string>
+    <string name="billing_purchase_cancelled">Kjøp avbrutt</string>
+    <string name="billing_purchase_unavailable_button">Kjøp ikke tilgjengelig</string>
+    <string name="billing_purchase_unavailable">Dette kjøpet er ikke tilgjengelig i Google Play akkurat nå.</string>
+    <string name="billing_purchase_network_error">Fikk ikke kontakt med Google Play. Sjekk internettilkoblingen og prøv igjen.</string>
+    <string name="billing_purchase_failed">Kjøpet kunne ikke fullføres. Prøv igjen.</string>
+    <string name="billing_already_owned_restore_failed">Google Play sier at du allerede eier dette kjøpet, men det kunne ikke gjenopprettes. Prøv Gjenopprett kjøp.</string>
 
     <!-- Yarn Card / OCR -->
     <string name="scan_yarn_label">Skann garnetikett</string>
@@ -336,7 +349,7 @@
     <string name="instruction_parsed">Verdier fylt inn fra instruksjon</string>
     <string name="instruction_parse_failed">Forsto ikke instruksjonen — prøv å formulere den annerledes</string>
     <string name="ai_error_busy">AI er opptatt — prøv igjen om litt</string>
-    <string name="ai_error_quota">Batterigrense nådd — prøv igjen senere</string>
+    <string name="ai_error_quota">Månedlig AI-grense nådd — prøv igjen senere</string>
     <string name="ai_error_unavailable">AI-funksjonen er ikke tilgjengelig på denne enheten</string>
     <string name="ai_error_unknown">Noe gikk galt — prøv igjen</string>
 

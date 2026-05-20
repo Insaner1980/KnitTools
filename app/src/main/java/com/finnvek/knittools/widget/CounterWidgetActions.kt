@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import com.finnvek.knittools.domain.model.CounterProject
+import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.repository.CounterRepository
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.CoroutineScope
@@ -40,7 +41,7 @@ class CounterWidgetActions : BroadcastReceiver() {
         action: String,
     ) {
         val entryPoint = widgetEntryPoint(context)
-        if (!entryPoint.proManager().isPro()) {
+        if (!entryPoint.proManager().hasFeature(ProFeature.WIDGET)) {
             Log.w(TAG, "Widget action ignored — not Pro")
             return
         }

@@ -13,6 +13,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -42,25 +44,35 @@ class SessionHistoryViewModel
             }
         }
 
-        val sessions: StateFlow<List<KnitSession>> =
-            (projectId?.let { repository.getSessionsForProject(it) } ?: flowOf(emptyList()))
-                .map { sessions ->
-                    val visibleSessions =
-                        if (proManager.hasFeature(ProFeature.FULL_HISTORY)) {
-                            // Pro: koko historia
-                            sessions
-                        } else {
-                            // Free: vain viimeiset 24h
-                            val cutoff = System.currentTimeMillis() - TimeUnit.HOURS.toMillis(24)
-                            sessions.filter { it.startedAt >= cutoff }
-                        }
-                    visibleSessions.sortedWith(
-                        compareByDescending<KnitSession> { it.startedAt }
-                            .thenByDescending { it.id },
-                    )
-                }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        val isPro: StateFlow<Boolean> =
+            proManager.proState
+                .map { it.hasFeature(ProFeature.FULL_HISTORY) }
+                .distinctUntilChanged()
+                .stateIn(
+                    viewModelScope,
+                    SharingStarted.WhileSubscribed(5000),
+                    proManager.proState.value.hasFeature(ProFeature.FULL_HISTORY),
+                )
 
-        val isPro: Boolean get() = proManager.hasFeature(ProFeature.FULL_HISTORY)
+        val sessions: StateFlow<List<KnitSession>> =
+            combine(
+                projectId?.let { repository.getSessionsForProject(it) } ?: flowOf(emptyList()),
+                isPro,
+            ) { sessions, canUseFullHistory ->
+                val visibleSessions =
+                    if (canUseFullHistory) {
+                        // Pro: koko historia
+                        sessions
+                    } else {
+                        // Free: vain viimeiset 24h
+                        val cutoff = System.currentTimeMillis() - TimeUnit.HOURS.toMillis(24)
+                        sessions.filter { it.startedAt >= cutoff }
+                    }
+                visibleSessions.sortedWith(
+                    compareByDescending<KnitSession> { it.startedAt }
+                        .thenByDescending { it.id },
+                )
+            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
         fun deleteSession(sessionId: Long) {
             viewModelScope.launch {

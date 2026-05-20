@@ -38,6 +38,9 @@ jobs:
           languages: java-kotlin
           build-mode: manual
 
+      - name: Create CI Firebase config
+        run: bash .github/scripts/create-ci-google-services-json.sh
+
       - name: Build with Gradle
         run: ./gradlew assembleDebug --no-daemon
 

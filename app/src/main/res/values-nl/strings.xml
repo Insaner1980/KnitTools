@@ -294,7 +294,14 @@
     <string name="pro_feature_full_history">Volledige tellergeschiedenis</string>
     <string name="pro_feature_notes">Notities per project</string>
     <string name="pro_feature_secondary_counter">Secundaire teller</string>
+    <string name="pro_feature_multiple_counters">Extra tellers</string>
+    <string name="pro_feature_row_reminders">Rijherinneringen</string>
+    <string name="pro_feature_progress_photos">Voortgangsfoto’s</string>
+    <string name="pro_feature_unlimited_yarn">Onbeperkt aantal garenkaarten</string>
     <string name="pro_feature_ocr">OCR-scan van garenlabels</string>
+    <string name="pro_feature_ai_features">AI-tools met maandelijkse credits</string>
+    <string name="pro_feature_voice_commands">Spraakopdrachten</string>
+    <string name="pro_feature_voice_live">Natuurlijke stem met maandelijkse minuten</string>
     <string name="pro_feature_widget">Widget op het startscherm</string>
     <string name="pro_feature_pattern_camera_scan">Patroon scannen met camera</string>
     <string name="pro_feature">Pro-functie</string>
@@ -302,6 +309,12 @@
     <string name="one_time_purchase">Eenmalige aankoop. Geen abonnement.</string>
     <string name="loading_price">Prijs laden…</string>
     <string name="price_loading_hint">Verbinding maken met Google Play — controleer je internetverbinding als dit lang duurt</string>
+    <string name="billing_purchase_cancelled">Aankoop geannuleerd</string>
+    <string name="billing_purchase_unavailable_button">Aankoop niet beschikbaar</string>
+    <string name="billing_purchase_unavailable">Deze aankoop is nu niet beschikbaar in Google Play.</string>
+    <string name="billing_purchase_network_error">Kan Google Play niet bereiken. Controleer je internetverbinding en probeer opnieuw.</string>
+    <string name="billing_purchase_failed">Aankoop kon niet worden voltooid. Probeer opnieuw.</string>
+    <string name="billing_already_owned_restore_failed">Volgens Google Play bezit je deze aankoop al, maar deze kon niet worden hersteld. Probeer Aankopen herstellen.</string>
 
     <!-- Yarn Card / OCR -->
     <string name="scan_yarn_label">Garenlabel scannen</string>
@@ -336,7 +349,7 @@
     <string name="instruction_parsed">Waarden ingevuld op basis van instructie</string>
     <string name="instruction_parse_failed">De instructie werd niet begrepen — probeer het anders te formuleren</string>
     <string name="ai_error_busy">AI is bezig — probeer het straks opnieuw</string>
-    <string name="ai_error_quota">Batterijlimiet bereikt — probeer het later opnieuw</string>
+    <string name="ai_error_quota">Maandelijkse AI-limiet bereikt — probeer het later opnieuw</string>
     <string name="ai_error_unavailable">AI-functie niet beschikbaar op dit apparaat</string>
     <string name="ai_error_unknown">Er is iets misgegaan — probeer het opnieuw</string>
 

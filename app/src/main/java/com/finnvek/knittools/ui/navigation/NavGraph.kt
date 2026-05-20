@@ -599,7 +599,7 @@ private fun NavGraphBuilder.libraryMyYarnRoute(navController: NavHostController)
         val selectedYarnIds by libraryViewModel.selectedYarnIds.collectAsStateWithLifecycle()
         val yarnDeleteErrorId by libraryViewModel.yarnDeleteErrorId.collectAsStateWithLifecycle()
         val yarnFormState by yarnCardViewModel.formState.collectAsStateWithLifecycle()
-        val canScanYarnLabel = yarnCardViewModel.isPro
+        val canScanYarnLabel = yarnCardViewModel.canScanYarnLabel
 
         MyYarnScreen(
             state =

@@ -44,6 +44,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
+import com.finnvek.knittools.billing.BillingProductStatus
+import com.finnvek.knittools.billing.BillingUserMessage
 import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.ui.components.StatusMessage
 import com.finnvek.knittools.ui.components.StatusMessageType
@@ -57,7 +59,8 @@ fun ProUpgradeScreen(
 ) {
     val proState by viewModel.proState.collectAsStateWithLifecycle()
     val productDetails by viewModel.productDetails.collectAsStateWithLifecycle()
-    val restoreMessageRes by viewModel.restoreMessageRes.collectAsStateWithLifecycle()
+    val productStatus by viewModel.productStatus.collectAsStateWithLifecycle()
+    val statusMessageRes by viewModel.statusMessageRes.collectAsStateWithLifecycle()
     val isRestoring by viewModel.isRestoring.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val backgroundColor = MaterialTheme.colorScheme.background
@@ -106,13 +109,17 @@ fun ProUpgradeScreen(
                 } else {
                     ProUpgradeContent(
                         price = productDetails?.oneTimePurchaseOfferDetails?.formattedPrice,
-                        restoreMessageRes = restoreMessageRes,
+                        productStatus = productStatus,
                         isRestoring = isRestoring,
                         onPurchase = {
                             (context as? Activity)?.let(onPurchase)
                         },
                         onRestore = { viewModel.restorePurchases() },
                     )
+                }
+                statusMessageRes?.let { messageRes ->
+                    Spacer(modifier = Modifier.height(8.dp))
+                    ProStatusMessage(messageRes = messageRes)
                 }
             }
         }
@@ -173,7 +180,7 @@ private fun ProPurchasedContent() {
 @Composable
 private fun ProUpgradeContent(
     price: String?,
-    restoreMessageRes: Int?,
+    productStatus: BillingProductStatus,
     isRestoring: Boolean,
     onPurchase: () -> Unit,
     onRestore: () -> Unit,
@@ -190,17 +197,17 @@ private fun ProUpgradeContent(
 
     Spacer(modifier = Modifier.height(32.dp))
 
-    PurchaseButton(price = price, onPurchase = onPurchase)
+    PurchaseButton(
+        price = price,
+        enabled = productStatus == BillingProductStatus.Available && price != null,
+        unavailable = productStatus is BillingProductStatus.Unavailable,
+        onPurchase = onPurchase,
+    )
 
     Spacer(modifier = Modifier.height(8.dp))
 
     Text(
-        text =
-            if (price != null) {
-                stringResource(R.string.one_time_purchase)
-            } else {
-                stringResource(R.string.price_loading_hint)
-            },
+        text = stringResource(productStatus.purchaseHelperMessageRes(hasPrice = price != null)),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         textAlign = TextAlign.Center,
@@ -229,20 +236,15 @@ private fun ProUpgradeContent(
         )
     }
 
-    restoreMessageRes?.let { messageRes ->
-        Spacer(modifier = Modifier.height(8.dp))
-        StatusMessage(
-            message = stringResource(messageRes),
-            type =
-                if (messageRes == R.string.pro_restored) {
-                    StatusMessageType.Success
-                } else {
-                    StatusMessageType.Info
-                },
-        )
-    }
-
     Spacer(modifier = Modifier.height(24.dp))
+}
+
+@Composable
+private fun ProStatusMessage(messageRes: Int) {
+    StatusMessage(
+        message = stringResource(messageRes),
+        type = messageRes.statusMessageType(),
+    )
 }
 
 @Composable
@@ -253,7 +255,14 @@ private fun ProFeatureList() {
             R.string.pro_feature_full_history,
             R.string.pro_feature_notes,
             R.string.pro_feature_secondary_counter,
+            R.string.pro_feature_multiple_counters,
+            R.string.pro_feature_row_reminders,
+            R.string.pro_feature_progress_photos,
+            R.string.pro_feature_unlimited_yarn,
             R.string.pro_feature_ocr,
+            R.string.pro_feature_ai_features,
+            R.string.pro_feature_voice_commands,
+            R.string.pro_feature_voice_live,
             R.string.pro_feature_widget,
             R.string.pro_feature_pattern_camera_scan,
         )
@@ -283,6 +292,8 @@ private fun ProFeatureList() {
 @Composable
 private fun PurchaseButton(
     price: String?,
+    enabled: Boolean,
+    unavailable: Boolean,
     onPurchase: () -> Unit,
 ) {
     Box(
@@ -300,14 +311,16 @@ private fun PurchaseButton(
                         ),
                     shape = MaterialTheme.shapes.large,
                 ).then(
-                    if (price != null) Modifier.clickable(onClick = onPurchase) else Modifier,
+                    if (enabled) Modifier.clickable(onClick = onPurchase) else Modifier,
                 ),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             text =
-                if (price != null) {
+                if (enabled && price != null) {
                     stringResource(R.string.upgrade_for_price, price)
+                } else if (unavailable) {
+                    stringResource(R.string.billing_purchase_unavailable_button)
                 } else {
                     stringResource(R.string.loading_price)
                 },
@@ -316,3 +329,32 @@ private fun PurchaseButton(
         )
     }
 }
+
+private fun BillingProductStatus.purchaseHelperMessageRes(hasPrice: Boolean): Int =
+    when (this) {
+        BillingProductStatus.Available -> {
+            if (hasPrice) R.string.one_time_purchase else R.string.price_loading_hint
+        }
+
+        BillingProductStatus.Loading -> R.string.price_loading_hint
+        is BillingProductStatus.Unavailable -> message.toMessageRes()
+    }
+
+private fun BillingUserMessage.toMessageRes(): Int =
+    when (this) {
+        BillingUserMessage.PURCHASE_CANCELLED -> R.string.billing_purchase_cancelled
+        BillingUserMessage.PURCHASE_UNAVAILABLE -> R.string.billing_purchase_unavailable
+        BillingUserMessage.PURCHASE_NETWORK_ERROR -> R.string.billing_purchase_network_error
+        BillingUserMessage.PURCHASE_FAILED -> R.string.billing_purchase_failed
+        BillingUserMessage.ALREADY_OWNED_RESTORE_FAILED -> R.string.billing_already_owned_restore_failed
+    }
+
+private fun Int.statusMessageType(): StatusMessageType =
+    when (this) {
+        R.string.pro_restored -> StatusMessageType.Success
+        R.string.no_purchases_found,
+        R.string.billing_purchase_cancelled,
+        -> StatusMessageType.Info
+
+        else -> StatusMessageType.Error
+    }

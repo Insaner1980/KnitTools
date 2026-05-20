@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -127,9 +128,13 @@ class InsightsViewModel
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
         private val heatmapSessions: StateFlow<List<KnitSession>> =
-            selectedProjectId
-                .flatMapLatest { projectId ->
-                    counterRepository.getSessionsForInsights(projectId, heatmapStartMillis())
+            combine(selectedProjectId, isPro) { projectId, pro -> projectId to pro }
+                .flatMapLatest { (projectId, pro) ->
+                    if (pro) {
+                        counterRepository.getSessionsForInsights(projectId, heatmapStartMillis())
+                    } else {
+                        flowOf(emptyList())
+                    }
                 }.distinctUntilChanged()
                 .flowOn(ioDispatcher)
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -222,11 +227,15 @@ class InsightsViewModel
                     zone = zone,
                 )
             val dailyActivity =
-                SessionMetrics.dailyActivityMinutes(
-                    sessions = heatmapSessions,
-                    earliestDate = heatmapEarliestDate(zone),
-                    zone = zone,
-                )
+                if (isPro) {
+                    SessionMetrics.dailyActivityMinutes(
+                        sessions = heatmapSessions,
+                        earliestDate = heatmapEarliestDate(zone),
+                        zone = zone,
+                    )
+                } else {
+                    emptyMap()
+                }
 
             return InsightsUiState(
                 totalMinutes = metrics.totalMinutes,
@@ -237,19 +246,27 @@ class InsightsViewModel
                 projects = projectList,
                 selectedProjectId = params.projectId,
                 timePerProject =
-                    buildTimePerProject(
-                        sessions = sessions,
-                        projectList = projectList,
-                        rangeStartMillis = params.startMillis,
-                        zone = zone,
-                    ),
+                    if (isPro) {
+                        buildTimePerProject(
+                            sessions = sessions,
+                            projectList = projectList,
+                            rangeStartMillis = params.startMillis,
+                            zone = zone,
+                        )
+                    } else {
+                        emptyList()
+                    },
                 paceOverTime =
-                    buildPaceOverTime(
-                        sessions = sessions,
-                        timeRange = params.timeRange,
-                        rangeStartMillis = params.startMillis,
-                        zone = zone,
-                    ),
+                    if (isPro) {
+                        buildPaceOverTime(
+                            sessions = sessions,
+                            timeRange = params.timeRange,
+                            rangeStartMillis = params.startMillis,
+                            zone = zone,
+                        )
+                    } else {
+                        emptyList()
+                    },
                 dailyActivity = dailyActivity,
                 timeRange = params.timeRange,
                 hasSessionData = metrics.sessionCount > 0,

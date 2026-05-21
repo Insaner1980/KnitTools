@@ -12,7 +12,7 @@
     "deepsec:report:custom": "pnpm run deepsec:scan:custom && pnpm run deepsec:process && pnpm run deepsec:revalidate && node scripts/mark-accepted-risks.mjs && pnpm run deepsec:export"
   },
   "dependencies": {
-    "deepsec": "2.0.8"
+    "deepsec": "2.0.9"
   },
   "devDependencies": {
     "@types/node": "^25.9.1",

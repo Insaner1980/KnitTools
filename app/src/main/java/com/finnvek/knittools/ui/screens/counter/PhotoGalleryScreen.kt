@@ -58,10 +58,9 @@ import coil3.compose.AsyncImage
 import com.finnvek.knittools.R
 import com.finnvek.knittools.data.storage.ProgressPhotoStorage
 import com.finnvek.knittools.domain.model.ProgressPhoto
+import com.finnvek.knittools.ui.components.rememberLocaleDateFormat
 import java.io.File
-import java.text.SimpleDateFormat
 import java.util.Date
-import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -258,7 +257,7 @@ private fun PhotoGridItem(
     onClick: () -> Unit,
     onLongClick: () -> Unit,
 ) {
-    val dateFormat = remember { SimpleDateFormat("d MMM", Locale.getDefault()) }
+    val dateFormat = rememberLocaleDateFormat("d MMM")
     val displayName = photo.note ?: stringResource(R.string.row_label_format, photo.rowNumber)
 
     Card(

@@ -58,10 +58,9 @@ import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.ProgressPhoto
 import com.finnvek.knittools.ui.components.ConfirmationDialog
+import com.finnvek.knittools.ui.components.rememberLocaleDateFormat
 import com.finnvek.knittools.ui.screens.counter.PhotoViewer
-import java.text.SimpleDateFormat
 import java.util.Date
-import java.util.Locale
 
 // Data-luokat AllPhotosScreen-parametrien ryhmittelyyn (S107)
 data class AllPhotosState(
@@ -390,7 +389,7 @@ private fun PhotoGridItem(
     onClick: () -> Unit,
     onLongClick: () -> Unit,
 ) {
-    val dateFormat = remember { SimpleDateFormat("d MMM", Locale.getDefault()) }
+    val dateFormat = rememberLocaleDateFormat("d MMM")
 
     // Valittu kortti saa kevyen primäärivärisen taustan
     val backgroundColor =

@@ -26,7 +26,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -44,9 +43,8 @@ import coil3.compose.AsyncImage
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.ProgressPhoto
 import com.finnvek.knittools.ui.components.ConfirmationDialog
-import java.text.SimpleDateFormat
+import com.finnvek.knittools.ui.components.rememberLocaleDateFormat
 import java.util.Date
-import java.util.Locale
 
 @Composable
 fun PhotoThumbnailStrip(
@@ -85,8 +83,7 @@ fun PhotoViewer(
 ) {
     var showDeleteConfirm by rememberSaveable { mutableStateOf(false) }
     val context = LocalContext.current
-    val locale = Locale.getDefault()
-    val dateFormat = remember(locale) { SimpleDateFormat("d MMM yyyy, HH:mm", locale) }
+    val dateFormat = rememberLocaleDateFormat("d MMM yyyy, HH:mm")
 
     if (showDeleteConfirm) {
         ConfirmationDialog(

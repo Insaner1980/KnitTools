@@ -14,7 +14,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -23,7 +22,6 @@ import com.finnvek.knittools.R
 import com.finnvek.knittools.ui.theme.knitToolsColors
 import java.text.SimpleDateFormat
 import java.util.Date
-import java.util.Locale
 
 @Composable
 fun SessionItem(
@@ -34,8 +32,7 @@ fun SessionItem(
     modifier: Modifier = Modifier,
     onDelete: (() -> Unit)? = null,
 ) {
-    val locale = Locale.getDefault()
-    val dateFormat = remember(locale) { SimpleDateFormat("MMM d, HH:mm", locale) }
+    val dateFormat = rememberLocaleDateFormat("MMM d, HH:mm")
 
     Surface(
         modifier = modifier.fillMaxWidth(),

@@ -32,17 +32,21 @@ Nykytilan kannalta hyödyllinen järjestys:
 - Widgetit: Glance App Widget
 - Verkko: Ktor + OkHttp
 - Integraatiot: Ravelry OAuth2/API, Firebase AI, Google Play Billing, In-App Review, In-App Update
-- On-device-ominaisuudet: ML Kit Text Recognition, ML Kit GenAI Prompt API, omat parserit `ai/nano/`
+- On-device-ominaisuudet: ML Kit GenAI Prompt API ja regex-fallbackit `ai/nano/`; ML Kit Text Recognition -riippuvuus on buildissä, mutta nykyiset pattern/yarn camera -polut käyttävät Gemini-multimodaalikutsuja
 - Lokalisaatio: `localeConfig` + useat `values-*`-hakemistot
-- Room schema version: `9`
+- Room schema version: `11`
 - `compileSdk` / `targetSdk` / `minSdk`: `36 / 36 / 29`
-- `baselineprofile`-moduulin `minSdk`: `28`
+- `baselineprofile`-moduulin `minSdk`: `29`
 - Java target: `17`
+- Gradle wrapper: `9.4.1`
 - AGP: `9.1.0`
 - Kotlin Compose plugin: `2.3.10`
+- KSP: `2.3.6`
+- Compose BOM: `2026.03.00`
 - Room: `2.8.4`
 - Glance: `1.1.1`
-- Firebase BoM: `34.12.0`
+- Ktor: `3.4.2`
+- Firebase BoM: `34.13.0`
 - Billing: `8.3.0`
 - versionCode / versionName: `1 / 1.0.0`
 
@@ -60,6 +64,7 @@ Jos avaat vain muutaman tiedoston, avaa nämä:
 - käynnistys:
   - `app/src/main/java/com/finnvek/knittools/App.kt`
   - `app/src/main/java/com/finnvek/knittools/MainActivity.kt`
+  - `app/src/main/java/com/finnvek/knittools/MainActivityTheme.kt`
   - `app/src/main/AndroidManifest.xml`
   - `app/src/main/res/values/themes.xml`
 - navigaatio:
@@ -78,6 +83,7 @@ Jos avaat vain muutaman tiedoston, avaa nämä:
   - `app/src/main/java/com/finnvek/knittools/ai/`
   - `app/src/main/java/com/finnvek/knittools/repository/PatternInstructionRepository.kt`
   - `app/src/main/java/com/finnvek/knittools/repository/YarnLabelScanRepository.kt`
+  - `app/src/main/java/com/finnvek/knittools/ui/screens/counter/VoiceCommandParser.kt`
   - `app/src/main/java/com/finnvek/knittools/util/NetworkStatusProvider.kt`
 - widgetit:
   - `app/src/main/java/com/finnvek/knittools/widget/`
@@ -111,6 +117,8 @@ Pluginit `app/build.gradle.kts`:ssä:
 Build-huomiot:
 
 - `org.jetbrains.kotlin.android`-pluginia ei käytetä
+- root-buildissä `dependency-analysis` on tarkoituksella kommentoitu pois AGP 9.x -yhteensopivuuden takia
+- Sonar-konfiguraatio delegoi Gradlen hallitsemat source/binary-polut Gradle-pluginille ja ajaa `:app:jacocoDebugUnitTestReport` ennen `sonar`-taskia
 - release signing on ympäristömuuttujapohjainen
 - release-artifaktit estetään ilman signing-muuttujia
 - release-artifaktit estetään ilman Ravelry-credentialeja
@@ -131,6 +139,8 @@ Erillinen Android Test -moduuli:
 Nykyinen käynnistyslogiikka:
 
 1. `App.onCreate()`
+   - `FirebaseApp.initializeApp(...)`
+   - `FirebaseAppCheck.installAppCheckProviderFactory(PlayIntegrityAppCheckProviderFactory.getInstance())`
    - `PreferencesManager.applyStoredAppLanguage()`
    - `BillingManager.initialize()`
    - `ProManager.initialize()`
@@ -138,18 +148,22 @@ Nykyinen käynnistyslogiikka:
    - `installSplashScreen()` ennen `super.onCreate()`
    - lukee mahdollisen `CounterLaunchRequest`in intentistä
    - käsittelee mahdollisen Ravelry OAuth callbackin
-   - ottaa `enableEdgeToEdge()`-tilan käyttöön
    - käynnistää In-App Update -tarkistuksen
-   - hakee asetukset `SettingsViewModel`in kautta
+   - lukee teeman suoraan `PreferencesManager.preferences`-flow'sta
+   - pitää splashin näkyvissä kunnes startup-teema on ratkaistu
+   - ottaa `enableEdgeToEdge()`-tilan käyttöön vasta kun light/dark-teema tiedetään
    - renderöi `KnitToolsNavHost`in
 3. `MainActivity.onResume()`
    - kutsuu `inAppUpdateManager.checkDownloadedOnResume()`
+   - synkronoi Android 13+ per-app-locale-tilan takaisin DataStore-peiliin
 4. `MainActivity.onNewIntent()`
    - päivittää OAuth- ja widget-launch-intentit
 
 Lisähuomiot:
 
 - appi on manifestissa lukittu portrait-orientaatioon
+- widget-counter-launch vaatii `CounterLaunchTokenStore`n antaman tunnetun launch-id:n; OAuth callback ei saa avata counteria
+- kulutettu counter-launch-id säilytetään recreationin yli, ja kulutetut intent-extrat poistetaan
 - snackbar näyttää flexible update -asennuskehotteen
 - review-pyyntö kytketään runtime-tilaan, ei pelkkään staattiseen näkymään
 
@@ -187,7 +201,7 @@ Bottom bar piilotetaan nykyään näillä routeilla:
 
 - `pro_upgrade`
 - `yarn_card_review`
-- `yarn_card_detail/{cardId}`
+- `library_yarn_card_review`
 - `pattern_viewer/{projectId}`
 - `library_pattern_viewer/{savedPatternId}`
 - `notes_editor/{projectId}`
@@ -196,13 +210,13 @@ ViewModel-scope:
 
 - `CounterViewModel` on scoped `Projects`-graafin tasolle
 - `LibraryViewModel` on scoped `Library`-graafin tasolle
-- `YarnCardViewModel` luodaan nav host -tasolla ja jaetaan Tools/Library-flow’hin
+- `YarnCardViewModel` on shared erikseen `Tools`-graafin ja `Library`-graafin parent-entryn tasolla
 
 Counterin projektivalinta:
 
 - route `counter` ei kanna `projectId`:tä navigaatioargumenttina
 - aktiivinen projekti valitaan ja säilytetään jaetussa `CounterViewModel`:ssä
-- widget-launch, Ravelryn "Start Project" ja project list -navigaatio käyttävät samaa valintamallia
+- widget-launch, Ravelryn "Start Project", yarn-card detailin linked-project-avaus ja project list -navigaatio käyttävät samaa valintamallia
 - `CounterLaunchRequest` on runtime-entry point intentti- ja cross-flow-launchille, ei pysyvä route-contract
 
 ## Reittikartta
@@ -234,6 +248,7 @@ Counterin projektivalinta:
 - `library_pattern_viewer/{savedPatternId}`
 - `library_ravelry_detail/{patternId}`
 - `my_yarn`
+- `library_yarn_card_review`
 - `yarn_card_detail/{cardId}`
 - `all_photos`
 - referenssireitit:
@@ -288,13 +303,12 @@ Huomio:
 ### Sovelluslogiikan pääpaketit
 
 - `ai/`
-  - cloud: `GeminiAiService`, `PatternInstructionGemini`, `PatternInstructionCombinerGemini`, `PatternTextExtractor`, `ProjectSummarizer`, `YarnLabelGeminiScanner`, `VoiceCommandInterpreter`
+  - cloud: `GeminiAiService`, `PatternInstructionGemini`, `PatternInstructionCombinerGemini`, `ProjectSummarizer`, `YarnLabelGeminiScanner`, `VoiceCommandInterpreter`
   - shared models: `ParsedYarnLabel`, `AiVoiceAction`
   - quota: `AiQuotaManager`
   - journal: `ai/journal/`
   - live-voice: `ai/live/`
   - on-device parserit: `ai/nano/`
-  - OCR: `ai/ocr/`
   - puhewrapper: `ai/speech/`
 - `auth/`
   - `RavelryAuthManager.kt`
@@ -309,11 +323,16 @@ Huomio:
   - `RavelryApiService.kt`
   - `RavelryModels.kt`
 - `data/storage/`
+  - `AppFileStorage.kt`
+  - `CounterLaunchTokenStore.kt`
   - `PatternDocumentStorage.kt`
+  - `PdfPageRenderer.kt`
   - `ProgressPhotoStorage.kt`
+  - `StorageFileNames.kt`
   - `YarnLabelPhotoStorage.kt`
 - `di/`
   - `DatabaseModule.kt`
+  - `DispatchersModule.kt`
   - `NetworkModule.kt`
 - `domain/calculator/`
   - laskenta- ja parserilogiikat
@@ -339,9 +358,14 @@ Huomio:
 - `widget/`
   - `CounterWidget.kt`
   - `CounterWidgetActions.kt`
+  - `CounterWidgetDataResolver.kt`
   - `CounterWidgetReceiver.kt`
   - `CounterWidgetState.kt`
+  - `WidgetCounterAction.kt`
   - `WidgetEntryPoint.kt`
+- `util/`
+  - `NetworkStatusProvider.kt`
+  - `extensions/UnitConversion.kt`
 
 ## Data ja pysyvä tila
 
@@ -362,13 +386,21 @@ Huomio:
 Migraatiotilanne:
 
 - automaattiset migraatiot: `1 -> 2`, `2 -> 3`
-- käsinkirjoitetut migraatiot: `3 -> 4`, `4 -> 5`, `5 -> 6`, `6 -> 7`, `7 -> 8`, `8 -> 9`
-- schema exportataan hakemistoon `app/schemas/.../9.json`
+- käsinkirjoitetut migraatiot: `3 -> 4`, `4 -> 5`, `5 -> 6`, `6 -> 7`, `7 -> 8`, `8 -> 9`, `9 -> 10`, `10 -> 11`
+- schema exportataan hakemistoon `app/schemas/com.finnvek.knittools.data.local.KnitToolsDatabase/`, jossa uusin export on `11.json`
 
 Näkyvä uusin lisäys:
 
-- `sessions.startedAt`-indeksi lisättiin migraatiossa `8 -> 9`
-- `counter_projects.targetRows` lisättiin migraatiossa `7 -> 8`
+- `sessions.durationSeconds` ja `sessions.rowsWorked` lisättiin migraatiossa `9 -> 10`; vanhat rivit backfillataan `durationMinutes * 60` ja positiivisella `endRow - startRow` -arvolla
+- `sessions(endedAt, startedAt)` ja `sessions(projectId, endedAt, startedAt)` -indeksit lisättiin migraatiossa `10 -> 11`
+- `sessions.startedAt`-indeksi on migraatiossa `8 -> 9`
+- `counter_projects.targetRows` on migraatiossa `7 -> 8`
+
+Session-laskennan nykyrajat:
+
+- `KnitSession` ja `SessionEntity` kantavat sekä display-minuutit että tarkat `durationSeconds` / `rowsWorked` -kentät
+- `SessionDao.getTotalMinutes(...)` summaa `durationSeconds`-kentän ja pyöristää ylöspäin minuutteihin
+- Insights käyttää `SessionMetrics`-apuria, joka jakaa cross-midnight-sessiot laitteen paikallisiin päiviin ja laskee pace-arvot sekunneista ja tehdyistä riveistä
 
 ### DataStore
 
@@ -397,16 +429,28 @@ Lisäksi käytössä on erillisiä DataStoreja:
 
 Entry pointit:
 
+- `AppFileStorage`
 - `PatternDocumentStorage`
+- `PdfPageRenderer`
 - `ProgressPhotoStorage`
 - `YarnLabelPhotoStorage`
 - `FileProvider` + `res/xml/file_paths.xml`
+
+Tallennuspolut nykykoodissa:
+
+- pattern PDF:t tallennetaan appin sisäiseen `pattern_pdfs/<projectId>`-hakemistoon `file://`-URIlla
+- pattern camera capture -kuvat luodaan `pattern_captures/<projectId>`-hakemistoon ja ne ovat FileProviderin kautta ulos annettava väliaikainen pattern-kuvapolku
+- progress-kuvat tallennetaan `progress_photos/<projectId>`-hakemistoon
+- yarn label -skannauskuvat tallennetaan `yarn_photos`-hakemistoon
+- `file_paths.xml` exposeeraa vain `yarn_photos`, `progress_photos` ja `pattern_captures`; app-owned `pattern_pdfs` avataan sisäisen resolverin kautta, ei FileProvider-rootina
+- `AppFileStorage` tunnistaa edelleen legacy `patterns/...` -FileProvider-URI:t sisäistä lukua/siivousta varten
 
 ## Kielet ja lokalisaatio
 
 Manifest käyttää `android:localeConfig="@xml/locales_config"`.
 
 `App` kutsuu käynnistyksessä `PreferencesManager.applyStoredAppLanguage()`.
+`MainActivity.onResume()` kutsuu Android 13+ -laitteilla `syncAppLanguageFromSystem()`, joten DataStore `app_language` on nykyään per-app-locale-tilan peili eikä ainoa runtime-kielen omistaja.
 
 Tuetut kielet `locales_config.xml`:n mukaan:
 
@@ -443,11 +487,13 @@ Nykyiset locale-resurssihakemistot:
 
 Nykyinen toteutus:
 
-- OAuth2 Authorization Code -flow Chrome Custom Tabilla; PKCE-parametrit lähetetään lisäsuojana, jos Ravelry hyväksyy ne
+- OAuth2 Authorization Code -flow Chrome Custom Tabilla; PKCE `S256` -parametrit lähetetään authorization requestissa
 - Chrome Custom Tabs autentikointiin
-- tokenit `EncryptedSharedPreferences`iin
-- Ktor-pohjainen HTTP-client
+- access/refresh-tokenit sekä pending `state`/`code_verifier` tallennetaan `EncryptedSharedPreferences`iin `MasterKey`-avaimella
+- Ktor + OkHttp -pohjainen HTTP-client, jossa `connectTimeout=15s`, `callTimeout=45s`, `read/writeTimeout=30s`
 - callback URI: `com.finnvek.knittools://oauth/callback`
+- API-kutsu käyttää ensin Bearer-tokenia, refreshaa 401/403-vastauksen jälkeen, signouttaa refresh-epäonnistumisen jälkeen ja putoaa Basic Auth -polkuun
+- transientit 5xx-vastaukset yritetään uudelleen rajatusti; muut ei-2xx-vastaukset nostavat `RavelryHttpException`in
 
 BuildConfig-kentät:
 
@@ -513,35 +559,53 @@ Huomio nykytilasta:
 
 AI ei ole yksi ominaisuus vaan useita polkuja:
 
-- cloud-Gemini: `ai/`
+- Firebase AI Logic: `GeminiAiService`
 - notes/journal-flow: `ai/journal/`
 - live-voice: `ai/live/`
 - on-device parserit: `ai/nano/`
-- OCR: `ai/ocr/`
 - kevyt puheentunnistuswrapper: `ai/speech/SimpleSpeechRecognizer.kt`
+- yarn label -skannaus: `YarnLabelGeminiScanner` käyttää yhtä Gemini-multimodaalikutsua, ei enää OCR -> Nano -putkea
+- pattern camera / PDF instruction -polut: `PatternInstructionGemini` ja `PatternInstructionCombinerGemini` käyttävät Gemini-multimodaalikutsuja skeemarajatulla JSON-vastauksella
+
+`GeminiAiService`:
+
+- käyttää Firebase AI Logicin Google AI -backendia
+- asettaa `useLimitedUseAppCheckTokens = true`
+- tekstimalli: `gemini-2.5-flash-lite`
+- voice-tulkintamalli: `gemini-2.5-flash`
+- skeemarajatut vastaukset määritetään `generationConfig { responseMimeType = "application/json"; responseSchema = schema }`
+- rate/quota-tyyppisiä virheitä yritetään uudelleen enintään 3 kertaa
 
 `AiQuotaManager`:
 
 - kuukausikiintiö `500`
-- sama quota käytössä tekstipohjaisille AI-kutsuille
-- klassinen voice-fallback käyttää samaa quota-järjestelmää
+- sama quota käytössä tekstipohjaisille AI-kutsuille ja klassisen voice-Gemini-fallbackin kutsuille
+- kutsut varataan ennen Gemini-kutsua `tryReserveCall()` / `tryReserveVoiceCall()` -metodeilla
+- epäonnistuneet tai käyttökelvottomat vastaukset palauttavat varauksen `refundReservedCall()` / `refundReservedVoiceCall()` -metodeilla
+- lisäkreditit tallennetaan samaan `ai_quota` DataStoreen
 
 ### Voice: kaksi erillistä putkea
 
 1. Klassinen keyword-flow (`VOICE_COMMANDS`)
    - `ui/screens/counter/VoiceCommandHandler.kt`
+   - `ui/screens/counter/VoiceCommandParser.kt`
    - `ai/VoiceCommandInterpreter.kt`
    - `ui/screens/counter/VoiceResponseManager.kt`
    - tunnistusjärjestys: exact keyword -> counted command -> first-word fallback -> Gemini
-   - paikallinen EN+FI count-parseri kattaa käytännössä luvut 1–20
-   - Gemini-fallback kuluttaa `AiQuotaManager`in kiintiötä
+   - paikallinen parseri tukee useiden lokalisoitujen komentojen keywordeja
+   - numeroina annetut määrät hyväksytään välillä `1..100`
+   - sanalliset numerot kattavat englannin ja suomen `1..20`, muissa tuetuissa kielissä pääosin `1..10`
+   - Gemini-fallback käyttää skeemarajattua JSONia ja kuluttaa `AiQuotaManager`in kiintiötä
 
 2. Gemini Live API -keskustelu (`VOICE_LIVE`)
    - `ai/live/VoiceLiveSession.kt`
    - `ai/live/ProjectVoiceContext.kt`
+   - `ai/live/LiveVoiceFunctionCallMapper.kt`
    - `ai/live/VoiceFunctionDeclarations.kt`
    - oma quota `VoiceLiveQuotaManager`
    - kuukausikiintiö `30` minuuttia
+   - Live-malli saa vain ei-mutatoivat `query_project`- ja `help`-työkalut
+   - session inactivity-timeout on 60 sekuntia; quota-deadline pysäyttää session jäljellä olevien minuuttien täyttyessä
 
 Wiring:
 
@@ -577,22 +641,28 @@ Nykyinen Glance-widget:
 - actionit toteutetaan broadcast-receiverin kautta
 - widget seuraa shared widget-statea ja peilaa sen myös instanssikohtaiseen Glance-stateen
 - uuden widget-instanssin bootstrap:
-  - ensin shared widget-store
-  - fallbackina `CounterRepository.getFirstProject()`
+  - ensin instanssin oma Glance-state
+  - sitten shared widget-store
+  - fallbackina `CounterRepository.getLatestActiveProject()`
+  - viimeisenä `CounterWidgetState.defaultData(...)`
+- widget-toiminnot kulkevat `CounterRepository.applyWidgetCountChange(...)` -metodin kautta, joka tekee count/history/current-stitch-reset -päivityksen transaktiona
 
 UI-tila juuri nyt:
 
 - sisäinen korttirakenne
 - selkeämpi lämmin reunus
 - paksumpi progress bar
+- target rows, section ja stitch tracking näkyvät widget-datassa, jos aktiivinen projekti käyttää niitä
 - visuaalisesti eri koot käyttävät samaa komponenttiperhettä, small hieman tiiviimpänä
 
 Source of truth:
 
 - `app/src/main/java/com/finnvek/knittools/widget/CounterWidget.kt`
+- `app/src/main/java/com/finnvek/knittools/widget/CounterWidgetDataResolver.kt`
 - `app/src/main/java/com/finnvek/knittools/widget/CounterWidgetState.kt`
 - `app/src/main/java/com/finnvek/knittools/widget/CounterWidgetActions.kt`
 - `app/src/main/java/com/finnvek/knittools/widget/CounterWidgetReceiver.kt`
+- `app/src/main/java/com/finnvek/knittools/widget/WidgetCounterAction.kt`
 - `app/src/main/java/com/finnvek/knittools/widget/WidgetEntryPoint.kt`
 - `app/src/main/java/com/finnvek/knittools/MainActivity.kt`
 - `app/src/main/AndroidManifest.xml`
@@ -780,6 +850,8 @@ Manifestin nykyinen pinta:
   - `RECORD_AUDIO`
 - `usesCleartextTraffic="false"`
 - `android:allowBackup="false"`
+- `android:dataExtractionRules="@xml/data_extraction_rules"`
+- `android:fullBackupContent="@xml/backup_rules"`
 - kamera-feature on `required="false"`
 - `MainActivity` on `exported=true`
 - `CounterWidgetReceiver` on `exported=true` + `BIND_APPWIDGET`
@@ -790,6 +862,7 @@ Huomio:
 
 - appissa on `google-services`-plugin käytössä
 - repo sisältää Firebase-kytkennän vaatiman `app/google-services.json`-tiedoston
+- CI luo oman Firebase-konfigin `.github/scripts/create-ci-google-services-json.sh` -skriptillä
 
 ## Testit ja verifiointi
 
@@ -797,10 +870,15 @@ Nykyiset testit painottuvat ainakin näihin:
 
 - domain calculators
 - AI-parserit ja wrapperit
+- Firebase AI -skeemarajoitteiden source-testit
 - repository-logiikka
+- data storage- ja Room source/migration -rajat
 - Pro/trial-logiikka
+- billing restore / already-owned -polut
 - useat ViewModel- ja UI-tasoiset testit
 - Android migration testit
+- navigation argument safety ja counter launch -tokenointi
+- widget data resolver ja action flow
 
 Pienimmät hyödylliset tarkistuskomennot:
 
@@ -808,13 +886,15 @@ Pienimmät hyödylliset tarkistuskomennot:
 - `./gradlew test`
 - `./gradlew :app:detekt`
 - `./gradlew lint`
+- `./gradlew :app:jacocoDebugUnitTestReport`
 - `./gradlew :app:generateBaselineProfile`
 
 Julkaisuvalmiuden muistilista:
 
 - pidä dependency-check kehitysvaiheessa manuaalisena, mutta dokumentoi ennen julkaisua puhtaan koneen komento ja tarvittavat `DEPENDENCY_CHECK_AUTO_UPDATE` / `NVD_API_KEY` -odotukset
 - päätä ennen julkaisua, jääkö Baseline Profile manuaaliseksi vai lisätäänkö sille emulaattori-/managed-device-polku CI:hin
-- pidä `ktlintCheck` pakollisena CI:ssä; nykyinen build-workflow ajaa `./gradlew :app:ktlintCheck`
+- pidä `ktlintCheck`, detekt ja Android lint pakollisina CI:ssä; nykyinen build-workflow ajaa `assembleDebug`, `test`, `:app:ktlintCheck`, `:app:detekt` ja `lint`
+- CodeQL-workflow on manuaalibuildinen Java/Kotlin-analyysi ja rakentaa `assembleDebug --no-daemon`
 
 Älä käytä agenttityössä käyttäjän wrapper-skriptejä `lint-check` tai `security-check`.
 
@@ -839,7 +919,7 @@ Julkaisuvalmiuden muistilista:
 
 - saved patterns
 - my yarn / yarn cards
-- OCR + Gemini/Nano-pohjainen yarn label -skannaus
+- `ProFeature.OCR`-nimellä gatettu yarn label -skannaus, jonka nykyinen toteutus on Gemini-multimodaalinen `YarnLabelGeminiScanner`
 - all photos
 - multi-select batch-poistot
 - reference-näkymät: needles, size charts, abbreviations, chart symbols
@@ -857,14 +937,16 @@ Julkaisuvalmiuden muistilista:
 - ajankäyttö
 - tahtimittarit
 - charts/heatmap/streak-tyyppiset näkymät
-- debug-build voi näyttää placeholder-projektidataa charttiin, jos oikeaa sessiodataa ei vielä ole
+- Pro-gating tyhjentää chart-listat non-Pro-tilassa, mutta perusmittarit lasketaan edelleen `InsightsUiState`en
+- debug-build näyttää footer-tekstin myös ilman sessiodataa; chartit eivät rakenna keksittyä placeholder-dataa
 
 ### AI ja ääni
 
 - klassinen voice command -flow
 - Live API -voice flow
 - AI-päiväkirjamerkinnät muistiinpanoihin
-- Gemini/Nano-pohjaiset parserit
+- Gemini-skeemavastaukset pattern-, yarn-label- ja voice-tulkinnoissa
+- Nano/regex-pohjainen pasted instruction -parseri laskureiden avuksi
 
 ### Monetisaatio
 
@@ -876,10 +958,12 @@ Julkaisuvalmiuden muistilista:
 
 Näihin kannattaa suhtautua epäluuloisesti vanhoissa dokumenteissa:
 
-- Room schema version: nykyinen on `9`, ei `8` tai `7`
+- build-versiot muuttuvat usein `gradle/libs.versions.toml`-tiedostossa; älä kopioi niitä muistista
 - `allowBackup`: nykyinen on `false`, ei `true`
-- voice-parserin local count-range: käytännössä `1–20`, ei `1–100`
+- Room schema version: nykyinen on `11`; tarkista aina `KnitToolsDatabase.version` ja `app/schemas/...`
+- voice-parserin paikallinen sanallinen range riippuu kielestä, mutta numerot hyväksytään `1..100`
 - widgetit eivät ole enää pelkkä basic counter-preview vaan niissä on oma state-sync ja viimeistelty kortti-UI
+- yarn label -skannaus ei nykykoodissa enää ole OCR -> Nano -putki, vaikka ProFeature-nimi on yhä `OCR`
 - `README.md` ei ole nykytilan source of truth
 
 ## Suhde muihin dokumentteihin

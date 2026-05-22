@@ -1528,7 +1528,7 @@ class CounterViewModel
                 }
 
                 // Kiintiötarkistus
-                if (!aiQuotaManager.hasVoiceQuota()) {
+                if (!aiQuotaManager.tryReserveVoiceCall()) {
                     _voiceResponse.tryEmit(context.getString(R.string.voice_quota_monthly_exhausted))
                     return@launch
                 }
@@ -1576,8 +1576,11 @@ class CounterViewModel
                             .toLanguageTag(),
                     )
 
-                aiQuotaManager.recordVoiceCall()
-                // Älä tallenna epäonnistuneita tuloksia välimuistiin
+                if (action == AiVoiceAction.Unknown) {
+                    aiQuotaManager.refundReservedVoiceCall()
+                    _voiceResponse.tryEmit(executeVoiceAction(action))
+                    return@launch
+                }
                 if (action != AiVoiceAction.Unknown) {
                     voiceCommandCache[normalizedText] = action
                 }

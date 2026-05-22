@@ -43,7 +43,7 @@ class CounterSummaryGenerator
                     ?: return CounterSummaryResult.Failure(context.getString(R.string.ai_summary_fallback))
             val data = buildProjectData(projectId, state)
 
-            if (!aiQuotaManager.hasQuota()) {
+            if (!aiQuotaManager.tryReserveCall()) {
                 return CounterSummaryResult.Failure(context.getString(R.string.ai_quota_exhausted))
             }
 
@@ -54,9 +54,9 @@ class CounterSummaryGenerator
                     .promptLanguageName()
             val aiSummary = ProjectSummarizer.summarize(geminiAiService, data, language)
             return if (aiSummary != null) {
-                aiQuotaManager.recordCall()
                 CounterSummaryResult.Success(aiSummary)
             } else {
+                aiQuotaManager.refundReservedCall()
                 CounterSummaryResult.Fallback(
                     summary = ProjectSummarizer.simpleSummary(data),
                     error = context.getString(R.string.ai_summary_fallback),

@@ -21,7 +21,7 @@ import org.junit.Test
 
 class PatternInstructionRepositoryTest {
     private val geminiAiService: GeminiAiService = mockk()
-    private val aiQuotaManager: AiQuotaManager = mockk()
+    private val aiQuotaManager: AiQuotaManager = mockk(relaxed = true)
     private val preferencesManager: PreferencesManager = mockk()
     private val networkStatusProvider: NetworkStatusProvider = mockk()
     private val proManager: ProManager = mockk()
@@ -42,15 +42,15 @@ class PatternInstructionRepositoryTest {
         runTest {
             val repository = createRepository()
             val bitmap: Bitmap = mockk()
-            coEvery { aiQuotaManager.hasQuota() } returns false
-            coEvery { geminiAiService.generateFromImage(any(), any()) } returns
+            coEvery { aiQuotaManager.tryReserveCall() } returns false
+            coEvery { geminiAiService.generateJsonFromImage(any(), any(), any()) } returns
                 """{"instruction": "K1, P1", "positionPercent": 20}"""
 
             val result = repository.getInstruction(bitmap, rowNumber = 4)
 
             assertNull(result)
-            coVerify(exactly = 0) { geminiAiService.generateFromImage(any(), any()) }
-            coVerify(exactly = 0) { aiQuotaManager.recordCall() }
+            coVerify(exactly = 0) { geminiAiService.generateJsonFromImage(any(), any(), any()) }
+            coVerify(exactly = 0) { aiQuotaManager.refundReservedCall() }
         }
 
     @Test
@@ -58,14 +58,43 @@ class PatternInstructionRepositoryTest {
         runTest {
             val repository = createRepository()
             every { preferencesManager.preferences } returns flowOf(AppPreferences())
-            coEvery { aiQuotaManager.hasQuota() } returns false
+            coEvery { aiQuotaManager.tryReserveCall() } returns false
             coEvery { geminiAiService.explainInstruction(any(), any()) } returns "Explained"
 
             val result = repository.explainInstruction("K1, P1")
 
             assertNull(result)
             coVerify(exactly = 0) { geminiAiService.explainInstruction(any(), any()) }
-            coVerify(exactly = 0) { aiQuotaManager.recordCall() }
+            coVerify(exactly = 0) { aiQuotaManager.refundReservedCall() }
+        }
+
+    @Test
+    fun `getInstruction refunds reserved quota when Gemini response is not parseable`() =
+        runTest {
+            val repository = createRepository()
+            val bitmap: Bitmap = mockk()
+            coEvery { aiQuotaManager.tryReserveCall() } returns true
+            coEvery { geminiAiService.generateJsonFromImage(any(), any(), any()) } returns "not json"
+
+            val result = repository.getInstruction(bitmap, rowNumber = 4)
+
+            assertNull(result)
+            coVerify(exactly = 1) { aiQuotaManager.refundReservedCall() }
+        }
+
+    @Test
+    fun `combineInstructions refunds reserved quota when Gemini combine fails`() =
+        runTest {
+            val repository = createRepository()
+            val bitmap: Bitmap = mockk()
+            every { networkStatusProvider.isOnline() } returns true
+            coEvery { aiQuotaManager.tryReserveCall() } returns true
+            coEvery { geminiAiService.combineInstructions(bitmap) } returns null
+
+            val result = repository.combineInstructions(bitmap)
+
+            assertSame(CombineInstructionsOutcome.Failed, result)
+            coVerify(exactly = 1) { aiQuotaManager.refundReservedCall() }
         }
 
     @Test
@@ -77,9 +106,9 @@ class PatternInstructionRepositoryTest {
             val result = repository.getInstruction(bitmap, rowNumber = 4)
 
             assertNull(result)
-            coVerify(exactly = 0) { aiQuotaManager.hasQuota() }
-            coVerify(exactly = 0) { geminiAiService.generateFromImage(any(), any()) }
-            coVerify(exactly = 0) { aiQuotaManager.recordCall() }
+            coVerify(exactly = 0) { aiQuotaManager.tryReserveCall() }
+            coVerify(exactly = 0) { geminiAiService.generateJsonFromImage(any(), any(), any()) }
+            coVerify(exactly = 0) { aiQuotaManager.refundReservedCall() }
         }
 
     @Test
@@ -90,9 +119,9 @@ class PatternInstructionRepositoryTest {
             val result = repository.explainInstruction("K1, P1")
 
             assertNull(result)
-            coVerify(exactly = 0) { aiQuotaManager.hasQuota() }
+            coVerify(exactly = 0) { aiQuotaManager.tryReserveCall() }
             coVerify(exactly = 0) { geminiAiService.explainInstruction(any(), any()) }
-            coVerify(exactly = 0) { aiQuotaManager.recordCall() }
+            coVerify(exactly = 0) { aiQuotaManager.refundReservedCall() }
         }
 
     @Test
@@ -105,8 +134,8 @@ class PatternInstructionRepositoryTest {
 
             assertSame(CombineInstructionsOutcome.FeatureUnavailable, result)
             verify(exactly = 0) { networkStatusProvider.isOnline() }
-            coVerify(exactly = 0) { aiQuotaManager.hasQuota() }
+            coVerify(exactly = 0) { aiQuotaManager.tryReserveCall() }
             coVerify(exactly = 0) { geminiAiService.combineInstructions(any()) }
-            coVerify(exactly = 0) { aiQuotaManager.recordCall() }
+            coVerify(exactly = 0) { aiQuotaManager.refundReservedCall() }
         }
 }

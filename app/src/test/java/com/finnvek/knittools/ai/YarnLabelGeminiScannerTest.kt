@@ -91,6 +91,11 @@ class YarnLabelGeminiScannerTest {
     }
 
     @Test
+    fun `parseResponse returns null when payload has no extracted label data`() {
+        assertNull(YarnLabelGeminiScanner.parseResponse("""{}"""))
+    }
+
+    @Test
     fun `parseResponse ignores unsupported weight category`() {
         val json =
             """

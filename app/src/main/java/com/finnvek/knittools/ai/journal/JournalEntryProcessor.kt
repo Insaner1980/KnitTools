@@ -46,7 +46,7 @@ class JournalEntryProcessor
             if (!proManager.hasFeature(ProFeature.AI_FEATURES)) {
                 return JournalProcessResult.Fallback(trimmed, JournalProcessResult.Fallback.Reason.NoPro)
             }
-            if (!aiQuotaManager.hasQuota()) {
+            if (!aiQuotaManager.tryReserveCall()) {
                 return JournalProcessResult.Fallback(trimmed, JournalProcessResult.Fallback.Reason.QuotaExhausted)
             }
 
@@ -55,9 +55,9 @@ class JournalEntryProcessor
             val cleaned = response?.let { postProcess(it) }
 
             return if (cleaned.isNullOrBlank()) {
+                aiQuotaManager.refundReservedCall()
                 JournalProcessResult.Fallback(trimmed, JournalProcessResult.Fallback.Reason.ApiError)
             } else {
-                aiQuotaManager.recordCall()
                 JournalProcessResult.Success(cleaned)
             }
         }

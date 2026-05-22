@@ -29,7 +29,11 @@ object ProjectSummarizer {
         geminiAiService: GeminiAiService,
         data: ProjectData,
         responseLanguage: String = "English",
-    ): String? = geminiAiService.generateText(buildPrompt(data, responseLanguage))
+    ): String? =
+        geminiAiService
+            .generateText(buildPrompt(data, responseLanguage))
+            ?.trim()
+            ?.takeIf { it.isNotBlank() }
 
     internal fun buildPrompt(
         data: ProjectData,

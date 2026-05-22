@@ -1,6 +1,7 @@
 package com.finnvek.knittools.ai
 
 import android.graphics.Bitmap
+import com.google.firebase.ai.type.Schema
 import org.json.JSONObject
 
 /**
@@ -8,6 +9,19 @@ import org.json.JSONObject
  * Yksi multimodal-kutsu korvaa vanhan OCR → Nano -putken.
  */
 object YarnLabelGeminiScanner {
+    private const val DRY_CLEAN = "dry clean"
+    private val SUPPORTED_WEIGHT_CATEGORIES =
+        listOf(
+            "LACE",
+            "FINGERING",
+            "SPORT",
+            "DK",
+            "WORSTED",
+            "ARAN",
+            "BULKY",
+            "SUPER_BULKY",
+        )
+
     private val PROMPT =
         """
         You are a yarn label reader. Analyze this photo of a yarn label and extract all visible information.
@@ -47,7 +61,7 @@ object YarnLabelGeminiScanner {
         geminiAiService: GeminiAiService,
         bitmap: Bitmap,
     ): ParsedYarnLabel? {
-        val response = geminiAiService.generateFromImage(bitmap, PROMPT) ?: return null
+        val response = geminiAiService.generateJsonFromImage(bitmap, PROMPT, RESPONSE_SCHEMA) ?: return null
         return parseResponse(response)
     }
 
@@ -74,7 +88,7 @@ object YarnLabelGeminiScanner {
                 colorNumber = json.optStringOrEmpty("colorNumber"),
                 dyeLot = json.optStringOrEmpty("dyeLot"),
                 careSymbols = parseCareSymbols(json.optStringOrEmpty("careInstructions")),
-            )
+            ).takeIf { it.hasExtractedData }
         } catch (_: Exception) {
             null
         }
@@ -98,18 +112,20 @@ object YarnLabelGeminiScanner {
 
     private fun formatNeedle(mm: Double): String = if (mm == mm.toLong().toDouble()) "${mm.toLong()}mm" else "${mm}mm"
 
-    private const val DRY_CLEAN = "dry clean"
-    private val SUPPORTED_WEIGHT_CATEGORIES =
-        setOf(
-            "LACE",
-            "FINGERING",
-            "SPORT",
-            "DK",
-            "WORSTED",
-            "ARAN",
-            "BULKY",
-            "SUPER_BULKY",
-        )
+    private val ParsedYarnLabel.hasExtractedData: Boolean
+        get() =
+            brand.isNotBlank() ||
+                yarnName.isNotBlank() ||
+                fiberContent.isNotBlank() ||
+                weightGrams.isNotBlank() ||
+                lengthMeters.isNotBlank() ||
+                needleSize.isNotBlank() ||
+                gaugeInfo.isNotBlank() ||
+                colorName.isNotBlank() ||
+                colorNumber.isNotBlank() ||
+                dyeLot.isNotBlank() ||
+                weightCategory.isNotBlank() ||
+                careSymbols != 0L
 
     private fun parseCareSymbols(instructions: String): Long {
         val text = instructions.lowercase()
@@ -209,4 +225,43 @@ object YarnLabelGeminiScanner {
         if (!has(key) || isNull(key)) return null
         return optDouble(key).takeIf { !it.isNaN() && it != 0.0 }
     }
+
+    private val RESPONSE_SCHEMA =
+        Schema.obj(
+            properties =
+                mapOf(
+                    "brand" to Schema.string(nullable = true),
+                    "name" to Schema.string(nullable = true),
+                    "fiberContent" to Schema.string(nullable = true),
+                    "weightCategory" to
+                        Schema.enumeration(SUPPORTED_WEIGHT_CATEGORIES, nullable = true),
+                    "metersPerSkein" to Schema.integer(nullable = true, minimum = 0.0),
+                    "gramsPerSkein" to Schema.integer(nullable = true, minimum = 0.0),
+                    "recommendedNeedleMm" to Schema.double(nullable = true, minimum = 0.0),
+                    "gaugeStitches" to Schema.integer(nullable = true, minimum = 0.0),
+                    "gaugeRows" to Schema.integer(nullable = true, minimum = 0.0),
+                    "colorName" to Schema.string(nullable = true),
+                    "colorNumber" to Schema.string(nullable = true),
+                    "dyeLot" to Schema.string(nullable = true),
+                    "careInstructions" to Schema.string(nullable = true),
+                    "error" to Schema.enumeration(listOf("not_a_yarn_label"), nullable = true),
+                ),
+            optionalProperties =
+                listOf(
+                    "brand",
+                    "name",
+                    "fiberContent",
+                    "weightCategory",
+                    "metersPerSkein",
+                    "gramsPerSkein",
+                    "recommendedNeedleMm",
+                    "gaugeStitches",
+                    "gaugeRows",
+                    "colorName",
+                    "colorNumber",
+                    "dyeLot",
+                    "careInstructions",
+                    "error",
+                ),
+        )
 }

@@ -145,7 +145,7 @@ class YarnCardViewModelTest {
                 )
             val photoUri = mockk<Uri>()
             every { photoUri.toString() } returns "content://scan/inactive-before"
-            coEvery { aiQuotaManager.hasQuota() } returns true
+            coEvery { aiQuotaManager.tryReserveCall() } returns true
             coEvery { scanRepository.scanLabel(photoUri) } returns parsed
             every { proManager.hasFeature(ProFeature.OCR) } returns true
             val vm = createViewModel()
@@ -175,7 +175,7 @@ class YarnCardViewModelTest {
                 )
             val photoUri = mockk<Uri>()
             every { photoUri.toString() } returns "content://scan/inactive-after"
-            coEvery { aiQuotaManager.hasQuota() } returns true
+            coEvery { aiQuotaManager.tryReserveCall() } returns true
             every { proManager.hasFeature(ProFeature.OCR) } returns true
             lateinit var vm: YarnCardViewModel
             coEvery { scanRepository.scanLabel(photoUri) } coAnswers {
@@ -290,7 +290,7 @@ class YarnCardViewModelTest {
 
             assertEquals(false, vm.formState.value.isScanning)
             assertEquals(false, navigatedToReview)
-            coVerify(exactly = 0) { aiQuotaManager.hasQuota() }
+            coVerify(exactly = 0) { aiQuotaManager.tryReserveCall() }
             coVerify(exactly = 0) { scanRepository.scanLabel(any()) }
         }
 
@@ -298,7 +298,7 @@ class YarnCardViewModelTest {
     fun `quota exhausted deletes captured photo`() =
         runTest {
             every { proManager.hasFeature(ProFeature.OCR) } returns true
-            coEvery { aiQuotaManager.hasQuota() } returns false
+            coEvery { aiQuotaManager.tryReserveCall() } returns false
             every { context.getString(R.string.ai_quota_exhausted) } returns "Quota exhausted"
             val photoUri = mockk<Uri>()
             every { photoUri.toString() } returns "content://scan/quota"
@@ -315,7 +315,7 @@ class YarnCardViewModelTest {
     fun `failed scan deletes captured photo`() =
         runTest {
             every { proManager.hasFeature(ProFeature.OCR) } returns true
-            coEvery { aiQuotaManager.hasQuota() } returns true
+            coEvery { aiQuotaManager.tryReserveCall() } returns true
             val photoUri = mockk<Uri>()
             every { photoUri.toString() } returns "content://scan/failed"
             coEvery { scanRepository.scanLabel(photoUri) } returns null
@@ -325,6 +325,7 @@ class YarnCardViewModelTest {
             advanceUntilIdle()
 
             verify { scanRepository.deleteScanPhoto("content://scan/failed") }
+            coVerify(exactly = 1) { aiQuotaManager.refundReservedCall() }
         }
 
     @Test

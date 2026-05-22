@@ -24,20 +24,21 @@ class JournalEntryProcessorTest {
         val pro = mockk<ProManager>()
         every { pro.hasFeature(ProFeature.AI_FEATURES) } returns isPro
         val quota = mockk<AiQuotaManager>(relaxed = true)
-        coEvery { quota.hasQuota() } returns hasQuota
+        coEvery { quota.tryReserveCall() } returns hasQuota
         val gemini = mockk<GeminiAiService>()
         coEvery { gemini.generateText(any()) } returns aiResponse
         return Triple(JournalEntryProcessor(gemini, quota, pro), quota, gemini)
     }
 
     @Test
-    fun `success path returns cleaned text and records call`() =
+    fun `success path returns cleaned text and keeps reserved quota`() =
         runTest {
             val (processor, quota, _) = build(aiResponse = "Vaihdoin puikot pienemmäksi.")
             val result = processor.process("vaihdoin puikot pienemmäksi")
             assertTrue(result is JournalProcessResult.Success)
             assertEquals("Vaihdoin puikot pienemmäksi.", (result as JournalProcessResult.Success).cleaned)
-            coVerify(exactly = 1) { quota.recordCall() }
+            coVerify(exactly = 1) { quota.tryReserveCall() }
+            coVerify(exactly = 0) { quota.refundReservedCall() }
         }
 
     @Test
@@ -52,7 +53,8 @@ class JournalEntryProcessorTest {
             )
             assertEquals("typed note", result.raw)
             coVerify(exactly = 0) { gemini.generateText(any()) }
-            coVerify(exactly = 0) { quota.recordCall() }
+            coVerify(exactly = 0) { quota.tryReserveCall() }
+            coVerify(exactly = 0) { quota.refundReservedCall() }
         }
 
     @Test
@@ -65,11 +67,12 @@ class JournalEntryProcessorTest {
                 JournalProcessResult.Fallback.Reason.QuotaExhausted,
                 (result as JournalProcessResult.Fallback).reason,
             )
-            coVerify(exactly = 0) { quota.recordCall() }
+            coVerify(exactly = 1) { quota.tryReserveCall() }
+            coVerify(exactly = 0) { quota.refundReservedCall() }
         }
 
     @Test
-    fun `null AI response returns ApiError fallback`() =
+    fun `null AI response returns ApiError fallback and refunds quota`() =
         runTest {
             val (processor, quota, _) = build(aiResponse = null)
             val result = processor.process("typed note")
@@ -78,19 +81,21 @@ class JournalEntryProcessorTest {
                 JournalProcessResult.Fallback.Reason.ApiError,
                 (result as JournalProcessResult.Fallback).reason,
             )
-            coVerify(exactly = 0) { quota.recordCall() }
+            coVerify(exactly = 1) { quota.tryReserveCall() }
+            coVerify(exactly = 1) { quota.refundReservedCall() }
         }
 
     @Test
-    fun `blank AI response returns ApiError fallback`() =
+    fun `blank AI response returns ApiError fallback and refunds quota`() =
         runTest {
-            val (processor, _, _) = build(aiResponse = "   \n  ")
+            val (processor, quota, _) = build(aiResponse = "   \n  ")
             val result = processor.process("typed note")
             assertTrue(result is JournalProcessResult.Fallback)
             assertEquals(
                 JournalProcessResult.Fallback.Reason.ApiError,
                 (result as JournalProcessResult.Fallback).reason,
             )
+            coVerify(exactly = 1) { quota.refundReservedCall() }
         }
 
     @Test
@@ -109,7 +114,7 @@ class JournalEntryProcessorTest {
             val captured = mutableListOf<String>()
             coEvery { gemini.generateText(capture(captured)) } returns "ok"
             val quota = mockk<AiQuotaManager>(relaxed = true)
-            coEvery { quota.hasQuota() } returns true
+            coEvery { quota.tryReserveCall() } returns true
             val pro = mockk<ProManager>()
             every { pro.hasFeature(ProFeature.AI_FEATURES) } returns true
             val processor = JournalEntryProcessor(gemini, quota, pro)

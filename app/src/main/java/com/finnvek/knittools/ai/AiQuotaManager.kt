@@ -44,6 +44,40 @@ class AiQuotaManager
         }
 
         /**
+         * Varaa yhden AI-kutsun atomisesti ennen Gemini-kutsua.
+         * Jos kutsu epäonnistuu tai vastaus ei ole käyttökelpoinen, palauta varaus
+         * [refundReservedCall]-metodilla.
+         */
+        suspend fun tryReserveCall(): Boolean {
+            val currentMonth = YearMonth.now().toString()
+            var reserved = false
+            val saved =
+                context.aiQuotaStore.editPreferencesSafely("AI-kiintiövarauksen tallennus") { prefs ->
+                    val storedMonth = prefs[KEY_MONTH_KEY]
+                    if (storedMonth != currentMonth) {
+                        prefs[KEY_MONTH_KEY] = currentMonth
+                        prefs[KEY_CALLS_THIS_MONTH] = 0
+                    }
+                    val current = prefs[KEY_CALLS_THIS_MONTH] ?: 0
+                    val extras = prefs[KEY_EXTRA_CREDITS] ?: 0
+                    if (current < MONTHLY_ALLOWANCE + extras) {
+                        prefs[KEY_CALLS_THIS_MONTH] = current + 1
+                        reserved = true
+                    }
+                }
+            return saved && reserved
+        }
+
+        suspend fun refundReservedCall() {
+            val currentMonth = YearMonth.now().toString()
+            context.aiQuotaStore.editPreferencesSafely("AI-kiintiövarauksen palautus") { prefs ->
+                if (prefs[KEY_MONTH_KEY] != currentMonth) return@editPreferencesSafely
+                val current = prefs[KEY_CALLS_THIS_MONTH] ?: 0
+                prefs[KEY_CALLS_THIS_MONTH] = (current - 1).coerceAtLeast(0)
+            }
+        }
+
+        /**
          * Kirjaa yhden AI-kutsun. Kutsu tätä jokaisen onnistuneen Gemini-kutsun jälkeen.
          */
         suspend fun recordCall() {
@@ -84,6 +118,10 @@ class AiQuotaManager
          * Tarkistaa onko ääni-AI-kiintiötä jäljellä (sama kuukausikiintiö kuin muille AI-kutsuille).
          */
         suspend fun hasVoiceQuota(): Boolean = hasQuota()
+
+        suspend fun tryReserveVoiceCall(): Boolean = tryReserveCall()
+
+        suspend fun refundReservedVoiceCall() = refundReservedCall()
 
         /**
          * Kirjaa yhden ääni-AI-kutsun kuukausikiintiöön.

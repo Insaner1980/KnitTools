@@ -219,14 +219,20 @@ class YarnCardViewModel
                 if (!isActiveScanOrDeletePhoto(scanRequestId, photoUri)) return@launch
                 _formState.update { it.copy(isScanning = true, scanError = null) }
 
-                if (!hasQuotaForActiveScan(scanRequestId)) {
+                if (!reserveQuotaForActiveScan(scanRequestId)) {
                     deletePhotoFile(photoUri.toString())
                     return@launch
                 }
-                if (!isActiveScanOrDeletePhoto(scanRequestId, photoUri)) return@launch
+                if (!isActiveScanOrDeletePhoto(scanRequestId, photoUri)) {
+                    aiQuotaManager.refundReservedCall()
+                    return@launch
+                }
 
                 val parsed = scanRepository.scanLabel(photoUri)
-                if (!isActiveScanOrDeletePhoto(scanRequestId, photoUri)) return@launch
+                if (!isActiveScanOrDeletePhoto(scanRequestId, photoUri)) {
+                    aiQuotaManager.refundReservedCall()
+                    return@launch
+                }
                 finishActiveScan(scanRequestId, parsed, photoUri, onSuccess)
             }
         }
@@ -236,10 +242,13 @@ class YarnCardViewModel
             _formState.update { it.copy(isScanning = false, scanError = null) }
         }
 
-        private suspend fun hasQuotaForActiveScan(scanRequestId: Long): Boolean {
-            val hasQuota = aiQuotaManager.hasQuota()
-            if (!isActiveScan(scanRequestId)) return false
-            if (hasQuota) return true
+        private suspend fun reserveQuotaForActiveScan(scanRequestId: Long): Boolean {
+            val reserved = aiQuotaManager.tryReserveCall()
+            if (!isActiveScan(scanRequestId)) {
+                if (reserved) aiQuotaManager.refundReservedCall()
+                return false
+            }
+            if (reserved) return true
             _formState.update {
                 it.copy(
                     isScanning = false,
@@ -256,6 +265,7 @@ class YarnCardViewModel
             onSuccess: () -> Unit,
         ) {
             if (parsed == null) {
+                aiQuotaManager.refundReservedCall()
                 deletePhotoFile(photoUri.toString())
                 _formState.update {
                     it.copy(
@@ -266,8 +276,10 @@ class YarnCardViewModel
                 return
             }
 
-            aiQuotaManager.recordCall()
-            if (!isActiveScanOrDeletePhoto(scanRequestId, photoUri)) return
+            if (!isActiveScanOrDeletePhoto(scanRequestId, photoUri)) {
+                aiQuotaManager.refundReservedCall()
+                return
+            }
             loadFromScan(parsed, photoUri)
             onSuccess()
         }

@@ -104,13 +104,13 @@ Use [`CLAUDE.md`](/home/emma/dev/KnitTools/CLAUDE.md) when product wording, visu
 <claude-mem-context>
 # Memory Context
 
-# [KnitTools] recent context, 2026-05-20 6:10pm GMT+3
+# [KnitTools] recent context, 2026-05-21 5:42pm GMT+3
 
 Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision 🚨security_alert 🔐security_note
 Format: ID TIME TYPE TITLE
 Fetch details: get_observations([IDs]) | Search: mem-search skill
 
-Stats: 50 obs (18,146t read) | 3,413,424t work | 99% savings
+Stats: 50 obs (18,358t read) | 3,443,737t work | 99% savings
 
 ### Apr 30, 2026
 S448 Investigating lint-check script failures on Windows and discovering hidden Android Lint issues (Apr 30, 11:19 PM)
@@ -118,7 +118,6 @@ S448 Investigating lint-check script failures on Windows and discovering hidden 
 S679 Document KnitTools app online/offline capabilities after discovering user's assumption about voice commands was incorrect (May 4, 4:12 PM)
 ### May 9, 2026
 5307 2:50a 🔵 Baseline profile module minSdk lower than app module minSdk
-5310 " 🔵 Baseline Profile Module Has Lower minSdk Than App Module
 5319 2:56a ✅ Updated baselineprofile minSdk to match app minimum SDK level
 5320 " ✅ Updated Firebase BoM and ML Kit GenAI Prompt to newer releases
 ### May 12, 2026
@@ -162,10 +161,7 @@ S679 Document KnitTools app online/offline capabilities after discovering user's
 5418 10:27p 🚨 Removed Firebase config file from entire Git history
 ### May 18, 2026
 5398 12:25a ✅ Disabled ossIndex analyzer in OWASP dependency-check configuration
-**5400** 12:28a 🔵 **OSV-scanner scans verification-metadata.xml containing build-time dependencies not in runtime classpath**
-Investigation of osv-scanner FAILED (1) exit code revealed that osv-scanner scans gradle/verification-metadata.xml as a lockfile, which captures all Gradle dependency resolution metadata including buildscript classpath, test dependencies, and plugin dependencies—not just the app's runtime dependencies. The scan found CVEs in logback-core 1.3.14 (arbitrary code execution), netty packages (multiple CVEs), bouncycastle 1.79 (LDAP injection, timing channel), jdom2 2.0.6 (XXE), commons-lang3 3.16.0, and httpclient 4.5.6. However, running `./gradlew :app:dependencyInsight` on these packages confirmed they are NOT present in the app's debugRuntimeClasspath—they exist only in the verification metadata from build-time resolution. The only runtime vulnerability found is guava 31.0.1-jre (CVE exposing potential security issues), which enters the runtime classpath transitively: ML Kit GenAI Prompt → kotlinx-coroutines-guava:1.10.2 → guava:31.0.1-jre. This explains why osv-scanner reports many more vulnerabilities than are actually exploitable in the shipped app—it's scanning the complete Gradle dependency graph, not just the runtime attack surface.
-~492t 🔍 31,199
-
+5400 12:28a 🔵 OSV-scanner scans verification-metadata.xml containing build-time dependencies not in runtime classpath
 5403 " 🔴 OSV scanner failure fixed by upgrading Guava and filtering verification metadata
 5407 " 🚨 OSV Scanner Detected Vulnerability in KnitTools Dependencies
 5408 " 🔴 OSV scanner now passes by filtering Gradle verification metadata
@@ -195,6 +191,11 @@ An osv-scan script was created to check dependencies but did not function as exp
 Memory search revealed this osv-scanner filtering issue is a documented recurring pattern across multiple Android projects in this workspace. Previous KnitTools security-check work (Task 2 from 2026-05-17) fixed the same issue by creating gradle/osv-scanner.toml to exclude verification-metadata.xml entries and confirmed OWASP dependency-check as the appropriate tool for runtime dependency CVE scanning. The dBcheck project encountered identical behavior (2026-05-17 Task 2) where osv-scanner misread verification-metadata as application dependencies. The established solution pattern is: configure osv-scanner.toml to ignore Gradle metadata files, verify reports/osv.json shows results=0, and rely on OWASP dependency-check for actual runtime dependency scanning.
 ~385t 🔍 7,436
 
+### May 21, 2026
+**5505** 2:57p 🔵 **Two Dependabot PRs blocked by missing Gradle verification-metadata.xml entries**
+When investigating "korjaa kaikki, githubissa" for KnitTools, three open Dependabot PRs were found. PR #20 (deepsec 2.0.9) passes CI, but PR #21 (coil-compose 3.1.0 → 3.4.0) and PR #23 (org.json 20240303 → 20251224) both fail during the build step with Gradle dependency verification errors. The failures occur because Dependabot bumps versions in gradle/libs.versions.toml but does not update gradle/verification-metadata.xml with SHA-256 hashes for the new artifacts. PR #21 requires verification entries for 31 artifacts including the new coil 3.4.0 family and transitive Compose Multiplatform 1.9.3 dependencies (animation, foundation, lifecycle, savedstate, ui). The fix requires running `./gradlew --write-verification-metadata sha256 help` or similar to regenerate verification-metadata.xml with the new dependency hashes. The GitHub Actions gh-fix-ci Python script encountered Unicode decode errors when attempting to extract logs automatically, so manual gh CLI commands were used instead.
+~515t 🔍 145,671
 
-Access 3413k tokens of past work via get_observations([IDs]) or mem-search skill.
+
+Access 3444k tokens of past work via get_observations([IDs]) or mem-search skill.
 </claude-mem-context>

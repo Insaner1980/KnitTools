@@ -1,6 +1,7 @@
 package com.finnvek.knittools.ai
 
 import android.graphics.Bitmap
+import com.google.firebase.ai.type.Schema
 import org.json.JSONObject
 
 data class CombinedRow(
@@ -51,7 +52,9 @@ object PatternInstructionCombinerGemini {
         geminiAiService: GeminiAiService,
         pageBitmap: Bitmap,
     ): CombinedInstructionResult? {
-        val response = geminiAiService.generateFromImage(pageBitmap, buildPrompt()) ?: return null
+        val response =
+            geminiAiService.generateJsonFromImage(pageBitmap, buildPrompt(), RESPONSE_SCHEMA)
+                ?: return null
         return parseResponse(response)
     }
 
@@ -107,4 +110,27 @@ object PatternInstructionCombinerGemini {
             null
         }
     }
+
+    private val ROW_SCHEMA =
+        Schema.obj(
+            properties =
+                mapOf(
+                    "row" to Schema.integer(minimum = 1.0),
+                    "side" to Schema.enumeration(listOf("RS", "WS"), nullable = true),
+                    "instruction" to Schema.string(),
+                ),
+            optionalProperties = listOf("side"),
+        )
+
+    private val RESPONSE_SCHEMA =
+        Schema.obj(
+            properties =
+                mapOf(
+                    "found" to Schema.boolean(),
+                    "title" to Schema.string(nullable = true),
+                    "startRow" to Schema.integer(nullable = true, minimum = 1.0),
+                    "rows" to Schema.array(ROW_SCHEMA),
+                ),
+            optionalProperties = listOf("title", "startRow", "rows"),
+        )
 }

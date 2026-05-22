@@ -1,6 +1,7 @@
 package com.finnvek.knittools.ai
 
 import android.graphics.Bitmap
+import com.google.firebase.ai.type.Schema
 import org.json.JSONObject
 
 /**
@@ -41,7 +42,7 @@ object PatternInstructionGemini {
         rowNumber: Int,
     ): InstructionResult? {
         val response =
-            geminiAiService.generateFromImage(pageBitmap, buildPrompt(rowNumber))
+            geminiAiService.generateJsonFromImage(pageBitmap, buildPrompt(rowNumber), RESPONSE_SCHEMA)
                 ?: return null
         return parseResponse(response)
     }
@@ -73,4 +74,13 @@ object PatternInstructionGemini {
             null
         }
     }
+
+    private val RESPONSE_SCHEMA =
+        Schema.obj(
+            properties =
+                mapOf(
+                    "instruction" to Schema.string(nullable = true),
+                    "positionPercent" to Schema.integer(nullable = true, minimum = 0.0, maximum = 100.0),
+                ),
+        )
 }

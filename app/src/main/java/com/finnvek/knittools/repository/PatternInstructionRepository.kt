@@ -42,7 +42,7 @@ class PatternInstructionRepository
             rowNumber: Int,
         ): PatternInstructionGemini.InstructionResult? {
             if (!proManager.hasFeature(ProFeature.AI_FEATURES)) return null
-            if (!aiQuotaManager.hasQuota()) return null
+            if (!aiQuotaManager.tryReserveCall()) return null
 
             val result =
                 PatternInstructionGemini.getInstruction(
@@ -50,15 +50,15 @@ class PatternInstructionRepository
                     pageBitmap = pageBitmap,
                     rowNumber = rowNumber,
                 )
-            if (result != null) {
-                aiQuotaManager.recordCall()
+            if (result == null) {
+                aiQuotaManager.refundReservedCall()
             }
             return result
         }
 
         suspend fun explainInstruction(instructionText: String): String? {
             if (!proManager.hasFeature(ProFeature.AI_FEATURES)) return null
-            if (!aiQuotaManager.hasQuota()) return null
+            if (!aiQuotaManager.tryReserveCall()) return null
 
             val language =
                 preferencesManager.preferences
@@ -66,8 +66,8 @@ class PatternInstructionRepository
                     .appLanguage
                     .promptLanguageName()
             val result = geminiAiService.explainInstruction(instructionText, language)
-            if (result != null) {
-                aiQuotaManager.recordCall()
+            if (result == null) {
+                aiQuotaManager.refundReservedCall()
             }
             return result
         }
@@ -75,12 +75,14 @@ class PatternInstructionRepository
         suspend fun combineInstructions(pageBitmap: Bitmap): CombineInstructionsOutcome {
             if (!proManager.hasFeature(ProFeature.AI_FEATURES)) return CombineInstructionsOutcome.FeatureUnavailable
             if (!networkStatusProvider.isOnline()) return CombineInstructionsOutcome.Offline
-            if (!aiQuotaManager.hasQuota()) return CombineInstructionsOutcome.QuotaExhausted
+            if (!aiQuotaManager.tryReserveCall()) return CombineInstructionsOutcome.QuotaExhausted
 
             val result =
                 geminiAiService.combineInstructions(pageBitmap)
-                    ?: return CombineInstructionsOutcome.Failed
-            aiQuotaManager.recordCall()
+                    ?: run {
+                        aiQuotaManager.refundReservedCall()
+                        return CombineInstructionsOutcome.Failed
+                    }
             return CombineInstructionsOutcome.Success(result)
         }
     }

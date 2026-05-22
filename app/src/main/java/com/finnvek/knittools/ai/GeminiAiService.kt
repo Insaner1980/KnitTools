@@ -4,7 +4,9 @@ import android.graphics.Bitmap
 import com.google.firebase.Firebase
 import com.google.firebase.ai.ai
 import com.google.firebase.ai.type.GenerativeBackend
+import com.google.firebase.ai.type.Schema
 import com.google.firebase.ai.type.content
+import com.google.firebase.ai.type.generationConfig
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -43,6 +45,19 @@ class GeminiAiService
          */
         suspend fun generateTextForVoice(prompt: String): String? =
             runWithRetry { voiceModel.generateContent(prompt).text }
+
+        /**
+         * Lähettää äänikomentopromptin ja pyytää Firebase AI Logicilta skeeman mukaista JSONia.
+         */
+        suspend fun generateJsonTextForVoice(
+            prompt: String,
+            schema: Schema,
+        ): String? =
+            runWithRetry {
+                schemaConstrainedModel(VOICE_MODEL_NAME, schema)
+                    .generateContent(prompt)
+                    .text
+            }
 
         /**
          * Selittää neulontaohjeen lyhyesti selkokielellä.
@@ -84,6 +99,25 @@ class GeminiAiService
             }
 
         /**
+         * Lähettää kuvan ja promptin, ja rajaa vastauksen skeeman mukaiseen JSONiin.
+         */
+        suspend fun generateJsonFromImage(
+            bitmap: Bitmap,
+            prompt: String,
+            schema: Schema,
+        ): String? =
+            runWithRetry {
+                val inputContent =
+                    content {
+                        image(bitmap)
+                        text(prompt)
+                    }
+                schemaConstrainedModel(MODEL_NAME, schema)
+                    .generateContent(inputContent)
+                    .text
+            }
+
+        /**
          * Yhdistää samalla sivulla päällekkäiset neulontaohjeet yhdeksi rivilistaksi.
          */
         suspend fun combineInstructions(bitmap: Bitmap): CombinedInstructionResult? =
@@ -116,6 +150,22 @@ class GeminiAiService
             }
             return null
         }
+
+        private fun schemaConstrainedModel(
+            modelName: String,
+            schema: Schema,
+        ) = Firebase
+            .ai(
+                backend = GenerativeBackend.googleAI(),
+                useLimitedUseAppCheckTokens = true,
+            ).generativeModel(
+                modelName,
+                generationConfig =
+                    generationConfig {
+                        responseMimeType = "application/json"
+                        responseSchema = schema
+                    },
+            )
 
         companion object {
             private const val MODEL_NAME = "gemini-2.5-flash-lite"

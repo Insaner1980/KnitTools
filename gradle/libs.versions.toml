@@ -31,7 +31,7 @@ androidSecurityLint = "1.0.4"
 composeStabilityAnalyzer = "0.7.4"
 sonarqube = "7.3.0.8198"
 
-baselineprofile = "1.5.0-alpha05"
+baselineprofile = "1.5.0-alpha06"
 profileinstaller = "1.4.1"
 uiautomator = "2.3.0"
 splashscreen = "1.2.0"

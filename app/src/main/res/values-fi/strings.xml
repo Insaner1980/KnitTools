@@ -115,10 +115,7 @@
     <string name="imported_pattern_designer">Tuotu PDF</string>
     <string name="current_row_short">Kerros %1$d</string>
     <string name="time_spent_minutes_format">%dm</string>
-    <string name="link_to_project">Liitetäänkö projektiin %s?</string>
-    <string name="link_yarn">Liitä lanka</string>
     <string name="unlink_yarn">Poista lankalinkki</string>
-    <string name="link">Liitä</string>
     <string name="select_yarn_card">Valitse lankakortti</string>
     <string name="add_yarn">Lisää lanka</string>
     <string name="linked_yarn_title">LIITETTY LANKA</string>
@@ -137,7 +134,6 @@
     <string name="linked_project_arrow">\u2192 %1$s</string>
     <string name="yarn_details_title">Tiedot</string>
     <string name="delete_yarn_card_message">Poistetaanko tämä lankakortti? Tätä ei voi kumota.</string>
-    <string name="saved_to_my_yarn_toast">Tallennettu kirjaston Omiin lankoihin</string>
     <string name="skein_count_one">%1$d kerä</string>
     <string name="skein_count_many">%1$d kerää</string>
 
@@ -286,8 +282,6 @@
 
     <!-- Lankakortti -->
     <string name="saved_yarns">Tallennetut langat</string>
-    <string name="brand">Merkki</string>
-    <string name="yarn_name">Langan nimi</string>
     <string name="fiber_content">Koostumus</string>
     <string name="weight_grams">Paino (g)</string>
     <string name="length_meters">Pituus (m)</string>
@@ -298,11 +292,7 @@
     <string name="dye_lot">Värjäyserä</string>
     <string name="weight_category">Paksuusluokka</string>
     <string name="care_symbols">Hoito</string>
-    <string name="save_and_use">Tallenna ja käytä</string>
-    <string name="discard">Hylkää</string>
-    <string name="use_in_calculator">Käytä laskurissa</string>
     <string name="no_saved_yarns">Lankakortteja ei ole vielä tallennettu</string>
-    <string name="pro_required_save">Pro vaaditaan lankakorttien tallentamiseen</string>
 
     <!-- Instruction parser -->
     <string name="paste_instruction">Liitä ohje</string>
@@ -317,7 +307,6 @@
     <!-- Kameran käyttöoikeus -->
     <string name="camera_permission_denied">Kameran käyttöoikeus tarvitaan kuvien ottamiseen</string>
     <string name="camera_permission_denied_permanent">Kameran käyttö estetty — ota se käyttöön asetuksissa</string>
-    <string name="open_settings">Asetukset</string>
 
     <!-- Hoitomerkkien luokat -->
     <string name="care_category_washing">Pesu</string>
@@ -769,60 +758,14 @@
     <string name="voice_commands">Äänikomennot</string>
     <string name="voice_mode_timeout">Äänitila päättyi toimettomuuden vuoksi</string>
     <string name="voice_recognizer_network_error">Äänentunnistus ei ole käytettävissä. Yritä myöhemmin uudelleen.</string>
-    <string name="voice_command_unknown">En ymmärtänyt</string>
-    <string name="voice_note_saved">Muistiinpano tallennettu</string>
     <string name="voice_counter_reset">Laskuri nollattu</string>
     <string name="voice_row_current">Kerros %d</string>
     <string name="voice_row_of_target">Kerros %1$d / %2$d, %3$d prosenttia valmiina</string>
-    <string name="voice_rows_remaining">%d kerrosta jäljellä</string>
-    <string name="voice_no_target">Tavoitetta ei ole asetettu</string>
     <string name="voice_back_to_row">Takaisin kerrokseen %d</string>
     <string name="voice_undone_row">Kumottu, kerros %d</string>
-    <string name="voice_remaining_done">Valmista tuli!</string>
-    <string name="voice_session_minutes">Olet neulonut %d minuuttia</string>
-    <string name="voice_session_under_minute">Alle minuutin</string>
-    <string name="voice_yarn_multiple">%1$s ja %2$d muuta</string>
-    <string name="voice_yarn_none">Lankaa ei ole liitetty</string>
-    <string name="voice_pattern_info">Ohje %1$s, sivu %2$d</string>
-    <string name="voice_instruction_none">Ohjetta ei ole liitetty</string>
-    <string name="voice_shaping_next">Seuraava %1$s %2$d kerroksen päästä</string>
-    <string name="voice_shaping_at">%1$s kerroksella %2$d</string>
-    <string name="voice_shaping_none">Muotoilulaskuri ei ole aktiivinen</string>
-    <string name="voice_stitches_total">%1$d silmukkaa yhteensä, %2$d per kerros %3$d kerroksella</string>
-    <string name="voice_stitches_current">%d silmukkaa</string>
-    <string name="voice_stitches_disabled">Silmukkaseuranta ei ole käytössä</string>
-    <string name="voice_reminders_none">Tulevia muistutuksia ei ole</string>
-    <string name="voice_reminder_next">Seuraava muistutus: %1$s, %2$d kerroksen päästä</string>
-    <string name="voice_reminders_multiple">Seuraava muistutus: %1$s, %2$d kerroksen päästä. Sen jälkeen vielä %3$d muuta</string>
     <string name="voice_counters_none">Lisälaskureita ei ole</string>
-    <string name="voice_counter_single">%1$s on kohdassa %2$d</string>
-    <string name="voice_counters_list">%1$d laskuria: %2$s</string>
-    <string name="voice_notes_empty">Muistiinpanoja ei ole vielä</string>
-    <string name="voice_notes_content">Muistiinpanosi: %1$s</string>
-    <string name="voice_total_time_none">Aikaa ei ole vielä tallennettu</string>
-    <string name="voice_total_time_hours">Tähän projektiin on käytetty yhteensä %1$d tuntia ja %2$d minuuttia</string>
-    <string name="voice_total_time_minutes">Tähän projektiin on käytetty yhteensä %1$d minuuttia</string>
-    <string name="voice_project_name">Työstät projektia %1$s</string>
-    <string name="voice_section_current">Nykyinen osio: %1$s</string>
-    <string name="voice_section_none">Osiota ei ole asetettu</string>
-    <string name="voice_section_set">Osioksi asetettu %1$s</string>
     <string name="voice_stitch_at">Silmukka %1$d</string>
     <string name="voice_help_full">Voit sanoa: seuraava, takaisin, kumoa, nollaa sekä numeron. Kysy edistymisestä, jäljellä olevista kerroksista, ajasta, langasta, ohjeesta, silmukoista, muistutuksista, laskureista tai muistiinpanoista. Sano muistiinpano tallentaaksesi merkinnän tai mainitse laskurin nimi muuttaaksesi sitä.</string>
-    <string name="voice_reminder_dismissed">Muistutus kuitattu</string>
-    <string name="voice_reminder_no_active">Aktiivista muistutusta ei ole kuitattavana</string>
-    <string name="voice_counter_incremented">%1$s on nyt %2$d</string>
-    <string name="voice_counter_decremented">%1$s takaisin kohtaan %2$d</string>
-    <string name="voice_counter_not_found">Laskuria nimeltä %1$s ei löytynyt</string>
-    <string name="voice_counter_ambiguous">Useita laskureita nimellä %1$s. Nimeä yksi uudelleen ennen äänikomentoja.</string>
-    <string name="voice_step_size_set">Askelkooksi asetettu %1$d</string>
-    <string name="voice_counter_reset_named">%1$s nollattu</string>
-    <string name="voice_page_current">Sivu %1$d</string>
-    <string name="voice_page_first">Olet jo ensimmäisellä sivulla</string>
-    <string name="voice_project_completed">%1$s merkitty valmistuneeksi. Hienoa työtä!</string>
-    <string name="voice_reminder_added">Muistutus asetettu: %1$s kerrokselle %2$d</string>
-    <string name="voice_stitch_count_set">Silmukkamääräksi asetettu %1$d per kerros</string>
-    <string name="voice_stitch_tracking_on">Silmukkaseuranta käytössä</string>
-    <string name="voice_stitch_tracking_off">Silmukkaseuranta pois käytöstä</string>
     <string name="voice_recognizer_error">Puheentunnistusvirhe</string>
     <string name="row_label_format">Kerros %d</string>
     <string name="share_photo">Jaa</string>

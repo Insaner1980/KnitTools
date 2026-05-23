@@ -115,10 +115,7 @@
     <string name="imported_pattern_designer">Importiertes PDF</string>
     <string name="current_row_short">Reihe %1$d</string>
     <string name="time_spent_minutes_format">%dm</string>
-    <string name="link_to_project">Mit %s verknüpfen?</string>
-    <string name="link_yarn">Garn verknüpfen</string>
     <string name="unlink_yarn">Garnverknüpfung lösen</string>
-    <string name="link">Verknüpfen</string>
     <string name="select_yarn_card">Garnkarte auswählen</string>
     <string name="add_yarn">Garn hinzufügen</string>
     <string name="linked_yarn_title">VERKNÜPFTES GARN</string>
@@ -137,7 +134,6 @@
     <string name="linked_project_arrow">\u2192 %1$s</string>
     <string name="yarn_details_title">Details</string>
     <string name="delete_yarn_card_message">Diese Garnkarte löschen? Dies kann nicht rückgängig gemacht werden.</string>
-    <string name="saved_to_my_yarn_toast">Unter „Mein Garn“ in der Bibliothek gespeichert</string>
     <string name="skein_count_one">%1$d Knäuel</string>
     <string name="skein_count_many">%1$d Knäuel</string>
 
@@ -286,8 +282,6 @@
 
     <!-- Yarn Card -->
     <string name="saved_yarns">Gespeicherte Garne</string>
-    <string name="brand">Marke</string>
-    <string name="yarn_name">Garnname</string>
     <string name="fiber_content">Fasergehalt</string>
     <string name="weight_grams">Gewicht (g)</string>
     <string name="length_meters">Länge (m)</string>
@@ -298,11 +292,7 @@
     <string name="dye_lot">Farbpartie</string>
     <string name="weight_category">Stärkenkategorie</string>
     <string name="care_symbols">Pflege</string>
-    <string name="save_and_use">Speichern und verwenden</string>
-    <string name="discard">Verwerfen</string>
-    <string name="use_in_calculator">Im Rechner verwenden</string>
     <string name="no_saved_yarns">Noch keine Garnkarten gespeichert</string>
-    <string name="pro_required_save">Pro erforderlich, um Garnkarten zu speichern</string>
 
     <!-- Instruction parser -->
     <string name="paste_instruction">Anweisung einfügen</string>
@@ -317,7 +307,6 @@
     <!-- Camera permission -->
     <string name="camera_permission_denied">Die Kameraberechtigung wird benötigt, um Fotos aufzunehmen</string>
     <string name="camera_permission_denied_permanent">Kameraberechtigung verweigert — aktiviere sie in den Einstellungen</string>
-    <string name="open_settings">Einstellungen</string>
 
     <!-- Care symbol categories -->
     <string name="care_category_washing">Waschen</string>
@@ -500,60 +489,14 @@
     <string name="voice_commands">Sprachbefehle</string>
     <string name="voice_mode_timeout">Sprachmodus wegen Inaktivität beendet</string>
     <string name="voice_recognizer_network_error">Spracherkennung ist nicht verfügbar. Versuche es später erneut.</string>
-    <string name="voice_command_unknown">Ich habe das nicht verstanden</string>
-    <string name="voice_note_saved">Notiz gespeichert</string>
     <string name="voice_counter_reset">Zähler zurückgesetzt</string>
     <string name="voice_row_current">Reihe %d</string>
     <string name="voice_row_of_target">Reihe %1$d von %2$d, %3$d Prozent erledigt</string>
-    <string name="voice_rows_remaining">%d Reihen übrig</string>
-    <string name="voice_no_target">Kein Ziel festgelegt</string>
     <string name="voice_back_to_row">Zurück zu Reihe %d</string>
     <string name="voice_undone_row">Rückgängig, Reihe %d</string>
-    <string name="voice_remaining_done">Du bist fertig!</string>
-    <string name="voice_session_minutes">Du strickst seit %d Minuten</string>
-    <string name="voice_session_under_minute">Weniger als eine Minute</string>
-    <string name="voice_yarn_multiple">%1$s und %2$d weitere</string>
-    <string name="voice_yarn_none">Kein Garn verknüpft</string>
-    <string name="voice_pattern_info">Anleitung %1$s, Seite %2$d</string>
-    <string name="voice_instruction_none">Keine Anleitung verknüpft</string>
-    <string name="voice_shaping_next">Nächste %1$s in %2$d Reihen</string>
-    <string name="voice_shaping_at">%1$s bei Reihe %2$d</string>
-    <string name="voice_shaping_none">Kein Formgebungszähler aktiv</string>
-    <string name="voice_stitches_total">%1$d Maschen insgesamt, %2$d pro Reihe über %3$d Reihen</string>
-    <string name="voice_stitches_current">%d Maschen</string>
-    <string name="voice_stitches_disabled">Maschenverfolgung ist nicht aktiviert</string>
-    <string name="voice_reminders_none">Keine kommenden Erinnerungen</string>
-    <string name="voice_reminder_next">Nächste Erinnerung: %1$s, in %2$d Reihen</string>
-    <string name="voice_reminders_multiple">Nächste Erinnerung: %1$s, in %2$d Reihen. Danach noch %3$d weitere</string>
     <string name="voice_counters_none">Keine zusätzlichen Zähler</string>
-    <string name="voice_counter_single">%1$s steht bei %2$d</string>
-    <string name="voice_counters_list">%1$d Zähler: %2$s</string>
-    <string name="voice_notes_empty">Noch keine Notizen</string>
-    <string name="voice_notes_content">Deine Notizen: %1$s</string>
-    <string name="voice_total_time_none">Noch keine Zeit erfasst</string>
-    <string name="voice_total_time_hours">%1$d Stunden und %2$d Minuten insgesamt für dieses Projekt</string>
-    <string name="voice_total_time_minutes">%1$d Minuten insgesamt für dieses Projekt</string>
-    <string name="voice_project_name">Du arbeitest an %1$s</string>
-    <string name="voice_section_current">Aktueller Abschnitt: %1$s</string>
-    <string name="voice_section_none">Kein Abschnitt festgelegt</string>
-    <string name="voice_section_set">Abschnitt auf %1$s gesetzt</string>
     <string name="voice_stitch_at">Masche %1$d</string>
     <string name="voice_help_full">Du kannst sagen: weiter, zurück, rückgängig, zurücksetzen und eine Zahl. Frage nach Fortschritt, verbleibenden Reihen, Zeit, Garn, Anleitung, Maschen, Erinnerungen, Zählern oder Notizen. Sage Notiz, um eine Notiz zu speichern, oder nenne einen Zähler, um ihn zu ändern.</string>
-    <string name="voice_reminder_dismissed">Erinnerung ausgeblendet</string>
-    <string name="voice_reminder_no_active">Keine aktive Erinnerung zum Ausblenden</string>
-    <string name="voice_counter_incremented">%1$s jetzt bei %2$d</string>
-    <string name="voice_counter_decremented">%1$s zurück auf %2$d</string>
-    <string name="voice_counter_not_found">Kein Zähler mit dem Namen %1$s gefunden</string>
-    <string name="voice_counter_ambiguous">Mehrere Zähler heißen %1$s. Benenne einen um, bevor du Sprachbefehle verwendest.</string>
-    <string name="voice_step_size_set">Schrittweite auf %1$d gesetzt</string>
-    <string name="voice_counter_reset_named">%1$s auf null zurückgesetzt</string>
-    <string name="voice_page_current">Seite %1$d</string>
-    <string name="voice_page_first">Bereits auf der ersten Seite</string>
-    <string name="voice_project_completed">%1$s als fertig markiert. Gute Arbeit!</string>
-    <string name="voice_reminder_added">Erinnerung gesetzt: %1$s bei Reihe %2$d</string>
-    <string name="voice_stitch_count_set">Maschenzahl auf %1$d pro Reihe gesetzt</string>
-    <string name="voice_stitch_tracking_on">Maschenverfolgung aktiviert</string>
-    <string name="voice_stitch_tracking_off">Maschenverfolgung deaktiviert</string>
     <string name="voice_recognizer_error">Spracherkennungsfehler</string>
     <string name="row_label_format">Reihe %d</string>
     <string name="share_photo">Teilen</string>

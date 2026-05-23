@@ -115,10 +115,7 @@
     <string name="imported_pattern_designer">Importerad PDF</string>
     <string name="current_row_short">Varv %1$d</string>
     <string name="time_spent_minutes_format">%dm</string>
-    <string name="link_to_project">Länka till %s?</string>
-    <string name="link_yarn">Länka garn</string>
     <string name="unlink_yarn">Ta bort garnlänk</string>
-    <string name="link">Länka</string>
     <string name="select_yarn_card">Välj garnkort</string>
     <string name="add_yarn">Lägg till garn</string>
     <string name="linked_yarn_title">LÄNKAT GARN</string>
@@ -137,7 +134,6 @@
     <string name="linked_project_arrow">\u2192 %1$s</string>
     <string name="yarn_details_title">Detaljer</string>
     <string name="delete_yarn_card_message">Ta bort detta garnkort? Detta kan inte ångras.</string>
-    <string name="saved_to_my_yarn_toast">Sparat i Mitt garn i biblioteket</string>
     <string name="skein_count_one">%1$d nystan</string>
     <string name="skein_count_many">%1$d nystan</string>
 
@@ -286,8 +282,6 @@
 
     <!-- Yarn Card -->
     <string name="saved_yarns">Sparade garner</string>
-    <string name="brand">Märke</string>
-    <string name="yarn_name">Garnnamn</string>
     <string name="fiber_content">Fiberinnehåll</string>
     <string name="weight_grams">Vikt (g)</string>
     <string name="length_meters">Längd (m)</string>
@@ -298,11 +292,7 @@
     <string name="dye_lot">Färgbad</string>
     <string name="weight_category">Grovlekskategori</string>
     <string name="care_symbols">Skötsel</string>
-    <string name="save_and_use">Spara och använd</string>
-    <string name="discard">Kassera</string>
-    <string name="use_in_calculator">Använd i räknaren</string>
     <string name="no_saved_yarns">Inga garnkort sparade ännu</string>
-    <string name="pro_required_save">Pro krävs för att spara garnkort</string>
 
     <!-- Instruction parser -->
     <string name="paste_instruction">Klistra in instruktion</string>
@@ -317,7 +307,6 @@
     <!-- Camera permission -->
     <string name="camera_permission_denied">Kamerabehörighet behövs för att ta bilder</string>
     <string name="camera_permission_denied_permanent">Kamerabehörighet nekad — aktivera den i Inställningar</string>
-    <string name="open_settings">Inställningar</string>
 
     <!-- Care symbol categories -->
     <string name="care_category_washing">Tvätt</string>
@@ -500,60 +489,14 @@
     <string name="voice_commands">Röstkommandon</string>
     <string name="voice_mode_timeout">Röstläget avslutades på grund av inaktivitet</string>
     <string name="voice_recognizer_network_error">Röstigenkänning är inte tillgänglig. Försök igen senare.</string>
-    <string name="voice_command_unknown">Jag förstod inte</string>
-    <string name="voice_note_saved">Anteckning sparad</string>
     <string name="voice_counter_reset">Räknare nollställd</string>
     <string name="voice_row_current">Varv %d</string>
     <string name="voice_row_of_target">Varv %1$d av %2$d, %3$d procent klart</string>
-    <string name="voice_rows_remaining">%d varv kvar</string>
-    <string name="voice_no_target">Inget mål inställt</string>
     <string name="voice_back_to_row">Tillbaka till varv %d</string>
     <string name="voice_undone_row">Ångrat, varv %d</string>
-    <string name="voice_remaining_done">Du är klar!</string>
-    <string name="voice_session_minutes">Du har stickat i %d minuter</string>
-    <string name="voice_session_under_minute">Mindre än en minut</string>
-    <string name="voice_yarn_multiple">%1$s och %2$d till</string>
-    <string name="voice_yarn_none">Inget garn länkat</string>
-    <string name="voice_pattern_info">Mönster %1$s, sida %2$d</string>
-    <string name="voice_instruction_none">Inget mönster länkat</string>
-    <string name="voice_shaping_next">Nästa %1$s om %2$d varv</string>
-    <string name="voice_shaping_at">%1$s på varv %2$d</string>
-    <string name="voice_shaping_none">Ingen formningsräknare aktiv</string>
-    <string name="voice_stitches_total">%1$d maskor totalt, %2$d per varv över %3$d varv</string>
-    <string name="voice_stitches_current">%d maskor</string>
-    <string name="voice_stitches_disabled">Maskspårning är inte aktiverad</string>
-    <string name="voice_reminders_none">Inga kommande påminnelser</string>
-    <string name="voice_reminder_next">Nästa påminnelse: %1$s, om %2$d varv</string>
-    <string name="voice_reminders_multiple">Nästa påminnelse: %1$s, om %2$d varv. %3$d till efter det</string>
     <string name="voice_counters_none">Inga extra räknare</string>
-    <string name="voice_counter_single">%1$s står på %2$d</string>
-    <string name="voice_counters_list">%1$d räknare: %2$s</string>
-    <string name="voice_notes_empty">Inga anteckningar ännu</string>
-    <string name="voice_notes_content">Dina anteckningar: %1$s</string>
-    <string name="voice_total_time_none">Ingen tid registrerad ännu</string>
-    <string name="voice_total_time_hours">%1$d timmar och %2$d minuter totalt i det här projektet</string>
-    <string name="voice_total_time_minutes">%1$d minuter totalt i det här projektet</string>
-    <string name="voice_project_name">Du arbetar med %1$s</string>
-    <string name="voice_section_current">Aktuell sektion: %1$s</string>
-    <string name="voice_section_none">Ingen sektion inställd</string>
-    <string name="voice_section_set">Sektion satt till %1$s</string>
     <string name="voice_stitch_at">Maska %1$d</string>
     <string name="voice_help_full">Du kan säga: nästa, tillbaka, ångra, nollställ, plus ett tal. Fråga om framsteg, återstående varv, tid, garn, mönster, maskor, påminnelser, räknare eller anteckningar. Säg anteckning för att spara en anteckning, eller nämn en räknare för att ändra den.</string>
-    <string name="voice_reminder_dismissed">Påminnelse avfärdad</string>
-    <string name="voice_reminder_no_active">Ingen aktiv påminnelse att avfärda</string>
-    <string name="voice_counter_incremented">%1$s är nu på %2$d</string>
-    <string name="voice_counter_decremented">%1$s tillbaka på %2$d</string>
-    <string name="voice_counter_not_found">Ingen räknare med namnet %1$s</string>
-    <string name="voice_counter_ambiguous">Flera räknare heter %1$s. Byt namn på en av dem innan du använder röstkommandon.</string>
-    <string name="voice_step_size_set">Steglängd satt till %1$d</string>
-    <string name="voice_counter_reset_named">%1$s nollställd till noll</string>
-    <string name="voice_page_current">Sida %1$d</string>
-    <string name="voice_page_first">Redan på första sidan</string>
-    <string name="voice_project_completed">%1$s markerades som klart. Bra jobbat!</string>
-    <string name="voice_reminder_added">Påminnelse satt: %1$s på varv %2$d</string>
-    <string name="voice_stitch_count_set">Maskantal satt till %1$d per varv</string>
-    <string name="voice_stitch_tracking_on">Maskspårning aktiverad</string>
-    <string name="voice_stitch_tracking_off">Maskspårning avaktiverad</string>
     <string name="voice_recognizer_error">Taligenkänningsfel</string>
     <string name="row_label_format">Varv %d</string>
     <string name="share_photo">Dela</string>

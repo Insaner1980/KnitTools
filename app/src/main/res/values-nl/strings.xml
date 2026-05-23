@@ -115,10 +115,7 @@
     <string name="imported_pattern_designer">Geïmporteerde PDF</string>
     <string name="current_row_short">Toer %1$d</string>
     <string name="time_spent_minutes_format">%dm</string>
-    <string name="link_to_project">Koppelen aan %s?</string>
-    <string name="link_yarn">Garen koppelen</string>
     <string name="unlink_yarn">Garen ontkoppelen</string>
-    <string name="link">Koppelen</string>
     <string name="select_yarn_card">Garenkaart selecteren</string>
     <string name="add_yarn">Garen toevoegen</string>
     <string name="linked_yarn_title">GEKOPPELD GAREN</string>
@@ -137,7 +134,6 @@
     <string name="linked_project_arrow">\u2192 %1$s</string>
     <string name="yarn_details_title">Details</string>
     <string name="delete_yarn_card_message">Deze garenkaart verwijderen? Dit kan niet ongedaan worden gemaakt.</string>
-    <string name="saved_to_my_yarn_toast">Opgeslagen in Mijn garen in de bibliotheek</string>
     <string name="skein_count_one">%1$d streng</string>
     <string name="skein_count_many">%1$d strengen</string>
 
@@ -286,8 +282,6 @@
 
     <!-- Yarn Card -->
     <string name="saved_yarns">Opgeslagen garens</string>
-    <string name="brand">Merk</string>
-    <string name="yarn_name">Naam van garen</string>
     <string name="fiber_content">Samenstelling</string>
     <string name="weight_grams">Gewicht (g)</string>
     <string name="length_meters">Lengte (m)</string>
@@ -298,11 +292,7 @@
     <string name="dye_lot">Verfbad</string>
     <string name="weight_category">Garendikte</string>
     <string name="care_symbols">Onderhoud</string>
-    <string name="save_and_use">Opslaan &amp; gebruiken</string>
-    <string name="discard">Verwerpen</string>
-    <string name="use_in_calculator">Gebruik in calculator</string>
     <string name="no_saved_yarns">Nog geen garenkaarten opgeslagen</string>
-    <string name="pro_required_save">Pro vereist om garenkaarten op te slaan</string>
 
     <!-- Instruction parser -->
     <string name="paste_instruction">Instructie plakken</string>
@@ -317,7 +307,6 @@
     <!-- Camera permission -->
     <string name="camera_permission_denied">Cameratoestemming is nodig om foto’s te maken</string>
     <string name="camera_permission_denied_permanent">Cameratoestemming geweigerd — schakel deze in via Instellingen</string>
-    <string name="open_settings">Instellingen</string>
 
     <!-- Care symbol categories -->
     <string name="care_category_washing">Wassen</string>
@@ -500,60 +489,14 @@
     <string name="voice_commands">Spraakopdrachten</string>
     <string name="voice_mode_timeout">Spraakmodus is beëindigd door inactiviteit</string>
     <string name="voice_recognizer_network_error">Spraakherkenning is niet beschikbaar. Probeer het later opnieuw.</string>
-    <string name="voice_command_unknown">Ik begreep dat niet</string>
-    <string name="voice_note_saved">Notitie opgeslagen</string>
     <string name="voice_counter_reset">Teller gereset</string>
     <string name="voice_row_current">Toer %d</string>
     <string name="voice_row_of_target">Toer %1$d van %2$d, %3$d procent klaar</string>
-    <string name="voice_rows_remaining">Nog %d toeren te gaan</string>
-    <string name="voice_no_target">Geen doel ingesteld</string>
     <string name="voice_back_to_row">Terug naar toer %d</string>
     <string name="voice_undone_row">Ongedaan gemaakt, toer %d</string>
-    <string name="voice_remaining_done">Je bent klaar!</string>
-    <string name="voice_session_minutes">Je bent al %d minuten aan het breien</string>
-    <string name="voice_session_under_minute">Minder dan een minuut</string>
-    <string name="voice_yarn_multiple">%1$s en nog %2$d</string>
-    <string name="voice_yarn_none">Geen garen gekoppeld</string>
-    <string name="voice_pattern_info">Patroon %1$s, pagina %2$d</string>
-    <string name="voice_instruction_none">Geen patroon gekoppeld</string>
-    <string name="voice_shaping_next">Volgende %1$s over %2$d toeren</string>
-    <string name="voice_shaping_at">%1$s bij toer %2$d</string>
-    <string name="voice_shaping_none">Geen actieve vormgevingsteller</string>
-    <string name="voice_stitches_total">%1$d steken totaal, %2$d per toer over %3$d toeren</string>
-    <string name="voice_stitches_current">%d steken</string>
-    <string name="voice_stitches_disabled">Steken bijhouden is niet ingeschakeld</string>
-    <string name="voice_reminders_none">Geen komende herinneringen</string>
-    <string name="voice_reminder_next">Volgende herinnering: %1$s, over %2$d toeren</string>
-    <string name="voice_reminders_multiple">Volgende herinnering: %1$s, over %2$d toeren. Daarna volgen er nog %3$d</string>
     <string name="voice_counters_none">Geen extra tellers</string>
-    <string name="voice_counter_single">%1$s staat op %2$d</string>
-    <string name="voice_counters_list">%1$d tellers: %2$s</string>
-    <string name="voice_notes_empty">Nog geen notities</string>
-    <string name="voice_notes_content">Je notities: %1$s</string>
-    <string name="voice_total_time_none">Nog geen tijd geregistreerd</string>
-    <string name="voice_total_time_hours">%1$d uur en %2$d minuten totaal aan dit project</string>
-    <string name="voice_total_time_minutes">%1$d minuten totaal aan dit project</string>
-    <string name="voice_project_name">Je werkt aan %1$s</string>
-    <string name="voice_section_current">Huidige sectie: %1$s</string>
-    <string name="voice_section_none">Geen sectie ingesteld</string>
-    <string name="voice_section_set">Sectie ingesteld op %1$s</string>
     <string name="voice_stitch_at">Steek %1$d</string>
     <string name="voice_help_full">Je kunt zeggen: volgende, terug, ongedaan maken, resetten en ook een getal. Vraag naar voortgang, resterende toeren, tijd, garen, patroon, steken, herinneringen, tellers of notities. Zeg notitie om een notitie op te slaan, of noem een teller om die te wijzigen.</string>
-    <string name="voice_reminder_dismissed">Herinnering gesloten</string>
-    <string name="voice_reminder_no_active">Geen actieve herinnering om te sluiten</string>
-    <string name="voice_counter_incremented">%1$s staat nu op %2$d</string>
-    <string name="voice_counter_decremented">%1$s terug naar %2$d</string>
-    <string name="voice_counter_not_found">Geen teller met de naam %1$s gevonden</string>
-    <string name="voice_counter_ambiguous">Meerdere tellers heten %1$s. Geef er één een andere naam voordat je spraakopdrachten gebruikt.</string>
-    <string name="voice_step_size_set">Stapgrootte ingesteld op %1$d</string>
-    <string name="voice_counter_reset_named">%1$s is teruggezet naar nul</string>
-    <string name="voice_page_current">Pagina %1$d</string>
-    <string name="voice_page_first">Je bent al op de eerste pagina</string>
-    <string name="voice_project_completed">%1$s is gemarkeerd als voltooid. Goed gedaan!</string>
-    <string name="voice_reminder_added">Herinnering ingesteld: %1$s bij toer %2$d</string>
-    <string name="voice_stitch_count_set">Aantal steken ingesteld op %1$d per toer</string>
-    <string name="voice_stitch_tracking_on">Steken bijhouden ingeschakeld</string>
-    <string name="voice_stitch_tracking_off">Steken bijhouden uitgeschakeld</string>
     <string name="voice_recognizer_error">Fout bij spraakherkenning</string>
     <string name="row_label_format">Toer %d</string>
     <string name="share_photo">Delen</string>

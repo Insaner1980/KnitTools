@@ -50,6 +50,15 @@ private data class PatternPickerActions(
     val startCameraScan: () -> Unit,
 )
 
+private data class CaptureResultRequest(
+    val success: Boolean,
+    val context: android.content.Context,
+    val projectId: Long?,
+    val canUseCameraScan: Boolean,
+    val patternStorage: PatternDocumentStorage,
+    val pendingImageUriString: String?,
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PatternPickerSheet(
@@ -115,12 +124,15 @@ private fun rememberPatternPickerActions(
         rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
             scope.launch {
                 handleCaptureResult(
-                    success = success,
-                    context = context,
-                    projectId = currentProjectId,
-                    canUseCameraScan = currentCanUseCameraScan,
-                    patternStorage = patternStorage,
-                    pendingImageUriString = pendingCaptureImageUriString,
+                    request =
+                        CaptureResultRequest(
+                            success = success,
+                            context = context,
+                            projectId = currentProjectId,
+                            canUseCameraScan = currentCanUseCameraScan,
+                            patternStorage = patternStorage,
+                            pendingImageUriString = pendingCaptureImageUriString,
+                        ),
                     onDocumentSelected = onDocumentSelected,
                     onDismiss = onDismiss,
                 )
@@ -246,28 +258,35 @@ private fun PatternPickerSavedPatterns(
 }
 
 private suspend fun handleCaptureResult(
-    success: Boolean,
-    context: android.content.Context,
-    projectId: Long?,
-    canUseCameraScan: Boolean,
-    patternStorage: PatternDocumentStorage,
-    pendingImageUriString: String?,
+    request: CaptureResultRequest,
     onDocumentSelected: (String, String) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val pendingUri = pendingImageUriString?.toUri()
-    if (!success || pendingUri == null || !canStartPatternCameraScan(projectId, canUseCameraScan)) return
-    val pendingProjectId = projectId ?: return
+    val pendingUri = request.pendingImageUriString?.toUri()
+    if (
+        !request.success ||
+        pendingUri == null ||
+        !canStartPatternCameraScan(request.projectId, request.canUseCameraScan)
+    ) {
+        return
+    }
+    val pendingProjectId = request.projectId ?: return
     val fileName = "pattern-scan-${System.currentTimeMillis()}.pdf"
     val converted =
         withContext(AppDispatchers.IO) {
-            patternStorage.convertImageToPdf(context, pendingProjectId, pendingUri, fileName)
+            request.patternStorage.convertImageToPdf(
+                context = request.context,
+                projectId = pendingProjectId,
+                imageUri = pendingUri,
+                fileName = fileName,
+            )
         }
     if (converted != null) {
         onDocumentSelected(converted.first, converted.second)
         onDismiss()
     } else {
-        Toast.makeText(context, context.getString(R.string.pattern_scan_failed), Toast.LENGTH_SHORT).show()
+        val message = request.context.getString(R.string.pattern_scan_failed)
+        Toast.makeText(request.context, message, Toast.LENGTH_SHORT).show()
     }
 }
 

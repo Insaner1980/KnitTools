@@ -1,13 +1,6 @@
 package com.finnvek.knittools.ui.screens.library
 
-import android.Manifest
-import android.app.Activity
-import android.content.Intent
-import android.net.Uri
-import android.provider.Settings
 import androidx.activity.compose.BackHandler
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -25,12 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CameraAlt
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -47,22 +35,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.core.app.ActivityCompat
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.domain.model.YarnCardStatus
 import com.finnvek.knittools.ui.components.BadgePill
 import com.finnvek.knittools.ui.components.ConfirmationDialog
-import com.finnvek.knittools.ui.components.StatusMessage
-import com.finnvek.knittools.ui.components.StatusMessageType
 import com.finnvek.knittools.ui.components.skeinCountText
-import com.finnvek.knittools.ui.screens.yarncard.handleYarnLabelCaptureResult
 import com.finnvek.knittools.ui.theme.knitToolsColors
 
 // Data-luokat MyYarnScreen-parametrien ryhmittelyyn (S107)
@@ -71,9 +54,6 @@ data class MyYarnState(
     val activeProjectNames: Map<Long, String>,
     val isSelectMode: Boolean,
     val selectedYarnIds: Set<Long>,
-    val isScanning: Boolean = false,
-    val statusMessage: String? = null,
-    val statusActionLabel: String? = null,
     val deleteErrorId: Long = 0L,
 )
 
@@ -84,11 +64,6 @@ data class MyYarnActions(
     val onSelectAll: (List<Long>) -> Unit,
     val onDeleteSelected: () -> Unit,
     val onExitSelectMode: () -> Unit,
-    val onScanLabel: (() -> Unit)? = null,
-    val onCreateScanPhotoUri: (() -> Uri?)? = null,
-    val onScanPhoto: ((Uri) -> Unit)? = null,
-    val onDeleteScanPhoto: ((String) -> Unit)? = null,
-    val onStatusAction: (() -> Unit)? = null,
     val onBack: () -> Unit,
 )
 
@@ -99,65 +74,14 @@ fun MyYarnScreen(
     actions: MyYarnActions,
 ) {
     var showDeleteConfirmDialog by rememberSaveable { mutableStateOf(false) }
-    var pendingPhotoUriString by rememberSaveable { mutableStateOf<String?>(null) }
-    var scanPermissionMessageRes by rememberSaveable { mutableStateOf<Int?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
-    val deleteFailedMessage = stringResource(R.string.ai_error_unknown)
-    val context = LocalContext.current
-    val pendingPhotoUri = pendingPhotoUriString?.let(Uri::parse)
+    val deleteFailedMessage = stringResource(R.string.generic_error_unknown)
 
     LaunchedEffect(state.deleteErrorId) {
         if (state.deleteErrorId > 0) {
             snackbarHostState.showSnackbar(deleteFailedMessage)
         }
     }
-
-    val cameraLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
-            handleYarnLabelCaptureResult(
-                success = success,
-                pendingPhotoUri = pendingPhotoUri,
-                onCaptured = { uri ->
-                    actions.onScanPhoto?.invoke(uri)
-                    scanPermissionMessageRes = null
-                },
-                onDeleteUnusedPhoto = { uriString -> actions.onDeleteScanPhoto?.invoke(uriString) },
-                clearPendingPhoto = { pendingPhotoUriString = null },
-            )
-        }
-
-    val permissionLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-            scanPermissionMessageRes =
-                handlePermissionResult(
-                    granted = granted,
-                    activity = context as? Activity,
-                    onCreateScanPhotoUri = actions.onCreateScanPhotoUri,
-                    cameraLauncher = cameraLauncher,
-                    setPendingUri = { pendingPhotoUriString = it },
-                )
-        }
-
-    val displayState =
-        state.withPermissionStatus(
-            permissionMessageRes = scanPermissionMessageRes,
-            context = context,
-        )
-    val displayActions =
-        actions.withScanLaunchers(
-            onLaunchScan = {
-                actions.onScanLabel?.invoke()
-                permissionLauncher.launch(Manifest.permission.CAMERA)
-            },
-            onStatusAction = {
-                handleStatusAction(
-                    context = context,
-                    permissionMessageRes = scanPermissionMessageRes,
-                    actions = actions,
-                    permissionLauncher = permissionLauncher,
-                )
-            },
-        )
 
     BackHandler(enabled = state.isSelectMode) {
         actions.onExitSelectMode()
@@ -176,139 +100,33 @@ fun MyYarnScreen(
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
-        floatingActionButton = {
-            if (!displayState.isSelectMode) {
-                displayActions.onScanLabel?.let { onScan ->
-                    FloatingActionButton(
-                        onClick = onScan,
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.CameraAlt,
-                            contentDescription = stringResource(R.string.scan_yarn_label),
-                        )
-                    }
-                }
-            }
-        },
         topBar = {
             MyYarnTopBar(
-                state = displayState,
-                onExitSelectMode = displayActions.onExitSelectMode,
-                onSelectAll = { displayActions.onSelectAll(displayState.cards.map { it.id }) },
-                onBack = displayActions.onBack,
+                state = state,
+                onExitSelectMode = actions.onExitSelectMode,
+                onSelectAll = { actions.onSelectAll(state.cards.map { it.id }) },
+                onBack = actions.onBack,
             )
         },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         bottomBar = {
             SelectModeDeleteBar(
-                visible = displayState.isSelectMode && displayState.selectedYarnIds.isNotEmpty(),
+                visible = state.isSelectMode && state.selectedYarnIds.isNotEmpty(),
                 onDeleteClick = { showDeleteConfirmDialog = true },
             )
         },
     ) { padding ->
-        if (displayState.cards.isEmpty()) {
+        if (state.cards.isEmpty()) {
             MyYarnEmptyState(
-                state = displayState,
-                actions = displayActions,
                 padding = padding,
             )
         } else {
             MyYarnList(
-                state = displayState,
-                actions = displayActions,
+                state = state,
+                actions = actions,
                 padding = padding,
             )
         }
-    }
-}
-
-private fun MyYarnState.withPermissionStatus(
-    permissionMessageRes: Int?,
-    context: android.content.Context,
-): MyYarnState {
-    val permissionMessage = permissionMessageRes?.let(context::getString)
-    return copy(
-        statusMessage = permissionMessage ?: statusMessage,
-        statusActionLabel =
-            when {
-                permissionMessageRes == R.string.camera_permission_denied_permanent -> {
-                    context.getString(R.string.open_settings)
-                }
-
-                permissionMessage != null -> {
-                    context.getString(R.string.retry)
-                }
-
-                else -> {
-                    statusActionLabel
-                }
-            },
-    )
-}
-
-private fun MyYarnActions.withScanLaunchers(
-    onLaunchScan: () -> Unit,
-    onStatusAction: () -> Unit,
-): MyYarnActions =
-    copy(
-        onScanLabel =
-            if (onScanLabel != null && onCreateScanPhotoUri != null && onScanPhoto != null) {
-                onLaunchScan
-            } else {
-                onScanLabel
-            },
-        onStatusAction = onStatusAction,
-    )
-
-private fun handlePermissionResult(
-    granted: Boolean,
-    activity: Activity?,
-    onCreateScanPhotoUri: (() -> Uri?)?,
-    cameraLauncher: androidx.activity.result.ActivityResultLauncher<Uri>,
-    setPendingUri: (String) -> Unit,
-): Int? {
-    if (granted) {
-        onCreateScanPhotoUri?.invoke()?.let { uri ->
-            setPendingUri(uri.toString())
-            cameraLauncher.launch(uri)
-        }
-        return null
-    }
-    val permanentlyDenied =
-        activity != null &&
-            !ActivityCompat.shouldShowRequestPermissionRationale(
-                activity,
-                Manifest.permission.CAMERA,
-            )
-    return if (permanentlyDenied) {
-        R.string.camera_permission_denied_permanent
-    } else {
-        R.string.camera_permission_denied
-    }
-}
-
-private fun handleStatusAction(
-    context: android.content.Context,
-    permissionMessageRes: Int?,
-    actions: MyYarnActions,
-    permissionLauncher: androidx.activity.result.ActivityResultLauncher<String>,
-) {
-    if (permissionMessageRes == R.string.camera_permission_denied_permanent) {
-        context.startActivity(
-            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                data = Uri.fromParts("package", context.packageName, null)
-            },
-        )
-        return
-    }
-    val statusAction = actions.onStatusAction
-    if (statusAction != null) {
-        statusAction()
-    } else {
-        actions.onScanLabel?.invoke()
-        permissionLauncher.launch(Manifest.permission.CAMERA)
     }
 }
 
@@ -347,21 +165,12 @@ private fun MyYarnTopBar(
 }
 
 @Composable
-private fun MyYarnEmptyState(
-    state: MyYarnState,
-    actions: MyYarnActions,
-    padding: PaddingValues,
-) {
+private fun MyYarnEmptyState(padding: PaddingValues) {
     Column(
         modifier = Modifier.fillMaxSize().padding(padding).padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        MyYarnStatusMessage(
-            state = state,
-            actions = actions,
-            modifier = Modifier.padding(bottom = 16.dp),
-        )
         Image(
             painter = painterResource(R.drawable.camera_icon),
             contentDescription = null,
@@ -389,14 +198,6 @@ private fun MyYarnList(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item { Spacer(modifier = Modifier.height(4.dp)) }
-        if (state.isScanning || !state.statusMessage.isNullOrBlank()) {
-            item {
-                MyYarnStatusMessage(
-                    state = state,
-                    actions = actions,
-                )
-            }
-        }
         items(state.cards, key = { it.id }) { card ->
             YarnStashCardItem(
                 card = card,
@@ -418,46 +219,6 @@ private fun MyYarnList(
             )
         }
         item { Spacer(modifier = Modifier.height(8.dp)) }
-    }
-}
-
-@Composable
-private fun MyYarnStatusMessage(
-    state: MyYarnState,
-    actions: MyYarnActions,
-    modifier: Modifier = Modifier,
-) {
-    when {
-        state.isScanning -> {
-            Row(
-                modifier =
-                    modifier
-                        .fillMaxWidth()
-                        .background(
-                            color = MaterialTheme.colorScheme.surfaceContainerLow,
-                            shape = MaterialTheme.shapes.large,
-                        ).padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                Spacer(modifier = Modifier.size(12.dp))
-                Text(
-                    text = stringResource(R.string.scanning),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-
-        !state.statusMessage.isNullOrBlank() -> {
-            StatusMessage(
-                message = state.statusMessage,
-                type = StatusMessageType.Error,
-                actionLabel = state.statusActionLabel,
-                onAction = actions.onStatusAction,
-                modifier = modifier,
-            )
-        }
     }
 }
 

@@ -28,8 +28,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
-import com.finnvek.knittools.ai.nano.ParsedInstruction
 import com.finnvek.knittools.domain.calculator.IncreaseDecreaseCalculator
+import com.finnvek.knittools.domain.calculator.ParsedInstruction
 import com.finnvek.knittools.domain.model.IncreaseDecreaseMessage
 import com.finnvek.knittools.domain.model.IncreaseDecreaseMode
 import com.finnvek.knittools.domain.model.IncreaseDecreaseResult

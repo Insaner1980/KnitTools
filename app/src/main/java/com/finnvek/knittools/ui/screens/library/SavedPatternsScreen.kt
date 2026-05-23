@@ -77,7 +77,7 @@ fun SavedPatternsScreen(
 ) {
     var showDeleteConfirmDialog by rememberSaveable { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
-    val deleteFailedMessage = stringResource(R.string.ai_error_unknown)
+    val deleteFailedMessage = stringResource(R.string.generic_error_unknown)
 
     BackHandler(enabled = state.isSelectMode) {
         actions.onExitSelectMode()

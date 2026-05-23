@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -13,10 +12,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
@@ -24,62 +20,31 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
-import com.finnvek.knittools.ai.journal.JournalProcessResult
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotesEditorScreen(
     onBack: () -> Unit,
-    onUpgradeToPro: () -> Unit = {},
     viewModel: NotesEditorViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    val journalEntryViewModel: JournalEntryViewModel = hiltViewModel()
-    val journalEntryState by journalEntryViewModel.uiState.collectAsStateWithLifecycle()
     val focusRequester = remember { FocusRequester() }
-    val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
-    var showJournalSheet by rememberSaveable { mutableStateOf(false) }
-
-    val offlineMessage = stringResource(R.string.journal_offline_notice)
-    val quotaMessage = stringResource(R.string.ai_quota_exhausted)
 
     LaunchedEffect(state.isMissingProject) {
         if (state.isMissingProject) {
             onBack()
         }
-    }
-
-    LaunchedEffect(journalEntryState.pendingEntry) {
-        val entry = journalEntryState.pendingEntry ?: return@LaunchedEffect
-        viewModel.appendJournalEntry(entry.text)
-        showJournalSheet = false
-        if (!entry.aiUsed) {
-            val message =
-                when (entry.reason) {
-                    JournalProcessResult.Fallback.Reason.QuotaExhausted -> quotaMessage
-                    else -> offlineMessage
-                }
-            scope.launch { snackbarHostState.showSnackbar(message) }
-        }
-        journalEntryViewModel.consumePendingEntry()
     }
 
     BackHandler {
@@ -107,31 +72,12 @@ fun NotesEditorScreen(
                         )
                     }
                 },
-                actions = {
-                    TextButton(
-                        onClick = {
-                            if (!state.isPro) {
-                                viewModel.saveImmediately(onUpgradeToPro)
-                            } else {
-                                showJournalSheet = true
-                            }
-                        },
-                        shape = RoundedCornerShape(8.dp),
-                    ) {
-                        Text(
-                            text = stringResource(R.string.journal_ai_badge),
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                    }
-                },
                 colors =
                     TopAppBarDefaults.topAppBarColors(
                         containerColor = Color.Transparent,
                     ),
             )
         },
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding).imePadding()) {
             TextField(
@@ -163,13 +109,6 @@ fun NotesEditorScreen(
                     ),
             )
         }
-    }
-
-    if (showJournalSheet) {
-        JournalEntryBottomSheet(
-            onDismiss = { showJournalSheet = false },
-            viewModel = journalEntryViewModel,
-        )
     }
 
     // Auto-focus kun data on ladattu

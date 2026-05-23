@@ -1,6 +1,5 @@
 package com.finnvek.knittools.ui.screens.yarncard
 
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -20,29 +19,22 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Remove
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -54,22 +46,14 @@ import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
 import com.finnvek.knittools.ui.components.care.CareSymbol
 import com.finnvek.knittools.ui.components.care.CareSymbolIcon
-import com.finnvek.knittools.ui.components.care.CareSymbolPicker
 import com.finnvek.knittools.ui.components.care.hasCareSymbol
-import com.finnvek.knittools.ui.components.care.toggleCareSymbol
 import com.finnvek.knittools.ui.components.skeinCountText
 import com.finnvek.knittools.ui.screens.library.YarnStatusSheet
 import com.finnvek.knittools.ui.screens.library.yarnStatusUi
 import com.finnvek.knittools.ui.theme.knitToolsColors
 
-// Historiallisesta nimestä huolimatta ruutu toimii kahdessa tilassa:
-// 1) skannatun yarn cardin review/tallennus
-// 2) tallennetun yarn cardin detail/editointi Library-flow’ssa
-data class YarnCardReviewActions(
-    val onSaveAndUse: (weightGrams: String, lengthMeters: String, needleSize: String) -> Unit,
-    val onDiscard: (weightGrams: String, lengthMeters: String, needleSize: String) -> Unit,
+data class YarnCardDetailActions(
     val onBack: () -> Unit,
-    val onLinkToProject: ((cardId: Long, projectId: Long) -> Unit)? = null,
     val onOpenLinkedProject: ((Long) -> Unit)? = null,
     val onDeleteCard: ((Long) -> Unit)? = null,
 )
@@ -77,42 +61,18 @@ data class YarnCardReviewActions(
 @Composable
 // Compose-modal-state ja ruudun orkestrointi tuottavat Sonarille vääriä osumia.
 @Suppress("kotlin:S6615", "kotlin:S3776")
-fun YarnCardReviewScreen(
+fun YarnCardDetailScreen(
     viewModel: YarnCardViewModel,
-    actions: YarnCardReviewActions,
-    initialLinkProjectId: Long? = null,
+    actions: YarnCardDetailActions,
 ) {
     val form by viewModel.formState.collectAsStateWithLifecycle()
     val linkedProjectName by viewModel.linkedProjectName.collectAsStateWithLifecycle()
     val availableProjects by viewModel.availableProjects.collectAsStateWithLifecycle()
-    val toastContext = LocalContext.current
-    val isDetailMode = form.editingCardId != null
-    var showLinkDialog by rememberSaveable { mutableStateOf(false) }
-    var savedCardId by rememberSaveable { mutableLongStateOf(0L) }
     var showStatusSheet by rememberSaveable { mutableStateOf(false) }
     var showProjectSheet by rememberSaveable { mutableStateOf(false) }
     var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
 
-    if (showLinkDialog && initialLinkProjectId != null && actions.onLinkToProject != null) {
-        LinkYarnDialog(
-            savedCardId = savedCardId,
-            projects = availableProjects,
-            initialProjectId = initialLinkProjectId,
-            onLink = { cardId, projectId ->
-                actions.onLinkToProject.invoke(cardId, projectId)
-                showLinkDialog = false
-                val (w, l, n) = viewModel.getCalculatorValues()
-                actions.onSaveAndUse(w, l, n)
-            },
-            onDismiss = {
-                showLinkDialog = false
-                val (w, l, n) = viewModel.getCalculatorValues()
-                actions.onSaveAndUse(w, l, n)
-            },
-        )
-    }
-
-    if (showStatusSheet && isDetailMode) {
+    if (showStatusSheet) {
         YarnStatusSheet(
             selectedStatus = form.status,
             onSelect = {
@@ -123,7 +83,7 @@ fun YarnCardReviewScreen(
         )
     }
 
-    if (showProjectSheet && isDetailMode) {
+    if (showProjectSheet) {
         LinkedProjectSheet(
             projects = availableProjects,
             linkedProjectId = form.linkedProjectId,
@@ -139,7 +99,7 @@ fun YarnCardReviewScreen(
         )
     }
 
-    if (showDeleteDialog && isDetailMode) {
+    if (showDeleteDialog) {
         ConfirmationDialog(
             title = stringResource(R.string.delete_yarn_card),
             message = stringResource(R.string.delete_yarn_card_message),
@@ -166,172 +126,33 @@ fun YarnCardReviewScreen(
     }
 
     ToolScreenScaffold(
-        title =
-            if (isDetailMode) {
-                form.yarnName.ifBlank { stringResource(R.string.yarn_card_fallback_name) }
-            } else {
-                stringResource(R.string.scanned_yarn)
-            },
+        title = form.yarnName.ifBlank { stringResource(R.string.yarn_card_fallback_name) },
         onBack = actions.onBack,
     ) { padding ->
-        if (isDetailMode) {
-            YarnCardDetailContent(
-                form = form,
-                linkedProjectName = linkedProjectName,
-                onStatusClick = { showStatusSheet = true },
-                onQuantityChange = viewModel::updateQuantity,
-                onLinkedProjectClick = {
-                    form.linkedProjectId?.let { projectId ->
-                        if (linkedProjectName != null && actions.onOpenLinkedProject != null) {
-                            actions.onOpenLinkedProject.invoke(projectId)
-                        } else {
-                            showProjectSheet = true
-                        }
-                    } ?: run {
+        YarnCardDetailContent(
+            form = form,
+            linkedProjectName = linkedProjectName,
+            onStatusClick = { showStatusSheet = true },
+            onQuantityChange = viewModel::updateQuantity,
+            onLinkedProjectClick = {
+                form.linkedProjectId?.let { projectId ->
+                    if (linkedProjectName != null && actions.onOpenLinkedProject != null) {
+                        actions.onOpenLinkedProject.invoke(projectId)
+                    } else {
                         showProjectSheet = true
                     }
-                },
-                onChangeProjectClick = { showProjectSheet = true },
-                onDelete = { showDeleteDialog = true },
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .padding(padding)
-                        .padding(horizontal = 16.dp)
-                        .verticalScroll(rememberScrollState()),
-            )
-        } else {
-            YarnCardScanContent(
-                form = form,
-                canSaveYarnCard = viewModel.canSaveYarnCards,
-                onUpdateField = viewModel::updateField,
-                onDiscard = actions.onDiscard,
-                onSaveAndUse = actions.onSaveAndUse,
-                onShowLinkDialog = { id ->
-                    savedCardId = id
-                    showLinkDialog = true
-                },
-                initialLinkProjectId = initialLinkProjectId,
-                availableProjects = availableProjects,
-                onLinkToProject = actions.onLinkToProject,
-                getCalculatorValues = viewModel::getCalculatorValues,
-                onDiscardScan = viewModel::discardScan,
-                onSaveCard = viewModel::saveCard,
-                toastContext = toastContext,
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .padding(padding)
-                        .padding(16.dp)
-                        .verticalScroll(rememberScrollState()),
-            )
-        }
-    }
-}
-
-@Composable
-@Suppress("kotlin:S107") // Compose-komponentti välittää eksplisiittiset callbackit ilman keinotekoista wrapper-oliota
-private fun YarnCardScanContent(
-    form: YarnCardFormState,
-    canSaveYarnCard: Boolean,
-    onUpdateField: (YarnCardFormState.() -> YarnCardFormState) -> Unit,
-    onDiscard: (String, String, String) -> Unit,
-    onSaveAndUse: (String, String, String) -> Unit,
-    onShowLinkDialog: (Long) -> Unit,
-    initialLinkProjectId: Long?,
-    availableProjects: List<CounterProject>,
-    onLinkToProject: ((cardId: Long, projectId: Long) -> Unit)?,
-    getCalculatorValues: () -> Triple<String, String, String>,
-    onDiscardScan: () -> Unit,
-    onSaveCard: ((Long) -> Unit) -> Unit,
-    toastContext: android.content.Context,
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        LabelField(stringResource(R.string.brand), form.brand) {
-            onUpdateField { copy(brand = it) }
-        }
-        LabelField(stringResource(R.string.yarn_name), form.yarnName) {
-            onUpdateField { copy(yarnName = it) }
-        }
-        LabelField(stringResource(R.string.fiber_content), form.fiberContent) {
-            onUpdateField { copy(fiberContent = it) }
-        }
-        LabelField(stringResource(R.string.color_name), form.colorName) {
-            onUpdateField { copy(colorName = it) }
-        }
-        LabelField(stringResource(R.string.color_number), form.colorNumber) {
-            onUpdateField { copy(colorNumber = it) }
-        }
-        LabelField(stringResource(R.string.dye_lot), form.dyeLot) {
-            onUpdateField { copy(dyeLot = it) }
-        }
-
-        Text(
-            text = stringResource(R.string.result),
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.primary,
-        )
-        LabelField(stringResource(R.string.weight_grams), form.weightGrams) {
-            onUpdateField { copy(weightGrams = it) }
-        }
-        LabelField(stringResource(R.string.length_meters), form.lengthMeters) {
-            onUpdateField { copy(lengthMeters = it) }
-        }
-        LabelField(stringResource(R.string.needle_size_label), form.needleSize) {
-            onUpdateField { copy(needleSize = it) }
-        }
-        LabelField(stringResource(R.string.gauge_label), form.gaugeInfo) {
-            onUpdateField { copy(gaugeInfo = it) }
-        }
-        LabelField(stringResource(R.string.weight_category), form.weightCategory) {
-            onUpdateField { copy(weightCategory = it) }
-        }
-
-        CareSymbolPicker(
-            careSymbols = form.careSymbols,
-            onToggle = { symbol ->
-                onUpdateField { copy(careSymbols = careSymbols.toggleCareSymbol(symbol)) }
+                } ?: run {
+                    showProjectSheet = true
+                }
             },
-        )
-
-        ReviewActionButtons(
-            canSaveYarnCard = canSaveYarnCard,
-            saveEnabled = !canSaveYarnCard || form.normalizedForPersistence().canPersistYarnCard(),
-            onDiscardClick = {
-                val (w, l, n) = getCalculatorValues()
-                onDiscard(w, l, n)
-            },
-            onSaveClick = {
-                handleSaveClick(
-                    canSaveYarnCard = canSaveYarnCard,
-                    getCalculatorValues = getCalculatorValues,
-                    onDiscardScan = onDiscardScan,
-                    onSaveCard = onSaveCard,
-                    onSaveAndUse = onSaveAndUse,
-                    onShowLinkDialog =
-                        if (
-                            initialLinkProjectId != null &&
-                            onLinkToProject != null &&
-                            availableProjects.any { it.id == initialLinkProjectId }
-                        ) {
-                            onShowLinkDialog
-                        } else {
-                            null
-                        },
-                    onSaved = {
-                        Toast
-                            .makeText(
-                                toastContext,
-                                toastContext.getString(R.string.saved_to_my_yarn_toast),
-                                Toast.LENGTH_SHORT,
-                            ).show()
-                    },
-                )
-            },
+            onChangeProjectClick = { showProjectSheet = true },
+            onDelete = { showDeleteDialog = true },
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(horizontal = 16.dp)
+                    .verticalScroll(rememberScrollState()),
         )
     }
 }
@@ -717,167 +538,4 @@ private fun LinkedProjectSheet(
             }
         }
     }
-}
-
-@Composable
-private fun LinkYarnDialog(
-    savedCardId: Long,
-    projects: List<CounterProject>,
-    initialProjectId: Long,
-    onLink: (cardId: Long, projectId: Long) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    var selectedProjectId by rememberSaveable(savedCardId, initialProjectId) {
-        mutableLongStateOf(initialProjectId)
-    }
-    val selectedProject = projects.firstOrNull { it.id == selectedProjectId }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.link_yarn)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                selectedProject?.let { project ->
-                    Text(stringResource(R.string.link_to_project, project.name))
-                }
-                Text(
-                    text = stringResource(R.string.select_project),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.secondary,
-                )
-                projects.forEach { project ->
-                    val isSelected = project.id == selectedProjectId
-                    Row(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .background(
-                                    color =
-                                        if (isSelected) {
-                                            MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
-                                        } else {
-                                            MaterialTheme.colorScheme.surfaceContainerHigh
-                                        },
-                                    shape = MaterialTheme.shapes.medium,
-                                ).clickable { selectedProjectId = project.id }
-                                .padding(horizontal = 14.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = project.name,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.weight(1f),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = { selectedProject?.let { onLink(savedCardId, it.id) } },
-                enabled = selectedProject != null,
-            ) {
-                Text(stringResource(R.string.link))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cancel))
-            }
-        },
-    )
-}
-
-@Composable
-private fun ReviewActionButtons(
-    canSaveYarnCard: Boolean,
-    saveEnabled: Boolean,
-    onDiscardClick: () -> Unit,
-    onSaveClick: () -> Unit,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        OutlinedButton(
-            onClick = onDiscardClick,
-            modifier = Modifier.weight(1f),
-        ) {
-            Text(stringResource(R.string.discard))
-        }
-        Button(
-            onClick = onSaveClick,
-            enabled = saveEnabled,
-            modifier = Modifier.weight(1f),
-        ) {
-            Text(
-                if (canSaveYarnCard) {
-                    stringResource(R.string.save_and_use)
-                } else {
-                    stringResource(R.string.use_in_calculator)
-                },
-            )
-        }
-    }
-
-    if (!canSaveYarnCard) {
-        Text(
-            text = stringResource(R.string.pro_required_save),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
-}
-
-private fun handleSaveClick(
-    canSaveYarnCard: Boolean,
-    getCalculatorValues: () -> Triple<String, String, String>,
-    onDiscardScan: () -> Unit,
-    onSaveCard: ((Long) -> Unit) -> Unit,
-    onSaveAndUse: (String, String, String) -> Unit,
-    onShowLinkDialog: ((Long) -> Unit)?,
-    onSaved: () -> Unit = {},
-) {
-    if (!canSaveYarnCard) {
-        val (w, l, n) = getCalculatorValues()
-        onDiscardScan()
-        onSaveAndUse(w, l, n)
-        return
-    }
-    onSaveCard { id ->
-        onSaved()
-        val showLinkDialog = onShowLinkDialog
-        if (showLinkDialog != null) {
-            showLinkDialog(id)
-        } else {
-            val (w, l, n) = getCalculatorValues()
-            onSaveAndUse(w, l, n)
-        }
-    }
-}
-
-@Composable
-private fun LabelField(
-    label: String,
-    value: String,
-    onValueChange: (String) -> Unit,
-) {
-    TextField(
-        value = value,
-        onValueChange = onValueChange,
-        label = { Text(label) },
-        modifier = Modifier.fillMaxWidth(),
-        singleLine = true,
-        shape = MaterialTheme.shapes.medium,
-        colors =
-            TextFieldDefaults.colors(
-                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                focusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
-                unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
-            ),
-    )
 }

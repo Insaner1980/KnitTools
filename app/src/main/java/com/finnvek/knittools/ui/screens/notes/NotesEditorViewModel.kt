@@ -3,7 +3,6 @@ package com.finnvek.knittools.ui.screens.notes
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.finnvek.knittools.ai.AiQuotaManager
 import com.finnvek.knittools.di.IoDispatcher
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
@@ -20,18 +19,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
 import javax.inject.Inject
 
 data class NotesEditorUiState(
     val projectName: String = "",
     val notes: String = "",
     val isLoaded: Boolean = false,
-    val currentRow: Int = 0,
     val isPro: Boolean = false,
-    val isAiAvailable: Boolean = false,
     val isMissingProject: Boolean = false,
 )
 
@@ -41,7 +35,6 @@ class NotesEditorViewModel
     constructor(
         private val repository: CounterRepository,
         private val proManager: ProManager,
-        private val aiQuotaManager: AiQuotaManager,
         @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
         savedStateHandle: SavedStateHandle,
     ) : ViewModel() {
@@ -67,8 +60,6 @@ class NotesEditorViewModel
                         return@collect
                     }
                     val canEditNotes = proManager.hasFeature(ProFeature.NOTES)
-                    val hasAiFeature = proManager.hasFeature(ProFeature.AI_FEATURES)
-                    val hasQuota = hasAiFeature && aiQuotaManager.hasQuota()
                     val shouldAdoptNotes =
                         !_uiState.value.isLoaded ||
                             !hasLocalEdits ||
@@ -82,9 +73,7 @@ class NotesEditorViewModel
                             projectName = project.name,
                             notes = if (shouldAdoptNotes) project.notes else state.notes,
                             isLoaded = true,
-                            currentRow = project.count,
                             isPro = canEditNotes,
-                            isAiAvailable = hasAiFeature && hasQuota,
                             isMissingProject = false,
                         )
                     }
@@ -128,32 +117,6 @@ class NotesEditorViewModel
             }
         }
 
-        /**
-         * Liittää päiväkirjamerkinnän olemassa olevien muistiinpanojen perään.
-         * Header: "{päivämäärä} · Row {currentRow}" (row-osuus vain jos count > 0).
-         * Erotin "---" lisätään vain jos olemassa olevat muistiinpanot eivät ole tyhjät.
-         */
-        fun appendJournalEntry(cleanedText: String) {
-            val state = _uiState.value
-            if (state.isMissingProject || !state.isLoaded || !state.isPro) return
-            val date = DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT).format(LocalDate.now())
-            val rowPart = if (state.currentRow > 0) " · Row ${state.currentRow}" else ""
-            val header = "$date$rowPart"
-            val block = "$header\n\n$cleanedText"
-            val newNotes =
-                if (state.notes.isBlank()) {
-                    block
-                } else {
-                    "${state.notes.trimEnd()}\n\n---\n\n$block"
-                }
-            onNotesChanged(newNotes)
-            // Päivitä AI-käytettävyys (quota voi olla muuttunut kutsun jälkeen)
-            viewModelScope.launch {
-                val stillAvailable = proManager.hasFeature(ProFeature.AI_FEATURES) && aiQuotaManager.hasQuota()
-                _uiState.update { it.copy(isAiAvailable = stillAvailable) }
-            }
-        }
-
         private suspend fun persistNotes(
             loadedProjectId: Long,
             requestedNotes: String,
@@ -174,7 +137,6 @@ class NotesEditorViewModel
                 state.copy(
                     projectName = savedProject.name,
                     notes = if (shouldApplySavedNotes) savedProject.notes else state.notes,
-                    currentRow = savedProject.count,
                     isMissingProject = false,
                 )
             }

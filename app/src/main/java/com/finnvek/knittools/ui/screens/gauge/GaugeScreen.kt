@@ -33,9 +33,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
-import com.finnvek.knittools.ai.nano.ParsedInstruction
 import com.finnvek.knittools.domain.calculator.GaugeConverter
 import com.finnvek.knittools.domain.calculator.GaugeSwatchCalculator
+import com.finnvek.knittools.domain.calculator.ParsedInstruction
 import com.finnvek.knittools.domain.model.GaugeConversionResult
 import com.finnvek.knittools.domain.model.GaugeSwatchResult
 import com.finnvek.knittools.ui.components.AnimatedResultNumber

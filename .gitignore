@@ -57,7 +57,12 @@ app/google-services.json
 /icon_splash_screen.*
 /camera-icon.webp
 /screen.png
+/screenshots/
 *.bak
+
+# Paikalliset analyysi- ja jatkomuistiinpanot
+/app/stability/
+/jatka.md
 
 # Paikalliset docs- ja launcher-assetit
 /docs/

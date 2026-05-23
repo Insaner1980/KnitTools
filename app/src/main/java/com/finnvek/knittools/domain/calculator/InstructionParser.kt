@@ -1,13 +1,4 @@
-package com.finnvek.knittools.ai.nano
-
-import com.google.mlkit.genai.common.FeatureStatus
-import com.google.mlkit.genai.common.GenAiException
-import com.google.mlkit.genai.prompt.Generation
-import com.google.mlkit.genai.prompt.GenerativeModel
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.firstOrNull
-import kotlin.math.min
-import kotlin.math.pow
+package com.finnvek.knittools.domain.calculator
 
 sealed class ParsedInstruction {
     enum class GaugeUnit { PER_10_CM, PER_4_INCHES }
@@ -39,147 +30,13 @@ sealed class ParsedInstruction {
         val errorType: ErrorType = ErrorType.UNKNOWN,
     ) : ParsedInstruction()
 
-    enum class ErrorType { BUSY, QUOTA, UNAVAILABLE, PARSE_FAILED, UNKNOWN }
+    enum class ErrorType { PARSE_FAILED, UNKNOWN }
 }
 
 object InstructionParser {
-    private const val MAX_RETRIES = 3
-    private const val BASE_DELAY_MS = 500L
-    private const val MAX_DELAY_MS = 8000L
+    fun parse(instruction: String): ParsedInstruction = parseWithRegex(instruction)
 
-    // Kattava Nano-prompt joka käsittelee kaikki yleisimmät englanninkieliset neulontaohjeet
-    private val SYSTEM_PROMPT =
-        """
-        You are a knitting instruction parser. Extract numbers from the instruction.
-
-        RULES:
-        - Only output key:value lines. No explanations.
-        - If you need to calculate (e.g. "increase to 108 from 96"), do the math: CHANGE = 108 - 96 = 12.
-        - Abbreviations: st/sts = stitches, r = rows, inc = increase, dec = decrease, k2tog/ssk/p2tog = decrease.
-        - "per 4 inches" and "per 10cm" both mean gauge units. Convert if needed (1 inch = 2.54cm).
-        - TOLERATE TYPOS: "stiches" = stitches, "guage" = gauge, "increse" = increase, "mesured" = measured, "widht" = width, "hight" = height, "accross" = across. Always try to understand the intent even with spelling errors.
-
-        FORMAT A — Increase or decrease stitches:
-        Inputs like: "increase 12 stitches evenly across 96", "dec 8 sts over 120 sts",
-        "increase evenly to 108 from 96", "k2tog every 12th st (96 sts)", "inc 1 st in every 8th st across 96"
-        Respond:
-        TYPE: INCREASE or DECREASE
-        CURRENT: <current stitch count>
-        CHANGE: <number of stitches to add or remove>
-
-        FORMAT B — Gauge / tension:
-        Inputs like: "22 sts and 30 rows = 10cm", "gauge: 5.5 sts per inch",
-        "tension: 28 sts x 36 rows to 10cm on 4mm", "20 stitches = 4 inches",
-        "gauge 22/30", "5 sts/inch, 7 rows/inch"
-        Respond:
-        GAUGE_STITCHES: <stitch gauge number>
-        GAUGE_ROWS: <row gauge number>
-        GAUGE_UNIT: 10CM or 4IN
-
-        FORMAT C — Swatch measurement:
-        Inputs like: "my swatch is 12cm wide with 26 stitches", "measured width is 30cm",
-        "I got 24 sts in 10cm", "swatch: 13.5cm, 30 stitches, 15cm tall, 38 rows",
-        "width 30 cm", "26 stitches over 12cm"
-        Respond:
-        SWATCH_WIDTH: <width in cm or inches, just the number>
-        SWATCH_STITCHES: <stitch count>
-        SWATCH_HEIGHT: <height in cm or inches, just the number>
-        SWATCH_ROWS: <row count>
-        SWATCH_UNIT: CM or IN
-        Omit any line where the value is not mentioned.
-
-        If nothing matches, respond: CANNOT_PARSE
-        """.trimIndent()
-
-    @Suppress("TooGenericExceptionCaught")
-    suspend fun parse(instruction: String): ParsedInstruction {
-        if (instruction.isBlank()) return ParsedInstruction.Failure("Empty instruction")
-
-        val model: GenerativeModel
-        try {
-            model = Generation.getClient()
-        } catch (_: Exception) {
-            // Nano ei saatavilla — yritä regexiä suoraan
-            return parseWithRegex(instruction.uppercase())
-                .takeIf { it !is ParsedInstruction.Failure }
-                ?: ParsedInstruction.Failure("unavailable", ParsedInstruction.ErrorType.UNAVAILABLE)
-        }
-
-        return try {
-            ensureFeatureReady(model)
-            val result = runWithRetry(model, instruction)
-            val parsed = parseResponse(result)
-            // Jos Nano-vastauksen parsinta epäonnistui, yritä suoraan käyttäjän syötettä
-            if (parsed is ParsedInstruction.Failure) {
-                val directParse = parseWithRegex(instruction.uppercase())
-                if (directParse !is ParsedInstruction.Failure) return directParse
-            }
-            parsed
-        } catch (e: GenAiException) {
-            // Nano-virhe — yritä regexiä
-            val directParse = parseWithRegex(instruction.uppercase())
-            if (directParse !is ParsedInstruction.Failure) return directParse
-            val msg = e.message?.lowercase() ?: ""
-            when {
-                msg.contains("quota") -> ParsedInstruction.Failure("quota", ParsedInstruction.ErrorType.QUOTA)
-                msg.contains("busy") -> ParsedInstruction.Failure("busy", ParsedInstruction.ErrorType.BUSY)
-                else -> ParsedInstruction.Failure(e.message ?: "unknown", ParsedInstruction.ErrorType.UNKNOWN)
-            }
-        } catch (_: Exception) {
-            val directParse = parseWithRegex(instruction.uppercase())
-            if (directParse !is ParsedInstruction.Failure) return directParse
-            ParsedInstruction.Failure("unknown", ParsedInstruction.ErrorType.UNKNOWN)
-        } finally {
-            model.close()
-        }
-    }
-
-    @Suppress("TooGenericExceptionCaught")
-    private suspend fun ensureFeatureReady(model: GenerativeModel) {
-        val status = model.checkStatus()
-        when (status) {
-            FeatureStatus.DOWNLOADABLE, FeatureStatus.DOWNLOADING -> {
-                try {
-                    model.download().firstOrNull()
-                } catch (_: Exception) {
-                    // Latausvirhe ei estä käyttöä — malli voi olla jo osittain saatavilla
-                }
-            }
-
-            FeatureStatus.AVAILABLE -> { /* Malli valmiina, ei toimenpiteitä */ }
-
-            else -> {
-                error("Feature unavailable")
-            }
-        }
-    }
-
-    @Suppress("TooGenericExceptionCaught")
-    private suspend fun runWithRetry(
-        model: GenerativeModel,
-        instruction: String,
-    ): String {
-        var lastException: Exception? = null
-        repeat(MAX_RETRIES) { attempt ->
-            try {
-                val prompt = "$SYSTEM_PROMPT\n\nInstruction: $instruction"
-                val response = model.generateContent(prompt)
-                return response.candidates.firstOrNull()?.text ?: ""
-            } catch (e: GenAiException) {
-                lastException = e
-                val errorMessage = e.message?.lowercase() ?: ""
-                if (errorMessage.contains("busy") || errorMessage.contains("quota")) {
-                    val delayMs = min(BASE_DELAY_MS * 2.0.pow(attempt).toLong(), MAX_DELAY_MS)
-                    delay(delayMs)
-                } else {
-                    throw e
-                }
-            }
-        }
-        throw lastException ?: error("Max retries exceeded")
-    }
-
-    // --- Nano-vastauksen parsinta (key:value) ---
+    // --- Avain-arvo-vastauksen parsinta (key:value) ---
 
     internal fun parseResponse(response: String): ParsedInstruction {
         val text = response.trim()
@@ -227,7 +84,7 @@ object InstructionParser {
             )
         }
 
-        // Vapaamuotoinen Nano-vastaus — yritä regexiä
+        // Vapaamuotoinen key:value-vastaus - yrita regexia
         return parseWithRegex(text.uppercase())
     }
 

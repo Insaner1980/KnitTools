@@ -47,7 +47,6 @@ import com.finnvek.knittools.BuildConfig
 import com.finnvek.knittools.R
 import com.finnvek.knittools.data.datastore.AppLanguage
 import com.finnvek.knittools.data.datastore.ThemeMode
-import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.ui.components.InfoTip
 import com.finnvek.knittools.ui.theme.knitToolsColors
 
@@ -59,7 +58,6 @@ fun SettingsScreen(
 ) {
     val prefs by viewModel.preferences.collectAsStateWithLifecycle()
     val proState by viewModel.proState.collectAsStateWithLifecycle()
-    val voiceUsage by viewModel.voiceLiveUsage.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val resources = LocalResources.current
     val showLanguageSheet = remember { mutableStateOf(false) }
@@ -145,25 +143,6 @@ fun SettingsScreen(
                 checked = prefs.showKnittingTips,
                 onCheckedChange = { viewModel.setShowKnittingTips(it) },
             )
-            if (proState.hasFeature(ProFeature.VOICE_LIVE) || BuildConfig.DEBUG) {
-                SwitchRow(
-                    label = stringResource(R.string.voice_natural_response),
-                    checked = prefs.voiceLiveEnabled,
-                    onCheckedChange = { viewModel.setVoiceLiveEnabled(it) },
-                )
-                Text(
-                    text =
-                        stringResource(
-                            R.string.voice_live_quota_remaining,
-                            voiceUsage.remainingMinutes,
-                            voiceUsage.monthlyAllowance,
-                        ),
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.knitToolsColors.onSurfaceMuted,
-                )
-            }
-
             if (!proState.isPro) {
                 HorizontalDivider()
                 SectionHeader(stringResource(R.string.settings_section_pro))

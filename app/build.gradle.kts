@@ -14,7 +14,7 @@ plugins {
     alias(libs.plugins.ktlint)
     alias(libs.plugins.detekt)
     alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.google.services)
+    alias(libs.plugins.stability.analyzer)
     jacoco
 }
 
@@ -390,18 +390,7 @@ val jacocoCoverageExclusionPatterns =
         "**/data/storage/**",
         "**/data/remote/**",
         "**/data/local/**",
-        "**/ai/speech/**",
-        "**/FirebaseVoiceLiveConnector*.*",
-        "**/FirebaseVoiceLiveConnection*.*",
-        "**/GeminiAiService*.*",
-        "**/AiQuotaManager*.*",
-        "**/VoiceLiveQuotaManager*.*",
         "**/PatternRowDetector*.*",
-        "**/NanoAvailability*.*",
-        "**/ProjectSummarizer*.*",
-        "**/VoiceCommandInterpreter*.*",
-        "**/NetworkStatusProvider*.*",
-        "**/YarnLabelScanRepository*.*",
     )
 
 val jacocoCoverageExclusions =
@@ -447,12 +436,6 @@ dependencies {
         }
         implementation(libs.kotlinx.serialization.json) {
             because("Room 2.8.x migration helpers require kotlinx.serialization 1.8.1")
-        }
-        implementation(libs.ktor.client.logging) {
-            because("Firebase AI tuo Ktor 3.0.x -transitiiveja; pidetään kaikki Ktor-artefaktit samassa versiossa")
-        }
-        implementation(libs.ktor.client.websockets) {
-            because("Firebase AI tuo Ktor 3.0.x -transitiiveja; pidetään kaikki Ktor-artefaktit samassa versiossa")
         }
         implementation(libs.guava) {
             because(
@@ -515,17 +498,6 @@ dependencies {
 
     // Google Play Billing
     implementation(libs.billing)
-
-    // Firebase
-    implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.ai)
-    implementation(libs.firebase.appcheck.playintegrity)
-
-    // ML Kit OCR
-    implementation(libs.mlkit.text.recognition)
-
-    // ML Kit GenAI (Gemini Nano on-device)
-    implementation(libs.mlkit.genai.prompt)
 
     // Glance (home screen widgets)
     implementation(libs.glance.appwidget)

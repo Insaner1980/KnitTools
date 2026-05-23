@@ -11,16 +11,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.finnvek.knittools.BuildConfig
 import com.finnvek.knittools.R
-import com.finnvek.knittools.ai.AiQuotaManager
-import com.finnvek.knittools.ai.AiVoiceAction
-import com.finnvek.knittools.ai.GeminiAiService
-import com.finnvek.knittools.ai.VoiceCommandInterpreter
-import com.finnvek.knittools.ai.live.LiveVoiceFunctionCallMapper
-import com.finnvek.knittools.ai.live.LiveVoiceState
-import com.finnvek.knittools.ai.live.ProjectVoiceContext
-import com.finnvek.knittools.ai.live.VoiceLiveQuotaManager
-import com.finnvek.knittools.ai.live.VoiceLiveSession
-import com.finnvek.knittools.ai.nano.NanoAvailability
 import com.finnvek.knittools.data.datastore.PreferencesManager
 import com.finnvek.knittools.data.storage.AppFileStorage
 import com.finnvek.knittools.data.storage.PatternDocumentStorage
@@ -48,11 +38,8 @@ import com.finnvek.knittools.repository.ProjectCounterRepository
 import com.finnvek.knittools.repository.ReminderRepository
 import com.finnvek.knittools.repository.SavedPatternRepository
 import com.finnvek.knittools.repository.YarnCardRepository
-import com.finnvek.knittools.util.NetworkStatusProvider
 import com.finnvek.knittools.widget.CounterWidgetState
 import com.finnvek.knittools.widget.WidgetData
-import com.google.firebase.ai.type.FunctionCallPart
-import com.google.firebase.ai.type.FunctionResponsePart
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
@@ -71,8 +58,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
@@ -92,8 +77,6 @@ data class CounterUiState(
     val canUseProgressPhotos: Boolean = false,
     val canUsePatternCameraScan: Boolean = false,
     val canUseVoiceCommands: Boolean = false,
-    val canUseVoiceLive: Boolean = false,
-    val isNanoAvailable: Boolean = false,
     val projects: List<CounterProject> = emptyList(),
     val sectionName: String? = null,
     val stitchCount: Int? = null,
@@ -101,10 +84,6 @@ data class CounterUiState(
     val currentStitch: Int = 0,
     val linkedYarns: List<Pair<Long, String>> = emptyList(),
     val totalSessionMinutes: Int = 0,
-    val isAiAvailable: Boolean = false,
-    val projectSummary: String? = null,
-    val summaryError: String? = null,
-    val isSummaryLoading: Boolean = false,
     val reminders: List<RowReminder> = emptyList(),
     val activeAlert: RowReminder? = null,
     val dismissedReminderTrigger: DismissedReminderTrigger? = null,
@@ -117,8 +96,6 @@ data class CounterUiState(
     val patternRowMapping: String? = null,
     val totalRows: Int? = null,
     val targetRows: Int? = null,
-    val isLiveSessionActive: Boolean = false,
-    val voiceLiveEnabled: Boolean = true,
 )
 
 data class DismissedReminderTrigger(
@@ -139,13 +116,7 @@ class CounterViewModel
         private val yarnCardRepository: YarnCardRepository,
         private val savedPatternRepository: SavedPatternRepository,
         private val patternDocumentStorage: PatternDocumentStorage,
-        private val geminiAiService: GeminiAiService,
-        private val aiQuotaManager: AiQuotaManager,
-        private val voiceLiveSession: VoiceLiveSession,
-        private val voiceLiveQuotaManager: VoiceLiveQuotaManager,
         private val inAppReviewManager: InAppReviewManager,
-        private val counterSummaryGenerator: CounterSummaryGenerator,
-        private val networkStatusProvider: NetworkStatusProvider,
         private val savedStateHandle: SavedStateHandle,
         @param:ApplicationContext private val context: Context,
         @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
@@ -182,7 +153,6 @@ class CounterViewModel
         private var counterCollectionJob: Job? = null
         private var photoCollectionJob: Job? = null
         private var allPhotosJob: Job? = null
-        private var summaryJob: Job? = null
         private var linkedYarnIdsCache: String = ""
         private var isForeground = true
         private var didRecoverPendingSession = false
@@ -225,7 +195,6 @@ class CounterViewModel
             startTimer()
             observePreferences()
             observeProState()
-            refreshNanoAvailability()
         }
 
         private fun observePreferences() {
@@ -235,7 +204,6 @@ class CounterViewModel
                         it.copy(
                             hapticFeedback = prefs.hapticFeedback,
                             keepScreenAwake = prefs.keepScreenAwake,
-                            voiceLiveEnabled = prefs.voiceLiveEnabled,
                         )
                     }
                 }
@@ -254,35 +222,12 @@ class CounterViewModel
                             canUseProgressPhotos = proState.hasFeature(ProFeature.PROGRESS_PHOTOS),
                             canUsePatternCameraScan = proState.hasFeature(ProFeature.PATTERN_CAMERA_SCAN),
                             canUseVoiceCommands = proState.hasFeature(ProFeature.VOICE_COMMANDS),
-                            canUseVoiceLive = proState.hasFeature(ProFeature.VOICE_LIVE),
                         )
                     }
                     if (!proState.isPro) {
-                        _uiState.update { it.copy(isNanoAvailable = false, isAiAvailable = false) }
                         pruneHistoryForFree()
-                    } else {
-                        refreshNanoAvailability()
-                        refreshAiAvailability()
                     }
                 }
-            }
-        }
-
-        fun refreshNanoAvailability() {
-            viewModelScope.launch {
-                val isNanoAvailable =
-                    proManager.hasFeature(ProFeature.GEMINI_NANO) &&
-                        NanoAvailability.isUsable()
-                _uiState.update { it.copy(isNanoAvailable = isNanoAvailable) }
-            }
-        }
-
-        fun refreshAiAvailability() {
-            viewModelScope.launch {
-                val available =
-                    proManager.hasFeature(ProFeature.AI_FEATURES) &&
-                        aiQuotaManager.hasQuota()
-                _uiState.update { it.copy(isAiAvailable = available) }
             }
         }
 
@@ -313,8 +258,6 @@ class CounterViewModel
 
         fun selectProject(project: CounterProject) {
             viewModelScope.launch {
-                // Pysäytä live-sessio ennen projektin vaihtoa — konteksti muuttuu
-                if (voiceLiveSession.isActive()) voiceLiveSession.stop()
                 persistCurrentSessionIfNeeded()
                 startProjectSession(project)
             }
@@ -469,7 +412,6 @@ class CounterViewModel
         }
 
         private suspend fun startProjectSession(project: CounterProject) {
-            clearSummary()
             sessionStartedAt = System.currentTimeMillis()
             sessionStartRow = project.count
             sessionRowsWorked = 0
@@ -1270,54 +1212,6 @@ class CounterViewModel
             return true
         }
 
-        fun generateSummary() {
-            summaryJob?.cancel()
-            summaryJob =
-                viewModelScope.launch {
-                    val state = _uiState.value
-                    val requestProjectId = state.projectId ?: return@launch
-                    if (!proManager.hasFeature(ProFeature.AI_FEATURES)) return@launch
-                    _uiState.update { it.copy(isSummaryLoading = true, projectSummary = null, summaryError = null) }
-
-                    val result = counterSummaryGenerator.generate(state)
-                    if (_uiState.value.projectId != requestProjectId) return@launch
-                    when (result) {
-                        is CounterSummaryResult.Success -> {
-                            _uiState.update {
-                                it.copy(projectSummary = result.summary, isSummaryLoading = false)
-                            }
-                            refreshAiAvailability()
-                        }
-
-                        is CounterSummaryResult.Fallback -> {
-                            _uiState.update {
-                                it.copy(
-                                    projectSummary = result.summary,
-                                    summaryError = result.error,
-                                    isSummaryLoading = false,
-                                )
-                            }
-                        }
-
-                        is CounterSummaryResult.Failure -> {
-                            _uiState.update {
-                                it.copy(
-                                    projectSummary = null,
-                                    summaryError = result.error,
-                                    isSummaryLoading = false,
-                                )
-                            }
-                        }
-                    }
-                }
-        }
-
-        fun clearSummary() {
-            summaryJob?.cancel()
-            summaryJob = null
-            _uiState.update { it.copy(projectSummary = null, summaryError = null, isSummaryLoading = false) }
-        }
-
         fun setSectionName(name: String?) {
             _uiState.update { it.copy(sectionName = name) }
             viewModelScope.launch {
@@ -1433,30 +1327,14 @@ class CounterViewModel
                 }
         }
 
-        // === Äänikomennot v2: AI-tulkinta, TTS, cache ===
+        // Paikalliset äänikomennot ja TTS-palaute.
 
         private val _voiceResponse = MutableSharedFlow<String>(extraBufferCapacity = 1)
         val voiceResponse: SharedFlow<String> = _voiceResponse.asSharedFlow()
 
-        // Signaali CounterScreenille: käynnistä v2 continuous mode fallbackina.
-        // Kantaa valinnaisen virheviestin snackbaria varten.
-        private val _fallbackToV2 = MutableSharedFlow<String?>(extraBufferCapacity = 1)
-        val fallbackToV2: SharedFlow<String?> = _fallbackToV2.asSharedFlow()
-
-        // Välimuisti: viimeiset 10 AI-tulkittua komentoa (session-elinaika)
-        private val voiceCommandCache =
-            object : LinkedHashMap<String, AiVoiceAction>(10, 0.75f, true) {
-                override fun removeEldestEntry(eldest: Map.Entry<String, AiVoiceAction>): Boolean = size > 10
-            }
-        private var lastRecognizedText: String = ""
-        private var lastRecognizedTimestamp: Long = 0L
-
-        // Offline-vihje näytetään kerran per session-elinaika
-        private var hasShownOfflineHint: Boolean = false
-
         /**
          * Paikallisesti tunnistetun komennon vahvistus TTS:lle.
-         * Vain ei-triviaalit komennot puhuvat — +1/−1 pysyy hiljaa (haptic riittää).
+         * Vain ei-triviaalit komennot puhuvat: +1/-1 pysyy hiljaa ja haptic riittää.
          */
         fun emitLocalVoiceFeedback(command: VoiceCommand) {
             val response =
@@ -1506,757 +1384,7 @@ class CounterViewModel
             response?.let { _voiceResponse.tryEmit(it) }
         }
 
-        // "Klassinen" voice-putki ei ole pelkkä offline-keyword-parseri:
-        // paikallisesti tunnistamattomat komennot tulevat tänne Gemini-tulkintaan.
-        // Live API on tästä erillinen putki, joka voi tarvittaessa fallbackata v2-tilaan.
-        fun interpretVoiceCommand(recognizedText: String) {
-            viewModelScope.launch {
-                if (!proManager.hasFeature(ProFeature.VOICE_COMMANDS)) return@launch
-
-                val normalizedText = recognizedText.lowercase().trim().replace(Regex("\\s+"), " ")
-
-                // Deduplikaatio: 3s ikkuna
-                val now = android.os.SystemClock.elapsedRealtime()
-                if (normalizedText == lastRecognizedText && now - lastRecognizedTimestamp < 3_000) return@launch
-                lastRecognizedText = normalizedText
-                lastRecognizedTimestamp = now
-
-                // Cache-haku
-                voiceCommandCache[normalizedText]?.let { cachedAction ->
-                    executeVoiceAction(cachedAction)
-                    return@launch
-                }
-
-                // Kiintiötarkistus
-                if (!aiQuotaManager.tryReserveVoiceCall()) {
-                    _voiceResponse.tryEmit(context.getString(R.string.voice_quota_monthly_exhausted))
-                    return@launch
-                }
-
-                // AI-tulkinta
-                val state = _uiState.value
-                val projectContext =
-                    VoiceCommandInterpreter.ProjectContext(
-                        projectName = state.projectName,
-                        currentRow = state.counter.count,
-                        targetRows = state.targetRows,
-                        stitchTrackingEnabled = state.stitchTrackingEnabled,
-                        currentStitch = state.currentStitch,
-                        totalStitches = state.stitchCount,
-                        activeCounters =
-                            state.projectCounters.map {
-                                VoiceCommandInterpreter.CounterInfo(
-                                    name = it.name,
-                                    type = it.counterType,
-                                    currentCount = it.count,
-                                )
-                            },
-                        sessionSeconds = state.sessionSeconds,
-                        linkedYarnNames = state.linkedYarns.map { it.second },
-                        patternName = state.patternName ?: state.linkedPattern?.name,
-                        shapingCounters =
-                            state.projectCounters
-                                .filter { it.counterType == "SHAPING" }
-                                .map {
-                                    VoiceCommandInterpreter.ShapingInfo(
-                                        name = it.name,
-                                        currentCount = it.count,
-                                        shapeEveryN = it.shapeEveryN,
-                                    )
-                                },
-                    )
-
-                val action =
-                    VoiceCommandInterpreter.interpret(
-                        geminiAiService,
-                        recognizedText,
-                        projectContext,
-                        java.util.Locale
-                            .getDefault()
-                            .toLanguageTag(),
-                    )
-
-                if (action == AiVoiceAction.Unknown) {
-                    aiQuotaManager.refundReservedVoiceCall()
-                    _voiceResponse.tryEmit(executeVoiceAction(action))
-                    return@launch
-                }
-                if (action != AiVoiceAction.Unknown) {
-                    voiceCommandCache[normalizedText] = action
-                }
-                val response = executeVoiceAction(action)
-                _voiceResponse.tryEmit(response)
-            }
-        }
-
-        // — Live API (v3) —
-
         fun canStartClassicVoice(): Boolean = BuildConfig.DEBUG || proManager.hasFeature(ProFeature.VOICE_COMMANDS)
-
-        fun startLiveVoice() {
-            if (voiceLiveSession.isActive()) return
-            viewModelScope.launch {
-                if (!canStartLiveVoice()) return@launch
-                _uiState.update { it.copy(isLiveSessionActive = true) }
-
-                // Seuraa session-tilan muutoksia ENNEN start()-kutsua,
-                // koska start() suspendaa koko audiokeskustelun ajan
-                val stateJob = observeLiveVoiceState()
-
-                // Suspendaa koko audiokeskustelun ajan
-                voiceLiveSession.start(buildProjectVoiceContext(), buildFunctionCallHandler())
-
-                // Sessio päättyi normaalisti
-                stateJob.cancel()
-                _uiState.update { it.copy(isLiveSessionActive = false) }
-            }
-        }
-
-        private fun observeLiveVoiceState(): Job =
-            viewModelScope.launch {
-                voiceLiveSession.state.collect(::handleLiveVoiceState)
-            }
-
-        private suspend fun canStartLiveVoice(): Boolean {
-            if (!BuildConfig.DEBUG && !proManager.hasFeature(ProFeature.VOICE_LIVE)) {
-                return false
-            }
-            if (!isOnline()) {
-                _fallbackToV2.tryEmit(offlineHintMessageOrNull())
-                return false
-            }
-            if (!voiceLiveQuotaManager.hasQuota()) {
-                _fallbackToV2.tryEmit(context.getString(R.string.voice_live_quota_exhausted))
-                return false
-            }
-            return true
-        }
-
-        /** Palauttaa offline-vihjeen vain ensimmäisellä kerralla per sessio */
-        private fun offlineHintMessageOrNull(): String? {
-            if (hasShownOfflineHint) return null
-            hasShownOfflineHint = true
-            return context.getString(R.string.voice_offline_mode)
-        }
-
-        private fun handleLiveVoiceState(liveState: LiveVoiceState) {
-            when (liveState) {
-                LiveVoiceState.ERROR -> {
-                    _uiState.update { it.copy(isLiveSessionActive = false) }
-                    _fallbackToV2.tryEmit(buildLiveVoiceErrorMessage())
-                }
-
-                LiveVoiceState.IDLE -> {
-                    _uiState.update { it.copy(isLiveSessionActive = false) }
-                }
-
-                LiveVoiceState.CONNECTING,
-                LiveVoiceState.ACTIVE,
-                -> {
-                    Unit
-                }
-            }
-        }
-
-        private fun buildLiveVoiceErrorMessage(): String? {
-            val detail = voiceLiveSession.lastError.orEmpty()
-            val isNetworkError =
-                detail.contains("UnknownHostException", ignoreCase = true) ||
-                    detail.contains("ConnectException", ignoreCase = true) ||
-                    detail.contains("SocketTimeout", ignoreCase = true) ||
-                    detail.contains("IOException", ignoreCase = true) ||
-                    detail.contains("Unable to resolve", ignoreCase = true)
-            return if (isNetworkError) {
-                offlineHintMessageOrNull()
-            } else {
-                context.getString(R.string.voice_live_error)
-            }
-        }
-
-        fun stopLiveVoice() {
-            viewModelScope.launch {
-                voiceLiveSession.stop()
-                _uiState.update { it.copy(isLiveSessionActive = false) }
-            }
-        }
-
-        private fun isOnline(): Boolean = networkStatusProvider.isOnline()
-
-        private fun buildProjectVoiceContext(): ProjectVoiceContext {
-            val state = _uiState.value
-            return ProjectVoiceContext(
-                projectName = state.projectName,
-                currentRow = state.counter.count,
-                targetRows = state.targetRows,
-                sectionName = state.sectionName,
-                stitchTrackingEnabled = state.stitchTrackingEnabled,
-                currentStitch = state.currentStitch,
-                totalStitches = state.stitchCount,
-                activeCounters =
-                    state.projectCounters.map {
-                        ProjectVoiceContext.CounterSummary(it.name, it.counterType, it.count)
-                    },
-                sessionMinutes = state.sessionSeconds / 60,
-                totalSessionMinutes = state.totalSessionMinutes,
-                linkedYarnNames = state.linkedYarns.map { it.second },
-                patternName = state.patternName ?: state.linkedPattern?.name,
-                currentPatternPage = state.currentPatternPage,
-                reminders =
-                    state.reminders.filter { !it.isCompleted }.map {
-                        ProjectVoiceContext.ReminderSummary(it.targetRow, it.message)
-                    },
-                notes = state.notes,
-            )
-        }
-
-        @Suppress("CyclomaticComplexMethod") // Dispatch map — jokainen haara on yksinkertainen
-        private fun buildFunctionCallHandler(): (FunctionCallPart) -> FunctionResponsePart =
-            { functionCall ->
-                val action = LiveVoiceFunctionCallMapper.toAction(functionCall.name, functionCall.args)
-                val response = executeVoiceAction(action)
-                FunctionResponsePart(
-                    functionCall.name,
-                    JsonObject(mapOf("response" to JsonPrimitive(response))),
-                    functionCall.id,
-                )
-            }
-
-        /**
-         * Suorittaa äänikomennon ja palauttaa vastausviestin.
-         * V2 kutsuu tätä interpretVoiceCommand()-metodista,
-         * V3 (Live API) kutsuu buildFunctionCallHandler()-kautta.
-         */
-        internal fun executeVoiceAction(action: AiVoiceAction): String {
-            val state = _uiState.value
-            return if (isVoiceQueryAction(action)) {
-                executeVoiceQueryAction(action, state)
-            } else {
-                executeVoiceCommandAction(action, state)
-            }
-        }
-
-        private fun isVoiceQueryAction(action: AiVoiceAction): Boolean =
-            when (action) {
-                is AiVoiceAction.QueryProgress,
-                is AiVoiceAction.QueryRemaining,
-                is AiVoiceAction.QuerySessionTime,
-                is AiVoiceAction.QueryTotalTime,
-                is AiVoiceAction.QueryYarn,
-                is AiVoiceAction.QueryInstruction,
-                is AiVoiceAction.QueryShaping,
-                is AiVoiceAction.QueryStitches,
-                is AiVoiceAction.QueryReminders,
-                is AiVoiceAction.QueryCounters,
-                is AiVoiceAction.QueryNotes,
-                is AiVoiceAction.QuerySummary,
-                is AiVoiceAction.QueryProject,
-                is AiVoiceAction.QuerySection,
-                -> true
-
-                else -> false
-            }
-
-        private fun executeVoiceCommandAction(
-            action: AiVoiceAction,
-            state: CounterUiState,
-        ): String =
-            when (action) {
-                is AiVoiceAction.Increment -> {
-                    handleVoiceIncrement(action)
-                }
-
-                is AiVoiceAction.Decrement -> {
-                    handleVoiceDecrement(action)
-                }
-
-                is AiVoiceAction.Undo -> {
-                    undo()
-                    context.getString(R.string.voice_undone_row, _uiState.value.counter.count)
-                }
-
-                is AiVoiceAction.Reset -> {
-                    reset()
-                    context.getString(R.string.voice_counter_reset)
-                }
-
-                is AiVoiceAction.AddNote -> {
-                    handleVoiceAddNote(state, action)
-                }
-
-                is AiVoiceAction.StitchIncrement -> {
-                    handleVoiceStitch(state, increment = true)
-                }
-
-                is AiVoiceAction.StitchDecrement -> {
-                    handleVoiceStitch(state, increment = false)
-                }
-
-                is AiVoiceAction.Help -> {
-                    context.getString(R.string.voice_help_full)
-                }
-
-                is AiVoiceAction.DismissReminder -> {
-                    handleVoiceDismissReminder(state)
-                }
-
-                is AiVoiceAction.IncrementCounter -> {
-                    handleVoiceCounterChange(state, action.name, delta = 1)
-                }
-
-                is AiVoiceAction.DecrementCounter -> {
-                    handleVoiceCounterChange(state, action.name, delta = -1)
-                }
-
-                is AiVoiceAction.ResetCounter -> {
-                    handleVoiceResetCounter(state, action.name)
-                }
-
-                is AiVoiceAction.SetSection -> {
-                    setSectionName(action.name)
-                    context.getString(R.string.voice_section_set, action.name)
-                }
-
-                is AiVoiceAction.SetStepSize -> {
-                    setStepSize(action.size)
-                    context.getString(R.string.voice_step_size_set, action.size)
-                }
-
-                is AiVoiceAction.SetStitchCount -> {
-                    setStitchCount(action.count)
-                    context.getString(R.string.voice_stitch_count_set, action.count)
-                }
-
-                is AiVoiceAction.ToggleStitchTracking -> {
-                    setStitchTrackingEnabled(action.enabled)
-                    if (action.enabled) {
-                        context.getString(
-                            R.string.voice_stitch_tracking_on,
-                        )
-                    } else {
-                        context.getString(R.string.voice_stitch_tracking_off)
-                    }
-                }
-
-                is AiVoiceAction.NextPage -> {
-                    handleVoicePageNav(state) {
-                        updatePatternPage(state.currentPatternPage + 1)
-                        ; context.getString(
-                            R.string.voice_page_current,
-                            _uiState.value.currentPatternPage + 1,
-                        )
-                    }
-                }
-
-                is AiVoiceAction.PreviousPage -> {
-                    handleVoicePreviousPage(state)
-                }
-
-                is AiVoiceAction.GoToPage -> {
-                    handleVoicePageNav(state) {
-                        updatePatternPage(action.page - 1)
-                        context.getString(R.string.voice_page_current, action.page)
-                    }
-                }
-
-                is AiVoiceAction.CompleteProject -> {
-                    completeProject()
-                    context.getString(R.string.voice_project_completed, state.projectName)
-                }
-
-                is AiVoiceAction.GenerateSummary -> {
-                    if (state.isAiAvailable) {
-                        generateSummary()
-                        context.getString(R.string.voice_summary_generating)
-                    } else {
-                        context.getString(R.string.voice_summary_unavailable)
-                    }
-                }
-
-                is AiVoiceAction.AddReminder -> {
-                    addReminder(action.row, null, action.message)
-                    context.getString(R.string.voice_reminder_added, action.message, action.row)
-                }
-
-                is AiVoiceAction.Unknown -> {
-                    context.getString(R.string.voice_command_unknown)
-                }
-
-                else -> {
-                    error("Kyselykomento ohjattiin väärään käsittelijään: $action")
-                }
-            }
-
-        private fun executeVoiceQueryAction(
-            action: AiVoiceAction,
-            state: CounterUiState,
-        ): String =
-            when (action) {
-                is AiVoiceAction.QueryProgress -> {
-                    voiceQueryProgress(state)
-                }
-
-                is AiVoiceAction.QueryRemaining -> {
-                    voiceQueryRemaining(state)
-                }
-
-                is AiVoiceAction.QuerySessionTime -> {
-                    voiceQuerySessionTime(state)
-                }
-
-                is AiVoiceAction.QueryTotalTime -> {
-                    voiceQueryTotalTime(state)
-                }
-
-                is AiVoiceAction.QueryYarn -> {
-                    voiceQueryYarn(state)
-                }
-
-                is AiVoiceAction.QueryInstruction -> {
-                    voiceQueryInstruction(state)
-                }
-
-                is AiVoiceAction.QueryShaping -> {
-                    voiceQueryShaping(state)
-                }
-
-                is AiVoiceAction.QueryStitches -> {
-                    voiceQueryStitches(state)
-                }
-
-                is AiVoiceAction.QueryReminders -> {
-                    voiceQueryReminders(state)
-                }
-
-                is AiVoiceAction.QueryCounters -> {
-                    voiceQueryCounters(state)
-                }
-
-                is AiVoiceAction.QueryNotes -> {
-                    voiceQueryNotes(state)
-                }
-
-                is AiVoiceAction.QuerySummary -> {
-                    state.projectSummary?.takeIf { it.isNotBlank() }
-                        ?: context.getString(R.string.voice_summary_none)
-                }
-
-                is AiVoiceAction.QueryProject -> {
-                    context.getString(R.string.voice_project_name, state.projectName)
-                }
-
-                is AiVoiceAction.QuerySection -> {
-                    if (!state.sectionName.isNullOrBlank()) {
-                        context.getString(
-                            R.string.voice_section_current,
-                            state.sectionName,
-                        )
-                    } else {
-                        context.getString(R.string.voice_section_none)
-                    }
-                }
-
-                else -> {
-                    error("Toimintokomento ohjattiin väärään kyselykäsittelijään: $action")
-                }
-            }
-
-        // — Voice action helpers —
-
-        private fun handleVoiceIncrement(action: AiVoiceAction.Increment): String {
-            repeat(action.count) { increment() }
-            return context.getString(R.string.voice_row_current, _uiState.value.counter.count)
-        }
-
-        private fun handleVoiceDecrement(action: AiVoiceAction.Decrement): String {
-            repeat(action.count) { decrement() }
-            return context.getString(R.string.voice_back_to_row, _uiState.value.counter.count)
-        }
-
-        private fun handleVoiceAddNote(
-            state: CounterUiState,
-            action: AiVoiceAction.AddNote,
-        ): String {
-            val separator = if (state.notes.isNotBlank()) "\n" else ""
-            setNotes(state.notes + separator + action.text)
-            return context.getString(R.string.voice_note_saved)
-        }
-
-        private fun handleVoiceStitch(
-            state: CounterUiState,
-            increment: Boolean,
-        ): String {
-            if (!state.stitchTrackingEnabled) return context.getString(R.string.voice_stitches_disabled)
-            if (increment) incrementStitch() else decrementStitch()
-            return context.getString(R.string.voice_stitch_at, _uiState.value.currentStitch)
-        }
-
-        private fun handleVoiceDismissReminder(state: CounterUiState): String {
-            val alert = state.activeAlert ?: return context.getString(R.string.voice_reminder_no_active)
-            dismissReminder(alert.id)
-            return context.getString(R.string.voice_reminder_dismissed)
-        }
-
-        private fun handleVoiceCounterChange(
-            state: CounterUiState,
-            name: String,
-            delta: Int,
-        ): String {
-            val counter =
-                when (val match = state.projectCounters.findUniqueProjectCounterByName(name)) {
-                    is ProjectCounterNameMatch.Found -> match.counter
-                    ProjectCounterNameMatch.Ambiguous ->
-                        return context.getString(R.string.voice_counter_ambiguous, name)
-                    ProjectCounterNameMatch.NotFound -> return context.getString(R.string.voice_counter_not_found, name)
-                }
-            if (delta > 0) incrementProjectCounter(counter) else decrementProjectCounter(counter)
-            val newCount =
-                if (delta >
-                    0
-                ) {
-                    counter.count + counter.stepSize
-                } else {
-                    (counter.count - counter.stepSize).coerceAtLeast(0)
-                }
-            return context.getString(
-                if (delta >
-                    0
-                ) {
-                    R.string.voice_counter_incremented
-                } else {
-                    R.string.voice_counter_decremented
-                },
-                counter.name,
-                newCount,
-            )
-        }
-
-        private fun handleVoiceResetCounter(
-            state: CounterUiState,
-            name: String,
-        ): String {
-            val counter =
-                when (val match = state.projectCounters.findUniqueProjectCounterByName(name)) {
-                    is ProjectCounterNameMatch.Found -> match.counter
-                    ProjectCounterNameMatch.Ambiguous ->
-                        return context.getString(R.string.voice_counter_ambiguous, name)
-                    ProjectCounterNameMatch.NotFound -> return context.getString(R.string.voice_counter_not_found, name)
-                }
-            resetProjectCounter(counter.id)
-            return context.getString(R.string.voice_counter_reset_named, counter.name)
-        }
-
-        private fun handleVoicePageNav(
-            state: CounterUiState,
-            navigate: () -> String,
-        ): String = if (state.patternUri != null) navigate() else context.getString(R.string.voice_instruction_none)
-
-        private fun handleVoicePreviousPage(state: CounterUiState): String =
-            when {
-                state.patternUri == null -> {
-                    context.getString(R.string.voice_instruction_none)
-                }
-
-                state.currentPatternPage <= 0 -> {
-                    context.getString(R.string.voice_page_first)
-                }
-
-                else -> {
-                    updatePatternPage(state.currentPatternPage - 1)
-                    context.getString(
-                        R.string.voice_page_current,
-                        _uiState.value.currentPatternPage + 1,
-                    )
-                }
-            }
-
-        // — Voice query helpers —
-
-        private fun voiceQueryProgress(state: CounterUiState): String =
-            if (state.targetRows != null && state.targetRows > 0) {
-                context.getString(
-                    R.string.voice_row_of_target,
-                    state.counter.count,
-                    state.targetRows,
-                    (state.counter.count * 100) / state.targetRows,
-                )
-            } else {
-                context.getString(R.string.voice_row_current, state.counter.count)
-            }
-
-        private fun voiceQueryRemaining(state: CounterUiState): String =
-            if (state.targetRows != null) {
-                val remaining = (state.targetRows - state.counter.count).coerceAtLeast(0)
-                if (remaining ==
-                    0
-                ) {
-                    context.getString(R.string.voice_remaining_done)
-                } else {
-                    context.getString(R.string.voice_rows_remaining, remaining)
-                }
-            } else {
-                context.getString(R.string.voice_no_target)
-            }
-
-        private fun voiceQuerySessionTime(state: CounterUiState): String {
-            val minutes = (state.sessionSeconds / 60).toInt()
-            return if (minutes >=
-                1
-            ) {
-                context.getString(R.string.voice_session_minutes, minutes)
-            } else {
-                context.getString(R.string.voice_session_under_minute)
-            }
-        }
-
-        private fun voiceQueryTotalTime(state: CounterUiState): String {
-            val totalMinutes = state.totalSessionMinutes
-            if (totalMinutes < 1) return context.getString(R.string.voice_total_time_none)
-            val hours = totalMinutes / 60
-            val mins = totalMinutes % 60
-            return if (hours >
-                0
-            ) {
-                context.getString(R.string.voice_total_time_hours, hours, mins)
-            } else {
-                context.getString(R.string.voice_total_time_minutes, mins)
-            }
-        }
-
-        private fun voiceQueryYarn(state: CounterUiState): String =
-            if (state.linkedYarns.isNotEmpty()) {
-                val firstName = state.linkedYarns.first().second
-                if (state.linkedYarns.size ==
-                    1
-                ) {
-                    firstName
-                } else {
-                    context.getString(
-                        R.string.voice_yarn_multiple,
-                        firstName,
-                        state.linkedYarns.size - 1,
-                    )
-                }
-            } else {
-                context.getString(R.string.voice_yarn_none)
-            }
-
-        private fun voiceQueryInstruction(state: CounterUiState): String {
-            val name = state.patternName ?: state.linkedPattern?.name
-            return if (name !=
-                null
-            ) {
-                context.getString(R.string.voice_pattern_info, name, state.currentPatternPage + 1)
-            } else {
-                context.getString(R.string.voice_instruction_none)
-            }
-        }
-
-        private fun voiceQueryShaping(state: CounterUiState): String {
-            val shaping = state.projectCounters.firstOrNull { it.counterType == "SHAPING" }
-            return when {
-                shaping != null && shaping.shapeEveryN != null && shaping.shapeEveryN > 0 -> {
-                    context.getString(
-                        R.string.voice_shaping_next,
-                        shaping.name,
-                        shaping.shapeEveryN - (shaping.count % shaping.shapeEveryN),
-                    )
-                }
-
-                shaping != null -> {
-                    context.getString(R.string.voice_shaping_at, shaping.name, shaping.count)
-                }
-
-                else -> {
-                    context.getString(R.string.voice_shaping_none)
-                }
-            }
-        }
-
-        private fun voiceQueryStitches(state: CounterUiState): String =
-            when {
-                state.stitchTrackingEnabled && state.stitchCount != null && state.stitchCount > 0 -> {
-                    context.getString(
-                        R.string.voice_stitches_total,
-                        state.stitchCount * state.counter.count,
-                        state.stitchCount,
-                        state.counter.count,
-                    )
-                }
-
-                state.stitchTrackingEnabled -> {
-                    context.getString(R.string.voice_stitches_current, state.currentStitch)
-                }
-
-                else -> {
-                    context.getString(R.string.voice_stitches_disabled)
-                }
-            }
-
-        private fun voiceQueryReminders(state: CounterUiState): String {
-            val upcoming =
-                state.reminders
-                    .filter {
-                        !it.isCompleted && it.targetRow > state.counter.count
-                    }.sortedBy { it.targetRow }
-            if (upcoming.isEmpty()) return context.getString(R.string.voice_reminders_none)
-            val next = upcoming.first()
-            val rowsUntil = next.targetRow - state.counter.count
-            return if (upcoming.size ==
-                1
-            ) {
-                context.getString(R.string.voice_reminder_next, next.message, rowsUntil)
-            } else {
-                context.getString(
-                    R.string.voice_reminders_multiple,
-                    next.message,
-                    rowsUntil,
-                    upcoming.size - 1,
-                )
-            }
-        }
-
-        private fun voiceQueryCounters(state: CounterUiState): String =
-            counterVoiceSummaryItems(
-                state = state,
-                secondaryCounterName = context.getString(R.string.pro_feature_secondary_counter),
-            ).let { counters ->
-                when {
-                    counters.isEmpty() -> {
-                        context.getString(R.string.voice_counters_none)
-                    }
-
-                    counters.size == 1 -> {
-                        context.getString(
-                            R.string.voice_counter_single,
-                            counters.first().name,
-                            counters.first().count,
-                        )
-                    }
-
-                    else -> {
-                        context
-                            .getString(
-                                R.string.voice_counters_list,
-                                counters.size,
-                                counters
-                                    .joinToString(
-                                        ", ",
-                                    ) {
-                                        "${it.name}: ${it.count}"
-                                    },
-                            )
-                    }
-                }
-            }
-
-        private fun voiceQueryNotes(state: CounterUiState): String =
-            if (state.notes.isBlank()) {
-                context.getString(R.string.voice_notes_empty)
-            } else {
-                val preview = state.notes.take(MAX_VOICE_NOTES_LENGTH)
-                val truncated = if (state.notes.length > MAX_VOICE_NOTES_LENGTH) "…" else ""
-                context.getString(R.string.voice_notes_content, preview + truncated)
-            }
 
         override fun onCleared() {
             val state = _uiState.value
@@ -2265,7 +1393,6 @@ class CounterViewModel
             @Suppress("TooGenericExceptionCaught")
             CoroutineScope(ioDispatcher + NonCancellable).launch {
                 try {
-                    voiceLiveSession.stop()
                     val projectId = state.projectId ?: return@launch
                     persistSessionSnapshotIfNeeded(
                         projectId = projectId,
@@ -2287,25 +1414,5 @@ class CounterViewModel
             const val KEY_SESSION_START_ROW = "counter.session_start_row"
             const val KEY_SESSION_SECONDS = "counter.session_seconds"
             const val KEY_SESSION_ROWS_WORKED = "counter.session_rows_worked"
-            const val MAX_VOICE_NOTES_LENGTH = 200
         }
     }
-
-private sealed interface ProjectCounterNameMatch {
-    data class Found(
-        val counter: ProjectCounter,
-    ) : ProjectCounterNameMatch
-
-    data object Ambiguous : ProjectCounterNameMatch
-
-    data object NotFound : ProjectCounterNameMatch
-}
-
-private fun List<ProjectCounter>.findUniqueProjectCounterByName(name: String): ProjectCounterNameMatch {
-    val matches = filter { it.name.equals(name, ignoreCase = true) }
-    return when (matches.size) {
-        0 -> ProjectCounterNameMatch.NotFound
-        1 -> ProjectCounterNameMatch.Found(matches.single())
-        else -> ProjectCounterNameMatch.Ambiguous
-    }
-}

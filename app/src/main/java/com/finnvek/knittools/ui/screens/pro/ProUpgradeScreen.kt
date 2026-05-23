@@ -259,10 +259,7 @@ private fun ProFeatureList() {
             R.string.pro_feature_row_reminders,
             R.string.pro_feature_progress_photos,
             R.string.pro_feature_unlimited_yarn,
-            R.string.pro_feature_ocr,
-            R.string.pro_feature_ai_features,
             R.string.pro_feature_voice_commands,
-            R.string.pro_feature_voice_live,
             R.string.pro_feature_widget,
             R.string.pro_feature_pattern_camera_scan,
         )

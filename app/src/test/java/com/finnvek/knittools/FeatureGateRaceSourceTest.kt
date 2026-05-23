@@ -22,17 +22,7 @@ class FeatureGateRaceSourceTest {
         assertTrue(viewModel.contains("fun canStartClassicVoice(): Boolean"))
         assertTrue(viewModel.contains("proManager.hasFeature(ProFeature.VOICE_COMMANDS)"))
         assertTrue(screen.contains("viewModel.canStartClassicVoice()"))
-        assertTrue(screen.contains("if (hasAudioPermission(context) && viewModel.canStartClassicVoice())"))
-    }
-
-    @Test
-    fun `summary generation rechecks AI feature before calling generator`() {
-        val viewModel = ProjectSourceFiles.read(COUNTER_VIEW_MODEL)
-        val gate = viewModel.indexOf("if (!proManager.hasFeature(ProFeature.AI_FEATURES)) return@launch")
-        val generatorCall = viewModel.indexOf("counterSummaryGenerator.generate(state)")
-
-        assertTrue(gate >= 0)
-        assertTrue(generatorCall > gate)
+        assertTrue(screen.contains("hasAudioPermission(context) && viewModel.canStartClassicVoice() ->"))
     }
 
     private companion object {

@@ -40,7 +40,6 @@ data class AppPreferences(
     val showKnittingTips: Boolean = true,
     val showCompletedProjects: Boolean = false,
     val projectSortOrder: String = "updated",
-    val voiceLiveEnabled: Boolean = true,
 )
 
 @Singleton
@@ -63,7 +62,6 @@ class PreferencesManager
                     showKnittingTips = prefs[KEY_SHOW_KNITTING_TIPS] ?: true,
                     showCompletedProjects = prefs[KEY_SHOW_COMPLETED] ?: false,
                     projectSortOrder = prefs[KEY_SORT_ORDER] ?: "updated",
-                    voiceLiveEnabled = prefs[KEY_VOICE_LIVE] ?: true,
                 )
             }
 
@@ -117,12 +115,6 @@ class PreferencesManager
         suspend fun setProjectSortOrder(order: String) {
             context.dataStore.editPreferencesSafely("Projektien lajittelun tallennus") {
                 it[KEY_SORT_ORDER] = order
-            }
-        }
-
-        suspend fun setVoiceLiveEnabled(enabled: Boolean) {
-            context.dataStore.editPreferencesSafely("Live-ääniasetuksen tallennus") {
-                it[KEY_VOICE_LIVE] = enabled
             }
         }
 
@@ -212,7 +204,6 @@ class PreferencesManager
             val KEY_SHOW_KNITTING_TIPS = booleanPreferencesKey("show_knitting_tips")
             val KEY_SHOW_COMPLETED = booleanPreferencesKey("show_completed_projects")
             val KEY_SORT_ORDER = stringPreferencesKey("project_sort_order")
-            val KEY_VOICE_LIVE = booleanPreferencesKey("voice_live_enabled")
             val KEY_DISMISSED_TOOLTIPS = stringSetPreferencesKey("dismissed_tooltips")
         }
     }

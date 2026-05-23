@@ -91,7 +91,7 @@ fun AllPhotosScreen(
     var viewingPhotoId by rememberSaveable { mutableStateOf<Long?>(null) }
     var showDeleteConfirmDialog by rememberSaveable { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
-    val deleteFailedMessage = stringResource(R.string.ai_error_unknown)
+    val deleteFailedMessage = stringResource(R.string.generic_error_unknown)
     val viewingPhoto = remember(viewingPhotoId, state.photos) { state.photos.firstOrNull { it.id == viewingPhotoId } }
 
     val filteredPhotos =

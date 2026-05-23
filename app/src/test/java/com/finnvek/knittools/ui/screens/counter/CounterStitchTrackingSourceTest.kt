@@ -19,9 +19,10 @@ class CounterStitchTrackingSourceTest {
 
     @Test
     fun `voice reset action delegates to row reset`() {
-        val counterViewModel = ProjectSourceFiles.read(COUNTER_VIEW_MODEL)
+        val counterScreen = ProjectSourceFiles.read(COUNTER_SCREEN)
 
-        assertTrue(counterViewModel.contains("is AiVoiceAction.Reset -> {\n                    reset()"))
+        assertTrue(counterScreen.contains("VoiceCommand.Reset -> {"))
+        assertTrue(counterScreen.contains("viewModel.reset()"))
     }
 
     @Test
@@ -39,8 +40,6 @@ class CounterStitchTrackingSourceTest {
             "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterScreen.kt"
         private const val PROJECT_ACTIONS_BOTTOM_SHEET =
             "app/src/main/java/com/finnvek/knittools/ui/screens/counter/ProjectActionsBottomSheet.kt"
-        private const val COUNTER_VIEW_MODEL =
-            "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterViewModel.kt"
         private const val COUNTER_WIDGET_ACTIONS =
             "app/src/main/java/com/finnvek/knittools/widget/CounterWidgetActions.kt"
         private const val COUNTER_REPOSITORY =

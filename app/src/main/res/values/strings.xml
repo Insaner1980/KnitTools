@@ -109,17 +109,12 @@
     <string name="pattern_page_indicator">Page %1$d of %2$d</string>
     <string name="pattern_previous_page">Previous page</string>
     <string name="pattern_next_page">Next page</string>
-    <string name="pattern_combine_instructions">Combine instructions</string>
-    <string name="pattern_combine_none_found">No overlapping instructions found on this page.</string>
-    <string name="pattern_combine_requires_internet">Requires internet connection</string>
-    <string name="pattern_combined_instructions_copied">Combined instructions copied</string>
     <string name="pattern_picker_device_files">Choose PDF from device</string>
     <string name="pattern_picker_saved_patterns">Saved patterns</string>
     <string name="pattern_picker_camera_scan">Camera scan</string>
     <string name="pattern_scan_failed">Pattern scan could not be converted to PDF.</string>
     <string name="imported_pattern_designer">Imported PDF</string>
     <string name="current_row_short">Row %1$d</string>
-    <string name="pattern_instruction_copied">Instruction copied</string>
     <string name="time_spent_minutes_format" tools:ignore="PluralsCandidate">%dm</string>
     <string name="link_to_project">Link to %s?</string>
     <string name="link_yarn">Link yarn</string>
@@ -158,11 +153,6 @@
 
     <!-- Settings -->
     <string name="show_knitting_tips">Show knitting tips</string>
-    <string name="project_summary">Project Summary</string>
-    <string name="view_ai_summary" tools:ignore="UnusedResources">View AI summary</string>
-    <string name="generating_summary">Generating summary\u2026</string>
-    <string name="ai_quota_exhausted">Monthly AI limit reached</string>
-    <string name="ai_summary_fallback">Could not generate AI summary — showing basic stats instead</string>
 
     <!-- Row Counter -->
     <string name="default_project_name">My Project</string>
@@ -175,26 +165,7 @@
     <string name="notes_editor_title">Notes \u2014 %1$s</string>
     <string name="write_your_notes_here">Write your notes here\u2026</string>
 
-    <!-- Journal (AI journal entry) -->
-    <string name="journal_ai_badge">+ AI</string>
-    <string name="journal_add_entry_title">Add journal entry</string>
-    <string name="journal_mode_speak">Speak</string>
-    <string name="journal_mode_type">Type</string>
-    <string name="journal_speak_title">Speak your entry</string>
-    <string name="journal_type_title">Type your entry</string>
-    <string name="journal_listening">Listening\u2026</string>
-    <string name="journal_tap_to_speak">Tap the microphone to start</string>
-    <string name="journal_type_placeholder">What happened this session?</string>
-    <string name="journal_transcription_placeholder">Your words appear here\u2026</string>
-    <string name="journal_add_button">Add entry</string>
-    <string name="journal_empty_error">Entry cannot be empty</string>
-    <string name="journal_offline_notice">AI formatting unavailable, entry saved as typed.</string>
-    <string name="journal_mic_permission_required">Microphone permission required</string>
-    <string name="journal_processing">Formatting\u2026</string>
-    <string name="journal_speech_unavailable">Speech recognition not available on this device</string>
-    <string name="journal_speech_network_error">Speech recognition needs a network connection</string>
-    <string name="journal_speech_no_match">Didn\u2019t catch that \u2014 try again</string>
-    <string name="journal_speech_error">Speech recognition error</string>
+
 
     <string name="counter_decrease">Decrease</string>
     <string name="counter_increase">Increase</string>
@@ -301,10 +272,7 @@
     <string name="pro_feature_row_reminders">Row reminders</string>
     <string name="pro_feature_progress_photos">Progress photos</string>
     <string name="pro_feature_unlimited_yarn">Unlimited yarn cards</string>
-    <string name="pro_feature_ocr">Yarn label OCR scanning</string>
-    <string name="pro_feature_ai_features">AI tools with monthly credits</string>
     <string name="pro_feature_voice_commands">Voice commands</string>
-    <string name="pro_feature_voice_live">Natural voice with monthly minutes</string>
     <string name="pro_feature_widget">Home screen widget</string>
     <string name="pro_feature_pattern_camera_scan">Pattern camera scan</string>
     <string name="pro_feature">Pro feature</string>
@@ -319,11 +287,8 @@
     <string name="billing_purchase_failed">Purchase could not be completed. Try again.</string>
     <string name="billing_already_owned_restore_failed">Google Play says you already own this purchase, but it could not be restored. Try Restore purchases.</string>
 
-    <!-- Yarn Card / OCR -->
-    <string name="scan_yarn_label">Scan yarn label</string>
-    <string name="yarn_scan_failed">Could not read a yarn label from this photo. Try again.</string>
+    <!-- Yarn Card -->
     <string name="saved_yarns">Saved yarns</string>
-    <string name="scanned_yarn">Scanned Yarn</string>
     <string name="brand">Brand</string>
     <string name="yarn_name">Yarn name</string>
     <string name="fiber_content">Fiber content</string>
@@ -340,10 +305,9 @@
     <string name="discard">Discard</string>
     <string name="use_in_calculator">Use in calculator</string>
     <string name="no_saved_yarns">No saved yarn cards yet</string>
-    <string name="scanning">Scanning…</string>
     <string name="pro_required_save">Pro required to save yarn cards</string>
 
-    <!-- Gemini Nano -->
+    <!-- Instruction parser -->
     <string name="paste_instruction">Paste instruction</string>
     <string name="instruction_hint">Paste your knitting instruction here</string>
     <string name="instruction_hint_increase">e.g. "Increase 12 stitches evenly across 96 stitches"</string>
@@ -351,13 +315,10 @@
     <string name="parsing_instruction">Parsing…</string>
     <string name="instruction_parsed">Values filled from instruction</string>
     <string name="instruction_parse_failed">Couldn\'t understand the instruction — try rephrasing</string>
-    <string name="ai_error_busy">AI is busy — try again in a moment</string>
-    <string name="ai_error_quota">Monthly AI limit reached — try again later</string>
-    <string name="ai_error_unavailable">AI feature not available on this device</string>
-    <string name="ai_error_unknown">Something went wrong — try again</string>
+    <string name="generic_error_unknown">Something went wrong — try again</string>
 
     <!-- Camera permission -->
-    <string name="camera_permission_denied">Camera permission is needed to scan yarn labels</string>
+    <string name="camera_permission_denied">Camera permission is needed to take photos</string>
     <string name="camera_permission_denied_permanent">Camera permission denied — enable it in Settings</string>
     <string name="open_settings">Settings</string>
     <string name="retry">Retry</string>
@@ -816,8 +777,7 @@
     <string name="progress_photos">Progress photos</string>
     <string name="voice_commands">Voice commands</string>
     <string name="voice_mode_timeout">Voice mode ended due to inactivity</string>
-    <string name="voice_offline_mode">Offline mode, basic commands only</string>
-    <string name="voice_quota_monthly_exhausted">Monthly AI command limit reached; basic commands still work</string>
+    <string name="voice_recognizer_network_error">Voice recognition is unavailable. Try again later.</string>
     <string name="voice_command_unknown">I didn\'t understand</string>
     <string name="voice_note_saved">Note saved</string>
     <string name="voice_counter_reset">Counter reset</string>
@@ -851,7 +811,6 @@
     <string name="voice_total_time_none">No time recorded yet</string>
     <string name="voice_total_time_hours" tools:ignore="PluralsCandidate">%1$d hours and %2$d minutes total on this project</string>
     <string name="voice_total_time_minutes" tools:ignore="PluralsCandidate">%1$d minutes total on this project</string>
-    <string name="voice_summary_none">No project summary available. Open the project first to generate one.</string>
     <string name="voice_project_name">You\'re working on %1$s</string>
     <string name="voice_section_current">Current section: %1$s</string>
     <string name="voice_section_none">No section set</string>
@@ -869,16 +828,10 @@
     <string name="voice_page_current">Page %1$d</string>
     <string name="voice_page_first">Already on the first page</string>
     <string name="voice_project_completed">%1$s marked as complete. Great work!</string>
-    <string name="voice_summary_generating">Generating summary…</string>
-    <string name="voice_summary_unavailable">AI summary is not available right now</string>
     <string name="voice_reminder_added">Reminder set: %1$s at row %2$d</string>
     <string name="voice_stitch_count_set" tools:ignore="PluralsCandidate">Stitch count set to %1$d per row</string>
     <string name="voice_stitch_tracking_on">Stitch tracking enabled</string>
     <string name="voice_stitch_tracking_off">Stitch tracking disabled</string>
-    <string name="voice_live_error">Voice connection failed</string>
-    <string name="voice_live_quota_exhausted">Voice minutes used up this month</string>
-    <string name="voice_natural_response">Natural voice</string>
-    <string name="voice_live_quota_remaining">%1$.0f / %2$.0f min remaining</string>
     <string name="voice_recognizer_error">Voice recognition error</string>
     <string name="row_label_format" tools:ignore="PluralsCandidate">Row %d</string>
     <string name="share_photo">Share</string>
@@ -945,7 +898,6 @@
     <string name="project_actions_section_counters">COUNTERS</string>
     <string name="project_actions_section_project_actions">PROJECT ACTIONS</string>
     <string name="project_actions_yarn">Yarn</string>
-    <string name="project_actions_ai_summary">AI summary</string>
     <string name="project_actions_photos">Photos</string>
     <string name="counter_repeat_label">REPEAT</string>
     <string name="counters_list_title">Counters</string>

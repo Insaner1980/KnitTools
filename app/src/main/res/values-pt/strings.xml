@@ -108,17 +108,12 @@
     <string name="pattern_page_indicator">Página %1$d de %2$d</string>
     <string name="pattern_previous_page">Página anterior</string>
     <string name="pattern_next_page">Página seguinte</string>
-    <string name="pattern_combine_instructions">Combinar instruções</string>
-    <string name="pattern_combine_none_found">Não foram encontradas instruções sobrepostas nesta página.</string>
-    <string name="pattern_combine_requires_internet">Requer ligação à Internet</string>
-    <string name="pattern_combined_instructions_copied">Instruções combinadas copiadas</string>
     <string name="pattern_picker_device_files">Escolher PDF do dispositivo</string>
     <string name="pattern_picker_saved_patterns">Receitas guardadas</string>
     <string name="pattern_picker_camera_scan">Leitura com câmara</string>
     <string name="pattern_scan_failed">Não foi possível converter a leitura da receita em PDF.</string>
     <string name="imported_pattern_designer">PDF importado</string>
     <string name="current_row_short">Carreira %1$d</string>
-    <string name="pattern_instruction_copied">Instrução copiada</string>
     <string name="time_spent_minutes_format">%dm</string>
     <string name="link_to_project">Ligar a %s?</string>
     <string name="link_yarn">Ligar fio</string>
@@ -157,11 +152,6 @@
 
     <!-- Settings -->
     <string name="show_knitting_tips">Mostrar dicas de tricô</string>
-    <string name="project_summary">Resumo do projeto</string>
-    <string name="view_ai_summary">Ver resumo com IA</string>
-    <string name="generating_summary">A gerar resumo…</string>
-    <string name="ai_quota_exhausted">Limite mensal de IA atingido</string>
-    <string name="ai_summary_fallback">Não foi possível gerar o resumo com IA — a mostrar estatísticas básicas em vez disso</string>
 
     <!-- Row Counter -->
     <string name="default_project_name">O meu projeto</string>
@@ -173,26 +163,7 @@
     <string name="notes_editor_title">Notas — %1$s</string>
     <string name="write_your_notes_here">Escreva as suas notas aqui…</string>
 
-    <!-- Journal (AI journal entry) -->
-    <string name="journal_ai_badge">+ IA</string>
-    <string name="journal_add_entry_title">Adicionar entrada de diário</string>
-    <string name="journal_mode_speak">Falar</string>
-    <string name="journal_mode_type">Escrever</string>
-    <string name="journal_speak_title">Diga a sua entrada</string>
-    <string name="journal_type_title">Escreva a sua entrada</string>
-    <string name="journal_listening">A ouvir…</string>
-    <string name="journal_tap_to_speak">Toque no microfone para começar</string>
-    <string name="journal_type_placeholder">O que aconteceu nesta sessão?</string>
-    <string name="journal_transcription_placeholder">As suas palavras aparecem aqui…</string>
-    <string name="journal_add_button">Adicionar entrada</string>
-    <string name="journal_empty_error">A entrada não pode estar vazia</string>
-    <string name="journal_offline_notice">A formatação por IA não está disponível; a entrada foi guardada como foi escrita.</string>
-    <string name="journal_mic_permission_required">É necessária permissão para usar o microfone</string>
-    <string name="journal_processing">A formatar…</string>
-    <string name="journal_speech_unavailable">O reconhecimento de voz não está disponível neste dispositivo</string>
-    <string name="journal_speech_network_error">O reconhecimento de voz requer ligação à rede</string>
-    <string name="journal_speech_no_match">Não percebi — tente novamente</string>
-    <string name="journal_speech_error">Erro de reconhecimento de voz</string>
+
 
     <string name="counter_decrease">Diminuir</string>
     <string name="counter_increase">Aumentar</string>
@@ -298,10 +269,7 @@
     <string name="pro_feature_row_reminders">Lembretes de carreiras</string>
     <string name="pro_feature_progress_photos">Fotos de progresso</string>
     <string name="pro_feature_unlimited_yarn">Fichas de fio ilimitadas</string>
-    <string name="pro_feature_ocr">Leitura OCR de etiquetas de fio</string>
-    <string name="pro_feature_ai_features">Ferramentas de IA com créditos mensais</string>
     <string name="pro_feature_voice_commands">Comandos de voz</string>
-    <string name="pro_feature_voice_live">Voz natural com minutos mensais</string>
     <string name="pro_feature_widget">Widget do ecrã inicial</string>
     <string name="pro_feature_pattern_camera_scan">Leitura de receitas com câmara</string>
     <string name="pro_feature">Funcionalidade Pro</string>
@@ -316,11 +284,8 @@
     <string name="billing_purchase_failed">Não foi possível concluir a compra. Tente novamente.</string>
     <string name="billing_already_owned_restore_failed">O Google Play indica que já tem esta compra, mas não foi possível restaurá-la. Use Restaurar compras.</string>
 
-    <!-- Yarn Card / OCR -->
-    <string name="scan_yarn_label">Ler etiqueta do fio</string>
-    <string name="yarn_scan_failed">Não foi possível ler uma etiqueta de fio nesta foto. Tente novamente.</string>
+    <!-- Yarn Card -->
     <string name="saved_yarns">Fios guardados</string>
-    <string name="scanned_yarn">Fio lido</string>
     <string name="brand">Marca</string>
     <string name="yarn_name">Nome do fio</string>
     <string name="fiber_content">Composição</string>
@@ -337,10 +302,9 @@
     <string name="discard">Descartar</string>
     <string name="use_in_calculator">Usar na calculadora</string>
     <string name="no_saved_yarns">Ainda não há fichas de fio guardadas</string>
-    <string name="scanning">A ler…</string>
     <string name="pro_required_save">É necessário Pro para guardar fichas de fio</string>
 
-    <!-- Gemini Nano -->
+    <!-- Instruction parser -->
     <string name="paste_instruction">Colar instrução</string>
     <string name="instruction_hint">Cole aqui a sua instrução de tricô</string>
     <string name="instruction_hint_increase">ex.: "Aumentar 12 pontos uniformemente ao longo de 96 pontos"</string>
@@ -348,13 +312,10 @@
     <string name="parsing_instruction">A analisar…</string>
     <string name="instruction_parsed">Valores preenchidos a partir da instrução</string>
     <string name="instruction_parse_failed">Não foi possível compreender a instrução — tente reformulá-la</string>
-    <string name="ai_error_busy">A IA está ocupada — tente novamente dentro de instantes</string>
-    <string name="ai_error_quota">Limite mensal de IA atingido — tente novamente mais tarde</string>
-    <string name="ai_error_unavailable">A funcionalidade de IA não está disponível neste dispositivo</string>
-    <string name="ai_error_unknown">Algo correu mal — tente novamente</string>
+    <string name="generic_error_unknown">Algo correu mal — tente novamente</string>
 
     <!-- Camera permission -->
-    <string name="camera_permission_denied">É necessária autorização da câmara para ler etiquetas de fio</string>
+    <string name="camera_permission_denied">É necessária autorização da câmara para tirar fotografias</string>
     <string name="camera_permission_denied_permanent">Autorização da câmara negada — ative-a nas Definições</string>
     <string name="open_settings">Definições</string>
 
@@ -538,8 +499,7 @@
     <string name="progress_photos">Fotos de progresso</string>
     <string name="voice_commands">Comandos de voz</string>
     <string name="voice_mode_timeout">O modo de voz terminou por inatividade</string>
-    <string name="voice_offline_mode">Modo offline, apenas comandos básicos</string>
-    <string name="voice_quota_monthly_exhausted">Limite mensal de comandos de IA atingido; os comandos básicos continuam a funcionar</string>
+    <string name="voice_recognizer_network_error">O reconhecimento de voz não está disponível. Tente novamente mais tarde.</string>
     <string name="voice_command_unknown">Não percebi</string>
     <string name="voice_note_saved">Nota guardada</string>
     <string name="voice_counter_reset">Contador reposto</string>
@@ -573,7 +533,6 @@
     <string name="voice_total_time_none">Ainda não há tempo registado</string>
     <string name="voice_total_time_hours">%1$d horas e %2$d minutos no total neste projeto</string>
     <string name="voice_total_time_minutes">%1$d minutos no total neste projeto</string>
-    <string name="voice_summary_none">Não há resumo do projeto disponível. Abra primeiro o projeto para gerar um.</string>
     <string name="voice_project_name">Está a trabalhar em %1$s</string>
     <string name="voice_section_current">Secção atual: %1$s</string>
     <string name="voice_section_none">Nenhuma secção definida</string>
@@ -591,16 +550,10 @@
     <string name="voice_page_current">Página %1$d</string>
     <string name="voice_page_first">Já está na primeira página</string>
     <string name="voice_project_completed">%1$s marcado como concluído. Bom trabalho!</string>
-    <string name="voice_summary_generating">A gerar resumo…</string>
-    <string name="voice_summary_unavailable">O resumo por IA não está disponível neste momento</string>
     <string name="voice_reminder_added">Lembrete definido: %1$s na carreira %2$d</string>
     <string name="voice_stitch_count_set">Número de pontos definido para %1$d por carreira</string>
     <string name="voice_stitch_tracking_on">Seguimento de pontos ativado</string>
     <string name="voice_stitch_tracking_off">Seguimento de pontos desativado</string>
-    <string name="voice_live_error">Falha na ligação de voz</string>
-    <string name="voice_live_quota_exhausted">Os minutos de voz deste mês já foram usados</string>
-    <string name="voice_natural_response">Voz natural</string>
-    <string name="voice_live_quota_remaining">%1$.0f / %2$.0f min restantes</string>
     <string name="voice_recognizer_error">Erro de reconhecimento de voz</string>
     <string name="row_label_format">Carreira %d</string>
     <string name="share_photo">Partilhar</string>
@@ -674,7 +627,6 @@
     <string name="project_actions_section_counters">CONTADORES</string>
     <string name="project_actions_section_project_actions">AÇÕES DO PROJETO</string>
     <string name="project_actions_yarn">Fio</string>
-    <string name="project_actions_ai_summary">Resumo de IA</string>
     <string name="project_actions_photos">Fotos</string>
     <string name="counter_repeat_label">REPETIÇÃO</string>
     <string name="counters_list_title">Contadores</string>

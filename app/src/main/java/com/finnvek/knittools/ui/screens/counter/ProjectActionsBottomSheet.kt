@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.Article
 import androidx.compose.material.icons.outlined.AddCircle
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.ChevronRight
@@ -50,7 +49,6 @@ data class ProjectActionsSheetCallbacks(
     val onDismiss: () -> Unit,
     val onOpenYarnManagement: () -> Unit,
     val onOpenNotes: () -> Unit,
-    val onOpenSummary: () -> Unit,
     val onOpenPhotos: () -> Unit,
     val onOpenReminders: () -> Unit,
     val onOpenCountersList: () -> Unit,
@@ -70,7 +68,6 @@ data class ProjectActionsSheetState(
     val projectCounterCount: Int,
     val stitchTrackingEnabled: Boolean,
     val stitchCount: Int?,
-    val isAiAvailable: Boolean,
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -98,12 +95,6 @@ fun ProjectActionsBottomSheet(
                     icon = Icons.Outlined.EditNote,
                     label = stringResource(R.string.notes),
                     onClick = callbacks.onOpenNotes,
-                )
-                ActionRow(
-                    icon = Icons.AutoMirrored.Outlined.Article,
-                    label = stringResource(R.string.project_actions_ai_summary),
-                    onClick = callbacks.onOpenSummary,
-                    enabled = state.isAiAvailable,
                 )
                 ActionRow(
                     icon = Icons.Outlined.PhotoLibrary,

@@ -63,7 +63,7 @@ fun RavelryDetailScreen(
     val isAuthenticated by viewModel.isAuthenticated.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val savedMessage = stringResource(R.string.pattern_saved_to_library)
-    val saveFailedMessage = stringResource(R.string.ai_error_unknown)
+    val saveFailedMessage = stringResource(R.string.generic_error_unknown)
     val openFailedMessage = stringResource(R.string.pattern_open_failed)
     val currentOnStartProject by rememberUpdatedState(onStartProject)
     val currentOnUpgradeToPro by rememberUpdatedState(onUpgradeToPro)

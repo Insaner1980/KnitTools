@@ -32,7 +32,7 @@ val TextMuted = Color(0xFF8A866E) // Hiljennetty teksti, chevronit, aikaleimat
 val TextDisabled = Color(0xFF5A5840) // Disabled-tila
 
 // === Aksentti ===
-val DustyRose = Color(0xFFB8908F) // Pro trial -teksti, AI summary, yarn card
+val DustyRose = Color(0xFFB8908F) // Pro trial -teksti, yarn card
 
 // === Status ===
 val Error = Color(0xFFC44D4D)

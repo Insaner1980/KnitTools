@@ -108,17 +108,12 @@
     <string name="pattern_page_indicator">Sivu %1$d / %2$d</string>
     <string name="pattern_previous_page">Edellinen sivu</string>
     <string name="pattern_next_page">Seuraava sivu</string>
-    <string name="pattern_combine_instructions">Yhdistä ohjeet</string>
-    <string name="pattern_combine_none_found">Tältä sivulta ei löytynyt päällekkäisiä ohjeita.</string>
-    <string name="pattern_combine_requires_internet">Vaatii internetyhteyden</string>
-    <string name="pattern_combined_instructions_copied">Yhdistetyt ohjeet kopioitu</string>
     <string name="pattern_picker_device_files">Valitse PDF laitteelta</string>
     <string name="pattern_picker_saved_patterns">Tallennetut ohjeet</string>
     <string name="pattern_picker_camera_scan">Kameraskannaus</string>
     <string name="pattern_scan_failed">Ohjeskannausta ei voitu muuntaa PDF:ksi.</string>
     <string name="imported_pattern_designer">Tuotu PDF</string>
     <string name="current_row_short">Kerros %1$d</string>
-    <string name="pattern_instruction_copied">Ohje kopioitu</string>
     <string name="time_spent_minutes_format">%dm</string>
     <string name="link_to_project">Liitetäänkö projektiin %s?</string>
     <string name="link_yarn">Liitä lanka</string>
@@ -157,11 +152,6 @@
 
     <!-- Asetukset -->
     <string name="show_knitting_tips">Näytä neulontavinkit</string>
-    <string name="project_summary">Projektin yhteenveto</string>
-    <string name="view_ai_summary">Näytä AI-yhteenveto</string>
-    <string name="generating_summary">Luodaan yhteenvetoa…</string>
-    <string name="ai_quota_exhausted">Kuukauden AI-raja täynnä</string>
-    <string name="ai_summary_fallback">AI-yhteenvetoa ei voitu luoda — näytetään perusluvut sen sijaan</string>
 
     <!-- Kerroslaskuri -->
     <string name="default_project_name">Oma projekti</string>
@@ -173,26 +163,7 @@
     <string name="notes_editor_title">Muistiinpanot — %1$s</string>
     <string name="write_your_notes_here">Kirjoita muistiinpanosi tähän…</string>
 
-    <!-- Päiväkirja (AI-merkintä) -->
-    <string name="journal_ai_badge">+ AI</string>
-    <string name="journal_add_entry_title">Lisää päiväkirjamerkintä</string>
-    <string name="journal_mode_speak">Puhu</string>
-    <string name="journal_mode_type">Kirjoita</string>
-    <string name="journal_speak_title">Puhu merkintäsi</string>
-    <string name="journal_type_title">Kirjoita merkintäsi</string>
-    <string name="journal_listening">Kuunnellaan…</string>
-    <string name="journal_tap_to_speak">Aloita painamalla mikrofonia</string>
-    <string name="journal_type_placeholder">Mitä tässä istunnossa tapahtui?</string>
-    <string name="journal_transcription_placeholder">Sanasi ilmestyvät tähän…</string>
-    <string name="journal_add_button">Lisää merkintä</string>
-    <string name="journal_empty_error">Merkintä ei voi olla tyhjä</string>
-    <string name="journal_offline_notice">AI-muotoilu ei ole käytettävissä, merkintä tallennettiin kirjoittamassasi muodossa.</string>
-    <string name="journal_mic_permission_required">Mikrofonin käyttöoikeus vaaditaan</string>
-    <string name="journal_processing">Muotoillaan…</string>
-    <string name="journal_speech_unavailable">Puheentunnistus ei ole käytettävissä tällä laitteella</string>
-    <string name="journal_speech_network_error">Puheentunnistus tarvitsee verkkoyhteyden</string>
-    <string name="journal_speech_no_match">Puhetta ei tunnistettu — yritä uudelleen</string>
-    <string name="journal_speech_error">Puheentunnistusvirhe</string>
+
 
     <string name="counter_decrease">Vähennä</string>
     <string name="counter_increase">Lisää</string>
@@ -298,10 +269,7 @@
     <string name="pro_feature_row_reminders">Rivimuistutukset</string>
     <string name="pro_feature_progress_photos">Edistymiskuvat</string>
     <string name="pro_feature_unlimited_yarn">Rajattomasti lankakortteja</string>
-    <string name="pro_feature_ocr">Lankavyötteen OCR-skannaus</string>
-    <string name="pro_feature_ai_features">AI-työkalut kuukausikrediiteillä</string>
     <string name="pro_feature_voice_commands">Äänikomennot</string>
-    <string name="pro_feature_voice_live">Luonnollinen puhe kuukausiminuuteilla</string>
     <string name="pro_feature_widget">Aloitusnäytön widget</string>
     <string name="pro_feature_pattern_camera_scan">Ohjeen kameraskannaus</string>
     <string name="pro_feature">Pro-ominaisuus</string>
@@ -316,11 +284,8 @@
     <string name="billing_purchase_failed">Ostoa ei voitu viimeistellä. Yritä uudelleen.</string>
     <string name="billing_already_owned_restore_failed">Google Playn mukaan omistat jo tämän oston, mutta sitä ei voitu palauttaa. Kokeile Palauta ostot -toimintoa.</string>
 
-    <!-- Lankakortti / OCR -->
-    <string name="scan_yarn_label">Skannaa lankavyöte</string>
-    <string name="yarn_scan_failed">Tästä kuvasta ei voitu lukea lankavyötettä. Yritä uudelleen.</string>
+    <!-- Lankakortti -->
     <string name="saved_yarns">Tallennetut langat</string>
-    <string name="scanned_yarn">Skannattu lanka</string>
     <string name="brand">Merkki</string>
     <string name="yarn_name">Langan nimi</string>
     <string name="fiber_content">Koostumus</string>
@@ -337,10 +302,9 @@
     <string name="discard">Hylkää</string>
     <string name="use_in_calculator">Käytä laskurissa</string>
     <string name="no_saved_yarns">Lankakortteja ei ole vielä tallennettu</string>
-    <string name="scanning">Skannataan…</string>
     <string name="pro_required_save">Pro vaaditaan lankakorttien tallentamiseen</string>
 
-    <!-- Gemini Nano -->
+    <!-- Instruction parser -->
     <string name="paste_instruction">Liitä ohje</string>
     <string name="instruction_hint">Liitä neuleohje tähän</string>
     <string name="instruction_hint_increase">esim. "Lisää 12 silmukkaa tasaisesti 96 silmukalle"</string>
@@ -348,13 +312,10 @@
     <string name="parsing_instruction">Jäsennetään…</string>
     <string name="instruction_parsed">Arvot täytetty ohjeesta</string>
     <string name="instruction_parse_failed">Ohjetta ei ymmärretty — kokeile muotoilla se toisin</string>
-    <string name="ai_error_busy">AI on varattu — yritä hetken kuluttua uudelleen</string>
-    <string name="ai_error_quota">Kuukausittainen AI-raja saavutettu — yritä myöhemmin uudelleen</string>
-    <string name="ai_error_unavailable">AI-ominaisuus ei ole käytettävissä tällä laitteella</string>
-    <string name="ai_error_unknown">Jotain meni pieleen — yritä uudelleen</string>
+    <string name="generic_error_unknown">Jotain meni pieleen — yritä uudelleen</string>
 
     <!-- Kameran käyttöoikeus -->
-    <string name="camera_permission_denied">Kameran käyttöoikeus tarvitaan lankavyötteen skannaukseen</string>
+    <string name="camera_permission_denied">Kameran käyttöoikeus tarvitaan kuvien ottamiseen</string>
     <string name="camera_permission_denied_permanent">Kameran käyttö estetty — ota se käyttöön asetuksissa</string>
     <string name="open_settings">Asetukset</string>
 
@@ -807,8 +768,7 @@
     <string name="progress_photos">Edistymiskuvat</string>
     <string name="voice_commands">Äänikomennot</string>
     <string name="voice_mode_timeout">Äänitila päättyi toimettomuuden vuoksi</string>
-    <string name="voice_offline_mode">Offline-tila, vain peruskomennot käytössä</string>
-    <string name="voice_quota_monthly_exhausted">AI-komentojen kuukausiraja on täynnä, mutta peruskomennot toimivat edelleen</string>
+    <string name="voice_recognizer_network_error">Äänentunnistus ei ole käytettävissä. Yritä myöhemmin uudelleen.</string>
     <string name="voice_command_unknown">En ymmärtänyt</string>
     <string name="voice_note_saved">Muistiinpano tallennettu</string>
     <string name="voice_counter_reset">Laskuri nollattu</string>
@@ -842,7 +802,6 @@
     <string name="voice_total_time_none">Aikaa ei ole vielä tallennettu</string>
     <string name="voice_total_time_hours">Tähän projektiin on käytetty yhteensä %1$d tuntia ja %2$d minuuttia</string>
     <string name="voice_total_time_minutes">Tähän projektiin on käytetty yhteensä %1$d minuuttia</string>
-    <string name="voice_summary_none">Projektin yhteenvetoa ei ole saatavilla. Avaa projekti ensin, jotta yhteenveto voidaan luoda.</string>
     <string name="voice_project_name">Työstät projektia %1$s</string>
     <string name="voice_section_current">Nykyinen osio: %1$s</string>
     <string name="voice_section_none">Osiota ei ole asetettu</string>
@@ -860,16 +819,10 @@
     <string name="voice_page_current">Sivu %1$d</string>
     <string name="voice_page_first">Olet jo ensimmäisellä sivulla</string>
     <string name="voice_project_completed">%1$s merkitty valmistuneeksi. Hienoa työtä!</string>
-    <string name="voice_summary_generating">Luodaan yhteenvetoa…</string>
-    <string name="voice_summary_unavailable">AI-yhteenveto ei ole juuri nyt saatavilla</string>
     <string name="voice_reminder_added">Muistutus asetettu: %1$s kerrokselle %2$d</string>
     <string name="voice_stitch_count_set">Silmukkamääräksi asetettu %1$d per kerros</string>
     <string name="voice_stitch_tracking_on">Silmukkaseuranta käytössä</string>
     <string name="voice_stitch_tracking_off">Silmukkaseuranta pois käytöstä</string>
-    <string name="voice_live_error">Ääniyhteys epäonnistui</string>
-    <string name="voice_live_quota_exhausted">Kuukauden ääniminuutit on käytetty</string>
-    <string name="voice_natural_response">Luonnollinen ääni</string>
-    <string name="voice_live_quota_remaining">%1$.0f / %2$.0f min jäljellä</string>
     <string name="voice_recognizer_error">Puheentunnistusvirhe</string>
     <string name="row_label_format">Kerros %d</string>
     <string name="share_photo">Jaa</string>
@@ -934,7 +887,6 @@
     <string name="project_actions_section_counters">LASKURIT</string>
     <string name="project_actions_section_project_actions">PROJEKTIN TOIMINNOT</string>
     <string name="project_actions_yarn">Lanka</string>
-    <string name="project_actions_ai_summary">Tekoälyn yhteenveto</string>
     <string name="project_actions_photos">Kuvat</string>
     <string name="counter_repeat_label">TOISTO</string>
     <string name="counters_list_title">Laskurit</string>

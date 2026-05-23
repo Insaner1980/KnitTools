@@ -108,17 +108,12 @@
     <string name="pattern_page_indicator">Side %1$d av %2$d</string>
     <string name="pattern_previous_page">Forrige side</string>
     <string name="pattern_next_page">Neste side</string>
-    <string name="pattern_combine_instructions">Kombiner instruksjoner</string>
-    <string name="pattern_combine_none_found">Ingen overlappende instruksjoner funnet på denne siden.</string>
-    <string name="pattern_combine_requires_internet">Krever internettilkobling</string>
-    <string name="pattern_combined_instructions_copied">Kombinerte instruksjoner kopiert</string>
     <string name="pattern_picker_device_files">Velg PDF fra enheten</string>
     <string name="pattern_picker_saved_patterns">Lagrede oppskrifter</string>
     <string name="pattern_picker_camera_scan">Kameraskanning</string>
     <string name="pattern_scan_failed">Skannet oppskrift kunne ikke konverteres til PDF.</string>
     <string name="imported_pattern_designer">Importert PDF</string>
     <string name="current_row_short">Rad %1$d</string>
-    <string name="pattern_instruction_copied">Instruksjon kopiert</string>
     <string name="time_spent_minutes_format">%dm</string>
     <string name="link_to_project">Koble til %s?</string>
     <string name="link_yarn">Koble garn</string>
@@ -157,11 +152,6 @@
 
     <!-- Settings -->
     <string name="show_knitting_tips">Vis strikketips</string>
-    <string name="project_summary">Prosjektsammendrag</string>
-    <string name="view_ai_summary">Vis AI-sammendrag</string>
-    <string name="generating_summary">Genererer sammendrag…</string>
-    <string name="ai_quota_exhausted">Månedlig AI-grense nådd</string>
-    <string name="ai_summary_fallback">Kunne ikke lage AI-sammendrag — viser grunnleggende statistikk i stedet</string>
 
     <!-- Row Counter -->
     <string name="default_project_name">Mitt prosjekt</string>
@@ -173,26 +163,7 @@
     <string name="notes_editor_title">Notater — %1$s</string>
     <string name="write_your_notes_here">Skriv notatene dine her…</string>
 
-    <!-- Journal (AI journal entry) -->
-    <string name="journal_ai_badge">+ AI</string>
-    <string name="journal_add_entry_title">Legg til dagbokinnlegg</string>
-    <string name="journal_mode_speak">Snakk</string>
-    <string name="journal_mode_type">Skriv</string>
-    <string name="journal_speak_title">Si innlegget ditt</string>
-    <string name="journal_type_title">Skriv innlegget ditt</string>
-    <string name="journal_listening">Lytter…</string>
-    <string name="journal_tap_to_speak">Trykk på mikrofonen for å starte</string>
-    <string name="journal_type_placeholder">Hva skjedde denne økten?</string>
-    <string name="journal_transcription_placeholder">Ordene dine vises her…</string>
-    <string name="journal_add_button">Legg til innlegg</string>
-    <string name="journal_empty_error">Innlegget kan ikke være tomt</string>
-    <string name="journal_offline_notice">AI-formatering utilgjengelig, innlegget ble lagret som skrevet.</string>
-    <string name="journal_mic_permission_required">Mikrofontillatelse kreves</string>
-    <string name="journal_processing">Formaterer…</string>
-    <string name="journal_speech_unavailable">Talegjenkjenning er ikke tilgjengelig på denne enheten</string>
-    <string name="journal_speech_network_error">Talegjenkjenning krever nettverkstilkobling</string>
-    <string name="journal_speech_no_match">Fikk ikke med meg det — prøv igjen</string>
-    <string name="journal_speech_error">Feil i talegjenkjenning</string>
+
 
     <string name="counter_decrease">Fell</string>
     <string name="counter_increase">Øk</string>
@@ -298,10 +269,7 @@
     <string name="pro_feature_row_reminders">Radpåminnelser</string>
     <string name="pro_feature_progress_photos">Framdriftsbilder</string>
     <string name="pro_feature_unlimited_yarn">Ubegrenset antall garnkort</string>
-    <string name="pro_feature_ocr">OCR-skanning av garnetiketter</string>
-    <string name="pro_feature_ai_features">AI-verktøy med månedlige kreditter</string>
     <string name="pro_feature_voice_commands">Talekommandoer</string>
-    <string name="pro_feature_voice_live">Naturlig stemme med månedlige minutter</string>
     <string name="pro_feature_widget">Widget på startskjermen</string>
     <string name="pro_feature_pattern_camera_scan">Skann oppskrift med kamera</string>
     <string name="pro_feature">Pro-funksjon</string>
@@ -316,11 +284,8 @@
     <string name="billing_purchase_failed">Kjøpet kunne ikke fullføres. Prøv igjen.</string>
     <string name="billing_already_owned_restore_failed">Google Play sier at du allerede eier dette kjøpet, men det kunne ikke gjenopprettes. Prøv Gjenopprett kjøp.</string>
 
-    <!-- Yarn Card / OCR -->
-    <string name="scan_yarn_label">Skann garnetikett</string>
-    <string name="yarn_scan_failed">Kunne ikke lese en garnetikett fra dette bildet. Prøv igjen.</string>
+    <!-- Yarn Card -->
     <string name="saved_yarns">Lagret garn</string>
-    <string name="scanned_yarn">Skannet garn</string>
     <string name="brand">Merke</string>
     <string name="yarn_name">Garnnavn</string>
     <string name="fiber_content">Fiberinnhold</string>
@@ -337,10 +302,9 @@
     <string name="discard">Forkast</string>
     <string name="use_in_calculator">Bruk i kalkulator</string>
     <string name="no_saved_yarns">Ingen garnkort lagret ennå</string>
-    <string name="scanning">Skanner…</string>
     <string name="pro_required_save">Pro kreves for å lagre garnkort</string>
 
-    <!-- Gemini Nano -->
+    <!-- Instruction parser -->
     <string name="paste_instruction">Lim inn instruksjon</string>
     <string name="instruction_hint">Lim inn strikkeinstruksjonen her</string>
     <string name="instruction_hint_increase">f.eks. "Øk 12 masker jevnt fordelt over 96 masker"</string>
@@ -348,13 +312,10 @@
     <string name="parsing_instruction">Tolker…</string>
     <string name="instruction_parsed">Verdier fylt inn fra instruksjon</string>
     <string name="instruction_parse_failed">Forsto ikke instruksjonen — prøv å formulere den annerledes</string>
-    <string name="ai_error_busy">AI er opptatt — prøv igjen om litt</string>
-    <string name="ai_error_quota">Månedlig AI-grense nådd — prøv igjen senere</string>
-    <string name="ai_error_unavailable">AI-funksjonen er ikke tilgjengelig på denne enheten</string>
-    <string name="ai_error_unknown">Noe gikk galt — prøv igjen</string>
+    <string name="generic_error_unknown">Noe gikk galt — prøv igjen</string>
 
     <!-- Camera permission -->
-    <string name="camera_permission_denied">Kameratillatelse trengs for å skanne garnetiketter</string>
+    <string name="camera_permission_denied">Kameratillatelse trengs for å ta bilder</string>
     <string name="camera_permission_denied_permanent">Kameratillatelse avslått — aktiver den i Innstillinger</string>
     <string name="open_settings">Innstillinger</string>
 
@@ -538,8 +499,7 @@
     <string name="progress_photos">Fremdriftsbilder</string>
     <string name="voice_commands">Talekommandoer</string>
     <string name="voice_mode_timeout">Talemodus avsluttet på grunn av inaktivitet</string>
-    <string name="voice_offline_mode">Frakoblet modus, bare grunnleggende kommandoer</string>
-    <string name="voice_quota_monthly_exhausted">Månedlig grense for AI-kommandoer er nådd, men grunnleggende kommandoer virker fortsatt</string>
+    <string name="voice_recognizer_network_error">Talegjenkjenning er ikke tilgjengelig. Prøv igjen senere.</string>
     <string name="voice_command_unknown">Jeg forsto ikke</string>
     <string name="voice_note_saved">Notat lagret</string>
     <string name="voice_counter_reset">Teller tilbakestilt</string>
@@ -573,7 +533,6 @@
     <string name="voice_total_time_none">Ingen tid registrert ennå</string>
     <string name="voice_total_time_hours">%1$d timer og %2$d minutter totalt på dette prosjektet</string>
     <string name="voice_total_time_minutes">%1$d minutter totalt på dette prosjektet</string>
-    <string name="voice_summary_none">Ingen prosjektsammendrag tilgjengelig. Åpne prosjektet først for å lage et.</string>
     <string name="voice_project_name">Du jobber med %1$s</string>
     <string name="voice_section_current">Nåværende seksjon: %1$s</string>
     <string name="voice_section_none">Ingen seksjon satt</string>
@@ -591,16 +550,10 @@
     <string name="voice_page_current">Side %1$d</string>
     <string name="voice_page_first">Allerede på første side</string>
     <string name="voice_project_completed">%1$s markert som fullført. Bra jobbet!</string>
-    <string name="voice_summary_generating">Genererer sammendrag…</string>
-    <string name="voice_summary_unavailable">AI-sammendrag er ikke tilgjengelig akkurat nå</string>
     <string name="voice_reminder_added">Påminnelse satt: %1$s på rad %2$d</string>
     <string name="voice_stitch_count_set">Masketall satt til %1$d per rad</string>
     <string name="voice_stitch_tracking_on">Maskesporing aktivert</string>
     <string name="voice_stitch_tracking_off">Maskesporing deaktivert</string>
-    <string name="voice_live_error">Taletilkoblingen mislyktes</string>
-    <string name="voice_live_quota_exhausted">Taleminuttene for denne måneden er brukt opp</string>
-    <string name="voice_natural_response">Naturlig stemme</string>
-    <string name="voice_live_quota_remaining">%1$.0f / %2$.0f min igjen</string>
     <string name="voice_recognizer_error">Feil i talegjenkjenning</string>
     <string name="row_label_format">Rad %d</string>
     <string name="share_photo">Del</string>
@@ -674,7 +627,6 @@
     <string name="project_actions_section_counters">TELLERE</string>
     <string name="project_actions_section_project_actions">PROSJEKTHANDLINGER</string>
     <string name="project_actions_yarn">Garn</string>
-    <string name="project_actions_ai_summary">AI-sammendrag</string>
     <string name="project_actions_photos">Bilder</string>
     <string name="counter_repeat_label">GJENTA</string>
     <string name="counters_list_title">Tellere</string>

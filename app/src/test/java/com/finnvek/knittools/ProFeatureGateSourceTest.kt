@@ -5,18 +5,6 @@ import org.junit.Test
 
 class ProFeatureGateSourceTest {
     @Test
-    fun `yarn card gates use scan and save feature names`() {
-        val viewModel = ProjectSourceFiles.read(YARN_CARD_VIEW_MODEL)
-
-        assertTrue(viewModel.contains("canScanYarnLabel: Boolean get() = proManager.hasFeature(ProFeature.OCR)"))
-        assertTrue(
-            viewModel.contains(
-                "canSaveYarnCards: Boolean get() = proManager.hasFeature(ProFeature.UNLIMITED_YARN)",
-            ),
-        )
-    }
-
-    @Test
     fun `counter gates use feature-specific names`() {
         val viewModel = ProjectSourceFiles.read(COUNTER_VIEW_MODEL)
         val screen = ProjectSourceFiles.read(COUNTER_SCREEN)
@@ -29,11 +17,10 @@ class ProFeatureGateSourceTest {
         assertTrue(viewModel.contains("ProFeature.ROW_REMINDERS"))
         assertTrue(viewModel.contains("ProFeature.PROGRESS_PHOTOS"))
         assertTrue(viewModel.contains("ProFeature.VOICE_COMMANDS"))
-        assertTrue(viewModel.contains("ProFeature.VOICE_LIVE"))
         assertTrue(screen.contains("state.canUseProgressPhotos || BuildConfig.DEBUG"))
         assertTrue(screen.contains("state.canUseMultipleCounters"))
         assertTrue(screen.contains("state.canUseRowReminders"))
-        assertTrue(screen.contains("state.canUseVoiceCommands || state.canUseVoiceLive"))
+        assertTrue(screen.contains("canUseVoice = state.canUseVoiceCommands"))
         assertTrue(voiceSummary.contains("state.canUseSecondaryCounter"))
     }
 
@@ -56,19 +43,14 @@ class ProFeatureGateSourceTest {
             "pro_feature_row_reminders",
             "pro_feature_progress_photos",
             "pro_feature_unlimited_yarn",
-            "pro_feature_ai_features",
             "pro_feature_voice_commands",
-            "pro_feature_voice_live",
         ).forEach { key ->
             assertTrue(upgradeScreen.contains("R.string.$key"))
             assertTrue(strings.contains("""<string name="$key">"""))
         }
-        assertTrue(strings.contains("Monthly AI limit reached"))
     }
 
     private companion object {
-        const val YARN_CARD_VIEW_MODEL =
-            "app/src/main/java/com/finnvek/knittools/ui/screens/yarncard/YarnCardViewModel.kt"
         const val COUNTER_VIEW_MODEL =
             "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterViewModel.kt"
         const val COUNTER_SCREEN =

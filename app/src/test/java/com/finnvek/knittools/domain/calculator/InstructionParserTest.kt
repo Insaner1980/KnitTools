@@ -1,11 +1,11 @@
-package com.finnvek.knittools.ai.nano
+package com.finnvek.knittools.domain.calculator
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class InstructionParserTest {
-    // === parseResponse: key:value Nano-vastaukset ===
+    // === parseResponse: key:value-vastaukset ===
 
     @Test
     fun `parseResponse - increase`() {

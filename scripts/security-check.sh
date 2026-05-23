@@ -7,6 +7,8 @@ SEM_GREP_TEXT_REPORT="$REPORTS_DIR/security-code.txt"
 SEM_GREP_JSON_REPORT="$REPORTS_DIR/security-code.json"
 DEP_TEXT_REPORT="$REPORTS_DIR/security-deps.txt"
 DEP_RAW_REPORT="$REPORTS_DIR/security-deps-raw.txt"
+DEP_JSON_REPORT="$REPORTS_DIR/dependency-check-report.json"
+DEP_HTML_REPORT="$REPORTS_DIR/dependency-check-report.html"
 SEM_GREP_REMOTE_TIMEOUT_SECONDS="${SEM_GREP_REMOTE_TIMEOUT_SECONDS:-60}"
 SEM_GREP_USE_REMOTE_CONFIGS="${SEM_GREP_USE_REMOTE_CONFIGS:-false}"
 GRADLE_USER_HOME_DIR="$ROOT_DIR/.gradle/security-check-home"
@@ -22,7 +24,7 @@ DEPENDENCY_CHECK_TASK="${DEPENDENCY_CHECK_TASK:-:app:dependencyCheckAnalyze}"
 mkdir -p "$REPORTS_DIR"
 
 summarize_dependency_check_report() {
-  python3 - <<'PY' "$ROOT_DIR/reports/dependency-check-report.json" "$DEP_TEXT_REPORT" "$DEP_RAW_REPORT"
+  python3 - <<'PY' "$DEP_JSON_REPORT" "$DEP_TEXT_REPORT" "$DEP_RAW_REPORT"
 import json
 import sys
 from collections import defaultdict
@@ -167,6 +169,7 @@ PY
 run_dependency_check() {
   printf '== Gradle dependency-check ==\n' | tee "$DEP_TEXT_REPORT"
   : > "$DEP_RAW_REPORT"
+  rm -f "$DEP_JSON_REPORT" "$DEP_HTML_REPORT"
 
   if [[ "$DEPENDENCY_CHECK_ENABLED" != "true" ]]; then
     printf 'Ohitetaan dependency-check, koska DEPENDENCY_CHECK_ENABLED ei ole true.\n' | tee -a "$DEP_TEXT_REPORT"

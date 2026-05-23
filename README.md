@@ -1,6 +1,6 @@
 # KnitTools
 
-KnitTools is an Android knitting toolkit built with Kotlin, Jetpack Compose, Material 3, Hilt, Room, DataStore, Firebase AI, Ravelry integration, Play Billing, and Glance widgets.
+KnitTools is an Android knitting toolkit built with Kotlin, Jetpack Compose, Material 3, Hilt, Room, DataStore, Ravelry integration, Play Billing, and Glance widgets.
 
 For the most detailed current architecture map, use [`PROJECT.md`](PROJECT.md). Older `knittools-*.md` files are planning/delta notes unless `PROJECT.md` points to them as current source of truth.
 
@@ -13,7 +13,6 @@ For the most detailed current architecture map, use [`PROJECT.md`](PROJECT.md). 
 
 Main source packages:
 
-- `ai` - Firebase AI, Gemini Nano/on-device parsers, voice AI, journal AI
 - `auth` - Ravelry authentication
 - `billing` / `pro` - Play Billing, trial, Pro feature access, in-app review/update helpers
 - `data` - Room, DataStore, remote API models/services, local file storage

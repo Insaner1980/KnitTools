@@ -108,17 +108,12 @@
     <string name="pattern_page_indicator">Seite %1$d von %2$d</string>
     <string name="pattern_previous_page">Vorherige Seite</string>
     <string name="pattern_next_page">Nächste Seite</string>
-    <string name="pattern_combine_instructions">Anweisungen zusammenführen</string>
-    <string name="pattern_combine_none_found">Auf dieser Seite wurden keine überlappenden Anweisungen gefunden.</string>
-    <string name="pattern_combine_requires_internet">Internetverbindung erforderlich</string>
-    <string name="pattern_combined_instructions_copied">Zusammengeführte Anweisungen kopiert</string>
     <string name="pattern_picker_device_files">PDF vom Gerät auswählen</string>
     <string name="pattern_picker_saved_patterns">Gespeicherte Anleitungen</string>
     <string name="pattern_picker_camera_scan">Kamera-Scan</string>
     <string name="pattern_scan_failed">Der Scan der Anleitung konnte nicht in PDF umgewandelt werden.</string>
     <string name="imported_pattern_designer">Importiertes PDF</string>
     <string name="current_row_short">Reihe %1$d</string>
-    <string name="pattern_instruction_copied">Anweisung kopiert</string>
     <string name="time_spent_minutes_format">%dm</string>
     <string name="link_to_project">Mit %s verknüpfen?</string>
     <string name="link_yarn">Garn verknüpfen</string>
@@ -157,11 +152,6 @@
 
     <!-- Settings -->
     <string name="show_knitting_tips">Stricktipps anzeigen</string>
-    <string name="project_summary">Projektzusammenfassung</string>
-    <string name="view_ai_summary">KI-Zusammenfassung anzeigen</string>
-    <string name="generating_summary">Zusammenfassung wird erstellt…</string>
-    <string name="ai_quota_exhausted">Monatliches KI-Limit erreicht</string>
-    <string name="ai_summary_fallback">KI-Zusammenfassung konnte nicht erstellt werden — stattdessen werden grundlegende Statistiken angezeigt</string>
 
     <!-- Row Counter -->
     <string name="default_project_name">Mein Projekt</string>
@@ -173,26 +163,7 @@
     <string name="notes_editor_title">Notizen — %1$s</string>
     <string name="write_your_notes_here">Schreibe hier deine Notizen…</string>
 
-    <!-- Journal (AI journal entry) -->
-    <string name="journal_ai_badge">+ KI</string>
-    <string name="journal_add_entry_title">Tagebucheintrag hinzufügen</string>
-    <string name="journal_mode_speak">Sprechen</string>
-    <string name="journal_mode_type">Tippen</string>
-    <string name="journal_speak_title">Sprich deinen Eintrag</string>
-    <string name="journal_type_title">Tippe deinen Eintrag</string>
-    <string name="journal_listening">Hört zu…</string>
-    <string name="journal_tap_to_speak">Tippe auf das Mikrofon, um zu starten</string>
-    <string name="journal_type_placeholder">Was ist in dieser Sitzung passiert?</string>
-    <string name="journal_transcription_placeholder">Deine Worte erscheinen hier…</string>
-    <string name="journal_add_button">Eintrag hinzufügen</string>
-    <string name="journal_empty_error">Der Eintrag darf nicht leer sein</string>
-    <string name="journal_offline_notice">KI-Formatierung nicht verfügbar, der Eintrag wurde unverändert gespeichert.</string>
-    <string name="journal_mic_permission_required">Mikrofonberechtigung erforderlich</string>
-    <string name="journal_processing">Wird formatiert…</string>
-    <string name="journal_speech_unavailable">Spracherkennung ist auf diesem Gerät nicht verfügbar</string>
-    <string name="journal_speech_network_error">Spracherkennung benötigt eine Netzwerkverbindung</string>
-    <string name="journal_speech_no_match">Nicht verstanden — versuche es erneut</string>
-    <string name="journal_speech_error">Spracherkennungsfehler</string>
+
 
     <string name="counter_decrease">Verringern</string>
     <string name="counter_increase">Erhöhen</string>
@@ -298,10 +269,7 @@
     <string name="pro_feature_row_reminders">Reihenerinnerungen</string>
     <string name="pro_feature_progress_photos">Fortschrittsfotos</string>
     <string name="pro_feature_unlimited_yarn">Unbegrenzte Garnkarten</string>
-    <string name="pro_feature_ocr">OCR-Scan von Garnetiketten</string>
-    <string name="pro_feature_ai_features">KI-Werkzeuge mit Monatsguthaben</string>
     <string name="pro_feature_voice_commands">Sprachbefehle</string>
-    <string name="pro_feature_voice_live">Natürliche Sprache mit Monatsminuten</string>
     <string name="pro_feature_widget">Startbildschirm-Widget</string>
     <string name="pro_feature_pattern_camera_scan">Kamera-Scan für Anleitungen</string>
     <string name="pro_feature">Pro-Funktion</string>
@@ -316,11 +284,8 @@
     <string name="billing_purchase_failed">Der Kauf konnte nicht abgeschlossen werden. Versuche es erneut.</string>
     <string name="billing_already_owned_restore_failed">Laut Google Play besitzt du diesen Kauf bereits, er konnte aber nicht wiederhergestellt werden. Versuche Käufe wiederherstellen.</string>
 
-    <!-- Yarn Card / OCR -->
-    <string name="scan_yarn_label">Garnetikett scannen</string>
-    <string name="yarn_scan_failed">Auf diesem Foto konnte kein Garnetikett gelesen werden. Versuche es erneut.</string>
+    <!-- Yarn Card -->
     <string name="saved_yarns">Gespeicherte Garne</string>
-    <string name="scanned_yarn">Gescanntes Garn</string>
     <string name="brand">Marke</string>
     <string name="yarn_name">Garnname</string>
     <string name="fiber_content">Fasergehalt</string>
@@ -337,10 +302,9 @@
     <string name="discard">Verwerfen</string>
     <string name="use_in_calculator">Im Rechner verwenden</string>
     <string name="no_saved_yarns">Noch keine Garnkarten gespeichert</string>
-    <string name="scanning">Wird gescannt…</string>
     <string name="pro_required_save">Pro erforderlich, um Garnkarten zu speichern</string>
 
-    <!-- Gemini Nano -->
+    <!-- Instruction parser -->
     <string name="paste_instruction">Anweisung einfügen</string>
     <string name="instruction_hint">Füge hier deine Strickanweisung ein</string>
     <string name="instruction_hint_increase">z. B. "12 Maschen gleichmäßig über 96 Maschen verteilt zunehmen"</string>
@@ -348,13 +312,10 @@
     <string name="parsing_instruction">Wird analysiert…</string>
     <string name="instruction_parsed">Werte aus der Anweisung übernommen</string>
     <string name="instruction_parse_failed">Die Anweisung konnte nicht verstanden werden — versuche eine andere Formulierung</string>
-    <string name="ai_error_busy">Die KI ist beschäftigt — versuche es gleich noch einmal</string>
-    <string name="ai_error_quota">Monatliches KI-Limit erreicht — versuche es später erneut</string>
-    <string name="ai_error_unavailable">KI-Funktion auf diesem Gerät nicht verfügbar</string>
-    <string name="ai_error_unknown">Etwas ist schiefgelaufen — versuche es erneut</string>
+    <string name="generic_error_unknown">Etwas ist schiefgelaufen — versuche es erneut</string>
 
     <!-- Camera permission -->
-    <string name="camera_permission_denied">Die Kameraberechtigung wird benötigt, um Garnetiketten zu scannen</string>
+    <string name="camera_permission_denied">Die Kameraberechtigung wird benötigt, um Fotos aufzunehmen</string>
     <string name="camera_permission_denied_permanent">Kameraberechtigung verweigert — aktiviere sie in den Einstellungen</string>
     <string name="open_settings">Einstellungen</string>
 
@@ -538,8 +499,7 @@
     <string name="progress_photos">Fortschrittsfotos</string>
     <string name="voice_commands">Sprachbefehle</string>
     <string name="voice_mode_timeout">Sprachmodus wegen Inaktivität beendet</string>
-    <string name="voice_offline_mode">Offline-Modus, nur einfache Befehle</string>
-    <string name="voice_quota_monthly_exhausted">Monatliches Limit für KI-Befehle erreicht, einfache Befehle funktionieren weiterhin</string>
+    <string name="voice_recognizer_network_error">Spracherkennung ist nicht verfügbar. Versuche es später erneut.</string>
     <string name="voice_command_unknown">Ich habe das nicht verstanden</string>
     <string name="voice_note_saved">Notiz gespeichert</string>
     <string name="voice_counter_reset">Zähler zurückgesetzt</string>
@@ -573,7 +533,6 @@
     <string name="voice_total_time_none">Noch keine Zeit erfasst</string>
     <string name="voice_total_time_hours">%1$d Stunden und %2$d Minuten insgesamt für dieses Projekt</string>
     <string name="voice_total_time_minutes">%1$d Minuten insgesamt für dieses Projekt</string>
-    <string name="voice_summary_none">Keine Projektzusammenfassung verfügbar. Öffne zuerst das Projekt, um eine zu erstellen.</string>
     <string name="voice_project_name">Du arbeitest an %1$s</string>
     <string name="voice_section_current">Aktueller Abschnitt: %1$s</string>
     <string name="voice_section_none">Kein Abschnitt festgelegt</string>
@@ -591,16 +550,10 @@
     <string name="voice_page_current">Seite %1$d</string>
     <string name="voice_page_first">Bereits auf der ersten Seite</string>
     <string name="voice_project_completed">%1$s als fertig markiert. Gute Arbeit!</string>
-    <string name="voice_summary_generating">Zusammenfassung wird erstellt…</string>
-    <string name="voice_summary_unavailable">KI-Zusammenfassung ist derzeit nicht verfügbar</string>
     <string name="voice_reminder_added">Erinnerung gesetzt: %1$s bei Reihe %2$d</string>
     <string name="voice_stitch_count_set">Maschenzahl auf %1$d pro Reihe gesetzt</string>
     <string name="voice_stitch_tracking_on">Maschenverfolgung aktiviert</string>
     <string name="voice_stitch_tracking_off">Maschenverfolgung deaktiviert</string>
-    <string name="voice_live_error">Sprachverbindung fehlgeschlagen</string>
-    <string name="voice_live_quota_exhausted">Die Sprachminuten für diesen Monat sind aufgebraucht</string>
-    <string name="voice_natural_response">Natürliche Stimme</string>
-    <string name="voice_live_quota_remaining">%1$.0f / %2$.0f Min verbleibend</string>
     <string name="voice_recognizer_error">Spracherkennungsfehler</string>
     <string name="row_label_format">Reihe %d</string>
     <string name="share_photo">Teilen</string>
@@ -674,7 +627,6 @@
     <string name="project_actions_section_counters">ZÄHLER</string>
     <string name="project_actions_section_project_actions">PROJEKTAKTIONEN</string>
     <string name="project_actions_yarn">Garn</string>
-    <string name="project_actions_ai_summary">KI-Zusammenfassung</string>
     <string name="project_actions_photos">Fotos</string>
     <string name="counter_repeat_label">WIEDERHOLUNG</string>
     <string name="counters_list_title">Zähler</string>

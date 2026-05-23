@@ -13,8 +13,6 @@ enum class ProFeature {
     FULL_HISTORY,
     NOTES,
     SECONDARY_COUNTER,
-    OCR,
-    GEMINI_NANO,
     WIDGET,
     ROW_REMINDERS,
     PROGRESS_PHOTOS,
@@ -26,8 +24,6 @@ enum class ProFeature {
     STREAK,
     UNLIMITED_YARN,
     VOICE_COMMANDS,
-    VOICE_LIVE,
-    AI_FEATURES,
 }
 
 @Immutable

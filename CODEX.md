@@ -21,7 +21,7 @@ Use [`CLAUDE.md`](/home/emma/dev/KnitTools/CLAUDE.md) when product wording, visu
 - Coroutine dispatchers that cross architectural boundaries are provided through `di/DispatchersModule` (`@IoDispatcher`); avoid hardcoded `Dispatchers.IO` in repositories and ViewModels
 - Multi-step Room writes that span DAOs go through `data/local/DatabaseTransactionRunner` from repository methods; UI code must not split bidirectional yarn/project links or pattern attachment writes into separate persistence calls
 - Widget row count changes go through `CounterRepository.applyWidgetCountChange`, which reads the current project row and writes count, history, and current-stitch reset inside one repository transaction
-- Project note replacement writes go through `CounterRepository.saveProjectNotes`, which merges against the editor's base notes so concurrent appends from voice/journal/editor flows are preserved instead of overwritten
+- Project note replacement writes go through `CounterRepository.saveProjectNotes`, which merges against the editor's base notes so concurrent editor flows are preserved instead of overwritten
 - Session rows store both display minutes and exact `durationSeconds`/`rowsWorked`; insights pace calculations must use the exact fields and split cross-midnight sessions by the device local date
 - Insights screen state is aggregated in `InsightsUiState`; heavy session-history calculations should run upstream with `@IoDispatcher` before Compose collects the single UI state
 - Legacy secondary counter state lives in `counter_projects.secondaryCount`; `project_counters` is only for named extra, repeating, shaping, and repeat-section counters, migrations must not duplicate `secondaryCount` into `project_counters`, and old generated `Pattern repeat` backfill copies are ignored at the counter UI boundary
@@ -33,10 +33,9 @@ Use [`CLAUDE.md`](/home/emma/dev/KnitTools/CLAUDE.md) when product wording, visu
 - Keep business logic out of composables when a ViewModel or use case should own it
 - Runtime app language is owned by AppCompat/Android per-app locale APIs; DataStore `app_language` is only a persistence and migration mirror managed by `PreferencesManager`
 - Ravelry is intentionally backendless: OAuth authorization requests include PKCE, but release builds may embed Ravelry Basic Auth credentials and OAuth client secret after explicit `KNITTOOLS_ALLOW_EMBEDDED_RAVELRY_SECRETS=true` opt-in; keep `config/security-decisions.md` aligned with this accepted risk
-- `ai/AiVoiceAction` is the single AI voice action contract; keyword-only voice commands stay in the counter UI voice handler
-- `ai/live/LiveVoiceFunctionCallMapper` is the validation boundary for Gemini Live tool calls; Gemini Live only maps non-mutating `query_project` and `help` tools because project context is untrusted, while keyword-only voice commands remain the mutating path
-- `ai/live/VoiceLiveSession` owns Gemini Live voice session lifecycle, quota, and timeout state; Firebase-specific connection setup lives in `ai/live/FirebaseVoiceLiveConnector` as the framework boundary
-- Journal UI and `JournalEntryViewModel` live under `ui/screens/notes`; `ai/journal` owns only journal AI processing and result models; completed journal entries are exposed through `JournalEntryUiState.pendingEntry` and consumed by `NotesEditorScreen`
+- Voice commands are local keyword commands under `ui/screens/counter`; do not reintroduce model-backed fallback or conversational voice without a new explicit product/security decision
+- Paste-to-parse uses the regex-only `domain/calculator/InstructionParser`; keep model-backed parser code out of calculator UI
+- Notes editing is local-only; do not reintroduce cloud journal processing or cloud cleanup without a new explicit product/security decision
 - PDF rendering lives in `data/storage/PdfPageRenderer`; pattern UI should not define renderer copies
 
 ## Navigation Rules
@@ -66,18 +65,16 @@ Use [`CLAUDE.md`](/home/emma/dev/KnitTools/CLAUDE.md) when product wording, visu
 - Do not reintroduce `android.disallowKotlinSourceSets`, `android.newDsl`, or `android.builtInKotlin` toggles unless absolutely necessary
 - Release signing must stay environment-variable-driven
 - Debug-only Ravelry credentials belong in ignored `debug.credentials.properties`, not `local.properties`; release Ravelry credentials come from `KNITTOOLS_RAVELRY_*` environment variables and require explicit embedded-secret opt-in
+- Firebase, Google Services, App Check, and model-backed parser dependencies are intentionally absent after model-backed feature removal; do not add them back as transitive convenience dependencies
 
 ## Security
 
 - Keep `usesCleartextTraffic` disabled unless explicitly justified
 - Ravelry Basic Auth credentials and OAuth client secret are an accepted no-backend risk only when documented in `config/security-decisions.md` and gated by the release opt-in; DeepSec marks only the documented Ravelry `secrets-exposure` findings as accepted-risk after revalidation
-- Firebase AI calls must keep Firebase App Check enabled through the Play Integrity provider, and AI SDK instances should request limited-use App Check tokens
-- Gemini Live system instructions must treat project context as untrusted quoted data; user/project/imported text must not be interpolated as executable model instructions
-- Gemini Live tools must stay non-mutating unless a deterministic recent-spoken-intent or confirmation boundary is added in code
 - Exported components must stay intentional and minimal
 - Treat extras on exported activities as untrusted unless they are explicitly validated against app-owned state
 - Keep `FileProvider` usage least-privilege
-- Do not log billing state, OCR text, AI prompt content, or user project data
+- Do not log billing state, voice transcripts, Ravelry credentials, pattern text, or user project data
 
 ## Working Conventions
 
@@ -97,5 +94,5 @@ Use [`CLAUDE.md`](/home/emma/dev/KnitTools/CLAUDE.md) when product wording, visu
 - `pc` runs PMD CPD duplicate detection with KnitTools' default `PMD_CPD_MINIMUM_TOKENS=100`, `cr` runs compose-rules through ktlint/detekt, `ga` runs Android Lint with Google Android Security Lints, and `cs` is available for Compose Stability Analyzer projects.
 - `sc` runs dependency, secret, and light Semgrep checks; `sc -Full` also runs the Android-specific `ac` path and DeepSec custom report
 - Typical commands: `./gradlew assembleDebug`, `./gradlew test`, `./gradlew :app:detekt`, `./gradlew lint`
-- Do not run the user's wrapper scripts such as `lint-check` or `security-check`
+- Do not run the user's wrapper scripts such as `lc` or `sc`
 - Never commit generated `reports/`

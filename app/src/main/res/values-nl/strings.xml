@@ -108,17 +108,12 @@
     <string name="pattern_page_indicator">Pagina %1$d van %2$d</string>
     <string name="pattern_previous_page">Vorige pagina</string>
     <string name="pattern_next_page">Volgende pagina</string>
-    <string name="pattern_combine_instructions">Instructies combineren</string>
-    <string name="pattern_combine_none_found">Geen overlappende instructies gevonden op deze pagina.</string>
-    <string name="pattern_combine_requires_internet">Internetverbinding vereist</string>
-    <string name="pattern_combined_instructions_copied">Gecombineerde instructies gekopieerd</string>
     <string name="pattern_picker_device_files">PDF van apparaat kiezen</string>
     <string name="pattern_picker_saved_patterns">Opgeslagen patronen</string>
     <string name="pattern_picker_camera_scan">Scannen met camera</string>
     <string name="pattern_scan_failed">De patroonscan kon niet naar PDF worden omgezet.</string>
     <string name="imported_pattern_designer">Geïmporteerde PDF</string>
     <string name="current_row_short">Toer %1$d</string>
-    <string name="pattern_instruction_copied">Instructie gekopieerd</string>
     <string name="time_spent_minutes_format">%dm</string>
     <string name="link_to_project">Koppelen aan %s?</string>
     <string name="link_yarn">Garen koppelen</string>
@@ -157,11 +152,6 @@
 
     <!-- Settings -->
     <string name="show_knitting_tips">Breitips tonen</string>
-    <string name="project_summary">Projectsamenvatting</string>
-    <string name="view_ai_summary">AI-samenvatting bekijken</string>
-    <string name="generating_summary">Samenvatting genereren…</string>
-    <string name="ai_quota_exhausted">Maandelijkse AI-limiet bereikt</string>
-    <string name="ai_summary_fallback">AI-samenvatting kon niet worden gegenereerd — basisstatistieken worden in plaats daarvan getoond</string>
 
     <!-- Row Counter -->
     <string name="default_project_name">Mijn project</string>
@@ -173,26 +163,7 @@
     <string name="notes_editor_title">Notities — %1$s</string>
     <string name="write_your_notes_here">Schrijf hier je notities…</string>
 
-    <!-- Journal (AI journal entry) -->
-    <string name="journal_ai_badge">+ AI</string>
-    <string name="journal_add_entry_title">Dagboekitem toevoegen</string>
-    <string name="journal_mode_speak">Spreken</string>
-    <string name="journal_mode_type">Typen</string>
-    <string name="journal_speak_title">Spreek je item in</string>
-    <string name="journal_type_title">Typ je item</string>
-    <string name="journal_listening">Luistert…</string>
-    <string name="journal_tap_to_speak">Tik op de microfoon om te starten</string>
-    <string name="journal_type_placeholder">Wat is er in deze sessie gebeurd?</string>
-    <string name="journal_transcription_placeholder">Je woorden verschijnen hier…</string>
-    <string name="journal_add_button">Item toevoegen</string>
-    <string name="journal_empty_error">Het item mag niet leeg zijn</string>
-    <string name="journal_offline_notice">AI-opmaak niet beschikbaar, item opgeslagen zoals getypt.</string>
-    <string name="journal_mic_permission_required">Microfoonmachtiging vereist</string>
-    <string name="journal_processing">Opmaak toepassen…</string>
-    <string name="journal_speech_unavailable">Spraakherkenning is niet beschikbaar op dit apparaat</string>
-    <string name="journal_speech_network_error">Spraakherkenning heeft een netwerkverbinding nodig</string>
-    <string name="journal_speech_no_match">Niet goed verstaan — probeer het opnieuw</string>
-    <string name="journal_speech_error">Fout bij spraakherkenning</string>
+
 
     <string name="counter_decrease">Minderen</string>
     <string name="counter_increase">Meerderen</string>
@@ -298,10 +269,7 @@
     <string name="pro_feature_row_reminders">Rijherinneringen</string>
     <string name="pro_feature_progress_photos">Voortgangsfoto’s</string>
     <string name="pro_feature_unlimited_yarn">Onbeperkt aantal garenkaarten</string>
-    <string name="pro_feature_ocr">OCR-scan van garenlabels</string>
-    <string name="pro_feature_ai_features">AI-tools met maandelijkse credits</string>
     <string name="pro_feature_voice_commands">Spraakopdrachten</string>
-    <string name="pro_feature_voice_live">Natuurlijke stem met maandelijkse minuten</string>
     <string name="pro_feature_widget">Widget op het startscherm</string>
     <string name="pro_feature_pattern_camera_scan">Patroon scannen met camera</string>
     <string name="pro_feature">Pro-functie</string>
@@ -316,11 +284,8 @@
     <string name="billing_purchase_failed">Aankoop kon niet worden voltooid. Probeer opnieuw.</string>
     <string name="billing_already_owned_restore_failed">Volgens Google Play bezit je deze aankoop al, maar deze kon niet worden hersteld. Probeer Aankopen herstellen.</string>
 
-    <!-- Yarn Card / OCR -->
-    <string name="scan_yarn_label">Garenlabel scannen</string>
-    <string name="yarn_scan_failed">Er kon geen garenlabel uit deze foto worden gelezen. Probeer het opnieuw.</string>
+    <!-- Yarn Card -->
     <string name="saved_yarns">Opgeslagen garens</string>
-    <string name="scanned_yarn">Gescand garen</string>
     <string name="brand">Merk</string>
     <string name="yarn_name">Naam van garen</string>
     <string name="fiber_content">Samenstelling</string>
@@ -337,10 +302,9 @@
     <string name="discard">Verwerpen</string>
     <string name="use_in_calculator">Gebruik in calculator</string>
     <string name="no_saved_yarns">Nog geen garenkaarten opgeslagen</string>
-    <string name="scanning">Scannen…</string>
     <string name="pro_required_save">Pro vereist om garenkaarten op te slaan</string>
 
-    <!-- Gemini Nano -->
+    <!-- Instruction parser -->
     <string name="paste_instruction">Instructie plakken</string>
     <string name="instruction_hint">Plak hier je brei-instructie</string>
     <string name="instruction_hint_increase">bijv. "Meerder 12 steken gelijkmatig verdeeld over 96 steken"</string>
@@ -348,13 +312,10 @@
     <string name="parsing_instruction">Verwerken…</string>
     <string name="instruction_parsed">Waarden ingevuld op basis van instructie</string>
     <string name="instruction_parse_failed">De instructie werd niet begrepen — probeer het anders te formuleren</string>
-    <string name="ai_error_busy">AI is bezig — probeer het straks opnieuw</string>
-    <string name="ai_error_quota">Maandelijkse AI-limiet bereikt — probeer het later opnieuw</string>
-    <string name="ai_error_unavailable">AI-functie niet beschikbaar op dit apparaat</string>
-    <string name="ai_error_unknown">Er is iets misgegaan — probeer het opnieuw</string>
+    <string name="generic_error_unknown">Er is iets misgegaan — probeer het opnieuw</string>
 
     <!-- Camera permission -->
-    <string name="camera_permission_denied">Cameratoestemming is nodig om garenlabels te scannen</string>
+    <string name="camera_permission_denied">Cameratoestemming is nodig om foto’s te maken</string>
     <string name="camera_permission_denied_permanent">Cameratoestemming geweigerd — schakel deze in via Instellingen</string>
     <string name="open_settings">Instellingen</string>
 
@@ -538,8 +499,7 @@
     <string name="progress_photos">Voortgangsfoto\'s</string>
     <string name="voice_commands">Spraakopdrachten</string>
     <string name="voice_mode_timeout">Spraakmodus is beëindigd door inactiviteit</string>
-    <string name="voice_offline_mode">Offline modus, alleen basisopdrachten</string>
-    <string name="voice_quota_monthly_exhausted">Maandelijkse limiet voor AI-opdrachten bereikt, basisopdrachten werken nog wel</string>
+    <string name="voice_recognizer_network_error">Spraakherkenning is niet beschikbaar. Probeer het later opnieuw.</string>
     <string name="voice_command_unknown">Ik begreep dat niet</string>
     <string name="voice_note_saved">Notitie opgeslagen</string>
     <string name="voice_counter_reset">Teller gereset</string>
@@ -573,7 +533,6 @@
     <string name="voice_total_time_none">Nog geen tijd geregistreerd</string>
     <string name="voice_total_time_hours">%1$d uur en %2$d minuten totaal aan dit project</string>
     <string name="voice_total_time_minutes">%1$d minuten totaal aan dit project</string>
-    <string name="voice_summary_none">Geen projectsamenvatting beschikbaar. Open eerst het project om er een te genereren.</string>
     <string name="voice_project_name">Je werkt aan %1$s</string>
     <string name="voice_section_current">Huidige sectie: %1$s</string>
     <string name="voice_section_none">Geen sectie ingesteld</string>
@@ -591,16 +550,10 @@
     <string name="voice_page_current">Pagina %1$d</string>
     <string name="voice_page_first">Je bent al op de eerste pagina</string>
     <string name="voice_project_completed">%1$s is gemarkeerd als voltooid. Goed gedaan!</string>
-    <string name="voice_summary_generating">Samenvatting genereren…</string>
-    <string name="voice_summary_unavailable">AI-samenvatting is nu niet beschikbaar</string>
     <string name="voice_reminder_added">Herinnering ingesteld: %1$s bij toer %2$d</string>
     <string name="voice_stitch_count_set">Aantal steken ingesteld op %1$d per toer</string>
     <string name="voice_stitch_tracking_on">Steken bijhouden ingeschakeld</string>
     <string name="voice_stitch_tracking_off">Steken bijhouden uitgeschakeld</string>
-    <string name="voice_live_error">Spraakverbinding mislukt</string>
-    <string name="voice_live_quota_exhausted">De spraakminuten van deze maand zijn opgebruikt</string>
-    <string name="voice_natural_response">Natuurlijke stem</string>
-    <string name="voice_live_quota_remaining">%1$.0f / %2$.0f min over</string>
     <string name="voice_recognizer_error">Fout bij spraakherkenning</string>
     <string name="row_label_format">Toer %d</string>
     <string name="share_photo">Delen</string>
@@ -674,7 +627,6 @@
     <string name="project_actions_section_counters">TELLERS</string>
     <string name="project_actions_section_project_actions">PROJECTACTIES</string>
     <string name="project_actions_yarn">Garen</string>
-    <string name="project_actions_ai_summary">AI-samenvatting</string>
     <string name="project_actions_photos">Foto’s</string>
     <string name="counter_repeat_label">HERHALING</string>
     <string name="counters_list_title">Tellers</string>

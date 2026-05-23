@@ -31,8 +31,8 @@ Nykytilan kannalta hyödyllinen järjestys:
 - Data: Room + DataStore + sisäinen tiedostotallennus
 - Widgetit: Glance App Widget
 - Verkko: Ktor + OkHttp
-- Integraatiot: Ravelry OAuth2/API, Firebase AI, Google Play Billing, In-App Review, In-App Update
-- On-device-ominaisuudet: ML Kit GenAI Prompt API ja regex-fallbackit `ai/nano/`; ML Kit Text Recognition -riippuvuus on buildissä, mutta nykyiset pattern/yarn camera -polut käyttävät Gemini-multimodaalikutsuja
+- Integraatiot: Ravelry OAuth2/API, Google Play Billing, In-App Review, In-App Update
+- Paikalliset lisäominaisuudet: regex-pohjainen laskuriohjeparseri `domain/calculator/InstructionParser.kt` sekä Android SpeechRecognizer/TTS -pohjaiset keyword-äänikomennot
 - Lokalisaatio: `localeConfig` + useat `values-*`-hakemistot
 - Room schema version: `11`
 - `compileSdk` / `targetSdk` / `minSdk`: `36 / 36 / 29`
@@ -42,11 +42,10 @@ Nykytilan kannalta hyödyllinen järjestys:
 - AGP: `9.1.0`
 - Kotlin Compose plugin: `2.3.10`
 - KSP: `2.3.6`
-- Compose BOM: `2026.03.00`
+- Compose BOM: `2026.05.01`
 - Room: `2.8.4`
 - Glance: `1.1.1`
-- Ktor: `3.4.2`
-- Firebase BoM: `34.13.0`
+- Ktor: `3.5.0`
 - Billing: `8.3.0`
 - versionCode / versionName: `1 / 1.0.0`
 
@@ -79,12 +78,11 @@ Jos avaat vain muutaman tiedoston, avaa nämä:
 - Pro / billing / trial:
   - `app/src/main/java/com/finnvek/knittools/billing/BillingManager.kt`
   - `app/src/main/java/com/finnvek/knittools/pro/`
-- AI / voice:
-  - `app/src/main/java/com/finnvek/knittools/ai/`
-  - `app/src/main/java/com/finnvek/knittools/repository/PatternInstructionRepository.kt`
-  - `app/src/main/java/com/finnvek/knittools/repository/YarnLabelScanRepository.kt`
+- voice ja paikallinen parseri:
   - `app/src/main/java/com/finnvek/knittools/ui/screens/counter/VoiceCommandParser.kt`
-  - `app/src/main/java/com/finnvek/knittools/util/NetworkStatusProvider.kt`
+  - `app/src/main/java/com/finnvek/knittools/ui/screens/counter/VoiceCommandHandler.kt`
+  - `app/src/main/java/com/finnvek/knittools/ui/screens/counter/VoiceResponseManager.kt`
+  - `app/src/main/java/com/finnvek/knittools/domain/calculator/InstructionParser.kt`
 - widgetit:
   - `app/src/main/java/com/finnvek/knittools/widget/`
 
@@ -97,7 +95,7 @@ Päätuote. Sisältää käytännössä kaiken tuotantologiikan:
 - Compose-screenit ja navigaatio
 - Room- ja DataStore-kerrokset
 - Ravelry-integraation
-- AI- ja voice-flowt
+- paikalliset voice-flowt ja laskuriohjeparseri
 - Play Billing / Pro / trial
 - Glance-widgetin
 
@@ -110,7 +108,6 @@ Pluginit `app/build.gradle.kts`:ssä:
 - `org.jlleitschuh.gradle.ktlint`
 - `dev.detekt`
 - `org.jetbrains.kotlin.plugin.serialization`
-- `com.google.gms.google-services`
 - `org.owasp.dependencycheck`
 - `androidx.baselineprofile`
 
@@ -139,8 +136,6 @@ Erillinen Android Test -moduuli:
 Nykyinen käynnistyslogiikka:
 
 1. `App.onCreate()`
-   - `FirebaseApp.initializeApp(...)`
-   - `FirebaseAppCheck.installAppCheckProviderFactory(PlayIntegrityAppCheckProviderFactory.getInstance())`
    - `PreferencesManager.applyStoredAppLanguage()`
    - `BillingManager.initialize()`
    - `ProManager.initialize()`
@@ -302,14 +297,6 @@ Huomio:
 
 ### Sovelluslogiikan pääpaketit
 
-- `ai/`
-  - cloud: `GeminiAiService`, `PatternInstructionGemini`, `PatternInstructionCombinerGemini`, `ProjectSummarizer`, `YarnLabelGeminiScanner`, `VoiceCommandInterpreter`
-  - shared models: `ParsedYarnLabel`, `AiVoiceAction`
-  - quota: `AiQuotaManager`
-  - journal: `ai/journal/`
-  - live-voice: `ai/live/`
-  - on-device parserit: `ai/nano/`
-  - puhewrapper: `ai/speech/`
 - `auth/`
   - `RavelryAuthManager.kt`
 - `billing/`
@@ -335,7 +322,7 @@ Huomio:
   - `DispatchersModule.kt`
   - `NetworkModule.kt`
 - `domain/calculator/`
-  - laskenta- ja parserilogiikat
+  - laskenta- ja paikalliset parserilogiikat, mukaan lukien regex-pohjainen `InstructionParser`
 - `domain/model/`
   - domain-mallit
 - `pro/`
@@ -347,14 +334,12 @@ Huomio:
 - `repository/`
   - `CounterRepository.kt`
   - `PatternAnnotationRepository.kt`
-  - `PatternInstructionRepository.kt`
   - `ProgressPhotoRepository.kt`
   - `ProjectCounterRepository.kt`
   - `RavelryRepository.kt`
   - `ReminderRepository.kt`
   - `SavedPatternRepository.kt`
   - `YarnCardRepository.kt`
-  - `YarnLabelScanRepository.kt`
 - `widget/`
   - `CounterWidget.kt`
   - `CounterWidgetActions.kt`
@@ -364,7 +349,6 @@ Huomio:
   - `WidgetCounterAction.kt`
   - `WidgetEntryPoint.kt`
 - `util/`
-  - `NetworkStatusProvider.kt`
   - `extensions/UnitConversion.kt`
 
 ## Data ja pysyvä tila
@@ -414,13 +398,10 @@ Session-laskennan nykyrajat:
 - knitting tips -näyttö
 - completed projects -näyttö
 - project sort order
-- voice live -kytkin
 - dismissed tooltipit
 
 Lisäksi käytössä on erillisiä DataStoreja:
 
-- `ai_quota`
-- `voice_live_quota`
 - `trial_state`
 - `review_state`
 - `counter_widget`
@@ -533,8 +514,6 @@ Billing-tuote:
 - `FULL_HISTORY`
 - `NOTES`
 - `SECONDARY_COUNTER`
-- `OCR`
-- `GEMINI_NANO`
 - `WIDGET`
 - `ROW_REMINDERS`
 - `PROGRESS_PHOTOS`
@@ -546,8 +525,6 @@ Billing-tuote:
 - `STREAK`
 - `UNLIMITED_YARN`
 - `VOICE_COMMANDS`
-- `VOICE_LIVE`
-- `AI_FEATURES`
 
 Huomio nykytilasta:
 
@@ -555,75 +532,32 @@ Huomio nykytilasta:
 - per-feature-gating on UI- ja käyttölogiikassa nimetty, mutta ei vielä eriytetty ostotasojen mukaan
 - trialin pituus on `14` päivää
 
-### AI
+### Paikallinen voice ja parseri
 
-AI ei ole yksi ominaisuus vaan useita polkuja:
+Sovelluksessa ei ole enää mallipohjaista tulkintakerrosta. Jäljellä olevat pinnat ovat paikallisia:
 
-- Firebase AI Logic: `GeminiAiService`
-- notes/journal-flow: `ai/journal/`
-- live-voice: `ai/live/`
-- on-device parserit: `ai/nano/`
-- kevyt puheentunnistuswrapper: `ai/speech/SimpleSpeechRecognizer.kt`
-- yarn label -skannaus: `YarnLabelGeminiScanner` käyttää yhtä Gemini-multimodaalikutsua, ei enää OCR -> Nano -putkea
-- pattern camera / PDF instruction -polut: `PatternInstructionGemini` ja `PatternInstructionCombinerGemini` käyttävät Gemini-multimodaalikutsuja skeemarajatulla JSON-vastauksella
+- `VOICE_COMMANDS`
+  - `ui/screens/counter/VoiceCommandHandler.kt`
+  - `ui/screens/counter/VoiceCommandParser.kt`
+  - `ui/screens/counter/VoiceResponseManager.kt`
+  - tunnistusjärjestys: exact keyword -> counted command -> first-word fallback
+  - paikallinen parseri tukee useiden lokalisoitujen komentojen keywordeja
+  - numeroina annetut määrät hyväksytään välillä `1..100`
+  - sanalliset numerot kattavat englannin ja suomen `1..20`, muissa tuetuissa kielissä pääosin `1..10`
+- `domain/calculator/InstructionParser.kt`
+  - paste-to-parse käyttää regex-pohjaista paikallista parseria
+  - parseri ei tee verkko- tai SDK-kutsuja
 
-`GeminiAiService`:
+Androidin `SpeechRecognizer` voi laitteen kielipaketeista riippuen tarvita verkkoyhteyttä transkription tuottamiseen, mutta KnitTools ei lähetä fraaseja omaan verkkopalveluun.
 
-- käyttää Firebase AI Logicin Google AI -backendia
-- asettaa `useLimitedUseAppCheckTokens = true`
-- tekstimalli: `gemini-2.5-flash-lite`
-- voice-tulkintamalli: `gemini-2.5-flash`
-- skeemarajatut vastaukset määritetään `generationConfig { responseMimeType = "application/json"; responseSchema = schema }`
-- rate/quota-tyyppisiä virheitä yritetään uudelleen enintään 3 kertaa
+### Notes
 
-`AiQuotaManager`:
-
-- kuukausikiintiö `500`
-- sama quota käytössä tekstipohjaisille AI-kutsuille ja klassisen voice-Gemini-fallbackin kutsuille
-- kutsut varataan ennen Gemini-kutsua `tryReserveCall()` / `tryReserveVoiceCall()` -metodeilla
-- epäonnistuneet tai käyttökelvottomat vastaukset palauttavat varauksen `refundReservedCall()` / `refundReservedVoiceCall()` -metodeilla
-- lisäkreditit tallennetaan samaan `ai_quota` DataStoreen
-
-### Voice: kaksi erillistä putkea
-
-1. Klassinen keyword-flow (`VOICE_COMMANDS`)
-   - `ui/screens/counter/VoiceCommandHandler.kt`
-   - `ui/screens/counter/VoiceCommandParser.kt`
-   - `ai/VoiceCommandInterpreter.kt`
-   - `ui/screens/counter/VoiceResponseManager.kt`
-   - tunnistusjärjestys: exact keyword -> counted command -> first-word fallback -> Gemini
-   - paikallinen parseri tukee useiden lokalisoitujen komentojen keywordeja
-   - numeroina annetut määrät hyväksytään välillä `1..100`
-   - sanalliset numerot kattavat englannin ja suomen `1..20`, muissa tuetuissa kielissä pääosin `1..10`
-   - Gemini-fallback käyttää skeemarajattua JSONia ja kuluttaa `AiQuotaManager`in kiintiötä
-
-2. Gemini Live API -keskustelu (`VOICE_LIVE`)
-   - `ai/live/VoiceLiveSession.kt`
-   - `ai/live/ProjectVoiceContext.kt`
-   - `ai/live/LiveVoiceFunctionCallMapper.kt`
-   - `ai/live/VoiceFunctionDeclarations.kt`
-   - oma quota `VoiceLiveQuotaManager`
-   - kuukausikiintiö `30` minuuttia
-   - Live-malli saa vain ei-mutatoivat `query_project`- ja `help`-työkalut
-   - session inactivity-timeout on 60 sekuntia; quota-deadline pysäyttää session jäljellä olevien minuuttien täyttyessä
-
-Wiring:
-
-- `CounterViewModel` ja `CounterScreen` käyttävät kumpaakin putkea
-- `PreferencesManager.voiceLiveEnabled` toimii erillisenä käyttöasetuksena Live-puolelle
-
-### Notes / journal / AI append
-
-Muistiinpanoissa on kaksi kerrosta:
-
-- tavallinen debounced editori `NotesEditorViewModel`
-- AI-journal append -flow `ai/journal/`
+Muistiinpanoissa on tavallinen debounced editori `NotesEditorViewModel`.
 
 Nykyinen toteutus:
 
 - `NotesEditorViewModel.onNotesChanged()` autosave 1000 ms debounce
-- `appendJournalEntry()` lisää päivämääräotsikon ja tarvittaessa `Row {currentRow}`
-- journal-flow voi syöttää siivotun tekstin notes-editoriin
+- `CounterRepository.saveProjectNotes()` yhdistää muokkaukset editorin pohjatekstiin, jotta rinnakkaiset tallennukset eivät ylikirjoitu
 
 ## Widgetit
 
@@ -717,7 +651,7 @@ Teksti:
 
 Aksentti:
 
-- `DustyRose` `#B8908F` — Pro trial -teksti, AI summary, yarn card
+- `DustyRose` `#B8908F` — Pro trial -teksti, yarn card
 
 Status:
 
@@ -836,7 +770,7 @@ Toteutuksessa näkyviä asioita, joita ei kannata päätellä vanhoista mockeist
 - bottom navigation on viritetty viidelle lokalisoidulle tabille
 - `Tools` ei ole geneerinen dashboard-gridi vaan oma Home/Tool-entry-näkymä
 - `Library` sisältää sekä sisällöt että reference-näkymät
-- muistiinpanoissa on sekä full-screen editori että AI-journal-polku
+- muistiinpanoissa on full-screen editori
 - widgetit on viilattu korttimaisemmiksi, mutta niiden ulkoreuna on silti launcher-maskauksen armoilla
 
 ## Manifesti ja platform surface
@@ -860,17 +794,15 @@ Manifestin nykyinen pinta:
 
 Huomio:
 
-- appissa on `google-services`-plugin käytössä
-- repo sisältää Firebase-kytkennän vaatiman `app/google-services.json`-tiedoston
-- CI luo oman Firebase-konfigin `.github/scripts/create-ci-google-services-json.sh` -skriptillä
+- appissa ei ole `google-services`-pluginia
+- `app/google-services.json` ei kuulu nykyiseen buildiin eikä sitä pidä commitoida
 
 ## Testit ja verifiointi
 
 Nykyiset testit painottuvat ainakin näihin:
 
 - domain calculators
-- AI-parserit ja wrapperit
-- Firebase AI -skeemarajoitteiden source-testit
+- paikalliset parserit ja voice-wrapperit
 - repository-logiikka
 - data storage- ja Room source/migration -rajat
 - Pro/trial-logiikka
@@ -919,7 +851,7 @@ Julkaisuvalmiuden muistilista:
 
 - saved patterns
 - my yarn / yarn cards
-- `ProFeature.OCR`-nimellä gatettu yarn label -skannaus, jonka nykyinen toteutus on Gemini-multimodaalinen `YarnLabelGeminiScanner`
+- my yarn -kortit luodaan ja muokataan käsin
 - all photos
 - multi-select batch-poistot
 - reference-näkymät: needles, size charts, abbreviations, chart symbols
@@ -940,13 +872,10 @@ Julkaisuvalmiuden muistilista:
 - Pro-gating tyhjentää chart-listat non-Pro-tilassa, mutta perusmittarit lasketaan edelleen `InsightsUiState`en
 - debug-build näyttää footer-tekstin myös ilman sessiodataa; chartit eivät rakenna keksittyä placeholder-dataa
 
-### AI ja ääni
+### Ääni ja parseri
 
 - klassinen voice command -flow
-- Live API -voice flow
-- AI-päiväkirjamerkinnät muistiinpanoihin
-- Gemini-skeemavastaukset pattern-, yarn-label- ja voice-tulkinnoissa
-- Nano/regex-pohjainen pasted instruction -parseri laskureiden avuksi
+- regex-pohjainen pasted instruction -parseri laskureiden avuksi
 
 ### Monetisaatio
 
@@ -963,7 +892,6 @@ Näihin kannattaa suhtautua epäluuloisesti vanhoissa dokumenteissa:
 - Room schema version: nykyinen on `11`; tarkista aina `KnitToolsDatabase.version` ja `app/schemas/...`
 - voice-parserin paikallinen sanallinen range riippuu kielestä, mutta numerot hyväksytään `1..100`
 - widgetit eivät ole enää pelkkä basic counter-preview vaan niissä on oma state-sync ja viimeistelty kortti-UI
-- yarn label -skannaus ei nykykoodissa enää ole OCR -> Nano -putki, vaikka ProFeature-nimi on yhä `OCR`
 - `README.md` ei ole nykytilan source of truth
 
 ## Suhde muihin dokumentteihin

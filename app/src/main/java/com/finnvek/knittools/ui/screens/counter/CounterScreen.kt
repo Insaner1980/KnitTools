@@ -8,11 +8,6 @@ import android.os.VibratorManager
 import android.view.WindowManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -30,11 +25,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Undo
@@ -45,7 +38,6 @@ import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Remove
-import androidx.compose.material.icons.outlined.FilterVintage
 import androidx.compose.material.icons.outlined.OpenInFull
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
@@ -122,7 +114,7 @@ fun CounterScreen(
     viewModel: CounterViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    val voiceControls = rememberCounterVoiceControls(state, viewModel)
+    val voiceControls = rememberCounterVoiceControls(viewModel)
     val snackbarHostState = remember { SnackbarHostState() }
 
     var showResetDialog by rememberSaveable { mutableStateOf(false) }
@@ -136,7 +128,6 @@ fun CounterScreen(
     var showNotesSheet by rememberSaveable { mutableStateOf(false) }
     var showYarnPicker by rememberSaveable { mutableStateOf(false) }
     var showYarnManagementSheet by rememberSaveable { mutableStateOf(false) }
-    var showSummarySheet by rememberSaveable { mutableStateOf(false) }
     var showRemindersSheet by rememberSaveable { mutableStateOf(false) }
     var showAddReminder by rememberSaveable { mutableStateOf(false) }
     var editingReminderId by rememberSaveable { mutableStateOf<Long?>(null) }
@@ -161,7 +152,6 @@ fun CounterScreen(
         showNotesSheet = false
         showYarnPicker = false
         showYarnManagementSheet = false
-        showSummarySheet = false
         showRemindersSheet = false
         showAddReminder = false
         editingReminderId = null
@@ -170,7 +160,6 @@ fun CounterScreen(
         showPatternInfoSheet = false
         showPatternPicker = false
         showTargetDialog = false
-        viewModel.clearSummary()
     }
 
     LaunchedEffect(state.projectId) {
@@ -206,10 +195,6 @@ fun CounterScreen(
             onOpenFeature = { showRemindersSheet = true },
             onOpenUpgrade = openProUpgrade,
         )
-    }
-
-    LaunchedEffect(Unit) {
-        viewModel.refreshNanoAvailability()
     }
 
     VoiceCommandEffects(
@@ -249,7 +234,6 @@ fun CounterScreen(
             onHideYarnManagementSheet = { showYarnManagementSheet = false },
             onHideNotesSheet = { showNotesSheet = false },
             onExpandNotes = { state.projectId?.let(onNotesEditor) },
-            onHideSummarySheet = { showSummarySheet = false },
             onHidePatternPicker = { showPatternPicker = false },
             onHidePatternInfoSheet = { showPatternInfoSheet = false },
         )
@@ -388,10 +372,6 @@ fun CounterScreen(
                 linkedYarns = state.linkedYarns,
                 showNotesSheet = showNotesSheet,
                 notes = state.notes,
-                showSummarySheet = showSummarySheet,
-                isSummaryLoading = state.isSummaryLoading,
-                projectSummary = state.projectSummary,
-                summaryError = state.summaryError,
                 showPatternPicker = showPatternPicker,
                 projectId = state.projectId,
                 savedPatterns = savedPatterns,
@@ -411,7 +391,6 @@ fun CounterScreen(
                 projectCounterCount = state.projectCounters.size,
                 stitchTrackingEnabled = state.stitchTrackingEnabled,
                 stitchCount = state.stitchCount,
-                isAiAvailable = state.isAiAvailable,
             ),
         callbacks =
             ProjectActionsSheetCallbacks(
@@ -427,11 +406,6 @@ fun CounterScreen(
                     } else {
                         openProUpgrade()
                     }
-                },
-                onOpenSummary = {
-                    showProjectActionsSheet = false
-                    viewModel.generateSummary()
-                    showSummarySheet = true
                 },
                 onOpenPhotos = {
                     showProjectActionsSheet = false
@@ -520,7 +494,7 @@ fun CounterScreen(
         topBar = {
             CounterTopBar(
                 canUseProgressPhotos = state.canUseProgressPhotos,
-                canUseVoice = state.canUseVoiceCommands || state.canUseVoiceLive,
+                canUseVoice = state.canUseVoiceCommands,
                 showPatternIcon =
                     state.projectId != null &&
                         state.patternUri != null,
@@ -528,7 +502,6 @@ fun CounterScreen(
                     CounterTopBarMicState(
                         isVoiceListening = voiceControls.isListening,
                         isContinuousMode = voiceControls.isContinuousMode,
-                        isLiveSessionActive = state.isLiveSessionActive,
                     ),
                 onMicClick = voiceControls.onToggle,
                 actions = topBarActions,
@@ -604,10 +577,7 @@ private data class CounterVoiceControls(
 )
 
 @Composable
-private fun rememberCounterVoiceControls(
-    state: CounterUiState,
-    viewModel: CounterViewModel,
-): CounterVoiceControls {
+private fun rememberCounterVoiceControls(viewModel: CounterViewModel): CounterVoiceControls {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val voiceCommandHandler =
@@ -620,27 +590,20 @@ private fun rememberCounterVoiceControls(
         }
     val isVoiceListening by voiceCommandHandler.isListening.collectAsStateWithLifecycle()
     val isContinuousMode by voiceCommandHandler.isContinuousMode.collectAsStateWithLifecycle()
-    val currentVoiceLiveEnabled by rememberUpdatedState(state.voiceLiveEnabled)
     val micPermissionLauncher =
         rememberLauncherForActivityResult(
             ActivityResultContracts.RequestPermission(),
         ) { granted ->
-            if (granted) {
-                if (currentVoiceLiveEnabled) {
-                    viewModel.startLiveVoice()
-                } else if (viewModel.canStartClassicVoice()) {
-                    voiceCommandHandler.startContinuousListening()
-                }
+            if (granted && viewModel.canStartClassicVoice()) {
+                voiceCommandHandler.startContinuousListening()
             }
         }
     val toggleVoice = {
         when {
-            state.isLiveSessionActive -> viewModel.stopLiveVoice()
             voiceCommandHandler.isContinuousMode.value -> voiceCommandHandler.stopContinuousListening()
-            state.voiceLiveEnabled && hasAudioPermission(context) -> viewModel.startLiveVoice()
-            !state.voiceLiveEnabled && hasAudioPermission(context) && viewModel.canStartClassicVoice() ->
+            hasAudioPermission(context) && viewModel.canStartClassicVoice() ->
                 voiceCommandHandler.startContinuousListening()
-            !state.voiceLiveEnabled && !viewModel.canStartClassicVoice() -> Unit
+            !viewModel.canStartClassicVoice() -> Unit
             else -> micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
         }
     }
@@ -722,20 +685,12 @@ private fun VoiceCommandEffects(
 ) {
     val timeoutMessage = stringResource(R.string.voice_mode_timeout)
     val fatalMessage = stringResource(R.string.voice_recognizer_error)
-    val networkLostMessage = stringResource(R.string.voice_offline_mode)
-    val context = LocalContext.current
+    val networkLostMessage = stringResource(R.string.voice_recognizer_network_error)
 
     DisposableEffect(voiceCommandHandler, voiceResponseManager) {
         onDispose {
             voiceResponseManager.destroy()
             voiceCommandHandler.destroy()
-        }
-    }
-
-    // Pysäytä Live API -sessio kun näyttö poistuu tai sovellus menee taustalle
-    DisposableEffect(viewModel) {
-        onDispose {
-            viewModel.stopLiveVoice()
         }
     }
 
@@ -751,30 +706,9 @@ private fun VoiceCommandEffects(
         }
     }
 
-    LaunchedEffect(voiceCommandHandler) {
-        voiceCommandHandler.unrecognizedText.collect { text ->
-            viewModel.interpretVoiceCommand(text)
-        }
-    }
-
     LaunchedEffect(viewModel) {
         viewModel.voiceResponse.collect { text ->
-            // Älä puhu TTS:llä kun Live API hoitaa äänentoiston
-            if (!viewModel.uiState.value.isLiveSessionActive) {
-                voiceResponseManager.speak(text)
-            }
-        }
-    }
-
-    // Live API fallback → näytä snackbar + käynnistä v2 continuous mode
-    LaunchedEffect(viewModel) {
-        viewModel.fallbackToV2.collect { errorMessage ->
-            if (errorMessage != null) {
-                snackbarHostState.showSnackbar(errorMessage)
-            }
-            if (hasAudioPermission(context) && viewModel.canStartClassicVoice()) {
-                voiceCommandHandler.startContinuousListening()
-            }
+            voiceResponseManager.speak(text)
         }
     }
 }
@@ -952,10 +886,6 @@ data class CounterSheetState(
     val linkedYarns: List<Pair<Long, String>>,
     val showNotesSheet: Boolean,
     val notes: String,
-    val showSummarySheet: Boolean,
-    val isSummaryLoading: Boolean,
-    val projectSummary: String?,
-    val summaryError: String?,
     val showPatternPicker: Boolean,
     val projectId: Long?,
     val savedPatterns: List<SavedPattern>,
@@ -973,7 +903,6 @@ data class CounterSheetActions(
     val onNotesChange: (String) -> Unit,
     val onNotesDismiss: () -> Unit,
     val onNotesExpand: () -> Unit,
-    val onSummaryDismiss: () -> Unit,
     val onPatternPickerDismiss: () -> Unit,
     val onPatternInfoDismiss: () -> Unit,
     val onPatternFileSelected: (String, String) -> Unit,
@@ -1008,14 +937,6 @@ private fun CounterScreenSheets(
             onExpandToFullScreen = actions.onNotesExpand,
         )
     }
-    if (state.showSummarySheet) {
-        SummarySheet(
-            isLoading = state.isSummaryLoading,
-            summary = state.projectSummary,
-            errorMessage = state.summaryError,
-            onDismiss = actions.onSummaryDismiss,
-        )
-    }
     if (state.showPatternPicker) {
         PatternPickerSheet(
             projectId = state.projectId,
@@ -1045,7 +966,6 @@ data class CounterTopBarActions(
 data class CounterTopBarMicState(
     val isVoiceListening: Boolean,
     val isContinuousMode: Boolean = false,
-    val isLiveSessionActive: Boolean = false,
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -1093,7 +1013,6 @@ private fun CounterTopBar(
                     CounterTopBarMicAction(
                         isVoiceListening = micState.isVoiceListening,
                         isContinuousMode = micState.isContinuousMode,
-                        isLiveSessionActive = micState.isLiveSessionActive,
                     )
                 }
             }
@@ -1117,11 +1036,9 @@ private fun CounterTopBar(
 private fun CounterTopBarMicAction(
     isVoiceListening: Boolean,
     isContinuousMode: Boolean,
-    isLiveSessionActive: Boolean,
 ) {
-    val isActive = isLiveSessionActive || isContinuousMode
-    if (isActive) {
-        ActiveCounterMicIcon(isLiveSessionActive = isLiveSessionActive)
+    if (isContinuousMode) {
+        ActiveCounterMicIcon()
         return
     }
 
@@ -1138,39 +1055,21 @@ private fun CounterTopBarMicAction(
 }
 
 @Composable
-private fun ActiveCounterMicIcon(isLiveSessionActive: Boolean) {
-    val infiniteTransition = rememberInfiniteTransition(label = "mic_pulse")
-    val bgAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.12f,
-        targetValue = 0.32f,
-        animationSpec =
-            infiniteRepeatable(
-                animation = tween(800),
-                repeatMode = RepeatMode.Reverse,
-            ),
-        label = "mic_bg",
-    )
-    val activeColor =
-        if (isLiveSessionActive) {
-            MaterialTheme.colorScheme.primary
-        } else {
-            MaterialTheme.colorScheme.error
-        }
-
+private fun ActiveCounterMicIcon() {
     Box(contentAlignment = Alignment.Center) {
         Box(
             modifier =
                 Modifier
                     .size(36.dp)
                     .background(
-                        activeColor.copy(alpha = bgAlpha),
+                        MaterialTheme.colorScheme.error.copy(alpha = 0.18f),
                         CircleShape,
                     ),
         )
         Icon(
             imageVector = Icons.Filled.Mic,
             contentDescription = stringResource(R.string.voice_commands),
-            tint = activeColor,
+            tint = MaterialTheme.colorScheme.error,
         )
     }
 }
@@ -1960,87 +1859,6 @@ private fun NotesSheet(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun SummarySheet(
-    isLoading: Boolean,
-    summary: String?,
-    errorMessage: String?,
-    onDismiss: () -> Unit,
-) {
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        containerColor = MaterialTheme.colorScheme.surface,
-    ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp)
-                    .padding(bottom = 32.dp),
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    Icons.Outlined.FilterVintage,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp),
-                    tint = MaterialTheme.colorScheme.primary,
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = stringResource(R.string.project_summary),
-                    style = MaterialTheme.typography.titleMedium,
-                )
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            if (isLoading) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    androidx.compose.material3.CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        strokeWidth = 2.dp,
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(
-                        text = stringResource(R.string.generating_summary),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            } else {
-                SummarySheetResult(summary = summary, errorMessage = errorMessage)
-            }
-        }
-    }
-}
-
-@Composable
-private fun SummarySheetResult(
-    summary: String?,
-    errorMessage: String?,
-) {
-    if (!summary.isNullOrBlank()) {
-        Text(
-            text = summary,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurface,
-            lineHeight = MaterialTheme.typography.bodyLarge.lineHeight,
-        )
-    }
-    if (!errorMessage.isNullOrBlank()) {
-        if (!summary.isNullOrBlank()) Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = errorMessage,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
-}
-
 @Composable
 private fun KeepScreenAwake(enabled: Boolean) {
     if (!enabled) return
@@ -2118,7 +1936,6 @@ private fun rememberCounterSheetActions(
     onHideYarnManagementSheet: () -> Unit,
     onHideNotesSheet: () -> Unit,
     onExpandNotes: () -> Unit,
-    onHideSummarySheet: () -> Unit,
     onHidePatternPicker: () -> Unit,
     onHidePatternInfoSheet: () -> Unit,
 ): CounterSheetActions =
@@ -2129,7 +1946,6 @@ private fun rememberCounterSheetActions(
         onHideYarnManagementSheet,
         onHideNotesSheet,
         onExpandNotes,
-        onHideSummarySheet,
         onHidePatternPicker,
         onHidePatternInfoSheet,
     ) {
@@ -2148,10 +1964,6 @@ private fun rememberCounterSheetActions(
             onNotesChange = viewModel::setNotes,
             onNotesDismiss = onHideNotesSheet,
             onNotesExpand = onExpandNotes,
-            onSummaryDismiss = {
-                onHideSummarySheet()
-                viewModel.clearSummary()
-            },
             onPatternPickerDismiss = onHidePatternPicker,
             onPatternInfoDismiss = onHidePatternInfoSheet,
             onPatternFileSelected = viewModel::attachPattern,

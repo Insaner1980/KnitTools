@@ -443,6 +443,21 @@ dependencies {
                     "constraint nostaa Android-artefaktin korjattuun versioon",
             )
         }
+        implementation(libs.kotlin.stdlib.jdk7) {
+            because(
+                "Kotlin stdlib tuo vanhan jdk7-artefaktin transitiivisesti; " +
+                    "constraint nostaa sen korjattuun Kotlin-versioon",
+            )
+        }
+        implementation(libs.work.runtime) {
+            because(
+                "Glance 1.1.1 tuo WorkManager 2.7.1:n, jonka inspector.jar " +
+                    "sisaltaa haavoittuvan protobuf-javaliten",
+            )
+        }
+        implementation(libs.work.runtime.ktx) {
+            because("Pidetaan WorkManager runtime ja ktx samassa korjatussa versiossa")
+        }
     }
 
     // Compose BOM

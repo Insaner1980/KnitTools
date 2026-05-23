@@ -115,10 +115,7 @@
     <string name="imported_pattern_designer">PDF importato</string>
     <string name="current_row_short">Ferro %1$d</string>
     <string name="time_spent_minutes_format">%dm</string>
-    <string name="link_to_project">Collegare a %s?</string>
-    <string name="link_yarn">Collega filato</string>
     <string name="unlink_yarn">Scollega filato</string>
-    <string name="link">Collega</string>
     <string name="select_yarn_card">Seleziona scheda filato</string>
     <string name="add_yarn">Aggiungi filato</string>
     <string name="linked_yarn_title">FILATO COLLEGATO</string>
@@ -137,7 +134,6 @@
     <string name="linked_project_arrow">\u2192 %1$s</string>
     <string name="yarn_details_title">Dettagli</string>
     <string name="delete_yarn_card_message">Eliminare questa scheda filato? Questa azione non può essere annullata.</string>
-    <string name="saved_to_my_yarn_toast">Salvato in Il mio filato nella Libreria</string>
     <string name="skein_count_one">%1$d gomitolo</string>
     <string name="skein_count_many">%1$d gomitoli</string>
 
@@ -286,8 +282,6 @@
 
     <!-- Yarn Card -->
     <string name="saved_yarns">Filati salvati</string>
-    <string name="brand">Marca</string>
-    <string name="yarn_name">Nome del filato</string>
     <string name="fiber_content">Composizione</string>
     <string name="weight_grams">Peso (g)</string>
     <string name="length_meters">Lunghezza (m)</string>
@@ -298,11 +292,7 @@
     <string name="dye_lot">Bagno di tintura</string>
     <string name="weight_category">Categoria spessore</string>
     <string name="care_symbols">Cura</string>
-    <string name="save_and_use">Salva &amp; usa</string>
-    <string name="discard">Scarta</string>
-    <string name="use_in_calculator">Usa nel calcolatore</string>
     <string name="no_saved_yarns">Nessuna scheda filato salvata per ora</string>
-    <string name="pro_required_save">Serve Pro per salvare le schede filato</string>
 
     <!-- Instruction parser -->
     <string name="paste_instruction">Incolla istruzione</string>
@@ -317,7 +307,6 @@
     <!-- Camera permission -->
     <string name="camera_permission_denied">L\'autorizzazione della fotocamera è necessaria per scattare foto</string>
     <string name="camera_permission_denied_permanent">Autorizzazione fotocamera negata — attivala nelle Impostazioni</string>
-    <string name="open_settings">Impostazioni</string>
 
     <!-- Care symbol categories -->
     <string name="care_category_washing">Lavaggio</string>
@@ -500,60 +489,14 @@
     <string name="voice_commands">Comandi vocali</string>
     <string name="voice_mode_timeout">La modalità vocale è terminata per inattività</string>
     <string name="voice_recognizer_network_error">Il riconoscimento vocale non è disponibile. Riprova più tardi.</string>
-    <string name="voice_command_unknown">Non ho capito</string>
-    <string name="voice_note_saved">Nota salvata</string>
     <string name="voice_counter_reset">Contatore reimpostato</string>
     <string name="voice_row_current">Ferro %d</string>
     <string name="voice_row_of_target">Ferro %1$d di %2$d, %3$d percento completato</string>
-    <string name="voice_rows_remaining">Mancano %d ferri</string>
-    <string name="voice_no_target">Nessun obiettivo impostato</string>
     <string name="voice_back_to_row">Torna al ferro %d</string>
     <string name="voice_undone_row">Annullato, ferro %d</string>
-    <string name="voice_remaining_done">Hai finito!</string>
-    <string name="voice_session_minutes">Stai lavorando a maglia da %d minuti</string>
-    <string name="voice_session_under_minute">Meno di un minuto</string>
-    <string name="voice_yarn_multiple">%1$s e altri %2$d</string>
-    <string name="voice_yarn_none">Nessun filato collegato</string>
-    <string name="voice_pattern_info">Modello %1$s, pagina %2$d</string>
-    <string name="voice_instruction_none">Nessun modello collegato</string>
-    <string name="voice_shaping_next">Prossima %1$s tra %2$d ferri</string>
-    <string name="voice_shaping_at">%1$s al ferro %2$d</string>
-    <string name="voice_shaping_none">Nessun contatore di sagomatura attivo</string>
-    <string name="voice_stitches_total">%1$d maglie totali, %2$d per ferro su %3$d ferri</string>
-    <string name="voice_stitches_current">%d maglie</string>
-    <string name="voice_stitches_disabled">Il conteggio maglie non è attivato</string>
-    <string name="voice_reminders_none">Nessun promemoria in arrivo</string>
-    <string name="voice_reminder_next">Prossimo promemoria: %1$s, tra %2$d ferri</string>
-    <string name="voice_reminders_multiple">Prossimo promemoria: %1$s, tra %2$d ferri. Poi ce ne sono altri %3$d</string>
     <string name="voice_counters_none">Nessun contatore extra</string>
-    <string name="voice_counter_single">%1$s è a %2$d</string>
-    <string name="voice_counters_list">%1$d contatori: %2$s</string>
-    <string name="voice_notes_empty">Nessuna nota per ora</string>
-    <string name="voice_notes_content">Le tue note: %1$s</string>
-    <string name="voice_total_time_none">Nessun tempo registrato per ora</string>
-    <string name="voice_total_time_hours">%1$d ore e %2$d minuti totali su questo progetto</string>
-    <string name="voice_total_time_minutes">%1$d minuti totali su questo progetto</string>
-    <string name="voice_project_name">Stai lavorando a %1$s</string>
-    <string name="voice_section_current">Sezione attuale: %1$s</string>
-    <string name="voice_section_none">Nessuna sezione impostata</string>
-    <string name="voice_section_set">Sezione impostata su %1$s</string>
     <string name="voice_stitch_at">Maglia %1$d</string>
     <string name="voice_help_full">Puoi dire: avanti, indietro, annulla, reimposta, oppure un numero. Chiedi informazioni su avanzamento, ferri rimanenti, tempo, filato, modello, maglie, promemoria, contatori o note. Di\' nota per salvare una nota, oppure il nome di un contatore per modificarlo.</string>
-    <string name="voice_reminder_dismissed">Promemoria chiuso</string>
-    <string name="voice_reminder_no_active">Nessun promemoria attivo da chiudere</string>
-    <string name="voice_counter_incremented">%1$s ora è a %2$d</string>
-    <string name="voice_counter_decremented">%1$s torna a %2$d</string>
-    <string name="voice_counter_not_found">Nessun contatore chiamato %1$s</string>
-    <string name="voice_counter_ambiguous">Più contatori si chiamano %1$s. Rinomina uno di essi prima di usare i comandi vocali.</string>
-    <string name="voice_step_size_set">Passo impostato a %1$d</string>
-    <string name="voice_counter_reset_named">%1$s reimpostato a zero</string>
-    <string name="voice_page_current">Pagina %1$d</string>
-    <string name="voice_page_first">Sei già alla prima pagina</string>
-    <string name="voice_project_completed">%1$s contrassegnato come completato. Ottimo lavoro!</string>
-    <string name="voice_reminder_added">Promemoria impostato: %1$s al ferro %2$d</string>
-    <string name="voice_stitch_count_set">Numero di maglie impostato a %1$d per ferro</string>
-    <string name="voice_stitch_tracking_on">Conteggio maglie attivato</string>
-    <string name="voice_stitch_tracking_off">Conteggio maglie disattivato</string>
     <string name="voice_recognizer_error">Errore di riconoscimento vocale</string>
     <string name="row_label_format">Ferro %d</string>
     <string name="share_photo">Condividi</string>

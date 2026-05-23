@@ -116,10 +116,7 @@
     <string name="imported_pattern_designer">Imported PDF</string>
     <string name="current_row_short">Row %1$d</string>
     <string name="time_spent_minutes_format" tools:ignore="PluralsCandidate">%dm</string>
-    <string name="link_to_project">Link to %s?</string>
-    <string name="link_yarn">Link yarn</string>
     <string name="unlink_yarn">Unlink yarn</string>
-    <string name="link">Link</string>
     <string name="select_yarn_card">Select yarn card</string>
     <string name="add_yarn">Add yarn</string>
     <string name="linked_yarn_title">LINKED YARN</string>
@@ -138,7 +135,6 @@
     <string name="linked_project_arrow">\u2192 %1$s</string>
     <string name="yarn_details_title">Details</string>
     <string name="delete_yarn_card_message">Delete this yarn card? This cannot be undone.</string>
-    <string name="saved_to_my_yarn_toast">Saved to My Yarn in Library</string>
     <string name="skein_count_one" tools:ignore="PluralsCandidate">%1$d skein</string>
     <string name="skein_count_many" tools:ignore="PluralsCandidate">%1$d skeins</string>
 
@@ -289,8 +285,6 @@
 
     <!-- Yarn Card -->
     <string name="saved_yarns">Saved yarns</string>
-    <string name="brand">Brand</string>
-    <string name="yarn_name">Yarn name</string>
     <string name="fiber_content">Fiber content</string>
     <string name="weight_grams">Weight (g)</string>
     <string name="length_meters">Length (m)</string>
@@ -301,11 +295,7 @@
     <string name="dye_lot">Dye lot</string>
     <string name="weight_category">Weight category</string>
     <string name="care_symbols">Care</string>
-    <string name="save_and_use">Save &amp; Use</string>
-    <string name="discard">Discard</string>
-    <string name="use_in_calculator">Use in calculator</string>
     <string name="no_saved_yarns">No saved yarn cards yet</string>
-    <string name="pro_required_save">Pro required to save yarn cards</string>
 
     <!-- Instruction parser -->
     <string name="paste_instruction">Paste instruction</string>
@@ -320,7 +310,6 @@
     <!-- Camera permission -->
     <string name="camera_permission_denied">Camera permission is needed to take photos</string>
     <string name="camera_permission_denied_permanent">Camera permission denied — enable it in Settings</string>
-    <string name="open_settings">Settings</string>
     <string name="retry">Retry</string>
 
     <!-- Care symbol categories -->
@@ -778,60 +767,14 @@
     <string name="voice_commands">Voice commands</string>
     <string name="voice_mode_timeout">Voice mode ended due to inactivity</string>
     <string name="voice_recognizer_network_error">Voice recognition is unavailable. Try again later.</string>
-    <string name="voice_command_unknown">I didn\'t understand</string>
-    <string name="voice_note_saved">Note saved</string>
     <string name="voice_counter_reset">Counter reset</string>
     <string name="voice_row_current" tools:ignore="PluralsCandidate">Row %d</string>
     <string name="voice_row_of_target" tools:ignore="PluralsCandidate">Row %1$d of %2$d, %3$d percent done</string>
-    <string name="voice_rows_remaining" tools:ignore="PluralsCandidate">%d rows left</string>
-    <string name="voice_no_target">No target set</string>
     <string name="voice_back_to_row" tools:ignore="PluralsCandidate">Back to row %d</string>
     <string name="voice_undone_row" tools:ignore="PluralsCandidate">Undone, row %d</string>
-    <string name="voice_remaining_done">You\'re done!</string>
-    <string name="voice_session_minutes" tools:ignore="PluralsCandidate">You\'ve been knitting for %d minutes</string>
-    <string name="voice_session_under_minute">Less than a minute</string>
-    <string name="voice_yarn_multiple" tools:ignore="PluralsCandidate">%1$s and %2$d more</string>
-    <string name="voice_yarn_none">No yarn linked</string>
-    <string name="voice_pattern_info">Pattern %1$s, page %2$d</string>
-    <string name="voice_instruction_none">No pattern linked</string>
-    <string name="voice_shaping_next" tools:ignore="PluralsCandidate">Next %1$s in %2$d rows</string>
-    <string name="voice_shaping_at">%1$s at row %2$d</string>
-    <string name="voice_shaping_none">No shaping counter active</string>
-    <string name="voice_stitches_total" tools:ignore="PluralsCandidate">%1$d stitches total, %2$d per row across %3$d rows</string>
-    <string name="voice_stitches_current" tools:ignore="PluralsCandidate">%d stitches</string>
-    <string name="voice_stitches_disabled">Stitch tracking is not enabled</string>
-    <string name="voice_reminders_none">No upcoming reminders</string>
-    <string name="voice_reminder_next" tools:ignore="PluralsCandidate">Next reminder: %1$s, in %2$d rows</string>
-    <string name="voice_reminders_multiple" tools:ignore="PluralsCandidate">Next reminder: %1$s, in %2$d rows. %3$d more after that</string>
     <string name="voice_counters_none">No extra counters</string>
-    <string name="voice_counter_single">%1$s is at %2$d</string>
-    <string name="voice_counters_list" tools:ignore="PluralsCandidate">%1$d counters: %2$s</string>
-    <string name="voice_notes_empty">No notes yet</string>
-    <string name="voice_notes_content">Your notes: %1$s</string>
-    <string name="voice_total_time_none">No time recorded yet</string>
-    <string name="voice_total_time_hours" tools:ignore="PluralsCandidate">%1$d hours and %2$d minutes total on this project</string>
-    <string name="voice_total_time_minutes" tools:ignore="PluralsCandidate">%1$d minutes total on this project</string>
-    <string name="voice_project_name">You\'re working on %1$s</string>
-    <string name="voice_section_current">Current section: %1$s</string>
-    <string name="voice_section_none">No section set</string>
-    <string name="voice_section_set">Section set to %1$s</string>
     <string name="voice_stitch_at">Stitch %1$d</string>
     <string name="voice_help_full">You can say: next, back, undo, reset, plus a number. Ask about progress, remaining rows, time, yarn, pattern, stitches, reminders, counters, or notes. Say note to save a note, or name a counter to change it.</string>
-    <string name="voice_reminder_dismissed">Reminder dismissed</string>
-    <string name="voice_reminder_no_active">No active reminder to dismiss</string>
-    <string name="voice_counter_incremented">%1$s now at %2$d</string>
-    <string name="voice_counter_decremented">%1$s back to %2$d</string>
-    <string name="voice_counter_not_found">No counter named %1$s</string>
-    <string name="voice_counter_ambiguous">Multiple counters are named %1$s. Rename one before using voice commands.</string>
-    <string name="voice_step_size_set">Step size set to %1$d</string>
-    <string name="voice_counter_reset_named">%1$s reset to zero</string>
-    <string name="voice_page_current">Page %1$d</string>
-    <string name="voice_page_first">Already on the first page</string>
-    <string name="voice_project_completed">%1$s marked as complete. Great work!</string>
-    <string name="voice_reminder_added">Reminder set: %1$s at row %2$d</string>
-    <string name="voice_stitch_count_set" tools:ignore="PluralsCandidate">Stitch count set to %1$d per row</string>
-    <string name="voice_stitch_tracking_on">Stitch tracking enabled</string>
-    <string name="voice_stitch_tracking_off">Stitch tracking disabled</string>
     <string name="voice_recognizer_error">Voice recognition error</string>
     <string name="row_label_format" tools:ignore="PluralsCandidate">Row %d</string>
     <string name="share_photo">Share</string>

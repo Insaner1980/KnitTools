@@ -29,4 +29,25 @@
         <packageUrl regex="true">^pkg:maven/androidx\.legacy/legacy-support-core-utils@.*$</packageUrl>
         <cpe>cpe:/a:utils_project:utils</cpe>
     </suppress>
+
+    <suppress>
+        <notes><![CDATA[
+        Ktor utils ei ole fredsmith/utils screenshot_sync -projekti.
+        Tämä on artefaktin nimen aiheuttama CPE/CVE false positive.
+        ]]></notes>
+        <packageUrl regex="true">^pkg:maven/io\.ktor/ktor-utils-jvm@.*$</packageUrl>
+        <cve>CVE-2021-4277</cve>
+    </suppress>
+
+    <suppress>
+        <notes><![CDATA[
+        Compose Stability Analyzer julkaistaan com.github.skydoves-ryhmällä, mutta artefakti
+        ei ole GitHub Enterprise Server. Nämä CVE:t ovat geneerisen github-CPE:n false positiveja.
+        ]]></notes>
+        <packageUrl regex="true">^pkg:maven/com\.github\.skydoves/compose-stability-runtime-android@.*$</packageUrl>
+        <cve>CVE-2020-10518</cve>
+        <cve>CVE-2020-10519</cve>
+        <cve>CVE-2012-2055</cve>
+        <cve>CVE-2020-10517</cve>
+    </suppress>
 </suppressions>

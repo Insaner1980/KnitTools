@@ -115,10 +115,7 @@
     <string name="imported_pattern_designer">Importeret PDF</string>
     <string name="current_row_short">Pind %1$d</string>
     <string name="time_spent_minutes_format">%dm</string>
-    <string name="link_to_project">Knyt til %s?</string>
-    <string name="link_yarn">Knyt garn</string>
     <string name="unlink_yarn">Fjern garnkobling</string>
-    <string name="link">Knyt</string>
     <string name="select_yarn_card">Vælg garnkort</string>
     <string name="add_yarn">Tilføj garn</string>
     <string name="linked_yarn_title">TILKNYTTET GARN</string>
@@ -137,7 +134,6 @@
     <string name="linked_project_arrow">\u2192 %1$s</string>
     <string name="yarn_details_title">Detaljer</string>
     <string name="delete_yarn_card_message">Slette dette garnkort? Dette kan ikke fortrydes.</string>
-    <string name="saved_to_my_yarn_toast">Gemt i Mit garn i biblioteket</string>
     <string name="skein_count_one">%1$d nøgle</string>
     <string name="skein_count_many">%1$d nøgler</string>
 
@@ -286,8 +282,6 @@
 
     <!-- Yarn Card -->
     <string name="saved_yarns">Gemte garner</string>
-    <string name="brand">Mærke</string>
-    <string name="yarn_name">Garnnavn</string>
     <string name="fiber_content">Fiberindhold</string>
     <string name="weight_grams">Vægt (g)</string>
     <string name="length_meters">Længde (m)</string>
@@ -298,11 +292,7 @@
     <string name="dye_lot">Farveparti</string>
     <string name="weight_category">Tykkelseskategori</string>
     <string name="care_symbols">Pleje</string>
-    <string name="save_and_use">Gem &amp; brug</string>
-    <string name="discard">Kassér</string>
-    <string name="use_in_calculator">Brug i beregner</string>
     <string name="no_saved_yarns">Ingen garnkort gemt endnu</string>
-    <string name="pro_required_save">Pro kræves for at gemme garnkort</string>
 
     <!-- Instruction parser -->
     <string name="paste_instruction">Indsæt instruktion</string>
@@ -317,7 +307,6 @@
     <!-- Camera permission -->
     <string name="camera_permission_denied">Kameratilladelse er nødvendig for at tage billeder</string>
     <string name="camera_permission_denied_permanent">Kameratilladelse afvist — aktivér den i Indstillinger</string>
-    <string name="open_settings">Indstillinger</string>
 
     <!-- Care symbol categories -->
     <string name="care_category_washing">Vask</string>
@@ -500,60 +489,14 @@
     <string name="voice_commands">Stemmekommandoer</string>
     <string name="voice_mode_timeout">Stemmetilstand afsluttet på grund af inaktivitet</string>
     <string name="voice_recognizer_network_error">Stemmegenkendelse er ikke tilgængelig. Prøv igen senere.</string>
-    <string name="voice_command_unknown">Det forstod jeg ikke</string>
-    <string name="voice_note_saved">Note gemt</string>
     <string name="voice_counter_reset">Tæller nulstillet</string>
     <string name="voice_row_current">Pind %d</string>
     <string name="voice_row_of_target">Pind %1$d af %2$d, %3$d procent færdig</string>
-    <string name="voice_rows_remaining">%d pinde tilbage</string>
-    <string name="voice_no_target">Intet mål sat</string>
     <string name="voice_back_to_row">Tilbage til pind %d</string>
     <string name="voice_undone_row">Fortrudt, pind %d</string>
-    <string name="voice_remaining_done">Du er færdig!</string>
-    <string name="voice_session_minutes">Du har strikket i %d minutter</string>
-    <string name="voice_session_under_minute">Mindre end et minut</string>
-    <string name="voice_yarn_multiple">%1$s og %2$d mere</string>
-    <string name="voice_yarn_none">Intet garn tilknyttet</string>
-    <string name="voice_pattern_info">Opskrift %1$s, side %2$d</string>
-    <string name="voice_instruction_none">Ingen opskrift tilknyttet</string>
-    <string name="voice_shaping_next">Næste %1$s om %2$d pinde</string>
-    <string name="voice_shaping_at">%1$s på pind %2$d</string>
-    <string name="voice_shaping_none">Ingen aktiv formgivningstæller</string>
-    <string name="voice_stitches_total">%1$d masker i alt, %2$d pr. pind over %3$d pinde</string>
-    <string name="voice_stitches_current">%d masker</string>
-    <string name="voice_stitches_disabled">Maskesporing er ikke aktiveret</string>
-    <string name="voice_reminders_none">Ingen kommende påmindelser</string>
-    <string name="voice_reminder_next">Næste påmindelse: %1$s, om %2$d pinde</string>
-    <string name="voice_reminders_multiple">Næste påmindelse: %1$s, om %2$d pinde. Derefter kommer %3$d mere</string>
     <string name="voice_counters_none">Ingen ekstra tællere</string>
-    <string name="voice_counter_single">%1$s står på %2$d</string>
-    <string name="voice_counters_list">%1$d tællere: %2$s</string>
-    <string name="voice_notes_empty">Ingen noter endnu</string>
-    <string name="voice_notes_content">Dine noter: %1$s</string>
-    <string name="voice_total_time_none">Ingen tid registreret endnu</string>
-    <string name="voice_total_time_hours">%1$d timer og %2$d minutter i alt på dette projekt</string>
-    <string name="voice_total_time_minutes">%1$d minutter i alt på dette projekt</string>
-    <string name="voice_project_name">Du arbejder på %1$s</string>
-    <string name="voice_section_current">Aktuel sektion: %1$s</string>
-    <string name="voice_section_none">Ingen sektion sat</string>
-    <string name="voice_section_set">Sektion sat til %1$s</string>
     <string name="voice_stitch_at">Maske %1$d</string>
     <string name="voice_help_full">Du kan sige: næste, tilbage, fortryd, nulstil samt et tal. Spørg om fremdrift, resterende pinde, tid, garn, opskrift, masker, påmindelser, tællere eller noter. Sig note for at gemme en note, eller sig navnet på en tæller for at ændre den.</string>
-    <string name="voice_reminder_dismissed">Påmindelse afvist</string>
-    <string name="voice_reminder_no_active">Ingen aktiv påmindelse at afvise</string>
-    <string name="voice_counter_incremented">%1$s er nu på %2$d</string>
-    <string name="voice_counter_decremented">%1$s tilbage på %2$d</string>
-    <string name="voice_counter_not_found">Ingen tæller med navnet %1$s</string>
-    <string name="voice_counter_ambiguous">Flere tællere hedder %1$s. Omdøb en af dem før du bruger stemmekommandoer.</string>
-    <string name="voice_step_size_set">Trinstørrelse sat til %1$d</string>
-    <string name="voice_counter_reset_named">%1$s nulstillet til nul</string>
-    <string name="voice_page_current">Side %1$d</string>
-    <string name="voice_page_first">Allerede på første side</string>
-    <string name="voice_project_completed">%1$s markeret som afsluttet. Godt arbejde!</string>
-    <string name="voice_reminder_added">Påmindelse sat: %1$s på pind %2$d</string>
-    <string name="voice_stitch_count_set">Antal masker sat til %1$d pr. pind</string>
-    <string name="voice_stitch_tracking_on">Maskesporing aktiveret</string>
-    <string name="voice_stitch_tracking_off">Maskesporing deaktiveret</string>
     <string name="voice_recognizer_error">Fejl i talegenkendelse</string>
     <string name="row_label_format">Pind %d</string>
     <string name="share_photo">Del</string>

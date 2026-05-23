@@ -527,7 +527,7 @@ private fun PatternViewerDocument(
     var offset by remember { mutableStateOf(Offset.Zero) }
 
     val transformableState =
-        rememberTransformableState { zoomChange, panChange, _ ->
+        rememberTransformableState { _, zoomChange, panChange, _ ->
             scale = (scale * zoomChange).coerceIn(1f, 5f)
             if (scale > 1f) {
                 offset += panChange

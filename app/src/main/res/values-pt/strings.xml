@@ -115,10 +115,7 @@
     <string name="imported_pattern_designer">PDF importado</string>
     <string name="current_row_short">Carreira %1$d</string>
     <string name="time_spent_minutes_format">%dm</string>
-    <string name="link_to_project">Ligar a %s?</string>
-    <string name="link_yarn">Ligar fio</string>
     <string name="unlink_yarn">Desligar fio</string>
-    <string name="link">Ligar</string>
     <string name="select_yarn_card">Selecionar ficha de fio</string>
     <string name="add_yarn">Adicionar fio</string>
     <string name="linked_yarn_title">FIO LIGADO</string>
@@ -137,7 +134,6 @@
     <string name="linked_project_arrow">\u2192 %1$s</string>
     <string name="yarn_details_title">Detalhes</string>
     <string name="delete_yarn_card_message">Eliminar esta ficha de fio? Esta ação não pode ser anulada.</string>
-    <string name="saved_to_my_yarn_toast">Guardado em O meu fio na Biblioteca</string>
     <string name="skein_count_one">%1$d novelo</string>
     <string name="skein_count_many">%1$d novelos</string>
 
@@ -286,8 +282,6 @@
 
     <!-- Yarn Card -->
     <string name="saved_yarns">Fios guardados</string>
-    <string name="brand">Marca</string>
-    <string name="yarn_name">Nome do fio</string>
     <string name="fiber_content">Composição</string>
     <string name="weight_grams">Peso (g)</string>
     <string name="length_meters">Comprimento (m)</string>
@@ -298,11 +292,7 @@
     <string name="dye_lot">Lote de tingimento</string>
     <string name="weight_category">Categoria de espessura</string>
     <string name="care_symbols">Cuidados</string>
-    <string name="save_and_use">Guardar e usar</string>
-    <string name="discard">Descartar</string>
-    <string name="use_in_calculator">Usar na calculadora</string>
     <string name="no_saved_yarns">Ainda não há fichas de fio guardadas</string>
-    <string name="pro_required_save">É necessário Pro para guardar fichas de fio</string>
 
     <!-- Instruction parser -->
     <string name="paste_instruction">Colar instrução</string>
@@ -317,7 +307,6 @@
     <!-- Camera permission -->
     <string name="camera_permission_denied">É necessária autorização da câmara para tirar fotografias</string>
     <string name="camera_permission_denied_permanent">Autorização da câmara negada — ative-a nas Definições</string>
-    <string name="open_settings">Definições</string>
 
     <!-- Care symbol categories -->
     <string name="care_category_washing">Lavagem</string>
@@ -500,60 +489,14 @@
     <string name="voice_commands">Comandos de voz</string>
     <string name="voice_mode_timeout">O modo de voz terminou por inatividade</string>
     <string name="voice_recognizer_network_error">O reconhecimento de voz não está disponível. Tente novamente mais tarde.</string>
-    <string name="voice_command_unknown">Não percebi</string>
-    <string name="voice_note_saved">Nota guardada</string>
     <string name="voice_counter_reset">Contador reposto</string>
     <string name="voice_row_current">Carreira %d</string>
     <string name="voice_row_of_target">Carreira %1$d de %2$d, %3$d por cento concluído</string>
-    <string name="voice_rows_remaining">Faltam %d carreiras</string>
-    <string name="voice_no_target">Nenhum objetivo definido</string>
     <string name="voice_back_to_row">Voltar à carreira %d</string>
     <string name="voice_undone_row">Desfeito, carreira %d</string>
-    <string name="voice_remaining_done">Terminou!</string>
-    <string name="voice_session_minutes">Está a tricotar há %d minutos</string>
-    <string name="voice_session_under_minute">Menos de um minuto</string>
-    <string name="voice_yarn_multiple">%1$s e mais %2$d</string>
-    <string name="voice_yarn_none">Nenhum fio ligado</string>
-    <string name="voice_pattern_info">Receita %1$s, página %2$d</string>
-    <string name="voice_instruction_none">Nenhuma receita ligada</string>
-    <string name="voice_shaping_next">Próxima %1$s dentro de %2$d carreiras</string>
-    <string name="voice_shaping_at">%1$s na carreira %2$d</string>
-    <string name="voice_shaping_none">Nenhum contador de moldagem ativo</string>
-    <string name="voice_stitches_total">%1$d pontos no total, %2$d por carreira ao longo de %3$d carreiras</string>
-    <string name="voice_stitches_current">%d pontos</string>
-    <string name="voice_stitches_disabled">O seguimento de pontos não está ativado</string>
-    <string name="voice_reminders_none">Não há lembretes futuros</string>
-    <string name="voice_reminder_next">Próximo lembrete: %1$s, dentro de %2$d carreiras</string>
-    <string name="voice_reminders_multiple">Próximo lembrete: %1$s, dentro de %2$d carreiras. Depois há mais %3$d</string>
     <string name="voice_counters_none">Sem contadores extra</string>
-    <string name="voice_counter_single">%1$s está em %2$d</string>
-    <string name="voice_counters_list">%1$d contadores: %2$s</string>
-    <string name="voice_notes_empty">Ainda não há notas</string>
-    <string name="voice_notes_content">As suas notas: %1$s</string>
-    <string name="voice_total_time_none">Ainda não há tempo registado</string>
-    <string name="voice_total_time_hours">%1$d horas e %2$d minutos no total neste projeto</string>
-    <string name="voice_total_time_minutes">%1$d minutos no total neste projeto</string>
-    <string name="voice_project_name">Está a trabalhar em %1$s</string>
-    <string name="voice_section_current">Secção atual: %1$s</string>
-    <string name="voice_section_none">Nenhuma secção definida</string>
-    <string name="voice_section_set">Secção definida como %1$s</string>
     <string name="voice_stitch_at">Ponto %1$d</string>
     <string name="voice_help_full">Pode dizer: seguinte, voltar, desfazer, repor, mais um número. Pergunte sobre o progresso, carreiras restantes, tempo, fio, receita, pontos, lembretes, contadores ou notas. Diga nota para guardar uma nota, ou diga o nome de um contador para o alterar.</string>
-    <string name="voice_reminder_dismissed">Lembrete dispensado</string>
-    <string name="voice_reminder_no_active">Nenhum lembrete ativo para dispensar</string>
-    <string name="voice_counter_incremented">%1$s está agora em %2$d</string>
-    <string name="voice_counter_decremented">%1$s voltou a %2$d</string>
-    <string name="voice_counter_not_found">Não foi encontrado nenhum contador com o nome %1$s</string>
-    <string name="voice_counter_ambiguous">Há vários contadores chamados %1$s. Renomeie um deles antes de usar comandos de voz.</string>
-    <string name="voice_step_size_set">Tamanho do passo definido para %1$d</string>
-    <string name="voice_counter_reset_named">%1$s reposto para zero</string>
-    <string name="voice_page_current">Página %1$d</string>
-    <string name="voice_page_first">Já está na primeira página</string>
-    <string name="voice_project_completed">%1$s marcado como concluído. Bom trabalho!</string>
-    <string name="voice_reminder_added">Lembrete definido: %1$s na carreira %2$d</string>
-    <string name="voice_stitch_count_set">Número de pontos definido para %1$d por carreira</string>
-    <string name="voice_stitch_tracking_on">Seguimento de pontos ativado</string>
-    <string name="voice_stitch_tracking_off">Seguimento de pontos desativado</string>
     <string name="voice_recognizer_error">Erro de reconhecimento de voz</string>
     <string name="row_label_format">Carreira %d</string>
     <string name="share_photo">Partilhar</string>

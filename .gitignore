@@ -39,7 +39,6 @@ app/google-services.json
 /knittools-*.md
 /insights-*-delta.md
 /delegated-painting-duckling.md
-/firebase-ai-logic-setup-guide.md
 
 # Paikalliset code review -muistiinpanot (ei commitoida)
 /claude_code_review_*.md

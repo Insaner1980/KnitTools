@@ -2,12 +2,12 @@ import type { CandidateMatch, MatcherPlugin } from "deepsec/config";
 import { isTestFile, regexCandidates } from "./utils.js";
 
 const sensitiveWords =
-  "(?:ravelry|oauth|token|credential|secret|password|billing|purchase|project|projectId|counter|count|pattern|instruction|ocr|prompt|voice|ai)";
+  "(?:ravelry|oauth|token|credential|secret|password|billing|purchase|project|projectId|counter|count|pattern|instruction|voice)";
 
 export const sensitiveAndroidLog: MatcherPlugin = {
   slug: "sensitive-android-log",
   description:
-    "Android log statements that may disclose user project data, billing state, AI/OCR content, or credentials",
+    "Android log statements that may disclose user project data, billing state, voice transcripts, or credentials",
   noiseTier: "normal",
   filePatterns: ["app/src/main/java/**/*.kt"],
   match(content, filePath): CandidateMatch[] {

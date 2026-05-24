@@ -40,11 +40,11 @@
 - Window insets: `consumeWindowInsets(scaffoldPadding)` NavHostissa — sisemmät Scaffoldit eivät lisää tuplainsetejä
 - CounterViewModel scopattu `TopLevelDestination.Projects.route`-tasolle (jaettu Counter + ProjectList)
 - LibraryViewModel scopattu `TopLevelDestination.Library.route`-tasolle (jaettu Library + alanäytöt)
-- Navigaatio: 5 tabia (Projects, Library, Tools, Insights, Settings). Sovellus käynnistyy Projects-tabista. Room v8.
-- Voice commands v2: `VoiceCommandHandler` (continuous + one-shot, sealed class `VoiceCommand` with count), `VoiceCommandInterpreter` (Gemini AI fallback), `VoiceResponseManager` (TTS), `AiQuotaManager.hasVoiceQuota()` (sama kuukausikiintiö kuin muilla AI-kutsuilla, `AiQuotaManager.MONTHLY_ALLOWANCE = 500`). Tunnistus: exact keyword → counted command (paikallinen EN+FI lukuparseri 1-20) → first-word fallback → Gemini
+- Navigaatio: 5 tabia (Projects, Library, Tools, Insights, Settings). Sovellus käynnistyy Projects-tabista. Room v11.
+- Voice commands: `VoiceCommandHandler`, `VoiceCommandParser` ja `VoiceResponseManager` ovat paikallinen SpeechRecognizer/TTS/keyword-putki. Ei Gemini-fallbackia, AI-kiintiötä tai keskustelevaa voice-flow'ta.
 - Multi-select UI: `SelectionIndicator` ja `SelectModeDeleteBar` jaetut internal composablet `SavedPatternsScreen.kt`:ssä
-- Notes: bottom sheet + full-screen editor (`notes_editor/{projectId}`), `NotesEditorViewModel` (debounced auto-save). Full-screen editorin TopAppBarissa `+ AI` -nappi avaa `JournalEntryBottomSheet` (Speak/Type) → `JournalEntryProcessor` (Gemini 2.5 Flash Lite siivoaa välimerkit) → `NotesEditorViewModel.appendJournalEntry()` lisää päivättyyn + rivi-headeriin. Fallback (offline/quota/ei-Pro) säilyttää raakatekstin. Pro-gate: `ProFeature.AI_FEATURES`.
-- Simple speech-to-text: `ai/speech/SimpleSpeechRecognizer` — kevyt raakatranskriptio-wrapper (erillään `VoiceCommandHandler`ista joka on kytketty keyword-parsingiin). Journal käyttää tätä.
+- Notes: bottom sheet + full-screen editor (`notes_editor/{projectId}`), `NotesEditorViewModel` ja paikallinen auto-save. Project note replacement kulkee `CounterRepository.saveProjectNotes`-polun kautta, jotta rinnakkaiset editorivirrat eivät ylikirjoita toisiaan.
+- Notes editing is local-only; älä palauta cloud-journalia, AI-siistintää tai voice-transcript-journalointia ilman uutta nimenomaista päätöstä.
 - Ravelry API: backendia ei ole eikä tule. Debug lukee ignored `debug.credentials.properties` -tiedostosta `ravelry.basicAuthUser`, `ravelry.basicAuthPassword`, `ravelry.oauth2ClientId` ja `ravelry.oauth2ClientSecret`; release lukee vastaavat `KNITTOOLS_RAVELRY_*`-ympäristömuuttujista ja vaatii `KNITTOOLS_ALLOW_EMBEDDED_RAVELRY_SECRETS=true`. OAuth käyttää PKCE:tä, mutta credentialien upotus on tietoinen riski.
 
 ## Google Play

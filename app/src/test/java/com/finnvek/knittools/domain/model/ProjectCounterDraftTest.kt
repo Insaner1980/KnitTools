@@ -17,7 +17,7 @@ class ProjectCounterDraftTest {
         assertEquals("Sleeve", draft.name)
         assertNull(draft.repeatAt)
         assertEquals(1, draft.stepSize)
-        assertEquals("COUNT_UP", draft.counterType)
+        assertEquals(ProjectCounterType.COUNT_UP, draft.counterType)
         assertNull(draft.startingStitches)
         assertNull(draft.stitchChange)
         assertNull(draft.shapeEveryN)
@@ -34,7 +34,7 @@ class ProjectCounterDraftTest {
                 name = "Waist shaping",
                 repeatAt = 6,
                 stepSize = 2,
-                counterType = "SHAPING",
+                counterType = ProjectCounterType.SHAPING,
                 startingStitches = 96,
                 stitchChange = -2,
                 shapeEveryN = 4,
@@ -47,7 +47,7 @@ class ProjectCounterDraftTest {
         assertEquals("Waist shaping", draft.name)
         assertEquals(6, draft.repeatAt)
         assertEquals(2, draft.stepSize)
-        assertEquals("SHAPING", draft.counterType)
+        assertEquals(ProjectCounterType.SHAPING, draft.counterType)
         assertEquals(96, draft.startingStitches)
         assertEquals(-2, draft.stitchChange)
         assertEquals(4, draft.shapeEveryN)

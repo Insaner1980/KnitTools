@@ -57,7 +57,6 @@ class TooltipManager
  * Tooltip ID -vakiot.
  */
 object TooltipIds {
-    const val VOICE_COMMANDS = "voice_commands"
     const val LIBRARY_TAB = "library_tab"
     const val INSIGHTS_TAB = "insights_tab"
     const val SHAPING_COUNTER = "shaping_counter"

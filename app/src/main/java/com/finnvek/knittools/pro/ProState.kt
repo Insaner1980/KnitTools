@@ -23,7 +23,6 @@ enum class ProFeature {
     INSIGHTS_CHARTS,
     STREAK,
     UNLIMITED_YARN,
-    VOICE_COMMANDS,
 }
 
 @Immutable

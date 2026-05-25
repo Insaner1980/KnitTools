@@ -58,6 +58,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.BuildConfig
 import com.finnvek.knittools.R
+import com.finnvek.knittools.ui.theme.InsightChartColors
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
@@ -258,7 +259,6 @@ fun InsightsScreen(
                     data = timePerProject,
                     isPro = isPro,
                     onProUpgrade = onProUpgrade,
-                    primaryColor = MaterialTheme.colorScheme.primary,
                     animationKey = animationKey,
                 )
             }
@@ -517,17 +517,9 @@ private fun TimePerProjectChart(
     data: List<ProjectTime>,
     isPro: Boolean,
     onProUpgrade: () -> Unit,
-    primaryColor: Color,
     animationKey: Any,
 ) {
-    val barColors =
-        listOf(
-            primaryColor,
-            Color(0xFF8BA44A),
-            Color(0xFFC9A435),
-            Color(0xFFB8908F),
-            Color(0xFF5F8A8B),
-        )
+    val barColors = InsightChartColors
 
     Surface(
         shape = MaterialTheme.shapes.large,

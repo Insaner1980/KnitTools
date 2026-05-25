@@ -54,11 +54,12 @@ fun ProjectCard(
     hasNotes: Boolean = false,
     onNotesClick: (() -> Unit)? = null,
 ) {
-    val trimmedName = name.trim()
-    val visiblePatternName =
-        patternName
-            ?.trim()
-            ?.takeIf { it.isNotEmpty() && !it.equals(trimmedName, ignoreCase = true) }
+    val secondaryLine =
+        projectCardSecondaryLine(
+            sectionName = sectionName,
+            patternName = patternName,
+            projectName = name,
+        )
 
     Surface(
         modifier = modifier.fillMaxWidth(),
@@ -82,20 +83,13 @@ fun ProjectCard(
                     text = name,
                     style = MaterialTheme.typography.titleMedium,
                 )
-                if (visiblePatternName != null) {
+                if (secondaryLine != null) {
                     Text(
-                        text = visiblePatternName,
+                        text = secondaryLine,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                    )
-                }
-                if (sectionName != null) {
-                    Text(
-                        text = sectionName,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
                 Spacer(modifier = Modifier.height(4.dp))
@@ -119,6 +113,22 @@ fun ProjectCard(
             )
         }
     }
+}
+
+private fun projectCardSecondaryLine(
+    sectionName: String?,
+    patternName: String?,
+    projectName: String,
+): String? {
+    sectionName
+        ?.trim()
+        ?.takeIf { it.isNotEmpty() }
+        ?.let { return it }
+
+    val trimmedName = projectName.trim()
+    return patternName
+        ?.trim()
+        ?.takeIf { it.isNotEmpty() && !it.equals(trimmedName, ignoreCase = true) }
 }
 
 // Erotettu ProjectCard-funktiosta kognitiivisen kompleksisuuden vähentämiseksi (S3776)

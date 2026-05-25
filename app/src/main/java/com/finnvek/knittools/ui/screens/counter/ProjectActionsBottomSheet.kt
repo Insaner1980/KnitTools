@@ -18,13 +18,10 @@ import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.Edit
-import androidx.compose.material.icons.outlined.EditNote
 import androidx.compose.material.icons.outlined.FormatListNumbered
 import androidx.compose.material.icons.outlined.History
-import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Numbers
-import androidx.compose.material.icons.outlined.PhotoLibrary
 import androidx.compose.material.icons.outlined.Restore
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -47,9 +44,6 @@ import com.finnvek.knittools.R
 
 data class ProjectActionsSheetCallbacks(
     val onDismiss: () -> Unit,
-    val onOpenYarnManagement: () -> Unit,
-    val onOpenNotes: () -> Unit,
-    val onOpenPhotos: () -> Unit,
     val onOpenReminders: () -> Unit,
     val onOpenCountersList: () -> Unit,
     val onOpenAddCounter: () -> Unit,
@@ -63,7 +57,6 @@ data class ProjectActionsSheetCallbacks(
 )
 
 data class ProjectActionsSheetState(
-    val linkedYarnCount: Int,
     val reminderCount: Int,
     val projectCounterCount: Int,
     val stitchTrackingEnabled: Boolean,
@@ -85,22 +78,6 @@ fun ProjectActionsBottomSheet(
     ) {
         Column(modifier = Modifier.padding(bottom = 18.dp)) {
             ProjectActionsSection(title = stringResource(R.string.project_actions_section_this_project)) {
-                ActionRow(
-                    icon = Icons.Outlined.Inventory2,
-                    label = stringResource(R.string.project_actions_yarn),
-                    trailingCount = state.linkedYarnCount.takeIf { it > 0 },
-                    onClick = callbacks.onOpenYarnManagement,
-                )
-                ActionRow(
-                    icon = Icons.Outlined.EditNote,
-                    label = stringResource(R.string.notes),
-                    onClick = callbacks.onOpenNotes,
-                )
-                ActionRow(
-                    icon = Icons.Outlined.PhotoLibrary,
-                    label = stringResource(R.string.project_actions_photos),
-                    onClick = callbacks.onOpenPhotos,
-                )
                 ActionRow(
                     icon = Icons.Outlined.Notifications,
                     label = stringResource(R.string.reminders),

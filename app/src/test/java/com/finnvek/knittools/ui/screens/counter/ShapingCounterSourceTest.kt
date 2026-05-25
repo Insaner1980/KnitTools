@@ -40,10 +40,10 @@ class ShapingCounterSourceTest {
     }
 
     @Test
-    fun `dao repeating increment preserves overflow with modulo`() {
-        val source = ProjectSourceFiles.read(PROJECT_COUNTER_DAO)
+    fun `domain repeating increment preserves overflow with modulo`() {
+        val source = ProjectSourceFiles.read(PROJECT_COUNTER_LOGIC)
 
-        assertTrue(source.contains("(count + stepSize) % repeatAt"))
+        assertTrue(source.contains("newCount % repeatAt"))
     }
 
     private fun isAddCounterFormValidByReflection(params: AddCounterFormParams): Boolean {
@@ -58,7 +58,7 @@ class ShapingCounterSourceTest {
     private companion object {
         const val MULTI_COUNTER_COMPONENTS =
             "app/src/main/java/com/finnvek/knittools/ui/screens/counter/MultiCounterComponents.kt"
-        const val PROJECT_COUNTER_DAO =
-            "app/src/main/java/com/finnvek/knittools/data/local/ProjectCounterDao.kt"
+        const val PROJECT_COUNTER_LOGIC =
+            "app/src/main/java/com/finnvek/knittools/domain/calculator/ProjectCounterLogic.kt"
     }
 }

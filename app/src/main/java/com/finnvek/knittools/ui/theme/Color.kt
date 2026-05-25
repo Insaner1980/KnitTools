@@ -105,3 +105,12 @@ val YarnColors =
         Color(0xFF9A82AA), // Laventeli
         Color(0xFFA85A3A), // Ruosteenpunainen
     )
+
+val InsightChartColors =
+    listOf(
+        Primary,
+        Secondary,
+        Tertiary,
+        DustyRose,
+        RavelryTeal,
+    )

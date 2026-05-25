@@ -41,6 +41,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.core.net.toUri
 import coil3.compose.AsyncImage
 import com.finnvek.knittools.R
+import com.finnvek.knittools.data.storage.AppFileStorage
 import com.finnvek.knittools.domain.model.ProgressPhoto
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.rememberLocaleDateFormat
@@ -137,13 +138,9 @@ fun PhotoViewer(
                 }
                 IconButton(
                     onClick = {
-                        val photoFile = java.io.File(photo.photoUri.toUri().path!!)
                         val contentUri =
-                            androidx.core.content.FileProvider.getUriForFile(
-                                context,
-                                "${context.packageName}.fileprovider",
-                                photoFile,
-                            )
+                            AppFileStorage.shareUriForAppOwnedFile(context, photo.photoUri.toUri())
+                                ?: return@IconButton
                         val shareIntent =
                             Intent(Intent.ACTION_SEND).apply {
                                 type = "image/jpeg"

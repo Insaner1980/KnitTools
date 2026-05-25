@@ -15,10 +15,11 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         RowReminderEntity::class,
         ProgressPhotoEntity::class,
         ProjectCounterEntity::class,
+        ProjectYarnNoteEntity::class,
         SavedPatternEntity::class,
         PatternAnnotationEntity::class,
     ],
-    version = 11,
+    version = 12,
     exportSchema = true,
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
@@ -37,6 +38,8 @@ abstract class KnitToolsDatabase : RoomDatabase() {
     abstract fun progressPhotoDao(): ProgressPhotoDao
 
     abstract fun projectCounterDao(): ProjectCounterDao
+
+    abstract fun projectYarnNoteDao(): ProjectYarnNoteDao
 
     abstract fun savedPatternDao(): SavedPatternDao
 
@@ -250,6 +253,33 @@ abstract class KnitToolsDatabase : RoomDatabase() {
                     db.execSQL(
                         "CREATE INDEX IF NOT EXISTS `index_sessions_projectId_endedAt_startedAt` " +
                             "ON `sessions` (`projectId`, `endedAt`, `startedAt`)",
+                    )
+                }
+            }
+
+        val MIGRATION_11_12 =
+            object : Migration(11, 12) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL(
+                        """
+                        CREATE TABLE IF NOT EXISTS `project_yarn_notes` (
+                            `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                            `projectId` INTEGER NOT NULL,
+                            `name` TEXT NOT NULL,
+                            `description` TEXT NOT NULL,
+                            `quantity` INTEGER NOT NULL DEFAULT 1,
+                            `notes` TEXT NOT NULL,
+                            `savedYarnCardId` INTEGER DEFAULT NULL,
+                            `createdAt` INTEGER NOT NULL,
+                            `updatedAt` INTEGER NOT NULL,
+                            FOREIGN KEY(`projectId`) REFERENCES `counter_projects`(`id`)
+                                ON UPDATE NO ACTION ON DELETE CASCADE
+                        )
+                        """.trimIndent(),
+                    )
+                    db.execSQL(
+                        "CREATE INDEX IF NOT EXISTS `index_project_yarn_notes_projectId` " +
+                            "ON `project_yarn_notes` (`projectId`)",
                     )
                 }
             }

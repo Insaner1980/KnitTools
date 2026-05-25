@@ -1,5 +1,6 @@
 package com.finnvek.knittools
 
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -15,14 +16,15 @@ class FeatureGateRaceSourceTest {
     }
 
     @Test
-    fun `classic voice start rechecks voice command feature before starting listener`() {
+    fun `classic voice start path is removed from counter`() {
         val viewModel = ProjectSourceFiles.read(COUNTER_VIEW_MODEL)
         val screen = ProjectSourceFiles.read(COUNTER_SCREEN)
 
-        assertTrue(viewModel.contains("fun canStartClassicVoice(): Boolean"))
-        assertTrue(viewModel.contains("proManager.hasFeature(ProFeature.VOICE_COMMANDS)"))
-        assertTrue(screen.contains("viewModel.canStartClassicVoice()"))
-        assertTrue(screen.contains("hasAudioPermission(context) && viewModel.canStartClassicVoice() ->"))
+        assertFalse(viewModel.contains("fun canStartClassicVoice(): Boolean"))
+        assertFalse(viewModel.contains("ProFeature.VOICE_COMMANDS"))
+        assertFalse(screen.contains("viewModel.canStartClassicVoice()"))
+        assertFalse(screen.contains("hasAudioPermission(context)"))
+        assertFalse(screen.contains("Manifest.permission.RECORD_AUDIO"))
     }
 
     private companion object {

@@ -1,15 +1,16 @@
 package com.finnvek.knittools.domain.calculator
 
 import com.finnvek.knittools.domain.model.ProjectCounter
+import com.finnvek.knittools.domain.model.ProjectCounterType
 
 object ProjectCounterLogic {
     fun increment(counter: ProjectCounter): ProjectCounter {
         val newCount = counter.count + counter.stepSize
         // SHAPING-tyyppi ei resettaa — normaali laskenta
-        if (counter.counterType == "SHAPING") {
+        if (counter.counterType == ProjectCounterType.SHAPING) {
             return counter.copy(count = newCount)
         }
-        if (counter.counterType == "REPEAT_SECTION") {
+        if (counter.counterType == ProjectCounterType.REPEAT_SECTION) {
             return counter
         }
         val repeatAt = counter.repeatAt
@@ -21,7 +22,7 @@ object ProjectCounterLogic {
     }
 
     fun decrement(counter: ProjectCounter): ProjectCounter {
-        if (counter.counterType == "REPEAT_SECTION") {
+        if (counter.counterType == ProjectCounterType.REPEAT_SECTION) {
             return counter
         }
         val newCount = (counter.count - counter.stepSize).coerceAtLeast(0)

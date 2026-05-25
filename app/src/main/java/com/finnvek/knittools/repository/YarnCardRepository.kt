@@ -11,6 +11,8 @@ import com.finnvek.knittools.data.storage.AppFileStorage
 import com.finnvek.knittools.di.IoDispatcher
 import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.domain.model.YarnCardStatus
+import com.finnvek.knittools.domain.model.formatYarnCardIds
+import com.finnvek.knittools.domain.model.parseYarnCardIds
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
@@ -39,30 +41,34 @@ class YarnCardRepository
 
         suspend fun saveCard(card: YarnCard): Long =
             transactionRunner.run {
-                val existingCard = card.id.takeIf { it != 0L }?.let { dao.getCard(it) }
-                val projects = counterProjectDao.getAllProjectsOnce()
-                val linkedProjectId =
-                    card.linkedProjectId?.takeIf { projectId ->
-                        projects.any { it.id == projectId }
-                    }
-                val normalizedCard =
-                    card.copy(
-                        status = YarnCardStatus.normalize(card.status),
-                        linkedProjectId = linkedProjectId,
-                    )
-                val upsertedId = dao.upsert(normalizedCard.toEntity())
-                val savedId = normalizedCard.id.takeIf { it != 0L } ?: upsertedId
-                val linkChanged = existingCard?.linkedProjectId != linkedProjectId
-                if (linkedProjectId != null || linkChanged) {
-                    updateProjectYarnLinks(
-                        projects = projects,
-                        cardId = savedId,
-                        projectId = linkedProjectId,
-                        updatedAt = System.currentTimeMillis(),
-                    )
-                }
-                savedId
+                saveCardInCurrentTransaction(card)
             }
+
+        internal suspend fun saveCardInCurrentTransaction(card: YarnCard): Long {
+            val existingCard = card.id.takeIf { it != 0L }?.let { dao.getCard(it) }
+            val projects = counterProjectDao.getAllProjectsOnce()
+            val linkedProjectId =
+                card.linkedProjectId?.takeIf { projectId ->
+                    projects.any { it.id == projectId }
+                }
+            val normalizedCard =
+                card.copy(
+                    status = YarnCardStatus.normalize(card.status),
+                    linkedProjectId = linkedProjectId,
+                )
+            val upsertedId = dao.upsert(normalizedCard.toEntity())
+            val savedId = normalizedCard.id.takeIf { it != 0L } ?: upsertedId
+            val linkChanged = existingCard?.linkedProjectId != linkedProjectId
+            if (linkedProjectId != null || linkChanged) {
+                updateProjectYarnLinks(
+                    projects = projects,
+                    cardId = savedId,
+                    projectId = linkedProjectId,
+                    updatedAt = System.currentTimeMillis(),
+                )
+            }
+            return savedId
+        }
 
         fun getCardCount() = dao.getCardCount()
 
@@ -115,12 +121,12 @@ class YarnCardRepository
         private suspend fun removeCardIdsFromProjects(cardIds: Set<Long>) {
             val updatedAt = System.currentTimeMillis()
             counterProjectDao.getAllProjectsOnce().forEach { project ->
-                val currentIds = project.yarnCardIds.toYarnCardIds()
+                val currentIds = parseYarnCardIds(project.yarnCardIds)
                 val nextIds = currentIds.filterNot { it in cardIds }
                 if (nextIds.size != currentIds.size) {
                     counterProjectDao.updateYarnCardIds(
                         id = project.id,
-                        yarnCardIds = nextIds.joinToString(","),
+                        yarnCardIds = formatYarnCardIds(nextIds),
                         updatedAt = updatedAt,
                     )
                 }
@@ -134,7 +140,7 @@ class YarnCardRepository
             updatedAt: Long,
         ) {
             projects.forEach { project ->
-                val currentIds = project.yarnCardIds.toYarnCardIds()
+                val currentIds = parseYarnCardIds(project.yarnCardIds)
                 val nextIds =
                     if (project.id == projectId) {
                         if (cardId in currentIds) currentIds else currentIds + cardId
@@ -150,12 +156,10 @@ class YarnCardRepository
                 if (shouldUpdate) {
                     counterProjectDao.updateYarnCardIds(
                         id = project.id,
-                        yarnCardIds = nextIds.joinToString(","),
+                        yarnCardIds = formatYarnCardIds(nextIds),
                         updatedAt = updatedAt,
                     )
                 }
             }
         }
     }
-
-private fun String.toYarnCardIds(): List<Long> = split(",").mapNotNull { it.trim().toLongOrNull() }

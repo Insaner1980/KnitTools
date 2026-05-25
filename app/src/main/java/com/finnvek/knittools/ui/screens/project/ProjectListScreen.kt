@@ -67,6 +67,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.CounterProject
+import com.finnvek.knittools.domain.model.ProjectSortOrder
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.ProjectCard
 import com.finnvek.knittools.ui.components.RenameProjectDialog
@@ -363,7 +364,7 @@ data class ProjectListTopBarState(
     val isMultiSelectMode: Boolean,
     val selectedCount: Int,
     val showCompleted: Boolean,
-    val sortOrder: String,
+    val sortOrder: ProjectSortOrder,
     val showOverflowMenu: Boolean,
     val showSortMenu: Boolean,
 )
@@ -377,7 +378,7 @@ data class ProjectListTopBarActions(
     val onShowSortMenu: () -> Unit,
     val onDismissSortMenu: () -> Unit,
     val onToggleShowCompleted: () -> Unit,
-    val onSortOrderChange: (String) -> Unit,
+    val onSortOrderChange: (ProjectSortOrder) -> Unit,
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -447,7 +448,7 @@ data class OverflowMenuState(
     val showOverflowMenu: Boolean,
     val showSortMenu: Boolean,
     val showCompleted: Boolean,
-    val sortOrder: String,
+    val sortOrder: ProjectSortOrder,
 )
 
 data class OverflowMenuActions(
@@ -457,7 +458,7 @@ data class OverflowMenuActions(
     val onShowSortMenu: () -> Unit,
     val onDismissSortMenu: () -> Unit,
     val onToggleShowCompleted: () -> Unit,
-    val onSortOrderChange: (String) -> Unit,
+    val onSortOrderChange: (ProjectSortOrder) -> Unit,
 )
 
 @Composable
@@ -516,9 +517,9 @@ private fun OverflowMenuWithSort(
 @Composable
 private fun SortSubMenu(
     expanded: Boolean,
-    sortOrder: String,
+    sortOrder: ProjectSortOrder,
     onDismiss: () -> Unit,
-    onSortOrderChange: (String) -> Unit,
+    onSortOrderChange: (ProjectSortOrder) -> Unit,
 ) {
     DropdownMenu(
         expanded = expanded,
@@ -526,18 +527,18 @@ private fun SortSubMenu(
     ) {
         SortMenuItem(
             label = stringResource(R.string.sort_name),
-            selected = sortOrder == "name",
-            onClick = { onSortOrderChange("name") },
+            selected = sortOrder == ProjectSortOrder.NAME,
+            onClick = { onSortOrderChange(ProjectSortOrder.NAME) },
         )
         SortMenuItem(
             label = stringResource(R.string.sort_last_updated),
-            selected = sortOrder == "updated",
-            onClick = { onSortOrderChange("updated") },
+            selected = sortOrder == ProjectSortOrder.UPDATED,
+            onClick = { onSortOrderChange(ProjectSortOrder.UPDATED) },
         )
         SortMenuItem(
             label = stringResource(R.string.sort_created_date),
-            selected = sortOrder == "created",
-            onClick = { onSortOrderChange("created") },
+            selected = sortOrder == ProjectSortOrder.CREATED,
+            onClick = { onSortOrderChange(ProjectSortOrder.CREATED) },
         )
     }
 }
@@ -658,6 +659,8 @@ private fun ProjectListContent(
                         projectName = ck.name,
                         rowCount = ck.count,
                         totalMinutes = ck.totalMinutes,
+                        sectionName = ck.sectionName,
+                        targetRows = ck.targetRows,
                         onClick = { actions.onProjectClick(ck.projectId) },
                     )
                     Spacer(modifier = Modifier.height(8.dp))
@@ -820,8 +823,24 @@ private fun ContinueKnittingCard(
     projectName: String,
     rowCount: Int,
     totalMinutes: Int,
+    sectionName: String?,
+    targetRows: Int?,
     onClick: () -> Unit,
 ) {
+    val rowContext =
+        if (targetRows != null && targetRows > 0) {
+            stringResource(R.string.row_label_with_target, rowCount, targetRows)
+        } else {
+            stringResource(R.string.rows_format, rowCount)
+        }
+    val contextLine =
+        continueKnittingContextLine(
+            sectionName = sectionName,
+            rowCount = rowCount,
+            targetRows = targetRows,
+            fallback = rowContext + " · " + formatMinutes(totalMinutes),
+        )
+
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
         shape = MaterialTheme.shapes.large,
@@ -848,7 +867,7 @@ private fun ContinueKnittingCard(
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = stringResource(R.string.rows_format, rowCount) + " · " + formatMinutes(totalMinutes),
+                    text = contextLine,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -878,6 +897,25 @@ private fun ContinueKnittingCard(
             }
         }
     }
+}
+
+private fun continueKnittingContextLine(
+    sectionName: String?,
+    rowCount: Int,
+    targetRows: Int?,
+    fallback: String,
+): String {
+    sectionName
+        ?.trim()
+        ?.takeIf { it.isNotEmpty() }
+        ?.let { return it }
+
+    val progressFallback =
+        targetRows
+            ?.takeIf { it > 0 }
+            ?.let { "$rowCount/$it" }
+            ?: rowCount.toString()
+    return fallback.ifBlank { progressFallback }
 }
 
 @Composable

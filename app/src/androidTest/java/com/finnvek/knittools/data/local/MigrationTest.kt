@@ -14,8 +14,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Testaa Room-migraatiot v1→v10.
- * v1→v3: AutoMigration. v3→v10: manuaaliset muutokset.
+ * Testaa Room-migraatiot v1→v12.
+ * v1→v3: AutoMigration. v3→v12: manuaaliset muutokset.
  */
 @RunWith(AndroidJUnit4::class)
 class MigrationTest {
@@ -35,9 +35,11 @@ class MigrationTest {
             KnitToolsDatabase.MIGRATION_7_8,
             KnitToolsDatabase.MIGRATION_8_9,
             KnitToolsDatabase.MIGRATION_9_10,
+            KnitToolsDatabase.MIGRATION_10_11,
+            KnitToolsDatabase.MIGRATION_11_12,
         )
 
-    private val latestVersion = 10
+    private val latestVersion = 12
 
     private fun migrateToLatest(testDb: String): SupportSQLiteDatabase =
         helper.runMigrationsAndValidate(
@@ -75,6 +77,21 @@ class MigrationTest {
             indexCursor.close()
         }
         assertTrue(hasStartedAtIndex)
+    }
+
+    private fun assertProjectYarnNoteIndexExists(db: SupportSQLiteDatabase) {
+        val indexCursor = db.query("PRAGMA index_list('project_yarn_notes')")
+        var hasProjectIdIndex = false
+        try {
+            while (indexCursor.moveToNext()) {
+                if (indexCursor.getString(1) == "index_project_yarn_notes_projectId") {
+                    hasProjectIdIndex = true
+                }
+            }
+        } finally {
+            indexCursor.close()
+        }
+        assertTrue(hasProjectIdIndex)
     }
 
     @Test
@@ -1182,6 +1199,128 @@ class MigrationTest {
             assertTrue(isNull(7))
         }
         assertStartedAtIndexExists(db)
+
+        db.close()
+    }
+
+    @Test
+    fun migrate11to12AddsProjectYarnNotesWithoutChangingExistingProjectData() {
+        val testDb = "migration-test-v11-to-v12"
+
+        helper.createDatabase(testDb, 11).apply {
+            execSQL(
+                """
+                INSERT INTO counter_projects (
+                    id, name, count, secondaryCount, stepSize, notes, createdAt, updatedAt,
+                    sectionName, stitchCount, isCompleted, totalRows, completedAt, yarnCardIds,
+                    linkedPatternId, patternUri, patternName, currentPatternPage, patternRowMapping,
+                    stitchTrackingEnabled, currentStitch, targetRows
+                ) VALUES (
+                    1, 'Project yarn migration', 22, 2, 1, 'notes', 1000, 2000,
+                    'Sleeve', 64, 0, NULL, NULL, '1',
+                    NULL, 'content://pattern.pdf', 'Pattern.pdf', 4, '{"10":2}',
+                    1, 12, 80
+                )
+                """.trimIndent(),
+            )
+            execSQL(
+                """
+                INSERT INTO yarn_cards (
+                    id, brand, yarnName, fiberContent, weightGrams, lengthMeters,
+                    needleSize, gaugeInfo, colorName, colorNumber, dyeLot,
+                    weightCategory, careSymbols, photoUri, createdAt,
+                    quantityInStash, status, linkedProjectId
+                ) VALUES (
+                    1, 'Istex', 'Lettlopi', '100% wool', '50', '100',
+                    '4.5', '18 sts', 'Moss', '9423', 'D2',
+                    'Aran', 9, 'content://yarn/11', 3000,
+                    7, 'IN_USE', 1
+                )
+                """.trimIndent(),
+            )
+            execSQL(
+                """
+                INSERT INTO project_counters (
+                    id, projectId, name, count, stepSize, repeatAt, sortOrder, createdAt,
+                    counterType, startingStitches, stitchChange, shapeEveryN,
+                    repeatStartRow, repeatEndRow, totalRepeats, currentRepeat
+                ) VALUES (
+                    1, 1, 'Sleeve repeats', 4, 1, NULL, 0, 4000,
+                    'REPEAT_SECTION', NULL, NULL, NULL,
+                    10, 18, 6, 2
+                )
+                """.trimIndent(),
+            )
+            execSQL(
+                """
+                INSERT INTO row_reminders (
+                    id, projectId, targetRow, repeatInterval, message, isCompleted, createdAt
+                ) VALUES (
+                    1, 1, 25, NULL, 'Try on', 0, 5000
+                )
+                """.trimIndent(),
+            )
+            execSQL(
+                """
+                INSERT INTO progress_photos (
+                    id, projectId, photoUri, rowNumber, note, createdAt
+                ) VALUES (
+                    1, 1, 'content://photo/11', 20, 'Halfway', 6000
+                )
+                """.trimIndent(),
+            )
+            close()
+        }
+
+        val db =
+            helper.runMigrationsAndValidate(
+                testDb,
+                12,
+                true,
+                KnitToolsDatabase.MIGRATION_11_12,
+            )
+
+        assertSingleRow(
+            db,
+            """
+            SELECT name, count, secondaryCount, sectionName, stitchCount, yarnCardIds,
+                patternName, currentPatternPage, stitchTrackingEnabled, currentStitch, targetRows
+            FROM counter_projects WHERE id = 1
+            """.trimIndent(),
+        ) {
+            assertEquals("Project yarn migration", getString(0))
+            assertEquals(22, getInt(1))
+            assertEquals(2, getInt(2))
+            assertEquals("Sleeve", getString(3))
+            assertEquals(64, getInt(4))
+            assertEquals("1", getString(5))
+            assertEquals("Pattern.pdf", getString(6))
+            assertEquals(4, getInt(7))
+            assertEquals(1, getInt(8))
+            assertEquals(12, getInt(9))
+            assertEquals(80, getInt(10))
+        }
+        assertSingleRow(
+            db,
+            "SELECT quantityInStash, status, linkedProjectId FROM yarn_cards WHERE id = 1",
+        ) {
+            assertEquals(7, getInt(0))
+            assertEquals("IN_USE", getString(1))
+            assertEquals(1L, getLong(2))
+        }
+        assertSingleRow(db, "SELECT COUNT(*) FROM project_counters WHERE projectId = 1") {
+            assertEquals(1, getInt(0))
+        }
+        assertSingleRow(db, "SELECT COUNT(*) FROM row_reminders WHERE projectId = 1") {
+            assertEquals(1, getInt(0))
+        }
+        assertSingleRow(db, "SELECT COUNT(*) FROM progress_photos WHERE projectId = 1") {
+            assertEquals(1, getInt(0))
+        }
+        assertSingleRow(db, "SELECT COUNT(*) FROM project_yarn_notes") {
+            assertEquals(0, getInt(0))
+        }
+        assertProjectYarnNoteIndexExists(db)
 
         db.close()
     }

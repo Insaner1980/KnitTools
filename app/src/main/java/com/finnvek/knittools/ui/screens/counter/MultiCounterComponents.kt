@@ -44,6 +44,7 @@ import com.finnvek.knittools.domain.calculator.RepeatSectionLogic
 import com.finnvek.knittools.domain.calculator.ShapingCounterLogic
 import com.finnvek.knittools.domain.model.ProjectCounter
 import com.finnvek.knittools.domain.model.ProjectCounterDraft
+import com.finnvek.knittools.domain.model.ProjectCounterType
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.NumberInputField
 import com.finnvek.knittools.ui.components.NumberInputOptions
@@ -93,7 +94,7 @@ fun CounterListItem(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            if (counter.counterType == "SHAPING" &&
+            if (counter.counterType == ProjectCounterType.SHAPING &&
                 counter.startingStitches != null &&
                 counter.stitchChange != null &&
                 counter.shapeEveryN != null
@@ -440,12 +441,12 @@ private fun isAddCounterFormValid(params: AddCounterFormParams): Boolean =
                 )
         )
 
-private fun counterTypeFromIndex(index: Int): String =
+private fun counterTypeFromIndex(index: Int): ProjectCounterType =
     when (index) {
-        1 -> "REPEATING"
-        2 -> "SHAPING"
-        3 -> "REPEAT_SECTION"
-        else -> "COUNT_UP"
+        1 -> ProjectCounterType.REPEATING
+        2 -> ProjectCounterType.SHAPING
+        3 -> ProjectCounterType.REPEAT_SECTION
+        else -> ProjectCounterType.COUNT_UP
     }
 
 // Data-luokka AddCounterDialogContent-parametrien ryhmittelyyn (S107)

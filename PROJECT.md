@@ -32,9 +32,9 @@ Nykytilan kannalta hyödyllinen järjestys:
 - Widgetit: Glance App Widget
 - Verkko: Ktor + OkHttp
 - Integraatiot: Ravelry OAuth2/API, Google Play Billing, In-App Review, In-App Update
-- Paikalliset lisäominaisuudet: regex-pohjainen laskuriohjeparseri `domain/calculator/InstructionParser.kt` sekä Android SpeechRecognizer/TTS -pohjaiset keyword-äänikomennot
+- Paikalliset lisäominaisuudet: regex-pohjainen laskuriohjeparseri `domain/calculator/InstructionParser.kt`
 - Lokalisaatio: `localeConfig` + useat `values-*`-hakemistot
-- Room schema version: `11`
+- Room schema version: `12`
 - `compileSdk` / `targetSdk` / `minSdk`: `36 / 36 / 29`
 - `baselineprofile`-moduulin `minSdk`: `29`
 - Java target: `17`
@@ -78,10 +78,7 @@ Jos avaat vain muutaman tiedoston, avaa nämä:
 - Pro / billing / trial:
   - `app/src/main/java/com/finnvek/knittools/billing/BillingManager.kt`
   - `app/src/main/java/com/finnvek/knittools/pro/`
-- voice ja paikallinen parseri:
-  - `app/src/main/java/com/finnvek/knittools/ui/screens/counter/VoiceCommandParser.kt`
-  - `app/src/main/java/com/finnvek/knittools/ui/screens/counter/VoiceCommandHandler.kt`
-  - `app/src/main/java/com/finnvek/knittools/ui/screens/counter/VoiceResponseManager.kt`
+- paikallinen laskuriohjeparseri:
   - `app/src/main/java/com/finnvek/knittools/domain/calculator/InstructionParser.kt`
 - widgetit:
   - `app/src/main/java/com/finnvek/knittools/widget/`
@@ -95,7 +92,7 @@ Päätuote. Sisältää käytännössä kaiken tuotantologiikan:
 - Compose-screenit ja navigaatio
 - Room- ja DataStore-kerrokset
 - Ravelry-integraation
-- paikalliset voice-flowt ja laskuriohjeparseri
+- paikallinen laskuriohjeparseri
 - Play Billing / Pro / trial
 - Glance-widgetin
 
@@ -104,12 +101,15 @@ Pluginit `app/build.gradle.kts`:ssä:
 - `com.android.application`
 - `org.jetbrains.kotlin.plugin.compose`
 - `com.google.devtools.ksp`
+- `androidx.room`
 - `com.google.dagger.hilt.android`
+- `org.owasp.dependencycheck`
+- `androidx.baselineprofile`
 - `org.jlleitschuh.gradle.ktlint`
 - `dev.detekt`
 - `org.jetbrains.kotlin.plugin.serialization`
-- `org.owasp.dependencycheck`
-- `androidx.baselineprofile`
+- `com.github.skydoves.compose.stability.analyzer`
+- `jacoco`
 
 Build-huomiot:
 
@@ -195,8 +195,6 @@ Sovellus käynnistyy `Projects`-tabiin.
 Bottom bar piilotetaan nykyään näillä routeilla:
 
 - `pro_upgrade`
-- `yarn_card_review`
-- `library_yarn_card_review`
 - `pattern_viewer/{projectId}`
 - `library_pattern_viewer/{savedPatternId}`
 - `notes_editor/{projectId}`
@@ -205,7 +203,7 @@ ViewModel-scope:
 
 - `CounterViewModel` on scoped `Projects`-graafin tasolle
 - `LibraryViewModel` on scoped `Library`-graafin tasolle
-- `YarnCardViewModel` on shared erikseen `Tools`-graafin ja `Library`-graafin parent-entryn tasolla
+- `YarnCardViewModel` on scoped `Library`-graafin parent-entryn tasolle `yarn_card_detail/{cardId}`-reitillä
 
 Counterin projektivalinta:
 
@@ -232,7 +230,6 @@ Counterin projektivalinta:
 - `increase_decrease`
 - `cast_on`
 - `yarn`
-- `yarn_card_review`
 - `ravelry`
 - `ravelry_detail/{patternId}`
 
@@ -243,7 +240,6 @@ Counterin projektivalinta:
 - `library_pattern_viewer/{savedPatternId}`
 - `library_ravelry_detail/{patternId}`
 - `my_yarn`
-- `library_yarn_card_review`
 - `yarn_card_detail/{cardId}`
 - `all_photos`
 - referenssireitit:
@@ -286,7 +282,7 @@ Tämä lista kuvaa toteutuksessa olevat screen-tiedostot, ei suunnitelmia:
 - `settings/SettingsScreen.kt`
 - `sizecharts/SizeChartScreen.kt`
 - `yarn/YarnEstimatorScreen.kt`
-- `yarncard/YarnCardReviewScreen.kt`
+- `yarncard/YarnCardDetailScreen.kt`
 
 Huomio:
 
@@ -316,7 +312,6 @@ Huomio:
   - `PdfPageRenderer.kt`
   - `ProgressPhotoStorage.kt`
   - `StorageFileNames.kt`
-  - `YarnLabelPhotoStorage.kt`
 - `di/`
   - `DatabaseModule.kt`
   - `DispatchersModule.kt`
@@ -335,6 +330,7 @@ Huomio:
   - `CounterRepository.kt`
   - `PatternAnnotationRepository.kt`
   - `ProgressPhotoRepository.kt`
+  - `ProjectNameRules.kt`
   - `ProjectCounterRepository.kt`
   - `RavelryRepository.kt`
   - `ReminderRepository.kt`
@@ -364,19 +360,21 @@ Huomio:
 - `RowReminderEntity`
 - `ProgressPhotoEntity`
 - `ProjectCounterEntity`
+- `ProjectYarnNoteEntity`
 - `SavedPatternEntity`
 - `PatternAnnotationEntity`
 
 Migraatiotilanne:
 
 - automaattiset migraatiot: `1 -> 2`, `2 -> 3`
-- käsinkirjoitetut migraatiot: `3 -> 4`, `4 -> 5`, `5 -> 6`, `6 -> 7`, `7 -> 8`, `8 -> 9`, `9 -> 10`, `10 -> 11`
-- schema exportataan hakemistoon `app/schemas/com.finnvek.knittools.data.local.KnitToolsDatabase/`, jossa uusin export on `11.json`
+- käsinkirjoitetut migraatiot: `3 -> 4`, `4 -> 5`, `5 -> 6`, `6 -> 7`, `7 -> 8`, `8 -> 9`, `9 -> 10`, `10 -> 11`, `11 -> 12`
+- schema exportataan hakemistoon `app/schemas/com.finnvek.knittools.data.local.KnitToolsDatabase/`, jossa uusin export on `12.json`
 
 Näkyvä uusin lisäys:
 
 - `sessions.durationSeconds` ja `sessions.rowsWorked` lisättiin migraatiossa `9 -> 10`; vanhat rivit backfillataan `durationMinutes * 60` ja positiivisella `endRow - startRow` -arvolla
 - `sessions(endedAt, startedAt)` ja `sessions(projectId, endedAt, startedAt)` -indeksit lisättiin migraatiossa `10 -> 11`
+- `project_yarn_notes` lisättiin migraatiossa `11 -> 12`
 - `sessions.startedAt`-indeksi on migraatiossa `8 -> 9`
 - `counter_projects.targetRows` on migraatiossa `7 -> 8`
 
@@ -414,7 +412,6 @@ Entry pointit:
 - `PatternDocumentStorage`
 - `PdfPageRenderer`
 - `ProgressPhotoStorage`
-- `YarnLabelPhotoStorage`
 - `FileProvider` + `res/xml/file_paths.xml`
 
 Tallennuspolut nykykoodissa:
@@ -422,7 +419,6 @@ Tallennuspolut nykykoodissa:
 - pattern PDF:t tallennetaan appin sisäiseen `pattern_pdfs/<projectId>`-hakemistoon `file://`-URIlla
 - pattern camera capture -kuvat luodaan `pattern_captures/<projectId>`-hakemistoon ja ne ovat FileProviderin kautta ulos annettava väliaikainen pattern-kuvapolku
 - progress-kuvat tallennetaan `progress_photos/<projectId>`-hakemistoon
-- yarn label -skannauskuvat tallennetaan `yarn_photos`-hakemistoon
 - `file_paths.xml` exposeeraa vain `yarn_photos`, `progress_photos` ja `pattern_captures`; app-owned `pattern_pdfs` avataan sisäisen resolverin kautta, ei FileProvider-rootina
 - `AppFileStorage` tunnistaa edelleen legacy `patterns/...` -FileProvider-URI:t sisäistä lukua/siivousta varten
 
@@ -524,7 +520,6 @@ Billing-tuote:
 - `INSIGHTS_CHARTS`
 - `STREAK`
 - `UNLIMITED_YARN`
-- `VOICE_COMMANDS`
 
 Huomio nykytilasta:
 
@@ -532,23 +527,15 @@ Huomio nykytilasta:
 - per-feature-gating on UI- ja käyttölogiikassa nimetty, mutta ei vielä eriytetty ostotasojen mukaan
 - trialin pituus on `14` päivää
 
-### Paikallinen voice ja parseri
+### Paikallinen parseri
 
-Sovelluksessa ei ole enää mallipohjaista tulkintakerrosta. Jäljellä olevat pinnat ovat paikallisia:
+Sovelluksessa ei ole enää mallipohjaista tulkintakerrosta eikä voice-command-flowta. Jäljellä oleva laskuriohjeiden tulkinta on paikallinen:
 
-- `VOICE_COMMANDS`
-  - `ui/screens/counter/VoiceCommandHandler.kt`
-  - `ui/screens/counter/VoiceCommandParser.kt`
-  - `ui/screens/counter/VoiceResponseManager.kt`
-  - tunnistusjärjestys: exact keyword -> counted command -> first-word fallback
-  - paikallinen parseri tukee useiden lokalisoitujen komentojen keywordeja
-  - numeroina annetut määrät hyväksytään välillä `1..100`
-  - sanalliset numerot kattavat englannin ja suomen `1..20`, muissa tuetuissa kielissä pääosin `1..10`
 - `domain/calculator/InstructionParser.kt`
   - paste-to-parse käyttää regex-pohjaista paikallista parseria
   - parseri ei tee verkko- tai SDK-kutsuja
 
-Androidin `SpeechRecognizer` voi laitteen kielipaketeista riippuen tarvita verkkoyhteyttä transkription tuottamiseen, mutta KnitTools ei lähetä fraaseja omaan verkkopalveluun.
+Älä päättele vanhoista dokumenteista, että counterissa olisi puhekomentoja: tuotantokoodissa ei ole voice-handleria, TTS-vastaajaa eikä mikrofonilupaa.
 
 ### Notes
 
@@ -781,7 +768,6 @@ Manifestin nykyinen pinta:
   - `INTERNET`
   - `VIBRATE`
   - `CAMERA`
-  - `RECORD_AUDIO`
 - `usesCleartextTraffic="false"`
 - `android:allowBackup="false"`
 - `android:dataExtractionRules="@xml/data_extraction_rules"`
@@ -802,7 +788,7 @@ Huomio:
 Nykyiset testit painottuvat ainakin näihin:
 
 - domain calculators
-- paikalliset parserit ja voice-wrapperit
+- paikalliset parserit
 - repository-logiikka
 - data storage- ja Room source/migration -rajat
 - Pro/trial-logiikka
@@ -851,7 +837,10 @@ Julkaisuvalmiuden muistilista:
 
 - saved patterns
 - my yarn / yarn cards
-- my yarn -kortit luodaan ja muokataan käsin
+- saved pattern avaa `library_pattern_viewer/{savedPatternId}`-reitin vain paikalliselle/importoidulle pattern-URI:lle; Ravelry-linkit avaavat `library_ravelry_detail/{patternId}`-reitin
+- `My Yarn` listaa olemassa olevat yarn cardit ja avaa `yarn_card_detail/{cardId}`-näkymän
+- yarn card detailissä voi muuttaa statusta, määrää ja projektia, avata linkitetyn projektin counteriin sekä poistaa kortin
+- tämän checkoutin tuotantokoodissa `YarnCardRepository.saveCard(...)`-metodille ei ole UI-kutsuja; älä oleta erillistä manuaalista yarn card -luontilomaketta ilman uutta kooditarkistusta
 - all photos
 - multi-select batch-poistot
 - reference-näkymät: needles, size charts, abbreviations, chart symbols
@@ -872,9 +861,8 @@ Julkaisuvalmiuden muistilista:
 - Pro-gating tyhjentää chart-listat non-Pro-tilassa, mutta perusmittarit lasketaan edelleen `InsightsUiState`en
 - debug-build näyttää footer-tekstin myös ilman sessiodataa; chartit eivät rakenna keksittyä placeholder-dataa
 
-### Ääni ja parseri
+### Parseri
 
-- klassinen voice command -flow
 - regex-pohjainen pasted instruction -parseri laskureiden avuksi
 
 ### Monetisaatio
@@ -889,9 +877,11 @@ Näihin kannattaa suhtautua epäluuloisesti vanhoissa dokumenteissa:
 
 - build-versiot muuttuvat usein `gradle/libs.versions.toml`-tiedostossa; älä kopioi niitä muistista
 - `allowBackup`: nykyinen on `false`, ei `true`
-- Room schema version: nykyinen on `11`; tarkista aina `KnitToolsDatabase.version` ja `app/schemas/...`
-- voice-parserin paikallinen sanallinen range riippuu kielestä, mutta numerot hyväksytään `1..100`
+- Room schema version: nykyinen on `12`; tarkista aina `KnitToolsDatabase.version` ja `app/schemas/...`
+- voice-command-flow on poistettu; älä palauta sitä ilman uutta product/security-päätöstä
 - widgetit eivät ole enää pelkkä basic counter-preview vaan niissä on oma state-sync ja viimeistelty kortti-UI
+- vanhat `yarn_card_review` / `library_yarn_card_review` -reitit eivät ole nykyisessä `Screen.kt` / `NavGraph.kt` -pinnassa; käytössä on `yarn_card_detail/{cardId}`
+- `AppLanguage.promptLanguageName()` on ilman tuotantokutsuja oleva legacy-helper; sen nimi tai kommenttisanasto ei yksin todista mallipohjaisen parserin tai pilvi-AI:n olemassaoloa
 - `README.md` ei ole nykytilan source of truth
 
 ## Suhde muihin dokumentteihin

@@ -1,5 +1,6 @@
 package com.finnvek.knittools
 
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -8,7 +9,6 @@ class ProFeatureGateSourceTest {
     fun `counter gates use feature-specific names`() {
         val viewModel = ProjectSourceFiles.read(COUNTER_VIEW_MODEL)
         val screen = ProjectSourceFiles.read(COUNTER_SCREEN)
-        val voiceSummary = ProjectSourceFiles.read(COUNTER_VOICE_SUMMARY_ITEM)
 
         assertTrue(viewModel.contains("ProFeature.SECONDARY_COUNTER"))
         assertTrue(viewModel.contains("ProFeature.MULTIPLE_COUNTERS"))
@@ -16,12 +16,12 @@ class ProFeatureGateSourceTest {
         assertTrue(viewModel.contains("ProFeature.REPEAT_SECTION"))
         assertTrue(viewModel.contains("ProFeature.ROW_REMINDERS"))
         assertTrue(viewModel.contains("ProFeature.PROGRESS_PHOTOS"))
-        assertTrue(viewModel.contains("ProFeature.VOICE_COMMANDS"))
         assertTrue(screen.contains("state.canUseProgressPhotos || BuildConfig.DEBUG"))
         assertTrue(screen.contains("state.canUseMultipleCounters"))
         assertTrue(screen.contains("state.canUseRowReminders"))
-        assertTrue(screen.contains("canUseVoice = state.canUseVoiceCommands"))
-        assertTrue(voiceSummary.contains("state.canUseSecondaryCounter"))
+        assertFalse(viewModel.contains("ProFeature.VOICE_COMMANDS"))
+        assertFalse(screen.contains("canUseVoice"))
+        assertFalse(screen.contains("canUseVoiceCommands"))
     }
 
     @Test
@@ -43,11 +43,13 @@ class ProFeatureGateSourceTest {
             "pro_feature_row_reminders",
             "pro_feature_progress_photos",
             "pro_feature_unlimited_yarn",
-            "pro_feature_voice_commands",
         ).forEach { key ->
             assertTrue(upgradeScreen.contains("R.string.$key"))
             assertTrue(strings.contains("""<string name="$key">"""))
         }
+
+        assertFalse(upgradeScreen.contains("R.string.pro_feature_voice_commands"))
+        assertFalse(strings.contains("""<string name="pro_feature_voice_commands">"""))
     }
 
     private companion object {
@@ -55,8 +57,6 @@ class ProFeatureGateSourceTest {
             "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterViewModel.kt"
         const val COUNTER_SCREEN =
             "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterScreen.kt"
-        const val COUNTER_VOICE_SUMMARY_ITEM =
-            "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterVoiceSummaryItem.kt"
         const val COUNTER_WIDGET =
             "app/src/main/java/com/finnvek/knittools/widget/CounterWidget.kt"
         const val COUNTER_WIDGET_ACTIONS =

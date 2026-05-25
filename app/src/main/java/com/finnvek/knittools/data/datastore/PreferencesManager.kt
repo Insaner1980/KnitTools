@@ -12,6 +12,7 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.finnvek.knittools.domain.model.ProjectSortOrder
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -39,7 +40,7 @@ data class AppPreferences(
     val useImperial: Boolean = false,
     val showKnittingTips: Boolean = true,
     val showCompletedProjects: Boolean = false,
-    val projectSortOrder: String = "updated",
+    val projectSortOrder: ProjectSortOrder = ProjectSortOrder.DEFAULT,
 )
 
 @Singleton
@@ -61,7 +62,7 @@ class PreferencesManager
                     useImperial = prefs[KEY_USE_IMPERIAL] ?: false,
                     showKnittingTips = prefs[KEY_SHOW_KNITTING_TIPS] ?: true,
                     showCompletedProjects = prefs[KEY_SHOW_COMPLETED] ?: false,
-                    projectSortOrder = prefs[KEY_SORT_ORDER] ?: "updated",
+                    projectSortOrder = ProjectSortOrder.fromPersistedValue(prefs[KEY_SORT_ORDER]),
                 )
             }
 
@@ -112,9 +113,9 @@ class PreferencesManager
             }
         }
 
-        suspend fun setProjectSortOrder(order: String) {
+        suspend fun setProjectSortOrder(order: ProjectSortOrder) {
             context.dataStore.editPreferencesSafely("Projektien lajittelun tallennus") {
-                it[KEY_SORT_ORDER] = order
+                it[KEY_SORT_ORDER] = order.persistedValue
             }
         }
 

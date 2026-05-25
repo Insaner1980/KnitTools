@@ -5,7 +5,6 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.pdf.PdfDocument
 import android.net.Uri
-import androidx.core.content.FileProvider
 import androidx.core.graphics.scale
 import androidx.core.net.toUri
 import java.io.File
@@ -26,12 +25,7 @@ class PatternDocumentStorage
             val dir = File(context.filesDir, "pattern_captures/$projectId")
             dir.mkdirs()
             val file = StorageFileNames.uniqueTimestampedFile(dir, "", ".jpg")
-            val uri =
-                FileProvider.getUriForFile(
-                    context,
-                    "${context.packageName}.fileprovider",
-                    file,
-                )
+            val uri = AppFileStorage.fileProviderUri(context, file)
             return file to uri
         }
 

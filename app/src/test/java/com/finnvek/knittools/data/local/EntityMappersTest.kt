@@ -5,6 +5,7 @@ import com.finnvek.knittools.domain.model.KnitSession
 import com.finnvek.knittools.domain.model.PatternAnnotation
 import com.finnvek.knittools.domain.model.ProgressPhoto
 import com.finnvek.knittools.domain.model.ProjectCounter
+import com.finnvek.knittools.domain.model.ProjectCounterType
 import com.finnvek.knittools.domain.model.RowReminder
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.YarnCard
@@ -266,7 +267,7 @@ class EntityMappersTest {
                 repeatAt = entity.repeatAt,
                 sortOrder = entity.sortOrder,
                 createdAt = entity.createdAt,
-                counterType = entity.counterType,
+                counterType = ProjectCounterType.fromPersistedValue(entity.counterType),
                 startingStitches = entity.startingStitches,
                 stitchChange = entity.stitchChange,
                 shapeEveryN = entity.shapeEveryN,

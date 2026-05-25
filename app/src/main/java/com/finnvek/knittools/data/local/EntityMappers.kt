@@ -5,6 +5,8 @@ import com.finnvek.knittools.domain.model.KnitSession
 import com.finnvek.knittools.domain.model.PatternAnnotation
 import com.finnvek.knittools.domain.model.ProgressPhoto
 import com.finnvek.knittools.domain.model.ProjectCounter
+import com.finnvek.knittools.domain.model.ProjectCounterType
+import com.finnvek.knittools.domain.model.ProjectYarnNote
 import com.finnvek.knittools.domain.model.RowReminder
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.YarnCard
@@ -71,7 +73,7 @@ fun ProjectCounterEntity.toDomain(): ProjectCounter =
         repeatAt = repeatAt,
         sortOrder = sortOrder,
         createdAt = createdAt,
-        counterType = counterType,
+        counterType = ProjectCounterType.fromPersistedValue(counterType),
         startingStitches = startingStitches,
         stitchChange = stitchChange,
         shapeEveryN = shapeEveryN,
@@ -91,7 +93,7 @@ fun ProjectCounter.toEntity(): ProjectCounterEntity =
         repeatAt = repeatAt,
         sortOrder = sortOrder,
         createdAt = createdAt,
-        counterType = counterType,
+        counterType = counterType.persistedValue,
         startingStitches = startingStitches,
         stitchChange = stitchChange,
         shapeEveryN = shapeEveryN,
@@ -99,6 +101,32 @@ fun ProjectCounter.toEntity(): ProjectCounterEntity =
         repeatEndRow = repeatEndRow,
         totalRepeats = totalRepeats,
         currentRepeat = currentRepeat,
+    )
+
+fun ProjectYarnNoteEntity.toDomain(): ProjectYarnNote =
+    ProjectYarnNote(
+        id = id,
+        projectId = projectId,
+        name = name,
+        description = description,
+        quantity = quantity,
+        notes = notes,
+        savedYarnCardId = savedYarnCardId,
+        createdAt = createdAt,
+        updatedAt = updatedAt,
+    )
+
+fun ProjectYarnNote.toEntity(): ProjectYarnNoteEntity =
+    ProjectYarnNoteEntity(
+        id = id,
+        projectId = projectId,
+        name = name,
+        description = description,
+        quantity = quantity,
+        notes = notes,
+        savedYarnCardId = savedYarnCardId,
+        createdAt = createdAt,
+        updatedAt = updatedAt,
     )
 
 fun RowReminderEntity.toDomain(): RowReminder =

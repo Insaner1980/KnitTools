@@ -4,7 +4,7 @@ data class ProjectCounterDraft(
     val name: String,
     val repeatAt: Int?,
     val stepSize: Int,
-    val counterType: String = "COUNT_UP",
+    val counterType: ProjectCounterType = ProjectCounterType.COUNT_UP,
     val startingStitches: Int? = null,
     val stitchChange: Int? = null,
     val shapeEveryN: Int? = null,

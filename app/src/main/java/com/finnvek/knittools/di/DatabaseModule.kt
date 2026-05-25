@@ -8,6 +8,7 @@ import com.finnvek.knittools.data.local.KnitToolsDatabase
 import com.finnvek.knittools.data.local.PatternAnnotationDao
 import com.finnvek.knittools.data.local.ProgressPhotoDao
 import com.finnvek.knittools.data.local.ProjectCounterDao
+import com.finnvek.knittools.data.local.ProjectYarnNoteDao
 import com.finnvek.knittools.data.local.RoomDatabaseTransactionRunner
 import com.finnvek.knittools.data.local.RowReminderDao
 import com.finnvek.knittools.data.local.SavedPatternDao
@@ -41,6 +42,7 @@ object DatabaseModule {
                 KnitToolsDatabase.MIGRATION_8_9,
                 KnitToolsDatabase.MIGRATION_9_10,
                 KnitToolsDatabase.MIGRATION_10_11,
+                KnitToolsDatabase.MIGRATION_11_12,
             ).build()
 
     @Provides
@@ -65,6 +67,9 @@ object DatabaseModule {
 
     @Provides
     fun provideProjectCounterDao(db: KnitToolsDatabase): ProjectCounterDao = db.projectCounterDao()
+
+    @Provides
+    fun provideProjectYarnNoteDao(db: KnitToolsDatabase): ProjectYarnNoteDao = db.projectYarnNoteDao()
 
     @Provides
     fun provideSavedPatternDao(db: KnitToolsDatabase): SavedPatternDao = db.savedPatternDao()

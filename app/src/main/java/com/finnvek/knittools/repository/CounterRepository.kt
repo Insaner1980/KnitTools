@@ -14,6 +14,7 @@ import com.finnvek.knittools.domain.calculator.CounterLogic
 import com.finnvek.knittools.domain.calculator.CounterState
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.KnitSession
+import com.finnvek.knittools.domain.model.ProjectSortOrder
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
@@ -47,21 +48,21 @@ class CounterRepository
         fun getActiveProjects(): Flow<List<CounterProject>> =
             dao.getActiveProjects().map { projects -> projects.map { it.toDomain() } }
 
-        fun getActiveProjects(sortOrder: String): Flow<List<CounterProject>> =
+        fun getActiveProjects(sortOrder: ProjectSortOrder): Flow<List<CounterProject>> =
             when (sortOrder) {
-                "name" -> dao.getActiveProjectsByName()
-                "created" -> dao.getActiveProjectsByCreated()
-                else -> dao.getActiveProjects()
+                ProjectSortOrder.NAME -> dao.getActiveProjectsByName()
+                ProjectSortOrder.CREATED -> dao.getActiveProjectsByCreated()
+                ProjectSortOrder.UPDATED -> dao.getActiveProjects()
             }.map { projects -> projects.map { it.toDomain() } }
 
         fun getCompletedProjects(): Flow<List<CounterProject>> =
             dao.getCompletedProjects().map { projects -> projects.map { it.toDomain() } }
 
-        fun getCompletedProjects(sortOrder: String): Flow<List<CounterProject>> =
+        fun getCompletedProjects(sortOrder: ProjectSortOrder): Flow<List<CounterProject>> =
             when (sortOrder) {
-                "name" -> dao.getCompletedProjectsByName()
-                "created" -> dao.getCompletedProjectsByCreated()
-                else -> dao.getCompletedProjects()
+                ProjectSortOrder.NAME -> dao.getCompletedProjectsByName()
+                ProjectSortOrder.CREATED -> dao.getCompletedProjectsByCreated()
+                ProjectSortOrder.UPDATED -> dao.getCompletedProjects()
             }.map { projects -> projects.map { it.toDomain() } }
 
         suspend fun getActiveProjectCount(): Int = dao.getActiveProjectCount()

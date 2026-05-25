@@ -98,7 +98,6 @@
     <string name="attach_pattern">Attach pattern</string>
     <string name="remove_pattern">Remove pattern</string>
     <string name="no_pattern_attached">No pattern attached</string>
-    <string name="show_pattern">Show pattern</string>
     <string name="pattern_viewer_title">Pattern Viewer</string>
     <string name="pattern_pdf_fallback_name">Pattern PDF</string>
     <string name="pattern_loading">Loading pattern…</string>
@@ -111,16 +110,23 @@
     <string name="pattern_next_page">Next page</string>
     <string name="pattern_picker_device_files">Choose PDF from device</string>
     <string name="pattern_picker_saved_patterns">Saved patterns</string>
-    <string name="pattern_picker_camera_scan">Camera scan</string>
-    <string name="pattern_scan_failed">Pattern scan could not be converted to PDF.</string>
+    <string name="pattern_picker_camera_scan">Take pattern photo</string>
+    <string name="pattern_scan_failed">Pattern photo could not be converted to PDF.</string>
     <string name="imported_pattern_designer">Imported PDF</string>
     <string name="current_row_short">Row %1$d</string>
     <string name="time_spent_minutes_format" tools:ignore="PluralsCandidate">%dm</string>
     <string name="unlink_yarn">Unlink yarn</string>
     <string name="select_yarn_card">Select yarn card</string>
-    <string name="add_yarn">Add yarn</string>
     <string name="linked_yarn_title">LINKED YARN</string>
     <string name="no_linked_yarn">No yarn linked yet</string>
+    <string name="choose_from_my_yarn">Choose from My Yarn</string>
+    <string name="add_yarn_to_project">Add yarn to this project</string>
+    <string name="project_yarn_notes_title">PROJECT YARN</string>
+    <string name="project_yarn_name">Yarn name</string>
+    <string name="project_yarn_description">Description</string>
+    <string name="project_yarn_quantity_format" tools:ignore="PluralsCandidate">Quantity: %d</string>
+    <string name="save_to_my_yarn">Save to My Yarn</string>
+    <string name="saved_to_my_yarn">Saved to My Yarn</string>
     <string name="yarn_count_format" tools:ignore="PluralsCandidate,UnusedResources">%1$d yarns</string>
     <string name="linked_project_label">Linked project</string>
     <string name="link_to_project_label">Link to project</string>
@@ -268,9 +274,8 @@
     <string name="pro_feature_row_reminders">Row reminders</string>
     <string name="pro_feature_progress_photos">Progress photos</string>
     <string name="pro_feature_unlimited_yarn">Unlimited yarn cards</string>
-    <string name="pro_feature_voice_commands">Voice commands</string>
     <string name="pro_feature_widget">Home screen widget</string>
-    <string name="pro_feature_pattern_camera_scan">Pattern camera scan</string>
+    <string name="pro_feature_pattern_camera_scan">Pattern photo capture</string>
     <string name="pro_feature">Pro feature</string>
     <string name="upgrade_for_price">Upgrade for %s</string>
     <string name="one_time_purchase">One-time purchase. No subscription.</string>
@@ -321,6 +326,7 @@
 
     <!-- Defaults -->
     <string name="yarn_card_fallback_name">Yarn card</string>
+    <string name="yarn_card_number_fallback" tools:ignore="MissingTranslation">Yarn #%1$d</string>
 
     <!-- Widget -->
     <string name="widget_name">Row Counter</string>
@@ -354,10 +360,10 @@
     <string name="library_my_collection">MY COLLECTION</string>
     <string name="library_reference">REFERENCE</string>
     <string name="desc_saved_patterns">Saved patterns from Ravelry and PDFs</string>
-    <string name="desc_my_yarn">Your yarn stash — brands, weights, and colors</string>
+    <string name="desc_my_yarn">Yarn notes, quantities, and linked projects</string>
     <string name="desc_all_photos">Progress photos from all your projects</string>
     <string name="empty_saved_patterns">No saved patterns yet.\nFind patterns in Ravelry Search.</string>
-    <string name="empty_my_yarn">No yarn cards saved yet.</string>
+    <string name="empty_my_yarn">No yarn notes saved yet.</string>
     <string name="empty_all_photos">No progress photos yet.</string>
     <string name="filter_all">All</string>
 
@@ -764,18 +770,7 @@
     <!-- Progress Photos -->
     <string name="take_photo">Take photo</string>
     <string name="progress_photos">Progress photos</string>
-    <string name="voice_commands">Voice commands</string>
-    <string name="voice_mode_timeout">Voice mode ended due to inactivity</string>
-    <string name="voice_recognizer_network_error">Voice recognition is unavailable. Try again later.</string>
-    <string name="voice_counter_reset">Counter reset</string>
-    <string name="voice_row_current" tools:ignore="PluralsCandidate">Row %d</string>
-    <string name="voice_row_of_target" tools:ignore="PluralsCandidate">Row %1$d of %2$d, %3$d percent done</string>
-    <string name="voice_back_to_row" tools:ignore="PluralsCandidate">Back to row %d</string>
-    <string name="voice_undone_row" tools:ignore="PluralsCandidate">Undone, row %d</string>
-    <string name="voice_counters_none">No extra counters</string>
-    <string name="voice_stitch_at">Stitch %1$d</string>
-    <string name="voice_help_full">You can say: next, back, undo, reset, plus a number. Ask about progress, remaining rows, time, yarn, pattern, stitches, reminders, counters, or notes. Say note to save a note, or name a counter to change it.</string>
-    <string name="voice_recognizer_error">Voice recognition error</string>
+    <string name="counters_list_empty">No extra counters</string>
     <string name="row_label_format" tools:ignore="PluralsCandidate">Row %d</string>
     <string name="share_photo">Share</string>
     <string name="delete_photo">Delete photo</string>
@@ -840,8 +835,25 @@
     <string name="project_actions_section_this_project">THIS PROJECT</string>
     <string name="project_actions_section_counters">COUNTERS</string>
     <string name="project_actions_section_project_actions">PROJECT ACTIONS</string>
-    <string name="project_actions_yarn">Yarn</string>
-    <string name="project_actions_photos">Photos</string>
+    <string name="quick_action_open_pattern">Open Pattern</string>
+    <string name="quick_action_attach_pattern">Attach Pattern</string>
+    <string name="quick_action_notes">Notes</string>
+    <string name="quick_action_add_note">Add Note</string>
+    <string name="quick_action_yarn">Yarn</string>
+    <string name="quick_action_add_yarn">Add Yarn</string>
+    <string name="quick_action_photos">Photos</string>
+    <string name="quick_action_add_photo">Add Photo</string>
+    <string name="project_info_title">Project Info</string>
+    <string name="project_info_pattern">Pattern</string>
+    <string name="project_info_yarn">Yarn</string>
+    <string name="project_info_notes">Notes</string>
+    <string name="project_info_reminder">Reminder</string>
+    <string name="project_info_photos">Photos</string>
+    <string name="project_info_empty_label">Add to this project</string>
+    <string name="project_info_empty_value">Attach a pattern, add notes, link yarn, or save photos.</string>
+    <string name="photo_count_one">1 photo</string>
+    <string name="photo_count_many" tools:ignore="PluralsCandidate">%d photos</string>
+    <string name="extra_counters_title">Extra Counters</string>
     <string name="counter_repeat_label">REPEAT</string>
     <string name="counters_list_title">Counters</string>
 </resources>

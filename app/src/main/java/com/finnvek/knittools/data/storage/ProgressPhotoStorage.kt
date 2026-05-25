@@ -4,7 +4,6 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
-import androidx.core.content.FileProvider
 import androidx.core.graphics.scale
 import androidx.core.net.toUri
 import java.io.File
@@ -22,12 +21,7 @@ class ProgressPhotoStorage
             val dir = File(context.filesDir, "progress_photos/$projectId")
             dir.mkdirs()
             val file = createUniquePhotoFile(dir)
-            val uri =
-                FileProvider.getUriForFile(
-                    context,
-                    "${context.packageName}.fileprovider",
-                    file,
-                )
+            val uri = AppFileStorage.fileProviderUri(context, file)
             return file to uri
         }
 

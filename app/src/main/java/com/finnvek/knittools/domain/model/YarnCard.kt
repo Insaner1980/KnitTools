@@ -20,3 +20,9 @@ data class YarnCard(
     val status: String = YarnCardStatus.IN_STASH,
     val linkedProjectId: Long? = null,
 )
+
+fun YarnCard.displayName(fallbackName: (Long) -> String): String =
+    listOfNotNull(
+        brand.takeIf { it.isNotBlank() },
+        yarnName.takeIf { it.isNotBlank() },
+    ).joinToString(" ").ifEmpty { fallbackName(id) }

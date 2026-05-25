@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths>
-    <files-path name="yarn_photos" path="yarn_photos/" />
     <files-path name="progress_photos" path="progress_photos/" />
     <files-path name="pattern_captures" path="pattern_captures/" />
 </paths>

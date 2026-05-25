@@ -1,10 +1,9 @@
 package com.finnvek.knittools.repository
 
+import com.finnvek.knittools.data.local.ImmediateDatabaseTransactionRunner
 import com.finnvek.knittools.data.local.ProjectCounterDao
 import com.finnvek.knittools.data.local.ProjectCounterEntity
-import com.finnvek.knittools.data.local.toDomain
 import com.finnvek.knittools.data.local.toEntity
-import com.finnvek.knittools.domain.calculator.ProjectCounterLogic
 import com.finnvek.knittools.domain.model.ProjectCounter
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
@@ -20,7 +19,7 @@ class ProjectCounterRepositoryTest {
     @Before
     fun setup() {
         fakeDao = FakeProjectCounterDao()
-        repository = ProjectCounterRepository(fakeDao)
+        repository = ProjectCounterRepository(fakeDao, ImmediateDatabaseTransactionRunner)
     }
 
     @Test
@@ -159,6 +158,8 @@ class ProjectCounterRepositoryTest {
 
         override fun getCountersForProject(projectId: Long): Flow<List<ProjectCounterEntity>> = flowOf(emptyList())
 
+        override suspend fun getCounter(id: Long): ProjectCounterEntity? = storedCounters[id]
+
         fun store(counter: ProjectCounter) {
             storedCounters[counter.id] = counter.toEntity()
         }
@@ -170,7 +171,9 @@ class ProjectCounterRepositoryTest {
             return 1L
         }
 
-        override suspend fun update(counter: ProjectCounterEntity) {}
+        override suspend fun update(counter: ProjectCounterEntity) {
+            storedCounters[counter.id] = counter
+        }
 
         override suspend fun delete(id: Long) {
             lastDeletedId = id
@@ -183,14 +186,6 @@ class ProjectCounterRepositoryTest {
             storedCounters[id]?.let { storedCounters[id] = it.copy(count = count) }
             lastUpdatedId = id
             lastUpdatedCount = count
-        }
-
-        override suspend fun incrementCount(id: Long) {
-            updateStoredCounter(id, ProjectCounterLogic::increment)
-        }
-
-        override suspend fun decrementCount(id: Long) {
-            updateStoredCounter(id, ProjectCounterLogic::decrement)
         }
 
         override suspend fun updateName(
@@ -208,16 +203,6 @@ class ProjectCounterRepositoryTest {
         ) {
             lastUpdatedId = id
             lastUpdatedCount = count
-        }
-
-        private fun updateStoredCounter(
-            id: Long,
-            update: (ProjectCounter) -> ProjectCounter,
-        ) {
-            val updated = update(storedCounters.getValue(id).toDomain())
-            storedCounters[id] = updated.toEntity()
-            lastUpdatedId = id
-            lastUpdatedCount = updated.count
         }
     }
 }

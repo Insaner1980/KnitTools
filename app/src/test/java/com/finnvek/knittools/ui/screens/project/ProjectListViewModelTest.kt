@@ -4,6 +4,7 @@ import android.content.Context
 import com.finnvek.knittools.data.datastore.AppPreferences
 import com.finnvek.knittools.data.datastore.PreferencesManager
 import com.finnvek.knittools.domain.model.CounterProject
+import com.finnvek.knittools.domain.model.ProjectSortOrder
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.CounterRepository
@@ -144,7 +145,7 @@ class ProjectListViewModelTest {
     fun `project photo badges use one bulk count query`() =
         runTest {
             every { preferencesManager.preferences } returns flowOf(AppPreferences())
-            every { repository.getActiveProjects("updated") } returns
+            every { repository.getActiveProjects(ProjectSortOrder.UPDATED) } returns
                 flowOf(
                     listOf(
                         CounterProject(id = 1L, name = "Sukat"),

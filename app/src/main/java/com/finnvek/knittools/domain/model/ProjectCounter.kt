@@ -9,7 +9,7 @@ data class ProjectCounter(
     val repeatAt: Int? = null,
     val sortOrder: Int = 0,
     val createdAt: Long = System.currentTimeMillis(),
-    val counterType: String = "COUNT_UP",
+    val counterType: ProjectCounterType = ProjectCounterType.COUNT_UP,
     val startingStitches: Int? = null,
     val stitchChange: Int? = null,
     val shapeEveryN: Int? = null,

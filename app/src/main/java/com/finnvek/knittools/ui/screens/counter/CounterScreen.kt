@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.OpenInFull
 import androidx.compose.material3.AlertDialog
@@ -54,8 +55,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.getSystemService
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -71,6 +75,7 @@ import com.finnvek.knittools.domain.model.displayName
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.RenameProjectDialog
 import com.finnvek.knittools.ui.screens.pattern.PatternPickerSheet
+import com.finnvek.knittools.ui.theme.CounterDimens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -238,10 +243,6 @@ fun CounterScreen(
     val projectHeaderActionDependencies =
         ProjectHeaderActionDependencies(
             viewModel = viewModel,
-            projectId = state.projectId,
-            onPatternViewer = onPatternViewer,
-            onShowPatternInfo = { showPatternInfoSheet = true },
-            onShowPatternPicker = { showPatternPicker = true },
             onEditingNameChange = { isEditingName = it },
         )
     val dialogActions = rememberCounterDialogActions(dialogActionDependencies)
@@ -282,7 +283,6 @@ fun CounterScreen(
                 onOpenYarn = { showYarnManagementSheet = true },
                 onOpenPhotos = requestPhotoGallery,
                 onOpenReminders = requestRowReminders,
-                onOpenProjectActions = { showProjectActionsSheet = true },
                 onShowAddCounter = requestAddCounter,
                 onDecrementSecondary = {
                     performHaptic()
@@ -454,6 +454,9 @@ fun CounterScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             CounterTopBar(
+                state = state,
+                isEditingName = isEditingName,
+                projectHeaderActions = projectHeaderActions,
                 actions = topBarActions,
             )
         },
@@ -461,8 +464,6 @@ fun CounterScreen(
         CounterWorkspace(
             scaffoldPadding = scaffoldPadding,
             state = state,
-            isEditingName = isEditingName,
-            projectHeaderActions = projectHeaderActions,
             projectCountersActions = projectCountersActions,
             actions = mainContentActions,
         )
@@ -780,9 +781,20 @@ data class CounterTopBarActions(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun CounterTopBar(actions: CounterTopBarActions) {
+private fun CounterTopBar(
+    state: CounterUiState,
+    isEditingName: Boolean,
+    projectHeaderActions: ProjectHeaderActions,
+    actions: CounterTopBarActions,
+) {
     TopAppBar(
-        title = {},
+        title = {
+            CounterTopBarTitle(
+                state = state,
+                isEditingName = isEditingName,
+                actions = projectHeaderActions,
+            )
+        },
         navigationIcon = {
             IconButton(onClick = actions.onBack) {
                 Icon(
@@ -807,6 +819,75 @@ private fun CounterTopBar(actions: CounterTopBarActions) {
                 scrolledContainerColor = Color.Transparent,
             ),
     )
+}
+
+@Composable
+private fun CounterTopBarTitle(
+    state: CounterUiState,
+    isEditingName: Boolean,
+    actions: ProjectHeaderActions,
+) {
+    var draftName by rememberSaveable(state.projectId) { mutableStateOf(state.projectName) }
+
+    LaunchedEffect(isEditingName, state.projectName) {
+        if (!isEditingName) {
+            draftName = state.projectName
+        }
+    }
+
+    if (isEditingName) {
+        TextField(
+            value = draftName,
+            onValueChange = { draftName = it },
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(end = CounterDimens.TopBarTitleEndPadding),
+            placeholder = { Text(stringResource(R.string.default_project_name)) },
+            singleLine = true,
+            shape = RoundedCornerShape(CounterDimens.TopBarTextFieldCornerRadius),
+            keyboardOptions = KeyboardOptions.Default,
+            colors =
+                TextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                ),
+            trailingIcon = {
+                IconButton(
+                    onClick = {
+                        actions.onNameSave(draftName.trim())
+                        actions.onEditingNameChange(false)
+                    },
+                    enabled = draftName.isNotBlank(),
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Check,
+                        contentDescription = stringResource(R.string.save),
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            },
+        )
+    } else {
+        Text(
+            text = state.projectName.ifEmpty { stringResource(R.string.default_project_name) }.uppercase(),
+            style =
+                MaterialTheme.typography.titleLarge.copy(
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.sp,
+                ),
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(end = CounterDimens.TopBarTitleEndPadding)
+                    .clickable(onClick = { actions.onEditingNameChange(true) }),
+        )
+    }
 }
 
 @Composable
@@ -845,10 +926,6 @@ private data class CounterTopBarActionDependencies(
 
 private data class ProjectHeaderActionDependencies(
     val viewModel: CounterViewModel,
-    val projectId: Long?,
-    val onPatternViewer: (Long) -> Unit,
-    val onShowPatternInfo: () -> Unit,
-    val onShowPatternPicker: () -> Unit,
     val onEditingNameChange: (Boolean) -> Unit,
 )
 
@@ -1248,9 +1325,6 @@ private fun rememberProjectHeaderActions(dependencies: ProjectHeaderActionDepend
         ProjectHeaderActions(
             onNameSave = dependencies.viewModel::setProjectName,
             onEditingNameChange = dependencies.onEditingNameChange,
-            onShowPatternInfo = dependencies.onShowPatternInfo,
-            onShowPatternPicker = dependencies.onShowPatternPicker,
-            onOpenPattern = { dependencies.projectId?.let(dependencies.onPatternViewer) },
         )
     }
 

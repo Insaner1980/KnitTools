@@ -20,8 +20,9 @@ class CounterWorkspaceSourceTest {
         assertTrue(workspace.contains("LazyColumn("))
         assertTrue(workspace.contains("contentPadding ="))
         assertTrue(workspace.contains("PaddingValues("))
-        assertTrue(workspace.contains("scaffoldPadding.calculateTopPadding()"))
-        assertTrue(workspace.contains("scaffoldPadding.calculateBottomPadding()"))
+        assertTrue(workspace.contains(".padding(scaffoldPadding)"))
+        assertFalse(workspace.contains("""key = "project-header""""))
+        assertTrue(workspace.indexOf("""key = "counter-hero"""") < workspace.indexOf("ProjectContentCards("))
         assertTrue(workspace.contains("verticalArrangement = Arrangement.spacedBy"))
         assertTrue(workspace.contains("key = { counter -> counter.id }"))
     }
@@ -49,12 +50,9 @@ class CounterWorkspaceSourceTest {
             "project_content_open_pattern",
             "project_content_attach_pattern",
             "project_content_yarn",
-            "project_content_add_yarn",
             "project_content_notes",
-            "project_content_add_note",
             "project_content_photos",
-            "project_content_add_photo",
-            "project_content_next_reminder",
+            "reminders",
         ).forEach { key ->
             assertTrue("Project content string missing: $key", strings.contains("""<string name="$key">"""))
             assertTrue("Project content source does not reference: $key", contentCards.contains("R.string.$key"))
@@ -62,20 +60,70 @@ class CounterWorkspaceSourceTest {
     }
 
     @Test
-    fun `attached pdf label is neutral in header while exact file name stays in pattern card`() {
+    fun `counter header keeps pattern details out of the first viewport`() {
+        val counterScreen = ProjectSourceFiles.read(COUNTER_SCREEN)
         val workspace = ProjectSourceFiles.read(COUNTER_WORKSPACE_SECTIONS)
         val contentCards = ProjectSourceFiles.read(COUNTER_PROJECT_CONTENT_CARDS)
 
-        assertTrue(workspace.contains("stringResource(R.string.project_header_pattern_attached)"))
+        assertTrue(counterScreen.contains("TopAppBar("))
+        assertTrue(counterScreen.contains("state.projectName.ifEmpty"))
+        assertFalse(workspace.contains("PatternHeaderRow"))
+        assertFalse(workspace.contains("project_header_pattern_attached"))
         assertFalse(workspace.contains("text = attachedPatternName,"))
-        assertTrue(contentCards.contains("val attachedPatternName = state.patternName?.takeIf(String::isNotBlank)"))
-        assertTrue(contentCards.contains("bodyText = patternName"))
+        assertFalse(contentCards.contains("two_sleeves_one_promise.pdf"))
+        assertFalse(contentCards.contains("Ravelry"))
+        assertFalse(contentCards.contains(" · "))
+    }
+
+    @Test
+    fun `counter card model does not expose preview fields or nested lazy grids`() {
+        val workspace = ProjectSourceFiles.read(COUNTER_WORKSPACE_SECTIONS)
+        val contentCards = ProjectSourceFiles.read(COUNTER_PROJECT_CONTENT_CARDS)
+
+        listOf(
+            "bodyText",
+            "bodyRes",
+            "photoCount",
+            "reminderRow",
+            "reminderMessage",
+            "project_content_next_reminder",
+            "project_content_reminder_body",
+            "KeyboardArrowRight",
+            "LazyVerticalGrid",
+        ).forEach { forbidden ->
+            assertFalse("Counter project cards should not contain $forbidden", contentCards.contains(forbidden))
+        }
+        assertTrue(contentCards.contains("aspectRatio(1f)"))
+        assertTrue(contentCards.contains("chunked(2)"))
+        assertFalse(workspace.contains("""key = "counter-buttons""""))
+        assertTrue(workspace.indexOf("ProjectContentCards(") < workspace.indexOf("""key = "stitch-tracker""""))
+    }
+
+    @Test
+    fun `counter route keeps bottom navigation visible`() {
+        val navGraph = ProjectSourceFiles.read(NAV_GRAPH)
+
+        val hiddenRoutesBlock =
+            navGraph
+                .substringAfter("private val HIDE_BOTTOM_BAR_ROUTES =")
+                .substringBefore(")")
+        assertFalse(hiddenRoutesBlock.contains("Screen.Counter.route"))
+    }
+
+    @Test
+    fun `localized strings no longer carry counter preview card copy`() {
         STRING_FILES.forEach { stringsFile ->
             val strings = ProjectSourceFiles.read(stringsFile)
             assertTrue(
-                "Attached pattern header string missing in $stringsFile",
-                strings.contains("""<string name="project_header_pattern_attached">"""),
+                "Add pattern card label missing in $stringsFile",
+                strings.contains("""<string name="project_content_attach_pattern">"""),
             )
+            assertFalse(strings.contains("""<string name="project_content_attach_pattern_body">"""))
+            assertFalse(strings.contains("""<string name="project_content_add_yarn_body">"""))
+            assertFalse(strings.contains("""<string name="project_content_add_note_body">"""))
+            assertFalse(strings.contains("""<string name="project_content_add_photo_body">"""))
+            assertFalse(strings.contains("""<string name="project_content_next_reminder">"""))
+            assertFalse(strings.contains("""<string name="project_content_reminder_body">"""))
         }
     }
 
@@ -86,6 +134,8 @@ class CounterWorkspaceSourceTest {
             "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterWorkspaceSections.kt"
         private const val COUNTER_PROJECT_CONTENT_CARDS =
             "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterProjectContentCards.kt"
+        private const val NAV_GRAPH =
+            "app/src/main/java/com/finnvek/knittools/ui/navigation/NavGraph.kt"
         private const val STRINGS = "app/src/main/res/values/strings.xml"
         private val STRING_FILES =
             listOf(

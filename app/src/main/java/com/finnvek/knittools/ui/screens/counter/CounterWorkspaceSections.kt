@@ -19,49 +19,34 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.ProjectCounter
 import com.finnvek.knittools.domain.model.ProjectCounterType
 import com.finnvek.knittools.ui.components.RollingCounter
 import com.finnvek.knittools.ui.components.StitchCounter
+import com.finnvek.knittools.ui.theme.CounterDimens
 
 data class ProjectHeaderActions(
     val onNameSave: (String) -> Unit,
     val onEditingNameChange: (Boolean) -> Unit,
-    val onShowPatternInfo: () -> Unit,
-    val onShowPatternPicker: () -> Unit,
-    val onOpenPattern: () -> Unit,
 )
 
 data class ProjectCountersSectionActions(
@@ -86,7 +71,6 @@ data class CounterWorkspaceActions(
     val onOpenYarn: () -> Unit,
     val onOpenPhotos: () -> Unit,
     val onOpenReminders: () -> Unit,
-    val onOpenProjectActions: () -> Unit,
     val onShowAddCounter: () -> Unit,
     val onDecrementSecondary: () -> Unit,
     val onIncrementSecondary: () -> Unit,
@@ -100,8 +84,6 @@ data class CounterWorkspaceActions(
 fun CounterWorkspace(
     scaffoldPadding: PaddingValues,
     state: CounterUiState,
-    isEditingName: Boolean,
-    projectHeaderActions: ProjectHeaderActions,
     projectCountersActions: ProjectCountersSectionActions,
     actions: CounterWorkspaceActions,
 ) {
@@ -109,47 +91,22 @@ fun CounterWorkspace(
         modifier =
             Modifier
                 .fillMaxSize()
+                .padding(scaffoldPadding)
                 .clipToBounds(),
         contentPadding =
             PaddingValues(
-                start = 24.dp,
-                top = scaffoldPadding.calculateTopPadding(),
-                end = 24.dp,
-                bottom = scaffoldPadding.calculateBottomPadding() + 24.dp,
+                start = CounterDimens.ScreenHorizontalPadding,
+                end = CounterDimens.ScreenHorizontalPadding,
+                bottom = CounterDimens.ContentBottomPadding,
             ),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(CounterDimens.WorkspaceSectionSpacing),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        item(key = "project-header") {
-            ProjectHeader(
-                state = state,
-                isEditingName = isEditingName,
-                actions = projectHeaderActions,
-            )
-        }
         item(key = "counter-hero") {
             CounterHero(
                 state = state,
                 actions = actions,
-            )
-        }
-        state.activeAlert?.let { reminder ->
-            item(key = "active-reminder-${reminder.id}") {
-                ReminderAlertCard(
-                    reminder = reminder,
-                    currentRow = state.counter.count,
-                    onDismiss = actions.onDismissReminder,
-                )
-            }
-        }
-        item(key = "stitch-tracker") {
-            CounterStitchTracker(state = state, actions = actions)
-        }
-        item(key = "counter-buttons") {
-            CounterButtons(
-                onDecrement = actions.onDecrement,
-                onIncrement = actions.onIncrement,
-                onUndo = actions.onUndo,
+                modifier = Modifier.fillParentMaxHeight(),
             )
         }
         item(key = "project-content") {
@@ -173,6 +130,9 @@ fun CounterWorkspace(
                     actions = projectCountersActions,
                 )
             }
+        }
+        item(key = "stitch-tracker") {
+            CounterStitchTracker(state = state, actions = actions)
         }
     }
 }
@@ -201,27 +161,42 @@ private fun CounterWorkspaceActions.onProjectContentClick(
 private fun CounterHero(
     state: CounterUiState,
     actions: CounterWorkspaceActions,
+    modifier: Modifier = Modifier,
 ) {
     Column(
         modifier =
-            Modifier
+            modifier
                 .fillMaxWidth()
-                .heightIn(min = 250.dp)
+                .heightIn(min = CounterDimens.HeroMinimumHeight)
                 .clickable(onClick = actions.onSurfaceIncrement),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
+        state.activeAlert?.let { reminder ->
+            ReminderAlertCard(
+                reminder = reminder,
+                currentRow = state.counter.count,
+                onDismiss = actions.onDismissReminder,
+            )
+            Spacer(modifier = Modifier.height(CounterDimens.WorkspaceGroupSpacing))
+        }
         if (state.canUseSecondaryCounter) {
             CompactPatternRepeatRow(
                 count = state.secondaryCount,
                 onDecrement = actions.onDecrementSecondary,
                 onIncrement = actions.onIncrementSecondary,
             )
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(CounterDimens.WorkspaceGroupSpacing))
         }
         CounterRowLabel(state = state, onShowTargetDialog = actions.onShowTargetDialog)
         CounterMainNumber(state = state)
         CounterTargetProgressBar(state = state, onShowTargetDialog = actions.onShowTargetDialog)
+        Spacer(modifier = Modifier.height(CounterDimens.HeroButtonSpacing))
+        CounterButtons(
+            onDecrement = actions.onDecrement,
+            onIncrement = actions.onIncrement,
+            onUndo = actions.onUndo,
+        )
     }
 }
 
@@ -288,7 +263,7 @@ private fun CounterTargetProgressBar(
 ) {
     val target = state.targetRows ?: return
     if (target <= 0) return
-    Spacer(modifier = Modifier.height(12.dp))
+    Spacer(modifier = Modifier.height(CounterDimens.CounterProgressSpacing))
     val fraction = (state.counter.count.toFloat() / target.toFloat()).coerceIn(0f, 1f)
     val completed = state.counter.count >= target
     val fillColor =
@@ -297,7 +272,7 @@ private fun CounterTargetProgressBar(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .height(2.dp)
+                .height(CounterDimens.CounterProgressHeight)
                 .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
                 .clickable(onClick = onShowTargetDialog),
     ) {
@@ -305,135 +280,9 @@ private fun CounterTargetProgressBar(
             modifier =
                 Modifier
                     .fillMaxWidth(fraction)
-                    .height(2.dp)
+                    .height(CounterDimens.CounterProgressHeight)
                     .background(fillColor),
         )
-    }
-}
-
-@Composable
-private fun ProjectHeader(
-    state: CounterUiState,
-    isEditingName: Boolean,
-    actions: ProjectHeaderActions,
-) {
-    var draftName by rememberSaveable(state.projectId) { mutableStateOf(state.projectName) }
-
-    LaunchedEffect(isEditingName, state.projectName) {
-        if (!isEditingName) {
-            draftName = state.projectName
-        }
-    }
-
-    if (isEditingName) {
-        TextField(
-            value = draftName,
-            onValueChange = { draftName = it },
-            modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text(stringResource(R.string.default_project_name)) },
-            singleLine = true,
-            shape = MaterialTheme.shapes.large,
-            keyboardOptions = KeyboardOptions.Default,
-            colors =
-                TextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surface,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent,
-                ),
-            trailingIcon = {
-                IconButton(
-                    onClick = {
-                        actions.onNameSave(draftName)
-                        actions.onEditingNameChange(false)
-                    },
-                    enabled = draftName.isNotBlank(),
-                ) {
-                    Icon(
-                        Icons.Filled.Check,
-                        contentDescription = stringResource(R.string.save),
-                        modifier = Modifier.size(20.dp),
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
-                }
-            },
-        )
-    } else {
-        Text(
-            text = state.projectName.ifEmpty { stringResource(R.string.default_project_name) }.uppercase(),
-            style =
-                MaterialTheme.typography.headlineSmall.copy(
-                    letterSpacing = 0.5.sp,
-                ),
-            color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .clickable(onClick = { actions.onEditingNameChange(true) }),
-        )
-        Spacer(modifier = Modifier.height(6.dp))
-        PatternHeaderRow(
-            attachedPatternName = state.patternName,
-            linkedPatternName = state.linkedPattern?.name,
-            onShowPatternPicker = actions.onShowPatternPicker,
-            onOpenPattern = actions.onOpenPattern,
-            onShowPatternInfo = actions.onShowPatternInfo,
-        )
-    }
-}
-
-@Composable
-private fun PatternHeaderRow(
-    attachedPatternName: String?,
-    linkedPatternName: String?,
-    onShowPatternPicker: () -> Unit,
-    onOpenPattern: () -> Unit,
-    onShowPatternInfo: () -> Unit,
-) {
-    when {
-        !attachedPatternName.isNullOrBlank() -> {
-            Text(
-                text = stringResource(R.string.project_header_pattern_attached),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .clickable(onClick = onOpenPattern)
-                        .padding(vertical = 2.dp),
-            )
-        }
-
-        !linkedPatternName.isNullOrBlank() -> {
-            Text(
-                text = "$linkedPatternName · Ravelry",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.primary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .clickable(onClick = onShowPatternInfo)
-                        .padding(vertical = 2.dp),
-            )
-        }
-
-        else -> {
-            Text(
-                text = stringResource(R.string.attach_pattern),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.tertiary,
-                modifier =
-                    Modifier
-                        .clickable(onClick = onShowPatternPicker)
-                        .padding(vertical = 2.dp),
-            )
-        }
     }
 }
 
@@ -451,7 +300,7 @@ private fun CounterButtons(
         Box(
             modifier =
                 Modifier
-                    .size(48.dp)
+                    .size(CounterDimens.CounterSideButtonSize)
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.surfaceVariant)
                     .clickable(onClick = onDecrement),
@@ -460,7 +309,7 @@ private fun CounterButtons(
             Icon(
                 Icons.Filled.Remove,
                 contentDescription = stringResource(R.string.counter_decrease),
-                modifier = Modifier.size(22.dp),
+                modifier = Modifier.size(CounterDimens.CounterSideIconSize),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
@@ -469,7 +318,7 @@ private fun CounterButtons(
             contentDescription = stringResource(R.string.counter_increase),
             modifier =
                 Modifier
-                    .size(144.dp)
+                    .size(CounterDimens.CounterPrimaryButtonSize)
                     .clip(CircleShape)
                     .clickable(onClick = onIncrement),
             contentScale = ContentScale.Crop,
@@ -477,7 +326,7 @@ private fun CounterButtons(
         Box(
             modifier =
                 Modifier
-                    .size(48.dp)
+                    .size(CounterDimens.CounterSideButtonSize)
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.surfaceVariant)
                     .clickable(onClick = onUndo),
@@ -486,7 +335,7 @@ private fun CounterButtons(
             Icon(
                 Icons.AutoMirrored.Filled.Undo,
                 contentDescription = stringResource(R.string.counter_undo),
-                modifier = Modifier.size(22.dp),
+                modifier = Modifier.size(CounterDimens.CounterSideIconSize),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
@@ -503,9 +352,12 @@ private fun CompactPatternRepeatRow(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
+                .clip(RoundedCornerShape(CounterDimens.CounterRepeatCornerRadius))
                 .background(MaterialTheme.colorScheme.surfaceVariant)
-                .padding(horizontal = 14.dp, vertical = 8.dp),
+                .padding(
+                    horizontal = CounterDimens.CounterRepeatHorizontalPadding,
+                    vertical = CounterDimens.CounterRepeatVerticalPadding,
+                ),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
@@ -521,7 +373,7 @@ private fun CompactPatternRepeatRow(
         )
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            horizontalArrangement = Arrangement.spacedBy(CounterDimens.ProjectCardGridSpacing),
         ) {
             PatternRepeatButton(
                 icon = Icons.Filled.Remove,
@@ -555,7 +407,7 @@ private fun PatternRepeatButton(
     Box(
         modifier =
             Modifier
-                .size(28.dp)
+                .size(CounterDimens.CounterRepeatButtonSize)
                 .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.surface)
                 .clickable(onClick = onClick),
@@ -564,7 +416,7 @@ private fun PatternRepeatButton(
         Icon(
             imageVector = icon,
             contentDescription = contentDescription,
-            modifier = Modifier.size(16.dp),
+            modifier = Modifier.size(CounterDimens.CounterRepeatIconSize),
             tint = MaterialTheme.colorScheme.onSurface,
         )
     }

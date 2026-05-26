@@ -58,6 +58,10 @@ Use [`CLAUDE.md`](/home/emma/dev/KnitTools/CLAUDE.md) when product wording, visu
 
 - All user-visible strings go in `res/values/strings.xml`
 - Use theme tokens and `MaterialTheme.knitToolsColors`, not hardcoded colors
+- Counter route first viewport is top bar plus row-counter hero plus bottom navigation; project content cards, extra counters, and stitch tracking belong below the hero scroll
+- Counter top bar owns back navigation, the uppercase project name, and overflow; do not restore pattern subtitles, PDF names, Ravelry names, or `Pattern attached` copy there
+- `CounterProjectContentCards` is a fixed five-card square grid: Pattern, Yarn, Notes, Photos, Reminders. Cards contain only icon plus title, never previews, counts, chevrons, or reminder messages
+- Counter-specific spacing, hero, grid, icon, and touch-target dimensions belong in `ui/theme/CounterDimens.kt`
 - Scaffold background should use the app `background` color
 - Reuse `ToolScreenScaffold` and shared UI components before adding feature-local scaffolds
 - Avoid inline typography overrides except documented project exceptions

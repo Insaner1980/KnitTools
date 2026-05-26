@@ -464,7 +464,7 @@ Tuetut kielet `locales_config.xml`:n mukaan:
 - `da`
 - `nl`
 
-Nykyiset locale-resurssihakemistot:
+Nykyiset kieli- ja `values`-resurssihakemistot:
 
 - `values`
 - `values-da`
@@ -576,32 +576,44 @@ Counterin varsinainen työtila on nykyään yksi `LazyColumn` tiedostossa `Count
 Keskeiset rajat:
 
 - `CounterScreen.kt` omistaa sheet/dialog-statea, route callbackit, feature-gate-päätökset ja ViewModel-kutsujen johdotuksen
-- `CounterWorkspaceSections.kt` omistaa työtilan järjestyksen, päälaskurin, projektin headerin, content-card-slotin, lisälaskurit, stitch trackingin ja reminder-alertin sijoittelun
-- `CounterProjectContentCards.kt` omistaa projektin "content cards" -mallin
+- `CounterScreen.kt` omistaa myös counter-reitin top barin: back-nuoli, iso uppercase-projektinimi ja overflow ovat samassa headerissa
+- `CounterWorkspaceSections.kt` omistaa työtilan järjestyksen, päälaskuriheron, content-card-slotin, lisälaskurit, stitch trackingin ja reminder-alertin sijoittelun
+- `CounterProjectContentCards.kt` omistaa projektin viiden neliökortin "content cards" -mallin
+- `ui/theme/CounterDimens.kt` omistaa counterin hero-, grid-, spacing-, icon- ja touch-target-mitoitustokenit
 - `CounterQuickActions.kt` ja `CounterProjectInfo.kt` on poistettu nykyisestä pinnasta; älä palauta niiden mallia dokumentin perusteella
 
-`ProjectContentCards` näyttää nykytilan perusteella nämä kortit:
+Ensimmäisen viewportin järjestys on tarkoituksella rauhallinen laskurityökalu:
+
+- top bar näyttää vain back-nuolen, projektinimen ja overflow-menun
+- ensimmäinen `LazyColumn`-item on `counter-hero`, jonka sisällä ovat mahdollinen aktiivinen reminder-tila, repeat/section-rivi, row label, iso rivinumero, progress bar ja laskurin kontrollit
+- `ProjectContentCards`, extra counters ja stitch tracking alkavat vasta hero-scrollin jälkeen
+- `Screen.Counter.route` ei kuulu `HIDE_BOTTOM_BAR_ROUTES`-joukkoon, joten alanavigaatio pysyy näkyvissä counterissa
+
+`ProjectContentCards` näyttää aina nämä viisi neliökorttia ilman preview-tekstejä, tiedostonimiä, kuvamääriä, chevroneita tai reminder-viestejä:
 
 - pattern:
-  - jos `patternUri` tai `linkedPattern` on olemassa, kortti avaa/kuvaa patternin
+  - title on `Open Pattern`, jos `patternUri` tai `linkedPattern` on olemassa
+  - title on `Add Pattern`, jos patternia ei ole
+  - jos `patternUri` on olemassa, kortti avaa PDF-katselun
+  - jos vain `linkedPattern` on olemassa, kortti avaa pattern-info-polun
   - jos patternia ei ole, kortti avaa pattern picker -flow'n
 - yarn:
-  - näyttää linkitettyjen `YarnCard`-rivien nimet ja projektikohtaiset yarn note -nimet
-  - tyhjänä avaa yarn management -sheetin
+  - title on aina `Yarn`
+  - kortti avaa yarn management -sheetin sekä tyhjänä että olemassa olevalla yarn-datalla
 - notes:
-  - näyttää ensimmäisen ei-tyhjän muistiinpanorivin
-  - tyhjänä ohjaa muistiinpanojen lisäämiseen
+  - title on aina `Notes`
+  - kortti noudattaa nykyistä Pro-gateä ja notes-flow'ta
 - photos:
-  - näyttää viimeisimpien projektikuvien määrän, jos kuvia on
-  - tyhjänä ohjaa progress photo -flow'hun
-- next reminder:
-  - näkyy vain jos nykyiselle tai tulevalle riville löytyy keskeneräinen muistutus
-  - valinta tehdään `nearestUpcomingReminder(...)`-logiikalla: `targetRow >= currentRow`, järjestys `targetRow`, sitten `id`
+  - title on aina `Photos`
+  - kortti noudattaa progress photo Pro-gateä ja photo gallery -flow'ta
+- reminders:
+  - title on aina `Reminders`
+  - kortti avaa nykyisen reminder management -flow'n
 
-Pattern-headerin nykyinen UX-raja:
+Counter-headerin nykyinen UX-raja:
 
-- projektin header näyttää liitetylle PDF:lle neutraalin tekstin `project_header_pattern_attached`
-- tarkka pattern-nimi tai tiedostonimi näkyy content-cardissa
+- headerissa ei näytetä pattern-subtitlea, PDF-nimeä, Ravelry-nimeä eikä `Pattern attached` -tekstiä
+- tarkka pattern-nimi tai tiedostonimi ei näy counterin projektikortissa
 - `ProjectCard` piilottaa raakamuotoisen `.pdf`-nimen secondary-linelta, jos se olisi muuten ainoa pattern-nimi
 
 ### Project list
@@ -625,9 +637,10 @@ Nykyinen listakäyttäytyminen:
 
 Nykyinen jako:
 
-- projektisisältö: notes, photos, pattern, yarn ja reminders ovat ensisijaisesti content-cardien kautta
-- projektitoiminnot: rename, complete/archive, reset, delete ja session history elävät action sheetissä
-- counter tools -osio sisältää counters-listan, add counter -polun ja stitch tracking -hallinnan
+- projektisisältö: notes, photos, pattern, yarn ja reminders ovat ensisijaisesti content-cardien kautta; aktiivinen reminder voi näkyä compact-tilana herossa, ei preview-korttina
+- action sheetin `This project` -osio sisältää reminders-listan ja counters-listan
+- action sheetin `Counter tools` -osio sisältää add counter -polun, stitches-per-row-asetuksen ja track stitches -kytkimen
+- action sheetin `Project actions` -osio sisältää session historyn, rename-, reset-, complete/archive- ja delete-polut
 - stitch trackingin kytkentä pyytää ensin stitch countin, jos seuranta yritetään ottaa käyttöön ilman positiivista stitch countia
 
 ## Library ja lankakortit
@@ -908,7 +921,7 @@ Toteutuksessa näkyviä asioita, joita ei kannata päätellä vanhoista mockeist
 - `Tools` ei ole geneerinen dashboard-gridi vaan oma Home/Tool-entry-näkymä
 - `Library` sisältää sekä sisällöt että reference-näkymät
 - muistiinpanoissa on full-screen editori
-- counterin päivittäiset projektisisällöt ovat `ProjectContentCards`-kortteja, eivät vanhoja quick action / project info -rivejä
+- counterin ensimmäinen viewport on top bar + iso row-counter-hero + alanavigaatio; projektisisällöt ovat scrollin alla olevia viittä `ProjectContentCards`-neliökorttia, eivät vanhoja quick action / project info -rivejä
 - project list -kortit toimivat nyt myös syvälinkkeinä patterniin, kuviin, muistiinpanoihin ja ensimmäiseen linkitettyyn lankakorttiin
 - `My Yarn` tukee manuaalista lankakortin luontia; se ei ole skanneri- tai AI-parseripinta
 - yarn card detailissä voi muokata manuaalisia perustietoja ja vaihtaa kuvan Android photo pickerillä

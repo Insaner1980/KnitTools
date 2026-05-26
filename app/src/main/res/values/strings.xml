@@ -814,22 +814,10 @@
     <string name="project_actions_section_project_actions">PROJECT ACTIONS</string>
     <string name="project_content_title">Project</string>
     <string name="project_content_open_pattern">Open Pattern</string>
-    <string name="project_content_attach_pattern">Attach Pattern</string>
-    <string name="project_content_attach_pattern_body">Add a PDF or saved pattern to this project</string>
-    <string name="project_header_pattern_attached">Pattern attached</string>
+    <string name="project_content_attach_pattern">Add Pattern</string>
     <string name="project_content_yarn">Yarn</string>
-    <string name="project_content_add_yarn">Add Yarn</string>
-    <string name="project_content_add_yarn_body">Choose from My Yarn or add yarn just for this project</string>
     <string name="project_content_notes">Notes</string>
-    <string name="project_content_add_note">Add Note</string>
-    <string name="project_content_add_note_body">Save a quick project note</string>
     <string name="project_content_photos">Photos</string>
-    <string name="project_content_add_photo">Add Photo</string>
-    <string name="project_content_add_photo_body">Save a progress photo for this project</string>
-    <string name="project_content_next_reminder">Next Reminder</string>
-    <string name="project_content_reminder_body">Row %1$d: %2$s</string>
-    <string name="photo_count_one">1 photo</string>
-    <string name="photo_count_many" tools:ignore="PluralsCandidate">%d photos</string>
     <string name="extra_counters_title">Extra Counters</string>
     <string name="counter_repeat_label">REPEAT</string>
     <string name="counters_list_title">Counters</string>

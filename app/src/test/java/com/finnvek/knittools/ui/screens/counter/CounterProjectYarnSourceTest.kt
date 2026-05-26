@@ -1,6 +1,7 @@
 package com.finnvek.knittools.ui.screens.counter
 
 import com.finnvek.knittools.ProjectSourceFiles
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -26,12 +27,15 @@ class CounterProjectYarnSourceTest {
     }
 
     @Test
-    fun `project info and quick action include project-only yarn notes`() {
+    fun `project-only yarn notes stay in management sheet instead of card previews`() {
+        val screen = ProjectSourceFiles.read(COUNTER_SCREEN)
         val contentCards = ProjectSourceFiles.read(COUNTER_PROJECT_CONTENT_CARDS)
 
-        assertTrue(contentCards.contains("projectYarnNoteNames"))
-        assertTrue(contentCards.contains("linkedYarnNames + projectYarnNoteNames"))
-        assertTrue(contentCards.contains("state.linkedYarns.isNotEmpty() || state.projectYarnNotes.isNotEmpty()"))
+        assertTrue(contentCards.contains("ProjectContentCardKind.YARN"))
+        assertTrue(contentCards.contains("R.string.project_content_yarn"))
+        assertFalse(contentCards.contains("projectYarnNoteNames"))
+        assertFalse(contentCards.contains("linkedYarnNames"))
+        assertTrue(screen.contains("projectYarnNotes = state.projectYarnNotes"))
     }
 
     @Test

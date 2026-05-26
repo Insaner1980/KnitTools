@@ -34,7 +34,6 @@
     <string name="tool_needle_sizes">Stickstorlekar</string>
     <string name="pro_trial_days_left">Pro-testperiod — %d dagar kvar</string>
     <string name="unlock_all_tools">Lås upp alla verktyg</string>
-    <string name="quick_tip_label">SNABBTIPS</string>
     <string name="desc_yarn_estimator_card">Beräkna garnåtgång och antal nystan</string>
 
     <!-- Bottom navigation tabs -->
@@ -107,9 +106,10 @@
     <string name="pattern_page_indicator">Sida %1$d av %2$d</string>
     <string name="pattern_previous_page">Föregående sida</string>
     <string name="pattern_next_page">Nästa sida</string>
-    <string name="pattern_picker_device_files">Välj PDF från enheten</string>
     <string name="pattern_picker_saved_patterns">Sparade mönster</string>
+    <string name="pattern_picker_import_pdf">Importera PDF</string>
     <string name="pattern_picker_camera_scan">Ta mönsterfoto</string>
+    <string name="pattern_picker_continue_without_pattern">Fortsätt utan mönster</string>
     <string name="pattern_scan_failed">Mönsterfotot kunde inte konverteras till PDF.</string>
     <string name="imported_pattern_designer">Importerad PDF</string>
     <string name="current_row_short">Varv %1$d</string>
@@ -119,10 +119,18 @@
     <string name="linked_yarn_title">LÄNKAT GARN</string>
     <string name="no_linked_yarn">Inget garn länkat ännu</string>
     <string name="choose_from_my_yarn">Välj från My Yarn</string>
+    <string name="choose_from_my_yarn_body">Välj ett sparat garn</string>
     <string name="add_yarn_to_project">Lägg till garn i detta projekt</string>
+    <string name="add_yarn_to_project_body">Spara en snabb garnanteckning bara för detta projekt</string>
     <string name="project_yarn_notes_title">PROJEKTGARN</string>
     <string name="project_yarn_name">Garnnamn</string>
+    <string name="brand_label">Märke</string>
     <string name="project_yarn_description">Beskrivning</string>
+    <string name="add_yarn_to_my_yarn">Lägg till garn</string>
+    <string name="edit_yarn_details">Redigera detaljer</string>
+    <string name="add_yarn_photo">Lägg till garnfoto</string>
+    <string name="change_yarn_photo">Byt garnfoto</string>
+    <string name="manual_yarn_optional_details">Börja med ett namn. Märke, grovlek, färg och färgbad är valfria.</string>
     <string name="project_yarn_quantity_format">Antal: %d</string>
     <string name="save_to_my_yarn">Spara i My Yarn</string>
     <string name="saved_to_my_yarn">Sparat i My Yarn</string>
@@ -137,8 +145,9 @@
     <string name="status_in_stash">I lager</string>
     <string name="status_in_use">Används</string>
     <string name="status_finished">Slut</string>
-    <string name="linked_project_arrow">\u2192 %1$s</string>
+    <string name="yarn_not_linked">Inte länkad</string>
     <string name="yarn_details_title">Detaljer</string>
+    <string name="yarn_details_empty_body">Märke, grovlek, färg och färgbad är valfria. Lägg bara till det som hjälper projektet.</string>
     <string name="delete_yarn_card_message">Ta bort detta garnkort? Detta kan inte ångras.</string>
     <string name="skein_count_one">%1$d nystan</string>
     <string name="skein_count_many">%1$d nystan</string>
@@ -153,8 +162,6 @@
     <string name="pro_full_history_hint">Uppgradera till Pro för full sessionshistorik</string>
 
     <!-- Settings -->
-    <string name="show_knitting_tips">Visa sticktips</string>
-
     <!-- Row Counter -->
     <string name="default_project_name">Mitt projekt</string>
     <string name="reset_counter">Nollställ räknaren</string>
@@ -413,36 +420,6 @@
     <string name="category_increases">Ökningar</string>
     <string name="category_cables">Flätor</string>
     <string name="category_other">Övrigt</string>
-
-    <!-- Quick Tips -->
-    <string-array name="knitting_tips">
-        <item>Sticka alltid en provlapp innan du börjar på ett nytt projekt — även om du tror att du redan känner din stickfasthet.</item>
-        <item>Blocka provlappen på samma sätt som du tänker blocka det färdiga plagget för att få en korrekt stickfasthet.</item>
-        <item>För att undvika ett hack när du stickar ränder runt, lyft upp maskan från varvet under till vänster sticka på andra varvet i den nya färgen.</item>
-        <item>Håll jämn handlag för ett proffsigt resultat i kanterna.</item>
-        <item>Sätt en låsbar maskmarkör var 20:e maska när du lägger upp många maskor.</item>
-        <item>Blocka dina färdiga delar — det gör stor skillnad för slutresultatet.</item>
-        <item>Räkna maskorna i slutet av varje varv när du stickar spetsmönster.</item>
-        <item>Nysta upp garnet till en boll innan du börjar — det minskar trassel.</item>
-        <item>Använd en livlina med några varvs mellanrum i spetsstickning — trä en hjälptråd genom alla maskor.</item>
-        <item>Fäst trådändar efter hand för att slippa ett stort jobb i slutet av projektet.</item>
-        <item>Köp alltid ett extra nystan — färgbad kan skilja sig mellan olika partier.</item>
-        <item>Prova att sticka provlappen runt om projektet stickas runt — stickfastheten kan skilja sig.</item>
-        <item>Använd maskmarkörer för att skilja mönsterrapporter åt — det gör räknandet mycket enklare.</item>
-        <item>Läs igenom hela mönstret innan du lägger upp för att undvika överraskningar.</item>
-        <item>Ha en projektanteckningsbok där du skriver upp ändringar och anteckningar för framtiden.</item>
-        <item>När du skarvar garn, lämna trådändar som är minst 15 cm långa för säker fästning.</item>
-        <item>Öva nya tekniker på en liten provlapp innan du använder dem i projektet.</item>
-        <item>Förvara stickningen i en projektpåse så håller den sig ren och inte fastnar i något.</item>
-        <item>Ta pauser för att stretcha händerna och förebygga belastningsskador.</item>
-        <item>Markera din plats i mönstret med en klisterlapp eller magnettavla.</item>
-        <item>Använd bambustickor till hala garner — de håller maskorna bättre på plats.</item>
-        <item>När du plockar upp maskor, använd en sticka som är en storlek mindre för en snyggare kant.</item>
-        <item>Vrid ut uppläggningen rätt på första varvet för att undvika att uppläggningen vrider sig.</item>
-        <item>Mät stickfastheten efter blockning, inte före — många garner förändras efter tvätt.</item>
-        <item>Växla mellan två nystan med några varvs mellanrum för att undvika synliga skillnader mellan färgbad.</item>
-    </string-array>
-
     <!-- In-App Updates -->
     <string name="update_downloaded">Uppdatering nedladdad — starta om för att tillämpa</string>
     <string name="restart">Starta om</string>
@@ -561,24 +538,24 @@
     <string name="pattern_detail_error">Kunde inte läsa in mönsterdetaljer. Kontrollera internetanslutningen.</string>
     <string name="project_actions_title">Projektåtgärder</string>
     <string name="project_actions_section_this_project">DETTA PROJEKT</string>
-    <string name="project_actions_section_counters">RÄKNARE</string>
+    <string name="project_actions_section_counter_tools">RÄKNARVERKTYG</string>
     <string name="project_actions_section_project_actions">PROJEKTÅTGÄRDER</string>
-    <string name="quick_action_open_pattern">Öppna mönster</string>
-    <string name="quick_action_attach_pattern">Bifoga mönster</string>
-    <string name="quick_action_notes">Anteckningar</string>
-    <string name="quick_action_add_note">Lägg till anteckning</string>
-    <string name="quick_action_yarn">Garn</string>
-    <string name="quick_action_add_yarn">Lägg till garn</string>
-    <string name="quick_action_photos">Foton</string>
-    <string name="quick_action_add_photo">Lägg till foto</string>
-    <string name="project_info_title">Projektinfo</string>
-    <string name="project_info_pattern">Mönster</string>
-    <string name="project_info_yarn">Garn</string>
-    <string name="project_info_notes">Anteckningar</string>
-    <string name="project_info_reminder">Påminnelse</string>
-    <string name="project_info_photos">Foton</string>
-    <string name="project_info_empty_label">Lägg till i projektet</string>
-    <string name="project_info_empty_value">Bifoga ett mönster, lägg till anteckningar, länka garn eller spara foton.</string>
+    <string name="project_content_title">Projekt</string>
+    <string name="project_content_open_pattern">Öppna mönster</string>
+    <string name="project_content_attach_pattern">Bifoga mönster</string>
+    <string name="project_content_attach_pattern_body">Lägg till en PDF eller ett sparat mönster i detta projekt</string>
+    <string name="project_header_pattern_attached">Mönster bifogat</string>
+    <string name="project_content_yarn">Garn</string>
+    <string name="project_content_add_yarn">Lägg till garn</string>
+    <string name="project_content_add_yarn_body">Välj från My Yarn eller lägg till garn bara för detta projekt</string>
+    <string name="project_content_notes">Anteckningar</string>
+    <string name="project_content_add_note">Lägg till anteckning</string>
+    <string name="project_content_add_note_body">Spara en snabb projektanteckning</string>
+    <string name="project_content_photos">Foton</string>
+    <string name="project_content_add_photo">Lägg till foto</string>
+    <string name="project_content_add_photo_body">Spara ett framstegsfoto för detta projekt</string>
+    <string name="project_content_next_reminder">Nästa påminnelse</string>
+    <string name="project_content_reminder_body">Varv %1$d: %2$s</string>
     <string name="photo_count_one">1 foto</string>
     <string name="photo_count_many">%d foton</string>
     <string name="extra_counters_title">Extra räknare</string>

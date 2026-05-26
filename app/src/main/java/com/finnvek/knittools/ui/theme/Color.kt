@@ -23,7 +23,7 @@ val SecondaryContainer = Color(0xFF3A4020) // Vihreä konttitausta
 
 // === Tertiary — Sinapinkeltainen ===
 val Tertiary = Color(0xFFC9A435) // Neulevinkit, aksenttikorostukset
-val TertiaryContainer = Color(0xFF3A3520) // Quick tip -kortin tausta
+val TertiaryContainer = Color(0xFF3A3520)
 
 // === Teksti ===
 val TextPrimary = Color(0xFFE8E4D0) // Pääteksti — lämmin kerma

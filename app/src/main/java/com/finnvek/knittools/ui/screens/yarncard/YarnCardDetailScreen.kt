@@ -1,5 +1,8 @@
 package com.finnvek.knittools.ui.screens.yarncard
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -48,6 +51,7 @@ import com.finnvek.knittools.ui.components.care.CareSymbol
 import com.finnvek.knittools.ui.components.care.CareSymbolIcon
 import com.finnvek.knittools.ui.components.care.hasCareSymbol
 import com.finnvek.knittools.ui.components.skeinCountText
+import com.finnvek.knittools.ui.screens.library.ManualYarnCardSheet
 import com.finnvek.knittools.ui.screens.library.YarnStatusSheet
 import com.finnvek.knittools.ui.screens.library.yarnStatusUi
 import com.finnvek.knittools.ui.theme.knitToolsColors
@@ -71,6 +75,11 @@ fun YarnCardDetailScreen(
     var showStatusSheet by rememberSaveable { mutableStateOf(false) }
     var showProjectSheet by rememberSaveable { mutableStateOf(false) }
     var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
+    var showManualDetailsSheet by rememberSaveable { mutableStateOf(false) }
+    val yarnPhotoPicker =
+        rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+            uri?.let { viewModel.updatePhotoUri(uri) }
+        }
 
     if (showStatusSheet) {
         YarnStatusSheet(
@@ -96,6 +105,18 @@ fun YarnCardDetailScreen(
                 showProjectSheet = false
             },
             onDismiss = { showProjectSheet = false },
+        )
+    }
+
+    if (showManualDetailsSheet) {
+        ManualYarnCardSheet(
+            initialInput = form.toManualYarnCardInput(),
+            titleRes = R.string.edit_yarn_details,
+            onSave = { input ->
+                viewModel.updateManualDetails(input)
+                showManualDetailsSheet = false
+            },
+            onDismiss = { showManualDetailsSheet = false },
         )
     }
 
@@ -146,6 +167,10 @@ fun YarnCardDetailScreen(
                 }
             },
             onChangeProjectClick = { showProjectSheet = true },
+            onEditManualDetails = { showManualDetailsSheet = true },
+            onAddYarnPhoto = {
+                yarnPhotoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+            },
             onDelete = { showDeleteDialog = true },
             modifier =
                 Modifier
@@ -166,6 +191,8 @@ private fun YarnCardDetailContent(
     onQuantityChange: (Int) -> Unit,
     onLinkedProjectClick: () -> Unit,
     onChangeProjectClick: () -> Unit,
+    onEditManualDetails: () -> Unit,
+    onAddYarnPhoto: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -173,7 +200,10 @@ private fun YarnCardDetailContent(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        YarnIdentitySection(form = form)
+        YarnIdentitySection(
+            form = form,
+            onAddYarnPhoto = onAddYarnPhoto,
+        )
         YarnActionsSection(
             form = form,
             linkedProjectName = linkedProjectName,
@@ -182,7 +212,10 @@ private fun YarnCardDetailContent(
             onLinkedProjectClick = onLinkedProjectClick,
             onChangeProjectClick = onChangeProjectClick,
         )
-        YarnDetailsSection(form = form)
+        YarnDetailsSection(
+            form = form,
+            onEditManualDetails = onEditManualDetails,
+        )
         YarnCareSection(careSymbols = form.careSymbols)
         TextButton(
             onClick = onDelete,
@@ -198,7 +231,10 @@ private fun YarnCardDetailContent(
 }
 
 @Composable
-private fun YarnIdentitySection(form: YarnCardFormState) {
+private fun YarnIdentitySection(
+    form: YarnCardFormState,
+    onAddYarnPhoto: () -> Unit,
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(14.dp),
@@ -234,6 +270,18 @@ private fun YarnIdentitySection(form: YarnCardFormState) {
                 style = MaterialTheme.typography.headlineSmall,
                 color = MaterialTheme.colorScheme.onSurface,
             )
+            TextButton(onClick = onAddYarnPhoto) {
+                Text(
+                    text =
+                        stringResource(
+                            if (form.photoUri.isBlank()) {
+                                R.string.add_yarn_photo
+                            } else {
+                                R.string.change_yarn_photo
+                            },
+                        ),
+                )
+            }
         }
     }
 }
@@ -368,7 +416,10 @@ private fun ActionRow(
 }
 
 @Composable
-private fun YarnDetailsSection(form: YarnCardFormState) {
+private fun YarnDetailsSection(
+    form: YarnCardFormState,
+    onEditManualDetails: () -> Unit,
+) {
     val detailRows =
         listOf(
             stringResource(R.string.fiber_content) to form.fiberContent,
@@ -376,12 +427,12 @@ private fun YarnDetailsSection(form: YarnCardFormState) {
             stringResource(R.string.weight_grams) to
                 form.weightGrams
                     .takeIf { it.isNotBlank() }
-                    ?.let { "$it g" }
+                    ?.let { formatYarnMeasurement(it, "g") }
                     .orEmpty(),
             stringResource(R.string.length_meters) to
                 form.lengthMeters
                     .takeIf { it.isNotBlank() }
-                    ?.let { "$it m" }
+                    ?.let { formatYarnMeasurement(it, "m") }
                     .orEmpty(),
             stringResource(R.string.needle_size_label) to form.needleSize,
             stringResource(R.string.gauge_label) to form.gaugeInfo,
@@ -390,7 +441,10 @@ private fun YarnDetailsSection(form: YarnCardFormState) {
             stringResource(R.string.dye_lot) to form.dyeLot,
         ).filter { it.second.isNotBlank() }
 
-    if (detailRows.isEmpty()) return
+    if (detailRows.isEmpty()) {
+        YarnDetailsEmptyState(onEditManualDetails = onEditManualDetails)
+        return
+    }
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -398,11 +452,7 @@ private fun YarnDetailsSection(form: YarnCardFormState) {
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = stringResource(R.string.yarn_details_title),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.knitToolsColors.onSurfaceMuted,
-            )
+            YarnDetailsHeader(onEditManualDetails = onEditManualDetails)
             Spacer(modifier = Modifier.height(12.dp))
             detailRows.forEachIndexed { index, (label, value) ->
                 LabeledDetailRow(label = label, value = value)
@@ -416,6 +466,70 @@ private fun YarnDetailsSection(form: YarnCardFormState) {
         }
     }
 }
+
+internal fun formatYarnMeasurement(
+    value: String,
+    unit: String,
+): String {
+    val trimmedValue = value.trim()
+    if (trimmedValue.isBlank()) return ""
+
+    val normalizedValue = trimmedValue.lowercase()
+    val normalizedUnit = unit.lowercase()
+    val hasUnitSuffix =
+        normalizedValue.endsWith(" $normalizedUnit") ||
+            normalizedValue.matches(Regex("""^.*\d\s*$normalizedUnit$"""))
+
+    return if (hasUnitSuffix) trimmedValue else "$trimmedValue $unit"
+}
+
+@Composable
+private fun YarnDetailsEmptyState(onEditManualDetails: () -> Unit) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            YarnDetailsHeader(onEditManualDetails = onEditManualDetails)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = stringResource(R.string.yarn_details_empty_body),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun YarnDetailsHeader(onEditManualDetails: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = stringResource(R.string.yarn_details_title),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.knitToolsColors.onSurfaceMuted,
+        )
+        TextButton(onClick = onEditManualDetails) {
+            Text(stringResource(R.string.edit_yarn_details))
+        }
+    }
+}
+
+private fun YarnCardFormState.toManualYarnCardInput(): ManualYarnCardInput =
+    ManualYarnCardInput(
+        yarnName = yarnName,
+        brand = brand,
+        quantity = quantityInStash,
+        weightCategory = weightCategory,
+        colorName = colorName,
+        colorNumber = colorNumber,
+        dyeLot = dyeLot,
+    )
 
 @Composable
 private fun LabeledDetailRow(

@@ -34,7 +34,6 @@
     <string name="tool_needle_sizes">Tailles d’aiguilles</string>
     <string name="pro_trial_days_left">Essai Pro — %d jours restants</string>
     <string name="unlock_all_tools">Débloquer tous les outils</string>
-    <string name="quick_tip_label">ASTUCE RAPIDE</string>
     <string name="desc_yarn_estimator_card">Calcule le métrage et le nombre de pelotes nécessaires</string>
 
     <!-- Bottom navigation tabs -->
@@ -107,9 +106,10 @@
     <string name="pattern_page_indicator">Page %1$d sur %2$d</string>
     <string name="pattern_previous_page">Page précédente</string>
     <string name="pattern_next_page">Page suivante</string>
-    <string name="pattern_picker_device_files">Choisir un PDF sur l’appareil</string>
     <string name="pattern_picker_saved_patterns">Modèles enregistrés</string>
+    <string name="pattern_picker_import_pdf">Importer un PDF</string>
     <string name="pattern_picker_camera_scan">Prendre une photo du modèle</string>
+    <string name="pattern_picker_continue_without_pattern">Continuer sans modèle</string>
     <string name="pattern_scan_failed">La photo du modèle n’a pas pu être convertie en PDF.</string>
     <string name="imported_pattern_designer">PDF importé</string>
     <string name="current_row_short">Rang %1$d</string>
@@ -119,10 +119,18 @@
     <string name="linked_yarn_title">FIL LIÉ</string>
     <string name="no_linked_yarn">Aucun fil lié pour le moment</string>
     <string name="choose_from_my_yarn">Choisir dans My Yarn</string>
+    <string name="choose_from_my_yarn_body">Choisir un fil enregistré</string>
     <string name="add_yarn_to_project">Ajouter du fil à ce projet</string>
+    <string name="add_yarn_to_project_body">Enregistrer une note de fil rapide uniquement pour ce projet</string>
     <string name="project_yarn_notes_title">FIL DU PROJET</string>
     <string name="project_yarn_name">Nom du fil</string>
+    <string name="brand_label">Marque</string>
     <string name="project_yarn_description">Description</string>
+    <string name="add_yarn_to_my_yarn">Ajouter du fil</string>
+    <string name="edit_yarn_details">Modifier les détails</string>
+    <string name="add_yarn_photo">Ajouter une photo du fil</string>
+    <string name="change_yarn_photo">Changer la photo du fil</string>
+    <string name="manual_yarn_optional_details">Commencez par un nom. La marque, la grosseur, la couleur et le bain sont facultatifs.</string>
     <string name="project_yarn_quantity_format">Quantité : %d</string>
     <string name="save_to_my_yarn">Enregistrer dans My Yarn</string>
     <string name="saved_to_my_yarn">Enregistré dans My Yarn</string>
@@ -137,8 +145,9 @@
     <string name="status_in_stash">En stock</string>
     <string name="status_in_use">En cours d’utilisation</string>
     <string name="status_finished">Terminé</string>
-    <string name="linked_project_arrow">\u2192 %1$s</string>
+    <string name="yarn_not_linked">Non lié</string>
     <string name="yarn_details_title">Détails</string>
+    <string name="yarn_details_empty_body">La marque, la grosseur, la couleur et le bain sont facultatifs. Ajoutez seulement ce qui aide ce projet.</string>
     <string name="delete_yarn_card_message">Supprimer cette fiche de fil ? Cette action est irréversible.</string>
     <string name="skein_count_one">%1$d pelote</string>
     <string name="skein_count_many">%1$d pelotes</string>
@@ -153,8 +162,6 @@
     <string name="pro_full_history_hint">Passez à Pro pour l’historique complet des sessions</string>
 
     <!-- Settings -->
-    <string name="show_knitting_tips">Afficher les conseils de tricot</string>
-
     <!-- Row Counter -->
     <string name="default_project_name">Mon projet</string>
     <string name="reset_counter">Réinitialiser le compteur</string>
@@ -413,36 +420,6 @@
     <string name="category_increases">Augmentations</string>
     <string name="category_cables">Torsades</string>
     <string name="category_other">Autres</string>
-
-    <!-- Quick Tips -->
-    <string-array name="knitting_tips">
-        <item>Faites toujours un échantillon avant de commencer un nouveau projet, même si vous pensez déjà connaître votre tension.</item>
-        <item>Bloquez votre échantillon de la même façon que vous prévoyez de bloquer l’ouvrage fini pour obtenir une mesure précise.</item>
-        <item>Pour éviter un décalage en tricotant des rayures en rond, relevez la maille du rang inférieur sur l’aiguille gauche au deuxième rang de la nouvelle couleur.</item>
-        <item>Gardez une tension régulière pour une finition nette sur les bords.</item>
-        <item>Placez un marqueur verrouillable toutes les 20 mailles lorsque vous montez un grand nombre de mailles.</item>
-        <item>Bloquez vos pièces terminées : cela change énormément l’aspect final.</item>
-        <item>Comptez vos mailles à la fin de chaque rang lorsque vous tricotez de la dentelle.</item>
-        <item>Mettez votre fil en boule avant de commencer : cela évite les nœuds.</item>
-        <item>Utilisez un fil de vie tous les quelques rangs en dentelle : passez un fil auxiliaire dans toutes les mailles.</item>
-        <item>Rentrez les fils au fur et à mesure pour éviter qu’ils ne s’accumulent à la fin du projet.</item>
-        <item>Achetez toujours une pelote supplémentaire ; les bains de teinture peuvent varier d’un lot à l’autre.</item>
-        <item>Essayez de tricoter votre échantillon en rond si votre projet se tricote en rond ; l’échantillon peut être différent.</item>
-        <item>Utilisez des marqueurs pour séparer les répétitions du motif : cela facilite beaucoup le comptage.</item>
-        <item>Lisez l’intégralité du modèle avant de monter les mailles pour éviter les surprises.</item>
-        <item>Tenez un carnet de projet pour noter vos modifications et remarques pour plus tard.</item>
-        <item>Lorsque vous changez de pelote, laissez des fils d’au moins 15 cm pour les rentrer solidement.</item>
-        <item>Entraînez-vous aux nouvelles techniques sur un petit échantillon avant de les utiliser dans votre projet.</item>
-        <item>Rangez votre tricot dans un sac à projet pour le garder propre et éviter les accrocs.</item>
-        <item>Faites des pauses pour étirer vos mains et prévenir les blessures dues aux gestes répétitifs.</item>
-        <item>Marquez votre place dans le modèle avec un pense-bête ou un tableau magnétique.</item>
-        <item>Utilisez des aiguilles en bambou avec les fils glissants : elles retiennent mieux les mailles.</item>
-        <item>Lorsque vous relevez des mailles, utilisez une aiguille d’une taille inférieure pour une bordure plus nette.</item>
-        <item>Vérifiez que le montage n’est pas vrillé au premier rang en rond.</item>
-        <item>Mesurez votre échantillon après blocage, pas avant : beaucoup de fils changent après lavage.</item>
-        <item>Alternez entre deux pelotes tous les quelques rangs pour éviter les différences visibles entre bains de teinture.</item>
-    </string-array>
-
     <!-- In-App Updates -->
     <string name="update_downloaded">Mise à jour téléchargée ; redémarrez pour l’appliquer</string>
     <string name="restart">Redémarrer</string>
@@ -561,24 +538,24 @@
     <string name="pattern_detail_error">Impossible de charger les détails du modèle. Vérifiez votre connexion internet.</string>
     <string name="project_actions_title">Actions du projet</string>
     <string name="project_actions_section_this_project">CE PROJET</string>
-    <string name="project_actions_section_counters">COMPTEURS</string>
+    <string name="project_actions_section_counter_tools">OUTILS DE COMPTEURS</string>
     <string name="project_actions_section_project_actions">ACTIONS DU PROJET</string>
-    <string name="quick_action_open_pattern">Ouvrir le modèle</string>
-    <string name="quick_action_attach_pattern">Joindre le modèle</string>
-    <string name="quick_action_notes">Notes</string>
-    <string name="quick_action_add_note">Ajouter une note</string>
-    <string name="quick_action_yarn">Fil</string>
-    <string name="quick_action_add_yarn">Ajouter du fil</string>
-    <string name="quick_action_photos">Photos</string>
-    <string name="quick_action_add_photo">Ajouter une photo</string>
-    <string name="project_info_title">Infos du projet</string>
-    <string name="project_info_pattern">Modèle</string>
-    <string name="project_info_yarn">Fil</string>
-    <string name="project_info_notes">Notes</string>
-    <string name="project_info_reminder">Rappel</string>
-    <string name="project_info_photos">Photos</string>
-    <string name="project_info_empty_label">Ajouter à ce projet</string>
-    <string name="project_info_empty_value">Joignez un modèle, ajoutez des notes, associez du fil ou enregistrez des photos.</string>
+    <string name="project_content_title">Projet</string>
+    <string name="project_content_open_pattern">Ouvrir le modèle</string>
+    <string name="project_content_attach_pattern">Joindre le modèle</string>
+    <string name="project_content_attach_pattern_body">Ajoutez un PDF ou un modèle enregistré à ce projet</string>
+    <string name="project_header_pattern_attached">Modèle joint</string>
+    <string name="project_content_yarn">Fil</string>
+    <string name="project_content_add_yarn">Ajouter du fil</string>
+    <string name="project_content_add_yarn_body">Choisissez dans My Yarn ou ajoutez du fil uniquement pour ce projet</string>
+    <string name="project_content_notes">Notes</string>
+    <string name="project_content_add_note">Ajouter une note</string>
+    <string name="project_content_add_note_body">Enregistrer une note rapide du projet</string>
+    <string name="project_content_photos">Photos</string>
+    <string name="project_content_add_photo">Ajouter une photo</string>
+    <string name="project_content_add_photo_body">Enregistrer une photo d’avancement pour ce projet</string>
+    <string name="project_content_next_reminder">Prochain rappel</string>
+    <string name="project_content_reminder_body">Rang %1$d: %2$s</string>
     <string name="photo_count_one">1 photo</string>
     <string name="photo_count_many">%d photos</string>
     <string name="extra_counters_title">Compteurs supplémentaires</string>

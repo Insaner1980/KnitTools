@@ -34,7 +34,6 @@
     <string name="tool_needle_sizes">Misure ferri</string>
     <string name="pro_trial_days_left">Prova Pro — %d giorni rimasti</string>
     <string name="unlock_all_tools">Sblocca tutti gli strumenti</string>
-    <string name="quick_tip_label">CONSIGLIO RAPIDO</string>
     <string name="desc_yarn_estimator_card">Calcola quantità di filato e numero di gomitoli</string>
 
     <!-- Bottom navigation tabs -->
@@ -107,9 +106,10 @@
     <string name="pattern_page_indicator">Pagina %1$d di %2$d</string>
     <string name="pattern_previous_page">Pagina precedente</string>
     <string name="pattern_next_page">Pagina successiva</string>
-    <string name="pattern_picker_device_files">Scegli PDF dal dispositivo</string>
     <string name="pattern_picker_saved_patterns">Modelli salvati</string>
+    <string name="pattern_picker_import_pdf">Importa PDF</string>
     <string name="pattern_picker_camera_scan">Scatta foto del modello</string>
+    <string name="pattern_picker_continue_without_pattern">Continua senza modello</string>
     <string name="pattern_scan_failed">La foto del modello non può essere convertita in PDF.</string>
     <string name="imported_pattern_designer">PDF importato</string>
     <string name="current_row_short">Ferro %1$d</string>
@@ -119,10 +119,18 @@
     <string name="linked_yarn_title">FILATO COLLEGATO</string>
     <string name="no_linked_yarn">Nessun filato collegato per ora</string>
     <string name="choose_from_my_yarn">Scegli da My Yarn</string>
+    <string name="choose_from_my_yarn_body">Scegli un filato salvato</string>
     <string name="add_yarn_to_project">Aggiungi filato a questo progetto</string>
+    <string name="add_yarn_to_project_body">Salva una nota rapida sul filato solo per questo progetto</string>
     <string name="project_yarn_notes_title">FILATO DEL PROGETTO</string>
     <string name="project_yarn_name">Nome filato</string>
+    <string name="brand_label">Marca</string>
     <string name="project_yarn_description">Descrizione</string>
+    <string name="add_yarn_to_my_yarn">Aggiungi filato</string>
+    <string name="edit_yarn_details">Modifica dettagli</string>
+    <string name="add_yarn_photo">Aggiungi foto del filato</string>
+    <string name="change_yarn_photo">Cambia foto del filato</string>
+    <string name="manual_yarn_optional_details">Inizia con un nome. Marca, spessore, colore e bagno sono facoltativi.</string>
     <string name="project_yarn_quantity_format">Quantità: %d</string>
     <string name="save_to_my_yarn">Salva in My Yarn</string>
     <string name="saved_to_my_yarn">Salvato in My Yarn</string>
@@ -137,8 +145,9 @@
     <string name="status_in_stash">In scorta</string>
     <string name="status_in_use">In uso</string>
     <string name="status_finished">Terminato</string>
-    <string name="linked_project_arrow">\u2192 %1$s</string>
+    <string name="yarn_not_linked">Non collegato</string>
     <string name="yarn_details_title">Dettagli</string>
+    <string name="yarn_details_empty_body">Marca, spessore, colore e bagno sono facoltativi. Aggiungi solo ciò che aiuta questo progetto.</string>
     <string name="delete_yarn_card_message">Eliminare questa scheda filato? Questa azione non può essere annullata.</string>
     <string name="skein_count_one">%1$d gomitolo</string>
     <string name="skein_count_many">%1$d gomitoli</string>
@@ -153,8 +162,6 @@
     <string name="pro_full_history_hint">Passa a Pro per la cronologia completa delle sessioni</string>
 
     <!-- Settings -->
-    <string name="show_knitting_tips">Mostra consigli di maglia</string>
-
     <!-- Row Counter -->
     <string name="default_project_name">Il mio progetto</string>
     <string name="reset_counter">Reimposta contatore</string>
@@ -413,36 +420,6 @@
     <string name="category_increases">Aumenti</string>
     <string name="category_cables">Trecce</string>
     <string name="category_other">Altro</string>
-
-    <!-- Quick Tips -->
-    <string-array name="knitting_tips">
-        <item>Lavora sempre un campione prima di iniziare un nuovo progetto — anche se pensi di conoscere già il tuo campione.</item>
-        <item>Blocca il campione nello stesso modo in cui bloccherai il capo finito per ottenere una misura accurata.</item>
-        <item>Per evitare lo scalino quando lavori righe colorate in tondo, solleva la maglia del ferro sottostante sul ferro sinistro al secondo giro del nuovo colore.</item>
-        <item>Mantieni una tensione uniforme per ottenere bordi dall\'aspetto professionale.</item>
-        <item>Metti un marcapunti apribile ogni 20 maglie quando avvii molti punti.</item>
-        <item>Blocca i pezzi finiti — fa una grande differenza nell\'aspetto finale.</item>
-        <item>Conta le maglie alla fine di ogni ferro quando lavori motivi traforati.</item>
-        <item>Avvolgi il filato in un gomitolo prima di iniziare — eviterai grovigli.</item>
-        <item>Usa un filo guida ogni pochi ferri nei lavori traforati — fai passare un filo di scarto attraverso tutte le maglie.</item>
-        <item>Ferma le codine man mano per evitare di ritrovarti con troppo lavoro alla fine.</item>
-        <item>Compra sempre un gomitolo in più — i bagni di tintura possono variare tra una partita e l\'altra.</item>
-        <item>Prova a lavorare il campione in tondo se il tuo progetto sarà lavorato in tondo — il campione può cambiare.</item>
-        <item>Usa i marcapunti per separare le ripetizioni del motivo — contare sarà molto più semplice.</item>
-        <item>Leggi tutto il modello prima di iniziare ad avviare le maglie per evitare sorprese.</item>
-        <item>Tieni un quaderno di progetto per annotare modifiche e appunti utili per il futuro.</item>
-        <item>Quando unisci un nuovo filo, lascia almeno 15 cm di capo per fissarlo bene.</item>
-        <item>Prova le tecniche nuove su un piccolo campione prima di usarle nel progetto.</item>
-        <item>Conserva il lavoro a maglia in una project bag per mantenerlo pulito ed evitare che si impigli.</item>
-        <item>Fai pause per allungare le mani ed evitare sforzi ripetitivi.</item>
-        <item>Segna il punto del modello con un post-it o una lavagna magnetica.</item>
-        <item>Usa ferri in bambù per filati scivolosi — trattengono meglio le maglie.</item>
-        <item>Quando riprendi le maglie, usa un ferro di una misura più piccola per ottenere un bordo più ordinato.</item>
-        <item>Controlla al primo giro dopo l\'avvio che il lavoro non sia attorcigliato.</item>
-        <item>Misura il campione dopo il bloccaggio, non prima — molti filati cambiano dopo il lavaggio.</item>
-        <item>Alterna due gomitoli ogni pochi ferri per evitare differenze visibili tra bagni di tintura.</item>
-    </string-array>
-
     <!-- In-App Updates -->
     <string name="update_downloaded">Aggiornamento scaricato — riavvia per applicarlo</string>
     <string name="restart">Riavvia</string>
@@ -561,24 +538,24 @@
     <string name="pattern_detail_error">Impossibile caricare i dettagli del modello. Controlla la connessione internet.</string>
     <string name="project_actions_title">Azioni progetto</string>
     <string name="project_actions_section_this_project">QUESTO PROGETTO</string>
-    <string name="project_actions_section_counters">CONTATORI</string>
+    <string name="project_actions_section_counter_tools">STRUMENTI CONTATORE</string>
     <string name="project_actions_section_project_actions">AZIONI PROGETTO</string>
-    <string name="quick_action_open_pattern">Apri modello</string>
-    <string name="quick_action_attach_pattern">Allega modello</string>
-    <string name="quick_action_notes">Note</string>
-    <string name="quick_action_add_note">Aggiungi nota</string>
-    <string name="quick_action_yarn">Filato</string>
-    <string name="quick_action_add_yarn">Aggiungi filato</string>
-    <string name="quick_action_photos">Foto</string>
-    <string name="quick_action_add_photo">Aggiungi foto</string>
-    <string name="project_info_title">Info progetto</string>
-    <string name="project_info_pattern">Modello</string>
-    <string name="project_info_yarn">Filato</string>
-    <string name="project_info_notes">Note</string>
-    <string name="project_info_reminder">Promemoria</string>
-    <string name="project_info_photos">Foto</string>
-    <string name="project_info_empty_label">Aggiungi a questo progetto</string>
-    <string name="project_info_empty_value">Allega un modello, aggiungi note, collega filato o salva foto.</string>
+    <string name="project_content_title">Progetto</string>
+    <string name="project_content_open_pattern">Apri modello</string>
+    <string name="project_content_attach_pattern">Allega modello</string>
+    <string name="project_content_attach_pattern_body">Aggiungi un PDF o un modello salvato a questo progetto</string>
+    <string name="project_header_pattern_attached">Modello allegato</string>
+    <string name="project_content_yarn">Filato</string>
+    <string name="project_content_add_yarn">Aggiungi filato</string>
+    <string name="project_content_add_yarn_body">Scegli da My Yarn o aggiungi filato solo per questo progetto</string>
+    <string name="project_content_notes">Note</string>
+    <string name="project_content_add_note">Aggiungi nota</string>
+    <string name="project_content_add_note_body">Salva una nota rapida del progetto</string>
+    <string name="project_content_photos">Foto</string>
+    <string name="project_content_add_photo">Aggiungi foto</string>
+    <string name="project_content_add_photo_body">Salva una foto di avanzamento per questo progetto</string>
+    <string name="project_content_next_reminder">Prossimo promemoria</string>
+    <string name="project_content_reminder_body">Ferro %1$d: %2$s</string>
     <string name="photo_count_one">1 foto</string>
     <string name="photo_count_many">%d foto</string>
     <string name="extra_counters_title">Contatori extra</string>

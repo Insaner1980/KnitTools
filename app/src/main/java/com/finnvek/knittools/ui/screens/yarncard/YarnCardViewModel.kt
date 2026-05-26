@@ -1,5 +1,6 @@
 package com.finnvek.knittools.ui.screens.yarncard
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.finnvek.knittools.domain.model.CounterProject
@@ -76,7 +77,7 @@ class YarnCardViewModel
                 initialValue = null,
             )
 
-        // Skannatut arvot estimaattorille (Save and Use / Use in Calculator)
+        // Lankakortin linkitys kulkee repositorion kautta, jotta projektin vastalinkki pysyy mukana.
         fun linkCardToProject(
             cardId: Long,
             projectId: Long,
@@ -160,6 +161,11 @@ class YarnCardViewModel
             viewModelScope.launch { repository.updateStatus(cardId, status) }
         }
 
+        fun updatePhotoUri(uri: Uri) {
+            val cardId = _formState.value.editingCardId ?: return
+            viewModelScope.launch { repository.updatePhotoUri(cardId, uri) }
+        }
+
         fun setLinkedProject(projectId: Long?) {
             val cardId = _formState.value.editingCardId ?: return
             val previousProjectId = _formState.value.linkedProjectId
@@ -167,6 +173,37 @@ class YarnCardViewModel
 
             viewModelScope.launch {
                 repository.updateLinkedProjectId(cardId, projectId)
+            }
+        }
+
+        fun updateManualDetails(input: ManualYarnCardInput) {
+            val form = _formState.value
+            val cardId = form.editingCardId ?: return
+            val yarnName = input.yarnName.trim()
+            if (yarnName.isBlank()) return
+
+            viewModelScope.launch {
+                repository.saveCard(
+                    YarnCard(
+                        id = cardId,
+                        brand = input.brand.trim(),
+                        yarnName = yarnName,
+                        fiberContent = form.fiberContent,
+                        weightGrams = form.weightGrams,
+                        lengthMeters = form.lengthMeters,
+                        needleSize = form.needleSize,
+                        gaugeInfo = form.gaugeInfo,
+                        colorName = input.colorName.trim(),
+                        colorNumber = input.colorNumber.trim(),
+                        dyeLot = input.dyeLot.trim(),
+                        weightCategory = input.weightCategory.trim(),
+                        careSymbols = form.careSymbols,
+                        photoUri = form.photoUri,
+                        quantityInStash = form.quantityInStash,
+                        status = form.status,
+                        linkedProjectId = form.linkedProjectId,
+                    ),
+                )
             }
         }
     }

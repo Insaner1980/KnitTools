@@ -1,5 +1,6 @@
 package com.finnvek.knittools.ui.screens.yarncard
 
+import android.net.Uri
 import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.domain.model.YarnCardStatus
 import com.finnvek.knittools.repository.CounterRepository
@@ -8,6 +9,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
@@ -132,6 +134,86 @@ class YarnCardViewModelTest {
             advanceUntilIdle()
 
             assertNull(vm.formState.value.linkedProjectId)
+        }
+
+    @Test
+    fun `updateManualDetails saves existing card with trimmed optional yarn details`() =
+        runTest {
+            val savedCard = slot<YarnCard>()
+            coEvery { repository.saveCard(any()) } returns 7L
+            val vm = createViewModel()
+            vm.loadFromCard(
+                YarnCard(
+                    id = 7L,
+                    brand = "Old brand",
+                    yarnName = "Old yarn",
+                    quantityInStash = 3,
+                    status = YarnCardStatus.IN_USE,
+                    linkedProjectId = 11L,
+                ),
+            )
+
+            vm.updateManualDetails(
+                ManualYarnCardInput(
+                    yarnName = "  Blue sock yarn  ",
+                    brand = "  Regia  ",
+                    quantity = 1,
+                    weightCategory = "  Fingering  ",
+                    colorName = "  Blue  ",
+                    colorNumber = "  123  ",
+                    dyeLot = "  A7  ",
+                ),
+            )
+            advanceUntilIdle()
+
+            coVerify { repository.saveCard(capture(savedCard)) }
+            assertEquals(7L, savedCard.captured.id)
+            assertEquals("Blue sock yarn", savedCard.captured.yarnName)
+            assertEquals("Regia", savedCard.captured.brand)
+            assertEquals(3, savedCard.captured.quantityInStash)
+            assertEquals(YarnCardStatus.IN_USE, savedCard.captured.status)
+            assertEquals(11L, savedCard.captured.linkedProjectId)
+            assertEquals("Fingering", savedCard.captured.weightCategory)
+            assertEquals("Blue", savedCard.captured.colorName)
+            assertEquals("123", savedCard.captured.colorNumber)
+            assertEquals("A7", savedCard.captured.dyeLot)
+        }
+
+    @Test
+    fun `updateManualDetails ignores missing cards and blank yarn names`() =
+        runTest {
+            val vm = createViewModel()
+
+            vm.updateManualDetails(ManualYarnCardInput(yarnName = " "))
+            advanceUntilIdle()
+
+            coVerify(exactly = 0) { repository.saveCard(any()) }
+        }
+
+    @Test
+    fun `updatePhotoUri saves selected yarn photo for existing card`() =
+        runTest {
+            val sourceUri = mockk<Uri>()
+            coEvery { repository.updatePhotoUri(7L, sourceUri) } returns true
+            val vm = createViewModel()
+            vm.loadFromCard(YarnCard(id = 7L, yarnName = "Sock yarn"))
+
+            vm.updatePhotoUri(sourceUri)
+            advanceUntilIdle()
+
+            coVerify { repository.updatePhotoUri(7L, sourceUri) }
+        }
+
+    @Test
+    fun `updatePhotoUri ignores missing cards`() =
+        runTest {
+            val sourceUri = mockk<Uri>()
+            val vm = createViewModel()
+
+            vm.updatePhotoUri(sourceUri)
+            advanceUntilIdle()
+
+            coVerify(exactly = 0) { repository.updatePhotoUri(any(), any()) }
         }
 
     @Test

@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -15,17 +14,14 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.ui.components.HubListItem
-import com.finnvek.knittools.ui.components.QuickTipCard
 import com.finnvek.knittools.ui.navigation.Screen
 import com.finnvek.knittools.ui.theme.knitToolsColors
 
@@ -38,9 +34,6 @@ fun LibraryScreen(
     val savedPatternCount by viewModel.savedPatternCount.collectAsStateWithLifecycle(initialValue = 0)
     val yarnCardCount by viewModel.yarnCardCount.collectAsStateWithLifecycle(initialValue = 0)
     val photoCount by viewModel.photoCount.collectAsStateWithLifecycle(initialValue = 0)
-
-    val tips = stringArrayResource(R.array.knitting_tips)
-    val currentTip = remember { tips.random() }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -140,16 +133,6 @@ fun LibraryScreen(
                     onClick = { onNavigate(Screen.ChartSymbols) },
                     titleColor = MaterialTheme.knitToolsColors.brandWine,
                 )
-            }
-
-            item {
-                HorizontalDivider(
-                    modifier = Modifier.padding(vertical = 12.dp),
-                    color = MaterialTheme.colorScheme.outline,
-                )
-            }
-            item {
-                QuickTipCard(tipText = currentTip)
             }
         }
     }

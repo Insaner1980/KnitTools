@@ -152,17 +152,10 @@ fun CounterWorkspace(
                 onUndo = actions.onUndo,
             )
         }
-        item(key = "quick-actions") {
-            CounterQuickActions(
+        item(key = "project-content") {
+            ProjectContentCards(
                 state = state,
-                actions = actions,
-            )
-        }
-        item(key = "project-info") {
-            val rows = projectInfoRows(state.toCounterWorkspaceSummary())
-            ProjectInfoSection(
-                rows = rows,
-                onRowClick = { kind -> actions.onProjectInfoClick(kind, state) },
+                onCardClick = { kind -> actions.onProjectContentClick(kind, state) },
             )
         }
         if (state.projectCounters.isNotEmpty()) {
@@ -184,12 +177,12 @@ fun CounterWorkspace(
     }
 }
 
-private fun CounterWorkspaceActions.onProjectInfoClick(
-    kind: ProjectInfoKind,
+private fun CounterWorkspaceActions.onProjectContentClick(
+    kind: ProjectContentCardKind,
     state: CounterUiState,
 ) {
     when (kind) {
-        ProjectInfoKind.PATTERN -> {
+        ProjectContentCardKind.PATTERN -> {
             when {
                 state.patternUri != null -> onOpenPattern()
                 state.linkedPattern != null -> onShowPatternInfo()
@@ -197,11 +190,10 @@ private fun CounterWorkspaceActions.onProjectInfoClick(
             }
         }
 
-        ProjectInfoKind.YARN -> onOpenYarn()
-        ProjectInfoKind.NOTES -> onOpenNotes()
-        ProjectInfoKind.REMINDER -> onOpenReminders()
-        ProjectInfoKind.PHOTOS -> onOpenPhotos()
-        ProjectInfoKind.EMPTY -> onOpenProjectActions()
+        ProjectContentCardKind.YARN -> onOpenYarn()
+        ProjectContentCardKind.NOTES -> onOpenNotes()
+        ProjectContentCardKind.PHOTOS -> onOpenPhotos()
+        ProjectContentCardKind.REMINDER -> onOpenReminders()
     }
 }
 
@@ -403,7 +395,7 @@ private fun PatternHeaderRow(
     when {
         !attachedPatternName.isNullOrBlank() -> {
             Text(
-                text = attachedPatternName,
+                text = stringResource(R.string.project_header_pattern_attached),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary,
                 maxLines = 1,

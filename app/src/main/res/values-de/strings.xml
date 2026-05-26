@@ -34,7 +34,6 @@
     <string name="tool_needle_sizes">Nadelstärken</string>
     <string name="pro_trial_days_left">Pro-Testversion — %d Tage übrig</string>
     <string name="unlock_all_tools">Alle Werkzeuge freischalten</string>
-    <string name="quick_tip_label">KURZTIPP</string>
     <string name="desc_yarn_estimator_card">Garnverbrauch und benötigte Knäuel berechnen</string>
 
     <!-- Bottom navigation tabs -->
@@ -107,9 +106,10 @@
     <string name="pattern_page_indicator">Seite %1$d von %2$d</string>
     <string name="pattern_previous_page">Vorherige Seite</string>
     <string name="pattern_next_page">Nächste Seite</string>
-    <string name="pattern_picker_device_files">PDF vom Gerät auswählen</string>
     <string name="pattern_picker_saved_patterns">Gespeicherte Anleitungen</string>
+    <string name="pattern_picker_import_pdf">PDF importieren</string>
     <string name="pattern_picker_camera_scan">Anleitungsfoto aufnehmen</string>
+    <string name="pattern_picker_continue_without_pattern">Ohne Anleitung fortfahren</string>
     <string name="pattern_scan_failed">Das Anleitungsfoto konnte nicht in PDF umgewandelt werden.</string>
     <string name="imported_pattern_designer">Importiertes PDF</string>
     <string name="current_row_short">Reihe %1$d</string>
@@ -119,10 +119,18 @@
     <string name="linked_yarn_title">VERKNÜPFTES GARN</string>
     <string name="no_linked_yarn">Noch kein Garn verknüpft</string>
     <string name="choose_from_my_yarn">Aus My Yarn wählen</string>
+    <string name="choose_from_my_yarn_body">Ein gespeichertes Garn auswählen</string>
     <string name="add_yarn_to_project">Garn zu diesem Projekt hinzufügen</string>
+    <string name="add_yarn_to_project_body">Eine kurze Garnnotiz nur für dieses Projekt speichern</string>
     <string name="project_yarn_notes_title">PROJEKTGARN</string>
     <string name="project_yarn_name">Garnname</string>
+    <string name="brand_label">Marke</string>
     <string name="project_yarn_description">Beschreibung</string>
+    <string name="add_yarn_to_my_yarn">Garn hinzufügen</string>
+    <string name="edit_yarn_details">Details bearbeiten</string>
+    <string name="add_yarn_photo">Garnfoto hinzufügen</string>
+    <string name="change_yarn_photo">Garnfoto ändern</string>
+    <string name="manual_yarn_optional_details">Beginne mit einem Namen. Marke, Stärke, Farbe und Partie sind optional.</string>
     <string name="project_yarn_quantity_format">Menge: %d</string>
     <string name="save_to_my_yarn">In My Yarn speichern</string>
     <string name="saved_to_my_yarn">In My Yarn gespeichert</string>
@@ -137,8 +145,9 @@
     <string name="status_in_stash">Vorrat</string>
     <string name="status_in_use">In Gebrauch</string>
     <string name="status_finished">Aufgebraucht</string>
-    <string name="linked_project_arrow">\u2192 %1$s</string>
+    <string name="yarn_not_linked">Nicht verknüpft</string>
     <string name="yarn_details_title">Details</string>
+    <string name="yarn_details_empty_body">Marke, Garnstärke, Farbe und Partie sind optional. Füge nur hinzu, was diesem Projekt hilft.</string>
     <string name="delete_yarn_card_message">Diese Garnkarte löschen? Dies kann nicht rückgängig gemacht werden.</string>
     <string name="skein_count_one">%1$d Knäuel</string>
     <string name="skein_count_many">%1$d Knäuel</string>
@@ -153,8 +162,6 @@
     <string name="pro_full_history_hint">Auf Pro upgraden für den vollständigen Sitzungsverlauf</string>
 
     <!-- Settings -->
-    <string name="show_knitting_tips">Stricktipps anzeigen</string>
-
     <!-- Row Counter -->
     <string name="default_project_name">Mein Projekt</string>
     <string name="reset_counter">Zähler zurücksetzen</string>
@@ -413,36 +420,6 @@
     <string name="category_increases">Zunahmen</string>
     <string name="category_cables">Zöpfe</string>
     <string name="category_other">Sonstiges</string>
-
-    <!-- Quick Tips -->
-    <string-array name="knitting_tips">
-        <item>Stricke immer zuerst eine Maschenprobe, bevor du ein neues Projekt beginnst — selbst wenn du glaubst, deine Maschenprobe schon zu kennen.</item>
-        <item>Spanne deine Maschenprobe genauso, wie du später das fertige Stück spannen willst, damit die Maschenprobe stimmt.</item>
-        <item>Um beim Ringelstricken in Runden einen Versatz zu vermeiden, hebe in der zweiten Reihe der neuen Farbe die Masche der darunterliegenden Reihe auf die linke Nadel.</item>
-        <item>Achte auf eine gleichmäßige Fadenspannung für saubere Kanten.</item>
-        <item>Setze beim Anschlag großer Maschenzahlen alle 20 Maschen einen verschließbaren Maschenmarkierer.</item>
-        <item>Spanne deine fertigen Teile — das macht einen großen Unterschied im Endergebnis.</item>
-        <item>Zähle bei Spitzenmustern am Ende jeder Reihe deine Maschen.</item>
-        <item>Wickle dein Garn vor dem Start zu einem Ball — das verhindert Verknoten.</item>
-        <item>Verwende beim Spitzenstricken alle paar Reihen eine Lebenslinie — ziehe einen Hilfsfaden durch alle Maschen.</item>
-        <item>Vernähe Fadenenden schon während des Strickens, damit sich am Ende nicht alles staut.</item>
-        <item>Kaufe immer ein zusätzliches Knäuel — Farbpartien können sich unterscheiden.</item>
-        <item>Stricke die Maschenprobe in Runden, wenn dein Projekt in Runden gestrickt wird — die Maschenprobe kann sich unterscheiden.</item>
-        <item>Verwende Maschenmarkierer, um Rapporte zu trennen — das erleichtert das Zählen enorm.</item>
-        <item>Lies die gesamte Anleitung durch, bevor du anschlägst, um Überraschungen zu vermeiden.</item>
-        <item>Führe ein Projektnotizbuch, um Änderungen und Notizen für später festzuhalten.</item>
-        <item>Lass beim Ansetzen eines neuen Garns mindestens 15 cm Fadenende zum sicheren Vernähen.</item>
-        <item>Übe neue Techniken zuerst an einer kleinen Maschenprobe, bevor du sie im Projekt verwendest.</item>
-        <item>Bewahre dein Strickstück in einer Projekttasche auf, damit es sauber bleibt und nirgendwo hängen bleibt.</item>
-        <item>Mache Pausen, um deine Hände zu dehnen und Überlastung zu vermeiden.</item>
-        <item>Markiere deine Stelle in der Anleitung mit einem Haftzettel oder Magnetbrett.</item>
-        <item>Verwende Bambusnadeln für rutschige Garne — sie halten die Maschen besser fest.</item>
-        <item>Wenn du Maschen aufnimmst, verwende eine Nadel eine Stärke kleiner für eine sauberere Kante.</item>
-        <item>Achte in der ersten Runde nach dem Anschlag darauf, dass sich der Anschlag nicht verdreht.</item>
-        <item>Messe deine Maschenprobe nach dem Spannen, nicht davor — viele Garne verändern sich nach dem Waschen.</item>
-        <item>Wechsle alle paar Reihen zwischen zwei Knäueln, um sichtbare Unterschiede zwischen Farbpartien zu vermeiden.</item>
-    </string-array>
-
     <!-- In-App Updates -->
     <string name="update_downloaded">Update heruntergeladen — neu starten, um es anzuwenden</string>
     <string name="restart">Neustarten</string>
@@ -561,24 +538,24 @@
     <string name="pattern_detail_error">Musterdetails konnten nicht geladen werden. Prüfe deine Internetverbindung.</string>
     <string name="project_actions_title">Projektaktionen</string>
     <string name="project_actions_section_this_project">DIESES PROJEKT</string>
-    <string name="project_actions_section_counters">ZÄHLER</string>
+    <string name="project_actions_section_counter_tools">ZÄHLERWERKZEUGE</string>
     <string name="project_actions_section_project_actions">PROJEKTAKTIONEN</string>
-    <string name="quick_action_open_pattern">Anleitung öffnen</string>
-    <string name="quick_action_attach_pattern">Anleitung anhängen</string>
-    <string name="quick_action_notes">Notizen</string>
-    <string name="quick_action_add_note">Notiz hinzufügen</string>
-    <string name="quick_action_yarn">Garn</string>
-    <string name="quick_action_add_yarn">Garn hinzufügen</string>
-    <string name="quick_action_photos">Fotos</string>
-    <string name="quick_action_add_photo">Foto hinzufügen</string>
-    <string name="project_info_title">Projektinfo</string>
-    <string name="project_info_pattern">Anleitung</string>
-    <string name="project_info_yarn">Garn</string>
-    <string name="project_info_notes">Notizen</string>
-    <string name="project_info_reminder">Erinnerung</string>
-    <string name="project_info_photos">Fotos</string>
-    <string name="project_info_empty_label">Zum Projekt hinzufügen</string>
-    <string name="project_info_empty_value">Hänge eine Anleitung an, füge Notizen hinzu, verknüpfe Garn oder speichere Fotos.</string>
+    <string name="project_content_title">Projekt</string>
+    <string name="project_content_open_pattern">Anleitung öffnen</string>
+    <string name="project_content_attach_pattern">Anleitung anhängen</string>
+    <string name="project_content_attach_pattern_body">Füge diesem Projekt ein PDF oder eine gespeicherte Anleitung hinzu</string>
+    <string name="project_header_pattern_attached">Anleitung angehängt</string>
+    <string name="project_content_yarn">Garn</string>
+    <string name="project_content_add_yarn">Garn hinzufügen</string>
+    <string name="project_content_add_yarn_body">Wähle aus My Yarn oder füge Garn nur für dieses Projekt hinzu</string>
+    <string name="project_content_notes">Notizen</string>
+    <string name="project_content_add_note">Notiz hinzufügen</string>
+    <string name="project_content_add_note_body">Speichere eine kurze Projektnotiz</string>
+    <string name="project_content_photos">Fotos</string>
+    <string name="project_content_add_photo">Foto hinzufügen</string>
+    <string name="project_content_add_photo_body">Speichere ein Fortschrittsfoto für dieses Projekt</string>
+    <string name="project_content_next_reminder">Nächste Erinnerung</string>
+    <string name="project_content_reminder_body">Reihe %1$d: %2$s</string>
     <string name="photo_count_one">1 Foto</string>
     <string name="photo_count_many">%d Fotos</string>
     <string name="extra_counters_title">Zusätzliche Zähler</string>

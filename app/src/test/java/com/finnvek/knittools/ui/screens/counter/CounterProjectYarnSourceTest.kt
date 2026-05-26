@@ -27,12 +27,23 @@ class CounterProjectYarnSourceTest {
 
     @Test
     fun `project info and quick action include project-only yarn notes`() {
-        val projectInfo = ProjectSourceFiles.read(COUNTER_PROJECT_INFO)
-        val quickActions = ProjectSourceFiles.read(COUNTER_QUICK_ACTIONS)
+        val contentCards = ProjectSourceFiles.read(COUNTER_PROJECT_CONTENT_CARDS)
 
-        assertTrue(projectInfo.contains("projectYarnNoteNames"))
-        assertTrue(projectInfo.contains("linkedYarnNames + projectYarnNoteNames"))
-        assertTrue(quickActions.contains("state.linkedYarns.isNotEmpty() || state.projectYarnNotes.isNotEmpty()"))
+        assertTrue(contentCards.contains("projectYarnNoteNames"))
+        assertTrue(contentCards.contains("linkedYarnNames + projectYarnNoteNames"))
+        assertTrue(contentCards.contains("state.linkedYarns.isNotEmpty() || state.projectYarnNotes.isNotEmpty()"))
+    }
+
+    @Test
+    fun `yarn management uses large option cards with supporting copy`() {
+        val sheet = ProjectSourceFiles.read(YARN_MANAGEMENT_SHEET)
+        val strings = ProjectSourceFiles.read(STRINGS)
+
+        assertTrue(sheet.contains("YarnOptionCard("))
+        assertTrue(sheet.contains("R.string.choose_from_my_yarn_body"))
+        assertTrue(sheet.contains("R.string.add_yarn_to_project_body"))
+        assertTrue(strings.contains("""<string name="choose_from_my_yarn_body">"""))
+        assertTrue(strings.contains("""<string name="add_yarn_to_project_body">"""))
     }
 
     private companion object {
@@ -42,9 +53,8 @@ class CounterProjectYarnSourceTest {
             "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterScreen.kt"
         private const val YARN_MANAGEMENT_SHEET =
             "app/src/main/java/com/finnvek/knittools/ui/screens/counter/YarnManagementSheet.kt"
-        private const val COUNTER_PROJECT_INFO =
-            "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterProjectInfo.kt"
-        private const val COUNTER_QUICK_ACTIONS =
-            "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterQuickActions.kt"
+        private const val COUNTER_PROJECT_CONTENT_CARDS =
+            "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterProjectContentCards.kt"
+        private const val STRINGS = "app/src/main/res/values/strings.xml"
     }
 }

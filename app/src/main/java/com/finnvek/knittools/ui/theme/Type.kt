@@ -120,7 +120,7 @@ val AppTypography =
                 fontSize = 12.sp,
                 letterSpacing = 0.5.sp,
             ),
-        // All-caps labelit (CURRENT ROW, QUICK TIP, nav-labelit)
+        // All-caps labelit (CURRENT ROW, nav-labelit)
         labelSmall =
             TextStyle(
                 fontFamily = OutfitFontFamily,

@@ -19,9 +19,9 @@ class ProjectListWorkspaceSourceTest {
     }
 
     @Test
-    fun `continue knitting context prefers section before row progress`() {
+    fun `continue knitting context includes section before row progress`() {
         assertEquals(
-            "Sleeve",
+            "Sleeve · Row 12 / 40",
             continueKnittingContextLineReflective(
                 sectionName = "Sleeve",
                 rowCount = 12,
@@ -38,6 +38,50 @@ class ProjectListWorkspaceSourceTest {
                 fallback = "Row 12 / 40",
             ),
         )
+    }
+
+    @Test
+    fun `project cards open project photos from their photo indicator`() {
+        val screen = ProjectSourceFiles.read(PROJECT_LIST_SCREEN)
+        val navGraph = ProjectSourceFiles.read(NAV_GRAPH)
+
+        assertTrue(screen.contains("onPhotoGallery: (Long) -> Unit = {}"))
+        assertTrue(screen.contains("onPhotoGallery = onPhotoGallery"))
+        assertTrue(screen.contains("onPhotosClick = { actions.onPhotoGallery(project.id) }"))
+        assertTrue(navGraph.contains("onPhotoGallery = { projectId ->"))
+        assertTrue(navGraph.contains("counterViewModel.selectProjectByIdForLaunch(projectId) { loaded ->"))
+        assertTrue(navGraph.contains("if (loaded) {"))
+        assertTrue(navGraph.contains("navController.navigateSingleTopTo(Screen.PhotoGallery.route)"))
+    }
+
+    @Test
+    fun `project cards open only attached local patterns from their pattern indicator`() {
+        val screen = ProjectSourceFiles.read(PROJECT_LIST_SCREEN)
+        val navGraph = ProjectSourceFiles.read(NAV_GRAPH)
+
+        assertTrue(screen.contains("onPatternViewer: (Long) -> Unit = {}"))
+        assertTrue(screen.contains("onPatternViewer = onPatternViewer"))
+        assertTrue(screen.contains("hasPatternAttachment = !project.patternUri.isNullOrBlank()"))
+        assertTrue(screen.contains("onPatternClick = { actions.onPatternViewer(project.id) }"))
+        assertTrue(navGraph.contains("onPatternViewer = { projectId ->"))
+        assertTrue(navGraph.contains("navController.navigateSingleTopTo(Screen.PatternViewer(projectId).route)"))
+    }
+
+    @Test
+    fun `project cards open first linked yarn card from their yarn row`() {
+        val screen = ProjectSourceFiles.read(PROJECT_LIST_SCREEN)
+        val navGraph = ProjectSourceFiles.read(NAV_GRAPH)
+
+        assertTrue(screen.contains("import com.finnvek.knittools.domain.model.parseYarnCardIds"))
+        assertTrue(screen.contains("onYarnCard: (Long) -> Unit = {}"))
+        assertTrue(screen.contains("onYarnCard = onYarnCard"))
+        assertTrue(screen.contains("val firstYarnCardId = parseYarnCardIds(project.yarnCardIds).firstOrNull()"))
+        assertTrue(screen.contains("onYarnClick ="))
+        assertTrue(screen.contains("firstYarnCardId?.let { yarnCardId ->"))
+        assertTrue(screen.contains("{ actions.onYarnCard(yarnCardId) }"))
+        assertTrue(navGraph.contains("onYarnCard = { cardId ->"))
+        assertTrue(navGraph.contains("navController.navigateToTopLevel(TopLevelDestination.Library)"))
+        assertTrue(navGraph.contains("navController.navigateSingleTopTo(Screen.YarnCardDetail(cardId).route)"))
     }
 
     private fun continueKnittingContextLineReflective(
@@ -64,5 +108,7 @@ class ProjectListWorkspaceSourceTest {
             "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectListViewModel.kt"
         private const val PROJECT_LIST_SCREEN =
             "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectListScreen.kt"
+        private const val NAV_GRAPH =
+            "app/src/main/java/com/finnvek/knittools/ui/navigation/NavGraph.kt"
     }
 }

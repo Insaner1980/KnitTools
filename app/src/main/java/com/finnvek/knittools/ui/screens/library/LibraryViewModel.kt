@@ -6,10 +6,12 @@ import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.ProgressPhoto
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.YarnCard
+import com.finnvek.knittools.domain.model.YarnCardStatus
 import com.finnvek.knittools.repository.CounterRepository
 import com.finnvek.knittools.repository.ProgressPhotoRepository
 import com.finnvek.knittools.repository.SavedPatternRepository
 import com.finnvek.knittools.repository.YarnCardRepository
+import com.finnvek.knittools.ui.screens.yarncard.ManualYarnCardInput
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -213,6 +215,32 @@ class LibraryViewModel
                 deleteByIds = yarnCardRepository::deleteCards,
                 onError = { _yarnDeleteErrorId.value += 1 },
             )
+        }
+
+        fun createManualYarnCard(input: ManualYarnCardInput) {
+            val yarnName = input.yarnName.trim()
+            if (yarnName.isBlank()) return
+
+            viewModelScope.launch {
+                try {
+                    yarnCardRepository.saveCard(
+                        YarnCard(
+                            yarnName = yarnName,
+                            brand = input.brand.trim(),
+                            quantityInStash = input.quantity.coerceAtLeast(1),
+                            weightCategory = input.weightCategory.trim(),
+                            colorName = input.colorName.trim(),
+                            colorNumber = input.colorNumber.trim(),
+                            dyeLot = input.dyeLot.trim(),
+                            status = YarnCardStatus.IN_STASH,
+                        ),
+                    )
+                } catch (cancellation: CancellationException) {
+                    throw cancellation
+                } catch (_: Exception) {
+                    _yarnDeleteErrorId.value += 1
+                }
+            }
         }
 
         private fun <T> Flow<List<T>>.syncSelectionWithItems(

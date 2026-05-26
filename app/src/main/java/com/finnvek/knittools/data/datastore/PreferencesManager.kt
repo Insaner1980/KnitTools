@@ -38,7 +38,6 @@ data class AppPreferences(
     val hapticFeedback: Boolean = true,
     val keepScreenAwake: Boolean = false,
     val useImperial: Boolean = false,
-    val showKnittingTips: Boolean = true,
     val showCompletedProjects: Boolean = false,
     val projectSortOrder: ProjectSortOrder = ProjectSortOrder.DEFAULT,
 )
@@ -60,7 +59,6 @@ class PreferencesManager
                     hapticFeedback = prefs[KEY_HAPTIC_FEEDBACK] ?: true,
                     keepScreenAwake = prefs[KEY_KEEP_SCREEN_AWAKE] ?: false,
                     useImperial = prefs[KEY_USE_IMPERIAL] ?: false,
-                    showKnittingTips = prefs[KEY_SHOW_KNITTING_TIPS] ?: true,
                     showCompletedProjects = prefs[KEY_SHOW_COMPLETED] ?: false,
                     projectSortOrder = ProjectSortOrder.fromPersistedValue(prefs[KEY_SORT_ORDER]),
                 )
@@ -98,12 +96,6 @@ class PreferencesManager
         suspend fun setUseImperial(imperial: Boolean) {
             context.dataStore.editPreferencesSafely("Yksikköasetuksen tallennus") {
                 it[KEY_USE_IMPERIAL] = imperial
-            }
-        }
-
-        suspend fun setShowKnittingTips(enabled: Boolean) {
-            context.dataStore.editPreferencesSafely("Vinkkiasetuksen tallennus") {
-                it[KEY_SHOW_KNITTING_TIPS] = enabled
             }
         }
 
@@ -202,7 +194,6 @@ class PreferencesManager
             val KEY_HAPTIC_FEEDBACK = booleanPreferencesKey("haptic_feedback")
             val KEY_KEEP_SCREEN_AWAKE = booleanPreferencesKey("keep_screen_awake")
             val KEY_USE_IMPERIAL = booleanPreferencesKey("use_imperial")
-            val KEY_SHOW_KNITTING_TIPS = booleanPreferencesKey("show_knitting_tips")
             val KEY_SHOW_COMPLETED = booleanPreferencesKey("show_completed_projects")
             val KEY_SORT_ORDER = stringPreferencesKey("project_sort_order")
             val KEY_DISMISSED_TOOLTIPS = stringSetPreferencesKey("dismissed_tooltips")

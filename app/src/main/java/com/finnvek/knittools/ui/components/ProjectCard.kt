@@ -5,10 +5,12 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -18,6 +20,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.outlined.StickyNote2
+import androidx.compose.material.icons.filled.AutoStories
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -26,6 +29,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -49,10 +53,14 @@ fun ProjectCard(
     totalRows: Int? = null,
     yarnName: String? = null,
     yarnColorSeed: Long = 0L,
+    onYarnClick: (() -> Unit)? = null,
     photoCount: Int = 0,
     patternName: String? = null,
+    hasPatternAttachment: Boolean = false,
     hasNotes: Boolean = false,
+    onPatternClick: (() -> Unit)? = null,
     onNotesClick: (() -> Unit)? = null,
+    onPhotosClick: (() -> Unit)? = null,
 ) {
     val secondaryLine =
         projectCardSecondaryLine(
@@ -94,15 +102,22 @@ fun ProjectCard(
                 }
                 Spacer(modifier = Modifier.height(4.dp))
                 ProjectCardStatsRow(
-                    rowCount = totalRows ?: rowCount,
-                    lastUpdated = lastUpdated,
-                    photoCount = photoCount,
-                    hasNotes = hasNotes,
+                    stats =
+                        ProjectCardStats(
+                            rowCount = totalRows ?: rowCount,
+                            lastUpdated = lastUpdated,
+                            photoCount = photoCount,
+                            hasPatternAttachment = hasPatternAttachment,
+                            hasNotes = hasNotes,
+                        ),
+                    onPatternClick = onPatternClick,
                     onNotesClick = onNotesClick,
+                    onPhotosClick = onPhotosClick,
                 )
                 ProjectCardYarnLine(
                     yarnName = yarnName,
                     yarnColorSeed = yarnColorSeed,
+                    onClick = onYarnClick,
                 )
             }
             Icon(
@@ -129,68 +144,133 @@ private fun projectCardSecondaryLine(
     return patternName
         ?.trim()
         ?.takeIf { it.isNotEmpty() && !it.equals(trimmedName, ignoreCase = true) }
+        ?.takeUnless(::isRawPdfFileName)
 }
+
+private fun isRawPdfFileName(name: String): Boolean = name.endsWith(".pdf", ignoreCase = true)
+
+private data class ProjectCardStats(
+    val rowCount: Int,
+    val lastUpdated: Long,
+    val photoCount: Int,
+    val hasPatternAttachment: Boolean,
+    val hasNotes: Boolean,
+)
 
 // Erotettu ProjectCard-funktiosta kognitiivisen kompleksisuuden vähentämiseksi (S3776)
 @Composable
 private fun ProjectCardStatsRow(
-    rowCount: Int,
-    lastUpdated: Long,
-    photoCount: Int,
-    hasNotes: Boolean = false,
+    stats: ProjectCardStats,
+    onPatternClick: (() -> Unit)? = null,
     onNotesClick: (() -> Unit)? = null,
+    onPhotosClick: (() -> Unit)? = null,
 ) {
     val dateFormat = rememberLocaleDateFormat("MMM d")
     val rowCountColor =
-        if (rowCount == 0) {
+        if (stats.rowCount == 0) {
             MaterialTheme.knitToolsColors.onSurfaceMuted
         } else {
             MaterialTheme.colorScheme.primary
         }
 
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(
-            text = stringResource(R.string.rows_format, rowCount),
-            style = MaterialTheme.typography.headlineSmall,
-            color = rowCountColor,
-        )
-        Spacer(modifier = Modifier.width(12.dp))
-        Text(
-            text = formatDate(lastUpdated, dateFormat),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.knitToolsColors.onSurfaceMuted,
-        )
-        if (photoCount > 0) {
-            Spacer(modifier = Modifier.width(12.dp))
-            Icon(
-                imageVector = Icons.Filled.CameraAlt,
-                contentDescription = null,
-                modifier = Modifier.size(14.dp),
-                tint = MaterialTheme.knitToolsColors.onSurfaceMuted,
-            )
-            Spacer(modifier = Modifier.width(4.dp))
+    Column {
+        Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = "$photoCount",
-                style = MaterialTheme.typography.bodySmall,
+                text = stringResource(R.string.rows_format, stats.rowCount),
+                style = MaterialTheme.typography.headlineSmall,
+                color = rowCountColor,
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = formatDate(stats.lastUpdated, dateFormat),
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.knitToolsColors.onSurfaceMuted,
             )
         }
+        ProjectCardAttachmentActionsRow(
+            hasPatternAttachment = stats.hasPatternAttachment,
+            photoCount = stats.photoCount,
+            hasNotes = stats.hasNotes,
+            onPatternClick = onPatternClick,
+            onPhotosClick = onPhotosClick,
+            onNotesClick = onNotesClick,
+        )
+    }
+}
+
+@Composable
+private fun ProjectCardAttachmentActionsRow(
+    hasPatternAttachment: Boolean,
+    photoCount: Int,
+    hasNotes: Boolean,
+    onPatternClick: (() -> Unit)? = null,
+    onPhotosClick: (() -> Unit)? = null,
+    onNotesClick: (() -> Unit)? = null,
+) {
+    if (!hasPatternAttachment && photoCount <= 0 && !hasNotes) return
+
+    Spacer(modifier = Modifier.height(2.dp))
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (hasPatternAttachment) {
+            ProjectCardAttachmentAction(
+                icon = Icons.Filled.AutoStories,
+                contentDescription = stringResource(R.string.pattern_viewer_title),
+                onClick = onPatternClick,
+            )
+        }
+        if (photoCount > 0) {
+            ProjectCardAttachmentAction(
+                icon = Icons.Filled.CameraAlt,
+                contentDescription = stringResource(R.string.progress_photos),
+                label = "$photoCount",
+                onClick = onPhotosClick,
+            )
+        }
         if (hasNotes) {
-            Spacer(modifier = Modifier.width(12.dp))
-            Icon(
-                imageVector = Icons.AutoMirrored.Outlined.StickyNote2,
+            ProjectCardAttachmentAction(
+                icon = Icons.AutoMirrored.Outlined.StickyNote2,
                 contentDescription = stringResource(R.string.notes),
-                modifier =
-                    Modifier
-                        .size(16.dp)
-                        .then(
-                            if (onNotesClick != null) {
-                                Modifier.clickable(onClick = onNotesClick)
-                            } else {
-                                Modifier
-                            },
-                        ),
-                tint = MaterialTheme.knitToolsColors.onSurfaceMuted,
+                onClick = onNotesClick,
+            )
+        }
+    }
+}
+
+@Composable
+private fun ProjectCardAttachmentAction(
+    icon: ImageVector,
+    contentDescription: String,
+    label: String? = null,
+    onClick: (() -> Unit)? = null,
+) {
+    Row(
+        modifier =
+            Modifier
+                .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+                .then(
+                    if (onClick != null) {
+                        Modifier.clickable(onClick = onClick)
+                    } else {
+                        Modifier
+                    },
+                ),
+        horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            modifier = Modifier.size(16.dp),
+            tint = MaterialTheme.knitToolsColors.onSurfaceMuted,
+        )
+        if (label != null) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.knitToolsColors.onSurfaceMuted,
             )
         }
     }
@@ -200,10 +280,23 @@ private fun ProjectCardStatsRow(
 private fun ProjectCardYarnLine(
     yarnName: String?,
     yarnColorSeed: Long,
+    onClick: (() -> Unit)? = null,
 ) {
     if (yarnName != null) {
         Spacer(modifier = Modifier.height(4.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            modifier =
+                Modifier
+                    .defaultMinSize(minHeight = 48.dp)
+                    .then(
+                        if (onClick != null) {
+                            Modifier.clickable(onClick = onClick)
+                        } else {
+                            Modifier
+                        },
+                    ),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             Box(
                 modifier =
                     Modifier

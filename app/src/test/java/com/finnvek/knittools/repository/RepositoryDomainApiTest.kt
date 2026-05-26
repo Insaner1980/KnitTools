@@ -542,6 +542,11 @@ class RepositoryDomainApiTest {
             status: String,
         ): Int = if (yarnCards.any { it.id == id }) 1 else 0
 
+        override suspend fun updatePhotoUri(
+            id: Long,
+            photoUri: String,
+        ): Int = if (yarnCards.any { it.id == id }) 1 else 0
+
         override suspend fun updateLinkedProjectId(
             id: Long,
             projectId: Long?,

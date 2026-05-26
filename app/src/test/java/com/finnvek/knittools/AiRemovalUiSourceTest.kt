@@ -3,17 +3,16 @@ package com.finnvek.knittools
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
 
 class AiRemovalUiSourceTest {
     @Test
     fun `removed AI summary copy is not exposed in UI resources`() {
-        val stringFiles = localizedStringFiles()
+        val stringFiles = ProjectSourceFiles.localizedStringFiles()
         val offenders =
             stringFiles.filter { file ->
-                val text = read(file)
+                val text = ProjectSourceFiles.read(file)
                 text.contains("project_actions_ai_summary") ||
                     text.contains("AI summary") ||
                     text.contains("Tekoälyn yhteenveto")
@@ -37,8 +36,8 @@ class AiRemovalUiSourceTest {
                 "etiquetas de fio",
             )
         val offenders =
-            localizedStringFiles().filter { file ->
-                val text = read(file)
+            ProjectSourceFiles.localizedStringFiles().filter { file ->
+                val text = ProjectSourceFiles.read(file)
                 removedYarnScanPhrases.any { phrase -> text.contains(phrase) }
             }
 
@@ -48,8 +47,8 @@ class AiRemovalUiSourceTest {
     @Test
     fun `pattern camera UI copy uses photo and PDF language instead of scan language`() {
         val offenders =
-            localizedStringFiles().filter { file ->
-                val text = read(file)
+            ProjectSourceFiles.localizedStringFiles().filter { file ->
+                val text = ProjectSourceFiles.read(file)
                 patternCameraValues(text).any { value ->
                     value.contains("scan", ignoreCase = true) ||
                         value.contains("skann", ignoreCase = true) ||
@@ -71,8 +70,8 @@ class AiRemovalUiSourceTest {
         assertTrue(baseStrings.contains("Yarn notes, quantities, and linked projects"))
         assertTrue(finnishStrings.contains("Lankamuistiinpanot, määrät ja linkitetyt projektit"))
 
-        localizedStringFiles().forEach { file ->
-            val text = read(file)
+        ProjectSourceFiles.localizedStringFiles().forEach { file ->
+            val text = ProjectSourceFiles.read(file)
             val myYarnValues = myYarnValues(text)
             listOf("brand", "brands", "weight", "weights", "color", "colors").forEach { token ->
                 assertFalse("$file still promises automatic yarn metadata: $token", myYarnValues.contains(token))
@@ -106,12 +105,15 @@ class AiRemovalUiSourceTest {
 
     @Test
     fun `voice and microphone surfaces are not exposed in live app sources`() {
-        val strings = localizedStringFiles().joinToString(separator = "\n") { read(it) }
+        val strings =
+            ProjectSourceFiles
+                .localizedStringFiles()
+                .joinToString(separator = "\n") { ProjectSourceFiles.read(it) }
         val counterScreen = ProjectSourceFiles.read(COUNTER_SCREEN)
         val manifest = ProjectSourceFiles.read(MANIFEST)
         val proState = ProjectSourceFiles.read(PRO_STATE)
         val proUpgradeScreen = ProjectSourceFiles.read(PRO_UPGRADE_SCREEN)
-        val mainSources = liveAppSources().joinToString(separator = "\n") { read(it) }
+        val mainSources = liveAppSources().joinToString(separator = "\n") { ProjectSourceFiles.read(it) }
 
         listOf(
             "voice_",
@@ -153,7 +155,7 @@ class AiRemovalUiSourceTest {
 
     @Test
     fun `removed yarn scan and AI prompt helpers are absent from live app sources`() {
-        val mainSources = liveAppSources().joinToString(separator = "\n") { read(it) }
+        val mainSources = liveAppSources().joinToString(separator = "\n") { ProjectSourceFiles.read(it) }
 
         listOf(
             "YarnLabelPhotoStorage",
@@ -171,21 +173,6 @@ class AiRemovalUiSourceTest {
         assertFalse(color.contains("AI summary"))
     }
 
-    private fun localizedStringFiles(): List<Path> {
-        val root = ProjectSourceFiles.file("app/src/main/res")
-        val result = mutableListOf<Path>()
-        Files.walk(root).use { paths ->
-            paths
-                .filter { path ->
-                    path.fileName.toString() == "strings.xml" &&
-                        path.parent.fileName
-                            .toString()
-                            .startsWith("values")
-                }.forEach(result::add)
-        }
-        return result
-    }
-
     private fun liveAppSources(): List<Path> {
         val root = ProjectSourceFiles.file("app/src/main")
         val result = mutableListOf<Path>()
@@ -199,10 +186,6 @@ class AiRemovalUiSourceTest {
         }
         return result
     }
-
-    private fun read(path: Path): String =
-        String(Files.readAllBytes(path), StandardCharsets.UTF_8)
-            .replace("\r\n", "\n")
 
     private fun patternCameraValues(text: String): List<String> =
         listOf(
@@ -231,7 +214,7 @@ class AiRemovalUiSourceTest {
     private fun yarnCardDetailSource(): String {
         val renamed = ProjectSourceFiles.file(YARN_CARD_DETAIL_SCREEN)
         return if (Files.exists(renamed)) {
-            read(renamed)
+            ProjectSourceFiles.read(renamed)
         } else {
             ProjectSourceFiles.read(YARN_CARD_REVIEW_SCREEN)
         }

@@ -34,7 +34,6 @@
     <string name="tool_needle_sizes">Puikkokoot</string>
     <string name="pro_trial_days_left">Pro-kokeilu — %d päivää jäljellä</string>
     <string name="unlock_all_tools">Avaa kaikki työkalut</string>
-    <string name="quick_tip_label">PIKAVINKKI</string>
     <string name="desc_yarn_estimator_card">Laske tarvittava lankamäärä ja kerien lukumäärä</string>
 
     <!-- Alapalkin välilehdet -->
@@ -107,9 +106,10 @@
     <string name="pattern_page_indicator">Sivu %1$d / %2$d</string>
     <string name="pattern_previous_page">Edellinen sivu</string>
     <string name="pattern_next_page">Seuraava sivu</string>
-    <string name="pattern_picker_device_files">Valitse PDF laitteelta</string>
     <string name="pattern_picker_saved_patterns">Tallennetut ohjeet</string>
+    <string name="pattern_picker_import_pdf">Tuo PDF</string>
     <string name="pattern_picker_camera_scan">Ota ohjekuva</string>
+    <string name="pattern_picker_continue_without_pattern">Jatka ilman ohjetta</string>
     <string name="pattern_scan_failed">Ohjekuvaa ei voitu muuntaa PDF:ksi.</string>
     <string name="imported_pattern_designer">Tuotu PDF</string>
     <string name="current_row_short">Kerros %1$d</string>
@@ -119,10 +119,18 @@
     <string name="linked_yarn_title">LIITETTY LANKA</string>
     <string name="no_linked_yarn">Lankaa ei ole vielä liitetty</string>
     <string name="choose_from_my_yarn">Valitse My Yarnista</string>
+    <string name="choose_from_my_yarn_body">Valitse jo tallennettu lanka</string>
     <string name="add_yarn_to_project">Lisää lanka tähän projektiin</string>
+    <string name="add_yarn_to_project_body">Tallenna nopea lankamuistiinpano vain tähän projektiin</string>
     <string name="project_yarn_notes_title">PROJEKTIN LANGAT</string>
     <string name="project_yarn_name">Langan nimi</string>
+    <string name="brand_label">Merkki</string>
     <string name="project_yarn_description">Kuvaus</string>
+    <string name="add_yarn_to_my_yarn">Lisää lanka</string>
+    <string name="edit_yarn_details">Muokkaa tietoja</string>
+    <string name="add_yarn_photo">Lisää lankakuva</string>
+    <string name="change_yarn_photo">Vaihda lankakuva</string>
+    <string name="manual_yarn_optional_details">Aloita nimestä. Merkki, vahvuus, väri ja värjäyserä ovat valinnaisia.</string>
     <string name="project_yarn_quantity_format">Määrä: %d</string>
     <string name="save_to_my_yarn">Tallenna My Yarniin</string>
     <string name="saved_to_my_yarn">Tallennettu My Yarniin</string>
@@ -137,8 +145,9 @@
     <string name="status_in_stash">Varastossa</string>
     <string name="status_in_use">Käytössä</string>
     <string name="status_finished">Valmis</string>
-    <string name="linked_project_arrow">\u2192 %1$s</string>
+    <string name="yarn_not_linked">Ei linkitetty</string>
     <string name="yarn_details_title">Tiedot</string>
+    <string name="yarn_details_empty_body">Merkki, vahvuus, väri ja värjäyserä ovat valinnaisia. Lisää vain se, mikä auttaa tätä projektia.</string>
     <string name="delete_yarn_card_message">Poistetaanko tämä lankakortti? Tätä ei voi kumota.</string>
     <string name="skein_count_one">%1$d kerä</string>
     <string name="skein_count_many">%1$d kerää</string>
@@ -153,8 +162,6 @@
     <string name="pro_full_history_hint">Päivitä Prohon nähdäksesi koko istuntohistorian</string>
 
     <!-- Asetukset -->
-    <string name="show_knitting_tips">Näytä neulontavinkit</string>
-
     <!-- Kerroslaskuri -->
     <string name="default_project_name">Oma projekti</string>
     <string name="reset_counter">Nollaa laskuri</string>
@@ -682,36 +689,6 @@
     <string name="sym_marker_desc">Silmukkamerkin sijainti</string>
     <string name="sym_repeat_name">Toisto</string>
     <string name="sym_repeat_desc">Kuvion toistosulku</string>
-
-    <!-- Pikavinkit -->
-    <string-array name="knitting_tips">
-        <item>Neulo aina mallitilkku ennen uuden projektin aloittamista — vaikka luulisit jo tuntevasi oman tiheytesi.</item>
-        <item>Viimeistele mallitilkku samalla tavalla kuin valmis työ, jotta tiheys on mahdollisimman tarkka.</item>
-        <item>Vältä raitojen porrastus pyöröneuleessa nostamalla uuden värin toisella kerroksella alla olevan kerroksen silmukka vasemmalle puikolle.</item>
-        <item>Pidä käsiala tasaisena, niin reunoista tulee siistit ja viimeistellyt.</item>
-        <item>Laita lukollinen silmukkamerkki joka 20. silmukan kohdalle, kun luot paljon silmukoita.</item>
-        <item>Viimeistele valmiit osat — lopputulos näyttää huomattavasti paremmalta.</item>
-        <item>Laske silmukat jokaisen kerroksen lopussa, kun neulot pitsiä.</item>
-        <item>Keri lanka palloksi ennen aloittamista — se vähentää sotkeutumista.</item>
-        <item>Käytä turvalankaa muutaman kerroksen välein pitsineuleessa — pujota apulanka kaikkien silmukoiden läpi.</item>
-        <item>Päättele langanpäät työn edetessä, niin ne eivät kasaannu projektin loppuun.</item>
-        <item>Osta aina yksi ylimääräinen kerä — värjäyserät voivat vaihdella erien välillä.</item>
-        <item>Neulo mallitilkku pyörönä, jos varsinainen työ neulotaan pyörönä — tiheys voi erota tasoneuleesta.</item>
-        <item>Erottele mallikerrat silmukkamerkeillä — laskeminen helpottuu huomattavasti.</item>
-        <item>Lue koko ohje läpi ennen luomista, jotta vältyt yllätyksiltä.</item>
-        <item>Pidä projektivihkoa muokkauksia ja muistiinpanoja varten, jotta niihin on helppo palata myöhemmin.</item>
-        <item>Jätä lankaliitoksiin vähintään 15 cm hännät, jotta päättely pysyy varmasti paikallaan.</item>
-        <item>Harjoittele uutta tekniikkaa pienellä mallitilkulla ennen kuin käytät sitä varsinaisessa työssä.</item>
-        <item>Säilytä neule työpussissa, jotta se pysyy puhtaana eikä tartu mihinkään.</item>
-        <item>Pidä taukoja ja venyttele käsiäsi, jotta vältät rasitusvaivoja.</item>
-        <item>Merkitse oma kohtasi ohjeessa tarralapulla tai magneettialustalla.</item>
-        <item>Käytä bambupuikkoja liukkaille langoille — ne pitävät silmukat paremmin paikoillaan.</item>
-        <item>Kun poimit silmukoita, käytä yhtä kokoa pienempää puikkoa, niin reunasta tulee siistimpi.</item>
-        <item>Tarkista ensimmäisellä kerroksella, etteivät luodut silmukat ole kiertyneet.</item>
-        <item>Mittaa tiheys viimeistelyn jälkeen, ei ennen sitä — moni lanka muuttuu pesussa.</item>
-        <item>Vuorottele kahta kerää muutaman kerroksen välein, jotta mahdolliset värjäyseroavaisuudet tasoittuvat.</item>
-    </string-array>
-
     <!-- Sovelluksen sisäiset päivitykset -->
     <string name="update_downloaded">Päivitys ladattu — käynnistä uudelleen ottaaksesi sen käyttöön</string>
     <string name="restart">Käynnistä uudelleen</string>
@@ -821,24 +798,24 @@
     <!-- Laskurinäytön redesign: bottom sheet -->
     <string name="project_actions_title">Projektin toiminnot</string>
     <string name="project_actions_section_this_project">TÄMÄ PROJEKTI</string>
-    <string name="project_actions_section_counters">LASKURIT</string>
+    <string name="project_actions_section_counter_tools">LASKURITYÖKALUT</string>
     <string name="project_actions_section_project_actions">PROJEKTIN TOIMINNOT</string>
-    <string name="quick_action_open_pattern">Avaa ohje</string>
-    <string name="quick_action_attach_pattern">Liitä ohje</string>
-    <string name="quick_action_notes">Muistiinpanot</string>
-    <string name="quick_action_add_note">Lisää muistiinpano</string>
-    <string name="quick_action_yarn">Lanka</string>
-    <string name="quick_action_add_yarn">Lisää lanka</string>
-    <string name="quick_action_photos">Kuvat</string>
-    <string name="quick_action_add_photo">Lisää kuva</string>
-    <string name="project_info_title">Projektin tiedot</string>
-    <string name="project_info_pattern">Ohje</string>
-    <string name="project_info_yarn">Lanka</string>
-    <string name="project_info_notes">Muistiinpanot</string>
-    <string name="project_info_reminder">Muistutus</string>
-    <string name="project_info_photos">Kuvat</string>
-    <string name="project_info_empty_label">Lisää projektiin</string>
-    <string name="project_info_empty_value">Liitä ohje, lisää muistiinpanoja, linkitä lankaa tai tallenna kuvia.</string>
+    <string name="project_content_title">Projekti</string>
+    <string name="project_content_open_pattern">Avaa ohje</string>
+    <string name="project_content_attach_pattern">Liitä ohje</string>
+    <string name="project_content_attach_pattern_body">Lisää PDF tai tallennettu ohje tähän projektiin</string>
+    <string name="project_header_pattern_attached">Ohje liitetty</string>
+    <string name="project_content_yarn">Lanka</string>
+    <string name="project_content_add_yarn">Lisää lanka</string>
+    <string name="project_content_add_yarn_body">Valitse My Yarnista tai lisää lanka vain tähän projektiin</string>
+    <string name="project_content_notes">Muistiinpanot</string>
+    <string name="project_content_add_note">Lisää muistiinpano</string>
+    <string name="project_content_add_note_body">Tallenna nopea projektimuistiinpano</string>
+    <string name="project_content_photos">Kuvat</string>
+    <string name="project_content_add_photo">Lisää kuva</string>
+    <string name="project_content_add_photo_body">Tallenna edistymiskuva tästä projektista</string>
+    <string name="project_content_next_reminder">Seuraava muistutus</string>
+    <string name="project_content_reminder_body">Kerros %1$d: %2$s</string>
     <string name="photo_count_one">1 kuva</string>
     <string name="photo_count_many">%d kuvaa</string>
     <string name="extra_counters_title">Lisälaskurit</string>

@@ -1,6 +1,7 @@
 package com.finnvek.knittools.repository
 
 import android.content.Context
+import android.net.Uri
 import com.finnvek.knittools.data.local.CounterProjectDao
 import com.finnvek.knittools.data.local.CounterProjectEntity
 import com.finnvek.knittools.data.local.DatabaseTransactionRunner
@@ -8,6 +9,7 @@ import com.finnvek.knittools.data.local.YarnCardDao
 import com.finnvek.knittools.data.local.toDomain
 import com.finnvek.knittools.data.local.toEntity
 import com.finnvek.knittools.data.storage.AppFileStorage
+import com.finnvek.knittools.data.storage.YarnPhotoStorage
 import com.finnvek.knittools.di.IoDispatcher
 import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.domain.model.YarnCardStatus
@@ -30,6 +32,7 @@ class YarnCardRepository
         @param:ApplicationContext private val context: Context,
         private val transactionRunner: DatabaseTransactionRunner,
         @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
+        private val yarnPhotoStorage: YarnPhotoStorage = YarnPhotoStorage(),
     ) {
         fun getAllCards(): Flow<List<YarnCard>> = dao.getAllCards().map { cards -> cards.map { it.toDomain() } }
 
@@ -81,6 +84,26 @@ class YarnCardRepository
             id: Long,
             status: String,
         ): Boolean = dao.updateStatus(id, status) > 0
+
+        suspend fun updatePhotoUri(
+            id: Long,
+            sourceUri: Uri,
+        ): Boolean {
+            val currentCard = dao.getCard(id) ?: return false
+            val copiedPhotoUri =
+                withContext(ioDispatcher) {
+                    yarnPhotoStorage.copyPhoto(context, id, sourceUri)
+                }
+            val updated = dao.updatePhotoUri(id, copiedPhotoUri) > 0
+            withContext(ioDispatcher) {
+                if (updated) {
+                    AppFileStorage.deleteIfAppOwned(context, currentCard.photoUri)
+                } else {
+                    AppFileStorage.deleteIfAppOwned(context, copiedPhotoUri)
+                }
+            }
+            return updated
+        }
 
         suspend fun updateLinkedProjectId(
             id: Long,

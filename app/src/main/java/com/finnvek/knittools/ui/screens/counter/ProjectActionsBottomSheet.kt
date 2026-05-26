@@ -84,17 +84,17 @@ fun ProjectActionsBottomSheet(
                     trailingCount = state.reminderCount.takeIf { it > 0 },
                     onClick = callbacks.onOpenReminders,
                 )
-            }
-
-            SectionDivider()
-
-            ProjectActionsSection(title = stringResource(R.string.project_actions_section_counters)) {
                 ActionRow(
                     icon = Icons.Outlined.FormatListNumbered,
                     label = stringResource(R.string.counters),
                     trailingCount = (state.projectCounterCount + 1).takeIf { it > 0 },
                     onClick = callbacks.onOpenCountersList,
                 )
+            }
+
+            SectionDivider()
+
+            ProjectActionsSection(title = stringResource(R.string.project_actions_section_counter_tools)) {
                 ActionRow(
                     icon = Icons.Outlined.AddCircle,
                     label = stringResource(R.string.add_counter),

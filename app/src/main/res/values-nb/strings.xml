@@ -34,7 +34,6 @@
     <string name="tool_needle_sizes">Pinnestørrelser</string>
     <string name="pro_trial_days_left">Pro-prøveperiode — %d dager igjen</string>
     <string name="unlock_all_tools">Lås opp alle verktøy</string>
-    <string name="quick_tip_label">RASKT TIPS</string>
     <string name="desc_yarn_estimator_card">Beregn garnmengde og antall nøster</string>
 
     <!-- Bottom navigation tabs -->
@@ -107,9 +106,10 @@
     <string name="pattern_page_indicator">Side %1$d av %2$d</string>
     <string name="pattern_previous_page">Forrige side</string>
     <string name="pattern_next_page">Neste side</string>
-    <string name="pattern_picker_device_files">Velg PDF fra enheten</string>
     <string name="pattern_picker_saved_patterns">Lagrede oppskrifter</string>
+    <string name="pattern_picker_import_pdf">Importer PDF</string>
     <string name="pattern_picker_camera_scan">Ta oppskriftsfoto</string>
+    <string name="pattern_picker_continue_without_pattern">Fortsett uten oppskrift</string>
     <string name="pattern_scan_failed">Oppskriftsfotoet kunne ikke konverteres til PDF.</string>
     <string name="imported_pattern_designer">Importert PDF</string>
     <string name="current_row_short">Rad %1$d</string>
@@ -119,10 +119,18 @@
     <string name="linked_yarn_title">KOBLET GARN</string>
     <string name="no_linked_yarn">Ingen garn koblet til ennå</string>
     <string name="choose_from_my_yarn">Velg fra My Yarn</string>
+    <string name="choose_from_my_yarn_body">Velg et lagret garn</string>
     <string name="add_yarn_to_project">Legg til garn i dette prosjektet</string>
+    <string name="add_yarn_to_project_body">Lagre et raskt garnnotat bare for dette prosjektet</string>
     <string name="project_yarn_notes_title">PROSJEKTGARN</string>
     <string name="project_yarn_name">Garnnavn</string>
+    <string name="brand_label">Merke</string>
     <string name="project_yarn_description">Beskrivelse</string>
+    <string name="add_yarn_to_my_yarn">Legg til garn</string>
+    <string name="edit_yarn_details">Rediger detaljer</string>
+    <string name="add_yarn_photo">Legg til garnbilde</string>
+    <string name="change_yarn_photo">Bytt garnbilde</string>
+    <string name="manual_yarn_optional_details">Start med et navn. Merke, tykkelse, farge og innfargingsparti er valgfritt.</string>
     <string name="project_yarn_quantity_format">Antall: %d</string>
     <string name="save_to_my_yarn">Lagre i My Yarn</string>
     <string name="saved_to_my_yarn">Lagret i My Yarn</string>
@@ -137,8 +145,9 @@
     <string name="status_in_stash">På lager</string>
     <string name="status_in_use">I bruk</string>
     <string name="status_finished">Ferdig</string>
-    <string name="linked_project_arrow">\u2192 %1$s</string>
+    <string name="yarn_not_linked">Ikke lenket</string>
     <string name="yarn_details_title">Detaljer</string>
+    <string name="yarn_details_empty_body">Merke, tykkelse, farge og innfargingsparti er valgfritt. Legg bare til det som hjelper dette prosjektet.</string>
     <string name="delete_yarn_card_message">Slette dette garnkortet? Dette kan ikke angres.</string>
     <string name="skein_count_one">%1$d nøste</string>
     <string name="skein_count_many">%1$d nøster</string>
@@ -153,8 +162,6 @@
     <string name="pro_full_history_hint">Oppgrader til Pro for full økthistorikk</string>
 
     <!-- Settings -->
-    <string name="show_knitting_tips">Vis strikketips</string>
-
     <!-- Row Counter -->
     <string name="default_project_name">Mitt prosjekt</string>
     <string name="reset_counter">Tilbakestill teller</string>
@@ -413,36 +420,6 @@
     <string name="category_increases">Økninger</string>
     <string name="category_cables">Fletter</string>
     <string name="category_other">Annet</string>
-
-    <!-- Quick Tips -->
-    <string-array name="knitting_tips">
-        <item>Strikk alltid en prøvelapp før du starter et nytt prosjekt — selv om du tror du kjenner fastheten din.</item>
-        <item>Blokk prøvelappen på samme måte som du planlegger å blokke det ferdige plagget for å få riktig fasthet.</item>
-        <item>For å unngå et hakk når du strikker striper rundt, løft masken fra raden under opp på venstre pinne på andre rad i den nye fargen.</item>
-        <item>Hold jevn strikkefasthet for en profesjonell finish på kantene.</item>
-        <item>Sett en låsbar maskemarkør for hver 20. maske når du legger opp mange masker.</item>
-        <item>Blokk de ferdige delene dine — det gjør en enorm forskjell på sluttresultatet.</item>
-        <item>Tell maskene på slutten av hver rad når du strikker hullmønster.</item>
-        <item>Vind garnet til en nøste før du begynner — det hindrer floker.</item>
-        <item>Bruk en sikkerhetstråd med noen raders mellomrom når du strikker hullstrikk — tre restegarn gjennom alle maskene.</item>
-        <item>Fest trådene underveis for å unngå en stor haug på slutten av prosjektet.</item>
-        <item>Kjøp alltid ett ekstra nøste — innfargingspartier kan variere mellom partier.</item>
-        <item>Prøv å strikke en prøvelapp rundt hvis prosjektet strikkes rundt — fastheten kan være annerledes.</item>
-        <item>Bruk maskemarkører til å skille mellom mønsterrepetisjoner — det gjør tellingen mye enklere.</item>
-        <item>Les hele oppskriften før du legger opp for å unngå overraskelser.</item>
-        <item>Før notater om prosjektet for å holde styr på endringer og ideer til senere.</item>
-        <item>Når du skjøter garn, la trådendene være minst 15 cm lange for sikker festing.</item>
-        <item>Øv på nye teknikker på en liten prøvelapp før du bruker dem i prosjektet.</item>
-        <item>Oppbevar strikketøyet i en prosjektpose for å holde det rent og unngå at det hekter seg fast.</item>
-        <item>Ta pauser og strekk hendene for å forebygge belastningsskader.</item>
-        <item>Marker hvor du er i oppskriften med en klistrelapp eller magnetbrett.</item>
-        <item>Bruk bambuspinner til glatt garn — de holder maskene bedre på plass.</item>
-        <item>Når du plukker opp masker, bruk en pinne som er én størrelse mindre for en penere kant.</item>
-        <item>Vri arbeidet riktig på første omgang etter opplegging for å unngå at opplegget vrir seg.</item>
-        <item>Mål fastheten etter blokkingen, ikke før — mange garn endrer seg etter vask.</item>
-        <item>Veksle mellom to nøster med noen raders mellomrom for å unngå synlige fargeforskjeller mellom partier.</item>
-    </string-array>
-
     <!-- In-App Updates -->
     <string name="update_downloaded">Oppdatering lastet ned — start på nytt for å bruke den</string>
     <string name="restart">Start på nytt</string>
@@ -561,24 +538,24 @@
     <string name="pattern_detail_error">Kunne ikke laste oppskriftsdetaljer. Sjekk internettforbindelsen.</string>
     <string name="project_actions_title">Prosjekthandlinger</string>
     <string name="project_actions_section_this_project">DETTE PROSJEKTET</string>
-    <string name="project_actions_section_counters">TELLERE</string>
+    <string name="project_actions_section_counter_tools">TELLEVERKTØY</string>
     <string name="project_actions_section_project_actions">PROSJEKTHANDLINGER</string>
-    <string name="quick_action_open_pattern">Åpne oppskrift</string>
-    <string name="quick_action_attach_pattern">Legg ved oppskrift</string>
-    <string name="quick_action_notes">Notater</string>
-    <string name="quick_action_add_note">Legg til notat</string>
-    <string name="quick_action_yarn">Garn</string>
-    <string name="quick_action_add_yarn">Legg til garn</string>
-    <string name="quick_action_photos">Bilder</string>
-    <string name="quick_action_add_photo">Legg til bilde</string>
-    <string name="project_info_title">Prosjektinfo</string>
-    <string name="project_info_pattern">Oppskrift</string>
-    <string name="project_info_yarn">Garn</string>
-    <string name="project_info_notes">Notater</string>
-    <string name="project_info_reminder">Påminnelse</string>
-    <string name="project_info_photos">Bilder</string>
-    <string name="project_info_empty_label">Legg til i dette prosjektet</string>
-    <string name="project_info_empty_value">Legg ved en oppskrift, legg til notater, koble garn eller lagre bilder.</string>
+    <string name="project_content_title">Prosjekt</string>
+    <string name="project_content_open_pattern">Åpne oppskrift</string>
+    <string name="project_content_attach_pattern">Legg ved oppskrift</string>
+    <string name="project_content_attach_pattern_body">Legg til en PDF eller lagret oppskrift i dette prosjektet</string>
+    <string name="project_header_pattern_attached">Oppskrift vedlagt</string>
+    <string name="project_content_yarn">Garn</string>
+    <string name="project_content_add_yarn">Legg til garn</string>
+    <string name="project_content_add_yarn_body">Velg fra My Yarn eller legg til garn bare for dette prosjektet</string>
+    <string name="project_content_notes">Notater</string>
+    <string name="project_content_add_note">Legg til notat</string>
+    <string name="project_content_add_note_body">Lagre et raskt prosjektnotat</string>
+    <string name="project_content_photos">Bilder</string>
+    <string name="project_content_add_photo">Legg til bilde</string>
+    <string name="project_content_add_photo_body">Lagre et fremdriftsbilde for dette prosjektet</string>
+    <string name="project_content_next_reminder">Neste påminnelse</string>
+    <string name="project_content_reminder_body">Rad %1$d: %2$s</string>
     <string name="photo_count_one">1 bilde</string>
     <string name="photo_count_many">%d bilder</string>
     <string name="extra_counters_title">Ekstra tellere</string>

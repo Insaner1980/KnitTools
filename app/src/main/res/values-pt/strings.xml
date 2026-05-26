@@ -34,7 +34,6 @@
     <string name="tool_needle_sizes">Tamanhos de agulhas</string>
     <string name="pro_trial_days_left">Teste Pro — faltam %d dias</string>
     <string name="unlock_all_tools">Desbloquear todas as ferramentas</string>
-    <string name="quick_tip_label">DICA RÁPIDA</string>
     <string name="desc_yarn_estimator_card">Calcule a metragem e o número de novelos necessários</string>
 
     <!-- Bottom navigation tabs -->
@@ -107,9 +106,10 @@
     <string name="pattern_page_indicator">Página %1$d de %2$d</string>
     <string name="pattern_previous_page">Página anterior</string>
     <string name="pattern_next_page">Página seguinte</string>
-    <string name="pattern_picker_device_files">Escolher PDF do dispositivo</string>
     <string name="pattern_picker_saved_patterns">Receitas guardadas</string>
+    <string name="pattern_picker_import_pdf">Importar PDF</string>
     <string name="pattern_picker_camera_scan">Tirar foto da receita</string>
+    <string name="pattern_picker_continue_without_pattern">Continuar sem receita</string>
     <string name="pattern_scan_failed">Não foi possível converter a foto da receita em PDF.</string>
     <string name="imported_pattern_designer">PDF importado</string>
     <string name="current_row_short">Carreira %1$d</string>
@@ -119,10 +119,18 @@
     <string name="linked_yarn_title">FIO LIGADO</string>
     <string name="no_linked_yarn">Ainda não há fio ligado</string>
     <string name="choose_from_my_yarn">Escolher em My Yarn</string>
+    <string name="choose_from_my_yarn_body">Escolha um fio guardado</string>
     <string name="add_yarn_to_project">Adicionar fio a este projeto</string>
+    <string name="add_yarn_to_project_body">Guarde uma nota rápida de fio apenas para este projeto</string>
     <string name="project_yarn_notes_title">FIO DO PROJETO</string>
     <string name="project_yarn_name">Nome do fio</string>
+    <string name="brand_label">Marca</string>
     <string name="project_yarn_description">Descrição</string>
+    <string name="add_yarn_to_my_yarn">Adicionar fio</string>
+    <string name="edit_yarn_details">Editar detalhes</string>
+    <string name="add_yarn_photo">Adicionar foto do fio</string>
+    <string name="change_yarn_photo">Alterar foto do fio</string>
+    <string name="manual_yarn_optional_details">Comece por um nome. Marca, espessura, cor e lote são opcionais.</string>
     <string name="project_yarn_quantity_format">Quantidade: %d</string>
     <string name="save_to_my_yarn">Guardar no My Yarn</string>
     <string name="saved_to_my_yarn">Guardado no My Yarn</string>
@@ -137,8 +145,9 @@
     <string name="status_in_stash">Em stock</string>
     <string name="status_in_use">Em uso</string>
     <string name="status_finished">Terminado</string>
-    <string name="linked_project_arrow">\u2192 %1$s</string>
+    <string name="yarn_not_linked">Não associado</string>
     <string name="yarn_details_title">Detalhes</string>
+    <string name="yarn_details_empty_body">Marca, espessura, cor e lote são opcionais. Adicione apenas o que ajuda este projeto.</string>
     <string name="delete_yarn_card_message">Eliminar esta ficha de fio? Esta ação não pode ser anulada.</string>
     <string name="skein_count_one">%1$d novelo</string>
     <string name="skein_count_many">%1$d novelos</string>
@@ -153,8 +162,6 @@
     <string name="pro_full_history_hint">Atualize para Pro para ver o histórico completo de sessões</string>
 
     <!-- Settings -->
-    <string name="show_knitting_tips">Mostrar dicas de tricô</string>
-
     <!-- Row Counter -->
     <string name="default_project_name">O meu projeto</string>
     <string name="reset_counter">Repor contador</string>
@@ -413,36 +420,6 @@
     <string name="category_increases">Aumentos</string>
     <string name="category_cables">Torcidos</string>
     <string name="category_other">Outros</string>
-
-    <!-- Quick Tips -->
-    <string-array name="knitting_tips">
-        <item>Faça sempre uma amostra antes de começar um novo projeto, mesmo que ache que já conhece a sua tensão.</item>
-        <item>Bloqueie a amostra da mesma forma que pretende bloquear a peça final para obter uma tensão correta.</item>
-        <item>Para evitar um degrau ao tricotar riscas em circular, levante o ponto da carreira de baixo para a agulha esquerda na segunda carreira da nova cor.</item>
-        <item>Mantenha uma tensão regular para um acabamento mais profissional nas bordas.</item>
-        <item>Coloque um marcador com fecho a cada 20 pontos quando montar muitos pontos.</item>
-        <item>Bloqueie as peças terminadas — faz uma grande diferença no aspeto final.</item>
-        <item>Conte os pontos no fim de cada carreira quando estiver a tricotar rendado.</item>
-        <item>Enrole o fio em bola antes de começar — isso evita emaranhados.</item>
-        <item>Use um fio de segurança a cada poucas carreiras no rendado — passe um fio auxiliar por todos os pontos.</item>
-        <item>Esconda as pontas à medida que avança para evitar acumulação no fim do projeto.</item>
-        <item>Compre sempre um novelo extra — os lotes de tingimento podem variar entre partidas.</item>
-        <item>Experimente tricotar a amostra em circular se o seu projeto for tricotado em circular — a tensão pode variar.</item>
-        <item>Use marcadores de pontos para separar as repetições do motivo — isso facilita muito a contagem.</item>
-        <item>Leia toda a receita antes de montar os pontos para evitar surpresas.</item>
-        <item>Mantenha um caderno de projeto para registar alterações e notas para consulta futura.</item>
-        <item>Ao unir fio novo, deixe pontas com pelo menos 15 cm para as esconder com segurança.</item>
-        <item>Pratique técnicas novas numa pequena amostra antes de as aplicar no seu projeto.</item>
-        <item>Guarde o tricô num saco de projeto para o manter limpo e evitar puxões.</item>
-        <item>Faça pausas para alongar as mãos e evitar lesões por esforço repetitivo.</item>
-        <item>Marque o seu lugar na receita com um post-it ou uma base magnética.</item>
-        <item>Use agulhas de bambu com fios escorregadios — agarram melhor os pontos.</item>
-        <item>Ao levantar pontos, use uma agulha um número abaixo para obter uma borda mais limpa.</item>
-        <item>Verifique se a montagem não ficou torcida na primeira volta em circular.</item>
-        <item>Meça a sua amostra depois do bloqueio, não antes — muitos fios mudam após a lavagem.</item>
-        <item>Alterne entre dois novelos a cada poucas carreiras para evitar diferenças visíveis entre lotes de tingimento.</item>
-    </string-array>
-
     <!-- In-App Updates -->
     <string name="update_downloaded">Atualização descarregada — reinicie para aplicar</string>
     <string name="restart">Reiniciar</string>
@@ -561,24 +538,24 @@
     <string name="pattern_detail_error">Não foi possível carregar os detalhes do modelo. Verifique a ligação à internet.</string>
     <string name="project_actions_title">Ações do projeto</string>
     <string name="project_actions_section_this_project">ESTE PROJETO</string>
-    <string name="project_actions_section_counters">CONTADORES</string>
+    <string name="project_actions_section_counter_tools">FERRAMENTAS DE CONTADORES</string>
     <string name="project_actions_section_project_actions">AÇÕES DO PROJETO</string>
-    <string name="quick_action_open_pattern">Abrir receita</string>
-    <string name="quick_action_attach_pattern">Anexar receita</string>
-    <string name="quick_action_notes">Notas</string>
-    <string name="quick_action_add_note">Adicionar nota</string>
-    <string name="quick_action_yarn">Fio</string>
-    <string name="quick_action_add_yarn">Adicionar fio</string>
-    <string name="quick_action_photos">Fotos</string>
-    <string name="quick_action_add_photo">Adicionar foto</string>
-    <string name="project_info_title">Informações do projeto</string>
-    <string name="project_info_pattern">Receita</string>
-    <string name="project_info_yarn">Fio</string>
-    <string name="project_info_notes">Notas</string>
-    <string name="project_info_reminder">Lembrete</string>
-    <string name="project_info_photos">Fotos</string>
-    <string name="project_info_empty_label">Adicionar a este projeto</string>
-    <string name="project_info_empty_value">Anexe uma receita, adicione notas, associe fio ou guarde fotos.</string>
+    <string name="project_content_title">Projeto</string>
+    <string name="project_content_open_pattern">Abrir receita</string>
+    <string name="project_content_attach_pattern">Anexar receita</string>
+    <string name="project_content_attach_pattern_body">Adicione um PDF ou uma receita guardada a este projeto</string>
+    <string name="project_header_pattern_attached">Receita anexada</string>
+    <string name="project_content_yarn">Fio</string>
+    <string name="project_content_add_yarn">Adicionar fio</string>
+    <string name="project_content_add_yarn_body">Escolha em My Yarn ou adicione fio apenas a este projeto</string>
+    <string name="project_content_notes">Notas</string>
+    <string name="project_content_add_note">Adicionar nota</string>
+    <string name="project_content_add_note_body">Guarde uma nota rápida do projeto</string>
+    <string name="project_content_photos">Fotos</string>
+    <string name="project_content_add_photo">Adicionar foto</string>
+    <string name="project_content_add_photo_body">Guarde uma foto de progresso deste projeto</string>
+    <string name="project_content_next_reminder">Próximo lembrete</string>
+    <string name="project_content_reminder_body">Carreira %1$d: %2$s</string>
     <string name="photo_count_one">1 foto</string>
     <string name="photo_count_many">%d fotos</string>
     <string name="extra_counters_title">Contadores extra</string>

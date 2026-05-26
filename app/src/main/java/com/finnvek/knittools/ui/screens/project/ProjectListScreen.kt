@@ -68,6 +68,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.ProjectSortOrder
+import com.finnvek.knittools.domain.model.parseYarnCardIds
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.ProjectCard
 import com.finnvek.knittools.ui.components.RenameProjectDialog
@@ -77,6 +78,9 @@ import com.finnvek.knittools.ui.components.RenameProjectDialog
 fun ProjectListScreen(
     onProjectClick: (Long) -> Unit,
     onNotesEditor: (Long) -> Unit = {},
+    onPhotoGallery: (Long) -> Unit = {},
+    onPatternViewer: (Long) -> Unit = {},
+    onYarnCard: (Long) -> Unit = {},
     onUpgradeToPro: () -> Unit = {},
     viewModel: ProjectListViewModel = hiltViewModel(),
 ) {
@@ -229,6 +233,9 @@ fun ProjectListScreen(
                     ProjectListContentActions(
                         onProjectClick = onProjectClick,
                         onNotesClick = onNotesEditor,
+                        onPhotoGallery = onPhotoGallery,
+                        onPatternViewer = onPatternViewer,
+                        onYarnCard = onYarnCard,
                         onToggleSelection = { viewModel.toggleProjectSelection(it) },
                         onEnterMultiSelect = { viewModel.enterMultiSelectMode(it) },
                         onArchive = { viewModel.archiveProject(it) },
@@ -625,6 +632,9 @@ data class ProjectListContentState(
 data class ProjectListContentActions(
     val onProjectClick: (Long) -> Unit,
     val onNotesClick: (Long) -> Unit,
+    val onPhotoGallery: (Long) -> Unit,
+    val onPatternViewer: (Long) -> Unit,
+    val onYarnCard: (Long) -> Unit,
     val onToggleSelection: (Long) -> Unit,
     val onEnterMultiSelect: (Long) -> Unit,
     val onArchive: (Long) -> Unit,
@@ -699,6 +709,9 @@ private fun ProjectListContent(
                             ActiveProjectItemActions(
                                 onProjectClick = actions.onProjectClick,
                                 onNotesClick = actions.onNotesClick,
+                                onPhotoGallery = actions.onPhotoGallery,
+                                onPatternViewer = actions.onPatternViewer,
+                                onYarnCard = actions.onYarnCard,
                                 onToggleSelection = actions.onToggleSelection,
                                 onEnterMultiSelect = actions.onEnterMultiSelect,
                                 onArchive = actions.onArchive,
@@ -754,6 +767,9 @@ data class ActiveProjectItemState(
 data class ActiveProjectItemActions(
     val onProjectClick: (Long) -> Unit,
     val onNotesClick: (Long) -> Unit,
+    val onPhotoGallery: (Long) -> Unit,
+    val onPatternViewer: (Long) -> Unit,
+    val onYarnCard: (Long) -> Unit,
     val onToggleSelection: (Long) -> Unit,
     val onEnterMultiSelect: (Long) -> Unit,
     val onArchive: (Long) -> Unit,
@@ -801,6 +817,7 @@ private fun ActiveProjectItem(
             )
         }
     } else {
+        val firstYarnCardId = parseYarnCardIds(project.yarnCardIds).firstOrNull()
         ProjectCard(
             name = project.name,
             rowCount = project.count,
@@ -812,8 +829,15 @@ private fun ActiveProjectItem(
             yarnColorSeed = project.id,
             photoCount = state.photoCount,
             patternName = state.patternName,
+            hasPatternAttachment = !project.patternUri.isNullOrBlank(),
             hasNotes = state.hasNotes,
+            onPatternClick = { actions.onPatternViewer(project.id) },
             onNotesClick = { actions.onNotesClick(project.id) },
+            onPhotosClick = { actions.onPhotoGallery(project.id) },
+            onYarnClick =
+                firstYarnCardId?.let { yarnCardId ->
+                    { actions.onYarnCard(yarnCardId) }
+                },
         )
     }
 }
@@ -908,7 +932,11 @@ private fun continueKnittingContextLine(
     sectionName
         ?.trim()
         ?.takeIf { it.isNotEmpty() }
-        ?.let { return it }
+        ?.let { section ->
+            return listOf(section, fallback)
+                .filter(String::isNotBlank)
+                .joinToString(" · ")
+        }
 
     val progressFallback =
         targetRows

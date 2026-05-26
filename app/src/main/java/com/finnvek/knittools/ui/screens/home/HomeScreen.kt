@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -29,7 +28,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.ui.components.HubListItem
-import com.finnvek.knittools.ui.components.QuickTipCard
 import com.finnvek.knittools.ui.navigation.Screen
 import com.finnvek.knittools.ui.theme.RavelryTeal
 import com.finnvek.knittools.ui.theme.knitToolsColors
@@ -43,8 +41,6 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val proState by viewModel.proState.collectAsStateWithLifecycle()
-    val showTips by viewModel.showTips.collectAsStateWithLifecycle()
-    val currentTip by viewModel.currentTip.collectAsStateWithLifecycle()
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -143,19 +139,6 @@ fun HomeScreen(
                         onClick = { onNavigate(Screen.Ravelry) },
                         titleColor = RavelryTeal,
                     )
-                }
-
-                // Erotin + Quick Tip
-                if (showTips) {
-                    item {
-                        HorizontalDivider(
-                            modifier = Modifier.padding(vertical = 12.dp),
-                            color = MaterialTheme.colorScheme.outline,
-                        )
-                    }
-                    item {
-                        QuickTipCard(tipText = currentTip)
-                    }
                 }
             }
         }

@@ -138,11 +138,6 @@ fun SettingsScreen(
                 tipTitle = stringResource(R.string.tip_imperial_units_title),
                 tipDescription = stringResource(R.string.tip_imperial_units_desc),
             )
-            SwitchRow(
-                label = stringResource(R.string.show_knitting_tips),
-                checked = prefs.showKnittingTips,
-                onCheckedChange = { viewModel.setShowKnittingTips(it) },
-            )
             if (!proState.isPro) {
                 HorizontalDivider()
                 SectionHeader(stringResource(R.string.settings_section_pro))

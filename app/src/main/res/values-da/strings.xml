@@ -34,7 +34,6 @@
     <string name="tool_needle_sizes">Pindestørrelser</string>
     <string name="pro_trial_days_left">Pro-prøveperiode — %d dage tilbage</string>
     <string name="unlock_all_tools">Lås alle værktøjer op</string>
-    <string name="quick_tip_label">HURTIGT TIP</string>
     <string name="desc_yarn_estimator_card">Beregn garnforbrug og antal nøgler</string>
 
     <!-- Bottom navigation tabs -->
@@ -107,9 +106,10 @@
     <string name="pattern_page_indicator">Side %1$d af %2$d</string>
     <string name="pattern_previous_page">Forrige side</string>
     <string name="pattern_next_page">Næste side</string>
-    <string name="pattern_picker_device_files">Vælg PDF fra enheden</string>
     <string name="pattern_picker_saved_patterns">Gemte opskrifter</string>
+    <string name="pattern_picker_import_pdf">Importér PDF</string>
     <string name="pattern_picker_camera_scan">Tag mønsterfoto</string>
+    <string name="pattern_picker_continue_without_pattern">Fortsæt uden opskrift</string>
     <string name="pattern_scan_failed">Mønsterfotoet kunne ikke konverteres til PDF.</string>
     <string name="imported_pattern_designer">Importeret PDF</string>
     <string name="current_row_short">Pind %1$d</string>
@@ -119,10 +119,18 @@
     <string name="linked_yarn_title">TILKNYTTET GARN</string>
     <string name="no_linked_yarn">Intet garn tilknyttet endnu</string>
     <string name="choose_from_my_yarn">Vælg fra My Yarn</string>
+    <string name="choose_from_my_yarn_body">Vælg et allerede gemt garn</string>
     <string name="add_yarn_to_project">Tilføj garn til dette projekt</string>
+    <string name="add_yarn_to_project_body">Gem en hurtig garnnote kun for dette projekt</string>
     <string name="project_yarn_notes_title">PROJEKTGARN</string>
     <string name="project_yarn_name">Garnnavn</string>
+    <string name="brand_label">Mærke</string>
     <string name="project_yarn_description">Beskrivelse</string>
+    <string name="add_yarn_to_my_yarn">Tilføj garn</string>
+    <string name="edit_yarn_details">Rediger detaljer</string>
+    <string name="add_yarn_photo">Tilføj garnfoto</string>
+    <string name="change_yarn_photo">Skift garnfoto</string>
+    <string name="manual_yarn_optional_details">Start med et navn. Mærke, tykkelse, farve og indfarvningsparti er valgfrie.</string>
     <string name="project_yarn_quantity_format">Antal: %d</string>
     <string name="save_to_my_yarn">Gem i My Yarn</string>
     <string name="saved_to_my_yarn">Gemt i My Yarn</string>
@@ -137,8 +145,9 @@
     <string name="status_in_stash">På lager</string>
     <string name="status_in_use">I brug</string>
     <string name="status_finished">Færdig</string>
-    <string name="linked_project_arrow">\u2192 %1$s</string>
+    <string name="yarn_not_linked">Ikke knyttet</string>
     <string name="yarn_details_title">Detaljer</string>
+    <string name="yarn_details_empty_body">Mærke, tykkelse, farve og indfarvningsparti er valgfrie. Tilføj kun det, der hjælper dette projekt.</string>
     <string name="delete_yarn_card_message">Slette dette garnkort? Dette kan ikke fortrydes.</string>
     <string name="skein_count_one">%1$d nøgle</string>
     <string name="skein_count_many">%1$d nøgler</string>
@@ -153,8 +162,6 @@
     <string name="pro_full_history_hint">Opgradér til Pro for fuld sessionshistorik</string>
 
     <!-- Settings -->
-    <string name="show_knitting_tips">Vis strikketips</string>
-
     <!-- Row Counter -->
     <string name="default_project_name">Mit projekt</string>
     <string name="reset_counter">Nulstil tæller</string>
@@ -413,36 +420,6 @@
     <string name="category_increases">Udtagninger</string>
     <string name="category_cables">Snoninger</string>
     <string name="category_other">Andet</string>
-
-    <!-- Quick Tips -->
-    <string-array name="knitting_tips">
-        <item>Strik altid en strikkeprøve, før du starter et nyt projekt — også selv om du tror, du kender din strikkefasthed.</item>
-        <item>Blok din strikkeprøve på samme måde som du vil blokke det færdige arbejde, så fastheden bliver korrekt.</item>
-        <item>For at undgå et hak, når du strikker striber rundt, kan du løfte masken fra rækken nedenunder op på venstre pind på anden omgang i den nye farve.</item>
-        <item>Hold spændingen jævn for et professionelt resultat langs kanterne.</item>
-        <item>Sæt en låsbar maskemarkør for hver 20. maske, når du slår mange masker op.</item>
-        <item>Blok dine færdige dele — det gør en stor forskel for det endelige udtryk.</item>
-        <item>Tæl maskerne ved slutningen af hver pind, når du strikker hulmønster.</item>
-        <item>Vind dit garn op til et nøgle, før du går i gang — det forebygger sammenfiltring.</item>
-        <item>Brug en livline med få pinders mellemrum i hulstrik — træk restegarn gennem alle masker.</item>
-        <item>Hæft ender undervejs, så du undgår en stor bunke til sidst i projektet.</item>
-        <item>Køb altid et ekstra nøgle — farvepartier kan variere mellem partier.</item>
-        <item>Prøv at strikke en strikkeprøve rundt, hvis dit projekt strikkes rundt — fastheden kan være anderledes.</item>
-        <item>Brug maskemarkører til at adskille mønsterrapporter — det gør det meget lettere at tælle.</item>
-        <item>Læs hele opskriften igennem, før du slår op, så du undgår overraskelser.</item>
-        <item>Før en projektbog med ændringer og noter til senere brug.</item>
-        <item>Når du samler garn, så lad enderne være mindst 15 cm lange, så de kan hæftes sikkert.</item>
-        <item>Øv nye teknikker på en lille strikkeprøve, før du bruger dem i projektet.</item>
-        <item>Opbevar dit strikketøj i en projektpose for at holde det rent og undgå, at det hænger fast.</item>
-        <item>Tag pauser og stræk hænderne for at forebygge belastningsskader.</item>
-        <item>Marker din plads i opskriften med en sticky note eller en magnetplade.</item>
-        <item>Brug bambuspinde til glatte garner — de holder bedre på maskerne.</item>
-        <item>Når du samler masker op, så brug en pind, der er én størrelse mindre, for en pænere kant.</item>
-        <item>Kontrollér at opslagningen ikke er snoet på første omgang efter opslagning.</item>
-        <item>Mål din strikkefasthed efter blokning, ikke før — mange garner ændrer sig efter vask.</item>
-        <item>Skift mellem to nøgler med få pinders mellemrum for at undgå synlige forskelle mellem farvepartier.</item>
-    </string-array>
-
     <!-- In-App Updates -->
     <string name="update_downloaded">Opdatering hentet — genstart for at anvende</string>
     <string name="restart">Genstart</string>
@@ -561,24 +538,24 @@
     <string name="pattern_detail_error">Kunne ikke indlæse opskriftsdetaljer. Tjek din internetforbindelse.</string>
     <string name="project_actions_title">Projekthandlinger</string>
     <string name="project_actions_section_this_project">DETTE PROJEKT</string>
-    <string name="project_actions_section_counters">TÆLLERE</string>
+    <string name="project_actions_section_counter_tools">TÆLLERVÆRKTØJER</string>
     <string name="project_actions_section_project_actions">PROJEKTHANDLINGER</string>
-    <string name="quick_action_open_pattern">Åbn opskrift</string>
-    <string name="quick_action_attach_pattern">Vedhæft opskrift</string>
-    <string name="quick_action_notes">Noter</string>
-    <string name="quick_action_add_note">Tilføj note</string>
-    <string name="quick_action_yarn">Garn</string>
-    <string name="quick_action_add_yarn">Tilføj garn</string>
-    <string name="quick_action_photos">Fotos</string>
-    <string name="quick_action_add_photo">Tilføj foto</string>
-    <string name="project_info_title">Projektinfo</string>
-    <string name="project_info_pattern">Opskrift</string>
-    <string name="project_info_yarn">Garn</string>
-    <string name="project_info_notes">Noter</string>
-    <string name="project_info_reminder">Påmindelse</string>
-    <string name="project_info_photos">Fotos</string>
-    <string name="project_info_empty_label">Tilføj til projektet</string>
-    <string name="project_info_empty_value">Vedhæft en opskrift, tilføj noter, link garn eller gem fotos.</string>
+    <string name="project_content_title">Projekt</string>
+    <string name="project_content_open_pattern">Åbn opskrift</string>
+    <string name="project_content_attach_pattern">Vedhæft opskrift</string>
+    <string name="project_content_attach_pattern_body">Tilføj en PDF eller gemt opskrift til dette projekt</string>
+    <string name="project_header_pattern_attached">Opskrift vedhæftet</string>
+    <string name="project_content_yarn">Garn</string>
+    <string name="project_content_add_yarn">Tilføj garn</string>
+    <string name="project_content_add_yarn_body">Vælg fra My Yarn eller tilføj garn kun til dette projekt</string>
+    <string name="project_content_notes">Noter</string>
+    <string name="project_content_add_note">Tilføj note</string>
+    <string name="project_content_add_note_body">Gem en hurtig projektnote</string>
+    <string name="project_content_photos">Fotos</string>
+    <string name="project_content_add_photo">Tilføj foto</string>
+    <string name="project_content_add_photo_body">Gem et fremskridtsfoto for dette projekt</string>
+    <string name="project_content_next_reminder">Næste påmindelse</string>
+    <string name="project_content_reminder_body">Pind %1$d: %2$s</string>
     <string name="photo_count_one">1 foto</string>
     <string name="photo_count_many">%d fotos</string>
     <string name="extra_counters_title">Ekstra tællere</string>

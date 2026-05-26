@@ -75,6 +75,17 @@ Jos avaat vain muutaman tiedoston, avaa nämä:
   - `app/src/main/java/com/finnvek/knittools/data/local/KnitToolsDatabase.kt`
   - `app/src/main/java/com/finnvek/knittools/data/datastore/PreferencesManager.kt`
   - `app/src/main/java/com/finnvek/knittools/repository/`
+- projektityötila ja projektikortit:
+  - `app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterWorkspaceSections.kt`
+  - `app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterProjectContentCards.kt`
+  - `app/src/main/java/com/finnvek/knittools/ui/components/ProjectCard.kt`
+  - `app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectListScreen.kt`
+- Library ja lankakortit:
+  - `app/src/main/java/com/finnvek/knittools/ui/screens/library/MyYarnScreen.kt`
+  - `app/src/main/java/com/finnvek/knittools/ui/screens/library/LibraryViewModel.kt`
+  - `app/src/main/java/com/finnvek/knittools/ui/screens/yarncard/YarnCardDetailScreen.kt`
+  - `app/src/main/java/com/finnvek/knittools/ui/screens/yarncard/YarnCardViewModel.kt`
+  - `app/src/main/java/com/finnvek/knittools/data/storage/YarnPhotoStorage.kt`
 - Pro / billing / trial:
   - `app/src/main/java/com/finnvek/knittools/billing/BillingManager.kt`
   - `app/src/main/java/com/finnvek/knittools/pro/`
@@ -312,6 +323,7 @@ Huomio:
   - `PdfPageRenderer.kt`
   - `ProgressPhotoStorage.kt`
   - `StorageFileNames.kt`
+  - `YarnPhotoStorage.kt`
 - `di/`
   - `DatabaseModule.kt`
   - `DispatchersModule.kt`
@@ -332,10 +344,17 @@ Huomio:
   - `ProgressPhotoRepository.kt`
   - `ProjectNameRules.kt`
   - `ProjectCounterRepository.kt`
+  - `ProjectYarnNoteRepository.kt`
   - `RavelryRepository.kt`
   - `ReminderRepository.kt`
   - `SavedPatternRepository.kt`
   - `YarnCardRepository.kt`
+- `ui/`
+  - `navigation/` omistaa route-mallit, top-level-tabien source of truthin ja route-argumenttien fallbackit
+  - `screens/counter/` omistaa counterin työtilan, content cardit, pattern picker -entryn, projektitoiminnot ja laskuriosiot
+  - `screens/library/` omistaa Library-hubin, My Yarn -listan, saved patterns -listan ja all photos -listan
+  - `screens/yarncard/` omistaa lankakortin detailin, manuaalisen input-mallin ja detail-editoinnin
+  - `components/` sisältää jaettuja UI-rakennuspalikoita, kuten `ProjectCard`, `HubListItem`, dialogit, inputit ja tooltipit
 - `widget/`
   - `CounterWidget.kt`
   - `CounterWidgetActions.kt`
@@ -393,10 +412,9 @@ Session-laskennan nykyrajat:
 - haptic feedback
 - keep screen awake
 - metriikka/imperial
-- knitting tips -näyttö
 - completed projects -näyttö
 - project sort order
-- dismissed tooltipit
+- dismissed one-shot tooltipit
 
 Lisäksi käytössä on erillisiä DataStoreja:
 
@@ -412,6 +430,7 @@ Entry pointit:
 - `PatternDocumentStorage`
 - `PdfPageRenderer`
 - `ProgressPhotoStorage`
+- `YarnPhotoStorage`
 - `FileProvider` + `res/xml/file_paths.xml`
 
 Tallennuspolut nykykoodissa:
@@ -419,8 +438,10 @@ Tallennuspolut nykykoodissa:
 - pattern PDF:t tallennetaan appin sisäiseen `pattern_pdfs/<projectId>`-hakemistoon `file://`-URIlla
 - pattern camera capture -kuvat luodaan `pattern_captures/<projectId>`-hakemistoon ja ne ovat FileProviderin kautta ulos annettava väliaikainen pattern-kuvapolku
 - progress-kuvat tallennetaan `progress_photos/<projectId>`-hakemistoon
-- `file_paths.xml` exposeeraa vain `yarn_photos`, `progress_photos` ja `pattern_captures`; app-owned `pattern_pdfs` avataan sisäisen resolverin kautta, ei FileProvider-rootina
-- `AppFileStorage` tunnistaa edelleen legacy `patterns/...` -FileProvider-URI:t sisäistä lukua/siivousta varten
+- yarn card -kuvat kopioidaan `YarnPhotoStorage.copyPhoto(...)`-metodilla appin sisäiseen `yarn_photos/<cardId>`-hakemistoon ja tallennetaan lankakortille app-owned `file://`-URIksi
+- `file_paths.xml` exposeeraa vain `progress_photos` ja `pattern_captures`; `yarn_photos` ja `pattern_pdfs` eivät ole nykyisiä FileProvider-share-rootteja
+- `AppFileStorage` tunnistaa silti sisäistä lukua/siivousta varten app-owned `file://`-URI:t sekä legacy FileProvider-rootit `yarn_photos`, `progress_photos`, `pattern_captures`, `pattern_pdfs` ja `patterns`
+- lankakortin kuvan vaihto poistaa vanhan app-owned kuvan vain jos uuden kuvan URI tallentui onnistuneesti; epäonnistunut tallennus siivoaa vasta kopioidun uuden kuvan
 
 ## Kielet ja lokalisaatio
 
@@ -546,6 +567,132 @@ Nykyinen toteutus:
 - `NotesEditorViewModel.onNotesChanged()` autosave 1000 ms debounce
 - `CounterRepository.saveProjectNotes()` yhdistää muokkaukset editorin pohjatekstiin, jotta rinnakkaiset tallennukset eivät ylikirjoitu
 
+## Projektityötila ja korttipinnat
+
+### Counter workspace
+
+Counterin varsinainen työtila on nykyään yksi `LazyColumn` tiedostossa `CounterWorkspaceSections.kt`.
+
+Keskeiset rajat:
+
+- `CounterScreen.kt` omistaa sheet/dialog-statea, route callbackit, feature-gate-päätökset ja ViewModel-kutsujen johdotuksen
+- `CounterWorkspaceSections.kt` omistaa työtilan järjestyksen, päälaskurin, projektin headerin, content-card-slotin, lisälaskurit, stitch trackingin ja reminder-alertin sijoittelun
+- `CounterProjectContentCards.kt` omistaa projektin "content cards" -mallin
+- `CounterQuickActions.kt` ja `CounterProjectInfo.kt` on poistettu nykyisestä pinnasta; älä palauta niiden mallia dokumentin perusteella
+
+`ProjectContentCards` näyttää nykytilan perusteella nämä kortit:
+
+- pattern:
+  - jos `patternUri` tai `linkedPattern` on olemassa, kortti avaa/kuvaa patternin
+  - jos patternia ei ole, kortti avaa pattern picker -flow'n
+- yarn:
+  - näyttää linkitettyjen `YarnCard`-rivien nimet ja projektikohtaiset yarn note -nimet
+  - tyhjänä avaa yarn management -sheetin
+- notes:
+  - näyttää ensimmäisen ei-tyhjän muistiinpanorivin
+  - tyhjänä ohjaa muistiinpanojen lisäämiseen
+- photos:
+  - näyttää viimeisimpien projektikuvien määrän, jos kuvia on
+  - tyhjänä ohjaa progress photo -flow'hun
+- next reminder:
+  - näkyy vain jos nykyiselle tai tulevalle riville löytyy keskeneräinen muistutus
+  - valinta tehdään `nearestUpcomingReminder(...)`-logiikalla: `targetRow >= currentRow`, järjestys `targetRow`, sitten `id`
+
+Pattern-headerin nykyinen UX-raja:
+
+- projektin header näyttää liitetylle PDF:lle neutraalin tekstin `project_header_pattern_attached`
+- tarkka pattern-nimi tai tiedostonimi näkyy content-cardissa
+- `ProjectCard` piilottaa raakamuotoisen `.pdf`-nimen secondary-linelta, jos se olisi muuten ainoa pattern-nimi
+
+### Project list
+
+`ProjectListScreen` ja `ProjectListViewModel` kokoavat Projects-tabin listapinnan.
+
+Nykyinen listakäyttäytyminen:
+
+- aktiiviset ja valmistuneet projektit haetaan `CounterRepository`n sort-order-aware flow'ista
+- sort order tulee `ProjectSortOrder`-enumista ja DataStore tallentaa `persistedValue`-arvon
+- free-käyttäjälle uuden aktiivisen projektin luonti pysäytetään, jos aktiivisia projekteja on jo vähintään yksi
+- completed-projektien näkyvyys tulee `PreferencesManager.showCompletedProjects`-asetuksesta
+- `ContinueKnittingProject` valitaan ensimmäisestä aktiivisesta projektista, jonka `count > 0`
+- project card näyttää rivimäärän, viimeksi päivitetyn päivän, ensimmäisen linkitetyn langan nimen, kuvamäärän, pattern-tilan ja note-indikaattorin
+- project cardin pattern-, photo-, note- ja yarn-pinnat ovat klikkialueita, eivät pelkkiä koristeita
+- yarn-korttiin navigointi käyttää ensimmäistä `parseYarnCardIds(project.yarnCardIds)`-tulosta ja vie Library-tabin `yarn_card_detail/{cardId}`-reitille
+
+### Project actions
+
+`ProjectActionsBottomSheet` sisältää projektin hallintatoiminnot.
+
+Nykyinen jako:
+
+- projektisisältö: notes, photos, pattern, yarn ja reminders ovat ensisijaisesti content-cardien kautta
+- projektitoiminnot: rename, complete/archive, reset, delete ja session history elävät action sheetissä
+- counter tools -osio sisältää counters-listan, add counter -polun ja stitch tracking -hallinnan
+- stitch trackingin kytkentä pyytää ensin stitch countin, jos seuranta yritetään ottaa käyttöön ilman positiivista stitch countia
+
+## Library ja lankakortit
+
+### Library hub
+
+`LibraryScreen` on laskurista erillinen kokoelmanäkymä, ei geneerinen dashboard.
+
+Nykyiset hub-rivit:
+
+- `Saved Patterns`
+- `My Yarn`
+- `All Photos`
+- referenssit: needles, size charts, abbreviations, chart symbols
+
+Hub näyttää laskurit saved pattern-, yarn card- ja photo-määrille `LibraryViewModel`n flow'ista.
+
+### My Yarn
+
+`MyYarnScreen` on nykyisessä checkoutissa sekä lista että manuaalisen lankakortin luontipinta.
+
+Nykyiset faktat:
+
+- tyhjässä tilassa on eksplisiittinen `Add Yarn` -painike
+- ei-tyhjässä listassa on `FloatingActionButton`, joka avaa `ManualYarnCardSheet`in
+- `ManualYarnCardSheet` käyttää `ManualYarnCardInput`-mallia
+- manuaalisen kortin kentät ovat `yarnName`, `brand`, `quantity`, `weightCategory`, `colorName`, `colorNumber` ja `dyeLot`
+- `LibraryViewModel.createManualYarnCard(...)` trimmaa tekstikentät, vaatii ei-tyhjän nimen, pakottaa määrän vähintään arvoon `1` ja tallentaa statuksella `YarnCardStatus.IN_STASH`
+- manuaalinen flow ei ole skanneri eikä AI-parseri; sen kopio ja testit on kirjoitettu ilman yarn label scan -kieltä
+- listakortin summary käyttää tekstiä ja yhtä väripistettä, ei metadata pill -komponentteja
+- long press käynnistää multi-select-tilan; valitut kortit poistetaan `YarnCardRepository.deleteCards(...)`-metodilla
+
+### Yarn card detail
+
+`YarnCardDetailScreen` käyttää `YarnCardViewModel`ia Library-graafin parent scopessa.
+
+Nykyiset detail-toiminnot:
+
+- reitti tarkistaa `cardId`-argumentin ja poistuu Libraryyn, jos id puuttuu tai `YarnCardRepository.observeCard(id)` palauttaa kadonneen rivin
+- status, määrä ja linkitetty projekti ovat muokattavissa
+- linkitetyn projektin counteriin voi avata detailistä `CounterViewModel.selectProjectByIdForLaunch(...)`-polun kautta
+- "Edit details" avaa saman `ManualYarnCardSheet`-komponentin esitäytettynä nykyisestä kortista
+- detail-edit tallentaa `YarnCardRepository.saveCard(...)`-metodilla saman id:n päälle ja säilyttää olemassa olevat lisäkentät, kuten `fiberContent`, `weightGrams`, `lengthMeters`, `needleSize`, `gaugeInfo`, `careSymbols`, `photoUri`, status ja linkitetty projekti
+- tyhjät optional detailit eivät piilota osiota kokonaan, vaan näyttävät intentional partial-data -empty staten
+- yarn photo -toiminto käyttää Android photo picker -sopimusta `ActivityResultContracts.PickVisualMedia.ImageOnly`
+- `YarnCardViewModel.updatePhotoUri(...)` välittää valitun URI:n repositorylle; storage-kopiointi ja vanhan kuvan siivous eivät tapahdu composablessa
+
+### Yarn link invariants
+
+Lankakorttien ja projektien välinen linkitys ei ole enää yksisuuntainen UI-apuri.
+
+Source of truth:
+
+- kortin suora linkki: `yarn_cards.linkedProjectId`
+- projektin käänteinen lista: `counter_projects.yarnCardIds`
+- CSV-parsaus ja formatointi: `domain/model/YarnCardLinks.kt`
+- kirjoitusrajapinta: `YarnCardRepository.saveCard(...)`, `updateLinkedProjectId(...)`, `clearLinkedProject(...)` ja `deleteCards(...)`
+
+Repository-säännöt:
+
+- `saveCard(...)` normalisoi olemassa olevan `linkedProjectId`-arvon vain olemassa olevaan projektiin
+- `updateLinkedProjectId(...)` päivittää kortin ja kaikkien projektien CSV-linkit saman `DatabaseTransactionRunner`-transaktion sisällä
+- `deleteCards(...)` poistaa kortti-id:t projektien CSV-listoista ennen korttirivien poistoa ja siivoaa app-owned kuvat IO-dispatcherilla
+- projektin poisto kutsuu `YarnCardRepository.clearLinkedProject(projectId)` transaktion sisällä
+
 ## Widgetit
 
 Nykyinen Glance-widget:
@@ -627,7 +774,7 @@ Brand:
 - `Secondary` `#8BA44A` — avokado (labelit, osio-otsikot, "CURRENT ROW")
 - `SecondaryMuted` `#6B8A35`, `SecondaryContainer` `#3A4020`
 - `Tertiary` `#C9A435` — sinappi (vinkit, aksentit)
-- `TertiaryContainer` `#3A3520` — quick tip -kortin tausta
+- `TertiaryContainer` `#3A3520`
 
 Teksti:
 
@@ -730,12 +877,15 @@ Material 3 -roolit `AppTypography`:ssa (size sp, letter spacing sp):
 | `bodySmall` | Normal | 12 | 0.4 |
 | `labelLarge` | SemiBold | 14 | 0.1 |
 | `labelMedium` | SemiBold | 12 | 0.5 |
-| `labelSmall` | SemiBold | 11 | 1.5 (all-caps: "CURRENT ROW", "QUICK TIP", nav-labelit) |
+| `labelSmall` | SemiBold | 11 | 1.5 (all-caps: "CURRENT ROW", nav-labelit) |
 
-Säännöt:
+Nykyiset poikkeukset:
 
-- ei inline-overrideja `letterSpacing` / `fontSize` / `fontWeight` Type.kt:n ulkopuolella
-- ainoa hyväksytty poikkeus: CounterScreenin pääluku **115sp Bold**
+- `Type.kt` on perusroolien source of truth, mutta tuotantokoodissa on joitain paikallisia `copy(...)`-poikkeuksia painon, koon ja merkkivälin säätöön
+- iso counter-numero käyttää fontScale-kompensoitua noin **115sp Bold** -tyyliä `CounterWorkspaceSections.kt`:ssa
+- bottom navigation pienentää ja jakaa label-fonttikoon runtime-mittauksen perusteella, jotta pisimmät lokalisoidut tabitekstit mahtuvat viidelle tabille
+- counterin content-cardit, action sheet -otsikot, stitch tracking -badge ja jotkin chart-/label-pinnat käyttävät paikallisia typografian paino- tai label-säätöjä
+- uutta UI:ta tehdessä ensisijainen sääntö on silti käyttää `AppTypography`-rooleja ja lisätä uusi poikkeus vain, jos nykyinen komponenttipinta tai responsiivinen teksti sitä vaatii
 
 ### Muodot (`AppShapes`)
 
@@ -758,6 +908,10 @@ Toteutuksessa näkyviä asioita, joita ei kannata päätellä vanhoista mockeist
 - `Tools` ei ole geneerinen dashboard-gridi vaan oma Home/Tool-entry-näkymä
 - `Library` sisältää sekä sisällöt että reference-näkymät
 - muistiinpanoissa on full-screen editori
+- counterin päivittäiset projektisisällöt ovat `ProjectContentCards`-kortteja, eivät vanhoja quick action / project info -rivejä
+- project list -kortit toimivat nyt myös syvälinkkeinä patterniin, kuviin, muistiinpanoihin ja ensimmäiseen linkitettyyn lankakorttiin
+- `My Yarn` tukee manuaalista lankakortin luontia; se ei ole skanneri- tai AI-parseripinta
+- yarn card detailissä voi muokata manuaalisia perustietoja ja vaihtaa kuvan Android photo pickerillä
 - widgetit on viilattu korttimaisemmiksi, mutta niiden ulkoreuna on silti launcher-maskauksen armoilla
 
 ## Manifesti ja platform surface
@@ -797,6 +951,9 @@ Nykyiset testit painottuvat ainakin näihin:
 - Android migration testit
 - navigation argument safety ja counter launch -tokenointi
 - widget data resolver ja action flow
+- project workspace -source-testit, jotka varmistavat `ProjectContentCards`-rakenteen ja poistettujen quick-action/project-info-komponenttien puuttumisen
+- My Yarn / Yarn Card detail -source-testit, jotka varmistavat manuaalisen lankakortin, photo picker -toiminnon ja skannerikielen puuttumisen
+- repository transaction boundary -testit, jotka varmistavat pattern-, yarn- ja project-linkkien sekä tiedostosiivouksen transaktiorajat
 
 Pienimmät hyödylliset tarkistuskomennot:
 
@@ -828,19 +985,22 @@ Julkaisuvalmiuden muistilista:
 - row reminders
 - progress photos
 - projektimuistiinpanot
+- project content cards patternille, langalle, muistiinpanoille, kuville ja seuraavalle muistutukselle
 - session history
 - pattern-PDF:n liittäminen projektiin
 - pattern viewer + annotations
 - target rows
+- project list -korttien deep linkit pattern viewer-, photo gallery-, notes editor- ja yarn card detail -pintoihin
 
 ### Library
 
 - saved patterns
 - my yarn / yarn cards
 - saved pattern avaa `library_pattern_viewer/{savedPatternId}`-reitin vain paikalliselle/importoidulle pattern-URI:lle; Ravelry-linkit avaavat `library_ravelry_detail/{patternId}`-reitin
-- `My Yarn` listaa olemassa olevat yarn cardit ja avaa `yarn_card_detail/{cardId}`-näkymän
-- yarn card detailissä voi muuttaa statusta, määrää ja projektia, avata linkitetyn projektin counteriin sekä poistaa kortin
-- tämän checkoutin tuotantokoodissa `YarnCardRepository.saveCard(...)`-metodille ei ole UI-kutsuja; älä oleta erillistä manuaalista yarn card -luontilomaketta ilman uutta kooditarkistusta
+- `My Yarn` listaa olemassa olevat yarn cardit, tukee multi-select-poistoa ja avaa `yarn_card_detail/{cardId}`-näkymän
+- `My Yarn` tukee manuaalista yarn card -luontia `ManualYarnCardSheet`in kautta
+- yarn card detailissä voi muuttaa statusta, määrää, projektia, manuaalisia perustietoja ja kuvaa, avata linkitetyn projektin counteriin sekä poistaa kortin
+- yarn card -kuvat tallennetaan app-owned `yarn_photos/<cardId>` -polkuun `YarnPhotoStorage`n kautta eikä FileProvider-share-polkuina
 - all photos
 - multi-select batch-poistot
 - reference-näkymät: needles, size charts, abbreviations, chart symbols
@@ -881,6 +1041,9 @@ Näihin kannattaa suhtautua epäluuloisesti vanhoissa dokumenteissa:
 - voice-command-flow on poistettu; älä palauta sitä ilman uutta product/security-päätöstä
 - widgetit eivät ole enää pelkkä basic counter-preview vaan niissä on oma state-sync ja viimeistelty kortti-UI
 - vanhat `yarn_card_review` / `library_yarn_card_review` -reitit eivät ole nykyisessä `Screen.kt` / `NavGraph.kt` -pinnassa; käytössä on `yarn_card_detail/{cardId}`
+- `CounterQuickActions` ja `ProjectInfoSection` eivät ole nykyinen counter workspace -malli; käytössä on `CounterProjectContentCards.kt`
+- `QuickTipCard.kt` on poistettu; jos näet Quick Tip -tekstiä vanhoissa spekseissä, tarkista nykyinen `ui/components` ja `strings.xml`
+- `file_paths.xml` ei exposeeraa `yarn_photos`-rootia nykykoodissa, vaikka `AppFileStorage` osaa edelleen ratkaista legacy `yarn_photos`-URI:t sisäistä siivousta varten
 - `AppLanguage.promptLanguageName()` on ilman tuotantokutsuja oleva legacy-helper; sen nimi tai kommenttisanasto ei yksin todista mallipohjaisen parserin tai pilvi-AI:n olemassaoloa
 - `README.md` ei ole nykytilan source of truth
 

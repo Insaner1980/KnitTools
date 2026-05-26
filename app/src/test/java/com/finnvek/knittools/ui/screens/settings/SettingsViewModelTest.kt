@@ -82,15 +82,6 @@ class SettingsViewModelTest {
         }
 
     @Test
-    fun `setShowKnittingTips calls preferencesManager`() =
-        runTest {
-            val vm = createViewModel()
-            vm.setShowKnittingTips(false)
-
-            coVerify { preferencesManager.setShowKnittingTips(false) }
-        }
-
-    @Test
     fun `restorePurchases calls billingManager`() =
         runTest {
             val vm = createViewModel()

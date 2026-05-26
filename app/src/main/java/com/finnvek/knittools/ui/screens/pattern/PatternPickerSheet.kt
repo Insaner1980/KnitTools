@@ -48,6 +48,7 @@ import kotlinx.coroutines.withContext
 private data class PatternPickerActions(
     val openDeviceFiles: () -> Unit,
     val startCameraScan: () -> Unit,
+    val continueWithoutPattern: () -> Unit,
 )
 
 private data class CaptureResultRequest(
@@ -165,6 +166,7 @@ private fun rememberPatternPickerActions(
                     permissionLauncher.launch(Manifest.permission.CAMERA)
                 }
             },
+            continueWithoutPattern = onDismiss,
         )
     }
 }
@@ -191,21 +193,6 @@ private fun PatternPickerSheetContent(
             color = MaterialTheme.colorScheme.onSurface,
         )
 
-        OutlinedButton(
-            onClick = actions.openDeviceFiles,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(stringResource(R.string.pattern_picker_device_files))
-        }
-
-        Button(
-            onClick = actions.startCameraScan,
-            enabled = canStartPatternCameraScan(projectId, canUseCameraScan),
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(stringResource(R.string.pattern_picker_camera_scan))
-        }
-
         if (attachablePatterns.isNotEmpty()) {
             Text(
                 text = stringResource(R.string.pattern_picker_saved_patterns),
@@ -216,6 +203,28 @@ private fun PatternPickerSheetContent(
                 attachablePatterns = attachablePatterns,
                 onSavedPatternSelected = onSavedPatternSelected,
             )
+        }
+
+        OutlinedButton(
+            onClick = actions.openDeviceFiles,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(stringResource(R.string.pattern_picker_import_pdf))
+        }
+
+        Button(
+            onClick = actions.startCameraScan,
+            enabled = canStartPatternCameraScan(projectId, canUseCameraScan),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(stringResource(R.string.pattern_picker_camera_scan))
+        }
+
+        OutlinedButton(
+            onClick = actions.continueWithoutPattern,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(stringResource(R.string.pattern_picker_continue_without_pattern))
         }
     }
 }

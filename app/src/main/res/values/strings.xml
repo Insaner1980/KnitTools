@@ -34,7 +34,6 @@
     <string name="tool_needle_sizes">Needle Sizes</string>
     <string name="pro_trial_days_left" tools:ignore="PluralsCandidate">Pro trial — %d days left</string>
     <string name="unlock_all_tools">Unlock all tools</string>
-    <string name="quick_tip_label">QUICK TIP</string>
     <string name="desc_yarn_estimator_card">Calculate yardage and skeins needed</string>
 
     <!-- Bottom navigation tabs -->
@@ -108,9 +107,10 @@
     <string name="pattern_page_indicator">Page %1$d of %2$d</string>
     <string name="pattern_previous_page">Previous page</string>
     <string name="pattern_next_page">Next page</string>
-    <string name="pattern_picker_device_files">Choose PDF from device</string>
     <string name="pattern_picker_saved_patterns">Saved patterns</string>
+    <string name="pattern_picker_import_pdf">Import PDF</string>
     <string name="pattern_picker_camera_scan">Take pattern photo</string>
+    <string name="pattern_picker_continue_without_pattern">Continue without pattern</string>
     <string name="pattern_scan_failed">Pattern photo could not be converted to PDF.</string>
     <string name="imported_pattern_designer">Imported PDF</string>
     <string name="current_row_short">Row %1$d</string>
@@ -120,10 +120,18 @@
     <string name="linked_yarn_title">LINKED YARN</string>
     <string name="no_linked_yarn">No yarn linked yet</string>
     <string name="choose_from_my_yarn">Choose from My Yarn</string>
+    <string name="choose_from_my_yarn_body">Pick an existing saved yarn</string>
     <string name="add_yarn_to_project">Add yarn to this project</string>
+    <string name="add_yarn_to_project_body">Save a quick yarn note for this project only</string>
     <string name="project_yarn_notes_title">PROJECT YARN</string>
     <string name="project_yarn_name">Yarn name</string>
+    <string name="brand_label">Brand</string>
     <string name="project_yarn_description">Description</string>
+    <string name="add_yarn_to_my_yarn">Add Yarn</string>
+    <string name="edit_yarn_details">Edit details</string>
+    <string name="add_yarn_photo">Add yarn photo</string>
+    <string name="change_yarn_photo">Change yarn photo</string>
+    <string name="manual_yarn_optional_details">Start with a name. Brand, weight, color, and dye lot are optional.</string>
     <string name="project_yarn_quantity_format" tools:ignore="PluralsCandidate">Quantity: %d</string>
     <string name="save_to_my_yarn">Save to My Yarn</string>
     <string name="saved_to_my_yarn">Saved to My Yarn</string>
@@ -138,8 +146,9 @@
     <string name="status_in_stash">In Stash</string>
     <string name="status_in_use">In Use</string>
     <string name="status_finished">Finished</string>
-    <string name="linked_project_arrow">\u2192 %1$s</string>
+    <string name="yarn_not_linked">Not linked</string>
     <string name="yarn_details_title">Details</string>
+    <string name="yarn_details_empty_body">Brand, weight, color, and dye lot are optional. Add only what helps this project.</string>
     <string name="delete_yarn_card_message">Delete this yarn card? This cannot be undone.</string>
     <string name="skein_count_one" tools:ignore="PluralsCandidate">%1$d skein</string>
     <string name="skein_count_many" tools:ignore="PluralsCandidate">%1$d skeins</string>
@@ -154,8 +163,6 @@
     <string name="pro_full_history_hint">Upgrade to Pro for full session history</string>
 
     <!-- Settings -->
-    <string name="show_knitting_tips">Show knitting tips</string>
-
     <!-- Row Counter -->
     <string name="default_project_name">My Project</string>
     <string name="reset_counter">Reset Counter</string>
@@ -692,36 +699,6 @@
     <string name="sym_marker_desc">Stitch marker position</string>
     <string name="sym_repeat_name">Repeat</string>
     <string name="sym_repeat_desc">Pattern repeat bracket</string>
-
-    <!-- Quick Tips -->
-    <string-array name="knitting_tips">
-        <item>Always swatch before starting a new project — even if you think you know your gauge.</item>
-        <item>Block your swatch the same way you plan to block your finished piece for an accurate gauge.</item>
-        <item>To avoid a jog when knitting stripes in the round, lift the stitch from the row below onto the left needle on the second row of the new color.</item>
-        <item>Keep your tension even for a professional finish on edges.</item>
-        <item>Place a locking stitch marker every 20 stitches when casting on large numbers.</item>
-        <item>Block your finished pieces — it makes a huge difference in the final look.</item>
-        <item>Count your stitches at the end of every row when working lace patterns.</item>
-        <item>Wind your yarn into a ball before starting — it prevents tangling.</item>
-        <item>Use a lifeline every few rows in lace knitting — thread waste yarn through all stitches.</item>
-        <item>Weave in ends as you go to avoid a pile-up at the end of your project.</item>
-        <item>Always buy one extra skein — dye lots may vary between batches.</item>
-        <item>Try knitting a gauge swatch in the round if your project is knit in the round — gauge can differ.</item>
-        <item>Use stitch markers to separate pattern repeats — they make counting much easier.</item>
-        <item>Read your entire pattern through before casting on to avoid surprises.</item>
-        <item>Keep a project notebook to track your modifications and notes for future reference.</item>
-        <item>When joining yarn, leave tails at least 15 cm long for secure weaving.</item>
-        <item>Practice new techniques on a small swatch before committing to your project.</item>
-        <item>Store your knitting in a project bag to keep it clean and prevent snags.</item>
-        <item>Take breaks to stretch your hands and prevent repetitive strain injuries.</item>
-        <item>Mark your place in the pattern with a sticky note or magnetic board.</item>
-        <item>Use bamboo needles for slippery yarns — they grip the stitches better.</item>
-        <item>When picking up stitches, use a needle one size smaller for a neater edge.</item>
-        <item>Twist your stitches on the first round after casting on to prevent the cast-on from twisting.</item>
-        <item>Measure your gauge after blocking, not before — many yarns change after washing.</item>
-        <item>Alternate between two skeins every few rows to avoid visible dye lot differences.</item>
-    </string-array>
-
     <!-- In-App Updates -->
     <string name="update_downloaded">Update downloaded — restart to apply</string>
     <string name="restart">Restart</string>
@@ -833,24 +810,24 @@
     <!-- Counter screen redesign: bottom sheet -->
     <string name="project_actions_title">Project actions</string>
     <string name="project_actions_section_this_project">THIS PROJECT</string>
-    <string name="project_actions_section_counters">COUNTERS</string>
+    <string name="project_actions_section_counter_tools">COUNTER TOOLS</string>
     <string name="project_actions_section_project_actions">PROJECT ACTIONS</string>
-    <string name="quick_action_open_pattern">Open Pattern</string>
-    <string name="quick_action_attach_pattern">Attach Pattern</string>
-    <string name="quick_action_notes">Notes</string>
-    <string name="quick_action_add_note">Add Note</string>
-    <string name="quick_action_yarn">Yarn</string>
-    <string name="quick_action_add_yarn">Add Yarn</string>
-    <string name="quick_action_photos">Photos</string>
-    <string name="quick_action_add_photo">Add Photo</string>
-    <string name="project_info_title">Project Info</string>
-    <string name="project_info_pattern">Pattern</string>
-    <string name="project_info_yarn">Yarn</string>
-    <string name="project_info_notes">Notes</string>
-    <string name="project_info_reminder">Reminder</string>
-    <string name="project_info_photos">Photos</string>
-    <string name="project_info_empty_label">Add to this project</string>
-    <string name="project_info_empty_value">Attach a pattern, add notes, link yarn, or save photos.</string>
+    <string name="project_content_title">Project</string>
+    <string name="project_content_open_pattern">Open Pattern</string>
+    <string name="project_content_attach_pattern">Attach Pattern</string>
+    <string name="project_content_attach_pattern_body">Add a PDF or saved pattern to this project</string>
+    <string name="project_header_pattern_attached">Pattern attached</string>
+    <string name="project_content_yarn">Yarn</string>
+    <string name="project_content_add_yarn">Add Yarn</string>
+    <string name="project_content_add_yarn_body">Choose from My Yarn or add yarn just for this project</string>
+    <string name="project_content_notes">Notes</string>
+    <string name="project_content_add_note">Add Note</string>
+    <string name="project_content_add_note_body">Save a quick project note</string>
+    <string name="project_content_photos">Photos</string>
+    <string name="project_content_add_photo">Add Photo</string>
+    <string name="project_content_add_photo_body">Save a progress photo for this project</string>
+    <string name="project_content_next_reminder">Next Reminder</string>
+    <string name="project_content_reminder_body">Row %1$d: %2$s</string>
     <string name="photo_count_one">1 photo</string>
     <string name="photo_count_many" tools:ignore="PluralsCandidate">%d photos</string>
     <string name="extra_counters_title">Extra Counters</string>

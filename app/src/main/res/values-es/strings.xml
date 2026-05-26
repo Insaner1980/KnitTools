@@ -34,7 +34,6 @@
     <string name="tool_needle_sizes">Tamaños de agujas</string>
     <string name="pro_trial_days_left">Prueba Pro — quedan %d días</string>
     <string name="unlock_all_tools">Desbloquear todas las herramientas</string>
-    <string name="quick_tip_label">CONSEJO RÁPIDO</string>
     <string name="desc_yarn_estimator_card">Calcula el metraje y los ovillos necesarios</string>
 
     <!-- Bottom navigation tabs -->
@@ -107,9 +106,10 @@
     <string name="pattern_page_indicator">Página %1$d de %2$d</string>
     <string name="pattern_previous_page">Página anterior</string>
     <string name="pattern_next_page">Página siguiente</string>
-    <string name="pattern_picker_device_files">Elegir PDF del dispositivo</string>
     <string name="pattern_picker_saved_patterns">Patrones guardados</string>
+    <string name="pattern_picker_import_pdf">Importar PDF</string>
     <string name="pattern_picker_camera_scan">Tomar foto del patrón</string>
+    <string name="pattern_picker_continue_without_pattern">Continuar sin patrón</string>
     <string name="pattern_scan_failed">La foto del patrón no pudo convertirse en PDF.</string>
     <string name="imported_pattern_designer">PDF importado</string>
     <string name="current_row_short">Vuelta %1$d</string>
@@ -119,10 +119,18 @@
     <string name="linked_yarn_title">HILO VINCULADO</string>
     <string name="no_linked_yarn">Aún no hay hilo vinculado</string>
     <string name="choose_from_my_yarn">Elegir de My Yarn</string>
+    <string name="choose_from_my_yarn_body">Elige un hilo guardado</string>
     <string name="add_yarn_to_project">Añadir hilo a este proyecto</string>
+    <string name="add_yarn_to_project_body">Guarda una nota rápida de hilo solo para este proyecto</string>
     <string name="project_yarn_notes_title">HILO DEL PROYECTO</string>
     <string name="project_yarn_name">Nombre del hilo</string>
+    <string name="brand_label">Marca</string>
     <string name="project_yarn_description">Descripción</string>
+    <string name="add_yarn_to_my_yarn">Añadir hilo</string>
+    <string name="edit_yarn_details">Editar detalles</string>
+    <string name="add_yarn_photo">Añadir foto del hilo</string>
+    <string name="change_yarn_photo">Cambiar foto del hilo</string>
+    <string name="manual_yarn_optional_details">Empieza con un nombre. La marca, el grosor, el color y el lote son opcionales.</string>
     <string name="project_yarn_quantity_format">Cantidad: %d</string>
     <string name="save_to_my_yarn">Guardar en My Yarn</string>
     <string name="saved_to_my_yarn">Guardado en My Yarn</string>
@@ -137,8 +145,9 @@
     <string name="status_in_stash">En reserva</string>
     <string name="status_in_use">En uso</string>
     <string name="status_finished">Terminado</string>
-    <string name="linked_project_arrow">\u2192 %1$s</string>
+    <string name="yarn_not_linked">Sin vincular</string>
     <string name="yarn_details_title">Detalles</string>
+    <string name="yarn_details_empty_body">La marca, el grosor, el color y el lote son opcionales. Añade solo lo que ayude a este proyecto.</string>
     <string name="delete_yarn_card_message">¿Eliminar esta ficha de hilo? Esto no se puede deshacer.</string>
     <string name="skein_count_one">%1$d ovillo</string>
     <string name="skein_count_many">%1$d ovillos</string>
@@ -153,8 +162,6 @@
     <string name="pro_full_history_hint">Actualiza a Pro para ver el historial completo de sesiones</string>
 
     <!-- Settings -->
-    <string name="show_knitting_tips">Mostrar consejos de tejido</string>
-
     <!-- Row Counter -->
     <string name="default_project_name">Mi proyecto</string>
     <string name="reset_counter">Restablecer contador</string>
@@ -413,36 +420,6 @@
     <string name="category_increases">Aumentos</string>
     <string name="category_cables">Trenzas</string>
     <string name="category_other">Otros</string>
-
-    <!-- Quick Tips -->
-    <string-array name="knitting_tips">
-        <item>Haz siempre una muestra antes de empezar un proyecto nuevo, aunque creas que ya conoces tu tensión.</item>
-        <item>Bloquea la muestra del mismo modo en que piensas bloquear la prenda terminada para obtener una medida precisa.</item>
-        <item>Para evitar el escalón al tejer rayas en circular, levanta el punto de la vuelta inferior en la segunda vuelta del nuevo color y colócalo en la aguja izquierda.</item>
-        <item>Mantén una tensión uniforme para conseguir un acabado profesional en los bordes.</item>
-        <item>Coloca un marcador de punto con cierre cada 20 puntos cuando montes muchos puntos.</item>
-        <item>Bloquea las piezas terminadas; marca una gran diferencia en el resultado final.</item>
-        <item>Cuenta los puntos al final de cada vuelta cuando tejas encaje.</item>
-        <item>Haz una bola con el hilo antes de empezar; así evitarás enredos.</item>
-        <item>Usa un hilo de seguridad cada pocas vueltas en el encaje: pásalo por todos los puntos.</item>
-        <item>Remata las hebras a medida que avanzas para no acumularlas al final del proyecto.</item>
-        <item>Compra siempre un ovillo extra; los lotes de tinte pueden variar entre partidas.</item>
-        <item>Prueba a tejer la muestra en circular si tu proyecto se teje en circular; la tensión puede variar.</item>
-        <item>Usa marcadores de puntos para separar las repeticiones del patrón; facilitan muchísimo el conteo.</item>
-        <item>Lee el patrón completo antes de montar para evitar sorpresas.</item>
-        <item>Lleva un cuaderno de proyecto para anotar cambios y observaciones para el futuro.</item>
-        <item>Al unir un nuevo hilo, deja cabos de al menos 15 cm para rematarlos con seguridad.</item>
-        <item>Practica las técnicas nuevas en una muestra pequeña antes de aplicarlas en tu proyecto.</item>
-        <item>Guarda tu labor en una bolsa de proyecto para mantenerla limpia y evitar enganches.</item>
-        <item>Haz pausas para estirar las manos y prevenir lesiones por esfuerzo repetitivo.</item>
-        <item>Marca tu lugar en el patrón con una nota adhesiva o una pizarra magnética.</item>
-        <item>Usa agujas de bambú con hilos resbaladizos; sujetan mejor los puntos.</item>
-        <item>Al recoger puntos, usa una aguja un número más pequeña para conseguir un borde más limpio.</item>
-        <item>Asegúrate de que el montaje no se haya retorcido al unir la primera vuelta.</item>
-        <item>Mide tu muestra después del bloqueo, no antes; muchos hilos cambian tras el lavado.</item>
-        <item>Alterna entre dos ovillos cada pocas vueltas para evitar diferencias visibles entre lotes de tinte.</item>
-    </string-array>
-
     <!-- In-App Updates -->
     <string name="update_downloaded">Actualización descargada; reinicia para aplicarla</string>
     <string name="restart">Reiniciar</string>
@@ -561,24 +538,24 @@
     <string name="pattern_detail_error">No se pudieron cargar los detalles del patrón. Comprueba tu conexión a internet.</string>
     <string name="project_actions_title">Acciones del proyecto</string>
     <string name="project_actions_section_this_project">ESTE PROYECTO</string>
-    <string name="project_actions_section_counters">CONTADORES</string>
+    <string name="project_actions_section_counter_tools">HERRAMIENTAS DE CONTADORES</string>
     <string name="project_actions_section_project_actions">ACCIONES DEL PROYECTO</string>
-    <string name="quick_action_open_pattern">Abrir patrón</string>
-    <string name="quick_action_attach_pattern">Adjuntar patrón</string>
-    <string name="quick_action_notes">Notas</string>
-    <string name="quick_action_add_note">Añadir nota</string>
-    <string name="quick_action_yarn">Lana</string>
-    <string name="quick_action_add_yarn">Añadir lana</string>
-    <string name="quick_action_photos">Fotos</string>
-    <string name="quick_action_add_photo">Añadir foto</string>
-    <string name="project_info_title">Información del proyecto</string>
-    <string name="project_info_pattern">Patrón</string>
-    <string name="project_info_yarn">Lana</string>
-    <string name="project_info_notes">Notas</string>
-    <string name="project_info_reminder">Recordatorio</string>
-    <string name="project_info_photos">Fotos</string>
-    <string name="project_info_empty_label">Añadir a este proyecto</string>
-    <string name="project_info_empty_value">Adjunta un patrón, añade notas, vincula lana o guarda fotos.</string>
+    <string name="project_content_title">Proyecto</string>
+    <string name="project_content_open_pattern">Abrir patrón</string>
+    <string name="project_content_attach_pattern">Adjuntar patrón</string>
+    <string name="project_content_attach_pattern_body">Añade un PDF o patrón guardado a este proyecto</string>
+    <string name="project_header_pattern_attached">Patrón adjunto</string>
+    <string name="project_content_yarn">Hilo</string>
+    <string name="project_content_add_yarn">Añadir hilo</string>
+    <string name="project_content_add_yarn_body">Elige de My Yarn o añade hilo solo para este proyecto</string>
+    <string name="project_content_notes">Notas</string>
+    <string name="project_content_add_note">Añadir nota</string>
+    <string name="project_content_add_note_body">Guarda una nota rápida del proyecto</string>
+    <string name="project_content_photos">Fotos</string>
+    <string name="project_content_add_photo">Añadir foto</string>
+    <string name="project_content_add_photo_body">Guarda una foto de progreso para este proyecto</string>
+    <string name="project_content_next_reminder">Próximo recordatorio</string>
+    <string name="project_content_reminder_body">Vuelta %1$d: %2$s</string>
     <string name="photo_count_one">1 foto</string>
     <string name="photo_count_many">%d fotos</string>
     <string name="extra_counters_title">Contadores extra</string>

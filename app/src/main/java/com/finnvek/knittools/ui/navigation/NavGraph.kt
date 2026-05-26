@@ -182,6 +182,20 @@ private fun NavGraphBuilder.projectsGraph(
                 onNotesEditor = { projectId ->
                     navController.navigateSingleTopTo(Screen.NotesEditor(projectId).route)
                 },
+                onPhotoGallery = { projectId ->
+                    counterViewModel.selectProjectByIdForLaunch(projectId) { loaded ->
+                        if (loaded) {
+                            navController.navigateSingleTopTo(Screen.PhotoGallery.route)
+                        }
+                    }
+                },
+                onPatternViewer = { projectId ->
+                    navController.navigateSingleTopTo(Screen.PatternViewer(projectId).route)
+                },
+                onYarnCard = { cardId ->
+                    navController.navigateToTopLevel(TopLevelDestination.Library)
+                    navController.navigateSingleTopTo(Screen.YarnCardDetail(cardId).route)
+                },
                 onUpgradeToPro = {
                     navController.navigateSingleTopTo(Screen.ProUpgrade.route)
                 },
@@ -565,6 +579,7 @@ private fun myYarnActions(
     onCardClick = { cardId ->
         navController.navigateSingleTopTo(Screen.YarnCardDetail(cardId).route)
     },
+    onCreateYarnCard = libraryViewModel::createManualYarnCard,
     onEnterSelectMode = libraryViewModel::enterYarnSelectMode,
     onToggleSelection = libraryViewModel::toggleYarnSelection,
     onSelectAll = libraryViewModel::selectAllYarn,

@@ -37,6 +37,12 @@ interface YarnCardDao {
         status: String,
     ): Int
 
+    @Query("UPDATE yarn_cards SET photoUri = :photoUri WHERE id = :id")
+    suspend fun updatePhotoUri(
+        id: Long,
+        photoUri: String,
+    ): Int
+
     @Query("UPDATE yarn_cards SET linkedProjectId = :projectId WHERE id = :id")
     suspend fun updateLinkedProjectId(
         id: Long,

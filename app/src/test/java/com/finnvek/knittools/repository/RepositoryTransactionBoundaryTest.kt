@@ -15,6 +15,7 @@ import com.finnvek.knittools.data.local.YarnCardEntity
 import com.finnvek.knittools.data.remote.PatternDetail
 import com.finnvek.knittools.data.storage.PatternDocumentStorage
 import com.finnvek.knittools.data.storage.ProgressPhotoStorage
+import com.finnvek.knittools.data.storage.YarnPhotoStorage
 import com.finnvek.knittools.domain.model.ProgressPhoto
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -273,6 +274,41 @@ class RepositoryTransactionBoundaryTest {
             }
 
             assertEquals(1, ioDispatcher.dispatchCount)
+        }
+
+    @Test
+    fun `yarn card photo update copies selected photo before saving uri`() =
+        runTest {
+            val ioDispatcher = RecordingDispatcher()
+            val runner = RecordingTransactionRunner()
+            val yarnDao = mockk<YarnCardDao>(relaxed = true)
+            val projectDao = mockk<CounterProjectDao>(relaxed = true)
+            val context = mockk<Context>(relaxed = true)
+            val storage = mockk<YarnPhotoStorage>(relaxed = true)
+            val sourceUri = mockk<Uri>()
+            coEvery { yarnDao.getCard(5L) } returns
+                YarnCardEntity(
+                    id = 5L,
+                    photoUri = "",
+                )
+            every { storage.copyPhoto(context, 5L, sourceUri) } returns "file:///new-yarn-photo.jpg"
+            coEvery { yarnDao.updatePhotoUri(5L, "file:///new-yarn-photo.jpg") } returns 1
+            val repository =
+                YarnCardRepository(
+                    dao = yarnDao,
+                    counterProjectDao = projectDao,
+                    context = context,
+                    transactionRunner = runner,
+                    ioDispatcher = ioDispatcher,
+                    yarnPhotoStorage = storage,
+                )
+
+            val updated = repository.updatePhotoUri(5L, sourceUri)
+
+            assertTrue(updated)
+            verify { storage.copyPhoto(context, 5L, sourceUri) }
+            coVerify { yarnDao.updatePhotoUri(5L, "file:///new-yarn-photo.jpg") }
+            assertEquals(2, ioDispatcher.dispatchCount)
         }
 
     @Test

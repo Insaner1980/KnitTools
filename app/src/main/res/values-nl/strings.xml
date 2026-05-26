@@ -34,7 +34,6 @@
     <string name="tool_needle_sizes">Naaldmaten</string>
     <string name="pro_trial_days_left">Pro-proefperiode — nog %d dagen</string>
     <string name="unlock_all_tools">Ontgrendel alle tools</string>
-    <string name="quick_tip_label">SNELLE TIP</string>
     <string name="desc_yarn_estimator_card">Bereken garenverbruik en aantal strengen</string>
 
     <!-- Bottom navigation tabs -->
@@ -107,9 +106,10 @@
     <string name="pattern_page_indicator">Pagina %1$d van %2$d</string>
     <string name="pattern_previous_page">Vorige pagina</string>
     <string name="pattern_next_page">Volgende pagina</string>
-    <string name="pattern_picker_device_files">PDF van apparaat kiezen</string>
     <string name="pattern_picker_saved_patterns">Opgeslagen patronen</string>
+    <string name="pattern_picker_import_pdf">PDF importeren</string>
     <string name="pattern_picker_camera_scan">Patroonfoto maken</string>
+    <string name="pattern_picker_continue_without_pattern">Doorgaan zonder patroon</string>
     <string name="pattern_scan_failed">De patroonfoto kon niet naar PDF worden omgezet.</string>
     <string name="imported_pattern_designer">Geïmporteerde PDF</string>
     <string name="current_row_short">Toer %1$d</string>
@@ -119,10 +119,18 @@
     <string name="linked_yarn_title">GEKOPPELD GAREN</string>
     <string name="no_linked_yarn">Nog geen garen gekoppeld</string>
     <string name="choose_from_my_yarn">Kiezen uit My Yarn</string>
+    <string name="choose_from_my_yarn_body">Kies een opgeslagen garen</string>
     <string name="add_yarn_to_project">Garen aan dit project toevoegen</string>
+    <string name="add_yarn_to_project_body">Sla een snelle garennotitie alleen voor dit project op</string>
     <string name="project_yarn_notes_title">PROJECTGAREN</string>
     <string name="project_yarn_name">Garennaam</string>
+    <string name="brand_label">Merk</string>
     <string name="project_yarn_description">Beschrijving</string>
+    <string name="add_yarn_to_my_yarn">Garen toevoegen</string>
+    <string name="edit_yarn_details">Details bewerken</string>
+    <string name="add_yarn_photo">Garenfoto toevoegen</string>
+    <string name="change_yarn_photo">Garenfoto wijzigen</string>
+    <string name="manual_yarn_optional_details">Begin met een naam. Merk, garendikte, kleur en verfbad zijn optioneel.</string>
     <string name="project_yarn_quantity_format">Aantal: %d</string>
     <string name="save_to_my_yarn">Opslaan in My Yarn</string>
     <string name="saved_to_my_yarn">Opgeslagen in My Yarn</string>
@@ -137,8 +145,9 @@
     <string name="status_in_stash">In voorraad</string>
     <string name="status_in_use">In gebruik</string>
     <string name="status_finished">Op</string>
-    <string name="linked_project_arrow">\u2192 %1$s</string>
+    <string name="yarn_not_linked">Niet gekoppeld</string>
     <string name="yarn_details_title">Details</string>
+    <string name="yarn_details_empty_body">Merk, garendikte, kleur en verfbad zijn optioneel. Voeg alleen toe wat dit project helpt.</string>
     <string name="delete_yarn_card_message">Deze garenkaart verwijderen? Dit kan niet ongedaan worden gemaakt.</string>
     <string name="skein_count_one">%1$d streng</string>
     <string name="skein_count_many">%1$d strengen</string>
@@ -153,8 +162,6 @@
     <string name="pro_full_history_hint">Upgrade naar Pro voor volledige sessiegeschiedenis</string>
 
     <!-- Settings -->
-    <string name="show_knitting_tips">Breitips tonen</string>
-
     <!-- Row Counter -->
     <string name="default_project_name">Mijn project</string>
     <string name="reset_counter">Teller resetten</string>
@@ -413,36 +420,6 @@
     <string name="category_increases">Meerderingen</string>
     <string name="category_cables">Kabels</string>
     <string name="category_other">Overig</string>
-
-    <!-- Quick Tips -->
-    <string-array name="knitting_tips">
-        <item>Maak altijd eerst een proeflap voordat je aan een nieuw project begint — zelfs als je denkt dat je je stekenproef al kent.</item>
-        <item>Blok je proeflap op dezelfde manier als je het eindresultaat wilt blokken voor een nauwkeurige stekenproef.</item>
-        <item>Om een sprongetje te voorkomen bij het breien van strepen in het rond, kun je in de tweede toer van de nieuwe kleur de steek van de vorige toer op de linkernaald tillen.</item>
-        <item>Houd je spanning gelijkmatig voor een nette afwerking langs de randen.</item>
-        <item>Plaats elke 20 steken een sluitbare stekenmarkeerder als je veel steken opzet.</item>
-        <item>Blok je afgewerkte delen — het maakt een enorm verschil in het eindresultaat.</item>
-        <item>Tel je steken aan het einde van elke toer wanneer je ajour breit.</item>
-        <item>Wind je garen eerst tot een bol op — dat voorkomt klitten.</item>
-        <item>Gebruik om de paar toeren een lifeline bij ajourbreien — rijg een hulpdraad door alle steken.</item>
-        <item>Werk draadjes onderweg af om een grote stapel aan het einde van je project te voorkomen.</item>
-        <item>Koop altijd één extra streng — verfbaden kunnen per batch verschillen.</item>
-        <item>Brei een proeflap in het rond als je project ook in het rond wordt gebreid — de stekenproef kan verschillen.</item>
-        <item>Gebruik stekenmarkeerders om patroonherhalingen te scheiden — dat maakt tellen veel makkelijker.</item>
-        <item>Lees je hele patroon door voordat je opzet om verrassingen te voorkomen.</item>
-        <item>Houd een projectnotitieboek bij om wijzigingen en notities voor later te bewaren.</item>
-        <item>Laat bij het aanhechten van een nieuwe draad de uiteinden minstens 15 cm lang voor veilig afwerken.</item>
-        <item>Oefen nieuwe technieken eerst op een klein proeflapje voordat je ze in je project gebruikt.</item>
-        <item>Bewaar je breiwerk in een projecttas om het schoon te houden en haken te voorkomen.</item>
-        <item>Neem pauzes om je handen te strekken en overbelasting te voorkomen.</item>
-        <item>Markeer je plek in het patroon met een plakbriefje of een magnetisch bord.</item>
-        <item>Gebruik bamboenaalden voor gladde garens — die houden de steken beter vast.</item>
-        <item>Gebruik bij het opnemen van steken een naald die één maat kleiner is voor een nettere rand.</item>
-        <item>Controleer bij de eerste toer na het opzetten of de opzet niet gedraaid zit.</item>
-        <item>Meet je stekenproef na het blokken, niet ervoor — veel garens veranderen na het wassen.</item>
-        <item>Wissel elke paar toeren af tussen twee strengen om zichtbare verschillen tussen verfbaden te voorkomen.</item>
-    </string-array>
-
     <!-- In-App Updates -->
     <string name="update_downloaded">Update gedownload — herstart om toe te passen</string>
     <string name="restart">Herstarten</string>
@@ -561,24 +538,24 @@
     <string name="pattern_detail_error">Kan patroondetails niet laden. Controleer je internetverbinding.</string>
     <string name="project_actions_title">Projectacties</string>
     <string name="project_actions_section_this_project">DIT PROJECT</string>
-    <string name="project_actions_section_counters">TELLERS</string>
+    <string name="project_actions_section_counter_tools">TELLERHULPMIDDELEN</string>
     <string name="project_actions_section_project_actions">PROJECTACTIES</string>
-    <string name="quick_action_open_pattern">Patroon openen</string>
-    <string name="quick_action_attach_pattern">Patroon koppelen</string>
-    <string name="quick_action_notes">Notities</string>
-    <string name="quick_action_add_note">Notitie toevoegen</string>
-    <string name="quick_action_yarn">Garen</string>
-    <string name="quick_action_add_yarn">Garen toevoegen</string>
-    <string name="quick_action_photos">Foto’s</string>
-    <string name="quick_action_add_photo">Foto toevoegen</string>
-    <string name="project_info_title">Projectinfo</string>
-    <string name="project_info_pattern">Patroon</string>
-    <string name="project_info_yarn">Garen</string>
-    <string name="project_info_notes">Notities</string>
-    <string name="project_info_reminder">Herinnering</string>
-    <string name="project_info_photos">Foto’s</string>
-    <string name="project_info_empty_label">Toevoegen aan dit project</string>
-    <string name="project_info_empty_value">Koppel een patroon, voeg notities toe, verbind garen of sla foto’s op.</string>
+    <string name="project_content_title">Project</string>
+    <string name="project_content_open_pattern">Patroon openen</string>
+    <string name="project_content_attach_pattern">Patroon koppelen</string>
+    <string name="project_content_attach_pattern_body">Voeg een PDF of opgeslagen patroon toe aan dit project</string>
+    <string name="project_header_pattern_attached">Patroon gekoppeld</string>
+    <string name="project_content_yarn">Garen</string>
+    <string name="project_content_add_yarn">Garen toevoegen</string>
+    <string name="project_content_add_yarn_body">Kies uit My Yarn of voeg garen alleen voor dit project toe</string>
+    <string name="project_content_notes">Notities</string>
+    <string name="project_content_add_note">Notitie toevoegen</string>
+    <string name="project_content_add_note_body">Sla een snelle projectnotitie op</string>
+    <string name="project_content_photos">Foto’s</string>
+    <string name="project_content_add_photo">Foto toevoegen</string>
+    <string name="project_content_add_photo_body">Sla een voortgangsfoto voor dit project op</string>
+    <string name="project_content_next_reminder">Volgende herinnering</string>
+    <string name="project_content_reminder_body">Toer %1$d: %2$s</string>
     <string name="photo_count_one">1 foto</string>
     <string name="photo_count_many">%d foto’s</string>
     <string name="extra_counters_title">Extra tellers</string>

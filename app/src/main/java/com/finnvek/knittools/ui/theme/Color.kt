@@ -77,6 +77,7 @@ val LightTextPrimary = Color(0xFF2E2A1E) // Tumma lämmin ruskea
 val LightTextSecondary = Color(0xFF5C5643) // Keskiväri ruskea
 val LightTextMuted = Color(0xFF8A8370) // Hiljennetty ruskea
 val LightTextDisabled = Color(0xFFC0BAA5) // Disabled-tila
+val LightCounterMinusIcon = Color(0xFF211E16)
 
 // === Light-teeman aksentti ===
 val LightDustyRose = Color(0xFF9E706E) // Syvempi dusty rose

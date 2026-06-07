@@ -252,7 +252,7 @@ private fun ProjectYarnNote.summaryText(): String {
             description.takeIf(String::isNotBlank),
             notes.takeIf(String::isNotBlank),
         )
-    return details.filterNotNull().joinToString(" · ")
+    return details.filterNotNull().joinToString(", ")
 }
 
 @Composable

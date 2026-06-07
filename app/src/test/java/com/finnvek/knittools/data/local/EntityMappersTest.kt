@@ -1,7 +1,8 @@
 package com.finnvek.knittools.data.local
 
-import com.finnvek.knittools.domain.model.CounterProject
+import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.KnitSession
+import com.finnvek.knittools.domain.model.MainCounterLabelType
 import com.finnvek.knittools.domain.model.PatternAnnotation
 import com.finnvek.knittools.domain.model.ProgressPhoto
 import com.finnvek.knittools.domain.model.ProjectCounter
@@ -9,6 +10,7 @@ import com.finnvek.knittools.domain.model.ProjectCounterType
 import com.finnvek.knittools.domain.model.RowReminder
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.YarnCard
+import com.finnvek.knittools.domain.model.sanitizeMainCounterCustomLabel
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -38,6 +40,12 @@ class EntityMappersTest {
                 patternRowMapping = "1=10",
                 stitchTrackingEnabled = true,
                 currentStitch = 38,
+                targetRows = 96,
+                craftType = "CROCHET",
+                mainCounterLabelType = "CUSTOM",
+                mainCounterCustomLabel = "Pattern row",
+                readingLineEnabled = true,
+                readingLineYFraction = 0.42f,
             ),
         )
         assertCounterProjectMapping(
@@ -70,6 +78,7 @@ class EntityMappersTest {
                 repeatEndRow = 10,
                 totalRepeats = 6,
                 currentRepeat = 4,
+                linkedToMainCounter = true,
             ),
         )
         assertProjectCounterMapping(
@@ -223,37 +232,36 @@ class EntityMappersTest {
     }
 
     private fun assertCounterProjectMapping(entity: CounterProjectEntity) {
-        val domain =
-            CounterProject(
-                id = entity.id,
-                name = entity.name,
-                count = entity.count,
-                secondaryCount = entity.secondaryCount,
-                stepSize = entity.stepSize,
-                notes = entity.notes,
-                createdAt = entity.createdAt,
-                updatedAt = entity.updatedAt,
-                sectionName = entity.sectionName,
-                stitchCount = entity.stitchCount,
-                isCompleted = entity.isCompleted,
-                totalRows = entity.totalRows,
-                completedAt = entity.completedAt,
-                yarnCardIds = entity.yarnCardIds,
-                linkedPatternId = entity.linkedPatternId,
-                patternUri = entity.patternUri,
-                patternName = entity.patternName,
-                currentPatternPage = entity.currentPatternPage,
-                patternRowMapping = entity.patternRowMapping,
-                stitchTrackingEnabled = entity.stitchTrackingEnabled,
-                currentStitch = entity.currentStitch,
-            )
+        val domain = entity.toDomain()
 
-        assertMapsBothWays(
-            entity = entity,
-            domain = domain,
-            toDomain = CounterProjectEntity::toDomain,
-            toEntity = CounterProject::toEntity,
-        )
+        assertEquals(entity.id, domain.id)
+        assertEquals(entity.name, domain.name)
+        assertEquals(entity.count, domain.count)
+        assertEquals(CraftType.fromPersistedValue(entity.craftType), domain.craftType)
+        assertEquals(MainCounterLabelType.fromPersistedValue(entity.mainCounterLabelType), domain.mainCounterLabelType)
+        assertEquals(sanitizeMainCounterCustomLabel(entity.mainCounterCustomLabel), domain.mainCounterCustomLabel)
+        assertEquals(entity.readingLineEnabled, domain.readingLineEnabled)
+        assertEquals(entity.readingLineYFraction.coerceIn(0f, 1f), domain.readingLineYFraction, 0f)
+        assertEquals(entity.secondaryCount, domain.secondaryCount)
+        assertEquals(entity.stepSize, domain.stepSize)
+        assertEquals(entity.notes, domain.notes)
+        assertEquals(entity.createdAt, domain.createdAt)
+        assertEquals(entity.updatedAt, domain.updatedAt)
+        assertEquals(entity.sectionName, domain.sectionName)
+        assertEquals(entity.stitchCount, domain.stitchCount)
+        assertEquals(entity.isCompleted, domain.isCompleted)
+        assertEquals(entity.totalRows, domain.totalRows)
+        assertEquals(entity.completedAt, domain.completedAt)
+        assertEquals(entity.yarnCardIds, domain.yarnCardIds)
+        assertEquals(entity.linkedPatternId, domain.linkedPatternId)
+        assertEquals(entity.patternUri, domain.patternUri)
+        assertEquals(entity.patternName, domain.patternName)
+        assertEquals(entity.currentPatternPage, domain.currentPatternPage)
+        assertEquals(entity.patternRowMapping, domain.patternRowMapping)
+        assertEquals(entity.stitchTrackingEnabled, domain.stitchTrackingEnabled)
+        assertEquals(entity.currentStitch, domain.currentStitch)
+        assertEquals(entity.targetRows, domain.targetRows)
+        assertEquals(entity, domain.toEntity())
     }
 
     private fun assertProjectCounterMapping(entity: ProjectCounterEntity) {
@@ -275,6 +283,7 @@ class EntityMappersTest {
                 repeatEndRow = entity.repeatEndRow,
                 totalRepeats = entity.totalRepeats,
                 currentRepeat = entity.currentRepeat,
+                linkedToMainCounter = entity.linkedToMainCounter,
             )
 
         assertMapsBothWays(

@@ -50,6 +50,7 @@ data class ProjectActionsSheetCallbacks(
     val onToggleStitchTracking: (Boolean) -> Unit,
     val onOpenStitchCount: () -> Unit,
     val onOpenSessionHistory: () -> Unit,
+    val onOpenProjectDetails: () -> Unit,
     val onStartRename: () -> Unit,
     val onShowResetDialog: () -> Unit,
     val onShowCompleteDialog: () -> Unit,
@@ -123,6 +124,11 @@ fun ProjectActionsBottomSheet(
                     icon = Icons.Outlined.History,
                     label = stringResource(R.string.session_history_title),
                     onClick = callbacks.onOpenSessionHistory,
+                )
+                ActionRow(
+                    icon = Icons.Outlined.Edit,
+                    label = stringResource(R.string.project_details),
+                    onClick = callbacks.onOpenProjectDetails,
                 )
                 ActionRow(
                     icon = Icons.Outlined.Edit,

@@ -1,7 +1,9 @@
 package com.finnvek.knittools.data.local
 
 import com.finnvek.knittools.domain.model.CounterProject
+import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.KnitSession
+import com.finnvek.knittools.domain.model.MainCounterLabelType
 import com.finnvek.knittools.domain.model.PatternAnnotation
 import com.finnvek.knittools.domain.model.ProgressPhoto
 import com.finnvek.knittools.domain.model.ProjectCounter
@@ -10,57 +12,76 @@ import com.finnvek.knittools.domain.model.ProjectYarnNote
 import com.finnvek.knittools.domain.model.RowReminder
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.YarnCard
+import com.finnvek.knittools.domain.model.sanitizeMainCounterCustomLabel
 
 fun CounterProjectEntity.toDomain(): CounterProject =
     CounterProject(
         id = id,
         name = name,
         count = count,
-        secondaryCount = secondaryCount,
-        stepSize = stepSize,
-        notes = notes,
-        createdAt = createdAt,
-        updatedAt = updatedAt,
-        sectionName = sectionName,
-        stitchCount = stitchCount,
-        isCompleted = isCompleted,
-        totalRows = totalRows,
-        completedAt = completedAt,
-        yarnCardIds = yarnCardIds,
-        linkedPatternId = linkedPatternId,
-        patternUri = patternUri,
-        patternName = patternName,
-        currentPatternPage = currentPatternPage,
-        patternRowMapping = patternRowMapping,
-        stitchTrackingEnabled = stitchTrackingEnabled,
-        currentStitch = currentStitch,
-        targetRows = targetRows,
-    )
+        craftType = CraftType.fromPersistedValue(craftType),
+        mainCounterLabelType = MainCounterLabelType.fromPersistedValue(mainCounterLabelType),
+    ).withEntityProjectDetails(this)
 
 fun CounterProject.toEntity(): CounterProjectEntity =
     CounterProjectEntity(
         id = id,
         name = name,
         count = count,
-        secondaryCount = secondaryCount,
-        stepSize = stepSize,
-        notes = notes,
-        createdAt = createdAt,
-        updatedAt = updatedAt,
-        sectionName = sectionName,
-        stitchCount = stitchCount,
-        isCompleted = isCompleted,
-        totalRows = totalRows,
-        completedAt = completedAt,
-        yarnCardIds = yarnCardIds,
-        linkedPatternId = linkedPatternId,
-        patternUri = patternUri,
-        patternName = patternName,
-        currentPatternPage = currentPatternPage,
-        patternRowMapping = patternRowMapping,
-        stitchTrackingEnabled = stitchTrackingEnabled,
-        currentStitch = currentStitch,
-        targetRows = targetRows,
+        craftType = craftType.persistedValue,
+        mainCounterLabelType = mainCounterLabelType.persistedValue,
+    ).withDomainProjectDetails(this)
+
+private fun CounterProject.withEntityProjectDetails(entity: CounterProjectEntity): CounterProject =
+    copy(
+        mainCounterCustomLabel = sanitizeMainCounterCustomLabel(entity.mainCounterCustomLabel),
+        readingLineEnabled = entity.readingLineEnabled,
+        readingLineYFraction = entity.readingLineYFraction.coerceIn(0f, 1f),
+        secondaryCount = entity.secondaryCount,
+        stepSize = entity.stepSize,
+        notes = entity.notes,
+        createdAt = entity.createdAt,
+        updatedAt = entity.updatedAt,
+        sectionName = entity.sectionName,
+        stitchCount = entity.stitchCount,
+        isCompleted = entity.isCompleted,
+        totalRows = entity.totalRows,
+        completedAt = entity.completedAt,
+        yarnCardIds = entity.yarnCardIds,
+        linkedPatternId = entity.linkedPatternId,
+        patternUri = entity.patternUri,
+        patternName = entity.patternName,
+        currentPatternPage = entity.currentPatternPage,
+        patternRowMapping = entity.patternRowMapping,
+        stitchTrackingEnabled = entity.stitchTrackingEnabled,
+        currentStitch = entity.currentStitch,
+        targetRows = entity.targetRows,
+    )
+
+private fun CounterProjectEntity.withDomainProjectDetails(project: CounterProject): CounterProjectEntity =
+    copy(
+        mainCounterCustomLabel = sanitizeMainCounterCustomLabel(project.mainCounterCustomLabel),
+        readingLineEnabled = project.readingLineEnabled,
+        readingLineYFraction = project.readingLineYFraction.coerceIn(0f, 1f),
+        secondaryCount = project.secondaryCount,
+        stepSize = project.stepSize,
+        notes = project.notes,
+        createdAt = project.createdAt,
+        updatedAt = project.updatedAt,
+        sectionName = project.sectionName,
+        stitchCount = project.stitchCount,
+        isCompleted = project.isCompleted,
+        totalRows = project.totalRows,
+        completedAt = project.completedAt,
+        yarnCardIds = project.yarnCardIds,
+        linkedPatternId = project.linkedPatternId,
+        patternUri = project.patternUri,
+        patternName = project.patternName,
+        currentPatternPage = project.currentPatternPage,
+        patternRowMapping = project.patternRowMapping,
+        stitchTrackingEnabled = project.stitchTrackingEnabled,
+        currentStitch = project.currentStitch,
+        targetRows = project.targetRows,
     )
 
 fun ProjectCounterEntity.toDomain(): ProjectCounter =
@@ -81,6 +102,7 @@ fun ProjectCounterEntity.toDomain(): ProjectCounter =
         repeatEndRow = repeatEndRow,
         totalRepeats = totalRepeats,
         currentRepeat = currentRepeat,
+        linkedToMainCounter = linkedToMainCounter,
     )
 
 fun ProjectCounter.toEntity(): ProjectCounterEntity =
@@ -101,6 +123,7 @@ fun ProjectCounter.toEntity(): ProjectCounterEntity =
         repeatEndRow = repeatEndRow,
         totalRepeats = totalRepeats,
         currentRepeat = currentRepeat,
+        linkedToMainCounter = linkedToMainCounter,
     )
 
 fun ProjectYarnNoteEntity.toDomain(): ProjectYarnNote =

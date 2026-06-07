@@ -14,8 +14,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Testaa Room-migraatiot v1→v12.
- * v1→v3: AutoMigration. v3→v12: manuaaliset muutokset.
+ * Testaa Room-migraatiot v1→v13.
+ * v1→v3: AutoMigration. v3→v13: manuaaliset muutokset.
  */
 @RunWith(AndroidJUnit4::class)
 class MigrationTest {
@@ -37,9 +37,10 @@ class MigrationTest {
             KnitToolsDatabase.MIGRATION_9_10,
             KnitToolsDatabase.MIGRATION_10_11,
             KnitToolsDatabase.MIGRATION_11_12,
+            KnitToolsDatabase.MIGRATION_12_13,
         )
 
-    private val latestVersion = 12
+    private val latestVersion = 13
 
     private fun migrateToLatest(testDb: String): SupportSQLiteDatabase =
         helper.runMigrationsAndValidate(
@@ -1326,6 +1327,71 @@ class MigrationTest {
     }
 
     @Test
+    fun migrate12to13AddsFeatureDecisionColumnsWithDefaults() {
+        val testDb = "migration-test-v12-to-v13"
+
+        helper.createDatabase(testDb, 12).apply {
+            execSQL(
+                """
+                INSERT INTO counter_projects (
+                    id, name, count, secondaryCount, stepSize, notes, createdAt, updatedAt,
+                    sectionName, stitchCount, isCompleted, totalRows, completedAt, yarnCardIds,
+                    linkedPatternId, patternUri, patternName, currentPatternPage, patternRowMapping,
+                    stitchTrackingEnabled, currentStitch, targetRows
+                ) VALUES (
+                    1, 'Legacy rows project', 22, 2, 1, 'notes', 1000, 2000,
+                    'Sleeve', 64, 0, NULL, NULL, '1',
+                    NULL, 'content://pattern.pdf', 'Pattern.pdf', 4, '{"10":2}',
+                    1, 12, 80
+                )
+                """.trimIndent(),
+            )
+            execSQL(
+                """
+                INSERT INTO project_counters (
+                    id, projectId, name, count, stepSize, repeatAt, sortOrder, createdAt,
+                    counterType, startingStitches, stitchChange, shapeEveryN,
+                    repeatStartRow, repeatEndRow, totalRepeats, currentRepeat
+                ) VALUES (
+                    1, 1, 'Sleeve repeats', 4, 1, NULL, 0, 4000,
+                    'COUNT_UP', NULL, NULL, NULL,
+                    NULL, NULL, NULL, NULL
+                )
+                """.trimIndent(),
+            )
+            close()
+        }
+
+        val db =
+            helper.runMigrationsAndValidate(
+                testDb,
+                13,
+                true,
+                KnitToolsDatabase.MIGRATION_12_13,
+            )
+
+        assertSingleRow(
+            db,
+            """
+            SELECT craftType, mainCounterLabelType, mainCounterCustomLabel,
+                readingLineEnabled, readingLineYFraction
+            FROM counter_projects WHERE id = 1
+            """.trimIndent(),
+        ) {
+            assertEquals("KNITTING", getString(0))
+            assertEquals("ROWS", getString(1))
+            assertTrue(isNull(2))
+            assertEquals(0, getInt(3))
+            assertEquals(0.5, getDouble(4), 0.0)
+        }
+        assertSingleRow(db, "SELECT linkedToMainCounter FROM project_counters WHERE id = 1") {
+            assertEquals(0, getInt(0))
+        }
+
+        db.close()
+    }
+
+    @Test
     fun migrate7toLatestPreservesPatternViewerData() {
         val testDb = "migration-test-v7-to-latest"
 
@@ -1429,7 +1495,7 @@ class MigrationTest {
         val db =
             helper.runMigrationsAndValidate(
                 testDb,
-                9,
+                latestVersion,
                 true,
                 *allMigrations,
             )

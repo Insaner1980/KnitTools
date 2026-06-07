@@ -1,6 +1,7 @@
 package com.finnvek.knittools.domain.calculator
 
 import com.finnvek.knittools.domain.model.ProjectCounter
+import com.finnvek.knittools.domain.model.ProjectCounterType
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -9,6 +10,8 @@ class ProjectCounterLogicTest {
         count: Int = 0,
         stepSize: Int = 1,
         repeatAt: Int? = null,
+        counterType: ProjectCounterType = ProjectCounterType.COUNT_UP,
+        shapeEveryN: Int? = null,
     ) = ProjectCounter(
         id = 1,
         projectId = 1,
@@ -16,6 +19,8 @@ class ProjectCounterLogicTest {
         count = count,
         stepSize = stepSize,
         repeatAt = repeatAt,
+        counterType = counterType,
+        shapeEveryN = shapeEveryN,
     )
 
     @Test
@@ -76,5 +81,20 @@ class ProjectCounterLogicTest {
     fun `no repeat cycling when repeatAt is null`() {
         val result = ProjectCounterLogic.increment(counter(count = 100, stepSize = 1, repeatAt = null))
         assertEquals(101, result.count)
+    }
+
+    @Test
+    fun `shaping increment tracks total count without interval reset`() {
+        val result =
+            ProjectCounterLogic.increment(
+                counter(
+                    count = 4,
+                    stepSize = 1,
+                    counterType = ProjectCounterType.SHAPING,
+                    shapeEveryN = 4,
+                ),
+            )
+
+        assertEquals(5, result.count)
     }
 }

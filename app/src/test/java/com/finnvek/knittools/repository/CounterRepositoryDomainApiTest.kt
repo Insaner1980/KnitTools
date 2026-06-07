@@ -42,6 +42,7 @@ class CounterRepositoryDomainApiTest {
         repository =
             CounterRepository(
                 dao = projectDao,
+                projectCounterDao = mockk(relaxed = true),
                 sessionDao = sessionDao,
                 photoStorage = mockk<ProgressPhotoStorage>(relaxed = true),
                 patternDocumentStorage = mockk<PatternDocumentStorage>(relaxed = true),

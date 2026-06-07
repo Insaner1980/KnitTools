@@ -87,6 +87,11 @@ class ProManager
 
         fun hasFeature(feature: ProFeature): Boolean = _proState.value.hasFeature(feature)
 
+        fun hasFeatureFlow(feature: ProFeature): Flow<Boolean> =
+            proState
+                .map { it.hasFeature(feature) }
+                .distinctUntilChanged()
+
         fun isPro(): Boolean = _proState.value.isPro
 
         private companion object {

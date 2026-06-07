@@ -51,6 +51,8 @@ fun ProjectCard(
     modifier: Modifier = Modifier,
     onLongClick: (() -> Unit)? = null,
     totalRows: Int? = null,
+    metadataLine: String? = null,
+    countText: String? = null,
     yarnName: String? = null,
     yarnColorSeed: Long = 0L,
     onYarnClick: (() -> Unit)? = null,
@@ -100,11 +102,21 @@ fun ProjectCard(
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
+                if (!metadataLine.isNullOrBlank()) {
+                    Text(
+                        text = metadataLine,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.knitToolsColors.onSurfaceMuted,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
                 Spacer(modifier = Modifier.height(4.dp))
                 ProjectCardStatsRow(
                     stats =
                         ProjectCardStats(
                             rowCount = totalRows ?: rowCount,
+                            countText = countText,
                             lastUpdated = lastUpdated,
                             photoCount = photoCount,
                             hasPatternAttachment = hasPatternAttachment,
@@ -151,6 +163,7 @@ private fun isRawPdfFileName(name: String): Boolean = name.endsWith(".pdf", igno
 
 private data class ProjectCardStats(
     val rowCount: Int,
+    val countText: String?,
     val lastUpdated: Long,
     val photoCount: Int,
     val hasPatternAttachment: Boolean,
@@ -176,7 +189,7 @@ private fun ProjectCardStatsRow(
     Column {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = stringResource(R.string.rows_format, stats.rowCount),
+                text = stats.countText ?: stringResource(R.string.rows_format, stats.rowCount),
                 style = MaterialTheme.typography.headlineSmall,
                 color = rowCountColor,
             )

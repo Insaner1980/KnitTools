@@ -31,6 +31,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.navigation.navigation
+import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.ui.screens.abbreviations.AbbreviationsScreen
 import com.finnvek.knittools.ui.screens.caston.CastOnScreen
 import com.finnvek.knittools.ui.screens.chartsymbols.ChartSymbolScreen
@@ -420,8 +421,21 @@ private fun NavGraphBuilder.libraryReferenceRoutes(navController: NavHostControl
     composable(Screen.SizeCharts.route) {
         SizeChartScreen(onBack = { navController.popBackStack() })
     }
-    composable(Screen.Abbreviations.route) {
-        AbbreviationsScreen(onBack = { navController.popBackStack() })
+    composable(
+        route = Screen.Abbreviations.ROUTE,
+        arguments =
+            listOf(
+                navArgument(Screen.Abbreviations.ARG_CRAFT_TYPE) {
+                    type = NavType.StringType
+                    defaultValue = CraftType.KNITTING.persistedValue
+                },
+            ),
+    ) { backStackEntry ->
+        val craftType =
+            CraftType.fromPersistedValue(
+                backStackEntry.arguments?.getString(Screen.Abbreviations.ARG_CRAFT_TYPE),
+            )
+        AbbreviationsScreen(craftType = craftType, onBack = { navController.popBackStack() })
     }
     composable(Screen.ChartSymbols.route) {
         ChartSymbolScreen(onBack = { navController.popBackStack() })

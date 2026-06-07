@@ -21,7 +21,11 @@ import com.finnvek.knittools.domain.calculator.RowMarker
 import com.finnvek.knittools.domain.calculator.parseMapping
 import com.finnvek.knittools.domain.calculator.serializeMapping
 import com.finnvek.knittools.domain.model.CounterProject
+import com.finnvek.knittools.domain.model.CraftType
+import com.finnvek.knittools.domain.model.DEFAULT_READING_LINE_Y_FRACTION
 import com.finnvek.knittools.domain.model.KnitSession
+import com.finnvek.knittools.domain.model.MainCounterChange
+import com.finnvek.knittools.domain.model.MainCounterLabelType
 import com.finnvek.knittools.domain.model.ProgressPhoto
 import com.finnvek.knittools.domain.model.ProjectCounter
 import com.finnvek.knittools.domain.model.ProjectCounterDraft
@@ -32,6 +36,7 @@ import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.domain.model.displayName
 import com.finnvek.knittools.domain.model.parseYarnCardIds
+import com.finnvek.knittools.domain.model.sanitizeReadingLineYFraction
 import com.finnvek.knittools.pro.InAppReviewManager
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
@@ -65,6 +70,9 @@ import javax.inject.Inject
 data class CounterUiState(
     val projectName: String = "",
     val counter: CounterState = CounterState(),
+    val craftType: CraftType = CraftType.KNITTING,
+    val mainCounterLabelType: MainCounterLabelType = MainCounterLabelType.ROWS,
+    val mainCounterCustomLabel: String? = null,
     val secondaryCount: Int = 0,
     val notes: String = "",
     val sessionSeconds: Long = 0,
@@ -94,6 +102,8 @@ data class CounterUiState(
     val patternUri: String? = null,
     val patternName: String? = null,
     val currentPatternPage: Int = 0,
+    val readingLineEnabled: Boolean = false,
+    val readingLineYFraction: Float = DEFAULT_READING_LINE_Y_FRACTION,
     val patternRowMapping: String? = null,
     val totalRows: Int? = null,
     val targetRows: Int? = null,
@@ -595,8 +605,6 @@ class CounterViewModel
                 action = "increment",
                 previousValue = state.counter.count,
                 newValue = updatedCounter.count,
-                stepSize = updatedCounter.stepSize,
-                delta = updatedCounter.count - state.counter.count,
             )
         }
 
@@ -613,8 +621,6 @@ class CounterViewModel
                 action = "decrement",
                 previousValue = state.counter.count,
                 newValue = updatedCounter.count,
-                stepSize = updatedCounter.stepSize,
-                delta = updatedCounter.count - state.counter.count,
             )
         }
 
@@ -632,7 +638,6 @@ class CounterViewModel
                 action = "undo",
                 previousValue = state.counter.count,
                 newValue = previousValue,
-                stepSize = updatedCounter.stepSize,
             )
         }
 
@@ -649,7 +654,6 @@ class CounterViewModel
                 action = "reset",
                 previousValue = state.counter.count,
                 newValue = updatedCounter.count,
-                stepSize = updatedCounter.stepSize,
             )
         }
 
@@ -708,6 +712,7 @@ class CounterViewModel
                         repeatEndRow = draft.repeatEndRow,
                         totalRepeats = draft.totalRepeats,
                         currentRepeat = draft.currentRepeat,
+                        linkedToMainCounter = draft.linkedToMainCounter,
                     )
                 val initialCounter =
                     if (draft.counterType == ProjectCounterType.REPEAT_SECTION) {
@@ -912,6 +917,35 @@ class CounterViewModel
             }
         }
 
+        fun setProjectDetails(
+            name: String,
+            craftType: CraftType,
+            mainCounterLabelType: MainCounterLabelType,
+            mainCounterCustomLabel: String?,
+        ) {
+            val projectName = name.trim()
+            if (projectName.isEmpty()) return
+            viewModelScope.launch {
+                val id = _uiState.value.projectId ?: return@launch
+                val savedProject =
+                    repository.updateProjectDetails(
+                        id = id,
+                        name = projectName,
+                        craftType = craftType,
+                        mainCounterLabelType = mainCounterLabelType,
+                        mainCounterCustomLabel = mainCounterCustomLabel,
+                    ) ?: return@launch
+                _uiState.update { state ->
+                    if (state.projectId == id) {
+                        state.withObservedProject(savedProject)
+                    } else {
+                        state
+                    }
+                }
+                syncWidget(projectName = savedProject.name)
+            }
+        }
+
         fun setStepSize(size: Int) {
             val state = _uiState.value
             val updatedCounter = CounterLogic.setStepSize(state.counter, size)
@@ -1099,6 +1133,25 @@ class CounterViewModel
             }
         }
 
+        fun setReadingLineEnabled(enabled: Boolean) {
+            val state = _uiState.value
+            val projectId = state.projectId ?: return
+            _uiState.update { it.copy(readingLineEnabled = enabled) }
+            viewModelScope.launch {
+                repository.updateReadingLine(projectId, enabled, state.readingLineYFraction)
+            }
+        }
+
+        fun updateReadingLineYFraction(yFraction: Float) {
+            val state = _uiState.value
+            val projectId = state.projectId ?: return
+            val sanitizedYFraction = sanitizeReadingLineYFraction(yFraction)
+            _uiState.update { it.copy(readingLineYFraction = sanitizedYFraction) }
+            viewModelScope.launch {
+                repository.updateReadingLine(projectId, state.readingLineEnabled, sanitizedYFraction)
+            }
+        }
+
         fun upsertPatternRowMarker(
             row: Int,
             page: Int,
@@ -1134,8 +1187,6 @@ class CounterViewModel
             action: String,
             previousValue: Int,
             newValue: Int,
-            stepSize: Int,
-            delta: Int? = null,
         ) {
             if (newValue == previousValue) return
             val state = _uiState.value
@@ -1143,29 +1194,20 @@ class CounterViewModel
             trackSessionRows(action, previousValue, newValue)
             viewModelScope.launch {
                 inAppReviewManager.recordAction()
-                if (delta != null) {
-                    repository.adjustProjectCountWithHistory(
-                        id = projectId,
-                        delta = delta,
-                        stepSize = stepSize,
-                        action = action,
-                        previousValue = previousValue,
-                        newValue = newValue,
-                    )
-                } else {
-                    repository.updateProjectCounterStateWithHistory(
-                        id = projectId,
-                        count = newValue,
-                        stepSize = stepSize,
-                        action = action,
-                        previousValue = previousValue,
-                        newValue = newValue,
-                    )
-                }
+                repository.applyMainCounterChange(projectId, action.toMainCounterChange())
                 savePendingSessionState(projectId, state.sessionSeconds)
                 syncWidget(projectId, state.projectName, newValue)
             }
         }
+
+        private fun String.toMainCounterChange(): MainCounterChange =
+            when (this) {
+                "increment" -> MainCounterChange.Increment
+                "decrement" -> MainCounterChange.Decrement
+                "reset" -> MainCounterChange.Reset
+                "undo" -> MainCounterChange.Undo
+                else -> MainCounterChange.Increment
+            }
 
         private fun trackSessionRows(
             action: String,

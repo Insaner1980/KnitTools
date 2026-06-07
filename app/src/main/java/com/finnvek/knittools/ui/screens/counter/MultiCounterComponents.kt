@@ -4,25 +4,29 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
@@ -36,19 +40,28 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.finnvek.knittools.R
+import com.finnvek.knittools.domain.calculator.CounterValueDisplay
+import com.finnvek.knittools.domain.calculator.CounterValueFormatter
 import com.finnvek.knittools.domain.calculator.RepeatSectionLogic
-import com.finnvek.knittools.domain.calculator.ShapingCounterLogic
 import com.finnvek.knittools.domain.model.ProjectCounter
 import com.finnvek.knittools.domain.model.ProjectCounterDraft
 import com.finnvek.knittools.domain.model.ProjectCounterType
 import com.finnvek.knittools.ui.components.ConfirmationDialog
+import com.finnvek.knittools.ui.components.CounterStepperButton
 import com.finnvek.knittools.ui.components.NumberInputField
 import com.finnvek.knittools.ui.components.NumberInputOptions
 import com.finnvek.knittools.ui.components.SegmentedToggle
+import com.finnvek.knittools.ui.theme.CounterDimens
+
+private const val DISABLED_CONTENT_ALPHA = 0.38f
 
 data class CounterItemActions(
     val onIncrement: () -> Unit,
@@ -76,133 +89,84 @@ fun CounterListItem(
     var showRenameDialog by rememberSaveable(counter.id) { mutableStateOf(false) }
     var showDeleteDialog by rememberSaveable(counter.id) { mutableStateOf(false) }
 
-    Row(
+    Column(
         modifier =
             modifier
                 .fillMaxWidth()
-                .clip(MaterialTheme.shapes.medium)
-                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .heightIn(min = CounterDimens.ExtraCounterCardMinHeight)
+                .clip(RoundedCornerShape(CounterDimens.ExtraCounterCardCornerRadius))
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                 .combinedClickable(
                     onClick = {},
                     onLongClick = { showContextMenu = true },
-                ).padding(horizontal = 12.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
+                ).padding(
+                    horizontal = CounterDimens.ExtraCounterCardHorizontalPadding,
+                    vertical = CounterDimens.ExtraCounterCardVerticalPadding,
+                ),
+        verticalArrangement = Arrangement.spacedBy(CounterDimens.ExtraCounterContentSpacing),
     ) {
-        Column(modifier = Modifier.weight(1f)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             Text(
                 text = counter.name,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style =
+                    MaterialTheme.typography.titleMedium.copy(
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.SemiBold,
+                    ),
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
             )
-            if (counter.counterType == ProjectCounterType.SHAPING &&
-                counter.startingStitches != null &&
-                counter.stitchChange != null &&
-                counter.shapeEveryN != null
-            ) {
-                val nextRow = ShapingCounterLogic.nextShapingRow(counter.shapeEveryN, counter.count)
-                val stsAtNext =
-                    ShapingCounterLogic.calculateCurrentStitches(
-                        counter.startingStitches,
-                        counter.stitchChange,
-                        counter.shapeEveryN,
-                        nextRow,
-                    )
-                val isShaping = ShapingCounterLogic.isShapingRow(counter.shapeEveryN, counter.count)
-                Text(
-                    text = stringResource(R.string.next_shaping_format, nextRow, stsAtNext),
-                    style = MaterialTheme.typography.labelSmall,
-                    color =
-                        if (isShaping) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        },
-                )
-            }
-        }
 
-        OutlinedButton(
-            onClick = {
-                performHaptic()
-                onDecrement()
-            },
-            modifier = Modifier.size(32.dp),
-            shape = CircleShape,
-            contentPadding =
-                androidx.compose.foundation.layout
-                    .PaddingValues(0.dp),
-        ) {
-            Icon(
-                imageVector = Icons.Filled.Remove,
-                contentDescription = stringResource(R.string.counter_decrease),
-                modifier = Modifier.size(16.dp),
+            CounterOverflowMenu(
+                counterName = counter.name,
+                expanded = showContextMenu,
+                onExpandedChange = { showContextMenu = it },
+                onRename = { showRenameDialog = true },
+                onReset = onReset,
+                onDelete = { showDeleteDialog = true },
             )
         }
 
-        Spacer(modifier = Modifier.width(12.dp))
-
-        val displayText =
-            if (counter.repeatAt != null) {
-                "${counter.count}/${counter.repeatAt}"
-            } else {
-                "${counter.count}"
-            }
-        Text(
-            text = displayText,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-
-        Spacer(modifier = Modifier.width(12.dp))
-
-        OutlinedButton(
-            onClick = {
-                performHaptic()
-                onIncrement()
-            },
-            modifier = Modifier.size(32.dp),
-            shape = CircleShape,
-            contentPadding =
-                androidx.compose.foundation.layout
-                    .PaddingValues(0.dp),
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(
-                imageVector = Icons.Filled.Add,
-                contentDescription = stringResource(R.string.counter_increase),
-                modifier = Modifier.size(16.dp),
+            CounterStepperButton(
+                icon = Icons.Filled.Remove,
+                isIncrement = false,
+                contentDescription = stringResource(R.string.counter_decrease_named, counter.name),
+                onClick = {
+                    performHaptic()
+                    onDecrement()
+                },
             )
-        }
 
-        // Kontekstivalikko pitkällä painalluksella
-        DropdownMenu(
-            expanded = showContextMenu,
-            onDismissRequest = { showContextMenu = false },
-        ) {
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.rename_counter)) },
-                onClick = {
-                    showContextMenu = false
-                    showRenameDialog = true
-                },
+            Spacer(modifier = Modifier.width(CounterDimens.ExtraCounterValueSpacing))
+
+            val displayText = CounterValueFormatter.forExtraCounter(counter).asText()
+            Text(
+                text = displayText,
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.weight(1f),
             )
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.reset_counter_name)) },
+
+            Spacer(modifier = Modifier.width(CounterDimens.ExtraCounterValueSpacing))
+
+            CounterStepperButton(
+                icon = Icons.Filled.Add,
+                isIncrement = true,
+                contentDescription = stringResource(R.string.counter_increase_named, counter.name),
                 onClick = {
-                    showContextMenu = false
-                    onReset()
-                },
-            )
-            DropdownMenuItem(
-                text = {
-                    Text(
-                        stringResource(R.string.delete_counter),
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                },
-                onClick = {
-                    showContextMenu = false
-                    showDeleteDialog = true
+                    performHaptic()
+                    onIncrement()
                 },
             )
         }
@@ -231,6 +195,90 @@ fun CounterListItem(
             },
             onDismiss = { showDeleteDialog = false },
         )
+    }
+}
+
+@Composable
+internal fun CounterValueDisplay.asText(): String =
+    when (this) {
+        is CounterValueDisplay.Plain -> count.toString()
+        is CounterValueDisplay.Cycle ->
+            stringResource(R.string.repeating_counter_value_format, current, length)
+        is CounterValueDisplay.Section ->
+            stringResource(
+                R.string.repeat_section_progress_format,
+                repeat,
+                totalRepeats,
+                rowInRepeat,
+                rowsInRepeat,
+            )
+        CounterValueDisplay.SectionComplete ->
+            stringResource(R.string.repeat_section_complete)
+        is CounterValueDisplay.ReminderRepeat ->
+            pluralStringResource(
+                R.plurals.reminder_repeat_occurrence_format,
+                intervalRows,
+                occurrence,
+                intervalRows,
+            )
+    }
+
+@Composable
+private fun CounterOverflowMenu(
+    counterName: String,
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
+    onRename: (() -> Unit)?,
+    onReset: (() -> Unit)?,
+    onDelete: () -> Unit,
+) {
+    Box {
+        IconButton(
+            onClick = { onExpandedChange(true) },
+            modifier = Modifier.size(CounterDimens.ExtraCounterOverflowTouchSize),
+        ) {
+            Icon(
+                imageVector = Icons.Filled.MoreVert,
+                contentDescription = stringResource(R.string.counter_actions, counterName),
+                modifier = Modifier.size(CounterDimens.ExtraCounterOverflowIconSize),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { onExpandedChange(false) },
+        ) {
+            onRename?.let { rename ->
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.rename_counter)) },
+                    onClick = {
+                        onExpandedChange(false)
+                        rename()
+                    },
+                )
+            }
+            onReset?.let { reset ->
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.reset_counter_name)) },
+                    onClick = {
+                        onExpandedChange(false)
+                        reset()
+                    },
+                )
+            }
+            DropdownMenuItem(
+                text = {
+                    Text(
+                        stringResource(R.string.delete_counter),
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                },
+                onClick = {
+                    onExpandedChange(false)
+                    onDelete()
+                },
+            )
+        }
     }
 }
 
@@ -292,10 +340,12 @@ fun AddCounterDialog(
     var repeatStartRowText by rememberSaveable { mutableStateOf("") }
     var repeatEndRowText by rememberSaveable { mutableStateOf("") }
     var totalRepeatsText by rememberSaveable { mutableStateOf("") }
+    var linkedToMainCounter by rememberSaveable { mutableStateOf(false) }
 
     val isRepeating = selectedType == 1
     val isShaping = selectedType == 2
     val isRepeatSection = selectedType == 3 && canUseRepeatSection
+    val canLinkToMainCounter = !isRepeatSection
     val repeatAt = repeatAtText.toIntOrNull()
     val stepSize = stepSizeText.toIntOrNull() ?: 1
     val startingStitches = startingStitchesText.toIntOrNull()
@@ -318,6 +368,7 @@ fun AddCounterDialog(
             repeatStartRow = repeatStartRow,
             repeatEndRow = repeatEndRow,
             totalRepeats = totalRepeats,
+            linkedToMainCounter = linkedToMainCounter && canLinkToMainCounter,
         )
     val canSave =
         isAddCounterFormValid(formParams)
@@ -342,12 +393,18 @@ fun AddCounterDialog(
                         repeatEndRowText = repeatEndRowText,
                         totalRepeatsText = totalRepeatsText,
                         stepSizeText = stepSizeText,
+                        linkedToMainCounter = linkedToMainCounter && canLinkToMainCounter,
                         canUseRepeatSection = canUseRepeatSection,
                     ),
                 actions =
                     AddCounterDialogContentActions(
                         onNameChange = { if (it.length <= 50) name = it },
-                        onTypeChange = { selectedType = it },
+                        onTypeChange = { index ->
+                            selectedType = index
+                            if (index == 3) {
+                                linkedToMainCounter = false
+                            }
+                        },
                         onRepeatAtChange = { repeatAtText = it },
                         onStartingStitchesChange = { startingStitchesText = it },
                         onStitchChangeChange = { stitchChangeText = it },
@@ -356,6 +413,7 @@ fun AddCounterDialog(
                         onRepeatEndRowChange = { repeatEndRowText = it },
                         onTotalRepeatsChange = { totalRepeatsText = it },
                         onStepSizeChange = { stepSizeText = it },
+                        onLinkedToMainCounterChange = { linkedToMainCounter = it && canLinkToMainCounter },
                     ),
             )
         },
@@ -398,6 +456,7 @@ private fun createProjectCounterDraft(
         repeatEndRow = if (params.isRepeatSection) params.repeatEndRow else null,
         totalRepeats = if (params.isRepeatSection) params.totalRepeats else null,
         currentRepeat = if (params.isRepeatSection) 1 else null,
+        linkedToMainCounter = params.linkedToMainCounter && !params.isRepeatSection,
     )
 
 // Data-luokka lomakkeen validointiparametrien ryhmittelyyn (S107)
@@ -414,6 +473,7 @@ data class AddCounterFormParams(
     val repeatStartRow: Int?,
     val repeatEndRow: Int?,
     val totalRepeats: Int?,
+    val linkedToMainCounter: Boolean = false,
 )
 
 private fun isAddCounterFormValid(params: AddCounterFormParams): Boolean =
@@ -464,6 +524,7 @@ data class AddCounterDialogContentState(
     val repeatEndRowText: String,
     val totalRepeatsText: String,
     val stepSizeText: String,
+    val linkedToMainCounter: Boolean,
     val canUseRepeatSection: Boolean,
 )
 
@@ -478,6 +539,7 @@ data class AddCounterDialogContentActions(
     val onRepeatEndRowChange: (String) -> Unit,
     val onTotalRepeatsChange: (String) -> Unit,
     val onStepSizeChange: (String) -> Unit,
+    val onLinkedToMainCounterChange: (Boolean) -> Unit,
 )
 
 @Composable
@@ -539,11 +601,57 @@ private fun AddCounterDialogContent(
                 onTotalRepeatsChange = actions.onTotalRepeatsChange,
             )
         }
+        LinkedCounterSetting(
+            checked = state.linkedToMainCounter,
+            enabled = !state.isRepeatSection,
+            onCheckedChange = actions.onLinkedToMainCounterChange,
+        )
         NumberInputField(
             value = state.stepSizeText,
             onValueChange = actions.onStepSizeChange,
             label = stringResource(R.string.step_size),
             options = NumberInputOptions(isLast = true),
+        )
+    }
+}
+
+@Composable
+private fun LinkedCounterSetting(
+    checked: Boolean,
+    enabled: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = stringResource(R.string.linked_counter),
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+                color =
+                    if (enabled) {
+                        MaterialTheme.colorScheme.onSurface
+                    } else {
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = DISABLED_CONTENT_ALPHA)
+                    },
+            )
+            Text(
+                text = stringResource(R.string.linked_counter_description),
+                style = MaterialTheme.typography.bodySmall,
+                color =
+                    if (enabled) {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DISABLED_CONTENT_ALPHA)
+                    },
+            )
+        }
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            enabled = enabled,
         )
     }
 }
@@ -609,14 +717,11 @@ fun RepeatSectionItem(
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val repeatStartRow = counter.repeatStartRow ?: return
-    val repeatEndRow = counter.repeatEndRow ?: return
-    val totalRepeats = counter.totalRepeats ?: return
-    val rowCountInRepeat = repeatEndRow - repeatStartRow + 1
-    val syncedCounter = RepeatSectionLogic.updatePosition(counter, mainRowCount)
-    val isComplete = RepeatSectionLogic.isComplete(counter, mainRowCount)
-    val currentRepeat = syncedCounter.currentRepeat?.coerceIn(1, totalRepeats) ?: 1
-    val currentRowInRepeat = RepeatSectionLogic.currentRowInRepeat(counter, mainRowCount)
+    if (counter.repeatStartRow == null || counter.repeatEndRow == null || counter.totalRepeats == null) {
+        return
+    }
+    val display = CounterValueFormatter.forRepeatSection(counter, mainRowCount)
+    val isComplete = display is CounterValueDisplay.SectionComplete
     var showContextMenu by rememberSaveable(counter.id) { mutableStateOf(false) }
     var showDeleteDialog by rememberSaveable(counter.id) { mutableStateOf(false) }
 
@@ -638,40 +743,29 @@ fun RepeatSectionItem(
         modifier =
             modifier
                 .fillMaxWidth()
-                .clip(MaterialTheme.shapes.medium)
+                .heightIn(min = CounterDimens.ExtraCounterCardMinHeight)
+                .clip(RoundedCornerShape(CounterDimens.ExtraCounterCardCornerRadius))
                 .combinedClickable(
                     onClick = {},
                     onLongClick = { showContextMenu = true },
-                ).background(MaterialTheme.colorScheme.surfaceVariant)
-                .padding(horizontal = 12.dp, vertical = 10.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+                ).background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                .padding(
+                    horizontal = CounterDimens.ExtraCounterCardHorizontalPadding,
+                    vertical = CounterDimens.ExtraCounterCardVerticalPadding,
+                ),
+        verticalArrangement = Arrangement.spacedBy(CounterDimens.ExtraCounterContentSpacing),
     ) {
-        DropdownMenu(
-            expanded = showContextMenu,
-            onDismissRequest = { showContextMenu = false },
-        ) {
-            DropdownMenuItem(
-                text = {
-                    Text(
-                        stringResource(R.string.delete_counter),
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                },
-                onClick = {
-                    showContextMenu = false
-                    showDeleteDialog = true
-                },
-            )
-        }
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(
                 text = counter.name,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
             )
             if (isComplete) {
                 Icon(
@@ -680,20 +774,17 @@ fun RepeatSectionItem(
                     tint = MaterialTheme.colorScheme.primary,
                 )
             }
+            CounterOverflowMenu(
+                counterName = counter.name,
+                expanded = showContextMenu,
+                onExpandedChange = { showContextMenu = it },
+                onRename = null,
+                onReset = null,
+                onDelete = { showDeleteDialog = true },
+            )
         }
         Text(
-            text =
-                if (isComplete) {
-                    stringResource(R.string.repeat_section_complete)
-                } else {
-                    stringResource(
-                        R.string.repeat_section_progress_format,
-                        currentRepeat,
-                        totalRepeats,
-                        currentRowInRepeat,
-                        rowCountInRepeat,
-                    )
-                },
+            text = display.asText(),
             style = MaterialTheme.typography.labelMedium,
             color =
                 if (isComplete) {
@@ -704,7 +795,10 @@ fun RepeatSectionItem(
         )
         LinearProgressIndicator(
             progress = { RepeatSectionLogic.progress(counter, mainRowCount) },
-            modifier = Modifier.fillMaxWidth(),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = CounterDimens.RepeatSectionProgressHeight),
             color = MaterialTheme.colorScheme.primary,
             trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
         )

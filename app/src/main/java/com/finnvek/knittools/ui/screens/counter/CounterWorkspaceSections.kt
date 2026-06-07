@@ -1,6 +1,5 @@
 package com.finnvek.knittools.ui.screens.counter
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -13,8 +12,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -32,17 +34,28 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.Dp
 import com.finnvek.knittools.R
+import com.finnvek.knittools.domain.calculator.CounterValueFormatter
+import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.ProjectCounter
 import com.finnvek.knittools.domain.model.ProjectCounterType
 import com.finnvek.knittools.ui.components.RollingCounter
 import com.finnvek.knittools.ui.components.StitchCounter
+import com.finnvek.knittools.ui.components.mainCounterCountText
+import com.finnvek.knittools.ui.components.mainCounterDecreaseContentDescription
+import com.finnvek.knittools.ui.components.mainCounterIncreaseContentDescription
+import com.finnvek.knittools.ui.components.mainCounterTargetText
 import com.finnvek.knittools.ui.theme.CounterDimens
+import com.finnvek.knittools.ui.theme.LightCounterMinusIcon
 
 data class ProjectHeaderActions(
     val onNameSave: (String) -> Unit,
@@ -109,9 +122,11 @@ fun CounterWorkspace(
                 modifier = Modifier.fillParentMaxHeight(),
             )
         }
+        item(key = "counter-hero-reveal-gap") {
+            Spacer(modifier = Modifier.height(CounterDimens.CounterProjectRevealGap))
+        }
         item(key = "project-content") {
             ProjectContentCards(
-                state = state,
                 onCardClick = { kind -> actions.onProjectContentClick(kind, state) },
             )
         }
@@ -131,8 +146,14 @@ fun CounterWorkspace(
                 )
             }
         }
-        item(key = "stitch-tracker") {
-            CounterStitchTracker(state = state, actions = actions)
+        state.activeAlert?.let { reminder ->
+            item(key = "active-reminder-alert") {
+                ReminderAlertCard(
+                    reminder = reminder,
+                    currentRow = state.counter.count,
+                    onDismiss = actions.onDismissReminder,
+                )
+            }
         }
     }
 }
@@ -168,47 +189,50 @@ private fun CounterHero(
             modifier
                 .fillMaxWidth()
                 .heightIn(min = CounterDimens.HeroMinimumHeight)
-                .clickable(onClick = actions.onSurfaceIncrement),
+                .counterClickWithoutIndication(actions.onSurfaceIncrement),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
+        verticalArrangement = Arrangement.Top,
     ) {
-        state.activeAlert?.let { reminder ->
-            ReminderAlertCard(
-                reminder = reminder,
-                currentRow = state.counter.count,
-                onDismiss = actions.onDismissReminder,
-            )
-            Spacer(modifier = Modifier.height(CounterDimens.WorkspaceGroupSpacing))
-        }
+        Spacer(modifier = Modifier.weight(CounterDimens.CounterHeroTopWeight))
         if (state.canUseSecondaryCounter) {
             CompactPatternRepeatRow(
                 count = state.secondaryCount,
                 onDecrement = actions.onDecrementSecondary,
                 onIncrement = actions.onIncrementSecondary,
             )
-            Spacer(modifier = Modifier.height(CounterDimens.WorkspaceGroupSpacing))
+            Spacer(modifier = Modifier.height(CounterDimens.CounterRepeatToRowSpacing))
         }
         CounterRowLabel(state = state, onShowTargetDialog = actions.onShowTargetDialog)
         CounterMainNumber(state = state)
         CounterTargetProgressBar(state = state, onShowTargetDialog = actions.onShowTargetDialog)
         Spacer(modifier = Modifier.height(CounterDimens.HeroButtonSpacing))
         CounterButtons(
+            state = state,
             onDecrement = actions.onDecrement,
             onIncrement = actions.onIncrement,
             onUndo = actions.onUndo,
         )
+        if (state.visibleStitchTotal != null) {
+            Spacer(modifier = Modifier.height(CounterDimens.CounterControlsToStitchTrackerSpacing))
+            CounterStitchTracker(state = state, actions = actions)
+        }
+        Spacer(modifier = Modifier.weight(CounterDimens.CounterHeroBottomWeight))
+        Spacer(modifier = Modifier.height(CounterDimens.HeroBottomBreathingSpace))
     }
 }
+
+private val CounterUiState.visibleStitchTotal: Int?
+    get() = stitchCount?.takeIf { stitchTrackingEnabled && it > 0 }
 
 @Composable
 private fun CounterStitchTracker(
     state: CounterUiState,
     actions: CounterWorkspaceActions,
 ) {
-    val totalStitches = state.stitchCount?.takeIf { it > 0 } ?: return
-    if (!state.stitchTrackingEnabled) return
+    val totalStitches = state.visibleStitchTotal ?: return
 
     StitchCounter(
+        label = stringResource(R.string.stitch_tracker_label),
         currentStitch = state.currentStitch.coerceIn(0, totalStitches),
         totalStitches = totalStitches,
         onIncrement = actions.onIncrementStitch,
@@ -221,34 +245,33 @@ private fun CounterRowLabel(
     state: CounterUiState,
     onShowTargetDialog: () -> Unit,
 ) {
+    val display = CounterValueFormatter.forMainCounter(state.toMainCounterProject())
     val labelText =
-        if (state.targetRows != null) {
-            stringResource(R.string.row_label_with_target, state.counter.count, state.targetRows)
-        } else {
-            stringResource(R.string.current_row)
-        }
+        display.targetLine?.let { mainCounterTargetText(it) }
+            ?: mainCounterCountText(display.heroTitle)
     Text(
         text = labelText,
-        style = MaterialTheme.typography.labelSmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        style =
+            MaterialTheme.typography.headlineSmall.copy(
+                fontSize = CounterDimens.CounterRowLabelFontSize,
+                fontWeight = FontWeight.SemiBold,
+            ),
+        color = MaterialTheme.colorScheme.onSurface,
         modifier = Modifier.clickable(onClick = onShowTargetDialog),
     )
 }
 
 @Composable
 private fun CounterMainNumber(state: CounterUiState) {
-    val counterFontSize = (115f / androidx.compose.ui.platform.LocalDensity.current.fontScale).sp
+    val display = CounterValueFormatter.forMainCounter(state.toMainCounterProject())
     val counterDescription =
-        if (state.targetRows != null && state.targetRows > 0) {
-            stringResource(R.string.row_label_with_target, state.counter.count, state.targetRows)
-        } else {
-            stringResource(R.string.current_row_short, state.counter.count)
-        }
+        display.targetLine?.let { mainCounterTargetText(it) }
+            ?: mainCounterCountText(display.heroTitle)
     RollingCounter(
         count = state.counter.count,
         textStyle =
             MaterialTheme.typography.displayMedium.copy(
-                fontSize = counterFontSize,
+                fontSize = CounterDimens.CounterMainNumberFontSize,
                 fontWeight = FontWeight.Bold,
                 fontFeatureSettings = "tnum",
             ),
@@ -272,8 +295,10 @@ private fun CounterTargetProgressBar(
         modifier =
             Modifier
                 .fillMaxWidth()
+                .widthIn(max = CounterDimens.CounterControlsMaxWidth)
                 .height(CounterDimens.CounterProgressHeight)
-                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                .clip(RoundedCornerShape(CounterDimens.CounterProgressCornerRadius))
+                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
                 .clickable(onClick = onShowTargetDialog),
     ) {
         Box(
@@ -281,64 +306,221 @@ private fun CounterTargetProgressBar(
                 Modifier
                     .fillMaxWidth(fraction)
                     .height(CounterDimens.CounterProgressHeight)
+                    .clip(RoundedCornerShape(CounterDimens.CounterProgressCornerRadius))
                     .background(fillColor),
         )
+    }
+    CounterTargetHelperLabel(
+        helperText = counterTargetHelperText(state.counter.count, target),
+        onShowTargetDialog = onShowTargetDialog,
+    )
+}
+
+internal sealed interface CounterTargetHelperText {
+    data object OneRowLeft : CounterTargetHelperText
+
+    data class RowsLeft(
+        val rows: Int,
+    ) : CounterTargetHelperText
+
+    data object TargetReached : CounterTargetHelperText
+
+    data class PastTarget(
+        val rows: Int,
+    ) : CounterTargetHelperText
+}
+
+internal fun counterTargetHelperText(
+    count: Int,
+    targetRows: Int?,
+): CounterTargetHelperText? {
+    val target = targetRows?.takeIf { it > 0 } ?: return null
+    val rowsUntilTarget = target - count
+    return when {
+        rowsUntilTarget > 1 -> CounterTargetHelperText.RowsLeft(rowsUntilTarget)
+        rowsUntilTarget == 1 -> CounterTargetHelperText.OneRowLeft
+        rowsUntilTarget == 0 -> CounterTargetHelperText.TargetReached
+        rowsUntilTarget == -1 -> CounterTargetHelperText.PastTarget(1)
+        else -> CounterTargetHelperText.PastTarget(-rowsUntilTarget)
     }
 }
 
 @Composable
+private fun CounterTargetHelperLabel(
+    helperText: CounterTargetHelperText?,
+    onShowTargetDialog: () -> Unit,
+) {
+    val text =
+        when (helperText) {
+            is CounterTargetHelperText.RowsLeft ->
+                pluralStringResource(R.plurals.counter_target_rows_left, helperText.rows, helperText.rows)
+
+            CounterTargetHelperText.OneRowLeft ->
+                pluralStringResource(R.plurals.counter_target_rows_left, 1, 1)
+            CounterTargetHelperText.TargetReached -> stringResource(R.string.counter_target_reached)
+            is CounterTargetHelperText.PastTarget ->
+                pluralStringResource(R.plurals.counter_target_rows_past, helperText.rows, helperText.rows)
+
+            null -> return
+        }
+    Spacer(modifier = Modifier.height(CounterDimens.CounterTargetHelperSpacing))
+    Text(
+        text = text,
+        style =
+            MaterialTheme.typography.labelMedium.copy(
+                fontSize = CounterDimens.CounterTargetHelperFontSize,
+            ),
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.clickable(onClick = onShowTargetDialog),
+    )
+}
+
+@Composable
 private fun CounterButtons(
+    state: CounterUiState,
     onDecrement: () -> Unit,
     onIncrement: () -> Unit,
     onUndo: () -> Unit,
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceEvenly,
-        verticalAlignment = Alignment.CenterVertically,
+    val display = CounterValueFormatter.forMainCounter(state.toMainCounterProject())
+    val isLightTheme = MaterialTheme.colorScheme.background.luminance() > 0.5f
+    val minusContentColor =
+        if (isLightTheme) {
+            LightCounterMinusIcon
+        } else {
+            MaterialTheme.colorScheme.onSurface
+        }
+
+    Box(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .widthIn(max = CounterDimens.CounterControlsMaxWidth)
+                .height(CounterDimens.CounterControlsHeight),
     ) {
         Box(
             modifier =
                 Modifier
-                    .size(CounterDimens.CounterSideButtonSize)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .clickable(onClick = onDecrement),
+                    .size(CounterDimens.CounterMinusTouchSize)
+                    .align(Alignment.CenterStart)
+                    .counterClickWithoutIndication(onDecrement),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(
-                Icons.Filled.Remove,
-                contentDescription = stringResource(R.string.counter_decrease),
-                modifier = Modifier.size(CounterDimens.CounterSideIconSize),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            CounterHeroActionButton(
+                icon = Icons.Filled.Remove,
+                contentDescription = mainCounterDecreaseContentDescription(display.decreaseContentDescription),
+                contentColor = minusContentColor,
+                visualSize = CounterDimens.CounterMinusVisualSize,
+                iconSize = CounterDimens.CounterMinusIconSize,
+                modifier =
+                    Modifier.size(CounterDimens.CounterMinusVisualSize),
             )
         }
-        Image(
-            painter = painterResource(R.drawable.plus_button),
-            contentDescription = stringResource(R.string.counter_increase),
-            modifier =
-                Modifier
-                    .size(CounterDimens.CounterPrimaryButtonSize)
-                    .clip(CircleShape)
-                    .clickable(onClick = onIncrement),
-            contentScale = ContentScale.Crop,
-        )
         Box(
             modifier =
                 Modifier
-                    .size(CounterDimens.CounterSideButtonSize)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .clickable(onClick = onUndo),
+                    .size(CounterDimens.CounterPrimaryTouchSize)
+                    .align(Alignment.CenterEnd)
+                    .counterClickWithoutIndication(onIncrement),
+            contentAlignment = Alignment.Center,
+        ) {
+            CounterHeroActionButton(
+                icon = Icons.Filled.Add,
+                contentDescription = mainCounterIncreaseContentDescription(display.increaseContentDescription),
+                contentColor = MaterialTheme.colorScheme.primary,
+                visualSize = CounterDimens.CounterPrimaryVisualSize,
+                iconSize = CounterDimens.CounterPrimaryIconSize,
+                modifier =
+                    Modifier.size(CounterDimens.CounterPrimaryVisualSize),
+            )
+        }
+        CounterUndoButton(
+            onUndo = onUndo,
+            modifier =
+                Modifier
+                    .align(Alignment.TopCenter)
+                    .offset(
+                        x = CounterDimens.CounterUndoHorizontalOffset,
+                        y = CounterDimens.CounterUndoVerticalOffset,
+                    ),
+        )
+    }
+}
+
+private fun CounterUiState.toMainCounterProject(): CounterProject =
+    CounterProject(
+        id = projectId ?: 0L,
+        name = projectName,
+        count = counter.count,
+        craftType = craftType,
+        mainCounterLabelType = mainCounterLabelType,
+        mainCounterCustomLabel = mainCounterCustomLabel,
+        stepSize = counter.stepSize,
+        targetRows = targetRows,
+    )
+
+@Composable
+private fun CounterUndoButton(
+    onUndo: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier =
+            modifier
+                .size(CounterDimens.CounterUndoTouchSize)
+                .counterClickWithoutIndication(onUndo),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .size(CounterDimens.CounterUndoVisualSize),
             contentAlignment = Alignment.Center,
         ) {
             Icon(
                 Icons.AutoMirrored.Filled.Undo,
-                contentDescription = stringResource(R.string.counter_undo),
-                modifier = Modifier.size(CounterDimens.CounterSideIconSize),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                contentDescription = stringResource(R.string.counter_undo_last_change),
+                modifier = Modifier.size(CounterDimens.CounterUndoIconSize),
+                tint = MaterialTheme.colorScheme.outline,
             )
         }
+    }
+}
+
+@Composable
+private fun CounterHeroActionButton(
+    icon: ImageVector,
+    contentDescription: String,
+    contentColor: Color,
+    visualSize: Dp,
+    iconSize: Dp,
+    modifier: Modifier = Modifier,
+) {
+    val isLightTheme = MaterialTheme.colorScheme.background.luminance() > 0.5f
+    val containerColor =
+        if (isLightTheme) {
+            MaterialTheme.colorScheme.surfaceContainerHighest
+        } else {
+            MaterialTheme.colorScheme.surfaceVariant
+        }
+
+    Box(
+        modifier =
+            modifier
+                .size(visualSize)
+                .clip(CircleShape)
+                .background(containerColor)
+                .semantics {
+                    this.contentDescription = contentDescription
+                },
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(iconSize),
+            tint = contentColor,
+        )
     }
 }
 
@@ -351,12 +533,14 @@ private fun CompactPatternRepeatRow(
     Row(
         modifier =
             Modifier
-                .fillMaxWidth()
+                .widthIn(
+                    min = CounterDimens.CounterRepeatMinWidth,
+                    max = CounterDimens.CounterRepeatMaxWidth,
+                ).height(CounterDimens.CounterRepeatHeight)
                 .clip(RoundedCornerShape(CounterDimens.CounterRepeatCornerRadius))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .background(MaterialTheme.colorScheme.surfaceContainer)
                 .padding(
                     horizontal = CounterDimens.CounterRepeatHorizontalPadding,
-                    vertical = CounterDimens.CounterRepeatVerticalPadding,
                 ),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -364,16 +548,15 @@ private fun CompactPatternRepeatRow(
         Text(
             text = stringResource(R.string.counter_repeat_label),
             style =
-                MaterialTheme.typography.labelSmall.copy(
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 12.sp,
-                    letterSpacing = 0.8.sp,
+                MaterialTheme.typography.labelMedium.copy(
+                    fontSize = CounterDimens.CounterRepeatLabelFontSize,
+                    fontWeight = FontWeight.SemiBold,
                 ),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(CounterDimens.ProjectCardGridSpacing),
+            horizontalArrangement = Arrangement.spacedBy(CounterDimens.WorkspaceGroupSpacing),
         ) {
             PatternRepeatButton(
                 icon = Icons.Filled.Remove,
@@ -383,9 +566,9 @@ private fun CompactPatternRepeatRow(
             Text(
                 text = count.toString(),
                 style =
-                    MaterialTheme.typography.labelLarge.copy(
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp,
+                    MaterialTheme.typography.titleMedium.copy(
+                        fontSize = CounterDimens.CounterRepeatValueFontSize,
+                        fontWeight = FontWeight.SemiBold,
                     ),
                 color = MaterialTheme.colorScheme.onSurface,
             )
@@ -398,27 +581,41 @@ private fun CompactPatternRepeatRow(
     }
 }
 
+private fun Modifier.counterClickWithoutIndication(onClick: () -> Unit): Modifier =
+    clickable(
+        interactionSource = null,
+        indication = null,
+        onClick = onClick,
+    )
+
 @Composable
 private fun PatternRepeatButton(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector,
     contentDescription: String,
     onClick: () -> Unit,
 ) {
     Box(
         modifier =
             Modifier
-                .size(CounterDimens.CounterRepeatButtonSize)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surface)
-                .clickable(onClick = onClick),
+                .size(CounterDimens.CounterRepeatButtonTouchSize)
+                .counterClickWithoutIndication(onClick),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = contentDescription,
-            modifier = Modifier.size(CounterDimens.CounterRepeatIconSize),
-            tint = MaterialTheme.colorScheme.onSurface,
-        )
+        Box(
+            modifier =
+                Modifier
+                    .size(CounterDimens.CounterRepeatButtonVisualSize)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = contentDescription,
+                modifier = Modifier.size(CounterDimens.CounterRepeatIconSize),
+                tint = MaterialTheme.colorScheme.onSurface,
+            )
+        }
     }
 }
 
@@ -436,11 +633,28 @@ private fun WorkspaceSectionTitle(
         Text(
             text = title,
             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = MaterialTheme.colorScheme.secondary,
         )
-        TextButton(onClick = onAction) {
-            Text(actionLabel)
-        }
+        WorkspaceSectionAction(
+            label = actionLabel,
+            onClick = onAction,
+        )
+    }
+}
+
+@Composable
+private fun WorkspaceSectionAction(
+    label: String,
+    onClick: () -> Unit,
+) {
+    TextButton(onClick = onClick) {
+        Icon(
+            imageVector = Icons.Filled.Add,
+            contentDescription = null,
+            modifier = Modifier.size(CounterDimens.WorkspaceSectionActionIconSize),
+        )
+        Spacer(modifier = Modifier.width(CounterDimens.WorkspaceSectionActionIconSpacing))
+        Text(label)
     }
 }
 

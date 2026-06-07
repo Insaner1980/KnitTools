@@ -34,7 +34,7 @@ Nykytilan kannalta hyödyllinen järjestys:
 - Integraatiot: Ravelry OAuth2/API, Google Play Billing, In-App Review, In-App Update
 - Paikalliset lisäominaisuudet: regex-pohjainen laskuriohjeparseri `domain/calculator/InstructionParser.kt`
 - Lokalisaatio: `localeConfig` + useat `values-*`-hakemistot
-- Room schema version: `12`
+- Room schema version: `13`
 - `compileSdk` / `targetSdk` / `minSdk`: `36 / 36 / 29`
 - `baselineprofile`-moduulin `minSdk`: `29`
 - Java target: `17`
@@ -75,10 +75,26 @@ Jos avaat vain muutaman tiedoston, avaa nämä:
   - `app/src/main/java/com/finnvek/knittools/data/local/KnitToolsDatabase.kt`
   - `app/src/main/java/com/finnvek/knittools/data/datastore/PreferencesManager.kt`
   - `app/src/main/java/com/finnvek/knittools/repository/`
+- päälaskurin domain ja näyttötekstit:
+  - `app/src/main/java/com/finnvek/knittools/domain/model/CraftType.kt`
+  - `app/src/main/java/com/finnvek/knittools/domain/model/MainCounterLabelType.kt`
+  - `app/src/main/java/com/finnvek/knittools/domain/model/MainCounterChange.kt`
+  - `app/src/main/java/com/finnvek/knittools/domain/model/ReadingLine.kt`
+  - `app/src/main/java/com/finnvek/knittools/domain/calculator/CounterValueFormatter.kt`
+  - `app/src/main/java/com/finnvek/knittools/ui/components/MainCounterDisplayText.kt`
 - projektityötila ja projektikortit:
+  - `app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterScreen.kt`
+  - `app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterViewModel.kt`
   - `app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterWorkspaceSections.kt`
   - `app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterProjectContentCards.kt`
+  - `app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterScreenDecisions.kt`
+  - `app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterUiStateReducers.kt`
+  - `app/src/main/java/com/finnvek/knittools/ui/screens/counter/YarnManagementSheet.kt`
+  - `app/src/main/java/com/finnvek/knittools/ui/screens/counter/PatternAttachmentUriResolver.kt`
+  - `app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternPickerSheet.kt`
   - `app/src/main/java/com/finnvek/knittools/ui/components/ProjectCard.kt`
+  - `app/src/main/java/com/finnvek/knittools/ui/components/ProjectDetailsDialog.kt`
+  - `app/src/main/java/com/finnvek/knittools/ui/components/ProjectYarnTextField.kt`
   - `app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectListScreen.kt`
 - Library ja lankakortit:
   - `app/src/main/java/com/finnvek/knittools/ui/screens/library/MyYarnScreen.kt`
@@ -86,6 +102,7 @@ Jos avaat vain muutaman tiedoston, avaa nämä:
   - `app/src/main/java/com/finnvek/knittools/ui/screens/yarncard/YarnCardDetailScreen.kt`
   - `app/src/main/java/com/finnvek/knittools/ui/screens/yarncard/YarnCardViewModel.kt`
   - `app/src/main/java/com/finnvek/knittools/data/storage/YarnPhotoStorage.kt`
+  - `app/src/main/java/com/finnvek/knittools/repository/ProjectYarnNoteRepository.kt`
 - Pro / billing / trial:
   - `app/src/main/java/com/finnvek/knittools/billing/BillingManager.kt`
   - `app/src/main/java/com/finnvek/knittools/pro/`
@@ -256,7 +273,7 @@ Counterin projektivalinta:
 - referenssireitit:
   - `needles`
   - `size_charts`
-  - `abbreviations`
+  - `abbreviations?craftType={craftType}`
   - `chart_symbols`
 
 ### Muut
@@ -329,9 +346,9 @@ Huomio:
   - `DispatchersModule.kt`
   - `NetworkModule.kt`
 - `domain/calculator/`
-  - laskenta- ja paikalliset parserilogiikat, mukaan lukien regex-pohjainen `InstructionParser`
+  - laskenta- ja paikalliset parserilogiikat, mukaan lukien regex-pohjainen `InstructionParser`, `CounterValueFormatter` ja projektikohtaisen lisälaskurin domain-logiikka
 - `domain/model/`
-  - domain-mallit
+  - domain-mallit, mukaan lukien `CraftType`, `MainCounterLabelType`, `MainCounterChange`, `ReadingLine`, `ProjectCounterType`, `ProjectSortOrder` ja `YarnCardLinks`
 - `pro/`
   - `InAppReviewManager.kt`
   - `InAppUpdateManager.kt`
@@ -351,7 +368,7 @@ Huomio:
   - `YarnCardRepository.kt`
 - `ui/`
   - `navigation/` omistaa route-mallit, top-level-tabien source of truthin ja route-argumenttien fallbackit
-  - `screens/counter/` omistaa counterin työtilan, content cardit, pattern picker -entryn, projektitoiminnot ja laskuriosiot
+  - `screens/counter/` omistaa counterin työtilan, content cardit, yarn management -sheetin, pattern picker -entryn, projektitoiminnot, laskuriosiot, pienet counter-päätöshelperit ja `CounterUiState`-reducerit
   - `screens/library/` omistaa Library-hubin, My Yarn -listan, saved patterns -listan ja all photos -listan
   - `screens/yarncard/` omistaa lankakortin detailin, manuaalisen input-mallin ja detail-editoinnin
   - `components/` sisältää jaettuja UI-rakennuspalikoita, kuten `ProjectCard`, `HubListItem`, dialogit, inputit ja tooltipit
@@ -386,14 +403,15 @@ Huomio:
 Migraatiotilanne:
 
 - automaattiset migraatiot: `1 -> 2`, `2 -> 3`
-- käsinkirjoitetut migraatiot: `3 -> 4`, `4 -> 5`, `5 -> 6`, `6 -> 7`, `7 -> 8`, `8 -> 9`, `9 -> 10`, `10 -> 11`, `11 -> 12`
-- schema exportataan hakemistoon `app/schemas/com.finnvek.knittools.data.local.KnitToolsDatabase/`, jossa uusin export on `12.json`
+- käsinkirjoitetut migraatiot: `3 -> 4`, `4 -> 5`, `5 -> 6`, `6 -> 7`, `7 -> 8`, `8 -> 9`, `9 -> 10`, `10 -> 11`, `11 -> 12`, `12 -> 13`
+- schema exportataan hakemistoon `app/schemas/com.finnvek.knittools.data.local.KnitToolsDatabase/`, jossa uusin export on `13.json`
 
 Näkyvä uusin lisäys:
 
 - `sessions.durationSeconds` ja `sessions.rowsWorked` lisättiin migraatiossa `9 -> 10`; vanhat rivit backfillataan `durationMinutes * 60` ja positiivisella `endRow - startRow` -arvolla
 - `sessions(endedAt, startedAt)` ja `sessions(projectId, endedAt, startedAt)` -indeksit lisättiin migraatiossa `10 -> 11`
 - `project_yarn_notes` lisättiin migraatiossa `11 -> 12`
+- `counter_projects.craftType`, `counter_projects.mainCounterLabelType`, `counter_projects.mainCounterCustomLabel`, `counter_projects.readingLineEnabled`, `counter_projects.readingLineYFraction` ja `project_counters.linkedToMainCounter` lisättiin migraatiossa `12 -> 13`
 - `sessions.startedAt`-indeksi on migraatiossa `8 -> 9`
 - `counter_projects.targetRows` on migraatiossa `7 -> 8`
 
@@ -402,6 +420,32 @@ Session-laskennan nykyrajat:
 - `KnitSession` ja `SessionEntity` kantavat sekä display-minuutit että tarkat `durationSeconds` / `rowsWorked` -kentät
 - `SessionDao.getTotalMinutes(...)` summaa `durationSeconds`-kentän ja pyöristää ylöspäin minuutteihin
 - Insights käyttää `SessionMetrics`-apuria, joka jakaa cross-midnight-sessiot laitteen paikallisiin päiviin ja laskee pace-arvot sekunneista ja tehdyistä riveistä
+
+### Päälaskurin ja lisälaskureiden domain
+
+Nykyinen päälaskuri ei ole enää pelkkä rivilaskuri.
+
+Source of truth:
+
+- `domain/model/CraftType.kt`
+- `domain/model/MainCounterLabelType.kt`
+- `domain/model/MainCounterChange.kt`
+- `domain/model/ProjectCounterType.kt`
+- `domain/calculator/CounterValueFormatter.kt`
+- `repository/CounterRepository.kt`
+- `ui/components/MainCounterDisplayText.kt`
+
+Nykyiset rajat:
+
+- projektin craft type on `KNITTING` tai `CROCHET`; vanhat ja tuntemattomat persisted-arvot putoavat `KNITTING`-tilaan
+- oletuspäälaskurin nimi tulee craft typestä: neulonta käyttää `ROWS`, virkkaus käyttää `ROUNDS`
+- päälaskurin label voi olla `ROWS`, `ROUNDS`, `REPEATS` tai `CUSTOM`
+- custom-label trimmataan, tyhjä arvo hylätään ja maksimipituus on `32` merkkiä `MainCounterLabelType.kt`:ssa
+- `CounterValueFormatter` muodostaa päälaskurin hero-labelin, target-tekstin, plus/miinus-content descriptionit, project card -count-tekstin sekä lisälaskureiden repeat/shaping/reminder-displayn
+- kaikki päälaskurimuutokset kulkevat `CounterRepository.applyMainCounterChange(...)` -metodin kautta, myös widgetin `applyWidgetCountChange(...)`
+- repository tekee countin, historyn, current-stitch-resetin ja linkitettyjen lisälaskureiden delta-päivitykset samassa `DatabaseTransactionRunner`-transaktiossa
+- `ProjectCounter.linkedToMainCounter` saa lisälaskurin seuraamaan päälaskurin todellista muutosta; decrement ja reset käyttävät toteutunutta deltaa eivätkä voi pudottaa laskuria alle nollan
+- repeat-section counterit eivät saa olla linked-to-main, koska niiden eteneminen johdetaan jo päälaskurin riveistä
 
 ### DataStore
 
@@ -436,12 +480,39 @@ Entry pointit:
 Tallennuspolut nykykoodissa:
 
 - pattern PDF:t tallennetaan appin sisäiseen `pattern_pdfs/<projectId>`-hakemistoon `file://`-URIlla
+- ulkoiset pattern-PDF:t kopioidaan `PatternDocumentStorage.copyPdfToInternal(...)`-polulla appin sisäiseen `pattern_pdfs/<projectId>`-hakemistoon; jo app-owned pattern-URI säilytetään ilman uutta kopiota `resolvePatternAttachmentUri(...)`-päätöksellä
+- jos ulkoisen pattern-PDF:n kopiointi epäonnistuu, `resolvePatternAttachmentUri(...)` palauttaa `null` eikä patternia liitetä projektiin
 - pattern camera capture -kuvat luodaan `pattern_captures/<projectId>`-hakemistoon ja ne ovat FileProviderin kautta ulos annettava väliaikainen pattern-kuvapolku
 - progress-kuvat tallennetaan `progress_photos/<projectId>`-hakemistoon
 - yarn card -kuvat kopioidaan `YarnPhotoStorage.copyPhoto(...)`-metodilla appin sisäiseen `yarn_photos/<cardId>`-hakemistoon ja tallennetaan lankakortille app-owned `file://`-URIksi
 - `file_paths.xml` exposeeraa vain `progress_photos` ja `pattern_captures`; `yarn_photos` ja `pattern_pdfs` eivät ole nykyisiä FileProvider-share-rootteja
 - `AppFileStorage` tunnistaa silti sisäistä lukua/siivousta varten app-owned `file://`-URI:t sekä legacy FileProvider-rootit `yarn_photos`, `progress_photos`, `pattern_captures`, `pattern_pdfs` ja `patterns`
 - lankakortin kuvan vaihto poistaa vanhan app-owned kuvan vain jos uuden kuvan URI tallentui onnistuneesti; epäonnistunut tallennus siivoaa vasta kopioidun uuden kuvan
+
+### Pattern PDF, import ja reading line
+
+Pattern viewer -tila jakautuu projektin pysyvään attached-PDF-polkuun ja libraryn session sisäiseen katselutilaan.
+
+Source of truth:
+
+- `ui/screens/pattern/PatternPickerSheet.kt`
+- `ui/screens/pattern/PatternViewerScreen.kt`
+- `ui/screens/counter/PatternAttachmentUriResolver.kt`
+- `data/storage/PatternDocumentStorage.kt`
+- `data/storage/PdfPageRenderer.kt`
+- `domain/model/ReadingLine.kt`
+- `repository/CounterRepository.kt`
+- `config/future-sync-spec.md`
+
+Nykyiset rajat:
+
+- pattern import käyttää Android Storage Access Frameworkia `OpenDocument(application/pdf)` -sopimuksella ja persistable read grantilla
+- `Open device files` ja Drive/Dropbox-copy käyttävät nykykoodissa samaa SAF PDF -pickeriä; sovelluksessa ei ole Drive/Dropbox SDK:ta, OAuthia, provider-kohtaista token storagea eikä taustasynkkaa
+- app-owned pattern PDF säilyy `pattern_pdfs/<projectId>`-polussa; ulkoinen PDF kopioidaan sisäiseen tallennukseen ennen attachia
+- projektin attached-PDF:n reading line tallennetaan kenttiin `counter_projects.readingLineEnabled` ja `counter_projects.readingLineYFraction`
+- `ReadingLine.sanitizeYFraction(...)` rajoittaa arvon välille `0.05f..0.95f`, oletus on `0.5f`
+- library-only pattern viewer käyttää `rememberSaveable(patternUri)` -tilaa sivulle ja reading linelle; se ei luo saved-pattern-skeemapolkua pelkän katselun takia
+- jatkuva Drive/Dropbox-sync on tulevaa speksiä `config/future-sync-spec.md`:ssä, ei nykyominaisuus; ennen sitä pitää määritellä Pro-gate, konfliktit, offline-käytös, OAuth/token storage ja background sync
 
 ## Kielet ja lokalisaatio
 
@@ -544,8 +615,9 @@ Billing-tuote:
 
 Huomio nykytilasta:
 
-- `ProState.hasFeature(feature)` palauttaa yhä käytännössä saman kuin `isPro`
-- per-feature-gating on UI- ja käyttölogiikassa nimetty, mutta ei vielä eriytetty ostotasojen mukaan
+- release- ja non-debug-käytössä `ProState.hasFeature(feature, debugUnlockAllFeatures = false)` vastaa yhtä Pro-tasoa: trial active tai purchase avaa ominaisuudet
+- debug-buildissä `ProState.hasFeature(...)` avaa feature-gatet `BuildConfig.DEBUG`-oletuksella muuttamatta `isPro`-arvoa, billing-ostotilaa, trial-tilaa, `purchaseTimestamp`ia tai upgrade UI:n ostoväitteitä
+- per-feature-gating on UI- ja käyttölogiikassa nimetty, mutta ostotasoja on edelleen vain yksi
 - trialin pituus on `14` päivää
 
 ### Paikallinen parseri
@@ -577,19 +649,24 @@ Keskeiset rajat:
 
 - `CounterScreen.kt` omistaa sheet/dialog-statea, route callbackit, feature-gate-päätökset ja ViewModel-kutsujen johdotuksen
 - `CounterScreen.kt` omistaa myös counter-reitin top barin: back-nuoli, iso uppercase-projektinimi ja overflow ovat samassa headerissa
-- `CounterWorkspaceSections.kt` omistaa työtilan järjestyksen, päälaskuriheron, content-card-slotin, lisälaskurit, stitch trackingin ja reminder-alertin sijoittelun
-- `CounterProjectContentCards.kt` omistaa projektin viiden neliökortin "content cards" -mallin
-- `ui/theme/CounterDimens.kt` omistaa counterin hero-, grid-, spacing-, icon- ja touch-target-mitoitustokenit
+- `CounterScreenDecisions.kt` omistaa pienet feature-portitus- ja stitch tracking -päätökset (`requestCounterFeature`, `handleStitchTrackingToggle`)
+- `CounterUiStateReducers.kt` omistaa projektin havainnoinnin, counter-muutosten, aktiivisen reminderin ja dismissed reminder -tilan yhdistämisen `CounterUiState`en
+- `CounterWorkspaceSections.kt` omistaa työtilan järjestyksen, päälaskuriheron, target-helperin, content-card-slotin, lisälaskurit, stitch trackingin ja reminder-alertin sijoittelun
+- `CounterProjectContentCards.kt` omistaa projektin viiden neliökortin "content cards" -mallin, jossa Reminders-kortti keskitetään omalle rivilleen
+- `YarnManagementSheet.kt` omistaa counterista avattavan yarn management -sheetin ja projektikohtaisen yarn note -lomakkeen
+- `ProjectDetailsDialog.kt` on jaettu projektin luonnin ja projektin tietojen muokkauksen pinta; se omistaa nimen, craft typen, päälaskurin labelin ja custom-labelin UI-valinnat
+- `MainCounterDisplayText.kt` muuntaa `CounterValueFormatter`in slotit lokalisoiduiksi Compose-teksteiksi päälaskurin herolle, targetille, content descriptioneille ja project cardeille
+- `ui/theme/CounterDimens.kt` omistaa counterin hero-, progress-, repeat-pill-, grid-, extra-counter-, spacing-, icon- ja touch-target-mitoitustokenit
 - `CounterQuickActions.kt` ja `CounterProjectInfo.kt` on poistettu nykyisestä pinnasta; älä palauta niiden mallia dokumentin perusteella
 
 Ensimmäisen viewportin järjestys on tarkoituksella rauhallinen laskurityökalu:
 
 - top bar näyttää vain back-nuolen, projektinimen ja overflow-menun
-- ensimmäinen `LazyColumn`-item on `counter-hero`, jonka sisällä ovat mahdollinen aktiivinen reminder-tila, repeat/section-rivi, row label, iso rivinumero, progress bar ja laskurin kontrollit
-- `ProjectContentCards`, extra counters ja stitch tracking alkavat vasta hero-scrollin jälkeen
+- ensimmäinen `LazyColumn`-item on `counter-hero`, jonka sisällä ovat mahdollinen repeat/section-rivi, row label, iso rivinumero, target progress/helper ja laskurin kontrollit
+- aktiivinen reminder-alert, `ProjectContentCards`, extra counters ja stitch tracking alkavat vasta hero-scrollin jälkeen
 - `Screen.Counter.route` ei kuulu `HIDE_BOTTOM_BAR_ROUTES`-joukkoon, joten alanavigaatio pysyy näkyvissä counterissa
 
-`ProjectContentCards` näyttää aina nämä viisi neliökorttia ilman preview-tekstejä, tiedostonimiä, kuvamääriä, chevroneita tai reminder-viestejä:
+`ProjectContentCards` näyttää aina nämä viisi neliökorttia ilman preview-tekstejä, tiedostonimiä, kuvamääriä, chevroneita tai reminder-viestejä. Ensimmäiset neljä korttia ovat kahden sarakkeen neliögridissä ja Reminders-kortti on samankokoisena keskitetty omalle rivilleen:
 
 - pattern:
   - title on `Open Pattern`, jos `patternUri` tai `linkedPattern` on olemassa
@@ -616,6 +693,14 @@ Counter-headerin nykyinen UX-raja:
 - tarkka pattern-nimi tai tiedostonimi ei näy counterin projektikortissa
 - `ProjectCard` piilottaa raakamuotoisen `.pdf`-nimen secondary-linelta, jos se olisi muuten ainoa pattern-nimi
 
+Yarn management -sheetin nykyinen malli:
+
+- `YarnManagementSheet` näyttää sekä linkitetyt My Yarn -kortit että projektikohtaiset yarn notes samassa sheetissä
+- kaksi päävalintaa ovat `Choose from My Yarn` ja `Add yarn to project`; projektikohtainen yarn note ei luo automaattisesti lankakorttia
+- `CounterViewModel.saveProjectYarnNote(...)` tallentaa `project_yarn_notes`-rivin `ProjectYarnNoteRepository.save(...)`-polun kautta
+- `CounterViewModel.saveProjectYarnNoteToMyYarn(noteId)` luo linkitetyn `YarnCard`in statuksella `YarnCardStatus.IN_USE` ja tallentaa `savedYarnCardId`-viitteen samaan repository-transaktioon
+- projektikohtaiset yarn notes pysyvät management sheetissä; niitä ei tuoda takaisin `ProjectContentCards`-previewksi
+
 ### Project list
 
 `ProjectListScreen` ja `ProjectListViewModel` kokoavat Projects-tabin listapinnan.
@@ -625,9 +710,10 @@ Nykyinen listakäyttäytyminen:
 - aktiiviset ja valmistuneet projektit haetaan `CounterRepository`n sort-order-aware flow'ista
 - sort order tulee `ProjectSortOrder`-enumista ja DataStore tallentaa `persistedValue`-arvon
 - free-käyttäjälle uuden aktiivisen projektin luonti pysäytetään, jos aktiivisia projekteja on jo vähintään yksi
+- projektin luonti käyttää `ProjectDetailsDialog`ia, oletuksena `CraftType.KNITTING` ja craft typen mukainen päälaskurin label
 - completed-projektien näkyvyys tulee `PreferencesManager.showCompletedProjects`-asetuksesta
 - `ContinueKnittingProject` valitaan ensimmäisestä aktiivisesta projektista, jonka `count > 0`
-- project card näyttää rivimäärän, viimeksi päivitetyn päivän, ensimmäisen linkitetyn langan nimen, kuvamäärän, pattern-tilan ja note-indikaattorin
+- project card näyttää päälaskurin craft/label-sääntöjen mukaisen count-tekstin, viimeksi päivitetyn päivän, ensimmäisen linkitetyn langan nimen, kuvamäärän, pattern-tilan ja note-indikaattorin
 - project cardin pattern-, photo-, note- ja yarn-pinnat ovat klikkialueita, eivät pelkkiä koristeita
 - yarn-korttiin navigointi käyttää ensimmäistä `parseYarnCardIds(project.yarnCardIds)`-tulosta ja vie Library-tabin `yarn_card_detail/{cardId}`-reitille
 
@@ -637,7 +723,7 @@ Nykyinen listakäyttäytyminen:
 
 Nykyinen jako:
 
-- projektisisältö: notes, photos, pattern, yarn ja reminders ovat ensisijaisesti content-cardien kautta; aktiivinen reminder voi näkyä compact-tilana herossa, ei preview-korttina
+- projektisisältö: notes, photos, pattern, yarn ja reminders ovat ensisijaisesti content-cardien kautta; aktiivinen reminder voi näkyä vasta hero-scrollin jälkeisessä sisällössä, ei herossa eikä preview-korttina
 - action sheetin `This project` -osio sisältää reminders-listan ja counters-listan
 - action sheetin `Counter tools` -osio sisältää add counter -polun, stitches-per-row-asetuksen ja track stitches -kytkimen
 - action sheetin `Project actions` -osio sisältää session historyn, rename-, reset-, complete/archive- ja delete-polut
@@ -655,8 +741,13 @@ Nykyiset hub-rivit:
 - `My Yarn`
 - `All Photos`
 - referenssit: needles, size charts, abbreviations, chart symbols
+- abbreviations-reitillä on optional craft type -argumentti `abbreviations?craftType={craftType}`; puuttuva tai tuntematon arvo putoaa `CraftType.KNITTING`-tilaan
 
 Hub näyttää laskurit saved pattern-, yarn card- ja photo-määrille `LibraryViewModel`n flow'ista.
+
+Reference-huomio:
+
+- `AbbreviationData.search(...)` ottaa craft typen vastaan, mutta nykyisessä datassa `KNITTING` ja `CROCHET` palauttavat saman abbreviation-listan
 
 ### My Yarn
 
@@ -725,8 +816,8 @@ Nykyinen Glance-widget:
   - ensin instanssin oma Glance-state
   - sitten shared widget-store
   - fallbackina `CounterRepository.getLatestActiveProject()`
-  - viimeisenä `CounterWidgetState.defaultData(...)`
-- widget-toiminnot kulkevat `CounterRepository.applyWidgetCountChange(...)` -metodin kautta, joka tekee count/history/current-stitch-reset -päivityksen transaktiona
+- viimeisenä `CounterWidgetState.defaultData(...)`
+- widget-toiminnot kulkevat `CounterRepository.applyWidgetCountChange(...)` -metodin kautta, joka käyttää samaa `applyMainCounterChange(...)`-semantiikkaa kuin appin päälaskuri ja päivittää count/history/current-stitch-resetin sekä linked-to-main-lisälaskurit transaktiona
 
 UI-tila juuri nyt:
 
@@ -921,7 +1012,7 @@ Toteutuksessa näkyviä asioita, joita ei kannata päätellä vanhoista mockeist
 - `Tools` ei ole geneerinen dashboard-gridi vaan oma Home/Tool-entry-näkymä
 - `Library` sisältää sekä sisällöt että reference-näkymät
 - muistiinpanoissa on full-screen editori
-- counterin ensimmäinen viewport on top bar + iso row-counter-hero + alanavigaatio; projektisisällöt ovat scrollin alla olevia viittä `ProjectContentCards`-neliökorttia, eivät vanhoja quick action / project info -rivejä
+- counterin ensimmäinen viewport on top bar + iso row-counter-hero + alanavigaatio; reminder-alertit ja projektisisällöt ovat scrollin alla olevia sisältöjä, ja `ProjectContentCards` käyttää neljän kortin gridia plus keskitettyä Reminders-korttia vanhojen quick action / project info -rivien sijaan
 - project list -kortit toimivat nyt myös syvälinkkeinä patterniin, kuviin, muistiinpanoihin ja ensimmäiseen linkitettyyn lankakorttiin
 - `My Yarn` tukee manuaalista lankakortin luontia; se ei ole skanneri- tai AI-parseripinta
 - yarn card detailissä voi muokata manuaalisia perustietoja ja vaihtaa kuvan Android photo pickerillä
@@ -964,7 +1055,7 @@ Nykyiset testit painottuvat ainakin näihin:
 - Android migration testit
 - navigation argument safety ja counter launch -tokenointi
 - widget data resolver ja action flow
-- project workspace -source-testit, jotka varmistavat `ProjectContentCards`-rakenteen ja poistettujen quick-action/project-info-komponenttien puuttumisen
+- project workspace -source-testit, jotka varmistavat `ProjectContentCards`-rakenteen, puhtaan ensimmäisen viewportin, counter-copyrajojen ja poistettujen quick-action/project-info-komponenttien puuttumisen
 - My Yarn / Yarn Card detail -source-testit, jotka varmistavat manuaalisen lankakortin, photo picker -toiminnon ja skannerikielen puuttumisen
 - repository transaction boundary -testit, jotka varmistavat pattern-, yarn- ja project-linkkien sekä tiedostosiivouksen transaktiorajat
 
@@ -991,9 +1082,11 @@ Julkaisuvalmiuden muistilista:
 ### Projektit ja laskuri
 
 - useita projekteja
-- rivilaskuri
+- päälaskuri, jonka craft type on neulonta tai virkkaus
+- päälaskurin label voi olla rows, rounds, repeats tai custom
 - stitch tracking
 - useita projektikohtaisia laskureita
+- lisälaskurit voivat seurata päälaskurin toteutunutta deltaa `linkedToMainCounter`-kentällä, paitsi repeat-section-laskurit
 - shaping/repeating-counter-polut
 - row reminders
 - progress photos
@@ -1002,6 +1095,8 @@ Julkaisuvalmiuden muistilista:
 - session history
 - pattern-PDF:n liittäminen projektiin
 - pattern viewer + annotations
+- projektin attached-PDF:n reading line tallentuu projektiriville; library-only viewerin reading line on vain katselusession tila
+- Drive/Dropbox-copy on nykykoodissa SAF PDF -pickerin käyttäjätekstiä, ei jatkuvaa pilvisynkkaa
 - target rows
 - project list -korttien deep linkit pattern viewer-, photo gallery-, notes editor- ja yarn card detail -pintoihin
 
@@ -1017,6 +1112,7 @@ Julkaisuvalmiuden muistilista:
 - all photos
 - multi-select batch-poistot
 - reference-näkymät: needles, size charts, abbreviations, chart symbols
+- abbreviations-reitti hyväksyy craft type -argumentin, mutta nykyinen abbreviation-data on sama neulonnalle ja virkkaukselle
 
 ### Tools
 
@@ -1043,6 +1139,7 @@ Julkaisuvalmiuden muistilista:
 - 14 päivän trial
 - yksi kertamaksullinen Pro-tuote
 - feature-nimet on mallinnettu `ProFeature`-enumilla
+- debug-build avaa feature-gatet `ProState.hasFeature(...)`-polussa muuttamatta ostotilaa tai trial-tilaa
 
 ## Asiat jotka vanhenevat helposti
 
@@ -1050,11 +1147,17 @@ Näihin kannattaa suhtautua epäluuloisesti vanhoissa dokumenteissa:
 
 - build-versiot muuttuvat usein `gradle/libs.versions.toml`-tiedostossa; älä kopioi niitä muistista
 - `allowBackup`: nykyinen on `false`, ei `true`
-- Room schema version: nykyinen on `12`; tarkista aina `KnitToolsDatabase.version` ja `app/schemas/...`
+- Room schema version: nykyinen on `13`; tarkista aina `KnitToolsDatabase.version`, `MIGRATION_12_13` ja `app/schemas/.../13.json`
+- schema 13:n helposti unohtuvat kentät ovat `craftType`, `mainCounterLabelType`, `mainCounterCustomLabel`, `readingLineEnabled`, `readingLineYFraction` ja `linkedToMainCounter`
+- `ProState.hasFeature(...)` ei ole pelkkä `isPro` debug-buildissä; debug avaa feature-gatet erillisenä kehittäjäpolkuna
 - voice-command-flow on poistettu; älä palauta sitä ilman uutta product/security-päätöstä
 - widgetit eivät ole enää pelkkä basic counter-preview vaan niissä on oma state-sync ja viimeistelty kortti-UI
+- widgetin plus/miinus käyttää samaa `CounterRepository.applyMainCounterChange(...)`-semantiikkaa kuin appin päälaskuri, joten linked-to-main-lisälaskurit muuttuvat myös widgetistä
 - vanhat `yarn_card_review` / `library_yarn_card_review` -reitit eivät ole nykyisessä `Screen.kt` / `NavGraph.kt` -pinnassa; käytössä on `yarn_card_detail/{cardId}`
 - `CounterQuickActions` ja `ProjectInfoSection` eivät ole nykyinen counter workspace -malli; käytössä on `CounterProjectContentCards.kt`
+- `abbreviations`-route ei ole enää pelkkä staattinen route-string, vaan `abbreviations?craftType={craftType}`; data on silti tällä hetkellä sama neulonnalle ja virkkaukselle
+- Drive/Dropbox on nykykoodissa vain SAF-pohjainen pattern-PDF:n valinta-/kopiointipolku; jatkuva sync on tulevaa speksiä `config/future-sync-spec.md`:ssä
+- project attached-PDF:n reading line on pysyvää projektitilaa, mutta library-only viewerin reading line ei ole Room-skeemassa
 - `QuickTipCard.kt` on poistettu; jos näet Quick Tip -tekstiä vanhoissa spekseissä, tarkista nykyinen `ui/components` ja `strings.xml`
 - `file_paths.xml` ei exposeeraa `yarn_photos`-rootia nykykoodissa, vaikka `AppFileStorage` osaa edelleen ratkaista legacy `yarn_photos`-URI:t sisäistä siivousta varten
 - `AppLanguage.promptLanguageName()` on ilman tuotantokutsuja oleva legacy-helper; sen nimi tai kommenttisanasto ei yksin todista mallipohjaisen parserin tai pilvi-AI:n olemassaoloa

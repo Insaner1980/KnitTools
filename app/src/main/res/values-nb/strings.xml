@@ -60,6 +60,43 @@
     <string name="section_completed">FULLFØRTE</string>
     <string name="new_project">Nytt prosjekt</string>
     <string name="new_project_name_format">Prosjekt %1$d</string>
+    <string name="create_project">Opprett prosjekt</string>
+    <string name="project_details">Prosjektdetaljer</string>
+    <string name="project_details_title">Prosjektdetaljer</string>
+    <string name="new_project_details_title">Nytt prosjekt</string>
+    <string name="project_name_label">Prosjektnavn</string>
+    <string name="craft_type_label">Håndarbeidstype</string>
+    <string name="craft_type_knitting">Strikking</string>
+    <string name="craft_type_crochet">Hekling</string>
+    <string name="main_counter_label">Etikett for hovedteller</string>
+    <string name="main_counter_rows">Rader</string>
+    <string name="main_counter_rounds">Runder</string>
+    <string name="main_counter_repeats">Repetisjoner</string>
+    <string name="main_counter_custom">Egendefinert</string>
+    <string name="main_counter_custom_label">Egendefinert etikett</string>
+    <string name="main_counter_custom_label_error">Angi en etikett.</string>
+    <string name="project_metadata_format">%1$s · %2$s</string>
+    <plurals name="rounds_format">
+        <item quantity="one">%1$d runde</item>
+        <item quantity="other">%1$d runder</item>
+    </plurals>
+    <plurals name="repeats_format">
+        <item quantity="one">%1$d repetisjon</item>
+        <item quantity="other">%1$d repetisjoner</item>
+    </plurals>
+    <string name="main_counter_custom_count_format">%1$d %2$s</string>
+    <string name="current_round_short">Runde %1$d</string>
+    <string name="current_repeat_short">Repetisjon %1$d</string>
+    <string name="counter_round_value_of_target_format">Runde %1$d / %2$d</string>
+    <string name="counter_repeat_value_of_target_format">Repetisjon %1$d / %2$d</string>
+    <string name="main_counter_custom_current_format">%1$s %2$d</string>
+    <string name="counter_custom_value_of_target_format">%1$s %2$d / %3$d</string>
+    <string name="counter_add_round">Legg til runde</string>
+    <string name="counter_decrease_round">Trekk fra runde</string>
+    <string name="counter_add_repeat">Legg til repetisjon</string>
+    <string name="counter_decrease_repeat">Trekk fra repetisjon</string>
+    <string name="counter_add_custom">Legg til %1$s</string>
+    <string name="counter_decrease_custom">Trekk fra %1$s</string>
     <string name="no_active_projects">Ingen aktive prosjekter</string>
     <string name="no_completed_projects">Ingen fullførte prosjekter ennå</string>
     <string name="delete_project">Slett</string>
@@ -86,14 +123,11 @@
     <string name="just_now">akkurat nå</string>
 
     <!-- Counter Screen -->
-    <string name="current_row">AKTUELL RAD</string>
     <string name="stitch_count_format">%s m</string>
     <string name="set_stitches">Angi masker</string>
     <string name="stitches_per_row">Masker per rad</string>
     <string name="track_stitches">Spor masker</string>
     <string name="stitch_counter_compact_format">%1$d/%2$d</string>
-    <string name="stitch_previous">◄</string>
-    <string name="stitch_next">►</string>
     <string name="attach_pattern">Legg til oppskrift</string>
     <string name="remove_pattern">Fjern oppskrift</string>
     <string name="no_pattern_attached">Ingen oppskrift lagt til</string>
@@ -101,6 +135,9 @@
     <string name="pattern_pdf_fallback_name">Oppskrift-PDF</string>
     <string name="pattern_loading">Laster oppskrift…</string>
     <string name="pattern_open_failed">Kunne ikke åpne oppskriften.</string>
+    <string name="pattern_show_reading_line">Vis leselinje</string>
+    <string name="pattern_hide_reading_line">Skjul leselinje</string>
+    <string name="pattern_reading_line_description">Leselinje</string>
     <string name="pattern_page_jump">Gå til side</string>
     <string name="pattern_page_number">Sidenummer</string>
     <string name="pattern_page_indicator">Side %1$d av %2$d</string>
@@ -108,6 +145,7 @@
     <string name="pattern_next_page">Neste side</string>
     <string name="pattern_picker_saved_patterns">Lagrede oppskrifter</string>
     <string name="pattern_picker_import_pdf">Importer PDF</string>
+    <string name="pattern_picker_import_cloud_pdf">Importer fra Drive eller Dropbox</string>
     <string name="pattern_picker_camera_scan">Ta oppskriftsfoto</string>
     <string name="pattern_picker_continue_without_pattern">Fortsett uten oppskrift</string>
     <string name="pattern_scan_failed">Oppskriftsfotoet kunne ikke konverteres til PDF.</string>
@@ -176,7 +214,29 @@
 
     <string name="counter_decrease">Fell</string>
     <string name="counter_increase">Øk</string>
-    <string name="counter_undo">Angre</string>
+    <string name="counter_value_of_target_format">Rad %1$d / %2$d</string>
+    <string name="repeating_counter_value_format">%1$d av %2$d</string>
+    <string name="counter_decrease_named">Fell %1$s</string>
+    <string name="counter_increase_named">Øk %1$s</string>
+    <string name="counter_actions">Handlinger for %1$s</string>
+    <string name="counter_add_row">Legg til rad</string>
+    <string name="counter_decrease_row">Trekk fra rad</string>
+    <string name="counter_undo_last_change">Angre siste endring</string>
+    <plurals name="counter_target_rows_left">
+        <item quantity="one">%1$d rad igjen</item>
+        <item quantity="other">%1$d rader igjen</item>
+    </plurals>
+    <string name="counter_target_reached">Mål nådd</string>
+    <plurals name="counter_target_rows_past">
+        <item quantity="one">%1$d rad over målet</item>
+        <item quantity="other">%1$d rader over målet</item>
+    </plurals>
+    <string name="project_content_pattern">Oppskrift</string>
+    <string name="stitch_tracker_label">Masker</string>
+    <plurals name="reminder_repeat_occurrence_format">
+        <item quantity="one">Gjenta #%1$d hver rad</item>
+        <item quantity="other">Gjenta #%1$d hver %2$d. rad</item>
+    </plurals>
 
     <!-- Increase / Decrease -->
     <string name="mode_increase">Øk</string>
@@ -438,7 +498,6 @@
     <string name="repeating">Gjenta</string>
     <string name="repeat_every">Gjenta hver</string>
     <string name="repeat_every_rows">rader</string>
-    <string name="repeat_count_format">Gjenta %1$d/%2$d</string>
     <string name="dismiss">Avvis</string>
 
     <!-- Multiple Counters -->
@@ -448,6 +507,8 @@
     <string name="counter_name_hint">f.eks. Økninger på ermet</string>
     <string name="count_up">Tell opp</string>
     <string name="step_size">Stegstørrelse</string>
+    <string name="linked_counter">Koblet teller</string>
+    <string name="linked_counter_description">Følger endringer i hovedtelleren.</string>
     <string name="shaping">Forming</string>
     <string name="repeat_section">Repeter seksjon</string>
     <string name="starting_stitches">Startantall masker</string>
@@ -456,9 +517,8 @@
     <string name="repeat_section_start_row">Startrad</string>
     <string name="repeat_section_end_row">Sluttrad</string>
     <string name="total_repeats">Totalt antall repetisjoner</string>
-    <string name="repeat_section_progress_format">Repetisjon %1$d av %2$d · Rad %3$d av %4$d</string>
+    <string name="repeat_section_progress_format">Repetisjon %1$d/%2$d, rad %3$d/%4$d</string>
     <string name="repeat_section_complete">Fullført</string>
-    <string name="next_shaping_format">Neste forming: Rad %1$d → %2$d m</string>
     <string name="rename_counter">Gi nytt navn</string>
     <string name="reset_counter_name">Tilbakestill</string>
     <string name="delete_counter">Slett</string>
@@ -541,8 +601,6 @@
     <string name="project_actions_section_counter_tools">TELLEVERKTØY</string>
     <string name="project_actions_section_project_actions">PROSJEKTHANDLINGER</string>
     <string name="project_content_title">Prosjekt</string>
-    <string name="project_content_open_pattern">Åpne oppskrift</string>
-    <string name="project_content_attach_pattern">Legg til oppskrift</string>
     <string name="project_content_yarn">Garn</string>
     <string name="project_content_notes">Notater</string>
     <string name="project_content_photos">Bilder</string>

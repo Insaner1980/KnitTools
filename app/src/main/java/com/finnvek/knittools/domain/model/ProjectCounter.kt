@@ -17,4 +17,5 @@ data class ProjectCounter(
     val repeatEndRow: Int? = null,
     val totalRepeats: Int? = null,
     val currentRepeat: Int? = null,
+    val linkedToMainCounter: Boolean = false,
 )

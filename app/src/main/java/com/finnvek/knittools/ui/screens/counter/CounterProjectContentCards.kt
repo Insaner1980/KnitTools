@@ -3,7 +3,7 @@ package com.finnvek.knittools.ui.screens.counter
 import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Description
@@ -25,13 +26,16 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import com.finnvek.knittools.R
 import com.finnvek.knittools.ui.theme.CounterDimens
+import com.finnvek.knittools.ui.theme.knitToolsColors
 
 enum class ProjectContentCardKind {
     PATTERN,
@@ -46,16 +50,11 @@ data class ProjectContentCard(
     @param:StringRes val titleRes: Int,
 )
 
-internal fun projectContentCards(state: CounterUiState): List<ProjectContentCard> =
+internal fun projectContentCards(): List<ProjectContentCard> =
     listOf(
         ProjectContentCard(
             kind = ProjectContentCardKind.PATTERN,
-            titleRes =
-                if (state.patternUri != null || state.linkedPattern != null) {
-                    R.string.project_content_open_pattern
-                } else {
-                    R.string.project_content_attach_pattern
-                },
+            titleRes = R.string.project_content_pattern,
         ),
         ProjectContentCard(
             kind = ProjectContentCardKind.YARN,
@@ -77,11 +76,10 @@ internal fun projectContentCards(state: CounterUiState): List<ProjectContentCard
 
 @Composable
 fun ProjectContentCards(
-    state: CounterUiState,
     onCardClick: (ProjectContentCardKind) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val cards = projectContentCards(state)
+    val cards = projectContentCards()
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(CounterDimens.ProjectCardGridSpacing),
@@ -89,9 +87,9 @@ fun ProjectContentCards(
         Text(
             text = stringResource(R.string.project_content_title),
             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = MaterialTheme.colorScheme.secondary,
         )
-        cards.chunked(2).forEach { rowCards ->
+        cards.take(4).chunked(2).forEach { rowCards ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(CounterDimens.ProjectCardGridSpacing),
@@ -103,12 +101,19 @@ fun ProjectContentCards(
                         modifier = Modifier.weight(1f),
                     )
                 }
-                if (rowCards.size == 1) {
-                    Box(
-                        modifier =
-                            Modifier
-                                .weight(1f)
-                                .aspectRatio(1f),
+            }
+        }
+        cards.getOrNull(4)?.let { card ->
+            BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                val centeredTileWidth = (maxWidth - CounterDimens.ProjectCardGridSpacing) / 2
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                ) {
+                    ProjectContentCardView(
+                        card = card,
+                        onClick = { onCardClick(card.kind) },
+                        modifier = Modifier.width(centeredTileWidth),
                     )
                 }
             }
@@ -122,11 +127,17 @@ private fun ProjectContentCardView(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val title = stringResource(card.titleRes)
+    val accent = card.kind.accentColor()
     Surface(
         modifier =
             modifier
                 .aspectRatio(1f)
-                .clickable(onClick = onClick),
+                .clickable(
+                    onClickLabel = title,
+                    role = Role.Button,
+                    onClick = onClick,
+                ),
         shape = RoundedCornerShape(CounterDimens.ProjectCardCornerRadius),
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
     ) {
@@ -136,16 +147,20 @@ private fun ProjectContentCardView(
                     .fillMaxSize()
                     .padding(CounterDimens.ProjectCardPadding),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
+            verticalArrangement =
+                Arrangement.spacedBy(
+                    space = CounterDimens.ProjectCardIconTitleSpacing,
+                    alignment = Alignment.CenterVertically,
+                ),
         ) {
             Icon(
                 imageVector = card.kind.icon(),
                 contentDescription = null,
                 modifier = Modifier.size(CounterDimens.ProjectCardIconSize),
-                tint = MaterialTheme.colorScheme.primary,
+                tint = accent,
             )
             Text(
-                text = stringResource(card.titleRes),
+                text = title,
                 style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
                 color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center,
@@ -155,6 +170,16 @@ private fun ProjectContentCardView(
         }
     }
 }
+
+@Composable
+private fun ProjectContentCardKind.accentColor(): Color =
+    when (this) {
+        ProjectContentCardKind.PATTERN -> MaterialTheme.colorScheme.primary
+        ProjectContentCardKind.YARN -> MaterialTheme.colorScheme.secondary
+        ProjectContentCardKind.NOTES -> MaterialTheme.knitToolsColors.brandWine
+        ProjectContentCardKind.PHOTOS -> MaterialTheme.colorScheme.tertiary
+        ProjectContentCardKind.REMINDER -> MaterialTheme.knitToolsColors.tealAccent
+    }
 
 private fun ProjectContentCardKind.icon(): ImageVector =
     when (this) {

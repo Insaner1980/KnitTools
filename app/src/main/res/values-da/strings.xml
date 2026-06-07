@@ -60,6 +60,43 @@
     <string name="section_completed">AFSLUTTEDE</string>
     <string name="new_project">Nyt projekt</string>
     <string name="new_project_name_format">Projekt %1$d</string>
+    <string name="create_project">Opret projekt</string>
+    <string name="project_details">Projektdetaljer</string>
+    <string name="project_details_title">Projektdetaljer</string>
+    <string name="new_project_details_title">Nyt projekt</string>
+    <string name="project_name_label">Projektnavn</string>
+    <string name="craft_type_label">Håndarbejdstype</string>
+    <string name="craft_type_knitting">Strik</string>
+    <string name="craft_type_crochet">Hækling</string>
+    <string name="main_counter_label">Hovedtællerens label</string>
+    <string name="main_counter_rows">Pinde</string>
+    <string name="main_counter_rounds">Runder</string>
+    <string name="main_counter_repeats">Gentagelser</string>
+    <string name="main_counter_custom">Egen</string>
+    <string name="main_counter_custom_label">Egen label</string>
+    <string name="main_counter_custom_label_error">Angiv en label.</string>
+    <string name="project_metadata_format">%1$s · %2$s</string>
+    <plurals name="rounds_format">
+        <item quantity="one">%1$d runde</item>
+        <item quantity="other">%1$d runder</item>
+    </plurals>
+    <plurals name="repeats_format">
+        <item quantity="one">%1$d gentagelse</item>
+        <item quantity="other">%1$d gentagelser</item>
+    </plurals>
+    <string name="main_counter_custom_count_format">%1$d %2$s</string>
+    <string name="current_round_short">Runde %1$d</string>
+    <string name="current_repeat_short">Gentagelse %1$d</string>
+    <string name="counter_round_value_of_target_format">Runde %1$d / %2$d</string>
+    <string name="counter_repeat_value_of_target_format">Gentagelse %1$d / %2$d</string>
+    <string name="main_counter_custom_current_format">%1$s %2$d</string>
+    <string name="counter_custom_value_of_target_format">%1$s %2$d / %3$d</string>
+    <string name="counter_add_round">Tilføj runde</string>
+    <string name="counter_decrease_round">Træk runde fra</string>
+    <string name="counter_add_repeat">Tilføj gentagelse</string>
+    <string name="counter_decrease_repeat">Træk gentagelse fra</string>
+    <string name="counter_add_custom">Tilføj %1$s</string>
+    <string name="counter_decrease_custom">Træk %1$s fra</string>
     <string name="no_active_projects">Ingen aktive projekter</string>
     <string name="no_completed_projects">Ingen afsluttede projekter endnu</string>
     <string name="delete_project">Slet</string>
@@ -86,14 +123,11 @@
     <string name="just_now">lige nu</string>
 
     <!-- Counter Screen -->
-    <string name="current_row">AKTUEL PINDE</string>
     <string name="stitch_count_format">%s m</string>
     <string name="set_stitches">Angiv masker</string>
     <string name="stitches_per_row">Masker pr. pind</string>
     <string name="track_stitches">Spor masker</string>
     <string name="stitch_counter_compact_format">%1$d/%2$d</string>
-    <string name="stitch_previous">◄</string>
-    <string name="stitch_next">►</string>
     <string name="attach_pattern">Tilføj opskrift</string>
     <string name="remove_pattern">Fjern opskrift</string>
     <string name="no_pattern_attached">Ingen opskrift tilknyttet</string>
@@ -101,6 +135,9 @@
     <string name="pattern_pdf_fallback_name">Opskrift-PDF</string>
     <string name="pattern_loading">Indlæser opskrift…</string>
     <string name="pattern_open_failed">Opskriften kunne ikke åbnes.</string>
+    <string name="pattern_show_reading_line">Vis læselinje</string>
+    <string name="pattern_hide_reading_line">Skjul læselinje</string>
+    <string name="pattern_reading_line_description">Læselinje</string>
     <string name="pattern_page_jump">Gå til side</string>
     <string name="pattern_page_number">Sidenummer</string>
     <string name="pattern_page_indicator">Side %1$d af %2$d</string>
@@ -108,6 +145,7 @@
     <string name="pattern_next_page">Næste side</string>
     <string name="pattern_picker_saved_patterns">Gemte opskrifter</string>
     <string name="pattern_picker_import_pdf">Importér PDF</string>
+    <string name="pattern_picker_import_cloud_pdf">Importér fra Drive eller Dropbox</string>
     <string name="pattern_picker_camera_scan">Tag mønsterfoto</string>
     <string name="pattern_picker_continue_without_pattern">Fortsæt uden opskrift</string>
     <string name="pattern_scan_failed">Mønsterfotoet kunne ikke konverteres til PDF.</string>
@@ -176,7 +214,29 @@
 
     <string name="counter_decrease">Tag ind</string>
     <string name="counter_increase">Tag ud</string>
-    <string name="counter_undo">Fortryd</string>
+    <string name="counter_value_of_target_format">Række %1$d / %2$d</string>
+    <string name="repeating_counter_value_format">%1$d af %2$d</string>
+    <string name="counter_decrease_named">Tag ind %1$s</string>
+    <string name="counter_increase_named">Tag ud %1$s</string>
+    <string name="counter_actions">Handlinger for %1$s</string>
+    <string name="counter_add_row">Tilføj pind</string>
+    <string name="counter_decrease_row">Træk pind fra</string>
+    <string name="counter_undo_last_change">Fortryd sidste ændring</string>
+    <plurals name="counter_target_rows_left">
+        <item quantity="one">%1$d pind tilbage</item>
+        <item quantity="other">%1$d pinde tilbage</item>
+    </plurals>
+    <string name="counter_target_reached">Mål nået</string>
+    <plurals name="counter_target_rows_past">
+        <item quantity="one">%1$d pind over målet</item>
+        <item quantity="other">%1$d pinde over målet</item>
+    </plurals>
+    <string name="project_content_pattern">Opskrift</string>
+    <string name="stitch_tracker_label">Masker</string>
+    <plurals name="reminder_repeat_occurrence_format">
+        <item quantity="one">Gentag #%1$d hver pind</item>
+        <item quantity="other">Gentag #%1$d hver %2$d. pind</item>
+    </plurals>
 
     <!-- Increase / Decrease -->
     <string name="mode_increase">Tag ud</string>
@@ -438,7 +498,6 @@
     <string name="repeating">Gentagende</string>
     <string name="repeat_every">Gentag hver</string>
     <string name="repeat_every_rows">pinde</string>
-    <string name="repeat_count_format">Gentagelse %1$d/%2$d</string>
     <string name="dismiss">Afvis</string>
 
     <!-- Multiple Counters -->
@@ -448,6 +507,8 @@
     <string name="counter_name_hint">f.eks. Udtagninger på ærmet</string>
     <string name="count_up">Tæl op</string>
     <string name="step_size">Trinstørrelse</string>
+    <string name="linked_counter">Sammenkædet tæller</string>
+    <string name="linked_counter_description">Følger hovedtællerens ændringer.</string>
     <string name="shaping">Formgivning</string>
     <string name="repeat_section">Gentag sektion</string>
     <string name="starting_stitches">Startmasker</string>
@@ -456,9 +517,8 @@
     <string name="repeat_section_start_row">Startpind</string>
     <string name="repeat_section_end_row">Slutpind</string>
     <string name="total_repeats">Samlet antal gentagelser</string>
-    <string name="repeat_section_progress_format">Gentagelse %1$d af %2$d · Pind %3$d af %4$d</string>
+    <string name="repeat_section_progress_format">Gentagelse %1$d/%2$d, pind %3$d/%4$d</string>
     <string name="repeat_section_complete">Færdig</string>
-    <string name="next_shaping_format">Næste formgivning: Pind %1$d → %2$d m</string>
     <string name="rename_counter">Omdøb</string>
     <string name="reset_counter_name">Nulstil</string>
     <string name="delete_counter">Slet</string>
@@ -541,8 +601,6 @@
     <string name="project_actions_section_counter_tools">TÆLLERVÆRKTØJER</string>
     <string name="project_actions_section_project_actions">PROJEKTHANDLINGER</string>
     <string name="project_content_title">Projekt</string>
-    <string name="project_content_open_pattern">Åbn opskrift</string>
-    <string name="project_content_attach_pattern">Tilføj opskrift</string>
     <string name="project_content_yarn">Garn</string>
     <string name="project_content_notes">Noter</string>
     <string name="project_content_photos">Fotos</string>

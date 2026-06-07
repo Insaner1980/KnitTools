@@ -80,6 +80,26 @@ interface CounterProjectDao {
         updatedAt: Long,
     )
 
+    @Query(
+        """
+        UPDATE counter_projects
+        SET name = :name,
+            craftType = :craftType,
+            mainCounterLabelType = :mainCounterLabelType,
+            mainCounterCustomLabel = :mainCounterCustomLabel,
+            updatedAt = :updatedAt
+        WHERE id = :id
+        """,
+    )
+    suspend fun updateProjectDetails(
+        id: Long,
+        name: String,
+        craftType: String,
+        mainCounterLabelType: String,
+        mainCounterCustomLabel: String?,
+        updatedAt: Long,
+    )
+
     @Query("UPDATE counter_projects SET notes = :notes, updatedAt = :updatedAt WHERE id = :id")
     suspend fun updateNotes(
         id: Long,
@@ -188,6 +208,22 @@ interface CounterProjectDao {
     suspend fun updatePatternRowMapping(
         id: Long,
         mapping: String?,
+        updatedAt: Long,
+    )
+
+    @Query(
+        """
+        UPDATE counter_projects
+        SET readingLineEnabled = :enabled,
+            readingLineYFraction = :yFraction,
+            updatedAt = :updatedAt
+        WHERE id = :id
+        """,
+    )
+    suspend fun updateReadingLine(
+        id: Long,
+        enabled: Boolean,
+        yFraction: Float,
         updatedAt: Long,
     )
 

@@ -3,8 +3,6 @@ package com.finnvek.knittools.ui.screens.insights
 import com.finnvek.knittools.domain.model.KnitSession
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
-import com.finnvek.knittools.pro.ProState
-import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.repository.CounterRepository
 import io.mockk.every
 import io.mockk.mockk
@@ -37,18 +35,19 @@ class InsightsViewModelTest {
 
     private lateinit var repository: CounterRepository
     private lateinit var proManager: ProManager
-    private lateinit var proState: MutableStateFlow<ProState>
+    private lateinit var insightsFeature: MutableStateFlow<Boolean>
 
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         repository = mockk()
         proManager = mockk()
-        proState = MutableStateFlow(ProState())
+        insightsFeature = MutableStateFlow(false)
         every { repository.getAllProjects() } returns flowOf(emptyList())
         every { repository.getSessionsForInsights(null, null) } returns flowOf(emptyList())
         every { repository.getSessionsForInsights(null, any()) } returns flowOf(emptyList())
-        every { proManager.proState } returns proState
+        every { proManager.hasFeature(ProFeature.INSIGHTS_CHARTS) } answers { insightsFeature.value }
+        every { proManager.hasFeatureFlow(ProFeature.INSIGHTS_CHARTS) } returns insightsFeature
     }
 
     @After
@@ -70,12 +69,11 @@ class InsightsViewModelTest {
             advanceUntilIdle()
 
             assertFalse(viewModel.isPro.value)
-            proState.value = ProState(status = ProStatus.PRO_PURCHASED)
+            insightsFeature.value = true
             advanceUntilIdle()
 
             assertEquals(listOf(false, true), values)
             assertTrue(viewModel.isPro.value)
-            assertTrue(proState.value.hasFeature(ProFeature.INSIGHTS_CHARTS))
             job.cancel()
         }
 
@@ -99,7 +97,7 @@ class InsightsViewModelTest {
     @Test
     fun `daily activity keeps heatmap lookback when time range changes`() =
         runTest {
-            proState.value = ProState(status = ProStatus.PRO_PURCHASED)
+            insightsFeature.value = true
             val zone = ZoneId.systemDefault()
             val activityDate = LocalDate.now(zone).minusDays(30)
             val activityStart = instantMillis(activityDate, 10, 0, zone)

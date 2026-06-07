@@ -60,6 +60,45 @@
     <string name="section_completed">CONCLUÍDOS</string>
     <string name="new_project">Novo projeto</string>
     <string name="new_project_name_format">Projeto %1$d</string>
+    <string name="create_project">Criar projeto</string>
+    <string name="project_details">Detalhes do projeto</string>
+    <string name="project_details_title">Detalhes do projeto</string>
+    <string name="new_project_details_title">Novo projeto</string>
+    <string name="project_name_label">Nome do projeto</string>
+    <string name="craft_type_label">Tipo de trabalho</string>
+    <string name="craft_type_knitting">Tricô</string>
+    <string name="craft_type_crochet">Croché</string>
+    <string name="main_counter_label">Etiqueta do contador principal</string>
+    <string name="main_counter_rows">Carreiras</string>
+    <string name="main_counter_rounds">Voltas</string>
+    <string name="main_counter_repeats">Repetições</string>
+    <string name="main_counter_custom">Personalizada</string>
+    <string name="main_counter_custom_label">Etiqueta personalizada</string>
+    <string name="main_counter_custom_label_error">Introduza uma etiqueta.</string>
+    <string name="project_metadata_format">%1$s · %2$s</string>
+    <plurals name="rounds_format">
+        <item quantity="one">%1$d volta</item>
+        <item quantity="many">%1$d voltas</item>
+        <item quantity="other">%1$d voltas</item>
+    </plurals>
+    <plurals name="repeats_format">
+        <item quantity="one">%1$d repetição</item>
+        <item quantity="many">%1$d repetições</item>
+        <item quantity="other">%1$d repetições</item>
+    </plurals>
+    <string name="main_counter_custom_count_format">%1$d %2$s</string>
+    <string name="current_round_short">Volta %1$d</string>
+    <string name="current_repeat_short">Repetição %1$d</string>
+    <string name="counter_round_value_of_target_format">Volta %1$d / %2$d</string>
+    <string name="counter_repeat_value_of_target_format">Repetição %1$d / %2$d</string>
+    <string name="main_counter_custom_current_format">%1$s %2$d</string>
+    <string name="counter_custom_value_of_target_format">%1$s %2$d / %3$d</string>
+    <string name="counter_add_round">Adicionar volta</string>
+    <string name="counter_decrease_round">Subtrair volta</string>
+    <string name="counter_add_repeat">Adicionar repetição</string>
+    <string name="counter_decrease_repeat">Subtrair repetição</string>
+    <string name="counter_add_custom">Adicionar %1$s</string>
+    <string name="counter_decrease_custom">Subtrair %1$s</string>
     <string name="no_active_projects">Sem projetos ativos</string>
     <string name="no_completed_projects">Ainda não há projetos concluídos</string>
     <string name="delete_project">Eliminar</string>
@@ -86,14 +125,11 @@
     <string name="just_now">agora mesmo</string>
 
     <!-- Counter Screen -->
-    <string name="current_row">CARREIRA ATUAL</string>
     <string name="stitch_count_format">%s pts</string>
     <string name="set_stitches">Definir pontos</string>
     <string name="stitches_per_row">Pontos por carreira</string>
     <string name="track_stitches">Seguir pontos</string>
     <string name="stitch_counter_compact_format">%1$d/%2$d</string>
-    <string name="stitch_previous">◄</string>
-    <string name="stitch_next">►</string>
     <string name="attach_pattern">Anexar receita</string>
     <string name="remove_pattern">Remover receita</string>
     <string name="no_pattern_attached">Nenhuma receita anexada</string>
@@ -101,6 +137,9 @@
     <string name="pattern_pdf_fallback_name">PDF da receita</string>
     <string name="pattern_loading">A carregar receita…</string>
     <string name="pattern_open_failed">Não foi possível abrir a receita.</string>
+    <string name="pattern_show_reading_line">Mostrar linha de leitura</string>
+    <string name="pattern_hide_reading_line">Ocultar linha de leitura</string>
+    <string name="pattern_reading_line_description">Linha de leitura</string>
     <string name="pattern_page_jump">Ir para a página</string>
     <string name="pattern_page_number">Número da página</string>
     <string name="pattern_page_indicator">Página %1$d de %2$d</string>
@@ -108,6 +147,7 @@
     <string name="pattern_next_page">Página seguinte</string>
     <string name="pattern_picker_saved_patterns">Receitas guardadas</string>
     <string name="pattern_picker_import_pdf">Importar PDF</string>
+    <string name="pattern_picker_import_cloud_pdf">Importar do Drive ou Dropbox</string>
     <string name="pattern_picker_camera_scan">Tirar foto da receita</string>
     <string name="pattern_picker_continue_without_pattern">Continuar sem receita</string>
     <string name="pattern_scan_failed">Não foi possível converter a foto da receita em PDF.</string>
@@ -176,7 +216,32 @@
 
     <string name="counter_decrease">Diminuir</string>
     <string name="counter_increase">Aumentar</string>
-    <string name="counter_undo">Desfazer</string>
+    <string name="counter_value_of_target_format">Fila %1$d / %2$d</string>
+    <string name="repeating_counter_value_format">%1$d de %2$d</string>
+    <string name="counter_decrease_named">Diminuir %1$s</string>
+    <string name="counter_increase_named">Aumentar %1$s</string>
+    <string name="counter_actions">Ações de %1$s</string>
+    <string name="counter_add_row">Adicionar carreira</string>
+    <string name="counter_decrease_row">Remover carreira</string>
+    <string name="counter_undo_last_change">Anular última alteração</string>
+    <plurals name="counter_target_rows_left">
+        <item quantity="one">Falta %1$d carreira</item>
+        <item quantity="many">Faltam %1$d carreiras</item>
+        <item quantity="other">Faltam %1$d carreiras</item>
+    </plurals>
+    <string name="counter_target_reached">Objetivo atingido</string>
+    <plurals name="counter_target_rows_past">
+        <item quantity="one">%1$d carreira além do objetivo</item>
+        <item quantity="many">%1$d carreiras além do objetivo</item>
+        <item quantity="other">%1$d carreiras além do objetivo</item>
+    </plurals>
+    <string name="project_content_pattern">Receita</string>
+    <string name="stitch_tracker_label">Pontos</string>
+    <plurals name="reminder_repeat_occurrence_format">
+        <item quantity="one">Repetir #%1$d a cada carreira</item>
+        <item quantity="many">Repetir #%1$d a cada %2$d carreiras</item>
+        <item quantity="other">Repetir #%1$d a cada %2$d carreiras</item>
+    </plurals>
 
     <!-- Increase / Decrease -->
     <string name="mode_increase">Aumentar</string>
@@ -438,7 +503,6 @@
     <string name="repeating">Repetitivo</string>
     <string name="repeat_every">Repetir a cada</string>
     <string name="repeat_every_rows">carreiras</string>
-    <string name="repeat_count_format">Repetição %1$d/%2$d</string>
     <string name="dismiss">Dispensar</string>
 
     <!-- Multiple Counters -->
@@ -448,6 +512,8 @@
     <string name="counter_name_hint">ex.: Aumentos da manga</string>
     <string name="count_up">Contar para cima</string>
     <string name="step_size">Tamanho do passo</string>
+    <string name="linked_counter">Contador ligado</string>
+    <string name="linked_counter_description">Segue as alterações do contador principal.</string>
     <string name="shaping">Moldagem</string>
     <string name="repeat_section">Secção de repetição</string>
     <string name="starting_stitches">Número inicial de pontos</string>
@@ -456,9 +522,8 @@
     <string name="repeat_section_start_row">Carreira inicial</string>
     <string name="repeat_section_end_row">Carreira final</string>
     <string name="total_repeats">Total de repetições</string>
-    <string name="repeat_section_progress_format">Repetição %1$d de %2$d · Carreira %3$d de %4$d</string>
+    <string name="repeat_section_progress_format">Repetição %1$d/%2$d, carreira %3$d/%4$d</string>
     <string name="repeat_section_complete">Concluído</string>
-    <string name="next_shaping_format">Próxima moldagem: carreira %1$d → %2$d pts</string>
     <string name="rename_counter">Mudar nome</string>
     <string name="reset_counter_name">Repor</string>
     <string name="delete_counter">Eliminar</string>
@@ -541,8 +606,6 @@
     <string name="project_actions_section_counter_tools">FERRAMENTAS DE CONTADORES</string>
     <string name="project_actions_section_project_actions">AÇÕES DO PROJETO</string>
     <string name="project_content_title">Projeto</string>
-    <string name="project_content_open_pattern">Abrir receita</string>
-    <string name="project_content_attach_pattern">Adicionar receita</string>
     <string name="project_content_yarn">Fio</string>
     <string name="project_content_notes">Notas</string>
     <string name="project_content_photos">Fotos</string>

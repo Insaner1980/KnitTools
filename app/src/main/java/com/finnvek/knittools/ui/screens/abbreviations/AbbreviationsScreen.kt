@@ -25,16 +25,20 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.AbbreviationData
+import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.KnittingAbbreviation
 import com.finnvek.knittools.ui.components.SearchTextField
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
 
 @Composable
-fun AbbreviationsScreen(onBack: () -> Unit) {
+fun AbbreviationsScreen(
+    craftType: CraftType = CraftType.KNITTING,
+    onBack: () -> Unit,
+) {
     var query by rememberSaveable { mutableStateOf("") }
     var expandedAbbreviation by rememberSaveable { mutableStateOf<String?>(null) }
     val context = LocalContext.current
-    val results = remember(query, context) { AbbreviationData.search(context, query) }
+    val results = remember(query, context, craftType) { AbbreviationData.search(context, query, craftType) }
 
     ToolScreenScaffold(
         title = stringResource(R.string.abbreviations_title),

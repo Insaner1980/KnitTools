@@ -60,6 +60,43 @@
     <string name="section_completed">VOLTOOID</string>
     <string name="new_project">Nieuw project</string>
     <string name="new_project_name_format">Project %1$d</string>
+    <string name="create_project">Project maken</string>
+    <string name="project_details">Projectdetails</string>
+    <string name="project_details_title">Projectdetails</string>
+    <string name="new_project_details_title">Nieuw project</string>
+    <string name="project_name_label">Projectnaam</string>
+    <string name="craft_type_label">Handwerktype</string>
+    <string name="craft_type_knitting">Breien</string>
+    <string name="craft_type_crochet">Haken</string>
+    <string name="main_counter_label">Label hoofdteller</string>
+    <string name="main_counter_rows">Toeren</string>
+    <string name="main_counter_rounds">Rondes</string>
+    <string name="main_counter_repeats">Herhalingen</string>
+    <string name="main_counter_custom">Aangepast</string>
+    <string name="main_counter_custom_label">Aangepast label</string>
+    <string name="main_counter_custom_label_error">Voer een label in.</string>
+    <string name="project_metadata_format">%1$s · %2$s</string>
+    <plurals name="rounds_format">
+        <item quantity="one">%1$d ronde</item>
+        <item quantity="other">%1$d rondes</item>
+    </plurals>
+    <plurals name="repeats_format">
+        <item quantity="one">%1$d herhaling</item>
+        <item quantity="other">%1$d herhalingen</item>
+    </plurals>
+    <string name="main_counter_custom_count_format">%1$d %2$s</string>
+    <string name="current_round_short">Ronde %1$d</string>
+    <string name="current_repeat_short">Herhaling %1$d</string>
+    <string name="counter_round_value_of_target_format">Ronde %1$d / %2$d</string>
+    <string name="counter_repeat_value_of_target_format">Herhaling %1$d / %2$d</string>
+    <string name="main_counter_custom_current_format">%1$s %2$d</string>
+    <string name="counter_custom_value_of_target_format">%1$s %2$d / %3$d</string>
+    <string name="counter_add_round">Ronde toevoegen</string>
+    <string name="counter_decrease_round">Ronde aftrekken</string>
+    <string name="counter_add_repeat">Herhaling toevoegen</string>
+    <string name="counter_decrease_repeat">Herhaling aftrekken</string>
+    <string name="counter_add_custom">%1$s toevoegen</string>
+    <string name="counter_decrease_custom">%1$s aftrekken</string>
     <string name="no_active_projects">Geen actieve projecten</string>
     <string name="no_completed_projects">Nog geen voltooide projecten</string>
     <string name="delete_project">Verwijderen</string>
@@ -86,14 +123,11 @@
     <string name="just_now">zojuist</string>
 
     <!-- Counter Screen -->
-    <string name="current_row">HUIDIGE TOER</string>
     <string name="stitch_count_format">%s st</string>
     <string name="set_stitches">Steken instellen</string>
     <string name="stitches_per_row">Steken per toer</string>
     <string name="track_stitches">Steken bijhouden</string>
     <string name="stitch_counter_compact_format">%1$d/%2$d</string>
-    <string name="stitch_previous">◄</string>
-    <string name="stitch_next">►</string>
     <string name="attach_pattern">Patroon koppelen</string>
     <string name="remove_pattern">Patroon verwijderen</string>
     <string name="no_pattern_attached">Nog geen patroon gekoppeld</string>
@@ -101,6 +135,9 @@
     <string name="pattern_pdf_fallback_name">Patroon-PDF</string>
     <string name="pattern_loading">Patroon laden…</string>
     <string name="pattern_open_failed">Het patroon kon niet worden geopend.</string>
+    <string name="pattern_show_reading_line">Leeslijn tonen</string>
+    <string name="pattern_hide_reading_line">Leeslijn verbergen</string>
+    <string name="pattern_reading_line_description">Leeslijn</string>
     <string name="pattern_page_jump">Ga naar pagina</string>
     <string name="pattern_page_number">Paginanummer</string>
     <string name="pattern_page_indicator">Pagina %1$d van %2$d</string>
@@ -108,6 +145,7 @@
     <string name="pattern_next_page">Volgende pagina</string>
     <string name="pattern_picker_saved_patterns">Opgeslagen patronen</string>
     <string name="pattern_picker_import_pdf">PDF importeren</string>
+    <string name="pattern_picker_import_cloud_pdf">Importeren uit Drive of Dropbox</string>
     <string name="pattern_picker_camera_scan">Patroonfoto maken</string>
     <string name="pattern_picker_continue_without_pattern">Doorgaan zonder patroon</string>
     <string name="pattern_scan_failed">De patroonfoto kon niet naar PDF worden omgezet.</string>
@@ -176,7 +214,29 @@
 
     <string name="counter_decrease">Minderen</string>
     <string name="counter_increase">Meerderen</string>
-    <string name="counter_undo">Ongedaan maken</string>
+    <string name="counter_value_of_target_format">Rij %1$d / %2$d</string>
+    <string name="repeating_counter_value_format">%1$d van %2$d</string>
+    <string name="counter_decrease_named">%1$s verlagen</string>
+    <string name="counter_increase_named">%1$s verhogen</string>
+    <string name="counter_actions">Acties voor %1$s</string>
+    <string name="counter_add_row">Toer toevoegen</string>
+    <string name="counter_decrease_row">Toer aftrekken</string>
+    <string name="counter_undo_last_change">Laatste wijziging ongedaan maken</string>
+    <plurals name="counter_target_rows_left">
+        <item quantity="one">Nog %1$d toer</item>
+        <item quantity="other">Nog %1$d toeren</item>
+    </plurals>
+    <string name="counter_target_reached">Doel bereikt</string>
+    <plurals name="counter_target_rows_past">
+        <item quantity="one">%1$d toer voorbij doel</item>
+        <item quantity="other">%1$d toeren voorbij doel</item>
+    </plurals>
+    <string name="project_content_pattern">Patroon</string>
+    <string name="stitch_tracker_label">Steken</string>
+    <plurals name="reminder_repeat_occurrence_format">
+        <item quantity="one">Herhaal #%1$d elke toer</item>
+        <item quantity="other">Herhaal #%1$d elke %2$d toeren</item>
+    </plurals>
 
     <!-- Increase / Decrease -->
     <string name="mode_increase">Meerderen</string>
@@ -438,7 +498,6 @@
     <string name="repeating">Herhalend</string>
     <string name="repeat_every">Herhaal elke</string>
     <string name="repeat_every_rows">toeren</string>
-    <string name="repeat_count_format">Herhaling %1$d/%2$d</string>
     <string name="dismiss">Sluiten</string>
 
     <!-- Multiple Counters -->
@@ -448,6 +507,8 @@
     <string name="counter_name_hint">bijv. Meerderingen mouw</string>
     <string name="count_up">Optellen</string>
     <string name="step_size">Stapgrootte</string>
+    <string name="linked_counter">Gekoppelde teller</string>
+    <string name="linked_counter_description">Volgt wijzigingen van de hoofdteller.</string>
     <string name="shaping">Vormgeven</string>
     <string name="repeat_section">Sectie herhalen</string>
     <string name="starting_stitches">Beginaantal steken</string>
@@ -456,9 +517,8 @@
     <string name="repeat_section_start_row">Begintoer</string>
     <string name="repeat_section_end_row">Eindtoer</string>
     <string name="total_repeats">Totaal aantal herhalingen</string>
-    <string name="repeat_section_progress_format">Herhaling %1$d van %2$d · Toer %3$d van %4$d</string>
+    <string name="repeat_section_progress_format">Herhaling %1$d/%2$d, toer %3$d/%4$d</string>
     <string name="repeat_section_complete">Voltooid</string>
-    <string name="next_shaping_format">Volgende vormgeving: Toer %1$d → %2$d st</string>
     <string name="rename_counter">Naam wijzigen</string>
     <string name="reset_counter_name">Resetten</string>
     <string name="delete_counter">Verwijderen</string>
@@ -541,8 +601,6 @@
     <string name="project_actions_section_counter_tools">TELLERHULPMIDDELEN</string>
     <string name="project_actions_section_project_actions">PROJECTACTIES</string>
     <string name="project_content_title">Project</string>
-    <string name="project_content_open_pattern">Patroon openen</string>
-    <string name="project_content_attach_pattern">Patroon toevoegen</string>
     <string name="project_content_yarn">Garen</string>
     <string name="project_content_notes">Notities</string>
     <string name="project_content_photos">Foto’s</string>

@@ -1,9 +1,11 @@
 package com.finnvek.knittools.ui.screens.pattern
 
 import android.graphics.Bitmap
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.gestures.rememberTransformableState
 import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.Arrangement
@@ -55,6 +57,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
@@ -62,6 +65,8 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
@@ -71,8 +76,15 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.data.storage.PdfPageRenderer
 import com.finnvek.knittools.di.AppDispatchers
+import com.finnvek.knittools.domain.model.DEFAULT_READING_LINE_Y_FRACTION
+import com.finnvek.knittools.domain.model.READING_LINE_MAX_Y_FRACTION
+import com.finnvek.knittools.domain.model.READING_LINE_MIN_Y_FRACTION
+import com.finnvek.knittools.domain.model.sanitizeReadingLineYFraction
 import com.finnvek.knittools.ui.screens.counter.CounterViewModel
 import kotlinx.coroutines.withContext
+
+private const val READING_LINE_BAND_HEIGHT_FRACTION = 0.045f
+private const val READING_LINE_BAND_ALPHA = 0.14f
 
 private data class PatternRenderState(
     val renderer: PdfPageRenderer?,
@@ -106,11 +118,13 @@ fun PatternViewerScreen(
                         totalPages = renderState.renderer?.pageCount ?: 0,
                         currentPage = currentPage,
                         canDetachPattern = true,
+                        readingLineEnabled = counterState.readingLineEnabled,
                     ),
                 actions =
                     TopBarActions(
                         onBack = onBack,
                         onJumpToPage = counterViewModel::updatePatternPage,
+                        onReadingLineToggle = counterViewModel::setReadingLineEnabled,
                         onDetachPattern = {
                             counterViewModel.detachPattern()
                             onBack()
@@ -137,12 +151,21 @@ fun PatternViewerScreen(
         },
     ) { scaffoldPadding ->
         PatternViewerContent(
-            patternUri = patternUri,
-            rendererError = renderState.rendererError,
-            renderedBitmap = renderState.renderedBitmap,
-            patternName = counterState.patternName,
-            currentRow = counterState.counter.count,
-            positionPercent = null,
+            state =
+                PatternViewerContentState(
+                    patternUri = patternUri,
+                    rendererError = renderState.rendererError,
+                    renderedBitmap = renderState.renderedBitmap,
+                    patternName = counterState.patternName,
+                    currentRow = counterState.counter.count,
+                    positionPercent = null,
+                    readingLineEnabled = counterState.readingLineEnabled,
+                    readingLineYFraction = counterState.readingLineYFraction,
+                ),
+            actions =
+                PatternViewerContentActions(
+                    onReadingLineYFractionChange = counterViewModel::updateReadingLineYFraction,
+                ),
             modifier =
                 Modifier
                     .fillMaxSize()
@@ -159,6 +182,8 @@ fun LibraryPatternViewerScreen(
     onBack: () -> Unit,
 ) {
     var currentPage by rememberSaveable(patternUri) { mutableIntStateOf(0) }
+    var readingLineEnabled by rememberSaveable(patternUri) { mutableStateOf(false) }
+    var readingLineYFraction by rememberSaveable(patternUri) { mutableFloatStateOf(DEFAULT_READING_LINE_Y_FRACTION) }
     val renderState =
         rememberPatternRenderState(
             patternUri = patternUri,
@@ -176,11 +201,13 @@ fun LibraryPatternViewerScreen(
                         totalPages = renderState.renderer?.pageCount ?: 0,
                         currentPage = currentPage,
                         canDetachPattern = false,
+                        readingLineEnabled = readingLineEnabled,
                     ),
                 actions =
                     TopBarActions(
                         onBack = onBack,
                         onJumpToPage = { currentPage = it },
+                        onReadingLineToggle = { readingLineEnabled = it },
                         onDetachPattern = {},
                     ),
             )
@@ -198,12 +225,21 @@ fun LibraryPatternViewerScreen(
         },
     ) { scaffoldPadding ->
         PatternViewerContent(
-            patternUri = patternUri,
-            rendererError = renderState.rendererError,
-            renderedBitmap = renderState.renderedBitmap,
-            patternName = patternName,
-            currentRow = null,
-            positionPercent = null,
+            state =
+                PatternViewerContentState(
+                    patternUri = patternUri,
+                    rendererError = renderState.rendererError,
+                    renderedBitmap = renderState.renderedBitmap,
+                    patternName = patternName,
+                    currentRow = null,
+                    positionPercent = null,
+                    readingLineEnabled = readingLineEnabled,
+                    readingLineYFraction = readingLineYFraction,
+                ),
+            actions =
+                PatternViewerContentActions(
+                    onReadingLineYFractionChange = { readingLineYFraction = sanitizeReadingLineYFraction(it) },
+                ),
             modifier =
                 Modifier
                     .fillMaxSize()
@@ -282,11 +318,13 @@ private data class TopBarState(
     val totalPages: Int,
     val currentPage: Int,
     val canDetachPattern: Boolean,
+    val readingLineEnabled: Boolean,
 )
 
 private data class TopBarActions(
     val onBack: () -> Unit,
     val onJumpToPage: (Int) -> Unit,
+    val onReadingLineToggle: (Boolean) -> Unit,
     val onDetachPattern: () -> Unit,
 )
 
@@ -334,6 +372,23 @@ private fun PatternViewerTopBar(
                         onClick = {
                             showOverflowMenu = false
                             showPageJumpDialog = true
+                        },
+                    )
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                stringResource(
+                                    if (state.readingLineEnabled) {
+                                        R.string.pattern_hide_reading_line
+                                    } else {
+                                        R.string.pattern_show_reading_line
+                                    },
+                                ),
+                            )
+                        },
+                        onClick = {
+                            showOverflowMenu = false
+                            actions.onReadingLineToggle(!state.readingLineEnabled)
                         },
                     )
                     if (state.canDetachPattern) {
@@ -475,36 +530,38 @@ private fun LibraryPatternViewerBottomBar(
 
 @Composable
 private fun PatternViewerContent(
-    patternUri: String?,
-    rendererError: String?,
-    renderedBitmap: Bitmap?,
-    patternName: String?,
-    currentRow: Int?,
-    positionPercent: Int?,
+    state: PatternViewerContentState,
+    actions: PatternViewerContentActions,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier) {
         when {
-            patternUri == null -> {
+            state.patternUri == null -> {
                 PatternViewerMessage(message = stringResource(R.string.no_pattern_attached))
             }
 
-            rendererError != null -> {
+            state.rendererError != null -> {
                 PatternViewerMessage(
-                    message = rendererError.ifBlank { stringResource(R.string.pattern_open_failed) },
+                    message = state.rendererError.ifBlank { stringResource(R.string.pattern_open_failed) },
                 )
             }
 
-            renderedBitmap == null -> {
+            state.renderedBitmap == null -> {
                 PatternViewerMessage(message = stringResource(R.string.pattern_loading))
             }
 
             else -> {
                 PatternViewerDocument(
-                    renderedBitmap = renderedBitmap,
-                    patternName = patternName,
-                    currentRow = currentRow,
-                    positionPercent = positionPercent,
+                    state =
+                        PatternViewerDocumentState(
+                            renderedBitmap = state.renderedBitmap,
+                            patternName = state.patternName,
+                            currentRow = state.currentRow,
+                            positionPercent = state.positionPercent,
+                            readingLineEnabled = state.readingLineEnabled,
+                            readingLineYFraction = state.readingLineYFraction,
+                        ),
+                    actions = actions,
                     modifier =
                         Modifier
                             .fillMaxWidth()
@@ -515,12 +572,34 @@ private fun PatternViewerContent(
     }
 }
 
+private data class PatternViewerContentState(
+    val patternUri: String?,
+    val rendererError: String?,
+    val renderedBitmap: Bitmap?,
+    val patternName: String?,
+    val currentRow: Int?,
+    val positionPercent: Int?,
+    val readingLineEnabled: Boolean,
+    val readingLineYFraction: Float,
+)
+
+private data class PatternViewerDocumentState(
+    val renderedBitmap: Bitmap,
+    val patternName: String?,
+    val currentRow: Int?,
+    val positionPercent: Int?,
+    val readingLineEnabled: Boolean,
+    val readingLineYFraction: Float,
+)
+
+private data class PatternViewerContentActions(
+    val onReadingLineYFractionChange: (Float) -> Unit,
+)
+
 @Composable
 private fun PatternViewerDocument(
-    renderedBitmap: Bitmap,
-    patternName: String?,
-    currentRow: Int?,
-    positionPercent: Int?,
+    state: PatternViewerDocumentState,
+    actions: PatternViewerContentActions,
     modifier: Modifier = Modifier,
 ) {
     var scale by remember { mutableFloatStateOf(1f) }
@@ -544,7 +623,7 @@ private fun PatternViewerDocument(
         BoxWithConstraints(
             modifier = Modifier.fillMaxWidth(),
         ) {
-            val aspectRatio = renderedBitmap.width.toFloat() / renderedBitmap.height.toFloat()
+            val aspectRatio = state.renderedBitmap.width.toFloat() / state.renderedBitmap.height.toFloat()
             Box(
                 modifier =
                     Modifier
@@ -566,23 +645,83 @@ private fun PatternViewerDocument(
                         ),
             ) {
                 Image(
-                    bitmap = renderedBitmap.asImageBitmap(),
-                    contentDescription = patternName,
+                    bitmap = state.renderedBitmap.asImageBitmap(),
+                    contentDescription = state.patternName,
                     contentScale = ContentScale.FillWidth,
                     modifier = Modifier.fillMaxSize(),
                 )
                 RowHighlightOverlay(
-                    yPosition = positionPercent?.let { it / 100f },
+                    yPosition = state.positionPercent?.let { it / 100f },
                     modifier = Modifier.fillMaxSize(),
                     accessibilityDescription =
-                        if (currentRow != null && positionPercent != null) {
-                            stringResource(R.string.pattern_row_highlight_description, currentRow, positionPercent)
+                        if (state.currentRow != null && state.positionPercent != null) {
+                            stringResource(
+                                R.string.pattern_row_highlight_description,
+                                state.currentRow,
+                                state.positionPercent,
+                            )
                         } else {
                             null
                         },
                 )
+                if (state.readingLineEnabled) {
+                    ReadingLineOverlay(
+                        yFraction = state.readingLineYFraction,
+                        scale = scale,
+                        onYFractionChange = actions.onReadingLineYFractionChange,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
             }
         }
+    }
+}
+
+@Composable
+private fun ReadingLineOverlay(
+    yFraction: Float,
+    scale: Float,
+    onYFractionChange: (Float) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val sanitizedYFraction = sanitizeReadingLineYFraction(yFraction)
+    val lineColor = MaterialTheme.colorScheme.primary
+    val bandColor = MaterialTheme.colorScheme.primary.copy(alpha = READING_LINE_BAND_ALPHA)
+    val description = stringResource(R.string.pattern_reading_line_description)
+    Canvas(
+        modifier =
+            modifier
+                .semantics { contentDescription = description }
+                .pointerInput(sanitizedYFraction, scale) {
+                    detectVerticalDragGestures { change, dragAmount ->
+                        change.consume()
+                        val heightPx =
+                            size.height.toFloat().takeIf { it > 0f }
+                                ?: return@detectVerticalDragGestures
+                        val adjustedDrag = dragAmount / scale.coerceAtLeast(1f)
+                        val nextFraction = sanitizedYFraction + (adjustedDrag / heightPx)
+                        onYFractionChange(
+                            nextFraction.coerceIn(
+                                READING_LINE_MIN_Y_FRACTION,
+                                READING_LINE_MAX_Y_FRACTION,
+                            ),
+                        )
+                    }
+                },
+    ) {
+        val centerY = size.height * sanitizedYFraction
+        val bandHeight = (size.height * READING_LINE_BAND_HEIGHT_FRACTION).coerceAtLeast(24.dp.toPx())
+        drawRect(
+            color = bandColor,
+            topLeft = Offset(0f, centerY - (bandHeight / 2f)),
+            size = Size(size.width, bandHeight),
+        )
+        drawLine(
+            color = lineColor,
+            start = Offset(0f, centerY),
+            end = Offset(size.width, centerY),
+            strokeWidth = 2.dp.toPx(),
+        )
     }
 }
 

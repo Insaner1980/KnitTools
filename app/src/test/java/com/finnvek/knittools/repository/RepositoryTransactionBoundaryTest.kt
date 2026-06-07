@@ -122,6 +122,7 @@ class RepositoryTransactionBoundaryTest {
             val repository =
                 CounterRepository(
                     dao = projectDao,
+                    projectCounterDao = mockk(relaxed = true),
                     sessionDao = sessionDao,
                     photoStorage = photoStorage,
                     patternDocumentStorage = patternDocumentStorage,
@@ -151,6 +152,7 @@ class RepositoryTransactionBoundaryTest {
             val repository =
                 CounterRepository(
                     dao = projectDao,
+                    projectCounterDao = mockk(relaxed = true),
                     sessionDao = sessionDao,
                     photoStorage = photoStorage,
                     patternDocumentStorage = mockk(relaxed = true),
@@ -179,6 +181,7 @@ class RepositoryTransactionBoundaryTest {
             val repository =
                 CounterRepository(
                     dao = projectDao,
+                    projectCounterDao = mockk(relaxed = true),
                     sessionDao = sessionDao,
                     photoStorage = photoStorage,
                     patternDocumentStorage = mockk(relaxed = true),
@@ -209,6 +212,7 @@ class RepositoryTransactionBoundaryTest {
             val repository =
                 CounterRepository(
                     dao = projectDao,
+                    projectCounterDao = mockk(relaxed = true),
                     sessionDao = sessionDao,
                     photoStorage = mockk(relaxed = true),
                     patternDocumentStorage = mockk(relaxed = true),

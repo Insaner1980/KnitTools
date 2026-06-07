@@ -19,7 +19,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         SavedPatternEntity::class,
         PatternAnnotationEntity::class,
     ],
-    version = 12,
+    version = 13,
     exportSchema = true,
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
@@ -280,6 +280,26 @@ abstract class KnitToolsDatabase : RoomDatabase() {
                     db.execSQL(
                         "CREATE INDEX IF NOT EXISTS `index_project_yarn_notes_projectId` " +
                             "ON `project_yarn_notes` (`projectId`)",
+                    )
+                }
+            }
+
+        val MIGRATION_12_13 =
+            object : Migration(12, 13) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL("ALTER TABLE counter_projects ADD COLUMN craftType TEXT NOT NULL DEFAULT 'KNITTING'")
+                    db.execSQL(
+                        "ALTER TABLE counter_projects ADD COLUMN mainCounterLabelType TEXT NOT NULL DEFAULT 'ROWS'",
+                    )
+                    db.execSQL("ALTER TABLE counter_projects ADD COLUMN mainCounterCustomLabel TEXT DEFAULT NULL")
+                    db.execSQL(
+                        "ALTER TABLE counter_projects ADD COLUMN readingLineEnabled INTEGER NOT NULL DEFAULT 0",
+                    )
+                    db.execSQL(
+                        "ALTER TABLE counter_projects ADD COLUMN readingLineYFraction REAL NOT NULL DEFAULT 0.5",
+                    )
+                    db.execSQL(
+                        "ALTER TABLE project_counters ADD COLUMN linkedToMainCounter INTEGER NOT NULL DEFAULT 0",
                     )
                 }
             }

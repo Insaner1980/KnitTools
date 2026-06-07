@@ -71,6 +71,7 @@ class CounterRepositoryTargetRowsTest {
 private fun buildRepository(dao: FakeCounterProjectDao): CounterRepository =
     CounterRepository(
         dao = dao,
+        projectCounterDao = mockk(relaxed = true),
         sessionDao = StubSessionDao(),
         photoStorage = mockk(relaxed = true),
         patternDocumentStorage = mockk(relaxed = true),

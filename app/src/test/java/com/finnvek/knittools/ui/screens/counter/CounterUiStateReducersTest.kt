@@ -54,6 +54,22 @@ class CounterUiStateReducersTest {
     }
 
     @Test
+    fun `started project copies reading line state`() {
+        val result =
+            CounterUiState().withStartedProject(
+                CounterProject(
+                    id = 2L,
+                    name = "Pattern project",
+                    readingLineEnabled = true,
+                    readingLineYFraction = 0.42f,
+                ),
+            )
+
+        assertTrue(result.readingLineEnabled)
+        assertEquals(0.42f, result.readingLineYFraction, 0.0f)
+    }
+
+    @Test
     fun `observed external row change clears stale undo value`() {
         val result =
             CounterUiState(
@@ -102,6 +118,26 @@ class CounterUiStateReducersTest {
             )
 
         assertNull(result.linkedPattern)
+    }
+
+    @Test
+    fun `observed project refreshes reading line state`() {
+        val result =
+            CounterUiState(
+                readingLineEnabled = false,
+                readingLineYFraction = 0.20f,
+            ).withObservedProject(
+                CounterProject(
+                    id = 2L,
+                    name = "Sukat",
+                    count = 10,
+                    readingLineEnabled = true,
+                    readingLineYFraction = 0.75f,
+                ),
+            )
+
+        assertTrue(result.readingLineEnabled)
+        assertEquals(0.75f, result.readingLineYFraction, 0.0f)
     }
 
     @Test

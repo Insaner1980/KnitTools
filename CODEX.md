@@ -9,7 +9,7 @@ Use [`CLAUDE.md`](/home/emma/dev/KnitTools/CLAUDE.md) when product wording, visu
 - Android app in `app` plus `baselineprofile`
 - Kotlin + Jetpack Compose + Material 3
 - Hilt, Room, DataStore, Glance
-- Room schema version `12`
+- Room schema version `13`
 - AGP `9.1.0` + Kotlin Compose plugin `2.3.10`
 
 ## Architecture
@@ -20,7 +20,10 @@ Use [`CLAUDE.md`](/home/emma/dev/KnitTools/CLAUDE.md) when product wording, visu
 - `ui/` owns screens, navigation, theme, and ViewModels
 - Coroutine dispatchers that cross architectural boundaries are provided through `di/DispatchersModule` (`@IoDispatcher`); avoid hardcoded `Dispatchers.IO` in repositories and ViewModels
 - Multi-step Room writes that span DAOs go through `data/local/DatabaseTransactionRunner` from repository methods; UI code must not split bidirectional yarn/project links or pattern attachment writes into separate persistence calls
-- Widget row count changes go through `CounterRepository.applyWidgetCountChange`, which reads the current project row and writes count, history, and current-stitch reset inside one repository transaction
+- Main counter changes go through `CounterRepository.applyMainCounterChange`, which reads the current project row and writes count, history, current-stitch reset, and linked-counter deltas inside one repository transaction; widget row count changes delegate to the same semantics through `applyWidgetCountChange`
+- Project craft type and main counter label are owned by `domain/model/CraftType` and `domain/model/MainCounterLabelType`; legacy projects default to `KNITTING` + `ROWS`, crochet projects default to `ROUNDS`, and custom labels are trimmed and limited centrally before persistence/display
+- Main counter display text is shaped by `domain/calculator/CounterValueFormatter`; Compose maps its slots to localized strings for hero labels, target rows, button content descriptions, and project-card count text
+- Extra-counter linked state is stored in `ProjectCounter.linkedToMainCounter` from the add/edit counter draft; repeat-section counters must not be marked linked because they already derive progress from main-counter rows
 - Project note replacement writes go through `CounterRepository.saveProjectNotes`, which merges against the editor's base notes so concurrent editor flows are preserved instead of overwritten
 - Session rows store both display minutes and exact `durationSeconds`/`rowsWorked`; insights pace calculations must use the exact fields and split cross-midnight sessions by the device local date
 - Insights screen state is aggregated in `InsightsUiState`; heavy session-history calculations should run upstream with `@IoDispatcher` before Compose collects the single UI state
@@ -33,10 +36,14 @@ Use [`CLAUDE.md`](/home/emma/dev/KnitTools/CLAUDE.md) when product wording, visu
 - Yarn card photo updates go through `YarnCardRepository.updatePhotoUri`, which copies the selected image with `data/storage/YarnPhotoStorage` into app-owned `yarn_photos/<cardId>` storage and cleans up the old app-owned photo; yarn photos are not FileProvider-exposed share paths
 - Pattern attach/detach database state goes through `CounterRepository.attachPattern` / `detachPattern` so saved-pattern rows, annotations, and project pattern fields stay atomic
 - Pattern PDF files are app-owned documents under `pattern_pdfs/<projectId>`; `SavedPatternRepository.deleteLocalPatternFileIfUnused` is the cleanup gate after saved-pattern deletion, project detach, and project deletion
+- Pattern PDF import, including the v1 Drive/Dropbox copy, stays on Android Storage Access Framework `OpenDocument(application/pdf)` plus persistable URI grants; do not add Drive/Dropbox SDKs, OAuth, provider-specific dependencies, or a separate import storage flow before a new sync spec
+- Drive/Dropbox sync is future-spec work tracked in `config/future-sync-spec.md`. Manual export/import or backup/restore comes before continuous sync. Do not market cross-device sync until conflict handling, background sync, offline behavior, OAuth/token storage, and the Pro gate are specified and implemented
+- Pattern viewer reading-line state belongs to `counter_projects.readingLineEnabled` and `readingLineYFraction` for attached project PDFs; library-only pattern viewer state is session/rotation-saveable and must not create a saved-pattern schema path in v1
 - Pattern camera capture is a photo-to-PDF flow: user-facing copy must use photo/PDF wording instead of scan/scanner wording, temp images live under `pattern_captures/<projectId>`, and only pattern/progress photo paths are exposed through FileProvider; FileProvider authority and share URI creation go through `AppFileStorage`, while legacy `patterns/...` and `yarn_photos/...` URIs are resolved internally by `AppFileStorage` for cleanup/read compatibility
 - Keep business logic out of composables when a ViewModel or use case should own it
 - Runtime app language is owned by AppCompat/Android per-app locale APIs; DataStore `app_language` is only a persistence and migration mirror managed by `PreferencesManager`
 - Ravelry is intentionally backendless: OAuth authorization requests include PKCE, but release builds may embed Ravelry Basic Auth credentials and OAuth client secret after explicit `KNITTOOLS_ALLOW_EMBEDDED_RAVELRY_SECRETS=true` opt-in; keep `config/security-decisions.md` aligned with this accepted risk
+- Debug-only Pro override is centralized in `ProState.hasFeature` through `BuildConfig.DEBUG`; it opens feature gates in debug builds without changing `isPro`, billing purchase state, trial state, or Pro upgrade UI purchase claims
 - Voice/microphone commands are intentionally absent from the counter; do not reintroduce SpeechRecognizer, TextToSpeech, or conversational voice without a new explicit product/security decision
 - Paste-to-parse uses the regex-only `domain/calculator/InstructionParser`; keep model-backed parser code out of calculator UI
 - Notes editing is local-only; do not reintroduce cloud journal processing or cloud cleanup without a new explicit product/security decision
@@ -58,10 +65,10 @@ Use [`CLAUDE.md`](/home/emma/dev/KnitTools/CLAUDE.md) when product wording, visu
 
 - All user-visible strings go in `res/values/strings.xml`
 - Use theme tokens and `MaterialTheme.knitToolsColors`, not hardcoded colors
-- Counter route first viewport is top bar plus row-counter hero plus bottom navigation; project content cards, extra counters, and stitch tracking belong below the hero scroll
+- Counter route first viewport is top bar plus row-counter hero plus bottom navigation; reminder cards, project content cards, extra counters, and stitch tracking belong below the hero scroll
 - Counter top bar owns back navigation, the uppercase project name, and overflow; do not restore pattern subtitles, PDF names, Ravelry names, or `Pattern attached` copy there
-- `CounterProjectContentCards` is a fixed five-card square grid: Pattern, Yarn, Notes, Photos, Reminders. Cards contain only icon plus title, never previews, counts, chevrons, or reminder messages
-- Counter-specific spacing, hero, grid, icon, and touch-target dimensions belong in `ui/theme/CounterDimens.kt`
+- `CounterProjectContentCards` is a fixed five-card square grid: Pattern, Yarn, Notes, Photos, Reminders. The first four cards form a two-column square grid and the Reminders tile is centered on its own row; cards contain only icon plus title, never previews, counts, chevrons, or reminder messages
+- Counter-specific spacing, hero, progress, repeat pill, grid, icon, extra-counter card, and touch-target dimensions belong in `ui/theme/CounterDimens.kt`
 - Scaffold background should use the app `background` color
 - Reuse `ToolScreenScaffold` and shared UI components before adding feature-local scaffolds
 - Avoid inline typography overrides except documented project exceptions

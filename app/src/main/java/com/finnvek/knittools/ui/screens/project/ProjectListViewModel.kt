@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.finnvek.knittools.R
 import com.finnvek.knittools.data.datastore.PreferencesManager
 import com.finnvek.knittools.domain.model.CounterProject
+import com.finnvek.knittools.domain.model.CraftType
+import com.finnvek.knittools.domain.model.MainCounterLabelType
 import com.finnvek.knittools.domain.model.ProjectSortOrder
 import com.finnvek.knittools.domain.model.displayName
 import com.finnvek.knittools.domain.model.parseYarnCardIds
@@ -39,6 +41,9 @@ data class ContinueKnittingProject(
     val totalMinutes: Int,
     val sectionName: String?,
     val targetRows: Int?,
+    val craftType: CraftType,
+    val mainCounterLabelType: MainCounterLabelType,
+    val mainCounterCustomLabel: String?,
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -200,6 +205,9 @@ class ProjectListViewModel
                         totalMinutes = totalMin,
                         sectionName = candidate.sectionName,
                         targetRows = candidate.targetRows,
+                        craftType = candidate.craftType,
+                        mainCounterLabelType = candidate.mainCounterLabelType,
+                        mainCounterCustomLabel = candidate.mainCounterCustomLabel,
                     )
                 } else {
                     null
@@ -254,17 +262,50 @@ class ProjectListViewModel
 
         fun createProject() {
             viewModelScope.launch {
-                if (!isPro && repository.getActiveProjectCount() >= 1) {
-                    _upgradeToPro.emit(Unit)
-                    return@launch
-                }
                 val count = repository.getProjectCount()
-                val id =
-                    repository.createProject(
-                        context.getString(R.string.new_project_name_format, count + 1),
-                    ) ?: return@launch
-                _navigateToProject.emit(id)
+                createProjectInternal(
+                    name = context.getString(R.string.new_project_name_format, count + 1),
+                    craftType = CraftType.KNITTING,
+                    mainCounterLabelType = CraftType.KNITTING.defaultMainCounterLabelType(),
+                    mainCounterCustomLabel = null,
+                )
             }
+        }
+
+        fun createProject(
+            name: String,
+            craftType: CraftType,
+            mainCounterLabelType: MainCounterLabelType,
+            mainCounterCustomLabel: String?,
+        ) {
+            viewModelScope.launch {
+                createProjectInternal(
+                    name = name,
+                    craftType = craftType,
+                    mainCounterLabelType = mainCounterLabelType,
+                    mainCounterCustomLabel = mainCounterCustomLabel,
+                )
+            }
+        }
+
+        private suspend fun createProjectInternal(
+            name: String,
+            craftType: CraftType,
+            mainCounterLabelType: MainCounterLabelType,
+            mainCounterCustomLabel: String?,
+        ) {
+            if (!isPro && repository.getActiveProjectCount() >= 1) {
+                _upgradeToPro.emit(Unit)
+                return
+            }
+            val id =
+                repository.createProject(
+                    name = name,
+                    craftType = craftType,
+                    mainCounterLabelType = mainCounterLabelType,
+                    mainCounterCustomLabel = mainCounterCustomLabel,
+                ) ?: return
+            _navigateToProject.emit(id)
         }
 
         fun archiveProject(id: Long) {

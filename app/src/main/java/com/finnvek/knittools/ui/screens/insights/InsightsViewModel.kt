@@ -85,13 +85,12 @@ class InsightsViewModel
         @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
     ) : ViewModel() {
         val isPro: StateFlow<Boolean> =
-            proManager.proState
-                .map { it.hasFeature(ProFeature.INSIGHTS_CHARTS) }
-                .distinctUntilChanged()
+            proManager
+                .hasFeatureFlow(ProFeature.INSIGHTS_CHARTS)
                 .stateIn(
                     viewModelScope,
                     SharingStarted.WhileSubscribed(5000),
-                    proManager.proState.value.hasFeature(ProFeature.INSIGHTS_CHARTS),
+                    proManager.hasFeature(ProFeature.INSIGHTS_CHARTS),
                 )
 
         private val _selectedProjectId = MutableStateFlow<Long?>(null)

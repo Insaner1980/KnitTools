@@ -45,4 +45,6 @@ data class ProjectCounterEntity(
     val totalRepeats: Int? = null,
     @ColumnInfo(defaultValue = "NULL")
     val currentRepeat: Int? = null,
+    @ColumnInfo(defaultValue = "0")
+    val linkedToMainCounter: Boolean = false,
 )

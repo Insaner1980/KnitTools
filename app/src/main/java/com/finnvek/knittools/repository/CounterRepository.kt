@@ -3,6 +3,7 @@ package com.finnvek.knittools.repository
 import android.content.Context
 import com.finnvek.knittools.data.local.CounterProjectDao
 import com.finnvek.knittools.data.local.DatabaseTransactionRunner
+import com.finnvek.knittools.data.local.ProjectCounterDao
 import com.finnvek.knittools.data.local.SessionDao
 import com.finnvek.knittools.data.local.SessionEntity
 import com.finnvek.knittools.data.local.toDomain
@@ -13,12 +14,20 @@ import com.finnvek.knittools.di.IoDispatcher
 import com.finnvek.knittools.domain.calculator.CounterLogic
 import com.finnvek.knittools.domain.calculator.CounterState
 import com.finnvek.knittools.domain.model.CounterProject
+import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.KnitSession
+import com.finnvek.knittools.domain.model.MainCounterChange
+import com.finnvek.knittools.domain.model.MainCounterLabelType
 import com.finnvek.knittools.domain.model.ProjectSortOrder
+import com.finnvek.knittools.domain.model.READING_LINE_MAX_Y_FRACTION
+import com.finnvek.knittools.domain.model.READING_LINE_MIN_Y_FRACTION
+import com.finnvek.knittools.domain.model.resolvedMainCounterLabelType
+import com.finnvek.knittools.domain.model.sanitizeMainCounterCustomLabel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
@@ -30,6 +39,7 @@ class CounterRepository
     @Inject
     constructor(
         private val dao: CounterProjectDao,
+        private val projectCounterDao: ProjectCounterDao,
         private val sessionDao: SessionDao,
         private val photoStorage: ProgressPhotoStorage,
         private val patternDocumentStorage: PatternDocumentStorage,
@@ -71,15 +81,63 @@ class CounterRepository
 
         fun observeProject(id: Long): Flow<CounterProject?> = dao.observeProject(id).map { it?.toDomain() }
 
-        suspend fun createProject(name: String): Long? {
+        suspend fun createProject(
+            name: String,
+            craftType: CraftType = CraftType.KNITTING,
+            mainCounterLabelType: MainCounterLabelType = craftType.defaultMainCounterLabelType(),
+            mainCounterCustomLabel: String? = null,
+        ): Long? {
             val projectName = uniqueProjectName(name) ?: return null
+            val labelType =
+                validatedMainCounterLabelType(
+                    craftType = craftType,
+                    labelType = mainCounterLabelType,
+                    customLabel = mainCounterCustomLabel,
+                ) ?: return null
             val now = System.currentTimeMillis()
-            return dao.insert(CounterProject(name = projectName, createdAt = now, updatedAt = now).toEntity())
+            return dao.insert(
+                CounterProject(
+                    name = projectName,
+                    craftType = craftType,
+                    mainCounterLabelType = labelType,
+                    mainCounterCustomLabel = sanitizeMainCounterCustomLabel(mainCounterCustomLabel),
+                    createdAt = now,
+                    updatedAt = now,
+                ).toEntity(),
+            )
         }
 
         suspend fun updateProject(project: CounterProject) {
             val projectName = uniqueProjectName(project.name, excludedProjectId = project.id) ?: return
-            dao.update(project.copy(name = projectName, updatedAt = System.currentTimeMillis()).toEntity())
+            val normalized = normalizeProjectDetails(project.copy(name = projectName)) ?: return
+            dao.update(normalized.copy(updatedAt = System.currentTimeMillis()).toEntity())
+        }
+
+        suspend fun updateProjectDetails(
+            id: Long,
+            name: String,
+            craftType: CraftType,
+            mainCounterLabelType: MainCounterLabelType,
+            mainCounterCustomLabel: String?,
+        ): CounterProject? {
+            val projectName = uniqueProjectName(name, excludedProjectId = id) ?: return null
+            val labelType =
+                validatedMainCounterLabelType(
+                    craftType = craftType,
+                    labelType = mainCounterLabelType,
+                    customLabel = mainCounterCustomLabel,
+                ) ?: return null
+            val customLabel = sanitizeMainCounterCustomLabel(mainCounterCustomLabel)
+            val updatedAt = System.currentTimeMillis()
+            dao.updateProjectDetails(
+                id = id,
+                name = projectName,
+                craftType = craftType.persistedValue,
+                mainCounterLabelType = labelType.persistedValue,
+                mainCounterCustomLabel = customLabel.takeIf { labelType == MainCounterLabelType.CUSTOM },
+                updatedAt = updatedAt,
+            )
+            return dao.getProject(id)?.toDomain()
         }
 
         suspend fun adjustProjectCount(
@@ -121,9 +179,9 @@ class CounterRepository
             updatedAt = System.currentTimeMillis(),
         )
 
-        suspend fun applyWidgetCountChange(
+        suspend fun applyMainCounterChange(
             id: Long,
-            increment: Boolean,
+            change: MainCounterChange,
         ): Boolean =
             transactionRunner.run {
                 val project = dao.getProject(id)?.toDomain() ?: return@run false
@@ -131,15 +189,29 @@ class CounterRepository
 
                 val before = CounterState(count = project.count, stepSize = project.stepSize)
                 val after =
-                    if (increment) {
-                        CounterLogic.increment(before)
-                    } else {
-                        CounterLogic.decrement(before)
+                    when (change) {
+                        MainCounterChange.Increment -> CounterLogic.increment(before)
+                        MainCounterChange.Decrement -> CounterLogic.decrement(before)
+                        MainCounterChange.Reset -> CounterState(count = 0, stepSize = before.stepSize)
+                        MainCounterChange.Undo -> {
+                            val history = dao.getLatestHistory(id) ?: return@run false
+                            val linkedDelta = history.previousValue - history.newValue
+                            dao.updateCount(id, history.previousValue, System.currentTimeMillis())
+                            dao.deleteHistoryById(history.id)
+                            applyLinkedCounterDelta(id, linkedDelta)
+                            return@run true
+                        }
                     }
                 if (after.count == before.count) return@run false
 
                 val updatedAt = System.currentTimeMillis()
-                val action = if (increment) "increment" else "decrement"
+                val action =
+                    when (change) {
+                        MainCounterChange.Increment -> "increment"
+                        MainCounterChange.Decrement -> "decrement"
+                        MainCounterChange.Reset -> "reset"
+                        MainCounterChange.Undo -> "undo"
+                    }
                 dao.updateCounterStateWithHistory(
                     projectId = id,
                     count = after.count,
@@ -152,8 +224,18 @@ class CounterRepository
                 if (project.stitchTrackingEnabled) {
                     dao.updateCurrentStitch(id, 0, updatedAt)
                 }
+                applyLinkedCounterDelta(id, after.count - before.count)
                 true
             }
+
+        suspend fun applyWidgetCountChange(
+            id: Long,
+            increment: Boolean,
+        ): Boolean =
+            applyMainCounterChange(
+                id = id,
+                change = if (increment) MainCounterChange.Increment else MainCounterChange.Decrement,
+            )
 
         suspend fun updateProjectName(
             id: Long,
@@ -276,6 +358,16 @@ class CounterRepository
             mapping: String?,
         ) = dao.updatePatternRowMapping(id, mapping, System.currentTimeMillis())
 
+        suspend fun updateReadingLine(
+            id: Long,
+            enabled: Boolean,
+            yFraction: Float,
+        ) {
+            val sanitizedYFraction =
+                yFraction.coerceIn(READING_LINE_MIN_Y_FRACTION, READING_LINE_MAX_Y_FRACTION)
+            dao.updateReadingLine(id, enabled, sanitizedYFraction, System.currentTimeMillis())
+        }
+
         suspend fun updateProjectStepSize(
             id: Long,
             stepSize: Int,
@@ -323,6 +415,49 @@ class CounterRepository
                     .map { it.name }
                     .toList()
             return ProjectNameRules.uniqueName(name, existingNames)
+        }
+
+        private fun normalizeProjectDetails(project: CounterProject): CounterProject? {
+            val labelType =
+                validatedMainCounterLabelType(
+                    craftType = project.craftType,
+                    labelType = project.mainCounterLabelType,
+                    customLabel = project.mainCounterCustomLabel,
+                ) ?: return null
+            return project.copy(
+                mainCounterLabelType = labelType,
+                mainCounterCustomLabel =
+                    sanitizeMainCounterCustomLabel(project.mainCounterCustomLabel)
+                        .takeIf { labelType == MainCounterLabelType.CUSTOM },
+            )
+        }
+
+        private fun validatedMainCounterLabelType(
+            craftType: CraftType,
+            labelType: MainCounterLabelType,
+            customLabel: String?,
+        ): MainCounterLabelType? =
+            if (labelType == MainCounterLabelType.CUSTOM && sanitizeMainCounterCustomLabel(customLabel) == null) {
+                null
+            } else {
+                resolvedMainCounterLabelType(craftType, labelType, customLabel)
+            }
+
+        private suspend fun applyLinkedCounterDelta(
+            projectId: Long,
+            delta: Int,
+        ) {
+            if (delta == 0) return
+            projectCounterDao
+                .getCountersForProject(projectId)
+                .first()
+                .filter { it.linkedToMainCounter }
+                .forEach { counter ->
+                    val updatedCount = (counter.count + delta).coerceAtLeast(0)
+                    if (updatedCount != counter.count) {
+                        projectCounterDao.updateCount(counter.id, updatedCount)
+                    }
+                }
         }
 
         suspend fun deleteHistoryBefore(

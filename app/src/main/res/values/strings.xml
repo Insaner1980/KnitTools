@@ -60,6 +60,43 @@
     <string name="section_completed">COMPLETED</string>
     <string name="new_project">New Project</string>
     <string name="new_project_name_format">Project %1$d</string>
+    <string name="create_project">Create project</string>
+    <string name="project_details">Project details</string>
+    <string name="project_details_title">Project details</string>
+    <string name="new_project_details_title">New project</string>
+    <string name="project_name_label">Project name</string>
+    <string name="craft_type_label">Craft type</string>
+    <string name="craft_type_knitting">Knitting</string>
+    <string name="craft_type_crochet">Crochet</string>
+    <string name="main_counter_label">Main counter label</string>
+    <string name="main_counter_rows">Rows</string>
+    <string name="main_counter_rounds">Rounds</string>
+    <string name="main_counter_repeats">Repeats</string>
+    <string name="main_counter_custom">Custom</string>
+    <string name="main_counter_custom_label">Custom label</string>
+    <string name="main_counter_custom_label_error">Enter a label.</string>
+    <string name="project_metadata_format">%1$s · %2$s</string>
+    <plurals name="rounds_format">
+        <item quantity="one">%1$d round</item>
+        <item quantity="other">%1$d rounds</item>
+    </plurals>
+    <plurals name="repeats_format">
+        <item quantity="one">%1$d repeat</item>
+        <item quantity="other">%1$d repeats</item>
+    </plurals>
+    <string name="main_counter_custom_count_format">%1$d %2$s</string>
+    <string name="current_round_short">Round %1$d</string>
+    <string name="current_repeat_short">Repeat %1$d</string>
+    <string name="counter_round_value_of_target_format">Round %1$d / %2$d</string>
+    <string name="counter_repeat_value_of_target_format">Repeat %1$d / %2$d</string>
+    <string name="main_counter_custom_current_format">%1$s %2$d</string>
+    <string name="counter_custom_value_of_target_format">%1$s %2$d / %3$d</string>
+    <string name="counter_add_round">Add round</string>
+    <string name="counter_decrease_round">Subtract round</string>
+    <string name="counter_add_repeat">Add repeat</string>
+    <string name="counter_decrease_repeat">Subtract repeat</string>
+    <string name="counter_add_custom">Add %1$s</string>
+    <string name="counter_decrease_custom">Subtract %1$s</string>
     <string name="no_active_projects">No active projects</string>
     <string name="no_completed_projects">No completed projects yet</string>
     <string name="delete_project">Delete</string>
@@ -86,14 +123,11 @@
     <string name="just_now">just now</string>
 
     <!-- Counter Screen -->
-    <string name="current_row">CURRENT ROW</string>
     <string name="stitch_count_format" tools:ignore="UnusedResources">%s st</string>
     <string name="set_stitches" tools:ignore="UnusedResources">Set stitches</string>
     <string name="stitches_per_row">Stitches per row</string>
     <string name="track_stitches">Track stitches</string>
     <string name="stitch_counter_compact_format">%1$d/%2$d</string>
-    <string name="stitch_previous">◄</string>
-    <string name="stitch_next">►</string>
     <string name="attach_pattern">Attach pattern</string>
     <string name="remove_pattern">Remove pattern</string>
     <string name="no_pattern_attached">No pattern attached</string>
@@ -101,6 +135,9 @@
     <string name="pattern_pdf_fallback_name">Pattern PDF</string>
     <string name="pattern_loading">Loading pattern…</string>
     <string name="pattern_open_failed">Pattern could not be opened.</string>
+    <string name="pattern_show_reading_line">Show reading line</string>
+    <string name="pattern_hide_reading_line">Hide reading line</string>
+    <string name="pattern_reading_line_description">Reading line</string>
     <string name="pattern_row_highlight_description" tools:ignore="PluralsCandidate">Row %1$d highlighted about %2$d percent down the page</string>
     <string name="pattern_page_jump">Page jump</string>
     <string name="pattern_page_number">Page number</string>
@@ -109,6 +146,7 @@
     <string name="pattern_next_page">Next page</string>
     <string name="pattern_picker_saved_patterns">Saved patterns</string>
     <string name="pattern_picker_import_pdf">Import PDF</string>
+    <string name="pattern_picker_import_cloud_pdf">Import from Drive or Dropbox</string>
     <string name="pattern_picker_camera_scan">Take pattern photo</string>
     <string name="pattern_picker_continue_without_pattern">Continue without pattern</string>
     <string name="pattern_scan_failed">Pattern photo could not be converted to PDF.</string>
@@ -178,7 +216,29 @@
 
     <string name="counter_decrease">Decrease</string>
     <string name="counter_increase">Increase</string>
-    <string name="counter_undo">Undo</string>
+    <string name="counter_value_of_target_format">Row %1$d / %2$d</string>
+    <string name="repeating_counter_value_format">%1$d of %2$d</string>
+    <string name="counter_decrease_named">Decrease %1$s</string>
+    <string name="counter_increase_named">Increase %1$s</string>
+    <string name="counter_actions">%1$s actions</string>
+    <string name="counter_add_row">Add row</string>
+    <string name="counter_decrease_row">Subtract row</string>
+    <string name="counter_undo_last_change">Undo last change</string>
+    <plurals name="counter_target_rows_left">
+        <item quantity="one">%1$d row left</item>
+        <item quantity="other">%1$d rows left</item>
+    </plurals>
+    <string name="counter_target_reached">Target reached</string>
+    <plurals name="counter_target_rows_past">
+        <item quantity="one">%1$d row past target</item>
+        <item quantity="other">%1$d rows past target</item>
+    </plurals>
+    <string name="project_content_pattern">Pattern</string>
+    <string name="stitch_tracker_label">Stitches</string>
+    <plurals name="reminder_repeat_occurrence_format">
+        <item quantity="one">Repeat #%1$d every row</item>
+        <item quantity="other">Repeat #%1$d every %2$d rows</item>
+    </plurals>
 
     <!-- Increase / Decrease -->
     <string name="mode_increase">Increase</string>
@@ -717,7 +777,6 @@
     <string name="repeating">Repeating</string>
     <string name="repeat_every">Repeat every</string>
     <string name="repeat_every_rows">rows</string>
-    <string name="repeat_count_format">Repeat %1$d/%2$d</string>
     <string name="dismiss">Dismiss</string>
 
     <!-- Multiple Counters -->
@@ -727,6 +786,8 @@
     <string name="counter_name_hint">e.g. Sleeve increases</string>
     <string name="count_up">Count up</string>
     <string name="step_size">Step size</string>
+    <string name="linked_counter">Linked counter</string>
+    <string name="linked_counter_description">Moves with the main counter.</string>
     <string name="shaping">Shaping</string>
     <string name="repeat_section">Repeat section</string>
     <string name="starting_stitches">Starting stitch count</string>
@@ -735,9 +796,8 @@
     <string name="repeat_section_start_row">Start row</string>
     <string name="repeat_section_end_row">End row</string>
     <string name="total_repeats">Total repeats</string>
-    <string name="repeat_section_progress_format">Repeat %1$d of %2$d · Row %3$d of %4$d</string>
+    <string name="repeat_section_progress_format">Repeat %1$d/%2$d, Row %3$d/%4$d</string>
     <string name="repeat_section_complete">Complete</string>
-    <string name="next_shaping_format">Next shaping: Row %1$d → %2$d sts</string>
     <string name="rename_counter">Rename</string>
     <string name="reset_counter_name">Reset</string>
     <string name="delete_counter">Delete</string>
@@ -813,8 +873,6 @@
     <string name="project_actions_section_counter_tools">COUNTER TOOLS</string>
     <string name="project_actions_section_project_actions">PROJECT ACTIONS</string>
     <string name="project_content_title">Project</string>
-    <string name="project_content_open_pattern">Open Pattern</string>
-    <string name="project_content_attach_pattern">Add Pattern</string>
     <string name="project_content_yarn">Yarn</string>
     <string name="project_content_notes">Notes</string>
     <string name="project_content_photos">Photos</string>

@@ -47,6 +47,7 @@ import kotlinx.coroutines.withContext
 
 private data class PatternPickerActions(
     val openDeviceFiles: () -> Unit,
+    val openCloudProviderFiles: () -> Unit,
     val startCameraScan: () -> Unit,
     val continueWithoutPattern: () -> Unit,
 )
@@ -158,9 +159,12 @@ private fun rememberPatternPickerActions(
             cameraLauncher.launch(uri)
         }
 
+    val openPdfDocumentPicker = { openDocumentLauncher.launch(pdfMimeTypes()) }
+
     return remember(openDocumentLauncher, permissionLauncher) {
         PatternPickerActions(
-            openDeviceFiles = { openDocumentLauncher.launch(arrayOf("application/pdf")) },
+            openDeviceFiles = openPdfDocumentPicker,
+            openCloudProviderFiles = openPdfDocumentPicker,
             startCameraScan = {
                 if (canStartPatternCameraScan(currentProjectId, currentCanUseCameraScan)) {
                     permissionLauncher.launch(Manifest.permission.CAMERA)
@@ -210,6 +214,13 @@ private fun PatternPickerSheetContent(
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text(stringResource(R.string.pattern_picker_import_pdf))
+        }
+
+        OutlinedButton(
+            onClick = actions.openCloudProviderFiles,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(stringResource(R.string.pattern_picker_import_cloud_pdf))
         }
 
         Button(
@@ -304,6 +315,8 @@ internal fun canStartPatternCameraScan(
     canUseCameraScan: Boolean,
 ): Boolean = canUseCameraScan && projectId != null
 
+private fun pdfMimeTypes(): Array<String> = arrayOf(PATTERN_PDF_MIME_TYPE)
+
 private fun showCameraPermissionDeniedToast(context: android.content.Context) {
     val activity = context as? Activity
     val permanentlyDenied =
@@ -331,3 +344,5 @@ private fun resolvePatternName(
     }
     return uri.lastPathSegment ?: context.getString(R.string.pattern_pdf_fallback_name)
 }
+
+private const val PATTERN_PDF_MIME_TYPE = "application/pdf"

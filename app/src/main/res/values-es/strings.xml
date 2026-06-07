@@ -60,6 +60,45 @@
     <string name="section_completed">TERMINADOS</string>
     <string name="new_project">Nuevo proyecto</string>
     <string name="new_project_name_format">Proyecto %1$d</string>
+    <string name="create_project">Crear proyecto</string>
+    <string name="project_details">Detalles del proyecto</string>
+    <string name="project_details_title">Detalles del proyecto</string>
+    <string name="new_project_details_title">Nuevo proyecto</string>
+    <string name="project_name_label">Nombre del proyecto</string>
+    <string name="craft_type_label">Tipo de labor</string>
+    <string name="craft_type_knitting">Punto</string>
+    <string name="craft_type_crochet">Ganchillo</string>
+    <string name="main_counter_label">Etiqueta del contador principal</string>
+    <string name="main_counter_rows">Vueltas</string>
+    <string name="main_counter_rounds">Rondas</string>
+    <string name="main_counter_repeats">Repeticiones</string>
+    <string name="main_counter_custom">Personalizada</string>
+    <string name="main_counter_custom_label">Etiqueta personalizada</string>
+    <string name="main_counter_custom_label_error">Introduce una etiqueta.</string>
+    <string name="project_metadata_format">%1$s · %2$s</string>
+    <plurals name="rounds_format">
+        <item quantity="one">%1$d ronda</item>
+        <item quantity="many">%1$d rondas</item>
+        <item quantity="other">%1$d rondas</item>
+    </plurals>
+    <plurals name="repeats_format">
+        <item quantity="one">%1$d repetición</item>
+        <item quantity="many">%1$d repeticiones</item>
+        <item quantity="other">%1$d repeticiones</item>
+    </plurals>
+    <string name="main_counter_custom_count_format">%1$d %2$s</string>
+    <string name="current_round_short">Ronda %1$d</string>
+    <string name="current_repeat_short">Repetición %1$d</string>
+    <string name="counter_round_value_of_target_format">Ronda %1$d / %2$d</string>
+    <string name="counter_repeat_value_of_target_format">Repetición %1$d / %2$d</string>
+    <string name="main_counter_custom_current_format">%1$s %2$d</string>
+    <string name="counter_custom_value_of_target_format">%1$s %2$d / %3$d</string>
+    <string name="counter_add_round">Añadir ronda</string>
+    <string name="counter_decrease_round">Restar ronda</string>
+    <string name="counter_add_repeat">Añadir repetición</string>
+    <string name="counter_decrease_repeat">Restar repetición</string>
+    <string name="counter_add_custom">Añadir %1$s</string>
+    <string name="counter_decrease_custom">Restar %1$s</string>
     <string name="no_active_projects">No hay proyectos activos</string>
     <string name="no_completed_projects">Aún no hay proyectos terminados</string>
     <string name="delete_project">Eliminar</string>
@@ -86,14 +125,11 @@
     <string name="just_now">justo ahora</string>
 
     <!-- Counter Screen -->
-    <string name="current_row">VUELTA ACTUAL</string>
     <string name="stitch_count_format">%s p</string>
     <string name="set_stitches">Fijar puntos</string>
     <string name="stitches_per_row">Puntos por vuelta</string>
     <string name="track_stitches">Seguir puntos</string>
     <string name="stitch_counter_compact_format">%1$d/%2$d</string>
-    <string name="stitch_previous">◄</string>
-    <string name="stitch_next">►</string>
     <string name="attach_pattern">Adjuntar patrón</string>
     <string name="remove_pattern">Quitar patrón</string>
     <string name="no_pattern_attached">No hay ningún patrón adjunto</string>
@@ -101,6 +137,9 @@
     <string name="pattern_pdf_fallback_name">PDF del patrón</string>
     <string name="pattern_loading">Cargando patrón…</string>
     <string name="pattern_open_failed">No se pudo abrir el patrón.</string>
+    <string name="pattern_show_reading_line">Mostrar línea de lectura</string>
+    <string name="pattern_hide_reading_line">Ocultar línea de lectura</string>
+    <string name="pattern_reading_line_description">Línea de lectura</string>
     <string name="pattern_page_jump">Ir a la página</string>
     <string name="pattern_page_number">Número de página</string>
     <string name="pattern_page_indicator">Página %1$d de %2$d</string>
@@ -108,6 +147,7 @@
     <string name="pattern_next_page">Página siguiente</string>
     <string name="pattern_picker_saved_patterns">Patrones guardados</string>
     <string name="pattern_picker_import_pdf">Importar PDF</string>
+    <string name="pattern_picker_import_cloud_pdf">Importar desde Drive o Dropbox</string>
     <string name="pattern_picker_camera_scan">Tomar foto del patrón</string>
     <string name="pattern_picker_continue_without_pattern">Continuar sin patrón</string>
     <string name="pattern_scan_failed">La foto del patrón no pudo convertirse en PDF.</string>
@@ -176,7 +216,32 @@
 
     <string name="counter_decrease">Disminuir</string>
     <string name="counter_increase">Aumentar</string>
-    <string name="counter_undo">Deshacer</string>
+    <string name="counter_value_of_target_format">Fila %1$d / %2$d</string>
+    <string name="repeating_counter_value_format">%1$d de %2$d</string>
+    <string name="counter_decrease_named">Disminuir %1$s</string>
+    <string name="counter_increase_named">Aumentar %1$s</string>
+    <string name="counter_actions">Acciones de %1$s</string>
+    <string name="counter_add_row">Añadir vuelta</string>
+    <string name="counter_decrease_row">Quitar vuelta</string>
+    <string name="counter_undo_last_change">Deshacer el último cambio</string>
+    <plurals name="counter_target_rows_left">
+        <item quantity="one">%1$d vuelta restante</item>
+        <item quantity="many">%1$d vueltas restantes</item>
+        <item quantity="other">%1$d vueltas restantes</item>
+    </plurals>
+    <string name="counter_target_reached">Objetivo alcanzado</string>
+    <plurals name="counter_target_rows_past">
+        <item quantity="one">%1$d vuelta por encima del objetivo</item>
+        <item quantity="many">%1$d vueltas por encima del objetivo</item>
+        <item quantity="other">%1$d vueltas por encima del objetivo</item>
+    </plurals>
+    <string name="project_content_pattern">Patrón</string>
+    <string name="stitch_tracker_label">Puntos</string>
+    <plurals name="reminder_repeat_occurrence_format">
+        <item quantity="one">Repetir #%1$d cada vuelta</item>
+        <item quantity="many">Repetir #%1$d cada %2$d vueltas</item>
+        <item quantity="other">Repetir #%1$d cada %2$d vueltas</item>
+    </plurals>
 
     <!-- Increase / Decrease -->
     <string name="mode_increase">Aumentar</string>
@@ -438,7 +503,6 @@
     <string name="repeating">Repetitivo</string>
     <string name="repeat_every">Repetir cada</string>
     <string name="repeat_every_rows">vueltas</string>
-    <string name="repeat_count_format">Repetición %1$d/%2$d</string>
     <string name="dismiss">Descartar</string>
 
     <!-- Multiple Counters -->
@@ -448,6 +512,8 @@
     <string name="counter_name_hint">p. ej., Aumentos de manga</string>
     <string name="count_up">Contar hacia arriba</string>
     <string name="step_size">Tamaño del paso</string>
+    <string name="linked_counter">Contador vinculado</string>
+    <string name="linked_counter_description">Sigue los cambios del contador principal.</string>
     <string name="shaping">Moldeado</string>
     <string name="repeat_section">Sección de repetición</string>
     <string name="starting_stitches">Número inicial de puntos</string>
@@ -456,9 +522,8 @@
     <string name="repeat_section_start_row">Vuelta inicial</string>
     <string name="repeat_section_end_row">Vuelta final</string>
     <string name="total_repeats">Repeticiones totales</string>
-    <string name="repeat_section_progress_format">Repetición %1$d de %2$d · Vuelta %3$d de %4$d</string>
+    <string name="repeat_section_progress_format">Repetición %1$d/%2$d, vuelta %3$d/%4$d</string>
     <string name="repeat_section_complete">Completo</string>
-    <string name="next_shaping_format">Siguiente moldeado: vuelta %1$d → %2$d p</string>
     <string name="rename_counter">Renombrar</string>
     <string name="reset_counter_name">Restablecer</string>
     <string name="delete_counter">Eliminar</string>
@@ -541,8 +606,6 @@
     <string name="project_actions_section_counter_tools">HERRAMIENTAS DE CONTADORES</string>
     <string name="project_actions_section_project_actions">ACCIONES DEL PROYECTO</string>
     <string name="project_content_title">Proyecto</string>
-    <string name="project_content_open_pattern">Abrir patrón</string>
-    <string name="project_content_attach_pattern">Añadir patrón</string>
     <string name="project_content_yarn">Hilo</string>
     <string name="project_content_notes">Notas</string>
     <string name="project_content_photos">Fotos</string>

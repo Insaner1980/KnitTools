@@ -6,15 +6,16 @@ import org.junit.Test
 
 class ProjectYarnNoteSourceTest {
     @Test
-    fun `database declares project yarn notes with version 12 migration and cascade cleanup`() {
+    fun `database declares project yarn notes with version 13 migration chain and cascade cleanup`() {
         val database = ProjectSourceFiles.read(DATABASE)
         val entity = ProjectSourceFiles.read(PROJECT_YARN_NOTE_ENTITY)
         val module = ProjectSourceFiles.read(DATABASE_MODULE)
 
         assertTrue(database.contains("ProjectYarnNoteEntity::class"))
-        assertTrue(database.contains("version = 12"))
+        assertTrue(database.contains("version = 13"))
         assertTrue(database.contains("abstract fun projectYarnNoteDao(): ProjectYarnNoteDao"))
         assertTrue(database.contains("MIGRATION_11_12"))
+        assertTrue(database.contains("MIGRATION_12_13"))
         assertTrue(database.contains("CREATE TABLE IF NOT EXISTS `project_yarn_notes`"))
         assertTrue(database.contains("CREATE INDEX IF NOT EXISTS `index_project_yarn_notes_projectId`"))
         assertTrue(module.contains("KnitToolsDatabase.MIGRATION_11_12"))

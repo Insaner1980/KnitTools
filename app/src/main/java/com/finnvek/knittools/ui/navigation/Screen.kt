@@ -9,6 +9,7 @@ import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.finnvek.knittools.R
+import com.finnvek.knittools.domain.model.CraftType
 
 sealed class Screen(
     val route: String,
@@ -31,7 +32,12 @@ sealed class Screen(
 
     data object SizeCharts : Screen("size_charts")
 
-    data object Abbreviations : Screen("abbreviations")
+    data object Abbreviations : Screen("abbreviations") {
+        const val ARG_CRAFT_TYPE = "craftType"
+        const val ROUTE = "abbreviations?craftType={$ARG_CRAFT_TYPE}"
+
+        fun createRoute(craftType: CraftType): String = "abbreviations?craftType=${craftType.persistedValue}"
+    }
 
     data object ChartSymbols : Screen("chart_symbols")
 

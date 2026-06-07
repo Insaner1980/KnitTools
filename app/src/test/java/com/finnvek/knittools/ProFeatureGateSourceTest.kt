@@ -16,7 +16,8 @@ class ProFeatureGateSourceTest {
         assertTrue(viewModel.contains("ProFeature.REPEAT_SECTION"))
         assertTrue(viewModel.contains("ProFeature.ROW_REMINDERS"))
         assertTrue(viewModel.contains("ProFeature.PROGRESS_PHOTOS"))
-        assertTrue(screen.contains("state.canUseProgressPhotos || BuildConfig.DEBUG"))
+        assertTrue(screen.contains("state.canUseProgressPhotos"))
+        assertFalse(screen.contains("state.canUseProgressPhotos || BuildConfig.DEBUG"))
         assertTrue(screen.contains("state.canUseMultipleCounters"))
         assertTrue(screen.contains("state.canUseRowReminders"))
         assertFalse(viewModel.contains("ProFeature.VOICE_COMMANDS"))
@@ -31,6 +32,27 @@ class ProFeatureGateSourceTest {
 
         assertTrue(widget.contains("hasFeature(ProFeature.WIDGET)"))
         assertTrue(actions.contains("hasFeature(ProFeature.WIDGET)"))
+    }
+
+    @Test
+    fun `debug pro override is documented and centralized in ProState`() {
+        val proState = ProjectSourceFiles.read(PRO_STATE)
+        val proManager = ProjectSourceFiles.read(PRO_MANAGER)
+        val billingManager = ProjectSourceFiles.read(BILLING_MANAGER)
+        val agents = ProjectSourceFiles.read(AGENTS)
+        val codex = ProjectSourceFiles.read(CODEX)
+
+        assertTrue(proState.contains("debugUnlockAllFeatures: Boolean = BuildConfig.DEBUG"))
+        assertTrue(proState.contains("debugUnlockAllFeatures || isPro"))
+        assertTrue(
+            proManager.contains(
+                "fun hasFeature(feature: ProFeature): Boolean = _proState.value.hasFeature(feature)",
+            ),
+        )
+        assertFalse(proManager.contains("BuildConfig.DEBUG"))
+        assertFalse(billingManager.contains("BuildConfig.DEBUG"))
+        assertTrue(agents.contains("Debug-only Pro override"))
+        assertTrue(codex.contains("Debug-only Pro override"))
     }
 
     @Test
@@ -61,8 +83,16 @@ class ProFeatureGateSourceTest {
             "app/src/main/java/com/finnvek/knittools/widget/CounterWidget.kt"
         const val COUNTER_WIDGET_ACTIONS =
             "app/src/main/java/com/finnvek/knittools/widget/CounterWidgetActions.kt"
+        const val PRO_STATE =
+            "app/src/main/java/com/finnvek/knittools/pro/ProState.kt"
+        const val PRO_MANAGER =
+            "app/src/main/java/com/finnvek/knittools/pro/ProManager.kt"
+        const val BILLING_MANAGER =
+            "app/src/main/java/com/finnvek/knittools/billing/BillingManager.kt"
         const val PRO_UPGRADE_SCREEN =
             "app/src/main/java/com/finnvek/knittools/ui/screens/pro/ProUpgradeScreen.kt"
         const val STRINGS = "app/src/main/res/values/strings.xml"
+        const val AGENTS = "AGENTS.md"
+        const val CODEX = "CODEX.md"
     }
 }

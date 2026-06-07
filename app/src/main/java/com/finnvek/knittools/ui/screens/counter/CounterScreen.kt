@@ -63,7 +63,6 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.getSystemService
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.finnvek.knittools.BuildConfig
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.ProjectCounter
 import com.finnvek.knittools.domain.model.ProjectCounterDraft
@@ -73,6 +72,8 @@ import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.domain.model.displayName
 import com.finnvek.knittools.ui.components.ConfirmationDialog
+import com.finnvek.knittools.ui.components.ProjectDetailsDialog
+import com.finnvek.knittools.ui.components.ProjectDetailsValues
 import com.finnvek.knittools.ui.components.RenameProjectDialog
 import com.finnvek.knittools.ui.screens.pattern.PatternPickerSheet
 import com.finnvek.knittools.ui.theme.CounterDimens
@@ -97,6 +98,7 @@ fun CounterScreen(
     var showCompleteDialog by rememberSaveable { mutableStateOf(false) }
     var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
     var showRenameDialog by rememberSaveable { mutableStateOf(false) }
+    var showProjectDetailsDialog by rememberSaveable { mutableStateOf(false) }
     var renameText by rememberSaveable { mutableStateOf("") }
     var isEditingName by rememberSaveable { mutableStateOf(false) }
     var showNotesSheet by rememberSaveable { mutableStateOf(false) }
@@ -121,6 +123,7 @@ fun CounterScreen(
         showCompleteDialog = false
         showDeleteDialog = false
         showRenameDialog = false
+        showProjectDetailsDialog = false
         renameText = ""
         isEditingName = false
         showNotesSheet = false
@@ -151,7 +154,7 @@ fun CounterScreen(
     }
     val requestPhotoGallery = {
         requestCounterFeature(
-            hasAccess = state.canUseProgressPhotos || BuildConfig.DEBUG,
+            hasAccess = state.canUseProgressPhotos,
             onOpenFeature = onPhotoGallery,
             onOpenUpgrade = openProUpgrade,
         )
@@ -341,6 +344,30 @@ fun CounterScreen(
         },
     )
 
+    if (showProjectDetailsDialog) {
+        ProjectDetailsDialog(
+            title = stringResource(R.string.project_details_title),
+            confirmText = stringResource(R.string.save),
+            initialValues =
+                ProjectDetailsValues(
+                    name = state.projectName,
+                    craftType = state.craftType,
+                    mainCounterLabelType = state.mainCounterLabelType,
+                    mainCounterCustomLabel = state.mainCounterCustomLabel,
+                ),
+            onConfirm = { values ->
+                viewModel.setProjectDetails(
+                    values.name,
+                    values.craftType,
+                    values.mainCounterLabelType,
+                    values.mainCounterCustomLabel,
+                )
+                showProjectDetailsDialog = false
+            },
+            onDismiss = { showProjectDetailsDialog = false },
+        )
+    }
+
     CounterScreenSheets(
         state =
             CounterSheetState(
@@ -403,6 +430,10 @@ fun CounterScreen(
                 onOpenSessionHistory = {
                     showProjectActionsSheet = false
                     viewModel.openSessionHistory(onSessionHistory)
+                },
+                onOpenProjectDetails = {
+                    showProjectActionsSheet = false
+                    showProjectDetailsDialog = true
                 },
                 onStartRename = {
                     showProjectActionsSheet = false

@@ -32,6 +32,7 @@ Nykytilan kannalta hyödyllinen järjestys:
 - Widgetit: Glance App Widget
 - Verkko: Ktor + OkHttp
 - Integraatiot: Ravelry OAuth2/API, Google Play Billing, In-App Review, In-App Update
+- Debug-diagnostiikka: Sentry Android Core vain debug-luokkapolussa
 - Paikalliset lisäominaisuudet: regex-pohjainen laskuriohjeparseri `domain/calculator/InstructionParser.kt`
 - Lokalisaatio: `localeConfig` + useat `values-*`-hakemistot
 - Room schema version: `13`
@@ -47,6 +48,7 @@ Nykytilan kannalta hyödyllinen järjestys:
 - Glance: `1.1.1`
 - Ktor: `3.5.0`
 - Billing: `8.3.0`
+- Sentry Android Core: `8.43.1` debug-only
 - versionCode / versionName: `1 / 1.0.0`
 
 Source of truth:
@@ -86,6 +88,8 @@ Jos avaat vain muutaman tiedoston, avaa nämä:
   - `app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterScreen.kt`
   - `app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterViewModel.kt`
   - `app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterWorkspaceSections.kt`
+  - `app/src/main/java/com/finnvek/knittools/ui/components/CounterImageButton.kt`
+  - `app/src/main/java/com/finnvek/knittools/ui/components/CounterStepperButton.kt`
   - `app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterProjectContentCards.kt`
   - `app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterScreenDecisions.kt`
   - `app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterUiStateReducers.kt`
@@ -106,6 +110,11 @@ Jos avaat vain muutaman tiedoston, avaa nämä:
 - Pro / billing / trial:
   - `app/src/main/java/com/finnvek/knittools/billing/BillingManager.kt`
   - `app/src/main/java/com/finnvek/knittools/pro/`
+- release- ja security-surface -sopimustarkistukset:
+  - `tools/release-surface.ps1`
+  - `tools/release-surface-test.ps1`
+  - `tools/rs.ps1`
+  - `tools/rst.ps1`
 - paikallinen laskuriohjeparseri:
   - `app/src/main/java/com/finnvek/knittools/domain/calculator/InstructionParser.kt`
 - widgetit:
@@ -149,6 +158,7 @@ Build-huomiot:
 - release-artifaktit estetään ilman Ravelry-credentialeja
 - release-artifaktit estetään ilman eksplisiittistä opt-in-lippua `KNITTOOLS_ALLOW_EMBEDDED_RAVELRY_SECRETS=true`, koska release upottaa Ravelry-arvot `BuildConfig`iin tietoisena no-backend-riskinä
 - debug lukee Ravelry-avaimet ignored `debug.credentials.properties` -tiedostosta
+- debug lukee Sentry DSN:n `KNITTOOLS_SENTRY_DSN`- tai `SENTRY_DSN`-ympäristömuuttujasta tai ignored `debug.credentials.properties` -tiedostosta avaimella `sentry.dsn`; Sentry on vain debug-luokkapolussa, automaattinen session/tracing/breadcrumb/screenshot/view-hierarchy/NDK-keruu on pois päältä, ja release-luokkapolun puhtaus tarkistetaan `tools\sentry.ps1`- sekä `tools\rs.ps1`-komennoilla
 
 ### `:baselineprofile`
 
@@ -164,6 +174,7 @@ Erillinen Android Test -moduuli:
 Nykyinen käynnistyslogiikka:
 
 1. `App.onCreate()`
+   - alustaa source-set-kohtaisen `SentryInit`-polun; debug voi käyttää Sentryä, release on no-op
    - `PreferencesManager.applyStoredAppLanguage()`
    - `BillingManager.initialize()`
    - `ProManager.initialize()`
@@ -501,6 +512,7 @@ Source of truth:
 - `data/storage/PatternDocumentStorage.kt`
 - `data/storage/PdfPageRenderer.kt`
 - `domain/model/ReadingLine.kt`
+- `domain/calculator/RowMappingParser.kt`
 - `repository/CounterRepository.kt`
 - `config/future-sync-spec.md`
 
@@ -510,6 +522,12 @@ Nykyiset rajat:
 - `Open device files` ja Drive/Dropbox-copy käyttävät nykykoodissa samaa SAF PDF -pickeriä; sovelluksessa ei ole Drive/Dropbox SDK:ta, OAuthia, provider-kohtaista token storagea eikä taustasynkkaa
 - app-owned pattern PDF säilyy `pattern_pdfs/<projectId>`-polussa; ulkoinen PDF kopioidaan sisäiseen tallennukseen ennen attachia
 - projektin attached-PDF:n reading line tallennetaan kenttiin `counter_projects.readingLineEnabled` ja `counter_projects.readingLineYFraction`
+- attached-PDF:n riviankkurit tallennetaan `counter_projects.patternRowMapping`-kenttään serialisoituina `RowMarker(row,page,yPosition)` -arvoina
+- projektin pattern viewerin overflow-toiminnot voivat tallentaa nykyisen reading line -kohdan nykyiseksi riviksi, poistaa nykyisen rivimerkin, poistaa sivun rivimerkit tai käynnistää kaksipistekalibroinnin; library viewer ei näytä näitä projektirivin persistointitoimintoja
+- drag commit luo tai päivittää nykyisen row/page-ankkurin `CounterViewModel.upsertPatternRowMarker(...)` -polulla; live drag käyttää projektin viewerissä transienttia preview-tilaa ennen commitia
+- reading line -overlay näyttää projektin viewerissä nykyisen rivin pienenä labelina viivan vieressä; library-only viewer näyttää vain paikallisen viivan ilman rivimerkintöjen persistointia
+- kahden pisteen kalibrointi yhdistää ensimmäisen ja viimeisen ankkurin `mergePatternRowMarkers(...)` -polulla ilman skeemamuutosta
+- riviliikkeen ratkaisu on `domain/calculator/resolveReadingLineYFraction(...)`-apurin vastuulla: täsmäankkuri voittaa, kaksi saman sivun ankkuria interpoloi, yksipuolinen ankkuri ei lukitse viivaa ja toisen sivun ankkurit eivät liikuta nykyistä sivua
 - `ReadingLine.sanitizeYFraction(...)` rajoittaa arvon välille `0.05f..0.95f`, oletus on `0.5f`
 - library-only pattern viewer käyttää `rememberSaveable(patternUri)` -tilaa sivulle ja reading linelle; se ei luo saved-pattern-skeemapolkua pelkän katselun takia
 - jatkuva Drive/Dropbox-sync on tulevaa speksiä `config/future-sync-spec.md`:ssä, ei nykyominaisuus; ennen sitä pitää määritellä Pro-gate, konfliktit, offline-käytös, OAuth/token storage ja background sync
@@ -570,9 +588,10 @@ BuildConfig-kentät:
 - `RAVELRY_BASIC_AUTH_PASSWORD`
 - `RAVELRY_OAUTH2_CLIENT_ID`
 - `RAVELRY_OAUTH2_CLIENT_SECRET`
+- debug-only `SENTRY_DSN`
 
-Debug lukee nämä `debug.credentials.properties`:sta.
-Release lukee ne ympäristömuuttujista ja vaatii accepted-risk opt-in -lipun.
+Debug lukee Ravelry-arvot `debug.credentials.properties`:sta ja Sentry DSN:n joko `KNITTOOLS_SENTRY_DSN`-/`SENTRY_DSN`-ympäristömuuttujasta tai `debug.credentials.properties`:sta.
+Release lukee Ravelry-arvot ympäristömuuttujista ja vaatii accepted-risk opt-in -lipun; Sentryn release-polku on no-op eikä release-luokkapolussa saa olla `io.sentry`-riippuvuuksia.
 
 ### Pro / Billing / Trial
 
@@ -652,6 +671,8 @@ Keskeiset rajat:
 - `CounterScreenDecisions.kt` omistaa pienet feature-portitus- ja stitch tracking -päätökset (`requestCounterFeature`, `handleStitchTrackingToggle`)
 - `CounterUiStateReducers.kt` omistaa projektin havainnoinnin, counter-muutosten, aktiivisen reminderin ja dismissed reminder -tilan yhdistämisen `CounterUiState`en
 - `CounterWorkspaceSections.kt` omistaa työtilan järjestyksen, päälaskuriheron, target-helperin, content-card-slotin, lisälaskurit, stitch trackingin ja reminder-alertin sijoittelun
+- `CounterImageButton.kt` omistaa päälaskuriheron ensisijaiset plus/miinusnapit; visualit tulevat `drawable-nodpi/counter_plus_button.webp`- ja `counter_minus_button.webp` -asseteista, mutta painallus, semantics ja content descriptionit pysyvät Compose-komponentissa
+- `CounterStepperButton.kt` omistaa pienemmät repeat-, stitch- ja extra-counter-stepperit; symbolit piirretään `Canvas`illa ja pyöreällä borderilla, ei Material-ikoneilla eikä hero-button-bitmappeina
 - `CounterProjectContentCards.kt` omistaa projektin viiden neliökortin "content cards" -mallin, jossa Reminders-kortti keskitetään omalle rivilleen
 - `YarnManagementSheet.kt` omistaa counterista avattavan yarn management -sheetin ja projektikohtaisen yarn note -lomakkeen
 - `ProjectDetailsDialog.kt` on jaettu projektin luonnin ja projektin tietojen muokkauksen pinta; se omistaa nimen, craft typen, päälaskurin labelin ja custom-labelin UI-valinnat
@@ -662,9 +683,16 @@ Keskeiset rajat:
 Ensimmäisen viewportin järjestys on tarkoituksella rauhallinen laskurityökalu:
 
 - top bar näyttää vain back-nuolen, projektinimen ja overflow-menun
-- ensimmäinen `LazyColumn`-item on `counter-hero`, jonka sisällä ovat mahdollinen repeat/section-rivi, row label, iso rivinumero, target progress/helper ja laskurin kontrollit
+- ensimmäinen `LazyColumn`-item on `counter-hero`, jonka sisällä ovat mahdollinen repeat/section-rivi, row label, iso rivinumero, target progress/helper ja `CounterImageButton`-päälaskurikontrollit
 - aktiivinen reminder-alert, `ProjectContentCards`, extra counters ja stitch tracking alkavat vasta hero-scrollin jälkeen
 - `Screen.Counter.route` ei kuulu `HIDE_BOTTOM_BAR_ROUTES`-joukkoon, joten alanavigaatio pysyy näkyvissä counterissa
+
+Päälaskurin nappimalli:
+
+- hero-päälaskurin minus käyttää `R.drawable.counter_minus_button` -assettia ja plus käyttää `R.drawable.counter_plus_button` -assettia
+- hero-nappien touch- ja visual-mitat ovat `CounterDimens.CounterMinusTouchSize`, `CounterMinusVisualSize`, `CounterPrimaryTouchSize` ja `CounterPrimaryVisualSize`
+- hero-napit eivät käytä enää vanhaa `CounterCraftButton`-mallia eivätkä geneerisiä `plus_button` / `minus_button` -drawableja
+- repeat-pill, stitch tracker ja extra-counterit käyttävät edelleen jaettua `CounterStepButtonFace` / `CounterStepSymbolIcon` -pintaa
 
 `ProjectContentCards` näyttää aina nämä viisi neliökorttia ilman preview-tekstejä, tiedostonimiä, kuvamääriä, chevroneita tai reminder-viestejä. Ensimmäiset neljä korttia ovat kahden sarakkeen neliögridissä ja Reminders-kortti on samankokoisena keskitetty omalle rivilleen:
 
@@ -1013,6 +1041,7 @@ Toteutuksessa näkyviä asioita, joita ei kannata päätellä vanhoista mockeist
 - `Library` sisältää sekä sisällöt että reference-näkymät
 - muistiinpanoissa on full-screen editori
 - counterin ensimmäinen viewport on top bar + iso row-counter-hero + alanavigaatio; reminder-alertit ja projektisisällöt ovat scrollin alla olevia sisältöjä, ja `ProjectContentCards` käyttää neljän kortin gridia plus keskitettyä Reminders-korttia vanhojen quick action / project info -rivien sijaan
+- päälaskurin suuret plus/miinusnapit ovat image-backed WebP-napit, mutta pienemmät repeat/stitch/extra-counter-stepperit ovat Compose Canvasilla piirrettyjä pyöreitä symboleita
 - project list -kortit toimivat nyt myös syvälinkkeinä patterniin, kuviin, muistiinpanoihin ja ensimmäiseen linkitettyyn lankakorttiin
 - `My Yarn` tukee manuaalista lankakortin luontia; se ei ole skanneri- tai AI-parseripinta
 - yarn card detailissä voi muokata manuaalisia perustietoja ja vaihtaa kuvan Android photo pickerillä
@@ -1056,6 +1085,7 @@ Nykyiset testit painottuvat ainakin näihin:
 - navigation argument safety ja counter launch -tokenointi
 - widget data resolver ja action flow
 - project workspace -source-testit, jotka varmistavat `ProjectContentCards`-rakenteen, puhtaan ensimmäisen viewportin, counter-copyrajojen ja poistettujen quick-action/project-info-komponenttien puuttumisen
+- counter button -source-testit, jotka varmistavat päälaskurin `CounterImageButton`-assetit sekä pienempien stepperien Canvas-piirretyt symbolit
 - My Yarn / Yarn Card detail -source-testit, jotka varmistavat manuaalisen lankakortin, photo picker -toiminnon ja skannerikielen puuttumisen
 - repository transaction boundary -testit, jotka varmistavat pattern-, yarn- ja project-linkkien sekä tiedostosiivouksen transaktiorajat
 
@@ -1067,6 +1097,8 @@ Pienimmät hyödylliset tarkistuskomennot:
 - `./gradlew lint`
 - `./gradlew :app:jacocoDebugUnitTestReport`
 - `./gradlew :app:generateBaselineProfile`
+- `tools\rs.ps1` KnitTools-kohtaiseen release-/security-surface -sopimustarkistukseen
+- `tools\rst.ps1` release-surface -skriptin self-testiin
 
 Julkaisuvalmiuden muistilista:
 
@@ -1074,6 +1106,7 @@ Julkaisuvalmiuden muistilista:
 - päätä ennen julkaisua, jääkö Baseline Profile manuaaliseksi vai lisätäänkö sille emulaattori-/managed-device-polku CI:hin
 - pidä `ktlintCheck`, detekt ja Android lint pakollisina CI:ssä; nykyinen build-workflow ajaa `assembleDebug`, `test`, `:app:ktlintCheck`, `:app:detekt` ja `lint`
 - CodeQL-workflow on manuaalibuildinen Java/Kotlin-analyysi ja rakentaa `assembleDebug --no-daemon`
+- `release-surface.ps1` ei korvaa linttiä, dependency-checkiä tai Semgrepiä; se tarkistaa vain tässä repossa sovitut manifest-, FileProvider-, credential-, Sentry-, Firebase/AI/voice-, Room-, widget-launch- ja lokalisaatiorajat
 
 Älä käytä agenttityössä käyttäjän wrapper-skriptejä `lint-check` tai `security-check`.
 
@@ -1084,6 +1117,7 @@ Julkaisuvalmiuden muistilista:
 - useita projekteja
 - päälaskuri, jonka craft type on neulonta tai virkkaus
 - päälaskurin label voi olla rows, rounds, repeats tai custom
+- päälaskurin hero-plus/miinus käyttää `CounterImageButton`-komponenttia ja kahta appin omaa WebP-button-assettia
 - stitch tracking
 - useita projektikohtaisia laskureita
 - lisälaskurit voivat seurata päälaskurin toteutunutta deltaa `linkedToMainCounter`-kentällä, paitsi repeat-section-laskurit
@@ -1095,7 +1129,8 @@ Julkaisuvalmiuden muistilista:
 - session history
 - pattern-PDF:n liittäminen projektiin
 - pattern viewer + annotations
-- projektin attached-PDF:n reading line tallentuu projektiriville; library-only viewerin reading line on vain katselusession tila
+- projektin attached-PDF:n reading line tallentuu projektiriville, ja rivikartta tallentuu `patternRowMapping`-kenttään `RowMarker(row,page,yPosition)` -ankkureina; library-only viewerin reading line on vain katselusession tila
+- projektin pattern viewer tukee reading line -rivin tallennusta, rivimerkkien poistoa ja kahden pisteen rivikalibrointia; library-only viewer ei tallenna näitä Roomiin
 - Drive/Dropbox-copy on nykykoodissa SAF PDF -pickerin käyttäjätekstiä, ei jatkuvaa pilvisynkkaa
 - target rows
 - project list -korttien deep linkit pattern viewer-, photo gallery-, notes editor- ja yarn card detail -pintoihin
@@ -1150,14 +1185,17 @@ Näihin kannattaa suhtautua epäluuloisesti vanhoissa dokumenteissa:
 - Room schema version: nykyinen on `13`; tarkista aina `KnitToolsDatabase.version`, `MIGRATION_12_13` ja `app/schemas/.../13.json`
 - schema 13:n helposti unohtuvat kentät ovat `craftType`, `mainCounterLabelType`, `mainCounterCustomLabel`, `readingLineEnabled`, `readingLineYFraction` ja `linkedToMainCounter`
 - `ProState.hasFeature(...)` ei ole pelkkä `isPro` debug-buildissä; debug avaa feature-gatet erillisenä kehittäjäpolkuna
+- Sentry on debug-only diagnostiikkaa; älä lisää Sentry Gradle -pluginia, replayta, tracingia, logcat breadcrumbseja tai release-riippuvuutta ilman uutta product/security-päätöstä
+- jos manifest-, FileProvider-, release-credential-, Sentry-, Firebase/AI/voice-, Room-, widget-launch- tai locale-raja näyttää epävarmalta, tarkista nykyinen sopimus myös `tools\release-surface.ps1`:stä
 - voice-command-flow on poistettu; älä palauta sitä ilman uutta product/security-päätöstä
 - widgetit eivät ole enää pelkkä basic counter-preview vaan niissä on oma state-sync ja viimeistelty kortti-UI
 - widgetin plus/miinus käyttää samaa `CounterRepository.applyMainCounterChange(...)`-semantiikkaa kuin appin päälaskuri, joten linked-to-main-lisälaskurit muuttuvat myös widgetistä
 - vanhat `yarn_card_review` / `library_yarn_card_review` -reitit eivät ole nykyisessä `Screen.kt` / `NavGraph.kt` -pinnassa; käytössä on `yarn_card_detail/{cardId}`
 - `CounterQuickActions` ja `ProjectInfoSection` eivät ole nykyinen counter workspace -malli; käytössä on `CounterProjectContentCards.kt`
+- `CounterCraftButton`, `CounterHeroActionButton`, `plus_button` ja `minus_button` eivät ole nykyinen päälaskurin nappimalli; käytössä on `CounterImageButton` sekä `counter_plus_button.webp` / `counter_minus_button.webp`
 - `abbreviations`-route ei ole enää pelkkä staattinen route-string, vaan `abbreviations?craftType={craftType}`; data on silti tällä hetkellä sama neulonnalle ja virkkaukselle
 - Drive/Dropbox on nykykoodissa vain SAF-pohjainen pattern-PDF:n valinta-/kopiointipolku; jatkuva sync on tulevaa speksiä `config/future-sync-spec.md`:ssä
-- project attached-PDF:n reading line on pysyvää projektitilaa, mutta library-only viewerin reading line ei ole Room-skeemassa
+- project attached-PDF:n reading line ja `patternRowMapping`-riviankkurit ovat pysyvää projektitilaa, mutta library-only viewerin reading line ei ole Room-skeemassa
 - `QuickTipCard.kt` on poistettu; jos näet Quick Tip -tekstiä vanhoissa spekseissä, tarkista nykyinen `ui/components` ja `strings.xml`
 - `file_paths.xml` ei exposeeraa `yarn_photos`-rootia nykykoodissa, vaikka `AppFileStorage` osaa edelleen ratkaista legacy `yarn_photos`-URI:t sisäistä siivousta varten
 - `AppLanguage.promptLanguageName()` on ilman tuotantokutsuja oleva legacy-helper; sen nimi tai kommenttisanasto ei yksin todista mallipohjaisen parserin tai pilvi-AI:n olemassaoloa

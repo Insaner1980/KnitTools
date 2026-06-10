@@ -137,6 +137,15 @@
     <string name="pattern_open_failed">Kunne ikke åpne oppskriften.</string>
     <string name="pattern_show_reading_line">Vis leselinje</string>
     <string name="pattern_hide_reading_line">Skjul leselinje</string>
+    <string name="pattern_save_line_as_row">Lagre linje som rad %1$d</string>
+    <string name="pattern_clear_row_mark">Fjern radmarkør</string>
+    <string name="pattern_clear_page_marks">Fjern sidemarkører</string>
+    <string name="pattern_calibrate_rows">Kalibrer rader</string>
+    <string name="pattern_calibration_first_row">Første rad</string>
+    <string name="pattern_calibration_last_row">Siste rad</string>
+    <string name="pattern_calibration_save_first">Lagre første</string>
+    <string name="pattern_calibration_save_last">Lagre siste</string>
+    <string name="pattern_calibration_invalid_row">Bruk to ulike radnumre</string>
     <string name="pattern_reading_line_description">Leselinje</string>
     <string name="pattern_page_jump">Gå til side</string>
     <string name="pattern_page_number">Sidenummer</string>

@@ -34,8 +34,10 @@ class CounterStitchTrackingSourceTest {
         assertFalse(workspace.contains("""item(key = "stitch-tracker")"""))
         assertTrue(hero.contains("CounterControlsToStitchTrackerSpacing"))
         assertTrue(hero.indexOf("CounterButtons(") < hero.indexOf("CounterStitchTracker("))
-        assertTrue(stitchCounter.contains("Icons.Filled.Remove"))
-        assertTrue(stitchCounter.contains("Icons.Filled.Add"))
+        assertTrue(stitchCounter.contains("symbol = CounterStepSymbol.Minus"))
+        assertTrue(stitchCounter.contains("symbol = CounterStepSymbol.Plus"))
+        assertFalse(stitchCounter.contains("Icons.Filled.Remove"))
+        assertFalse(stitchCounter.contains("Icons.Filled.Add"))
         assertTrue(stitchCounter.contains("CounterStepperButton("))
         assertTrue(stitchCounter.contains("isIncrement = false"))
         assertTrue(stitchCounter.contains("isIncrement = true"))
@@ -52,6 +54,32 @@ class CounterStitchTrackingSourceTest {
         assertTrue(stepperButton.contains("CounterDimens.ExtraCounterStepperTouchSize"))
         assertTrue(stepperButton.contains("CounterDimens.ExtraCounterStepperVisualSize"))
         assertTrue(stepperButton.contains("CounterDimens.ExtraCounterStepperIconSize"))
+    }
+
+    @Test
+    fun `repeat hero keeps stitch tracker visible after undo`() {
+        val workspace = ProjectSourceFiles.read(COUNTER_WORKSPACE_SECTIONS)
+        val dimens = ProjectSourceFiles.read(COUNTER_DIMENS)
+        val hero =
+            workspace
+                .substringAfter("private fun CounterHero")
+                .substringBefore("@Composable\nprivate fun CounterStitchTracker")
+
+        assertTrue(dimens.contains("HeroButtonCompactSpacing = 48.dp"))
+        assertTrue(hero.contains("val heroButtonSpacing ="))
+        assertTrue(hero.contains("val controlsToStitchTrackerSpacing ="))
+        assertTrue(hero.contains("state.canUseSecondaryCounter && state.visibleStitchTotal != null"))
+        assertTrue(hero.contains("CounterDimens.HeroButtonCompactSpacing"))
+        assertTrue(hero.contains("CounterDimens.CounterControlsToStitchTrackerCompactSpacing"))
+        assertTrue(hero.contains("Spacer(modifier = Modifier.height(heroButtonSpacing))"))
+        assertTrue(hero.contains("Spacer(modifier = Modifier.height(controlsToStitchTrackerSpacing))"))
+        assertTrue(dimens.contains("CounterControlsToStitchTrackerCompactSpacing = 24.dp"))
+        assertTrue(dimens.contains("StitchTrackerMinHeight = 68.dp"))
+        assertTrue(
+            ProjectSourceFiles
+                .read(STITCH_COUNTER)
+                .contains("heightIn(min = CounterDimens.StitchTrackerMinHeight)"),
+        )
     }
 
     @Test

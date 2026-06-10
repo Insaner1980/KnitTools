@@ -137,6 +137,15 @@
     <string name="pattern_open_failed">Het patroon kon niet worden geopend.</string>
     <string name="pattern_show_reading_line">Leeslijn tonen</string>
     <string name="pattern_hide_reading_line">Leeslijn verbergen</string>
+    <string name="pattern_save_line_as_row">Lijn opslaan als toer %1$d</string>
+    <string name="pattern_clear_row_mark">Toermarkering wissen</string>
+    <string name="pattern_clear_page_marks">Paginamarkeringen wissen</string>
+    <string name="pattern_calibrate_rows">Toeren kalibreren</string>
+    <string name="pattern_calibration_first_row">Eerste toer</string>
+    <string name="pattern_calibration_last_row">Laatste toer</string>
+    <string name="pattern_calibration_save_first">Eerste opslaan</string>
+    <string name="pattern_calibration_save_last">Laatste opslaan</string>
+    <string name="pattern_calibration_invalid_row">Gebruik twee verschillende toernummers</string>
     <string name="pattern_reading_line_description">Leeslijn</string>
     <string name="pattern_page_jump">Ga naar pagina</string>
     <string name="pattern_page_number">Paginanummer</string>

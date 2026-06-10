@@ -19,6 +19,7 @@ object CounterDimens {
     val CounterHeroBottomWeight = 0.68f
 
     val HeroButtonSpacing = 88.dp
+    val HeroButtonCompactSpacing = 48.dp
     val CounterRowLabelFontSize = 25.sp
     val CounterMainNumberFontSize = 115.sp
     val CounterProgressSpacing = 14.dp
@@ -34,23 +35,19 @@ object CounterDimens {
     val CounterRepeatLabelFontSize = 15.sp
     val CounterRepeatValueFontSize = 21.sp
     val CounterRepeatButtonTouchSize = 48.dp
-    val CounterRepeatButtonVisualSize = 38.dp
-    val CounterRepeatIconSize = 18.dp
+    val CounterRepeatButtonVisualSize = 32.dp
+    val CounterRepeatIconSize = 16.dp
     val CounterRepeatToRowSpacing = 52.dp
     val CounterControlsMaxWidth = 360.dp
     val CounterControlsHeight = 160.dp
     val CounterPrimaryTouchSize = 144.dp
     val CounterPrimaryVisualSize = 125.dp
-    val CounterPrimaryIconSize = 48.dp
+    val CounterPrimaryIconSize = 52.dp
     val CounterMinusTouchSize = 144.dp
-    val CounterMinusVisualSize = 125.dp
-    val CounterMinusIconSize = 48.dp
-    val CounterUndoTouchSize = 48.dp
-    val CounterUndoVisualSize = 48.dp
-    val CounterUndoIconSize = 28.dp
-    val CounterUndoHorizontalOffset = (-8).dp
-    val CounterUndoVerticalOffset = 172.dp
+    val CounterMinusVisualSize = 108.dp
+    val CounterMinusIconSize = 44.dp
     val CounterControlsToStitchTrackerSpacing = 72.dp
+    val CounterControlsToStitchTrackerCompactSpacing = 24.dp
     val ProjectCardGridSpacing = 12.dp
     val ProjectCardPadding = 12.dp
     val ProjectCardIconSize = 56.dp
@@ -64,8 +61,8 @@ object CounterDimens {
     val ExtraCounterValueSpacing = 14.dp
     val ExtraCounterValueColumnWidth = 74.dp
     val ExtraCounterStepperTouchSize = 56.dp
-    val ExtraCounterStepperVisualSize = 48.dp
-    val ExtraCounterStepperIconSize = 22.dp
+    val ExtraCounterStepperVisualSize = 42.dp
+    val ExtraCounterStepperIconSize = 20.dp
     val ExtraCounterOverflowTouchSize = 48.dp
     val ExtraCounterOverflowIconSize = 22.dp
     val RepeatSectionProgressHeight = 8.dp
@@ -75,6 +72,7 @@ object CounterDimens {
     @Suppress("MayBeConstant")
     val StitchTrackerContainerAlpha = 0.42f
 
+    val StitchTrackerMinHeight = 68.dp
     val StitchTrackerCornerRadius = 16.dp
     val StitchTrackerHorizontalPadding = 16.dp
     val StitchTrackerVerticalPadding = 6.dp

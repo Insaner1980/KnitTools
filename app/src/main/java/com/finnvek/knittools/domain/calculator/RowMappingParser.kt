@@ -1,5 +1,7 @@
 package com.finnvek.knittools.domain.calculator
 
+import com.finnvek.knittools.domain.model.advanceReadingLineForRowDelta
+import com.finnvek.knittools.domain.model.sanitizeReadingLineYFraction
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -33,6 +35,30 @@ fun serializeMapping(markers: List<RowMarker>): String =
             .sortedWith(compareBy<RowMarker> { it.page }.thenBy { it.row }),
     )
 
+fun createCalibrationRowMarkers(
+    firstRow: Int,
+    firstPage: Int,
+    firstYPosition: Float,
+    lastRow: Int,
+    lastPage: Int,
+    lastYPosition: Float,
+): List<RowMarker>? {
+    if (firstRow == lastRow) return null
+
+    return listOf(
+        RowMarker(
+            row = firstRow,
+            page = firstPage,
+            yPosition = sanitizeReadingLineYFraction(firstYPosition),
+        ),
+        RowMarker(
+            row = lastRow,
+            page = lastPage,
+            yPosition = sanitizeReadingLineYFraction(lastYPosition),
+        ),
+    ).sortedWith(compareBy<RowMarker> { it.page }.thenBy { it.row })
+}
+
 fun interpolateYPosition(
     markers: List<RowMarker>,
     targetRow: Int,
@@ -51,5 +77,30 @@ fun interpolateYPosition(
         return previous.yPosition + ((next.yPosition - previous.yPosition) * progress)
     }
 
-    return previous?.yPosition ?: next?.yPosition
+    return null
+}
+
+fun resolveReadingLineYFraction(
+    markers: List<RowMarker>,
+    currentRow: Int,
+    currentPage: Int,
+    currentYFraction: Float,
+    rowDelta: Int,
+): Float? {
+    val mappedYFraction =
+        interpolateYPosition(
+            markers = markers,
+            targetRow = currentRow,
+            page = currentPage,
+        )
+    if (mappedYFraction != null) {
+        return sanitizeReadingLineYFraction(mappedYFraction)
+    }
+
+    if (rowDelta == 0) return null
+
+    return advanceReadingLineForRowDelta(
+        yFraction = currentYFraction,
+        rowDelta = rowDelta,
+    )
 }

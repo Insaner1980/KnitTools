@@ -21,6 +21,7 @@ class App : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        SentryInit.init(this)
         runBlocking {
             preferencesManager.get().applyStoredAppLanguage()
         }

@@ -38,12 +38,14 @@ Use [`CLAUDE.md`](/home/emma/dev/KnitTools/CLAUDE.md) when product wording, visu
 - Pattern PDF files are app-owned documents under `pattern_pdfs/<projectId>`; `SavedPatternRepository.deleteLocalPatternFileIfUnused` is the cleanup gate after saved-pattern deletion, project detach, and project deletion
 - Pattern PDF import, including the v1 Drive/Dropbox copy, stays on Android Storage Access Framework `OpenDocument(application/pdf)` plus persistable URI grants; do not add Drive/Dropbox SDKs, OAuth, provider-specific dependencies, or a separate import storage flow before a new sync spec
 - Drive/Dropbox sync is future-spec work tracked in `config/future-sync-spec.md`. Manual export/import or backup/restore comes before continuous sync. Do not market cross-device sync until conflict handling, background sync, offline behavior, OAuth/token storage, and the Pro gate are specified and implemented
-- Pattern viewer reading-line state belongs to `counter_projects.readingLineEnabled` and `readingLineYFraction` for attached project PDFs; library-only pattern viewer state is session/rotation-saveable and must not create a saved-pattern schema path in v1
+- Attached project PDF reading-line state persists on `counter_projects.readingLineEnabled` and `readingLineYFraction`; row anchors live in `counter_projects.patternRowMapping` as serialized `RowMarker(row,page,yPosition)` values owned by `domain/calculator/RowMappingParser`; drag commit creates or updates the current row/page anchor through `CounterViewModel.upsertPatternRowMarker`, calibration merges two anchors through `mergePatternRowMarkers`, and live drag uses project-viewer preview state before commit. Library-only pattern viewer state remains session/rotation-saveable and must not create a saved-pattern schema path in v1
+- Pattern viewer row movement is resolved through `domain/calculator/resolveReadingLineYFraction`: exact row anchors win, two anchors interpolate, one-sided anchors fall back to row-step movement, and page-specific anchors must not affect other pages
 - Pattern camera capture is a photo-to-PDF flow: user-facing copy must use photo/PDF wording instead of scan/scanner wording, temp images live under `pattern_captures/<projectId>`, and only pattern/progress photo paths are exposed through FileProvider; FileProvider authority and share URI creation go through `AppFileStorage`, while legacy `patterns/...` and `yarn_photos/...` URIs are resolved internally by `AppFileStorage` for cleanup/read compatibility
 - Keep business logic out of composables when a ViewModel or use case should own it
 - Runtime app language is owned by AppCompat/Android per-app locale APIs; DataStore `app_language` is only a persistence and migration mirror managed by `PreferencesManager`
 - Ravelry is intentionally backendless: OAuth authorization requests include PKCE, but release builds may embed Ravelry Basic Auth credentials and OAuth client secret after explicit `KNITTOOLS_ALLOW_EMBEDDED_RAVELRY_SECRETS=true` opt-in; keep `config/security-decisions.md` aligned with this accepted risk
 - Debug-only Pro override is centralized in `ProState.hasFeature` through `BuildConfig.DEBUG`; it opens feature gates in debug builds without changing `isPro`, billing purchase state, trial state, or Pro upgrade UI purchase claims
+- Debug-only Sentry diagnostics live under `app/src/debug` and use `io.sentry:sentry-android-core` only through `debugImplementation`; the release source set is a no-op and release builds must stay free of `io.sentry` dependencies
 - Voice/microphone commands are intentionally absent from the counter; do not reintroduce SpeechRecognizer, TextToSpeech, or conversational voice without a new explicit product/security decision
 - Paste-to-parse uses the regex-only `domain/calculator/InstructionParser`; keep model-backed parser code out of calculator UI
 - Notes editing is local-only; do not reintroduce cloud journal processing or cloud cleanup without a new explicit product/security decision
@@ -81,6 +83,7 @@ Use [`CLAUDE.md`](/home/emma/dev/KnitTools/CLAUDE.md) when product wording, visu
 - Do not reintroduce `android.disallowKotlinSourceSets`, `android.newDsl`, or `android.builtInKotlin` toggles unless absolutely necessary
 - Release signing must stay environment-variable-driven
 - Debug-only Ravelry credentials belong in ignored `debug.credentials.properties`, not `local.properties`; release Ravelry credentials come from `KNITTOOLS_RAVELRY_*` environment variables and require explicit embedded-secret opt-in
+- Debug-only Sentry DSN belongs in `KNITTOOLS_SENTRY_DSN`, `SENTRY_DSN`, or ignored `debug.credentials.properties` as `sentry.dsn`; do not hardcode or commit it
 - Firebase, Google Services, App Check, and model-backed parser dependencies are intentionally absent after model-backed feature removal; do not add them back as transitive convenience dependencies
 
 ## Security
@@ -91,6 +94,7 @@ Use [`CLAUDE.md`](/home/emma/dev/KnitTools/CLAUDE.md) when product wording, visu
 - Treat extras on exported activities as untrusted unless they are explicitly validated against app-owned state
 - Keep `FileProvider` usage least-privilege
 - Do not log billing state, voice transcripts, Ravelry credentials, pattern text, or user project data
+- Do not add release-path crash reporting, analytics, tracking, Sentry Gradle plugin uploads, source-context uploads, replay, tracing, or logcat breadcrumbs without a new explicit product/security decision
 
 ## Working Conventions
 
@@ -105,9 +109,10 @@ Use [`CLAUDE.md`](/home/emma/dev/KnitTools/CLAUDE.md) when product wording, visu
 - Prefer the smallest useful check
 - Project-local PowerShell wrappers are two-letter `tools/*.ps1` scripts; check wrappers delegate to `C:\Dev\Android-check\tools\AndroidProjectChecks.psm1`, and `ad` delegates to `C:\Dev\Android-check\tools\InstallDebugToDevice.ps1`
 - `lc` runs ktlint, detekt, and Android lint into `reports/ktlint.txt`, `reports/detekt.txt`, and `reports/lint.txt`
-- `ad`, `ac`, `dc`, `ss`, `ds`, `ms`, `os`, `ql`, `db`, `pc`, `cs`, `cr`, `ga`, and `sc` are project-local wrappers; use `-PlanOnly` or `-ResolveOnly` for dry checks where supported
+- `ad`, `ac`, `dc`, `ss`, `ds`, `ms`, `os`, `ql`, `db`, `pc`, `cs`, `cr`, `ga`, `sentry`, and `sc` are project-local wrappers; use `-PlanOnly` or `-ResolveOnly` for dry checks where supported
 - `ad` builds `assembleDebug`, resolves `adb.exe` from `local.properties` `sdk.dir`, and installs `app/build/outputs/apk/debug/app-debug.apk` with `adb install -r`; use `ad -NoBuild` to install an already-built APK
 - `pc` runs PMD CPD duplicate detection with KnitTools' default `PMD_CPD_MINIMUM_TOKENS=100`, `cr` runs compose-rules through ktlint/detekt, `ga` runs Android Lint with Google Android Security Lints, and `cs` is available for Compose Stability Analyzer projects.
+- `sentry` verifies that debug includes `io.sentry`, release does not include `io.sentry`, and writes `reports/sentry.txt`
 - `sc` runs dependency, secret, and light Semgrep checks; `sc -Full` also runs the Android-specific `ac` path and DeepSec custom report
 - Typical commands: `./gradlew assembleDebug`, `./gradlew test`, `./gradlew :app:detekt`, `./gradlew lint`
 - Do not run the user's wrapper scripts such as `lc` or `sc`
@@ -117,21 +122,15 @@ Use [`CLAUDE.md`](/home/emma/dev/KnitTools/CLAUDE.md) when product wording, visu
 <claude-mem-context>
 # Memory Context
 
-# [KnitTools] recent context, 2026-05-31 11:30am GMT+3
+# [KnitTools] recent context, 2026-06-10 7:21pm GMT+3
 
 Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision 🚨security_alert 🔐security_note
 Format: ID TIME TYPE TITLE
 Fetch details: get_observations([IDs]) | Search: mem-search skill
 
-Stats: 50 obs (21,682t read) | 2,907,443t work | 99% savings
+Stats: 50 obs (21,832t read) | 2,239,635t work | 99% savings
 
 ### May 17, 2026
-5385 1:32p 🟣 CodeQL Security Scanning Restored for KnitTools Android Project
-5389 2:23p 🟣 CodeQL workflow restored for KnitTools CI security scanning
-5390 " 🔴 Dependency verification extended with 18 missing artifacts for CI compatibility
-5391 " 🔴 Ktlint formatting violations fixed for CI compliance
-5392 " 🔵 dBcheck CodeQL configuration pattern identified for Android projects
-5394 4:40p 🔴 Fixed session tracking accuracy and lifecycle handling
 5396 7:40p 🔵 Pace calculation logic verified with comprehensive edge-case guards
 5418 10:27p 🚨 Removed Firebase config file from entire Git history
 ### May 18, 2026
@@ -159,7 +158,6 @@ Stats: 50 obs (21,682t read) | 2,907,443t work | 99% savings
 ### May 30, 2026
 5527 1:17a 🟣 Migrated MultiCounterComponents to Use CounterValueFormatter
 5532 1:23a ✅ All Unit Tests Pass After CounterValueFormatter Migration
-S828 Continue CounterValueFormatter implementation - user requested "jatka" to proceed with Step 1 of centralizing counter display logic (May 30, 1:23 AM)
 S833 Continue counter UI polish work - fixed reminder repeat display formatting (May 30, 1:24 AM)
 5533 1:58a 🔵 Repeat Count Format Has Single Usage and No Existing Plural Resources
 5534 " 🟣 Implemented Android plural resources for reminder repeat display
@@ -180,41 +178,41 @@ S838 Fix KnitTools Android build failure caused by missing counter string resour
 5548 " 🔵 Predecessor string translations exist in git HEAD across all 11 locales
 5549 8:23p 🔵 Pattern and stitches translation vocabulary established across all locales
 5550 8:24p 🔵 project_content_pattern missing from established naming pattern with sibling translations available
-**5551** " 🔵 **repeat_section_progress_format exists with middle-dot separator across all locales**
-Verification scan confirmed that repeat_section_progress_format string resource exists in current working tree across all 11 supported locales with consistent middle-dot separator formatting. The format pattern is "Repeat X of Y · Row Z of W" with localized prepositions and nouns. This string is NOT one of the missing resources identified earlier - it exists and is used in MultiCounterComponents.kt for displaying repeat section progress. The middle-dot (·) provides visual separation between the two progress components. Finnish uniquely uses slash (/) for ratios while all other languages use prepositions (of/af/von/de/sur/di/av/van). This discovery confirms that not all strings referenced in the counter module are missing; only specific ones identified in the comprehensive audit lack definitions.
-~416t 🔍 1,529
-
-**5552** " 🔴 **Restored 16 missing counter string resources across all 11 locales via Python script**
-Created and executed automated Python script to restore all missing counter-related string resources across the entire KnitTools project. The script contained hardcoded professional translations for 15 string resources and 1 plural resource across all 11 supported languages (English, Danish, German, Spanish, Finnish, French, Italian, Norwegian, Dutch, Portuguese, Swedish). The script intelligently inserted the resources after the existing counter_increase line to maintain logical grouping, or before the closing resources tag as fallback. All 11 locale files were successfully modified, resolving the Kotlin compilation errors caused by unresolved string resource references in CounterWorkspaceSections.kt and MultiCounterComponents.kt. This batch restoration approach ensured consistency across all locales and eliminated the need for manual translation and insertion into each file.
-~525t 🛠️ 26,957
-
-**5553** 11:07p 🔴 **Verified all counter string resources restored and XML files valid**
-Post-restoration verification confirmed complete success of the string resource recovery operation. Re-scanning the counter module source files (CounterWorkspaceSections.kt, MultiCounterComponents.kt, CounterValueFormatter.kt) found zero missing string or plural resource references, confirming all 16 previously missing resources were successfully restored. XML validation using Python's ElementTree parser verified that all 11 locale strings.xml files remain well-formed after the batch insertion, ensuring no syntax errors were introduced. The temporary Python restoration script was cleaned up after successful execution. The counter module compilation errors are now fully resolved with complete internationalization support across all 11 languages. The only remaining missing resources in the broader app are dynamic template strings (abbreviations, symbols, size rows, units, insights footer) that are outside the counter module scope and unrelated to the current build failure.
-~420t 🛠️ 13,717
-
+5551 " 🔵 repeat_section_progress_format exists with middle-dot separator across all locales
+5552 " 🔴 Restored 16 missing counter string resources across all 11 locales via Python script
+5553 11:07p 🔴 Verified all counter string resources restored and XML files valid
 S839 Fix KnitTools Android build failure caused by missing counter string resources after accidental git revert, restore all missing resources across 11 locales, and verify successful compilation (May 30, 11:07 PM)
-**5554** 11:08p 🔴 **Build verification successful: KnitTools debug APK compiled with all restored counter strings**
-Clean build verification confirmed complete resolution of the counter module compilation failure. After restoring all 16 missing string resources (15 strings + 1 plural) across all 11 locale files, the Gradle build system successfully compiled the entire KnitTools Android application without errors. The build executed 33 tasks from scratch (after clean), leveraged 10 tasks from Gradle cache, and kept 1 task up-to-date, demonstrating efficient incremental build behavior. The resulting debug APK weighs 88.7 MB, consistent with a full-featured Android application with multiple locale resources. This successful build proves that the Python-scripted batch restoration of missing counter string resources completely resolved the unresolved reference errors in CounterWorkspaceSections.kt and MultiCounterComponents.kt, and the application is now in a buildable state on the codex/project-workspace-cards branch.
-~388t 🛠️ 2,987
-
+5554 11:08p 🔴 Build verification successful: KnitTools debug APK compiled with all restored counter strings
 S843 Verify clean restoration of 16 counter resources, then remove middle-dot separator from repeat_section_progress_format across all locales and update test expectations (May 30, 11:12 PM)
-**5555** 11:14p 🔵 **Git diff confirms clean restoration: 19 additions per locale, zero modifications to existing strings**
-Git diff analysis confirms the string restoration operation was surgically clean with zero impact to existing translations. Every locale file (values, values-da, values-de, values-es, values-fi, values-fr, values-it, values-nb, values-nl, values-pt, values-sv) shows exactly 19 additions and 0 deletions versus HEAD, proving no existing string resources were modified, replaced, or removed during the restoration process. The absence of deletion lines confirms the Python script's insertion logic worked correctly: it found the anchor line (counter_increase) and appended the new resource block without disturbing surrounding content. The CRLF/LF warnings are cosmetic - the Python script used Windows-native line endings which git will normalize to LF on commit, maintaining consistency with the repository's existing line-ending configuration. This verification provides confidence that the restoration preserved all original translations while adding only the missing counter resources.
-~450t 🔍 2,467
-
+5555 11:14p 🔵 Git diff confirms clean restoration: 19 additions per locale, zero modifications to existing strings
 S846 Remove middle-dot separator from repeat_section_progress_format and fix failing counter string resource tests (May 30, 11:14 PM)
 S840 Fix KnitTools Android build failure by restoring 16 missing counter string resources and verify clean restoration without modifying existing translations (May 30, 11:14 PM)
 S845 Remove middle-dot separator from repeat_section_progress_format and verify counter resource restoration integrity (May 30, 11:32 PM)
 S844 Remove middle-dot separator from repeat_section_progress_format string resource across all locales and update test expectations (May 30, 11:32 PM)
-S848 Remove middle-dot separator from repeat_section_progress_format across all locales and ensure counter string resource tests pass (May 30, 11:35 PM)
-**Investigated**: Test failure analysis revealed CounterStringResourcesSourceTest failing on deprecated "next_shaping_format" resource existence assertion (line 33), separate from middle-dot removal work. Verified deprecated resource existed in all 11 locale files due to earlier git checkout restoring it from HEAD. Confirmed middle-dot successfully removed from repeat_section_progress_format and XML well-formedness across all locale files. Re-ran tests after deprecated resource cleanup.
+S848 Remove middle-dot separator from repeat_section_progress_format across all locales and ensure counter string resource tests pass (May 30, 11:33 PM)
+### Jun 9, 2026
+**5577** 2:46p 🔵 **KnitTools Row Counter Buttons Use Custom 3D Craft Button Component**
+Developer is investigating button appearance issue in KnitTools knitting app row counter. The plus/minus buttons currently appear inverted (rim looks higher near center instead of at outer edge). Investigation revealed CounterCraftButton.kt contains a sophisticated custom button implementation with multiple visual layers: outer shadow (drawn with blur), rim (radial gradient), recess shadow (vertical gradient), recess floor (solid color), and carved symbol (with bevel effect). The button uses Material3 theme colors, supports light/dark themes, has press animation, and includes disabled states. The radial gradient for the rim uses light center positioning and color stops to create 3D effect. Current implementation may have gradient positioning that creates inverted appearance.
+~394t 🔍 6,733
 
-**Learned**: The CounterStringResourcesSourceTest contains multiple assertions checking both feature requirements (no middle-dot separators) and codebase hygiene (no deprecated keys). The git checkout operation that wiped counter strings also restored the deprecated next_shaping_format resource that the branch had intentionally deleted. Test now checks for bare middot character "·" instead of space-middot-space " · " pattern to catch any separator usage. All three issues (missing counter resources, unwanted middot separator, deprecated key restoration) were side effects of the same git checkout accident.
+5578 " 🔄 Redesigned CounterCraftButton Gradient System to Fix Inverted Appearance
+**5579** 2:50p 🔵 **CounterCraftButton Refactor Breaks Existing Source Tests**
+Developer discovered that the button gradient refactor conflicts with existing source tests. CounterCraftButtonSourceTest.kt contains tests that verify specific implementation details: test "craft counter button uses recessed center layers instead of a domed center" checks for recessShadowRadius, recessFloorRadius, recessShadowBrush, and vertical gradients, while the first test "craft counter button is compose drawn and image free" checks for Brush.radialGradient. These tests will now fail because the implementation was changed from radial/vertical gradients with three-layer recess (shadow top/bottom/floor) to linear diagonal gradients with two-layer plateau (highlight/base). Tests need to be updated to reflect new implementation while preserving intent.
+~381t 🔍 41,614
 
-**Completed**: Successfully removed middle-dot separator from repeat_section_progress_format in all 11 locales (e.g., "Repeat %1$d of %2$d · Row %3$d of %4$d" → "Repeat %1$d of %2$d Row %3$d of %4$d"). Updated CounterStringResourcesSourceTest assertion to detect any middot character usage. Removed deprecated next_shaping_format resource from all 11 locale files (1 removal per file, confirmed no source code references remain). XML validation passed. Unit tests BUILD SUCCESSFUL in 1m 30s with CounterStringResourcesSourceTest and CounterValueFormatterTest both passing (EXIT=0).
+**5580** " ✅ **Updated Test to Expect linearGradient Instead of radialGradient**
+Updated CounterCraftButtonSourceTest to reflect the button gradient refactor. The test that verifies the button is drawn using Compose primitives (not images) now expects Brush.linearGradient instead of Brush.radialGradient. This partial fix addresses one of the breaking test assertions. However, the test at line 76 "craft counter button uses recessed center layers instead of a domed center" still checks for recess-specific tokens (recessShadowRadius, recessFloorRadius, recessShadowTop, etc.) that were replaced with plateau layers in the implementation.
+~265t 🛠️ 3,037
 
-**Next Steps**: All requested work completed successfully. Counter resource restoration verified clean (19 additions, 0 deletions per locale), middle-dot separator fully removed, deprecated resources cleaned up, and all tests passing. Awaiting user feedback or next request.
+**5582** " 🔄 **Button design changed from recessed center to domed plateau style**
+Refactored CounterCraftButton design specification from a recessed/bowl-shaped center to a domed flat-top plateau with rounded rim edges. The test suite now enforces a button with a raised flat center area (plateau) surrounded by a rounded rim gradient, matching a physical button reference image. The gradient approach shifted from radial/vertical to linear for both rim and plateau surfaces. This addresses the user's concern that the previous design made the rim appear higher than the center with the outer edge lower, creating an inverted appearance. The new design creates a proper raised button dome with a flat top surface.
+~332t 🛠️ 7,646
+
+S852 Fix row counter plus/minus button design to match reference image with raised flat center and rounded rim (Jun 9, 2:50 PM)
+**5581** " ✅ **Rewrote Button Architecture Test to Match Plateau Design**
+Completely rewrote the button architecture test to match the refactored plateau-based implementation. The test previously verified a three-layer recessed button design (rim + recess shadow + recess floor with vertical gradient), but now validates the simpler two-layer plateau design (rim + plateau with linear diagonal gradients). Test name changed to accurately describe new architecture: button has rounded beveled rim and flat-top plateau center, both lit from upper-left with linear gradients. This completes the test suite update, aligning all assertions with the refactored CounterCraftButton implementation that fixed the inverted appearance issue.
+~389t 🛠️ 7,692
 
 
-Access 2907k tokens of past work via get_observations([IDs]) or mem-search skill.
+Access 2240k tokens of past work via get_observations([IDs]) or mem-search skill.
 </claude-mem-context>

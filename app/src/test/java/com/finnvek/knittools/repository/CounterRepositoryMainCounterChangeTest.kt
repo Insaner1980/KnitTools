@@ -119,7 +119,14 @@ class CounterRepositoryMainCounterChangeTest {
             val projectDao = mockk<CounterProjectDao>(relaxed = true)
             val counterDao = linkedCounterDao(projectId = 7L, linkedCount = 6, unlinkedCount = 9)
             coEvery { projectDao.getProject(7L) } returns
-                CounterProjectEntity(id = 7L, name = "Socks", count = 12, stepSize = 1)
+                CounterProjectEntity(
+                    id = 7L,
+                    name = "Socks",
+                    count = 12,
+                    stepSize = 1,
+                    stitchTrackingEnabled = true,
+                    currentStitch = 8,
+                )
             coEvery { projectDao.getLatestHistory(7L) } returns
                 CounterHistoryEntity(
                     id = 55L,
@@ -136,6 +143,7 @@ class CounterRepositoryMainCounterChangeTest {
             coVerify {
                 projectDao.updateCount(7L, 10, any())
                 projectDao.deleteHistoryById(55L)
+                projectDao.updateCurrentStitch(7L, 0, any())
                 counterDao.updateCount(20L, 4)
             }
         }

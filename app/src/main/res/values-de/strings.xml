@@ -137,6 +137,15 @@
     <string name="pattern_open_failed">Die Anleitung konnte nicht geöffnet werden.</string>
     <string name="pattern_show_reading_line">Leselinie anzeigen</string>
     <string name="pattern_hide_reading_line">Leselinie ausblenden</string>
+    <string name="pattern_save_line_as_row">Linie als Reihe %1$d speichern</string>
+    <string name="pattern_clear_row_mark">Reihenmarkierung entfernen</string>
+    <string name="pattern_clear_page_marks">Seitenmarkierungen entfernen</string>
+    <string name="pattern_calibrate_rows">Reihen kalibrieren</string>
+    <string name="pattern_calibration_first_row">Erste Reihe</string>
+    <string name="pattern_calibration_last_row">Letzte Reihe</string>
+    <string name="pattern_calibration_save_first">Erste speichern</string>
+    <string name="pattern_calibration_save_last">Letzte speichern</string>
+    <string name="pattern_calibration_invalid_row">Verwende zwei unterschiedliche Reihennummern</string>
     <string name="pattern_reading_line_description">Leselinie</string>
     <string name="pattern_page_jump">Zu Seite springen</string>
     <string name="pattern_page_number">Seitennummer</string>

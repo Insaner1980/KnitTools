@@ -2,6 +2,7 @@ package com.finnvek.knittools.data.storage
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.Color
 import android.graphics.pdf.PdfRenderer
 import android.net.Uri
 import android.os.ParcelFileDescriptor
@@ -31,6 +32,7 @@ class PdfPageRenderer(
             val ratio = page.height.toFloat() / page.width.toFloat()
             val height = (width * ratio).toInt().coerceAtLeast(1)
             return createBitmap(width, height).also { bitmap ->
+                bitmap.eraseColor(Color.WHITE)
                 page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
             }
         }

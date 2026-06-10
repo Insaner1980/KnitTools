@@ -3,10 +3,10 @@ package com.finnvek.knittools.ui.screens.counter
 import com.finnvek.knittools.ui.components.extraCounterStepperColors
 import com.finnvek.knittools.ui.theme.LightSurfaceHigh
 import com.finnvek.knittools.ui.theme.LightSurfaceHighest
-import com.finnvek.knittools.ui.theme.LightTextPrimary
+import com.finnvek.knittools.ui.theme.LightTextSecondary
 import com.finnvek.knittools.ui.theme.Primary
 import com.finnvek.knittools.ui.theme.SurfaceHigh
-import com.finnvek.knittools.ui.theme.TextPrimary
+import com.finnvek.knittools.ui.theme.TextSecondary
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -18,7 +18,7 @@ class CounterStepperButtonColorsTest {
                 isLightTheme = true,
                 isIncrement = true,
                 primary = Primary,
-                onSurface = LightTextPrimary,
+                neutralContent = LightTextSecondary,
                 surfaceVariant = LightSurfaceHigh,
                 surfaceContainerHighest = LightSurfaceHighest,
             )
@@ -27,7 +27,7 @@ class CounterStepperButtonColorsTest {
                 isLightTheme = true,
                 isIncrement = false,
                 primary = Primary,
-                onSurface = LightTextPrimary,
+                neutralContent = LightTextSecondary,
                 surfaceVariant = LightSurfaceHigh,
                 surfaceContainerHighest = LightSurfaceHighest,
             )
@@ -35,17 +35,17 @@ class CounterStepperButtonColorsTest {
         assertEquals(LightSurfaceHighest, plus.container)
         assertEquals(Primary, plus.content)
         assertEquals(LightSurfaceHighest, minus.container)
-        assertEquals(LightTextPrimary, minus.content)
+        assertEquals(LightTextSecondary, minus.content)
     }
 
     @Test
-    fun `dark theme steppers keep the existing colors`() {
+    fun `dark theme steppers use primary plus and neutral minus symbols`() {
         val plus =
             extraCounterStepperColors(
                 isLightTheme = false,
                 isIncrement = true,
                 primary = Primary,
-                onSurface = TextPrimary,
+                neutralContent = TextSecondary,
                 surfaceVariant = SurfaceHigh,
                 surfaceContainerHighest = LightSurfaceHighest,
             )
@@ -54,14 +54,14 @@ class CounterStepperButtonColorsTest {
                 isLightTheme = false,
                 isIncrement = false,
                 primary = Primary,
-                onSurface = TextPrimary,
+                neutralContent = TextSecondary,
                 surfaceVariant = SurfaceHigh,
                 surfaceContainerHighest = LightSurfaceHighest,
             )
 
         assertEquals(SurfaceHigh, plus.container)
-        assertEquals(TextPrimary, plus.content)
+        assertEquals(Primary, plus.content)
         assertEquals(SurfaceHigh, minus.container)
-        assertEquals(TextPrimary, minus.content)
+        assertEquals(TextSecondary, minus.content)
     }
 }

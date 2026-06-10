@@ -2,11 +2,9 @@ package com.finnvek.knittools.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -32,9 +30,11 @@ fun StitchCounter(
         MaterialTheme.colorScheme.surfaceContainerHighest.copy(
             alpha = CounterDimens.StitchTrackerContainerAlpha,
         )
+    val canDecrement = currentStitch > 0
+    val canIncrement = currentStitch < totalStitches
 
     Surface(
-        modifier = modifier,
+        modifier = modifier.heightIn(min = CounterDimens.StitchTrackerMinHeight),
         shape = RoundedCornerShape(CounterDimens.StitchTrackerCornerRadius),
         color = containerColor,
     ) {
@@ -53,10 +53,11 @@ fun StitchCounter(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             CounterStepperButton(
-                icon = Icons.Filled.Remove,
+                symbol = CounterStepSymbol.Minus,
                 isIncrement = false,
                 contentDescription = stringResource(R.string.counter_decrease),
                 onClick = onDecrement,
+                enabled = canDecrement,
             )
             Text(
                 text = stringResource(R.string.stitch_counter_compact_format, currentStitch, totalStitches),
@@ -66,10 +67,11 @@ fun StitchCounter(
                 textAlign = TextAlign.Center,
             )
             CounterStepperButton(
-                icon = Icons.Filled.Add,
+                symbol = CounterStepSymbol.Plus,
                 isIncrement = true,
                 contentDescription = stringResource(R.string.counter_increase),
                 onClick = onIncrement,
+                enabled = canIncrement,
             )
         }
     }

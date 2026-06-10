@@ -239,7 +239,7 @@ class CounterWorkspaceSourceTest {
             "painterResource(id = imageRes)",
             "contentDescription = contentDescription",
         ).forEach { required -> assertTrue(heroSource.imageButton.contains(required)) }
-        assertTrue(heroSource.repeatButton.contains(".counterClickWithoutIndication(onClick)"))
+        assertTrue(heroSource.repeatButton.contains(".counterClickWithoutIndication(onClick = onClick, enabled = enabled)"))
         assertFalse(heroSource.repeatButton.contains(".clickable(onClick = onClick)"))
         assertTrue(workspace.contains("indication = null"))
         listOf(

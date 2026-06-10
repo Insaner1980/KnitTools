@@ -187,45 +187,10 @@ class CounterRepository
                 val project = dao.getProject(id)?.toDomain() ?: return@run false
                 if (project.isCompleted) return@run false
 
-                val before = CounterState(count = project.count, stepSize = project.stepSize)
-                val after =
-                    when (change) {
-                        MainCounterChange.Increment -> CounterLogic.increment(before)
-                        MainCounterChange.Decrement -> CounterLogic.decrement(before)
-                        MainCounterChange.Reset -> CounterState(count = 0, stepSize = before.stepSize)
-                        MainCounterChange.Undo -> {
-                            val history = dao.getLatestHistory(id) ?: return@run false
-                            val linkedDelta = history.previousValue - history.newValue
-                            dao.updateCount(id, history.previousValue, System.currentTimeMillis())
-                            dao.deleteHistoryById(history.id)
-                            applyLinkedCounterDelta(id, linkedDelta)
-                            return@run true
-                        }
-                    }
-                if (after.count == before.count) return@run false
-
-                val updatedAt = System.currentTimeMillis()
-                val action =
-                    when (change) {
-                        MainCounterChange.Increment -> "increment"
-                        MainCounterChange.Decrement -> "decrement"
-                        MainCounterChange.Reset -> "reset"
-                        MainCounterChange.Undo -> "undo"
-                    }
-                dao.updateCounterStateWithHistory(
-                    projectId = id,
-                    count = after.count,
-                    stepSize = after.stepSize,
-                    action = action,
-                    previousValue = before.count,
-                    newValue = after.count,
-                    updatedAt = updatedAt,
-                )
-                if (project.stitchTrackingEnabled) {
-                    dao.updateCurrentStitch(id, 0, updatedAt)
+                when (change) {
+                    MainCounterChange.Undo -> undoMainCounterChange(id, project)
+                    else -> applyHistoryTrackedMainCounterChange(id, project, change)
                 }
-                applyLinkedCounterDelta(id, after.count - before.count)
-                true
             }
 
         suspend fun applyWidgetCountChange(
@@ -442,6 +407,70 @@ class CounterRepository
             } else {
                 resolvedMainCounterLabelType(craftType, labelType, customLabel)
             }
+
+        private suspend fun applyHistoryTrackedMainCounterChange(
+            id: Long,
+            project: CounterProject,
+            change: MainCounterChange,
+        ): Boolean {
+            val before = CounterState(count = project.count, stepSize = project.stepSize)
+            val after = change.applyTo(before)
+            if (after.count == before.count) return false
+
+            val updatedAt = System.currentTimeMillis()
+            dao.updateCounterStateWithHistory(
+                projectId = id,
+                count = after.count,
+                stepSize = after.stepSize,
+                action = change.historyAction,
+                previousValue = before.count,
+                newValue = after.count,
+                updatedAt = updatedAt,
+            )
+            resetCurrentStitchIfNeeded(id, project, updatedAt)
+            applyLinkedCounterDelta(id, after.count - before.count)
+            return true
+        }
+
+        private suspend fun undoMainCounterChange(
+            id: Long,
+            project: CounterProject,
+        ): Boolean {
+            val history = dao.getLatestHistory(id) ?: return false
+            val updatedAt = System.currentTimeMillis()
+            dao.updateCount(id, history.previousValue, updatedAt)
+            dao.deleteHistoryById(history.id)
+            resetCurrentStitchIfNeeded(id, project, updatedAt)
+            applyLinkedCounterDelta(id, history.previousValue - history.newValue)
+            return true
+        }
+
+        private suspend fun resetCurrentStitchIfNeeded(
+            id: Long,
+            project: CounterProject,
+            updatedAt: Long,
+        ) {
+            if (project.stitchTrackingEnabled) {
+                dao.updateCurrentStitch(id, 0, updatedAt)
+            }
+        }
+
+        private fun MainCounterChange.applyTo(before: CounterState): CounterState =
+            when (this) {
+                MainCounterChange.Increment -> CounterLogic.increment(before)
+                MainCounterChange.Decrement -> CounterLogic.decrement(before)
+                MainCounterChange.Reset -> CounterState(count = 0, stepSize = before.stepSize)
+                MainCounterChange.Undo -> before
+            }
+
+        private val MainCounterChange.historyAction: String
+            get() =
+                when (this) {
+                    MainCounterChange.Increment -> "increment"
+                    MainCounterChange.Decrement -> "decrement"
+                    MainCounterChange.Reset -> "reset"
+                    MainCounterChange.Undo -> "undo"
+                }
 
         private suspend fun applyLinkedCounterDelta(
             projectId: Long,

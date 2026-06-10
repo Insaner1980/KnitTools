@@ -1,20 +1,36 @@
 package com.finnvek.knittools.ui.components
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Dp
 import com.finnvek.knittools.ui.theme.CounterDimens
+import kotlin.math.min
+
+private const val STEP_SYMBOL_LENGTH_FRACTION = 0.76f
+private const val STEP_SYMBOL_STROKE_FRACTION = 0.14f
+private const val COUNTER_STEPPER_DISABLED_ALPHA = 0.38f
+private const val COUNTER_STEPPER_SUBDUED_ALPHA = 0.64f
+
+enum class CounterStepSymbol {
+    Plus,
+    Minus,
+}
 
 internal data class CounterStepperColors(
     val container: Color,
@@ -25,36 +41,38 @@ internal fun extraCounterStepperColors(
     isLightTheme: Boolean,
     isIncrement: Boolean,
     primary: Color,
-    onSurface: Color,
+    neutralContent: Color,
     surfaceVariant: Color,
     surfaceContainerHighest: Color,
 ): CounterStepperColors =
     if (isLightTheme) {
         CounterStepperColors(
             container = surfaceContainerHighest,
-            content = if (isIncrement) primary else onSurface,
+            content = if (isIncrement) primary else neutralContent,
         )
     } else {
         CounterStepperColors(
             container = surfaceVariant,
-            content = onSurface,
+            content = if (isIncrement) primary else neutralContent,
         )
     }
 
 @Composable
 fun CounterStepperButton(
-    icon: ImageVector,
+    symbol: CounterStepSymbol,
     isIncrement: Boolean,
     contentDescription: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    prominent: Boolean = true,
 ) {
     val colors =
         extraCounterStepperColors(
             isLightTheme = MaterialTheme.colorScheme.background.luminance() > 0.5f,
             isIncrement = isIncrement,
             primary = MaterialTheme.colorScheme.primary,
-            onSurface = MaterialTheme.colorScheme.onSurface,
+            neutralContent = MaterialTheme.colorScheme.onSurfaceVariant,
             surfaceVariant = MaterialTheme.colorScheme.surfaceVariant,
             surfaceContainerHighest = MaterialTheme.colorScheme.surfaceContainerHighest,
         )
@@ -63,23 +81,112 @@ fun CounterStepperButton(
         modifier =
             modifier
                 .size(CounterDimens.ExtraCounterStepperTouchSize)
-                .clickable(onClick = onClick),
+                .clickable(
+                    interactionSource = null,
+                    indication = null,
+                    enabled = enabled,
+                    onClick = onClick,
+                ),
         contentAlignment = Alignment.Center,
     ) {
-        Box(
-            modifier =
-                Modifier
-                    .size(CounterDimens.ExtraCounterStepperVisualSize)
-                    .clip(CircleShape)
-                    .background(colors.container),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = contentDescription,
-                modifier = Modifier.size(CounterDimens.ExtraCounterStepperIconSize),
-                tint = colors.content,
-            )
+        CounterStepButtonFace(
+            symbol = symbol,
+            contentDescription = contentDescription,
+            visualSize = CounterDimens.ExtraCounterStepperVisualSize,
+            symbolSize = CounterDimens.ExtraCounterStepperIconSize,
+            containerColor = colors.container,
+            contentColor = colors.content,
+            enabled = enabled,
+            prominent = prominent,
+        )
+    }
+}
+
+@Composable
+fun CounterStepButtonFace(
+    symbol: CounterStepSymbol,
+    visualSize: Dp,
+    symbolSize: Dp,
+    containerColor: Color,
+    contentColor: Color,
+    modifier: Modifier = Modifier,
+    contentDescription: String? = null,
+    enabled: Boolean = true,
+    prominent: Boolean = true,
+) {
+    val stepColor =
+        contentColor.copy(
+            alpha = counterStepperVisualAlpha(enabled = enabled, prominent = prominent),
+        )
+
+    Box(
+        modifier =
+            modifier
+                .size(visualSize)
+                .clip(CircleShape)
+                .background(containerColor)
+                .border(
+                    width = symbolSize * STEP_SYMBOL_STROKE_FRACTION,
+                    color = stepColor,
+                    shape = CircleShape,
+                ),
+        contentAlignment = Alignment.Center,
+    ) {
+        CounterStepSymbolIcon(
+            symbol = symbol,
+            contentDescription = contentDescription,
+            modifier = Modifier.size(symbolSize),
+            tint = stepColor,
+        )
+    }
+}
+
+private fun counterStepperVisualAlpha(
+    enabled: Boolean,
+    prominent: Boolean,
+): Float =
+    when {
+        !enabled -> COUNTER_STEPPER_DISABLED_ALPHA
+        !prominent -> COUNTER_STEPPER_SUBDUED_ALPHA
+        else -> 1f
+    }
+
+@Composable
+fun CounterStepSymbolIcon(
+    symbol: CounterStepSymbol,
+    tint: Color,
+    modifier: Modifier = Modifier,
+    contentDescription: String? = null,
+) {
+    Canvas(
+        modifier =
+            modifier.semantics {
+                contentDescription?.let { this.contentDescription = it }
+            },
+    ) {
+        val iconSize = min(size.width, size.height)
+        val strokeWidth = iconSize * STEP_SYMBOL_STROKE_FRACTION
+        val halfLength = iconSize * STEP_SYMBOL_LENGTH_FRACTION / 2f
+        val center = Offset(size.width / 2f, size.height / 2f)
+
+        drawLine(
+            color = tint,
+            start = Offset(center.x - halfLength, center.y),
+            end = Offset(center.x + halfLength, center.y),
+            strokeWidth = strokeWidth,
+            cap = StrokeCap.Round,
+        )
+        when (symbol) {
+            CounterStepSymbol.Plus ->
+                drawLine(
+                    color = tint,
+                    start = Offset(center.x, center.y - halfLength),
+                    end = Offset(center.x, center.y + halfLength),
+                    strokeWidth = strokeWidth,
+                    cap = StrokeCap.Round,
+                )
+
+            CounterStepSymbol.Minus -> Unit
         }
     }
 }

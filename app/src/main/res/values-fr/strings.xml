@@ -139,6 +139,15 @@
     <string name="pattern_open_failed">Impossible d’ouvrir le modèle.</string>
     <string name="pattern_show_reading_line">Afficher la ligne de lecture</string>
     <string name="pattern_hide_reading_line">Masquer la ligne de lecture</string>
+    <string name="pattern_save_line_as_row">Enregistrer la ligne au rang %1$d</string>
+    <string name="pattern_clear_row_mark">Effacer le repère de rang</string>
+    <string name="pattern_clear_page_marks">Effacer les repères de la page</string>
+    <string name="pattern_calibrate_rows">Calibrer les rangs</string>
+    <string name="pattern_calibration_first_row">Premier rang</string>
+    <string name="pattern_calibration_last_row">Dernier rang</string>
+    <string name="pattern_calibration_save_first">Enregistrer le premier</string>
+    <string name="pattern_calibration_save_last">Enregistrer le dernier</string>
+    <string name="pattern_calibration_invalid_row">Utilisez deux numéros de rang différents</string>
     <string name="pattern_reading_line_description">Ligne de lecture</string>
     <string name="pattern_page_jump">Aller à la page</string>
     <string name="pattern_page_number">Numéro de page</string>

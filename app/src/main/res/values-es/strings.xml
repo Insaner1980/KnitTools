@@ -139,6 +139,15 @@
     <string name="pattern_open_failed">No se pudo abrir el patrón.</string>
     <string name="pattern_show_reading_line">Mostrar línea de lectura</string>
     <string name="pattern_hide_reading_line">Ocultar línea de lectura</string>
+    <string name="pattern_save_line_as_row">Guardar línea como vuelta %1$d</string>
+    <string name="pattern_clear_row_mark">Borrar marca de vuelta</string>
+    <string name="pattern_clear_page_marks">Borrar marcas de la página</string>
+    <string name="pattern_calibrate_rows">Calibrar vueltas</string>
+    <string name="pattern_calibration_first_row">Primera vuelta</string>
+    <string name="pattern_calibration_last_row">Última vuelta</string>
+    <string name="pattern_calibration_save_first">Guardar primera</string>
+    <string name="pattern_calibration_save_last">Guardar última</string>
+    <string name="pattern_calibration_invalid_row">Usa dos números de vuelta distintos</string>
     <string name="pattern_reading_line_description">Línea de lectura</string>
     <string name="pattern_page_jump">Ir a la página</string>
     <string name="pattern_page_number">Número de página</string>

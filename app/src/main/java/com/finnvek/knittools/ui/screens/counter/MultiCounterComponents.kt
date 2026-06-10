@@ -15,10 +15,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -55,6 +53,7 @@ import com.finnvek.knittools.domain.model.ProjectCounter
 import com.finnvek.knittools.domain.model.ProjectCounterDraft
 import com.finnvek.knittools.domain.model.ProjectCounterType
 import com.finnvek.knittools.ui.components.ConfirmationDialog
+import com.finnvek.knittools.ui.components.CounterStepSymbol
 import com.finnvek.knittools.ui.components.CounterStepperButton
 import com.finnvek.knittools.ui.components.NumberInputField
 import com.finnvek.knittools.ui.components.NumberInputOptions
@@ -88,6 +87,9 @@ fun CounterListItem(
     var showContextMenu by rememberSaveable(counter.id) { mutableStateOf(false) }
     var showRenameDialog by rememberSaveable(counter.id) { mutableStateOf(false) }
     var showDeleteDialog by rememberSaveable(counter.id) { mutableStateOf(false) }
+    val canDecrement = counter.count > 0
+    val incrementProminent = extraCounterIncrementIsProminent(counter)
+    val displayText = CounterValueFormatter.forExtraCounter(counter).asText()
 
     Column(
         modifier =
@@ -137,18 +139,18 @@ fun CounterListItem(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             CounterStepperButton(
-                icon = Icons.Filled.Remove,
+                symbol = CounterStepSymbol.Minus,
                 isIncrement = false,
                 contentDescription = stringResource(R.string.counter_decrease_named, counter.name),
                 onClick = {
                     performHaptic()
                     onDecrement()
                 },
+                enabled = canDecrement,
             )
 
             Spacer(modifier = Modifier.width(CounterDimens.ExtraCounterValueSpacing))
 
-            val displayText = CounterValueFormatter.forExtraCounter(counter).asText()
             Text(
                 text = displayText,
                 style = MaterialTheme.typography.headlineMedium,
@@ -161,13 +163,14 @@ fun CounterListItem(
             Spacer(modifier = Modifier.width(CounterDimens.ExtraCounterValueSpacing))
 
             CounterStepperButton(
-                icon = Icons.Filled.Add,
+                symbol = CounterStepSymbol.Plus,
                 isIncrement = true,
                 contentDescription = stringResource(R.string.counter_increase_named, counter.name),
                 onClick = {
                     performHaptic()
                     onIncrement()
                 },
+                prominent = incrementProminent,
             )
         }
     }
@@ -195,6 +198,14 @@ fun CounterListItem(
             },
             onDismiss = { showDeleteDialog = false },
         )
+    }
+}
+
+internal fun extraCounterIncrementIsProminent(counter: ProjectCounter): Boolean {
+    val display = CounterValueFormatter.forExtraCounter(counter)
+    return when (display) {
+        is CounterValueDisplay.Cycle -> display.current < display.length
+        else -> true
     }
 }
 

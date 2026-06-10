@@ -137,6 +137,15 @@
     <string name="pattern_open_failed">Pattern could not be opened.</string>
     <string name="pattern_show_reading_line">Show reading line</string>
     <string name="pattern_hide_reading_line">Hide reading line</string>
+    <string name="pattern_save_line_as_row" tools:ignore="PluralsCandidate">Save line as row %1$d</string>
+    <string name="pattern_clear_row_mark">Clear row mark</string>
+    <string name="pattern_clear_page_marks">Clear page marks</string>
+    <string name="pattern_calibrate_rows">Calibrate rows</string>
+    <string name="pattern_calibration_first_row">First row</string>
+    <string name="pattern_calibration_last_row">Last row</string>
+    <string name="pattern_calibration_save_first">Save first</string>
+    <string name="pattern_calibration_save_last">Save last</string>
+    <string name="pattern_calibration_invalid_row">Use two different row numbers</string>
     <string name="pattern_reading_line_description">Reading line</string>
     <string name="pattern_row_highlight_description" tools:ignore="PluralsCandidate">Row %1$d highlighted about %2$d percent down the page</string>
     <string name="pattern_page_jump">Page jump</string>

@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -70,12 +71,17 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.data.storage.PdfPageRenderer
 import com.finnvek.knittools.di.AppDispatchers
+import com.finnvek.knittools.domain.calculator.RowMarker
+import com.finnvek.knittools.domain.calculator.createCalibrationRowMarkers
+import com.finnvek.knittools.domain.calculator.parseMapping
+import com.finnvek.knittools.domain.calculator.resolveReadingLineYFraction
 import com.finnvek.knittools.domain.model.DEFAULT_READING_LINE_Y_FRACTION
 import com.finnvek.knittools.domain.model.READING_LINE_MAX_Y_FRACTION
 import com.finnvek.knittools.domain.model.READING_LINE_MIN_Y_FRACTION
@@ -107,6 +113,24 @@ fun PatternViewerScreen(
             currentPage = currentPage,
             onPageClamped = counterViewModel::updatePatternPage,
         )
+    var rowCalibrationState by remember(patternUri) { mutableStateOf<RowCalibrationState?>(null) }
+    var readingLinePreviewYFraction by remember(patternUri) { mutableFloatStateOf(counterState.readingLineYFraction) }
+    var isReadingLineDragging by remember(patternUri) { mutableStateOf(false) }
+
+    LaunchedEffect(patternUri, counterState.readingLineYFraction, isReadingLineDragging) {
+        if (!isReadingLineDragging) {
+            readingLinePreviewYFraction = counterState.readingLineYFraction
+        }
+    }
+
+    TrackReadingLineForCurrentRow(
+        currentRow = counterState.counter.count,
+        currentPage = currentPage,
+        patternRowMapping = counterState.patternRowMapping,
+        readingLineEnabled = counterState.readingLineEnabled,
+        readingLineYFraction = counterState.readingLineYFraction,
+        onReadingLineYFractionChange = counterViewModel::updateReadingLineYFraction,
+    )
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -117,6 +141,7 @@ fun PatternViewerScreen(
                         patternName = counterState.patternName,
                         totalPages = renderState.renderer?.pageCount ?: 0,
                         currentPage = currentPage,
+                        currentRow = counterState.counter.count,
                         canDetachPattern = true,
                         readingLineEnabled = counterState.readingLineEnabled,
                     ),
@@ -125,6 +150,29 @@ fun PatternViewerScreen(
                         onBack = onBack,
                         onJumpToPage = counterViewModel::updatePatternPage,
                         onReadingLineToggle = counterViewModel::setReadingLineEnabled,
+                        onSaveReadingLineAsCurrentRow = {
+                            counterViewModel.upsertPatternRowMarker(
+                                row = counterState.counter.count,
+                                page = currentPage,
+                                yPosition = counterState.readingLineYFraction,
+                            )
+                        },
+                        onClearReadingLineRowMarker = {
+                            counterViewModel.removePatternRowMarker(
+                                row = counterState.counter.count,
+                                page = currentPage,
+                            )
+                        },
+                        onClearReadingLinePageMarkers = {
+                            counterViewModel.removePatternRowMarkersForPage(currentPage)
+                        },
+                        onStartRowCalibration = {
+                            counterViewModel.setReadingLineEnabled(true)
+                            rowCalibrationState =
+                                RowCalibrationState(
+                                    rowInput = counterState.counter.count.toString(),
+                                )
+                        },
                         onDetachPattern = {
                             counterViewModel.detachPattern()
                             onBack()
@@ -150,27 +198,260 @@ fun PatternViewerScreen(
             )
         },
     ) { scaffoldPadding ->
-        PatternViewerContent(
-            state =
-                PatternViewerContentState(
-                    patternUri = patternUri,
-                    rendererError = renderState.rendererError,
-                    renderedBitmap = renderState.renderedBitmap,
-                    patternName = counterState.patternName,
-                    currentRow = counterState.counter.count,
-                    positionPercent = null,
-                    readingLineEnabled = counterState.readingLineEnabled,
-                    readingLineYFraction = counterState.readingLineYFraction,
-                ),
-            actions =
-                PatternViewerContentActions(
-                    onReadingLineYFractionChange = counterViewModel::updateReadingLineYFraction,
-                ),
+        Column(
             modifier =
                 Modifier
                     .fillMaxSize()
                     .padding(scaffoldPadding),
+        ) {
+            rowCalibrationState?.let { calibrationState ->
+                RowCalibrationPanel(
+                    state = calibrationState,
+                    onRowInputChange = { input ->
+                        rowCalibrationState =
+                            calibrationState.copy(
+                                rowInput = input.filter(Char::isDigit),
+                                showInvalidRowError = false,
+                            )
+                    },
+                    onSaveFirst = {
+                        val firstRow = calibrationState.rowInput.toIntOrNull()
+                        rowCalibrationState =
+                            if (firstRow == null) {
+                                calibrationState.copy(showInvalidRowError = true)
+                            } else {
+                                RowCalibrationState(
+                                    firstMarker =
+                                        RowMarker(
+                                            row = firstRow,
+                                            page = currentPage,
+                                            yPosition = sanitizeReadingLineYFraction(counterState.readingLineYFraction),
+                                        ),
+                                    rowInput = counterState.counter.count.toString(),
+                                )
+                            }
+                    },
+                    onSaveLast = {
+                        val markers =
+                            calibrationState.toCalibrationMarkers(
+                                currentPage = currentPage,
+                                currentYFraction = counterState.readingLineYFraction,
+                            )
+                        if (markers == null) {
+                            rowCalibrationState = calibrationState.copy(showInvalidRowError = true)
+                        } else {
+                            counterViewModel.mergePatternRowMarkers(markers)
+                            rowCalibrationState = null
+                        }
+                    },
+                    onCancel = {
+                        rowCalibrationState = null
+                    },
+                )
+            }
+            PatternViewerContent(
+                state =
+                    PatternViewerContentState(
+                        patternUri = patternUri,
+                        rendererError = renderState.rendererError,
+                        renderedBitmap = renderState.renderedBitmap,
+                        patternName = counterState.patternName,
+                        currentRow = counterState.counter.count,
+                        positionPercent = null,
+                        readingLineEnabled = counterState.readingLineEnabled,
+                        readingLineYFraction = readingLinePreviewYFraction,
+                    ),
+                actions =
+                    PatternViewerContentActions(
+                        onReadingLineDragStart = {
+                            isReadingLineDragging = true
+                        },
+                        onReadingLineYFractionChange = { yFraction ->
+                            isReadingLineDragging = true
+                            readingLinePreviewYFraction = sanitizeReadingLineYFraction(yFraction)
+                        },
+                        onReadingLineYFractionCommit = { yFraction ->
+                            val sanitizedYFraction = sanitizeReadingLineYFraction(yFraction)
+                            isReadingLineDragging = false
+                            readingLinePreviewYFraction = sanitizedYFraction
+                            counterViewModel.updateReadingLineYFraction(sanitizedYFraction)
+                            counterViewModel.upsertPatternRowMarker(
+                                row = counterState.counter.count,
+                                page = currentPage,
+                                yPosition = sanitizedYFraction,
+                            )
+                        },
+                        onReadingLineDragCancel = {
+                            isReadingLineDragging = false
+                            readingLinePreviewYFraction = counterState.readingLineYFraction
+                        },
+                    ),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+            )
+        }
+    }
+}
+
+private data class RowCalibrationState(
+    val firstMarker: RowMarker? = null,
+    val rowInput: String,
+    val showInvalidRowError: Boolean = false,
+)
+
+private val RowCalibrationState.isSecondStep: Boolean
+    get() = firstMarker != null
+
+private fun RowCalibrationState.rowLabelRes(): Int =
+    if (isSecondStep) {
+        R.string.pattern_calibration_last_row
+    } else {
+        R.string.pattern_calibration_first_row
+    }
+
+private fun RowCalibrationState.saveButtonLabelRes(): Int =
+    if (isSecondStep) {
+        R.string.pattern_calibration_save_last
+    } else {
+        R.string.pattern_calibration_save_first
+    }
+
+private fun RowCalibrationState.saveAction(
+    onSaveFirst: () -> Unit,
+    onSaveLast: () -> Unit,
+): () -> Unit = if (isSecondStep) onSaveLast else onSaveFirst
+
+private fun RowCalibrationState.toCalibrationMarkers(
+    currentPage: Int,
+    currentYFraction: Float,
+): List<RowMarker>? {
+    val firstMarker = firstMarker ?: return null
+    val lastRow = rowInput.toIntOrNull() ?: return null
+    val markers =
+        createCalibrationRowMarkers(
+            firstRow = firstMarker.row,
+            firstPage = firstMarker.page,
+            firstYPosition = firstMarker.yPosition,
+            lastRow = lastRow,
+            lastPage = currentPage,
+            lastYPosition = currentYFraction,
         )
+    if (markers == null) return null
+    return markers
+}
+
+@Composable
+private fun RowCalibrationPanel(
+    state: RowCalibrationState,
+    onRowInputChange: (String) -> Unit,
+    onSaveFirst: () -> Unit,
+    onSaveLast: () -> Unit,
+    onCancel: () -> Unit,
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        tonalElevation = 2.dp,
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 10.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.pattern_calibrate_rows),
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold,
+            )
+            TextField(
+                value = state.rowInput,
+                onValueChange = onRowInputChange,
+                singleLine = true,
+                isError = state.showInvalidRowError,
+                label = {
+                    Text(stringResource(state.rowLabelRes()))
+                },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                supportingText = rowCalibrationSupportingText(state.showInvalidRowError),
+                shape = MaterialTheme.shapes.medium,
+                colors =
+                    TextFieldDefaults.colors(
+                        focusedContainerColor = MaterialTheme.colorScheme.surface,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    ),
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                TextButton(
+                    onClick = state.saveAction(onSaveFirst, onSaveLast),
+                    enabled = state.rowInput.toIntOrNull() != null,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(
+                        text = stringResource(state.saveButtonLabelRes()),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                TextButton(
+                    onClick = onCancel,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(
+                        text = stringResource(R.string.cancel),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun rowCalibrationSupportingText(showInvalidRowError: Boolean): (@Composable () -> Unit)? {
+    if (!showInvalidRowError) return null
+    return {
+        Text(stringResource(R.string.pattern_calibration_invalid_row))
+    }
+}
+
+@Composable
+private fun TrackReadingLineForCurrentRow(
+    currentRow: Int,
+    currentPage: Int,
+    patternRowMapping: String?,
+    readingLineEnabled: Boolean,
+    readingLineYFraction: Float,
+    onReadingLineYFractionChange: (Float) -> Unit,
+) {
+    var previousRow by remember(currentPage, patternRowMapping) { mutableIntStateOf(currentRow) }
+    LaunchedEffect(currentRow, currentPage, patternRowMapping, readingLineEnabled) {
+        if (!readingLineEnabled) {
+            previousRow = currentRow
+            return@LaunchedEffect
+        }
+
+        val rowDelta = currentRow - previousRow
+        val nextYFraction =
+            resolveReadingLineYFraction(
+                markers = parseMapping(patternRowMapping),
+                currentRow = currentRow,
+                currentPage = currentPage,
+                currentYFraction = readingLineYFraction,
+                rowDelta = rowDelta,
+            )
+
+        previousRow = currentRow
+        nextYFraction
+            ?.takeIf { it != readingLineYFraction }
+            ?.let(onReadingLineYFractionChange)
     }
 }
 
@@ -200,6 +481,7 @@ fun LibraryPatternViewerScreen(
                         patternName = patternName,
                         totalPages = renderState.renderer?.pageCount ?: 0,
                         currentPage = currentPage,
+                        currentRow = null,
                         canDetachPattern = false,
                         readingLineEnabled = readingLineEnabled,
                     ),
@@ -208,6 +490,10 @@ fun LibraryPatternViewerScreen(
                         onBack = onBack,
                         onJumpToPage = { currentPage = it },
                         onReadingLineToggle = { readingLineEnabled = it },
+                        onSaveReadingLineAsCurrentRow = {},
+                        onClearReadingLineRowMarker = {},
+                        onClearReadingLinePageMarkers = {},
+                        onStartRowCalibration = {},
                         onDetachPattern = {},
                     ),
             )
@@ -238,7 +524,10 @@ fun LibraryPatternViewerScreen(
                 ),
             actions =
                 PatternViewerContentActions(
+                    onReadingLineDragStart = {},
                     onReadingLineYFractionChange = { readingLineYFraction = sanitizeReadingLineYFraction(it) },
+                    onReadingLineYFractionCommit = { readingLineYFraction = sanitizeReadingLineYFraction(it) },
+                    onReadingLineDragCancel = {},
                 ),
             modifier =
                 Modifier
@@ -317,6 +606,7 @@ private data class TopBarState(
     val patternName: String?,
     val totalPages: Int,
     val currentPage: Int,
+    val currentRow: Int?,
     val canDetachPattern: Boolean,
     val readingLineEnabled: Boolean,
 )
@@ -325,6 +615,10 @@ private data class TopBarActions(
     val onBack: () -> Unit,
     val onJumpToPage: (Int) -> Unit,
     val onReadingLineToggle: (Boolean) -> Unit,
+    val onSaveReadingLineAsCurrentRow: () -> Unit,
+    val onClearReadingLineRowMarker: () -> Unit,
+    val onClearReadingLinePageMarkers: () -> Unit,
+    val onStartRowCalibration: () -> Unit,
     val onDetachPattern: () -> Unit,
 )
 
@@ -391,6 +685,36 @@ private fun PatternViewerTopBar(
                             actions.onReadingLineToggle(!state.readingLineEnabled)
                         },
                     )
+                    state.currentRow?.let { currentRow ->
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.pattern_save_line_as_row, currentRow)) },
+                            onClick = {
+                                showOverflowMenu = false
+                                actions.onSaveReadingLineAsCurrentRow()
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.pattern_clear_row_mark)) },
+                            onClick = {
+                                showOverflowMenu = false
+                                actions.onClearReadingLineRowMarker()
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.pattern_clear_page_marks)) },
+                            onClick = {
+                                showOverflowMenu = false
+                                actions.onClearReadingLinePageMarkers()
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.pattern_calibrate_rows)) },
+                            onClick = {
+                                showOverflowMenu = false
+                                actions.onStartRowCalibration()
+                            },
+                        )
+                    }
                     if (state.canDetachPattern) {
                         DropdownMenuItem(
                             text = { Text(stringResource(R.string.remove_pattern)) },
@@ -593,7 +917,17 @@ private data class PatternViewerDocumentState(
 )
 
 private data class PatternViewerContentActions(
+    val onReadingLineDragStart: () -> Unit,
     val onReadingLineYFractionChange: (Float) -> Unit,
+    val onReadingLineYFractionCommit: (Float) -> Unit,
+    val onReadingLineDragCancel: () -> Unit,
+)
+
+private data class ReadingLineOverlayActions(
+    val onDragStart: () -> Unit,
+    val onYFractionChange: (Float) -> Unit,
+    val onYFractionCommit: (Float) -> Unit,
+    val onDragCancel: () -> Unit,
 )
 
 @Composable
@@ -667,8 +1001,15 @@ private fun PatternViewerDocument(
                 if (state.readingLineEnabled) {
                     ReadingLineOverlay(
                         yFraction = state.readingLineYFraction,
+                        currentRow = state.currentRow,
                         scale = scale,
-                        onYFractionChange = actions.onReadingLineYFractionChange,
+                        actions =
+                            ReadingLineOverlayActions(
+                                onDragStart = actions.onReadingLineDragStart,
+                                onYFractionChange = actions.onReadingLineYFractionChange,
+                                onYFractionCommit = actions.onReadingLineYFractionCommit,
+                                onDragCancel = actions.onReadingLineDragCancel,
+                            ),
                         modifier = Modifier.fillMaxSize(),
                     )
                 }
@@ -680,47 +1021,101 @@ private fun PatternViewerDocument(
 @Composable
 private fun ReadingLineOverlay(
     yFraction: Float,
+    currentRow: Int?,
     scale: Float,
-    onYFractionChange: (Float) -> Unit,
+    actions: ReadingLineOverlayActions,
     modifier: Modifier = Modifier,
 ) {
     val sanitizedYFraction = sanitizeReadingLineYFraction(yFraction)
     val lineColor = MaterialTheme.colorScheme.primary
     val bandColor = MaterialTheme.colorScheme.primary.copy(alpha = READING_LINE_BAND_ALPHA)
     val description = stringResource(R.string.pattern_reading_line_description)
-    Canvas(
+    BoxWithConstraints(
         modifier =
             modifier
                 .semantics { contentDescription = description }
                 .pointerInput(sanitizedYFraction, scale) {
-                    detectVerticalDragGestures { change, dragAmount ->
-                        change.consume()
-                        val heightPx =
-                            size.height.toFloat().takeIf { it > 0f }
-                                ?: return@detectVerticalDragGestures
-                        val adjustedDrag = dragAmount / scale.coerceAtLeast(1f)
-                        val nextFraction = sanitizedYFraction + (adjustedDrag / heightPx)
-                        onYFractionChange(
-                            nextFraction.coerceIn(
-                                READING_LINE_MIN_Y_FRACTION,
-                                READING_LINE_MAX_Y_FRACTION,
-                            ),
-                        )
-                    }
+                    var lastYFraction = sanitizedYFraction
+                    detectVerticalDragGestures(
+                        onDragStart = {
+                            actions.onDragStart()
+                            lastYFraction = sanitizedYFraction
+                        },
+                        onDragEnd = { actions.onYFractionCommit(lastYFraction) },
+                        onDragCancel = { actions.onDragCancel() },
+                        onVerticalDrag = { change, dragAmount ->
+                            change.consume()
+                            val heightPx =
+                                size.height.toFloat().takeIf { it > 0f }
+                                    ?: return@detectVerticalDragGestures
+                            val adjustedDrag = dragAmount / scale.coerceAtLeast(1f)
+                            lastYFraction =
+                                (lastYFraction + (adjustedDrag / heightPx)).coerceIn(
+                                    READING_LINE_MIN_Y_FRACTION,
+                                    READING_LINE_MAX_Y_FRACTION,
+                                )
+                            actions.onYFractionChange(lastYFraction)
+                        },
+                    )
                 },
     ) {
-        val centerY = size.height * sanitizedYFraction
-        val bandHeight = (size.height * READING_LINE_BAND_HEIGHT_FRACTION).coerceAtLeast(24.dp.toPx())
-        drawRect(
-            color = bandColor,
-            topLeft = Offset(0f, centerY - (bandHeight / 2f)),
-            size = Size(size.width, bandHeight),
-        )
-        drawLine(
-            color = lineColor,
-            start = Offset(0f, centerY),
-            end = Offset(size.width, centerY),
-            strokeWidth = 2.dp.toPx(),
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val centerY = size.height * sanitizedYFraction
+            val bandHeight = (size.height * READING_LINE_BAND_HEIGHT_FRACTION).coerceAtLeast(24.dp.toPx())
+            drawRect(
+                color = bandColor,
+                topLeft = Offset(0f, centerY - (bandHeight / 2f)),
+                size = Size(size.width, bandHeight),
+            )
+            drawLine(
+                color = lineColor,
+                start = Offset(0f, centerY),
+                end = Offset(size.width, centerY),
+                strokeWidth = 2.dp.toPx(),
+            )
+        }
+        currentRow?.let { currentRow ->
+            ReadingLineRowLabel(
+                currentRow = currentRow,
+                yFraction = sanitizedYFraction,
+                containerHeight = maxHeight,
+                modifier = Modifier.align(Alignment.TopStart),
+            )
+        }
+    }
+}
+
+@Composable
+private fun ReadingLineRowLabel(
+    currentRow: Int,
+    yFraction: Float,
+    containerHeight: Dp,
+    modifier: Modifier = Modifier,
+) {
+    val verticalMargin = 4.dp
+    val labelHeight = 28.dp
+    val maxOffset = containerHeight - labelHeight - verticalMargin
+    val boundedMaxOffset = if (maxOffset > verticalMargin) maxOffset else verticalMargin
+    val labelOffset =
+        (containerHeight * yFraction - (labelHeight / 2f))
+            .coerceIn(verticalMargin, boundedMaxOffset)
+
+    Surface(
+        color = MaterialTheme.colorScheme.primaryContainer,
+        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+        shape = MaterialTheme.shapes.small,
+        tonalElevation = 2.dp,
+        modifier =
+            modifier
+                .padding(start = 8.dp)
+                .offset(y = labelOffset),
+    ) {
+        Text(
+            text = stringResource(R.string.current_row_short, currentRow),
+            style = MaterialTheme.typography.labelSmall,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
         )
     }
 }

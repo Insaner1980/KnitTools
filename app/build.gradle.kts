@@ -62,19 +62,30 @@ fun releaseEnvOrEmpty(name: String): String =
         ?.takeIf { it.isNotBlank() }
         .orEmpty()
 
-fun debugBuildConfigField(name: String) =
-    debugCredentialsText.map { text ->
-        val value =
+fun debugBuildConfigField(
+    name: String,
+    vararg envNames: String,
+): Provider<BuildConfigField<String>> {
+    val credentialsTextProvider = debugCredentialsText
+    val environmentValue =
+        envNames.firstNotNullOfOrNull { envName ->
+            providers.environmentVariable(envName).orNull?.takeIf { it.isNotBlank() }
+        }
+
+    return credentialsTextProvider.map { text ->
+        val localValue =
             Properties()
                 .also { props ->
                     StringReader(text).use { props.load(it) }
                 }.getProperty(name, "")
+        val value = environmentValue ?: localValue
         val quotedValue =
             "\"${value
                 .replace("\\", "\\\\")
                 .replace("\"", "\\\"")}\""
         BuildConfigField("String", quotedValue, null)
     }
+}
 
 fun quotedBuildConfigValue(value: String): String =
     "\"${value
@@ -217,6 +228,10 @@ androidComponents {
         buildConfigFields.put(
             "RAVELRY_OAUTH2_CLIENT_SECRET",
             debugBuildConfigField("ravelry.oauth2ClientSecret"),
+        )
+        buildConfigFields.put(
+            "SENTRY_DSN",
+            debugBuildConfigField("sentry.dsn", "KNITTOOLS_SENTRY_DSN", "SENTRY_DSN"),
         )
     }
 }
@@ -536,6 +551,9 @@ dependencies {
     // Baseline Profiles
     implementation(libs.profileinstaller)
     baselineProfile(project(":baselineprofile"))
+
+    // Sentry on vain debug-diagnostiikkaa. Release-luokkapolku tarkistetaan tools\sentry.ps1-komennolla.
+    debugImplementation(libs.sentry.android.core)
 
     // Detekt plugins
     detektPlugins(libs.detekt.compose.rules)

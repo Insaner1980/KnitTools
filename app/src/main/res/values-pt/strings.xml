@@ -139,6 +139,15 @@
     <string name="pattern_open_failed">Não foi possível abrir a receita.</string>
     <string name="pattern_show_reading_line">Mostrar linha de leitura</string>
     <string name="pattern_hide_reading_line">Ocultar linha de leitura</string>
+    <string name="pattern_save_line_as_row">Guardar linha como carreira %1$d</string>
+    <string name="pattern_clear_row_mark">Limpar marcador da carreira</string>
+    <string name="pattern_clear_page_marks">Limpar marcadores da página</string>
+    <string name="pattern_calibrate_rows">Calibrar carreiras</string>
+    <string name="pattern_calibration_first_row">Primeira carreira</string>
+    <string name="pattern_calibration_last_row">Última carreira</string>
+    <string name="pattern_calibration_save_first">Guardar primeira</string>
+    <string name="pattern_calibration_save_last">Guardar última</string>
+    <string name="pattern_calibration_invalid_row">Use dois números de carreira diferentes</string>
     <string name="pattern_reading_line_description">Linha de leitura</string>
     <string name="pattern_page_jump">Ir para a página</string>
     <string name="pattern_page_number">Número da página</string>

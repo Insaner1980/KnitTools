@@ -1,6 +1,7 @@
 package com.finnvek.knittools.ui.screens.counter
 
 import com.finnvek.knittools.ProjectSourceFiles
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -13,10 +14,15 @@ class ProjectActionsBottomSheetSourceTest {
         val remindersAction = source.indexOf("R.string.reminders")
         val countersAction = source.indexOf("R.string.counters")
         val counterToolsSection = source.indexOf("R.string.project_actions_section_counter_tools")
+        val undoRow =
+            source
+                .substringAfter("R.string.counter_undo_last_change")
+                .substringBefore("ActionRow(")
         val addCounterAction = source.indexOf("R.string.add_counter")
         val stitchesAction = source.indexOf("R.string.stitches_per_row")
         val trackStitchesAction = source.indexOf("R.string.track_stitches")
         val projectActionsSection = source.indexOf("R.string.project_actions_section_project_actions")
+        val undoAction = source.indexOf("R.string.counter_undo_last_change")
         val historyAction = source.indexOf("R.string.session_history_title")
 
         assertTrue(thisProjectSection >= 0)
@@ -27,7 +33,11 @@ class ProjectActionsBottomSheetSourceTest {
         assertTrue(addCounterAction < stitchesAction)
         assertTrue(stitchesAction < trackStitchesAction)
         assertTrue(trackStitchesAction < projectActionsSection)
-        assertTrue(projectActionsSection < historyAction)
+        assertTrue(projectActionsSection < undoAction)
+        assertTrue(undoAction < historyAction)
+        assertFalse(undoRow.contains("showChevron = true"))
+        assertTrue(undoRow.contains("showChevron = false"))
+        assertTrue(source.contains("onUndo: () -> Unit"))
     }
 
     @Test

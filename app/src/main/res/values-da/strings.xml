@@ -137,6 +137,15 @@
     <string name="pattern_open_failed">Opskriften kunne ikke åbnes.</string>
     <string name="pattern_show_reading_line">Vis læselinje</string>
     <string name="pattern_hide_reading_line">Skjul læselinje</string>
+    <string name="pattern_save_line_as_row">Gem linje som pind %1$d</string>
+    <string name="pattern_clear_row_mark">Fjern pindmarkering</string>
+    <string name="pattern_clear_page_marks">Fjern sidens markeringer</string>
+    <string name="pattern_calibrate_rows">Kalibrer pinde</string>
+    <string name="pattern_calibration_first_row">Første pind</string>
+    <string name="pattern_calibration_last_row">Sidste pind</string>
+    <string name="pattern_calibration_save_first">Gem første</string>
+    <string name="pattern_calibration_save_last">Gem sidste</string>
+    <string name="pattern_calibration_invalid_row">Brug to forskellige pindnumre</string>
     <string name="pattern_reading_line_description">Læselinje</string>
     <string name="pattern_page_jump">Gå til side</string>
     <string name="pattern_page_number">Sidenummer</string>

@@ -137,6 +137,15 @@
     <string name="pattern_open_failed">Ohjetta ei voitu avata.</string>
     <string name="pattern_show_reading_line">Näytä lukulinja</string>
     <string name="pattern_hide_reading_line">Piilota lukulinja</string>
+    <string name="pattern_save_line_as_row">Tallenna viiva riviksi %1$d</string>
+    <string name="pattern_clear_row_mark">Poista rivimerkki</string>
+    <string name="pattern_clear_page_marks">Poista sivun rivimerkit</string>
+    <string name="pattern_calibrate_rows">Kalibroi rivit</string>
+    <string name="pattern_calibration_first_row">Ensimmäinen kerros</string>
+    <string name="pattern_calibration_last_row">Viimeinen kerros</string>
+    <string name="pattern_calibration_save_first">Tallenna ensimmäinen</string>
+    <string name="pattern_calibration_save_last">Tallenna viimeinen</string>
+    <string name="pattern_calibration_invalid_row">Käytä kahta eri kerrosnumeroa</string>
     <string name="pattern_reading_line_description">Lukulinja</string>
     <string name="pattern_page_jump">Siirry sivulle</string>
     <string name="pattern_page_number">Sivunumero</string>

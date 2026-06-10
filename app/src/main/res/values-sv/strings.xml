@@ -137,6 +137,15 @@
     <string name="pattern_open_failed">Mönstret kunde inte öppnas.</string>
     <string name="pattern_show_reading_line">Visa läslinje</string>
     <string name="pattern_hide_reading_line">Dölj läslinje</string>
+    <string name="pattern_save_line_as_row">Spara linje som varv %1$d</string>
+    <string name="pattern_clear_row_mark">Ta bort varvmarkering</string>
+    <string name="pattern_clear_page_marks">Ta bort sidans markeringar</string>
+    <string name="pattern_calibrate_rows">Kalibrera varv</string>
+    <string name="pattern_calibration_first_row">Första varvet</string>
+    <string name="pattern_calibration_last_row">Sista varvet</string>
+    <string name="pattern_calibration_save_first">Spara första</string>
+    <string name="pattern_calibration_save_last">Spara sista</string>
+    <string name="pattern_calibration_invalid_row">Använd två olika varvnummer</string>
     <string name="pattern_reading_line_description">Läslinje</string>
     <string name="pattern_page_jump">Hoppa till sida</string>
     <string name="pattern_page_number">Sidnummer</string>

@@ -139,6 +139,15 @@
     <string name="pattern_open_failed">Impossibile aprire il modello.</string>
     <string name="pattern_show_reading_line">Mostra riga di lettura</string>
     <string name="pattern_hide_reading_line">Nascondi riga di lettura</string>
+    <string name="pattern_save_line_as_row">Salva linea come ferro %1$d</string>
+    <string name="pattern_clear_row_mark">Cancella segno del ferro</string>
+    <string name="pattern_clear_page_marks">Cancella segni della pagina</string>
+    <string name="pattern_calibrate_rows">Calibra ferri</string>
+    <string name="pattern_calibration_first_row">Primo ferro</string>
+    <string name="pattern_calibration_last_row">Ultimo ferro</string>
+    <string name="pattern_calibration_save_first">Salva primo</string>
+    <string name="pattern_calibration_save_last">Salva ultimo</string>
+    <string name="pattern_calibration_invalid_row">Usa due numeri di ferro diversi</string>
     <string name="pattern_reading_line_description">Riga di lettura</string>
     <string name="pattern_page_jump">Vai alla pagina</string>
     <string name="pattern_page_number">Numero di pagina</string>

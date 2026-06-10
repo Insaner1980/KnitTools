@@ -275,10 +275,6 @@ fun CounterScreen(
                     performHaptic()
                     viewModel.increment()
                 },
-                onUndo = {
-                    performHaptic()
-                    viewModel.undo()
-                },
                 onOpenPattern = { state.projectId?.let(onPatternViewer) },
                 onShowPatternPicker = { showPatternPicker = true },
                 onShowPatternInfo = { showPatternInfoSheet = true },
@@ -426,6 +422,11 @@ fun CounterScreen(
                         },
                         onSetStitchTrackingEnabled = viewModel::setStitchTrackingEnabled,
                     )
+                },
+                onUndo = {
+                    showProjectActionsSheet = false
+                    performHaptic()
+                    viewModel.undo()
                 },
                 onOpenSessionHistory = {
                     showProjectActionsSheet = false

@@ -626,19 +626,35 @@ class CounterViewModel
 
         fun undo() {
             val state = _uiState.value
-            state.projectId ?: return
-            val previousValue = state.counter.previousCount ?: return
-            val updatedCounter = CounterLogic.undo(state.counter)
-            if (updatedCounter.count == state.counter.count) return
-            val resetStitch = state.stitchTrackingEnabled && updatedCounter.count != state.counter.count
-            _uiState.update { it.withCounterChange(updatedCounter, resetStitch) }
-            syncRepeatSectionCounters(updatedCounter.count, state.projectCounters, persist = true)
-            persistCurrentStitchIfNeeded(resetStitch)
-            persistCount(
-                action = "undo",
-                previousValue = state.counter.count,
-                newValue = previousValue,
-            )
+            val projectId = state.projectId ?: return
+            viewModelScope.launch {
+                val changed = repository.applyMainCounterChange(projectId, MainCounterChange.Undo)
+                if (!changed) return@launch
+                val updatedProject = repository.getProject(projectId) ?: return@launch
+                val currentState = _uiState.value
+                if (currentState.projectId != projectId) return@launch
+
+                val updatedCounter =
+                    CounterState(
+                        count = updatedProject.count,
+                        stepSize = updatedProject.stepSize,
+                    )
+                val resetStitch =
+                    currentState.stitchTrackingEnabled &&
+                        updatedCounter.count != currentState.counter.count
+                trackSessionRows("undo", previousValue = state.counter.count, newValue = updatedCounter.count)
+                _uiState.update { latestState ->
+                    if (latestState.projectId == projectId) {
+                        latestState.withCounterChange(updatedCounter, resetStitch)
+                    } else {
+                        latestState
+                    }
+                }
+                syncRepeatSectionCounters(updatedCounter.count, _uiState.value.projectCounters, persist = true)
+                inAppReviewManager.recordAction()
+                savePendingSessionState(projectId, _uiState.value.sessionSeconds)
+                syncWidget(projectId, _uiState.value.projectName, updatedCounter.count)
+            }
         }
 
         fun reset() {
@@ -1166,6 +1182,23 @@ class CounterViewModel
             } else {
                 markers += marker
             }
+            updatePatternRowMapping(serializeMapping(markers))
+        }
+
+        fun removePatternRowMarker(
+            row: Int,
+            page: Int,
+        ) {
+            val markers =
+                parseMapping(_uiState.value.patternRowMapping)
+                    .filterNot { it.row == row && it.page == page }
+            updatePatternRowMapping(serializeMapping(markers))
+        }
+
+        fun removePatternRowMarkersForPage(page: Int) {
+            val markers =
+                parseMapping(_uiState.value.patternRowMapping)
+                    .filterNot { it.page == page }
             updatePatternRowMapping(serializeMapping(markers))
         }
 

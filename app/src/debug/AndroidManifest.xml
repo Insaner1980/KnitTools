@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules">
+        <!-- Sentry alustetaan debugissä käsin SentryInit-luokasta. -->
+        <meta-data
+            android:name="io.sentry.auto-init"
+            android:value="false" />
+    </application>
+</manifest>

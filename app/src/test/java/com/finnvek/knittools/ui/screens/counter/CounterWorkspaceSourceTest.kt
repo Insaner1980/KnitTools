@@ -131,6 +131,36 @@ class CounterWorkspaceSourceTest {
     }
 
     @Test
+    fun `pattern card opens pdf viewer or saved pattern detail without preview UI`() {
+        val counterScreen = ProjectSourceFiles.read(COUNTER_SCREEN)
+        val workspace = ProjectSourceFiles.read(COUNTER_WORKSPACE_SECTIONS)
+        val contentCards = ProjectSourceFiles.read(COUNTER_PROJECT_CONTENT_CARDS)
+        val navGraph = ProjectSourceFiles.read(NAV_GRAPH)
+
+        assertTrue(workspace.contains("state.patternUri != null -> onOpenPattern()"))
+        assertTrue(workspace.contains("state.linkedPattern != null -> onOpenSavedPatternDetail()"))
+        assertFalse(workspace.contains("onShowPatternInfo"))
+        assertTrue(counterScreen.contains("onSavedPatternDetail: (Long) -> Unit = {}"))
+        assertTrue(
+            counterScreen.contains(
+                "onOpenSavedPatternDetail = { " +
+                    "state.linkedPattern?.id?.let(onSavedPatternDetail) }",
+            ),
+        )
+        assertFalse(counterScreen.contains("PatternInfoSheet("))
+        assertTrue(navGraph.contains("onSavedPatternDetail = { savedPatternId ->"))
+        assertTrue(navGraph.contains("navController.navigateToTopLevel(TopLevelDestination.Library)"))
+        assertTrue(
+            navGraph.contains(
+                "navController.navigateSingleTopTo(" +
+                    "Screen.SavedPatternDetail(savedPatternId).route)",
+            ),
+        )
+        assertFalse(contentCards.contains("patternName"))
+        assertFalse(contentCards.contains("linkedPattern"))
+    }
+
+    @Test
     fun `counter route keeps bottom navigation visible`() {
         val navGraph = ProjectSourceFiles.read(NAV_GRAPH)
 

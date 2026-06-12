@@ -182,6 +182,22 @@ class LibraryViewModel
             )
         }
 
+        fun deleteSavedPattern(
+            id: Long,
+            onDeleted: () -> Unit,
+        ) {
+            viewModelScope.launch {
+                try {
+                    savedPatternRepository.deleteById(id)
+                    onDeleted()
+                } catch (cancellation: CancellationException) {
+                    throw cancellation
+                } catch (_: Exception) {
+                    _patternDeleteErrorId.value += 1
+                }
+            }
+        }
+
         // === Multi-select (MyYarnScreen) ===
 
         fun enterYarnSelectMode(initialYarnId: Long) {

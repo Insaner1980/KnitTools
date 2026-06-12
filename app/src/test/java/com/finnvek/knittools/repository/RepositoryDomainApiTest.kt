@@ -13,6 +13,7 @@ import com.finnvek.knittools.data.local.YarnCardDao
 import com.finnvek.knittools.data.local.YarnCardEntity
 import com.finnvek.knittools.domain.model.PatternAnnotation
 import com.finnvek.knittools.domain.model.SavedPattern
+import com.finnvek.knittools.domain.model.SavedPatternSource
 import com.finnvek.knittools.domain.model.YarnCard
 import io.mockk.every
 import io.mockk.mockk
@@ -48,10 +49,12 @@ class RepositoryDomainApiTest {
                         listOf(
                             SavedPatternEntity(
                                 id = 1L,
-                                ravelryId = 123,
+                                source = SavedPatternSource.Ravelry.persistedValue,
+                                ravelryPatternId = 123,
                                 name = "Cardigan",
                                 designerName = "Designer",
-                                patternUrl = "https://example.com/cardigan",
+                                originalUrl = "https://example.com/cardigan",
+                                canonicalUrl = "https://example.com/cardigan",
                                 savedAt = 100L,
                             ),
                         ),
@@ -70,10 +73,13 @@ class RepositoryDomainApiTest {
             val savedId =
                 repository.save(
                     SavedPattern(
-                        ravelryId = 456,
+                        source = SavedPatternSource.LocalFile,
+                        ravelryPatternId = 456,
                         name = "Hat",
                         designerName = "Maker",
-                        patternUrl = "content://hat",
+                        originalUrl = "content://hat",
+                        localPdfUri = "content://hat",
+                        isAvailableOffline = true,
                         savedAt = 200L,
                     ),
                 )
@@ -83,11 +89,15 @@ class RepositoryDomainApiTest {
             assertEquals(99L, savedId)
             assertEquals(
                 SavedPatternEntity(
-                    ravelryId = 456,
+                    source = SavedPatternSource.LocalFile.persistedValue,
+                    ravelryPatternId = 456,
                     name = "Hat",
                     designerName = "Maker",
-                    patternUrl = "content://hat",
+                    originalUrl = "content://hat",
+                    localPdfUri = "content://hat",
+                    isAvailableOffline = true,
                     savedAt = 200L,
+                    updatedAt = 200L,
                 ),
                 dao.lastInserted,
             )
@@ -123,9 +133,11 @@ class RepositoryDomainApiTest {
                         listOf(
                             SavedPatternEntity(
                                 id = 7L,
-                                ravelryId = 42,
+                                source = SavedPatternSource.Ravelry.persistedValue,
+                                ravelryPatternId = 42,
                                 name = "Old name",
                                 designerName = "Designer",
+                                canonicalUrl = "https://example.com/patterns/42",
                             ),
                         ),
                 )
@@ -141,9 +153,11 @@ class RepositoryDomainApiTest {
             val savedId =
                 repository.saveRavelryPatternIfMissing(
                     SavedPattern(
-                        ravelryId = 42,
+                        source = SavedPatternSource.Ravelry,
+                        ravelryPatternId = 42,
                         name = "New name",
                         designerName = "Designer",
+                        canonicalUrl = "https://example.com/patterns/42",
                     ),
                 )
 
@@ -165,10 +179,13 @@ class RepositoryDomainApiTest {
                         listOf(
                             SavedPatternEntity(
                                 id = 7L,
-                                ravelryId = 0,
+                                source = SavedPatternSource.LocalFile.persistedValue,
+                                ravelryPatternId = null,
                                 name = "Missing",
                                 designerName = "Imported",
-                                patternUrl = missingUri,
+                                originalUrl = missingUri,
+                                localPdfUri = missingUri,
+                                isAvailableOffline = true,
                             ),
                         ),
                 )
@@ -210,10 +227,13 @@ class RepositoryDomainApiTest {
                         listOf(
                             SavedPatternEntity(
                                 id = 7L,
-                                ravelryId = 0,
+                                source = SavedPatternSource.LocalFile.persistedValue,
+                                ravelryPatternId = null,
                                 name = "Pattern.pdf",
                                 designerName = "Imported",
-                                patternUrl = existingUri,
+                                originalUrl = existingUri,
+                                localPdfUri = existingUri,
+                                isAvailableOffline = true,
                             ),
                         ),
                 )
@@ -424,7 +444,13 @@ class RepositoryDomainApiTest {
                 FakeSavedPatternDao(
                     savedPatterns =
                         listOf(
-                            SavedPatternEntity(id = 4L, ravelryId = 4, name = "Pattern", designerName = "Designer"),
+                            SavedPatternEntity(
+                                id = 4L,
+                                source = SavedPatternSource.Ravelry.persistedValue,
+                                ravelryPatternId = 4,
+                                name = "Pattern",
+                                designerName = "Designer",
+                            ),
                         ),
                 )
             val projectDao = FakeCounterProjectDao()
@@ -482,14 +508,26 @@ class RepositoryDomainApiTest {
 
         override suspend fun getById(id: Long): SavedPatternEntity? = savedPatterns.firstOrNull { it.id == id }
 
-        override suspend fun getByRavelryId(ravelryId: Int): SavedPatternEntity? =
-            savedPatterns.firstOrNull { it.ravelryId == ravelryId }
+        override suspend fun getByRavelryPatternId(ravelryPatternId: Int): SavedPatternEntity? =
+            savedPatterns.firstOrNull { it.ravelryPatternId == ravelryPatternId }
 
-        override suspend fun getByPatternUrl(patternUrl: String): SavedPatternEntity? =
-            savedPatterns.firstOrNull { it.patternUrl == patternUrl }
+        override suspend fun getByCanonicalUrl(canonicalUrl: String): SavedPatternEntity? =
+            savedPatterns.firstOrNull { it.canonicalUrl == canonicalUrl }
+
+        override suspend fun getByLocalPdfUri(localPdfUri: String): SavedPatternEntity? =
+            savedPatterns.firstOrNull { it.localPdfUri == localPdfUri }
+
+        override suspend fun getByTitleAndDesignerName(
+            name: String,
+            designerName: String,
+        ): SavedPatternEntity? = savedPatterns.firstOrNull { it.name == name && it.designerName == designerName }
+
+        override suspend fun getAllOnce(): List<SavedPatternEntity> = savedPatterns
 
         override suspend fun getImportedPatternsOnce(): List<SavedPatternEntity> =
-            savedPatterns.filter { it.ravelryId == 0 && it.patternUrl.isNotBlank() }
+            savedPatterns.filter {
+                it.source == SavedPatternSource.LocalFile.persistedValue && it.localPdfUri != null
+            }
 
         override suspend fun getByIds(ids: List<Long>): List<SavedPatternEntity> = savedPatterns.filter { it.id in ids }
 

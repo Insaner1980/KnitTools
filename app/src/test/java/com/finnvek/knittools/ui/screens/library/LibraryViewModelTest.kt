@@ -3,6 +3,7 @@ package com.finnvek.knittools.ui.screens.library
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.ProgressPhoto
 import com.finnvek.knittools.domain.model.SavedPattern
+import com.finnvek.knittools.domain.model.SavedPatternSource
 import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.domain.model.YarnCardStatus
 import com.finnvek.knittools.repository.CounterRepository
@@ -255,7 +256,8 @@ class LibraryViewModelTest {
     private fun savedPattern(id: Long) =
         SavedPattern(
             id = id,
-            ravelryId = id.toInt(),
+            source = SavedPatternSource.Ravelry,
+            ravelryPatternId = id.toInt(),
             name = "Pattern $id",
             designerName = "Designer",
         )

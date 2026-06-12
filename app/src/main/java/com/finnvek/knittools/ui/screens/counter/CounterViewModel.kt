@@ -167,6 +167,7 @@ class CounterViewModel
         private var projectYarnNoteCollectionJob: Job? = null
         private var allPhotosJob: Job? = null
         private var linkedYarnIdsCache: String = ""
+        private var pendingSavedPatternAttachment: SavedPattern? = null
         private var isForeground = true
         private var didRecoverPendingSession = false
 
@@ -480,6 +481,7 @@ class CounterViewModel
             syncWidget()
             loadLinkedYarnNames(project.yarnCardIds)
             loadLinkedPattern(project.linkedPatternId)
+            attachPendingSavedPatternIfReady()
             loadTotalSessionMinutes(project.id)
         }
 
@@ -1001,6 +1003,29 @@ class CounterViewModel
             }
         }
 
+        fun attachSavedPattern(pattern: SavedPattern) {
+            if (pattern.id <= 0L) return
+            val projectId = _uiState.value.projectId
+            if (projectId == null) {
+                pendingSavedPatternAttachment = pattern
+                return
+            }
+            pendingSavedPatternAttachment = null
+            updateSavedPatternAttachmentState(pattern)
+            viewModelScope.launch {
+                repository.attachSavedPattern(
+                    projectId = projectId,
+                    savedPatternId = pattern.id,
+                )
+            }
+        }
+
+        private fun attachPendingSavedPatternIfReady() {
+            val pattern = pendingSavedPatternAttachment ?: return
+            if (_uiState.value.projectId == null) return
+            attachSavedPattern(pattern)
+        }
+
         private suspend fun preparePatternAttachment(
             sourceUriString: String,
             projectId: Long,
@@ -1079,8 +1104,21 @@ class CounterViewModel
         ) {
             _uiState.update {
                 it.copy(
+                    linkedPattern = null,
                     patternUri = patternUri,
                     patternName = patternName,
+                    currentPatternPage = 0,
+                    patternRowMapping = null,
+                )
+            }
+        }
+
+        private fun updateSavedPatternAttachmentState(pattern: SavedPattern) {
+            _uiState.update {
+                it.copy(
+                    linkedPattern = pattern,
+                    patternUri = pattern.localPdfUri,
+                    patternName = pattern.name,
                     currentPatternPage = 0,
                     patternRowMapping = null,
                 )
@@ -1121,6 +1159,7 @@ class CounterViewModel
             val projectId = _uiState.value.projectId ?: return
             _uiState.update {
                 it.copy(
+                    linkedPattern = null,
                     patternUri = null,
                     patternName = null,
                     currentPatternPage = 0,

@@ -31,11 +31,11 @@ Nykytilan kannalta hyödyllinen järjestys:
 - Data: Room + DataStore + sisäinen tiedostotallennus
 - Widgetit: Glance App Widget
 - Verkko: Ktor + OkHttp
-- Integraatiot: Ravelry OAuth2/API, Google Play Billing, In-App Review, In-App Update
+- Integraatiot: Ravelry Firebase backend, Google Play Billing, In-App Review, In-App Update
 - Debug-diagnostiikka: Sentry Android Core vain debug-luokkapolussa
 - Paikalliset lisäominaisuudet: regex-pohjainen laskuriohjeparseri `domain/calculator/InstructionParser.kt`
 - Lokalisaatio: `localeConfig` + useat `values-*`-hakemistot
-- Room schema version: `13`
+- Room schema version: `14`
 - `compileSdk` / `targetSdk` / `minSdk`: `36 / 36 / 29`
 - `baselineprofile`-moduulin `minSdk`: `29`
 - Java target: `17`
@@ -49,6 +49,13 @@ Nykytilan kannalta hyödyllinen järjestys:
 - Ktor: `3.5.0`
 - Billing: `8.3.0`
 - Sentry Android Core: `8.43.1` debug-only
+- AndroidX Browser: `1.10.0`
+- Firebase BOM: `34.14.0`
+- Google Services Gradle plugin: `4.4.4`
+- Functions runtime: `nodejs22`
+- `firebase-functions`: `7.2.5`
+- `firebase-admin`: `13.10.0`
+- TypeScript: `6.0.3`
 - versionCode / versionName: `1 / 1.0.0`
 
 Source of truth:
@@ -103,10 +110,29 @@ Jos avaat vain muutaman tiedoston, avaa nämä:
 - Library ja lankakortit:
   - `app/src/main/java/com/finnvek/knittools/ui/screens/library/MyYarnScreen.kt`
   - `app/src/main/java/com/finnvek/knittools/ui/screens/library/LibraryViewModel.kt`
+  - `app/src/main/java/com/finnvek/knittools/ui/screens/library/SavedPatternDetailScreen.kt`
   - `app/src/main/java/com/finnvek/knittools/ui/screens/yarncard/YarnCardDetailScreen.kt`
   - `app/src/main/java/com/finnvek/knittools/ui/screens/yarncard/YarnCardViewModel.kt`
   - `app/src/main/java/com/finnvek/knittools/data/storage/YarnPhotoStorage.kt`
   - `app/src/main/java/com/finnvek/knittools/repository/ProjectYarnNoteRepository.kt`
+- Ravelry ja saved-pattern metadata:
+  - `app/src/main/java/com/finnvek/knittools/MainActivity.kt`
+  - `app/src/main/java/com/finnvek/knittools/auth/RavelryAuthManager.kt`
+  - `app/src/main/java/com/finnvek/knittools/auth/FirebaseAnonymousAuthGateway.kt`
+  - `app/src/main/java/com/finnvek/knittools/data/remote/RavelryBackendClient.kt`
+  - `app/src/main/java/com/finnvek/knittools/data/remote/RavelryBackendMappers.kt`
+  - `app/src/main/java/com/finnvek/knittools/data/remote/RavelryApiService.kt`
+  - `app/src/main/java/com/finnvek/knittools/ravelry/RavelryShareImportUrls.kt`
+  - `app/src/main/java/com/finnvek/knittools/ui/navigation/Screen.kt`
+  - `app/src/main/java/com/finnvek/knittools/ui/navigation/NavGraph.kt`
+  - `app/src/main/java/com/finnvek/knittools/ui/screens/ravelry/RavelrySearchScreen.kt`
+  - `app/src/main/java/com/finnvek/knittools/ui/screens/ravelry/RavelryDetailScreen.kt`
+  - `app/src/main/java/com/finnvek/knittools/ui/screens/ravelry/RavelryAccountHeader.kt`
+  - `app/src/main/java/com/finnvek/knittools/ui/screens/ravelry/RavelryImportConfirmationSheet.kt`
+  - `app/src/main/java/com/finnvek/knittools/ui/screens/ravelry/RavelryExternalLinks.kt`
+  - `app/src/main/java/com/finnvek/knittools/repository/RavelryRepository.kt`
+  - `app/src/main/java/com/finnvek/knittools/repository/SavedPatternRepository.kt`
+  - `functions/src/ravelry/`
 - Pro / billing / trial:
   - `app/src/main/java/com/finnvek/knittools/billing/BillingManager.kt`
   - `app/src/main/java/com/finnvek/knittools/pro/`
@@ -155,9 +181,8 @@ Build-huomiot:
 - Sonar-konfiguraatio delegoi Gradlen hallitsemat source/binary-polut Gradle-pluginille ja ajaa `:app:jacocoDebugUnitTestReport` ennen `sonar`-taskia
 - release signing on ympäristömuuttujapohjainen
 - release-artifaktit estetään ilman signing-muuttujia
-- release-artifaktit estetään ilman Ravelry-credentialeja
-- release-artifaktit estetään ilman eksplisiittistä opt-in-lippua `KNITTOOLS_ALLOW_EMBEDDED_RAVELRY_SECRETS=true`, koska release upottaa Ravelry-arvot `BuildConfig`iin tietoisena no-backend-riskinä
-- debug lukee Ravelry-avaimet ignored `debug.credentials.properties` -tiedostosta
+- Ravelryn vanha backenditön release-polku on superseded; Android ei enää määritä Ravelry credential `BuildConfig` -kenttiä, release opt-in -gatea, Basic Auth fallbackia eikä Ravelry token-storea
+- Android Firebase -build vaatii ignored `app/google-services.json` -tiedoston paikallisesti tai CI:ssä `KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64` -salaisuudesta generoidun tiedoston
 - debug lukee Sentry DSN:n `KNITTOOLS_SENTRY_DSN`- tai `SENTRY_DSN`-ympäristömuuttujasta tai ignored `debug.credentials.properties` -tiedostosta avaimella `sentry.dsn`; Sentry on vain debug-luokkapolussa, automaattinen session/tracing/breadcrumb/screenshot/view-hierarchy/NDK-keruu on pois päältä, ja release-luokkapolun puhtaus tarkistetaan `tools\sentry.ps1`- sekä `tools\rs.ps1`-komennoilla
 
 ### `:baselineprofile`
@@ -168,6 +193,25 @@ Erillinen Android Test -moduuli:
 - target project: `:app`
 - käyttää `androidx.benchmark.macro.junit4` + `uiautomator`
 - `baselineProfile { useConnectedDevices = true }`
+
+### `functions`
+
+Ravelry Firebase -backend:
+
+- Firebase Functions v2 TypeScript `functions/src`
+- root `firebase.json` määrittää `functions`-sourcen ja `nodejs22` runtimen
+- root `firestore.rules` kieltää client read/write -pääsyn `ravelryOAuthStates/{state}`- ja `ravelryTokens/{uid}`-kokoelmiin
+- `functions/package.json` omistaa backendin versiontotuuden: `node` engine `22`, `firebase-functions 7.2.5`, `firebase-admin 13.10.0`, `typescript 6.0.3` ja `firebase-functions-test 3.5.0`
+- `functions/src/config.ts` omistaa alueen `europe-west1`, kokoelmanimet ja Secret Manager -sidokset `RAVELRY_CLIENT_ID` / `RAVELRY_CLIENT_SECRET`
+- `functions/src/ravelry/auth.ts` julkaisee `ravelryStartAuth`, `ravelryCallback`, `ravelryAuthStatus`, `ravelryDisconnect` ja `ravelryCurrentUser`
+- `functions/src/ravelry/authCore.ts`, `oauthStateStore.ts`, `oauth2.ts`, `tokenStore.ts` ja `client.ts` omistavat backend-OAuth2-flow'n, PKCE state -tallennuksen, server-side token exchangen, token tallennuksen ja current-user API-kutsun
+- `functions/src/ravelry/patternImport.ts`, `urlParsing.ts`, `client.ts` ja `sanitizedTypes.ts` omistavat backend-haun ja metadata-only importin: `ravelrySearchPatterns`, `ravelryImportPatternById` ja `ravelryImportPatternByUrl` palauttavat vain sallitut Ravelry ID/title/designer/thumbnail/canonical/original URL/availability/pagination -kentät eivätkä lataa pattern-PDF:iä
+- Androidissa on Firebase Auth/Functions -riippuvuudet sekä `RavelryBackendClient` callable-rajalle; `RavelryAuthManager` omistaa backend-auth-statuksen, start/disconnect-kutsut ja token-free `knittools://ravelry-auth-complete` callbackin; auth avataan Auth Tabilla ja Custom Tabs jää fallbackiksi
+- Saved patterns ovat Room schema 14 -lähdemetadatassa: `source`, nullable `ravelryPatternId`, `originalUrl`, `canonicalUrl`, nullable `localPdfUri`, `isAvailableOffline`, `updatedAt` ja nullable `lastSyncedAt`
+- Phase 8 UI-polku on valmis: `RavelryImportConfirmationSheet` hoitaa hakutulos- ja jaetun URL:n import-vahvistuksen, `SavedPatternDetailScreen` hoitaa metadata-availabilityn ja toiminnot, PatternPickerSheet listaa kaikki saved patternit, ja projektin pattern-kortti avaa metadata-only linkit detailiin ilman PDF-vieweriä
+- Phase 9 release-surface -vahti sallii vain Firebase Auth/Functions/Google Services -pinnan tälle backendille, kieltää Firebase AI/ML Kit/Gemini/voice-riippuvuudet, estää trackatun `app/google-services.json`in ja skannaa tunnetut paikalliset/env Ravelry-secret-arvot tulostamatta niitä
+- `firebase-admin` on lukittu uusimpaan `firebase-functions@7.2.5`:n peer dependencyyn sopivaan 13.x-versioon, ei suunnitelman yhteensopimattomaan 14.x-versioon
+- Android artifact -build ei ole konfiguroitavissa tyhjästä checkoutista ilman oikeaa Firebase-konfigia: `:app:assembleDebug`, `:app:assembleRelease` ja `:app:bundleRelease` riippuvat `verifyGoogleServicesJson`-tehtävästä, joka vaatii ignored `app/google-services.json` -tiedoston
 
 ## Käynnistys ja runtime
 
@@ -270,12 +314,14 @@ Counterin projektivalinta:
 - `cast_on`
 - `yarn`
 - `ravelry`
+- `ravelry_import/{importUrl}`
 - `ravelry_detail/{patternId}`
 
 ### Library-graafi
 
 - `library`
 - `saved_patterns`
+- `saved_pattern_detail/{savedPatternId}`
 - `library_pattern_viewer/{savedPatternId}`
 - `library_ravelry_detail/{patternId}`
 - `my_yarn`
@@ -309,6 +355,7 @@ Tämä lista kuvaa toteutuksessa olevat screen-tiedostot, ei suunnitelmia:
 - `library/AllPhotosScreen.kt`
 - `library/LibraryScreen.kt`
 - `library/MyYarnScreen.kt`
+- `library/SavedPatternDetailScreen.kt`
 - `library/SavedPatternsScreen.kt`
 - `needles/NeedleSizeScreen.kt`
 - `notes/NotesEditorScreen.kt`
@@ -316,6 +363,7 @@ Tämä lista kuvaa toteutuksessa olevat screen-tiedostot, ei suunnitelmia:
 - `pro/ProUpgradeScreen.kt`
 - `project/ProjectListScreen.kt`
 - `ravelry/RavelryDetailScreen.kt`
+- `ravelry/RavelryImportConfirmationSheet.kt`
 - `ravelry/RavelrySearchScreen.kt`
 - `session/SessionHistoryScreen.kt`
 - `settings/SettingsScreen.kt`
@@ -327,6 +375,7 @@ Huomio:
 
 - `LibraryPatternViewerScreen` elää samassa tiedostossa kuin `PatternViewerScreen`
 - `HomeScreen` on käytännössä Tools-tabin aloitusnäkymä
+- `RavelryAccountHeader`, `PatternCard` ja `RavelryExternalLinks` eivät ole itsenäisiä screen-reittejä, mutta ne ovat nykyisen Ravelry UI -pinnan keskeisiä komponentteja
 
 ## Pakettikartta
 
@@ -334,6 +383,8 @@ Huomio:
 
 - `auth/`
   - `RavelryAuthManager.kt`
+  - `FirebaseAnonymousAuthGateway.kt`
+  - `FirebaseTaskAwait.kt`
 - `billing/`
   - `BillingManager.kt`
 - `data/datastore/`
@@ -343,6 +394,8 @@ Huomio:
   - Room entityt, DAO:t ja `KnitToolsDatabase`
 - `data/remote/`
   - `RavelryApiService.kt`
+  - `RavelryBackendClient.kt` sisältää sekä `RavelryBackendClient`-rajapinnan että Firebase Functions -toteutuksen `FirebaseRavelryBackendClient`
+  - `RavelryBackendMappers.kt`
   - `RavelryModels.kt`
 - `data/storage/`
   - `AppFileStorage.kt`
@@ -355,6 +408,7 @@ Huomio:
 - `di/`
   - `DatabaseModule.kt`
   - `DispatchersModule.kt`
+  - `FirebaseModule.kt`
   - `NetworkModule.kt`
 - `domain/calculator/`
   - laskenta- ja paikalliset parserilogiikat, mukaan lukien regex-pohjainen `InstructionParser`, `CounterValueFormatter` ja projektikohtaisen lisälaskurin domain-logiikka
@@ -377,10 +431,13 @@ Huomio:
   - `ReminderRepository.kt`
   - `SavedPatternRepository.kt`
   - `YarnCardRepository.kt`
+- `ravelry/`
+  - `RavelryShareImportUrls.kt`
 - `ui/`
   - `navigation/` omistaa route-mallit, top-level-tabien source of truthin ja route-argumenttien fallbackit
   - `screens/counter/` omistaa counterin työtilan, content cardit, yarn management -sheetin, pattern picker -entryn, projektitoiminnot, laskuriosiot, pienet counter-päätöshelperit ja `CounterUiState`-reducerit
-  - `screens/library/` omistaa Library-hubin, My Yarn -listan, saved patterns -listan ja all photos -listan
+  - `screens/library/` omistaa Library-hubin, My Yarn -listan, saved patterns -listan, saved pattern detailin ja all photos -listan
+  - `screens/ravelry/` omistaa Ravelry search/detail -näkymät, account headerin, import-vahvistuksen, pattern-kortit ja ulkoisen Ravelry-linkin avaushelperin
   - `screens/yarncard/` omistaa lankakortin detailin, manuaalisen input-mallin ja detail-editoinnin
   - `components/` sisältää jaettuja UI-rakennuspalikoita, kuten `ProjectCard`, `HubListItem`, dialogit, inputit ja tooltipit
 - `widget/`
@@ -414,8 +471,8 @@ Huomio:
 Migraatiotilanne:
 
 - automaattiset migraatiot: `1 -> 2`, `2 -> 3`
-- käsinkirjoitetut migraatiot: `3 -> 4`, `4 -> 5`, `5 -> 6`, `6 -> 7`, `7 -> 8`, `8 -> 9`, `9 -> 10`, `10 -> 11`, `11 -> 12`, `12 -> 13`
-- schema exportataan hakemistoon `app/schemas/com.finnvek.knittools.data.local.KnitToolsDatabase/`, jossa uusin export on `13.json`
+- käsinkirjoitetut migraatiot: `3 -> 4`, `4 -> 5`, `5 -> 6`, `6 -> 7`, `7 -> 8`, `8 -> 9`, `9 -> 10`, `10 -> 11`, `11 -> 12`, `12 -> 13`, `13 -> 14`
+- schema exportataan hakemistoon `app/schemas/com.finnvek.knittools.data.local.KnitToolsDatabase/`, jossa uusin export on `14.json`
 
 Näkyvä uusin lisäys:
 
@@ -423,6 +480,8 @@ Näkyvä uusin lisäys:
 - `sessions(endedAt, startedAt)` ja `sessions(projectId, endedAt, startedAt)` -indeksit lisättiin migraatiossa `10 -> 11`
 - `project_yarn_notes` lisättiin migraatiossa `11 -> 12`
 - `counter_projects.craftType`, `counter_projects.mainCounterLabelType`, `counter_projects.mainCounterCustomLabel`, `counter_projects.readingLineEnabled`, `counter_projects.readingLineYFraction` ja `project_counters.linkedToMainCounter` lisättiin migraatiossa `12 -> 13`
+- `saved_patterns` uudelleenmuotoiltiin migraatiossa `13 -> 14`: vanhat `ravelryId` / `patternUrl` -sentinelit muunnetaan lähdemetadataksi `source`, `ravelryPatternId`, `originalUrl`, `canonicalUrl`, `localPdfUri`, `isAvailableOffline`, `updatedAt` ja `lastSyncedAt`
+- schema 14 lisää saved-pattern-hakuihin indeksit `ravelryPatternId`, `canonicalUrl`, `originalUrl` ja `localPdfUri`
 - `sessions.startedAt`-indeksi on migraatiossa `8 -> 9`
 - `counter_projects.targetRows` on migraatiossa `7 -> 8`
 
@@ -572,26 +631,34 @@ Nykyiset kieli- ja `values`-resurssihakemistot:
 
 ### Ravelry
 
-Nykyinen toteutus:
+Nykyinen toteutus käyttää Firebase-backend-rajaa Ravelry API -pintaan. Tavoitearkkitehtuuri on superseded-päätöksen jälkeen `Ravelry Firebase Backend And Saved Patterns Plan.md` + `config/ravelry-backend-progress.md`: Firebase Auth anonymous UID ja Cloud Functions v2 omistavat Ravelry-secretit, token exchangen, API-kutsut, auth-statuksen, disconnectin, haun ja URL-importin.
 
-- OAuth2 Authorization Code -flow Chrome Custom Tabilla; PKCE `S256` -parametrit lähetetään authorization requestissa
-- Chrome Custom Tabs autentikointiin
-- access/refresh-tokenit sekä pending `state`/`code_verifier` tallennetaan `EncryptedSharedPreferences`iin `MasterKey`-avaimella
-- Ktor + OkHttp -pohjainen HTTP-client, jossa `connectTimeout=15s`, `callTimeout=45s`, `read/writeTimeout=30s`
-- callback URI: `com.finnvek.knittools://oauth/callback`
-- API-kutsu käyttää ensin Bearer-tokenia, refreshaa 401/403-vastauksen jälkeen, signouttaa refresh-epäonnistumisen jälkeen ja putoaa Basic Auth -polkuun
-- transientit 5xx-vastaukset yritetään uudelleen rajatusti; muut ei-2xx-vastaukset nostavat `RavelryHttpException`in
+Backendin OAuth2 start/callback/status/disconnect/current-user sekä metadata-only search/import -flow ovat olemassa `functions/`-hakemistossa. Androidissa on Firebase Auth/Functions -riippuvuudet, anonymous sign-in -gateway ja `RavelryBackendClient`, joka kutsuu backendin callableja. Tools > Ravelry auth-tila ja OAuth callback -flow ovat Phase 6:n jälkeen backendin omistamia: Android avaa vain backendin palauttaman authorize URL:n ja käsittelee token-free callbackin. Saved patterns ovat Phase 7:n jälkeen schema 14 -lähdemetadatassa, eivät persisted `ravelryId = 0` / `patternUrl` -sentineleissä. Phase 8:n jälkeen Ravelry UI ja saved-pattern attachment -polut käyttävät samaa metadataa ilman source-kategoriaotsikoita. Phase 9:n jälkeen release-surface-sopimus sallii vain Firebase Auth/Functions/Google Services -pinnan tälle backendille ja pitää vanhat Android Ravelry-secret-pinnat removed-risk-regressiona.
+
+Nykyinen Android-koodi Phase 8:n jälkeen:
+
+- `FirebaseAnonymousAuthGateway` varmistaa anonymous Firebase Auth -käyttäjän ennen callable-kutsuja
+- `FirebaseRavelryBackendClient` kutsuu callableja `ravelryStartAuth`, `ravelryAuthStatus`, `ravelryDisconnect`, `ravelryCurrentUser`, `ravelrySearchPatterns`, `ravelryImportPatternById` ja `ravelryImportPatternByUrl`
+- `RavelryApiService` on yhteensopivuusraja vanhalle repository/UI-kutsupinnalle ja delegoi search/detail-haut backend-clientille
+- `RavelryBackendMappers` muuntaa backendin sanitisoidut pattern-metadata-vastaukset nykyisiin `PatternSearchResponse`- ja `PatternDetail`-malleihin
+- `RavelryAuthManager` omistaa `RavelryAuthState`-tilan, backend `startAuth` / `authStatus` / `disconnect` -kutsut, pending state -tarkistuksen sekä cancelled/expired/backend-unavailable -tilat
+- `MainActivity.launchRavelryAuth` avaa authin AndroidX Browser Auth Tabilla ja käyttää Custom Tabsia fallbackina; `MainActivity` käsittelee vain `knittools://ravelry-auth-complete?state=...` callbackin eikä token-arvoja kulje deep linkissä
+- `MainActivity` vastaanottaa `ACTION_SEND text/plain` share-intentit, käyttää `RavelryShareImportUrls.extractPatternUrl(...)` -validointia ja reitittää hyväksytyt Ravelry pattern URL:t `RavelryShareImportRequest`in kautta `ravelry_import/{importUrl}`-reitille ilman counter-launch-sivuvaikutusta
+- `RavelrySearchScreen` ja `RavelryDetailScreen` näyttävät state-aware `RavelryAccountHeader`-näkymän not-connected, connected-as-username, cancelled, expired, backend-unavailable ja disconnect-tiloille; connected-tilan Browse Ravelry avaa `https://www.ravelry.com/patterns/search` Custom Tabsilla ja share päällä
+- `RavelryImportConfirmationSheet` käsittelee hakutulos- ja share-URL-importin tilat loading/ready/already-saved/needs-sign-in/could-not-import/backend-unavailable; duplicate-polku avaa nykyisen `SavedPatternDetail`-rivin
+- `SavedPatternDetailScreen` näyttää title/designer/thumbnail/availability-tiedot ja hoitaa Open Pattern / Open on Ravelry / Attach to Project / Remove -toiminnot
+- `PatternPickerSheet` listaa kaikki saved patternit, kutsuu `CounterViewModel.attachSavedPattern`-polkua valinnassa ja tarjoaa erillisen Import from Ravelry -toiminnon; SAF PDF -liite säilyy `Attach PDF from device` -polkuna
+- `SavedPatternSource` erottaa `RAVELRY`, `LOCAL_FILE` ja `OTHER` -lähteet; repositoryn duplikaattihaku tarkistaa Ravelry ID:n, canonical URL:n, normalisoidun original URL:n ja title+designer-vastaavuuden vain erikseen pyydettynä
+- `CounterRepository.attachSavedPattern` kirjoittaa `linkedPatternId`in sekä mahdollisen `localPdfUri`n yhteen pattern-attachment-transaktioon; project pattern cards avaavat PDF-viewerin vain, kun `patternUri` on olemassa, ja metadata-only linkit avaavat `SavedPatternDetail`-reitin
+- `RavelryExternalLinks.openRavelryUrl(...)` keskittää ulkoisen Ravelry-linkin avaamisen ja käsittelee `ActivityNotFoundException`-tapauksen Toast-fallbackilla
+- `NetworkModule` tarjoaa yhä Ktor + OkHttp -pohjaisen HTTP-clientin, jossa `connectTimeout=15s`, `callTimeout=45s`, `read/writeTimeout=30s`; nykyinen Ravelry-polku käyttää kuitenkin Firebase callable -clientiä eikä tee suoria Ravelry HTTP -kutsuja Androidista
+- callable-virheet mapataan nykyiseen Ravelry HTTP -poikkeusmalliin: 400, 401, 404, 412, 429, 503 tai 500
 
 BuildConfig-kentät:
 
-- `RAVELRY_BASIC_AUTH_USER`
-- `RAVELRY_BASIC_AUTH_PASSWORD`
-- `RAVELRY_OAUTH2_CLIENT_ID`
-- `RAVELRY_OAUTH2_CLIENT_SECRET`
 - debug-only `SENTRY_DSN`
 
-Debug lukee Ravelry-arvot `debug.credentials.properties`:sta ja Sentry DSN:n joko `KNITTOOLS_SENTRY_DSN`-/`SENTRY_DSN`-ympäristömuuttujasta tai `debug.credentials.properties`:sta.
-Release lukee Ravelry-arvot ympäristömuuttujista ja vaatii accepted-risk opt-in -lipun; Sentryn release-polku on no-op eikä release-luokkapolussa saa olla `io.sentry`-riippuvuuksia.
+Android ei enää määritä Ravelry credential `BuildConfig` -kenttiä, eikä `debug.credentials.properties`, `local.properties`, resurssit tai source saa sisältää Ravelry-secretejä. `app/google-services.json` pidetään ignored-polussa paikallisesti tai luodaan CI:ssä `KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64` -salaisuudesta. Sentryn release-polku on no-op eikä release-luokkapolussa saa olla `io.sentry`-riippuvuuksia.
 
 ### Pro / Billing / Trial
 
@@ -1061,14 +1128,19 @@ Manifestin nykyinen pinta:
 - `android:fullBackupContent="@xml/backup_rules"`
 - kamera-feature on `required="false"`
 - `MainActivity` on `exported=true`
+  - launcher intent
+  - OAuth callback intent: `knittools://ravelry-auth-complete`
+  - Ravelry share import: `ACTION_SEND` + `text/plain`
 - `CounterWidgetReceiver` on `exported=true` + `BIND_APPWIDGET`
 - `CounterWidgetActions` on `exported=false`
 - `FileProvider` on `exported=false`
+- FileProvider-roots: `progress_photos/` ja `pattern_captures/`
+- runtime-kielivalinta käyttää manifestin `android:localeConfig="@xml/locales_config"` -asetusta
 
 Huomio:
 
-- appissa ei ole `google-services`-pluginia
-- `app/google-services.json` ei kuulu nykyiseen buildiin eikä sitä pidä commitoida
+- `google-services`-plugin on sallittu vain Ravelry Firebase -integraatiolle ja applikoidaan, kun ignored `app/google-services.json` on paikallaan
+- `app/google-services.json` kuuluu nykyiseen Firebase-buildiin, mutta sitä ei pidä commitoida; CI luo sen `KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64` -salaisuudesta, ja staattinen Android lint saa toimia ilman paikallista tiedostoa
 
 ## Testit ja verifiointi
 
@@ -1088,17 +1160,23 @@ Nykyiset testit painottuvat ainakin näihin:
 - counter button -source-testit, jotka varmistavat päälaskurin `CounterImageButton`-assetit sekä pienempien stepperien Canvas-piirretyt symbolit
 - My Yarn / Yarn Card detail -source-testit, jotka varmistavat manuaalisen lankakortin, photo picker -toiminnon ja skannerikielen puuttumisen
 - repository transaction boundary -testit, jotka varmistavat pattern-, yarn- ja project-linkkien sekä tiedostosiivouksen transaktiorajat
+- Ravelry/Firebase source- ja unit-testit, jotka varmistavat backend callable -rajat, Auth Tab / Custom Tabs -authin, share-importin, import confirmation -tilat, saved pattern detailin, lokalisaatiot, URL-avausfallbackin ja release-surface -sopimuksen
 
 Pienimmät hyödylliset tarkistuskomennot:
 
-- `./gradlew assembleDebug`
-- `./gradlew test`
-- `./gradlew :app:detekt`
-- `./gradlew lint`
-- `./gradlew :app:jacocoDebugUnitTestReport`
-- `./gradlew :app:generateBaselineProfile`
+- `.\gradlew.bat --no-configuration-cache :app:testDebugUnitTest --rerun-tasks`
+- `.\gradlew.bat --no-configuration-cache :app:lintDebug :app:ktlintCheck :app:detekt`
+- `.\gradlew.bat --no-configuration-cache :app:kspDebugKotlin`
+- `npm --prefix functions test`
+- `npm --prefix functions run build`
+- `git diff --check`
 - `tools\rs.ps1` KnitTools-kohtaiseen release-/security-surface -sopimustarkistukseen
 - `tools\rst.ps1` release-surface -skriptin self-testiin
+
+Artifact-buildien nykyinen paikallisraja:
+
+- `.\gradlew.bat --no-configuration-cache :app:assembleDebug` pysähtyy tarkoituksella `:app:verifyGoogleServicesJson`-tehtävään, jos ignored `app/google-services.json` puuttuu
+- tämä checkout on viimeksi tarkistettu niin, että `app/google-services.json`, `KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64` ja `GOOGLE_SERVICES_JSON_BASE64` puuttuivat; staattinen Android lint / ktlint / detekt ja unit-testit ovat silti ajettavissa ilman paikallista Firebase JSONia
 
 Julkaisuvalmiuden muistilista:
 
@@ -1106,7 +1184,7 @@ Julkaisuvalmiuden muistilista:
 - päätä ennen julkaisua, jääkö Baseline Profile manuaaliseksi vai lisätäänkö sille emulaattori-/managed-device-polku CI:hin
 - pidä `ktlintCheck`, detekt ja Android lint pakollisina CI:ssä; nykyinen build-workflow ajaa `assembleDebug`, `test`, `:app:ktlintCheck`, `:app:detekt` ja `lint`
 - CodeQL-workflow on manuaalibuildinen Java/Kotlin-analyysi ja rakentaa `assembleDebug --no-daemon`
-- `release-surface.ps1` ei korvaa linttiä, dependency-checkiä tai Semgrepiä; se tarkistaa vain tässä repossa sovitut manifest-, FileProvider-, credential-, Sentry-, Firebase/AI/voice-, Room-, widget-launch- ja lokalisaatiorajat
+- `release-surface.ps1` ei korvaa linttiä, dependency-checkiä tai Semgrepiä; se tarkistaa vain tässä repossa sovitut manifest-, FileProvider-, credential-, Sentry-, Firebase/AI/voice-, Room-, widget-launch- ja lokalisaatiorajat. Ravelry Firebase -migraation aikana sallittu Firebase-pinta on rajattu Firebase Auth/Functions/Google Services -polkuun. Skripti hylkää trackatun `app/google-services.json`in ja etsii paikallisesti/envistä tunnettuja Ravelry-secret-arvoja lähteistä, resursseista, generated BuildConfig -vakioista, Gradle-tiedostoista, manifesteista, testeistä, APK:sta ja AAB:sta tulostamatta arvoja.
 
 Älä käytä agenttityössä käyttäjän wrapper-skriptejä `lint-check` tai `security-check`.
 
@@ -1128,6 +1206,7 @@ Julkaisuvalmiuden muistilista:
 - project content cards patternille, langalle, muistiinpanoille, kuville ja seuraavalle muistutukselle
 - session history
 - pattern-PDF:n liittäminen projektiin
+- saved patternin metadata-only liittäminen projektiin `linkedPatternId`-polulla; jos saved patternilla on `localPdfUri`, sama attachment voi avata PDF-viewerin
 - pattern viewer + annotations
 - projektin attached-PDF:n reading line tallentuu projektiriville, ja rivikartta tallentuu `patternRowMapping`-kenttään `RowMarker(row,page,yPosition)` -ankkureina; library-only viewerin reading line on vain katselusession tila
 - projektin pattern viewer tukee reading line -rivin tallennusta, rivimerkkien poistoa ja kahden pisteen rivikalibrointia; library-only viewer ei tallenna näitä Roomiin
@@ -1139,7 +1218,7 @@ Julkaisuvalmiuden muistilista:
 
 - saved patterns
 - my yarn / yarn cards
-- saved pattern avaa `library_pattern_viewer/{savedPatternId}`-reitin vain paikalliselle/importoidulle pattern-URI:lle; Ravelry-linkit avaavat `library_ravelry_detail/{patternId}`-reitin
+- saved pattern avaa `saved_pattern_detail/{savedPatternId}`-reitin metadata- ja toimintopinnaksi; detailin `Open Pattern` avaa `library_pattern_viewer/{savedPatternId}`-reitin vain paikalliselle `localPdfUri`-PDF:lle ja Ravelry-linkit avataan ulkoisesti Ravelryssä
 - `My Yarn` listaa olemassa olevat yarn cardit, tukee multi-select-poistoa ja avaa `yarn_card_detail/{cardId}`-näkymän
 - `My Yarn` tukee manuaalista yarn card -luontia `ManualYarnCardSheet`in kautta
 - yarn card detailissä voi muuttaa statusta, määrää, projektia, manuaalisia perustietoja ja kuvaa, avata linkitetyn projektin counteriin sekä poistaa kortin
@@ -1155,7 +1234,7 @@ Julkaisuvalmiuden muistilista:
 - increase/decrease
 - cast on
 - yarn estimator
-- Ravelry search/detail
+- Ravelry search/detail/import, mukaan lukien share-intentistä tuleva Ravelry pattern URL
 
 ### Insights
 
@@ -1182,11 +1261,14 @@ Näihin kannattaa suhtautua epäluuloisesti vanhoissa dokumenteissa:
 
 - build-versiot muuttuvat usein `gradle/libs.versions.toml`-tiedostossa; älä kopioi niitä muistista
 - `allowBackup`: nykyinen on `false`, ei `true`
-- Room schema version: nykyinen on `13`; tarkista aina `KnitToolsDatabase.version`, `MIGRATION_12_13` ja `app/schemas/.../13.json`
-- schema 13:n helposti unohtuvat kentät ovat `craftType`, `mainCounterLabelType`, `mainCounterCustomLabel`, `readingLineEnabled`, `readingLineYFraction` ja `linkedToMainCounter`
+- Room schema version: nykyinen on `14`; tarkista aina `KnitToolsDatabase.version`, `MIGRATION_13_14` ja `app/schemas/.../14.json`
+- schema 14:n helposti unohtuvat saved-pattern-kentät ovat `source`, `ravelryPatternId`, `originalUrl`, `canonicalUrl`, `localPdfUri`, `isAvailableOffline`, `updatedAt` ja `lastSyncedAt`; schema 13:n projektikentät ovat edelleen `craftType`, `mainCounterLabelType`, `mainCounterCustomLabel`, `readingLineEnabled`, `readingLineYFraction` ja `linkedToMainCounter`
+- `ravelry_import/{importUrl}` on URL-enkoodattu route; älä käytä raakaa URL:ää route-segmenttinä
+- `saved_pattern_detail/{savedPatternId}` on nykyinen saved-pattern metadata/detail -pinta; vanha oletus suoraan PDF-vieweriin avaamisesta pätee vain, kun `localPdfUri` on olemassa
+- `app/google-services.json` on tarkoituksella ignored ja artifact-buildin edellytys; sen puute ei tarkoita, että lint/unit-testit olisivat rikki
 - `ProState.hasFeature(...)` ei ole pelkkä `isPro` debug-buildissä; debug avaa feature-gatet erillisenä kehittäjäpolkuna
 - Sentry on debug-only diagnostiikkaa; älä lisää Sentry Gradle -pluginia, replayta, tracingia, logcat breadcrumbseja tai release-riippuvuutta ilman uutta product/security-päätöstä
-- jos manifest-, FileProvider-, release-credential-, Sentry-, Firebase/AI/voice-, Room-, widget-launch- tai locale-raja näyttää epävarmalta, tarkista nykyinen sopimus myös `tools\release-surface.ps1`:stä
+- jos manifest-, FileProvider-, release-credential-, Sentry-, Firebase/AI/voice-, Room-, widget-launch- tai locale-raja näyttää epävarmalta, tarkista nykyinen sopimus myös `tools\release-surface.ps1`:stä ja Ravelry-backendin osalta `config/ravelry-backend-progress.md`:stä
 - voice-command-flow on poistettu; älä palauta sitä ilman uutta product/security-päätöstä
 - widgetit eivät ole enää pelkkä basic counter-preview vaan niissä on oma state-sync ja viimeistelty kortti-UI
 - widgetin plus/miinus käyttää samaa `CounterRepository.applyMainCounterChange(...)`-semantiikkaa kuin appin päälaskuri, joten linked-to-main-lisälaskurit muuttuvat myös widgetistä

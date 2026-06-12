@@ -280,8 +280,9 @@ class CounterRepositoryDomainApiTest {
             repository.detachPattern(7L)
 
             coVerifyOrder {
-                projectDao.updatePattern(
+                projectDao.updatePatternAttachment(
                     id = 7L,
+                    linkedPatternId = null,
                     patternUri = null,
                     patternName = null,
                     currentPatternPage = 0,
@@ -298,12 +299,14 @@ class CounterRepositoryDomainApiTest {
             val oldPatternUri = "file:///data/user/0/com.finnvek.knittools/files/pattern_pdfs/7/old.pdf"
             val newPatternUri = "file:///data/user/0/com.finnvek.knittools/files/pattern_pdfs/7/new.pdf"
             coEvery { projectDao.getProject(7L) } returns CounterProjectEntity(id = 7L, patternUri = oldPatternUri)
+            coEvery { savedPatternRepository.saveImportedPatternIfMissing(newPatternUri, "New pattern") } returns 13L
 
             repository.attachPattern(7L, newPatternUri, "New pattern", 0, null)
 
             coVerifyOrder {
-                projectDao.updatePattern(
+                projectDao.updatePatternAttachment(
                     id = 7L,
+                    linkedPatternId = 13L,
                     patternUri = newPatternUri,
                     patternName = "New pattern",
                     currentPatternPage = 0,

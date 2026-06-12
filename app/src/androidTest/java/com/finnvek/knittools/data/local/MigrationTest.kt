@@ -14,8 +14,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Testaa Room-migraatiot v1→v13.
- * v1→v3: AutoMigration. v3→v13: manuaaliset muutokset.
+ * Testaa Room-migraatiot v1->v14.
+ * v1->v3: AutoMigration. v3->v14: manuaaliset muutokset.
  */
 @RunWith(AndroidJUnit4::class)
 class MigrationTest {
@@ -38,9 +38,10 @@ class MigrationTest {
             KnitToolsDatabase.MIGRATION_10_11,
             KnitToolsDatabase.MIGRATION_11_12,
             KnitToolsDatabase.MIGRATION_12_13,
+            KnitToolsDatabase.MIGRATION_13_14,
         )
 
-    private val latestVersion = 13
+    private val latestVersion = 14
 
     private fun migrateToLatest(testDb: String): SupportSQLiteDatabase =
         helper.runMigrationsAndValidate(
@@ -1101,27 +1102,141 @@ class MigrationTest {
         assertSingleRow(
             db,
             """
-            SELECT ravelryId, name, designerName, thumbnailUrl, difficulty,
+            SELECT source, ravelryPatternId, name, designerName, thumbnailUrl, difficulty,
                 gaugeStitches, gaugeRows, needleSize, yarnWeight, yardage,
-                isFree, patternUrl, savedAt
+                isFree, originalUrl, canonicalUrl, localPdfUri, isAvailableOffline,
+                savedAt, updatedAt, lastSyncedAt
             FROM saved_patterns WHERE id = 1
             """.trimIndent(),
         ) {
-            assertEquals(9001, getInt(0))
-            assertEquals("Cable Socks", getString(1))
-            assertEquals("Test Designer", getString(2))
-            assertEquals("https://example.test/thumb.jpg", getString(3))
-            assertEquals(3.5, getDouble(4), 0.0)
-            assertEquals(28.0, getDouble(5), 0.0)
-            assertEquals(36.0, getDouble(6), 0.0)
-            assertEquals("2.5 mm", getString(7))
-            assertEquals("Fingering", getString(8))
-            assertEquals(420, getInt(9))
-            assertEquals(0, getInt(10))
-            assertEquals("https://example.test/pattern", getString(11))
-            assertEquals(6000L, getLong(12))
+            assertEquals("RAVELRY", getString(0))
+            assertEquals(9001, getInt(1))
+            assertEquals("Cable Socks", getString(2))
+            assertEquals("Test Designer", getString(3))
+            assertEquals("https://example.test/thumb.jpg", getString(4))
+            assertEquals(3.5, getDouble(5), 0.0)
+            assertEquals(28.0, getDouble(6), 0.0)
+            assertEquals(36.0, getDouble(7), 0.0)
+            assertEquals("2.5 mm", getString(8))
+            assertEquals("Fingering", getString(9))
+            assertEquals(420, getInt(10))
+            assertEquals(0, getInt(11))
+            assertEquals("https://example.test/pattern", getString(12))
+            assertEquals("https://example.test/pattern", getString(13))
+            assertTrue(isNull(14))
+            assertEquals(0, getInt(15))
+            assertEquals(6000L, getLong(16))
+            assertEquals(6000L, getLong(17))
+            assertTrue(isNull(18))
         }
         assertStartedAtIndexExists(db)
+
+        db.close()
+    }
+
+    @Test
+    fun migrate13toLatestBackfillsSavedPatternSourceMetadata() {
+        val testDb = "migration-test-v13-to-latest"
+
+        helper.createDatabase(testDb, 13).apply {
+            execSQL(
+                """
+                INSERT INTO saved_patterns (
+                    id, ravelryId, name, designerName, thumbnailUrl, difficulty,
+                    gaugeStitches, gaugeRows, needleSize, yarnWeight, yardage,
+                    isFree, patternUrl, savedAt
+                ) VALUES (
+                    10, 9001, 'Ravelry pattern', 'Designer', NULL, NULL,
+                    NULL, NULL, NULL, NULL, NULL, 1, 'https://www.ravelry.com/patterns/library/test', 1000
+                )
+                """.trimIndent(),
+            )
+            execSQL(
+                """
+                INSERT INTO saved_patterns (
+                    id, ravelryId, name, designerName, thumbnailUrl, difficulty,
+                    gaugeStitches, gaugeRows, needleSize, yarnWeight, yardage,
+                    isFree, patternUrl, savedAt
+                ) VALUES (
+                    11, 0, 'Local pattern', 'Imported', NULL, NULL,
+                    NULL, NULL, NULL, NULL, NULL, 1, 'content://patterns/local.pdf', 2000
+                )
+                """.trimIndent(),
+            )
+            execSQL(
+                """
+                INSERT INTO saved_patterns (
+                    id, ravelryId, name, designerName, thumbnailUrl, difficulty,
+                    gaugeStitches, gaugeRows, needleSize, yarnWeight, yardage,
+                    isFree, patternUrl, savedAt
+                ) VALUES (
+                    12, 0, 'Other pattern', 'Unknown', NULL, NULL,
+                    NULL, NULL, NULL, NULL, NULL, 1, 'https://example.test/other', 3000
+                )
+                """.trimIndent(),
+            )
+            close()
+        }
+
+        val db = migrateToLatest(testDb)
+
+        assertSingleRow(
+            db,
+            """
+            SELECT id, source, ravelryPatternId, originalUrl, canonicalUrl, localPdfUri,
+                isAvailableOffline, savedAt, updatedAt, lastSyncedAt
+            FROM saved_patterns WHERE id = 10
+            """.trimIndent(),
+        ) {
+            assertEquals(10L, getLong(0))
+            assertEquals("RAVELRY", getString(1))
+            assertEquals(9001, getInt(2))
+            assertEquals("https://www.ravelry.com/patterns/library/test", getString(3))
+            assertEquals("https://www.ravelry.com/patterns/library/test", getString(4))
+            assertTrue(isNull(5))
+            assertEquals(0, getInt(6))
+            assertEquals(1000L, getLong(7))
+            assertEquals(1000L, getLong(8))
+            assertTrue(isNull(9))
+        }
+        assertSingleRow(
+            db,
+            """
+            SELECT id, source, ravelryPatternId, originalUrl, canonicalUrl, localPdfUri,
+                isAvailableOffline, savedAt, updatedAt, lastSyncedAt
+            FROM saved_patterns WHERE id = 11
+            """.trimIndent(),
+        ) {
+            assertEquals(11L, getLong(0))
+            assertEquals("LOCAL_FILE", getString(1))
+            assertTrue(isNull(2))
+            assertEquals("content://patterns/local.pdf", getString(3))
+            assertEquals("", getString(4))
+            assertEquals("content://patterns/local.pdf", getString(5))
+            assertEquals(1, getInt(6))
+            assertEquals(2000L, getLong(7))
+            assertEquals(2000L, getLong(8))
+            assertTrue(isNull(9))
+        }
+        assertSingleRow(
+            db,
+            """
+            SELECT id, source, ravelryPatternId, originalUrl, canonicalUrl, localPdfUri,
+                isAvailableOffline, savedAt, updatedAt, lastSyncedAt
+            FROM saved_patterns WHERE id = 12
+            """.trimIndent(),
+        ) {
+            assertEquals(12L, getLong(0))
+            assertEquals("OTHER", getString(1))
+            assertTrue(isNull(2))
+            assertEquals("https://example.test/other", getString(3))
+            assertEquals("", getString(4))
+            assertTrue(isNull(5))
+            assertEquals(0, getInt(6))
+            assertEquals(3000L, getLong(7))
+            assertEquals(3000L, getLong(8))
+            assertTrue(isNull(9))
+        }
 
         db.close()
     }

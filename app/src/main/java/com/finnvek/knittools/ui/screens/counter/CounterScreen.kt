@@ -10,12 +10,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -86,6 +83,8 @@ fun CounterScreen(
     onSessionHistory: (Long) -> Unit = {},
     onPhotoGallery: () -> Unit = {},
     onPatternViewer: (Long) -> Unit = {},
+    onSavedPatternDetail: (Long) -> Unit = {},
+    onImportFromRavelry: () -> Unit = {},
     onNotesEditor: (Long) -> Unit = {},
     onUpgradeToPro: () -> Unit = {},
     viewModel: CounterViewModel = hiltViewModel(),
@@ -109,7 +108,6 @@ fun CounterScreen(
     var editingReminderId by rememberSaveable { mutableStateOf<Long?>(null) }
     var showAddCounter by rememberSaveable { mutableStateOf(false) }
     var showStitchDialog by rememberSaveable { mutableStateOf(false) }
-    var showPatternInfoSheet by rememberSaveable { mutableStateOf(false) }
     var showPatternPicker by rememberSaveable { mutableStateOf(false) }
     var showTargetDialog by rememberSaveable { mutableStateOf(false) }
     var previousOverlayProjectId by rememberSaveable { mutableStateOf<Long?>(null) }
@@ -134,7 +132,6 @@ fun CounterScreen(
         editingReminderId = null
         showAddCounter = false
         showStitchDialog = false
-        showPatternInfoSheet = false
         showPatternPicker = false
         showTargetDialog = false
     }
@@ -207,7 +204,7 @@ fun CounterScreen(
             onHideNotesSheet = { showNotesSheet = false },
             onExpandNotes = { state.projectId?.let(onNotesEditor) },
             onHidePatternPicker = { showPatternPicker = false },
-            onHidePatternInfoSheet = { showPatternInfoSheet = false },
+            onImportFromRavelry = onImportFromRavelry,
         )
     val projectCountersActions =
         rememberProjectCountersSectionActions(
@@ -256,7 +253,9 @@ fun CounterScreen(
             viewModel,
             performHaptic,
             onPatternViewer,
+            onSavedPatternDetail,
             state.projectId,
+            state.linkedPattern?.id,
             requestNotes,
             requestPhotoGallery,
             requestRowReminders,
@@ -277,7 +276,7 @@ fun CounterScreen(
                 },
                 onOpenPattern = { state.projectId?.let(onPatternViewer) },
                 onShowPatternPicker = { showPatternPicker = true },
-                onShowPatternInfo = { showPatternInfoSheet = true },
+                onOpenSavedPatternDetail = { state.linkedPattern?.id?.let(onSavedPatternDetail) },
                 onOpenNotes = requestNotes,
                 onOpenYarn = { showYarnManagementSheet = true },
                 onOpenPhotos = requestPhotoGallery,
@@ -378,8 +377,6 @@ fun CounterScreen(
                 projectId = state.projectId,
                 savedPatterns = savedPatterns,
                 canUseCameraScan = state.canUsePatternCameraScan,
-                showPatternInfoSheet = showPatternInfoSheet,
-                linkedPattern = state.linkedPattern,
             ),
         actions = sheetActions,
     )
@@ -730,8 +727,6 @@ data class CounterSheetState(
     val projectId: Long?,
     val savedPatterns: List<SavedPattern>,
     val canUseCameraScan: Boolean,
-    val showPatternInfoSheet: Boolean,
-    val linkedPattern: SavedPattern?,
 )
 
 data class CounterSheetActions(
@@ -747,9 +742,9 @@ data class CounterSheetActions(
     val onNotesDismiss: () -> Unit,
     val onNotesExpand: () -> Unit,
     val onPatternPickerDismiss: () -> Unit,
-    val onPatternInfoDismiss: () -> Unit,
     val onPatternFileSelected: (String, String) -> Unit,
     val onSavedPatternSelected: (SavedPattern) -> Unit,
+    val onImportFromRavelry: () -> Unit,
 )
 
 @Composable
@@ -794,13 +789,8 @@ private fun CounterScreenSheets(
             canUseCameraScan = state.canUseCameraScan,
             onSavedPatternSelected = actions.onSavedPatternSelected,
             onDocumentSelected = actions.onPatternFileSelected,
+            onImportFromRavelry = actions.onImportFromRavelry,
             onDismiss = actions.onPatternPickerDismiss,
-        )
-    }
-    if (state.showPatternInfoSheet && state.linkedPattern != null) {
-        PatternInfoSheet(
-            pattern = state.linkedPattern,
-            onDismiss = actions.onPatternInfoDismiss,
         )
     }
 }
@@ -1090,85 +1080,6 @@ private fun YarnPickerItem(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun PatternInfoSheet(
-    pattern: SavedPattern,
-    onDismiss: () -> Unit,
-) {
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        containerColor = MaterialTheme.colorScheme.surface,
-    ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp)
-                    .padding(bottom = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Text(
-                text = pattern.name,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            if (pattern.designerName.isNotBlank()) {
-                Text(
-                    text = pattern.designerName,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Spacer(modifier = Modifier.height(4.dp))
-            pattern.needleSize?.let {
-                PatternDetailRow(label = stringResource(R.string.needle_size_label), value = it)
-            }
-            pattern.yarnWeight?.let {
-                PatternDetailRow(label = stringResource(R.string.filter_weight), value = it)
-            }
-            pattern.yardage?.let {
-                PatternDetailRow(
-                    label = stringResource(R.string.pattern_detail_yardage),
-                    value = stringResource(R.string.yardage_format, it),
-                )
-            }
-            pattern.gaugeRows?.let {
-                PatternDetailRow(
-                    label = stringResource(R.string.gauge_label),
-                    value = stringResource(R.string.rows_format, it),
-                )
-            }
-            pattern.difficulty?.let {
-                PatternDetailRow(
-                    label = stringResource(R.string.filter_difficulty),
-                    value = stringResource(R.string.difficulty_format, it),
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun PatternDetailRow(
-    label: String,
-    value: String,
-) {
-    Row(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.width(100.dp),
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
 private fun NotesSheet(
     notes: String,
     onNotesChange: (String) -> Unit,
@@ -1303,7 +1214,7 @@ private fun rememberCounterSheetActions(
     onHideNotesSheet: () -> Unit,
     onExpandNotes: () -> Unit,
     onHidePatternPicker: () -> Unit,
-    onHidePatternInfoSheet: () -> Unit,
+    onImportFromRavelry: () -> Unit,
 ): CounterSheetActions =
     remember(
         viewModel,
@@ -1313,7 +1224,7 @@ private fun rememberCounterSheetActions(
         onHideNotesSheet,
         onExpandNotes,
         onHidePatternPicker,
-        onHidePatternInfoSheet,
+        onImportFromRavelry,
     ) {
         CounterSheetActions(
             onYarnSelect = {
@@ -1334,11 +1245,9 @@ private fun rememberCounterSheetActions(
             onNotesDismiss = onHideNotesSheet,
             onNotesExpand = onExpandNotes,
             onPatternPickerDismiss = onHidePatternPicker,
-            onPatternInfoDismiss = onHidePatternInfoSheet,
             onPatternFileSelected = viewModel::attachPattern,
-            onSavedPatternSelected = { pattern ->
-                viewModel.attachPattern(pattern.patternUrl, pattern.name)
-            },
+            onSavedPatternSelected = viewModel::attachSavedPattern,
+            onImportFromRavelry = onImportFromRavelry,
         )
     }
 

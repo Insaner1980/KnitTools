@@ -156,6 +156,7 @@
     <string name="pattern_picker_saved_patterns">Saved patterns</string>
     <string name="pattern_picker_import_pdf">Import PDF</string>
     <string name="pattern_picker_import_cloud_pdf">Import from Drive or Dropbox</string>
+    <string name="pattern_picker_import_from_ravelry">Import from Ravelry</string>
     <string name="pattern_picker_camera_scan">Take pattern photo</string>
     <string name="pattern_picker_continue_without_pattern">Continue without pattern</string>
     <string name="pattern_scan_failed">Pattern photo could not be converted to PDF.</string>
@@ -837,10 +838,26 @@
     <string name="ravelry_saved_patterns">Saved Patterns</string>
     <string name="start_project">Start Project</string>
     <string name="save_pattern">Save Pattern</string>
+    <string name="ravelry_open_saved_pattern">Open</string>
     <string name="open_in_ravelry">Open in Ravelry</string>
     <string name="pattern_saved">Pattern saved</string>
     <string name="no_saved_patterns">No saved patterns yet</string>
     <string name="search_hint">Search knitting patterns…</string>
+    <string name="ravelry_search_requires_sign_in">Sign in with Ravelry to search patterns.</string>
+    <string name="ravelry_import_loading">Loading pattern</string>
+    <string name="ravelry_import_title">Save this pattern?</string>
+    <string name="ravelry_import_already_saved">Pattern already saved</string>
+    <string name="ravelry_import_needs_sign_in">Sign in with Ravelry to save this pattern.</string>
+    <string name="ravelry_import_could_not_import">Could not import this pattern.</string>
+    <string name="ravelry_import_backend_unavailable">Ravelry import is temporarily unavailable.</string>
+    <string name="saved_pattern_detail_pdf_attached">PDF attached</string>
+    <string name="saved_pattern_detail_available_offline">Available offline</string>
+    <string name="saved_pattern_detail_open_on_ravelry">Open on Ravelry</string>
+    <string name="saved_pattern_detail_requires_ravelry">Requires Ravelry</string>
+    <string name="saved_pattern_detail_open_pattern">Open Pattern</string>
+    <string name="saved_pattern_detail_attach_to_project">Attach to Project</string>
+    <string name="saved_pattern_detail_remove_confirm">Remove this saved pattern?</string>
+    <string name="saved_pattern_detail_thumbnail">Pattern thumbnail</string>
     <string name="filter_weight">Weight</string>
     <string name="filter_difficulty">Difficulty</string>
     <string name="free">Free</string>
@@ -853,6 +870,17 @@
     <string name="ravelry_search_service_error">Ravelry is temporarily unavailable. Try again later.</string>
     <string name="pattern_detail_error">Could not load pattern details. Check your internet connection.</string>
     <string name="ravelry_sign_in">Sign in with Ravelry</string>
+    <string name="ravelry_browse">Browse Ravelry</string>
+    <string name="ravelry_disconnect">Disconnect Ravelry</string>
+    <string name="ravelry_not_connected">Sign in to search Ravelry patterns from KnitTools.</string>
+    <string name="ravelry_connecting">Connecting to Ravelry…</string>
+    <string name="ravelry_auth_pending">Finish signing in with Ravelry in the browser.</string>
+    <string name="ravelry_connected">Connected to Ravelry</string>
+    <string name="ravelry_connected_as">Connected as %1$s</string>
+    <string name="ravelry_auth_cancelled">Ravelry sign-in was cancelled.</string>
+    <string name="ravelry_auth_expired">Ravelry sign-in expired. Sign in again.</string>
+    <string name="ravelry_backend_unavailable">Ravelry connection is temporarily unavailable.</string>
+    <string name="ravelry_disconnecting">Disconnecting Ravelry…</string>
     <string name="difficulty_format">%.1f / 5</string>
     <string name="yardage_format" tools:ignore="PluralsCandidate">%d yards</string>
     <string name="pattern_detail_needles" tools:ignore="MissingTranslation">Needles</string>

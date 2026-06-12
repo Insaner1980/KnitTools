@@ -214,6 +214,28 @@ interface CounterProjectDao {
     @Query(
         """
         UPDATE counter_projects
+        SET linkedPatternId = :linkedPatternId,
+            patternUri = :patternUri,
+            patternName = :patternName,
+            currentPatternPage = :currentPatternPage,
+            patternRowMapping = :patternRowMapping,
+            updatedAt = :updatedAt
+        WHERE id = :id
+        """,
+    )
+    suspend fun updatePatternAttachment(
+        id: Long,
+        linkedPatternId: Long?,
+        patternUri: String?,
+        patternName: String?,
+        currentPatternPage: Int,
+        patternRowMapping: String?,
+        updatedAt: Long,
+    )
+
+    @Query(
+        """
+        UPDATE counter_projects
         SET readingLineEnabled = :enabled,
             readingLineYFraction = :yFraction,
             updatedAt = :updatedAt

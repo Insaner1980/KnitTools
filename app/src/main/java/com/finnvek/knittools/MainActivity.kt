@@ -1,5 +1,6 @@
 package com.finnvek.knittools
 
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
@@ -10,12 +11,15 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.browser.auth.AuthTabIntent
+import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
@@ -35,9 +39,11 @@ import com.finnvek.knittools.data.datastore.PreferencesManager
 import com.finnvek.knittools.data.storage.CounterLaunchTokenStore
 import com.finnvek.knittools.pro.InAppReviewManager
 import com.finnvek.knittools.pro.InAppUpdateManager
+import com.finnvek.knittools.ravelry.RavelryShareImportUrls
 import com.finnvek.knittools.ui.navigation.CounterLaunchIntentData
 import com.finnvek.knittools.ui.navigation.CounterLaunchRequest
 import com.finnvek.knittools.ui.navigation.KnitToolsNavHost
+import com.finnvek.knittools.ui.navigation.RavelryShareImportRequest
 import com.finnvek.knittools.ui.navigation.TopLevelDestination
 import com.finnvek.knittools.ui.theme.KnitToolsTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -59,9 +65,6 @@ class MainActivity : AppCompatActivity() {
     lateinit var billingManager: BillingManager
 
     @Inject
-    lateinit var httpClient: io.ktor.client.HttpClient
-
-    @Inject
     lateinit var preferencesManager: PreferencesManager
 
     private val updateResultLauncher =
@@ -72,8 +75,25 @@ class MainActivity : AppCompatActivity() {
             // Flexible mode — lataustulos käsitellään installStateListenerissa
         }
 
+    private val ravelryAuthTabLauncher =
+        AuthTabIntent.registerActivityResultLauncher(this) { result ->
+            when (result.resultCode) {
+                AuthTabIntent.RESULT_OK -> {
+                    result.resultUri?.let(::handleRavelryCallbackUri) ?: lifecycleScope.launch {
+                        ravelryAuthManager.refreshAuthStatus()
+                    }
+                }
+
+                else -> {
+                    ravelryAuthManager.markBrowserAuthCancelled()
+                }
+            }
+        }
+
     private var counterLaunchRequest by mutableStateOf<CounterLaunchRequest?>(null)
+    private var ravelryShareImportRequest by mutableStateOf<RavelryShareImportRequest?>(null)
     private var consumedCounterLaunchRequestId: String? = null
+    private var nextRavelryShareImportRequestId = 0L
     private var startupThemeLoaded = false
     private var edgeToEdgeDarkTheme: Boolean? = null
 
@@ -82,7 +102,11 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         splashScreen.setKeepOnScreenCondition { !startupThemeLoaded }
         restoreCounterLaunchRequest(savedInstanceState)
-        handleOAuthCallbackIfNeeded(intent)
+        val isOAuthCallback = handleOAuthCallbackIfNeeded(intent)
+        val isShareImport = if (isOAuthCallback) false else handleRavelryShareIntentIfNeeded(intent)
+        if (isOAuthCallback || isShareImport) {
+            counterLaunchRequest = null
+        }
         checkForInAppUpdate()
         setContent {
             val prefs by preferencesManager.preferences.collectAsStateWithLifecycle(initialValue = null)
@@ -101,41 +125,32 @@ class MainActivity : AppCompatActivity() {
                 inAppReviewManager.maybeRequestReview(activity)
             }
 
-            // In-App Update: näytä snackbar aina kun ladattu päivitys havaitaan.
-            val downloadedUpdatePromptId by
-                inAppUpdateManager.downloadedUpdatePromptId.collectAsStateWithLifecycle()
             val snackbarHostState = remember { SnackbarHostState() }
-            var lastShownDownloadedUpdatePromptId by rememberSaveable { mutableLongStateOf(0L) }
-            val updateMessage = stringResource(R.string.update_downloaded)
-            val restartLabel = stringResource(R.string.restart)
-            LaunchedEffect(downloadedUpdatePromptId) {
-                if (downloadedUpdatePromptId > lastShownDownloadedUpdatePromptId) {
-                    lastShownDownloadedUpdatePromptId = downloadedUpdatePromptId
-                    val result =
-                        snackbarHostState.showSnackbar(
-                            message = updateMessage,
-                            actionLabel = restartLabel,
-                            duration = SnackbarDuration.Indefinite,
-                        )
-                    if (result == SnackbarResult.ActionPerformed) {
-                        inAppUpdateManager.completeUpdate()
-                    }
-                }
-            }
+            DownloadedUpdatePromptEffect(
+                inAppUpdateManager = inAppUpdateManager,
+                snackbarHostState = snackbarHostState,
+            )
 
             KnitToolsTheme(isDarkTheme = isDarkTheme) {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     KnitToolsNavHost(
                         startDestination = TopLevelDestination.Projects.route,
                         counterLaunchRequest = counterLaunchRequest,
+                        ravelryShareImportRequest = ravelryShareImportRequest,
                         snackbarHostState = snackbarHostState,
                         onPurchasePro = billingManager::launchPurchaseFlow,
+                        onLaunchRavelryAuth = ::launchRavelryAuth,
+                        onBrowseRavelry = ::launchRavelryBrowse,
                         onCounterLaunchHandled = {
                             counterLaunchRequest?.let {
                                 consumedCounterLaunchRequestId = it.requestId
                             }
                             counterLaunchRequest = null
                             clearCounterLaunchIntent()
+                        },
+                        onRavelryShareImportHandled = {
+                            ravelryShareImportRequest = null
+                            clearRavelryShareIntent()
                         },
                     )
                 }
@@ -194,12 +209,35 @@ class MainActivity : AppCompatActivity() {
         inAppUpdateManager.cleanup()
     }
 
+    fun launchRavelryBrowse() {
+        CustomTabsIntent
+            .Builder()
+            .setShareState(CustomTabsIntent.SHARE_STATE_ON)
+            .build()
+            .launchUrl(this, Uri.parse(RAVELRY_PATTERN_SEARCH_URL))
+    }
+
+    fun launchRavelryAuth(uri: Uri) {
+        try {
+            AuthTabIntent
+                .Builder()
+                .build()
+                .launch(ravelryAuthTabLauncher, uri, RavelryAuthManager.REDIRECT_SCHEME)
+        } catch (_: ActivityNotFoundException) {
+            CustomTabsIntent
+                .Builder()
+                .build()
+                .launchUrl(this, uri)
+        }
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
         val isOAuthCallback = handleOAuthCallbackIfNeeded(intent)
+        val isShareImport = if (isOAuthCallback) false else handleRavelryShareIntentIfNeeded(intent)
         counterLaunchRequest =
-            if (isOAuthCallback) {
+            if (isOAuthCallback || isShareImport) {
                 null
             } else {
                 intent.toCounterLaunchRequest(consumedRequestId = null)
@@ -209,14 +247,18 @@ class MainActivity : AppCompatActivity() {
     private fun handleOAuthCallbackIfNeeded(intent: Intent?): Boolean {
         val uri = intent?.data ?: return false
         if (!ravelryAuthManager.isOAuthCallback(uri)) return false
+        handleRavelryCallbackUri(uri)
+        return true
+    }
+
+    private fun handleRavelryCallbackUri(uri: Uri) {
         clearCounterLaunchIntent()
         lifecycleScope.launch {
-            val handled = ravelryAuthManager.handleCallback(httpClient, uri)
+            val handled = ravelryAuthManager.handleCallback(uri)
             if (handled) {
                 clearOAuthCallbackIntent(uri)
             }
         }
-        return true
     }
 
     private fun clearOAuthCallbackIntent(uri: Uri) {
@@ -225,10 +267,38 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun handleRavelryShareIntentIfNeeded(intent: Intent?): Boolean {
+        if (intent?.action != Intent.ACTION_SEND) return false
+        if (intent.type != MIME_TYPE_TEXT_PLAIN) return false
+
+        val patternUrl = RavelryShareImportUrls.extractPatternUrl(intent.getStringExtra(Intent.EXTRA_TEXT))
+        clearRavelryShareIntent()
+        if (patternUrl == null) return true
+
+        nextRavelryShareImportRequestId += 1
+        ravelryShareImportRequest =
+            RavelryShareImportRequest(
+                requestId = nextRavelryShareImportRequestId,
+                url = patternUrl,
+            )
+        return true
+    }
+
     private fun clearCounterLaunchIntent() {
         intent?.removeExtra(EXTRA_OPEN_COUNTER)
         intent?.removeExtra(EXTRA_PROJECT_ID)
         intent?.removeExtra(EXTRA_COUNTER_LAUNCH_ID)
+    }
+
+    private fun clearRavelryShareIntent() {
+        intent
+            ?.takeIf { it.action == Intent.ACTION_SEND }
+            ?.apply {
+                setAction(Intent.ACTION_MAIN)
+                setType(null)
+                removeExtra(Intent.EXTRA_TEXT)
+                removeExtra(Intent.EXTRA_SUBJECT)
+            }
     }
 
     private fun Intent?.toCounterLaunchRequest(consumedRequestId: String?): CounterLaunchRequest? {
@@ -253,6 +323,8 @@ class MainActivity : AppCompatActivity() {
         private const val EXTRA_OPEN_COUNTER = "com.finnvek.knittools.extra.OPEN_COUNTER"
         private const val EXTRA_PROJECT_ID = "com.finnvek.knittools.extra.PROJECT_ID"
         private const val EXTRA_COUNTER_LAUNCH_ID = "com.finnvek.knittools.extra.COUNTER_LAUNCH_ID"
+        private const val MIME_TYPE_TEXT_PLAIN = "text/plain"
+        private const val RAVELRY_PATTERN_SEARCH_URL = "https://www.ravelry.com/patterns/search"
         private const val STATE_CONSUMED_COUNTER_LAUNCH_REQUEST_ID =
             "com.finnvek.knittools.state.CONSUMED_COUNTER_LAUNCH_REQUEST_ID"
 
@@ -266,5 +338,32 @@ class MainActivity : AppCompatActivity() {
                 putExtra(EXTRA_COUNTER_LAUNCH_ID, CounterLaunchTokenStore.issueLaunchId(context))
                 addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
             }
+    }
+}
+
+@Composable
+private fun DownloadedUpdatePromptEffect(
+    inAppUpdateManager: InAppUpdateManager,
+    snackbarHostState: SnackbarHostState,
+) {
+    // In-App Update: näytä snackbar aina kun ladattu päivitys havaitaan.
+    val downloadedUpdatePromptId by
+        inAppUpdateManager.downloadedUpdatePromptId.collectAsStateWithLifecycle()
+    var lastShownDownloadedUpdatePromptId by rememberSaveable { mutableLongStateOf(0L) }
+    val updateMessage = stringResource(R.string.update_downloaded)
+    val restartLabel = stringResource(R.string.restart)
+    LaunchedEffect(downloadedUpdatePromptId) {
+        if (downloadedUpdatePromptId > lastShownDownloadedUpdatePromptId) {
+            lastShownDownloadedUpdatePromptId = downloadedUpdatePromptId
+            val result =
+                snackbarHostState.showSnackbar(
+                    message = updateMessage,
+                    actionLabel = restartLabel,
+                    duration = SnackbarDuration.Indefinite,
+                )
+            if (result == SnackbarResult.ActionPerformed) {
+                inAppUpdateManager.completeUpdate()
+            }
+        }
     }
 }

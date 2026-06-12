@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -37,6 +38,7 @@ fun PatternCard(
     isFree: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    actionContent: (@Composable () -> Unit)? = null,
 ) {
     Surface(
         modifier = modifier.fillMaxWidth().clickable(onClick = onClick),
@@ -55,7 +57,21 @@ fun PatternCard(
                 isFree = isFree,
                 modifier = Modifier.weight(1f),
             )
+            PatternCardActionSlot(actionContent = actionContent)
         }
+    }
+}
+
+@Composable
+private fun PatternCardActionSlot(actionContent: (@Composable () -> Unit)?) {
+    if (actionContent == null) return
+
+    Spacer(modifier = Modifier.width(8.dp))
+    Box(
+        modifier = Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp),
+        contentAlignment = Alignment.CenterEnd,
+    ) {
+        actionContent()
     }
 }
 

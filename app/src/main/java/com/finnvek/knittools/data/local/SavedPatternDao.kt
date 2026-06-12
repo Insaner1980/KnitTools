@@ -16,13 +16,31 @@ interface SavedPatternDao {
     @Query("SELECT * FROM saved_patterns WHERE id IN (:ids)")
     suspend fun getByIds(ids: List<Long>): List<SavedPatternEntity>
 
-    @Query("SELECT * FROM saved_patterns WHERE ravelryId = :ravelryId ORDER BY savedAt DESC, id DESC LIMIT 1")
-    suspend fun getByRavelryId(ravelryId: Int): SavedPatternEntity?
+    @Query(
+        "SELECT * FROM saved_patterns WHERE ravelryPatternId = :ravelryPatternId " +
+            "ORDER BY savedAt DESC, id DESC LIMIT 1",
+    )
+    suspend fun getByRavelryPatternId(ravelryPatternId: Int): SavedPatternEntity?
 
-    @Query("SELECT * FROM saved_patterns WHERE patternUrl = :patternUrl ORDER BY savedAt DESC, id DESC LIMIT 1")
-    suspend fun getByPatternUrl(patternUrl: String): SavedPatternEntity?
+    @Query("SELECT * FROM saved_patterns WHERE canonicalUrl = :canonicalUrl ORDER BY savedAt DESC, id DESC LIMIT 1")
+    suspend fun getByCanonicalUrl(canonicalUrl: String): SavedPatternEntity?
 
-    @Query("SELECT * FROM saved_patterns WHERE ravelryId = 0 AND patternUrl != ''")
+    @Query("SELECT * FROM saved_patterns WHERE localPdfUri = :localPdfUri ORDER BY savedAt DESC, id DESC LIMIT 1")
+    suspend fun getByLocalPdfUri(localPdfUri: String): SavedPatternEntity?
+
+    @Query(
+        "SELECT * FROM saved_patterns WHERE name = :name AND designerName = :designerName " +
+            "ORDER BY savedAt DESC, id DESC LIMIT 1",
+    )
+    suspend fun getByTitleAndDesignerName(
+        name: String,
+        designerName: String,
+    ): SavedPatternEntity?
+
+    @Query("SELECT * FROM saved_patterns")
+    suspend fun getAllOnce(): List<SavedPatternEntity>
+
+    @Query("SELECT * FROM saved_patterns WHERE source = 'LOCAL_FILE' AND localPdfUri IS NOT NULL")
     suspend fun getImportedPatternsOnce(): List<SavedPatternEntity>
 
     @Insert

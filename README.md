@@ -45,14 +45,12 @@ export KNITTOOLS_KEY_ALIAS=alias
 export KNITTOOLS_KEY_PASSWORD=password
 ```
 
-Ravelry is intentionally backendless. Release builds embed Ravelry credentials only after an explicit accepted-risk opt-in:
+Ravelry's old backendless accepted-risk path is superseded by `Ravelry Firebase Backend And Saved Patterns Plan.md`. Android no longer embeds Ravelry credentials or stores Ravelry tokens; Ravelry secrets belong in the Firebase backend.
+
+Android Firebase builds require the project-specific config file locally at ignored path `app/google-services.json`, or CI must generate it from `KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64`.
 
 ```bash
-export KNITTOOLS_RAVELRY_BASIC_AUTH_USER=user
-export KNITTOOLS_RAVELRY_BASIC_AUTH_PASSWORD=password
-export KNITTOOLS_RAVELRY_OAUTH2_CLIENT_ID=client-id
-export KNITTOOLS_RAVELRY_OAUTH2_CLIENT_SECRET=client-secret
-export KNITTOOLS_ALLOW_EMBEDDED_RAVELRY_SECRETS=true
+export KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64=base64-encoded-google-services-json
 ```
 
 ## Current Documentation

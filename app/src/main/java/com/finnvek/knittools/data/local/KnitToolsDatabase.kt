@@ -19,7 +19,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         SavedPatternEntity::class,
         PatternAnnotationEntity::class,
     ],
-    version = 13,
+    version = 14,
     exportSchema = true,
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
@@ -300,6 +300,98 @@ abstract class KnitToolsDatabase : RoomDatabase() {
                     )
                     db.execSQL(
                         "ALTER TABLE project_counters ADD COLUMN linkedToMainCounter INTEGER NOT NULL DEFAULT 0",
+                    )
+                }
+            }
+
+        val MIGRATION_13_14 =
+            object : Migration(13, 14) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL(
+                        """
+                        CREATE TABLE IF NOT EXISTS `saved_patterns_new` (
+                            `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                            `source` TEXT NOT NULL,
+                            `ravelryPatternId` INTEGER,
+                            `name` TEXT NOT NULL,
+                            `designerName` TEXT NOT NULL,
+                            `thumbnailUrl` TEXT,
+                            `difficulty` REAL,
+                            `gaugeStitches` REAL,
+                            `gaugeRows` REAL,
+                            `needleSize` TEXT,
+                            `yarnWeight` TEXT,
+                            `yardage` INTEGER,
+                            `isFree` INTEGER NOT NULL,
+                            `originalUrl` TEXT NOT NULL,
+                            `canonicalUrl` TEXT NOT NULL,
+                            `localPdfUri` TEXT,
+                            `isAvailableOffline` INTEGER NOT NULL,
+                            `savedAt` INTEGER NOT NULL,
+                            `updatedAt` INTEGER NOT NULL,
+                            `lastSyncedAt` INTEGER
+                        )
+                        """.trimIndent(),
+                    )
+                    db.execSQL(
+                        """
+                        INSERT INTO `saved_patterns_new` (
+                            id, source, ravelryPatternId, name, designerName, thumbnailUrl, difficulty,
+                            gaugeStitches, gaugeRows, needleSize, yarnWeight, yardage, isFree,
+                            originalUrl, canonicalUrl, localPdfUri, isAvailableOffline,
+                            savedAt, updatedAt, lastSyncedAt
+                        )
+                        SELECT
+                            id,
+                            CASE
+                                WHEN ravelryId > 0 THEN 'RAVELRY'
+                                WHEN patternUrl LIKE 'content://%' OR patternUrl LIKE 'file://%' THEN 'LOCAL_FILE'
+                                ELSE 'OTHER'
+                            END,
+                            CASE WHEN ravelryId > 0 THEN ravelryId ELSE NULL END,
+                            name,
+                            designerName,
+                            thumbnailUrl,
+                            difficulty,
+                            gaugeStitches,
+                            gaugeRows,
+                            needleSize,
+                            yarnWeight,
+                            yardage,
+                            isFree,
+                            patternUrl,
+                            CASE WHEN ravelryId > 0 THEN patternUrl ELSE '' END,
+                            CASE
+                                WHEN patternUrl LIKE 'content://%' OR patternUrl LIKE 'file://%' THEN patternUrl
+                                ELSE NULL
+                            END,
+                            CASE
+                                WHEN patternUrl LIKE 'content://%' OR patternUrl LIKE 'file://%' THEN 1
+                                ELSE 0
+                            END,
+                            savedAt,
+                            savedAt,
+                            NULL
+                        FROM `saved_patterns`
+                        """.trimIndent(),
+                    )
+                    db.execSQL("DROP TABLE `saved_patterns`")
+                    db.execSQL("ALTER TABLE `saved_patterns_new` RENAME TO `saved_patterns`")
+                    db.execSQL(
+                        "CREATE INDEX IF NOT EXISTS `index_saved_patterns_ravelryPatternId` " +
+                            "ON `saved_patterns` (`ravelryPatternId`)",
+                    )
+                    db.execSQL(
+                        "CREATE INDEX IF NOT EXISTS `index_saved_patterns_canonicalUrl` " +
+                            "ON `saved_patterns` (`canonicalUrl`)",
+                    )
+                    db.execSQL(
+                        "CREATE INDEX IF NOT EXISTS `index_saved_patterns_originalUrl` " +
+                            "ON `saved_patterns` (`originalUrl`)",
+                    )
+                    db.execSQL(
+                        "CREATE INDEX IF NOT EXISTS `index_saved_patterns_localPdfUri` " +
+                            "ON `saved_patterns` (`localPdfUri`)",
                     )
                 }
             }

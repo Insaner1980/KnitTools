@@ -74,3 +74,8 @@ app/google-services.json
 
 # Paikallinen pnpm-asennuskansio
 /node_modules/
+/functions/lib/
+/functions/node_modules/
+/functions/firebase-debug.log
+/functions/.runtimeconfig.json
+/functions/.secret.local

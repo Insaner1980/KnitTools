@@ -72,8 +72,8 @@ rules:
   - id: knittools-ravelry-credential-surface
     languages:
       - kotlin
-    severity: WARNING
-    message: Ravelry-salaisuus tai Basic Auth -credential kulkee BuildConfigin kautta hyväksyttynä riskinä. Varmista, että config/security-decisions.md pysyy ajan tasalla.
+    severity: ERROR
+    message: Ravelry-salaisuus tai Basic Auth -credential on palannut Android BuildConfigiin, vaikka riski on merkitty poistetuksi. Ravelry-secretit kuuluvat vain backendille.
     patterns:
       - pattern-either:
           - pattern: BuildConfig.RAVELRY_BASIC_AUTH_PASSWORD
@@ -82,13 +82,26 @@ rules:
   - id: knittools-ravelry-gradle-secret-gate
     languages:
       - generic
-    severity: WARNING
-    message: Gradle-buildissä on tietoinen Ravelry-secretien upotusportti. Pidä release-riskipäätös dokumentoituna.
+    severity: ERROR
+    message: Gradle-buildiin on palannut Android Ravelry-secretien upotusportti. Ravelry-secretit kuuluvat vain Firebase Functionseille.
     paths:
       include:
         - app/build.gradle.kts
     patterns:
       - pattern-regex: 'KNITTOOLS_(ALLOW_EMBEDDED_RAVELRY_SECRETS|RAVELRY_(BASIC_AUTH_(USER|PASSWORD)|OAUTH2_CLIENT_SECRET))'
+
+  - id: knittools-forbidden-firebase-ai-ml-gemini-dependency
+    languages:
+      - generic
+    severity: ERROR
+    message: Firebase AI, ML Kit tai Gemini/Google Generative AI -riippuvuus ei kuulu Ravelry Firebase -migraation sallittuun pintaan.
+    paths:
+      include:
+        - build.gradle.kts
+        - app/build.gradle.kts
+        - gradle/libs.versions.toml
+    patterns:
+      - pattern-regex: '(firebase[-.]ai|firebase\.ai|com\.google\.firebase.*ai|com\.google\.mlkit|mlkit|ml-kit|play-services-mlkit|generativeai|generative-ai|gemini|google-ai-client)'
 
   - id: knittools-log-user-project-state
     languages:

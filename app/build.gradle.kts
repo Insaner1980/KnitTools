@@ -1,4 +1,9 @@
 import com.android.build.api.variant.BuildConfigField
+import org.gradle.api.DefaultTask
+import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.tasks.InputFile
+import org.gradle.api.tasks.Optional
+import org.gradle.api.tasks.TaskAction
 import org.gradle.testing.jacoco.tasks.JacocoReport
 import java.io.StringReader
 import java.util.Properties
@@ -21,6 +26,28 @@ plugins {
 val releaseSigningEnvPrefix = "KNITTOOLS" // Change to your app name, e.g. "KNITTOOLS"
 val debugCredentialsFile = rootProject.layout.projectDirectory.file("debug.credentials.properties")
 val debugCredentialsText = providers.fileContents(debugCredentialsFile).asText.orElse("")
+val googleServicesJsonConfigFile = layout.projectDirectory.file("google-services.json")
+
+if (googleServicesJsonConfigFile.asFile.isFile) {
+    apply(plugin = "com.google.gms.google-services")
+}
+
+abstract class VerifyGoogleServicesJsonTask : DefaultTask() {
+    @get:InputFile
+    @get:Optional
+    abstract val googleServicesJsonFile: RegularFileProperty
+
+    @TaskAction
+    fun verify() {
+        if (!googleServicesJsonFile.asFile.get().isFile) {
+            error(
+                "Android Firebase -build vaatii tiedoston app/google-services.json. " +
+                    "Pidä tiedosto gitignored-polussa paikallisesti tai luo se CI:ssä " +
+                    "KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64 -salaisuudesta.",
+            )
+        }
+    }
+}
 
 val releaseSigningEnvNames =
     listOf(
@@ -35,17 +62,6 @@ val releaseSigningAvailable =
         providers.environmentVariable(envName).orNull?.isNotBlank() == true
     }
 
-val embeddedRavelryCredentialsAllowed =
-    providers.environmentVariable("KNITTOOLS_ALLOW_EMBEDDED_RAVELRY_SECRETS").orNull == "true"
-
-val releaseRavelryEnvNames =
-    listOf(
-        "KNITTOOLS_RAVELRY_BASIC_AUTH_USER",
-        "KNITTOOLS_RAVELRY_BASIC_AUTH_PASSWORD",
-        "KNITTOOLS_RAVELRY_OAUTH2_CLIENT_ID",
-        "KNITTOOLS_RAVELRY_OAUTH2_CLIENT_SECRET",
-    )
-
 fun missingEnvNames(names: List<String>): List<String> =
     names.filter { envName ->
         providers.environmentVariable(envName).orNull?.isBlank() != false
@@ -54,13 +70,6 @@ fun missingEnvNames(names: List<String>): List<String> =
 fun requiredReleaseEnv(name: String): String =
     providers.environmentVariable(name).orNull?.takeIf { it.isNotBlank() }
         ?: error("Release signing requires the $name environment variable.")
-
-fun releaseEnvOrEmpty(name: String): String =
-    providers
-        .environmentVariable(name)
-        .orNull
-        ?.takeIf { it.isNotBlank() }
-        .orEmpty()
 
 fun debugBuildConfigField(
     name: String,
@@ -87,11 +96,6 @@ fun debugBuildConfigField(
     }
 }
 
-fun quotedBuildConfigValue(value: String): String =
-    "\"${value
-        .replace("\\", "\\\\")
-        .replace("\"", "\\\"")}\""
-
 android {
     namespace = "com.finnvek.knittools"
     compileSdk = 36
@@ -104,11 +108,6 @@ android {
         versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
-        buildConfigField("String", "RAVELRY_BASIC_AUTH_USER", quotedBuildConfigValue(""))
-        buildConfigField("String", "RAVELRY_BASIC_AUTH_PASSWORD", quotedBuildConfigValue(""))
-        buildConfigField("String", "RAVELRY_OAUTH2_CLIENT_ID", quotedBuildConfigValue(""))
-        buildConfigField("String", "RAVELRY_OAUTH2_CLIENT_SECRET", quotedBuildConfigValue(""))
     }
 
     sourceSets {
@@ -131,26 +130,6 @@ android {
             isDebuggable = false
             isMinifyEnabled = true
             isShrinkResources = true
-            buildConfigField(
-                "String",
-                "RAVELRY_BASIC_AUTH_USER",
-                quotedBuildConfigValue(releaseEnvOrEmpty("KNITTOOLS_RAVELRY_BASIC_AUTH_USER")),
-            )
-            buildConfigField(
-                "String",
-                "RAVELRY_BASIC_AUTH_PASSWORD",
-                quotedBuildConfigValue(releaseEnvOrEmpty("KNITTOOLS_RAVELRY_BASIC_AUTH_PASSWORD")),
-            )
-            buildConfigField(
-                "String",
-                "RAVELRY_OAUTH2_CLIENT_ID",
-                quotedBuildConfigValue(releaseEnvOrEmpty("KNITTOOLS_RAVELRY_OAUTH2_CLIENT_ID")),
-            )
-            buildConfigField(
-                "String",
-                "RAVELRY_OAUTH2_CLIENT_SECRET",
-                quotedBuildConfigValue(releaseEnvOrEmpty("KNITTOOLS_RAVELRY_OAUTH2_CLIENT_SECRET")),
-            )
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
@@ -213,22 +192,6 @@ androidComponents {
             variant.buildConfigFields
                 ?: error("Debug BuildConfig -kenttiä ei voi määrittää, koska BuildConfig ei ole käytössä.")
 
-        buildConfigFields.put(
-            "RAVELRY_BASIC_AUTH_USER",
-            debugBuildConfigField("ravelry.basicAuthUser"),
-        )
-        buildConfigFields.put(
-            "RAVELRY_BASIC_AUTH_PASSWORD",
-            debugBuildConfigField("ravelry.basicAuthPassword"),
-        )
-        buildConfigFields.put(
-            "RAVELRY_OAUTH2_CLIENT_ID",
-            debugBuildConfigField("ravelry.oauth2ClientId"),
-        )
-        buildConfigFields.put(
-            "RAVELRY_OAUTH2_CLIENT_SECRET",
-            debugBuildConfigField("ravelry.oauth2ClientSecret"),
-        )
         buildConfigFields.put(
             "SENTRY_DSN",
             debugBuildConfigField("sentry.dsn", "KNITTOOLS_SENTRY_DSN", "SENTRY_DSN"),
@@ -319,25 +282,12 @@ gradle.taskGraph.whenReady {
 
     if (appReleaseArtifactsRequested) {
         val missingSigningEnvNames = missingEnvNames(releaseSigningEnvNames)
-        val missingRavelryEnvNames = missingEnvNames(releaseRavelryEnvNames)
         val releaseProblems =
             buildList {
                 if (missingSigningEnvNames.isNotEmpty()) {
                     add(
                         "Puuttuvat release signing -muuttujat: " +
                             missingSigningEnvNames.joinToString(),
-                    )
-                }
-                if (!embeddedRavelryCredentialsAllowed) {
-                    add(
-                        "Release build upottaa Ravelry-credentialit BuildConfigiin tietoisena riskinä. " +
-                            "Aseta KNITTOOLS_ALLOW_EMBEDDED_RAVELRY_SECRETS=true jatkaaksesi.",
-                    )
-                }
-                if (missingRavelryEnvNames.isNotEmpty()) {
-                    add(
-                        "Puuttuvat release Ravelry -muuttujat: " +
-                            missingRavelryEnvNames.joinToString(),
                     )
                 }
             }
@@ -348,6 +298,25 @@ gradle.taskGraph.whenReady {
                     releaseProblems.joinToString(separator = "\n") { "- $it" },
             )
         }
+    }
+}
+
+val verifyGoogleServicesJson by tasks.registering(VerifyGoogleServicesJsonTask::class) {
+    group = "verification"
+    description = "Tarkistaa, että Android Firebase -konfiguraatio on paikallaan."
+    googleServicesJsonFile.set(googleServicesJsonConfigFile)
+}
+
+val firebaseConfiguredArtifactTaskNames =
+    setOf(
+        "assembleDebug",
+        "assembleRelease",
+        "bundleRelease",
+    )
+
+tasks.configureEach {
+    if (name in firebaseConfiguredArtifactTaskNames) {
+        dependsOn(verifyGoogleServicesJson)
     }
 }
 
@@ -542,11 +511,13 @@ dependencies {
     implementation(libs.ktor.client.content.negotiation)
     implementation(libs.ktor.serialization.kotlinx.json)
 
-    // Security (encrypted token storage)
-    implementation(libs.security.crypto)
-
     // Browser (Custom Chrome Tabs)
     implementation(libs.browser)
+
+    // Firebase backend integration
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth)
+    implementation(libs.firebase.functions)
 
     // Baseline Profiles
     implementation(libs.profileinstaller)

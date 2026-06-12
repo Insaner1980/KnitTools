@@ -5,6 +5,7 @@ import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.ProjectCounter
 import com.finnvek.knittools.domain.model.RowReminder
 import com.finnvek.knittools.domain.model.SavedPattern
+import com.finnvek.knittools.domain.model.SavedPatternSource
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -44,7 +45,14 @@ class CounterUiStateReducersTest {
 
     @Test
     fun `started project clears linked pattern from previous project`() {
-        val stalePattern = SavedPattern(id = 4L, ravelryId = 4, name = "Old pattern", designerName = "Designer")
+        val stalePattern =
+            SavedPattern(
+                id = 4L,
+                source = SavedPatternSource.Ravelry,
+                ravelryPatternId = 4,
+                name = "Old pattern",
+                designerName = "Designer",
+            )
         val result =
             CounterUiState(linkedPattern = stalePattern).withStartedProject(
                 CounterProject(id = 2L, name = "New project", count = 1),
@@ -111,7 +119,14 @@ class CounterUiStateReducersTest {
 
     @Test
     fun `observed project clears linked pattern when project link is removed`() {
-        val stalePattern = SavedPattern(id = 4L, ravelryId = 4, name = "Old pattern", designerName = "Designer")
+        val stalePattern =
+            SavedPattern(
+                id = 4L,
+                source = SavedPatternSource.Ravelry,
+                ravelryPatternId = 4,
+                name = "Old pattern",
+                designerName = "Designer",
+            )
         val result =
             CounterUiState(linkedPattern = stalePattern).withObservedProject(
                 CounterProject(id = 2L, name = "Sukat", count = 10, linkedPatternId = null),

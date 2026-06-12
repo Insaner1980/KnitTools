@@ -199,27 +199,45 @@ try {
             }
 
         Test-Mutation `
-            -Name "ravelry-opt-in" `
-            -ExpectedStatus "FAIL" `
-            -ExpectedCheck "release-gates" `
-            -PassMessage "Ravelry opt-in gate mutation detected" `
-            -Mutate {
-                param($fixture)
-                $path = Join-Path $fixture "app/build.gradle.kts"
-                $text = Get-Content -Raw -LiteralPath $path
-                Set-FileText -Path $path -Text ($text.Replace("KNITTOOLS_ALLOW_EMBEDDED_RAVELRY_SECRETS", "KNITTOOLS_RAVELRY_SECRET_OPT_IN_REMOVED"))
-            }
-
-        Test-Mutation `
             -Name "google-services" `
             -ExpectedStatus "FAIL" `
-            -ExpectedCheck "forbidden-dependencies" `
-            -PassMessage "google-services.json mutation detected" `
+            -ExpectedCheck "firebase-boundary" `
+            -PassMessage "tracked google-services.json mutation detected" `
             -Mutate {
                 param($fixture)
                 $path = Join-Path $fixture "app/google-services.json"
                 New-Item -ItemType Directory -Force -Path (Split-Path -Parent $path) | Out-Null
                 Set-FileText -Path $path -Text "{}"
+                & git -C $fixture add -f app/google-services.json 2>$null | Out-Null
+                if ($LASTEXITCODE -ne 0) {
+                    throw "git add google-services.json mutation failed"
+                }
+            }
+
+        Test-Mutation `
+            -Name "mlkit-dependency" `
+            -ExpectedStatus "FAIL" `
+            -ExpectedCheck "forbidden-dependencies" `
+            -PassMessage "ML Kit dependency mutation detected" `
+            -Mutate {
+                param($fixture)
+                $path = Join-Path $fixture "gradle/libs.versions.toml"
+                $text = Get-Content -Raw -LiteralPath $path
+                Set-FileText -Path $path -Text ($text + "`r`nmlkitBarcode = { group = `"com.google.mlkit`", name = `"barcode-scanning`", version = `"17.3.0`" }`r`n")
+            }
+
+        Test-Mutation `
+            -Name "known-ravelry-secret" `
+            -ExpectedStatus "FAIL" `
+            -ExpectedCheck "known-ravelry-secrets" `
+            -PassMessage "known Ravelry secret value mutation detected without printing secret" `
+            -Mutate {
+                param($fixture)
+                $path = Join-Path $fixture "app/src/main/res/values/strings.xml"
+                $text = Get-Content -Raw -LiteralPath $path
+                $replacement = '    <string name="leaked_ravelry_secret">phase9-secret-probe</string>' + "`r`n`$1"
+                Set-FileText -Path $path -Text ($text -replace '(</resources>)', $replacement)
+                $env:KNITTOOLS_RAVELRY_OAUTH2_CLIENT_SECRET = "phase9-secret-probe"
             }
 
         Test-Mutation `
@@ -243,7 +261,7 @@ try {
                 param($fixture)
                 $path = Join-Path $fixture "app/src/main/java/com/finnvek/knittools/data/local/KnitToolsDatabase.kt"
                 $text = Get-Content -Raw -LiteralPath $path
-                Set-FileText -Path $path -Text ($text.Replace("version = 13", "version = 14"))
+                Set-FileText -Path $path -Text ($text.Replace("version = 14", "version = 15"))
             }
 
         Test-Mutation `

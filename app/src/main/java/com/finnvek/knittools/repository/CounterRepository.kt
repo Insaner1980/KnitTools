@@ -21,6 +21,7 @@ import com.finnvek.knittools.domain.model.MainCounterLabelType
 import com.finnvek.knittools.domain.model.ProjectSortOrder
 import com.finnvek.knittools.domain.model.READING_LINE_MAX_Y_FRACTION
 import com.finnvek.knittools.domain.model.READING_LINE_MIN_Y_FRACTION
+import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.resolvedMainCounterLabelType
 import com.finnvek.knittools.domain.model.sanitizeMainCounterCustomLabel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -283,10 +284,11 @@ class CounterRepository
         ) {
             val previousPatternUri = dao.getProject(id)?.patternUri
             transactionRunner.run {
-                savedPatternRepository.saveImportedPatternIfMissing(patternUri, patternName)
+                val linkedPatternId = savedPatternRepository.saveImportedPatternIfMissing(patternUri, patternName)
                 patternAnnotationRepository.clearProject(id)
-                updatePattern(
+                updatePatternAttachment(
                     id = id,
+                    linkedPatternId = linkedPatternId,
                     patternUri = patternUri,
                     patternName = patternName,
                     currentPatternPage = currentPatternPage,
@@ -298,12 +300,37 @@ class CounterRepository
                 ?.let { savedPatternRepository.deleteLocalPatternFileIfUnused(it) }
         }
 
+        suspend fun attachSavedPattern(
+            projectId: Long,
+            savedPatternId: Long,
+        ): SavedPattern? {
+            val previousPatternUri = dao.getProject(projectId)?.patternUri
+            val pattern = savedPatternRepository.getById(savedPatternId) ?: return null
+            val patternUri = pattern.localPdfUri
+            transactionRunner.run {
+                patternAnnotationRepository.clearProject(projectId)
+                updatePatternAttachment(
+                    id = projectId,
+                    linkedPatternId = pattern.id,
+                    patternUri = patternUri,
+                    patternName = pattern.name,
+                    currentPatternPage = 0,
+                    patternRowMapping = null,
+                )
+            }
+            previousPatternUri
+                ?.takeIf { it != patternUri }
+                ?.let { savedPatternRepository.deleteLocalPatternFileIfUnused(it) }
+            return pattern
+        }
+
         suspend fun detachPattern(id: Long) {
             val patternUri = dao.getProject(id)?.patternUri
             transactionRunner.run {
                 patternAnnotationRepository.clearProject(id)
-                updatePattern(
+                updatePatternAttachment(
                     id = id,
+                    linkedPatternId = null,
                     patternUri = null,
                     patternName = null,
                     currentPatternPage = 0,
@@ -312,6 +339,23 @@ class CounterRepository
             }
             patternUri?.let { savedPatternRepository.deleteLocalPatternFileIfUnused(it) }
         }
+
+        private suspend fun updatePatternAttachment(
+            id: Long,
+            linkedPatternId: Long?,
+            patternUri: String?,
+            patternName: String?,
+            currentPatternPage: Int,
+            patternRowMapping: String?,
+        ) = dao.updatePatternAttachment(
+            id = id,
+            linkedPatternId = linkedPatternId,
+            patternUri = patternUri,
+            patternName = patternName,
+            currentPatternPage = currentPatternPage,
+            patternRowMapping = patternRowMapping,
+            updatedAt = System.currentTimeMillis(),
+        )
 
         suspend fun updateCurrentPatternPage(
             id: Long,

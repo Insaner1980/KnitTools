@@ -14,6 +14,7 @@ plugins {
     alias(libs.plugins.owasp.dependency.check)
     alias(libs.plugins.stability.analyzer) apply false
     alias(libs.plugins.sonarqube)
+    alias(libs.plugins.google.services) apply false
 }
 
 val sonarProjectProperties =

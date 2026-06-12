@@ -101,6 +101,16 @@ open class StubCounterProjectDao(
         updatedAt: Long,
     ) = Unit
 
+    override suspend fun updatePatternAttachment(
+        id: Long,
+        linkedPatternId: Long?,
+        patternUri: String?,
+        patternName: String?,
+        currentPatternPage: Int,
+        patternRowMapping: String?,
+        updatedAt: Long,
+    ) = Unit
+
     override suspend fun updateCurrentPatternPage(
         id: Long,
         page: Int,

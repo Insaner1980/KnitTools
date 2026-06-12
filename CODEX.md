@@ -6,10 +6,10 @@ Use [`CLAUDE.md`](/home/emma/dev/KnitTools/CLAUDE.md) when product wording, visu
 
 ## Snapshot
 
-- Android app in `app` plus `baselineprofile`
+- Android app in `app` plus `baselineprofile`; Ravelry Firebase backend in `functions`
 - Kotlin + Jetpack Compose + Material 3
 - Hilt, Room, DataStore, Glance
-- Room schema version `13`
+- Room schema version `14`
 - AGP `9.1.0` + Kotlin Compose plugin `2.3.10`
 
 ## Architecture
@@ -36,6 +36,7 @@ Use [`CLAUDE.md`](/home/emma/dev/KnitTools/CLAUDE.md) when product wording, visu
 - Yarn card photo updates go through `YarnCardRepository.updatePhotoUri`, which copies the selected image with `data/storage/YarnPhotoStorage` into app-owned `yarn_photos/<cardId>` storage and cleans up the old app-owned photo; yarn photos are not FileProvider-exposed share paths
 - Pattern attach/detach database state goes through `CounterRepository.attachPattern` / `detachPattern` so saved-pattern rows, annotations, and project pattern fields stay atomic
 - Pattern PDF files are app-owned documents under `pattern_pdfs/<projectId>`; `SavedPatternRepository.deleteLocalPatternFileIfUnused` is the cleanup gate after saved-pattern deletion, project detach, and project deletion
+- Saved patterns use source metadata through `domain/model/SavedPatternSource` and Room schema 14 fields: `source`, nullable `ravelryPatternId`, `originalUrl`, `canonicalUrl`, nullable `localPdfUri`, `isAvailableOffline`, `updatedAt`, and nullable `lastSyncedAt`; do not reintroduce `ravelryId = 0` or `patternUrl` as persisted saved-pattern sentinels. Repository duplicate detection checks Ravelry ID, canonical URL, normalized original URL, then title+designer only when explicitly requested.
 - Pattern PDF import, including the v1 Drive/Dropbox copy, stays on Android Storage Access Framework `OpenDocument(application/pdf)` plus persistable URI grants; do not add Drive/Dropbox SDKs, OAuth, provider-specific dependencies, or a separate import storage flow before a new sync spec
 - Drive/Dropbox sync is future-spec work tracked in `config/future-sync-spec.md`. Manual export/import or backup/restore comes before continuous sync. Do not market cross-device sync until conflict handling, background sync, offline behavior, OAuth/token storage, and the Pro gate are specified and implemented
 - Attached project PDF reading-line state persists on `counter_projects.readingLineEnabled` and `readingLineYFraction`; row anchors live in `counter_projects.patternRowMapping` as serialized `RowMarker(row,page,yPosition)` values owned by `domain/calculator/RowMappingParser`; drag commit creates or updates the current row/page anchor through `CounterViewModel.upsertPatternRowMarker`, calibration merges two anchors through `mergePatternRowMarkers`, and live drag uses project-viewer preview state before commit. Library-only pattern viewer state remains session/rotation-saveable and must not create a saved-pattern schema path in v1
@@ -43,7 +44,8 @@ Use [`CLAUDE.md`](/home/emma/dev/KnitTools/CLAUDE.md) when product wording, visu
 - Pattern camera capture is a photo-to-PDF flow: user-facing copy must use photo/PDF wording instead of scan/scanner wording, temp images live under `pattern_captures/<projectId>`, and only pattern/progress photo paths are exposed through FileProvider; FileProvider authority and share URI creation go through `AppFileStorage`, while legacy `patterns/...` and `yarn_photos/...` URIs are resolved internally by `AppFileStorage` for cleanup/read compatibility
 - Keep business logic out of composables when a ViewModel or use case should own it
 - Runtime app language is owned by AppCompat/Android per-app locale APIs; DataStore `app_language` is only a persistence and migration mirror managed by `PreferencesManager`
-- Ravelry is intentionally backendless: OAuth authorization requests include PKCE, but release builds may embed Ravelry Basic Auth credentials and OAuth client secret after explicit `KNITTOOLS_ALLOW_EMBEDDED_RAVELRY_SECRETS=true` opt-in; keep `config/security-decisions.md` aligned with this accepted risk
+- Ravelry's old backendless accepted-risk decision is superseded by `Ravelry Firebase Backend And Saved Patterns Plan.md` and tracked in `config/ravelry-backend-progress.md`; Android no longer owns Ravelry secrets, token exchange, token storage, or Basic Auth fallback
+- Ravelry backend lives in `functions/` as Firebase Functions v2 TypeScript, deployed through root `firebase.json` with Firestore rules in `firestore.rules`; Phase 3 implements backend-owned OAuth2 start/callback/status/disconnect/current-user flow, `ravelryOAuthStates/{state}` PKCE state storage, and `ravelryTokens/{uid}` token storage; Phase 4 adds backend `ravelrySearchPatterns`, `ravelryImportPatternById`, and `ravelryImportPatternByUrl` metadata-only callables that sanitize Ravelry fields and never download pattern PDFs; Phase 5 adds Android Firebase Auth/Functions dependencies, anonymous auth, and `RavelryBackendClient`; Phase 6 makes `RavelryAuthManager` own backend auth status/start/disconnect/callback state, opens auth through Auth Tab with Custom Tabs fallback, and handles only token-free `knittools://ravelry-auth-complete` callbacks in Android UI; Phase 7 moves saved patterns to schema 14 source metadata while preserving existing saved-pattern IDs; Phase 8 completes Ravelry UI and saved-pattern UX: search/share URL imports use one confirmation flow, Android `ACTION_SEND text/plain` imports validated Ravelry pattern URLs, connected Browse Ravelry opens Custom Tabs with share enabled, `SavedPatternDetailScreen` owns metadata availability/actions, PatternPickerSheet lists all saved patterns, and project pattern cards open SavedPatternDetail for metadata-only links while attached PDFs still open the PDF viewer; Phase 9 hardens `tools/release-surface.ps1` so only Firebase Auth/Functions/Google Services are allowed for this backend, Firebase AI/ML Kit/Gemini/voice remain forbidden, tracked `app/google-services.json` fails, and locally/env-known Ravelry secret values are scanned without printing them
 - Debug-only Pro override is centralized in `ProState.hasFeature` through `BuildConfig.DEBUG`; it opens feature gates in debug builds without changing `isPro`, billing purchase state, trial state, or Pro upgrade UI purchase claims
 - Debug-only Sentry diagnostics live under `app/src/debug` and use `io.sentry:sentry-android-core` only through `debugImplementation`; the release source set is a no-op and release builds must stay free of `io.sentry` dependencies
 - Voice/microphone commands are intentionally absent from the counter; do not reintroduce SpeechRecognizer, TextToSpeech, or conversational voice without a new explicit product/security decision
@@ -82,14 +84,15 @@ Use [`CLAUDE.md`](/home/emma/dev/KnitTools/CLAUDE.md) when product wording, visu
 - Do not add back `org.jetbrains.kotlin.android`
 - Do not reintroduce `android.disallowKotlinSourceSets`, `android.newDsl`, or `android.builtInKotlin` toggles unless absolutely necessary
 - Release signing must stay environment-variable-driven
-- Debug-only Ravelry credentials belong in ignored `debug.credentials.properties`, not `local.properties`; release Ravelry credentials come from `KNITTOOLS_RAVELRY_*` environment variables and require explicit embedded-secret opt-in
+- Android Firebase config belongs in ignored `app/google-services.json` locally or the CI secret `KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64`; build artifact tasks require it, but static Android lint must be able to run without the local file; Ravelry credentials must not be added to Android `BuildConfig`, `debug.credentials.properties`, `local.properties`, resources, or source code
 - Debug-only Sentry DSN belongs in `KNITTOOLS_SENTRY_DSN`, `SENTRY_DSN`, or ignored `debug.credentials.properties` as `sentry.dsn`; do not hardcode or commit it
-- Firebase, Google Services, App Check, and model-backed parser dependencies are intentionally absent after model-backed feature removal; do not add them back as transitive convenience dependencies
+- Firebase and Google Services are allowed only for the Ravelry backend migration phases documented in `Ravelry Firebase Backend And Saved Patterns Plan.md`; do not add Firebase AI, ML Kit, Gemini, App Check, or model-backed parser dependencies as transitive convenience dependencies
+- Functions runtime is `nodejs22`; `firebase-functions` and `firebase-admin` versions must satisfy npm peer dependencies instead of being forced with `--legacy-peer-deps`
 
 ## Security
 
 - Keep `usesCleartextTraffic` disabled unless explicitly justified
-- Ravelry Basic Auth credentials and OAuth client secret are an accepted no-backend risk only when documented in `config/security-decisions.md` and gated by the release opt-in; DeepSec marks only the documented Ravelry `secrets-exposure` findings as accepted-risk after revalidation
+- Ravelry Basic Auth credentials and OAuth client secret are removed from Android; new Ravelry work must keep secrets and token exchange server-side, and DeepSec accepted-risk handling must not expand beyond documented historical findings
 - Exported components must stay intentional and minimal
 - Treat extras on exported activities as untrusted unless they are explicitly validated against app-owned state
 - Keep `FileProvider` usage least-privilege

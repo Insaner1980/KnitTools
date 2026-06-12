@@ -12,6 +12,7 @@ import com.finnvek.knittools.data.local.toEntity
 import com.finnvek.knittools.data.storage.AppFileStorage
 import com.finnvek.knittools.di.IoDispatcher
 import com.finnvek.knittools.domain.model.SavedPattern
+import com.finnvek.knittools.domain.model.SavedPatternSource
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
@@ -21,6 +22,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.InputStream
+import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -51,23 +53,54 @@ class SavedPatternRepository
             return pattern.toDomain()
         }
 
-        suspend fun getByRavelryId(ravelryId: Int): SavedPattern? = dao.getByRavelryId(ravelryId)?.toDomain()
-
-        suspend fun getByPatternUrl(patternUrl: String): SavedPattern? = dao.getByPatternUrl(patternUrl)?.toDomain()
+        suspend fun getByRavelryPatternId(ravelryPatternId: Int): SavedPattern? =
+            dao.getByRavelryPatternId(ravelryPatternId)?.toDomain()
 
         suspend fun pruneMissingLocalPattern(patternUrl: String): Boolean {
             if (!patternUrl.isAppOwnedMissingFile()) return false
-            dao.getByPatternUrl(patternUrl)?.let { pattern -> deleteById(pattern.id) }
+            dao.getByLocalPdfUri(patternUrl)?.let { pattern -> deleteById(pattern.id) }
             return true
         }
 
         suspend fun save(pattern: SavedPattern): Long = dao.insert(pattern.toEntity())
 
         suspend fun saveRavelryPatternIfMissing(pattern: SavedPattern): Long {
-            if (pattern.ravelryId <= 0) return save(pattern)
-            return saveMutex.withLock {
-                dao.getByRavelryId(pattern.ravelryId)?.id ?: dao.insert(pattern.toEntity())
+            if (pattern.ravelryPatternId == null && pattern.canonicalUrl.isBlank() && pattern.originalUrl.isBlank()) {
+                return save(pattern)
             }
+            return saveMutex.withLock {
+                findDuplicateCandidate(pattern, includeTitleDesigner = false)?.id ?: dao.insert(pattern.toEntity())
+            }
+        }
+
+        suspend fun findDuplicateCandidate(
+            pattern: SavedPattern,
+            includeTitleDesigner: Boolean,
+        ): SavedPattern? {
+            pattern.ravelryPatternId?.let { ravelryPatternId ->
+                if (ravelryPatternId > 0) {
+                    dao.getByRavelryPatternId(ravelryPatternId)?.toDomain()?.let { return it }
+                }
+            }
+
+            pattern.canonicalUrl.takeIf { it.isNotBlank() }?.let { canonicalUrl ->
+                dao.getByCanonicalUrl(canonicalUrl)?.toDomain()?.let { return it }
+            }
+
+            val normalizedOriginalUrl = pattern.originalUrl.normalizedOriginalUrl()
+            if (normalizedOriginalUrl.isNotBlank()) {
+                val originalUrlMatch =
+                    dao.getAllOnce().firstOrNull { candidate ->
+                        candidate.originalUrl.normalizedOriginalUrl() == normalizedOriginalUrl
+                    }
+                if (originalUrlMatch != null) return originalUrlMatch.toDomain()
+            }
+
+            if (includeTitleDesigner && pattern.name.isNotBlank() && pattern.designerName.isNotBlank()) {
+                dao.getByTitleAndDesignerName(pattern.name, pattern.designerName)?.toDomain()?.let { return it }
+            }
+
+            return null
         }
 
         suspend fun saveImportedPatternIfMissing(
@@ -76,15 +109,17 @@ class SavedPatternRepository
         ): Long? {
             if (!patternUrl.startsWith("content://") && !patternUrl.startsWith("file://")) return null
             return saveMutex.withLock {
-                val existing = dao.getByPatternUrl(patternUrl)
+                val existing = dao.getByLocalPdfUri(patternUrl)
                 if (existing != null) return@withLock existing.id
 
                 dao.insert(
                     SavedPatternEntity(
-                        ravelryId = 0,
+                        source = SavedPatternSource.LocalFile.persistedValue,
                         name = name,
                         designerName = context.getString(R.string.imported_pattern_designer),
-                        patternUrl = patternUrl,
+                        originalUrl = patternUrl,
+                        localPdfUri = patternUrl,
+                        isAvailableOffline = true,
                     ),
                 )
             }
@@ -138,7 +173,7 @@ class SavedPatternRepository
             val uri = patternUrl.toUri()
             if (!AppFileStorage.isAppOwnedUri(context, uri)) return
 
-            val savedPatternStillReferencesFile = dao.getByPatternUrl(patternUrl) != null
+            val savedPatternStillReferencesFile = dao.getByLocalPdfUri(patternUrl) != null
             val projectStillReferencesFile = counterProjectDao.countProjectsUsingPatternUri(patternUrl) > 0
             if (!savedPatternStillReferencesFile && !projectStillReferencesFile) {
                 withContext(ioDispatcher) {
@@ -160,6 +195,11 @@ class SavedPatternRepository
             val file = AppFileStorage.resolveAppOwnedFile(context, toUri()) ?: return false
             return !file.exists()
         }
+
+        private fun String.normalizedOriginalUrl(): String =
+            trim()
+                .removeSuffix("/")
+                .lowercase(Locale.US)
 
         private fun filesHaveSameContent(
             first: File,

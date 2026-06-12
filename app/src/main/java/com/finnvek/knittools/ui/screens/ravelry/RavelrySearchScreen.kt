@@ -1,7 +1,7 @@
 package com.finnvek.knittools.ui.screens.ravelry
 
+import android.net.Uri
 import androidx.activity.compose.BackHandler
-import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -57,7 +58,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -66,22 +66,24 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
+import com.finnvek.knittools.auth.RavelryAuthState
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.StatusMessage
 import com.finnvek.knittools.ui.components.StatusMessageType
-import com.finnvek.knittools.ui.screens.library.SavedPatternRouteTarget
 import com.finnvek.knittools.ui.screens.library.SelectionIndicator
-import com.finnvek.knittools.ui.screens.library.routeTarget
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Suppress("UNUSED_PARAMETER")
 @Composable
 fun RavelrySearchScreen(
     onPatternClick: (Int) -> Unit,
-    onLocalPatternClick: (Long) -> Unit,
     onSavedPatterns: () -> Unit,
     onBack: () -> Unit,
+    onLaunchRavelryAuth: (Uri) -> Unit = {},
+    onBrowseRavelry: () -> Unit = {},
+    importUrl: String? = null,
+    onSavedPatternDetail: (Long) -> Unit = {},
     viewModel: RavelryViewModel = hiltViewModel(),
 ) {
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
@@ -91,17 +93,32 @@ fun RavelrySearchScreen(
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val searchError by viewModel.searchError.collectAsStateWithLifecycle()
     val savedPatterns by viewModel.savedPatterns.collectAsStateWithLifecycle()
-    val isAuthenticated by viewModel.isAuthenticated.collectAsStateWithLifecycle()
+    val authState by viewModel.authState.collectAsStateWithLifecycle()
     val isSavedSelectMode by viewModel.isSavedSelectMode.collectAsStateWithLifecycle()
     val selectedSavedIds by viewModel.selectedSavedIds.collectAsStateWithLifecycle()
+    val importConfirmationState by viewModel.importConfirmationState.collectAsStateWithLifecycle()
 
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     var showDeleteConfirmDialog by rememberSaveable { mutableStateOf(false) }
     val keyboardController = LocalSoftwareKeyboardController.current
-    val context = LocalContext.current
+    val currentOnLaunchRavelryAuth by rememberUpdatedState(onLaunchRavelryAuth)
 
     BackHandler(enabled = isSavedSelectMode) {
         viewModel.exitSavedSelectMode()
+    }
+
+    LaunchedEffect(viewModel) {
+        viewModel.refreshAuthStatus()
+    }
+
+    LaunchedEffect(viewModel) {
+        viewModel.signInLaunchRequests.collect { uri ->
+            currentOnLaunchRavelryAuth(uri)
+        }
+    }
+
+    LaunchedEffect(viewModel, importUrl) {
+        importUrl?.let(viewModel::showImportConfirmationForUrl)
     }
 
     if (showDeleteConfirmDialog) {
@@ -115,6 +132,17 @@ fun RavelrySearchScreen(
                 showDeleteConfirmDialog = false
             },
             onDismiss = { showDeleteConfirmDialog = false },
+        )
+    }
+
+    importConfirmationState?.let { state ->
+        RavelryImportConfirmationSheet(
+            state = state,
+            onSave = viewModel::saveImportPattern,
+            onSignIn = viewModel::startSignIn,
+            onRetry = viewModel::retryImportConfirmation,
+            onOpenSavedPattern = onSavedPatternDetail,
+            onDismiss = viewModel::dismissImportConfirmation,
         )
     }
 
@@ -209,15 +237,12 @@ fun RavelrySearchScreen(
         },
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            // Kirjautumisbanneri
-            if (!isAuthenticated && !isSavedSelectMode) {
-                RavelrySignInPrompt(
-                    onSignIn = {
-                        CustomTabsIntent
-                            .Builder()
-                            .build()
-                            .launchUrl(context, viewModel.createSignInUri())
-                    },
+            if (!isSavedSelectMode) {
+                RavelryAccountHeader(
+                    authState = authState,
+                    onSignIn = viewModel::startSignIn,
+                    onBrowseRavelry = onBrowseRavelry,
+                    onDisconnect = viewModel::disconnectRavelry,
                 )
             }
 
@@ -252,6 +277,8 @@ fun RavelrySearchScreen(
                                 results = results,
                                 isLoading = isLoading,
                                 searchError = searchError,
+                                canSearch = authState is RavelryAuthState.Connected,
+                                savedRavelryPatternIds = savedPatterns.mapNotNull { it.ravelryPatternId }.toSet(),
                             ),
                         onQueryChange = viewModel::updateQuery,
                         onSearch = {
@@ -259,6 +286,9 @@ fun RavelrySearchScreen(
                             viewModel.search()
                         },
                         onPatternClick = onPatternClick,
+                        onImportPattern = { patternId ->
+                            viewModel.showImportConfirmationForPattern(patternId)
+                        },
                         onLoadMore = viewModel::loadMore,
                     )
                 }
@@ -268,8 +298,7 @@ fun RavelrySearchScreen(
                         patterns = savedPatterns,
                         isSelectMode = isSavedSelectMode,
                         selectedIds = selectedSavedIds,
-                        onPatternClick = onPatternClick,
-                        onLocalPatternClick = onLocalPatternClick,
+                        onSavedPatternDetail = onSavedPatternDetail,
                         onEnterSelectMode = viewModel::enterSavedSelectMode,
                         onToggleSelection = viewModel::toggleSavedSelection,
                     )
@@ -286,15 +315,39 @@ private data class SearchTabState(
     val results: List<com.finnvek.knittools.data.remote.PatternSearchResult>,
     val isLoading: Boolean,
     val searchError: RavelrySearchError?,
+    val canSearch: Boolean,
+    val savedRavelryPatternIds: Set<Int>,
 )
+
+internal enum class RavelrySearchResultCardAction {
+    OpenSavedPattern,
+    SavePattern,
+}
+
+internal fun ravelrySearchResultAction(
+    patternId: Int,
+    savedRavelryPatternIds: Set<Int>,
+): RavelrySearchResultCardAction =
+    if (patternId in savedRavelryPatternIds) {
+        RavelrySearchResultCardAction.OpenSavedPattern
+    } else {
+        RavelrySearchResultCardAction.SavePattern
+    }
 
 internal fun shouldRequestRavelryLoadMore(
     shouldLoadMore: Boolean,
+    canSearch: Boolean,
     resultCount: Int,
     isLoading: Boolean,
     hasError: Boolean,
     isCurrentSubmittedSearch: Boolean,
-): Boolean = shouldLoadMore && resultCount > 0 && !isLoading && !hasError && isCurrentSubmittedSearch
+): Boolean =
+    shouldLoadMore &&
+        canSearch &&
+        resultCount > 0 &&
+        !isLoading &&
+        !hasError &&
+        isCurrentSubmittedSearch
 
 internal fun shouldShowRavelryEmptyState(
     isLoading: Boolean,
@@ -322,6 +375,7 @@ private fun SearchTab(
     onQueryChange: (String) -> Unit,
     onSearch: () -> Unit,
     onPatternClick: (Int) -> Unit,
+    onImportPattern: (Int) -> Unit,
     onLoadMore: () -> Unit,
 ) {
     val listState = rememberLazyListState()
@@ -337,11 +391,20 @@ private fun SearchTab(
     val currentOnLoadMore by rememberUpdatedState(onLoadMore)
     val hasError = state.searchError != null
     val isCurrentSubmittedSearch = state.isCurrentSubmittedSearch()
+    val retryLabel = stringResource(R.string.retry)
 
-    LaunchedEffect(shouldLoadMore, state.results.size, state.isLoading, hasError, isCurrentSubmittedSearch) {
+    LaunchedEffect(
+        shouldLoadMore,
+        state.canSearch,
+        state.results.size,
+        state.isLoading,
+        hasError,
+        isCurrentSubmittedSearch,
+    ) {
         if (
             shouldRequestRavelryLoadMore(
                 shouldLoadMore = shouldLoadMore,
+                canSearch = state.canSearch,
                 resultCount = state.results.size,
                 isLoading = state.isLoading,
                 hasError = hasError,
@@ -362,12 +425,20 @@ private fun SearchTab(
             TextField(
                 value = state.searchQuery,
                 onValueChange = onQueryChange,
+                enabled = state.canSearch,
                 modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                 placeholder = { Text(stringResource(R.string.search_hint)) },
                 singleLine = true,
                 shape = MaterialTheme.shapes.medium,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(onSearch = { onSearch() }),
+                keyboardActions =
+                    KeyboardActions(
+                        onSearch = {
+                            if (state.canSearch) {
+                                onSearch()
+                            }
+                        },
+                    ),
                 colors =
                     TextFieldDefaults.colors(
                         focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -378,7 +449,23 @@ private fun SearchTab(
             )
         }
 
+        if (!state.canSearch) {
+            item {
+                Text(
+                    text = stringResource(R.string.ravelry_search_requires_sign_in),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                )
+            }
+        }
+
         items(state.results, key = { it.id }) { pattern ->
+            val cardAction =
+                ravelrySearchResultAction(
+                    patternId = pattern.id,
+                    savedRavelryPatternIds = state.savedRavelryPatternIds,
+                )
             PatternCard(
                 name = pattern.name,
                 designerName = pattern.designer?.name ?: "",
@@ -386,6 +473,13 @@ private fun SearchTab(
                 difficulty = pattern.difficultyAverage,
                 isFree = pattern.free,
                 onClick = { onPatternClick(pattern.id) },
+                actionContent = {
+                    RavelrySearchResultActionContent(
+                        action = cardAction,
+                        onOpen = { onPatternClick(pattern.id) },
+                        onSave = { onImportPattern(pattern.id) },
+                    )
+                },
             )
         }
 
@@ -405,8 +499,8 @@ private fun SearchTab(
                 StatusMessage(
                     message = stringResource(state.searchError.messageRes(isLoadMoreError = false)),
                     type = StatusMessageType.Error,
-                    actionLabel = stringResource(R.string.retry),
-                    onAction = onSearch,
+                    actionLabel = if (state.canSearch) retryLabel else null,
+                    onAction = if (state.canSearch) onSearch else null,
                     modifier = Modifier.padding(vertical = 24.dp),
                 )
             }
@@ -417,8 +511,8 @@ private fun SearchTab(
                 StatusMessage(
                     message = stringResource(state.searchError.messageRes(isLoadMoreError = true)),
                     type = StatusMessageType.Error,
-                    actionLabel = stringResource(R.string.retry),
-                    onAction = onLoadMore,
+                    actionLabel = if (state.canSearch) retryLabel else null,
+                    onAction = if (state.canSearch) onLoadMore else null,
                 )
             }
         }
@@ -446,6 +540,40 @@ private fun SearchTab(
     }
 }
 
+@Composable
+private fun RavelrySearchResultActionContent(
+    action: RavelrySearchResultCardAction,
+    onOpen: () -> Unit,
+    onSave: () -> Unit,
+) {
+    when (action) {
+        RavelrySearchResultCardAction.OpenSavedPattern -> {
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = stringResource(R.string.pattern_saved),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                TextButton(
+                    onClick = onOpen,
+                    modifier = Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp),
+                ) {
+                    Text(stringResource(R.string.ravelry_open_saved_pattern))
+                }
+            }
+        }
+
+        RavelrySearchResultCardAction.SavePattern -> {
+            Button(
+                onClick = onSave,
+                modifier = Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp),
+            ) {
+                Text(stringResource(R.string.save_pattern))
+            }
+        }
+    }
+}
+
 private fun RavelrySearchError.messageRes(isLoadMoreError: Boolean): Int =
     when (this) {
         RavelrySearchError.Network, RavelrySearchError.Unknown ->
@@ -466,8 +594,7 @@ private fun SavedTab(
     patterns: List<SavedPattern>,
     isSelectMode: Boolean,
     selectedIds: Set<Long>,
-    onPatternClick: (Int) -> Unit,
-    onLocalPatternClick: (Long) -> Unit,
+    onSavedPatternDetail: (Long) -> Unit,
     onEnterSelectMode: (Long) -> Unit,
     onToggleSelection: (Long) -> Unit,
 ) {
@@ -484,8 +611,7 @@ private fun SavedTab(
                     pattern = pattern,
                     isSelectMode = isSelectMode,
                     isSelected = pattern.id in selectedIds,
-                    onPatternClick = onPatternClick,
-                    onLocalPatternClick = onLocalPatternClick,
+                    onSavedPatternDetail = onSavedPatternDetail,
                     onEnterSelectMode = onEnterSelectMode,
                     onToggleSelection = onToggleSelection,
                 )
@@ -515,8 +641,7 @@ private fun SavedPatternItem(
     pattern: SavedPattern,
     isSelectMode: Boolean,
     isSelected: Boolean,
-    onPatternClick: (Int) -> Unit,
-    onLocalPatternClick: (Long) -> Unit,
+    onSavedPatternDetail: (Long) -> Unit,
     onEnterSelectMode: (Long) -> Unit,
     onToggleSelection: (Long) -> Unit,
 ) {
@@ -526,17 +651,6 @@ private fun SavedPatternItem(
         } else {
             MaterialTheme.colorScheme.surfaceVariant
         }
-    val openPattern = {
-        when (val target = pattern.routeTarget()) {
-            is SavedPatternRouteTarget.LocalPattern -> {
-                onLocalPatternClick(target.savedPatternId)
-            }
-
-            is SavedPatternRouteTarget.RavelryPattern -> {
-                onPatternClick(target.ravelryId)
-            }
-        }
-    }
 
     Box(
         modifier =
@@ -547,7 +661,7 @@ private fun SavedPatternItem(
                         if (isSelectMode) {
                             onToggleSelection(pattern.id)
                         } else {
-                            openPattern()
+                            onSavedPatternDetail(pattern.id)
                         }
                     },
                     onLongClick = {
@@ -567,7 +681,7 @@ private fun SavedPatternItem(
                 if (isSelectMode) {
                     onToggleSelection(pattern.id)
                 } else {
-                    openPattern()
+                    onSavedPatternDetail(pattern.id)
                 }
             },
             modifier = Modifier.background(backgroundColor, MaterialTheme.shapes.large),

@@ -59,8 +59,7 @@ data class SavedPatternsState(
 )
 
 data class SavedPatternsActions(
-    val onPatternClick: (Int) -> Unit,
-    val onLocalPatternClick: (Long) -> Unit,
+    val onPatternClick: (Long) -> Unit,
     val onEnterSelectMode: (Long) -> Unit,
     val onToggleSelection: (Long) -> Unit,
     val onSelectAll: (List<Long>) -> Unit,
@@ -157,15 +156,7 @@ private fun SavedPatternsList(
                     if (state.isSelectMode) {
                         actions.onToggleSelection(pattern.id)
                     } else {
-                        when (val target = pattern.routeTarget()) {
-                            is SavedPatternRouteTarget.LocalPattern -> {
-                                actions.onLocalPatternClick(target.savedPatternId)
-                            }
-
-                            is SavedPatternRouteTarget.RavelryPattern -> {
-                                actions.onPatternClick(target.ravelryId)
-                            }
-                        }
+                        actions.onPatternClick(pattern.id)
                     }
                 },
                 onLongClick = {

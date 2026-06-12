@@ -1,5 +1,6 @@
 package com.finnvek.knittools.ui.navigation
 
+import android.net.Uri
 import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoStories
@@ -63,6 +64,20 @@ sealed class Screen(
 
     data object Ravelry : Screen("ravelry")
 
+    data class RavelryImport(
+        val url: String,
+    ) : Screen("ravelry_import/${Uri.encode(url)}") {
+        companion object {
+            const val ARG_IMPORT_URL = "importUrl"
+            const val ROUTE = "ravelry_import/{$ARG_IMPORT_URL}"
+
+            fun importUrl(routeArgument: String?): String? =
+                routeArgument
+                    ?.let(Uri::decode)
+                    ?.takeIf { it.isNotBlank() }
+        }
+    }
+
     data class RavelryDetail(
         val patternId: Int,
     ) : Screen("ravelry_detail/$patternId") {
@@ -103,6 +118,14 @@ sealed class Screen(
     data object Library : Screen("library")
 
     data object SavedPatterns : Screen("saved_patterns")
+
+    data class SavedPatternDetail(
+        val savedPatternId: Long,
+    ) : Screen("saved_pattern_detail/$savedPatternId") {
+        companion object {
+            const val ROUTE = "saved_pattern_detail/{savedPatternId}"
+        }
+    }
 
     data class LibraryPatternViewer(
         val savedPatternId: Long,

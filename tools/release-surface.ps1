@@ -24,11 +24,13 @@ Odotetut sopimusarvot, varmistettu nykyisista lahdetiedostoista:
 - FileProvider rootit: files-path progress_photos -> progress_photos/ ja files-path pattern_captures -> pattern_captures/.
   yarn_photos, pattern_pdfs, broad files/cache/external roots ja external storage roots eivat kuulu jaettuun pintaan.
 - Release signing gate riippuu KNITTOOLS_* signing -ymparistomuuttujista.
-- Release Ravelry credential gate riippuu KNITTOOLS_RAVELRY_* -muuttujista ja
-  KNITTOOLS_ALLOW_EMBEDDED_RAVELRY_SECRETS=true -opt-in-lipusta.
+- Firebase Auth/Functions ja Google Services ovat sallittuja vain Ravelry-backendia varten.
+  app/google-services.json saa olla paikallinen ignoroitu tiedosto, mutta se ei saa olla git-indexissa.
 - debug.credentials.properties on paikallinen, ignoroitu ja git-indexin ulkopuolella.
 - Sentry saa olla vain debugImplementation + app/src/debug; app/src/release on no-op eika release/main lahdekoodi saa importata io.sentrya.
-- Google Services, Firebase, ML Kit, Gemini/Google Generative AI ja voice/speech dependencyt eivat kuulu projektiin.
+- Firebase AI, ML Kit, Gemini/Google Generative AI ja voice/speech dependencyt eivat kuulu projektiin.
+- Tunnettuja paikallisista tai ymparistomuuttujista luettuja Ravelry secret -arvoja ei saa esiintya lahteissa,
+  resursseissa, BuildConfig/generoiduissa vakioissa, Gradle-tiedostoissa, manifesteissa, testeissa, APK:ssa tai AAB:ssa.
 - Room-version luetaan @Database-annotaatiosta. Schema exportin pitaa olla paalla, N.json pitaa loytya,
   ja auto/manual-migraatiopolun pitaa ulottua varhaisimmasta exportoidusta schemasta versioon N.
 - Widget counter launch on CounterLaunchTokenStore-tokenilla rajattu, ja OAuth callback ei saa muodostaa counter launchia.
@@ -196,6 +198,31 @@ function Get-RelativeFiles {
                 $_.FullName.Substring($RepoRoot.Length + 1).Replace("\", "/")
             }
     )
+}
+
+function Get-RelativeFilesForRoots {
+    param([string[]]$RelativeRoots)
+
+    $files = @()
+    foreach ($relativeRoot in $RelativeRoots) {
+        $path = Join-RepoPath $relativeRoot
+        if (-not (Test-Path -LiteralPath $path)) {
+            continue
+        }
+
+        if ((Get-Item -LiteralPath $path).PSIsContainer) {
+            $files += @(
+                Get-ChildItem -LiteralPath $path -Recurse -File |
+                    ForEach-Object {
+                        $_.FullName.Substring($RepoRoot.Length + 1).Replace("\", "/")
+                    }
+            )
+        } else {
+            $files += $relativeRoot.Replace("\", "/")
+        }
+    }
+
+    return @($files | Sort-Object -Unique)
 }
 
 function Invoke-Git {
@@ -442,6 +469,13 @@ function Test-ReleaseGates {
             "appReleaseArtifactTasks",
             "missingSigningEnvNames",
             "Release build estetty",
+            "VerifyGoogleServicesJsonTask",
+            "verifyGoogleServicesJson",
+            "firebaseConfiguredArtifactTaskNames",
+            "KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64"
+        )
+
+        $legacyRavelryAnchors = @(@(
             "releaseRavelryEnvNames",
             "embeddedRavelryCredentialsAllowed",
             "KNITTOOLS_ALLOW_EMBEDDED_RAVELRY_SECRETS",
@@ -449,17 +483,79 @@ function Test-ReleaseGates {
             "KNITTOOLS_RAVELRY_BASIC_AUTH_PASSWORD",
             "KNITTOOLS_RAVELRY_OAUTH2_CLIENT_ID",
             "KNITTOOLS_RAVELRY_OAUTH2_CLIENT_SECRET"
-        )
+        ) | Where-Object { $text.Contains($_) })
 
         $missing = @($requiredAnchors | Where-Object { -not $text.Contains($_) })
-        if ($missing.Count -eq 0) {
-            Add-Pass -Check $check -Message "release signing and Ravelry gate anchors present"
+        if ($missing.Count -eq 0 -and $legacyRavelryAnchors.Count -eq 0) {
+            Add-Pass -Check $check -Message "release signing and Firebase config gates match contract"
         } else {
-            $line = Get-LineNumber -RelativePath $relativePath -Pattern "releaseSigningEnvNames|releaseRavelryEnvNames|KNITTOOLS_ALLOW_EMBEDDED_RAVELRY_SECRETS"
-            Add-Fail -Check $check -Message "missing gate anchors: $($missing -join ', ')" -RelativePath $relativePath -Line $line
+            $parts = @()
+            if ($missing.Count -gt 0) {
+                $parts += "missing gate anchors: $($missing -join ', ')"
+            }
+            if ($legacyRavelryAnchors.Count -gt 0) {
+                $parts += "legacy Android Ravelry credential gate anchors remain: $($legacyRavelryAnchors -join ', ')"
+            }
+
+            $line = Get-LineNumber -RelativePath $relativePath -Pattern "releaseSigningEnvNames|VerifyGoogleServicesJsonTask|KNITTOOLS_RAVELRY|KNITTOOLS_ALLOW_EMBEDDED_RAVELRY_SECRETS"
+            Add-Fail -Check $check -Message ($parts -join "; ") -RelativePath $relativePath -Line $line
         }
     } catch {
         Add-Fail -Check $check -Message $_.Exception.Message -RelativePath $relativePath
+    }
+}
+
+function Test-FirebaseBoundary {
+    $check = "firebase-boundary"
+    $googleServicesPath = "app/google-services.json"
+    $gitignorePath = ".gitignore"
+    $firstPath = "app/build.gradle.kts"
+    $firstLine = $null
+
+    try {
+        $problems = @()
+        $trackedGoogleServices = Invoke-Git -Arguments @("ls-files", "--", $googleServicesPath)
+        if ($trackedGoogleServices.ExitCode -eq 0 -and $trackedGoogleServices.Output.Count -gt 0) {
+            $problems += "app/google-services.json is tracked by git"
+            $firstPath = $googleServicesPath
+        }
+
+        $ignoredGoogleServices = Invoke-Git -Arguments @("check-ignore", "--no-index", "-q", "--", $googleServicesPath)
+        if ($ignoredGoogleServices.ExitCode -ne 0) {
+            $problems += ".gitignore does not cover app/google-services.json"
+            $firstPath = $gitignorePath
+            $firstLine = Get-LineNumber -RelativePath $gitignorePath -Pattern "google-services\.json"
+        }
+
+        $appGradle = Read-TextFile "app/build.gradle.kts"
+        $catalog = Read-TextFile "gradle/libs.versions.toml"
+        $requiredAnchors = @(
+            [pscustomobject]@{ Path = "app/build.gradle.kts"; Text = $appGradle; Anchor = 'apply(plugin = "com.google.gms.google-services")' },
+            [pscustomobject]@{ Path = "app/build.gradle.kts"; Text = $appGradle; Anchor = "implementation(platform(libs.firebase.bom))" },
+            [pscustomobject]@{ Path = "app/build.gradle.kts"; Text = $appGradle; Anchor = "implementation(libs.firebase.auth)" },
+            [pscustomobject]@{ Path = "app/build.gradle.kts"; Text = $appGradle; Anchor = "implementation(libs.firebase.functions)" },
+            [pscustomobject]@{ Path = "gradle/libs.versions.toml"; Text = $catalog; Anchor = 'firebase-auth = { group = "com.google.firebase", name = "firebase-auth" }' },
+            [pscustomobject]@{ Path = "gradle/libs.versions.toml"; Text = $catalog; Anchor = 'firebase-functions = { group = "com.google.firebase", name = "firebase-functions" }' },
+            [pscustomobject]@{ Path = "gradle/libs.versions.toml"; Text = $catalog; Anchor = 'google-services = { id = "com.google.gms.google-services"' }
+        )
+
+        foreach ($anchor in $requiredAnchors) {
+            if (-not $anchor.Text.Contains($anchor.Anchor)) {
+                $problems += "missing Firebase/Google Services anchor '$($anchor.Anchor)'"
+                if ($null -eq $firstLine) {
+                    $firstPath = $anchor.Path
+                    $firstLine = Get-LineNumber -RelativePath $anchor.Path -Pattern "firebase|google-services|GoogleServices"
+                }
+            }
+        }
+
+        if ($problems.Count -gt 0) {
+            Add-Fail -Check $check -Message ($problems -join "; ") -RelativePath $firstPath -Line $firstLine
+        } else {
+            Add-Pass -Check $check -Message "Firebase Auth/Functions and ignored Google Services config match contract"
+        }
+    } catch {
+        Add-Fail -Check $check -Message $_.Exception.Message -RelativePath $firstPath -Line $firstLine
     }
 }
 
@@ -563,19 +659,6 @@ function Test-ForbiddenDependencies {
     $firstLine = $null
 
     try {
-        $googleServicesPath = "app/google-services.json"
-        $googleServicesFullPath = Join-RepoPath $googleServicesPath
-        if (Test-Path -LiteralPath $googleServicesFullPath) {
-            $problems += "app/google-services.json exists"
-            $firstPath = $googleServicesPath
-        }
-
-        $trackedGoogleServices = Invoke-Git -Arguments @("ls-files", "--", $googleServicesPath)
-        if ($trackedGoogleServices.ExitCode -eq 0 -and $trackedGoogleServices.Output.Count -gt 0) {
-            $problems += "app/google-services.json is tracked by git"
-            $firstPath = $googleServicesPath
-        }
-
         $gradleFiles = @(
             "build.gradle.kts",
             "app/build.gradle.kts",
@@ -584,8 +667,7 @@ function Test-ForbiddenDependencies {
         ) | Where-Object { Test-Path -LiteralPath (Join-RepoPath $_) }
 
         $denyPatterns = @(
-            [pscustomobject]@{ Name = "google-services plugin"; Pattern = 'com\.google\.gms\.google-services|google-services' },
-            [pscustomobject]@{ Name = "Firebase dependency"; Pattern = 'com\.google\.firebase|firebase[-.]|\bfirebase\b' },
+            [pscustomobject]@{ Name = "Firebase AI dependency"; Pattern = 'firebase[-.]ai|firebase\.ai|firebase-ai|com\.google\.firebase.*ai' },
             [pscustomobject]@{ Name = "ML Kit dependency"; Pattern = 'com\.google\.mlkit|mlkit|ml-kit|play-services-mlkit' },
             [pscustomobject]@{ Name = "Gemini or Google Generative AI dependency"; Pattern = 'generativeai|generative-ai|gemini|google-ai-client' },
             [pscustomobject]@{ Name = "voice or speech dependency"; Pattern = 'speechrecognizer|speech-recognition|voice-command|text-to-speech|texttospeech|androidx\.speech' }
@@ -602,6 +684,36 @@ function Test-ForbiddenDependencies {
                         }
                     }
                 }
+
+                if ($line.Text -match '^\s*(implementation|api|runtimeOnly|compileOnly|debugImplementation|releaseImplementation|testImplementation|androidTestImplementation)\s*\(\s*libs\.firebase\.([A-Za-z0-9_.-]+)') {
+                    $alias = $Matches[2]
+                    if ($alias -notin @("bom", "auth", "functions")) {
+                        $problems += "unapproved Firebase dependency alias '$alias' found in $file"
+                        if ($null -eq $firstLine) {
+                            $firstPath = $file
+                            $firstLine = $line.Number
+                        }
+                    }
+                }
+
+                if ($file -eq "gradle/libs.versions.toml" -and $line.Text -match '^\s*(firebase[-A-Za-z0-9_.]*)\s*=') {
+                    $key = $Matches[1]
+                    if ($key -notin @("firebaseBom", "firebase-bom", "firebase-auth", "firebase-functions")) {
+                        $problems += "unapproved Firebase catalog entry '$key' found in $file"
+                        if ($null -eq $firstLine) {
+                            $firstPath = $file
+                            $firstLine = $line.Number
+                        }
+                    }
+                }
+
+                if ($line.Text -match 'com\.google\.firebase' -and $line.Text -notmatch 'firebase-(bom|auth|functions)') {
+                    $problems += "unapproved direct Firebase dependency found in $file"
+                    if ($null -eq $firstLine) {
+                        $firstPath = $file
+                        $firstLine = $line.Number
+                    }
+                }
             }
         }
 
@@ -612,6 +724,164 @@ function Test-ForbiddenDependencies {
         }
     } catch {
         Add-Fail -Check $check -Message $_.Exception.Message -RelativePath $firstPath -Line $firstLine
+    }
+}
+
+function Get-KnownRavelrySecretValues {
+    $secretNames = @(
+        "KNITTOOLS_RAVELRY_BASIC_AUTH_USER",
+        "KNITTOOLS_RAVELRY_BASIC_AUTH_PASSWORD",
+        "KNITTOOLS_RAVELRY_OAUTH2_CLIENT_ID",
+        "KNITTOOLS_RAVELRY_OAUTH2_CLIENT_SECRET",
+        "RAVELRY_CLIENT_ID",
+        "RAVELRY_CLIENT_SECRET"
+    )
+
+    $values = New-Object System.Collections.Generic.List[string]
+    foreach ($name in $secretNames) {
+        $value = [Environment]::GetEnvironmentVariable($name)
+        if (-not [string]::IsNullOrWhiteSpace($value)) {
+            $values.Add($value) | Out-Null
+        }
+    }
+
+    $debugCredentialsPath = Join-RepoPath "debug.credentials.properties"
+    if (Test-Path -LiteralPath $debugCredentialsPath) {
+        $properties = New-Object System.Collections.Specialized.OrderedDictionary
+        $rawLines = Get-Content -LiteralPath $debugCredentialsPath
+        foreach ($line in $rawLines) {
+            if ($line -notmatch '^\s*([^#!=:\s][^!=:]*)\s*[=:]\s*(.*)\s*$') {
+                continue
+            }
+
+            $key = $Matches[1].Trim()
+            $value = $Matches[2].Trim()
+            if ($key -match '(?i)ravelry' -and $key -match '(?i)(secret|password|client|auth|token)' -and -not [string]::IsNullOrWhiteSpace($value)) {
+                $values.Add($value) | Out-Null
+            }
+        }
+    }
+
+    return @(
+        $values |
+            Where-Object {
+                $_.Length -ge 8 -and
+                    $_ -notmatch '^(?i)(example|placeholder|dummy|test|knitter|secret|password|client)$'
+            } |
+            Sort-Object -Unique
+    )
+}
+
+function Test-TextFileContainsSecret {
+    param(
+        [string]$RelativePath,
+        [string[]]$Secrets
+    )
+
+    $path = Join-RepoPath $RelativePath
+    try {
+        $text = [System.IO.File]::ReadAllText($path)
+        foreach ($secret in $Secrets) {
+            if ($text.Contains($secret)) {
+                return $true
+            }
+        }
+    } catch {
+        return $false
+    }
+
+    return $false
+}
+
+function Test-BinaryFileContainsSecret {
+    param(
+        [string]$RelativePath,
+        [string[]]$Secrets
+    )
+
+    $path = Join-RepoPath $RelativePath
+    if (-not (Test-Path -LiteralPath $path)) {
+        return $false
+    }
+
+    $bytes = [System.IO.File]::ReadAllBytes($path)
+    foreach ($secret in $Secrets) {
+        $needle = [System.Text.Encoding]::UTF8.GetBytes($secret)
+        if ($needle.Length -eq 0 -or $bytes.Length -lt $needle.Length) {
+            continue
+        }
+
+        for ($index = 0; $index -le $bytes.Length - $needle.Length; $index++) {
+            $matched = $true
+            for ($offset = 0; $offset -lt $needle.Length; $offset++) {
+                if ($bytes[$index + $offset] -ne $needle[$offset]) {
+                    $matched = $false
+                    break
+                }
+            }
+
+            if ($matched) {
+                return $true
+            }
+        }
+    }
+
+    return $false
+}
+
+function Test-KnownRavelrySecrets {
+    $check = "known-ravelry-secrets"
+
+    try {
+        $secrets = @(Get-KnownRavelrySecretValues)
+        if ($secrets.Count -eq 0) {
+            Add-Pass -Check $check -Message "no known local or environment Ravelry secret values were provided for comparison"
+            return
+        }
+
+        $textFiles = Get-RelativeFilesForRoots @(
+            "app/src/main",
+            "app/src/test",
+            "app/src/androidTest",
+            "app/build/generated",
+            "build.gradle.kts",
+            "settings.gradle.kts",
+            "app/build.gradle.kts",
+            "baselineprofile/build.gradle.kts",
+            "gradle/libs.versions.toml",
+            "gradle/verification-metadata.xml",
+            "functions/src",
+            "functions/lib",
+            "functions/package.json",
+            "firebase.json",
+            "firestore.rules"
+        )
+
+        $binaryFiles = Get-RelativeFilesForRoots @(
+            "app/build/outputs/apk",
+            "app/build/outputs/bundle"
+        )
+
+        $matches = @()
+        foreach ($file in $textFiles) {
+            if (Test-TextFileContainsSecret -RelativePath $file -Secrets $secrets) {
+                $matches += $file
+            }
+        }
+        foreach ($file in $binaryFiles) {
+            if (Test-BinaryFileContainsSecret -RelativePath $file -Secrets $secrets) {
+                $matches += $file
+            }
+        }
+
+        if ($matches.Count -gt 0) {
+            $firstPath = $matches[0]
+            Add-Fail -Check $check -Message "known Ravelry secret value found in $($matches.Count) checked file(s); value redacted" -RelativePath $firstPath
+        } else {
+            Add-Pass -Check $check -Message "known Ravelry secret values are absent from checked sources, resources, generated constants, tests, APKs, and bundles"
+        }
+    } catch {
+        Add-Fail -Check $check -Message $_.Exception.Message
     }
 }
 
@@ -888,9 +1158,11 @@ Test-ManifestFlags
 Test-ExportedSurface
 Test-FileProviderRoots
 Test-ReleaseGates
+Test-FirebaseBoundary
 Test-DebugCredentialsIgnored
 Test-SentryBoundary
 Test-ForbiddenDependencies
+Test-KnownRavelrySecrets
 Test-RoomSchema
 Test-WidgetOAuthBoundary
 Test-LocaleParity

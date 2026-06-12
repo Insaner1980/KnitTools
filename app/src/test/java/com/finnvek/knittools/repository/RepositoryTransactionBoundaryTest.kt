@@ -17,6 +17,8 @@ import com.finnvek.knittools.data.storage.PatternDocumentStorage
 import com.finnvek.knittools.data.storage.ProgressPhotoStorage
 import com.finnvek.knittools.data.storage.YarnPhotoStorage
 import com.finnvek.knittools.domain.model.ProgressPhoto
+import com.finnvek.knittools.domain.model.SavedPattern
+import com.finnvek.knittools.domain.model.SavedPatternSource
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.coVerifyOrder
@@ -75,7 +77,15 @@ class RepositoryTransactionBoundaryTest {
             val projectDao = mockk<CounterProjectDao>(relaxed = true)
             val context = mockk<Context>(relaxed = true)
             coEvery { patternDao.getByIds(listOf(4L)) } returns
-                listOf(SavedPatternEntity(id = 4L, ravelryId = 4, name = "Pattern", designerName = "Designer"))
+                listOf(
+                    SavedPatternEntity(
+                        id = 4L,
+                        source = SavedPatternSource.Ravelry.persistedValue,
+                        ravelryPatternId = 4,
+                        name = "Pattern",
+                        designerName = "Designer",
+                    ),
+                )
             val repository =
                 SavedPatternRepository(
                     patternDao,
@@ -224,16 +234,68 @@ class RepositoryTransactionBoundaryTest {
                     ioDispatcher = UnconfinedTestDispatcher(testScheduler),
                 )
 
+            coEvery { savedPatternRepository.saveImportedPatternIfMissing("content://pattern", "Pattern") } returns 11L
             repository.attachPattern(7L, "content://pattern", "Pattern", 0, null)
 
             assertEquals(1, runner.runCount)
             coVerifyOrder {
                 savedPatternRepository.saveImportedPatternIfMissing("content://pattern", "Pattern")
                 annotationRepository.clearProject(7L)
-                projectDao.updatePattern(
+                projectDao.updatePatternAttachment(
                     id = 7L,
+                    linkedPatternId = 11L,
                     patternUri = "content://pattern",
                     patternName = "Pattern",
+                    currentPatternPage = 0,
+                    patternRowMapping = null,
+                    updatedAt = any(),
+                )
+            }
+        }
+
+    @Test
+    fun `saved pattern attachment links existing saved pattern inside one transaction`() =
+        runTest {
+            val runner = RecordingTransactionRunner()
+            val projectDao = mockk<CounterProjectDao>(relaxed = true)
+            val sessionDao = mockk<SessionDao>(relaxed = true)
+            val savedPatternRepository = mockk<SavedPatternRepository>(relaxed = true)
+            val annotationRepository = mockk<PatternAnnotationRepository>(relaxed = true)
+            coEvery { savedPatternRepository.getById(12L) } returns
+                SavedPattern(
+                    id = 12L,
+                    source = SavedPatternSource.Ravelry,
+                    name = "Cardigan",
+                    designerName = "Designer",
+                    localPdfUri = null,
+                )
+            val repository =
+                CounterRepository(
+                    dao = projectDao,
+                    projectCounterDao = mockk(relaxed = true),
+                    sessionDao = sessionDao,
+                    photoStorage = mockk(relaxed = true),
+                    patternDocumentStorage = mockk(relaxed = true),
+                    context = mockk(relaxed = true),
+                    yarnCardRepository = mockk(relaxed = true),
+                    savedPatternRepository = savedPatternRepository,
+                    patternAnnotationRepository = annotationRepository,
+                    transactionRunner = runner,
+                    ioDispatcher = UnconfinedTestDispatcher(testScheduler),
+                )
+
+            val attachedPattern = repository.attachSavedPattern(7L, 12L)
+
+            assertEquals(12L, attachedPattern?.id)
+            assertEquals(1, runner.runCount)
+            coVerifyOrder {
+                savedPatternRepository.getById(12L)
+                annotationRepository.clearProject(7L)
+                projectDao.updatePatternAttachment(
+                    id = 7L,
+                    linkedPatternId = 12L,
+                    patternUri = null,
+                    patternName = "Cardigan",
                     currentPatternPage = 0,
                     patternRowMapping = null,
                     updatedAt = any(),
@@ -334,13 +396,16 @@ class RepositoryTransactionBoundaryTest {
                 listOf(
                     SavedPatternEntity(
                         id = 4L,
-                        ravelryId = 4,
+                        source = SavedPatternSource.LocalFile.persistedValue,
+                        ravelryPatternId = null,
                         name = "Pattern",
                         designerName = "Designer",
-                        patternUrl = patternUri,
+                        originalUrl = patternUri,
+                        localPdfUri = patternUri,
+                        isAvailableOffline = true,
                     ),
                 )
-            coEvery { patternDao.getByPatternUrl(patternUri) } returns null
+            coEvery { patternDao.getByLocalPdfUri(patternUri) } returns null
             coEvery { projectDao.countProjectsUsingPatternUri(patternUri) } returns 0
             withParsedAppUri(patternUri, listOf("patterns", "4", "pdf", "pattern.pdf")) {
                 val repository =
@@ -371,7 +436,7 @@ class RepositoryTransactionBoundaryTest {
                     .toFile()
             val patternUri = "file://${file.absolutePath.replace('\\', '/')}"
             every { context.filesDir } returns file.parentFile
-            coEvery { patternDao.getByPatternUrl(patternUri) } returns null
+            coEvery { patternDao.getByLocalPdfUri(patternUri) } returns null
             coEvery { projectDao.countProjectsUsingPatternUri(patternUri) } returns 0
             withParsedFileUri(patternUri, file.absolutePath) {
                 val repository =

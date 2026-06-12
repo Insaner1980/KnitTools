@@ -9,6 +9,7 @@ import com.finnvek.knittools.domain.model.ProjectCounter
 import com.finnvek.knittools.domain.model.ProjectCounterType
 import com.finnvek.knittools.domain.model.RowReminder
 import com.finnvek.knittools.domain.model.SavedPattern
+import com.finnvek.knittools.domain.model.SavedPatternSource
 import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.domain.model.sanitizeMainCounterCustomLabel
 import org.junit.Assert.assertEquals
@@ -143,7 +144,8 @@ class EntityMappersTest {
         assertSavedPatternMapping(
             SavedPatternEntity(
                 id = 51L,
-                ravelryId = 12345,
+                source = "RAVELRY",
+                ravelryPatternId = 12345,
                 name = "Rib Cardigan",
                 designerName = "Designer",
                 thumbnailUrl = "https://example.com/thumb.jpg",
@@ -154,16 +156,25 @@ class EntityMappersTest {
                 yarnWeight = "DK",
                 yardage = 850,
                 isFree = false,
-                patternUrl = "https://example.com/pattern",
+                originalUrl = "https://example.com/pattern?utm=1",
+                canonicalUrl = "https://example.com/pattern",
+                localPdfUri = null,
+                isAvailableOffline = false,
                 savedAt = 1_700_000_401L,
+                updatedAt = 1_700_000_501L,
+                lastSyncedAt = 1_700_000_601L,
             ),
         )
         assertSavedPatternMapping(
             SavedPatternEntity(
                 id = 52L,
-                ravelryId = 67890,
+                source = "LOCAL_FILE",
+                ravelryPatternId = null,
                 name = "Simple Hat",
                 designerName = "Maker",
+                originalUrl = "content://pattern/hat",
+                localPdfUri = "content://pattern/hat",
+                isAvailableOffline = true,
                 savedAt = 1_700_000_402L,
             ),
         )
@@ -337,7 +348,8 @@ class EntityMappersTest {
         val domain =
             SavedPattern(
                 id = entity.id,
-                ravelryId = entity.ravelryId,
+                source = SavedPatternSource.fromPersistedValue(entity.source),
+                ravelryPatternId = entity.ravelryPatternId,
                 name = entity.name,
                 designerName = entity.designerName,
                 thumbnailUrl = entity.thumbnailUrl,
@@ -348,8 +360,13 @@ class EntityMappersTest {
                 yarnWeight = entity.yarnWeight,
                 yardage = entity.yardage,
                 isFree = entity.isFree,
-                patternUrl = entity.patternUrl,
+                originalUrl = entity.originalUrl,
+                canonicalUrl = entity.canonicalUrl,
+                localPdfUri = entity.localPdfUri,
+                isAvailableOffline = entity.isAvailableOffline,
                 savedAt = entity.savedAt,
+                updatedAt = entity.updatedAt,
+                lastSyncedAt = entity.lastSyncedAt,
             )
 
         assertMapsBothWays(

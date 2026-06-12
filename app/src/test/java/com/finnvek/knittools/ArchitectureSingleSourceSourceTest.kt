@@ -73,12 +73,12 @@ class ArchitectureSingleSourceSourceTest {
 
     @Test
     fun `pattern info labels use string resources`() {
-        val counterScreen = ProjectSourceFiles.read(COUNTER_SCREEN)
+        val ravelryDetailScreen = ProjectSourceFiles.read(RAVELRY_DETAIL_SCREEN)
 
-        assertFalse(counterScreen.contains("label = \"Yardage\""))
-        assertFalse(counterScreen.contains("value = \"${'$'}it rows\""))
-        assertTrue(counterScreen.contains("R.string.pattern_detail_yardage"))
-        assertTrue(counterScreen.contains("R.string.rows_format"))
+        assertFalse(ravelryDetailScreen.contains("label = \"Yardage\""))
+        assertFalse(ravelryDetailScreen.contains("value = \"${'$'}it yards\""))
+        assertTrue(ravelryDetailScreen.contains("R.string.pattern_detail_yardage"))
+        assertTrue(ravelryDetailScreen.contains("R.string.yardage_format"))
     }
 
     @Test
@@ -96,9 +96,7 @@ class ArchitectureSingleSourceSourceTest {
     fun `PROJECT document matches current architecture decisions`() {
         val project = ProjectSourceFiles.read(PROJECT_MD)
 
-        assertTrue(project.contains("Room schema version: `13`"))
-        assertFalse(project.contains("Room schema version: `12`"))
-        assertFalse(project.contains("Room schema version: `11`"))
+        assertTrue(project.contains("Room schema version: `14`"))
         assertFalse(project.contains("VoiceCommandParser.kt"))
         assertFalse(project.contains("SpeechRecognizer"))
         assertFalse(project.contains("YarnLabelPhotoStorage"))
@@ -148,5 +146,7 @@ class ArchitectureSingleSourceSourceTest {
             "app/src/main/java/com/finnvek/knittools/ui/screens/counter/PhotoComponents.kt"
         private const val SCREEN =
             "app/src/main/java/com/finnvek/knittools/ui/navigation/Screen.kt"
+        private const val RAVELRY_DETAIL_SCREEN =
+            "app/src/main/java/com/finnvek/knittools/ui/screens/ravelry/RavelryDetailScreen.kt"
     }
 }

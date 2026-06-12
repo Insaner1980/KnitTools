@@ -46,6 +46,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 private data class PatternPickerActions(
+    val openRavelryImport: () -> Unit,
     val openDeviceFiles: () -> Unit,
     val openCloudProviderFiles: () -> Unit,
     val startCameraScan: () -> Unit,
@@ -69,14 +70,15 @@ fun PatternPickerSheet(
     canUseCameraScan: Boolean,
     onSavedPatternSelected: (SavedPattern) -> Unit,
     onDocumentSelected: (String, String) -> Unit,
+    onImportFromRavelry: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val attachablePatterns = remember(savedPatterns) { savedPatterns.filter { it.patternUrl.isLocalPatternUri() } }
     val actions =
         rememberPatternPickerActions(
             projectId = projectId,
             canUseCameraScan = canUseCameraScan,
             onDocumentSelected = onDocumentSelected,
+            onImportFromRavelry = onImportFromRavelry,
             onDismiss = onDismiss,
         )
 
@@ -85,7 +87,7 @@ fun PatternPickerSheet(
         containerColor = MaterialTheme.colorScheme.surface,
     ) {
         PatternPickerSheetContent(
-            attachablePatterns = attachablePatterns,
+            savedPatterns = savedPatterns,
             canUseCameraScan = canUseCameraScan,
             projectId = projectId,
             actions = actions,
@@ -102,6 +104,7 @@ private fun rememberPatternPickerActions(
     projectId: Long?,
     canUseCameraScan: Boolean,
     onDocumentSelected: (String, String) -> Unit,
+    onImportFromRavelry: () -> Unit,
     onDismiss: () -> Unit,
 ): PatternPickerActions {
     val context = LocalContext.current
@@ -161,8 +164,12 @@ private fun rememberPatternPickerActions(
 
     val openPdfDocumentPicker = { openDocumentLauncher.launch(pdfMimeTypes()) }
 
-    return remember(openDocumentLauncher, permissionLauncher) {
+    return remember(openDocumentLauncher, permissionLauncher, onDismiss, onImportFromRavelry) {
         PatternPickerActions(
+            openRavelryImport = {
+                onDismiss()
+                onImportFromRavelry()
+            },
             openDeviceFiles = openPdfDocumentPicker,
             openCloudProviderFiles = openPdfDocumentPicker,
             startCameraScan = {
@@ -177,7 +184,7 @@ private fun rememberPatternPickerActions(
 
 @Composable
 private fun PatternPickerSheetContent(
-    attachablePatterns: List<SavedPattern>,
+    savedPatterns: List<SavedPattern>,
     canUseCameraScan: Boolean,
     projectId: Long?,
     actions: PatternPickerActions,
@@ -197,16 +204,23 @@ private fun PatternPickerSheetContent(
             color = MaterialTheme.colorScheme.onSurface,
         )
 
-        if (attachablePatterns.isNotEmpty()) {
+        if (savedPatterns.isNotEmpty()) {
             Text(
                 text = stringResource(R.string.pattern_picker_saved_patterns),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.secondary,
             )
             PatternPickerSavedPatterns(
-                attachablePatterns = attachablePatterns,
+                savedPatterns = savedPatterns,
                 onSavedPatternSelected = onSavedPatternSelected,
             )
+        }
+
+        OutlinedButton(
+            onClick = actions.openRavelryImport,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(stringResource(R.string.pattern_picker_import_from_ravelry))
         }
 
         OutlinedButton(
@@ -242,11 +256,11 @@ private fun PatternPickerSheetContent(
 
 @Composable
 private fun PatternPickerSavedPatterns(
-    attachablePatterns: List<SavedPattern>,
+    savedPatterns: List<SavedPattern>,
     onSavedPatternSelected: (SavedPattern) -> Unit,
 ) {
     LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        items(attachablePatterns, key = { it.id }) { pattern ->
+        items(savedPatterns, key = { it.id }) { pattern ->
             Column(
                 modifier =
                     Modifier

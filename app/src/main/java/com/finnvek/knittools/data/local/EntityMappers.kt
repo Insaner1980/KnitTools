@@ -11,6 +11,7 @@ import com.finnvek.knittools.domain.model.ProjectCounterType
 import com.finnvek.knittools.domain.model.ProjectYarnNote
 import com.finnvek.knittools.domain.model.RowReminder
 import com.finnvek.knittools.domain.model.SavedPattern
+import com.finnvek.knittools.domain.model.SavedPatternSource
 import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.domain.model.sanitizeMainCounterCustomLabel
 
@@ -197,7 +198,8 @@ fun ProgressPhoto.toEntity(): ProgressPhotoEntity =
 fun SavedPatternEntity.toDomain(): SavedPattern =
     SavedPattern(
         id = id,
-        ravelryId = ravelryId,
+        source = SavedPatternSource.fromPersistedValue(source),
+        ravelryPatternId = ravelryPatternId,
         name = name,
         designerName = designerName,
         thumbnailUrl = thumbnailUrl,
@@ -208,14 +210,20 @@ fun SavedPatternEntity.toDomain(): SavedPattern =
         yarnWeight = yarnWeight,
         yardage = yardage,
         isFree = isFree,
-        patternUrl = patternUrl,
+        originalUrl = originalUrl,
+        canonicalUrl = canonicalUrl,
+        localPdfUri = localPdfUri,
+        isAvailableOffline = isAvailableOffline,
         savedAt = savedAt,
+        updatedAt = updatedAt,
+        lastSyncedAt = lastSyncedAt,
     )
 
 fun SavedPattern.toEntity(): SavedPatternEntity =
     SavedPatternEntity(
         id = id,
-        ravelryId = ravelryId,
+        source = source.persistedValue,
+        ravelryPatternId = ravelryPatternId,
         name = name,
         designerName = designerName,
         thumbnailUrl = thumbnailUrl,
@@ -226,8 +234,13 @@ fun SavedPattern.toEntity(): SavedPatternEntity =
         yarnWeight = yarnWeight,
         yardage = yardage,
         isFree = isFree,
-        patternUrl = patternUrl,
+        originalUrl = originalUrl,
+        canonicalUrl = canonicalUrl,
+        localPdfUri = localPdfUri,
+        isAvailableOffline = isAvailableOffline,
         savedAt = savedAt,
+        updatedAt = updatedAt,
+        lastSyncedAt = lastSyncedAt,
     )
 
 fun YarnCardEntity.toDomain(): YarnCard =

@@ -10,6 +10,7 @@ class RavelrySearchScreenTest {
         assertTrue(
             shouldRequestRavelryLoadMore(
                 shouldLoadMore = true,
+                canSearch = true,
                 resultCount = 12,
                 isLoading = false,
                 hasError = false,
@@ -23,6 +24,7 @@ class RavelrySearchScreenTest {
         assertFalse(
             shouldRequestRavelryLoadMore(
                 shouldLoadMore = true,
+                canSearch = true,
                 resultCount = 0,
                 isLoading = false,
                 hasError = false,
@@ -36,6 +38,7 @@ class RavelrySearchScreenTest {
         assertFalse(
             shouldRequestRavelryLoadMore(
                 shouldLoadMore = true,
+                canSearch = true,
                 resultCount = 12,
                 isLoading = true,
                 hasError = false,
@@ -46,6 +49,7 @@ class RavelrySearchScreenTest {
         assertFalse(
             shouldRequestRavelryLoadMore(
                 shouldLoadMore = true,
+                canSearch = true,
                 resultCount = 12,
                 isLoading = false,
                 hasError = true,
@@ -59,10 +63,25 @@ class RavelrySearchScreenTest {
         assertFalse(
             shouldRequestRavelryLoadMore(
                 shouldLoadMore = true,
+                canSearch = true,
                 resultCount = 12,
                 isLoading = false,
                 hasError = false,
                 isCurrentSubmittedSearch = false,
+            ),
+        )
+    }
+
+    @Test
+    fun loadMoreNotRequestedWhenSearchIsDisabled() {
+        assertFalse(
+            shouldRequestRavelryLoadMore(
+                shouldLoadMore = true,
+                canSearch = false,
+                resultCount = 12,
+                isLoading = false,
+                hasError = false,
+                isCurrentSubmittedSearch = true,
             ),
         )
     }

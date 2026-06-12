@@ -70,7 +70,7 @@ data class CounterWorkspaceActions(
     val onIncrement: () -> Unit,
     val onOpenPattern: () -> Unit,
     val onShowPatternPicker: () -> Unit,
-    val onShowPatternInfo: () -> Unit,
+    val onOpenSavedPatternDetail: () -> Unit,
     val onOpenNotes: () -> Unit,
     val onOpenYarn: () -> Unit,
     val onOpenPhotos: () -> Unit,
@@ -157,7 +157,7 @@ private fun CounterWorkspaceActions.onProjectContentClick(
         ProjectContentCardKind.PATTERN -> {
             when {
                 state.patternUri != null -> onOpenPattern()
-                state.linkedPattern != null -> onShowPatternInfo()
+                state.linkedPattern != null -> onOpenSavedPatternDetail()
                 else -> onShowPatternPicker()
             }
         }

@@ -24,9 +24,22 @@ class RavelryFirebaseIntegrationSourceTest {
         assertTrue(appBuild.contains("implementation(libs.firebase.auth)"))
         assertTrue(appBuild.contains("implementation(libs.firebase.functions)"))
         assertTrue(appBuild.contains("verifyGoogleServicesJson"))
+        assertTrue(appBuild.contains("@get:InputFiles"))
+        assertFalse(appBuild.contains("@get:InputFile\n    @get:Optional"))
         assertTrue(appBuild.contains("app/google-services.json"))
         assertTrue(buildWorkflow.contains("KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64"))
         assertTrue(codeQlWorkflow.contains("KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64"))
+    }
+
+    @Test
+    fun `sonar wrapper does not require firebase build artifact config`() {
+        val rootBuild = ProjectSourceFiles.read("build.gradle.kts")
+        val sonarWrapper = ProjectSourceFiles.read("tools/sonar.ps1")
+
+        assertTrue(rootBuild.contains("dependsOn(\":app:jacocoDebugUnitTestReport\")"))
+        assertTrue(sonarWrapper.contains("Command: reports/sonar.txt :: ./gradlew sonar"))
+        assertTrue(sonarWrapper.contains("& .\\gradlew.bat \"sonar\" \"--console=plain\""))
+        assertFalse(sonarWrapper.contains("assembleDebug"))
     }
 
     @Test

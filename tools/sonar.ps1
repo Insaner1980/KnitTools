@@ -88,7 +88,7 @@ Set-Content -LiteralPath $scanReport -Encoding utf8 -Value @(
     "sonar"
     "Root: $repoRoot"
     "Project: $projectKey"
-    "Command: reports/sonar.txt :: ./gradlew assembleDebug sonar"
+    "Command: reports/sonar.txt :: ./gradlew sonar"
     "Started: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
     ""
 )
@@ -108,7 +108,7 @@ try {
         exit 1
     }
 
-    & .\gradlew.bat "assembleDebug" "sonar" "--console=plain" *>&1 |
+    & .\gradlew.bat "sonar" "--console=plain" *>&1 |
         Tee-Object -FilePath $scanReport -Append |
         Out-Host
     $scanExitCode = if ($null -ne $global:LASTEXITCODE) { [int]$global:LASTEXITCODE } else { 0 }

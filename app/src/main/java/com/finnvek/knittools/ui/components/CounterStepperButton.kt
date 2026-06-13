@@ -37,6 +37,13 @@ internal data class CounterStepperColors(
     val content: Color,
 )
 
+data class CounterStepButtonFaceAppearance(
+    val visualSize: Dp,
+    val symbolSize: Dp,
+    val containerColor: Color,
+    val contentColor: Color,
+)
+
 internal fun extraCounterStepperColors(
     isLightTheme: Boolean,
     isIncrement: Boolean,
@@ -92,10 +99,13 @@ fun CounterStepperButton(
         CounterStepButtonFace(
             symbol = symbol,
             contentDescription = contentDescription,
-            visualSize = CounterDimens.ExtraCounterStepperVisualSize,
-            symbolSize = CounterDimens.ExtraCounterStepperIconSize,
-            containerColor = colors.container,
-            contentColor = colors.content,
+            appearance =
+                CounterStepButtonFaceAppearance(
+                    visualSize = CounterDimens.ExtraCounterStepperVisualSize,
+                    symbolSize = CounterDimens.ExtraCounterStepperIconSize,
+                    containerColor = colors.container,
+                    contentColor = colors.content,
+                ),
             enabled = enabled,
             prominent = prominent,
         )
@@ -105,28 +115,25 @@ fun CounterStepperButton(
 @Composable
 fun CounterStepButtonFace(
     symbol: CounterStepSymbol,
-    visualSize: Dp,
-    symbolSize: Dp,
-    containerColor: Color,
-    contentColor: Color,
+    appearance: CounterStepButtonFaceAppearance,
     modifier: Modifier = Modifier,
     contentDescription: String? = null,
     enabled: Boolean = true,
     prominent: Boolean = true,
 ) {
     val stepColor =
-        contentColor.copy(
+        appearance.contentColor.copy(
             alpha = counterStepperVisualAlpha(enabled = enabled, prominent = prominent),
         )
 
     Box(
         modifier =
             modifier
-                .size(visualSize)
+                .size(appearance.visualSize)
                 .clip(CircleShape)
-                .background(containerColor)
+                .background(appearance.containerColor)
                 .border(
-                    width = symbolSize * STEP_SYMBOL_STROKE_FRACTION,
+                    width = appearance.symbolSize * STEP_SYMBOL_STROKE_FRACTION,
                     color = stepColor,
                     shape = CircleShape,
                 ),
@@ -135,7 +142,7 @@ fun CounterStepButtonFace(
         CounterStepSymbolIcon(
             symbol = symbol,
             contentDescription = contentDescription,
-            modifier = Modifier.size(symbolSize),
+            modifier = Modifier.size(appearance.symbolSize),
             tint = stepColor,
         )
     }

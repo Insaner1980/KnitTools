@@ -160,11 +160,14 @@ private fun ImportPatternHeader(
         style = MaterialTheme.typography.titleMedium,
     )
     PatternCard(
-        name = pattern.name,
-        designerName = pattern.designer?.name ?: "",
-        thumbnailUrl = pattern.mainPhotoUrl,
-        difficulty = pattern.difficultyAverage,
-        isFree = pattern.free,
+        state =
+            PatternCardState(
+                name = pattern.name,
+                designerName = pattern.designer?.name ?: "",
+                thumbnailUrl = pattern.mainPhotoUrl,
+                difficulty = pattern.difficultyAverage,
+                isFree = pattern.free,
+            ),
         onClick = {},
     )
 }

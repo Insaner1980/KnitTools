@@ -25,7 +25,7 @@ object FirebaseModule {
 
 @Module
 @InstallIn(SingletonComponent::class)
-interface FirebaseBindingsModule {
+fun interface FirebaseBindingsModule {
     @Binds
     @Singleton
     fun bindRavelryBackendClient(client: FirebaseRavelryBackendClient): RavelryBackendClient

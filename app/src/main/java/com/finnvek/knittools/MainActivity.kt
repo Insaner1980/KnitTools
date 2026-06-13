@@ -30,6 +30,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.core.net.toUri
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
@@ -42,6 +43,7 @@ import com.finnvek.knittools.pro.InAppUpdateManager
 import com.finnvek.knittools.ravelry.RavelryShareImportUrls
 import com.finnvek.knittools.ui.navigation.CounterLaunchIntentData
 import com.finnvek.knittools.ui.navigation.CounterLaunchRequest
+import com.finnvek.knittools.ui.navigation.KnitToolsNavActions
 import com.finnvek.knittools.ui.navigation.KnitToolsNavHost
 import com.finnvek.knittools.ui.navigation.RavelryShareImportRequest
 import com.finnvek.knittools.ui.navigation.TopLevelDestination
@@ -103,7 +105,7 @@ class MainActivity : AppCompatActivity() {
         splashScreen.setKeepOnScreenCondition { !startupThemeLoaded }
         restoreCounterLaunchRequest(savedInstanceState)
         val isOAuthCallback = handleOAuthCallbackIfNeeded(intent)
-        val isShareImport = if (isOAuthCallback) false else handleRavelryShareIntentIfNeeded(intent)
+        val isShareImport = !isOAuthCallback && handleRavelryShareIntentIfNeeded(intent)
         if (isOAuthCallback || isShareImport) {
             counterLaunchRequest = null
         }
@@ -138,20 +140,23 @@ class MainActivity : AppCompatActivity() {
                         counterLaunchRequest = counterLaunchRequest,
                         ravelryShareImportRequest = ravelryShareImportRequest,
                         snackbarHostState = snackbarHostState,
-                        onPurchasePro = billingManager::launchPurchaseFlow,
-                        onLaunchRavelryAuth = ::launchRavelryAuth,
-                        onBrowseRavelry = ::launchRavelryBrowse,
-                        onCounterLaunchHandled = {
-                            counterLaunchRequest?.let {
-                                consumedCounterLaunchRequestId = it.requestId
-                            }
-                            counterLaunchRequest = null
-                            clearCounterLaunchIntent()
-                        },
-                        onRavelryShareImportHandled = {
-                            ravelryShareImportRequest = null
-                            clearRavelryShareIntent()
-                        },
+                        actions =
+                            KnitToolsNavActions(
+                                onPurchasePro = billingManager::launchPurchaseFlow,
+                                onLaunchRavelryAuth = ::launchRavelryAuth,
+                                onBrowseRavelry = ::launchRavelryBrowse,
+                                onCounterLaunchHandled = {
+                                    counterLaunchRequest?.let {
+                                        consumedCounterLaunchRequestId = it.requestId
+                                    }
+                                    counterLaunchRequest = null
+                                    clearCounterLaunchIntent()
+                                },
+                                onRavelryShareImportHandled = {
+                                    ravelryShareImportRequest = null
+                                    clearRavelryShareIntent()
+                                },
+                            ),
                     )
                 }
             }
@@ -214,7 +219,7 @@ class MainActivity : AppCompatActivity() {
             .Builder()
             .setShareState(CustomTabsIntent.SHARE_STATE_ON)
             .build()
-            .launchUrl(this, Uri.parse(RAVELRY_PATTERN_SEARCH_URL))
+            .launchUrl(this, RAVELRY_PATTERN_SEARCH_URL.toUri())
     }
 
     fun launchRavelryAuth(uri: Uri) {
@@ -235,7 +240,7 @@ class MainActivity : AppCompatActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         val isOAuthCallback = handleOAuthCallbackIfNeeded(intent)
-        val isShareImport = if (isOAuthCallback) false else handleRavelryShareIntentIfNeeded(intent)
+        val isShareImport = !isOAuthCallback && handleRavelryShareIntentIfNeeded(intent)
         counterLaunchRequest =
             if (isOAuthCallback || isShareImport) {
                 null

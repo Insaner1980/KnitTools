@@ -38,6 +38,7 @@ import com.finnvek.knittools.ui.screens.abbreviations.AbbreviationsScreen
 import com.finnvek.knittools.ui.screens.caston.CastOnScreen
 import com.finnvek.knittools.ui.screens.chartsymbols.ChartSymbolScreen
 import com.finnvek.knittools.ui.screens.counter.CounterScreen
+import com.finnvek.knittools.ui.screens.counter.CounterScreenActions
 import com.finnvek.knittools.ui.screens.counter.CounterViewModel
 import com.finnvek.knittools.ui.screens.counter.PhotoGalleryScreen
 import com.finnvek.knittools.ui.screens.gauge.GaugeScreen
@@ -63,6 +64,7 @@ import com.finnvek.knittools.ui.screens.pattern.PatternViewerScreen
 import com.finnvek.knittools.ui.screens.pro.ProUpgradeScreen
 import com.finnvek.knittools.ui.screens.project.ProjectListScreen
 import com.finnvek.knittools.ui.screens.ravelry.RavelryDetailScreen
+import com.finnvek.knittools.ui.screens.ravelry.RavelrySearchActions
 import com.finnvek.knittools.ui.screens.ravelry.RavelrySearchScreen
 import com.finnvek.knittools.ui.screens.session.SessionHistoryScreen
 import com.finnvek.knittools.ui.screens.settings.SettingsScreen
@@ -87,6 +89,14 @@ private const val ARG_PATTERN_ID = "patternId"
 private const val ARG_SAVED_PATTERN_ID = "savedPatternId"
 private const val ARG_CARD_ID = "cardId"
 
+data class KnitToolsNavActions(
+    val onPurchasePro: (Activity) -> Unit = {},
+    val onLaunchRavelryAuth: (Uri) -> Unit = {},
+    val onBrowseRavelry: () -> Unit = {},
+    val onCounterLaunchHandled: () -> Unit = {},
+    val onRavelryShareImportHandled: () -> Unit = {},
+)
+
 @Composable
 fun KnitToolsNavHost(
     modifier: Modifier = Modifier,
@@ -95,11 +105,7 @@ fun KnitToolsNavHost(
     counterLaunchRequest: CounterLaunchRequest? = null,
     ravelryShareImportRequest: RavelryShareImportRequest? = null,
     snackbarHostState: SnackbarHostState? = null,
-    onPurchasePro: (Activity) -> Unit = {},
-    onLaunchRavelryAuth: (Uri) -> Unit = {},
-    onBrowseRavelry: () -> Unit = {},
-    onCounterLaunchHandled: () -> Unit = {},
-    onRavelryShareImportHandled: () -> Unit = {},
+    actions: KnitToolsNavActions = KnitToolsNavActions(),
 ) {
     // Ravelry "Start Project" käyttää samaa mekanismia kuin widget-launch
     var internalCounterLaunch by remember { mutableStateOf<CounterLaunchRequest?>(null) }
@@ -119,7 +125,7 @@ fun KnitToolsNavHost(
         val request = ravelryShareImportRequest ?: return@LaunchedEffect
         navController.navigateToTopLevel(TopLevelDestination.Tools)
         navController.navigateSingleTopTo(Screen.RavelryImport(request.url).route)
-        onRavelryShareImportHandled()
+        actions.onRavelryShareImportHandled()
     }
 
     Scaffold(
@@ -146,7 +152,7 @@ fun KnitToolsNavHost(
                 navController,
                 effectiveCounterLaunch,
                 onCounterLaunchHandled = {
-                    onCounterLaunchHandled()
+                    actions.onCounterLaunchHandled()
                     internalCounterLaunch = null
                 },
                 onImportFromRavelry = {
@@ -156,16 +162,16 @@ fun KnitToolsNavHost(
             )
             libraryGraph(
                 navController = navController,
-                onLaunchRavelryAuth = onLaunchRavelryAuth,
-                onBrowseRavelry = onBrowseRavelry,
+                onLaunchRavelryAuth = actions.onLaunchRavelryAuth,
+                onBrowseRavelry = actions.onBrowseRavelry,
                 onLaunchCounter = { projectId ->
                     internalCounterLaunch = CounterLaunchRequest(projectId = projectId)
                 },
             )
             toolsGraph(
                 navController = navController,
-                onLaunchRavelryAuth = onLaunchRavelryAuth,
-                onBrowseRavelry = onBrowseRavelry,
+                onLaunchRavelryAuth = actions.onLaunchRavelryAuth,
+                onBrowseRavelry = actions.onBrowseRavelry,
                 onLaunchCounter = { projectId ->
                     internalCounterLaunch = CounterLaunchRequest(projectId = projectId)
                 },
@@ -177,7 +183,7 @@ fun KnitToolsNavHost(
             composable(Screen.ProUpgrade.route) {
                 ProUpgradeScreen(
                     onBack = { navController.popBackStack() },
-                    onPurchase = onPurchasePro,
+                    onPurchase = actions.onPurchasePro,
                 )
             }
         }
@@ -245,27 +251,30 @@ private fun NavGraphBuilder.projectsGraph(
                 onCounterLaunchHandled()
             }
             CounterScreen(
-                onBack = { navController.popBackStack() },
-                onSessionHistory = { projectId ->
-                    navController.navigateSingleTopTo(Screen.SessionHistory(projectId).route)
-                },
-                onPhotoGallery = {
-                    navController.navigateSingleTopTo(Screen.PhotoGallery.route)
-                },
-                onPatternViewer = { projectId ->
-                    navController.navigateSingleTopTo(Screen.PatternViewer(projectId).route)
-                },
-                onSavedPatternDetail = { savedPatternId ->
-                    navController.navigateToTopLevel(TopLevelDestination.Library)
-                    navController.navigateSingleTopTo(Screen.SavedPatternDetail(savedPatternId).route)
-                },
-                onImportFromRavelry = onImportFromRavelry,
-                onNotesEditor = { projectId ->
-                    navController.navigateSingleTopTo(Screen.NotesEditor(projectId).route)
-                },
-                onUpgradeToPro = {
-                    navController.navigateSingleTopTo(Screen.ProUpgrade.route)
-                },
+                actions =
+                    CounterScreenActions(
+                        onBack = { navController.popBackStack() },
+                        onSessionHistory = { projectId ->
+                            navController.navigateSingleTopTo(Screen.SessionHistory(projectId).route)
+                        },
+                        onPhotoGallery = {
+                            navController.navigateSingleTopTo(Screen.PhotoGallery.route)
+                        },
+                        onPatternViewer = { projectId ->
+                            navController.navigateSingleTopTo(Screen.PatternViewer(projectId).route)
+                        },
+                        onSavedPatternDetail = { savedPatternId ->
+                            navController.navigateToTopLevel(TopLevelDestination.Library)
+                            navController.navigateSingleTopTo(Screen.SavedPatternDetail(savedPatternId).route)
+                        },
+                        onImportFromRavelry = onImportFromRavelry,
+                        onNotesEditor = { projectId ->
+                            navController.navigateSingleTopTo(Screen.NotesEditor(projectId).route)
+                        },
+                        onUpgradeToPro = {
+                            navController.navigateSingleTopTo(Screen.ProUpgrade.route)
+                        },
+                    ),
                 viewModel = counterViewModel,
             )
         }
@@ -448,19 +457,19 @@ private fun RavelrySearchRoute(
     importUrl: String? = null,
 ) {
     RavelrySearchScreen(
-        onPatternClick = { id ->
-            navController.navigateSingleTopTo(Screen.RavelryDetail(id).route)
-        },
-        onSavedPatterns = {
-            navController.navigateSingleTopTo(Screen.SavedPatterns.route)
-        },
-        onBack = { navController.popBackStack() },
-        onLaunchRavelryAuth = onLaunchRavelryAuth,
-        onBrowseRavelry = onBrowseRavelry,
+        actions =
+            RavelrySearchActions(
+                onPatternClick = { id ->
+                    navController.navigateSingleTopTo(Screen.RavelryDetail(id).route)
+                },
+                onBack = { navController.popBackStack() },
+                onLaunchRavelryAuth = onLaunchRavelryAuth,
+                onBrowseRavelry = onBrowseRavelry,
+                onSavedPatternDetail = { savedPatternId ->
+                    navController.navigateSingleTopTo(Screen.SavedPatternDetail(savedPatternId).route)
+                },
+            ),
         importUrl = importUrl,
-        onSavedPatternDetail = { savedPatternId ->
-            navController.navigateSingleTopTo(Screen.SavedPatternDetail(savedPatternId).route)
-        },
     )
 }
 

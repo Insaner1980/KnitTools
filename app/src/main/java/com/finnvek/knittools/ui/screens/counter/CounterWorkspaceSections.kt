@@ -40,6 +40,7 @@ import com.finnvek.knittools.domain.model.ProjectCounter
 import com.finnvek.knittools.domain.model.ProjectCounterType
 import com.finnvek.knittools.ui.components.CounterImageButton
 import com.finnvek.knittools.ui.components.CounterStepButtonFace
+import com.finnvek.knittools.ui.components.CounterStepButtonFaceAppearance
 import com.finnvek.knittools.ui.components.CounterStepSymbol
 import com.finnvek.knittools.ui.components.RollingCounter
 import com.finnvek.knittools.ui.components.StitchCounter
@@ -522,10 +523,13 @@ private fun PatternRepeatButton(
         CounterStepButtonFace(
             symbol = symbol,
             contentDescription = contentDescription,
-            visualSize = CounterDimens.CounterRepeatButtonVisualSize,
-            symbolSize = CounterDimens.CounterRepeatIconSize,
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-            contentColor = contentColor,
+            appearance =
+                CounterStepButtonFaceAppearance(
+                    visualSize = CounterDimens.CounterRepeatButtonVisualSize,
+                    symbolSize = CounterDimens.CounterRepeatIconSize,
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = contentColor,
+                ),
             enabled = enabled,
         )
     }

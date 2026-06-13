@@ -1,8 +1,7 @@
 import com.android.build.api.variant.BuildConfigField
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.RegularFileProperty
-import org.gradle.api.tasks.InputFile
-import org.gradle.api.tasks.Optional
+import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.TaskAction
 import org.gradle.testing.jacoco.tasks.JacocoReport
 import java.io.StringReader
@@ -33,8 +32,7 @@ if (googleServicesJsonConfigFile.asFile.isFile) {
 }
 
 abstract class VerifyGoogleServicesJsonTask : DefaultTask() {
-    @get:InputFile
-    @get:Optional
+    @get:InputFiles
     abstract val googleServicesJsonFile: RegularFileProperty
 
     @TaskAction

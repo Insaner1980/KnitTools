@@ -17,7 +17,8 @@ class RavelryBrowseCustomTabsSourceTest {
         )
         assertTrue(mainActivity.contains("CustomTabsIntent.SHARE_STATE_ON"))
         assertTrue(mainActivity.contains(".setShareState(CustomTabsIntent.SHARE_STATE_ON)"))
-        assertTrue(mainActivity.contains(".launchUrl(this, Uri.parse(RAVELRY_PATTERN_SEARCH_URL))"))
+        assertTrue(mainActivity.contains("import androidx.core.net.toUri"))
+        assertTrue(mainActivity.contains(".launchUrl(this, RAVELRY_PATTERN_SEARCH_URL.toUri())"))
         assertFalse(mainActivity.contains("setActionButton("))
         assertFalse(mainActivity.contains("addMenuItem("))
     }
@@ -28,7 +29,8 @@ class RavelryBrowseCustomTabsSourceTest {
         val navGraph = ProjectSourceFiles.read(NAV_GRAPH)
 
         assertTrue(mainActivity.contains("onBrowseRavelry = ::launchRavelryBrowse"))
-        assertTrue(navGraph.contains("onBrowseRavelry: () -> Unit = {}"))
+        assertTrue(navGraph.contains("data class KnitToolsNavActions("))
+        assertTrue(navGraph.contains("val onBrowseRavelry: () -> Unit = {},"))
         assertTrue(navGraph.contains("onBrowseRavelry = onBrowseRavelry"))
         assertTrue(navGraph.contains("RavelrySearchRoute("))
         assertTrue(navGraph.contains("RavelryDetailScreen("))

@@ -81,17 +81,7 @@ class FirebaseRavelryBackendClient
             RavelryBackendMappers.searchResponseFrom(
                 callBackend(
                     "ravelrySearchPatterns",
-                    mapOf(
-                        "query" to params.query,
-                        "craft" to params.craft,
-                        "availability" to params.availability,
-                        "pc" to params.pc,
-                        "weight" to params.weight,
-                        "difficultyFrom" to params.difficultyFrom,
-                        "difficultyTo" to params.difficultyTo,
-                        "page" to params.page,
-                        "pageSize" to params.pageSize,
-                    ).filterValues { it != null },
+                    params.toBackendData(),
                 ),
             )
 
@@ -142,6 +132,26 @@ private fun FirebaseFunctionsException.toRavelryException(): RavelryHttpExceptio
             else -> 500
         },
     )
+
+private fun PatternSearchParams.toBackendData(): Map<String, Any> =
+    buildMap {
+        put("query", query)
+        putOptional("craft", craft)
+        putOptional("availability", availability)
+        putOptional("pc", pc)
+        putOptional("weight", weight)
+        putOptional("difficultyFrom", difficultyFrom)
+        putOptional("difficultyTo", difficultyTo)
+        put("page", page)
+        put("pageSize", pageSize)
+    }
+
+private fun <T : Any> MutableMap<String, Any>.putOptional(
+    key: String,
+    value: T?,
+) {
+    value?.let { put(key, it) }
+}
 
 private fun Map<*, *>.optionalString(key: String): String? = this[key]?.toString()?.takeIf { it.isNotBlank() }
 

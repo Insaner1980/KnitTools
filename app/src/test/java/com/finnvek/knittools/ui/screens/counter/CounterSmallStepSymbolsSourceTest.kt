@@ -31,9 +31,10 @@ class CounterSmallStepSymbolsSourceTest {
             "enabled = enabled",
             "indication = null",
             "interactionSource = null",
+            "data class CounterStepButtonFaceAppearance",
             "CounterStepButtonFace(",
             "border(",
-            "width = symbolSize * STEP_SYMBOL_STROKE_FRACTION",
+            "width = appearance.symbolSize * STEP_SYMBOL_STROKE_FRACTION",
             "shape = CircleShape",
         ).forEach { required ->
             assertTrue("CounterStepperButton should contain $required", stepperButton.contains(required))

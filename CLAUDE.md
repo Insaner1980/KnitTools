@@ -19,7 +19,7 @@
 - `sc` käyttää tässä repossa paikallisia Semgrep-sääntöjä ja ajaa myös OWASP dependency-checkin.
 - Dependency-checkin voi ohittaa vain erikseen: `DEPENDENCY_CHECK_ENABLED=false sc`
 - Ensimmäinen OWASP dependency-check -ajo voi olla hidas, koska se alustaa CVE-tietokannan automaattisesti. `NVD_API_KEY` nopeuttaa NVD-päivitystä, jos sellainen on käytössä.
-- `sonar` ajaa projektin SonarCloud-skannauksen Gradlen `assembleDebug sonar` -polulla ja kirjoittaa lokin `reports/sonar.txt`; `sonar auth login/status/...` ohjautuu edelleen SonarQube CLI:lle.
+- `sonar` ajaa projektin SonarCloud-skannauksen Gradlen `sonar`-taskilla, joka ajaa ensin `:app:jacocoDebugUnitTestReport`-tehtävän, ja kirjoittaa lokin `reports/sonar.txt`; `sonar auth login/status/...` ohjautuu edelleen SonarQube CLI:lle.
 - SonarCloud-skannaus tarvitsee `SONAR_TOKEN`-ympäristömuuttujan. SonarQube CLI:n keychain-kirjautumista käytetään issueiden lukemiseen `reports/sonar-issues.json`-raporttiin.
 
 ## Conventions

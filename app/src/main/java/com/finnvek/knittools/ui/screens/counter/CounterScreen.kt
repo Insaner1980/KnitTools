@@ -75,20 +75,32 @@ import com.finnvek.knittools.ui.components.RenameProjectDialog
 import com.finnvek.knittools.ui.screens.pattern.PatternPickerSheet
 import com.finnvek.knittools.ui.theme.CounterDimens
 
+data class CounterScreenActions(
+    val onBack: () -> Unit = {},
+    val onSessionHistory: (Long) -> Unit = {},
+    val onPhotoGallery: () -> Unit = {},
+    val onPatternViewer: (Long) -> Unit = {},
+    val onSavedPatternDetail: (Long) -> Unit = {},
+    val onImportFromRavelry: () -> Unit = {},
+    val onNotesEditor: (Long) -> Unit = {},
+    val onUpgradeToPro: () -> Unit = {},
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 @Suppress("ViewModelForwarding")
 fun CounterScreen(
-    onBack: () -> Unit = {},
-    onSessionHistory: (Long) -> Unit = {},
-    onPhotoGallery: () -> Unit = {},
-    onPatternViewer: (Long) -> Unit = {},
-    onSavedPatternDetail: (Long) -> Unit = {},
-    onImportFromRavelry: () -> Unit = {},
-    onNotesEditor: (Long) -> Unit = {},
-    onUpgradeToPro: () -> Unit = {},
+    actions: CounterScreenActions = CounterScreenActions(),
     viewModel: CounterViewModel = hiltViewModel(),
 ) {
+    val onBack = actions.onBack
+    val onSessionHistory = actions.onSessionHistory
+    val onPhotoGallery = actions.onPhotoGallery
+    val onPatternViewer = actions.onPatternViewer
+    val onSavedPatternDetail = actions.onSavedPatternDetail
+    val onImportFromRavelry = actions.onImportFromRavelry
+    val onNotesEditor = actions.onNotesEditor
+    val onUpgradeToPro = actions.onUpgradeToPro
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     var showResetDialog by rememberSaveable { mutableStateOf(false) }

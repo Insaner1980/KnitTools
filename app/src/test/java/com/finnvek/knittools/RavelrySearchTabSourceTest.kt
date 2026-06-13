@@ -13,7 +13,7 @@ class RavelrySearchTabSourceTest {
         assertTrue(searchScreen.contains("import com.finnvek.knittools.auth.RavelryAuthState"))
         assertTrue(searchScreen.contains("canSearch = authState is RavelryAuthState.Connected"))
         assertTrue(searchScreen.contains("val canSearch: Boolean,"))
-        assertTrue(searchScreen.contains("enabled = state.canSearch"))
+        assertTrue(searchScreen.contains("enabled = canSearch"))
         assertTrue(searchScreen.contains("R.string.ravelry_search_requires_sign_in"))
         assertTrue(
             strings.contains(
@@ -31,16 +31,16 @@ class RavelrySearchTabSourceTest {
         assertTrue(searchScreen.contains("shouldLoadMore &&\n        canSearch &&"))
         assertTrue(searchScreen.contains("canSearch = state.canSearch"))
         assertTrue(
-            Regex("""if \(state\.canSearch\) \{\s+onSearch\(\)\s+}""")
+            Regex("""if \(canSearch\) \{\s+onSearch\(\)\s+}""")
                 .containsMatchIn(searchScreen),
         )
         assertTrue(
             searchScreen.contains(
-                "actionLabel = if (state.canSearch) retryLabel else null",
+                "actionLabel = if (canSearch) retryLabel else null",
             ),
         )
-        assertTrue(searchScreen.contains("onAction = if (state.canSearch) onSearch else null"))
-        assertTrue(searchScreen.contains("onAction = if (state.canSearch) onLoadMore else null"))
+        assertTrue(searchScreen.contains("hasResults -> onLoadMore"))
+        assertTrue(searchScreen.contains("else -> onSearch"))
 
         assertTrue(tabRow.contains("R.string.ravelry_saved_patterns"))
         assertFalse(tabRow.contains("enabled = false"))

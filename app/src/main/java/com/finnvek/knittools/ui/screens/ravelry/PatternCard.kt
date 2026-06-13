@@ -29,13 +29,17 @@ import coil3.compose.AsyncImage
 import com.finnvek.knittools.R
 import com.finnvek.knittools.ui.theme.RavelryTeal
 
+data class PatternCardState(
+    val name: String,
+    val designerName: String,
+    val thumbnailUrl: String?,
+    val difficulty: Float?,
+    val isFree: Boolean,
+)
+
 @Composable
 fun PatternCard(
-    name: String,
-    designerName: String,
-    thumbnailUrl: String?,
-    difficulty: Float?,
-    isFree: Boolean,
+    state: PatternCardState,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     actionContent: (@Composable () -> Unit)? = null,
@@ -49,12 +53,12 @@ fun PatternCard(
             modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            PatternThumbnail(thumbnailUrl = thumbnailUrl, contentDescription = name)
+            PatternThumbnail(thumbnailUrl = state.thumbnailUrl, contentDescription = state.name)
             PatternDetails(
-                name = name,
-                designerName = designerName,
-                difficulty = difficulty,
-                isFree = isFree,
+                name = state.name,
+                designerName = state.designerName,
+                difficulty = state.difficulty,
+                isFree = state.isFree,
                 modifier = Modifier.weight(1f),
             )
             PatternCardActionSlot(actionContent = actionContent)

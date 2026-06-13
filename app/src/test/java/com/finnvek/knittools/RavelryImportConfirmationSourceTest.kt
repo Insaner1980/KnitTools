@@ -43,7 +43,7 @@ class RavelryImportConfirmationSourceTest {
         assertTrue(searchScreen.contains("viewModel.showImportConfirmationForPattern(patternId)"))
         assertTrue(searchScreen.contains("RavelryImportConfirmationSheet("))
         assertTrue(searchScreen.contains("onSave = viewModel::saveImportPattern"))
-        assertTrue(searchScreen.contains("onOpenSavedPattern = onSavedPatternDetail"))
+        assertTrue(searchScreen.contains("onOpenSavedPattern = actions.onSavedPatternDetail"))
 
         assertTrue(Files.exists(sheetPath))
         val sheet = ProjectSourceFiles.read(sheetPath)

@@ -49,6 +49,7 @@ import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.screens.ravelry.PatternCard
+import com.finnvek.knittools.ui.screens.ravelry.PatternCardState
 
 // Data-luokat SavedPatternsScreen-parametrien ryhmittelyyn (S107)
 data class SavedPatternsState(
@@ -304,11 +305,14 @@ private fun SavedPatternItem(
                 ),
     ) {
         PatternCard(
-            name = pattern.name,
-            designerName = pattern.designerName,
-            thumbnailUrl = pattern.thumbnailUrl,
-            difficulty = pattern.difficulty,
-            isFree = pattern.isFree,
+            state =
+                PatternCardState(
+                    name = pattern.name,
+                    designerName = pattern.designerName,
+                    thumbnailUrl = pattern.thumbnailUrl,
+                    difficulty = pattern.difficulty,
+                    isFree = pattern.isFree,
+                ),
             onClick = onClick,
             modifier = Modifier.background(backgroundColor, MaterialTheme.shapes.large),
         )

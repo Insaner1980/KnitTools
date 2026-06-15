@@ -18,13 +18,10 @@ object CounterDimens {
     @Suppress("MayBeConstant")
     val CounterHeroBottomWeight = 0.68f
 
-    val HeroButtonSpacing = 88.dp
-    val HeroButtonCompactSpacing = 48.dp
+    val HeroButtonSpacing = 64.dp
+    val HeroButtonCompactSpacing = 8.dp
     val CounterRowLabelFontSize = 25.sp
     val CounterMainNumberFontSize = 115.sp
-    val CounterProgressSpacing = 14.dp
-    val CounterProgressHeight = 6.dp
-    val CounterProgressCornerRadius = 999.dp
     val CounterTargetHelperSpacing = 8.dp
     val CounterTargetHelperFontSize = 19.sp
     val CounterRepeatMinWidth = 232.dp
@@ -37,17 +34,20 @@ object CounterDimens {
     val CounterRepeatButtonTouchSize = 48.dp
     val CounterRepeatButtonVisualSize = 32.dp
     val CounterRepeatIconSize = 16.dp
-    val CounterRepeatToRowSpacing = 52.dp
-    val CounterControlsMaxWidth = 360.dp
-    val CounterControlsHeight = 160.dp
+    val CounterRepeatToRowSpacing = 32.dp
     val CounterPrimaryTouchSize = 144.dp
     val CounterPrimaryVisualSize = 125.dp
-    val CounterPrimaryIconSize = 52.dp
     val CounterMinusTouchSize = 144.dp
-    val CounterMinusVisualSize = 108.dp
-    val CounterMinusIconSize = 44.dp
+    val CounterMinusVisualSize = 123.dp
+    val CounterMinusOpticalOffsetY = 1.dp
+    val CounterUndoVisualSize = 92.dp
+    val CounterUndoTouchSize = CounterUndoVisualSize
+    val CounterUndoVerticalSpacing = 16.dp
+    val CounterControlsMaxWidth = 360.dp
+    val CounterControlsHeight =
+        CounterPrimaryTouchSize + CounterUndoVerticalSpacing + CounterUndoTouchSize
     val CounterControlsToStitchTrackerSpacing = 72.dp
-    val CounterControlsToStitchTrackerCompactSpacing = 24.dp
+    val CounterControlsToStitchTrackerCompactSpacing = 8.dp
     val ProjectCardGridSpacing = 12.dp
     val ProjectCardPadding = 12.dp
     val ProjectCardIconSize = 56.dp

@@ -185,7 +185,7 @@ Build-huomiot:
 - release signing on ympäristömuuttujapohjainen
 - release-artifaktit estetään ilman signing-muuttujia
 - Ravelryn vanha backenditön release-polku on superseded; Android ei enää määritä Ravelry credential `BuildConfig` -kenttiä, release opt-in -gatea, Basic Auth fallbackia eikä Ravelry token-storea
-- Android Firebase artifact -build vaatii ignored `app/google-services.json` -tiedoston paikallisesti tai CI:ssä `KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64` -salaisuudesta generoidun tiedoston; `VerifyGoogleServicesJsonTask` käyttää Gradle-inputina `@InputFiles`-merkittyä `RegularFileProperty`ä ja pysäyttää `assembleDebug`, `assembleRelease` ja `bundleRelease` -taskit vasta taskin suorituksessa, jos tiedosto puuttuu
+- Android Firebase release artifact -build vaatii ignored `app/google-services.json` -tiedoston paikallisesti tai CI:ssä `KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64` -salaisuudesta generoidun tiedoston; `VerifyGoogleServicesJsonTask` käyttää Gradle-inputina `@InputFiles`-merkittyä `RegularFileProperty`ä ja pysäyttää `assembleRelease` ja `bundleRelease` -taskit vasta taskin suorituksessa, jos tiedosto puuttuu. Debug artifact -build voi luoda ignored `app/src/debug/google-services.json` -placeholderin paikallista buildattavuutta varten, jos oikeaa configia ei ole.
 - debug lukee Sentry DSN:n `KNITTOOLS_SENTRY_DSN`- tai `SENTRY_DSN`-ympäristömuuttujasta tai ignored `debug.credentials.properties` -tiedostosta avaimella `sentry.dsn`; Sentry on vain debug-luokkapolussa, automaattinen session/tracing/breadcrumb/screenshot/view-hierarchy/NDK-keruu on pois päältä, ja release-luokkapolun puhtaus tarkistetaan `tools\sentry.ps1`- sekä `tools\rs.ps1`-komennoilla
 
 ### `:baselineprofile`
@@ -212,9 +212,9 @@ Ravelry Firebase -backend:
 - Androidissa on Firebase Auth/Functions -riippuvuudet sekä `RavelryBackendClient` callable-rajalle; `RavelryAuthManager` omistaa backend-auth-statuksen, start/disconnect-kutsut ja token-free `knittools://ravelry-auth-complete` callbackin; auth avataan Auth Tabilla ja Custom Tabs jää fallbackiksi
 - Saved patterns ovat Room schema 14 -lähdemetadatassa: `source`, nullable `ravelryPatternId`, `originalUrl`, `canonicalUrl`, nullable `localPdfUri`, `isAvailableOffline`, `updatedAt` ja nullable `lastSyncedAt`
 - Phase 8 UI-polku on valmis: `RavelryImportConfirmationSheet` hoitaa hakutulos- ja jaetun URL:n import-vahvistuksen, `SavedPatternDetailScreen` hoitaa metadata-availabilityn ja toiminnot, PatternPickerSheet listaa kaikki saved patternit, ja projektin pattern-kortti avaa metadata-only linkit detailiin ilman PDF-vieweriä
-- Phase 9 release-surface -vahti sallii vain Firebase Auth/Functions/Google Services -pinnan tälle backendille, kieltää Firebase AI/ML Kit/Gemini/voice-riippuvuudet, estää trackatun `app/google-services.json`in ja skannaa tunnetut paikalliset/env Ravelry-secret-arvot tulostamatta niitä
+- Phase 9 release-surface -vahti sallii vain Firebase Auth/Functions/Google Services -pinnan tälle backendille, kieltää Firebase AI/ML Kit/Gemini/voice-riippuvuudet, estää trackatut `app/google-services.json`- ja `app/src/debug/google-services.json` -tiedostot ja skannaa tunnetut paikalliset/env Ravelry-secret-arvot tulostamatta niitä
 - `firebase-admin` on lukittu uusimpaan `firebase-functions@7.2.5`:n peer dependencyyn sopivaan 13.x-versioon, ei suunnitelman yhteensopimattomaan 14.x-versioon
-- Android artifact -build ei ole konfiguroitavissa tyhjästä checkoutista ilman oikeaa Firebase-konfigia: `:app:assembleDebug`, `:app:assembleRelease` ja `:app:bundleRelease` riippuvat `verifyGoogleServicesJson`-tehtävästä, joka vaatii ignored `app/google-services.json` -tiedoston
+- Release artifact -build ei ole konfiguroitavissa tyhjästä checkoutista ilman oikeaa Firebase-konfigia: `:app:assembleRelease` ja `:app:bundleRelease` riippuvat `verifyGoogleServicesJson`-tehtävästä, joka vaatii ignored `app/google-services.json` -tiedoston. Debug artifact -build voi käyttää ignored placeholderia paikalliseen käännökseen.
 
 ## Käynnistys ja runtime
 
@@ -1193,8 +1193,8 @@ Pienimmät hyödylliset tarkistuskomennot:
 
 Artifact-buildien nykyinen paikallisraja:
 
-- `.\gradlew.bat --no-configuration-cache :app:assembleDebug` pysähtyy tarkoituksella `:app:verifyGoogleServicesJson`-tehtävään, jos ignored `app/google-services.json` puuttuu
-- tämä checkout on viimeksi tarkistettu niin, että `app/google-services.json`, `KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64` ja `GOOGLE_SERVICES_JSON_BASE64` puuttuivat; staattinen Android lint / ktlint / detekt ja unit-testit ovat silti ajettavissa ilman paikallista Firebase JSONia
+- `.\gradlew.bat --no-configuration-cache :app:assembleDebug` saa kääntyä ilman oikeaa Firebase-projektia debug-only placeholderilla; `.\gradlew.bat --no-configuration-cache :app:assembleRelease` ja `.\gradlew.bat --no-configuration-cache :app:bundleRelease` pysähtyvät tarkoituksella `:app:verifyGoogleServicesJson`-tehtävään, jos ignored `app/google-services.json` puuttuu
+- tämä checkout on viimeksi tarkistettu niin, että `app/google-services.json`, `KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64` ja `GOOGLE_SERVICES_JSON_BASE64` puuttuivat; debug build, staattinen Android lint / ktlint / detekt ja unit-testit ovat silti ajettavissa ilman paikallista Firebase JSONia
 
 Julkaisuvalmiuden muistilista:
 
@@ -1285,7 +1285,7 @@ Näihin kannattaa suhtautua epäluuloisesti vanhoissa dokumenteissa:
 - `KnitToolsNavHost`, `CounterScreen` ja `RavelrySearchScreen` eivät enää ota kaikkia reittitoimintoja irrallisina callback-parametreina; nykyiset action-mallit ovat `KnitToolsNavActions`, `CounterScreenActions` ja `RavelrySearchActions`
 - `PatternCard` ei enää ota erillisiä `name` / `designerName` / `thumbnailUrl` / `difficulty` / `isFree` -parametreja, vaan `PatternCardState`-mallin
 - `saved_pattern_detail/{savedPatternId}` on nykyinen saved-pattern metadata/detail -pinta; vanha oletus suoraan PDF-vieweriin avaamisesta pätee vain, kun `localPdfUri` on olemassa
-- `app/google-services.json` on tarkoituksella ignored ja artifact-buildin edellytys; sen puute ei tarkoita, että lint/unit-testit olisivat rikki
+- `app/google-services.json` on tarkoituksella ignored ja release artifact -buildin edellytys; debug artifact voi käyttää ignored `app/src/debug/google-services.json` -placeholderia, eikä root-configin puute tarkoita, että lint/unit-testit olisivat rikki
 - Sonar-wrapper ei nykyisin aja `assembleDebug`-taskia; jos Sonar-skannaus pysähtyy Firebase JSON -porttiin, tarkista ensin ettei wrapperia tai Gradle-taskigraafia ole palautettu vanhaan `assembleDebug sonar` -malliin
 - `ProState.hasFeature(...)` ei ole pelkkä `isPro` debug-buildissä; debug avaa feature-gatet erillisenä kehittäjäpolkuna
 - Sentry on debug-only diagnostiikkaa; älä lisää Sentry Gradle -pluginia, replayta, tracingia, logcat breadcrumbseja tai release-riippuvuutta ilman uutta product/security-päätöstä

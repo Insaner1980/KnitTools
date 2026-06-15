@@ -8,6 +8,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -28,6 +29,7 @@ fun CounterImageButton(
     @DrawableRes imageRes: Int,
     contentDescription: String,
     visualSize: Dp,
+    visualOffsetY: Dp = 0.dp,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
@@ -61,6 +63,7 @@ fun CounterImageButton(
             modifier =
                 Modifier
                     .size(visualSize)
+                    .offset(y = visualOffsetY)
                     .graphicsLayer {
                         val scale = 1f - pressProgress * 0.018f
                         scaleX = scale

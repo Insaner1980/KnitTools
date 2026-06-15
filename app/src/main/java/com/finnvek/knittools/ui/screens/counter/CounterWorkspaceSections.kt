@@ -69,6 +69,7 @@ data class CounterWorkspaceActions(
     val onSurfaceIncrement: () -> Unit,
     val onDecrement: () -> Unit,
     val onIncrement: () -> Unit,
+    val onUndo: () -> Unit,
     val onOpenPattern: () -> Unit,
     val onShowPatternPicker: () -> Unit,
     val onOpenSavedPatternDetail: () -> Unit,
@@ -210,12 +211,16 @@ private fun CounterHero(
         }
         CounterRowLabel(state = state, onShowTargetDialog = actions.onShowTargetDialog)
         CounterMainNumber(state = state)
-        CounterTargetProgressBar(state = state, onShowTargetDialog = actions.onShowTargetDialog)
+        CounterTargetHelperLabel(
+            helperText = counterTargetHelperText(state.counter.count, state.targetRows),
+            onShowTargetDialog = actions.onShowTargetDialog,
+        )
         Spacer(modifier = Modifier.height(heroButtonSpacing))
         CounterButtons(
             state = state,
             onDecrement = actions.onDecrement,
             onIncrement = actions.onIncrement,
+            onUndo = actions.onUndo,
         )
         if (state.visibleStitchTotal != null) {
             Spacer(modifier = Modifier.height(controlsToStitchTrackerSpacing))
@@ -284,43 +289,6 @@ private fun CounterMainNumber(state: CounterUiState) {
     )
 }
 
-@Composable
-private fun CounterTargetProgressBar(
-    state: CounterUiState,
-    onShowTargetDialog: () -> Unit,
-) {
-    val target = state.targetRows ?: return
-    if (target <= 0) return
-    Spacer(modifier = Modifier.height(CounterDimens.CounterProgressSpacing))
-    val fraction = (state.counter.count.toFloat() / target.toFloat()).coerceIn(0f, 1f)
-    val completed = state.counter.count >= target
-    val fillColor =
-        if (completed) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary
-    Box(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .widthIn(max = CounterDimens.CounterControlsMaxWidth)
-                .height(CounterDimens.CounterProgressHeight)
-                .clip(RoundedCornerShape(CounterDimens.CounterProgressCornerRadius))
-                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-                .clickable(onClick = onShowTargetDialog),
-    ) {
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxWidth(fraction)
-                    .height(CounterDimens.CounterProgressHeight)
-                    .clip(RoundedCornerShape(CounterDimens.CounterProgressCornerRadius))
-                    .background(fillColor),
-        )
-    }
-    CounterTargetHelperLabel(
-        helperText = counterTargetHelperText(state.counter.count, target),
-        onShowTargetDialog = onShowTargetDialog,
-    )
-}
-
 internal sealed interface CounterTargetHelperText {
     data object OneRowLeft : CounterTargetHelperText
 
@@ -385,6 +353,7 @@ private fun CounterButtons(
     state: CounterUiState,
     onDecrement: () -> Unit,
     onIncrement: () -> Unit,
+    onUndo: () -> Unit,
 ) {
     val display = CounterValueFormatter.forMainCounter(state.toMainCounterProject())
 
@@ -399,11 +368,12 @@ private fun CounterButtons(
             imageRes = R.drawable.counter_minus_button,
             contentDescription = mainCounterDecreaseContentDescription(display.decreaseContentDescription),
             visualSize = CounterDimens.CounterMinusVisualSize,
+            visualOffsetY = CounterDimens.CounterMinusOpticalOffsetY,
             onClick = onDecrement,
             modifier =
                 Modifier
                     .size(CounterDimens.CounterMinusTouchSize)
-                    .align(Alignment.CenterStart),
+                    .align(Alignment.TopStart),
         )
         CounterImageButton(
             imageRes = R.drawable.counter_plus_button,
@@ -413,7 +383,17 @@ private fun CounterButtons(
             modifier =
                 Modifier
                     .size(CounterDimens.CounterPrimaryTouchSize)
-                    .align(Alignment.CenterEnd),
+                    .align(Alignment.TopEnd),
+        )
+        CounterImageButton(
+            imageRes = R.drawable.counter_undo_button,
+            contentDescription = stringResource(R.string.counter_undo_last_change),
+            visualSize = CounterDimens.CounterUndoVisualSize,
+            onClick = onUndo,
+            modifier =
+                Modifier
+                    .size(CounterDimens.CounterUndoTouchSize)
+                    .align(Alignment.BottomCenter),
         )
     }
 }

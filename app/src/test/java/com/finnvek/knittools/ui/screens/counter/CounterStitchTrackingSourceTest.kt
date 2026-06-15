@@ -65,7 +65,7 @@ class CounterStitchTrackingSourceTest {
                 .substringAfter("private fun CounterHero")
                 .substringBefore("@Composable\nprivate fun CounterStitchTracker")
 
-        assertTrue(dimens.contains("HeroButtonCompactSpacing = 48.dp"))
+        assertTrue(dimens.contains("HeroButtonCompactSpacing = 8.dp"))
         assertTrue(hero.contains("val heroButtonSpacing ="))
         assertTrue(hero.contains("val controlsToStitchTrackerSpacing ="))
         assertTrue(hero.contains("state.canUseSecondaryCounter && state.visibleStitchTotal != null"))
@@ -73,7 +73,12 @@ class CounterStitchTrackingSourceTest {
         assertTrue(hero.contains("CounterDimens.CounterControlsToStitchTrackerCompactSpacing"))
         assertTrue(hero.contains("Spacer(modifier = Modifier.height(heroButtonSpacing))"))
         assertTrue(hero.contains("Spacer(modifier = Modifier.height(controlsToStitchTrackerSpacing))"))
-        assertTrue(dimens.contains("CounterControlsToStitchTrackerCompactSpacing = 24.dp"))
+        assertTrue(dimens.contains("CounterRepeatToRowSpacing = 32.dp"))
+        assertTrue(dimens.contains("CounterUndoTouchSize = CounterUndoVisualSize"))
+        assertTrue(dimens.contains("CounterUndoVerticalSpacing = 16.dp"))
+        assertTrue(dimens.contains("CounterControlsHeight ="))
+        assertTrue(dimens.contains("CounterPrimaryTouchSize + CounterUndoVerticalSpacing + CounterUndoTouchSize"))
+        assertTrue(dimens.contains("CounterControlsToStitchTrackerCompactSpacing = 8.dp"))
         assertTrue(dimens.contains("StitchTrackerMinHeight = 68.dp"))
         assertTrue(
             ProjectSourceFiles

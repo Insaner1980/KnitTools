@@ -200,8 +200,8 @@ Completed phase: Phase 5 - Android Firebase Integration
   - `firebase-auth`
   - `firebase-functions`
   - Google Services Gradle plugin `4.4.4`
-- Added conditional Google Services plugin application in `app/build.gradle.kts` so unit tests and static Android lint can still resolve without a local Firebase JSON, while Android build artifact tasks require `app/google-services.json`.
-- Added `verifyGoogleServicesJson`, which fails Android build artifact tasks unless the ignored local `app/google-services.json` exists.
+- Added conditional Google Services plugin application in `app/build.gradle.kts` so unit tests and static Android lint can still resolve without a local Firebase JSON, while release build artifact tasks require `app/google-services.json` and debug artifact tasks may generate an ignored placeholder.
+- Added `verifyGoogleServicesJson`, which fails release artifact tasks unless the ignored local `app/google-services.json` exists.
 - Added CI setup in `.github/workflows/build.yml` and `.github/workflows/codeql.yml` to generate `app/google-services.json` from `KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64`.
 - Added `FirebaseAnonymousAuthGateway` and a small Firebase `Task.await()` coroutine bridge.
 - Added `RavelryBackendClient`, `FirebaseRavelryBackendClient`, and `RavelryBackendMappers`.
@@ -217,7 +217,7 @@ Completed phase: Phase 5 - Android Firebase Integration
 - Android no longer embeds Ravelry OAuth client secret or Basic Auth credentials.
 - Backend callable search/import still returns only sanitized metadata and no pattern PDF URLs.
 - `RavelryAuthManager` intentionally remains a temporary compatibility surface for existing UI/MainActivity callers; it does not own tokens or secrets.
-- Android Firebase config remains uncommitted: local builds use ignored `app/google-services.json`, CI uses `KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64`.
+- Android Firebase config remains uncommitted: release builds use ignored `app/google-services.json`, CI uses `KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64`, and local debug builds may use ignored `app/src/debug/google-services.json` placeholder config.
 
 ## Version notes
 

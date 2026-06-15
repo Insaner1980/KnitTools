@@ -53,8 +53,23 @@ class RavelryFirebaseIntegrationSourceTest {
         assertFalse(appBuild.contains("@get:InputFile\n    @get:Optional"))
         assertTrue(appBuild.contains("app/google-services.json"))
         assertTrue(gitignore.contains("app/src/debug/google-services.json"))
-        assertTrue(buildWorkflow.contains("KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64"))
-        assertTrue(codeQlWorkflow.contains("KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64"))
+        assertFalse(buildWorkflow.contains("Missing KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64 secret"))
+        assertFalse(codeQlWorkflow.contains("Missing KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64 secret"))
+        assertFalse(buildWorkflow.contains("secrets.KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64"))
+        assertFalse(codeQlWorkflow.contains("secrets.KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64"))
+    }
+
+    @Test
+    fun `pull request workflows let Gradle materialize debug Firebase config`() {
+        val buildWorkflow = ProjectSourceFiles.read(".github/workflows/build.yml")
+        val codeQlWorkflow = ProjectSourceFiles.read(".github/workflows/codeql.yml")
+
+        assertTrue(buildWorkflow.contains("run: ./gradlew assembleDebug"))
+        assertTrue(codeQlWorkflow.contains("run: ./gradlew assembleDebug --no-daemon"))
+        assertFalse(buildWorkflow.contains("Write Firebase Android config"))
+        assertFalse(codeQlWorkflow.contains("Write Firebase Android config"))
+        assertFalse(buildWorkflow.contains("app/google-services.json"))
+        assertFalse(codeQlWorkflow.contains("app/google-services.json"))
     }
 
     @Test

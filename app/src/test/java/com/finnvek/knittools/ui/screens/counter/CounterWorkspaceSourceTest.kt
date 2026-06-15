@@ -105,7 +105,11 @@ class CounterWorkspaceSourceTest {
         assertTrue(Files.exists(ProjectSourceFiles.file(COUNTER_UNDO_BUTTON_ASSET)))
         assertTrue(heroSource.controls.contains("onUndo: () -> Unit"))
         assertTrue(heroSource.controls.contains("imageRes = R.drawable.counter_undo_button"))
-        assertTrue(heroSource.controls.contains("contentDescription = stringResource(R.string.counter_undo_last_change)"))
+        assertTrue(
+            heroSource.controls.contains(
+                "contentDescription = stringResource(R.string.counter_undo_last_change)",
+            ),
+        )
         assertTrue(heroSource.controls.contains("visualSize = CounterDimens.CounterUndoVisualSize"))
         assertTrue(heroSource.controls.contains(".size(CounterDimens.CounterUndoTouchSize)"))
         assertTrue(heroSource.controls.contains(".align(Alignment.BottomCenter)"))

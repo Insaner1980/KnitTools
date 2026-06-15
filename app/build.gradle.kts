@@ -396,67 +396,70 @@ gradle.taskGraph.whenReady {
     }
 }
 
-val writeGoogleServicesJsonFromEnv = tasks.register("writeGoogleServicesJsonFromEnv") {
-    group = "build setup"
-    description = "Luo ignored app/google-services.json -tiedoston ympäristömuuttujasta tarvittaessa."
+val writeGoogleServicesJsonFromEnv =
+    tasks.register("writeGoogleServicesJsonFromEnv") {
+        group = "build setup"
+        description = "Luo ignored app/google-services.json -tiedoston ympäristömuuttujasta tarvittaessa."
 
-    val targetFile = googleServicesJsonConfigFile.asFile
-    val envName = googleServicesJsonBase64EnvVar
-    val encodedConfig = googleServicesJsonBase64Env.orNull
+        val targetFile = googleServicesJsonConfigFile.asFile
+        val envName = googleServicesJsonBase64EnvVar
+        val encodedConfig = googleServicesJsonBase64Env.orNull
 
-    inputs.property("base64EnvName", envName)
-    inputs.property("encodedConfig", encodedConfig.orEmpty())
-    outputs.file(targetFile)
-    outputs.upToDateWhen { targetFile.isFile }
+        inputs.property("base64EnvName", envName)
+        inputs.property("encodedConfig", encodedConfig.orEmpty())
+        outputs.file(targetFile)
+        outputs.upToDateWhen { targetFile.isFile }
 
-    doLast {
-        GoogleServicesJsonTaskActions.writeFromEnv(targetFile, envName, encodedConfig)
-    }
-}
-
-val writeDebugGoogleServicesJson = tasks.register("writeDebugGoogleServicesJson") {
-    group = "build setup"
-    description = "Luo debug-buildille ignored placeholder Firebase -konfiguraation tarvittaessa."
-    dependsOn(writeGoogleServicesJsonFromEnv)
-
-    val rootFile = googleServicesJsonConfigFile.asFile
-    val targetFile = debugGoogleServicesJsonConfigFile.asFile
-    val encodedConfig = googleServicesJsonBase64Env.orNull
-    val placeholderJson = debugGoogleServicesPlaceholderJson
-
-    inputs.files(rootFile).withPropertyName("rootGoogleServicesJsonFile")
-    inputs.property("encodedConfig", encodedConfig.orEmpty())
-    inputs.property("placeholderJson", placeholderJson)
-    outputs.file(targetFile)
-    outputs.upToDateWhen {
-        rootFile.isFile ||
-            !encodedConfig.isNullOrBlank() ||
-            targetFile.isFile
+        doLast {
+            GoogleServicesJsonTaskActions.writeFromEnv(targetFile, envName, encodedConfig)
+        }
     }
 
-    doLast {
-        GoogleServicesJsonTaskActions.writeDebugPlaceholder(
-            rootFile,
-            encodedConfig,
-            placeholderJson,
-            targetFile,
-        )
+val writeDebugGoogleServicesJson =
+    tasks.register("writeDebugGoogleServicesJson") {
+        group = "build setup"
+        description = "Luo debug-buildille ignored placeholder Firebase -konfiguraation tarvittaessa."
+        dependsOn(writeGoogleServicesJsonFromEnv)
+
+        val rootFile = googleServicesJsonConfigFile.asFile
+        val targetFile = debugGoogleServicesJsonConfigFile.asFile
+        val encodedConfig = googleServicesJsonBase64Env.orNull
+        val placeholderJson = debugGoogleServicesPlaceholderJson
+
+        inputs.files(rootFile).withPropertyName("rootGoogleServicesJsonFile")
+        inputs.property("encodedConfig", encodedConfig.orEmpty())
+        inputs.property("placeholderJson", placeholderJson)
+        outputs.file(targetFile)
+        outputs.upToDateWhen {
+            rootFile.isFile ||
+                !encodedConfig.isNullOrBlank() ||
+                targetFile.isFile
+        }
+
+        doLast {
+            GoogleServicesJsonTaskActions.writeDebugPlaceholder(
+                rootFile,
+                encodedConfig,
+                placeholderJson,
+                targetFile,
+            )
+        }
     }
-}
 
-val verifyGoogleServicesJson = tasks.register("verifyGoogleServicesJson") {
-    group = "verification"
-    description = "Tarkistaa, että Android Firebase -konfiguraatio on paikallaan."
-    dependsOn(writeGoogleServicesJsonFromEnv)
+val verifyGoogleServicesJson =
+    tasks.register("verifyGoogleServicesJson") {
+        group = "verification"
+        description = "Tarkistaa, että Android Firebase -konfiguraatio on paikallaan."
+        dependsOn(writeGoogleServicesJsonFromEnv)
 
-    val targetFile = googleServicesJsonConfigFile.asFile
+        val targetFile = googleServicesJsonConfigFile.asFile
 
-    inputs.files(targetFile).withPropertyName("googleServicesJsonFile")
+        inputs.files(targetFile).withPropertyName("googleServicesJsonFile")
 
-    doLast {
-        GoogleServicesJsonTaskActions.verify(targetFile)
+        doLast {
+            GoogleServicesJsonTaskActions.verify(targetFile)
+        }
     }
-}
 
 val firebaseConfiguredArtifactTaskNames =
     setOf(

@@ -47,10 +47,11 @@ export KNITTOOLS_KEY_PASSWORD=password
 
 Ravelry's old backendless accepted-risk path is superseded by `Ravelry Firebase Backend And Saved Patterns Plan.md`. Android no longer embeds Ravelry credentials or stores Ravelry tokens; Ravelry secrets belong in the Firebase backend.
 
-Android Firebase builds require the project-specific config file locally at ignored path `app/google-services.json`, or CI must generate it from `KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64`.
+Android Firebase release builds require the project-specific config file locally at ignored path `app/google-services.json`. If the file is missing, Gradle can create the ignored file from `KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64` before release artifact builds. Debug builds can compile without a real Firebase project by generating an ignored local placeholder at `app/src/debug/google-services.json`.
 
 ```bash
 export KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64=base64-encoded-google-services-json
+./gradlew assembleDebug
 ```
 
 ## Current Documentation

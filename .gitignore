@@ -28,6 +28,7 @@
 
 # Firebase config (sisältää projektikohtaisia tunnistetietoja)
 app/google-services.json
+app/src/debug/google-services.json
 
 # Prevent CLAUDE.md files from breaking Android resource merger
 **/src/main/res/**/CLAUDE.md

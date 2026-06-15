@@ -25,7 +25,8 @@ Odotetut sopimusarvot, varmistettu nykyisista lahdetiedostoista:
   yarn_photos, pattern_pdfs, broad files/cache/external roots ja external storage roots eivat kuulu jaettuun pintaan.
 - Release signing gate riippuu KNITTOOLS_* signing -ymparistomuuttujista.
 - Firebase Auth/Functions ja Google Services ovat sallittuja vain Ravelry-backendia varten.
-  app/google-services.json saa olla paikallinen ignoroitu tiedosto, mutta se ei saa olla git-indexissa.
+  app/google-services.json saa olla paikallinen ignoroitu tiedosto, ja debug-build voi luoda
+  app/src/debug/google-services.json -placeholderin, mutta kumpikaan ei saa olla git-indexissa.
 - debug.credentials.properties on paikallinen, ignoroitu ja git-indexin ulkopuolella.
 - Sentry saa olla vain debugImplementation + app/src/debug; app/src/release on no-op eika release/main lahdekoodi saa importata io.sentrya.
 - Firebase AI, ML Kit, Gemini/Google Generative AI ja voice/speech dependencyt eivat kuulu projektiin.
@@ -507,24 +508,29 @@ function Test-ReleaseGates {
 
 function Test-FirebaseBoundary {
     $check = "firebase-boundary"
-    $googleServicesPath = "app/google-services.json"
+    $googleServicesPaths = @(
+        "app/google-services.json",
+        "app/src/debug/google-services.json"
+    )
     $gitignorePath = ".gitignore"
     $firstPath = "app/build.gradle.kts"
     $firstLine = $null
 
     try {
         $problems = @()
-        $trackedGoogleServices = Invoke-Git -Arguments @("ls-files", "--", $googleServicesPath)
-        if ($trackedGoogleServices.ExitCode -eq 0 -and $trackedGoogleServices.Output.Count -gt 0) {
-            $problems += "app/google-services.json is tracked by git"
-            $firstPath = $googleServicesPath
-        }
+        foreach ($googleServicesPath in $googleServicesPaths) {
+            $trackedGoogleServices = Invoke-Git -Arguments @("ls-files", "--", $googleServicesPath)
+            if ($trackedGoogleServices.ExitCode -eq 0 -and $trackedGoogleServices.Output.Count -gt 0) {
+                $problems += "$googleServicesPath is tracked by git"
+                $firstPath = $googleServicesPath
+            }
 
-        $ignoredGoogleServices = Invoke-Git -Arguments @("check-ignore", "--no-index", "-q", "--", $googleServicesPath)
-        if ($ignoredGoogleServices.ExitCode -ne 0) {
-            $problems += ".gitignore does not cover app/google-services.json"
-            $firstPath = $gitignorePath
-            $firstLine = Get-LineNumber -RelativePath $gitignorePath -Pattern "google-services\.json"
+            $ignoredGoogleServices = Invoke-Git -Arguments @("check-ignore", "--no-index", "-q", "--", $googleServicesPath)
+            if ($ignoredGoogleServices.ExitCode -ne 0) {
+                $problems += ".gitignore does not cover $googleServicesPath"
+                $firstPath = $gitignorePath
+                $firstLine = Get-LineNumber -RelativePath $gitignorePath -Pattern "google-services\.json"
+            }
         }
 
         $appGradle = Read-TextFile "app/build.gradle.kts"

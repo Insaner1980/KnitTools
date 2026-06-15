@@ -1,10 +1,9 @@
 import com.android.build.api.variant.BuildConfigField
-import org.gradle.api.DefaultTask
-import org.gradle.api.file.RegularFileProperty
-import org.gradle.api.tasks.InputFiles
-import org.gradle.api.tasks.TaskAction
+import org.gradle.api.GradleException
 import org.gradle.testing.jacoco.tasks.JacocoReport
+import java.io.File
 import java.io.StringReader
+import java.util.Base64
 import java.util.Properties
 
 plugins {
@@ -26,18 +25,116 @@ val releaseSigningEnvPrefix = "KNITTOOLS" // Change to your app name, e.g. "KNIT
 val debugCredentialsFile = rootProject.layout.projectDirectory.file("debug.credentials.properties")
 val debugCredentialsText = providers.fileContents(debugCredentialsFile).asText.orElse("")
 val googleServicesJsonConfigFile = layout.projectDirectory.file("google-services.json")
+val debugGoogleServicesJsonConfigFile = layout.projectDirectory.file("src/debug/google-services.json")
+val googleServicesJsonBase64EnvVar = "KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64"
+val googleServicesJsonBase64Env = providers.environmentVariable(googleServicesJsonBase64EnvVar)
+val requestedTaskNames = gradle.startParameter.taskNames
 
-if (googleServicesJsonConfigFile.asFile.isFile) {
+fun isRequestedAppTask(taskName: String): Boolean =
+    requestedTaskNames.any { requestedTaskName ->
+        requestedTaskName == taskName ||
+            requestedTaskName == ":app:$taskName" ||
+            requestedTaskName.endsWith(":$taskName")
+    }
+
+val debugFirebaseArtifactRequested =
+    listOf(
+        "assembleDebug",
+        "installDebug",
+        "processDebugGoogleServices",
+    ).any(::isRequestedAppTask)
+
+val canMaterializeGoogleServicesJson =
+    googleServicesJsonConfigFile.asFile.isFile ||
+        googleServicesJsonBase64Env.isPresent ||
+        debugFirebaseArtifactRequested
+val debugGoogleServicesPlaceholderJson =
+    """
+    {
+      "project_info": {
+        "project_number": "123456789012",
+        "project_id": "knittools-local-debug",
+        "storage_bucket": "knittools-local-debug.appspot.com"
+      },
+      "client": [
+        {
+          "client_info": {
+            "mobilesdk_app_id": "1:123456789012:android:0000000000000000",
+            "android_client_info": {
+              "package_name": "com.finnvek.knittools"
+            }
+          },
+          "oauth_client": [],
+          "api_key": [
+            {
+              "current_key": "debug-placeholder-api-key"
+            }
+          ],
+          "services": {
+            "appinvite_service": {
+              "other_platform_oauth_client": []
+            }
+          }
+        }
+      ],
+      "configuration_version": "1"
+    }
+    """.trimIndent()
+
+if (canMaterializeGoogleServicesJson) {
     apply(plugin = "com.google.gms.google-services")
 }
 
-abstract class VerifyGoogleServicesJsonTask : DefaultTask() {
-    @get:InputFiles
-    abstract val googleServicesJsonFile: RegularFileProperty
+object GoogleServicesJsonTaskActions {
+    private const val DEBUG_PLACEHOLDER_API_KEY = "debug-placeholder-api-key"
 
-    @TaskAction
-    fun verify() {
-        if (!googleServicesJsonFile.asFile.get().isFile) {
+    fun writeFromEnv(
+        targetFile: File,
+        envName: String,
+        encodedConfig: String?,
+    ) {
+        if (targetFile.isFile) {
+            return
+        }
+
+        val encodedConfig = encodedConfig?.takeIf { it.isNotBlank() } ?: return
+        val decodedConfig =
+            try {
+                Base64.getMimeDecoder().decode(encodedConfig)
+            } catch (exception: IllegalArgumentException) {
+                throw GradleException(
+                    "$envName ei ole kelvollinen Base64-koodattu google-services.json.",
+                    exception,
+                )
+            }
+
+        targetFile.parentFile.mkdirs()
+        targetFile.writeBytes(decodedConfig)
+    }
+
+    fun writeDebugPlaceholder(
+        rootGoogleServicesJsonFile: File,
+        encodedConfig: String?,
+        placeholderJson: String,
+        targetFile: File,
+    ) {
+        if (rootGoogleServicesJsonFile.isFile || !encodedConfig.isNullOrBlank()) {
+            if (targetFile.isFile && targetFile.readText(Charsets.UTF_8).contains(DEBUG_PLACEHOLDER_API_KEY)) {
+                targetFile.delete()
+            }
+            return
+        }
+
+        if (targetFile.isFile) {
+            return
+        }
+
+        targetFile.parentFile.mkdirs()
+        targetFile.writeText(placeholderJson, Charsets.UTF_8)
+    }
+
+    fun verify(googleServicesJsonFile: File) {
+        if (!googleServicesJsonFile.isFile) {
             error(
                 "Android Firebase -build vaatii tiedoston app/google-services.json. " +
                     "Pidä tiedosto gitignored-polussa paikallisesti tai luo se CI:ssä " +
@@ -299,20 +396,84 @@ gradle.taskGraph.whenReady {
     }
 }
 
-val verifyGoogleServicesJson by tasks.registering(VerifyGoogleServicesJsonTask::class) {
-    group = "verification"
-    description = "Tarkistaa, että Android Firebase -konfiguraatio on paikallaan."
-    googleServicesJsonFile.set(googleServicesJsonConfigFile)
-}
+val writeGoogleServicesJsonFromEnv =
+    tasks.register("writeGoogleServicesJsonFromEnv") {
+        group = "build setup"
+        description = "Luo ignored app/google-services.json -tiedoston ympäristömuuttujasta tarvittaessa."
+
+        val targetFile = googleServicesJsonConfigFile.asFile
+        val envName = googleServicesJsonBase64EnvVar
+        val encodedConfig = googleServicesJsonBase64Env.orNull
+
+        inputs.property("base64EnvName", envName)
+        inputs.property("encodedConfig", encodedConfig.orEmpty())
+        outputs.file(targetFile)
+        outputs.upToDateWhen { targetFile.isFile }
+
+        doLast {
+            GoogleServicesJsonTaskActions.writeFromEnv(targetFile, envName, encodedConfig)
+        }
+    }
+
+val writeDebugGoogleServicesJson =
+    tasks.register("writeDebugGoogleServicesJson") {
+        group = "build setup"
+        description = "Luo debug-buildille ignored placeholder Firebase -konfiguraation tarvittaessa."
+        dependsOn(writeGoogleServicesJsonFromEnv)
+
+        val rootFile = googleServicesJsonConfigFile.asFile
+        val targetFile = debugGoogleServicesJsonConfigFile.asFile
+        val encodedConfig = googleServicesJsonBase64Env.orNull
+        val placeholderJson = debugGoogleServicesPlaceholderJson
+
+        inputs.files(rootFile).withPropertyName("rootGoogleServicesJsonFile")
+        inputs.property("encodedConfig", encodedConfig.orEmpty())
+        inputs.property("placeholderJson", placeholderJson)
+        outputs.file(targetFile)
+        outputs.upToDateWhen {
+            rootFile.isFile ||
+                !encodedConfig.isNullOrBlank() ||
+                targetFile.isFile
+        }
+
+        doLast {
+            GoogleServicesJsonTaskActions.writeDebugPlaceholder(
+                rootFile,
+                encodedConfig,
+                placeholderJson,
+                targetFile,
+            )
+        }
+    }
+
+val verifyGoogleServicesJson =
+    tasks.register("verifyGoogleServicesJson") {
+        group = "verification"
+        description = "Tarkistaa, että Android Firebase -konfiguraatio on paikallaan."
+        dependsOn(writeGoogleServicesJsonFromEnv)
+
+        val targetFile = googleServicesJsonConfigFile.asFile
+
+        inputs.files(targetFile).withPropertyName("googleServicesJsonFile")
+
+        doLast {
+            GoogleServicesJsonTaskActions.verify(targetFile)
+        }
+    }
 
 val firebaseConfiguredArtifactTaskNames =
     setOf(
-        "assembleDebug",
         "assembleRelease",
         "bundleRelease",
     )
 
 tasks.configureEach {
+    if (name == "processDebugGoogleServices") {
+        dependsOn(writeGoogleServicesJsonFromEnv, writeDebugGoogleServicesJson)
+    } else if (name.startsWith("process") && name.endsWith("GoogleServices")) {
+        dependsOn(writeGoogleServicesJsonFromEnv)
+    }
+
     if (name in firebaseConfiguredArtifactTaskNames) {
         dependsOn(verifyGoogleServicesJson)
     }

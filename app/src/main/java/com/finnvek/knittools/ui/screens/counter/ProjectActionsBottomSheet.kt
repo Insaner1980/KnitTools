@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.Undo
 import androidx.compose.material.icons.outlined.AddCircle
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.ChevronRight
@@ -50,7 +49,6 @@ data class ProjectActionsSheetCallbacks(
     val onOpenAddCounter: () -> Unit,
     val onToggleStitchTracking: (Boolean) -> Unit,
     val onOpenStitchCount: () -> Unit,
-    val onUndo: () -> Unit,
     val onOpenSessionHistory: () -> Unit,
     val onOpenProjectDetails: () -> Unit,
     val onStartRename: () -> Unit,
@@ -122,12 +120,6 @@ fun ProjectActionsBottomSheet(
             SectionDivider()
 
             ProjectActionsSection(title = stringResource(R.string.project_actions_section_project_actions)) {
-                ActionRow(
-                    icon = Icons.AutoMirrored.Outlined.Undo,
-                    label = stringResource(R.string.counter_undo_last_change),
-                    onClick = callbacks.onUndo,
-                    showChevron = false,
-                )
                 ActionRow(
                     icon = Icons.Outlined.History,
                     label = stringResource(R.string.session_history_title),

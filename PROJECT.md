@@ -56,6 +56,7 @@ Nykytilan kannalta hyödyllinen järjestys:
 - `firebase-functions`: `7.2.5`
 - `firebase-admin`: `13.10.0`
 - TypeScript: `6.0.3`
+- DeepSec: `2.1.2`
 - versionCode / versionName: `1 / 1.0.0`
 
 Source of truth:
@@ -64,6 +65,8 @@ Source of truth:
 - `baselineprofile/build.gradle.kts`
 - `gradle/libs.versions.toml`
 - `settings.gradle.kts`
+- `functions/package.json`
+- `.deepsec/package.json`
 
 ## Nopea orientoituminen
 
@@ -141,6 +144,13 @@ Jos avaat vain muutaman tiedoston, avaa nämä:
   - `tools/release-surface-test.ps1`
   - `tools/rs.ps1`
   - `tools/rst.ps1`
+- CI- ja scanner-konfiguraatio:
+  - `.github/workflows/build.yml`
+  - `.github/workflows/codeql.yml`
+  - `.github/dependabot.yml`
+  - `gradle/osv-scanner.toml`
+  - `.deepsec/deepsec.config.ts`
+  - `.deepsec/matchers/`
 - paikallinen laskuriohjeparseri:
   - `app/src/main/java/com/finnvek/knittools/domain/calculator/InstructionParser.kt`
 - widgetit:
@@ -185,7 +195,7 @@ Build-huomiot:
 - release signing on ympäristömuuttujapohjainen
 - release-artifaktit estetään ilman signing-muuttujia
 - Ravelryn vanha backenditön release-polku on superseded; Android ei enää määritä Ravelry credential `BuildConfig` -kenttiä, release opt-in -gatea, Basic Auth fallbackia eikä Ravelry token-storea
-- Android Firebase release artifact -build vaatii ignored `app/google-services.json` -tiedoston paikallisesti tai CI:ssä `KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64` -salaisuudesta generoidun tiedoston; `VerifyGoogleServicesJsonTask` käyttää Gradle-inputina `@InputFiles`-merkittyä `RegularFileProperty`ä ja pysäyttää `assembleRelease` ja `bundleRelease` -taskit vasta taskin suorituksessa, jos tiedosto puuttuu. Debug artifact -build voi luoda ignored `app/src/debug/google-services.json` -placeholderin paikallista buildattavuutta varten, jos oikeaa configia ei ole.
+- Android Firebase release artifact -build vaatii ignored `app/google-services.json` -tiedoston paikallisesti tai CI:ssä `KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64` -salaisuudesta generoidun tiedoston; `verifyGoogleServicesJson` käyttää `inputs.files(targetFile)`-inputia ja `GoogleServicesJsonTaskActions.verify(...)`-tarkistusta, joka pysäyttää `assembleRelease` ja `bundleRelease` -taskit vasta taskin suorituksessa, jos tiedosto puuttuu. Debug artifact -build voi luoda ignored `app/src/debug/google-services.json` -placeholderin paikallista buildattavuutta varten, jos oikeaa configia ei ole.
 - debug lukee Sentry DSN:n `KNITTOOLS_SENTRY_DSN`- tai `SENTRY_DSN`-ympäristömuuttujasta tai ignored `debug.credentials.properties` -tiedostosta avaimella `sentry.dsn`; Sentry on vain debug-luokkapolussa, automaattinen session/tracing/breadcrumb/screenshot/view-hierarchy/NDK-keruu on pois päältä, ja release-luokkapolun puhtaus tarkistetaan `tools\sentry.ps1`- sekä `tools\rs.ps1`-komennoilla
 
 ### `:baselineprofile`
@@ -209,6 +219,7 @@ Ravelry Firebase -backend:
 - `functions/src/ravelry/auth.ts` julkaisee `ravelryStartAuth`, `ravelryCallback`, `ravelryAuthStatus`, `ravelryDisconnect` ja `ravelryCurrentUser`
 - `functions/src/ravelry/authCore.ts`, `oauthStateStore.ts`, `oauth2.ts`, `tokenStore.ts` ja `client.ts` omistavat backend-OAuth2-flow'n, PKCE state -tallennuksen, server-side token exchangen, token tallennuksen ja current-user API-kutsun
 - `functions/src/ravelry/patternImport.ts`, `urlParsing.ts`, `client.ts` ja `sanitizedTypes.ts` omistavat backend-haun ja metadata-only importin: `ravelrySearchPatterns`, `ravelryImportPatternById` ja `ravelryImportPatternByUrl` palauttavat vain sallitut Ravelry ID/title/designer/thumbnail/canonical/original URL/availability/pagination -kentät eivätkä lataa pattern-PDF:iä
+- `functions/package.json` sisältää npm `overrides` -lukitukset `form-data 4.0.6`, `js-yaml 5.2.0`, `ts-deepmerge 8.0.0` ja `uuid 11.1.1`; nämä ovat osa nykyistä dependency-surfacea, eivät Android-riippuvuuksia
 - Androidissa on Firebase Auth/Functions -riippuvuudet sekä `RavelryBackendClient` callable-rajalle; `RavelryAuthManager` omistaa backend-auth-statuksen, start/disconnect-kutsut ja token-free `knittools://ravelry-auth-complete` callbackin; auth avataan Auth Tabilla ja Custom Tabs jää fallbackiksi
 - Saved patterns ovat Room schema 14 -lähdemetadatassa: `source`, nullable `ravelryPatternId`, `originalUrl`, `canonicalUrl`, nullable `localPdfUri`, `isAvailableOffline`, `updatedAt` ja nullable `lastSyncedAt`
 - Phase 8 UI-polku on valmis: `RavelryImportConfirmationSheet` hoitaa hakutulos- ja jaetun URL:n import-vahvistuksen, `SavedPatternDetailScreen` hoitaa metadata-availabilityn ja toiminnot, PatternPickerSheet listaa kaikki saved patternit, ja projektin pattern-kortti avaa metadata-only linkit detailiin ilman PDF-vieweriä
@@ -753,7 +764,8 @@ Keskeiset rajat:
 - `CounterScreenDecisions.kt` omistaa pienet feature-portitus- ja stitch tracking -päätökset (`requestCounterFeature`, `handleStitchTrackingToggle`)
 - `CounterUiStateReducers.kt` omistaa projektin havainnoinnin, counter-muutosten, aktiivisen reminderin ja dismissed reminder -tilan yhdistämisen `CounterUiState`en
 - `CounterWorkspaceSections.kt` omistaa työtilan järjestyksen, päälaskuriheron, target-helperin, content-card-slotin, lisälaskurit, stitch trackingin ja reminder-alertin sijoittelun
-- `CounterImageButton.kt` omistaa päälaskuriheron ensisijaiset plus/miinusnapit; visualit tulevat `drawable-nodpi/counter_plus_button.webp`- ja `counter_minus_button.webp` -asseteista, mutta painallus, semantics ja content descriptionit pysyvät Compose-komponentissa
+- `CounterImageButton.kt` omistaa päälaskuriheron ensisijaiset plus/miinus/undo-napit; visualit tulevat `drawable-nodpi/counter_plus_button.webp`, `counter_minus_button.webp` ja `counter_undo_button.webp` -asseteista, mutta painallus, semantics ja content descriptionit pysyvät Compose-komponentissa
+- `CounterImageButton`-funktion pakolliset parametrit ovat `imageRes`, `contentDescription`, `visualSize` ja `onClick`; ensimmäinen valinnainen parametri on `modifier`, ennen `visualOffsetY`- ja `enabled`-parametreja. Tätä järjestystä suojaa `CounterImageButtonSourceTest`, jotta komponentti pysyy Compose-kutsupintojen odotuksen mukaisena.
 - `CounterStepperButton.kt` omistaa pienemmät repeat-, stitch- ja extra-counter-stepperit; `CounterStepButtonFaceAppearance` ryhmittelee stepper-face-mitat ja värit, ja `CounterStepSymbolIcon` piirtää plus/miinus-symbolin `Canvas`illa pyöreän borderin sisälle ilman Material-ikoneita tai hero-button-bitmappeja
 - `CounterProjectContentCards.kt` omistaa projektin viiden neliökortin "content cards" -mallin, jossa Reminders-kortti keskitetään omalle rivilleen
 - `YarnManagementSheet.kt` omistaa counterista avattavan yarn management -sheetin ja projektikohtaisen yarn note -lomakkeen
@@ -771,8 +783,8 @@ Ensimmäisen viewportin järjestys on tarkoituksella rauhallinen laskurityökalu
 
 Päälaskurin nappimalli:
 
-- hero-päälaskurin minus käyttää `R.drawable.counter_minus_button` -assettia ja plus käyttää `R.drawable.counter_plus_button` -assettia
-- hero-nappien touch- ja visual-mitat ovat `CounterDimens.CounterMinusTouchSize`, `CounterMinusVisualSize`, `CounterPrimaryTouchSize` ja `CounterPrimaryVisualSize`
+- hero-päälaskurin minus käyttää `R.drawable.counter_minus_button` -assettia, plus käyttää `R.drawable.counter_plus_button` -assettia ja undo käyttää `R.drawable.counter_undo_button` -assettia
+- hero-nappien touch- ja visual-mitat ovat `CounterDimens.CounterMinusTouchSize`, `CounterMinusVisualSize`, `CounterPrimaryTouchSize`, `CounterPrimaryVisualSize`, `CounterUndoTouchSize` ja `CounterUndoVisualSize`
 - hero-napit eivät käytä enää vanhaa `CounterCraftButton`-mallia eivätkä geneerisiä `plus_button` / `minus_button` -drawableja
 - repeat-pill, stitch tracker ja extra-counterit käyttävät edelleen jaettua `CounterStepButtonFace` / `CounterStepSymbolIcon` -pintaa
 
@@ -1123,7 +1135,7 @@ Toteutuksessa näkyviä asioita, joita ei kannata päätellä vanhoista mockeist
 - `Library` sisältää sekä sisällöt että reference-näkymät
 - muistiinpanoissa on full-screen editori
 - counterin ensimmäinen viewport on top bar + iso row-counter-hero + alanavigaatio; reminder-alertit ja projektisisällöt ovat scrollin alla olevia sisältöjä, ja `ProjectContentCards` käyttää neljän kortin gridia plus keskitettyä Reminders-korttia vanhojen quick action / project info -rivien sijaan
-- päälaskurin suuret plus/miinusnapit ovat image-backed WebP-napit, mutta pienemmät repeat/stitch/extra-counter-stepperit ovat Compose Canvasilla piirrettyjä pyöreitä symboleita
+- päälaskurin suuret plus/miinus/undo-napit ovat image-backed WebP-napit, mutta pienemmät repeat/stitch/extra-counter-stepperit ovat Compose Canvasilla piirrettyjä pyöreitä symboleita
 - project list -kortit toimivat nyt myös syvälinkkeinä patterniin, kuviin, muistiinpanoihin ja ensimmäiseen linkitettyyn lankakorttiin
 - `My Yarn` tukee manuaalista lankakortin luontia; se ei ole skanneri- tai AI-parseripinta
 - yarn card detailissä voi muokata manuaalisia perustietoja ja vaihtaa kuvan Android photo pickerillä
@@ -1157,6 +1169,35 @@ Huomio:
 - `google-services`-plugin on sallittu vain Ravelry Firebase -integraatiolle ja applikoidaan, kun ignored `app/google-services.json` on paikallaan
 - `app/google-services.json` kuuluu nykyiseen Firebase-buildiin, mutta sitä ei pidä commitoida; CI luo sen `KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64` -salaisuudesta, ja staattinen Android lint saa toimia ilman paikallista tiedostoa
 
+## CI, scannerit ja paikalliset wrapperit
+
+GitHub Actions:
+
+- `.github/workflows/build.yml` ajaa push- ja pull request -tapahtumissa `assembleDebug`, `test`, `:app:ktlintCheck`, `:app:detekt` ja `lint`
+- build-workflow käyttää pinnejä `actions/checkout` v6.0.3, `actions/setup-java` v5.3.0 ja `gradle/actions/setup-gradle` v6.1.0; versio näkyy kommentissa, mutta hash on varsinainen lukitus
+- `.github/workflows/codeql.yml` ajaa push-, pull request- ja maanantaiaikataululla Java/Kotlin CodeQL -analyysin manuaalibuildilla; se käyttää `assembleDebug --no-daemon`, `android-actions/setup-android` v4.0.1 ja `github/codeql-action` v4.36.2 pin-hasheilla
+- `.github/dependabot.yml` seuraa Gradle-riippuvuuksia rootissa, GitHub Actions -riippuvuuksia rootissa, npm-riippuvuuksia `.deepsec`-hakemistossa sekä npm-riippuvuuksia `functions`-hakemistossa; CodeQL action -päivitykset ryhmitellään `codeql-action`-ryhmään
+
+Paikalliset PowerShell-wrapperit:
+
+- `tools/ac.ps1`, `cr.ps1`, `cs.ps1`, `db.ps1`, `dc.ps1`, `ds.ps1`, `ga.ps1`, `lc.ps1`, `ms.ps1`, `os.ps1`, `pc.ps1`, `ql.ps1`, `sc.ps1`, `sentry.ps1` ja `ss.ps1` ovat ohuet delegaatit `C:\Dev\Android-check\tools\InvokeProjectCheck.ps1`-skriptiin
+- wrapperit asettavat `-ProjectCheckCommand`-arvon ja palauttavat nyt kutsutun tarkistuksen exit-koodin `exit $LASTEXITCODE` -rivillä; `pc.ps1` lisäksi asettaa oletuksena `PMD_CPD_MINIMUM_TOKENS=100`, jos ympäristömuuttuja puuttuu
+- `tools/rs.ps1` ja `tools/rst.ps1` pysyvät repo-lokaaleina release-surface -reitteinä; `tools/ad.ps1` on erillinen debug APK:n build/install -wrapper
+
+OSV ja dependency-surface:
+
+- `gradle/osv-scanner.toml` ei tee projektinlaajuista package-ignorea; OSV lukee tuettuja lock/verification-tiedostoja, joten build-tool-only-false positivet rajataan pakettikohtaisilla `[[PackageOverrides]]`-entryillä
+- nykyiset OSV-poikkeukset koskevat Gradle verification metadataan päätyviä build-tool-riippuvuuksia, kuten Logback, Jackson, Guava `31.0.1-jre`, Okio `2.10.0`, Wire Runtime, Netty 4.1.x, Commons Lang, Apache HttpClient, jose4j, Bouncy Castle ja JDOM2; appin runtime-CVE-polku tarkistetaan erikseen OWASP dependency-checkillä
+
+DeepSec:
+
+- `.deepsec/package.json` käyttää `deepsec 2.1.2`:ta ja sisältää `deepsec:scan`, `deepsec:scan:custom`, `deepsec:process`, `deepsec:revalidate`, `deepsec:export`, `deepsec:report`, `deepsec:report:custom` ja `test:matchers` -skriptit
+- custom scan ajaa matcherit `android-exported-component`, `android-kotlin-entrypoint-surface`, `android-intent-input-surface`, `fileprovider-broad-path`, `knittools-file-uri-surface`, `android-uri-share-without-clipdata`, `ravelry-firebase-callable-surface`, `ravelry-credential-surface`, `sensitive-android-log` ja `widget-mutation-surface`
+- `.deepsec/deepsec.config.ts` rajaa KnitTools-projektin rootiksi `..`, lisää prioriteettipoluiksi Android-manifestin, `auth/`, `widget/` ja `data/storage/` -pinnat ja ohjaa tarkastusta exported component-, OAuth callback-, FileProvider URI grant-, widget mutation-, Ravelry credential- ja sensitive logging -riskeihin
+- uudet Kotlin-matcherit nostavat tarkastuspintaan Android activity/receiver/service/worker-entrypointit, intent data/extras -luvut, FileProvider/SAF/contentResolver/file-copy/file-delete -rajat, Firebase Auth/Functions callable -rajat, Ravelry callable -nimet ja widgetin counter-mutaatiot
+- `test:matchers` kääntää matcherit TypeScriptillä `.tmp/test-build`-hakemistoon ja ajaa Node testit `knittools-kotlin-security-surface.test.js`-tiedostolle
+- DeepSec accepted-risk -merkintä on rajattu dokumentoituihin historiallisiin Ravelry credential -findingeihin `config/security-decisions.md`-päätöksen perusteella; se ei saa laajeta kalliisiin API abuse-, prompt injection- tai muihin finding-tyyppeihin ilman uutta päätöstä
+
 ## Testit ja verifiointi
 
 Nykyiset testit painottuvat ainakin näihin:
@@ -1172,10 +1213,12 @@ Nykyiset testit painottuvat ainakin näihin:
 - navigation argument safety ja counter launch -tokenointi
 - widget data resolver ja action flow
 - project workspace -source-testit, jotka varmistavat `ProjectContentCards`-rakenteen, puhtaan ensimmäisen viewportin, counter-copyrajojen ja poistettujen quick-action/project-info-komponenttien puuttumisen
-- counter button -source-testit, jotka varmistavat päälaskurin `CounterImageButton`-assetit, pienempien stepperien Canvas-piirretyt symbolit ja `CounterStepButtonFaceAppearance`-rajapinnan
+- counter button -source-testit, jotka varmistavat päälaskurin `CounterImageButton`-assetit, undo-buttonin WebP-polun, `modifier`-parametrin sijainnin ensimmäisenä valinnaisena parametrina, pienempien stepperien Canvas-piirretyt symbolit ja `CounterStepButtonFaceAppearance`-rajapinnan
 - My Yarn / Yarn Card detail -source-testit, jotka varmistavat manuaalisen lankakortin, photo picker -toiminnon ja skannerikielen puuttumisen
 - repository transaction boundary -testit, jotka varmistavat pattern-, yarn- ja project-linkkien sekä tiedostosiivouksen transaktiorajat
 - Ravelry/Firebase source- ja unit-testit, jotka varmistavat backend callable -rajat, Auth Tab / Custom Tabs -authin, Browse Ravelry -Custom Tabs -avaamisen share päällä, share-importin, import confirmation -tilat, search-tabin connected-gatet, saved pattern detailin, lokalisaatiot, URL-avausfallbackin ja release-surface -sopimuksen
+- DeepSec source- ja matcher-testit, jotka varmistavat custom report -putken revalidation-vaiheen, accepted-risk-rajauksen sekä Kotlin entrypoint-, intent input-, FileProvider/SAF-, Firebase callable- ja widget mutation -matcherit
+- CI/source-testit varmistavat myös CodeQL/build-workflowjen ja security-tooling-konfigien odotettuja ankkureita, joten workflow- tai scanner-versiomuutos voi rikkoa testin vaikka app-koodi ei muuttuisi
 - `SonarMaintainabilitySourceTest` varmistaa tällä hetkellä konkreettisia ylläpidettävyysrajoja: `MainActivity`n tiivis OAuth/share-import-haara, `toUri()`-käyttö, Ravelry backend -pyynnön optional-parametriapu, `FirebaseBindingsModule`-fun-interface, action/state-parametrien ryhmittely, Ravelry search -renderöinnin apurijako ja `SentryInit.kt` coverage-exclusion
 - `DomainModelCoverageTest` kattaa domain-mallien helposti unohtuvia fallbackeja: yarn card display name, `SavedPatternSource.fromPersistedValue`, saved patternin legacy-yhteensopivuuspropertyt `ravelryId`/`patternUrl`, persisted enum fallbackit, custom main counter label -sanitoinnin ja unsupported yarn status -normalisoinnin
 
@@ -1187,6 +1230,8 @@ Pienimmät hyödylliset tarkistuskomennot:
 - `.\gradlew.bat sonar --console=plain` silloin kun `SONAR_TOKEN` on asetettu; wrapper `tools\sonar.ps1` kirjoittaa `reports\sonar.txt` ja voi hakea avoimet issuet `sonar.exe list issues` -komennolla, jos CLI löytyy
 - `npm --prefix functions test`
 - `npm --prefix functions run build`
+- `pnpm --dir .deepsec test:matchers`
+- `pnpm --dir .deepsec run deepsec:scan:custom`
 - `git diff --check`
 - `tools\rs.ps1` KnitTools-kohtaiseen release-/security-surface -sopimustarkistukseen
 - `tools\rst.ps1` release-surface -skriptin self-testiin
@@ -1213,7 +1258,7 @@ Julkaisuvalmiuden muistilista:
 - useita projekteja
 - päälaskuri, jonka craft type on neulonta tai virkkaus
 - päälaskurin label voi olla rows, rounds, repeats tai custom
-- päälaskurin hero-plus/miinus käyttää `CounterImageButton`-komponenttia ja kahta appin omaa WebP-button-assettia
+- päälaskurin hero-plus/miinus/undo käyttää `CounterImageButton`-komponenttia ja kolmea appin omaa WebP-button-assettia
 - stitch tracking
 - useita projektikohtaisia laskureita
 - lisälaskurit voivat seurata päälaskurin toteutunutta deltaa `linkedToMainCounter`-kentällä, paitsi repeat-section-laskurit
@@ -1286,7 +1331,12 @@ Näihin kannattaa suhtautua epäluuloisesti vanhoissa dokumenteissa:
 - `PatternCard` ei enää ota erillisiä `name` / `designerName` / `thumbnailUrl` / `difficulty` / `isFree` -parametreja, vaan `PatternCardState`-mallin
 - `saved_pattern_detail/{savedPatternId}` on nykyinen saved-pattern metadata/detail -pinta; vanha oletus suoraan PDF-vieweriin avaamisesta pätee vain, kun `localPdfUri` on olemassa
 - `app/google-services.json` on tarkoituksella ignored ja release artifact -buildin edellytys; debug artifact voi käyttää ignored `app/src/debug/google-services.json` -placeholderia, eikä root-configin puute tarkoita, että lint/unit-testit olisivat rikki
+- vanha `VerifyGoogleServicesJsonTask`-niminen oletus on poistunut build-scriptistä; nykyinen portti on `verifyGoogleServicesJson`-task + `GoogleServicesJsonTaskActions.verify(...)`
 - Sonar-wrapper ei nykyisin aja `assembleDebug`-taskia; jos Sonar-skannaus pysähtyy Firebase JSON -porttiin, tarkista ensin ettei wrapperia tai Gradle-taskigraafia ole palautettu vanhaan `assembleDebug sonar` -malliin
+- Android-check-wrapperien onnistuminen/epäonnistuminen tulee nyt niiden delegoiman prosessin exit-koodista; jos wrapper näyttää hiljaisesti onnistuvan, tarkista että tiedostossa on edelleen `exit $LASTEXITCODE`
+- `gradle/osv-scanner.toml` ei saa palata yleiseen `ignore = true` -malliin koko verification metadata -pinnalle; nykyinen malli on pakettikohtaiset false-positive-poikkeukset
+- DeepSec custom scan ei ole enää vain manifest/FileProvider/Ravelry credential/logging -pinta; nykyinen custom matcher -lista sisältää myös Kotlin entrypointit, intent-inputit, KnitTools file/URI -rajat, Ravelry Firebase callable -rajat ja widget-mutaatiot
+- `.deepsec/data/knittools/INFO.md` on scannerin kontekstiteksti eikä toteutuksen source of truth; jos se on ristiriidassa nykyisen koodin, `config/security-decisions.md`-päätöksen tai tämän tiedoston kanssa, tarkista koodi ennen findingin hyväksymistä
 - `ProState.hasFeature(...)` ei ole pelkkä `isPro` debug-buildissä; debug avaa feature-gatet erillisenä kehittäjäpolkuna
 - Sentry on debug-only diagnostiikkaa; älä lisää Sentry Gradle -pluginia, replayta, tracingia, logcat breadcrumbseja tai release-riippuvuutta ilman uutta product/security-päätöstä
 - jos manifest-, FileProvider-, release-credential-, Sentry-, Firebase/AI/voice-, Room-, widget-launch- tai locale-raja näyttää epävarmalta, tarkista nykyinen sopimus myös `tools\release-surface.ps1`:stä ja Ravelry-backendin osalta `config/ravelry-backend-progress.md`:stä
@@ -1295,7 +1345,7 @@ Näihin kannattaa suhtautua epäluuloisesti vanhoissa dokumenteissa:
 - widgetin plus/miinus käyttää samaa `CounterRepository.applyMainCounterChange(...)`-semantiikkaa kuin appin päälaskuri, joten linked-to-main-lisälaskurit muuttuvat myös widgetistä
 - vanhat `yarn_card_review` / `library_yarn_card_review` -reitit eivät ole nykyisessä `Screen.kt` / `NavGraph.kt` -pinnassa; käytössä on `yarn_card_detail/{cardId}`
 - `CounterQuickActions` ja `ProjectInfoSection` eivät ole nykyinen counter workspace -malli; käytössä on `CounterProjectContentCards.kt`
-- `CounterCraftButton`, `CounterHeroActionButton`, `plus_button` ja `minus_button` eivät ole nykyinen päälaskurin nappimalli; käytössä on `CounterImageButton` sekä `counter_plus_button.webp` / `counter_minus_button.webp`
+- `CounterCraftButton`, `CounterHeroActionButton`, `plus_button` ja `minus_button` eivät ole nykyinen päälaskurin nappimalli; käytössä on `CounterImageButton` sekä `counter_plus_button.webp` / `counter_minus_button.webp` / `counter_undo_button.webp`
 - `abbreviations`-route ei ole enää pelkkä staattinen route-string, vaan `abbreviations?craftType={craftType}`; data on silti tällä hetkellä sama neulonnalle ja virkkaukselle
 - Drive/Dropbox on nykykoodissa vain SAF-pohjainen pattern-PDF:n valinta-/kopiointipolku; jatkuva sync on tulevaa speksiä `config/future-sync-spec.md`:ssä
 - project attached-PDF:n reading line ja `patternRowMapping`-riviankkurit ovat pysyvää projektitilaa, mutta library-only viewerin reading line ei ole Room-skeemassa

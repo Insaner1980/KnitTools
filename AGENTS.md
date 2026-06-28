@@ -110,7 +110,7 @@ Use [`CLAUDE.md`](/home/emma/dev/KnitTools/CLAUDE.md) when product wording, visu
 ## Verification
 
 - Prefer the smallest useful check
-- Project-local PowerShell wrappers are mostly short `tools/*.ps1` scripts; check wrappers delegate to `C:\Dev\Android-check\tools\AndroidProjectChecks.psm1`, `ad` delegates to `C:\Dev\Android-check\tools\InstallDebugToDevice.ps1`, and release-surface wrappers are repo-local.
+- Project-local PowerShell wrappers are mostly short `tools/*.ps1` scripts; check wrappers delegate to `C:\Dev\Android-check\tools\InvokeProjectCheck.ps1`, `ad` delegates to `C:\Dev\Android-check\tools\InstallDebugToDevice.ps1`, and release-surface wrappers are repo-local.
 - `lc` runs ktlint, detekt, and Android lint into `reports/ktlint.txt`, `reports/detekt.txt`, and `reports/lint.txt`
 - `ad`, `ac`, `dc`, `ss`, `ds`, `ms`, `os`, `ql`, `db`, `pc`, `cs`, `cr`, `ga`, `sentry`, `rs`, `rst`, and `sc` are project-local wrappers; use `-PlanOnly` or `-ResolveOnly` for dry checks where supported
 - `ad` builds `assembleDebug`, resolves `adb.exe` from `local.properties` `sdk.dir`, and installs `app/build/outputs/apk/debug/app-debug.apk` with `adb install -r`; use `ad -NoBuild` to install an already-built APK

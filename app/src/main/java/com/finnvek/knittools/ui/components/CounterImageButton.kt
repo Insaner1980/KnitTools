@@ -29,9 +29,9 @@ fun CounterImageButton(
     @DrawableRes imageRes: Int,
     contentDescription: String,
     visualSize: Dp,
-    visualOffsetY: Dp = 0.dp,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    visualOffsetY: Dp = 0.dp,
     enabled: Boolean = true,
 ) {
     val interactionSource = remember { MutableInteractionSource() }

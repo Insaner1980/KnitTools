@@ -470,7 +470,7 @@ function Test-ReleaseGates {
             "appReleaseArtifactTasks",
             "missingSigningEnvNames",
             "Release build estetty",
-            "VerifyGoogleServicesJsonTask",
+            "GoogleServicesJsonTaskActions.verify",
             "verifyGoogleServicesJson",
             "firebaseConfiguredArtifactTaskNames",
             "KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64"
@@ -498,7 +498,7 @@ function Test-ReleaseGates {
                 $parts += "legacy Android Ravelry credential gate anchors remain: $($legacyRavelryAnchors -join ', ')"
             }
 
-            $line = Get-LineNumber -RelativePath $relativePath -Pattern "releaseSigningEnvNames|VerifyGoogleServicesJsonTask|KNITTOOLS_RAVELRY|KNITTOOLS_ALLOW_EMBEDDED_RAVELRY_SECRETS"
+            $line = Get-LineNumber -RelativePath $relativePath -Pattern "releaseSigningEnvNames|GoogleServicesJsonTaskActions|KNITTOOLS_RAVELRY|KNITTOOLS_ALLOW_EMBEDDED_RAVELRY_SECRETS"
             Add-Fail -Check $check -Message ($parts -join "; ") -RelativePath $relativePath -Line $line
         }
     } catch {

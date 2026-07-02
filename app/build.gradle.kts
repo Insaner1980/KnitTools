@@ -193,12 +193,21 @@ fun debugBuildConfigField(
 
 android {
     namespace = "com.finnvek.knittools"
-    compileSdk = 36
+    compileSdk =
+        libs.versions.androidCompileSdk
+            .get()
+            .toInt()
 
     defaultConfig {
         applicationId = "com.finnvek.knittools"
-        minSdk = 29
-        targetSdk = 36
+        minSdk =
+            libs.versions.androidMinSdk
+                .get()
+                .toInt()
+        targetSdk =
+            libs.versions.androidTargetSdk
+                .get()
+                .toInt()
         versionCode = 1
         versionName = "1.0.0"
 
@@ -367,6 +376,9 @@ gradle.taskGraph.whenReady {
             ":app:assembleRelease",
             ":app:bundleRelease",
             ":app:packageRelease",
+            ":app:packageReleaseBundle",
+            ":app:packageReleaseUniversalApk",
+            ":app:signReleaseBundle",
             ":app:publishRelease",
         )
 

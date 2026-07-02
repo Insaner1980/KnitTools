@@ -3,10 +3,15 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { type DeepsecPlugin, defineConfig } from "deepsec/config";
 import { androidExportedComponent } from "./matchers/android-exported-component.js";
+import { androidIntentInputSurface } from "./matchers/android-intent-input-surface.js";
+import { androidKotlinEntrypointSurface } from "./matchers/android-kotlin-entrypoint-surface.js";
 import { androidUriShareWithoutClipData } from "./matchers/android-uri-share-without-clipdata.js";
 import { fileproviderBroadPath } from "./matchers/fileprovider-broad-path.js";
+import { knitToolsFileUriSurface } from "./matchers/knittools-file-uri-surface.js";
+import { ravelryFirebaseCallableSurface } from "./matchers/ravelry-firebase-callable-surface.js";
 import { ravelryCredentialSurface } from "./matchers/ravelry-credential-surface.js";
 import { sensitiveAndroidLog } from "./matchers/sensitive-android-log.js";
+import { widgetMutationSurface } from "./matchers/widget-mutation-surface.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -15,10 +20,15 @@ function knitToolsPlugin(): DeepsecPlugin {
     name: "knittools-android",
     matchers: [
       androidExportedComponent,
+      androidKotlinEntrypointSurface,
+      androidIntentInputSurface,
       fileproviderBroadPath,
+      knitToolsFileUriSurface,
       androidUriShareWithoutClipData,
+      ravelryFirebaseCallableSurface,
       ravelryCredentialSurface,
       sensitiveAndroidLog,
+      widgetMutationSurface,
     ],
   };
 }

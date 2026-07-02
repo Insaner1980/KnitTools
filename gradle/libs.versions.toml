@@ -46,6 +46,9 @@ browser = "1.10.0"
 work = "2.11.2"
 firebaseBom = "34.14.0"
 googleServices = "4.4.4"
+androidCompileSdk = "36"
+androidMinSdk = "29"
+androidTargetSdk = "36"
 
 [libraries]
 # Compose BOM

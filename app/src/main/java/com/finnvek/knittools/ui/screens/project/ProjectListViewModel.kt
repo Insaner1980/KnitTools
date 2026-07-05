@@ -245,13 +245,24 @@ class ProjectListViewModel
 
         private suspend fun updatePatternNames(projects: List<CounterProject>) {
             val nameMap = mutableMapOf<Long, String>()
+            val linkedPatternIds =
+                projects
+                    .filter { it.patternName.isNullOrBlank() }
+                    .mapNotNull { it.linkedPatternId }
+                    .distinct()
+            val patternsById =
+                if (linkedPatternIds.isEmpty()) {
+                    emptyMap()
+                } else {
+                    savedPatternRepository.getByIds(linkedPatternIds).associateBy { it.id }
+                }
             projects.forEach { p ->
                 p.patternName?.takeIf { it.isNotBlank() }?.let {
                     nameMap[p.id] = it
                     return@forEach
                 }
                 val patternId = p.linkedPatternId ?: return@forEach
-                savedPatternRepository.getById(patternId)?.let { nameMap[p.id] = it.name }
+                patternsById[patternId]?.let { nameMap[p.id] = it.name }
             }
             _projectPatternNames.value = nameMap
         }

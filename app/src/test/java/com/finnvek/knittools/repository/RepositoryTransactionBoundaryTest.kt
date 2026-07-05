@@ -577,6 +577,23 @@ class RepositoryTransactionBoundaryTest {
         }
 
     @Test
+    fun `ravelry saved pattern multi delete delegates batch ids`() =
+        runTest {
+            val savedPatternRepository = mockk<SavedPatternRepository>(relaxed = true)
+            val repository =
+                RavelryRepository(
+                    api = mockk(relaxed = true),
+                    savedPatternRepository = savedPatternRepository,
+                    counterProjectDao = mockk(relaxed = true),
+                    transactionRunner = ImmediateDatabaseTransactionRunner,
+                )
+
+            repository.deleteSavedPatterns(listOf(4L, 5L))
+
+            coVerify(exactly = 1) { savedPatternRepository.deleteByIds(listOf(4L, 5L)) }
+        }
+
+    @Test
     fun `ravelry project creation tekee projektin nimestä uniikin`() =
         runTest {
             val savedPatternRepository = mockk<SavedPatternRepository>(relaxed = true)

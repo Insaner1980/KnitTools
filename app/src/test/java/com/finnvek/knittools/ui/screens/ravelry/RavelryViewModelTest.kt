@@ -419,6 +419,26 @@ class RavelryViewModelTest {
             assertEquals(9L, vm.importConfirmationState.value?.savedPatternId)
         }
 
+    @Test
+    fun `delete selected saved patterns delegates one batch delete`() =
+        runTest(testDispatcher) {
+            val vm = createViewModel(isPro = true)
+
+            vm.enterSavedSelectMode(1L)
+            vm.toggleSavedSelection(2L)
+            vm.deleteSelectedSaved()
+            advanceUntilIdle()
+
+            coVerify(exactly = 1) {
+                repository.deleteSavedPatterns(
+                    match { ids -> ids.size == 2 && ids.toSet() == setOf(1L, 2L) },
+                )
+            }
+            coVerify(exactly = 0) { repository.deleteSavedPattern(any()) }
+            assertFalse(vm.isSavedSelectMode.value)
+            assertEquals(emptySet<Long>(), vm.selectedSavedIds.value)
+        }
+
     private fun searchResponse(
         id: Int,
         page: Int = 1,

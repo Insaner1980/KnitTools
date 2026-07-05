@@ -43,6 +43,9 @@ class BillingManager
         private val _isProPurchased = MutableStateFlow(false)
         val isProPurchased: StateFlow<Boolean> = _isProPurchased.asStateFlow()
 
+        private val _purchaseStateReady = MutableStateFlow(false)
+        val purchaseStateReady: StateFlow<Boolean> = _purchaseStateReady.asStateFlow()
+
         private val _productDetails = MutableStateFlow<ProductDetails?>(null)
         val productDetails: StateFlow<ProductDetails?> = _productDetails.asStateFlow()
 
@@ -56,6 +59,7 @@ class BillingManager
         private val pendingAcknowledgementRetries = mutableSetOf<String>()
 
         fun initialize() {
+            _purchaseStateReady.value = false
             billingClient =
                 BillingClient
                     .newBuilder(context)
@@ -71,9 +75,11 @@ class BillingManager
                         if (result.responseCode == BillingClient.BillingResponseCode.OK) {
                             scope.launch {
                                 queryPurchases()
+                                _purchaseStateReady.value = true
                                 queryProductDetails()
                             }
                         } else {
+                            _purchaseStateReady.value = true
                             applyProductUnavailable(result.toUserMessage())
                         }
                     }
@@ -164,6 +170,7 @@ class BillingManager
         fun destroy() {
             billingClient?.endConnection()
             billingClient = null
+            _purchaseStateReady.value = false
         }
 
         private suspend fun queryPurchases() {

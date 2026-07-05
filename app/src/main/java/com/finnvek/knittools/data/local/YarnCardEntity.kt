@@ -2,10 +2,14 @@ package com.finnvek.knittools.data.local
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.finnvek.knittools.domain.model.YarnCardStatus
 
-@Entity(tableName = "yarn_cards")
+@Entity(
+    tableName = "yarn_cards",
+    indices = [Index("linkedProjectId")],
+)
 data class YarnCardEntity(
     // CPD-OFF: Room-entity peilaa domain- ja lomakekenttia, jotta kerrosrajat pysyvat selkeina.
     @PrimaryKey(autoGenerate = true)

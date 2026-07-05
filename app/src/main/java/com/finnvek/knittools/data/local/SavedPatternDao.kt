@@ -25,6 +25,9 @@ interface SavedPatternDao {
     @Query("SELECT * FROM saved_patterns WHERE canonicalUrl = :canonicalUrl ORDER BY savedAt DESC, id DESC LIMIT 1")
     suspend fun getByCanonicalUrl(canonicalUrl: String): SavedPatternEntity?
 
+    @Query("SELECT * FROM saved_patterns WHERE originalUrl = :originalUrl ORDER BY savedAt DESC, id DESC LIMIT 1")
+    suspend fun getByOriginalUrl(originalUrl: String): SavedPatternEntity?
+
     @Query("SELECT * FROM saved_patterns WHERE localPdfUri = :localPdfUri ORDER BY savedAt DESC, id DESC LIMIT 1")
     suspend fun getByLocalPdfUri(localPdfUri: String): SavedPatternEntity?
 

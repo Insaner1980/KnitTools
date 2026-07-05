@@ -19,7 +19,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         SavedPatternEntity::class,
         PatternAnnotationEntity::class,
     ],
-    version = 14,
+    version = 15,
     exportSchema = true,
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
@@ -235,8 +235,9 @@ abstract class KnitToolsDatabase : RoomDatabase() {
                         """
                         UPDATE sessions
                         SET rowsWorked = CASE
-                            WHEN endRow > startRow THEN endRow - startRow
-                            ELSE 0
+                            WHEN endRow <= startRow THEN 0
+                            WHEN endRow - startRow > ${Int.MAX_VALUE} THEN ${Int.MAX_VALUE}
+                            ELSE endRow - startRow
                         END
                         """.trimIndent(),
                     )
@@ -392,6 +393,20 @@ abstract class KnitToolsDatabase : RoomDatabase() {
                     db.execSQL(
                         "CREATE INDEX IF NOT EXISTS `index_saved_patterns_localPdfUri` " +
                             "ON `saved_patterns` (`localPdfUri`)",
+                    )
+                }
+            }
+
+        val MIGRATION_14_15 =
+            object : Migration(14, 15) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL(
+                        "CREATE INDEX IF NOT EXISTS `index_counter_projects_linkedPatternId` " +
+                            "ON `counter_projects` (`linkedPatternId`)",
+                    )
+                    db.execSQL(
+                        "CREATE INDEX IF NOT EXISTS `index_yarn_cards_linkedProjectId` " +
+                            "ON `yarn_cards` (`linkedProjectId`)",
                     )
                 }
             }

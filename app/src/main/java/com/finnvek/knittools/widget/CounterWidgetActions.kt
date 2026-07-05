@@ -41,7 +41,7 @@ class CounterWidgetActions : BroadcastReceiver() {
         action: String,
     ) {
         val entryPoint = widgetEntryPoint(context)
-        if (!entryPoint.proManager().hasFeature(ProFeature.WIDGET)) {
+        if (!entryPoint.proManager().hasFeatureAfterInitialLoad(ProFeature.WIDGET)) {
             Log.w(TAG, "Widget action ignored — not Pro")
             return
         }

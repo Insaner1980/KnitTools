@@ -433,7 +433,9 @@ class RavelryViewModel
         fun deleteSelectedSaved() {
             viewModelScope.launch {
                 val ids = _selectedSavedIds.value.toList()
-                ids.forEach { repository.deleteSavedPattern(it) }
+                if (ids.isNotEmpty()) {
+                    repository.deleteSavedPatterns(ids)
+                }
                 exitSavedSelectMode()
             }
         }

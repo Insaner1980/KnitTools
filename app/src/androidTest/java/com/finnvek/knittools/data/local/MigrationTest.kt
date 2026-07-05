@@ -14,8 +14,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Testaa Room-migraatiot v1->v14.
- * v1->v3: AutoMigration. v3->v14: manuaaliset muutokset.
+ * Testaa Room-migraatiot v1->v15.
+ * v1->v3: AutoMigration. v3->v15: manuaaliset muutokset.
  */
 @RunWith(AndroidJUnit4::class)
 class MigrationTest {
@@ -39,9 +39,10 @@ class MigrationTest {
             KnitToolsDatabase.MIGRATION_11_12,
             KnitToolsDatabase.MIGRATION_12_13,
             KnitToolsDatabase.MIGRATION_13_14,
+            KnitToolsDatabase.MIGRATION_14_15,
         )
 
-    private val latestVersion = 14
+    private val latestVersion = 15
 
     private fun migrateToLatest(testDb: String): SupportSQLiteDatabase =
         helper.runMigrationsAndValidate(
@@ -67,33 +68,53 @@ class MigrationTest {
     }
 
     private fun assertStartedAtIndexExists(db: SupportSQLiteDatabase) {
-        val indexCursor = db.query("PRAGMA index_list('sessions')")
-        var hasStartedAtIndex = false
-        try {
-            while (indexCursor.moveToNext()) {
-                if (indexCursor.getString(1) == "index_sessions_startedAt") {
-                    hasStartedAtIndex = true
-                }
-            }
-        } finally {
-            indexCursor.close()
-        }
-        assertTrue(hasStartedAtIndex)
+        assertIndexExists(db, "sessions", "index_sessions_startedAt")
     }
 
     private fun assertProjectYarnNoteIndexExists(db: SupportSQLiteDatabase) {
-        val indexCursor = db.query("PRAGMA index_list('project_yarn_notes')")
-        var hasProjectIdIndex = false
+        assertIndexExists(db, "project_yarn_notes", "index_project_yarn_notes_projectId")
+    }
+
+    private fun assertLinkedCleanupIndexesExist(db: SupportSQLiteDatabase) {
+        assertIndexExists(db, "counter_projects", "index_counter_projects_linkedPatternId")
+        assertIndexExists(db, "yarn_cards", "index_yarn_cards_linkedProjectId")
+    }
+
+    private fun assertIndexExists(
+        db: SupportSQLiteDatabase,
+        table: String,
+        indexName: String,
+    ) {
+        val indexCursor = db.query("PRAGMA index_list('$table')")
+        var hasIndex = false
         try {
             while (indexCursor.moveToNext()) {
-                if (indexCursor.getString(1) == "index_project_yarn_notes_projectId") {
-                    hasProjectIdIndex = true
+                if (indexCursor.getString(1) == indexName) {
+                    hasIndex = true
                 }
             }
         } finally {
             indexCursor.close()
         }
-        assertTrue(hasProjectIdIndex)
+        assertTrue(hasIndex)
+    }
+
+    @Test
+    fun migrate14to15AddsLinkedCleanupIndexes() {
+        val testDb = "migration-test-v14-to-v15-linked-cleanup-indexes"
+
+        helper.createDatabase(testDb, 14).close()
+
+        val db =
+            helper.runMigrationsAndValidate(
+                testDb,
+                15,
+                true,
+                KnitToolsDatabase.MIGRATION_14_15,
+            )
+
+        assertLinkedCleanupIndexesExist(db)
+        db.close()
     }
 
     @Test
@@ -816,6 +837,57 @@ class MigrationTest {
         ) {
             assertEquals(720L, getLong(0))
             assertEquals(5, getInt(1))
+        }
+
+        db.close()
+    }
+
+    @Test
+    fun migrate9to10ClampsRowsWorkedOverflowToIntMax() {
+        val testDb = "migration-test-v9-to-v10-rows-overflow"
+
+        helper.createDatabase(testDb, 9).apply {
+            execSQL(
+                """
+                INSERT INTO counter_projects (
+                    id, name, count, secondaryCount, stepSize, notes, createdAt, updatedAt,
+                    sectionName, stitchCount, isCompleted, totalRows, completedAt, yarnCardIds,
+                    linkedPatternId, patternUri, patternName, currentPatternPage, patternRowMapping,
+                    stitchTrackingEnabled, currentStitch, targetRows
+                ) VALUES (
+                    1, 'Overflow session project', 10, 0, 1, '', 1000, 2000,
+                    NULL, NULL, 0, NULL, NULL, '',
+                    NULL, NULL, NULL, 0, NULL,
+                    0, 0, 72
+                )
+                """.trimIndent(),
+            )
+            execSQL(
+                """
+                INSERT INTO sessions (
+                    id, projectId, startedAt, endedAt, startRow, endRow, durationMinutes
+                ) VALUES (
+                    1, 1, 1000, 2000, ${Int.MIN_VALUE}, ${Int.MAX_VALUE}, 12
+                )
+                """.trimIndent(),
+            )
+            close()
+        }
+
+        val db =
+            helper.runMigrationsAndValidate(
+                testDb,
+                10,
+                true,
+                KnitToolsDatabase.MIGRATION_9_10,
+            )
+
+        assertSingleRow(
+            db,
+            "SELECT durationSeconds, rowsWorked FROM sessions WHERE id = 1",
+        ) {
+            assertEquals(720L, getLong(0))
+            assertEquals(Int.MAX_VALUE, getInt(1))
         }
 
         db.close()

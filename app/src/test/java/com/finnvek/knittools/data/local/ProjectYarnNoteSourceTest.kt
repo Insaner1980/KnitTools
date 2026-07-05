@@ -12,7 +12,7 @@ class ProjectYarnNoteSourceTest {
         val module = ProjectSourceFiles.read(DATABASE_MODULE)
 
         assertTrue(database.contains("ProjectYarnNoteEntity::class"))
-        assertTrue(database.contains("version = 14"))
+        assertTrue(database.contains("version = 15"))
         assertTrue(database.contains("abstract fun projectYarnNoteDao(): ProjectYarnNoteDao"))
         assertTrue(database.contains("MIGRATION_11_12"))
         assertTrue(database.contains("MIGRATION_12_13"))

@@ -602,7 +602,6 @@ class CounterViewModel
             val resetStitch = state.stitchTrackingEnabled && updatedCounter.count != state.counter.count
             _uiState.update { it.withCounterChange(updatedCounter, resetStitch) }
             syncRepeatSectionCounters(updatedCounter.count, state.projectCounters, persist = true)
-            persistCurrentStitchIfNeeded(resetStitch)
             persistCount(
                 action = "increment",
                 previousValue = state.counter.count,
@@ -618,7 +617,6 @@ class CounterViewModel
             val resetStitch = state.stitchTrackingEnabled && updatedCounter.count != state.counter.count
             _uiState.update { it.withCounterChange(updatedCounter, resetStitch) }
             syncRepeatSectionCounters(updatedCounter.count, state.projectCounters, persist = true)
-            persistCurrentStitchIfNeeded(resetStitch)
             persistCount(
                 action = "decrement",
                 previousValue = state.counter.count,
@@ -667,7 +665,6 @@ class CounterViewModel
             val resetStitch = state.stitchTrackingEnabled && updatedCounter.count != state.counter.count
             _uiState.update { it.withCounterChange(updatedCounter, resetStitch) }
             syncRepeatSectionCounters(updatedCounter.count, state.projectCounters, persist = true)
-            persistCurrentStitchIfNeeded(resetStitch)
             persistCount(
                 action = "reset",
                 previousValue = state.counter.count,
@@ -1438,14 +1435,6 @@ class CounterViewModel
                 if (!shouldEnable) {
                     repository.updateCurrentStitch(projectId, 0)
                 }
-            }
-        }
-
-        private fun persistCurrentStitchIfNeeded(shouldReset: Boolean) {
-            if (!shouldReset) return
-            val projectId = _uiState.value.projectId ?: return
-            viewModelScope.launch {
-                repository.updateCurrentStitch(projectId, 0)
             }
         }
 

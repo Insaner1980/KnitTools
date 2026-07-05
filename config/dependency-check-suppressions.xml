@@ -50,4 +50,54 @@
         <cve>CVE-2012-2055</cve>
         <cve>CVE-2020-10517</cve>
     </suppress>
+
+    <suppress>
+        <notes><![CDATA[
+        Daggerin lint-AAR käyttää artifact-kuvauksessa sanaa distribution, mutta artefakti ei ole
+        OCI registry distribution -palvelin. Nämä ovat väärän distribution-CPE:n false positiveja.
+        ]]></notes>
+        <packageUrl regex="true">^pkg:maven/com\.google\.dagger/dagger-lint-aar@.*$</packageUrl>
+        <cpe>cpe:/a:distribution:distribution</cpe>
+        <cpe>cpe:/a:distribution_project:distribution</cpe>
+    </suppress>
+
+    <suppress>
+        <notes><![CDATA[
+        Kotlin runtime stdlib -JARit matchautuvat JetBrains Kotlin -tuotteen CPE:hen, mutta
+        CVE-2026-53914 koskee build cache -metadataa eikä sovelluksen runtime-luokkapolkua.
+        Rajaus pidetään nykyisissä raportoiduissa PURL-versioissa, jotta uusi Kotlin-versio
+        pakottaa arvioimaan tilanteen uudelleen.
+        ]]></notes>
+        <packageUrl regex="true">^pkg:maven/org\.jetbrains\.kotlin/kotlin-stdlib@2\.3\.21$</packageUrl>
+        <cve>CVE-2026-53914</cve>
+    </suppress>
+
+    <suppress>
+        <notes><![CDATA[
+        Kotlin stdlib jdk7 runtime -JAR matchautuu JetBrains Kotlin -tuotteen CPE:hen, mutta
+        CVE-2026-53914 koskee build cache -metadataa eikä sovelluksen runtime-luokkapolkua.
+        ]]></notes>
+        <packageUrl regex="true">^pkg:maven/org\.jetbrains\.kotlin/kotlin-stdlib-jdk7@2\.3\.10$</packageUrl>
+        <cve>CVE-2026-53914</cve>
+    </suppress>
+
+    <suppress>
+        <notes><![CDATA[
+        Kotlin stdlib jdk8 runtime -JAR matchautuu JetBrains Kotlin -tuotteen CPE:hen.
+        CVE-2026-53914 koskee build cache -metadataa, ja CVE-2020-29582 koski ennen 1.4.21
+        korjattua tilapäistiedostojen luontia, joten nämä eivät kuvaa tätä runtime-artefaktia.
+        ]]></notes>
+        <packageUrl regex="true">^pkg:maven/org\.jetbrains\.kotlin/kotlin-stdlib-jdk8@1\.8\.0$</packageUrl>
+        <cve>CVE-2026-53914</cve>
+        <cve>CVE-2020-29582</cve>
+    </suppress>
+
+    <suppress>
+        <notes><![CDATA[
+        kotlinx-coroutines-play-services integroi coroutine-continuationit Play Services Task -APIin,
+        mutta se ei ole Tasks.org Android-sovellus. Nämä ovat väärän tasks-CPE:n false positiveja.
+        ]]></notes>
+        <packageUrl regex="true">^pkg:maven/org\.jetbrains\.kotlinx/kotlinx-coroutines-play-services@.*$</packageUrl>
+        <cpe>cpe:/a:tasks:tasks</cpe>
+    </suppress>
 </suppressions>

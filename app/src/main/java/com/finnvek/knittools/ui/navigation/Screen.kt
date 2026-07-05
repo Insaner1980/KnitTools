@@ -71,10 +71,7 @@ sealed class Screen(
             const val ARG_IMPORT_URL = "importUrl"
             const val ROUTE = "ravelry_import/{$ARG_IMPORT_URL}"
 
-            fun importUrl(routeArgument: String?): String? =
-                routeArgument
-                    ?.let(Uri::decode)
-                    ?.takeIf { it.isNotBlank() }
+            fun importUrl(routeArgument: String?): String? = routeArgument?.takeIf { it.isNotBlank() }
         }
     }
 

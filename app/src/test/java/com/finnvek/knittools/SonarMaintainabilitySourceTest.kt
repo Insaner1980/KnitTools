@@ -80,7 +80,27 @@ class SonarMaintainabilitySourceTest {
         assertTrue(sonarProperties.contains("**/SentryInit.kt"))
     }
 
+    @Test
+    fun `jacoco report excludes app shell synthetic classes and debug diagnostics`() {
+        val appBuild = ProjectSourceFiles.read(APP_BUILD)
+
+        listOf(
+            "\"**/App.*\"",
+            "\"**/App$*.*\"",
+            "\"**/MainActivity.*\"",
+            "\"**/MainActivity$*.*\"",
+            "\"**/MainActivityKt*.*\"",
+            "\"**/SentryInit.*\"",
+            "\"**/SentryInit$*.*\"",
+        ).forEach { exclusion ->
+            assertTrue("JaCoCo exclusion missing: $exclusion", appBuild.contains(exclusion))
+        }
+        assertFalse(appBuild.contains("\"**/App*.*\""))
+        assertFalse(appBuild.contains("\"**/MainActivity*.*\""))
+    }
+
     private companion object {
+        private const val APP_BUILD = "app/build.gradle.kts"
         private const val SONAR_PROPERTIES = "sonar-project.properties"
         private const val MAIN_ACTIVITY = "app/src/main/java/com/finnvek/knittools/MainActivity.kt"
         private const val RAVELRY_BACKEND_CLIENT =

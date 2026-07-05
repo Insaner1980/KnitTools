@@ -46,6 +46,8 @@ class RavelryRepository
 
         suspend fun deleteSavedPattern(id: Long) = savedPatternRepository.deleteById(id)
 
+        suspend fun deleteSavedPatterns(ids: List<Long>) = savedPatternRepository.deleteByIds(ids)
+
         suspend fun getActiveProjectCount(): Int = counterProjectDao.getActiveProjectCount()
 
         suspend fun createProjectFromPattern(detail: PatternDetail): Long? =

@@ -85,7 +85,7 @@ class RavelryAuthManager
 
             val callbackState = uri.getQueryParameter(QUERY_STATE)
             val expectedState = pendingState
-            if (callbackState.isNullOrBlank() || expectedState == null || callbackState != expectedState) {
+            if (callbackState.isNullOrBlank() || (expectedState != null && callbackState != expectedState)) {
                 return true
             }
 

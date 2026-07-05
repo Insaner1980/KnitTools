@@ -64,14 +64,14 @@ class RavelryAuthManagerTest {
         }
 
     @Test
-    fun `callback requires pending state match before changing auth state`() =
+    fun `callback ignores missing or mismatched state before changing auth state`() =
         runTest {
             val noPendingBackend = FakeRavelryBackendClient()
             val noPendingManager = RavelryAuthManager(noPendingBackend)
 
-            val noPendingHandled = noPendingManager.handleCallback(callbackUri(state = "attacker-state"))
+            val noStateHandled = noPendingManager.handleCallback(callbackUri())
 
-            assertTrue(noPendingHandled)
+            assertTrue(noStateHandled)
             assertEquals(RavelryAuthState.NotConnected, noPendingManager.authState.value)
             assertEquals(0, noPendingBackend.authStatusCalls)
 
@@ -92,6 +92,22 @@ class RavelryAuthManagerTest {
             assertTrue(wrongStateHandled)
             assertEquals(RavelryAuthState.AwaitingBrowser, pendingManager.authState.value)
             assertEquals(0, pendingBackend.authStatusCalls)
+        }
+
+    @Test
+    fun `callback refreshes backend status when pending state was lost after process recreation`() =
+        runTest {
+            val backend =
+                FakeRavelryBackendClient(
+                    authStatus = RavelryBackendAuthStatus(true, "knitter"),
+                )
+            val manager = RavelryAuthManager(backend)
+
+            val handled = manager.handleCallback(callbackUri(state = "state-after-recreation"))
+
+            assertTrue(handled)
+            assertEquals(RavelryAuthState.Connected("knitter"), manager.authState.value)
+            assertEquals(1, backend.authStatusCalls)
         }
 
     @Test

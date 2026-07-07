@@ -30,8 +30,8 @@ class ProFeatureGateSourceTest {
         val widget = ProjectSourceFiles.read(COUNTER_WIDGET)
         val actions = ProjectSourceFiles.read(COUNTER_WIDGET_ACTIONS)
 
-        assertTrue(widget.contains("hasFeature(ProFeature.WIDGET)"))
-        assertTrue(actions.contains("hasFeature(ProFeature.WIDGET)"))
+        assertTrue(widget.contains("hasFeatureAfterInitialLoad(ProFeature.WIDGET)"))
+        assertTrue(actions.contains("hasFeatureAfterInitialLoad(ProFeature.WIDGET)"))
     }
 
     @Test

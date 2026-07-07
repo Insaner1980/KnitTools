@@ -64,6 +64,53 @@ class RavelryAuthManagerTest {
         }
 
     @Test
+    fun `callback ignores missing or mismatched state before changing auth state`() =
+        runTest {
+            val noPendingBackend = FakeRavelryBackendClient()
+            val noPendingManager = RavelryAuthManager(noPendingBackend)
+
+            val noStateHandled = noPendingManager.handleCallback(callbackUri())
+
+            assertTrue(noStateHandled)
+            assertEquals(RavelryAuthState.NotConnected, noPendingManager.authState.value)
+            assertEquals(0, noPendingBackend.authStatusCalls)
+
+            val pendingBackend = FakeRavelryBackendClient()
+            val pendingManager = RavelryAuthManager(pendingBackend)
+            withParsedUri(AUTHORIZE_URL) {
+                pendingManager.startAuth()
+            }
+
+            val wrongStateHandled =
+                pendingManager.handleCallback(
+                    callbackUri(
+                        state = "attacker-state",
+                        error = "access_denied",
+                    ),
+                )
+
+            assertTrue(wrongStateHandled)
+            assertEquals(RavelryAuthState.AwaitingBrowser, pendingManager.authState.value)
+            assertEquals(0, pendingBackend.authStatusCalls)
+        }
+
+    @Test
+    fun `callback refreshes backend status when pending state was lost after process recreation`() =
+        runTest {
+            val backend =
+                FakeRavelryBackendClient(
+                    authStatus = RavelryBackendAuthStatus(true, "knitter"),
+                )
+            val manager = RavelryAuthManager(backend)
+
+            val handled = manager.handleCallback(callbackUri(state = "state-after-recreation"))
+
+            assertTrue(handled)
+            assertEquals(RavelryAuthState.Connected("knitter"), manager.authState.value)
+            assertEquals(1, backend.authStatusCalls)
+        }
+
+    @Test
     fun `disconnect calls backend and exposes not connected`() =
         runTest {
             val backend = FakeRavelryBackendClient(authStatus = RavelryBackendAuthStatus(true, "knitter"))
@@ -121,6 +168,7 @@ class RavelryAuthManagerTest {
         private var authStatus: RavelryBackendAuthStatus = RavelryBackendAuthStatus(false),
     ) : RavelryBackendClient {
         var disconnectCalls = 0
+        var authStatusCalls = 0
 
         override suspend fun startAuth(): RavelryStartAuthResponse =
             RavelryStartAuthResponse(
@@ -129,7 +177,10 @@ class RavelryAuthManagerTest {
                 expiresAtMillis = 123L,
             )
 
-        override suspend fun authStatus(): RavelryBackendAuthStatus = authStatus
+        override suspend fun authStatus(): RavelryBackendAuthStatus {
+            authStatusCalls += 1
+            return authStatus
+        }
 
         override suspend fun disconnect() {
             disconnectCalls += 1

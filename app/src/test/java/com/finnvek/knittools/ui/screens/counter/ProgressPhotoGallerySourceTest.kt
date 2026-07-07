@@ -19,8 +19,37 @@ class ProgressPhotoGallerySourceTest {
         val source = ProjectSourceFiles.read(PHOTO_GALLERY_SCREEN)
 
         assertTrue(source.contains("pendingPhotoFilePath"))
+        assertTrue(source.contains("actions.deletePendingPhotoFile"))
+        assertTrue(source.contains("private fun handlePhotoCaptureResult("))
+        assertTrue(source.contains("} else {\n        actions.deletePendingPhotoFile(pendingPhotoFilePath)"))
+    }
+
+    @Test
+    fun `photo gallery delegates capture file creation outside the composable`() {
+        val source = ProjectSourceFiles.read(PHOTO_GALLERY_SCREEN)
+
+        assertFalse(source.contains("ProgressPhotoStorage"))
+        assertTrue(source.contains("PhotoGalleryActions"))
+        assertTrue(source.contains("createPhotoCaptureTarget"))
+    }
+
+    @Test
+    fun `photo gallery delegates abandoned capture file deletion outside the composable`() {
+        val source = ProjectSourceFiles.read(PHOTO_GALLERY_SCREEN)
+
+        assertFalse(source.contains("java.io.File"))
+        assertFalse(source.contains("file.delete()"))
         assertTrue(source.contains("deletePendingPhotoFile"))
-        assertTrue(source.contains("if (!success)"))
+    }
+
+    @Test
+    fun `progress photo capture file operations stay behind repository IO dispatcher`() {
+        val source = ProjectSourceFiles.read(PROGRESS_PHOTO_REPOSITORY)
+
+        assertTrue(source.contains("suspend fun createPhotoCaptureTarget("))
+        assertTrue(source.contains("suspend fun deletePendingPhotoFile("))
+        assertTrue(source.contains("withContext(ioDispatcher) {\n                storage.createPhotoFile"))
+        assertTrue(source.contains("withContext(ioDispatcher) {\n                storage.deletePendingPhotoFile"))
     }
 
     @Test
@@ -48,5 +77,7 @@ class ProgressPhotoGallerySourceTest {
             "app/src/main/java/com/finnvek/knittools/ui/screens/counter/PhotoComponents.kt"
         private const val ALL_PHOTOS_SCREEN =
             "app/src/main/java/com/finnvek/knittools/ui/screens/library/AllPhotosScreen.kt"
+        private const val PROGRESS_PHOTO_REPOSITORY =
+            "app/src/main/java/com/finnvek/knittools/repository/ProgressPhotoRepository.kt"
     }
 }

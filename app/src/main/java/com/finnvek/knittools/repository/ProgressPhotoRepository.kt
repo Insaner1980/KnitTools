@@ -13,6 +13,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import java.io.File
 import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -40,6 +41,11 @@ class ProgressPhotoRepository
             dao.getLatestPhotos(projectId).map { photos -> availablePhotos(photos) }
 
         fun getPhotoCount(projectId: Long): Flow<Int> = dao.getPhotoCount(projectId)
+
+        suspend fun createPhotoCaptureTarget(projectId: Long): Pair<File, Uri> =
+            withContext(ioDispatcher) {
+                storage.createPhotoFile(context, projectId)
+            }
 
         suspend fun getPhotoCountsByProjectIds(projectIds: List<Long>): Map<Long, Int> {
             val distinctProjectIds = projectIds.distinct()
@@ -109,8 +115,16 @@ class ProgressPhotoRepository
             }
         }
 
-        fun deleteAllPhotosForProject(projectId: Long) {
-            storage.deleteProjectPhotos(context, projectId)
+        suspend fun deleteAllPhotosForProject(projectId: Long) {
+            withContext(ioDispatcher) {
+                storage.deleteProjectPhotos(context, projectId)
+            }
+        }
+
+        suspend fun deletePendingPhotoFile(filePath: String?) {
+            withContext(ioDispatcher) {
+                storage.deletePendingPhotoFile(filePath)
+            }
         }
 
         private suspend fun availablePhotos(photos: List<ProgressPhotoEntity>): List<ProgressPhoto> =

@@ -73,7 +73,7 @@ class CounterWidget : GlanceAppWidget() {
                 context.applicationContext,
                 WidgetEntryPoint::class.java,
             )
-        val isPro = entryPoint.proManager().hasFeature(ProFeature.WIDGET)
+        val isPro = entryPoint.proManager().hasFeatureAfterInitialLoad(ProFeature.WIDGET)
         val widgetData = CounterWidgetState.loadGlance(context, id)
         val initialWidgetData =
             if (isPro) resolveInitialWidgetData(context, id, entryPoint, widgetData) else widgetData

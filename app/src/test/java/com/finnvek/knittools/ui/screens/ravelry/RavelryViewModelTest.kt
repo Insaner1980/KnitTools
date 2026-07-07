@@ -336,7 +336,7 @@ class RavelryViewModelTest {
         }
 
     @Test
-    fun `import confirmation for url delegates to repository url import`() =
+    fun `import confirmation for url waits for explicit user confirmation before repository url import`() =
         runTest(testDispatcher) {
             authState.value = RavelryAuthState.Connected("knitter")
             val url = "https://www.ravelry.com/patterns/library/import-pattern"
@@ -346,6 +346,12 @@ class RavelryViewModelTest {
             val vm = createViewModel(isPro = true)
 
             vm.showImportConfirmationForUrl(url)
+            advanceUntilIdle()
+
+            assertEquals(RavelryImportStatus.AwaitingUserConfirmation, vm.importConfirmationState.value?.status)
+            coVerify(exactly = 0) { repository.importPatternByUrl(any()) }
+
+            vm.retryImportConfirmation()
             advanceUntilIdle()
 
             assertEquals(RavelryImportStatus.Ready, vm.importConfirmationState.value?.status)
@@ -417,6 +423,26 @@ class RavelryViewModelTest {
 
             assertEquals(RavelryImportStatus.AlreadySaved, vm.importConfirmationState.value?.status)
             assertEquals(9L, vm.importConfirmationState.value?.savedPatternId)
+        }
+
+    @Test
+    fun `delete selected saved patterns delegates one batch delete`() =
+        runTest(testDispatcher) {
+            val vm = createViewModel(isPro = true)
+
+            vm.enterSavedSelectMode(1L)
+            vm.toggleSavedSelection(2L)
+            vm.deleteSelectedSaved()
+            advanceUntilIdle()
+
+            coVerify(exactly = 1) {
+                repository.deleteSavedPatterns(
+                    match { ids -> ids.size == 2 && ids.toSet() == setOf(1L, 2L) },
+                )
+            }
+            coVerify(exactly = 0) { repository.deleteSavedPattern(any()) }
+            assertFalse(vm.isSavedSelectMode.value)
+            assertEquals(emptySet<Long>(), vm.selectedSavedIds.value)
         }
 
     private fun searchResponse(

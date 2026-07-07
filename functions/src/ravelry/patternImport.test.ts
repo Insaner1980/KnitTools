@@ -7,6 +7,12 @@ import {
   importPatternByUrl,
   searchPatternsForUser,
 } from "./patternImport";
+import {
+  RAVELRY_RATE_LIMIT_RULES,
+  RavelryRateLimitError,
+  type RavelryRateLimitBucket,
+  type RavelryRateLimiter,
+} from "./rateLimit";
 import type { RavelryTokenStore, StoredRavelryToken } from "./tokenStore";
 import { parseRavelryPatternUrl } from "./urlParsing";
 
@@ -24,6 +30,21 @@ class MemoryTokenStore implements RavelryTokenStore {
 
   async deleteToken(uid: string): Promise<void> {
     this.tokens.delete(uid);
+  }
+}
+
+class RecordingRateLimiter implements RavelryRateLimiter {
+  readonly calls: Array<{ uid: string; bucket: RavelryRateLimitBucket }> = [];
+
+  async consume(uid: string, bucket: RavelryRateLimitBucket): Promise<void> {
+    this.calls.push({ uid, bucket });
+  }
+}
+
+class BlockingRateLimiter implements RavelryRateLimiter {
+  async consume(_uid: string, bucket: RavelryRateLimitBucket): Promise<void> {
+    const rule = RAVELRY_RATE_LIMIT_RULES[bucket];
+    throw new RavelryRateLimitError(bucket, rule.limit, rule.windowMillis);
   }
 }
 
@@ -220,6 +241,98 @@ describe("Ravelry backend search and import", () => {
     assert.equal(fromUrl.ravelryPatternId, 42);
     assert.equal(fromUrl.originalUrl, "https://www.ravelry.com/patterns/library/cozy-hat?utm_source=share");
     assert.equal(JSON.stringify(fromUrl).includes("pdf_url"), false);
+  });
+
+  it("consumes search and import rate-limit buckets for slug URL imports", async () => {
+    const tokenStore = new MemoryTokenStore();
+    await tokenStore.saveToken({
+      uid: "uid",
+      authType: "oauth2",
+      accessToken: "access-token",
+      createdAtMillis: 1_000,
+      updatedAtMillis: 1_000,
+    });
+    const rateLimiter = new RecordingRateLimiter();
+
+    const client = createRavelryClient(async (input) => {
+      const url = typeof input === "string" ? input : input.toString();
+      if (url.includes("/patterns/search.json")) {
+        return new Response(
+          JSON.stringify({
+            patterns: [
+              {
+                id: 42,
+                name: "Cozy Hat",
+                designer: { name: "Ada Designer" },
+                permalink: "cozy-hat",
+              },
+            ],
+            paginator: { page: 1, page_count: 1, results: 1 },
+          }),
+          { status: 200 },
+        );
+      }
+      return new Response(
+        JSON.stringify({
+          pattern: {
+            id: 42,
+            name: "Cozy Hat",
+            designer: { name: "Ada Designer" },
+            permalink: "cozy-hat",
+          },
+        }),
+        { status: 200 },
+      );
+    });
+
+    await importPatternByUrl({
+      uid: "uid",
+      tokenStore,
+      client,
+      rateLimiter,
+      url: "https://www.ravelry.com/patterns/library/cozy-hat",
+    });
+
+    assert.deepEqual(rateLimiter.calls, [
+      { uid: "uid", bucket: "search" },
+      { uid: "uid", bucket: "import" },
+    ]);
+  });
+
+  it("does not call Ravelry when the authenticated search bucket is exhausted", async () => {
+    const tokenStore = new MemoryTokenStore();
+    await tokenStore.saveToken({
+      uid: "uid",
+      authType: "oauth2",
+      accessToken: "access-token",
+      createdAtMillis: 1_000,
+      updatedAtMillis: 1_000,
+    });
+    let searchCount = 0;
+    const client = {
+      async getCurrentUser() {
+        throw new Error("not used");
+      },
+      async searchPatterns() {
+        searchCount += 1;
+        throw new Error("not used");
+      },
+      async getPatternById() {
+        throw new Error("not used");
+      },
+    };
+
+    await assert.rejects(
+      searchPatternsForUser({
+        uid: "uid",
+        tokenStore,
+        client,
+        rateLimiter: new BlockingRateLimiter(),
+        query: { query: "hat" },
+      }),
+      /ravelry_rate_limited/,
+    );
+    assert.equal(searchCount, 0);
   });
 
   it("does not call Ravelry when the Firebase user has no stored Ravelry token", async () => {

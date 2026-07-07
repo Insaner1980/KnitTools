@@ -11,7 +11,7 @@ class SavedPatternSchema14SourceTest {
         val module = ProjectSourceFiles.read(DATABASE_MODULE)
         val entity = ProjectSourceFiles.read(SAVED_PATTERN_ENTITY)
 
-        assertTrue(database.contains("version = 14"))
+        assertTrue(database.contains("version = 15"))
         assertTrue(database.contains("MIGRATION_13_14"))
         assertTrue(module.contains("KnitToolsDatabase.MIGRATION_13_14"))
         assertTrue(entity.contains("val source: String"))
@@ -57,16 +57,19 @@ class SavedPatternSchema14SourceTest {
 
         assertTrue(dao.contains("getByRavelryPatternId"))
         assertTrue(dao.contains("getByCanonicalUrl"))
+        assertTrue(dao.contains("getByOriginalUrl"))
         assertTrue(dao.contains("getAllOnce"))
         assertTrue(dao.contains("getByTitleAndDesignerName"))
         assertTrue(repository.contains("findDuplicateCandidate"))
         assertTrue(repository.contains("pattern.ravelryPatternId?.let"))
         assertTrue(repository.contains("dao.getByRavelryPatternId"))
         assertTrue(repository.contains("dao.getByCanonicalUrl"))
+        assertTrue(repository.contains("dao.getByOriginalUrl"))
         assertTrue(repository.contains("normalizedOriginalUrl"))
         assertTrue(repository.contains("includeTitleDesigner"))
         assertTrue(repository.indexOf("dao.getByRavelryPatternId") < repository.indexOf("dao.getByCanonicalUrl"))
-        assertTrue(repository.indexOf("dao.getByCanonicalUrl") < repository.indexOf("normalizedOriginalUrl"))
+        assertTrue(repository.indexOf("dao.getByCanonicalUrl") < repository.indexOf("dao.getByOriginalUrl"))
+        assertTrue(repository.indexOf("dao.getByOriginalUrl") < repository.indexOf("normalizedOriginalUrl"))
         assertTrue(repository.indexOf("normalizedOriginalUrl") < repository.indexOf("if (includeTitleDesigner"))
     }
 

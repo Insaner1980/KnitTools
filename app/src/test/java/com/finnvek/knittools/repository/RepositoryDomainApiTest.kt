@@ -125,6 +125,44 @@ class RepositoryDomainApiTest {
         }
 
     @Test
+    fun `saved pattern repository exposes batch domain lookup`() =
+        runTest {
+            val dao =
+                FakeSavedPatternDao(
+                    savedPatterns =
+                        listOf(
+                            SavedPatternEntity(
+                                id = 1L,
+                                source = SavedPatternSource.Ravelry.persistedValue,
+                                ravelryPatternId = 1,
+                                name = "Palmikot",
+                                designerName = "Designer",
+                            ),
+                            SavedPatternEntity(
+                                id = 2L,
+                                source = SavedPatternSource.Ravelry.persistedValue,
+                                ravelryPatternId = 2,
+                                name = "Ribbi",
+                                designerName = "Designer",
+                            ),
+                        ),
+                )
+            val repository =
+                SavedPatternRepository(
+                    dao,
+                    context,
+                    FakeCounterProjectDao(),
+                    ImmediateDatabaseTransactionRunner,
+                    UnconfinedTestDispatcher(testScheduler),
+                )
+
+            val patterns = repository.getByIds(listOf(1L, 2L))
+
+            assertEquals(listOf("Palmikot", "Ribbi"), patterns.map { it.name })
+            assertEquals(listOf(1L, 2L), dao.lastRequestedIds)
+        }
+
+    @Test
     fun `saved pattern repository reuses existing ravelry pattern`() =
         runTest {
             val dao =
@@ -503,6 +541,7 @@ class RepositoryDomainApiTest {
         var lastInserted: SavedPatternEntity? = null
         var deletedIds: List<Long> = emptyList()
         var insertCount: Int = 0
+        var lastRequestedIds: List<Long> = emptyList()
 
         override fun getAll(): Flow<List<SavedPatternEntity>> = flowOf(savedPatterns)
 
@@ -513,6 +552,9 @@ class RepositoryDomainApiTest {
 
         override suspend fun getByCanonicalUrl(canonicalUrl: String): SavedPatternEntity? =
             savedPatterns.firstOrNull { it.canonicalUrl == canonicalUrl }
+
+        override suspend fun getByOriginalUrl(originalUrl: String): SavedPatternEntity? =
+            savedPatterns.firstOrNull { it.originalUrl == originalUrl }
 
         override suspend fun getByLocalPdfUri(localPdfUri: String): SavedPatternEntity? =
             savedPatterns.firstOrNull { it.localPdfUri == localPdfUri }
@@ -529,7 +571,10 @@ class RepositoryDomainApiTest {
                 it.source == SavedPatternSource.LocalFile.persistedValue && it.localPdfUri != null
             }
 
-        override suspend fun getByIds(ids: List<Long>): List<SavedPatternEntity> = savedPatterns.filter { it.id in ids }
+        override suspend fun getByIds(ids: List<Long>): List<SavedPatternEntity> {
+            lastRequestedIds = ids
+            return savedPatterns.filter { it.id in ids }
+        }
 
         override suspend fun insert(pattern: SavedPatternEntity): Long {
             insertCount += 1

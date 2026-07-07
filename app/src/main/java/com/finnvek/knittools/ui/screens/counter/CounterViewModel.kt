@@ -1,6 +1,8 @@
 package com.finnvek.knittools.ui.screens.counter
 
+import android.content.ContentResolver
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import androidx.core.net.toUri
 import androidx.lifecycle.DefaultLifecycleObserver
@@ -602,7 +604,6 @@ class CounterViewModel
             val resetStitch = state.stitchTrackingEnabled && updatedCounter.count != state.counter.count
             _uiState.update { it.withCounterChange(updatedCounter, resetStitch) }
             syncRepeatSectionCounters(updatedCounter.count, state.projectCounters, persist = true)
-            persistCurrentStitchIfNeeded(resetStitch)
             persistCount(
                 action = "increment",
                 previousValue = state.counter.count,
@@ -618,7 +619,6 @@ class CounterViewModel
             val resetStitch = state.stitchTrackingEnabled && updatedCounter.count != state.counter.count
             _uiState.update { it.withCounterChange(updatedCounter, resetStitch) }
             syncRepeatSectionCounters(updatedCounter.count, state.projectCounters, persist = true)
-            persistCurrentStitchIfNeeded(resetStitch)
             persistCount(
                 action = "decrement",
                 previousValue = state.counter.count,
@@ -667,7 +667,6 @@ class CounterViewModel
             val resetStitch = state.stitchTrackingEnabled && updatedCounter.count != state.counter.count
             _uiState.update { it.withCounterChange(updatedCounter, resetStitch) }
             syncRepeatSectionCounters(updatedCounter.count, state.projectCounters, persist = true)
-            persistCurrentStitchIfNeeded(resetStitch)
             persistCount(
                 action = "reset",
                 previousValue = state.counter.count,
@@ -880,6 +879,29 @@ class CounterViewModel
             }
         }
 
+        fun createPhotoCaptureTarget(
+            projectId: Long,
+            onCreated: (PhotoCaptureTarget?) -> Unit,
+        ) {
+            viewModelScope.launch {
+                val target =
+                    runCatching {
+                        val (file, uri) = photoRepository.createPhotoCaptureTarget(projectId)
+                        PhotoCaptureTarget(
+                            uri = uri,
+                            filePath = file.absolutePath,
+                        )
+                    }.getOrNull()
+                onCreated(target)
+            }
+        }
+
+        fun deletePendingPhotoFile(filePath: String?) {
+            viewModelScope.launch {
+                photoRepository.deletePendingPhotoFile(filePath)
+            }
+        }
+
         fun updatePhotoNote(
             photoId: Long,
             note: String?,
@@ -1078,14 +1100,33 @@ class CounterViewModel
             } else {
                 // Kopioi PDF sisäiseen tallennustilaan — estää permission-ongelmat
                 withContext(ioDispatcher) {
-                    patternDocumentStorage.copyPdfToInternal(
-                        context = context,
-                        projectId = projectId,
-                        sourceUri = sourceUri,
-                        fileName = sanitizedName,
-                    )
+                    try {
+                        patternDocumentStorage.copyPdfToInternal(
+                            context = context,
+                            projectId = projectId,
+                            sourceUri = sourceUri,
+                            fileName = sanitizedName,
+                        )
+                    } finally {
+                        releasePersistedReadPermissionIfHeld(context.contentResolver, sourceUri)
+                    }
                 }
             }
+
+        private fun releasePersistedReadPermissionIfHeld(
+            contentResolver: ContentResolver,
+            uri: Uri,
+        ) {
+            val hasPersistedReadPermission =
+                contentResolver.persistedUriPermissions.any { permission ->
+                    permission.uri == uri && permission.isReadPermission
+                }
+            if (!hasPersistedReadPermission) return
+
+            runCatching {
+                contentResolver.releasePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+        }
 
         private suspend fun findReusablePatternUri(
             copiedUri: String?,
@@ -1212,7 +1253,9 @@ class CounterViewModel
             page: Int,
             yPosition: Float,
         ) {
-            val markers = parseMapping(_uiState.value.patternRowMapping).toMutableList()
+            val state = _uiState.value
+            if (state.patternUri == null) return
+            val markers = parseMapping(state.patternRowMapping).toMutableList()
             val sanitizedY = yPosition.coerceIn(0f, 1f)
             val index = markers.indexOfFirst { it.row == row && it.page == page }
             val marker = RowMarker(row = row, page = page, yPosition = sanitizedY)
@@ -1228,22 +1271,30 @@ class CounterViewModel
             row: Int,
             page: Int,
         ) {
+            val state = _uiState.value
+            if (state.patternUri == null) return
+            val currentMarkers = parseMapping(state.patternRowMapping)
             val markers =
-                parseMapping(_uiState.value.patternRowMapping)
-                    .filterNot { it.row == row && it.page == page }
+                currentMarkers.filterNot { it.row == row && it.page == page }
+            if (markers.size == currentMarkers.size) return
             updatePatternRowMapping(serializeMapping(markers))
         }
 
         fun removePatternRowMarkersForPage(page: Int) {
+            val state = _uiState.value
+            if (state.patternUri == null) return
+            val currentMarkers = parseMapping(state.patternRowMapping)
             val markers =
-                parseMapping(_uiState.value.patternRowMapping)
-                    .filterNot { it.page == page }
+                currentMarkers.filterNot { it.page == page }
+            if (markers.size == currentMarkers.size) return
             updatePatternRowMapping(serializeMapping(markers))
         }
 
         fun mergePatternRowMarkers(markersToMerge: List<RowMarker>) {
             if (markersToMerge.isEmpty()) return
-            val markers = parseMapping(_uiState.value.patternRowMapping).toMutableList()
+            val state = _uiState.value
+            if (state.patternUri == null) return
+            val markers = parseMapping(state.patternRowMapping).toMutableList()
             markersToMerge.forEach { marker ->
                 val index = markers.indexOfFirst { it.row == marker.row && it.page == marker.page }
                 if (index >= 0) {
@@ -1438,14 +1489,6 @@ class CounterViewModel
                 if (!shouldEnable) {
                     repository.updateCurrentStitch(projectId, 0)
                 }
-            }
-        }
-
-        private fun persistCurrentStitchIfNeeded(shouldReset: Boolean) {
-            if (!shouldReset) return
-            val projectId = _uiState.value.projectId ?: return
-            viewModelScope.launch {
-                repository.updateCurrentStitch(projectId, 0)
             }
         }
 

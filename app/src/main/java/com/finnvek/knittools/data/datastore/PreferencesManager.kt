@@ -139,6 +139,9 @@ class PreferencesManager
 
             val currentLanguage = currentAppLanguage()
             context.dataStore.editPreferencesSafely("Järjestelmän kieliasetuksen synkronointi") { prefs ->
+                if (prefs[KEY_APP_LANGUAGE_MIGRATED_TO_SYSTEM] != true) {
+                    return@editPreferencesSafely
+                }
                 if (AppLanguage.fromValue(prefs[KEY_APP_LANGUAGE]) != currentLanguage) {
                     prefs[KEY_APP_LANGUAGE] = currentLanguage.value
                 }

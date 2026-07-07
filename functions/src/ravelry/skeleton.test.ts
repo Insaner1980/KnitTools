@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 
 import {
   RAVELRY_OAUTH_STATES_COLLECTION,
+  RAVELRY_RATE_LIMITS_COLLECTION,
   RAVELRY_TOKENS_COLLECTION,
   firebaseRegion,
   ravelryClientId,
@@ -33,6 +34,7 @@ describe("Ravelry Firebase backend surface", () => {
     assert.equal(firebaseRegion, "europe-west1");
     assert.equal(RAVELRY_OAUTH_STATES_COLLECTION, "ravelryOAuthStates");
     assert.equal(RAVELRY_TOKENS_COLLECTION, "ravelryTokens");
+    assert.equal(RAVELRY_RATE_LIMITS_COLLECTION, "ravelryRateLimits");
     assert.equal(ravelryClientId.name, "RAVELRY_CLIENT_ID");
     assert.equal(ravelryClientSecret.name, "RAVELRY_CLIENT_SECRET");
 

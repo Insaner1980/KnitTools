@@ -261,7 +261,13 @@ try {
                 param($fixture)
                 $path = Join-Path $fixture "app/src/main/java/com/finnvek/knittools/data/local/KnitToolsDatabase.kt"
                 $text = Get-Content -Raw -LiteralPath $path
-                Set-FileText -Path $path -Text ($text.Replace("version = 14", "version = 15"))
+                $versionPattern = [regex]'(?s)(@Database\s*\(.*?version\s*=\s*)(\d+)'
+                $versionMatch = $versionPattern.Match($text)
+                if (-not $versionMatch.Success) {
+                    throw "Room database version not found"
+                }
+                $nextVersion = ([int]$versionMatch.Groups[2].Value) + 1
+                Set-FileText -Path $path -Text ($versionPattern.Replace($text, ('${1}' + $nextVersion), 1))
             }
 
         Test-Mutation `

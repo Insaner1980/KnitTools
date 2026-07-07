@@ -577,6 +577,23 @@ class RepositoryTransactionBoundaryTest {
         }
 
     @Test
+    fun `ravelry saved pattern multi delete delegates batch ids`() =
+        runTest {
+            val savedPatternRepository = mockk<SavedPatternRepository>(relaxed = true)
+            val repository =
+                RavelryRepository(
+                    api = mockk(relaxed = true),
+                    savedPatternRepository = savedPatternRepository,
+                    counterProjectDao = mockk(relaxed = true),
+                    transactionRunner = ImmediateDatabaseTransactionRunner,
+                )
+
+            repository.deleteSavedPatterns(listOf(4L, 5L))
+
+            coVerify(exactly = 1) { savedPatternRepository.deleteByIds(listOf(4L, 5L)) }
+        }
+
+    @Test
     fun `ravelry project creation tekee projektin nimestä uniikin`() =
         runTest {
             val savedPatternRepository = mockk<SavedPatternRepository>(relaxed = true)
@@ -617,49 +634,6 @@ class RepositoryTransactionBoundaryTest {
         ) {
             dispatchCount += 1
             block.run()
-        }
-    }
-
-    private suspend inline fun withParsedAppUri(
-        uriString: String,
-        pathSegments: List<String>,
-        block: suspend () -> Unit,
-    ) = withParsedUri(
-        uriString = uriString,
-        configure = { uri ->
-            every { uri.scheme } returns "content"
-            every { uri.authority } returns "com.finnvek.knittools.fileprovider"
-            every { uri.pathSegments } returns pathSegments
-        },
-        block = block,
-    )
-
-    private suspend inline fun withParsedFileUri(
-        uriString: String,
-        path: String,
-        block: suspend () -> Unit,
-    ) = withParsedUri(
-        uriString = uriString,
-        configure = { uri ->
-            every { uri.scheme } returns "file"
-            every { uri.path } returns path
-        },
-        block = block,
-    )
-
-    private suspend inline fun withParsedUri(
-        uriString: String,
-        configure: (Uri) -> Unit,
-        block: suspend () -> Unit,
-    ) {
-        mockkStatic(Uri::class)
-        try {
-            val uri = mockk<Uri>(relaxed = true)
-            every { Uri.parse(uriString) } returns uri
-            configure(uri)
-            block()
-        } finally {
-            unmockkStatic(Uri::class)
         }
     }
 }

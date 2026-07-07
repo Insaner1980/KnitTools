@@ -219,6 +219,20 @@ class PatternViewerSourceTest {
     }
 
     @Test
+    fun `project pattern viewer parses row mapping only when mapping changes`() {
+        val source = ProjectSourceFiles.read(PATTERN_VIEWER_SCREEN)
+        val tracker =
+            source.blockBetween(
+                "@Composable\nprivate fun TrackReadingLineForCurrentRow",
+                "@OptIn(ExperimentalMaterial3Api::class)\n@Composable\nfun LibraryPatternViewerScreen",
+            )
+
+        assertTrue(tracker.contains("val rowMarkers = remember(patternRowMapping) { parseMapping(patternRowMapping) }"))
+        assertTrue(tracker.contains("markers = rowMarkers"))
+        assertFalse(tracker.contains("markers = parseMapping(patternRowMapping)"))
+    }
+
+    @Test
     fun `project pattern viewer exposes row marker controls only from project overflow`() {
         val source = ProjectSourceFiles.read(PATTERN_VIEWER_SCREEN)
         val projectViewer =
@@ -290,21 +304,43 @@ class PatternViewerSourceTest {
     @Test
     fun `pattern viewer top bar renders row marker menu items from string resources`() {
         val source = ProjectSourceFiles.read(PATTERN_VIEWER_SCREEN)
-        val topBar =
+        val overflowMenu =
             source.blockBetween(
-                "private fun PatternViewerTopBar(",
+                "private fun PatternViewerOverflowMenu(",
                 "@Composable\nprivate fun PatternPageJumpDialog",
             )
 
-        assertTrue(topBar.contains("R.string.pattern_save_line_as_row"))
-        assertTrue(topBar.contains("R.string.pattern_clear_row_mark"))
-        assertTrue(topBar.contains("R.string.pattern_clear_page_marks"))
-        assertTrue(topBar.contains("R.string.pattern_calibrate_rows"))
-        assertTrue(topBar.contains("state.currentRow?.let { currentRow ->"))
-        assertTrue(topBar.contains("actions.onSaveReadingLineAsCurrentRow()"))
-        assertTrue(topBar.contains("actions.onClearReadingLineRowMarker()"))
-        assertTrue(topBar.contains("actions.onClearReadingLinePageMarkers()"))
-        assertTrue(topBar.contains("actions.onStartRowCalibration()"))
+        assertTrue(overflowMenu.contains("R.string.pattern_save_line_as_row"))
+        assertTrue(overflowMenu.contains("R.string.pattern_clear_row_mark"))
+        assertTrue(overflowMenu.contains("R.string.pattern_clear_page_marks"))
+        assertTrue(overflowMenu.contains("R.string.pattern_calibrate_rows"))
+        assertTrue(overflowMenu.contains("val currentRow = state.currentRow ?: return"))
+        assertTrue(overflowMenu.contains("actions.onSaveReadingLineAsCurrentRow()"))
+        assertTrue(overflowMenu.contains("actions.onClearReadingLineRowMarker()"))
+        assertTrue(overflowMenu.contains("actions.onClearReadingLinePageMarkers()"))
+        assertTrue(overflowMenu.contains("actions.onStartRowCalibration()"))
+    }
+
+    @Test
+    fun `project pattern viewer guards row marker overflow when no pdf is attached`() {
+        val source = ProjectSourceFiles.read(PATTERN_VIEWER_SCREEN)
+        val projectViewer =
+            source.blockBetween(
+                "fun PatternViewerScreen(",
+                "@Composable\nprivate fun TrackReadingLineForCurrentRow",
+            )
+        val overflowMenu =
+            source.blockBetween(
+                "private fun PatternViewerOverflowMenu(",
+                "@Composable\nprivate fun PatternPageJumpDialog",
+            )
+
+        assertTrue(projectViewer.contains("val rowMarkers = remember(counterState.patternRowMapping)"))
+        assertTrue(projectViewer.contains("currentRow = counterState.counter.count.takeIf { patternUri != null }"))
+        assertTrue(projectViewer.contains("hasCurrentRowMarker ="))
+        assertTrue(projectViewer.contains("hasPageRowMarkers ="))
+        assertTrue(overflowMenu.contains("if (state.hasCurrentRowMarker)"))
+        assertTrue(overflowMenu.contains("if (state.hasPageRowMarkers)"))
     }
 
     @Test
@@ -321,12 +357,48 @@ class PatternViewerSourceTest {
                 "fun mergePatternRowMarkers(",
             )
 
-        assertTrue(removeRowBlock.contains("parseMapping(_uiState.value.patternRowMapping)"))
+        assertTrue(removeRowBlock.contains("val currentMarkers = parseMapping(state.patternRowMapping)"))
         assertTrue(removeRowBlock.contains("filterNot { it.row == row && it.page == page }"))
+        assertTrue(removeRowBlock.contains("if (markers.size == currentMarkers.size) return"))
         assertTrue(removeRowBlock.contains("updatePatternRowMapping(serializeMapping(markers))"))
-        assertTrue(removePageBlock.contains("parseMapping(_uiState.value.patternRowMapping)"))
+        assertTrue(removePageBlock.contains("val currentMarkers = parseMapping(state.patternRowMapping)"))
         assertTrue(removePageBlock.contains("filterNot { it.page == page }"))
+        assertTrue(removePageBlock.contains("if (markers.size == currentMarkers.size) return"))
         assertTrue(removePageBlock.contains("updatePatternRowMapping(serializeMapping(markers))"))
+    }
+
+    @Test
+    fun `counter view model skips row marker writes without pdf or matching markers`() {
+        val source = ProjectSourceFiles.read(COUNTER_VIEW_MODEL)
+        val upsertBlock =
+            source.blockBetween(
+                "fun upsertPatternRowMarker(",
+                "fun removePatternRowMarker(",
+            )
+        val removeRowBlock =
+            source.blockBetween(
+                "fun removePatternRowMarker(",
+                "fun removePatternRowMarkersForPage(",
+            )
+        val removePageBlock =
+            source.blockBetween(
+                "fun removePatternRowMarkersForPage(",
+                "fun mergePatternRowMarkers(",
+            )
+        val mergeBlock =
+            source.blockBetween(
+                "fun mergePatternRowMarkers(",
+                "private fun persistCount(",
+            )
+
+        listOf(upsertBlock, removeRowBlock, removePageBlock, mergeBlock).forEach { block ->
+            assertTrue(block.contains("val state = _uiState.value"))
+            assertTrue(block.contains("if (state.patternUri == null) return"))
+        }
+        assertTrue(removeRowBlock.contains("val currentMarkers = parseMapping(state.patternRowMapping)"))
+        assertTrue(removeRowBlock.contains("if (markers.size == currentMarkers.size) return"))
+        assertTrue(removePageBlock.contains("val currentMarkers = parseMapping(state.patternRowMapping)"))
+        assertTrue(removePageBlock.contains("if (markers.size == currentMarkers.size) return"))
     }
 
     @Test

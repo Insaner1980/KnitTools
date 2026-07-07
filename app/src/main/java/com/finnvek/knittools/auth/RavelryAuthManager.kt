@@ -82,6 +82,13 @@ class RavelryAuthManager
 
         suspend fun handleCallback(uri: Uri): Boolean {
             if (!isOAuthCallback(uri)) return false
+
+            val callbackState = uri.getQueryParameter(QUERY_STATE)
+            val expectedState = pendingState
+            if (callbackState.isNullOrBlank() || (expectedState != null && callbackState != expectedState)) {
+                return true
+            }
+
             when (uri.callbackFailure()) {
                 CallbackFailure.Cancelled -> {
                     pendingState = null
@@ -96,14 +103,6 @@ class RavelryAuthManager
                 }
 
                 null -> Unit
-            }
-
-            val callbackState = uri.getQueryParameter(QUERY_STATE)
-            val expectedState = pendingState
-            if (callbackState.isNullOrBlank() || (expectedState != null && callbackState != expectedState)) {
-                pendingState = null
-                _authState.value = RavelryAuthState.Cancelled
-                return true
             }
 
             pendingState = null

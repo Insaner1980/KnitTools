@@ -5,6 +5,7 @@ import com.finnvek.knittools.data.local.ProjectCounterDao
 import com.finnvek.knittools.data.local.ProjectCounterEntity
 import com.finnvek.knittools.data.local.toEntity
 import com.finnvek.knittools.domain.model.ProjectCounter
+import com.finnvek.knittools.domain.model.ProjectCounterType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -46,6 +47,21 @@ class ProjectCounterRepositoryTest {
             repository.addCounter(ProjectCounter(projectId = 1L, name = "Test", stepSize = 1, repeatAt = 10))
 
             assertEquals(10, fakeDao.lastInserted!!.repeatAt)
+        }
+
+    @Test
+    fun `addCounter clears main-counter link for repeat sections`() =
+        runTest {
+            repository.addCounter(
+                ProjectCounter(
+                    projectId = 1L,
+                    name = "Repeat section",
+                    counterType = ProjectCounterType.REPEAT_SECTION,
+                    linkedToMainCounter = true,
+                ),
+            )
+
+            assertEquals(false, fakeDao.lastInserted!!.linkedToMainCounter)
         }
 
     @Test

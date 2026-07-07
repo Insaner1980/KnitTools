@@ -44,6 +44,12 @@ class SavedPatternRepository
 
         suspend fun getById(id: Long): SavedPattern? = dao.getById(id)?.toDomain()
 
+        suspend fun getByIds(ids: List<Long>): List<SavedPattern> {
+            val distinctIds = ids.distinct()
+            if (distinctIds.isEmpty()) return emptyList()
+            return dao.getByIds(distinctIds).map { it.toDomain() }
+        }
+
         suspend fun getByIdIfAvailable(id: Long): SavedPattern? {
             val pattern = dao.getById(id) ?: return null
             if (pattern.patternUrl.isAppOwnedMissingFile()) {
@@ -87,6 +93,10 @@ class SavedPatternRepository
                 dao.getByCanonicalUrl(canonicalUrl)?.toDomain()?.let { return it }
             }
 
+            pattern.originalUrl.takeIf { it.isNotBlank() }?.let { originalUrl ->
+                dao.getByOriginalUrl(originalUrl)?.toDomain()?.let { return it }
+            }
+
             val normalizedOriginalUrl = pattern.originalUrl.normalizedOriginalUrl()
             if (normalizedOriginalUrl.isNotBlank()) {
                 val originalUrlMatch =
@@ -96,11 +106,11 @@ class SavedPatternRepository
                 if (originalUrlMatch != null) return originalUrlMatch.toDomain()
             }
 
-            if (includeTitleDesigner && pattern.name.isNotBlank() && pattern.designerName.isNotBlank()) {
-                dao.getByTitleAndDesignerName(pattern.name, pattern.designerName)?.toDomain()?.let { return it }
+            return if (includeTitleDesigner && pattern.name.isNotBlank() && pattern.designerName.isNotBlank()) {
+                dao.getByTitleAndDesignerName(pattern.name, pattern.designerName)?.toDomain()
+            } else {
+                null
             }
-
-            return null
         }
 
         suspend fun saveImportedPatternIfMissing(

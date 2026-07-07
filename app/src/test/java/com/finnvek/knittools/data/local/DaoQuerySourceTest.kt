@@ -62,6 +62,12 @@ class DaoQuerySourceTest {
                 "SELECT * FROM saved_patterns WHERE canonicalUrl = :canonicalUrl ORDER BY savedAt DESC, id DESC LIMIT 1",
             ),
         )
+        assertTrue(
+            dao.contains(
+                "SELECT * FROM saved_patterns WHERE originalUrl = :originalUrl ORDER BY savedAt DESC, id DESC LIMIT 1",
+            ),
+        )
+        assertTrue(dao.contains("suspend fun getByOriginalUrl(originalUrl: String): SavedPatternEntity?"))
     }
 
     @Test

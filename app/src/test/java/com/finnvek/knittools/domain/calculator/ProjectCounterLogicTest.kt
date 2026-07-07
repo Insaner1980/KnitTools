@@ -3,6 +3,8 @@ package com.finnvek.knittools.domain.calculator
 import com.finnvek.knittools.domain.model.ProjectCounter
 import com.finnvek.knittools.domain.model.ProjectCounterType
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ProjectCounterLogicTest {
@@ -12,6 +14,7 @@ class ProjectCounterLogicTest {
         repeatAt: Int? = null,
         counterType: ProjectCounterType = ProjectCounterType.COUNT_UP,
         shapeEveryN: Int? = null,
+        linkedToMainCounter: Boolean = false,
     ) = ProjectCounter(
         id = 1,
         projectId = 1,
@@ -21,6 +24,7 @@ class ProjectCounterLogicTest {
         repeatAt = repeatAt,
         counterType = counterType,
         shapeEveryN = shapeEveryN,
+        linkedToMainCounter = linkedToMainCounter,
     )
 
     @Test
@@ -96,5 +100,28 @@ class ProjectCounterLogicTest {
             )
 
         assertEquals(5, result.count)
+    }
+
+    @Test
+    fun `main-counter link rule clears repeat-section link state`() {
+        val result =
+            ProjectCounterLogic.enforceMainCounterLinkRules(
+                counter(
+                    counterType = ProjectCounterType.REPEAT_SECTION,
+                    linkedToMainCounter = true,
+                ),
+            )
+
+        assertFalse(result.linkedToMainCounter)
+    }
+
+    @Test
+    fun `main-counter link rule preserves supported linked counters`() {
+        val result =
+            ProjectCounterLogic.enforceMainCounterLinkRules(
+                counter(linkedToMainCounter = true),
+            )
+
+        assertTrue(result.linkedToMainCounter)
     }
 }

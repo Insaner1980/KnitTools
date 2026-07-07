@@ -14,6 +14,7 @@ import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.SavedPatternSource
 import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.domain.model.sanitizeMainCounterCustomLabel
+import com.finnvek.knittools.domain.model.sanitizeReadingLineYFraction
 
 fun CounterProjectEntity.toDomain(): CounterProject =
     CounterProject(
@@ -63,7 +64,7 @@ private fun CounterProjectEntity.withDomainProjectDetails(project: CounterProjec
     copy(
         mainCounterCustomLabel = sanitizeMainCounterCustomLabel(project.mainCounterCustomLabel),
         readingLineEnabled = project.readingLineEnabled,
-        readingLineYFraction = project.readingLineYFraction.coerceIn(0f, 1f),
+        readingLineYFraction = sanitizeReadingLineYFraction(project.readingLineYFraction),
         secondaryCount = project.secondaryCount,
         stepSize = project.stepSize,
         notes = project.notes,

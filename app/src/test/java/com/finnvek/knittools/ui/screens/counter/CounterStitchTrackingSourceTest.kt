@@ -106,7 +106,25 @@ class CounterStitchTrackingSourceTest {
         assertTrue(counterRepository.contains("dao.updateCurrentStitch(id, 0, updatedAt)"))
     }
 
+    @Test
+    fun `row counter actions leave persisted stitch reset inside repository transaction`() {
+        val counterViewModel = ProjectSourceFiles.read(COUNTER_VIEW_MODEL)
+        val counterRepository = ProjectSourceFiles.read(COUNTER_REPOSITORY)
+
+        assertFalse(counterViewModel.contains("persistCurrentStitchIfNeeded(resetStitch)"))
+        assertFalse(counterViewModel.contains("private fun persistCurrentStitchIfNeeded"))
+        assertTrue(
+            counterViewModel.contains(
+                "repository.applyMainCounterChange(projectId, action.toMainCounterChange())",
+            ),
+        )
+        assertTrue(counterRepository.contains("transactionRunner.run"))
+        assertTrue(counterRepository.contains("dao.updateCurrentStitch(id, 0, updatedAt)"))
+    }
+
     private companion object {
+        private const val COUNTER_VIEW_MODEL =
+            "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterViewModel.kt"
         private const val COUNTER_SCREEN =
             "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterScreen.kt"
         private const val COUNTER_WORKSPACE_SECTIONS =

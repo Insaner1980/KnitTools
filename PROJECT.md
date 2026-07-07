@@ -36,8 +36,8 @@ Nykytilan kannalta hyödyllinen järjestys:
 - Paikalliset lisäominaisuudet: regex-pohjainen laskuriohjeparseri `domain/calculator/InstructionParser.kt`
 - Lokalisaatio: `localeConfig` + useat `values-*`-hakemistot
 - Room schema version: `14`
-- `compileSdk` / `targetSdk` / `minSdk`: `36 / 36 / 29`
-- `baselineprofile`-moduulin `minSdk`: `29`
+- `compileSdk` / `targetSdk` / `minSdk`: `36 / 36 / 29`, kaikki `gradle/libs.versions.toml`-avaimista `androidCompileSdk`, `androidTargetSdk` ja `androidMinSdk`
+- `baselineprofile`-moduulin `compileSdk` / `targetSdk` / `minSdk`: samat version catalog -arvot `36 / 36 / 29`
 - Java target: `17`
 - Gradle wrapper: `9.4.1`
 - AGP: `9.1.0`
@@ -192,10 +192,11 @@ Build-huomiot:
 - root `sonar`-task lukee `sonar-project.properties`-tiedoston, mutta ei syötä Gradlen itse hallitsemia source/binary/test/library-propertyjä Sonar-pluginille; app-moduulille asetetaan erikseen `sonar.coverage.jacoco.xmlReportPaths`
 - `sonar-project.properties` rajaa coverage-portin domain-, repository- ja parserilogiikkaan; coverage-exclusion-listalla ovat muun muassa `App.kt`, `MainActivity.kt`, debug/release-source-setien `SentryInit.kt`, `di`, `ui`, `widget`, `auth`, `billing`, `pro`, `data/*` ja `PatternRowDetector.kt`
 - `tools/sonar.ps1` ajaa nykyisin vain `.\gradlew.bat sonar --console=plain`, ei `assembleDebug sonar`; siksi Sonar-skannaus ei ole sidottu Firebase artifact -buildin `app/google-services.json`-porttiin, vaikka Gradlen `sonar`-task ajaa JaCoCo-raportin ennen analyysiä
-- release signing on ympäristömuuttujapohjainen
-- release-artifaktit estetään ilman signing-muuttujia
+- `compileSdk`, `minSdk` ja `targetSdk` tulevat version catalogista myös `:app`- ja `:baselineprofile`-build-skripteissä; älä etsi näille kovakoodattuja numeroita moduulien `android {}` -lohkoista
+- release signing on ympäristömuuttujapohjainen ja käyttää neljää `KNITTOOLS_*`-muuttujaa: `KNITTOOLS_KEYSTORE_PATH`, `KNITTOOLS_KEYSTORE_PASSWORD`, `KNITTOOLS_KEY_ALIAS` ja `KNITTOOLS_KEY_PASSWORD`
+- `gradle.taskGraph.whenReady` pysäyttää release signing -portilla nämä app-release-artifactit, jos signing-muuttujia puuttuu: `:app:assembleRelease`, `:app:bundleRelease`, `:app:packageRelease`, `:app:packageReleaseBundle`, `:app:packageReleaseUniversalApk`, `:app:signReleaseBundle` ja `:app:publishRelease`
 - Ravelryn vanha backenditön release-polku on superseded; Android ei enää määritä Ravelry credential `BuildConfig` -kenttiä, release opt-in -gatea, Basic Auth fallbackia eikä Ravelry token-storea
-- Android Firebase release artifact -build vaatii ignored `app/google-services.json` -tiedoston paikallisesti tai CI:ssä `KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64` -salaisuudesta generoidun tiedoston; `verifyGoogleServicesJson` käyttää `inputs.files(targetFile)`-inputia ja `GoogleServicesJsonTaskActions.verify(...)`-tarkistusta, joka pysäyttää `assembleRelease` ja `bundleRelease` -taskit vasta taskin suorituksessa, jos tiedosto puuttuu. Debug artifact -build voi luoda ignored `app/src/debug/google-services.json` -placeholderin paikallista buildattavuutta varten, jos oikeaa configia ei ole.
+- Android Firebase release artifact -build vaatii ignored `app/google-services.json` -tiedoston paikallisesti tai CI:ssä `KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64` -salaisuudesta generoidun tiedoston; `verifyGoogleServicesJson` käyttää `inputs.files(targetFile)`-inputia ja `GoogleServicesJsonTaskActions.verify(...)`-tarkistusta, joka pysäyttää `assembleRelease`- ja `bundleRelease`-taskit vasta taskin suorituksessa, jos tiedosto puuttuu. Debug artifact -build voi luoda ignored `app/src/debug/google-services.json` -placeholderin paikallista buildattavuutta varten, jos oikeaa configia ei ole.
 - debug lukee Sentry DSN:n `KNITTOOLS_SENTRY_DSN`- tai `SENTRY_DSN`-ympäristömuuttujasta tai ignored `debug.credentials.properties` -tiedostosta avaimella `sentry.dsn`; Sentry on vain debug-luokkapolussa, automaattinen session/tracing/breadcrumb/screenshot/view-hierarchy/NDK-keruu on pois päältä, ja release-luokkapolun puhtaus tarkistetaan `tools\sentry.ps1`- sekä `tools\rs.ps1`-komennoilla
 
 ### `:baselineprofile`
@@ -225,7 +226,7 @@ Ravelry Firebase -backend:
 - Phase 8 UI-polku on valmis: `RavelryImportConfirmationSheet` hoitaa hakutulos- ja jaetun URL:n import-vahvistuksen, `SavedPatternDetailScreen` hoitaa metadata-availabilityn ja toiminnot, PatternPickerSheet listaa kaikki saved patternit, ja projektin pattern-kortti avaa metadata-only linkit detailiin ilman PDF-vieweriä
 - Phase 9 release-surface -vahti sallii vain Firebase Auth/Functions/Google Services -pinnan tälle backendille, kieltää Firebase AI/ML Kit/Gemini/voice-riippuvuudet, estää trackatut `app/google-services.json`- ja `app/src/debug/google-services.json` -tiedostot ja skannaa tunnetut paikalliset/env Ravelry-secret-arvot tulostamatta niitä
 - `firebase-admin` on lukittu uusimpaan `firebase-functions@7.2.5`:n peer dependencyyn sopivaan 13.x-versioon, ei suunnitelman yhteensopimattomaan 14.x-versioon
-- Release artifact -build ei ole konfiguroitavissa tyhjästä checkoutista ilman oikeaa Firebase-konfigia: `:app:assembleRelease` ja `:app:bundleRelease` riippuvat `verifyGoogleServicesJson`-tehtävästä, joka vaatii ignored `app/google-services.json` -tiedoston. Debug artifact -build voi käyttää ignored placeholderia paikalliseen käännökseen.
+- Release artifact -build ei ole konfiguroitavissa tyhjästä checkoutista ilman oikeaa Firebase-konfigia: `:app:assembleRelease` ja `:app:bundleRelease` riippuvat `verifyGoogleServicesJson`-tehtävästä, joka vaatii ignored `app/google-services.json` -tiedoston. Lisäksi release signing -portti kattaa alemman tason release package/sign/publish -taskit, vaikka Firebase-configin taskiriippuvuus on nykykoodissa sidottu vain `assembleRelease`- ja `bundleRelease`-nimiin. Debug artifact -build voi käyttää ignored placeholderia paikalliseen käännökseen.
 
 ## Käynnistys ja runtime
 
@@ -1174,7 +1175,7 @@ Huomio:
 GitHub Actions:
 
 - `.github/workflows/build.yml` ajaa push- ja pull request -tapahtumissa `assembleDebug`, `test`, `:app:ktlintCheck`, `:app:detekt` ja `lint`
-- build-workflow käyttää pinnejä `actions/checkout` v6.0.3, `actions/setup-java` v5.3.0 ja `gradle/actions/setup-gradle` v6.1.0; versio näkyy kommentissa, mutta hash on varsinainen lukitus
+- build-workflow käyttää pinnejä `actions/checkout` v6.0.3, `actions/setup-java` v5.3.0 ja `gradle/actions/setup-gradle` v6.2.0; versio näkyy kommentissa, mutta hash on varsinainen lukitus
 - `.github/workflows/codeql.yml` ajaa push-, pull request- ja maanantaiaikataululla Java/Kotlin CodeQL -analyysin manuaalibuildilla; se käyttää `assembleDebug --no-daemon`, `android-actions/setup-android` v4.0.1 ja `github/codeql-action` v4.36.2 pin-hasheilla
 - `.github/dependabot.yml` seuraa Gradle-riippuvuuksia rootissa, GitHub Actions -riippuvuuksia rootissa, npm-riippuvuuksia `.deepsec`-hakemistossa sekä npm-riippuvuuksia `functions`-hakemistossa; CodeQL action -päivitykset ryhmitellään `codeql-action`-ryhmään
 
@@ -1238,7 +1239,7 @@ Pienimmät hyödylliset tarkistuskomennot:
 
 Artifact-buildien nykyinen paikallisraja:
 
-- `.\gradlew.bat --no-configuration-cache :app:assembleDebug` saa kääntyä ilman oikeaa Firebase-projektia debug-only placeholderilla; `.\gradlew.bat --no-configuration-cache :app:assembleRelease` ja `.\gradlew.bat --no-configuration-cache :app:bundleRelease` pysähtyvät tarkoituksella `:app:verifyGoogleServicesJson`-tehtävään, jos ignored `app/google-services.json` puuttuu
+- `.\gradlew.bat --no-configuration-cache :app:assembleDebug` saa kääntyä ilman oikeaa Firebase-projektia debug-only placeholderilla; `.\gradlew.bat --no-configuration-cache :app:assembleRelease` ja `.\gradlew.bat --no-configuration-cache :app:bundleRelease` pysähtyvät tarkoituksella `:app:verifyGoogleServicesJson`-tehtävään, jos ignored `app/google-services.json` puuttuu; signing-muuttujien puute pysäyttää lisäksi `appReleaseArtifactTasks`-joukkoon kuuluvat package/sign/publish-release-taskit
 - tämä checkout on viimeksi tarkistettu niin, että `app/google-services.json`, `KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64` ja `GOOGLE_SERVICES_JSON_BASE64` puuttuivat; debug build, staattinen Android lint / ktlint / detekt ja unit-testit ovat silti ajettavissa ilman paikallista Firebase JSONia
 
 Julkaisuvalmiuden muistilista:
@@ -1323,6 +1324,7 @@ Julkaisuvalmiuden muistilista:
 Näihin kannattaa suhtautua epäluuloisesti vanhoissa dokumenteissa:
 
 - build-versiot muuttuvat usein `gradle/libs.versions.toml`-tiedostossa; älä kopioi niitä muistista
+- Android SDK -arvojen source of truth on version catalog: `androidCompileSdk`, `androidTargetSdk` ja `androidMinSdk`; `app/build.gradle.kts` ja `baselineprofile/build.gradle.kts` lukevat nämä `libs.versions.*.get().toInt()` -polulla
 - `allowBackup`: nykyinen on `false`, ei `true`
 - Room schema version: nykyinen on `14`; tarkista aina `KnitToolsDatabase.version`, `MIGRATION_13_14` ja `app/schemas/.../14.json`
 - schema 14:n helposti unohtuvat saved-pattern-kentät ovat `source`, `ravelryPatternId`, `originalUrl`, `canonicalUrl`, `localPdfUri`, `isAvailableOffline`, `updatedAt` ja `lastSyncedAt`; schema 13:n projektikentät ovat edelleen `craftType`, `mainCounterLabelType`, `mainCounterCustomLabel`, `readingLineEnabled`, `readingLineYFraction` ja `linkedToMainCounter`
@@ -1332,6 +1334,7 @@ Näihin kannattaa suhtautua epäluuloisesti vanhoissa dokumenteissa:
 - `saved_pattern_detail/{savedPatternId}` on nykyinen saved-pattern metadata/detail -pinta; vanha oletus suoraan PDF-vieweriin avaamisesta pätee vain, kun `localPdfUri` on olemassa
 - `app/google-services.json` on tarkoituksella ignored ja release artifact -buildin edellytys; debug artifact voi käyttää ignored `app/src/debug/google-services.json` -placeholderia, eikä root-configin puute tarkoita, että lint/unit-testit olisivat rikki
 - vanha `VerifyGoogleServicesJsonTask`-niminen oletus on poistunut build-scriptistä; nykyinen portti on `verifyGoogleServicesJson`-task + `GoogleServicesJsonTaskActions.verify(...)`
+- älä sekoita release signing -porttia ja Firebase-config-porttia: signing gate tarkistaa `appReleaseArtifactTasks`-joukon seitsemän `:app:*Release*`-artifact-taskia, kun taas `verifyGoogleServicesJson` on nykykoodissa `firebaseConfiguredArtifactTaskNames = setOf("assembleRelease", "bundleRelease")`
 - Sonar-wrapper ei nykyisin aja `assembleDebug`-taskia; jos Sonar-skannaus pysähtyy Firebase JSON -porttiin, tarkista ensin ettei wrapperia tai Gradle-taskigraafia ole palautettu vanhaan `assembleDebug sonar` -malliin
 - Android-check-wrapperien onnistuminen/epäonnistuminen tulee nyt niiden delegoiman prosessin exit-koodista; jos wrapper näyttää hiljaisesti onnistuvan, tarkista että tiedostossa on edelleen `exit $LASTEXITCODE`
 - `gradle/osv-scanner.toml` ei saa palata yleiseen `ignore = true` -malliin koko verification metadata -pinnalle; nykyinen malli on pakettikohtaiset false-positive-poikkeukset

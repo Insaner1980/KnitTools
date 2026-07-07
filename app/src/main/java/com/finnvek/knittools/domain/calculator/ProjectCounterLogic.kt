@@ -4,6 +4,16 @@ import com.finnvek.knittools.domain.model.ProjectCounter
 import com.finnvek.knittools.domain.model.ProjectCounterType
 
 object ProjectCounterLogic {
+    fun canLinkToMainCounter(counterType: ProjectCounterType): Boolean =
+        counterType != ProjectCounterType.REPEAT_SECTION
+
+    fun enforceMainCounterLinkRules(counter: ProjectCounter): ProjectCounter =
+        if (canLinkToMainCounter(counter.counterType)) {
+            counter
+        } else {
+            counter.copy(linkedToMainCounter = false)
+        }
+
     fun increment(counter: ProjectCounter): ProjectCounter {
         val newCount = counter.count + counter.stepSize
         // SHAPING-tyyppi ei resettaa — normaali laskenta

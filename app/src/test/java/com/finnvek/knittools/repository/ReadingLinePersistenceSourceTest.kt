@@ -11,7 +11,7 @@ class ReadingLinePersistenceSourceTest {
 
         assertTrue(repository.contains("suspend fun updateReadingLine("))
         assertTrue(repository.contains("val sanitizedYFraction ="))
-        assertTrue(repository.contains(".coerceIn(READING_LINE_MIN_Y_FRACTION, READING_LINE_MAX_Y_FRACTION)"))
+        assertTrue(repository.contains("sanitizeReadingLineYFraction(yFraction)"))
         assertTrue(repository.contains("dao.updateReadingLine("))
     }
 

@@ -1,5 +1,6 @@
 package com.finnvek.knittools.data.local
 
+import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.KnitSession
 import com.finnvek.knittools.domain.model.MainCounterLabelType
@@ -7,6 +8,8 @@ import com.finnvek.knittools.domain.model.PatternAnnotation
 import com.finnvek.knittools.domain.model.ProgressPhoto
 import com.finnvek.knittools.domain.model.ProjectCounter
 import com.finnvek.knittools.domain.model.ProjectCounterType
+import com.finnvek.knittools.domain.model.READING_LINE_MAX_Y_FRACTION
+import com.finnvek.knittools.domain.model.READING_LINE_MIN_Y_FRACTION
 import com.finnvek.knittools.domain.model.RowReminder
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.SavedPatternSource
@@ -56,6 +59,20 @@ class EntityMappersTest {
                 createdAt = 1_700_000_011L,
                 updatedAt = 1_700_000_012L,
             ),
+        )
+    }
+
+    @Test
+    fun `counter project entity mapper sanitizes reading line fraction on write`() {
+        assertEquals(
+            READING_LINE_MIN_Y_FRACTION,
+            CounterProject(readingLineYFraction = 0f).toEntity().readingLineYFraction,
+            0f,
+        )
+        assertEquals(
+            READING_LINE_MAX_Y_FRACTION,
+            CounterProject(readingLineYFraction = 1f).toEntity().readingLineYFraction,
+            0f,
         )
     }
 

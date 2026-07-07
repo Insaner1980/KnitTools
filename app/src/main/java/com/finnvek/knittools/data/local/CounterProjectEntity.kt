@@ -2,9 +2,13 @@ package com.finnvek.knittools.data.local
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "counter_projects")
+@Entity(
+    tableName = "counter_projects",
+    indices = [Index("linkedPatternId")],
+)
 data class CounterProjectEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,

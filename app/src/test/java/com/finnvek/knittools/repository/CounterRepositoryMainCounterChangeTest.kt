@@ -62,6 +62,28 @@ class CounterRepositoryMainCounterChangeTest {
         }
 
     @Test
+    fun `applyMainCounterChange ignores repeat sections even if their linked flag is true`() =
+        runTest {
+            val projectDao = mockk<CounterProjectDao>(relaxed = true)
+            val counterDao =
+                linkedCounterDao(
+                    projectId = 7L,
+                    linkedCount = 5,
+                    unlinkedCount = 9,
+                    repeatSectionLinked = true,
+                )
+            coEvery { projectDao.getProject(7L) } returns
+                CounterProjectEntity(id = 7L, name = "Cardigan", count = 10, stepSize = 2)
+            val repository = buildRepository(projectDao, counterDao)
+
+            val changed = repository.applyMainCounterChange(7L, MainCounterChange.Increment)
+
+            assertTrue(changed)
+            coVerify { counterDao.updateCount(20L, 7) }
+            coVerify(exactly = 0) { counterDao.updateCount(22L, any()) }
+        }
+
+    @Test
     fun `applyMainCounterChange decrement uses clamped main delta for linked counters`() =
         runTest {
             val projectDao = mockk<CounterProjectDao>(relaxed = true)
@@ -201,6 +223,7 @@ class CounterRepositoryMainCounterChangeTest {
         projectId: Long,
         linkedCount: Int,
         unlinkedCount: Int,
+        repeatSectionLinked: Boolean = false,
     ): ProjectCounterDao =
         mockk<ProjectCounterDao>(relaxed = true).also { dao ->
             every { dao.getCountersForProject(projectId) } returns
@@ -226,7 +249,7 @@ class CounterRepositoryMainCounterChangeTest {
                             name = "Repeat section",
                             count = 0,
                             counterType = "REPEAT_SECTION",
-                            linkedToMainCounter = false,
+                            linkedToMainCounter = repeatSectionLinked,
                         ),
                     ),
                 )

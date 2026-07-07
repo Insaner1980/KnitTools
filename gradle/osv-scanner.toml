@@ -25,6 +25,13 @@ vulnerability.ignore = true
 reason = "Build-tool-only dependency from Gradle verification metadata; app runtime dependencies are checked separately."
 
 [[PackageOverrides]]
+name = "com.fasterxml.jackson.core:jackson-databind"
+version = "2.21.3"
+ecosystem = "Maven"
+vulnerability.ignore = true
+reason = "Build-tool-only dependency from Dependency-Check Gradle plugin metadata; app runtime dependencies are checked separately."
+
+[[PackageOverrides]]
 name = "com.google.guava:guava"
 version = "31.0.1-jre"
 ecosystem = "Maven"

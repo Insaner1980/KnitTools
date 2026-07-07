@@ -1,5 +1,6 @@
 package com.finnvek.knittools
 
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -42,6 +43,15 @@ class RavelryShareTargetSourceTest {
         assertTrue(navGraph.contains("navController.navigateSingleTopTo(Screen.RavelryImport(request.url).route)"))
         assertTrue(navGraph.contains("onRavelryShareImportHandled()"))
         assertTrue(navGraph.contains("importUrl = importUrl"))
+    }
+
+    @Test
+    fun `ravelry import argument is not decoded twice after navigation argument parsing`() {
+        val screen = ProjectSourceFiles.read(SCREEN)
+
+        assertTrue(screen.contains("Screen(\"ravelry_import/${'$'}{Uri.encode(url)}\")"))
+        assertFalse(screen.contains("Uri::decode"))
+        assertFalse(screen.contains("Uri.decode(routeArgument"))
     }
 
     private companion object {

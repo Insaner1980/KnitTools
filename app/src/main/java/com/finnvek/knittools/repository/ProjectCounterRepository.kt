@@ -22,7 +22,12 @@ class ProjectCounterRepository
             dao.getCountersForProject(projectId).map { counters -> counters.map { it.toDomain() } }
 
         suspend fun addCounter(counter: ProjectCounter): Long =
-            dao.insert(counter.copy(name = counter.name.take(50)).toEntity())
+            dao.insert(
+                ProjectCounterLogic
+                    .enforceMainCounterLinkRules(counter)
+                    .copy(name = counter.name.take(50))
+                    .toEntity(),
+            )
 
         suspend fun incrementCounter(counter: ProjectCounter) {
             updateCounterCount(counter, ProjectCounterLogic::increment)

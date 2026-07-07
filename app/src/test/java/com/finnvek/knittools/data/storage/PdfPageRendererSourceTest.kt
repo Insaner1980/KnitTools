@@ -21,6 +21,33 @@ class PdfPageRendererSourceTest {
         )
     }
 
+    @Test
+    fun `pdf descriptor is closed if renderer construction fails`() {
+        val source = ProjectSourceFiles.read(PDF_PAGE_RENDERER)
+        val helperIndex =
+            source.indexOf(
+                "private fun createRenderer(fileDescriptor: ParcelFileDescriptor): PdfRenderer",
+            )
+        val guardedSource = source.substring(helperIndex.coerceAtLeast(0))
+
+        assertTrue(
+            "PdfRenderer construction must go through a helper that can close the descriptor on failure.",
+            helperIndex >= 0,
+        )
+        assertTrue(
+            "The helper must construct PdfRenderer from the opened descriptor.",
+            guardedSource.contains("PdfRenderer(fileDescriptor)"),
+        )
+        assertTrue(
+            "The helper must close the descriptor when PdfRenderer construction fails.",
+            guardedSource.contains("fileDescriptor.close()"),
+        )
+        assertTrue(
+            "The helper must rethrow the original renderer construction failure.",
+            guardedSource.contains("throw failure"),
+        )
+    }
+
     private companion object {
         const val PDF_PAGE_RENDERER =
             "app/src/main/java/com/finnvek/knittools/data/storage/PdfPageRenderer.kt"

@@ -17,7 +17,9 @@ import com.finnvek.knittools.domain.model.formatYarnCardIds
 import com.finnvek.knittools.domain.model.parseYarnCardIds
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -94,15 +96,31 @@ class YarnCardRepository
                 withContext(ioDispatcher) {
                     yarnPhotoStorage.copyPhoto(context, id, sourceUri)
                 }
-            val updated = dao.updatePhotoUri(id, copiedPhotoUri) > 0
-            withContext(ioDispatcher) {
-                if (updated) {
-                    AppFileStorage.deleteIfAppOwned(context, currentCard.photoUri)
-                } else {
-                    AppFileStorage.deleteIfAppOwned(context, copiedPhotoUri)
-                }
+            val updateResult = runCatching { dao.updatePhotoUri(id, copiedPhotoUri) }
+            updateResult.exceptionOrNull()?.let { failure ->
+                deleteAppOwnedPhoto(copiedPhotoUri)
+                throw failure
+            }
+            val updated = updateResult.getOrThrow() > 0
+            if (updated) {
+                deleteAppOwnedPhoto(currentCard.photoUri)
+            } else {
+                deleteAppOwnedPhoto(copiedPhotoUri)
             }
             return updated
+        }
+
+        suspend fun pruneUnreferencedPhotoFiles() {
+            val referencedPhotoUris =
+                dao
+                    .getAllCards()
+                    .first()
+                    .map { card -> card.photoUri }
+                    .filter { photoUri -> photoUri.isNotBlank() }
+                    .toSet()
+            withContext(ioDispatcher) {
+                yarnPhotoStorage.pruneUnreferencedPhotos(context, referencedPhotoUris)
+            }
         }
 
         suspend fun updateLinkedProjectId(
@@ -183,6 +201,12 @@ class YarnCardRepository
                         updatedAt = updatedAt,
                     )
                 }
+            }
+        }
+
+        private suspend fun deleteAppOwnedPhoto(photoUri: String) {
+            withContext(ioDispatcher + NonCancellable) {
+                AppFileStorage.deleteIfAppOwned(context, photoUri)
             }
         }
     }

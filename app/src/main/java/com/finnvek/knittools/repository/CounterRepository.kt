@@ -13,17 +13,18 @@ import com.finnvek.knittools.data.storage.ProgressPhotoStorage
 import com.finnvek.knittools.di.IoDispatcher
 import com.finnvek.knittools.domain.calculator.CounterLogic
 import com.finnvek.knittools.domain.calculator.CounterState
+import com.finnvek.knittools.domain.calculator.ProjectCounterLogic
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.KnitSession
 import com.finnvek.knittools.domain.model.MainCounterChange
 import com.finnvek.knittools.domain.model.MainCounterLabelType
+import com.finnvek.knittools.domain.model.ProjectCounterType
 import com.finnvek.knittools.domain.model.ProjectSortOrder
-import com.finnvek.knittools.domain.model.READING_LINE_MAX_Y_FRACTION
-import com.finnvek.knittools.domain.model.READING_LINE_MIN_Y_FRACTION
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.resolvedMainCounterLabelType
 import com.finnvek.knittools.domain.model.sanitizeMainCounterCustomLabel
+import com.finnvek.knittools.domain.model.sanitizeReadingLineYFraction
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
@@ -372,8 +373,7 @@ class CounterRepository
             enabled: Boolean,
             yFraction: Float,
         ) {
-            val sanitizedYFraction =
-                yFraction.coerceIn(READING_LINE_MIN_Y_FRACTION, READING_LINE_MAX_Y_FRACTION)
+            val sanitizedYFraction = sanitizeReadingLineYFraction(yFraction)
             dao.updateReadingLine(id, enabled, sanitizedYFraction, System.currentTimeMillis())
         }
 
@@ -524,8 +524,12 @@ class CounterRepository
             projectCounterDao
                 .getCountersForProject(projectId)
                 .first()
-                .filter { it.linkedToMainCounter }
-                .forEach { counter ->
+                .filter { counter ->
+                    counter.linkedToMainCounter &&
+                        ProjectCounterLogic.canLinkToMainCounter(
+                            ProjectCounterType.fromPersistedValue(counter.counterType),
+                        )
+                }.forEach { counter ->
                     val updatedCount = (counter.count + delta).coerceAtLeast(0)
                     if (updatedCount != counter.count) {
                         projectCounterDao.updateCount(counter.id, updatedCount)

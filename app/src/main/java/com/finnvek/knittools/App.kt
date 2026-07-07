@@ -3,7 +3,9 @@ package com.finnvek.knittools
 import android.app.Application
 import com.finnvek.knittools.billing.BillingManager
 import com.finnvek.knittools.data.datastore.PreferencesManager
+import com.finnvek.knittools.data.storage.PatternDocumentStorage
 import com.finnvek.knittools.pro.ProManager
+import com.finnvek.knittools.repository.YarnCardRepository
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -23,6 +25,12 @@ class App : Application() {
     @Inject
     lateinit var proManager: dagger.Lazy<ProManager>
 
+    @Inject
+    lateinit var yarnCardRepository: dagger.Lazy<YarnCardRepository>
+
+    @Inject
+    lateinit var patternDocumentStorage: dagger.Lazy<PatternDocumentStorage>
+
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
     override fun onCreate() {
@@ -30,6 +38,12 @@ class App : Application() {
         SentryInit.init(this)
         applicationScope.launch {
             preferencesManager.get().applyStoredAppLanguage()
+        }
+        applicationScope.launch {
+            yarnCardRepository.get().pruneUnreferencedPhotoFiles()
+        }
+        applicationScope.launch {
+            patternDocumentStorage.get().pruneStaleCaptureImages(this@App)
         }
         billingManager.get().initialize()
         proManager.get().initialize()

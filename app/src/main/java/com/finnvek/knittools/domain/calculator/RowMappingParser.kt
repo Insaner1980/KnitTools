@@ -64,13 +64,28 @@ fun interpolateYPosition(
     targetRow: Int,
     page: Int,
 ): Float? {
-    val pageMarkers = markers.filter { it.page == page }.sortedBy { it.row }
-    if (pageMarkers.isEmpty()) return null
+    var previous: RowMarker? = null
+    var next: RowMarker? = null
 
-    pageMarkers.firstOrNull { it.row == targetRow }?.let { return it.yPosition }
+    markers.forEach { marker ->
+        if (marker.page != page) return@forEach
 
-    val previous = pageMarkers.lastOrNull { it.row < targetRow }
-    val next = pageMarkers.firstOrNull { it.row > targetRow }
+        when {
+            marker.row == targetRow -> return marker.yPosition
+            marker.row < targetRow -> {
+                val currentPrevious = previous
+                if (currentPrevious == null || marker.row >= currentPrevious.row) {
+                    previous = marker
+                }
+            }
+            marker.row > targetRow -> {
+                val currentNext = next
+                if (currentNext == null || marker.row < currentNext.row) {
+                    next = marker
+                }
+            }
+        }
+    }
 
     if (previous != null && next != null && previous.row != next.row) {
         val progress = (targetRow - previous.row).toFloat() / (next.row - previous.row).toFloat()

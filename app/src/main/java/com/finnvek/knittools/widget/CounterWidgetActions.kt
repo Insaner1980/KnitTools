@@ -3,7 +3,6 @@ package com.finnvek.knittools.widget
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.util.Log
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.repository.CounterRepository
@@ -18,18 +17,15 @@ class CounterWidgetActions : BroadcastReceiver() {
         intent: Intent?,
     ) {
         val action =
-            intent?.action ?: run {
-                Log.w(TAG, "onReceive with null action")
-                return
-            }
+            intent?.action ?: return
         val pendingResult = goAsync()
         val appContext = context.applicationContext
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 handleAction(appContext, action)
-            } catch (e: Exception) {
-                Log.e(TAG, "Widget handling failed: ${e.javaClass.simpleName}")
+            } catch (_: Exception) {
+                // Widget-toiminto on best effort; finish() ajetaan silti aina, eikä käyttäjädataa lokiteta.
             } finally {
                 pendingResult.finish()
             }
@@ -42,14 +38,13 @@ class CounterWidgetActions : BroadcastReceiver() {
     ) {
         val entryPoint = widgetEntryPoint(context)
         if (!entryPoint.proManager().hasFeatureAfterInitialLoad(ProFeature.WIDGET)) {
-            Log.w(TAG, "Widget action ignored — not Pro")
             return
         }
 
         val repository = entryPoint.counterRepository()
         val widgetData = repository.loadActionWidgetData(context) ?: return
         val widgetAction = action.toWidgetAction() ?: return
-        applyCountChangeAndSync(context, repository, widgetData, action, widgetAction)
+        applyCountChangeAndSync(context, repository, widgetData, widgetAction)
     }
 
     private fun widgetEntryPoint(context: Context): WidgetEntryPoint =
@@ -61,7 +56,6 @@ class CounterWidgetActions : BroadcastReceiver() {
     private suspend fun CounterRepository.loadActionWidgetData(context: Context): WidgetData? {
         val widgetData = CounterWidgetState.load(context)
         if (widgetData.projectId == 0L) {
-            Log.w(TAG, "Widget action ignored — widget state incomplete")
             return null
         }
         return widgetData
@@ -78,7 +72,6 @@ class CounterWidgetActions : BroadcastReceiver() {
             }
 
             else -> {
-                Log.w(TAG, "Unknown action: $this")
                 null
             }
         }
@@ -87,29 +80,19 @@ class CounterWidgetActions : BroadcastReceiver() {
         context: Context,
         repository: CounterRepository,
         widgetData: WidgetData,
-        action: String,
         widgetAction: WidgetCounterAction,
     ) {
-        Log.d(TAG, "Applying widget action: $action")
-        val changed = repository.applyWidgetCountChange(widgetData.projectId, widgetAction.increments)
-        if (!changed) {
-            Log.d(TAG, "Widget action ignored — target unchanged or inactive")
-        }
+        repository.applyWidgetCountChange(widgetData.projectId, widgetAction.increments)
         val updatedProject =
-            repository.activeWidgetProjectOrSyncFallback(context, widgetData) {
-                Log.e(TAG, "Widget action target disappeared or became inactive after update")
-            } ?: return
-        Log.d(TAG, "Widget action applied successfully")
+            repository.activeWidgetProjectOrSyncFallback(context, widgetData) ?: return
         CounterWidgetState.syncAll(context, updatedProject.toWidgetData())
     }
 
     private suspend fun CounterRepository.activeWidgetProjectOrSyncFallback(
         context: Context,
         widgetData: WidgetData,
-        onMissingTarget: () -> Unit,
     ): CounterProject? =
         getActiveWidgetProject(widgetData) ?: run {
-            onMissingTarget()
             syncFallbackWidgetData(context)
             null
         }
@@ -122,7 +105,6 @@ class CounterWidgetActions : BroadcastReceiver() {
         get() = this == WidgetCounterAction.Increment
 
     companion object {
-        private const val TAG = "CounterWidgetActions"
         private const val ACTION_INCREMENT = "com.finnvek.knittools.widget.INCREMENT"
         private const val ACTION_DECREMENT = "com.finnvek.knittools.widget.DECREMENT"
 

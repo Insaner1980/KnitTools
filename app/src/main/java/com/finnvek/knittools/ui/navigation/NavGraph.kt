@@ -40,6 +40,7 @@ import com.finnvek.knittools.ui.screens.chartsymbols.ChartSymbolScreen
 import com.finnvek.knittools.ui.screens.counter.CounterScreen
 import com.finnvek.knittools.ui.screens.counter.CounterScreenActions
 import com.finnvek.knittools.ui.screens.counter.CounterViewModel
+import com.finnvek.knittools.ui.screens.counter.PhotoGalleryActions
 import com.finnvek.knittools.ui.screens.counter.PhotoGalleryScreen
 import com.finnvek.knittools.ui.screens.gauge.GaugeScreen
 import com.finnvek.knittools.ui.screens.home.HomeScreen
@@ -290,9 +291,14 @@ private fun NavGraphBuilder.projectsGraph(
                 photos = allPhotos,
                 projectId = state.projectId,
                 onBack = { navController.popBackStack() },
-                onSavePhoto = { uri -> counterViewModel.savePhoto(uri) },
-                onDeletePhoto = { photo -> counterViewModel.deletePhoto(photo) },
-                onUpdateNote = { id, note -> counterViewModel.updatePhotoNote(id, note) },
+                actions =
+                    PhotoGalleryActions(
+                        createPhotoCaptureTarget = counterViewModel::createPhotoCaptureTarget,
+                        deletePendingPhotoFile = counterViewModel::deletePendingPhotoFile,
+                        savePhoto = counterViewModel::savePhoto,
+                        deletePhoto = counterViewModel::deletePhoto,
+                        updateNote = counterViewModel::updatePhotoNote,
+                    ),
             )
         }
         composable(

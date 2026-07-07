@@ -1,4 +1,3 @@
-import { getFirestore } from "firebase-admin/firestore";
 import { onCall, onRequest } from "firebase-functions/v2/https";
 
 import { ravelryCallbackUrl, ravelryClientId, ravelryClientSecret } from "../config";
@@ -13,27 +12,24 @@ import {
 } from "./authCore";
 import { httpsErrorFor, requireUid } from "./callable";
 import { createRavelryClient } from "./client";
-import { createOAuthStateStore } from "./oauthStateStore";
 import { exchangeOAuth2CodeForToken } from "./oauth2";
-import { createTokenStore } from "./tokenStore";
+import { createRavelryBackendStores } from "./stores";
 
 const ravelrySecretOptions = {
   secrets: [ravelryClientId, ravelryClientSecret],
 };
 
 function stores() {
-  const firestore = getFirestore();
-  return {
-    stateStore: createOAuthStateStore(firestore),
-    tokenStore: createTokenStore(firestore),
-  };
+  return createRavelryBackendStores();
 }
 
 export const ravelryStartAuth = onCall(ravelrySecretOptions, async (request) => {
   try {
-    const { stateStore } = stores();
+    const { rateLimiter, stateStore } = stores();
+    const uid = requireUid(request.auth);
+    await rateLimiter.consume(uid, "auth");
     return await startRavelryOAuth({
-      uid: requireUid(request.auth),
+      uid,
       stateStore,
       clientId: ravelryClientId.value(),
       backendCallbackUrl: resolveBackendCallbackUrl(ravelryCallbackUrl.value()),
@@ -70,9 +66,11 @@ export const ravelryDisconnect = onCall(async (request) => {
 
 export const ravelryCurrentUser = onCall(async (request) => {
   try {
-    const { tokenStore } = stores();
+    const { rateLimiter, tokenStore } = stores();
+    const uid = requireUid(request.auth);
+    await rateLimiter.consume(uid, "auth");
     return await getRavelryCurrentUser({
-      uid: requireUid(request.auth),
+      uid,
       tokenStore,
       client: createRavelryClient(),
     });

@@ -26,6 +26,36 @@ class AppStartupSourceTest {
     }
 
     @Test
+    fun `app startup schedules yarn photo orphan cleanup without blocking main thread`() {
+        val app = ProjectSourceFiles.read(APP)
+
+        assertTrue(app.contains("import com.finnvek.knittools.repository.YarnCardRepository"))
+        assertTrue(app.contains("lateinit var yarnCardRepository: dagger.Lazy<YarnCardRepository>"))
+        assertTrue(
+            app.contains(
+                "applicationScope.launch {\n" +
+                    "            yarnCardRepository.get().pruneUnreferencedPhotoFiles()\n" +
+                    "        }",
+            ),
+        )
+    }
+
+    @Test
+    fun `app startup schedules stale pattern capture cleanup without blocking main thread`() {
+        val app = ProjectSourceFiles.read(APP)
+
+        assertTrue(app.contains("import com.finnvek.knittools.data.storage.PatternDocumentStorage"))
+        assertTrue(app.contains("lateinit var patternDocumentStorage: dagger.Lazy<PatternDocumentStorage>"))
+        assertTrue(
+            app.contains(
+                "applicationScope.launch {\n" +
+                    "            patternDocumentStorage.get().pruneStaleCaptureImages(this@App)\n" +
+                    "        }",
+            ),
+        )
+    }
+
+    @Test
     fun `widget pro gates wait for initial pro state before failing closed`() {
         val billingManager = ProjectSourceFiles.read(BILLING_MANAGER)
         val proManager = ProjectSourceFiles.read(PRO_MANAGER)
@@ -44,6 +74,8 @@ class AppStartupSourceTest {
         assertTrue(actions.contains("hasFeatureAfterInitialLoad(ProFeature.WIDGET)"))
         assertFalse(widget.contains("hasFeature(ProFeature.WIDGET)"))
         assertFalse(actions.contains("hasFeature(ProFeature.WIDGET)"))
+        assertFalse(actions.contains("android.util.Log"))
+        assertFalse(actions.contains("Log."))
     }
 
     private companion object {

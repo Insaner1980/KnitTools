@@ -141,6 +141,7 @@ fun RavelrySearchScreen(
     importConfirmationState?.let { state ->
         RavelryImportConfirmationSheet(
             state = state,
+            onConfirmImport = viewModel::retryImportConfirmation,
             onSave = viewModel::saveImportPattern,
             onSignIn = viewModel::startSignIn,
             onRetry = viewModel::retryImportConfirmation,

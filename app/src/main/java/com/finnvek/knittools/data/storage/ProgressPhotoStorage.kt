@@ -67,6 +67,13 @@ class ProgressPhotoStorage
             deleteFileUri(photoUri.toUri())
         }
 
+        fun deletePendingPhotoFile(filePath: String?) {
+            val file = filePath?.let(::File) ?: return
+            if (file.exists() && !file.delete()) {
+                file.deleteOnExit()
+            }
+        }
+
         fun isPhotoAvailable(
             context: Context,
             photoUri: String,

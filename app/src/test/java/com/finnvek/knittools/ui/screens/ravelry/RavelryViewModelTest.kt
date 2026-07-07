@@ -336,7 +336,7 @@ class RavelryViewModelTest {
         }
 
     @Test
-    fun `import confirmation for url delegates to repository url import`() =
+    fun `import confirmation for url waits for explicit user confirmation before repository url import`() =
         runTest(testDispatcher) {
             authState.value = RavelryAuthState.Connected("knitter")
             val url = "https://www.ravelry.com/patterns/library/import-pattern"
@@ -346,6 +346,12 @@ class RavelryViewModelTest {
             val vm = createViewModel(isPro = true)
 
             vm.showImportConfirmationForUrl(url)
+            advanceUntilIdle()
+
+            assertEquals(RavelryImportStatus.AwaitingUserConfirmation, vm.importConfirmationState.value?.status)
+            coVerify(exactly = 0) { repository.importPatternByUrl(any()) }
+
+            vm.retryImportConfirmation()
             advanceUntilIdle()
 
             assertEquals(RavelryImportStatus.Ready, vm.importConfirmationState.value?.status)

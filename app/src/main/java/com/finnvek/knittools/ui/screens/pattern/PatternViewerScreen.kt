@@ -107,6 +107,10 @@ fun PatternViewerScreen(
     val counterState by counterViewModel.uiState.collectAsStateWithLifecycle()
     val patternUri = counterState.patternUri
     val currentPage = counterState.currentPatternPage
+    val rowMarkers = remember(counterState.patternRowMapping) { parseMapping(counterState.patternRowMapping) }
+    val hasCurrentRowMarker =
+        rowMarkers.any { marker -> marker.row == counterState.counter.count && marker.page == currentPage }
+    val hasPageRowMarkers = rowMarkers.any { marker -> marker.page == currentPage }
     val renderState =
         rememberPatternRenderState(
             patternUri = patternUri,
@@ -141,9 +145,11 @@ fun PatternViewerScreen(
                         patternName = counterState.patternName,
                         totalPages = renderState.renderer?.pageCount ?: 0,
                         currentPage = currentPage,
-                        currentRow = counterState.counter.count,
+                        currentRow = counterState.counter.count.takeIf { patternUri != null },
                         canDetachPattern = true,
                         readingLineEnabled = counterState.readingLineEnabled,
+                        hasCurrentRowMarker = hasCurrentRowMarker,
+                        hasPageRowMarkers = hasPageRowMarkers,
                     ),
                 actions =
                     TopBarActions(
@@ -432,6 +438,7 @@ private fun TrackReadingLineForCurrentRow(
     onReadingLineYFractionChange: (Float) -> Unit,
 ) {
     var previousRow by remember(currentPage, patternRowMapping) { mutableIntStateOf(currentRow) }
+    val rowMarkers = remember(patternRowMapping) { parseMapping(patternRowMapping) }
     LaunchedEffect(currentRow, currentPage, patternRowMapping, readingLineEnabled) {
         if (!readingLineEnabled) {
             previousRow = currentRow
@@ -441,7 +448,7 @@ private fun TrackReadingLineForCurrentRow(
         val rowDelta = currentRow - previousRow
         val nextYFraction =
             resolveReadingLineYFraction(
-                markers = parseMapping(patternRowMapping),
+                markers = rowMarkers,
                 currentRow = currentRow,
                 currentPage = currentPage,
                 currentYFraction = readingLineYFraction,
@@ -484,6 +491,8 @@ fun LibraryPatternViewerScreen(
                         currentRow = null,
                         canDetachPattern = false,
                         readingLineEnabled = readingLineEnabled,
+                        hasCurrentRowMarker = false,
+                        hasPageRowMarkers = false,
                     ),
                 actions =
                     TopBarActions(
@@ -609,6 +618,8 @@ private data class TopBarState(
     val currentRow: Int?,
     val canDetachPattern: Boolean,
     val readingLineEnabled: Boolean,
+    val hasCurrentRowMarker: Boolean,
+    val hasPageRowMarkers: Boolean,
 )
 
 private data class TopBarActions(
@@ -657,74 +668,14 @@ private fun PatternViewerTopBar(
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                DropdownMenu(
+                PatternViewerOverflowMenu(
                     expanded = showOverflowMenu,
                     onDismissRequest = { showOverflowMenu = false },
-                ) {
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.pattern_page_jump)) },
-                        onClick = {
-                            showOverflowMenu = false
-                            showPageJumpDialog = true
-                        },
-                    )
-                    DropdownMenuItem(
-                        text = {
-                            Text(
-                                stringResource(
-                                    if (state.readingLineEnabled) {
-                                        R.string.pattern_hide_reading_line
-                                    } else {
-                                        R.string.pattern_show_reading_line
-                                    },
-                                ),
-                            )
-                        },
-                        onClick = {
-                            showOverflowMenu = false
-                            actions.onReadingLineToggle(!state.readingLineEnabled)
-                        },
-                    )
-                    state.currentRow?.let { currentRow ->
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.pattern_save_line_as_row, currentRow)) },
-                            onClick = {
-                                showOverflowMenu = false
-                                actions.onSaveReadingLineAsCurrentRow()
-                            },
-                        )
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.pattern_clear_row_mark)) },
-                            onClick = {
-                                showOverflowMenu = false
-                                actions.onClearReadingLineRowMarker()
-                            },
-                        )
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.pattern_clear_page_marks)) },
-                            onClick = {
-                                showOverflowMenu = false
-                                actions.onClearReadingLinePageMarkers()
-                            },
-                        )
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.pattern_calibrate_rows)) },
-                            onClick = {
-                                showOverflowMenu = false
-                                actions.onStartRowCalibration()
-                            },
-                        )
-                    }
-                    if (state.canDetachPattern) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.remove_pattern)) },
-                            onClick = {
-                                showOverflowMenu = false
-                                actions.onDetachPattern()
-                            },
-                        )
-                    }
-                }
+                    state = state,
+                    actions = actions,
+                    onPageJumpClick = { showPageJumpDialog = true },
+                    closeOverflowMenu = { showOverflowMenu = false },
+                )
             }
         },
         colors =
@@ -745,6 +696,112 @@ private fun PatternViewerTopBar(
             },
         )
     }
+}
+
+@Composable
+private fun PatternViewerOverflowMenu(
+    expanded: Boolean,
+    onDismissRequest: () -> Unit,
+    state: TopBarState,
+    actions: TopBarActions,
+    onPageJumpClick: () -> Unit,
+    closeOverflowMenu: () -> Unit,
+) {
+    DropdownMenu(
+        expanded = expanded,
+        onDismissRequest = onDismissRequest,
+    ) {
+        DropdownMenuItem(
+            text = { Text(stringResource(R.string.pattern_page_jump)) },
+            onClick = {
+                closeOverflowMenu()
+                onPageJumpClick()
+            },
+        )
+        PatternReadingLineMenuItem(
+            readingLineEnabled = state.readingLineEnabled,
+            onClick = {
+                closeOverflowMenu()
+                actions.onReadingLineToggle(!state.readingLineEnabled)
+            },
+        )
+        PatternRowMarkerMenuItems(
+            state = state,
+            actions = actions,
+            closeOverflowMenu = closeOverflowMenu,
+        )
+        if (state.canDetachPattern) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.remove_pattern)) },
+                onClick = {
+                    closeOverflowMenu()
+                    actions.onDetachPattern()
+                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun PatternReadingLineMenuItem(
+    readingLineEnabled: Boolean,
+    onClick: () -> Unit,
+) {
+    DropdownMenuItem(
+        text = {
+            Text(
+                stringResource(
+                    if (readingLineEnabled) {
+                        R.string.pattern_hide_reading_line
+                    } else {
+                        R.string.pattern_show_reading_line
+                    },
+                ),
+            )
+        },
+        onClick = onClick,
+    )
+}
+
+@Composable
+private fun PatternRowMarkerMenuItems(
+    state: TopBarState,
+    actions: TopBarActions,
+    closeOverflowMenu: () -> Unit,
+) {
+    val currentRow = state.currentRow ?: return
+    DropdownMenuItem(
+        text = { Text(stringResource(R.string.pattern_save_line_as_row, currentRow)) },
+        onClick = {
+            closeOverflowMenu()
+            actions.onSaveReadingLineAsCurrentRow()
+        },
+    )
+    if (state.hasCurrentRowMarker) {
+        DropdownMenuItem(
+            text = { Text(stringResource(R.string.pattern_clear_row_mark)) },
+            onClick = {
+                closeOverflowMenu()
+                actions.onClearReadingLineRowMarker()
+            },
+        )
+    }
+    if (state.hasPageRowMarkers) {
+        DropdownMenuItem(
+            text = { Text(stringResource(R.string.pattern_clear_page_marks)) },
+            onClick = {
+                closeOverflowMenu()
+                actions.onClearReadingLinePageMarkers()
+            },
+        )
+    }
+    DropdownMenuItem(
+        text = { Text(stringResource(R.string.pattern_calibrate_rows)) },
+        onClick = {
+            closeOverflowMenu()
+            actions.onStartRowCalibration()
+        },
+    )
 }
 
 @Composable

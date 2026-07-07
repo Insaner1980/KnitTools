@@ -52,6 +52,7 @@ enum class PatternSaveResult {
 }
 
 enum class RavelryImportStatus {
+    AwaitingUserConfirmation,
     Loading,
     Ready,
     AlreadySaved,
@@ -186,12 +187,18 @@ class RavelryViewModel
 
         fun showImportConfirmationForUrl(url: String) {
             val trimmedUrl = url.trim()
+            importRequestId += 1
+            isImportSaveInFlight = false
             if (trimmedUrl.isBlank()) {
                 _importConfirmationState.value =
                     RavelryImportConfirmationState(status = RavelryImportStatus.CouldNotImport)
                 return
             }
-            showImportConfirmation(RavelryImportRequest.Url(trimmedUrl))
+            _importConfirmationState.value =
+                RavelryImportConfirmationState(
+                    status = RavelryImportStatus.AwaitingUserConfirmation,
+                    request = RavelryImportRequest.Url(trimmedUrl),
+                )
         }
 
         fun retryImportConfirmation() {

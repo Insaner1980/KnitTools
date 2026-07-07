@@ -18,6 +18,7 @@ class RavelryImportConfirmationSourceTest {
         }
         assertTrue(viewModel.contains("fun showImportConfirmationForPattern(patternId: Int)"))
         assertTrue(viewModel.contains("fun showImportConfirmationForUrl(url: String)"))
+        assertTrue(viewModel.contains("fun retryImportConfirmation()"))
         assertTrue(viewModel.contains("fun saveImportPattern()"))
         assertTrue(viewModel.contains("fun dismissImportConfirmation()"))
         assertTrue(viewModel.contains("repository.findDuplicateFor(detail)"))
@@ -42,12 +43,14 @@ class RavelryImportConfirmationSourceTest {
         assertTrue(searchScreen.contains("importUrl?.let(viewModel::showImportConfirmationForUrl)"))
         assertTrue(searchScreen.contains("viewModel.showImportConfirmationForPattern(patternId)"))
         assertTrue(searchScreen.contains("RavelryImportConfirmationSheet("))
+        assertTrue(searchScreen.contains("onConfirmImport = viewModel::retryImportConfirmation"))
         assertTrue(searchScreen.contains("onSave = viewModel::saveImportPattern"))
         assertTrue(searchScreen.contains("onOpenSavedPattern = actions.onSavedPatternDetail"))
 
         assertTrue(Files.exists(sheetPath))
         val sheet = ProjectSourceFiles.read(sheetPath)
         assertTrue(sheet.contains("ModalBottomSheet("))
+        assertTrue(sheet.contains("RavelryImportStatus.AwaitingUserConfirmation"))
         assertTrue(sheet.contains("RavelryImportStatus.Loading"))
         assertTrue(sheet.contains("RavelryImportStatus.Ready"))
         assertTrue(sheet.contains("RavelryImportStatus.AlreadySaved"))
@@ -65,6 +68,7 @@ class RavelryImportConfirmationSourceTest {
     private companion object {
         private val IMPORT_STATUSES =
             listOf(
+                "AwaitingUserConfirmation",
                 "Loading",
                 "Ready",
                 "AlreadySaved",

@@ -28,6 +28,7 @@ import com.finnvek.knittools.ui.components.StatusMessageType
 @Composable
 fun RavelryImportConfirmationSheet(
     state: RavelryImportConfirmationState,
+    onConfirmImport: () -> Unit,
     onSave: () -> Unit,
     onSignIn: () -> Unit,
     onRetry: () -> Unit,
@@ -47,6 +48,13 @@ fun RavelryImportConfirmationSheet(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             when (state.status) {
+                RavelryImportStatus.AwaitingUserConfirmation ->
+                    ImportMessageContent(
+                        message = stringResource(R.string.ravelry_import_title),
+                        actionText = stringResource(R.string.pattern_picker_import_from_ravelry),
+                        onAction = onConfirmImport,
+                    )
+
                 RavelryImportStatus.Loading -> LoadingImportContent()
                 RavelryImportStatus.Ready -> ReadyImportContent(state = state, onSave = onSave)
                 RavelryImportStatus.AlreadySaved ->

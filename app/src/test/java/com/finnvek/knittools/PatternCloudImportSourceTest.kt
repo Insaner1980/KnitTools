@@ -26,6 +26,23 @@ class PatternCloudImportSourceTest {
     }
 
     @Test
+    fun `pattern import releases persisted document permission after internal copy`() {
+        val viewModel = ProjectSourceFiles.read(COUNTER_VIEW_MODEL)
+        val copyIndex = viewModel.indexOf("patternDocumentStorage.copyPdfToInternal(")
+        val finallyIndex = viewModel.indexOf("} finally {", copyIndex)
+        val releaseIndex =
+            viewModel.indexOf(
+                "releasePersistedReadPermissionIfHeld(context.contentResolver, sourceUri)",
+                finallyIndex,
+            )
+
+        assertTrue(copyIndex >= 0)
+        assertTrue(finallyIndex > copyIndex)
+        assertTrue(releaseIndex > finallyIndex)
+        assertTrue(viewModel.contains("releasePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)"))
+    }
+
+    @Test
     fun `drive and dropbox import copy is localized`() {
         val englishStrings = ProjectSourceFiles.read(STRINGS)
 
@@ -67,6 +84,8 @@ class PatternCloudImportSourceTest {
     private companion object {
         const val PATTERN_PICKER_SHEET =
             "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternPickerSheet.kt"
+        const val COUNTER_VIEW_MODEL =
+            "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterViewModel.kt"
         const val STRINGS = "app/src/main/res/values/strings.xml"
         const val ROOT_BUILD = "build.gradle.kts"
         const val SETTINGS = "settings.gradle.kts"

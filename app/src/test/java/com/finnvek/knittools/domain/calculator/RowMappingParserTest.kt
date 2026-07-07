@@ -1,9 +1,12 @@
 package com.finnvek.knittools.domain.calculator
 
+import com.finnvek.knittools.ProjectSourceFiles
 import com.finnvek.knittools.domain.model.READING_LINE_MAX_Y_FRACTION
 import com.finnvek.knittools.domain.model.READING_LINE_MIN_Y_FRACTION
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class RowMappingParserTest {
@@ -113,6 +116,18 @@ class RowMappingParserTest {
     }
 
     @Test
+    fun `interpolateYPosition does not sort page markers on every resolve`() {
+        val source = ProjectSourceFiles.read(ROW_MAPPING_PARSER)
+        val interpolateBlock =
+            source
+                .substringAfter("fun interpolateYPosition(")
+                .substringBefore("fun resolveReadingLineYFraction(")
+
+        assertTrue(interpolateBlock.contains("markers.forEach { marker ->"))
+        assertFalse(interpolateBlock.contains(".filter { it.page == page }.sortedBy { it.row }"))
+    }
+
+    @Test
     fun `resolveReadingLineYFraction returns exact marker and interpolates between two page markers`() {
         val markers =
             listOf(
@@ -197,5 +212,10 @@ class RowMappingParserTest {
             ),
             0.0001f,
         )
+    }
+
+    private companion object {
+        const val ROW_MAPPING_PARSER =
+            "app/src/main/java/com/finnvek/knittools/domain/calculator/RowMappingParser.kt"
     }
 }

@@ -183,7 +183,7 @@ fun CounterScreen(
         )
     }
     val requestNotes = {
-        if (state.isPro) {
+        if (state.canUseNotes) {
             showNotesSheet = true
         } else {
             openProUpgrade()

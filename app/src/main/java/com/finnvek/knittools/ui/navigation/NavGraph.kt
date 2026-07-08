@@ -604,6 +604,7 @@ private fun NavGraphBuilder.savedPatternDetailRoute(navController: NavHostContro
                 navController.getBackStackEntry(TopLevelDestination.Projects.route)
             }
         val counterViewModel: CounterViewModel = hiltViewModel(projectsEntry)
+        val patternDeleteErrorId by libraryViewModel.patternDeleteErrorId.collectAsStateWithLifecycle()
         var patternRouteState by remember(savedPatternId) { mutableStateOf<SavedPattern?>(null) }
         var patternRouteLoaded by remember(savedPatternId) { mutableStateOf(false) }
         LaunchedEffect(savedPatternId) {
@@ -636,6 +637,7 @@ private fun NavGraphBuilder.savedPatternDetailRoute(navController: NavHostContro
                     navController.popBackStackOrNavigateToTopLevel(TopLevelDestination.Library)
                 }
             },
+            deleteErrorId = patternDeleteErrorId,
         )
     }
 }

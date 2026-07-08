@@ -119,7 +119,10 @@
     <string name="select_all">Select All</string>
     <string name="complete_n_projects" tools:ignore="PluralsCandidate">Complete %d projects? They will be moved to your completed projects.</string>
     <string name="delete_n_projects" tools:ignore="PluralsCandidate">Delete %d projects? This cannot be undone.</string>
-    <string name="rows_format" tools:ignore="PluralsCandidate">%d rows</string>
+    <plurals name="rows_format">
+        <item quantity="one">%1$d row</item>
+        <item quantity="other">%1$d rows</item>
+    </plurals>
     <string name="just_now">just now</string>
 
     <!-- Counter Screen -->
@@ -234,16 +237,10 @@
     <string name="counter_add_row">Add row</string>
     <string name="counter_decrease_row">Subtract row</string>
     <string name="counter_undo_last_change">Undo last change</string>
-    <plurals name="counter_target_rows_left">
-        <item quantity="one">%1$d row left</item>
-        <item quantity="other">%1$d rows left</item>
-    </plurals>
+    <string name="counter_target_remaining_format">%1$s left</string>
     <string name="counter_target_reached">Target reached</string>
-    <plurals name="counter_target_rows_past">
-        <item quantity="one">%1$d row past target</item>
-        <item quantity="other">%1$d rows past target</item>
-    </plurals>
-    <string name="project_content_pattern">Pattern</string>
+    <string name="counter_target_past_format">%1$s past target</string>
+    <string name="project_content_add_pattern">Add Pattern</string>
     <string name="stitch_tracker_label">Stitches</string>
     <plurals name="reminder_repeat_occurrence_format">
         <item quantity="one">Repeat #%1$d every row</item>

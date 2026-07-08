@@ -10,7 +10,7 @@ import {
 } from "./authCore";
 import type { RavelryCurrentUserClient } from "./client";
 import type { OAuthStateStore } from "./oauthStateStore";
-import type { OAuthTokenExchange } from "./oauth2";
+import type { OAuthTokenExchange, OAuthTokenRefresh } from "./oauth2";
 import type { RavelryTokenStore, StoredRavelryToken } from "./tokenStore";
 
 class MemoryOAuthStateStore implements OAuthStateStore {
@@ -26,13 +26,11 @@ class MemoryOAuthStateStore implements OAuthStateStore {
 
   async markStateUsed(state: string, usedAtMillis: number): Promise<boolean> {
     const existing = this.states.get(state);
-    if (existing?.usedAtMillis != null) {
+    if (!existing || existing.usedAtMillis != null || existing.expiresAtMillis <= usedAtMillis) {
       return false;
     }
-    if (existing) {
-      this.states.set(state, { ...existing, usedAtMillis });
-    }
-    return existing != null;
+    this.states.set(state, { ...existing, usedAtMillis });
+    return true;
   }
 
   async expireUnusedStatesForUid(uid: string, expiresAtMillis: number): Promise<void> {
@@ -283,6 +281,51 @@ describe("Ravelry OAuth2 auth core", () => {
     assert.equal(exchangeCount, 0);
   });
 
+  it("does not exchange when a state expires before atomic consumption", async () => {
+    class ExpiringBeforeConsumeOAuthStateStore extends MemoryOAuthStateStore {
+      override async markStateUsed(state: string, usedAtMillis: number): Promise<boolean> {
+        const existing = this.states.get(state);
+        if (existing) {
+          this.states.set(state, { ...existing, expiresAtMillis: usedAtMillis });
+        }
+        return super.markStateUsed(state, usedAtMillis);
+      }
+    }
+
+    const stateStore = new ExpiringBeforeConsumeOAuthStateStore();
+    const tokenStore = new MemoryTokenStore();
+    let exchangeCount = 0;
+
+    await stateStore.saveState({
+      state: "expires-before-consume",
+      uid: "uid",
+      authType: "oauth2",
+      createdAtMillis: 0,
+      expiresAtMillis: 2_000,
+      usedAtMillis: null,
+      redirectUri: "https://callback",
+      codeVerifier: "verifier",
+      codeChallenge: "challenge",
+      codeChallengeMethod: "S256",
+    });
+
+    await assert.rejects(
+      completeRavelryOAuthCallback({
+        query: { state: "expires-before-consume", code: "auth-code" },
+        stateStore,
+        tokenStore,
+        exchange: async () => {
+          exchangeCount += 1;
+          return { accessToken: "access-token" };
+        },
+        nowMillis: () => 1_000,
+      }),
+      /expired_state/,
+    );
+
+    assert.equal(exchangeCount, 0);
+  });
+
   it("reports status, fetches current user, and disconnects without exposing tokens", async () => {
     const stateStore = new MemoryOAuthStateStore();
     const tokenStore = new MemoryTokenStore();
@@ -337,5 +380,60 @@ describe("Ravelry OAuth2 auth core", () => {
       { disconnected: true },
     );
     assert.equal(await tokenStore.getToken("uid"), null);
+  });
+
+  it("refreshes an expired token before fetching the current Ravelry user", async () => {
+    const tokenStore = new MemoryTokenStore();
+    const client: RavelryCurrentUserClient = {
+      async getCurrentUser(accessToken) {
+        assert.equal(accessToken, "fresh-access-token");
+        return { ravelryUserId: "42", ravelryUsername: "knitter" };
+      },
+    };
+    const refresh: OAuthTokenRefresh = async ({ refreshToken }) => {
+      assert.equal(refreshToken, "old-refresh-token");
+      return {
+        accessToken: "fresh-access-token",
+        refreshToken: "rotated-refresh-token",
+        expiresAtMillis: 10_000,
+      };
+    };
+
+    await tokenStore.saveToken({
+      uid: "uid",
+      authType: "oauth2",
+      accessToken: "expired-access-token",
+      refreshToken: "old-refresh-token",
+      expiresAtMillis: 999,
+      createdAtMillis: 100,
+      updatedAtMillis: 100,
+    });
+
+    assert.deepEqual(
+      await getRavelryCurrentUser({
+        uid: "uid",
+        tokenStore,
+        client,
+        refresh,
+        nowMillis: () => 1_000,
+      }),
+      {
+        connected: true,
+        ravelryUserId: "42",
+        ravelryUsername: "knitter",
+      },
+    );
+    assert.deepEqual(await tokenStore.getToken("uid"), {
+      uid: "uid",
+      authType: "oauth2",
+      accessToken: "fresh-access-token",
+      refreshToken: "rotated-refresh-token",
+      expiresAtMillis: 10_000,
+      ravelryUserId: "42",
+      ravelryUsername: "knitter",
+      createdAtMillis: 100,
+      updatedAtMillis: 1_000,
+      lastVerifiedAtMillis: 1_000,
+    });
   });
 });

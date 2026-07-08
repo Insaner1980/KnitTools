@@ -12,6 +12,7 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
 import io.mockk.verify
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -66,27 +67,25 @@ class ProgressPhotoRepositoryDomainApiTest {
     @Test
     fun `progress photo repository prunes unavailable photos before exposing galleries`() =
         runTest {
-            val unavailableUri = "file:///missing.jpg"
-            val availableUri = "file:///available.jpg"
-            val dao =
-                FakeProgressPhotoDao(
-                    progressPhotos =
-                        listOf(
-                            ProgressPhotoEntity(id = 3L, projectId = 7L, photoUri = unavailableUri, rowNumber = 12),
-                            ProgressPhotoEntity(id = 4L, projectId = 7L, photoUri = availableUri, rowNumber = 13),
-                        ),
-                )
-            val storage = mockk<ProgressPhotoStorage>(relaxed = true)
-            every { storage.isPhotoAvailable(context, unavailableUri) } returns false
-            every { storage.isPhotoAvailable(context, availableUri) } returns true
-            val repository = ProgressPhotoRepository(dao, storage, context, UnconfinedTestDispatcher(testScheduler))
+            val fixture = progressPhotoPruningFixture(UnconfinedTestDispatcher(testScheduler))
 
-            val allPhotos = repository.getAllPhotos().first()
-            val projectPhotos = repository.getPhotosForProject(7L).first()
+            val allPhotos = fixture.repository.getAllPhotos().first()
+            val projectPhotos = fixture.repository.getPhotosForProject(7L).first()
 
             assertEquals(listOf(4L), allPhotos.map { it.id })
             assertEquals(listOf(4L), projectPhotos.map { it.id })
-            assertEquals(listOf(3L, 3L), dao.deletedIds)
+            assertEquals(listOf(3L), fixture.dao.deletedIds)
+        }
+
+    @Test
+    fun `all photo count prunes unavailable photos before counting rows`() =
+        runTest {
+            val fixture = progressPhotoPruningFixture(UnconfinedTestDispatcher(testScheduler))
+
+            val count = fixture.repository.getAllPhotoCount().first()
+
+            assertEquals(1, count)
+            assertEquals(listOf(3L), fixture.dao.deletedIds)
         }
 
     @Test
@@ -213,9 +212,35 @@ class ProgressPhotoRepositoryDomainApiTest {
             assertEquals(mapOf(3L to null, 4L to "a".repeat(100)), dao.updatedNotes)
         }
 
+    private fun progressPhotoPruningFixture(dispatcher: CoroutineDispatcher): ProgressPhotoPruningFixture {
+        val unavailableUri = "file:///missing.jpg"
+        val availableUri = "file:///available.jpg"
+        val dao =
+            FakeProgressPhotoDao(
+                progressPhotos =
+                    listOf(
+                        ProgressPhotoEntity(id = 3L, projectId = 7L, photoUri = unavailableUri, rowNumber = 12),
+                        ProgressPhotoEntity(id = 4L, projectId = 7L, photoUri = availableUri, rowNumber = 13),
+                    ),
+            )
+        val storage = mockk<ProgressPhotoStorage>(relaxed = true)
+        every { storage.isPhotoAvailable(context, unavailableUri) } returns false
+        every { storage.isPhotoAvailable(context, availableUri) } returns true
+        return ProgressPhotoPruningFixture(
+            dao = dao,
+            repository = ProgressPhotoRepository(dao, storage, context, dispatcher),
+        )
+    }
+
+    private data class ProgressPhotoPruningFixture(
+        val dao: FakeProgressPhotoDao,
+        val repository: ProgressPhotoRepository,
+    )
+
     private class FakeProgressPhotoDao(
-        private val progressPhotos: List<ProgressPhotoEntity> = emptyList(),
+        progressPhotos: List<ProgressPhotoEntity> = emptyList(),
     ) : ProgressPhotoDao {
+        private val progressPhotos = progressPhotos.toMutableList()
         var lastInserted: ProgressPhotoEntity? = null
         var insertCount: Int = 0
         var lastDeletedId: Long? = null
@@ -234,7 +259,9 @@ class ProgressPhotoRepositoryDomainApiTest {
         override fun getPhotoCount(projectId: Long): Flow<Int> =
             flowOf(progressPhotos.count { it.projectId == projectId })
 
-        override fun getAllPhotos(): Flow<List<ProgressPhotoEntity>> = flowOf(progressPhotos)
+        override fun getAllPhotos(): Flow<List<ProgressPhotoEntity>> = flowOf(progressPhotos.toList())
+
+        override suspend fun getAllPhotosOnce(): List<ProgressPhotoEntity> = progressPhotos.toList()
 
         override fun getAllPhotoCount(): Flow<Int> = flowOf(progressPhotos.size)
 
@@ -263,6 +290,7 @@ class ProgressPhotoRepositoryDomainApiTest {
         override suspend fun delete(id: Long) {
             lastDeletedId = id
             deletedIds += id
+            progressPhotos.removeAll { it.id == id }
         }
 
         override suspend fun deleteByIds(ids: List<Long>) = Unit

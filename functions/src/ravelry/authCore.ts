@@ -7,8 +7,9 @@ import {
 } from "../config";
 import type { RavelryCurrentUserClient } from "./client";
 import type { OAuthStateStore } from "./oauthStateStore";
-import type { OAuthTokenExchange } from "./oauth2";
+import type { OAuthTokenExchange, OAuthTokenRefresh } from "./oauth2";
 import { RAVELRY_AUTHORIZATION_URL } from "./oauth2";
+import { getUsableRavelryToken } from "./tokenAccess";
 import type { RavelryTokenStore } from "./tokenStore";
 
 type RandomLabel = "state" | "code-verifier";
@@ -37,6 +38,7 @@ interface UserTokenOptions {
 
 interface CurrentUserOptions extends UserTokenOptions {
   readonly client: RavelryCurrentUserClient;
+  readonly refresh?: OAuthTokenRefresh;
   readonly nowMillis?: () => number;
 }
 
@@ -149,6 +151,16 @@ async function markStateUsedOrReject(
 ) {
   const marked = await stateStore.markStateUsed(state, nowMillis);
   if (!marked) {
+    const storedState = await stateStore.getState(state);
+    if (!storedState) {
+      throw new RavelryAuthFlowError("invalid_state", 400);
+    }
+    if (storedState.usedAtMillis != null) {
+      throw new RavelryAuthFlowError("used_state", 400);
+    }
+    if (storedState.expiresAtMillis <= nowMillis) {
+      throw new RavelryAuthFlowError("expired_state", 400);
+    }
     throw new RavelryAuthFlowError("used_state", 400);
   }
 }
@@ -277,9 +289,15 @@ export async function getRavelryCurrentUser({
   uid,
   tokenStore,
   client,
+  refresh,
   nowMillis = Date.now,
 }: CurrentUserOptions): Promise<CurrentUserResponse> {
-  const token = await tokenStore.getToken(uid);
+  const token = await getUsableRavelryToken({
+    uid,
+    tokenStore,
+    refresh,
+    nowMillis,
+  });
   if (!token) {
     return { connected: false };
   }

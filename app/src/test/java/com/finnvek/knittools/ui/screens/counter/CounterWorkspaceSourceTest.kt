@@ -50,7 +50,7 @@ class CounterWorkspaceSourceTest {
         assertTrue(workspace.contains("ProjectContentCards("))
 
         listOf(
-            "project_content_pattern",
+            "project_content_add_pattern",
             "project_content_yarn",
             "project_content_notes",
             "project_content_photos",
@@ -59,7 +59,26 @@ class CounterWorkspaceSourceTest {
             assertTrue("Project content string missing: $key", strings.contains("""<string name="$key">"""))
             assertTrue("Project content source does not reference: $key", contentCards.contains("R.string.$key"))
         }
+        assertTrue(contentCards.contains("R.string.saved_pattern_detail_open_pattern"))
         assertFalse(contentCards.contains("R.string.project_content_open_pattern"))
+        assertFalse(contentCards.contains("R.string.project_content_attach_pattern"))
+    }
+
+    @Test
+    fun `pattern content card title follows attachment state`() {
+        val workspace = ProjectSourceFiles.read(COUNTER_WORKSPACE_SECTIONS)
+        val contentCards = ProjectSourceFiles.read(COUNTER_PROJECT_CONTENT_CARDS)
+        val strings = ProjectSourceFiles.read(STRINGS)
+
+        assertTrue(workspace.contains("hasPattern = state.patternUri != null || state.linkedPattern != null"))
+        assertTrue(contentCards.contains("hasPattern: Boolean"))
+        assertTrue(contentCards.contains("titleRes = patternContentTitleRes(hasPattern)"))
+        assertTrue(
+            contentCards.contains(
+                "if (hasPattern) R.string.saved_pattern_detail_open_pattern else R.string.project_content_add_pattern",
+            ),
+        )
+        assertTrue(strings.contains("""<string name="project_content_add_pattern">Add Pattern</string>"""))
         assertFalse(contentCards.contains("R.string.project_content_attach_pattern"))
     }
 
@@ -94,6 +113,40 @@ class CounterWorkspaceSourceTest {
         assertHeroDimensions(dimens)
         assertFalse(workspace.contains("CounterUndoButton("))
         assertFalse(workspace.contains("Icons.AutoMirrored.Filled.Undo"))
+    }
+
+    @Test
+    fun `counter hero number measures available width before rolling digits`() {
+        val workspace = ProjectSourceFiles.read(COUNTER_WORKSPACE_SECTIONS)
+        val dimens = ProjectSourceFiles.read(COUNTER_DIMENS)
+        val mainNumber =
+            workspace.blockBetween(
+                "@Composable\nprivate fun CounterMainNumber",
+                "internal sealed interface CounterTargetHelperText",
+            )
+        val fitHelper =
+            workspace.blockBetween(
+                "internal fun counterMainNumberFittedFontSize",
+                "@Composable\nprivate fun CounterTargetHelperLabel",
+            )
+
+        assertTrue(workspace.contains("import androidx.compose.foundation.layout.BoxWithConstraints"))
+        assertTrue(workspace.contains("import androidx.compose.ui.text.rememberTextMeasurer"))
+        assertTrue(mainNumber.contains("val countText = state.counter.count.toString()"))
+        assertTrue(mainNumber.contains("BoxWithConstraints("))
+        assertTrue(mainNumber.contains("modifier = Modifier.fillMaxWidth()"))
+        assertTrue(mainNumber.contains("contentAlignment = Alignment.Center"))
+        assertTrue(mainNumber.contains("val textMeasurer = rememberTextMeasurer()"))
+        assertTrue(mainNumber.contains("counterMainNumberFittedFontSize("))
+        assertTrue(mainNumber.contains("maxWidthPx = constraints.maxWidth"))
+        assertTrue(mainNumber.contains("measureWidth = { candidateFontSize ->"))
+        assertTrue(mainNumber.contains("baseTextStyle.copy(fontSize = candidateFontSize)"))
+        assertTrue(mainNumber.contains("fontSize = fittedFontSize"))
+        assertTrue(fitHelper.contains("if (measureWidth(maxFontSize) <= maxWidthPx)"))
+        assertTrue(fitHelper.contains("repeat(CounterDimens.CounterMainNumberFitIterations)"))
+        assertTrue(fitHelper.contains("if (measureWidth(candidateFontSize) <= maxWidthPx)"))
+        assertTrue(dimens.contains("CounterMainNumberMinimumFontSize = 48.sp"))
+        assertTrue(dimens.contains("CounterMainNumberFitIterations = 8"))
     }
 
     @Test
@@ -227,9 +280,10 @@ class CounterWorkspaceSourceTest {
         STRING_FILES.forEach { stringsFile ->
             val strings = ProjectSourceFiles.read(stringsFile)
             assertTrue(
-                "Pattern card label missing in $stringsFile",
-                strings.contains("""<string name="project_content_pattern">"""),
+                "Add-pattern card label missing in $stringsFile",
+                strings.contains("""<string name="project_content_add_pattern">"""),
             )
+            assertFalse(strings.contains("""<string name="project_content_pattern">"""))
             assertFalse(strings.contains("""<string name="project_content_open_pattern">"""))
             assertFalse(strings.contains("""<string name="project_content_attach_pattern">"""))
             assertFalse(strings.contains("""<string name="project_content_attach_pattern_body">"""))

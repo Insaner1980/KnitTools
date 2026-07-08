@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { createRavelryClient } from "./client";
+import type { OAuthTokenRefresh } from "./oauth2";
 import {
   importPatternById,
   importPatternByUrl,
@@ -66,6 +67,11 @@ describe("Ravelry backend search and import", () => {
     });
     assert.equal(parseRavelryPatternUrl("https://example.com/patterns/library/cozy-hat"), null);
     assert.equal(parseRavelryPatternUrl("not a url"), null);
+  });
+
+  it("rejects malformed percent-encoded Ravelry pattern slugs", () => {
+    assert.equal(parseRavelryPatternUrl("https://www.ravelry.com/patterns/library/%"), null);
+    assert.equal(parseRavelryPatternUrl("https://www.ravelry.com/patterns/library/%ZZ"), null);
   });
 
   it("searches Ravelry with a bearer token and returns only sanitized fields plus pagination", async () => {
@@ -361,5 +367,123 @@ describe("Ravelry backend search and import", () => {
       /ravelry_not_connected/,
     );
     assert.equal(searchCount, 0);
+  });
+
+  it("refreshes an expired token before searching patterns", async () => {
+    const tokenStore = new MemoryTokenStore();
+    await tokenStore.saveToken({
+      uid: "uid",
+      authType: "oauth2",
+      accessToken: "expired-access-token",
+      refreshToken: "old-refresh-token",
+      expiresAtMillis: 999,
+      createdAtMillis: 100,
+      updatedAtMillis: 100,
+    });
+    const refresh: OAuthTokenRefresh = async ({ refreshToken }) => {
+      assert.equal(refreshToken, "old-refresh-token");
+      return {
+        accessToken: "fresh-access-token",
+        refreshToken: "rotated-refresh-token",
+        expiresAtMillis: 10_000,
+      };
+    };
+    const client = {
+      async getCurrentUser() {
+        throw new Error("not used");
+      },
+      async searchPatterns(accessToken: string) {
+        assert.equal(accessToken, "fresh-access-token");
+        return {
+          patterns: [],
+          pagination: { page: 1, pageCount: 1, resultCount: 0 },
+        };
+      },
+      async getPatternById() {
+        throw new Error("not used");
+      },
+    };
+
+    await searchPatternsForUser({
+      uid: "uid",
+      tokenStore,
+      client,
+      refresh,
+      nowMillis: () => 1_000,
+      query: { query: "hat" },
+    });
+
+    assert.deepEqual(await tokenStore.getToken("uid"), {
+      uid: "uid",
+      authType: "oauth2",
+      accessToken: "fresh-access-token",
+      refreshToken: "rotated-refresh-token",
+      expiresAtMillis: 10_000,
+      createdAtMillis: 100,
+      updatedAtMillis: 1_000,
+    });
+  });
+
+  it("keeps refresh handling when importing a slug URL", async () => {
+    const tokenStore = new MemoryTokenStore();
+    await tokenStore.saveToken({
+      uid: "uid",
+      authType: "oauth2",
+      accessToken: "expired-access-token",
+      refreshToken: "old-refresh-token",
+      expiresAtMillis: 999,
+      createdAtMillis: 100,
+      updatedAtMillis: 100,
+    });
+    const refresh: OAuthTokenRefresh = async () => ({
+      accessToken: "fresh-access-token",
+      refreshToken: "rotated-refresh-token",
+      expiresAtMillis: 10_000,
+    });
+    const client = createRavelryClient(async (input, init) => {
+      assert.equal(
+        init?.headers instanceof Headers ? init.headers.get("Authorization") : undefined,
+        "Bearer fresh-access-token",
+      );
+      const url = typeof input === "string" ? input : input.toString();
+      if (url.includes("/patterns/search.json")) {
+        return new Response(
+          JSON.stringify({
+            patterns: [
+              {
+                id: 42,
+                name: "Cozy Hat",
+                designer: { name: "Ada Designer" },
+                permalink: "cozy-hat",
+              },
+            ],
+            paginator: { page: 1, page_count: 1, results: 1 },
+          }),
+          { status: 200 },
+        );
+      }
+      return new Response(
+        JSON.stringify({
+          pattern: {
+            id: 42,
+            name: "Cozy Hat",
+            designer: { name: "Ada Designer" },
+            permalink: "cozy-hat",
+          },
+        }),
+        { status: 200 },
+      );
+    });
+
+    const pattern = await importPatternByUrl({
+      uid: "uid",
+      tokenStore,
+      client,
+      refresh,
+      nowMillis: () => 1_000,
+      url: "https://www.ravelry.com/patterns/library/cozy-hat",
+    });
+
+    assert.equal(pattern.ravelryPatternId, 42);
   });
 });

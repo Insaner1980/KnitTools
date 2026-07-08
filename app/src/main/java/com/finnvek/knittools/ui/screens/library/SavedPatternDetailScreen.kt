@@ -23,12 +23,16 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -56,11 +60,20 @@ fun SavedPatternDetailScreen(
     onAttachToProject: () -> Unit,
     onRemove: () -> Unit,
     modifier: Modifier = Modifier,
+    deleteErrorId: Long = 0L,
 ) {
     var showRemoveConfirmDialog by rememberSaveable { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
     val openFailedMessage = stringResource(R.string.pattern_open_failed)
+    val deleteFailedMessage = stringResource(R.string.generic_error_unknown)
     val ravelryUrl = pattern.ravelryUrlOrNull()
+
+    LaunchedEffect(deleteErrorId) {
+        if (deleteErrorId > 0L) {
+            snackbarHostState.showSnackbar(deleteFailedMessage)
+        }
+    }
 
     if (showRemoveConfirmDialog) {
         ConfirmationDialog(
@@ -80,6 +93,7 @@ fun SavedPatternDetailScreen(
         title = pattern.name,
         onBack = onBack,
         modifier = modifier,
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
     ) {
         Column(
             modifier =

@@ -1,10 +1,14 @@
 import { onCall } from "firebase-functions/v2/https";
 
+import { ravelrySecretOptions } from "../config";
 import { httpsErrorFor, requireUid } from "./callable";
 import { createRavelryClient, type RavelryClient, type RavelrySearchQuery } from "./client";
+import { refreshRavelryAccessToken } from "./oauthSecretRefresh";
+import type { OAuthTokenRefresh } from "./oauth2";
 import { disabledRavelryRateLimiter, type RavelryRateLimiter } from "./rateLimit";
 import type { SanitizedPattern } from "./sanitizedTypes";
 import { createRavelryBackendStores } from "./stores";
+import { getUsableRavelryToken } from "./tokenAccess";
 import type { RavelryTokenStore } from "./tokenStore";
 import { parseRavelryPatternUrl } from "./urlParsing";
 
@@ -13,6 +17,8 @@ interface UserPatternOptions {
   readonly tokenStore: RavelryTokenStore;
   readonly client: RavelryClient;
   readonly rateLimiter?: RavelryRateLimiter;
+  readonly refresh?: OAuthTokenRefresh;
+  readonly nowMillis?: () => number;
 }
 
 interface SearchPatternsOptions extends UserPatternOptions {
@@ -36,8 +42,23 @@ export class RavelryPatternImportError extends Error {
   }
 }
 
-async function requireAccessToken(uid: string, tokenStore: RavelryTokenStore): Promise<string> {
-  const token = await tokenStore.getToken(uid);
+async function requireAccessToken({
+  uid,
+  tokenStore,
+  refresh,
+  nowMillis,
+}: {
+  readonly uid: string;
+  readonly tokenStore: RavelryTokenStore;
+  readonly refresh?: OAuthTokenRefresh;
+  readonly nowMillis?: () => number;
+}): Promise<string> {
+  const token = await getUsableRavelryToken({
+    uid,
+    tokenStore,
+    refresh,
+    nowMillis,
+  });
   if (!token) {
     throw new RavelryPatternImportError("ravelry_not_connected", 412);
   }
@@ -89,7 +110,7 @@ function queryFromData(data: unknown): RavelrySearchQuery {
 }
 
 export async function searchPatternsForUser(options: SearchPatternsOptions) {
-  const accessToken = await requireAccessToken(options.uid, options.tokenStore);
+  const accessToken = await requireAccessToken(options);
   await rateLimiterFor(options).consume(options.uid, "search");
   return options.client.searchPatterns(accessToken, options.query);
 }
@@ -99,7 +120,7 @@ export async function importPatternById(options: ImportPatternByIdOptions): Prom
     throw new RavelryPatternImportError("invalid_pattern_id", 400);
   }
 
-  const accessToken = await requireAccessToken(options.uid, options.tokenStore);
+  const accessToken = await requireAccessToken(options);
   await rateLimiterFor(options).consume(options.uid, "import");
   const pattern = await options.client.getPatternById(accessToken, options.ravelryPatternId);
   if (!pattern) {
@@ -121,6 +142,8 @@ export async function importPatternByUrl(options: ImportPatternByUrlOptions): Pr
         tokenStore: options.tokenStore,
         client: options.client,
         rateLimiter: options.rateLimiter,
+        refresh: options.refresh,
+        nowMillis: options.nowMillis,
         ravelryPatternId: parsedUrl.ravelryPatternId,
       }),
       parsedUrl.originalUrl,
@@ -132,6 +155,8 @@ export async function importPatternByUrl(options: ImportPatternByUrlOptions): Pr
     tokenStore: options.tokenStore,
     client: options.client,
     rateLimiter: options.rateLimiter,
+    refresh: options.refresh,
+    nowMillis: options.nowMillis,
     query: {
       query: parsedUrl.patternSlug ?? parsedUrl.canonicalUrl,
       page: 1,
@@ -151,6 +176,8 @@ export async function importPatternByUrl(options: ImportPatternByUrlOptions): Pr
       tokenStore: options.tokenStore,
       client: options.client,
       rateLimiter: options.rateLimiter,
+      refresh: options.refresh,
+      nowMillis: options.nowMillis,
       ravelryPatternId: matchedPattern.ravelryPatternId,
     }),
     parsedUrl.originalUrl,
@@ -165,7 +192,7 @@ function rateLimiterFor(options: UserPatternOptions): RavelryRateLimiter {
   return options.rateLimiter ?? disabledRavelryRateLimiter;
 }
 
-export const ravelrySearchPatterns = onCall(async (request) => {
+export const ravelrySearchPatterns = onCall(ravelrySecretOptions, async (request) => {
   try {
     const { rateLimiter, tokenStore } = stores();
     return await searchPatternsForUser({
@@ -173,6 +200,7 @@ export const ravelrySearchPatterns = onCall(async (request) => {
       tokenStore,
       rateLimiter,
       client: createRavelryClient(),
+      refresh: refreshRavelryAccessToken,
       query: queryFromData(request.data),
     });
   } catch (error) {
@@ -180,7 +208,7 @@ export const ravelrySearchPatterns = onCall(async (request) => {
   }
 });
 
-export const ravelryImportPatternById = onCall(async (request) => {
+export const ravelryImportPatternById = onCall(ravelrySecretOptions, async (request) => {
   try {
     const { rateLimiter, tokenStore } = stores();
     const ravelryPatternId = positiveInteger(dataObject(request.data).ravelryPatternId);
@@ -192,6 +220,7 @@ export const ravelryImportPatternById = onCall(async (request) => {
       tokenStore,
       rateLimiter,
       client: createRavelryClient(),
+      refresh: refreshRavelryAccessToken,
       ravelryPatternId,
     });
   } catch (error) {
@@ -199,7 +228,7 @@ export const ravelryImportPatternById = onCall(async (request) => {
   }
 });
 
-export const ravelryImportPatternByUrl = onCall(async (request) => {
+export const ravelryImportPatternByUrl = onCall(ravelrySecretOptions, async (request) => {
   try {
     const { rateLimiter, tokenStore } = stores();
     const url = optionalString(dataObject(request.data).url);
@@ -211,6 +240,7 @@ export const ravelryImportPatternByUrl = onCall(async (request) => {
       tokenStore,
       rateLimiter,
       client: createRavelryClient(),
+      refresh: refreshRavelryAccessToken,
       url,
     });
   } catch (error) {

@@ -82,6 +82,7 @@ data class CounterUiState(
     val hapticFeedback: Boolean = true,
     val keepScreenAwake: Boolean = false,
     val isPro: Boolean = false,
+    val canUseNotes: Boolean = false,
     val canUseSecondaryCounter: Boolean = false,
     val canUseMultipleCounters: Boolean = false,
     val canUseRowReminders: Boolean = false,
@@ -232,6 +233,7 @@ class CounterViewModel
                     _uiState.update {
                         it.copy(
                             isPro = proState.isPro,
+                            canUseNotes = proState.hasFeature(ProFeature.NOTES),
                             canUseSecondaryCounter = proState.hasFeature(ProFeature.SECONDARY_COUNTER),
                             canUseMultipleCounters = proState.hasFeature(ProFeature.MULTIPLE_COUNTERS),
                             canUseRowReminders = proState.hasFeature(ProFeature.ROW_REMINDERS),

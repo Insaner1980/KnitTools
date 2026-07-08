@@ -119,7 +119,10 @@
     <string name="select_all">Alles selecteren</string>
     <string name="complete_n_projects">%d projecten voltooien? Ze worden naar je voltooide projecten verplaatst.</string>
     <string name="delete_n_projects">%d projecten verwijderen? Dit kan niet ongedaan worden gemaakt.</string>
-    <string name="rows_format">%d toeren</string>
+    <plurals name="rows_format">
+        <item quantity="one">%1$d toer</item>
+        <item quantity="other">%1$d toeren</item>
+    </plurals>
     <string name="just_now">zojuist</string>
 
     <!-- Counter Screen -->
@@ -232,16 +235,10 @@
     <string name="counter_add_row">Toer toevoegen</string>
     <string name="counter_decrease_row">Toer aftrekken</string>
     <string name="counter_undo_last_change">Laatste wijziging ongedaan maken</string>
-    <plurals name="counter_target_rows_left">
-        <item quantity="one">Nog %1$d toer</item>
-        <item quantity="other">Nog %1$d toeren</item>
-    </plurals>
+    <string name="counter_target_remaining_format">Nog %1$s</string>
     <string name="counter_target_reached">Doel bereikt</string>
-    <plurals name="counter_target_rows_past">
-        <item quantity="one">%1$d toer voorbij doel</item>
-        <item quantity="other">%1$d toeren voorbij doel</item>
-    </plurals>
-    <string name="project_content_pattern">Patroon</string>
+    <string name="counter_target_past_format">%1$s voorbij doel</string>
+    <string name="project_content_add_pattern">Patroon toevoegen</string>
     <string name="stitch_tracker_label">Steken</string>
     <plurals name="reminder_repeat_occurrence_format">
         <item quantity="one">Herhaal #%1$d elke toer</item>

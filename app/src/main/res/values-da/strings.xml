@@ -119,7 +119,10 @@
     <string name="select_all">Vælg alle</string>
     <string name="complete_n_projects">Afslutte %d projekter? De flyttes til dine afsluttede projekter.</string>
     <string name="delete_n_projects">Slette %d projekter? Dette kan ikke fortrydes.</string>
-    <string name="rows_format">%d pinde</string>
+    <plurals name="rows_format">
+        <item quantity="one">%1$d pind</item>
+        <item quantity="other">%1$d pinde</item>
+    </plurals>
     <string name="just_now">lige nu</string>
 
     <!-- Counter Screen -->
@@ -232,16 +235,10 @@
     <string name="counter_add_row">Tilføj pind</string>
     <string name="counter_decrease_row">Træk pind fra</string>
     <string name="counter_undo_last_change">Fortryd sidste ændring</string>
-    <plurals name="counter_target_rows_left">
-        <item quantity="one">%1$d pind tilbage</item>
-        <item quantity="other">%1$d pinde tilbage</item>
-    </plurals>
+    <string name="counter_target_remaining_format">%1$s tilbage</string>
     <string name="counter_target_reached">Mål nået</string>
-    <plurals name="counter_target_rows_past">
-        <item quantity="one">%1$d pind over målet</item>
-        <item quantity="other">%1$d pinde over målet</item>
-    </plurals>
-    <string name="project_content_pattern">Opskrift</string>
+    <string name="counter_target_past_format">%1$s over målet</string>
+    <string name="project_content_add_pattern">Tilføj opskrift</string>
     <string name="stitch_tracker_label">Masker</string>
     <plurals name="reminder_repeat_occurrence_format">
         <item quantity="one">Gentag #%1$d hver pind</item>

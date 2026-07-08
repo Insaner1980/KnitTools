@@ -11,6 +11,8 @@ import com.finnvek.knittools.domain.model.ProgressPhoto
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -32,7 +34,11 @@ class ProgressPhotoRepository
                 availablePhotos(photos)
             }
 
-        fun getAllPhotoCount(): Flow<Int> = dao.getAllPhotoCount()
+        fun getAllPhotoCount(): Flow<Int> =
+            flow {
+                pruneUnavailablePhotos(dao.getAllPhotosOnce())
+                emitAll(dao.getAllPhotoCount())
+            }
 
         fun getPhotosForProject(projectId: Long): Flow<List<ProgressPhoto>> =
             dao.getPhotosForProject(projectId).map { photos -> availablePhotos(photos) }
@@ -130,12 +136,22 @@ class ProgressPhotoRepository
         private suspend fun availablePhotos(photos: List<ProgressPhotoEntity>): List<ProgressPhoto> =
             withContext(ioDispatcher) {
                 photos.mapNotNull { photo ->
-                    if (storage.isPhotoAvailable(context, photo.photoUri)) {
+                    if (photo.isAvailableOrDelete()) {
                         photo.toDomain()
                     } else {
-                        dao.delete(photo.id)
                         null
                     }
                 }
             }
+
+        private suspend fun pruneUnavailablePhotos(photos: List<ProgressPhotoEntity>) =
+            withContext(ioDispatcher) {
+                photos.forEach { photo -> photo.isAvailableOrDelete() }
+            }
+
+        private suspend fun ProgressPhotoEntity.isAvailableOrDelete(): Boolean {
+            if (storage.isPhotoAvailable(context, photoUri)) return true
+            dao.delete(id)
+            return false
+        }
     }

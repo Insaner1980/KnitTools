@@ -50,11 +50,11 @@ data class ProjectContentCard(
     @param:StringRes val titleRes: Int,
 )
 
-internal fun projectContentCards(): List<ProjectContentCard> =
+internal fun projectContentCards(hasPattern: Boolean): List<ProjectContentCard> =
     listOf(
         ProjectContentCard(
             kind = ProjectContentCardKind.PATTERN,
-            titleRes = R.string.project_content_pattern,
+            titleRes = patternContentTitleRes(hasPattern),
         ),
         ProjectContentCard(
             kind = ProjectContentCardKind.YARN,
@@ -74,12 +74,17 @@ internal fun projectContentCards(): List<ProjectContentCard> =
         ),
     )
 
+@StringRes
+private fun patternContentTitleRes(hasPattern: Boolean): Int =
+    if (hasPattern) R.string.saved_pattern_detail_open_pattern else R.string.project_content_add_pattern
+
 @Composable
 fun ProjectContentCards(
     onCardClick: (ProjectContentCardKind) -> Unit,
+    hasPattern: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val cards = projectContentCards()
+    val cards = projectContentCards(hasPattern)
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(CounterDimens.ProjectCardGridSpacing),

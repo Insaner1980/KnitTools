@@ -121,7 +121,11 @@
     <string name="select_all">Seleccionar todo</string>
     <string name="complete_n_projects">¿Terminar %d proyectos? Se moverán a tus proyectos terminados.</string>
     <string name="delete_n_projects">¿Eliminar %d proyectos? Esto no se puede deshacer.</string>
-    <string name="rows_format">%d vueltas</string>
+    <plurals name="rows_format">
+        <item quantity="one">%1$d vuelta</item>
+        <item quantity="many">%1$d vueltas</item>
+        <item quantity="other">%1$d vueltas</item>
+    </plurals>
     <string name="just_now">justo ahora</string>
 
     <!-- Counter Screen -->
@@ -234,18 +238,10 @@
     <string name="counter_add_row">Añadir vuelta</string>
     <string name="counter_decrease_row">Quitar vuelta</string>
     <string name="counter_undo_last_change">Deshacer el último cambio</string>
-    <plurals name="counter_target_rows_left">
-        <item quantity="one">%1$d vuelta restante</item>
-        <item quantity="many">%1$d vueltas restantes</item>
-        <item quantity="other">%1$d vueltas restantes</item>
-    </plurals>
+    <string name="counter_target_remaining_format">Quedan %1$s</string>
     <string name="counter_target_reached">Objetivo alcanzado</string>
-    <plurals name="counter_target_rows_past">
-        <item quantity="one">%1$d vuelta por encima del objetivo</item>
-        <item quantity="many">%1$d vueltas por encima del objetivo</item>
-        <item quantity="other">%1$d vueltas por encima del objetivo</item>
-    </plurals>
-    <string name="project_content_pattern">Patrón</string>
+    <string name="counter_target_past_format">%1$s por encima del objetivo</string>
+    <string name="project_content_add_pattern">Añadir patrón</string>
     <string name="stitch_tracker_label">Puntos</string>
     <plurals name="reminder_repeat_occurrence_format">
         <item quantity="one">Repetir #%1$d cada vuelta</item>

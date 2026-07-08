@@ -7,6 +7,7 @@ import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.ProjectSortOrder
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.SavedPatternSource
+import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.CounterRepository
@@ -20,11 +21,13 @@ import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
@@ -164,6 +167,26 @@ class ProjectListViewModelTest {
         }
 
     @Test
+    fun `project yarn card navigation skips stale csv ids`() =
+        runTest {
+            every { preferencesManager.preferences } returns flowOf(AppPreferences())
+            every { repository.getActiveProjects(ProjectSortOrder.UPDATED) } returns
+                flowOf(
+                    listOf(
+                        CounterProject(id = 1L, name = "Sukat", yarnCardIds = "404,not-id,7"),
+                    ),
+                )
+            coEvery { yarnCardRepository.getCards(listOf(404L, 7L)) } returns
+                listOf(YarnCard(id = 7L, yarnName = "Nalle"))
+            coEvery { photoRepository.getPhotoCountsByProjectIds(listOf(1L)) } returns emptyMap()
+
+            val vm = createViewModel()
+
+            assertEquals(mapOf(1L to "Nalle"), vm.projectYarnNames.value)
+            assertEquals(mapOf(1L to 7L), vm.projectYarnCardIds.value)
+        }
+
+    @Test
     fun `project pattern badges use one bulk saved pattern query`() =
         runTest {
             every { preferencesManager.preferences } returns flowOf(AppPreferences())
@@ -188,6 +211,32 @@ class ProjectListViewModelTest {
             assertEquals(mapOf(1L to "Palmikot", 2L to "Ribbi", 3L to "Tallennettu"), vm.projectPatternNames.value)
             coVerify(exactly = 1) { savedPatternRepository.getByIds(listOf(7L, 8L)) }
             coVerify(exactly = 0) { savedPatternRepository.getById(any()) }
+        }
+
+    @Test
+    fun `completed projects are collected only when visible`() =
+        runTest {
+            val preferences = MutableStateFlow(AppPreferences(showCompletedProjects = false))
+            val completedProject = CounterProject(id = 9L, name = "Valmis", isCompleted = true)
+            every { preferencesManager.preferences } returns preferences
+            every { repository.getActiveProjects(ProjectSortOrder.UPDATED) } returns flowOf(emptyList())
+            every { repository.getCompletedProjects(ProjectSortOrder.UPDATED) } returns flowOf(listOf(completedProject))
+            coEvery { photoRepository.getPhotoCountsByProjectIds(emptyList()) } returns emptyMap()
+
+            val vm = createViewModel()
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                vm.completedProjects.collect()
+            }
+            runCurrent()
+
+            assertEquals(emptyList<CounterProject>(), vm.completedProjects.value)
+            verify(exactly = 0) { repository.getCompletedProjects(any()) }
+
+            preferences.value = AppPreferences(showCompletedProjects = true)
+            runCurrent()
+
+            assertEquals(listOf(completedProject), vm.completedProjects.value)
+            verify(exactly = 1) { repository.getCompletedProjects(ProjectSortOrder.UPDATED) }
         }
 
     @Test

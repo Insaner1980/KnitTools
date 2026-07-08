@@ -20,8 +20,10 @@ class CounterStringResourcesSourceTest {
                 "counter_increase_named",
                 "counter_actions",
                 "counter_value_of_target_format",
+                "counter_target_remaining_format",
                 "counter_target_reached",
-                "project_content_pattern",
+                "counter_target_past_format",
+                "project_content_add_pattern",
                 "stitch_tracker_label",
             ).forEach { key ->
                 assertTrue("Missing $key in $stringsFile", hasStringResource(strings, key))
@@ -51,6 +53,9 @@ class CounterStringResourcesSourceTest {
                 "counter_target_one_row_left",
                 "counter_target_past_one",
                 "counter_target_past_many",
+                "counter_target_rows_left",
+                "counter_target_rows_past",
+                "project_content_pattern",
                 "counter_undo",
                 "current_row",
                 "project_content_open_pattern",
@@ -71,6 +76,15 @@ class CounterStringResourcesSourceTest {
                 "Repeat section copy still uses middle dot in $stringsFile",
                 counterString(strings, "repeat_section_progress_format").contains("·"),
             )
+            listOf(
+                "counter_target_rows_left",
+                "counter_target_rows_past",
+            ).forEach { key ->
+                assertFalse(
+                    "Stale plural $key still exists in $stringsFile",
+                    strings.contains("<plurals name=\"$key\""),
+                )
+            }
         }
     }
 
@@ -107,6 +121,25 @@ class CounterStringResourcesSourceTest {
         val format = repeatSectionProgressFormat("app/src/main/res/values/strings.xml")
 
         assertFalse("English repeat section progress format still uses old of structure", format.contains(" of "))
+    }
+
+    @Test
+    fun `project card rows use plural resources in every locale`() {
+        val displayTextSource = ProjectSourceFiles.read(MAIN_COUNTER_DISPLAY_TEXT)
+
+        assertTrue(
+            "ROWS project-card count must use the rows_format plural",
+            displayTextSource.contains(
+                "MainCounterLabelType.ROWS -> pluralStringResource(R.plurals.rows_format, slot.count, slot.count)",
+            ),
+        )
+
+        ProjectSourceFiles.localizedStringFiles().forEach { stringsFile ->
+            val strings = ProjectSourceFiles.read(stringsFile)
+
+            assertTrue("Missing rows_format plural in $stringsFile", strings.contains("<plurals name=\"rows_format\""))
+            assertFalse("rows_format string still present in $stringsFile", hasStringResource(strings, "rows_format"))
+        }
     }
 
     @Test
@@ -150,9 +183,8 @@ class CounterStringResourcesSourceTest {
         val MANY_QUANTITY_LOCALES = setOf("values-es", "values-fr", "values-it", "values-pt")
         val COUNTER_PLURAL_KEYS =
             listOf(
-                "counter_target_rows_left",
-                "counter_target_rows_past",
                 "reminder_repeat_occurrence_format",
+                "rows_format",
             )
         val EXPECTED_REPEAT_SECTION_PLACEHOLDERS = listOf("%1\$d", "%2\$d", "%3\$d", "%4\$d")
         val FORMAT_PLACEHOLDER_REGEX = Regex("%\\d\\\$d")
@@ -165,5 +197,7 @@ class CounterStringResourcesSourceTest {
             "app/src/main/java/com/finnvek/knittools/ui/screens/counter/MultiCounterComponents.kt"
         const val YARN_MANAGEMENT_SHEET =
             "app/src/main/java/com/finnvek/knittools/ui/screens/counter/YarnManagementSheet.kt"
+        const val MAIN_COUNTER_DISPLAY_TEXT =
+            "app/src/main/java/com/finnvek/knittools/ui/components/MainCounterDisplayText.kt"
     }
 }

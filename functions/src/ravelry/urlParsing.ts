@@ -28,7 +28,12 @@ export function parseRavelryPatternUrl(url: string): ParsedRavelryPatternUrl | n
     return null;
   }
 
-  const patternSlug = decodeURIComponent(segments[2]).trim();
+  let patternSlug: string;
+  try {
+    patternSlug = decodeURIComponent(segments[2]).trim();
+  } catch {
+    return null;
+  }
   if (!patternSlug) {
     return null;
   }

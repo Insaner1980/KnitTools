@@ -2,6 +2,7 @@ package com.finnvek.knittools.ui.screens.project
 
 import com.finnvek.knittools.ProjectSourceFiles
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -72,13 +73,14 @@ class ProjectListWorkspaceSourceTest {
         val screen = ProjectSourceFiles.read(PROJECT_LIST_SCREEN)
         val navGraph = ProjectSourceFiles.read(NAV_GRAPH)
 
-        assertTrue(screen.contains("import com.finnvek.knittools.domain.model.parseYarnCardIds"))
         assertTrue(screen.contains("onYarnCard: (Long) -> Unit = {}"))
         assertTrue(screen.contains("onYarnCard = onYarnCard"))
-        assertTrue(screen.contains("val firstYarnCardId = parseYarnCardIds(project.yarnCardIds).firstOrNull()"))
+        assertTrue(screen.contains("val yarnCardIds: Map<Long, Long>"))
+        assertTrue(screen.contains("firstYarnCardId = state.yarnCardIds[project.id]"))
         assertTrue(screen.contains("onYarnClick ="))
-        assertTrue(screen.contains("firstYarnCardId?.let { yarnCardId ->"))
+        assertTrue(screen.contains("state.firstYarnCardId?.let { yarnCardId ->"))
         assertTrue(screen.contains("{ actions.onYarnCard(yarnCardId) }"))
+        assertFalse(screen.contains("parseYarnCardIds(project.yarnCardIds).firstOrNull()"))
         assertTrue(navGraph.contains("onYarnCard = { cardId ->"))
         assertTrue(navGraph.contains("navController.navigateToTopLevel(TopLevelDestination.Library)"))
         assertTrue(navGraph.contains("navController.navigateSingleTopTo(Screen.YarnCardDetail(cardId).route)"))

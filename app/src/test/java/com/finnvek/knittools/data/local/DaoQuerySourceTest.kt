@@ -25,6 +25,18 @@ class DaoQuerySourceTest {
     }
 
     @Test
+    fun `active name sort uses stable row id tiebreaker`() {
+        val dao = ProjectSourceFiles.read(COUNTER_PROJECT_DAO)
+
+        assertTrue(
+            dao.contains(
+                "SELECT * FROM counter_projects WHERE isCompleted = 0 " +
+                    "ORDER BY name COLLATE NOCASE ASC, id DESC",
+            ),
+        )
+    }
+
+    @Test
     fun `active counter entry points ignore completed projects`() {
         val dao = ProjectSourceFiles.read(COUNTER_PROJECT_DAO)
         val repository = ProjectSourceFiles.read(COUNTER_REPOSITORY)

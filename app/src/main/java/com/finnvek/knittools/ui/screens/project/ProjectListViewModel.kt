@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -80,9 +81,15 @@ class ProjectListViewModel
                 }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
         val completedProjects: StateFlow<List<CounterProject>> =
-            sortOrder
-                .flatMapLatest { order ->
-                    repository.getCompletedProjects(order)
+            showCompleted
+                .flatMapLatest { shouldShow ->
+                    if (shouldShow) {
+                        sortOrder.flatMapLatest { order ->
+                            repository.getCompletedProjects(order)
+                        }
+                    } else {
+                        flowOf(emptyList())
+                    }
                 }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
         val isPro: Boolean get() = proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS)
@@ -102,6 +109,9 @@ class ProjectListViewModel
 
         private val _projectYarnNames = MutableStateFlow<Map<Long, String>>(emptyMap())
         val projectYarnNames: StateFlow<Map<Long, String>> = _projectYarnNames.asStateFlow()
+
+        private val _projectYarnCardIds = MutableStateFlow<Map<Long, Long>>(emptyMap())
+        val projectYarnCardIds: StateFlow<Map<Long, Long>> = _projectYarnCardIds.asStateFlow()
 
         private val _projectPhotoCounts = MutableStateFlow<Map<Long, Int>>(emptyMap())
         val projectPhotoCounts: StateFlow<Map<Long, Int>> = _projectPhotoCounts.asStateFlow()
@@ -215,7 +225,8 @@ class ProjectListViewModel
         }
 
         private suspend fun updateYarnNames(projects: List<CounterProject>) {
-            val yarnMap = mutableMapOf<Long, String>()
+            val yarnNameMap = mutableMapOf<Long, String>()
+            val yarnCardIdMap = mutableMapOf<Long, Long>()
             val allYarnIds =
                 projects
                     .flatMap { p ->
@@ -227,11 +238,13 @@ class ProjectListViewModel
                     val ids = parseYarnCardIds(p.yarnCardIds)
                     val firstCard = ids.firstNotNullOfOrNull { cards[it] }
                     if (firstCard != null) {
-                        yarnMap[p.id] = firstCard.displayName(::fallbackYarnCardName)
+                        yarnNameMap[p.id] = firstCard.displayName(::fallbackYarnCardName)
+                        yarnCardIdMap[p.id] = firstCard.id
                     }
                 }
             }
-            _projectYarnNames.value = yarnMap
+            _projectYarnNames.value = yarnNameMap
+            _projectYarnCardIds.value = yarnCardIdMap
         }
 
         private fun fallbackYarnCardName(id: Long): String = context.getString(R.string.yarn_card_number_fallback, id)

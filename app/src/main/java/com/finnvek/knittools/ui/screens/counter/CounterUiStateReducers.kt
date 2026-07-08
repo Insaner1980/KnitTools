@@ -28,6 +28,9 @@ internal fun CounterUiState.withStartedProject(project: CounterProject): Counter
         patternRowMapping = project.patternRowMapping,
         totalRows = project.totalRows,
         targetRows = project.targetRows,
+        linkedYarns = emptyList(),
+        projectYarnNotes = emptyList(),
+        reminders = emptyList(),
         projectCounters = emptyList(),
         activeAlert = null,
         dismissedReminderTrigger = null,
@@ -97,13 +100,18 @@ internal fun CounterUiState.withReminderList(reminders: List<RowReminder>): Coun
 
 internal fun CounterUiState.withDismissedReminder(reminderId: Long): CounterUiState {
     val reminder = reminders.find { it.id == reminderId }
-    val dismissal =
+    val immediateDismissal = DismissedReminderTrigger(reminderId = reminderId, row = counter.count)
+    val persistedDismissal =
         if (reminder?.repeatInterval != null) {
-            DismissedReminderTrigger(reminderId = reminderId, row = counter.count)
+            immediateDismissal
         } else {
             null
         }
-    return copy(activeAlert = null, dismissedReminderTrigger = dismissal)
+    val projectReminders = reminders.filter { reminder -> projectId == null || reminder.projectId == projectId }
+    return copy(
+        activeAlert = activeReminder(projectReminders, counter.count, immediateDismissal),
+        dismissedReminderTrigger = persistedDismissal,
+    )
 }
 
 private fun activeReminder(

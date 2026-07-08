@@ -428,7 +428,7 @@ interface CounterProjectDao {
     @Query("SELECT * FROM counter_projects WHERE isCompleted = 0 ORDER BY updatedAt DESC, id DESC")
     fun getActiveProjects(): Flow<List<CounterProjectEntity>>
 
-    @Query("SELECT * FROM counter_projects WHERE isCompleted = 0 ORDER BY name COLLATE NOCASE ASC")
+    @Query("SELECT * FROM counter_projects WHERE isCompleted = 0 ORDER BY name COLLATE NOCASE ASC, id DESC")
     fun getActiveProjectsByName(): Flow<List<CounterProjectEntity>>
 
     @Query("SELECT * FROM counter_projects WHERE isCompleted = 0 ORDER BY createdAt DESC, id DESC")

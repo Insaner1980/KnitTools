@@ -71,7 +71,6 @@ import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.MainCounterLabelType
 import com.finnvek.knittools.domain.model.ProjectSortOrder
-import com.finnvek.knittools.domain.model.parseYarnCardIds
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.ProjectCard
 import com.finnvek.knittools.ui.components.ProjectDetailsDialog
@@ -96,6 +95,7 @@ fun ProjectListScreen(
     val completed by viewModel.completedProjects.collectAsStateWithLifecycle()
     val continueKnitting by viewModel.continueKnittingProject.collectAsStateWithLifecycle()
     val yarnNames by viewModel.projectYarnNames.collectAsStateWithLifecycle()
+    val yarnCardIds by viewModel.projectYarnCardIds.collectAsStateWithLifecycle()
     val photoCounts by viewModel.projectPhotoCounts.collectAsStateWithLifecycle()
     val patternNames by viewModel.projectPatternNames.collectAsStateWithLifecycle()
     val hasNotes by viewModel.projectHasNotes.collectAsStateWithLifecycle()
@@ -255,6 +255,7 @@ fun ProjectListScreen(
                         completed = completed,
                         continueKnitting = continueKnitting,
                         yarnNames = yarnNames,
+                        yarnCardIds = yarnCardIds,
                         photoCounts = photoCounts,
                         patternNames = patternNames,
                         hasNotes = hasNotes,
@@ -654,6 +655,7 @@ data class ProjectListContentState(
     val completed: List<CounterProject>,
     val continueKnitting: ContinueKnittingProject?,
     val yarnNames: Map<Long, String>,
+    val yarnCardIds: Map<Long, Long>,
     val photoCounts: Map<Long, Int>,
     val patternNames: Map<Long, String>,
     val hasNotes: Set<Long>,
@@ -740,6 +742,7 @@ private fun ProjectListContent(
                                 isMultiSelectMode = state.isMultiSelectMode,
                                 isSelected = project.id in state.selectedProjectIds,
                                 yarnName = state.yarnNames[project.id],
+                                firstYarnCardId = state.yarnCardIds[project.id],
                                 photoCount = state.photoCounts[project.id] ?: 0,
                                 patternName = state.patternNames[project.id],
                                 hasNotes = project.id in state.hasNotes,
@@ -800,6 +803,7 @@ data class ActiveProjectItemState(
     val isMultiSelectMode: Boolean,
     val isSelected: Boolean,
     val yarnName: String?,
+    val firstYarnCardId: Long?,
     val photoCount: Int,
     val patternName: String?,
     val hasNotes: Boolean = false,
@@ -860,7 +864,6 @@ private fun ActiveProjectItem(
             )
         }
     } else {
-        val firstYarnCardId = parseYarnCardIds(project.yarnCardIds).firstOrNull()
         ProjectCard(
             name = project.name,
             rowCount = project.count,
@@ -880,7 +883,7 @@ private fun ActiveProjectItem(
             onNotesClick = { actions.onNotesClick(project.id) },
             onPhotosClick = { actions.onPhotoGallery(project.id) },
             onYarnClick =
-                firstYarnCardId?.let { yarnCardId ->
+                state.firstYarnCardId?.let { yarnCardId ->
                     { actions.onYarnCard(yarnCardId) }
                 },
         )

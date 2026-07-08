@@ -3,6 +3,7 @@ package com.finnvek.knittools.ui.screens.counter
 import com.finnvek.knittools.domain.calculator.CounterState
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.ProjectCounter
+import com.finnvek.knittools.domain.model.ProjectYarnNote
 import com.finnvek.knittools.domain.model.RowReminder
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.SavedPatternSource
@@ -41,6 +42,26 @@ class CounterUiStateReducersTest {
             )
 
         assertTrue(result.projectCounters.isEmpty())
+    }
+
+    @Test
+    fun `started project clears yarn and reminder state from previous project`() {
+        val previousReminder = RowReminder(id = 20L, projectId = 1L, targetRow = 4, message = "Old reminder")
+        val previousYarnNote = ProjectYarnNote(id = 30L, projectId = 1L, name = "Old yarn")
+        val result =
+            CounterUiState(
+                linkedYarns = listOf(40L to "Old linked yarn"),
+                projectYarnNotes = listOf(previousYarnNote),
+                reminders = listOf(previousReminder),
+                activeAlert = previousReminder,
+            ).withStartedProject(
+                CounterProject(id = 2L, name = "New project", count = 1),
+            )
+
+        assertTrue(result.linkedYarns.isEmpty())
+        assertTrue(result.projectYarnNotes.isEmpty())
+        assertTrue(result.reminders.isEmpty())
+        assertNull(result.activeAlert)
     }
 
     @Test
@@ -199,5 +220,23 @@ class CounterUiStateReducersTest {
         val nextRepeat = dismissed.withCounterChange(CounterState(count = 16, previousCount = 8), resetStitch = false)
 
         assertEquals(reminder, nextRepeat.activeAlert)
+    }
+
+    @Test
+    fun `dismissed repeating reminder reveals another active reminder on same row`() {
+        val dismissedReminder =
+            RowReminder(id = 7L, projectId = 2L, targetRow = 8, repeatInterval = 8, message = "Cable")
+        val nextReminder =
+            RowReminder(id = 8L, projectId = 2L, targetRow = 16, repeatInterval = 8, message = "Sleeve")
+
+        val result =
+            CounterUiState(
+                projectId = 2L,
+                counter = CounterState(count = 16),
+                reminders = listOf(dismissedReminder, nextReminder),
+                activeAlert = dismissedReminder,
+            ).withDismissedReminder(7L)
+
+        assertEquals(nextReminder, result.activeAlert)
     }
 }

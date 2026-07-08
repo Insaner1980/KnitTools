@@ -113,7 +113,6 @@ fun ProjectActionsBottomSheet(
                     label = stringResource(R.string.track_stitches),
                     checked = state.stitchTrackingEnabled,
                     onCheckedChange = callbacks.onToggleStitchTracking,
-                    enabled = (state.stitchCount ?: 0) > 0,
                 )
             }
 

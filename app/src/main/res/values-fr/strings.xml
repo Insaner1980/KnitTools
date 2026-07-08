@@ -121,7 +121,11 @@
     <string name="select_all">Tout sélectionner</string>
     <string name="complete_n_projects">Terminer %d projets ? Ils seront déplacés dans vos projets terminés.</string>
     <string name="delete_n_projects">Supprimer %d projets ? Cette action est irréversible.</string>
-    <string name="rows_format">%d rangs</string>
+    <plurals name="rows_format">
+        <item quantity="one">%1$d rang</item>
+        <item quantity="many">%1$d rangs</item>
+        <item quantity="other">%1$d rangs</item>
+    </plurals>
     <string name="just_now">à l’instant</string>
 
     <!-- Counter Screen -->
@@ -234,18 +238,10 @@
     <string name="counter_add_row">Ajouter un rang</string>
     <string name="counter_decrease_row">Retirer un rang</string>
     <string name="counter_undo_last_change">Annuler la dernière modification</string>
-    <plurals name="counter_target_rows_left">
-        <item quantity="one">%1$d rang restant</item>
-        <item quantity="many">%1$d rangs restants</item>
-        <item quantity="other">%1$d rangs restants</item>
-    </plurals>
+    <string name="counter_target_remaining_format">Il reste %1$s</string>
     <string name="counter_target_reached">Objectif atteint</string>
-    <plurals name="counter_target_rows_past">
-        <item quantity="one">%1$d rang au-delà de l’objectif</item>
-        <item quantity="many">%1$d rangs au-delà de l’objectif</item>
-        <item quantity="other">%1$d rangs au-delà de l’objectif</item>
-    </plurals>
-    <string name="project_content_pattern">Modèle</string>
+    <string name="counter_target_past_format">%1$s au-delà de l’objectif</string>
+    <string name="project_content_add_pattern">Ajouter un modèle</string>
     <string name="stitch_tracker_label">Mailles</string>
     <plurals name="reminder_repeat_occurrence_format">
         <item quantity="one">Répéter #%1$d à chaque rang</item>

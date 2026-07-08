@@ -29,6 +29,9 @@ import io.mockk.unmockkStatic
 import io.mockk.verify
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -343,6 +346,53 @@ class RepositoryTransactionBoundaryTest {
         }
 
     @Test
+    fun `yarn card delete cleans app owned photos when caller is cancelled after database delete`() =
+        runTest {
+            val ioDispatcher = RecordingDispatcher()
+            val runner = CancellingTransactionRunner()
+            val yarnDao = mockk<YarnCardDao>(relaxed = true)
+            val projectDao = mockk<CounterProjectDao>(relaxed = true)
+            val context = mockk<Context>(relaxed = true)
+            val filesDir =
+                Files
+                    .createTempDirectory("knittools-files")
+                    .toFile()
+            val photoFile = filesDir.resolve("yarn_photos/5/yarn.jpg")
+            val photoUri = photoFile.toURI().toString()
+            checkNotNull(photoFile.parentFile).mkdirs()
+            photoFile.writeText("photo")
+            every { context.filesDir } returns filesDir
+            coEvery { yarnDao.getCards(listOf(5L)) } returns
+                listOf(
+                    YarnCardEntity(
+                        id = 5L,
+                        photoUri = photoUri,
+                    ),
+                )
+            coEvery { projectDao.getAllProjectsOnce() } returns emptyList()
+
+            withParsedFileUri(photoUri, photoFile.absolutePath) {
+                val repository =
+                    YarnCardRepository(
+                        dao = yarnDao,
+                        counterProjectDao = projectDao,
+                        context = context,
+                        transactionRunner = runner,
+                        ioDispatcher = ioDispatcher,
+                    )
+
+                val deleteJob =
+                    launch {
+                        repository.deleteCards(listOf(5L))
+                    }
+                deleteJob.join()
+            }
+
+            assertFalse(photoFile.exists())
+            assertEquals(1, ioDispatcher.dispatchCount)
+        }
+
+    @Test
     fun `yarn card photo update copies selected photo before saving uri`() =
         runTest {
             val ioDispatcher = RecordingDispatcher()
@@ -622,6 +672,14 @@ class RepositoryTransactionBoundaryTest {
         override suspend fun <T> run(block: suspend () -> T): T {
             runCount += 1
             return block()
+        }
+    }
+
+    private class CancellingTransactionRunner : DatabaseTransactionRunner {
+        override suspend fun <T> run(block: suspend () -> T): T {
+            val result = block()
+            currentCoroutineContext()[Job]?.cancel()
+            return result
         }
     }
 

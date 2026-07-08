@@ -778,8 +778,8 @@ Keskeiset rajat:
 Ensimmäisen viewportin järjestys on tarkoituksella rauhallinen laskurityökalu:
 
 - top bar näyttää vain back-nuolen, projektinimen ja overflow-menun
-- ensimmäinen `LazyColumn`-item on `counter-hero`, jonka sisällä ovat mahdollinen repeat/section-rivi, row label, iso rivinumero, target progress/helper ja `CounterImageButton`-päälaskurikontrollit
-- aktiivinen reminder-alert, `ProjectContentCards`, extra counters ja stitch tracking alkavat vasta hero-scrollin jälkeen
+- ensimmäinen `LazyColumn`-item on `counter-hero`, jonka sisällä ovat mahdollinen repeat/section-rivi, row label, iso rivinumero, target progress/helper, `CounterImageButton`-päälaskurikontrollit ja aktiivinen stitch tracker silloin kun silmukkaseuranta on käytössä
+- aktiivinen reminder-alert, `ProjectContentCards` ja extra counters alkavat vasta hero-scrollin jälkeen
 - `Screen.Counter.route` ei kuulu `HIDE_BOTTOM_BAR_ROUTES`-joukkoon, joten alanavigaatio pysyy näkyvissä counterissa
 
 Päälaskurin nappimalli:

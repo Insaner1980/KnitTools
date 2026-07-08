@@ -121,7 +121,11 @@
     <string name="select_all">Seleziona tutto</string>
     <string name="complete_n_projects">Completare %d progetti? Verranno spostati tra quelli completati.</string>
     <string name="delete_n_projects">Eliminare %d progetti? Questa azione non può essere annullata.</string>
-    <string name="rows_format">%d ferri</string>
+    <plurals name="rows_format">
+        <item quantity="one">%1$d ferro</item>
+        <item quantity="many">%1$d ferri</item>
+        <item quantity="other">%1$d ferri</item>
+    </plurals>
     <string name="just_now">proprio ora</string>
 
     <!-- Counter Screen -->
@@ -234,18 +238,10 @@
     <string name="counter_add_row">Aggiungi ferro</string>
     <string name="counter_decrease_row">Togli ferro</string>
     <string name="counter_undo_last_change">Annulla l’ultima modifica</string>
-    <plurals name="counter_target_rows_left">
-        <item quantity="one">%1$d ferro rimasto</item>
-        <item quantity="many">%1$d ferri rimasti</item>
-        <item quantity="other">%1$d ferri rimasti</item>
-    </plurals>
+    <string name="counter_target_remaining_format">Rimanenti: %1$s</string>
     <string name="counter_target_reached">Obiettivo raggiunto</string>
-    <plurals name="counter_target_rows_past">
-        <item quantity="one">%1$d ferro oltre l’obiettivo</item>
-        <item quantity="many">%1$d ferri oltre l’obiettivo</item>
-        <item quantity="other">%1$d ferri oltre l’obiettivo</item>
-    </plurals>
-    <string name="project_content_pattern">Modello</string>
+    <string name="counter_target_past_format">Oltre l’obiettivo: %1$s</string>
+    <string name="project_content_add_pattern">Aggiungi modello</string>
     <string name="stitch_tracker_label">Maglie</string>
     <plurals name="reminder_repeat_occurrence_format">
         <item quantity="one">Ripeti #%1$d a ogni ferro</item>

@@ -435,7 +435,7 @@ class RepositoryDomainApiTest {
         }
 
     @Test
-    fun `yarn card save removes stale project link when saved unlinked`() =
+    fun `yarn card relink removes stale project link when explicitly unlinked`() =
         runTest {
             val yarnDao =
                 FakeYarnCardDao(
@@ -460,19 +460,55 @@ class RepositoryDomainApiTest {
                     UnconfinedTestDispatcher(testScheduler),
                 )
 
+            val updated = repository.updateLinkedProjectId(5L, null)
+
+            assertEquals(true, updated)
+            assertEquals(5L to null, yarnDao.lastLinkedProjectUpdate)
+            assertEquals(mapOf(10L to "1"), projectDao.updatedYarnCardIds)
+        }
+
+    @Test
+    fun `yarn card save preserves existing detail-only fields when editing same card`() =
+        runTest {
+            val existingYarnCard = detailedYarnCardEntity()
+            val yarnDao =
+                FakeYarnCardDao(
+                    yarnCards = listOf(existingYarnCard),
+                )
+            val projectDao =
+                FakeCounterProjectDao(
+                    projects =
+                        listOf(
+                            CounterProjectEntity(id = 10L, yarnCardIds = "5"),
+                        ),
+                )
+            val repository =
+                YarnCardRepository(
+                    yarnDao,
+                    projectDao,
+                    context,
+                    ImmediateDatabaseTransactionRunner,
+                    UnconfinedTestDispatcher(testScheduler),
+                )
+
             val savedId =
                 repository.saveCard(
-                    YarnCard(
-                        id = 5L,
-                        brand = "Novita",
-                        yarnName = "Nalle",
-                        linkedProjectId = null,
-                    ),
+                    editedYarnCard(),
                 )
 
             assertEquals(5L, savedId)
-            assertEquals(null, yarnDao.lastUpserted?.linkedProjectId)
-            assertEquals(mapOf(10L to "1"), projectDao.updatedYarnCardIds)
+            assertEquals(
+                existingYarnCard.copy(
+                    brand = "New brand",
+                    yarnName = "New yarn",
+                    colorName = "New color",
+                    colorNumber = "34",
+                    dyeLot = "B",
+                    weightCategory = "Fingering",
+                ),
+                yarnDao.lastUpserted,
+            )
+            assertEquals(emptyMap<Long, String>(), projectDao.updatedYarnCardIds)
         }
 
     @Test
@@ -534,6 +570,39 @@ class RepositoryDomainApiTest {
             assertEquals(77L, addedId)
             assertEquals("M 1 1 L 2 2", dao.lastInserted?.pathData)
         }
+
+    private fun detailedYarnCardEntity() =
+        YarnCardEntity(
+            id = 5L,
+            brand = "Old brand",
+            yarnName = "Old yarn",
+            fiberContent = "75% wool",
+            weightGrams = "100",
+            lengthMeters = "200",
+            needleSize = "3.5 mm",
+            gaugeInfo = "22 sts",
+            colorName = "Old color",
+            colorNumber = "12",
+            dyeLot = "A",
+            weightCategory = "DK",
+            careSymbols = 15L,
+            photoUri = "content://photo",
+            createdAt = 123L,
+            quantityInStash = 2,
+            status = "IN_USE",
+            linkedProjectId = 10L,
+        )
+
+    private fun editedYarnCard() =
+        YarnCard(
+            id = 5L,
+            brand = "New brand",
+            yarnName = "New yarn",
+            colorName = "New color",
+            colorNumber = "34",
+            dyeLot = "B",
+            weightCategory = "Fingering",
+        )
 
     private class FakeSavedPatternDao(
         private val savedPatterns: List<SavedPatternEntity> = emptyList(),
@@ -597,6 +666,7 @@ class RepositoryDomainApiTest {
         private val yarnCards: List<YarnCardEntity> = emptyList(),
     ) : YarnCardDao {
         var lastUpserted: YarnCardEntity? = null
+        var lastLinkedProjectUpdate: Pair<Long, Long?>? = null
         var clearedProjectId: Long? = null
         var deletedIds: List<Long> = emptyList()
 
@@ -633,7 +703,11 @@ class RepositoryDomainApiTest {
         override suspend fun updateLinkedProjectId(
             id: Long,
             projectId: Long?,
-        ): Int = if (yarnCards.any { it.id == id }) 1 else 0
+        ): Int {
+            if (yarnCards.none { it.id == id }) return 0
+            lastLinkedProjectUpdate = id to projectId
+            return 1
+        }
 
         override suspend fun clearLinkedProject(projectId: Long) {
             clearedProjectId = projectId

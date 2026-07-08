@@ -121,7 +121,11 @@
     <string name="select_all">Selecionar tudo</string>
     <string name="complete_n_projects">Concluir %d projetos? Serão movidos para os seus projetos concluídos.</string>
     <string name="delete_n_projects">Eliminar %d projetos? Esta ação não pode ser anulada.</string>
-    <string name="rows_format">%d carreiras</string>
+    <plurals name="rows_format">
+        <item quantity="one">%1$d carreira</item>
+        <item quantity="many">%1$d carreiras</item>
+        <item quantity="other">%1$d carreiras</item>
+    </plurals>
     <string name="just_now">agora mesmo</string>
 
     <!-- Counter Screen -->
@@ -234,18 +238,10 @@
     <string name="counter_add_row">Adicionar carreira</string>
     <string name="counter_decrease_row">Remover carreira</string>
     <string name="counter_undo_last_change">Anular última alteração</string>
-    <plurals name="counter_target_rows_left">
-        <item quantity="one">Falta %1$d carreira</item>
-        <item quantity="many">Faltam %1$d carreiras</item>
-        <item quantity="other">Faltam %1$d carreiras</item>
-    </plurals>
+    <string name="counter_target_remaining_format">Por fazer: %1$s</string>
     <string name="counter_target_reached">Objetivo atingido</string>
-    <plurals name="counter_target_rows_past">
-        <item quantity="one">%1$d carreira além do objetivo</item>
-        <item quantity="many">%1$d carreiras além do objetivo</item>
-        <item quantity="other">%1$d carreiras além do objetivo</item>
-    </plurals>
-    <string name="project_content_pattern">Receita</string>
+    <string name="counter_target_past_format">Além do objetivo: %1$s</string>
+    <string name="project_content_add_pattern">Adicionar receita</string>
     <string name="stitch_tracker_label">Pontos</string>
     <plurals name="reminder_repeat_occurrence_format">
         <item quantity="one">Repetir #%1$d a cada carreira</item>

@@ -1,6 +1,11 @@
 import { onCall, onRequest } from "firebase-functions/v2/https";
 
-import { ravelryCallbackUrl, ravelryClientId, ravelryClientSecret } from "../config";
+import {
+  ravelryCallbackUrl,
+  ravelryClientId,
+  ravelryClientSecret,
+  ravelrySecretOptions,
+} from "../config";
 import {
   RavelryAuthFlowError,
   completeRavelryOAuthCallback,
@@ -12,12 +17,9 @@ import {
 } from "./authCore";
 import { httpsErrorFor, requireUid } from "./callable";
 import { createRavelryClient } from "./client";
+import { refreshRavelryAccessToken } from "./oauthSecretRefresh";
 import { exchangeOAuth2CodeForToken } from "./oauth2";
 import { createRavelryBackendStores } from "./stores";
-
-const ravelrySecretOptions = {
-  secrets: [ravelryClientId, ravelryClientSecret],
-};
 
 function stores() {
   return createRavelryBackendStores();
@@ -64,7 +66,7 @@ export const ravelryDisconnect = onCall(async (request) => {
   }
 });
 
-export const ravelryCurrentUser = onCall(async (request) => {
+export const ravelryCurrentUser = onCall(ravelrySecretOptions, async (request) => {
   try {
     const { rateLimiter, tokenStore } = stores();
     const uid = requireUid(request.auth);
@@ -73,6 +75,7 @@ export const ravelryCurrentUser = onCall(async (request) => {
       uid,
       tokenStore,
       client: createRavelryClient(),
+      refresh: refreshRavelryAccessToken,
     });
   } catch (error) {
     throw httpsErrorFor(error);

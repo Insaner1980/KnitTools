@@ -21,6 +21,12 @@ class SavedPatternDetailSourceTest {
         assertTrue(navGraph.contains("counterViewModel.attachSavedPattern(pattern)"))
         assertTrue(navGraph.contains("navController.navigateSingleTopTo(Screen.Counter.route)"))
         assertTrue(navGraph.contains("libraryViewModel.deleteSavedPattern(savedPatternId)"))
+        val detailRoute =
+            navGraph
+                .substringAfter("private fun NavGraphBuilder.savedPatternDetailRoute")
+                .substringBefore("private fun NavGraphBuilder.libraryPatternViewerRoute")
+        assertTrue(detailRoute.contains("libraryViewModel.patternDeleteErrorId.collectAsStateWithLifecycle()"))
+        assertTrue(detailRoute.contains("deleteErrorId = patternDeleteErrorId"))
         assertTrue(viewModel.contains("fun deleteSavedPattern("))
         assertTrue(viewModel.contains("savedPatternRepository.deleteById(id)"))
     }
@@ -45,6 +51,19 @@ class SavedPatternDetailSourceTest {
         assertTrue(detail.contains("onOpenPattern"))
         assertTrue(detail.contains("onAttachToProject"))
         assertTrue(detail.contains("onRemove"))
+        val detailSignature =
+            detail
+                .substringAfter("fun SavedPatternDetailScreen(")
+                .substringBefore(") {")
+        assertTrue(
+            "modifier must be the first optional parameter",
+            detailSignature.indexOf("modifier: Modifier = Modifier") <
+                detailSignature.indexOf("deleteErrorId: Long = 0L"),
+        )
+        assertTrue(detail.contains("deleteErrorId: Long = 0L"))
+        assertTrue(detail.contains("SnackbarHostState()"))
+        assertTrue(detail.contains("LaunchedEffect(deleteErrorId)"))
+        assertTrue(detail.contains("SnackbarHost(hostState = snackbarHostState)"))
 
         DETAIL_STRINGS.forEach { stringName ->
             assertTrue(strings.contains("name=\"$stringName\""))

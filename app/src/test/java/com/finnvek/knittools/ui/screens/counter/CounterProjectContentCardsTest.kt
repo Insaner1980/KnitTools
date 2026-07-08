@@ -10,7 +10,7 @@ import org.junit.Test
 class CounterProjectContentCardsTest {
     @Test
     fun `empty project content cards expose the fixed square card set`() {
-        val cards = projectContentCards()
+        val cards = projectContentCards(hasPattern = false)
 
         assertEquals(
             listOf(
@@ -22,11 +22,19 @@ class CounterProjectContentCardsTest {
             ),
             cards.map { it.kind },
         )
-        assertEquals(R.string.project_content_pattern, cards[0].titleRes)
+        assertEquals(R.string.project_content_add_pattern, cards[0].titleRes)
         assertEquals(R.string.project_content_yarn, cards[1].titleRes)
         assertEquals(R.string.project_content_notes, cards[2].titleRes)
         assertEquals(R.string.project_content_photos, cards[3].titleRes)
         assertEquals(R.string.reminders, cards[4].titleRes)
+    }
+
+    @Test
+    fun `project content pattern card uses open title when pattern exists`() {
+        val cards = projectContentCards(hasPattern = true)
+
+        assertEquals(R.string.saved_pattern_detail_open_pattern, cards[0].titleRes)
+        assertEquals(ProjectContentCardKind.PATTERN, cards[0].kind)
     }
 
     @Test
@@ -36,7 +44,7 @@ class CounterProjectContentCardsTest {
 
         assertTrue(source.contains("take(4).chunked(2)"))
         assertFalse(source.contains("ProjectContentIconWell("))
-        assertTrue(source.contains("titleRes = R.string.project_content_pattern"))
+        assertTrue(source.contains("titleRes = patternContentTitleRes(hasPattern)"))
         assertTrue(source.contains("ProjectContentCardKind.PATTERN -> MaterialTheme.colorScheme.primary"))
         assertTrue(source.contains("ProjectContentCardKind.YARN -> MaterialTheme.colorScheme.secondary"))
         assertTrue(source.contains("ProjectContentCardKind.NOTES -> MaterialTheme.knitToolsColors.brandWine"))

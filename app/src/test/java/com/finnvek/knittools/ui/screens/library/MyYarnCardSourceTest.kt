@@ -85,7 +85,11 @@ class MyYarnCardSourceTest {
     fun `empty my yarn state uses explicit add action instead of camera placeholder`() {
         val screen = ProjectSourceFiles.read(MY_YARN_SCREEN)
 
-        assertTrue(screen.contains("onAddYarn = { showManualYarnSheet = true }"))
+        assertTrue(screen.contains("val requestAddYarn = {"))
+        assertTrue(screen.contains("if (state.canCreateYarnCard) {"))
+        assertTrue(screen.contains("showManualYarnSheet = true"))
+        assertTrue(screen.contains("actions.onUpgradeToPro()"))
+        assertTrue(screen.contains("onAddYarn = requestAddYarn"))
         assertTrue(screen.contains("Button("))
         assertTrue(screen.contains("onClick = onAddYarn"))
         assertFalse(screen.contains("painterResource(R.drawable.camera_icon)"))

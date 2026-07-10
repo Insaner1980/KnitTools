@@ -47,7 +47,10 @@ class ProjectListWorkspaceSourceTest {
         val navGraph = ProjectSourceFiles.read(NAV_GRAPH)
 
         assertTrue(screen.contains("onPhotoGallery: (Long) -> Unit = {}"))
-        assertTrue(screen.contains("onPhotoGallery = onPhotoGallery"))
+        assertTrue(screen.contains("val currentOnPhotoGallery by rememberUpdatedState(onPhotoGallery)"))
+        assertTrue(screen.contains("viewModel.navigateToPhotoGallery.collect { projectId ->"))
+        assertTrue(screen.contains("currentOnPhotoGallery(projectId)"))
+        assertTrue(screen.contains("onPhotoGallery = viewModel::openPhotoGallery"))
         assertTrue(screen.contains("onPhotosClick = { actions.onPhotoGallery(project.id) }"))
         assertTrue(navGraph.contains("onPhotoGallery = { projectId ->"))
         assertTrue(navGraph.contains("counterViewModel.selectProjectByIdForLaunch(projectId) { loaded ->"))

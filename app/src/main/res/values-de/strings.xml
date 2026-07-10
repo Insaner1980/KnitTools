@@ -580,6 +580,7 @@
     <string name="filter_difficulty">Schwierigkeit</string>
     <string name="free">Kostenlos</string>
     <string name="paid">Kostenpflichtig</string>
+    <string name="availability_unknown">Verfügbarkeit unbekannt</string>
     <string name="no_results">Keine Anleitungen gefunden</string>
     <string name="search_error">Anleitungen konnten nicht geladen werden. Überprüfe deine Internetverbindung.</string>
     <string name="ravelry_search_rate_limited">Ravelry begrenzt Suchanfragen. Versuche es später erneut.</string>

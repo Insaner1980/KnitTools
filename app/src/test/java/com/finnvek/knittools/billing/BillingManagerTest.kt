@@ -57,6 +57,19 @@ class BillingManagerTest {
     }
 
     @Test
+    fun `billing setup failure retries connection before marking product unavailable`() {
+        val source =
+            ProjectSourceFiles.read(
+                "app/src/main/java/com/finnvek/knittools/billing/BillingManager.kt",
+            )
+
+        assertTrue(source.contains("private fun startBillingConnection()"))
+        assertTrue(source.contains("private fun scheduleConnectionRetry(): Boolean"))
+        assertTrue(source.contains("if (scheduleConnectionRetry())"))
+        assertTrue(source.contains("private const val CONNECTION_MAX_ATTEMPTS = 3"))
+    }
+
+    @Test
     fun `successful pro purchase marks pro purchased`() {
         val billingClient = mockk<BillingClient>(relaxed = true)
         val manager = createManager(billingClient)

@@ -849,6 +849,7 @@
     <string name="filter_difficulty">Vaikeus</string>
     <string name="free">Ilmainen</string>
     <string name="paid">Maksullinen</string>
+    <string name="availability_unknown">Saatavuus tuntematon</string>
     <string name="no_results">Ohjeita ei löytynyt</string>
     <string name="search_error">Ohjeita ei voitu ladata. Tarkista internetyhteytesi.</string>
     <string name="ravelry_search_rate_limited">Ravelry rajoittaa hakuja. Yritä myöhemmin uudelleen.</string>

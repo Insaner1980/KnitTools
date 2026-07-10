@@ -44,6 +44,21 @@ class RavelryShareImportUrlsTest {
         assertNull(extractPatternUrl("http://www.ravelry.com/patterns/library/cozy-hat"))
     }
 
+    @Test
+    fun `rejects excessively long ravelry pattern urls`() {
+        val oversizedUrl = "https://www.ravelry.com/patterns/library/" + "a".repeat(3_000)
+
+        assertNull(extractPatternUrl(oversizedUrl))
+    }
+
+    @Test
+    fun `skips oversized url candidates and extracts later valid pattern url`() {
+        val oversizedUrl = "https://www.ravelry.com/patterns/library/" + "a".repeat(3_000)
+        val validUrl = "https://www.ravelry.com/patterns/library/cozy-hat"
+
+        assertEquals(validUrl, extractPatternUrl("$oversizedUrl $validUrl"))
+    }
+
     private fun extractPatternUrl(text: String?): String? {
         val type =
             runCatching {

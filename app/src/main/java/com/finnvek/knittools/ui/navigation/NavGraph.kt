@@ -287,6 +287,12 @@ private fun NavGraphBuilder.projectsGraph(
             val counterViewModel: CounterViewModel = hiltViewModel(parentEntry)
             val allPhotos by counterViewModel.allPhotos.collectAsStateWithLifecycle()
             val state by counterViewModel.uiState.collectAsStateWithLifecycle()
+            if (!state.canUseProgressPhotos) {
+                LaunchedEffect(state.canUseProgressPhotos) {
+                    navController.navigateSingleTopTo(Screen.ProUpgrade.route)
+                }
+                return@composable
+            }
             PhotoGalleryScreen(
                 photos = allPhotos,
                 projectId = state.projectId,
@@ -358,6 +364,18 @@ private fun NavGraphBuilder.projectsGraph(
             val projectId = backStackEntry.positiveLongArgument(ARG_PROJECT_ID)
             if (projectId == null) {
                 RouteArgumentFallback(navController, TopLevelDestination.Projects)
+                return@composable
+            }
+            val parentEntry =
+                remember(backStackEntry) {
+                    navController.getBackStackEntry(TopLevelDestination.Projects.route)
+                }
+            val counterViewModel: CounterViewModel = hiltViewModel(parentEntry)
+            val state by counterViewModel.uiState.collectAsStateWithLifecycle()
+            if (!state.canUseNotes) {
+                LaunchedEffect(state.canUseNotes) {
+                    navController.navigateSingleTopTo(Screen.ProUpgrade.route)
+                }
                 return@composable
             }
             NotesEditorScreen(
@@ -497,6 +515,7 @@ private fun NavGraphBuilder.libraryGraph(
             val libraryViewModel: LibraryViewModel = hiltViewModel(parentEntry)
             LibraryScreen(
                 onNavigate = { screen -> navController.navigateSingleTopTo(screen.route) },
+                onUpgradeToPro = { navController.navigateSingleTopTo(Screen.ProUpgrade.route) },
                 viewModel = libraryViewModel,
             )
         }
@@ -726,6 +745,7 @@ private fun NavGraphBuilder.libraryMyYarnRoute(navController: NavHostController)
         val isYarnSelectMode by libraryViewModel.isYarnSelectMode.collectAsStateWithLifecycle()
         val selectedYarnIds by libraryViewModel.selectedYarnIds.collectAsStateWithLifecycle()
         val yarnDeleteErrorId by libraryViewModel.yarnDeleteErrorId.collectAsStateWithLifecycle()
+        val canUseYarnCards by libraryViewModel.canUseYarnCards.collectAsStateWithLifecycle()
 
         MyYarnScreen(
             state =
@@ -734,6 +754,7 @@ private fun NavGraphBuilder.libraryMyYarnRoute(navController: NavHostController)
                     activeProjectNames = activeProjectNames,
                     isSelectMode = isYarnSelectMode,
                     selectedYarnIds = selectedYarnIds,
+                    canCreateYarnCard = canUseYarnCards,
                     deleteErrorId = yarnDeleteErrorId,
                 ),
             actions =
@@ -758,6 +779,9 @@ private fun myYarnActions(
     onSelectAll = libraryViewModel::selectAllYarn,
     onDeleteSelected = libraryViewModel::deleteSelectedYarn,
     onExitSelectMode = libraryViewModel::exitYarnSelectMode,
+    onUpgradeToPro = {
+        navController.navigateSingleTopTo(Screen.ProUpgrade.route)
+    },
     onBack = { navController.popBackStack() },
 )
 
@@ -858,6 +882,13 @@ private fun NavGraphBuilder.libraryAllPhotosRoute(navController: NavHostControll
         val isPhotoSelectMode by libraryViewModel.isPhotoSelectMode.collectAsStateWithLifecycle()
         val selectedPhotoIds by libraryViewModel.selectedPhotoIds.collectAsStateWithLifecycle()
         val photoDeleteErrorId by libraryViewModel.photoDeleteErrorId.collectAsStateWithLifecycle()
+        val canUseProgressPhotos by libraryViewModel.canUseProgressPhotos.collectAsStateWithLifecycle()
+        if (!canUseProgressPhotos) {
+            LaunchedEffect(canUseProgressPhotos) {
+                navController.navigateSingleTopTo(Screen.ProUpgrade.route)
+            }
+            return@composable
+        }
         AllPhotosScreen(
             state =
                 AllPhotosState(

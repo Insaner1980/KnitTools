@@ -125,6 +125,12 @@ class ProjectListViewModel
         private val _navigateToProject = MutableSharedFlow<Long>()
         val navigateToProject: SharedFlow<Long> = _navigateToProject.asSharedFlow()
 
+        private val _navigateToNotesEditor = MutableSharedFlow<Long>()
+        val navigateToNotesEditor: SharedFlow<Long> = _navigateToNotesEditor.asSharedFlow()
+
+        private val _navigateToPhotoGallery = MutableSharedFlow<Long>()
+        val navigateToPhotoGallery: SharedFlow<Long> = _navigateToPhotoGallery.asSharedFlow()
+
         private val _upgradeToPro = MutableSharedFlow<Unit>()
         val upgradeToPro: SharedFlow<Unit> = _upgradeToPro.asSharedFlow()
 
@@ -361,6 +367,26 @@ class ProjectListViewModel
         fun reactivateProject(id: Long) {
             viewModelScope.launch {
                 repository.reactivateProject(id)
+            }
+        }
+
+        fun openNotesEditor(projectId: Long) {
+            viewModelScope.launch {
+                if (!proManager.hasFeature(ProFeature.NOTES)) {
+                    _upgradeToPro.emit(Unit)
+                    return@launch
+                }
+                _navigateToNotesEditor.emit(projectId)
+            }
+        }
+
+        fun openPhotoGallery(projectId: Long) {
+            viewModelScope.launch {
+                if (!proManager.hasFeature(ProFeature.PROGRESS_PHOTOS)) {
+                    _upgradeToPro.emit(Unit)
+                    return@launch
+                }
+                _navigateToPhotoGallery.emit(projectId)
             }
         }
     }

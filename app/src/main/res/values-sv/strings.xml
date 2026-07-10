@@ -580,6 +580,7 @@
     <string name="filter_difficulty">Svårighet</string>
     <string name="free">Gratis</string>
     <string name="paid">Betald</string>
+    <string name="availability_unknown">Tillgänglighet okänd</string>
     <string name="no_results">Inga mönster hittades</string>
     <string name="search_error">Kunde inte ladda mönster. Kontrollera internetanslutningen.</string>
     <string name="ravelry_search_rate_limited">Ravelry begränsar sökningar. Försök igen senare.</string>

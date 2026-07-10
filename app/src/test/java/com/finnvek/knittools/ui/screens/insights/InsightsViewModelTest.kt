@@ -36,6 +36,7 @@ class InsightsViewModelTest {
     private lateinit var repository: CounterRepository
     private lateinit var proManager: ProManager
     private lateinit var insightsFeature: MutableStateFlow<Boolean>
+    private lateinit var streakFeature: MutableStateFlow<Boolean>
 
     @Before
     fun setup() {
@@ -43,11 +44,14 @@ class InsightsViewModelTest {
         repository = mockk()
         proManager = mockk()
         insightsFeature = MutableStateFlow(false)
+        streakFeature = MutableStateFlow(false)
         every { repository.getAllProjects() } returns flowOf(emptyList())
         every { repository.getSessionsForInsights(null, null) } returns flowOf(emptyList())
         every { repository.getSessionsForInsights(null, any()) } returns flowOf(emptyList())
         every { proManager.hasFeature(ProFeature.INSIGHTS_CHARTS) } answers { insightsFeature.value }
         every { proManager.hasFeatureFlow(ProFeature.INSIGHTS_CHARTS) } returns insightsFeature
+        every { proManager.hasFeature(ProFeature.STREAK) } answers { streakFeature.value }
+        every { proManager.hasFeatureFlow(ProFeature.STREAK) } returns streakFeature
     }
 
     @After

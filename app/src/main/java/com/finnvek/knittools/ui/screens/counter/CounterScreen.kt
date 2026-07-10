@@ -387,6 +387,7 @@ fun CounterScreen(
                 savedYarnCards = savedYarnCards,
                 linkedYarns = state.linkedYarns,
                 projectYarnNotes = state.projectYarnNotes,
+                canSaveToMyYarn = state.canUseYarnCards,
                 showNotesSheet = showNotesSheet,
                 notes = state.notes,
                 showPatternPicker = showPatternPicker,
@@ -464,7 +465,7 @@ fun CounterScreen(
     )
 
     CounterCountersListSheetHost(
-        showSheet = showCountersListSheet,
+        showSheet = showCountersListSheet && state.canUseMultipleCounters,
         projectCounters = state.projectCounters,
         mainRowCount = state.counter.count,
         actions = projectCountersActions,
@@ -732,6 +733,7 @@ data class CounterSheetState(
     val savedYarnCards: List<YarnCard>,
     val linkedYarns: List<Pair<Long, String>>,
     val projectYarnNotes: List<ProjectYarnNote>,
+    val canSaveToMyYarn: Boolean,
     val showNotesSheet: Boolean,
     val notes: String,
     val showPatternPicker: Boolean,
@@ -774,6 +776,7 @@ private fun CounterScreenSheets(
         YarnManagementSheet(
             linkedYarns = state.linkedYarns,
             projectYarnNotes = state.projectYarnNotes,
+            canSaveToMyYarn = state.canSaveToMyYarn,
             actions =
                 YarnManagementSheetActions(
                     onUnlinkYarn = actions.onUnlinkYarn,

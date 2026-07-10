@@ -580,6 +580,7 @@
     <string name="filter_difficulty">Moeilijkheidsgraad</string>
     <string name="free">Gratis</string>
     <string name="paid">Betaald</string>
+    <string name="availability_unknown">Beschikbaarheid onbekend</string>
     <string name="no_results">Geen patronen gevonden</string>
     <string name="search_error">Patronen konden niet worden geladen. Controleer je internetverbinding.</string>
     <string name="ravelry_search_rate_limited">Ravelry beperkt zoekopdrachten. Probeer het later opnieuw.</string>

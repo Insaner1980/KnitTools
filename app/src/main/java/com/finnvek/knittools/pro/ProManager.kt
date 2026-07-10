@@ -51,36 +51,39 @@ class ProManager
                     combine(
                         trialManager.trialState,
                         billingManager.isProPurchased,
-                    ) { trial, isPurchased ->
-                        when {
-                            isPurchased -> {
-                                ProState(
-                                    status = ProStatus.PRO_PURCHASED,
-                                    trialDaysRemaining = 0,
-                                    trialStartTimestamp = trial.startTimestamp,
-                                    purchaseTimestamp = System.currentTimeMillis(),
-                                )
-                            }
+                        billingManager.purchaseStateReady,
+                    ) { trial, isPurchased, purchaseStateReady ->
+                        val state =
+                            when {
+                                isPurchased -> {
+                                    ProState(
+                                        status = ProStatus.PRO_PURCHASED,
+                                        trialDaysRemaining = 0,
+                                        trialStartTimestamp = trial.startTimestamp,
+                                        purchaseTimestamp = System.currentTimeMillis(),
+                                    )
+                                }
 
-                            trial.isActive -> {
-                                ProState(
-                                    status = ProStatus.TRIAL_ACTIVE,
-                                    trialDaysRemaining = trial.daysRemaining,
-                                    trialStartTimestamp = trial.startTimestamp,
-                                )
-                            }
+                                trial.isActive -> {
+                                    ProState(
+                                        status = ProStatus.TRIAL_ACTIVE,
+                                        trialDaysRemaining = trial.daysRemaining,
+                                        trialStartTimestamp = trial.startTimestamp,
+                                    )
+                                }
 
-                            else -> {
-                                ProState(
-                                    status = ProStatus.TRIAL_EXPIRED,
-                                    trialDaysRemaining = 0,
-                                    trialStartTimestamp = trial.startTimestamp,
-                                )
+                                else -> {
+                                    ProState(
+                                        status = ProStatus.TRIAL_EXPIRED,
+                                        trialDaysRemaining = 0,
+                                        trialStartTimestamp = trial.startTimestamp,
+                                    )
+                                }
                             }
-                        }
-                    }.collect { state ->
+                        state to purchaseStateReady
+                    }.collect { (state, purchaseStateReady) ->
                         _proState.value = state
-                        _initialStateReady.value = true
+                        _initialStateReady.value = purchaseStateReady
                     }
                 } catch (e: CancellationException) {
                     throw e

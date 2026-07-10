@@ -110,6 +110,13 @@ function requireState(value: string | undefined): string {
   return value;
 }
 
+function redirectExpiredStateOrThrow(error: unknown, state: string): CallbackResponse {
+  if (error instanceof RavelryAuthFlowError && error.code === "expired_state") {
+    return { redirectUrl: appRedirectUrl(state, "state_expired") };
+  }
+  throw error;
+}
+
 function tokenForStorage(
   uid: string,
   token: Awaited<ReturnType<OAuthTokenExchange>>,
@@ -242,11 +249,21 @@ export async function completeRavelryOAuthCallback({
 }: CompleteCallbackOptions): Promise<CallbackResponse> {
   const now = nowMillis();
   const state = requireState(queryString(query, "state"));
-  const storedState = await loadUsableState(stateStore, state, now);
+  const storedState = await loadUsableState(stateStore, state, now).catch((error: unknown) =>
+    redirectExpiredStateOrThrow(error, state),
+  );
+  if ("redirectUrl" in storedState) {
+    return storedState;
+  }
   const ravelryError = queryString(query, "error");
 
   if (ravelryError) {
-    await markStateUsedOrReject(stateStore, state, now);
+    const expiredResult = await markStateUsedOrReject(stateStore, state, now).catch((error: unknown) =>
+      redirectExpiredStateOrThrow(error, state),
+    );
+    if (expiredResult) {
+      return expiredResult;
+    }
     return { redirectUrl: appRedirectUrl(state, ravelryError) };
   }
 
@@ -255,7 +272,12 @@ export async function completeRavelryOAuthCallback({
     throw new RavelryAuthFlowError("missing_code", 400);
   }
 
-  await markStateUsedOrReject(stateStore, state, now);
+  const expiredResult = await markStateUsedOrReject(stateStore, state, now).catch((error: unknown) =>
+    redirectExpiredStateOrThrow(error, state),
+  );
+  if (expiredResult) {
+    return expiredResult;
+  }
   const token = await exchange({
     code,
     codeVerifier: storedState.codeVerifier,

@@ -122,10 +122,10 @@ class MainActivity : AppCompatActivity() {
                 startupThemeLoaded = true
             }
 
-            val activity = this@MainActivity
-            LaunchedEffect(Unit) {
-                inAppReviewManager.maybeRequestReview(activity)
-            }
+            InAppReviewPromptEffect(
+                inAppReviewManager = inAppReviewManager,
+                activity = this@MainActivity,
+            )
 
             val snackbarHostState = remember { SnackbarHostState() }
             DownloadedUpdatePromptEffect(
@@ -343,6 +343,20 @@ class MainActivity : AppCompatActivity() {
                 putExtra(EXTRA_COUNTER_LAUNCH_ID, CounterLaunchTokenStore.issueLaunchId(context))
                 addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
             }
+    }
+}
+
+@Composable
+private fun InAppReviewPromptEffect(
+    inAppReviewManager: InAppReviewManager,
+    activity: MainActivity,
+) {
+    val reviewEligible by
+        inAppReviewManager.reviewEligibility.collectAsStateWithLifecycle(initialValue = false)
+    LaunchedEffect(reviewEligible) {
+        if (reviewEligible) {
+            inAppReviewManager.maybeRequestReview(activity)
+        }
     }
 }
 

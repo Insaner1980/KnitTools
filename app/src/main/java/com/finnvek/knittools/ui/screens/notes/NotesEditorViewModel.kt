@@ -60,6 +60,18 @@ class NotesEditorViewModel
                         return@collect
                     }
                     val canEditNotes = proManager.hasFeature(ProFeature.NOTES)
+                    if (!canEditNotes) {
+                        _uiState.update { state ->
+                            state.copy(
+                                projectName = project.name,
+                                notes = "",
+                                isLoaded = true,
+                                isPro = false,
+                                isMissingProject = false,
+                            )
+                        }
+                        return@collect
+                    }
                     val shouldAdoptNotes =
                         !_uiState.value.isLoaded ||
                             !hasLocalEdits ||

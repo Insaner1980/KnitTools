@@ -83,6 +83,7 @@ fun InsightsScreen(
     val timeRange = uiState.timeRange
     val hasSessionData = uiState.hasSessionData
     val isPro = uiState.isPro
+    val canUseStreak = uiState.canUseStreak
     val resources = LocalResources.current
 
     var showProjectPicker by remember { mutableStateOf(false) }
@@ -241,6 +242,7 @@ fun InsightsScreen(
                     currentStreak = currentStreak,
                     bestStreak = bestStreak,
                     isPro = isPro,
+                    canUseStreak = canUseStreak,
                     onProUpgrade = onProUpgrade,
                 )
             }

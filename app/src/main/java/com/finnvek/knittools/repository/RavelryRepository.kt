@@ -83,7 +83,7 @@ private fun PatternDetail.toSavedPattern(): SavedPattern =
         needleSize = needleSizeText,
         yarnWeight = yarnWeight?.name,
         yardage = yardage ?: yardageMax,
-        isFree = free,
-        originalUrl = ravelryUrl,
-        canonicalUrl = ravelryUrl,
+        isFree = availability.isFree,
+        originalUrl = originalUrl.ifBlank { ravelryUrl },
+        canonicalUrl = canonicalUrl.ifBlank { ravelryUrl },
     )

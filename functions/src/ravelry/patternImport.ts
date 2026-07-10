@@ -194,9 +194,10 @@ function rateLimiterFor(options: UserPatternOptions): RavelryRateLimiter {
 
 export const ravelrySearchPatterns = onCall(ravelrySecretOptions, async (request) => {
   try {
+    const uid = requireUid(request.auth);
     const { rateLimiter, tokenStore } = stores();
     return await searchPatternsForUser({
-      uid: requireUid(request.auth),
+      uid,
       tokenStore,
       rateLimiter,
       client: createRavelryClient(),
@@ -210,13 +211,14 @@ export const ravelrySearchPatterns = onCall(ravelrySecretOptions, async (request
 
 export const ravelryImportPatternById = onCall(ravelrySecretOptions, async (request) => {
   try {
+    const uid = requireUid(request.auth);
     const { rateLimiter, tokenStore } = stores();
     const ravelryPatternId = positiveInteger(dataObject(request.data).ravelryPatternId);
     if (ravelryPatternId == null) {
       throw new RavelryPatternImportError("invalid_pattern_id", 400);
     }
     return await importPatternById({
-      uid: requireUid(request.auth),
+      uid,
       tokenStore,
       rateLimiter,
       client: createRavelryClient(),
@@ -230,13 +232,14 @@ export const ravelryImportPatternById = onCall(ravelrySecretOptions, async (requ
 
 export const ravelryImportPatternByUrl = onCall(ravelrySecretOptions, async (request) => {
   try {
+    const uid = requireUid(request.auth);
     const { rateLimiter, tokenStore } = stores();
     const url = optionalString(dataObject(request.data).url);
     if (!url) {
       throw new RavelryPatternImportError("missing_url", 400);
     }
     return await importPatternByUrl({
-      uid: requireUid(request.auth),
+      uid,
       tokenStore,
       rateLimiter,
       client: createRavelryClient(),

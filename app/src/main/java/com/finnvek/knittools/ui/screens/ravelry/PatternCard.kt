@@ -27,6 +27,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.finnvek.knittools.R
+import com.finnvek.knittools.data.remote.PatternAvailability
 import com.finnvek.knittools.ui.theme.RavelryTeal
 
 data class PatternCardState(
@@ -34,7 +35,7 @@ data class PatternCardState(
     val designerName: String,
     val thumbnailUrl: String?,
     val difficulty: Float?,
-    val isFree: Boolean,
+    val availability: PatternAvailability,
 )
 
 @Composable
@@ -58,7 +59,7 @@ fun PatternCard(
                 name = state.name,
                 designerName = state.designerName,
                 difficulty = state.difficulty,
-                isFree = state.isFree,
+                availability = state.availability,
                 modifier = Modifier.weight(1f),
             )
             PatternCardActionSlot(actionContent = actionContent)
@@ -103,7 +104,7 @@ private fun PatternDetails(
     name: String,
     designerName: String,
     difficulty: Float?,
-    isFree: Boolean,
+    availability: PatternAvailability,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier) {
@@ -122,14 +123,14 @@ private fun PatternDetails(
             overflow = TextOverflow.Ellipsis,
         )
         Spacer(modifier = Modifier.height(4.dp))
-        PatternBadgeRow(difficulty = difficulty, isFree = isFree)
+        PatternBadgeRow(difficulty = difficulty, availability = availability)
     }
 }
 
 @Composable
 private fun PatternBadgeRow(
     difficulty: Float?,
-    isFree: Boolean,
+    availability: PatternAvailability,
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -142,13 +143,24 @@ private fun PatternBadgeRow(
                 color = RavelryTeal,
             )
         }
-        PriceBadge(isFree = isFree)
+        PriceBadge(availability = availability)
     }
 }
 
 @Composable
-private fun PriceBadge(isFree: Boolean) {
-    val badgeColor = if (isFree) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.tertiary
+private fun PriceBadge(availability: PatternAvailability) {
+    val badgeColor =
+        when (availability) {
+            PatternAvailability.Free -> MaterialTheme.colorScheme.secondary
+            PatternAvailability.Paid -> MaterialTheme.colorScheme.tertiary
+            PatternAvailability.Unknown -> MaterialTheme.colorScheme.onSurfaceVariant
+        }
+    val text =
+        when (availability) {
+            PatternAvailability.Free -> stringResource(R.string.free)
+            PatternAvailability.Paid -> stringResource(R.string.paid)
+            PatternAvailability.Unknown -> stringResource(R.string.availability_unknown)
+        }
     Box(
         modifier =
             Modifier
@@ -158,7 +170,7 @@ private fun PriceBadge(isFree: Boolean) {
                 ).padding(horizontal = 6.dp, vertical = 2.dp),
     ) {
         Text(
-            text = if (isFree) stringResource(R.string.free) else stringResource(R.string.paid),
+            text = text,
             style = MaterialTheme.typography.labelSmall,
             color = badgeColor,
         )

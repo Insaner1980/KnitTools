@@ -1,11 +1,22 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
+import { HttpsError, type CallableRequest } from "firebase-functions/v2/https";
+
+import {
+  ravelryAuthStatus,
+  ravelryCurrentUser,
+  ravelryDisconnect,
+  ravelryStartAuth,
+} from "./auth";
 import { createRavelryClient } from "./client";
 import type { OAuthTokenRefresh } from "./oauth2";
 import {
   importPatternById,
   importPatternByUrl,
+  ravelrySearchPatterns,
+  ravelryImportPatternById,
+  ravelryImportPatternByUrl,
   searchPatternsForUser,
 } from "./patternImport";
 import {
@@ -48,6 +59,22 @@ class BlockingRateLimiter implements RavelryRateLimiter {
     throw new RavelryRateLimitError(bucket, rule.limit, rule.windowMillis);
   }
 }
+
+function callableRequest(data: unknown): CallableRequest {
+  return {
+    data,
+    rawRequest: {} as CallableRequest["rawRequest"],
+    acceptsStreaming: false,
+  };
+}
+
+function isUnauthenticatedHttpsError(error: unknown): boolean {
+  return error instanceof HttpsError && error.code === "unauthenticated";
+}
+
+type RunnableCallable = {
+  run(request: CallableRequest): Promise<unknown>;
+};
 
 describe("Ravelry backend search and import", () => {
   it("parses only Ravelry pattern-library URLs and normalizes canonical URLs", () => {
@@ -367,6 +394,26 @@ describe("Ravelry backend search and import", () => {
       /ravelry_not_connected/,
     );
     assert.equal(searchCount, 0);
+  });
+
+  it("rejects unauthenticated Ravelry callables before backend work or request data validation", async () => {
+    const callables: Array<{ name: string; callable: RunnableCallable; data: unknown }> = [
+      { name: "ravelryStartAuth", callable: ravelryStartAuth, data: {} },
+      { name: "ravelryAuthStatus", callable: ravelryAuthStatus, data: {} },
+      { name: "ravelryDisconnect", callable: ravelryDisconnect, data: {} },
+      { name: "ravelryCurrentUser", callable: ravelryCurrentUser, data: {} },
+      { name: "ravelrySearchPatterns", callable: ravelrySearchPatterns, data: {} },
+      { name: "ravelryImportPatternById", callable: ravelryImportPatternById, data: {} },
+      { name: "ravelryImportPatternByUrl", callable: ravelryImportPatternByUrl, data: {} },
+    ];
+
+    for (const { name, callable, data } of callables) {
+      await assert.rejects(
+        callable.run(callableRequest(data)),
+        isUnauthenticatedHttpsError,
+        `${name} should reject unauthenticated calls first`,
+      );
+    }
   });
 
   it("refreshes an expired token before searching patterns", async () => {

@@ -91,7 +91,7 @@ describe("Ravelry OAuth2 auth core", () => {
     assert.equal(storedState?.usedAtMillis, null);
   });
 
-  it("rejects missing callback params, expired states, and used states before token exchange", async () => {
+  it("rejects missing and used callback params while redirecting expired states before token exchange", async () => {
     const stateStore = new MemoryOAuthStateStore();
     const tokenStore = new MemoryTokenStore();
     let exchangeCount = 0;
@@ -124,15 +124,17 @@ describe("Ravelry OAuth2 auth core", () => {
       codeChallengeMethod: "S256",
     });
 
-    await assert.rejects(
-      completeRavelryOAuthCallback({
-        query: { state: "expired", code: "code" },
-        stateStore,
-        tokenStore,
-        exchange,
-        nowMillis: () => 1_000,
-      }),
-      /expired_state/,
+    const expiredResult = await completeRavelryOAuthCallback({
+      query: { state: "expired", code: "code" },
+      stateStore,
+      tokenStore,
+      exchange,
+      nowMillis: () => 1_000,
+    });
+
+    assert.equal(
+      expiredResult.redirectUrl,
+      "knittools://ravelry-auth-complete?state=expired&error=state_expired",
     );
 
     await stateStore.saveState({
@@ -309,18 +311,20 @@ describe("Ravelry OAuth2 auth core", () => {
       codeChallengeMethod: "S256",
     });
 
-    await assert.rejects(
-      completeRavelryOAuthCallback({
-        query: { state: "expires-before-consume", code: "auth-code" },
-        stateStore,
-        tokenStore,
-        exchange: async () => {
-          exchangeCount += 1;
-          return { accessToken: "access-token" };
-        },
-        nowMillis: () => 1_000,
-      }),
-      /expired_state/,
+    const result = await completeRavelryOAuthCallback({
+      query: { state: "expires-before-consume", code: "auth-code" },
+      stateStore,
+      tokenStore,
+      exchange: async () => {
+        exchangeCount += 1;
+        return { accessToken: "access-token" };
+      },
+      nowMillis: () => 1_000,
+    });
+
+    assert.equal(
+      result.redirectUrl,
+      "knittools://ravelry-auth-complete?state=expires-before-consume&error=state_expired",
     );
 
     assert.equal(exchangeCount, 0);

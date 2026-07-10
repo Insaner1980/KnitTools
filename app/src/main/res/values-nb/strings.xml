@@ -580,6 +580,7 @@
     <string name="filter_difficulty">Vanskelighetsgrad</string>
     <string name="free">Gratis</string>
     <string name="paid">Betalt</string>
+    <string name="availability_unknown">Tilgjengelighet ukjent</string>
     <string name="no_results">Ingen oppskrifter funnet</string>
     <string name="search_error">Kunne ikke laste oppskrifter. Sjekk internettilkoblingen.</string>
     <string name="ravelry_search_rate_limited">Ravelry begrenser søk. Prøv igjen senere.</string>

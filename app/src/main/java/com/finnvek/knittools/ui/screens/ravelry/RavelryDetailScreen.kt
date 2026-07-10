@@ -157,7 +157,7 @@ internal fun PatternDetail.ravelryUrlOrNull(): String? =
     if (permalink.isBlank()) {
         null
     } else {
-        ravelryUrl
+        ravelryExternalUrlOrNull(ravelryUrl)
     }
 
 data class PatternDetailActions(

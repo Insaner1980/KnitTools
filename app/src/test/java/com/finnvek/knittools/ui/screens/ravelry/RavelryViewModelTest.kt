@@ -426,6 +426,30 @@ class RavelryViewModelTest {
         }
 
     @Test
+    fun `save import pattern does not restore dismissed sheet when save completes`() =
+        runTest(testDispatcher) {
+            authState.value = RavelryAuthState.Connected("knitter")
+            val pattern = PatternDetail(id = 42, name = "Import Pattern", permalink = "import-pattern")
+            coEvery { repository.getPatternDetail(42) } returns pattern
+            coEvery { repository.findDuplicateFor(pattern) } returns null
+            val saveResult = CompletableDeferred<Long>()
+            coEvery { repository.savePattern(pattern) } coAnswers {
+                saveResult.await()
+            }
+            val vm = createViewModel(isPro = true)
+
+            vm.showImportConfirmationForPattern(42)
+            advanceUntilIdle()
+            vm.saveImportPattern()
+            runCurrent()
+            vm.dismissImportConfirmation()
+            saveResult.complete(9L)
+            advanceUntilIdle()
+
+            assertNull(vm.importConfirmationState.value)
+        }
+
+    @Test
     fun `delete selected saved patterns delegates one batch delete`() =
         runTest(testDispatcher) {
             val vm = createViewModel(isPro = true)

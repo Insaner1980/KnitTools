@@ -174,7 +174,7 @@ private fun ImportPatternHeader(
                 designerName = pattern.designer?.name ?: "",
                 thumbnailUrl = pattern.mainPhotoUrl,
                 difficulty = pattern.difficultyAverage,
-                isFree = pattern.free,
+                availability = pattern.availability,
             ),
         onClick = {},
     )

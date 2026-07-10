@@ -104,6 +104,8 @@ fun ProjectListScreen(
     val selectedProjectIds by viewModel.selectedProjectIds.collectAsStateWithLifecycle()
     val sortOrder by viewModel.sortOrder.collectAsStateWithLifecycle()
     val currentOnProjectClick by rememberUpdatedState(onProjectClick)
+    val currentOnNotesEditor by rememberUpdatedState(onNotesEditor)
+    val currentOnPhotoGallery by rememberUpdatedState(onPhotoGallery)
     val currentOnUpgradeToPro by rememberUpdatedState(onUpgradeToPro)
 
     // FAB-luonnin jälkeen navigoi uuteen projektiin
@@ -116,6 +118,18 @@ fun ProjectListScreen(
     LaunchedEffect(viewModel) {
         viewModel.upgradeToPro.collect {
             currentOnUpgradeToPro()
+        }
+    }
+
+    LaunchedEffect(viewModel) {
+        viewModel.navigateToNotesEditor.collect { projectId ->
+            currentOnNotesEditor(projectId)
+        }
+    }
+
+    LaunchedEffect(viewModel) {
+        viewModel.navigateToPhotoGallery.collect { projectId ->
+            currentOnPhotoGallery(projectId)
         }
     }
 
@@ -266,8 +280,8 @@ fun ProjectListScreen(
                 actions =
                     ProjectListContentActions(
                         onProjectClick = onProjectClick,
-                        onNotesClick = onNotesEditor,
-                        onPhotoGallery = onPhotoGallery,
+                        onNotesClick = viewModel::openNotesEditor,
+                        onPhotoGallery = viewModel::openPhotoGallery,
                         onPatternViewer = onPatternViewer,
                         onYarnCard = onYarnCard,
                         onToggleSelection = { viewModel.toggleProjectSelection(it) },

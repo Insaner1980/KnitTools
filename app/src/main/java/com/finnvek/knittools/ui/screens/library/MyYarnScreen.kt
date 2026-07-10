@@ -73,6 +73,7 @@ data class MyYarnState(
     val activeProjectNames: Map<Long, String>,
     val isSelectMode: Boolean,
     val selectedYarnIds: Set<Long>,
+    val canCreateYarnCard: Boolean,
     val deleteErrorId: Long = 0L,
 )
 
@@ -84,6 +85,7 @@ data class MyYarnActions(
     val onSelectAll: (List<Long>) -> Unit,
     val onDeleteSelected: () -> Unit,
     val onExitSelectMode: () -> Unit,
+    val onUpgradeToPro: () -> Unit,
     val onBack: () -> Unit,
 )
 
@@ -97,6 +99,13 @@ fun MyYarnScreen(
     var showManualYarnSheet by rememberSaveable { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     val deleteFailedMessage = stringResource(R.string.generic_error_unknown)
+    val requestAddYarn = {
+        if (state.canCreateYarnCard) {
+            showManualYarnSheet = true
+        } else {
+            actions.onUpgradeToPro()
+        }
+    }
 
     LaunchedEffect(state.deleteErrorId) {
         if (state.deleteErrorId > 0) {
@@ -149,7 +158,7 @@ fun MyYarnScreen(
         floatingActionButton = {
             if (!state.isSelectMode && state.cards.isNotEmpty()) {
                 FloatingActionButton(
-                    onClick = { showManualYarnSheet = true },
+                    onClick = requestAddYarn,
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary,
                 ) {
@@ -164,7 +173,7 @@ fun MyYarnScreen(
         if (state.cards.isEmpty()) {
             MyYarnEmptyState(
                 padding = padding,
-                onAddYarn = { showManualYarnSheet = true },
+                onAddYarn = requestAddYarn,
             )
         } else {
             MyYarnList(

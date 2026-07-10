@@ -20,6 +20,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -57,9 +58,14 @@ class BillingManager
 
         private var billingClient: BillingClient? = null
         private val pendingAcknowledgementRetries = mutableSetOf<String>()
+        private var connectionAttempt = 0
+        private var connectionRetryJob: Job? = null
 
         fun initialize() {
             _purchaseStateReady.value = false
+            connectionAttempt = 0
+            connectionRetryJob?.cancel()
+            connectionRetryJob = null
             billingClient =
                 BillingClient
                     .newBuilder(context)
@@ -69,16 +75,28 @@ class BillingManager
                     ).enableAutoServiceReconnection()
                     .build()
 
-            billingClient?.startConnection(
+            startBillingConnection()
+        }
+
+        private fun startBillingConnection() {
+            val client = billingClient ?: return
+            connectionAttempt++
+            client.startConnection(
                 object : BillingClientStateListener {
                     override fun onBillingSetupFinished(result: BillingResult) {
                         if (result.responseCode == BillingClient.BillingResponseCode.OK) {
+                            connectionAttempt = 0
+                            connectionRetryJob?.cancel()
+                            connectionRetryJob = null
                             scope.launch {
                                 queryPurchases()
                                 _purchaseStateReady.value = true
                                 queryProductDetails()
                             }
                         } else {
+                            if (scheduleConnectionRetry()) {
+                                return
+                            }
                             _purchaseStateReady.value = true
                             applyProductUnavailable(result.toUserMessage())
                         }
@@ -89,6 +107,18 @@ class BillingManager
                     }
                 },
             )
+        }
+
+        private fun scheduleConnectionRetry(): Boolean {
+            if (connectionAttempt >= CONNECTION_MAX_ATTEMPTS) return false
+            connectionRetryJob?.cancel()
+            connectionRetryJob =
+                scope.launch {
+                    delay(CONNECTION_RETRY_DELAY_MS)
+                    connectionRetryJob = null
+                    startBillingConnection()
+                }
+            return true
         }
 
         fun launchPurchaseFlow(activity: Activity) {
@@ -168,6 +198,8 @@ class BillingManager
         }
 
         fun destroy() {
+            connectionRetryJob?.cancel()
+            connectionRetryJob = null
             billingClient?.endConnection()
             billingClient = null
             _purchaseStateReady.value = false
@@ -362,6 +394,8 @@ class BillingManager
 
         companion object {
             const val PRODUCT_ID = "knittools_pro"
+            private const val CONNECTION_MAX_ATTEMPTS = 3
+            private const val CONNECTION_RETRY_DELAY_MS = 2_000L
             private const val ACKNOWLEDGEMENT_RETRY_DELAY_MS = 5_000L
         }
     }

@@ -68,6 +68,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.auth.RavelryAuthState
+import com.finnvek.knittools.data.remote.PatternAvailability
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.StatusMessage
@@ -528,7 +529,7 @@ private fun LazyListScope.ravelrySearchResults(
                     designerName = pattern.designer?.name ?: "",
                     thumbnailUrl = pattern.firstPhoto?.small2Url,
                     difficulty = pattern.difficultyAverage,
-                    isFree = pattern.free,
+                    availability = pattern.availability,
                 ),
             onClick = { onPatternClick(pattern.id) },
             actionContent = {
@@ -734,7 +735,7 @@ private fun SavedPatternItem(
                     designerName = pattern.designerName,
                     thumbnailUrl = pattern.thumbnailUrl,
                     difficulty = pattern.difficulty,
-                    isFree = pattern.isFree,
+                    availability = PatternAvailability.fromFree(pattern.isFree),
                 ),
             onClick = {
                 if (isSelectMode) {

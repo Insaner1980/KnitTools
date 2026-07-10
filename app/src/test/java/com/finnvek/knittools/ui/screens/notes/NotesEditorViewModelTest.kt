@@ -170,7 +170,7 @@ class NotesEditorViewModelTest {
         }
 
     @Test
-    fun `non-pro editor does not persist note changes`() =
+    fun `non-pro editor does not read or persist note changes`() =
         runTest {
             every { proManager.hasFeature(ProFeature.NOTES) } returns false
             val viewModel = vm(notes = "Base")
@@ -180,7 +180,7 @@ class NotesEditorViewModelTest {
             viewModel.saveImmediately()
             advanceUntilIdle()
 
-            assertEquals("Base", viewModel.uiState.value.notes)
+            assertEquals("", viewModel.uiState.value.notes)
             coVerify(exactly = 0) { repository.updateProjectNotes(any(), any()) }
             coVerify(exactly = 0) { repository.saveProjectNotes(any(), any(), any()) }
         }

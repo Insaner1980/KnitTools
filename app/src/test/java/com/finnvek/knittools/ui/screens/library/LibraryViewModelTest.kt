@@ -6,6 +6,8 @@ import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.SavedPatternSource
 import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.domain.model.YarnCardStatus
+import com.finnvek.knittools.pro.ProFeature
+import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.CounterRepository
 import com.finnvek.knittools.repository.ProgressPhotoRepository
 import com.finnvek.knittools.repository.SavedPatternRepository
@@ -43,11 +45,14 @@ class LibraryViewModelTest {
     private lateinit var yarnCardRepository: YarnCardRepository
     private lateinit var progressPhotoRepository: ProgressPhotoRepository
     private lateinit var counterRepository: CounterRepository
+    private lateinit var proManager: ProManager
 
     private lateinit var savedPatterns: MutableStateFlow<List<SavedPattern>>
     private lateinit var yarnCards: MutableStateFlow<List<YarnCard>>
     private lateinit var photos: MutableStateFlow<List<ProgressPhoto>>
     private lateinit var projects: MutableStateFlow<List<CounterProject>>
+    private lateinit var progressPhotosFeature: MutableStateFlow<Boolean>
+    private lateinit var yarnCardsFeature: MutableStateFlow<Boolean>
 
     @Before
     fun setup() {
@@ -56,11 +61,14 @@ class LibraryViewModelTest {
         yarnCardRepository = mockk(relaxed = true)
         progressPhotoRepository = mockk(relaxed = true)
         counterRepository = mockk(relaxed = true)
+        proManager = mockk()
 
         savedPatterns = MutableStateFlow(emptyList())
         yarnCards = MutableStateFlow(emptyList())
         photos = MutableStateFlow(emptyList())
         projects = MutableStateFlow(emptyList())
+        progressPhotosFeature = MutableStateFlow(true)
+        yarnCardsFeature = MutableStateFlow(true)
 
         every { savedPatternRepository.getCount() } returns flowOf(0)
         every { yarnCardRepository.getCardCount() } returns flowOf(0)
@@ -69,6 +77,10 @@ class LibraryViewModelTest {
         every { yarnCardRepository.getAllCards() } returns yarnCards
         every { progressPhotoRepository.getAllPhotos() } returns photos
         every { counterRepository.getAllProjects() } returns projects
+        every { proManager.hasFeature(ProFeature.PROGRESS_PHOTOS) } answers { progressPhotosFeature.value }
+        every { proManager.hasFeatureFlow(ProFeature.PROGRESS_PHOTOS) } returns progressPhotosFeature
+        every { proManager.hasFeature(ProFeature.UNLIMITED_YARN) } answers { yarnCardsFeature.value }
+        every { proManager.hasFeatureFlow(ProFeature.UNLIMITED_YARN) } returns yarnCardsFeature
     }
 
     @After
@@ -81,6 +93,7 @@ class LibraryViewModelTest {
             savedPatternRepository = savedPatternRepository,
             yarnCardRepository = yarnCardRepository,
             progressPhotoRepository = progressPhotoRepository,
+            proManager = proManager,
             counterRepository = counterRepository,
         )
 
@@ -151,6 +164,18 @@ class LibraryViewModelTest {
             val viewModel = createViewModel()
 
             viewModel.createManualYarnCard(ManualYarnCardInput(yarnName = " "))
+            advanceUntilIdle()
+
+            coVerify(exactly = 0) { yarnCardRepository.saveCard(any()) }
+        }
+
+    @Test
+    fun `manual yarn creation is ignored without yarn feature`() =
+        runTest {
+            yarnCardsFeature.value = false
+            val viewModel = createViewModel()
+
+            viewModel.createManualYarnCard(ManualYarnCardInput(yarnName = "Blue"))
             advanceUntilIdle()
 
             coVerify(exactly = 0) { yarnCardRepository.saveCard(any()) }

@@ -584,6 +584,7 @@
     <string name="filter_difficulty">Dificuldade</string>
     <string name="free">Grátis</string>
     <string name="paid">Pago</string>
+    <string name="availability_unknown">Disponibilidade desconhecida</string>
     <string name="no_results">Nenhuma receita encontrada</string>
     <string name="search_error">Não foi possível carregar as receitas. Verifique a sua ligação à Internet.</string>
     <string name="ravelry_search_rate_limited">O Ravelry está a limitar as pesquisas. Tente novamente mais tarde.</string>

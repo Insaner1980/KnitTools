@@ -62,6 +62,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -88,6 +89,7 @@ data class CounterUiState(
     val canUseRowReminders: Boolean = false,
     val canUseProgressPhotos: Boolean = false,
     val canUsePatternCameraScan: Boolean = false,
+    val canUseYarnCards: Boolean = false,
     val projects: List<CounterProject> = emptyList(),
     val sectionName: String? = null,
     val stitchCount: Int? = null,
@@ -229,7 +231,9 @@ class CounterViewModel
 
         private fun observeProState() {
             viewModelScope.launch {
-                proManager.proState.collect { proState ->
+                combine(proManager.proState, proManager.initialStateReady) { proState, initialStateReady ->
+                    proState to initialStateReady
+                }.collect { (proState, initialStateReady) ->
                     _uiState.update {
                         it.copy(
                             isPro = proState.isPro,
@@ -239,9 +243,10 @@ class CounterViewModel
                             canUseRowReminders = proState.hasFeature(ProFeature.ROW_REMINDERS),
                             canUseProgressPhotos = proState.hasFeature(ProFeature.PROGRESS_PHOTOS),
                             canUsePatternCameraScan = proState.hasFeature(ProFeature.PATTERN_CAMERA_SCAN),
+                            canUseYarnCards = proState.hasFeature(ProFeature.UNLIMITED_YARN),
                         )
                     }
-                    if (!proState.isPro) {
+                    if (initialStateReady && !proState.isPro) {
                         pruneHistoryForFree()
                     }
                 }
@@ -391,6 +396,7 @@ class CounterViewModel
         }
 
         fun saveProjectYarnNoteToMyYarn(noteId: Long) {
+            if (!proManager.hasFeature(ProFeature.UNLIMITED_YARN)) return
             viewModelScope.launch {
                 projectYarnNoteRepository.saveToMyYarn(noteId)
             }
@@ -752,25 +758,47 @@ class CounterViewModel
             }
         }
 
+        private fun canUseProjectCounter(counter: ProjectCounter): Boolean {
+            if (!proManager.hasFeature(ProFeature.MULTIPLE_COUNTERS)) return false
+            return when (counter.counterType) {
+                ProjectCounterType.SHAPING -> proManager.hasFeature(ProFeature.SHAPING_COUNTER)
+                ProjectCounterType.REPEAT_SECTION -> proManager.hasFeature(ProFeature.REPEAT_SECTION)
+                else -> true
+            }
+        }
+
+        private fun canUseProjectCounter(counterId: Long): Boolean =
+            _uiState.value.projectCounters
+                .firstOrNull { it.id == counterId }
+                ?.let(::canUseProjectCounter) == true
+
+        private fun canUseRepeatSectionCounters(): Boolean =
+            proManager.hasFeature(ProFeature.MULTIPLE_COUNTERS) &&
+                proManager.hasFeature(ProFeature.REPEAT_SECTION)
+
         fun incrementProjectCounter(counter: ProjectCounter) {
+            if (!canUseProjectCounter(counter)) return
             viewModelScope.launch {
                 projectCounterRepository.incrementCounter(counter)
             }
         }
 
         fun decrementProjectCounter(counter: ProjectCounter) {
+            if (!canUseProjectCounter(counter)) return
             viewModelScope.launch {
                 projectCounterRepository.decrementCounter(counter)
             }
         }
 
         fun resetProjectCounter(counterId: Long) {
+            if (!canUseProjectCounter(counterId)) return
             viewModelScope.launch {
                 projectCounterRepository.resetCounter(counterId)
             }
         }
 
         fun deleteProjectCounter(counterId: Long) {
+            if (!canUseProjectCounter(counterId)) return
             viewModelScope.launch {
                 projectCounterRepository.deleteCounter(counterId)
             }
@@ -780,6 +808,7 @@ class CounterViewModel
             counterId: Long,
             name: String,
         ) {
+            if (!canUseProjectCounter(counterId)) return
             viewModelScope.launch {
                 projectCounterRepository.renameCounter(counterId, name)
             }
@@ -822,6 +851,7 @@ class CounterViewModel
             repeatInterval: Int?,
             message: String,
         ) {
+            if (!proManager.hasFeature(ProFeature.ROW_REMINDERS)) return
             viewModelScope.launch {
                 val reminder = _uiState.value.reminders.find { it.id == reminderId } ?: return@launch
                 reminderRepository.update(
@@ -836,6 +866,7 @@ class CounterViewModel
         }
 
         fun dismissReminder(reminderId: Long) {
+            if (!proManager.hasFeature(ProFeature.ROW_REMINDERS)) return
             viewModelScope.launch {
                 val reminder = _uiState.value.reminders.find { it.id == reminderId } ?: return@launch
                 if (reminder.repeatInterval == null) {
@@ -848,6 +879,7 @@ class CounterViewModel
         }
 
         fun deleteReminder(reminderId: Long) {
+            if (!proManager.hasFeature(ProFeature.ROW_REMINDERS)) return
             viewModelScope.launch {
                 reminderRepository.delete(reminderId)
             }
@@ -1499,6 +1531,10 @@ class CounterViewModel
             counters: List<ProjectCounter>,
             persist: Boolean,
         ) {
+            if (!canUseRepeatSectionCounters()) {
+                _uiState.update { it.copy(projectCounters = counters) }
+                return
+            }
             val syncedCounters =
                 counters.map { counter ->
                     if (counter.counterType == ProjectCounterType.REPEAT_SECTION) {

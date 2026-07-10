@@ -29,6 +29,15 @@ class RavelryDetailFlowSourceTest {
     }
 
     @Test
+    fun `external ravelry link helper validates URL before launching view intent`() {
+        val externalLinks = ProjectSourceFiles.read(RAVELRY_EXTERNAL_LINKS)
+
+        assertTrue(externalLinks.contains("ravelryExternalUriOrNull(url)"))
+        assertTrue(externalLinks.contains("Intent(Intent.ACTION_VIEW, uri)"))
+        assertFalse(externalLinks.contains("Intent(Intent.ACTION_VIEW, url.toUri())"))
+    }
+
+    @Test
     fun `detail screen offers reconnect action for authentication errors`() {
         val detailScreen = ProjectSourceFiles.read(RAVELRY_DETAIL_SCREEN)
         val viewModel = ProjectSourceFiles.read(RAVELRY_VIEW_MODEL)

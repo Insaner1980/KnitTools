@@ -580,6 +580,7 @@
     <string name="filter_difficulty">Sværhedsgrad</string>
     <string name="free">Gratis</string>
     <string name="paid">Betalt</string>
+    <string name="availability_unknown">Tilgængelighed ukendt</string>
     <string name="no_results">Ingen opskrifter fundet</string>
     <string name="search_error">Kunne ikke indlæse opskrifter. Tjek din internetforbindelse.</string>
     <string name="ravelry_search_rate_limited">Ravelry begrænser søgninger. Prøv igen senere.</string>

@@ -73,6 +73,7 @@ data class InsightsUiState(
     val timeRange: TimeRange = TimeRange.ALL_TIME,
     val hasSessionData: Boolean = false,
     val isPro: Boolean = false,
+    val canUseStreak: Boolean = false,
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -92,6 +93,28 @@ class InsightsViewModel
                     SharingStarted.WhileSubscribed(5000),
                     proManager.hasFeature(ProFeature.INSIGHTS_CHARTS),
                 )
+        val canUseStreak: StateFlow<Boolean> =
+            proManager
+                .hasFeatureFlow(ProFeature.STREAK)
+                .stateIn(
+                    viewModelScope,
+                    SharingStarted.WhileSubscribed(5000),
+                    proManager.hasFeature(ProFeature.STREAK),
+                )
+        private val proFeatureGates: StateFlow<InsightsProFeatureGates> =
+            combine(isPro, canUseStreak) { chartsAllowed, streakAllowed ->
+                InsightsProFeatureGates(
+                    canUseCharts = chartsAllowed,
+                    canUseStreak = streakAllowed,
+                )
+            }.stateIn(
+                viewModelScope,
+                SharingStarted.WhileSubscribed(5000),
+                InsightsProFeatureGates(
+                    canUseCharts = proManager.hasFeature(ProFeature.INSIGHTS_CHARTS),
+                    canUseStreak = proManager.hasFeature(ProFeature.STREAK),
+                ),
+            )
 
         private val _selectedProjectId = MutableStateFlow<Long?>(null)
         private val _timeRange = MutableStateFlow(TimeRange.ALL_TIME)
@@ -144,14 +167,15 @@ class InsightsViewModel
                 heatmapSessions,
                 projects,
                 queryParams,
-                isPro,
-            ) { sessions, heatmap, projectList, params, pro ->
+                proFeatureGates,
+            ) { sessions, heatmap, projectList, params, featureGates ->
                 buildUiState(
                     sessions = sessions,
                     heatmapSessions = heatmap,
                     projectList = projectList,
                     params = params,
-                    isPro = pro,
+                    isPro = featureGates.canUseCharts,
+                    canUseStreak = featureGates.canUseStreak,
                 )
             }.distinctUntilChanged()
                 .flowOn(ioDispatcher)
@@ -217,6 +241,7 @@ class InsightsViewModel
             projectList: List<CounterProject>,
             params: InsightsQueryParams,
             isPro: Boolean,
+            canUseStreak: Boolean,
         ): InsightsUiState {
             val zone = systemDefault()
             val metrics =
@@ -235,13 +260,14 @@ class InsightsViewModel
                 } else {
                     emptyMap()
                 }
+            val streakMetrics = buildStreakMetrics(sessions, params.startMillis, canUseStreak)
 
             return InsightsUiState(
                 totalMinutes = metrics.totalMinutes,
                 avgPace = metrics.rowsPerHour,
                 completedCount = completedProjectCount(projectList, params),
-                currentStreak = calculateCurrentStreak(sessions, rangeStartMillis = params.startMillis),
-                bestStreak = calculateStreak(sessions, rangeStartMillis = params.startMillis),
+                currentStreak = streakMetrics.current,
+                bestStreak = streakMetrics.best,
                 projects = projectList,
                 selectedProjectId = params.projectId,
                 timePerProject =
@@ -270,8 +296,23 @@ class InsightsViewModel
                 timeRange = params.timeRange,
                 hasSessionData = metrics.sessionCount > 0,
                 isPro = isPro,
+                canUseStreak = canUseStreak,
             )
         }
+
+        private fun buildStreakMetrics(
+            sessions: List<KnitSession>,
+            rangeStartMillis: Long?,
+            canUseStreak: Boolean,
+        ): StreakMetrics =
+            if (canUseStreak) {
+                StreakMetrics(
+                    current = calculateCurrentStreak(sessions, rangeStartMillis = rangeStartMillis),
+                    best = calculateStreak(sessions, rangeStartMillis = rangeStartMillis),
+                )
+            } else {
+                StreakMetrics(current = 0, best = 0)
+            }
 
         fun selectProject(projectId: Long?) {
             _selectedProjectId.value = projectId
@@ -519,6 +560,16 @@ private data class InsightsQueryParams(
     val projectId: Long? = null,
     val timeRange: TimeRange = TimeRange.ALL_TIME,
     val startMillis: Long? = null,
+)
+
+private data class InsightsProFeatureGates(
+    val canUseCharts: Boolean,
+    val canUseStreak: Boolean,
+)
+
+private data class StreakMetrics(
+    val current: Int,
+    val best: Int,
 )
 
 internal fun LocalDate.bucketStart(interval: PaceGroupingInterval): LocalDate =

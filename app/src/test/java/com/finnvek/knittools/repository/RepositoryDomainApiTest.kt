@@ -204,6 +204,50 @@ class RepositoryDomainApiTest {
         }
 
     @Test
+    fun `saved pattern repository reuses existing ravelry pattern by normalized original url`() =
+        runTest {
+            val dao =
+                FakeSavedPatternDao(
+                    savedPatterns =
+                        listOf(
+                            SavedPatternEntity(
+                                id = 7L,
+                                source = SavedPatternSource.Other.persistedValue,
+                                ravelryPatternId = null,
+                                name = "Old name",
+                                designerName = "Designer",
+                                originalUrl = "https://carts.ravelry.com/patterns/library/delight-cardigan/",
+                                canonicalUrl = "",
+                            ),
+                        ),
+                )
+            val repository =
+                SavedPatternRepository(
+                    dao,
+                    context,
+                    FakeCounterProjectDao(),
+                    ImmediateDatabaseTransactionRunner,
+                    UnconfinedTestDispatcher(testScheduler),
+                )
+
+            val savedId =
+                repository.saveRavelryPatternIfMissing(
+                    SavedPattern(
+                        source = SavedPatternSource.Ravelry,
+                        ravelryPatternId = 99,
+                        name = "Delight Cardigan",
+                        designerName = "Designer",
+                        originalUrl =
+                            "https://www.ravelry.com/patterns/library/delight-cardigan?utm_source=share#notes",
+                        canonicalUrl = "https://www.ravelry.com/patterns/library/delight-cardigan",
+                    ),
+                )
+
+            assertEquals(7L, savedId)
+            assertEquals(0, dao.insertCount)
+        }
+
+    @Test
     fun `saved pattern repository prunes missing app owned pattern on viewer load`() =
         runTest {
             val missingUri = "file:///data/data/com.finnvek.knittools/files/pattern_pdfs/1/missing.pdf"

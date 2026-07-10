@@ -131,7 +131,7 @@ fun CounterWorkspace(
                 hasPattern = state.patternUri != null || state.linkedPattern != null,
             )
         }
-        if (state.projectCounters.isNotEmpty()) {
+        if (state.canUseMultipleCounters && state.projectCounters.isNotEmpty()) {
             item(key = "extra-counters-title") {
                 WorkspaceSectionTitle(
                     title = stringResource(R.string.extra_counters_title),
@@ -147,13 +147,15 @@ fun CounterWorkspace(
                 )
             }
         }
-        state.activeAlert?.let { reminder ->
-            item(key = "active-reminder-alert") {
-                ReminderAlertCard(
-                    reminder = reminder,
-                    currentRow = state.counter.count,
-                    onDismiss = actions.onDismissReminder,
-                )
+        if (state.canUseRowReminders && state.activeAlert != null) {
+            state.activeAlert.let { reminder ->
+                item(key = "active-reminder-alert") {
+                    ReminderAlertCard(
+                        reminder = reminder,
+                        currentRow = state.counter.count,
+                        onDismiss = actions.onDismissReminder,
+                    )
+                }
             }
         }
     }

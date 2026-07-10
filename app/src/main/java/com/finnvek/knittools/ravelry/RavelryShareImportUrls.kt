@@ -4,6 +4,7 @@ import java.net.URI
 import java.util.Locale
 
 object RavelryShareImportUrls {
+    private const val MAX_SHARED_PATTERN_URL_LENGTH = 2_048
     private const val PATTERN_LIBRARY_PATH = "/patterns/library/"
     private const val TRAILING_SHARED_URL_PUNCTUATION = ".,!?;:)]}"
     private val urlPattern = Regex("""https://[^\s<>"']+""")
@@ -12,7 +13,9 @@ object RavelryShareImportUrls {
         text
             ?.let(urlPattern::findAll)
             ?.map { match -> match.value.trimSharedUrlPunctuation() }
-            ?.firstOrNull(::isRavelryPatternUrl)
+            ?.firstOrNull { candidate ->
+                candidate.length <= MAX_SHARED_PATTERN_URL_LENGTH && isRavelryPatternUrl(candidate)
+            }
 
     private fun isRavelryPatternUrl(candidate: String): Boolean {
         val uri = runCatching { URI(candidate) }.getOrNull() ?: return false

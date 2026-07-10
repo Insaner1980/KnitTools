@@ -41,11 +41,30 @@ class RavelrySearchResultCardsSourceTest {
         )
     }
 
+    @Test
+    fun `ravelry cards render backend availability instead of boolean only price`() {
+        val patternCard = ProjectSourceFiles.read(PATTERN_CARD)
+        val searchScreen = ProjectSourceFiles.read(RAVELRY_SEARCH_SCREEN)
+        val importSheet = ProjectSourceFiles.read(RAVELRY_IMPORT_SHEET)
+        val strings = ProjectSourceFiles.read(BASE_STRINGS)
+
+        assertTrue(patternCard.contains("val availability: PatternAvailability"))
+        assertTrue(patternCard.contains("PatternAvailability.Unknown ->"))
+        assertTrue(patternCard.contains("R.string.availability_unknown"))
+        assertTrue(strings.contains("<string name=\"availability_unknown\">Availability unknown</string>"))
+        assertTrue(searchScreen.contains("availability = pattern.availability"))
+        assertTrue(importSheet.contains("availability = pattern.availability"))
+        assertFalse(searchScreen.contains("isFree = pattern.free"))
+        assertFalse(importSheet.contains("isFree = pattern.free"))
+    }
+
     private companion object {
         private const val PATTERN_CARD =
             "app/src/main/java/com/finnvek/knittools/ui/screens/ravelry/PatternCard.kt"
         private const val RAVELRY_SEARCH_SCREEN =
             "app/src/main/java/com/finnvek/knittools/ui/screens/ravelry/RavelrySearchScreen.kt"
+        private const val RAVELRY_IMPORT_SHEET =
+            "app/src/main/java/com/finnvek/knittools/ui/screens/ravelry/RavelryImportConfirmationSheet.kt"
         private const val BASE_STRINGS =
             "app/src/main/res/values/strings.xml"
     }

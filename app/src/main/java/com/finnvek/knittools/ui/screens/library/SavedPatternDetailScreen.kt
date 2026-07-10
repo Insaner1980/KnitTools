@@ -50,6 +50,7 @@ import com.finnvek.knittools.domain.model.SavedPatternSource
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
 import com.finnvek.knittools.ui.screens.ravelry.openRavelryUrl
+import com.finnvek.knittools.ui.screens.ravelry.ravelryExternalUrlOrNull
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -262,4 +263,4 @@ private val SavedPattern.requiresRavelryAccess: Boolean
 private fun SavedPattern.ravelryUrlOrNull(): String? =
     canonicalUrl
         .ifBlank { originalUrl }
-        .takeIf { url -> url.startsWith("https://www.ravelry.com") || url.startsWith("https://ravelry.com") }
+        .let(::ravelryExternalUrlOrNull)

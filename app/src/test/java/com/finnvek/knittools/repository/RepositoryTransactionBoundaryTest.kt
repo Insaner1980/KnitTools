@@ -600,7 +600,10 @@ class RepositoryTransactionBoundaryTest {
                 unmockkStatic(Uri::class)
             }
         }
+}
 
+@OptIn(ExperimentalCoroutinesApi::class)
+class RavelryRepositoryTransactionBoundaryTest {
     @Test
     fun `ravelry project creation saves pattern and project inside one transaction`() =
         runTest {
@@ -623,6 +626,40 @@ class RepositoryTransactionBoundaryTest {
             coVerifyOrder {
                 savedPatternRepository.saveRavelryPatternIfMissing(any())
                 projectDao.insert(match { it.name == "Cardigan" && it.linkedPatternId == 12L })
+            }
+        }
+
+    @Test
+    fun `ravelry save preserves backend canonical and original urls`() =
+        runTest {
+            val savedPatternRepository = mockk<SavedPatternRepository>(relaxed = true)
+            coEvery { savedPatternRepository.saveRavelryPatternIfMissing(any()) } returns 12L
+            val repository =
+                RavelryRepository(
+                    api = mockk(relaxed = true),
+                    savedPatternRepository = savedPatternRepository,
+                    counterProjectDao = mockk(relaxed = true),
+                    transactionRunner = ImmediateDatabaseTransactionRunner,
+                )
+
+            repository.savePattern(
+                PatternDetail(
+                    id = 99,
+                    name = "Cardigan",
+                    permalink = "cardigan",
+                    canonicalUrl = "https://www.ravelry.com/patterns/library/cardigan",
+                    originalUrl = "https://www.ravelry.com/patterns/library/cardigan?utm_source=share",
+                ),
+            )
+
+            coVerify {
+                savedPatternRepository.saveRavelryPatternIfMissing(
+                    match {
+                        it.ravelryPatternId == 99 &&
+                            it.canonicalUrl == "https://www.ravelry.com/patterns/library/cardigan" &&
+                            it.originalUrl == "https://www.ravelry.com/patterns/library/cardigan?utm_source=share"
+                    },
+                )
             }
         }
 
@@ -665,33 +702,33 @@ class RepositoryTransactionBoundaryTest {
                 projectDao.insert(match { it.name == "Cardigan (2)" && it.linkedPatternId == 12L })
             }
         }
+}
 
-    private class RecordingTransactionRunner : DatabaseTransactionRunner {
-        var runCount: Int = 0
+private class RecordingTransactionRunner : DatabaseTransactionRunner {
+    var runCount: Int = 0
 
-        override suspend fun <T> run(block: suspend () -> T): T {
-            runCount += 1
-            return block()
-        }
+    override suspend fun <T> run(block: suspend () -> T): T {
+        runCount += 1
+        return block()
     }
+}
 
-    private class CancellingTransactionRunner : DatabaseTransactionRunner {
-        override suspend fun <T> run(block: suspend () -> T): T {
-            val result = block()
-            currentCoroutineContext()[Job]?.cancel()
-            return result
-        }
+private class CancellingTransactionRunner : DatabaseTransactionRunner {
+    override suspend fun <T> run(block: suspend () -> T): T {
+        val result = block()
+        currentCoroutineContext()[Job]?.cancel()
+        return result
     }
+}
 
-    private class RecordingDispatcher : CoroutineDispatcher() {
-        var dispatchCount: Int = 0
+private class RecordingDispatcher : CoroutineDispatcher() {
+    var dispatchCount: Int = 0
 
-        override fun dispatch(
-            context: CoroutineContext,
-            block: Runnable,
-        ) {
-            dispatchCount += 1
-            block.run()
-        }
+    override fun dispatch(
+        context: CoroutineContext,
+        block: Runnable,
+    ) {
+        dispatchCount += 1
+        block.run()
     }
 }

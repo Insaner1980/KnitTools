@@ -42,6 +42,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -180,7 +181,7 @@ private fun SavedPatternsDeleteDialog(
 ) {
     ConfirmationDialog(
         title = stringResource(R.string.delete_pattern),
-        message = stringResource(R.string.delete_patterns_confirm, selectedCount),
+        message = pluralStringResource(R.plurals.delete_patterns_confirm, selectedCount, selectedCount),
         confirmText = stringResource(R.string.delete),
         isDestructive = true,
         onConfirm = onConfirm,

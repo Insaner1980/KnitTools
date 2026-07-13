@@ -9,10 +9,12 @@ export const widgetMutationSurface: MatcherPlugin = {
   filePatterns: [
     "app/src/main/java/com/finnvek/knittools/widget/**/*.kt",
     "app/src/main/java/com/finnvek/knittools/repository/CounterRepository.kt",
+    "app/src/main/java/com/finnvek/knittools/MainActivity.kt",
+    "app/src/main/java/com/finnvek/knittools/data/storage/CounterLaunchTokenStore.kt",
   ],
   match(content, filePath): CandidateMatch[] {
     if (isTestFile(filePath)) return [];
-    if (!/\b(?:Widget|widget|BroadcastReceiver|actionSendBroadcast|applyWidgetCountChange)\b/.test(content)) return [];
+    if (!/\b(?:Widget|widget|BroadcastReceiver|actionSendBroadcast|applyWidgetCountChange|CounterLaunchTokenStore)\b/.test(content)) return [];
 
     return regexCandidates("widget-mutation-surface", content, [
       {
@@ -28,8 +30,20 @@ export const widgetMutationSurface: MatcherPlugin = {
         label: "Widget counter repository mutation",
       },
       {
-        regex: /\bCounterWidgetState\.(?:load|syncAll|updateProjectId)\s*\(/,
+        regex: /\bCounterWidgetState\.(?:load|save|saveGlance|syncAll|refreshAll|updateProjectId)\s*\(/,
         label: "Widget persisted state boundary",
+      },
+      {
+        regex: /\b(?:issueLaunchId|consumeLaunchId)\s*\(/,
+        label: "Widget launch-token trust boundary",
+      },
+      {
+        regex: /\bupdatePreferencesSafely\s*\(/,
+        label: "Widget persisted DataStore write",
+      },
+      {
+        regex: /\bupdateAppWidgetState\s*\(/,
+        label: "Glance widget persisted state write",
       },
     ]);
   },

@@ -520,7 +520,10 @@ function Test-FirebaseBoundary {
         $problems = @()
         foreach ($googleServicesPath in $googleServicesPaths) {
             $trackedGoogleServices = Invoke-Git -Arguments @("ls-files", "--", $googleServicesPath)
-            if ($trackedGoogleServices.ExitCode -eq 0 -and $trackedGoogleServices.Output.Count -gt 0) {
+            if ($trackedGoogleServices.ExitCode -ne 0) {
+                $problems += "git ls-files failed for $googleServicesPath"
+                $firstPath = $gitignorePath
+            } elseif ($trackedGoogleServices.Output.Count -gt 0) {
                 $problems += "$googleServicesPath is tracked by git"
                 $firstPath = $googleServicesPath
             }
@@ -793,7 +796,7 @@ function Test-TextFileContainsSecret {
             }
         }
     } catch {
-        return $false
+        throw "Unable to read checked file: $RelativePath"
     }
 
     return $false
@@ -1049,7 +1052,7 @@ function Test-WidgetOAuthBoundary {
         $firstLine = $null
 
         $anchors = @(
-            [pscustomobject]@{ Path = $mainPath; Text = $mainText; Pattern = "CounterLaunchTokenStore.isKnownLaunchId"; Message = "token store validation symbol not found" },
+            [pscustomobject]@{ Path = $mainPath; Text = $mainText; Pattern = "CounterLaunchTokenStore.consumeLaunchId"; Message = "token store consumption symbol not found" },
             [pscustomobject]@{ Path = $mainPath; Text = $mainText; Pattern = "CounterLaunchTokenStore.issueLaunchId"; Message = "token issue symbol not found" },
             [pscustomobject]@{ Path = $requestPath; Text = $requestText; Pattern = "if (intentData.isOAuthCallback) return null"; Message = "OAuth callback null guard not found" },
             [pscustomobject]@{ Path = $requestPath; Text = $requestText; Pattern = "if (!intentData.isTrustedCounterLaunch) return null"; Message = "trusted launch guard not found" }

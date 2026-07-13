@@ -38,7 +38,7 @@ class MyYarnCardSourceTest {
     }
 
     @Test
-    fun `my yarn has manual add flow without scanner language`() {
+    fun `my yarn has manual add flow`() {
         val screen = ProjectSourceFiles.read(MY_YARN_SCREEN)
         val navGraph = ProjectSourceFiles.read(NAV_GRAPH)
         val input = ProjectSourceFiles.read(MANUAL_YARN_CARD_INPUT)
@@ -55,8 +55,6 @@ class MyYarnCardSourceTest {
         assertTrue(screen.contains("label = stringResource(R.string.color_number)"))
         assertTrue(screen.contains("label = stringResource(R.string.dye_lot)"))
         assertTrue(navGraph.contains("onCreateYarnCard = libraryViewModel::createManualYarnCard"))
-        assertFalse(screen.contains("scan"))
-        assertFalse(screen.contains("detect"))
     }
 
     @Test

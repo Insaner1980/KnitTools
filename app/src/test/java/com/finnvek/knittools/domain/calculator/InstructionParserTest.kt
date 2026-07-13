@@ -5,6 +5,16 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class InstructionParserTest {
+    @Test(timeout = 500)
+    fun `parseWithRegex - patologinen ylipitka syote hylataan nopeasti`() {
+        val suurinSallittuSyote = "INCREASE 1 ".repeat(909)
+        val ylipitkaSyote = "INCREASE 1 ".repeat(50_000)
+
+        assertEquals(9_999, suurinSallittuSyote.length)
+        assertTrue(InstructionParser.parseWithRegex(suurinSallittuSyote) is ParsedInstruction.Failure)
+        assertTrue(InstructionParser.parseWithRegex(ylipitkaSyote) is ParsedInstruction.Failure)
+    }
+
     // === parseResponse: key:value-vastaukset ===
 
     @Test
@@ -167,6 +177,13 @@ class InstructionParserTest {
     }
 
     @Test
+    fun `regex - section count after across does not become current stitch count`() {
+        val result = InstructionParser.parseWithRegex("Increase 8 sts evenly across 4 sections, ending with 96 sts")
+
+        assertTrue(result is ParsedInstruction.Failure)
+    }
+
+    @Test
     fun `regex - reverse increase form`() {
         val result = InstructionParser.parseWithRegex("96 STITCHES INCREASE 12")
         assertTrue(result is ParsedInstruction.IncreaseDecrease)
@@ -246,6 +263,27 @@ class InstructionParserTest {
         assertEquals(22.0, g.stitchesPer10cm, 0.01)
         assertEquals(30.0, g.rowsPer10cm, 0.01)
         assertEquals(ParsedInstruction.GaugeUnit.PER_10_CM, g.unit)
+    }
+
+    @Test
+    fun `regex - row repeat does not become gauge`() {
+        val result = InstructionParser.parseWithRegex("Repeat the last 4 rows until 96 sts remain")
+
+        assertTrue(result is ParsedInstruction.Failure)
+    }
+
+    @Test
+    fun `regex - row range with stitch count returns failure`() {
+        val result = InstructionParser.parseWithRegex("Rows 1-4: repeat from asterisk across; 96 sts remain")
+
+        assertTrue(result is ParsedInstruction.Failure)
+    }
+
+    @Test
+    fun `regex - crochet round range returns failure`() {
+        val result = InstructionParser.parseWithRegex("Rounds 3-6: repeat from asterisk around; 48 sts remain")
+
+        assertTrue(result is ParsedInstruction.Failure)
     }
 
     // === parseWithRegex: Swatch ===

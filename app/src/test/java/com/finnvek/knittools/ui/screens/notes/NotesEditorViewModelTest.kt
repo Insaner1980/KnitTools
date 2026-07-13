@@ -10,8 +10,10 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -24,6 +26,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -31,6 +34,7 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class NotesEditorViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
+    private val applicationScope = CoroutineScope(testDispatcher)
     private lateinit var repository: CounterRepository
     private lateinit var proManager: ProManager
 
@@ -44,6 +48,7 @@ class NotesEditorViewModelTest {
 
     @After
     fun tearDown() {
+        applicationScope.cancel()
         Dispatchers.resetMain()
     }
 
@@ -62,6 +67,7 @@ class NotesEditorViewModelTest {
             repository = repository,
             proManager = proManager,
             ioDispatcher = testDispatcher,
+            applicationScope = applicationScope,
             savedStateHandle = SavedStateHandle(mapOf("projectId" to 1L)),
         )
     }
@@ -89,6 +95,7 @@ class NotesEditorViewModelTest {
                     repository = repository,
                     proManager = proManager,
                     ioDispatcher = testDispatcher,
+                    applicationScope = applicationScope,
                     savedStateHandle = SavedStateHandle(mapOf("projectId" to 1L)),
                 )
             advanceUntilIdle()
@@ -120,6 +127,7 @@ class NotesEditorViewModelTest {
                     repository = repository,
                     proManager = proManager,
                     ioDispatcher = testDispatcher,
+                    applicationScope = applicationScope,
                     savedStateHandle = SavedStateHandle(mapOf("projectId" to 1L)),
                 )
             advanceUntilIdle()
@@ -167,6 +175,67 @@ class NotesEditorViewModelTest {
             advanceUntilIdle()
 
             coVerify(exactly = 1) { repository.saveProjectNotes(1L, "Base", "Local edit") }
+        }
+
+    @Test
+    fun `local edit is stored as a saved state draft during debounce`() =
+        runTest {
+            val project = CounterProject(id = 1L, name = "Test", notes = "Base")
+            val savedStateHandle = SavedStateHandle(mapOf("projectId" to 1L))
+            every { repository.observeProject(1L) } returns flowOf(project)
+            val viewModel =
+                NotesEditorViewModel(
+                    repository = repository,
+                    proManager = proManager,
+                    ioDispatcher = testDispatcher,
+                    applicationScope = applicationScope,
+                    savedStateHandle = savedStateHandle,
+                )
+            runCurrent()
+
+            viewModel.onNotesChanged("Local edit")
+
+            assertEquals("Local edit", savedStateHandle.get<String>("notesDraft"))
+            assertEquals("Base", savedStateHandle.get<String>("notesDraftBase"))
+            coVerify(exactly = 0) { repository.saveProjectNotes(any(), any(), any()) }
+        }
+
+    @Test
+    fun `restored draft survives process recreation and is autosaved`() =
+        runTest {
+            val project = CounterProject(id = 1L, name = "Test", notes = "Base")
+            every { repository.observeProject(1L) } returns flowOf(project)
+            coEvery {
+                repository.saveProjectNotes(1L, "Base", "Local edit")
+            } returns project.copy(notes = "Local edit")
+            val savedStateHandle =
+                SavedStateHandle(
+                    mapOf(
+                        "projectId" to 1L,
+                        "notesDraft" to "Local edit",
+                        "notesDraftBase" to "Base",
+                    ),
+                )
+            val viewModel =
+                NotesEditorViewModel(
+                    repository = repository,
+                    proManager = proManager,
+                    ioDispatcher = testDispatcher,
+                    applicationScope = applicationScope,
+                    savedStateHandle = savedStateHandle,
+                )
+
+            runCurrent()
+
+            assertEquals("Local edit", viewModel.uiState.value.notes)
+            coVerify(exactly = 0) { repository.saveProjectNotes(any(), any(), any()) }
+
+            advanceTimeBy(1_000)
+            advanceUntilIdle()
+
+            coVerify(exactly = 1) { repository.saveProjectNotes(1L, "Base", "Local edit") }
+            assertNull(savedStateHandle.get<String>("notesDraft"))
+            assertNull(savedStateHandle.get<String>("notesDraftBase"))
         }
 
     @Test

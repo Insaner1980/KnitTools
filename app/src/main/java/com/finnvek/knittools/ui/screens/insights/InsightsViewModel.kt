@@ -11,6 +11,8 @@ import com.finnvek.knittools.repository.CounterRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -18,6 +20,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
@@ -31,10 +34,11 @@ import java.time.temporal.WeekFields
 import javax.inject.Inject
 
 private const val HEATMAP_LOOKBACK_DAYS = 55L
+private const val DATE_CHANGE_CHECK_INTERVAL_MILLIS = 60_000L
 
 data class ProjectTime(
     val projectId: Long,
-    val projectName: String,
+    val projectName: String?,
     val totalMinutes: Int,
     val totalRows: Int,
     val lastSessionAt: Long,
@@ -120,6 +124,13 @@ class InsightsViewModel
         private val _timeRange = MutableStateFlow(TimeRange.ALL_TIME)
         val selectedProjectId: StateFlow<Long?> = _selectedProjectId.asStateFlow()
         val timeRange: StateFlow<TimeRange> = _timeRange.asStateFlow()
+        private val currentDate: StateFlow<LocalDate> =
+            localDateChanges()
+                .stateIn(
+                    viewModelScope,
+                    SharingStarted.WhileSubscribed(5000),
+                    LocalDate.now(systemDefault()),
+                )
 
         val projects: StateFlow<List<CounterProject>> =
             counterRepository
@@ -133,11 +144,12 @@ class InsightsViewModel
                 )
 
         private val queryParams: StateFlow<InsightsQueryParams> =
-            combine(selectedProjectId, timeRange) { projectId, activeTimeRange ->
+            combine(selectedProjectId, timeRange, currentDate) { projectId, activeTimeRange, date ->
                 InsightsQueryParams(
                     projectId = projectId,
                     timeRange = activeTimeRange,
                     startMillis = rangeStartMillis(activeTimeRange),
+                    currentDate = date,
                 )
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), InsightsQueryParams())
 
@@ -394,11 +406,13 @@ class InsightsViewModel
                                 ?.let { Instant.ofEpochMilli(it).atZone(zone).toLocalDate() }
                                 ?: buckets.keys.minOrNull()
                                 ?: return emptyList()
-                        bucketStartsBetween(
-                            startDate = startDate,
-                            endDate = LocalDate.now(zone),
-                            interval = interval,
-                        )
+                        (
+                            bucketStartsBetween(
+                                startDate = startDate,
+                                endDate = LocalDate.now(zone),
+                                interval = interval,
+                            ) + buckets.keys
+                        ).distinct().sorted()
                     }
 
                 return sortedBucketStarts.map { bucketStart ->
@@ -443,7 +457,7 @@ class InsightsViewModel
                         if (summary.sessionCount == 0) return@mapNotNull null
                         ProjectTime(
                             projectId = projectId,
-                            projectName = projectNames[projectId] ?: "Project $projectId",
+                            projectName = projectNames[projectId],
                             totalMinutes = summary.totalMinutes,
                             totalRows = summary.totalRows,
                             lastSessionAt = projectSessions.maxOf { it.startedAt },
@@ -560,7 +574,28 @@ private data class InsightsQueryParams(
     val projectId: Long? = null,
     val timeRange: TimeRange = TimeRange.ALL_TIME,
     val startMillis: Long? = null,
+    val currentDate: LocalDate = LocalDate.now(systemDefault()),
 )
+
+internal fun localDateChanges(
+    nowMillis: () -> Long = System::currentTimeMillis,
+    zoneProvider: () -> ZoneId = ZoneId::systemDefault,
+): Flow<LocalDate> =
+    flow {
+        while (true) {
+            val zone = zoneProvider()
+            val now = nowMillis()
+            val date = Instant.ofEpochMilli(now).atZone(zone).toLocalDate()
+            emit(date)
+            val nextDayStart =
+                date
+                    .plusDays(1)
+                    .atStartOfDay(zone)
+                    .toInstant()
+                    .toEpochMilli()
+            delay(minOf((nextDayStart - now).coerceAtLeast(1L), DATE_CHANGE_CHECK_INTERVAL_MILLIS))
+        }
+    }.distinctUntilChanged()
 
 private data class InsightsProFeatureGates(
     val canUseCharts: Boolean,

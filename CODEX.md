@@ -9,8 +9,8 @@ Use [`CLAUDE.md`](/home/emma/dev/KnitTools/CLAUDE.md) when product wording, visu
 - Android app in `app` plus `baselineprofile`; Ravelry Firebase backend in `functions`
 - Kotlin + Jetpack Compose + Material 3
 - Hilt, Room, DataStore, Glance
-- Room schema version `15`
-- AGP `9.1.0` + Kotlin Compose plugin `2.3.10`
+- Room schema version `16`
+- AGP `9.1.1` + Kotlin Compose plugin `2.3.21`
 
 ## Architecture
 
@@ -19,13 +19,14 @@ Use [`CLAUDE.md`](/home/emma/dev/KnitTools/CLAUDE.md) when product wording, visu
 - `repository/` is the seam between storage/framework details and UI consumers
 - `ui/` owns screens, navigation, theme, and ViewModels
 - Coroutine dispatchers that cross architectural boundaries are provided through `di/DispatchersModule` (`@IoDispatcher`); avoid hardcoded `Dispatchers.IO` in repositories and ViewModels
+- Application-lifetime coroutine work uses the Hilt-owned `@ApplicationScope` from `di/DispatchersModule`; ViewModels may use it only for final persistence that must outlive `viewModelScope`, and blocking work launched there must still select the injected `@IoDispatcher`
 - Multi-step Room writes that span DAOs go through `data/local/DatabaseTransactionRunner` from repository methods; UI code must not split bidirectional yarn/project links or pattern attachment writes into separate persistence calls
 - Main counter changes go through `CounterRepository.applyMainCounterChange`, which reads the current project row and writes count, history, current-stitch reset, and linked-counter deltas inside one repository transaction; widget row count changes delegate to the same semantics through `applyWidgetCountChange`
 - Project craft type and main counter label are owned by `domain/model/CraftType` and `domain/model/MainCounterLabelType`; legacy projects default to `KNITTING` + `ROWS`, crochet projects default to `ROUNDS`, and custom labels are trimmed and limited centrally before persistence/display
 - Main counter display text is shaped by `domain/calculator/CounterValueFormatter`; Compose maps its slots to localized strings for hero labels, target rows, button content descriptions, and project-card count text
 - Extra-counter linked state is stored in `ProjectCounter.linkedToMainCounter` from the add/edit counter draft; repeat-section counters must not be marked linked because they already derive progress from main-counter rows
 - Project note replacement writes go through `CounterRepository.saveProjectNotes`, which merges against the editor's base notes so concurrent editor flows are preserved instead of overwritten
-- Session rows store both display minutes and exact `durationSeconds`/`rowsWorked`; insights pace calculations must use the exact fields and split cross-midnight sessions by the device local date
+- Session rows store display minutes, exact `durationSeconds`/`rowsWorked`, and nullable `zoneId`; new sessions capture the device zone at session start, legacy null zones fall back to the current device zone, and insights must use the session zone for cross-midnight day and pace-bucket splitting
 - Insights screen state is aggregated in `InsightsUiState`; heavy session-history calculations should run upstream with `@IoDispatcher` before Compose collects the single UI state
 - Legacy secondary counter state lives in `counter_projects.secondaryCount`; `project_counters` is only for named extra, repeating, shaping, and repeat-section counters, migrations must not duplicate `secondaryCount` into `project_counters`, and old generated `Pattern repeat` backfill copies are ignored at the counter UI boundary
 - Extra counter type rules are owned by `domain/model/ProjectCounterType` plus `domain/calculator/ProjectCounterLogic`; repositories should apply those domain rules inside a transaction instead of duplicating counter behavior in DAO SQL
@@ -65,7 +66,7 @@ Use [`CLAUDE.md`](/home/emma/dev/KnitTools/CLAUDE.md) when product wording, visu
 - `CounterViewModel` is shared at the Projects graph level
 - `LibraryViewModel` is shared at the Library graph level
 - Widget counter launches carry a `CounterLaunchRequest.requestId`; `MainActivity` clears consumed launch extras and saves the consumed id across recreation
-- Widget counter launch ids must be issued by `data/storage/CounterLaunchTokenStore`; `MainActivity` must ignore untrusted counter extras and OAuth callback intents must not trigger counter navigation
+- Widget counter launch ids must be issued by `data/storage/CounterLaunchTokenStore` and atomically consumed by `MainActivity`; unused ids expire after 24 hours, legacy untimestamped ids are rejected, untrusted counter extras are ignored, and OAuth callback intents must not trigger counter navigation or consume counter tokens
 - Pattern viewer entry points require an attached PDF URI; Ravelry pattern links are metadata until a local PDF is attached
 - Do not turn `Tools` back into a generic dashboard grid
 - Project list sort order is `domain/model/ProjectSortOrder`; DataStore persists its `persistedValue`, but UI/repository code should use the enum

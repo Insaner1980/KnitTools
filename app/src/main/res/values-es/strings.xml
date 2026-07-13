@@ -75,7 +75,7 @@
     <string name="main_counter_custom">Personalizada</string>
     <string name="main_counter_custom_label">Etiqueta personalizada</string>
     <string name="main_counter_custom_label_error">Introduce una etiqueta.</string>
-    <string name="project_metadata_format">%1$s · %2$s</string>
+    <string name="project_metadata_format">%1$s, %2$s</string>
     <plurals name="rounds_format">
         <item quantity="one">%1$d ronda</item>
         <item quantity="many">%1$d rondas</item>
@@ -397,6 +397,26 @@
     <string name="care_category_drying">Secado</string>
     <string name="care_category_ironing">Planchado</string>
     <string name="care_category_dry_cleaning">Limpieza en seco</string>
+    <string name="care_wash_30">30°</string>
+    <string name="care_wash_40">40°</string>
+    <string name="care_wash_60">60°</string>
+    <string name="care_wash_hand">Lavado a mano</string>
+    <string name="care_wash_do_not">No lavar</string>
+    <string name="care_bleach_any">Cualquier blanqueador</string>
+    <string name="care_bleach_non_chlorine">Blanqueador sin cloro</string>
+    <string name="care_bleach_do_not">No usar blanqueador</string>
+    <string name="care_dry_tumble_low">Secar en secadora a baja temperatura</string>
+    <string name="care_dry_tumble_normal">Secar en secadora a temperatura normal</string>
+    <string name="care_dry_flat">Secar en horizontal</string>
+    <string name="care_dry_do_not_tumble">No secar en secadora</string>
+    <string name="care_iron_low">Planchar a baja temperatura</string>
+    <string name="care_iron_medium">Planchar a temperatura media</string>
+    <string name="care_iron_high">Planchar a alta temperatura</string>
+    <string name="care_iron_do_not">No planchar</string>
+    <string name="care_dryclean_any">Cualquier disolvente</string>
+    <string name="care_dryclean_p">Disolvente P</string>
+    <string name="care_dryclean_f">Disolvente F</string>
+    <string name="care_dryclean_do_not">No limpiar en seco</string>
 
     <!-- Defaults -->
     <string name="yarn_card_fallback_name">Ficha de hilo</string>
@@ -440,7 +460,11 @@
     <string name="insights_knitting_activity">ACTIVIDAD DE TEJIDO</string>
     <string name="insights_current_streak">Racha actual:</string>
     <string name="insights_best_streak">Mejor:</string>
-    <string name="insights_rows_count">%1$d vueltas</string>
+    <plurals name="insights_rows_count">
+        <item quantity="one">%1$d vuelta</item>
+        <item quantity="many">%1$d vueltas</item>
+        <item quantity="other">%1$d vueltas</item>
+    </plurals>
     <string name="insights_less_than_tenth_hour">&lt;0.1h</string>
     <string name="insights_no_time">—</string>
     <string name="insights_footer_1">Cada vuelta cuenta; ¡sigue tejiendo!</string>
@@ -544,8 +568,16 @@
     <string name="share_photo">Compartir</string>
     <string name="delete_photo">Eliminar foto</string>
     <string name="delete_photo_confirm">¿Eliminar esta foto?</string>
-    <string name="delete_photos_confirm">¿Eliminar %d fotos?</string>
-    <string name="delete_patterns_confirm">¿Eliminar %d patrones?</string>
+    <plurals name="delete_photos_confirm">
+        <item quantity="one">¿Eliminar %1$d foto?</item>
+        <item quantity="many">¿Eliminar %1$d fotos?</item>
+        <item quantity="other">¿Eliminar %1$d fotos?</item>
+    </plurals>
+    <plurals name="delete_patterns_confirm">
+        <item quantity="one">¿Eliminar %1$d patrón?</item>
+        <item quantity="many">¿Eliminar %1$d patrones?</item>
+        <item quantity="other">¿Eliminar %1$d patrones?</item>
+    </plurals>
     <string name="delete_pattern">Eliminar patrón</string>
     <string name="delete_yarn_cards_confirm">¿Eliminar %d fichas de hilo?</string>
     <string name="delete_yarn_card">Eliminar ficha de hilo</string>
@@ -646,4 +678,13 @@
     <string name="extra_counters_title">Contadores extra</string>
     <string name="counter_repeat_label">REPETICIÓN</string>
     <string name="counters_list_title">Contadores</string>
+
+    <!-- Täydennetyt lokalisoidut käyttöliittymätekstit -->
+    <string name="yarn_card_number_fallback">Hilo #%1$d</string>
+    <string name="pattern_detail_needles">Agujas</string>
+    <string name="pattern_detail_yardage">Metraje</string>
+    <string name="pattern_detail_sizes">Tallas</string>
+    <string name="pattern_saved_to_library">Guardado en la biblioteca</string>
+    <string name="show_more">Mostrar más</string>
+    <string name="show_less">Mostrar menos</string>
 </resources>

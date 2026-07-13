@@ -10,20 +10,18 @@ class ProjectListWorkspaceSourceTest {
     @Test
     fun `continue knitting model carries only cheap project context`() {
         val viewModel = ProjectSourceFiles.read(PROJECT_LIST_VIEW_MODEL)
-        val screen = ProjectSourceFiles.read(PROJECT_LIST_SCREEN)
 
         assertTrue(viewModel.contains("val sectionName: String?"))
         assertTrue(viewModel.contains("val targetRows: Int?"))
         assertTrue(viewModel.contains("sectionName = candidate.sectionName"))
         assertTrue(viewModel.contains("targetRows = candidate.targetRows"))
-        assertTrue(screen.contains("private fun continueKnittingContextLine("))
     }
 
     @Test
     fun `continue knitting context includes section before row progress`() {
         assertEquals(
-            "Sleeve · Row 12 / 40",
-            continueKnittingContextLineReflective(
+            "Sleeve, Row 12 / 40",
+            continueKnittingContextLine(
                 sectionName = "Sleeve",
                 rowCount = 12,
                 targetRows = 40,
@@ -32,7 +30,7 @@ class ProjectListWorkspaceSourceTest {
         )
         assertEquals(
             "Row 12 / 40",
-            continueKnittingContextLineReflective(
+            continueKnittingContextLine(
                 sectionName = " ",
                 rowCount = 12,
                 targetRows = 40,
@@ -47,9 +45,8 @@ class ProjectListWorkspaceSourceTest {
         val navGraph = ProjectSourceFiles.read(NAV_GRAPH)
 
         assertTrue(screen.contains("onPhotoGallery: (Long) -> Unit = {}"))
-        assertTrue(screen.contains("val currentOnPhotoGallery by rememberUpdatedState(onPhotoGallery)"))
-        assertTrue(screen.contains("viewModel.navigateToPhotoGallery.collect { projectId ->"))
-        assertTrue(screen.contains("currentOnPhotoGallery(projectId)"))
+        assertTrue(screen.contains("CollectWithLifecycleEffect(viewModel.navigateToPhotoGallery) { projectId ->"))
+        assertTrue(screen.contains("onPhotoGallery(projectId)"))
         assertTrue(screen.contains("onPhotoGallery = viewModel::openPhotoGallery"))
         assertTrue(screen.contains("onPhotosClick = { actions.onPhotoGallery(project.id) }"))
         assertTrue(navGraph.contains("onPhotoGallery = { projectId ->"))
@@ -88,25 +85,6 @@ class ProjectListWorkspaceSourceTest {
         assertTrue(navGraph.contains("navController.navigateToTopLevel(TopLevelDestination.Library)"))
         assertTrue(navGraph.contains("navController.navigateSingleTopTo(Screen.YarnCardDetail(cardId).route)"))
     }
-
-    private fun continueKnittingContextLineReflective(
-        sectionName: String?,
-        rowCount: Int,
-        targetRows: Int?,
-        fallback: String,
-    ): String =
-        projectListScreenKt()
-            .getDeclaredMethod(
-                "continueKnittingContextLine",
-                String::class.java,
-                Int::class.javaPrimitiveType,
-                Int::class.javaObjectType,
-                String::class.java,
-            ).apply { isAccessible = true }
-            .invoke(null, sectionName, rowCount, targetRows, fallback) as String
-
-    private fun projectListScreenKt(): Class<*> =
-        Class.forName("com.finnvek.knittools.ui.screens.project.ProjectListScreenKt")
 
     private companion object {
         private const val PROJECT_LIST_VIEW_MODEL =

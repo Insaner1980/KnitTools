@@ -149,6 +149,50 @@ function Test-Mutation {
         -Details "exit=$($result.ExitCode); expected line '$expectedLine'; output=$($result.Output)"
 }
 
+function Test-SecretScanReadFailure {
+    $fixture = New-Fixture -Name "secret-scan-read-failure"
+    $relativePath = "app/src/main/secret-read-failure.txt"
+    $path = Join-Path $fixture $relativePath
+    Set-FileText -Path $path -Text "locked fixture file"
+
+    $secretName = "KNITTOOLS_RAVELRY_OAUTH2_CLIENT_SECRET"
+    $previousSecret = [Environment]::GetEnvironmentVariable($secretName, "Process")
+    $stream = $null
+    try {
+        [Environment]::SetEnvironmentVariable($secretName, "phase9-secret-probe", "Process")
+        $stream = [System.IO.File]::Open(
+            $path,
+            [System.IO.FileMode]::Open,
+            [System.IO.FileAccess]::ReadWrite,
+            [System.IO.FileShare]::None
+        )
+        $result = Run-ReleaseSurface -Fixture $fixture
+        $expectedLine = "[FAIL] known-ravelry-secrets:"
+        $expectedMessage = "Unable to read checked file: $relativePath"
+        Add-SelfTestResult `
+            -Condition ($result.ExitCode -eq 1 -and $result.Output.Contains($expectedLine) -and $result.Output.Contains($expectedMessage)) `
+            -Message "known Ravelry secret scan fails closed when a checked file cannot be read" `
+            -Details "exit=$($result.ExitCode); expected line '$expectedLine'; expected message '$expectedMessage'; output=$($result.Output)"
+    } finally {
+        if ($null -ne $stream) {
+            $stream.Dispose()
+        }
+        [Environment]::SetEnvironmentVariable($secretName, $previousSecret, "Process")
+    }
+}
+
+function Test-GitReadFailure {
+    $fixture = New-Fixture -Name "git-read-failure"
+    Remove-Item -LiteralPath (Join-Path $fixture ".git") -Recurse -Force
+    $result = Run-ReleaseSurface -Fixture $fixture
+    $expectedLine = "[FAIL] firebase-boundary:"
+    $expectedMessage = "git ls-files failed for app/google-services.json"
+    Add-SelfTestResult `
+        -Condition ($result.ExitCode -eq 1 -and $result.Output.Contains($expectedLine) -and $result.Output.Contains($expectedMessage)) `
+        -Message "Firebase boundary fails closed when git tracked-file lookup fails" `
+        -Details "exit=$($result.ExitCode); expected line '$expectedLine'; expected message '$expectedMessage'; output=$($result.Output)"
+}
+
 try {
     New-Item -ItemType Directory -Force -Path $TempRoot | Out-Null
 
@@ -160,6 +204,9 @@ try {
             -Condition ($baseline.ExitCode -eq 0 -and -not $baseline.Output.Contains("[FAIL]")) `
             -Message "baseline fixture passes" `
             -Details "exit=$($baseline.ExitCode); output=$($baseline.Output)"
+
+        Test-SecretScanReadFailure
+        Test-GitReadFailure
 
         Test-Mutation `
             -Name "record-audio" `
@@ -183,6 +230,19 @@ try {
                 $path = Join-Path $fixture "app/src/main/AndroidManifest.xml"
                 $text = Get-Content -Raw -LiteralPath $path
                 Set-FileText -Path $path -Text ($text.Replace('android:allowBackup="false"', 'android:allowBackup="true"'))
+            }
+
+        Test-Mutation `
+            -Name "exported-widget-action" `
+            -ExpectedStatus "FAIL" `
+            -ExpectedCheck "exported-components" `
+            -PassMessage "exported widget action mutation detected" `
+            -Mutate {
+                param($fixture)
+                $path = Join-Path $fixture "app/src/main/AndroidManifest.xml"
+                $text = Get-Content -Raw -LiteralPath $path
+                $pattern = '(?s)(android:name="\.widget\.CounterWidgetActions"\s+android:exported=")false"'
+                Set-FileText -Path $path -Text ([regex]::Replace($text, $pattern, '${1}true"', 1))
             }
 
         Test-Mutation `
@@ -211,6 +271,33 @@ try {
                 & git -C $fixture add -f app/google-services.json 2>$null | Out-Null
                 if ($LASTEXITCODE -ne 0) {
                     throw "git add google-services.json mutation failed"
+                }
+            }
+
+        Test-Mutation `
+            -Name "release-gate" `
+            -ExpectedStatus "FAIL" `
+            -ExpectedCheck "release-gates" `
+            -PassMessage "release signing gate mutation detected" `
+            -Mutate {
+                param($fixture)
+                $path = Join-Path $fixture "app/build.gradle.kts"
+                $text = Get-Content -Raw -LiteralPath $path
+                Set-FileText -Path $path -Text ($text.Replace("releaseSigningEnvNames", "releaseCredentialEnvNames"))
+            }
+
+        Test-Mutation `
+            -Name "tracked-debug-credentials" `
+            -ExpectedStatus "FAIL" `
+            -ExpectedCheck "debug-credentials" `
+            -PassMessage "tracked debug credentials mutation detected" `
+            -Mutate {
+                param($fixture)
+                $path = Join-Path $fixture "debug.credentials.properties"
+                Set-FileText -Path $path -Text "test=true"
+                & git -C $fixture add -f debug.credentials.properties 2>$null | Out-Null
+                if ($LASTEXITCODE -ne 0) {
+                    throw "git add debug.credentials.properties mutation failed"
                 }
             }
 
@@ -291,7 +378,20 @@ try {
                 param($fixture)
                 $path = Join-Path $fixture "app/src/main/java/com/finnvek/knittools/MainActivity.kt"
                 $text = Get-Content -Raw -LiteralPath $path
-                Set-FileText -Path $path -Text ($text.Replace("CounterLaunchTokenStore.isKnownLaunchId(this@MainActivity, launchId)", "false"))
+                Set-FileText -Path $path -Text ($text.Replace("CounterLaunchTokenStore.consumeLaunchId(this@MainActivity, launchId)", "false"))
+            }
+
+        Test-Mutation `
+            -Name "widget-oauth-counter-launch" `
+            -ExpectedStatus "FAIL" `
+            -ExpectedCheck "widget-oauth-boundary" `
+            -PassMessage "OAuth counter launch mutation detected" `
+            -Mutate {
+                param($fixture)
+                $path = Join-Path $fixture "app/src/main/java/com/finnvek/knittools/MainActivity.kt"
+                $text = Get-Content -Raw -LiteralPath $path
+                $signature = "private fun handleOAuthCallbackIfNeeded(intent: Intent?): Boolean {"
+                Set-FileText -Path $path -Text ($text.Replace($signature, "$signature`r`n        createCounterLaunchIntent()"))
             }
     }
 } finally {

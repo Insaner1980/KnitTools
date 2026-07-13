@@ -38,6 +38,20 @@ class ProFeatureGateSourceTest {
     }
 
     @Test
+    fun `locked widget opens pro upgrade instead of counter`() {
+        val widget = ProjectSourceFiles.read(COUNTER_WIDGET)
+        val mainActivity = ProjectSourceFiles.read(MAIN_ACTIVITY)
+        val navGraph = ProjectSourceFiles.read(NAV_GRAPH)
+
+        assertTrue(widget.contains("openProUpgrade = true"))
+        assertTrue(widget.contains("MainActivity.createProUpgradeLaunchIntent(context)"))
+        assertTrue(mainActivity.contains("fun createProUpgradeLaunchIntent(context: Context)"))
+        assertTrue(mainActivity.contains("openProUpgradeRequest = intent?.action == ACTION_OPEN_PRO_UPGRADE"))
+        assertTrue(navGraph.contains("if (!openProUpgradeRequest) return@LaunchedEffect"))
+        assertTrue(navGraph.contains("navController.navigateSingleTopTo(Screen.ProUpgrade.route)"))
+    }
+
+    @Test
     fun `project and library deep links require feature-specific gates`() {
         val navGraph = ProjectSourceFiles.read(NAV_GRAPH)
         val projectListViewModel = ProjectSourceFiles.read(PROJECT_LIST_VIEW_MODEL)
@@ -72,7 +86,8 @@ class ProFeatureGateSourceTest {
         assertTrue(screen.contains("showSheet = showCountersListSheet && state.canUseMultipleCounters"))
 
         assertTrue(viewModel.contains("canUseYarnCards = proState.hasFeature(ProFeature.UNLIMITED_YARN)"))
-        assertTrue(viewModel.contains("if (!proManager.hasFeature(ProFeature.UNLIMITED_YARN)) return"))
+        assertTrue(viewModel.contains("runProjectYarnNoteSaveIfAllowed("))
+        assertTrue(viewModel.contains("canUseYarnCards = proManager.hasFeature(ProFeature.UNLIMITED_YARN)"))
         assertTrue(screen.contains("canSaveToMyYarn = state.canUseYarnCards"))
         assertTrue(yarnManagementSheet.contains("canSaveToMyYarn: Boolean"))
         assertTrue(yarnManagementSheet.contains("note.savedYarnCardId == null && canSaveToMyYarn"))
@@ -154,6 +169,7 @@ class ProFeatureGateSourceTest {
             "app/src/main/java/com/finnvek/knittools/widget/CounterWidget.kt"
         const val COUNTER_WIDGET_ACTIONS =
             "app/src/main/java/com/finnvek/knittools/widget/CounterWidgetActions.kt"
+        const val MAIN_ACTIVITY = "app/src/main/java/com/finnvek/knittools/MainActivity.kt"
         const val LIBRARY_VIEW_MODEL =
             "app/src/main/java/com/finnvek/knittools/ui/screens/library/LibraryViewModel.kt"
         const val LIBRARY_SCREEN =

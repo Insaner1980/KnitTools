@@ -630,5 +630,5 @@ private fun combineNoteBlocks(
     when {
         primary.isBlank() -> secondary
         secondary.isBlank() -> primary
-        else -> "${primary.trimEnd()}\n\n---\n\n${secondary.trimStart()}"
+        else -> "$primary\n\n---\n\n$secondary"
     }

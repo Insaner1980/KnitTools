@@ -38,6 +38,7 @@ import com.finnvek.knittools.auth.RavelryAuthManager
 import com.finnvek.knittools.billing.BillingManager
 import com.finnvek.knittools.data.datastore.PreferencesManager
 import com.finnvek.knittools.data.storage.CounterLaunchTokenStore
+import com.finnvek.knittools.di.IoDispatcher
 import com.finnvek.knittools.pro.InAppReviewManager
 import com.finnvek.knittools.pro.InAppUpdateManager
 import com.finnvek.knittools.ravelry.RavelryShareImportUrls
@@ -47,9 +48,13 @@ import com.finnvek.knittools.ui.navigation.KnitToolsNavActions
 import com.finnvek.knittools.ui.navigation.KnitToolsNavHost
 import com.finnvek.knittools.ui.navigation.RavelryShareImportRequest
 import com.finnvek.knittools.ui.navigation.TopLevelDestination
+import com.finnvek.knittools.ui.navigation.withValidatedCounterLaunchTrust
 import com.finnvek.knittools.ui.theme.KnitToolsTheme
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -68,6 +73,10 @@ class MainActivity : AppCompatActivity() {
 
     @Inject
     lateinit var preferencesManager: PreferencesManager
+
+    @Inject
+    @IoDispatcher
+    lateinit var ioDispatcher: CoroutineDispatcher
 
     private val updateResultLauncher =
         registerForActivityResult(
@@ -94,21 +103,18 @@ class MainActivity : AppCompatActivity() {
 
     private var counterLaunchRequest by mutableStateOf<CounterLaunchRequest?>(null)
     private var ravelryShareImportRequest by mutableStateOf<RavelryShareImportRequest?>(null)
+    private var openProUpgradeRequest by mutableStateOf(false)
     private var consumedCounterLaunchRequestId: String? = null
     private var nextRavelryShareImportRequestId = 0L
     private var startupThemeLoaded = false
     private var edgeToEdgeDarkTheme: Boolean? = null
+    private var launchRequestJob: Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
         splashScreen.setKeepOnScreenCondition { !startupThemeLoaded }
-        restoreCounterLaunchRequest(savedInstanceState)
-        val isOAuthCallback = handleOAuthCallbackIfNeeded(intent)
-        val isShareImport = !isOAuthCallback && handleRavelryShareIntentIfNeeded(intent)
-        if (isOAuthCallback || isShareImport) {
-            counterLaunchRequest = null
-        }
+        startLaunchRequestInitialization(savedInstanceState)
         checkForInAppUpdate()
         setContent {
             val prefs by preferencesManager.preferences.collectAsStateWithLifecycle(initialValue = null)
@@ -138,6 +144,7 @@ class MainActivity : AppCompatActivity() {
                     KnitToolsNavHost(
                         startDestination = TopLevelDestination.Projects.route,
                         counterLaunchRequest = counterLaunchRequest,
+                        openProUpgradeRequest = openProUpgradeRequest,
                         ravelryShareImportRequest = ravelryShareImportRequest,
                         snackbarHostState = snackbarHostState,
                         actions =
@@ -152,6 +159,10 @@ class MainActivity : AppCompatActivity() {
                                     counterLaunchRequest = null
                                     clearCounterLaunchIntent()
                                 },
+                                onProUpgradeLaunchHandled = {
+                                    openProUpgradeRequest = false
+                                    clearProUpgradeLaunchIntent()
+                                },
                                 onRavelryShareImportHandled = {
                                     ravelryShareImportRequest = null
                                     clearRavelryShareIntent()
@@ -163,6 +174,24 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun startLaunchRequestInitialization(savedInstanceState: Bundle?) {
+        launchRequestJob?.cancel()
+        launchRequestJob =
+            lifecycleScope.launch {
+                initializeLaunchRequests(savedInstanceState)
+            }
+    }
+
+    private suspend fun initializeLaunchRequests(savedInstanceState: Bundle?) {
+        restoreCounterLaunchRequest(savedInstanceState)
+        openProUpgradeRequest = intent?.action == ACTION_OPEN_PRO_UPGRADE
+        val isOAuthCallback = handleOAuthCallbackIfNeeded(intent)
+        val isShareImport = !isOAuthCallback && handleRavelryShareIntentIfNeeded(intent)
+        if (isOAuthCallback || isShareImport) {
+            counterLaunchRequest = null
+        }
+    }
+
     private fun checkForInAppUpdate() {
         inAppUpdateManager.checkForUpdate(
             resultLauncher = updateResultLauncher,
@@ -170,7 +199,7 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
-    private fun restoreCounterLaunchRequest(savedInstanceState: Bundle?) {
+    private suspend fun restoreCounterLaunchRequest(savedInstanceState: Bundle?) {
         consumedCounterLaunchRequestId = savedInstanceState?.getString(STATE_CONSUMED_COUNTER_LAUNCH_REQUEST_ID)
         counterLaunchRequest =
             intent.toCounterLaunchRequest(
@@ -239,13 +268,18 @@ class MainActivity : AppCompatActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
+        openProUpgradeRequest = intent.action == ACTION_OPEN_PRO_UPGRADE
         val isOAuthCallback = handleOAuthCallbackIfNeeded(intent)
         val isShareImport = !isOAuthCallback && handleRavelryShareIntentIfNeeded(intent)
-        counterLaunchRequest =
-            if (isOAuthCallback || isShareImport) {
-                null
-            } else {
-                intent.toCounterLaunchRequest(consumedRequestId = null)
+        launchRequestJob?.cancel()
+        launchRequestJob =
+            lifecycleScope.launch {
+                counterLaunchRequest =
+                    if (isOAuthCallback || isShareImport) {
+                        null
+                    } else {
+                        intent.toCounterLaunchRequest(consumedRequestId = null)
+                    }
             }
     }
 
@@ -295,6 +329,12 @@ class MainActivity : AppCompatActivity() {
         intent?.removeExtra(EXTRA_COUNTER_LAUNCH_ID)
     }
 
+    private fun clearProUpgradeLaunchIntent() {
+        intent
+            ?.takeIf { it.action == ACTION_OPEN_PRO_UPGRADE }
+            ?.setAction(Intent.ACTION_MAIN)
+    }
+
     private fun clearRavelryShareIntent() {
         intent
             ?.takeIf { it.action == Intent.ACTION_SEND }
@@ -306,20 +346,24 @@ class MainActivity : AppCompatActivity() {
             }
     }
 
-    private fun Intent?.toCounterLaunchRequest(consumedRequestId: String?): CounterLaunchRequest? {
+    private suspend fun Intent?.toCounterLaunchRequest(consumedRequestId: String?): CounterLaunchRequest? {
         if (this == null) return null
         val isOAuthCallback = data?.let(ravelryAuthManager::isOAuthCallback) == true
+        val shouldOpenCounter = getBooleanExtra(EXTRA_OPEN_COUNTER, false)
         val launchId = getStringExtra(EXTRA_COUNTER_LAUNCH_ID)
-        return CounterLaunchRequest.fromIntentData(
-            intentData =
+        val intentData =
+            withContext(ioDispatcher) {
                 CounterLaunchIntentData(
-                    shouldOpenCounter = getBooleanExtra(EXTRA_OPEN_COUNTER, false),
+                    shouldOpenCounter = shouldOpenCounter,
                     projectId = getLongExtra(EXTRA_PROJECT_ID, 0L).takeIf { it > 0L },
                     launchId = launchId,
-                    isTrustedCounterLaunch =
-                        CounterLaunchTokenStore.isKnownLaunchId(this@MainActivity, launchId),
                     isOAuthCallback = isOAuthCallback,
-                ),
+                ).withValidatedCounterLaunchTrust { candidateLaunchId ->
+                    CounterLaunchTokenStore.consumeLaunchId(this@MainActivity, candidateLaunchId)
+                }
+            }
+        return CounterLaunchRequest.fromIntentData(
+            intentData = intentData,
             consumedRequestId = consumedRequestId,
         )
     }
@@ -328,6 +372,7 @@ class MainActivity : AppCompatActivity() {
         private const val EXTRA_OPEN_COUNTER = "com.finnvek.knittools.extra.OPEN_COUNTER"
         private const val EXTRA_PROJECT_ID = "com.finnvek.knittools.extra.PROJECT_ID"
         private const val EXTRA_COUNTER_LAUNCH_ID = "com.finnvek.knittools.extra.COUNTER_LAUNCH_ID"
+        private const val ACTION_OPEN_PRO_UPGRADE = "com.finnvek.knittools.action.OPEN_PRO_UPGRADE"
         private const val MIME_TYPE_TEXT_PLAIN = "text/plain"
         private const val RAVELRY_PATTERN_SEARCH_URL = "https://www.ravelry.com/patterns/search"
         private const val STATE_CONSUMED_COUNTER_LAUNCH_REQUEST_ID =
@@ -341,6 +386,12 @@ class MainActivity : AppCompatActivity() {
                 putExtra(EXTRA_OPEN_COUNTER, true)
                 projectId?.let { putExtra(EXTRA_PROJECT_ID, it) }
                 putExtra(EXTRA_COUNTER_LAUNCH_ID, CounterLaunchTokenStore.issueLaunchId(context))
+                addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            }
+
+        fun createProUpgradeLaunchIntent(context: Context): Intent =
+            Intent(context, MainActivity::class.java).apply {
+                action = ACTION_OPEN_PRO_UPGRADE
                 addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
             }
     }

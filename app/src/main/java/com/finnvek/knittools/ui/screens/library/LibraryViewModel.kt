@@ -6,17 +6,23 @@ import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.ProgressPhoto
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.YarnCard
+import com.finnvek.knittools.domain.model.YarnCardStatus
+import com.finnvek.knittools.pro.ProFeature
+import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.CounterRepository
 import com.finnvek.knittools.repository.ProgressPhotoRepository
 import com.finnvek.knittools.repository.SavedPatternRepository
 import com.finnvek.knittools.repository.YarnCardRepository
+import com.finnvek.knittools.ui.screens.yarncard.ManualYarnCardInput
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.concurrent.CancellationException
@@ -29,6 +35,7 @@ class LibraryViewModel
         private val savedPatternRepository: SavedPatternRepository,
         private val yarnCardRepository: YarnCardRepository,
         private val progressPhotoRepository: ProgressPhotoRepository,
+        private val proManager: ProManager,
         counterRepository: CounterRepository,
     ) : ViewModel() {
         private val _isPhotoSelectMode = MutableStateFlow(false)
@@ -59,6 +66,22 @@ class LibraryViewModel
         val savedPatternCount: Flow<Int> = savedPatternRepository.getCount()
         val yarnCardCount: Flow<Int> = yarnCardRepository.getCardCount()
         val photoCount: Flow<Int> = progressPhotoRepository.getAllPhotoCount()
+        val canUseProgressPhotos: StateFlow<Boolean> =
+            proManager
+                .hasFeatureFlow(ProFeature.PROGRESS_PHOTOS)
+                .stateIn(
+                    viewModelScope,
+                    SharingStarted.WhileSubscribed(5000),
+                    proManager.hasFeature(ProFeature.PROGRESS_PHOTOS),
+                )
+        val canUseYarnCards: StateFlow<Boolean> =
+            proManager
+                .hasFeatureFlow(ProFeature.UNLIMITED_YARN)
+                .stateIn(
+                    viewModelScope,
+                    SharingStarted.WhileSubscribed(5000),
+                    proManager.hasFeature(ProFeature.UNLIMITED_YARN),
+                )
 
         // Listat alanäytöille
         val savedPatterns: Flow<List<SavedPattern>> =
@@ -180,6 +203,22 @@ class LibraryViewModel
             )
         }
 
+        fun deleteSavedPattern(
+            id: Long,
+            onDeleted: () -> Unit,
+        ) {
+            viewModelScope.launch {
+                try {
+                    savedPatternRepository.deleteById(id)
+                    onDeleted()
+                } catch (cancellation: CancellationException) {
+                    throw cancellation
+                } catch (_: Exception) {
+                    _patternDeleteErrorId.value += 1
+                }
+            }
+        }
+
         // === Multi-select (MyYarnScreen) ===
 
         fun enterYarnSelectMode(initialYarnId: Long) {
@@ -213,6 +252,33 @@ class LibraryViewModel
                 deleteByIds = yarnCardRepository::deleteCards,
                 onError = { _yarnDeleteErrorId.value += 1 },
             )
+        }
+
+        fun createManualYarnCard(input: ManualYarnCardInput) {
+            if (!canUseYarnCards.value) return
+            val yarnName = input.yarnName.trim()
+            if (yarnName.isBlank()) return
+
+            viewModelScope.launch {
+                try {
+                    yarnCardRepository.saveCard(
+                        YarnCard(
+                            yarnName = yarnName,
+                            brand = input.brand.trim(),
+                            quantityInStash = input.quantity.coerceAtLeast(1),
+                            weightCategory = input.weightCategory.trim(),
+                            colorName = input.colorName.trim(),
+                            colorNumber = input.colorNumber.trim(),
+                            dyeLot = input.dyeLot.trim(),
+                            status = YarnCardStatus.IN_STASH,
+                        ),
+                    )
+                } catch (cancellation: CancellationException) {
+                    throw cancellation
+                } catch (_: Exception) {
+                    _yarnDeleteErrorId.value += 1
+                }
+            }
         }
 
         private fun <T> Flow<List<T>>.syncSelectionWithItems(

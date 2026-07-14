@@ -10,6 +10,9 @@ internal fun CounterUiState.withStartedProject(project: CounterProject): Counter
         projectId = project.id,
         projectName = project.name,
         counter = CounterState(count = project.count, stepSize = project.stepSize),
+        craftType = project.craftType,
+        mainCounterLabelType = project.mainCounterLabelType,
+        mainCounterCustomLabel = project.mainCounterCustomLabel,
         secondaryCount = project.secondaryCount,
         notes = project.notes,
         sectionName = project.sectionName,
@@ -20,9 +23,14 @@ internal fun CounterUiState.withStartedProject(project: CounterProject): Counter
         patternUri = project.patternUri,
         patternName = project.patternName,
         currentPatternPage = project.currentPatternPage,
+        readingLineEnabled = project.readingLineEnabled,
+        readingLineYFraction = project.readingLineYFraction,
         patternRowMapping = project.patternRowMapping,
         totalRows = project.totalRows,
         targetRows = project.targetRows,
+        linkedYarns = emptyList(),
+        projectYarnNotes = emptyList(),
+        reminders = emptyList(),
         projectCounters = emptyList(),
         activeAlert = null,
         dismissedReminderTrigger = null,
@@ -41,6 +49,9 @@ internal fun CounterUiState.withObservedProject(project: CounterProject): Counte
     return copy(
         projectName = project.name,
         counter = observedCounter,
+        craftType = project.craftType,
+        mainCounterLabelType = project.mainCounterLabelType,
+        mainCounterCustomLabel = project.mainCounterCustomLabel,
         secondaryCount = project.secondaryCount,
         notes = project.notes,
         sectionName = project.sectionName,
@@ -51,6 +62,8 @@ internal fun CounterUiState.withObservedProject(project: CounterProject): Counte
         patternUri = project.patternUri,
         patternName = project.patternName,
         currentPatternPage = project.currentPatternPage,
+        readingLineEnabled = project.readingLineEnabled,
+        readingLineYFraction = project.readingLineYFraction,
         patternRowMapping = project.patternRowMapping,
         totalRows = project.totalRows,
         targetRows = project.targetRows,
@@ -87,13 +100,18 @@ internal fun CounterUiState.withReminderList(reminders: List<RowReminder>): Coun
 
 internal fun CounterUiState.withDismissedReminder(reminderId: Long): CounterUiState {
     val reminder = reminders.find { it.id == reminderId }
-    val dismissal =
+    val immediateDismissal = DismissedReminderTrigger(reminderId = reminderId, row = counter.count)
+    val persistedDismissal =
         if (reminder?.repeatInterval != null) {
-            DismissedReminderTrigger(reminderId = reminderId, row = counter.count)
+            immediateDismissal
         } else {
             null
         }
-    return copy(activeAlert = null, dismissedReminderTrigger = dismissal)
+    val projectReminders = reminders.filter { reminder -> projectId == null || reminder.projectId == projectId }
+    return copy(
+        activeAlert = activeReminder(projectReminders, counter.count, immediateDismissal),
+        dismissedReminderTrigger = persistedDismissal,
+    )
 }
 
 private fun activeReminder(

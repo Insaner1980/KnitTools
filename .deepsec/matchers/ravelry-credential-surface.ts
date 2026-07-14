@@ -10,7 +10,7 @@ export const ravelryCredentialSurface: MatcherPlugin = {
   match(content, filePath): CandidateMatch[] {
     if (isTestFile(filePath)) return [];
 
-    return regexCandidates("ravelry-credential-surface", content, [
+    const patterns = [
       {
         regex: /BuildConfig\.RAVELRY_(?:BASIC_AUTH|OAUTH2)_[A-Z_]+/,
         label: "Ravelry credential read from BuildConfig",
@@ -19,14 +19,15 @@ export const ravelryCredentialSurface: MatcherPlugin = {
         regex: /KNITTOOLS_(?:ALLOW_EMBEDDED_RAVELRY_SECRETS|RAVELRY_[A-Z0-9_]+)/,
         label: "Ravelry release credential environment gate",
       },
-      {
-        regex: /debug\.credentials\.properties/,
-        label: "Debug credential file path",
-      },
-      {
+    ];
+
+    if (/Ravelry/i.test(filePath)) {
+      patterns.push({
         regex: /Authorization["']?\s*,\s*["'](?:Basic|Bearer)\b/,
         label: "Ravelry Authorization header construction",
-      },
-    ]);
+      });
+    }
+
+    return regexCandidates("ravelry-credential-surface", content, patterns);
   },
 };

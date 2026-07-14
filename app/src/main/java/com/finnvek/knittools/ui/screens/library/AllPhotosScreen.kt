@@ -49,6 +49,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -58,10 +59,9 @@ import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.ProgressPhoto
 import com.finnvek.knittools.ui.components.ConfirmationDialog
+import com.finnvek.knittools.ui.components.rememberLocaleDateFormat
 import com.finnvek.knittools.ui.screens.counter.PhotoViewer
-import java.text.SimpleDateFormat
 import java.util.Date
-import java.util.Locale
 
 // Data-luokat AllPhotosScreen-parametrien ryhmittelyyn (S107)
 data class AllPhotosState(
@@ -92,7 +92,7 @@ fun AllPhotosScreen(
     var viewingPhotoId by rememberSaveable { mutableStateOf<Long?>(null) }
     var showDeleteConfirmDialog by rememberSaveable { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
-    val deleteFailedMessage = stringResource(R.string.ai_error_unknown)
+    val deleteFailedMessage = stringResource(R.string.generic_error_unknown)
     val viewingPhoto = remember(viewingPhotoId, state.photos) { state.photos.firstOrNull { it.id == viewingPhotoId } }
 
     val filteredPhotos =
@@ -202,7 +202,7 @@ private fun AllPhotosDeleteDialog(
 ) {
     ConfirmationDialog(
         title = stringResource(R.string.delete_photo),
-        message = stringResource(R.string.delete_photos_confirm, selectedCount),
+        message = pluralStringResource(R.plurals.delete_photos_confirm, selectedCount, selectedCount),
         confirmText = stringResource(R.string.delete),
         isDestructive = true,
         onConfirm = onConfirm,
@@ -390,7 +390,7 @@ private fun PhotoGridItem(
     onClick: () -> Unit,
     onLongClick: () -> Unit,
 ) {
-    val dateFormat = remember { SimpleDateFormat("d MMM", Locale.getDefault()) }
+    val dateFormat = rememberLocaleDateFormat("d MMM")
 
     // Valittu kortti saa kevyen primäärivärisen taustan
     val backgroundColor =

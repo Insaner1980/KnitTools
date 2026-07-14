@@ -37,6 +37,7 @@ fun SessionHistoryScreen(
     viewModel: SessionHistoryViewModel = hiltViewModel(),
 ) {
     val sessions by viewModel.sessions.collectAsStateWithLifecycle()
+    val isPro by viewModel.isPro.collectAsStateWithLifecycle()
     val projectMissing by viewModel.projectMissing.collectAsStateWithLifecycle()
     var pendingDeleteSessionId by rememberSaveable { mutableStateOf<Long?>(null) }
 
@@ -70,7 +71,7 @@ fun SessionHistoryScreen(
                     .fillMaxSize()
                     .padding(padding),
         ) {
-            if (!viewModel.isPro) {
+            if (!isPro) {
                 Card(
                     modifier =
                         Modifier

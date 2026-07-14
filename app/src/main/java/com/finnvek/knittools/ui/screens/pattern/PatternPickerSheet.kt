@@ -29,6 +29,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -45,8 +46,20 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 private data class PatternPickerActions(
+    val openRavelryImport: () -> Unit,
     val openDeviceFiles: () -> Unit,
+    val openCloudProviderFiles: () -> Unit,
     val startCameraScan: () -> Unit,
+    val continueWithoutPattern: () -> Unit,
+)
+
+private data class CaptureResultRequest(
+    val success: Boolean,
+    val context: android.content.Context,
+    val projectId: Long?,
+    val canUseCameraScan: Boolean,
+    val patternStorage: PatternDocumentStorage,
+    val pendingImageUriString: String?,
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -54,16 +67,18 @@ private data class PatternPickerActions(
 fun PatternPickerSheet(
     projectId: Long?,
     savedPatterns: List<SavedPattern>,
-    isPro: Boolean,
+    canUseCameraScan: Boolean,
     onSavedPatternSelected: (SavedPattern) -> Unit,
     onDocumentSelected: (String, String) -> Unit,
+    onImportFromRavelry: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val attachablePatterns = remember(savedPatterns) { savedPatterns.filter { it.patternUrl.isLocalPatternUri() } }
     val actions =
         rememberPatternPickerActions(
             projectId = projectId,
+            canUseCameraScan = canUseCameraScan,
             onDocumentSelected = onDocumentSelected,
+            onImportFromRavelry = onImportFromRavelry,
             onDismiss = onDismiss,
         )
 
@@ -72,8 +87,8 @@ fun PatternPickerSheet(
         containerColor = MaterialTheme.colorScheme.surface,
     ) {
         PatternPickerSheetContent(
-            attachablePatterns = attachablePatterns,
-            isPro = isPro,
+            savedPatterns = savedPatterns,
+            canUseCameraScan = canUseCameraScan,
             projectId = projectId,
             actions = actions,
             onSavedPatternSelected = { pattern ->
@@ -87,12 +102,16 @@ fun PatternPickerSheet(
 @Composable
 private fun rememberPatternPickerActions(
     projectId: Long?,
+    canUseCameraScan: Boolean,
     onDocumentSelected: (String, String) -> Unit,
+    onImportFromRavelry: () -> Unit,
     onDismiss: () -> Unit,
 ): PatternPickerActions {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val patternStorage = remember { PatternDocumentStorage() }
+    val currentProjectId by rememberUpdatedState(projectId)
+    val currentCanUseCameraScan by rememberUpdatedState(canUseCameraScan)
     var pendingCaptureImageUriString by rememberSaveable { mutableStateOf<String?>(null) }
     var pendingCaptureFilePath by rememberSaveable { mutableStateOf<String?>(null) }
 
@@ -110,11 +129,15 @@ private fun rememberPatternPickerActions(
         rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
             scope.launch {
                 handleCaptureResult(
-                    success = success,
-                    context = context,
-                    projectId = projectId,
-                    patternStorage = patternStorage,
-                    pendingImageUriString = pendingCaptureImageUriString,
+                    request =
+                        CaptureResultRequest(
+                            success = success,
+                            context = context,
+                            projectId = currentProjectId,
+                            canUseCameraScan = currentCanUseCameraScan,
+                            patternStorage = patternStorage,
+                            pendingImageUriString = pendingCaptureImageUriString,
+                        ),
                     onDocumentSelected = onDocumentSelected,
                     onDismiss = onDismiss,
                 )
@@ -129,25 +152,45 @@ private fun rememberPatternPickerActions(
                 showCameraPermissionDeniedToast(context)
                 return@rememberLauncherForActivityResult
             }
-            val pendingProjectId = projectId ?: return@rememberLauncherForActivityResult
-            val (file, uri) = patternStorage.createCaptureImageFile(context, pendingProjectId)
-            pendingCaptureImageUriString = uri.toString()
-            pendingCaptureFilePath = file.absolutePath
-            cameraLauncher.launch(uri)
+            val pendingProjectId = currentProjectId ?: return@rememberLauncherForActivityResult
+            if (!canStartPatternCameraScan(pendingProjectId, currentCanUseCameraScan)) {
+                return@rememberLauncherForActivityResult
+            }
+            scope.launch {
+                val (file, uri) =
+                    withContext(AppDispatchers.IO) {
+                        patternStorage.createCaptureImageFile(context, pendingProjectId)
+                    }
+                pendingCaptureImageUriString = uri.toString()
+                pendingCaptureFilePath = file.absolutePath
+                cameraLauncher.launch(uri)
+            }
         }
 
-    return remember(openDocumentLauncher, permissionLauncher) {
+    val openPdfDocumentPicker = { openDocumentLauncher.launch(pdfMimeTypes()) }
+
+    return remember(openDocumentLauncher, permissionLauncher, onDismiss, onImportFromRavelry) {
         PatternPickerActions(
-            openDeviceFiles = { openDocumentLauncher.launch(arrayOf("application/pdf")) },
-            startCameraScan = { permissionLauncher.launch(Manifest.permission.CAMERA) },
+            openRavelryImport = {
+                onDismiss()
+                onImportFromRavelry()
+            },
+            openDeviceFiles = openPdfDocumentPicker,
+            openCloudProviderFiles = openPdfDocumentPicker,
+            startCameraScan = {
+                if (canStartPatternCameraScan(currentProjectId, currentCanUseCameraScan)) {
+                    permissionLauncher.launch(Manifest.permission.CAMERA)
+                }
+            },
+            continueWithoutPattern = onDismiss,
         )
     }
 }
 
 @Composable
 private fun PatternPickerSheetContent(
-    attachablePatterns: List<SavedPattern>,
-    isPro: Boolean,
+    savedPatterns: List<SavedPattern>,
+    canUseCameraScan: Boolean,
     projectId: Long?,
     actions: PatternPickerActions,
     onSavedPatternSelected: (SavedPattern) -> Unit,
@@ -166,42 +209,63 @@ private fun PatternPickerSheetContent(
             color = MaterialTheme.colorScheme.onSurface,
         )
 
-        OutlinedButton(
-            onClick = actions.openDeviceFiles,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(stringResource(R.string.pattern_picker_device_files))
-        }
-
-        Button(
-            onClick = actions.startCameraScan,
-            enabled = isPro && projectId != null,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(stringResource(R.string.pattern_picker_camera_scan))
-        }
-
-        if (attachablePatterns.isNotEmpty()) {
+        if (savedPatterns.isNotEmpty()) {
             Text(
                 text = stringResource(R.string.pattern_picker_saved_patterns),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.secondary,
             )
             PatternPickerSavedPatterns(
-                attachablePatterns = attachablePatterns,
+                savedPatterns = savedPatterns,
                 onSavedPatternSelected = onSavedPatternSelected,
             )
+        }
+
+        OutlinedButton(
+            onClick = actions.openRavelryImport,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(stringResource(R.string.pattern_picker_import_from_ravelry))
+        }
+
+        OutlinedButton(
+            onClick = actions.openDeviceFiles,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(stringResource(R.string.pattern_picker_import_pdf))
+        }
+
+        OutlinedButton(
+            onClick = actions.openCloudProviderFiles,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(stringResource(R.string.pattern_picker_import_cloud_pdf))
+        }
+
+        Button(
+            onClick = actions.startCameraScan,
+            enabled = canStartPatternCameraScan(projectId, canUseCameraScan),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(stringResource(R.string.pattern_picker_camera_scan))
+        }
+
+        OutlinedButton(
+            onClick = actions.continueWithoutPattern,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(stringResource(R.string.pattern_picker_continue_without_pattern))
         }
     }
 }
 
 @Composable
 private fun PatternPickerSavedPatterns(
-    attachablePatterns: List<SavedPattern>,
+    savedPatterns: List<SavedPattern>,
     onSavedPatternSelected: (SavedPattern) -> Unit,
 ) {
     LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        items(attachablePatterns, key = { it.id }) { pattern ->
+        items(savedPatterns, key = { it.id }) { pattern ->
             Column(
                 modifier =
                     Modifier
@@ -233,28 +297,44 @@ private fun PatternPickerSavedPatterns(
 }
 
 private suspend fun handleCaptureResult(
-    success: Boolean,
-    context: android.content.Context,
-    projectId: Long?,
-    patternStorage: PatternDocumentStorage,
-    pendingImageUriString: String?,
+    request: CaptureResultRequest,
     onDocumentSelected: (String, String) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val pendingUri = pendingImageUriString?.toUri()
-    if (!success || pendingUri == null || projectId == null) return
+    val pendingUri = request.pendingImageUriString?.toUri()
+    if (
+        !request.success ||
+        pendingUri == null ||
+        !canStartPatternCameraScan(request.projectId, request.canUseCameraScan)
+    ) {
+        return
+    }
+    val pendingProjectId = request.projectId ?: return
     val fileName = "pattern-scan-${System.currentTimeMillis()}.pdf"
     val converted =
         withContext(AppDispatchers.IO) {
-            patternStorage.convertImageToPdf(context, projectId, pendingUri, fileName)
+            request.patternStorage.convertImageToPdf(
+                context = request.context,
+                projectId = pendingProjectId,
+                imageUri = pendingUri,
+                fileName = fileName,
+            )
         }
     if (converted != null) {
         onDocumentSelected(converted.first, converted.second)
         onDismiss()
     } else {
-        Toast.makeText(context, context.getString(R.string.pattern_scan_failed), Toast.LENGTH_SHORT).show()
+        val message = request.context.getString(R.string.pattern_scan_failed)
+        Toast.makeText(request.context, message, Toast.LENGTH_SHORT).show()
     }
 }
+
+internal fun canStartPatternCameraScan(
+    projectId: Long?,
+    canUseCameraScan: Boolean,
+): Boolean = canUseCameraScan && projectId != null
+
+private fun pdfMimeTypes(): Array<String> = arrayOf(PATTERN_PDF_MIME_TYPE)
 
 private fun showCameraPermissionDeniedToast(context: android.content.Context) {
     val activity = context as? Activity
@@ -283,3 +363,5 @@ private fun resolvePatternName(
     }
     return uri.lastPathSegment ?: context.getString(R.string.pattern_pdf_fallback_name)
 }
+
+private const val PATTERN_PDF_MIME_TYPE = "application/pdf"

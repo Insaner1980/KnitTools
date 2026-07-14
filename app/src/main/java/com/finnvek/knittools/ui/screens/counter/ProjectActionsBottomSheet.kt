@@ -13,19 +13,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.Article
 import androidx.compose.material.icons.outlined.AddCircle
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.Edit
-import androidx.compose.material.icons.outlined.EditNote
 import androidx.compose.material.icons.outlined.FormatListNumbered
 import androidx.compose.material.icons.outlined.History
-import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Numbers
-import androidx.compose.material.icons.outlined.PhotoLibrary
 import androidx.compose.material.icons.outlined.Restore
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -48,16 +44,13 @@ import com.finnvek.knittools.R
 
 data class ProjectActionsSheetCallbacks(
     val onDismiss: () -> Unit,
-    val onOpenYarnManagement: () -> Unit,
-    val onOpenNotes: () -> Unit,
-    val onOpenSummary: () -> Unit,
-    val onOpenPhotos: () -> Unit,
     val onOpenReminders: () -> Unit,
     val onOpenCountersList: () -> Unit,
     val onOpenAddCounter: () -> Unit,
     val onToggleStitchTracking: (Boolean) -> Unit,
     val onOpenStitchCount: () -> Unit,
     val onOpenSessionHistory: () -> Unit,
+    val onOpenProjectDetails: () -> Unit,
     val onStartRename: () -> Unit,
     val onShowResetDialog: () -> Unit,
     val onShowCompleteDialog: () -> Unit,
@@ -65,13 +58,10 @@ data class ProjectActionsSheetCallbacks(
 )
 
 data class ProjectActionsSheetState(
-    val linkedYarnCount: Int,
     val reminderCount: Int,
     val projectCounterCount: Int,
     val stitchTrackingEnabled: Boolean,
     val stitchCount: Int?,
-    val isPro: Boolean,
-    val isAiAvailable: Boolean,
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -90,44 +80,22 @@ fun ProjectActionsBottomSheet(
         Column(modifier = Modifier.padding(bottom = 18.dp)) {
             ProjectActionsSection(title = stringResource(R.string.project_actions_section_this_project)) {
                 ActionRow(
-                    icon = Icons.Outlined.Inventory2,
-                    label = stringResource(R.string.project_actions_yarn),
-                    trailingCount = state.linkedYarnCount.takeIf { it > 0 },
-                    onClick = callbacks.onOpenYarnManagement,
-                )
-                ActionRow(
-                    icon = Icons.Outlined.EditNote,
-                    label = stringResource(R.string.notes),
-                    onClick = callbacks.onOpenNotes,
-                )
-                ActionRow(
-                    icon = Icons.AutoMirrored.Outlined.Article,
-                    label = stringResource(R.string.project_actions_ai_summary),
-                    onClick = callbacks.onOpenSummary,
-                    enabled = state.isPro && state.isAiAvailable,
-                )
-                ActionRow(
-                    icon = Icons.Outlined.PhotoLibrary,
-                    label = stringResource(R.string.project_actions_photos),
-                    onClick = callbacks.onOpenPhotos,
-                )
-                ActionRow(
                     icon = Icons.Outlined.Notifications,
                     label = stringResource(R.string.reminders),
                     trailingCount = state.reminderCount.takeIf { it > 0 },
                     onClick = callbacks.onOpenReminders,
                 )
-            }
-
-            SectionDivider()
-
-            ProjectActionsSection(title = stringResource(R.string.project_actions_section_counters)) {
                 ActionRow(
                     icon = Icons.Outlined.FormatListNumbered,
                     label = stringResource(R.string.counters),
                     trailingCount = (state.projectCounterCount + 1).takeIf { it > 0 },
                     onClick = callbacks.onOpenCountersList,
                 )
+            }
+
+            SectionDivider()
+
+            ProjectActionsSection(title = stringResource(R.string.project_actions_section_counter_tools)) {
                 ActionRow(
                     icon = Icons.Outlined.AddCircle,
                     label = stringResource(R.string.add_counter),
@@ -145,7 +113,6 @@ fun ProjectActionsBottomSheet(
                     label = stringResource(R.string.track_stitches),
                     checked = state.stitchTrackingEnabled,
                     onCheckedChange = callbacks.onToggleStitchTracking,
-                    enabled = (state.stitchCount ?: 0) > 0,
                 )
             }
 
@@ -156,6 +123,11 @@ fun ProjectActionsBottomSheet(
                     icon = Icons.Outlined.History,
                     label = stringResource(R.string.session_history_title),
                     onClick = callbacks.onOpenSessionHistory,
+                )
+                ActionRow(
+                    icon = Icons.Outlined.Edit,
+                    label = stringResource(R.string.project_details),
+                    onClick = callbacks.onOpenProjectDetails,
                 )
                 ActionRow(
                     icon = Icons.Outlined.Edit,

@@ -63,4 +63,16 @@ class CounterRepositoryNotesMergeTest {
 
         assertEquals("Local note\n\n---\n\nExternal note", result)
     }
+
+    @Test
+    fun `merge preserves boundary whitespace from concurrent note additions`() {
+        val result =
+            mergeProjectNotes(
+                baseNotes = "",
+                requestedNotes = "Beta  ",
+                currentNotes = "  Alpha",
+            )
+
+        assertEquals("Beta  \n\n---\n\n  Alpha", result)
+    }
 }

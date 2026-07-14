@@ -98,15 +98,28 @@ object CounterWidgetState {
         // Päivitä ensin jaettu store ja peilaa sama data kaikkiin Glance-instansseihin.
         save(context, data)
 
-        val widget = CounterWidget()
-        val manager = GlanceAppWidgetManager(context)
-        manager.getGlanceIds(CounterWidget::class.java).forEach { glanceId ->
+        updatePlacedWidgets(context) { glanceId ->
             updateAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId) { prefs ->
                 prefs.toMutablePreferences().apply {
                     applyWidgetData(data)
                     this[KEY_REVISION] = (prefs[KEY_REVISION] ?: 0) + 1
                 }
             }
+        }
+    }
+
+    suspend fun refreshAll(context: Context) {
+        updatePlacedWidgets(context) {}
+    }
+
+    private suspend fun updatePlacedWidgets(
+        context: Context,
+        beforeUpdate: suspend (GlanceId) -> Unit,
+    ) {
+        val widget = CounterWidget()
+        val manager = GlanceAppWidgetManager(context)
+        manager.getGlanceIds(CounterWidget::class.java).forEach { glanceId ->
+            beforeUpdate(glanceId)
             widget.update(context, glanceId)
         }
     }

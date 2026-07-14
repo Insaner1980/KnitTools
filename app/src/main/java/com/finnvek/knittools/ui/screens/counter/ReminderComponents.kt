@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -48,7 +47,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
-import com.finnvek.knittools.domain.calculator.ReminderLogic
+import com.finnvek.knittools.domain.calculator.CounterValueFormatter
 import com.finnvek.knittools.domain.model.RowReminder
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.NumberInputField
@@ -131,19 +130,9 @@ fun ReminderAlertCard(
                 .fillMaxWidth()
                 .clip(MaterialTheme.shapes.medium)
                 .background(MaterialTheme.colorScheme.surfaceVariant)
-                .padding(start = 4.dp),
+                .padding(start = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // Kullanvärinen vasen reuna
-        Box(
-            modifier =
-                Modifier
-                    .width(4.dp)
-                    .height(48.dp)
-                    .clip(MaterialTheme.shapes.small)
-                    .background(MaterialTheme.colorScheme.primary),
-        )
-        Spacer(modifier = Modifier.width(12.dp))
         Icon(
             imageVector = Icons.Filled.Notifications,
             contentDescription = null,
@@ -158,10 +147,9 @@ fun ReminderAlertCard(
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            if (reminder.repeatInterval != null) {
-                val count = ReminderLogic.repeatCount(reminder, currentRow)
+            CounterValueFormatter.forReminderRepeat(reminder, currentRow)?.let { repeatDisplay ->
                 Text(
-                    text = stringResource(R.string.repeat_count_format, count, reminder.repeatInterval),
+                    text = repeatDisplay.asText(),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

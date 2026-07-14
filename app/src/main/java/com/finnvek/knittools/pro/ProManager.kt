@@ -1,6 +1,5 @@
 package com.finnvek.knittools.pro
 
-import android.util.Log
 import com.finnvek.knittools.billing.BillingManager
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -12,8 +11,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -28,6 +29,8 @@ class ProManager
 
         private val _proState = MutableStateFlow(ProState())
         val proState: StateFlow<ProState> = _proState.asStateFlow()
+        private val _initialStateReady = MutableStateFlow(false)
+        val initialStateReady: StateFlow<Boolean> = _initialStateReady.asStateFlow()
         val isProUser: Flow<Boolean> =
             proState
                 .map { it.isPro }
@@ -39,6 +42,7 @@ class ProManager
         fun initialize() {
             if (initialized) return
             initialized = true
+            _initialStateReady.value = false
             scope.launch {
                 try {
                     trialManager.initialize()
@@ -46,40 +50,44 @@ class ProManager
                     combine(
                         trialManager.trialState,
                         billingManager.isProPurchased,
-                    ) { trial, isPurchased ->
-                        when {
-                            isPurchased -> {
-                                ProState(
-                                    status = ProStatus.PRO_PURCHASED,
-                                    trialDaysRemaining = 0,
-                                    trialStartTimestamp = trial.startTimestamp,
-                                    purchaseTimestamp = System.currentTimeMillis(),
-                                )
-                            }
+                        billingManager.purchaseStateReady,
+                    ) { trial, isPurchased, purchaseStateReady ->
+                        val state =
+                            when {
+                                isPurchased -> {
+                                    ProState(
+                                        status = ProStatus.PRO_PURCHASED,
+                                        trialDaysRemaining = 0,
+                                        trialStartTimestamp = trial.startTimestamp,
+                                        purchaseTimestamp = System.currentTimeMillis(),
+                                    )
+                                }
 
-                            trial.isActive -> {
-                                ProState(
-                                    status = ProStatus.TRIAL_ACTIVE,
-                                    trialDaysRemaining = trial.daysRemaining,
-                                    trialStartTimestamp = trial.startTimestamp,
-                                )
-                            }
+                                trial.isActive -> {
+                                    ProState(
+                                        status = ProStatus.TRIAL_ACTIVE,
+                                        trialDaysRemaining = trial.daysRemaining,
+                                        trialStartTimestamp = trial.startTimestamp,
+                                    )
+                                }
 
-                            else -> {
-                                ProState(
-                                    status = ProStatus.TRIAL_EXPIRED,
-                                    trialDaysRemaining = 0,
-                                    trialStartTimestamp = trial.startTimestamp,
-                                )
+                                else -> {
+                                    ProState(
+                                        status = ProStatus.TRIAL_EXPIRED,
+                                        trialDaysRemaining = 0,
+                                        trialStartTimestamp = trial.startTimestamp,
+                                    )
+                                }
                             }
-                        }
-                    }.collect { state ->
+                        state to purchaseStateReady
+                    }.collect { (state, purchaseStateReady) ->
                         _proState.value = state
+                        _initialStateReady.value = purchaseStateReady
                     }
                 } catch (e: CancellationException) {
                     throw e
-                } catch (e: Exception) {
-                    Log.e(TAG, "Pro-tilan alustus epäonnistui", e)
+                } catch (_: Exception) {
+                    _initialStateReady.value = false
                     initialized = false
                 }
             }
@@ -87,9 +95,34 @@ class ProManager
 
         fun hasFeature(feature: ProFeature): Boolean = _proState.value.hasFeature(feature)
 
+        suspend fun hasFeatureAfterInitialLoad(feature: ProFeature): Boolean {
+            waitForInitialProState()
+            waitForInitialPurchaseState()
+            return billingManager.isProPurchased.value || hasFeature(feature)
+        }
+
+        fun hasFeatureFlow(feature: ProFeature): Flow<Boolean> =
+            proState
+                .map { it.hasFeature(feature) }
+                .distinctUntilChanged()
+
         fun isPro(): Boolean = _proState.value.isPro
 
+        private suspend fun waitForInitialPurchaseState() {
+            if (billingManager.purchaseStateReady.value) return
+            withTimeoutOrNull(INITIAL_STATE_WAIT_TIMEOUT_MS) {
+                billingManager.purchaseStateReady.first { it }
+            }
+        }
+
+        private suspend fun waitForInitialProState() {
+            if (_initialStateReady.value) return
+            withTimeoutOrNull(INITIAL_STATE_WAIT_TIMEOUT_MS) {
+                initialStateReady.first { it }
+            }
+        }
+
         private companion object {
-            const val TAG = "ProManager"
+            private const val INITIAL_STATE_WAIT_TIMEOUT_MS = 2_000L
         }
     }

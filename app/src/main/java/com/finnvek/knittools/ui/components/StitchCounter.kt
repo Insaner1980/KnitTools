@@ -2,62 +2,77 @@ package com.finnvek.knittools.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import com.finnvek.knittools.R
+import com.finnvek.knittools.ui.theme.CounterDimens
 
 @Composable
 fun StitchCounter(
+    label: String,
     currentStitch: Int,
     totalStitches: Int,
     onIncrement: () -> Unit,
     onDecrement: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val isComplete = totalStitches > 0 && currentStitch >= totalStitches
     val containerColor =
-        if (isComplete) {
-            MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
-        } else {
-            MaterialTheme.colorScheme.surfaceVariant
-        }
-    val contentColor =
-        if (isComplete) {
-            MaterialTheme.colorScheme.primary
-        } else {
-            MaterialTheme.colorScheme.onSurfaceVariant
-        }
+        MaterialTheme.colorScheme.surfaceContainerHighest.copy(
+            alpha = CounterDimens.StitchTrackerContainerAlpha,
+        )
+    val canDecrement = currentStitch > 0
+    val canIncrement = currentStitch < totalStitches
 
     Surface(
-        modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
+        modifier = modifier.heightIn(min = CounterDimens.StitchTrackerMinHeight),
+        shape = RoundedCornerShape(CounterDimens.StitchTrackerCornerRadius),
         color = containerColor,
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+            modifier =
+                Modifier.padding(
+                    horizontal = CounterDimens.StitchTrackerHorizontalPadding,
+                    vertical = CounterDimens.StitchTrackerVerticalPadding,
+                ),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(CounterDimens.StitchTrackerContentSpacing),
         ) {
-            TextButton(onClick = onDecrement) {
-                Text(text = stringResource(R.string.stitch_previous), color = contentColor)
-            }
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            CounterStepperButton(
+                symbol = CounterStepSymbol.Minus,
+                isIncrement = false,
+                contentDescription = stringResource(R.string.counter_decrease),
+                onClick = onDecrement,
+                enabled = canDecrement,
+            )
             Text(
                 text = stringResource(R.string.stitch_counter_compact_format, currentStitch, totalStitches),
-                style = MaterialTheme.typography.labelLarge,
-                color = contentColor,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center,
             )
-            TextButton(onClick = onIncrement) {
-                Text(text = stringResource(R.string.stitch_next), color = contentColor)
-            }
+            CounterStepperButton(
+                symbol = CounterStepSymbol.Plus,
+                isIncrement = true,
+                contentDescription = stringResource(R.string.counter_increase),
+                onClick = onIncrement,
+                enabled = canIncrement,
+            )
         }
     }
 }

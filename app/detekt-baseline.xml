@@ -4,44 +4,29 @@
   <CurrentIssues>
     <ID>ContentSlotReused:TooltipManager.kt:content: @Composable () -&gt; Unit</ID>
     <ID>CyclomaticComplexMethod:ChartSymbolScreen.kt:private fun DrawScope.drawSymbol</ID>
-    <ID>CyclomaticComplexMethod:CounterViewModel.kt:CounterViewModel$private fun executeVoiceCommandAction: String</ID>
-    <ID>CyclomaticComplexMethod:CounterViewModel.kt:CounterViewModel$private fun executeVoiceQueryAction: String</ID>
     <ID>CyclomaticComplexMethod:InstructionParser.kt:InstructionParser$private fun parseIncreaseDecrease: ParsedInstruction?</ID>
     <ID>CyclomaticComplexMethod:MultiCounterComponents.kt:private fun isAddCounterFormValid: Boolean</ID>
-    <ID>CyclomaticComplexMethod:PatternInstructionCombinerGemini.kt:PatternInstructionCombinerGemini$internal fun parseResponse: CombinedInstructionResult?</ID>
     <ID>EmptyFunctionBlock:ProjectCounterRepositoryTest.kt:ProjectCounterRepositoryTest.FakeProjectCounterDao${}</ID>
     <ID>LargeClass:CounterViewModel.kt:CounterViewModel : ViewModel</ID>
     <ID>LongMethod:ChartSymbolScreen.kt:private fun DrawScope.drawSymbol</ID>
-    <ID>LongMethod:CounterViewModel.kt:CounterViewModel$@Suppress("CyclomaticComplexMethod") // Dispatch map — jokainen haara on yksinkertainen private fun buildFunctionCallHandler: (FunctionCallPart) -&gt; FunctionResponsePart</ID>
-    <ID>LongMethod:CounterViewModel.kt:CounterViewModel$fun interpretVoiceCommand</ID>
-    <ID>LongMethod:CounterViewModel.kt:CounterViewModel$private fun executeVoiceCommandAction: String</ID>
     <ID>LongMethod:InstructionParser.kt:InstructionParser$private fun parseGaugeSwatch: ParsedInstruction?</ID>
     <ID>LongMethod:KnitToolsDatabase.kt:KnitToolsDatabase.Companion.&lt;no name provided&gt;$override fun migrate</ID>
     <ID>LongMethod:NavGraph.kt:@Suppress("kotlin:S3776") // Navigaation route-rekisteri kokoaa tarkoituksella useita haaroja yhteen paikkaan private fun NavGraphBuilder.toolsGraph</ID>
     <ID>LongMethod:NavGraph.kt:private fun NavGraphBuilder.projectsGraph</ID>
-    <ID>LongMethod:PatternViewerViewModel.kt:PatternViewerViewModel$fun onViewerContextChanged</ID>
-    <ID>LongMethod:VoiceCommandInterpreter.kt:VoiceCommandInterpreter$internal fun buildPrompt: String</ID>
-    <ID>LoopWithTooManyJumpStatements:PatternInstructionCombinerGemini.kt:PatternInstructionCombinerGemini$for</ID>
     <ID>MaxLineLength:InstructionParser.kt:InstructionParser$"""(\d+(?:\.\d+)?)\s*(?:STITCHES?|STS?)\s*(?:AND|,|&amp;|X|/)\s*(\d+(?:\.\d+)?)\s*(?:ROWS?|R)\s*(?:=|PER|TO|OVER|IN)?\s*(10\s*CM|4\s*IN(?:CHES?)?)"""</ID>
     <ID>MaxLineLength:SessionDao.kt:SessionDao$"SELECT * FROM sessions WHERE startedAt &gt;= :start AND startedAt &lt;= :end AND (:projectId IS NULL OR projectId = :projectId) ORDER BY startedAt"</ID>
-    <ID>MaxLineLength:VoiceFunctionDeclarations.kt:VoiceFunctionDeclarations$"One of: progress, remaining, session_time, total_time, yarn, instruction, shaping, stitches, reminders, counters, notes, summary, project, section"</ID>
     <ID>MutableStateAutoboxing:PatternViewerScreen.kt:mutableStateOf(0)</ID>
     <ID>ReturnCount:InstructionParser.kt:InstructionParser$private fun parseIncreaseDecrease: ParsedInstruction?</ID>
-    <ID>ReturnCount:VoiceCommandParser.kt:VoiceCommandParser$fun parse: VoiceCommand?</ID>
     <ID>SwallowedException:RavelryViewModel.kt:RavelryViewModel$e: Exception</ID>
     <ID>TooGenericExceptionCaught:CounterWidgetActions.kt:CounterWidgetActions$e: Exception</ID>
-    <ID>TooGenericExceptionCaught:GeminiAiService.kt:GeminiAiService$e: Exception</ID>
     <ID>TooGenericExceptionCaught:RavelryViewModel.kt:RavelryViewModel$e: Exception</ID>
-    <ID>TooGenericExceptionCaught:VoiceLiveSession.kt:VoiceLiveSession$e: Exception</ID>
     <ID>TooManyFunctions:CounterProjectDao.kt:CounterProjectDao</ID>
     <ID>TooManyFunctions:CounterRepository.kt:CounterRepository</ID>
     <ID>TooManyFunctions:CounterScreen.kt:com.finnvek.knittools.ui.screens.counter.CounterScreen.kt</ID>
     <ID>TooManyFunctions:CounterViewModel.kt:CounterViewModel : ViewModel</ID>
     <ID>TooManyFunctions:InstructionParser.kt:InstructionParser</ID>
     <ID>ViewModelForwarding:CounterScreen.kt:CounterDialogActionDependencies( viewModel = viewModel, projectId = state.projectId, renameText = renameText, onRenameTextChange = { renameText = it }, onBack = onBack, onHideAddReminder = { showAddReminder = false }, onHideAddCounter = { showAddCounter = false }, onHideResetDialog = { showResetDialog = false }, onHideCompleteDialog = { showCompleteDialog = false }, onHideDeleteDialog = { showDeleteDialog = false }, onHideRenameDialog = { showRenameDialog = false }, onHideStitchDialog = { showStitchDialog = false }, )</ID>
-    <ID>ViewModelForwarding:CounterScreen.kt:HandleVoiceCommands( voiceCommandHandler = voiceCommandHandler, viewModel = viewModel, performHaptic = performHaptic, )</ID>
     <ID>ViewModelForwarding:CounterScreen.kt:ProjectHeaderActionDependencies( viewModel = viewModel, projectId = state.projectId, onPatternViewer = onPatternViewer, onShowPatternInfo = { showPatternInfoSheet = true }, onShowPatternPicker = { showPatternPicker = true }, onEditingNameChange = { isEditingName = it }, )</ID>
-    <ID>ViewModelForwarding:CounterScreen.kt:VoiceCommandEffects( voiceCommandHandler = voiceCommandHandler, voiceResponseManager = voiceResponseManager, viewModel = viewModel, snackbarHostState = snackbarHostState, )</ID>
     <ID>ViewModelForwarding:YarnCardReviewScreen.kt:YarnCardScanContent( form = form, viewModel = viewModel, onDiscard = onDiscard, onSaveAndUse = onSaveAndUse, onShowLinkDialog = { id -&gt; savedCardId = id showLinkDialog = true }, initialLinkProjectId = initialLinkProjectId, availableProjects = availableProjects, onLinkToProject = onLinkToProject, toastContext = toastContext, modifier = Modifier .fillMaxSize() .padding(padding) .padding(16.dp) .verticalScroll(rememberScrollState()), )</ID>
   </CurrentIssues>
 </SmellBaseline>

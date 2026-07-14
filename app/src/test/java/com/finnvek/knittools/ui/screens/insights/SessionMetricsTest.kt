@@ -84,6 +84,113 @@ class SessionMetricsTest {
     }
 
     @Test
+    fun `daily activity keeps the session start zone after the device zone changes`() {
+        val sessionZone = ZoneId.of("Pacific/Kiritimati")
+        val currentDeviceZone = ZoneId.of("Pacific/Honolulu")
+        val session =
+            KnitSession(
+                id = 1L,
+                projectId = 1L,
+                startedAt = instantMillis(2026, 1, 2, 0, 30, sessionZone),
+                endedAt = instantMillis(2026, 1, 2, 1, 0, sessionZone),
+                startRow = 0,
+                endRow = 10,
+                durationMinutes = 30,
+                durationSeconds = 1_800L,
+                rowsWorked = 10,
+                zoneId = sessionZone.id,
+            )
+
+        val activity =
+            SessionMetrics.dailyActivityMinutes(
+                sessions = listOf(session),
+                earliestDate = LocalDate.of(2026, 1, 1),
+                zone = currentDeviceZone,
+            )
+
+        assertEquals(mapOf(LocalDate.of(2026, 1, 2) to 30), activity)
+    }
+
+    @Test
+    fun `cross midnight splits preserve synthetic session totals`() {
+        val zone = ZoneId.of("UTC")
+        val midnight = instantMillis(2026, 1, 2, 0, 0, zone)
+        val session =
+            KnitSession(
+                id = 1L,
+                projectId = 1L,
+                startedAt = midnight - 500L,
+                endedAt = midnight + 500L,
+                startRow = 0,
+                endRow = 1,
+                durationMinutes = 0,
+                durationSeconds = 0L,
+                rowsWorked = 1,
+            )
+
+        val activity =
+            SessionMetrics.dailyActivityMinutes(
+                sessions = listOf(session),
+                earliestDate = LocalDate.of(2026, 1, 1),
+                zone = zone,
+            )
+        val paceBuckets =
+            SessionMetrics.paceBuckets(
+                sessions = listOf(session),
+                rangeStartMillis = null,
+                interval = PaceGroupingInterval.DAY,
+                zone = zone,
+            )
+
+        assertEquals(1, activity.values.sum())
+        assertEquals(1L, paceBuckets.values.sumOf { it.totalSeconds })
+        assertEquals(1, paceBuckets.values.sumOf { it.totalRows })
+    }
+
+    @Test
+    fun `zero row sessions still contribute duration to pace buckets`() {
+        val zone = ZoneId.of("UTC")
+        val productiveSession =
+            KnitSession(
+                id = 1L,
+                projectId = 1L,
+                startedAt = 0L,
+                endedAt = 1_800_000L,
+                startRow = 0,
+                endRow = 10,
+                durationMinutes = 30,
+                durationSeconds = 1_800L,
+                rowsWorked = 10,
+            )
+        val zeroRowSession =
+            KnitSession(
+                id = 2L,
+                projectId = 1L,
+                startedAt = 1_800_000L,
+                endedAt = 3_600_000L,
+                startRow = 10,
+                endRow = 10,
+                durationMinutes = 30,
+                durationSeconds = 1_800L,
+                rowsWorked = 0,
+            )
+
+        val bucket =
+            SessionMetrics
+                .paceBuckets(
+                    sessions = listOf(productiveSession, zeroRowSession),
+                    rangeStartMillis = null,
+                    interval = PaceGroupingInterval.DAY,
+                    zone = zone,
+                ).values
+                .single()
+
+        assertEquals(3_600L, bucket.totalSeconds)
+        assertEquals(10, bucket.totalRows)
+        assertEquals(10f, bucket.rowsPerHour, 0.01f)
+    }
+
+    @Test
     fun `range summary ignores overlap too small to contribute rounded seconds or rows`() {
         val zone = ZoneId.of("UTC")
         val session =

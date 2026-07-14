@@ -1,299 +1,153 @@
-@file:Suppress("DEPRECATION")
-
 package com.finnvek.knittools.auth
 
-import android.content.Context
-import android.content.SharedPreferences
 import android.net.Uri
-import android.util.Log
-import androidx.browser.customtabs.CustomTabsIntent
-import androidx.core.content.edit
 import androidx.core.net.toUri
-import androidx.security.crypto.EncryptedSharedPreferences
-import androidx.security.crypto.MasterKey
-import com.finnvek.knittools.BuildConfig
-import dagger.hilt.android.qualifiers.ApplicationContext
-import io.ktor.client.HttpClient
-import io.ktor.client.request.forms.submitForm
-import io.ktor.client.request.header
-import io.ktor.client.statement.bodyAsText
-import io.ktor.http.parameters
-import kotlinx.coroutines.CancellationException
+import com.finnvek.knittools.data.remote.RavelryBackendClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.serialization.SerializationException
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
-import java.io.IOException
-import java.security.MessageDigest
-import java.security.SecureRandom
+import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.io.encoding.Base64
-import kotlin.io.encoding.ExperimentalEncodingApi
+import kotlin.coroutines.cancellation.CancellationException
 
-/**
- * Hallinnoi Ravelry OAuth 2.0 -autentikointia.
- * Authorization Code -flow Chrome Custom Tabilla.
- * Tokenit tallennetaan EncryptedSharedPreferencesiin.
- */
+sealed interface RavelryAuthState {
+    data object NotConnected : RavelryAuthState
+
+    data object Starting : RavelryAuthState
+
+    data object AwaitingBrowser : RavelryAuthState
+
+    data class Connected(
+        val username: String?,
+    ) : RavelryAuthState
+
+    data object Cancelled : RavelryAuthState
+
+    data object Expired : RavelryAuthState
+
+    data object BackendUnavailable : RavelryAuthState
+
+    data object Disconnecting : RavelryAuthState
+}
+
 @Singleton
 class RavelryAuthManager
     @Inject
     constructor(
-        @param:ApplicationContext private val context: Context,
+        private val backendClient: RavelryBackendClient,
     ) {
         companion object {
-            private const val AUTH_URL = "https://www.ravelry.com/oauth2/auth"
-            private const val TOKEN_URL = "https://www.ravelry.com/oauth2/token"
-            private const val REDIRECT_SCHEME = "com.finnvek.knittools"
-            private const val REDIRECT_HOST = "oauth"
-            private const val REDIRECT_PATH = "/callback"
-            private const val REDIRECT_URI = "$REDIRECT_SCHEME://$REDIRECT_HOST$REDIRECT_PATH"
-            private const val SCOPE = "offline"
-
-            private const val PREFS_FILE = "ravelry_oauth2"
-            private const val KEY_ACCESS_TOKEN = "access_token"
-            private const val KEY_REFRESH_TOKEN = "refresh_token"
-            private const val KEY_PENDING_STATE = "pending_state"
-            private const val KEY_PENDING_CODE_VERIFIER = "pending_code_verifier"
-            private const val TAG = "RavelryAuthManager"
+            const val REDIRECT_SCHEME = "knittools"
+            const val REDIRECT_HOST = "ravelry-auth-complete"
+            private const val QUERY_STATE = "state"
+            private const val QUERY_ERROR = "error"
+            private const val QUERY_STATUS = "status"
         }
 
-        private val json = Json { ignoreUnknownKeys = true }
+        private val _authState = MutableStateFlow<RavelryAuthState>(RavelryAuthState.NotConnected)
+        val authState: StateFlow<RavelryAuthState> = _authState.asStateFlow()
 
-        private val prefs: SharedPreferences by lazy {
-            // AndroidX Security Crypto on deprekoitu kokonaisena API:na, mutta säilytetään nykyinen
-            // salattu tokenivarasto kunnes korvaava tallennusmalli migroidaan erikseen.
-            val masterKey =
-                MasterKey
-                    .Builder(context)
-                    .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-                    .build()
-            EncryptedSharedPreferences.create(
-                context,
-                PREFS_FILE,
-                masterKey,
-                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
-            )
+        private var pendingState: String? = null
+
+        suspend fun refreshAuthStatus(): RavelryAuthState =
+            try {
+                val status = backendClient.authStatus()
+                if (status.connected) {
+                    RavelryAuthState.Connected(status.username)
+                } else {
+                    RavelryAuthState.NotConnected
+                }.also { _authState.value = it }
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: Exception) {
+                RavelryAuthState.BackendUnavailable.also { _authState.value = it }
+            }
+
+        suspend fun startAuth(): Uri? {
+            _authState.value = RavelryAuthState.Starting
+            return try {
+                val response = backendClient.startAuth()
+                pendingState = response.state
+                _authState.value = RavelryAuthState.AwaitingBrowser
+                response.authorizeUrl.toUri()
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: Exception) {
+                pendingState = null
+                _authState.value = RavelryAuthState.BackendUnavailable
+                null
+            }
         }
 
-        private val _isAuthenticated = MutableStateFlow(hasStoredTokens())
-        val isAuthenticated: StateFlow<Boolean> = _isAuthenticated.asStateFlow()
-
-        // CSRF-suojaus: tallennetaan state OAuth-pyynnön ajaksi
-        private var pendingState: String? = prefs.getString(KEY_PENDING_STATE, null)
-        private var pendingCodeVerifier: String? = prefs.getString(KEY_PENDING_CODE_VERIFIER, null)
-
-        val accessToken: String? get() = prefs.getString(KEY_ACCESS_TOKEN, null)
-        private val refreshToken: String? get() = prefs.getString(KEY_REFRESH_TOKEN, null)
-
-        private fun hasStoredTokens(): Boolean = prefs.getString(KEY_ACCESS_TOKEN, null)?.isNotEmpty() == true
-
-        /**
-         * Luo Ravelryn OAuth 2.0 -valtuutusosoitteen ja tallentaa CSRF-state-arvon.
-         */
-        fun createOAuthUri(): Uri {
-            val state = generateState()
-            val codeVerifier = generateCodeVerifier()
-            savePendingGrant(state, codeVerifier)
-
-            return AUTH_URL
-                .toUri()
-                .buildUpon()
-                .appendQueryParameter("response_type", "code")
-                .appendQueryParameter("client_id", BuildConfig.RAVELRY_OAUTH2_CLIENT_ID)
-                .appendQueryParameter("redirect_uri", REDIRECT_URI)
-                .appendQueryParameter("scope", SCOPE)
-                .appendQueryParameter("state", state)
-                .appendQueryParameter("code_challenge", codeVerifier.toCodeChallenge())
-                .appendQueryParameter("code_challenge_method", "S256")
-                .build()
-        }
-
-        /**
-         * Avaa Chrome Custom Tab Ravelryn OAuth 2.0 -valtuutussivulle.
-         */
-        fun startOAuthFlow(activity: android.app.Activity) {
-            CustomTabsIntent.Builder().build().launchUrl(activity, createOAuthUri())
-        }
-
-        /**
-         * Käsittelee OAuth 2.0 -callback deep linkin.
-         * Vaihdetaan authorization code tokeneiksi.
-         */
-        suspend fun handleCallback(
-            httpClient: HttpClient,
-            uri: Uri,
-        ): Boolean {
+        suspend fun handleCallback(uri: Uri): Boolean {
             if (!isOAuthCallback(uri)) return false
 
-            val expectedState = pendingState ?: prefs.getString(KEY_PENDING_STATE, null)
-            val codeVerifier = pendingCodeVerifier ?: prefs.getString(KEY_PENDING_CODE_VERIFIER, null)
-            val state = uri.getQueryParameter("state")
-            if (
-                state.isNullOrEmpty() ||
-                expectedState.isNullOrEmpty() ||
-                codeVerifier.isNullOrEmpty() ||
-                state != expectedState
-            ) {
+            val callbackState = uri.getQueryParameter(QUERY_STATE)
+            val expectedState = pendingState
+            if (callbackState.isNullOrBlank() || (expectedState != null && callbackState != expectedState)) {
                 return true
             }
 
-            if (uri.getQueryParameter("error") != null) {
-                clearPendingState()
-                return true
+            when (uri.callbackFailure()) {
+                CallbackFailure.Cancelled -> {
+                    pendingState = null
+                    _authState.value = RavelryAuthState.Cancelled
+                    return true
+                }
+
+                CallbackFailure.Expired -> {
+                    pendingState = null
+                    _authState.value = RavelryAuthState.Expired
+                    return true
+                }
+
+                null -> Unit
             }
 
-            val code = uri.getQueryParameter("code")
-            if (code.isNullOrEmpty()) {
-                clearPendingState()
-                return true
+            pendingState = null
+            val refreshedState = refreshAuthStatus()
+            if (refreshedState == RavelryAuthState.NotConnected) {
+                _authState.value = RavelryAuthState.Expired
             }
-
-            try {
-                exchangeCodeForTokens(httpClient, code, codeVerifier)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: IOException) {
-                logOAuthTokenExchangeFailure(e)
-            } catch (e: SerializationException) {
-                logOAuthTokenExchangeFailure(e)
-            }
-
-            clearPendingState()
             return true
         }
 
         fun isOAuthCallback(uri: Uri): Boolean =
             uri.scheme == REDIRECT_SCHEME &&
-                uri.host == REDIRECT_HOST &&
-                uri.path == REDIRECT_PATH
+                uri.host == REDIRECT_HOST
 
-        private fun logOAuthTokenExchangeFailure(error: Throwable) {
-            Log.w(TAG, "Ravelry OAuth token exchange failed: ${error.javaClass.simpleName}")
-        }
-
-        /**
-         * Päivittää access tokenin refresh tokenilla.
-         * Kutsutaan automaattisesti kun API palauttaa 401.
-         */
-        suspend fun refreshAccessToken(httpClient: HttpClient): Boolean {
-            val currentRefreshToken = refreshToken ?: return false
-            return requestTokens(
-                httpClient,
-                mapOf(
-                    "grant_type" to "refresh_token",
-                    "refresh_token" to currentRefreshToken,
-                ),
-            )
-        }
-
-        fun signOut() {
-            prefs.edit { clear() }
-            pendingState = null
-            pendingCodeVerifier = null
-            _isAuthenticated.value = false
-        }
-
-        private fun savePendingGrant(
-            state: String,
-            codeVerifier: String,
-        ) {
-            pendingState = state
-            pendingCodeVerifier = codeVerifier
-            prefs.edit {
-                putString(KEY_PENDING_STATE, state)
-                putString(KEY_PENDING_CODE_VERIFIER, codeVerifier)
+        suspend fun disconnect(): RavelryAuthState {
+            _authState.value = RavelryAuthState.Disconnecting
+            return try {
+                backendClient.disconnect()
+                pendingState = null
+                RavelryAuthState.NotConnected.also { _authState.value = it }
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: Exception) {
+                RavelryAuthState.BackendUnavailable.also { _authState.value = it }
             }
         }
 
-        private fun clearPendingState() {
-            pendingState = null
-            pendingCodeVerifier = null
-            prefs.edit {
-                remove(KEY_PENDING_STATE)
-                remove(KEY_PENDING_CODE_VERIFIER)
+        fun markBrowserAuthCancelled() {
+            if (_authState.value == RavelryAuthState.AwaitingBrowser || _authState.value == RavelryAuthState.Starting) {
+                pendingState = null
+                _authState.value = RavelryAuthState.Cancelled
             }
         }
 
-        private suspend fun exchangeCodeForTokens(
-            httpClient: HttpClient,
-            code: String,
-            codeVerifier: String,
-        ): Boolean =
-            requestTokens(
-                httpClient,
-                mapOf(
-                    "grant_type" to "authorization_code",
-                    "code" to code,
-                    "redirect_uri" to REDIRECT_URI,
-                    "code_verifier" to codeVerifier,
-                ),
-            )
-
-        /**
-         * Lähettää token-pyynnön Ravelrylle.
-         * Ravelrylle ei ole backendia, joten client secret kulkee tietoisena client-riskinä.
-         */
-        @OptIn(ExperimentalEncodingApi::class)
-        private suspend fun requestTokens(
-            httpClient: HttpClient,
-            params: Map<String, String>,
-        ): Boolean {
-            val credentials =
-                Base64.encode(
-                    "${BuildConfig.RAVELRY_OAUTH2_CLIENT_ID}:${BuildConfig.RAVELRY_OAUTH2_CLIENT_SECRET}"
-                        .toByteArray(),
-                )
-
-            val response =
-                httpClient
-                    .submitForm(
-                        url = TOKEN_URL,
-                        formParameters =
-                            parameters {
-                                params.forEach { (key, value) -> append(key, value) }
-                            },
-                    ) {
-                        header("Authorization", "Basic $credentials")
-                    }.bodyAsText()
-
-            val jsonObj = json.parseToJsonElement(response).jsonObject
-            val newAccessToken = jsonObj["access_token"]?.jsonPrimitive?.content ?: return false
-            val newRefreshToken = jsonObj["refresh_token"]?.jsonPrimitive?.content
-
-            prefs.edit {
-                putString(KEY_ACCESS_TOKEN, newAccessToken)
-                if (newRefreshToken != null) {
-                    putString(KEY_REFRESH_TOKEN, newRefreshToken)
-                }
+        private fun Uri.callbackFailure(): CallbackFailure? {
+            val rawValue = getQueryParameter(QUERY_ERROR) ?: getQueryParameter(QUERY_STATUS) ?: return null
+            return when (rawValue.lowercase(Locale.US)) {
+                "cancelled", "canceled", "access_denied" -> CallbackFailure.Cancelled
+                "expired", "state_expired" -> CallbackFailure.Expired
+                else -> CallbackFailure.Cancelled
             }
-
-            _isAuthenticated.value = true
-            return true
         }
 
-        @OptIn(ExperimentalEncodingApi::class)
-        private fun generateCodeVerifier(): String {
-            val bytes = ByteArray(32)
-            SecureRandom().nextBytes(bytes)
-            return Base64.UrlSafe.encode(bytes).trimEnd('=')
-        }
-
-        @OptIn(ExperimentalEncodingApi::class)
-        private fun String.toCodeChallenge(): String {
-            val digest = MessageDigest.getInstance("SHA-256").digest(toByteArray())
-            return Base64.UrlSafe.encode(digest).trimEnd('=')
-        }
-
-        @OptIn(ExperimentalEncodingApi::class)
-        private fun generateState(): String {
-            val bytes = ByteArray(16)
-            SecureRandom().nextBytes(bytes)
-            return Base64.UrlSafe.encode(bytes).trimEnd('=')
+        private enum class CallbackFailure {
+            Cancelled,
+            Expired,
         }
     }

@@ -1,5 +1,6 @@
 package com.finnvek.knittools.ui.navigation
 
+import android.net.Uri
 import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoStories
@@ -9,6 +10,7 @@ import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.finnvek.knittools.R
+import com.finnvek.knittools.domain.model.CraftType
 
 sealed class Screen(
     val route: String,
@@ -31,18 +33,18 @@ sealed class Screen(
 
     data object SizeCharts : Screen("size_charts")
 
-    data object Abbreviations : Screen("abbreviations")
+    data object Abbreviations : Screen("abbreviations") {
+        const val ARG_CRAFT_TYPE = "craftType"
+        const val ROUTE = "abbreviations?craftType={$ARG_CRAFT_TYPE}"
+
+        fun createRoute(craftType: CraftType): String = "abbreviations?craftType=${craftType.persistedValue}"
+    }
 
     data object ChartSymbols : Screen("chart_symbols")
 
     data object Settings : Screen("settings")
 
     data object ProUpgrade : Screen("pro_upgrade")
-
-    // Sama composable hoitaa sekä skannatun langan review-flow’n että tallennetun kortin detail-tilan.
-    data object YarnCardReview : Screen("yarn_card_review")
-
-    data object LibraryYarnCardReview : Screen("library_yarn_card_review")
 
     data class YarnCardDetail(
         val cardId: Long,
@@ -61,6 +63,17 @@ sealed class Screen(
     }
 
     data object Ravelry : Screen("ravelry")
+
+    data class RavelryImport(
+        val url: String,
+    ) : Screen("ravelry_import/${Uri.encode(url)}") {
+        companion object {
+            const val ARG_IMPORT_URL = "importUrl"
+            const val ROUTE = "ravelry_import/{$ARG_IMPORT_URL}"
+
+            fun importUrl(routeArgument: String?): String? = routeArgument?.takeIf { it.isNotBlank() }
+        }
+    }
 
     data class RavelryDetail(
         val patternId: Int,
@@ -103,6 +116,14 @@ sealed class Screen(
 
     data object SavedPatterns : Screen("saved_patterns")
 
+    data class SavedPatternDetail(
+        val savedPatternId: Long,
+    ) : Screen("saved_pattern_detail/$savedPatternId") {
+        companion object {
+            const val ROUTE = "saved_pattern_detail/{savedPatternId}"
+        }
+    }
+
     data class LibraryPatternViewer(
         val savedPatternId: Long,
     ) : Screen("library_pattern_viewer/$savedPatternId") {
@@ -125,9 +146,9 @@ enum class TopLevelDestination(
     val icon: ImageVector,
     val startRoute: String,
 ) {
-    Projects("projects_tab", R.string.tab_projects, Icons.Outlined.FolderOpen, "project_list"),
-    Library("library_tab", R.string.tab_library, Icons.Filled.AutoStories, "library"),
-    Tools("tools_tab", R.string.tab_tools, Icons.Outlined.Build, "tools"),
-    Insights("insights_tab", R.string.tab_insights, Icons.Outlined.BarChart, "insights"),
-    Settings("settings_tab", R.string.tab_settings, Icons.Outlined.Settings, "settings"),
+    Projects("projects_tab", R.string.tab_projects, Icons.Outlined.FolderOpen, Screen.ProjectList.route),
+    Library("library_tab", R.string.tab_library, Icons.Filled.AutoStories, Screen.Library.route),
+    Tools("tools_tab", R.string.tab_tools, Icons.Outlined.Build, Screen.Tools.route),
+    Insights("insights_tab", R.string.tab_insights, Icons.Outlined.BarChart, Screen.Insights.route),
+    Settings("settings_tab", R.string.tab_settings, Icons.Outlined.Settings, Screen.Settings.route),
 }

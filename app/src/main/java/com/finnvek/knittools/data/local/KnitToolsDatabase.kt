@@ -15,10 +15,11 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         RowReminderEntity::class,
         ProgressPhotoEntity::class,
         ProjectCounterEntity::class,
+        ProjectYarnNoteEntity::class,
         SavedPatternEntity::class,
         PatternAnnotationEntity::class,
     ],
-    version = 11,
+    version = 16,
     exportSchema = true,
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
@@ -37,6 +38,8 @@ abstract class KnitToolsDatabase : RoomDatabase() {
     abstract fun progressPhotoDao(): ProgressPhotoDao
 
     abstract fun projectCounterDao(): ProjectCounterDao
+
+    abstract fun projectYarnNoteDao(): ProjectYarnNoteDao
 
     abstract fun savedPatternDao(): SavedPatternDao
 
@@ -232,8 +235,9 @@ abstract class KnitToolsDatabase : RoomDatabase() {
                         """
                         UPDATE sessions
                         SET rowsWorked = CASE
-                            WHEN endRow > startRow THEN endRow - startRow
-                            ELSE 0
+                            WHEN endRow <= startRow THEN 0
+                            WHEN endRow - startRow > ${Int.MAX_VALUE} THEN ${Int.MAX_VALUE}
+                            ELSE endRow - startRow
                         END
                         """.trimIndent(),
                     )
@@ -251,6 +255,166 @@ abstract class KnitToolsDatabase : RoomDatabase() {
                         "CREATE INDEX IF NOT EXISTS `index_sessions_projectId_endedAt_startedAt` " +
                             "ON `sessions` (`projectId`, `endedAt`, `startedAt`)",
                     )
+                }
+            }
+
+        val MIGRATION_11_12 =
+            object : Migration(11, 12) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL(
+                        """
+                        CREATE TABLE IF NOT EXISTS `project_yarn_notes` (
+                            `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                            `projectId` INTEGER NOT NULL,
+                            `name` TEXT NOT NULL,
+                            `description` TEXT NOT NULL,
+                            `quantity` INTEGER NOT NULL DEFAULT 1,
+                            `notes` TEXT NOT NULL,
+                            `savedYarnCardId` INTEGER DEFAULT NULL,
+                            `createdAt` INTEGER NOT NULL,
+                            `updatedAt` INTEGER NOT NULL,
+                            FOREIGN KEY(`projectId`) REFERENCES `counter_projects`(`id`)
+                                ON UPDATE NO ACTION ON DELETE CASCADE
+                        )
+                        """.trimIndent(),
+                    )
+                    db.execSQL(
+                        "CREATE INDEX IF NOT EXISTS `index_project_yarn_notes_projectId` " +
+                            "ON `project_yarn_notes` (`projectId`)",
+                    )
+                }
+            }
+
+        val MIGRATION_12_13 =
+            object : Migration(12, 13) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL("ALTER TABLE counter_projects ADD COLUMN craftType TEXT NOT NULL DEFAULT 'KNITTING'")
+                    db.execSQL(
+                        "ALTER TABLE counter_projects ADD COLUMN mainCounterLabelType TEXT NOT NULL DEFAULT 'ROWS'",
+                    )
+                    db.execSQL("ALTER TABLE counter_projects ADD COLUMN mainCounterCustomLabel TEXT DEFAULT NULL")
+                    db.execSQL(
+                        "ALTER TABLE counter_projects ADD COLUMN readingLineEnabled INTEGER NOT NULL DEFAULT 0",
+                    )
+                    db.execSQL(
+                        "ALTER TABLE counter_projects ADD COLUMN readingLineYFraction REAL NOT NULL DEFAULT 0.5",
+                    )
+                    db.execSQL(
+                        "ALTER TABLE project_counters ADD COLUMN linkedToMainCounter INTEGER NOT NULL DEFAULT 0",
+                    )
+                }
+            }
+
+        val MIGRATION_13_14 =
+            object : Migration(13, 14) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL(
+                        """
+                        CREATE TABLE IF NOT EXISTS `saved_patterns_new` (
+                            `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                            `source` TEXT NOT NULL,
+                            `ravelryPatternId` INTEGER,
+                            `name` TEXT NOT NULL,
+                            `designerName` TEXT NOT NULL,
+                            `thumbnailUrl` TEXT,
+                            `difficulty` REAL,
+                            `gaugeStitches` REAL,
+                            `gaugeRows` REAL,
+                            `needleSize` TEXT,
+                            `yarnWeight` TEXT,
+                            `yardage` INTEGER,
+                            `isFree` INTEGER NOT NULL,
+                            `originalUrl` TEXT NOT NULL,
+                            `canonicalUrl` TEXT NOT NULL,
+                            `localPdfUri` TEXT,
+                            `isAvailableOffline` INTEGER NOT NULL,
+                            `savedAt` INTEGER NOT NULL,
+                            `updatedAt` INTEGER NOT NULL,
+                            `lastSyncedAt` INTEGER
+                        )
+                        """.trimIndent(),
+                    )
+                    db.execSQL(
+                        """
+                        INSERT INTO `saved_patterns_new` (
+                            id, source, ravelryPatternId, name, designerName, thumbnailUrl, difficulty,
+                            gaugeStitches, gaugeRows, needleSize, yarnWeight, yardage, isFree,
+                            originalUrl, canonicalUrl, localPdfUri, isAvailableOffline,
+                            savedAt, updatedAt, lastSyncedAt
+                        )
+                        SELECT
+                            id,
+                            CASE
+                                WHEN ravelryId > 0 THEN 'RAVELRY'
+                                WHEN patternUrl LIKE 'content://%' OR patternUrl LIKE 'file://%' THEN 'LOCAL_FILE'
+                                ELSE 'OTHER'
+                            END,
+                            CASE WHEN ravelryId > 0 THEN ravelryId ELSE NULL END,
+                            name,
+                            designerName,
+                            thumbnailUrl,
+                            difficulty,
+                            gaugeStitches,
+                            gaugeRows,
+                            needleSize,
+                            yarnWeight,
+                            yardage,
+                            isFree,
+                            patternUrl,
+                            CASE WHEN ravelryId > 0 THEN patternUrl ELSE '' END,
+                            CASE
+                                WHEN patternUrl LIKE 'content://%' OR patternUrl LIKE 'file://%' THEN patternUrl
+                                ELSE NULL
+                            END,
+                            CASE
+                                WHEN patternUrl LIKE 'content://%' OR patternUrl LIKE 'file://%' THEN 1
+                                ELSE 0
+                            END,
+                            savedAt,
+                            savedAt,
+                            NULL
+                        FROM `saved_patterns`
+                        """.trimIndent(),
+                    )
+                    db.execSQL("DROP TABLE `saved_patterns`")
+                    db.execSQL("ALTER TABLE `saved_patterns_new` RENAME TO `saved_patterns`")
+                    db.execSQL(
+                        "CREATE INDEX IF NOT EXISTS `index_saved_patterns_ravelryPatternId` " +
+                            "ON `saved_patterns` (`ravelryPatternId`)",
+                    )
+                    db.execSQL(
+                        "CREATE INDEX IF NOT EXISTS `index_saved_patterns_canonicalUrl` " +
+                            "ON `saved_patterns` (`canonicalUrl`)",
+                    )
+                    db.execSQL(
+                        "CREATE INDEX IF NOT EXISTS `index_saved_patterns_originalUrl` " +
+                            "ON `saved_patterns` (`originalUrl`)",
+                    )
+                    db.execSQL(
+                        "CREATE INDEX IF NOT EXISTS `index_saved_patterns_localPdfUri` " +
+                            "ON `saved_patterns` (`localPdfUri`)",
+                    )
+                }
+            }
+
+        val MIGRATION_14_15 =
+            object : Migration(14, 15) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL(
+                        "CREATE INDEX IF NOT EXISTS `index_counter_projects_linkedPatternId` " +
+                            "ON `counter_projects` (`linkedPatternId`)",
+                    )
+                    db.execSQL(
+                        "CREATE INDEX IF NOT EXISTS `index_yarn_cards_linkedProjectId` " +
+                            "ON `yarn_cards` (`linkedProjectId`)",
+                    )
+                }
+            }
+
+        val MIGRATION_15_16 =
+            object : Migration(15, 16) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL("ALTER TABLE sessions ADD COLUMN zoneId TEXT")
                 }
             }
     }

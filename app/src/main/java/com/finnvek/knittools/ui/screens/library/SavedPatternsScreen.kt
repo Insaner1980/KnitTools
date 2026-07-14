@@ -42,13 +42,16 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
+import com.finnvek.knittools.data.remote.PatternAvailability
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.screens.ravelry.PatternCard
+import com.finnvek.knittools.ui.screens.ravelry.PatternCardState
 
 // Data-luokat SavedPatternsScreen-parametrien ryhmittelyyn (S107)
 data class SavedPatternsState(
@@ -59,8 +62,7 @@ data class SavedPatternsState(
 )
 
 data class SavedPatternsActions(
-    val onPatternClick: (Int) -> Unit,
-    val onLocalPatternClick: (Long) -> Unit,
+    val onPatternClick: (Long) -> Unit,
     val onEnterSelectMode: (Long) -> Unit,
     val onToggleSelection: (Long) -> Unit,
     val onSelectAll: (List<Long>) -> Unit,
@@ -77,7 +79,7 @@ fun SavedPatternsScreen(
 ) {
     var showDeleteConfirmDialog by rememberSaveable { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
-    val deleteFailedMessage = stringResource(R.string.ai_error_unknown)
+    val deleteFailedMessage = stringResource(R.string.generic_error_unknown)
 
     BackHandler(enabled = state.isSelectMode) {
         actions.onExitSelectMode()
@@ -157,15 +159,7 @@ private fun SavedPatternsList(
                     if (state.isSelectMode) {
                         actions.onToggleSelection(pattern.id)
                     } else {
-                        when (val target = pattern.routeTarget()) {
-                            is SavedPatternRouteTarget.LocalPattern -> {
-                                actions.onLocalPatternClick(target.savedPatternId)
-                            }
-
-                            is SavedPatternRouteTarget.RavelryPattern -> {
-                                actions.onPatternClick(target.ravelryId)
-                            }
-                        }
+                        actions.onPatternClick(pattern.id)
                     }
                 },
                 onLongClick = {
@@ -187,7 +181,7 @@ private fun SavedPatternsDeleteDialog(
 ) {
     ConfirmationDialog(
         title = stringResource(R.string.delete_pattern),
-        message = stringResource(R.string.delete_patterns_confirm, selectedCount),
+        message = pluralStringResource(R.plurals.delete_patterns_confirm, selectedCount, selectedCount),
         confirmText = stringResource(R.string.delete),
         isDestructive = true,
         onConfirm = onConfirm,
@@ -313,11 +307,14 @@ private fun SavedPatternItem(
                 ),
     ) {
         PatternCard(
-            name = pattern.name,
-            designerName = pattern.designerName,
-            thumbnailUrl = pattern.thumbnailUrl,
-            difficulty = pattern.difficulty,
-            isFree = pattern.isFree,
+            state =
+                PatternCardState(
+                    name = pattern.name,
+                    designerName = pattern.designerName,
+                    thumbnailUrl = pattern.thumbnailUrl,
+                    difficulty = pattern.difficulty,
+                    availability = PatternAvailability.fromFree(pattern.isFree),
+                ),
             onClick = onClick,
             modifier = Modifier.background(backgroundColor, MaterialTheme.shapes.large),
         )

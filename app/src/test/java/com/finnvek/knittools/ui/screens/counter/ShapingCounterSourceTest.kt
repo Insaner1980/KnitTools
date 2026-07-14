@@ -1,6 +1,11 @@
 package com.finnvek.knittools.ui.screens.counter
 
 import com.finnvek.knittools.ProjectSourceFiles
+import com.finnvek.knittools.domain.calculator.CounterValueDisplay
+import com.finnvek.knittools.domain.calculator.CounterValueFormatter
+import com.finnvek.knittools.domain.model.ProjectCounter
+import com.finnvek.knittools.domain.model.ProjectCounterType
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -41,22 +46,44 @@ class ShapingCounterSourceTest {
     }
 
     @Test
-    fun `voice shaping query uses shaping counter row instead of main project row`() {
-        val source = ProjectSourceFiles.read(COUNTER_VIEW_MODEL)
-        val voiceQuery =
-            source
-                .substringAfter("private fun voiceQueryShaping")
-                .substringBefore("private fun voiceQueryCounters")
+    fun `domain repeating increment preserves overflow with modulo`() {
+        val source = ProjectSourceFiles.read(PROJECT_COUNTER_LOGIC)
 
-        assertTrue(voiceQuery.contains("shaping.count % shaping.shapeEveryN"))
-        assertFalse(voiceQuery.contains("state.counter.count % shaping.shapeEveryN"))
+        assertTrue(source.contains("newCount % repeatAt"))
     }
 
     @Test
-    fun `dao repeating increment preserves overflow with modulo`() {
-        val source = ProjectSourceFiles.read(PROJECT_COUNTER_DAO)
+    fun `shaping counter uses compact progress formatting instead of next row copy`() {
+        val source = ProjectSourceFiles.read(MULTI_COUNTER_COMPONENTS)
 
-        assertTrue(source.contains("(count + stepSize) % repeatAt"))
+        assertFalse(source.contains("R.string.next_shaping_counter_format"))
+        assertFalse(source.contains("ShapingCounterLogic.nextShapingRow"))
+        assertTrue(source.contains("CounterValueFormatter.forExtraCounter(counter)"))
+        assertTrue(source.contains("R.string.repeating_counter_value_format"))
+    }
+
+    @Test
+    fun `shaping display wraps total count into interval progress`() {
+        assertEquals(
+            CounterValueDisplay.Cycle(current = 3, length = 4),
+            CounterValueFormatter.forExtraCounter(shapingCounter(count = 3)),
+        )
+        assertEquals(
+            CounterValueDisplay.Cycle(current = 4, length = 4),
+            CounterValueFormatter.forExtraCounter(shapingCounter(count = 4)),
+        )
+        assertEquals(
+            CounterValueDisplay.Cycle(current = 3, length = 4),
+            CounterValueFormatter.forExtraCounter(shapingCounter(count = 7)),
+        )
+    }
+
+    @Test
+    fun `extra counter names use ellipsis instead of expanding layout`() {
+        val source = ProjectSourceFiles.read(MULTI_COUNTER_COMPONENTS)
+
+        assertTrue(source.contains("TextOverflow.Ellipsis"))
+        assertTrue(source.contains("maxLines = 1"))
     }
 
     private fun isAddCounterFormValidByReflection(params: AddCounterFormParams): Boolean {
@@ -68,12 +95,20 @@ class ShapingCounterSourceTest {
         return method.invoke(null, params) as Boolean
     }
 
+    private fun shapingCounter(count: Int): ProjectCounter =
+        ProjectCounter(
+            id = 1,
+            projectId = 1,
+            name = "Gusset decreases",
+            count = count,
+            counterType = ProjectCounterType.SHAPING,
+            shapeEveryN = 4,
+        )
+
     private companion object {
         const val MULTI_COUNTER_COMPONENTS =
             "app/src/main/java/com/finnvek/knittools/ui/screens/counter/MultiCounterComponents.kt"
-        const val COUNTER_VIEW_MODEL =
-            "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterViewModel.kt"
-        const val PROJECT_COUNTER_DAO =
-            "app/src/main/java/com/finnvek/knittools/data/local/ProjectCounterDao.kt"
+        const val PROJECT_COUNTER_LOGIC =
+            "app/src/main/java/com/finnvek/knittools/domain/calculator/ProjectCounterLogic.kt"
     }
 }

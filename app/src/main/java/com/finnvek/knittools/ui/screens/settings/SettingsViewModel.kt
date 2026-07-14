@@ -2,8 +2,6 @@ package com.finnvek.knittools.ui.screens.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.finnvek.knittools.ai.live.VoiceLiveQuotaManager
-import com.finnvek.knittools.ai.live.VoiceLiveUsage
 import com.finnvek.knittools.billing.BillingManager
 import com.finnvek.knittools.billing.RestorePurchasesResult
 import com.finnvek.knittools.data.datastore.AppLanguage
@@ -28,7 +26,6 @@ class SettingsViewModel
     constructor(
         private val preferencesManager: PreferencesManager,
         private val billingManager: BillingManager,
-        voiceLiveQuotaManager: VoiceLiveQuotaManager,
         proManager: ProManager,
     ) : ViewModel() {
         val preferences: StateFlow<AppPreferences> =
@@ -38,13 +35,6 @@ class SettingsViewModel
                 initialValue = AppPreferences(),
             )
         val proState: StateFlow<ProState> = proManager.proState
-
-        val voiceLiveUsage: StateFlow<VoiceLiveUsage> =
-            voiceLiveQuotaManager.usage.stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5000),
-                initialValue = VoiceLiveUsage(0f, VoiceLiveQuotaManager.MONTHLY_ALLOWANCE),
-            )
 
         private val _messages = MutableSharedFlow<Int>()
         val messages: SharedFlow<Int> = _messages.asSharedFlow()
@@ -71,14 +61,6 @@ class SettingsViewModel
             viewModelScope.launch { preferencesManager.setUseImperial(imperial) }
         }
 
-        fun setShowKnittingTips(enabled: Boolean) {
-            viewModelScope.launch { preferencesManager.setShowKnittingTips(enabled) }
-        }
-
-        fun setVoiceLiveEnabled(enabled: Boolean) {
-            viewModelScope.launch { preferencesManager.setVoiceLiveEnabled(enabled) }
-        }
-
         fun restorePurchases() {
             viewModelScope.launch {
                 when (billingManager.restorePurchasesWithResult()) {
@@ -90,6 +72,10 @@ class SettingsViewModel
                         _messages.emit(
                             com.finnvek.knittools.R.string.no_purchases_found,
                         )
+                    }
+
+                    RestorePurchasesResult.FAILED -> {
+                        _messages.emit(com.finnvek.knittools.R.string.generic_error_unknown)
                     }
                 }
             }

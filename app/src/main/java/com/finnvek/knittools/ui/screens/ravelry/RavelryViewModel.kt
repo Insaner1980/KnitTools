@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.finnvek.knittools.auth.RavelryAuthManager
+import com.finnvek.knittools.auth.RavelryAuthState
 import com.finnvek.knittools.data.remote.PatternDetail
 import com.finnvek.knittools.data.remote.PatternSearchParams
 import com.finnvek.knittools.data.remote.PatternSearchResult
@@ -50,6 +51,34 @@ enum class PatternSaveResult {
     Failed,
 }
 
+enum class RavelryImportStatus {
+    AwaitingUserConfirmation,
+    Loading,
+    Ready,
+    AlreadySaved,
+    NeedsSignIn,
+    CouldNotImport,
+    BackendUnavailable,
+}
+
+sealed interface RavelryImportRequest {
+    data class PatternId(
+        val patternId: Int,
+    ) : RavelryImportRequest
+
+    data class Url(
+        val url: String,
+    ) : RavelryImportRequest
+}
+
+data class RavelryImportConfirmationState(
+    val status: RavelryImportStatus,
+    val request: RavelryImportRequest? = null,
+    val pattern: PatternDetail? = null,
+    val savedPatternId: Long = 0L,
+    val isSaving: Boolean = false,
+)
+
 private data class SubmittedRavelrySearch(
     val query: String,
     val filters: SearchFilters,
@@ -63,7 +92,7 @@ class RavelryViewModel
         private val proManager: ProManager,
         private val authManager: RavelryAuthManager,
     ) : ViewModel() {
-        val isAuthenticated: StateFlow<Boolean> = authManager.isAuthenticated
+        val authState: StateFlow<RavelryAuthState> = authManager.authState
 
         private val _searchQuery = MutableStateFlow("")
         val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
@@ -107,6 +136,13 @@ class RavelryViewModel
         private val _patternSaveResults = MutableSharedFlow<PatternSaveResult>()
         val patternSaveResults = _patternSaveResults.asSharedFlow()
 
+        private val _signInLaunchRequests = MutableSharedFlow<Uri>()
+        val signInLaunchRequests = _signInLaunchRequests.asSharedFlow()
+
+        private val _importConfirmationState = MutableStateFlow<RavelryImportConfirmationState?>(null)
+        val importConfirmationState: StateFlow<RavelryImportConfirmationState?> =
+            _importConfirmationState.asStateFlow()
+
         val savedPatterns: StateFlow<List<SavedPattern>> =
             repository.getSavedPatterns().stateIn(
                 viewModelScope,
@@ -117,16 +153,62 @@ class RavelryViewModel
         private var currentPage = 1
         private var totalPages = 1
         private var isSaveInFlight = false
+        private var isImportSaveInFlight = false
+        private var importRequestId = 0L
         private var activeSearch: SubmittedRavelrySearch? = null
         private var searchJob: Job? = null
         private var searchRequestId = 0L
 
         val isPro: Boolean get() = proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS)
 
-        fun createSignInUri(): Uri = authManager.createOAuthUri()
+        fun refreshAuthStatus() {
+            viewModelScope.launch {
+                authManager.refreshAuthStatus()
+            }
+        }
 
-        fun signOut() {
-            authManager.signOut()
+        fun startSignIn() {
+            viewModelScope.launch {
+                authManager.startAuth()?.let { uri ->
+                    _signInLaunchRequests.emit(uri)
+                }
+            }
+        }
+
+        fun disconnectRavelry() {
+            viewModelScope.launch {
+                authManager.disconnect()
+            }
+        }
+
+        fun showImportConfirmationForPattern(patternId: Int) {
+            showImportConfirmation(RavelryImportRequest.PatternId(patternId))
+        }
+
+        fun showImportConfirmationForUrl(url: String) {
+            val trimmedUrl = url.trim()
+            importRequestId += 1
+            isImportSaveInFlight = false
+            if (trimmedUrl.isBlank()) {
+                _importConfirmationState.value =
+                    RavelryImportConfirmationState(status = RavelryImportStatus.CouldNotImport)
+                return
+            }
+            _importConfirmationState.value =
+                RavelryImportConfirmationState(
+                    status = RavelryImportStatus.AwaitingUserConfirmation,
+                    request = RavelryImportRequest.Url(trimmedUrl),
+                )
+        }
+
+        fun retryImportConfirmation() {
+            _importConfirmationState.value?.request?.let(::showImportConfirmation)
+        }
+
+        fun dismissImportConfirmation() {
+            importRequestId += 1
+            isImportSaveInFlight = false
+            _importConfirmationState.value = null
         }
 
         fun updateQuery(query: String) {
@@ -157,7 +239,14 @@ class RavelryViewModel
 
         fun loadMore() {
             val submittedSearch = activeSearch ?: return
-            if (submittedSearch.matchesCurrentDraft() && currentPage < totalPages && !_isLoading.value) {
+            if (
+                submittedSearch.matchesDraft(
+                    query = _searchQuery.value,
+                    filters = _filters.value,
+                ) &&
+                currentPage < totalPages &&
+                !_isLoading.value
+            ) {
                 startPageLoad(
                     page = currentPage + 1,
                     replaceResults = false,
@@ -231,32 +320,16 @@ class RavelryViewModel
                 }
         }
 
-        private fun Exception.toSearchError(): RavelrySearchError =
-            when (this) {
-                is RavelryHttpException ->
-                    when (statusCode) {
-                        401, 403 -> RavelrySearchError.Authentication
-                        429 -> RavelrySearchError.RateLimited
-                        in 500..599 -> RavelrySearchError.ServiceUnavailable
-                        else -> RavelrySearchError.Unknown
-                    }
-
-                is TransientRavelryException -> RavelrySearchError.ServiceUnavailable
-                is IOException -> RavelrySearchError.Network
-                else -> RavelrySearchError.Unknown
-            }
-
         private fun shouldApplySearchResult(
             requestId: Long,
             submittedSearch: SubmittedRavelrySearch,
         ): Boolean =
             requestId == searchRequestId &&
                 activeSearch == submittedSearch &&
-                submittedSearch.matchesCurrentDraft()
-
-        private fun SubmittedRavelrySearch.matchesCurrentDraft(): Boolean =
-            _searchQuery.value.trim() == query &&
-                _filters.value == filters
+                submittedSearch.matchesDraft(
+                    query = _searchQuery.value,
+                    filters = _filters.value,
+                )
 
         fun loadDetail(patternId: Int) {
             viewModelScope.launch {
@@ -293,6 +366,41 @@ class RavelryViewModel
                     _patternSaveResults.emit(PatternSaveResult.Failed)
                 } finally {
                     isSaveInFlight = false
+                }
+            }
+        }
+
+        fun saveImportPattern() {
+            val currentState = _importConfirmationState.value ?: return
+            val detail = currentState.pattern ?: return
+            if (currentState.status != RavelryImportStatus.Ready || isImportSaveInFlight) return
+            val requestId = importRequestId
+            isImportSaveInFlight = true
+            _importConfirmationState.value = currentState.copy(isSaving = true)
+            viewModelScope.launch {
+                try {
+                    val savedId = repository.savePattern(detail)
+                    if (requestId != importRequestId) return@launch
+                    _importConfirmationState.value =
+                        currentState.copy(
+                            status = RavelryImportStatus.AlreadySaved,
+                            savedPatternId = savedId,
+                            isSaving = false,
+                        )
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    if (requestId == importRequestId) {
+                        _importConfirmationState.value =
+                            currentState.copy(
+                                status = e.toImportStatus(),
+                                isSaving = false,
+                            )
+                    }
+                } finally {
+                    if (requestId == importRequestId) {
+                        isImportSaveInFlight = false
+                    }
                 }
             }
         }
@@ -338,7 +446,9 @@ class RavelryViewModel
         fun deleteSelectedSaved() {
             viewModelScope.launch {
                 val ids = _selectedSavedIds.value.toList()
-                ids.forEach { repository.deleteSavedPattern(it) }
+                if (ids.isNotEmpty()) {
+                    repository.deleteSavedPatterns(ids)
+                }
                 exitSavedSelectMode()
             }
         }
@@ -355,4 +465,96 @@ class RavelryViewModel
                 }
             }
         }
+
+        private fun showImportConfirmation(request: RavelryImportRequest) {
+            importRequestId += 1
+            val requestId = importRequestId
+            isImportSaveInFlight = false
+            if (authState.value !is RavelryAuthState.Connected) {
+                _importConfirmationState.value =
+                    RavelryImportConfirmationState(
+                        status = RavelryImportStatus.NeedsSignIn,
+                        request = request,
+                    )
+                return
+            }
+
+            _importConfirmationState.value =
+                RavelryImportConfirmationState(
+                    status = RavelryImportStatus.Loading,
+                    request = request,
+                )
+            viewModelScope.launch {
+                try {
+                    val detail =
+                        when (request) {
+                            is RavelryImportRequest.PatternId -> repository.getPatternDetail(request.patternId)
+                            is RavelryImportRequest.Url -> repository.importPatternByUrl(request.url)
+                        }
+                    if (requestId != importRequestId) return@launch
+                    val duplicate = repository.findDuplicateFor(detail)
+                    _importConfirmationState.value =
+                        if (duplicate != null) {
+                            RavelryImportConfirmationState(
+                                status = RavelryImportStatus.AlreadySaved,
+                                request = request,
+                                pattern = detail,
+                                savedPatternId = duplicate.id,
+                            )
+                        } else {
+                            RavelryImportConfirmationState(
+                                status = RavelryImportStatus.Ready,
+                                request = request,
+                                pattern = detail,
+                            )
+                        }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    if (requestId == importRequestId) {
+                        _importConfirmationState.value =
+                            RavelryImportConfirmationState(
+                                status = e.toImportStatus(),
+                                request = request,
+                            )
+                    }
+                }
+            }
+        }
+    }
+
+private fun Exception.toSearchError(): RavelrySearchError =
+    when (this) {
+        is RavelryHttpException ->
+            when (statusCode) {
+                401, 403 -> RavelrySearchError.Authentication
+                429 -> RavelrySearchError.RateLimited
+                in 500..599 -> RavelrySearchError.ServiceUnavailable
+                else -> RavelrySearchError.Unknown
+            }
+
+        is TransientRavelryException -> RavelrySearchError.ServiceUnavailable
+        is IOException -> RavelrySearchError.Network
+        else -> RavelrySearchError.Unknown
+    }
+
+private fun SubmittedRavelrySearch.matchesDraft(
+    query: String,
+    filters: SearchFilters,
+): Boolean =
+    query.trim() == this.query &&
+        filters == this.filters
+
+private fun Exception.toImportStatus(): RavelryImportStatus =
+    when (this) {
+        is RavelryHttpException ->
+            when {
+                statusCode == 412 -> RavelryImportStatus.NeedsSignIn
+                statusCode == 401 || statusCode == 403 -> RavelryImportStatus.NeedsSignIn
+                statusCode in 500..599 -> RavelryImportStatus.BackendUnavailable
+                else -> RavelryImportStatus.CouldNotImport
+            }
+
+        is TransientRavelryException -> RavelryImportStatus.BackendUnavailable
+        else -> RavelryImportStatus.CouldNotImport
     }

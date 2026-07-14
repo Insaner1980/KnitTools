@@ -14,7 +14,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -25,9 +24,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
-import com.finnvek.knittools.ai.nano.InstructionParser
-import com.finnvek.knittools.ai.nano.NanoAvailability
-import com.finnvek.knittools.ai.nano.ParsedInstruction
+import com.finnvek.knittools.domain.calculator.InstructionParser
+import com.finnvek.knittools.domain.calculator.ParsedInstruction
 import kotlinx.coroutines.launch
 
 @Composable
@@ -37,16 +35,9 @@ fun PasteInstructionButton(
     modifier: Modifier = Modifier,
     hintText: String? = null,
 ) {
-    var nanoAvailable by remember { mutableStateOf(false) }
     var expanded by rememberSaveable { mutableStateOf(false) }
 
-    LaunchedEffect(isPro) {
-        if (isPro) {
-            nanoAvailable = NanoAvailability.isUsable()
-        }
-    }
-
-    if (!isPro || !nanoAvailable) return
+    if (!isPro) return
 
     Column(modifier = modifier) {
         TextButton(
@@ -93,11 +84,8 @@ private fun InstructionInputForm(
 
     val errorMessages =
         mapOf(
-            ParsedInstruction.ErrorType.BUSY to stringResource(R.string.ai_error_busy),
-            ParsedInstruction.ErrorType.QUOTA to stringResource(R.string.ai_error_quota),
-            ParsedInstruction.ErrorType.UNAVAILABLE to stringResource(R.string.ai_error_unavailable),
             ParsedInstruction.ErrorType.PARSE_FAILED to stringResource(R.string.instruction_parse_failed),
-            ParsedInstruction.ErrorType.UNKNOWN to stringResource(R.string.ai_error_unknown),
+            ParsedInstruction.ErrorType.UNKNOWN to stringResource(R.string.generic_error_unknown),
         )
     val successMessage = stringResource(R.string.instruction_parsed)
 

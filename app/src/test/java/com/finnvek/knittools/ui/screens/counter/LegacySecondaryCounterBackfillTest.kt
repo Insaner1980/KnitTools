@@ -1,6 +1,7 @@
 package com.finnvek.knittools.ui.screens.counter
 
 import com.finnvek.knittools.domain.model.ProjectCounter
+import com.finnvek.knittools.domain.model.ProjectCounterType
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -16,7 +17,7 @@ class LegacySecondaryCounterBackfillTest {
                 stepSize = 8,
                 repeatAt = 8,
                 sortOrder = 0,
-                counterType = "REPEATING",
+                counterType = ProjectCounterType.REPEATING,
             )
         val userCounter =
             ProjectCounter(

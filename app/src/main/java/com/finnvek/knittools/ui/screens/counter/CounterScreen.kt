@@ -1,51 +1,26 @@
 package com.finnvek.knittools.ui.screens.counter
 
-import android.Manifest
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import android.view.WindowManager
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.Undo
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Remove
-import androidx.compose.material.icons.outlined.FilterVintage
 import androidx.compose.material.icons.outlined.OpenInFull
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
@@ -55,8 +30,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
@@ -71,21 +44,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -95,35 +60,48 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.getSystemService
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.finnvek.knittools.BuildConfig
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.ProjectCounter
 import com.finnvek.knittools.domain.model.ProjectCounterDraft
+import com.finnvek.knittools.domain.model.ProjectYarnNote
 import com.finnvek.knittools.domain.model.RowReminder
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.YarnCard
+import com.finnvek.knittools.domain.model.displayName
 import com.finnvek.knittools.ui.components.ConfirmationDialog
+import com.finnvek.knittools.ui.components.ProjectDetailsDialog
+import com.finnvek.knittools.ui.components.ProjectDetailsValues
 import com.finnvek.knittools.ui.components.RenameProjectDialog
-import com.finnvek.knittools.ui.components.RollingCounter
-import com.finnvek.knittools.ui.components.StitchCounter
 import com.finnvek.knittools.ui.screens.pattern.PatternPickerSheet
-import com.finnvek.knittools.ui.theme.YarnColors
+import com.finnvek.knittools.ui.theme.CounterDimens
+
+data class CounterScreenActions(
+    val onBack: () -> Unit = {},
+    val onSessionHistory: (Long) -> Unit = {},
+    val onPhotoGallery: () -> Unit = {},
+    val onPatternViewer: (Long) -> Unit = {},
+    val onSavedPatternDetail: (Long) -> Unit = {},
+    val onImportFromRavelry: () -> Unit = {},
+    val onNotesEditor: (Long) -> Unit = {},
+    val onUpgradeToPro: () -> Unit = {},
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 @Suppress("ViewModelForwarding")
 fun CounterScreen(
-    onBack: () -> Unit = {},
-    onSessionHistory: (Long) -> Unit = {},
-    onPhotoGallery: () -> Unit = {},
-    onPatternViewer: (Long) -> Unit = {},
-    onNotesEditor: (Long) -> Unit = {},
-    onUpgradeToPro: () -> Unit = {},
+    actions: CounterScreenActions = CounterScreenActions(),
     viewModel: CounterViewModel = hiltViewModel(),
 ) {
+    val onBack = actions.onBack
+    val onSessionHistory = actions.onSessionHistory
+    val onPhotoGallery = actions.onPhotoGallery
+    val onPatternViewer = actions.onPatternViewer
+    val onSavedPatternDetail = actions.onSavedPatternDetail
+    val onImportFromRavelry = actions.onImportFromRavelry
+    val onNotesEditor = actions.onNotesEditor
+    val onUpgradeToPro = actions.onUpgradeToPro
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    val voiceControls = rememberCounterVoiceControls(state, viewModel)
-    val snackbarHostState = remember { SnackbarHostState() }
 
     var showResetDialog by rememberSaveable { mutableStateOf(false) }
     var showProjectActionsSheet by rememberSaveable { mutableStateOf(false) }
@@ -131,18 +109,17 @@ fun CounterScreen(
     var showCompleteDialog by rememberSaveable { mutableStateOf(false) }
     var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
     var showRenameDialog by rememberSaveable { mutableStateOf(false) }
+    var showProjectDetailsDialog by rememberSaveable { mutableStateOf(false) }
     var renameText by rememberSaveable { mutableStateOf("") }
     var isEditingName by rememberSaveable { mutableStateOf(false) }
     var showNotesSheet by rememberSaveable { mutableStateOf(false) }
     var showYarnPicker by rememberSaveable { mutableStateOf(false) }
     var showYarnManagementSheet by rememberSaveable { mutableStateOf(false) }
-    var showSummarySheet by rememberSaveable { mutableStateOf(false) }
     var showRemindersSheet by rememberSaveable { mutableStateOf(false) }
     var showAddReminder by rememberSaveable { mutableStateOf(false) }
     var editingReminderId by rememberSaveable { mutableStateOf<Long?>(null) }
     var showAddCounter by rememberSaveable { mutableStateOf(false) }
     var showStitchDialog by rememberSaveable { mutableStateOf(false) }
-    var showPatternInfoSheet by rememberSaveable { mutableStateOf(false) }
     var showPatternPicker by rememberSaveable { mutableStateOf(false) }
     var showTargetDialog by rememberSaveable { mutableStateOf(false) }
     var previousOverlayProjectId by rememberSaveable { mutableStateOf<Long?>(null) }
@@ -156,21 +133,19 @@ fun CounterScreen(
         showCompleteDialog = false
         showDeleteDialog = false
         showRenameDialog = false
+        showProjectDetailsDialog = false
         renameText = ""
         isEditingName = false
         showNotesSheet = false
         showYarnPicker = false
         showYarnManagementSheet = false
-        showSummarySheet = false
         showRemindersSheet = false
         showAddReminder = false
         editingReminderId = null
         showAddCounter = false
         showStitchDialog = false
-        showPatternInfoSheet = false
         showPatternPicker = false
         showTargetDialog = false
-        viewModel.clearSummary()
     }
 
     LaunchedEffect(state.projectId) {
@@ -188,36 +163,32 @@ fun CounterScreen(
     }
     val requestPhotoGallery = {
         requestCounterFeature(
-            hasAccess = state.isPro || BuildConfig.DEBUG,
+            hasAccess = state.canUseProgressPhotos,
             onOpenFeature = onPhotoGallery,
             onOpenUpgrade = openProUpgrade,
         )
     }
     val requestAddCounter = {
         requestCounterFeature(
-            hasAccess = state.isPro,
+            hasAccess = state.canUseMultipleCounters,
             onOpenFeature = { showAddCounter = true },
             onOpenUpgrade = openProUpgrade,
         )
     }
     val requestRowReminders = {
         requestCounterFeature(
-            hasAccess = state.isPro,
+            hasAccess = state.canUseRowReminders,
             onOpenFeature = { showRemindersSheet = true },
             onOpenUpgrade = openProUpgrade,
         )
     }
-
-    LaunchedEffect(Unit) {
-        viewModel.refreshNanoAvailability()
+    val requestNotes = {
+        if (state.canUseNotes) {
+            showNotesSheet = true
+        } else {
+            openProUpgrade()
+        }
     }
-
-    VoiceCommandEffects(
-        voiceCommandHandler = voiceControls.commandHandler,
-        voiceResponseManager = voiceControls.responseManager,
-        viewModel = viewModel,
-        snackbarHostState = snackbarHostState,
-    )
 
     val vibrator = rememberVibrator()
 
@@ -231,11 +202,6 @@ fun CounterScreen(
         }
 
     KeepScreenAwake(state.keepScreenAwake)
-    HandleVoiceCommands(
-        voiceCommandHandler = voiceControls.commandHandler,
-        viewModel = viewModel,
-        performHaptic = performHaptic,
-    )
     TriggerAlertHaptic(
         alertId = state.activeAlert?.id,
         hasActiveAlert = state.activeAlert != null,
@@ -249,9 +215,8 @@ fun CounterScreen(
             onHideYarnManagementSheet = { showYarnManagementSheet = false },
             onHideNotesSheet = { showNotesSheet = false },
             onExpandNotes = { state.projectId?.let(onNotesEditor) },
-            onHideSummarySheet = { showSummarySheet = false },
             onHidePatternPicker = { showPatternPicker = false },
-            onHidePatternInfoSheet = { showPatternInfoSheet = false },
+            onImportFromRavelry = onImportFromRavelry,
         )
     val projectCountersActions =
         rememberProjectCountersSectionActions(
@@ -281,9 +246,6 @@ fun CounterScreen(
     val topBarActionDependencies =
         CounterTopBarActionDependencies(
             onBack = onBack,
-            onPhotoGallery = requestPhotoGallery,
-            projectId = state.projectId,
-            onPatternViewer = onPatternViewer,
             onShowProjectActions = { showProjectActionsSheet = true },
         )
     val startRename = {
@@ -293,18 +255,25 @@ fun CounterScreen(
     val projectHeaderActionDependencies =
         ProjectHeaderActionDependencies(
             viewModel = viewModel,
-            projectId = state.projectId,
-            onPatternViewer = onPatternViewer,
-            onShowPatternInfo = { showPatternInfoSheet = true },
-            onShowPatternPicker = { showPatternPicker = true },
             onEditingNameChange = { isEditingName = it },
         )
     val dialogActions = rememberCounterDialogActions(dialogActionDependencies)
     val topBarActions = rememberCounterTopBarActions(topBarActionDependencies)
     val projectHeaderActions = rememberProjectHeaderActions(projectHeaderActionDependencies)
     val mainContentActions =
-        remember(viewModel, performHaptic, onPatternViewer) {
-            CounterMainContentActions(
+        remember(
+            viewModel,
+            performHaptic,
+            onPatternViewer,
+            onSavedPatternDetail,
+            state.projectId,
+            state.linkedPattern?.id,
+            requestNotes,
+            requestPhotoGallery,
+            requestRowReminders,
+            requestAddCounter,
+        ) {
+            CounterWorkspaceActions(
                 onSurfaceIncrement = {
                     performHaptic()
                     viewModel.increment()
@@ -321,7 +290,14 @@ fun CounterScreen(
                     performHaptic()
                     viewModel.undo()
                 },
-                onOpenPatternViewer = onPatternViewer,
+                onOpenPattern = { state.projectId?.let(onPatternViewer) },
+                onShowPatternPicker = { showPatternPicker = true },
+                onOpenSavedPatternDetail = { state.linkedPattern?.id?.let(onSavedPatternDetail) },
+                onOpenNotes = requestNotes,
+                onOpenYarn = { showYarnManagementSheet = true },
+                onOpenPhotos = requestPhotoGallery,
+                onOpenReminders = requestRowReminders,
+                onShowAddCounter = requestAddCounter,
                 onDecrementSecondary = {
                     performHaptic()
                     viewModel.decrementSecondary()
@@ -379,6 +355,30 @@ fun CounterScreen(
         },
     )
 
+    if (showProjectDetailsDialog) {
+        ProjectDetailsDialog(
+            title = stringResource(R.string.project_details_title),
+            confirmText = stringResource(R.string.save),
+            initialValues =
+                ProjectDetailsValues(
+                    name = state.projectName,
+                    craftType = state.craftType,
+                    mainCounterLabelType = state.mainCounterLabelType,
+                    mainCounterCustomLabel = state.mainCounterCustomLabel,
+                ),
+            onConfirm = { values ->
+                viewModel.setProjectDetails(
+                    values.name,
+                    values.craftType,
+                    values.mainCounterLabelType,
+                    values.mainCounterCustomLabel,
+                )
+                showProjectDetailsDialog = false
+            },
+            onDismiss = { showProjectDetailsDialog = false },
+        )
+    }
+
     CounterScreenSheets(
         state =
             CounterSheetState(
@@ -386,18 +386,14 @@ fun CounterScreen(
                 showYarnManagementSheet = showYarnManagementSheet,
                 savedYarnCards = savedYarnCards,
                 linkedYarns = state.linkedYarns,
+                projectYarnNotes = state.projectYarnNotes,
+                canSaveToMyYarn = state.canUseYarnCards,
                 showNotesSheet = showNotesSheet,
                 notes = state.notes,
-                showSummarySheet = showSummarySheet,
-                isSummaryLoading = state.isSummaryLoading,
-                projectSummary = state.projectSummary,
-                summaryError = state.summaryError,
                 showPatternPicker = showPatternPicker,
                 projectId = state.projectId,
                 savedPatterns = savedPatterns,
-                isPro = state.isPro,
-                showPatternInfoSheet = showPatternInfoSheet,
-                linkedPattern = state.linkedPattern,
+                canUseCameraScan = state.canUsePatternCameraScan,
             ),
         actions = sheetActions,
     )
@@ -406,38 +402,14 @@ fun CounterScreen(
         showSheet = showProjectActionsSheet,
         state =
             ProjectActionsSheetState(
-                linkedYarnCount = state.linkedYarns.size,
                 reminderCount = state.reminders.count { !it.isCompleted },
                 projectCounterCount = state.projectCounters.size,
                 stitchTrackingEnabled = state.stitchTrackingEnabled,
                 stitchCount = state.stitchCount,
-                isPro = state.isPro,
-                isAiAvailable = state.isAiAvailable,
             ),
         callbacks =
             ProjectActionsSheetCallbacks(
                 onDismiss = { showProjectActionsSheet = false },
-                onOpenYarnManagement = {
-                    showProjectActionsSheet = false
-                    showYarnManagementSheet = true
-                },
-                onOpenNotes = {
-                    showProjectActionsSheet = false
-                    if (state.isPro) {
-                        showNotesSheet = true
-                    } else {
-                        openProUpgrade()
-                    }
-                },
-                onOpenSummary = {
-                    showProjectActionsSheet = false
-                    viewModel.generateSummary()
-                    showSummarySheet = true
-                },
-                onOpenPhotos = {
-                    showProjectActionsSheet = false
-                    requestPhotoGallery()
-                },
                 onOpenReminders = {
                     showProjectActionsSheet = false
                     requestRowReminders()
@@ -469,6 +441,10 @@ fun CounterScreen(
                     showProjectActionsSheet = false
                     viewModel.openSessionHistory(onSessionHistory)
                 },
+                onOpenProjectDetails = {
+                    showProjectActionsSheet = false
+                    showProjectDetailsDialog = true
+                },
                 onStartRename = {
                     showProjectActionsSheet = false
                     startRename()
@@ -489,7 +465,7 @@ fun CounterScreen(
     )
 
     CounterCountersListSheetHost(
-        showSheet = showCountersListSheet,
+        showSheet = showCountersListSheet && state.canUseMultipleCounters,
         projectCounters = state.projectCounters,
         mainRowCount = state.counter.count,
         actions = projectCountersActions,
@@ -517,29 +493,19 @@ fun CounterScreen(
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             CounterTopBar(
-                isPro = state.isPro,
-                showPatternIcon =
-                    state.projectId != null &&
-                        state.patternUri != null,
-                micState =
-                    CounterTopBarMicState(
-                        isVoiceListening = voiceControls.isListening,
-                        isContinuousMode = voiceControls.isContinuousMode,
-                        isLiveSessionActive = state.isLiveSessionActive,
-                    ),
-                onMicClick = voiceControls.onToggle,
+                state = state,
+                isEditingName = isEditingName,
+                projectHeaderActions = projectHeaderActions,
                 actions = topBarActions,
             )
         },
     ) { scaffoldPadding ->
-        CounterScreenContent(
+        CounterWorkspace(
             scaffoldPadding = scaffoldPadding,
             state = state,
-            isEditingName = isEditingName,
-            projectHeaderActions = projectHeaderActions,
+            projectCountersActions = projectCountersActions,
             actions = mainContentActions,
         )
     }
@@ -592,188 +558,6 @@ private fun CounterCountersListSheetHost(
             actions = actions,
             onDismiss = onDismiss,
         )
-    }
-}
-
-private data class CounterVoiceControls(
-    val commandHandler: VoiceCommandHandler,
-    val responseManager: VoiceResponseManager,
-    val isListening: Boolean,
-    val isContinuousMode: Boolean,
-    val onToggle: () -> Unit,
-)
-
-@Composable
-private fun rememberCounterVoiceControls(
-    state: CounterUiState,
-    viewModel: CounterViewModel,
-): CounterVoiceControls {
-    val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
-    val voiceCommandHandler =
-        remember(context, coroutineScope) {
-            VoiceCommandHandler(context, coroutineScope)
-        }
-    val voiceResponseManager =
-        remember(context, voiceCommandHandler) {
-            VoiceResponseManager(context, voiceCommandHandler)
-        }
-    val isVoiceListening by voiceCommandHandler.isListening.collectAsStateWithLifecycle()
-    val isContinuousMode by voiceCommandHandler.isContinuousMode.collectAsStateWithLifecycle()
-    val currentVoiceLiveEnabled by rememberUpdatedState(state.voiceLiveEnabled)
-    val micPermissionLauncher =
-        rememberLauncherForActivityResult(
-            ActivityResultContracts.RequestPermission(),
-        ) { granted ->
-            if (granted) {
-                if (currentVoiceLiveEnabled) {
-                    viewModel.startLiveVoice()
-                } else {
-                    voiceCommandHandler.startContinuousListening()
-                }
-            }
-        }
-    val toggleVoice = {
-        when {
-            state.isLiveSessionActive -> viewModel.stopLiveVoice()
-            voiceCommandHandler.isContinuousMode.value -> voiceCommandHandler.stopContinuousListening()
-            state.voiceLiveEnabled && hasAudioPermission(context) -> viewModel.startLiveVoice()
-            !state.voiceLiveEnabled && hasAudioPermission(context) -> voiceCommandHandler.startContinuousListening()
-            else -> micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-        }
-    }
-    return CounterVoiceControls(
-        commandHandler = voiceCommandHandler,
-        responseManager = voiceResponseManager,
-        isListening = isVoiceListening,
-        isContinuousMode = isContinuousMode,
-        onToggle = toggleVoice,
-    )
-}
-
-@Composable
-@Suppress("ViewModelForwarding")
-private fun HandleVoiceCommands(
-    voiceCommandHandler: VoiceCommandHandler,
-    viewModel: CounterViewModel,
-    performHaptic: () -> Unit,
-) {
-    val currentPerformHaptic by rememberUpdatedState(performHaptic)
-
-    LaunchedEffect(voiceCommandHandler, viewModel) {
-        voiceCommandHandler.recognizedCommand.collect { command ->
-            when (command) {
-                is VoiceCommand.Increment -> {
-                    repeat(command.count) {
-                        currentPerformHaptic()
-                        viewModel.increment()
-                    }
-                }
-
-                is VoiceCommand.Decrement -> {
-                    repeat(command.count) {
-                        currentPerformHaptic()
-                        viewModel.decrement()
-                    }
-                }
-
-                VoiceCommand.Undo -> {
-                    currentPerformHaptic()
-                    viewModel.undo()
-                }
-
-                VoiceCommand.Reset -> {
-                    viewModel.reset()
-                }
-
-                VoiceCommand.StitchIncrement -> {
-                    currentPerformHaptic()
-                    viewModel.incrementStitch()
-                }
-
-                VoiceCommand.StitchDecrement -> {
-                    currentPerformHaptic()
-                    viewModel.decrementStitch()
-                }
-
-                VoiceCommand.StopListening -> {
-                    // Handler pysäyttää jatkuvan kuuntelun itse
-                }
-
-                VoiceCommand.Help -> {
-                    Unit
-                }
-            }
-            // TTS-vahvistus ei-triviaaleille komennoille (paikallinen parseri, offline-yhteensopiva)
-            viewModel.emitLocalVoiceFeedback(command)
-        }
-    }
-}
-
-@Composable
-@Suppress("ViewModelForwarding")
-private fun VoiceCommandEffects(
-    voiceCommandHandler: VoiceCommandHandler,
-    voiceResponseManager: VoiceResponseManager,
-    viewModel: CounterViewModel,
-    snackbarHostState: SnackbarHostState,
-) {
-    val timeoutMessage = stringResource(R.string.voice_mode_timeout)
-    val fatalMessage = stringResource(R.string.voice_recognizer_error)
-    val networkLostMessage = stringResource(R.string.voice_offline_mode)
-    val context = LocalContext.current
-
-    DisposableEffect(voiceCommandHandler, voiceResponseManager) {
-        onDispose {
-            voiceResponseManager.destroy()
-            voiceCommandHandler.destroy()
-        }
-    }
-
-    // Pysäytä Live API -sessio kun näyttö poistuu tai sovellus menee taustalle
-    DisposableEffect(viewModel) {
-        onDispose {
-            viewModel.stopLiveVoice()
-        }
-    }
-
-    LaunchedEffect(voiceCommandHandler) {
-        voiceCommandHandler.voiceError.collect { error ->
-            val message =
-                when (error) {
-                    VoiceError.Timeout -> timeoutMessage
-                    VoiceError.Fatal -> fatalMessage
-                    VoiceError.NetworkLost -> networkLostMessage
-                }
-            snackbarHostState.showSnackbar(message)
-        }
-    }
-
-    LaunchedEffect(voiceCommandHandler) {
-        voiceCommandHandler.unrecognizedText.collect { text ->
-            viewModel.interpretVoiceCommand(text)
-        }
-    }
-
-    LaunchedEffect(viewModel) {
-        viewModel.voiceResponse.collect { text ->
-            // Älä puhu TTS:llä kun Live API hoitaa äänentoiston
-            if (!viewModel.uiState.value.isLiveSessionActive) {
-                voiceResponseManager.speak(text)
-            }
-        }
-    }
-
-    // Live API fallback → näytä snackbar + käynnistä v2 continuous mode
-    LaunchedEffect(viewModel) {
-        viewModel.fallbackToV2.collect { errorMessage ->
-            if (errorMessage != null) {
-                snackbarHostState.showSnackbar(errorMessage)
-            }
-            if (hasAudioPermission(context)) {
-                voiceCommandHandler.startContinuousListening()
-            }
-        }
     }
 }
 
@@ -948,34 +732,32 @@ data class CounterSheetState(
     val showYarnManagementSheet: Boolean,
     val savedYarnCards: List<YarnCard>,
     val linkedYarns: List<Pair<Long, String>>,
+    val projectYarnNotes: List<ProjectYarnNote>,
+    val canSaveToMyYarn: Boolean,
     val showNotesSheet: Boolean,
     val notes: String,
-    val showSummarySheet: Boolean,
-    val isSummaryLoading: Boolean,
-    val projectSummary: String?,
-    val summaryError: String?,
     val showPatternPicker: Boolean,
     val projectId: Long?,
     val savedPatterns: List<SavedPattern>,
-    val isPro: Boolean,
-    val showPatternInfoSheet: Boolean,
-    val linkedPattern: SavedPattern?,
+    val canUseCameraScan: Boolean,
 )
 
 data class CounterSheetActions(
     val onYarnSelect: (Long) -> Unit,
     val onShowYarnPickerFromManagement: () -> Unit,
     val onUnlinkYarn: (Long) -> Unit,
+    val onSaveProjectYarnNote: (String, String, Int, String) -> Unit,
+    val onDeleteProjectYarnNote: (Long) -> Unit,
+    val onSaveProjectYarnNoteToMyYarn: (Long) -> Unit,
     val onYarnPickerDismiss: () -> Unit,
     val onYarnManagementDismiss: () -> Unit,
     val onNotesChange: (String) -> Unit,
     val onNotesDismiss: () -> Unit,
     val onNotesExpand: () -> Unit,
-    val onSummaryDismiss: () -> Unit,
     val onPatternPickerDismiss: () -> Unit,
-    val onPatternInfoDismiss: () -> Unit,
     val onPatternFileSelected: (String, String) -> Unit,
     val onSavedPatternSelected: (SavedPattern) -> Unit,
+    val onImportFromRavelry: () -> Unit,
 )
 
 @Composable
@@ -993,9 +775,17 @@ private fun CounterScreenSheets(
     if (state.showYarnManagementSheet) {
         YarnManagementSheet(
             linkedYarns = state.linkedYarns,
-            onUnlinkYarn = actions.onUnlinkYarn,
-            onAddYarn = actions.onShowYarnPickerFromManagement,
-            onDismiss = actions.onYarnManagementDismiss,
+            projectYarnNotes = state.projectYarnNotes,
+            canSaveToMyYarn = state.canSaveToMyYarn,
+            actions =
+                YarnManagementSheetActions(
+                    onUnlinkYarn = actions.onUnlinkYarn,
+                    onAddYarn = actions.onShowYarnPickerFromManagement,
+                    onSaveProjectYarnNote = actions.onSaveProjectYarnNote,
+                    onDeleteProjectYarnNote = actions.onDeleteProjectYarnNote,
+                    onSaveProjectYarnNoteToMyYarn = actions.onSaveProjectYarnNoteToMyYarn,
+                    onDismiss = actions.onYarnManagementDismiss,
+                ),
         )
     }
     if (state.showNotesSheet) {
@@ -1006,28 +796,15 @@ private fun CounterScreenSheets(
             onExpandToFullScreen = actions.onNotesExpand,
         )
     }
-    if (state.showSummarySheet) {
-        SummarySheet(
-            isLoading = state.isSummaryLoading,
-            summary = state.projectSummary,
-            errorMessage = state.summaryError,
-            onDismiss = actions.onSummaryDismiss,
-        )
-    }
     if (state.showPatternPicker) {
         PatternPickerSheet(
             projectId = state.projectId,
             savedPatterns = state.savedPatterns,
-            isPro = state.isPro,
+            canUseCameraScan = state.canUseCameraScan,
             onSavedPatternSelected = actions.onSavedPatternSelected,
             onDocumentSelected = actions.onPatternFileSelected,
+            onImportFromRavelry = actions.onImportFromRavelry,
             onDismiss = actions.onPatternPickerDismiss,
-        )
-    }
-    if (state.showPatternInfoSheet && state.linkedPattern != null) {
-        PatternInfoSheet(
-            pattern = state.linkedPattern,
-            onDismiss = actions.onPatternInfoDismiss,
         )
     }
 }
@@ -1035,28 +812,25 @@ private fun CounterScreenSheets(
 // Data-luokka CounterTopBar-callbackien ryhmittelyyn (S107)
 data class CounterTopBarActions(
     val onBack: () -> Unit,
-    val onPhotoGallery: () -> Unit,
-    val onShowPattern: () -> Unit,
     val onShowProjectActions: () -> Unit,
-)
-
-data class CounterTopBarMicState(
-    val isVoiceListening: Boolean,
-    val isContinuousMode: Boolean = false,
-    val isLiveSessionActive: Boolean = false,
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CounterTopBar(
-    isPro: Boolean,
-    showPatternIcon: Boolean,
-    micState: CounterTopBarMicState,
-    onMicClick: () -> Unit,
+    state: CounterUiState,
+    isEditingName: Boolean,
+    projectHeaderActions: ProjectHeaderActions,
     actions: CounterTopBarActions,
 ) {
     TopAppBar(
-        title = {},
+        title = {
+            CounterTopBarTitle(
+                state = state,
+                isEditingName = isEditingName,
+                actions = projectHeaderActions,
+            )
+        },
         navigationIcon = {
             IconButton(onClick = actions.onBack) {
                 Icon(
@@ -1067,31 +841,6 @@ private fun CounterTopBar(
             }
         },
         actions = {
-            if (showPatternIcon) {
-                IconButton(onClick = actions.onShowPattern) {
-                    Icon(
-                        imageVector = Icons.Filled.Description,
-                        contentDescription = stringResource(R.string.show_pattern),
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
-                }
-            }
-            if (isPro || BuildConfig.DEBUG) {
-                IconButton(onClick = actions.onPhotoGallery) {
-                    Icon(
-                        imageVector = Icons.Filled.CameraAlt,
-                        contentDescription = stringResource(R.string.progress_photos),
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
-                }
-                IconButton(onClick = onMicClick) {
-                    CounterTopBarMicAction(
-                        isVoiceListening = micState.isVoiceListening,
-                        isContinuousMode = micState.isContinuousMode,
-                        isLiveSessionActive = micState.isLiveSessionActive,
-                    )
-                }
-            }
             IconButton(onClick = actions.onShowProjectActions) {
                 Icon(
                     imageVector = Icons.Default.MoreVert,
@@ -1109,63 +858,70 @@ private fun CounterTopBar(
 }
 
 @Composable
-private fun CounterTopBarMicAction(
-    isVoiceListening: Boolean,
-    isContinuousMode: Boolean,
-    isLiveSessionActive: Boolean,
+private fun CounterTopBarTitle(
+    state: CounterUiState,
+    isEditingName: Boolean,
+    actions: ProjectHeaderActions,
 ) {
-    val isActive = isLiveSessionActive || isContinuousMode
-    if (isActive) {
-        ActiveCounterMicIcon(isLiveSessionActive = isLiveSessionActive)
-        return
+    var draftName by rememberSaveable(state.projectId) { mutableStateOf(state.projectName) }
+
+    LaunchedEffect(isEditingName, state.projectName) {
+        if (!isEditingName) {
+            draftName = state.projectName
+        }
     }
 
-    Icon(
-        imageVector = Icons.Filled.Mic,
-        contentDescription = stringResource(R.string.voice_commands),
-        tint =
-            if (isVoiceListening) {
-                MaterialTheme.colorScheme.error
-            } else {
-                MaterialTheme.colorScheme.primary
-            },
-    )
-}
-
-@Composable
-private fun ActiveCounterMicIcon(isLiveSessionActive: Boolean) {
-    val infiniteTransition = rememberInfiniteTransition(label = "mic_pulse")
-    val bgAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.12f,
-        targetValue = 0.32f,
-        animationSpec =
-            infiniteRepeatable(
-                animation = tween(800),
-                repeatMode = RepeatMode.Reverse,
-            ),
-        label = "mic_bg",
-    )
-    val activeColor =
-        if (isLiveSessionActive) {
-            MaterialTheme.colorScheme.primary
-        } else {
-            MaterialTheme.colorScheme.error
-        }
-
-    Box(contentAlignment = Alignment.Center) {
-        Box(
+    if (isEditingName) {
+        TextField(
+            value = draftName,
+            onValueChange = { draftName = it },
             modifier =
                 Modifier
-                    .size(36.dp)
-                    .background(
-                        activeColor.copy(alpha = bgAlpha),
-                        CircleShape,
-                    ),
+                    .fillMaxWidth()
+                    .padding(end = CounterDimens.TopBarTitleEndPadding),
+            placeholder = { Text(stringResource(R.string.default_project_name)) },
+            singleLine = true,
+            shape = RoundedCornerShape(CounterDimens.TopBarTextFieldCornerRadius),
+            keyboardOptions = KeyboardOptions.Default,
+            colors =
+                TextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                ),
+            trailingIcon = {
+                IconButton(
+                    onClick = {
+                        actions.onNameSave(draftName.trim())
+                        actions.onEditingNameChange(false)
+                    },
+                    enabled = draftName.isNotBlank(),
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Check,
+                        contentDescription = stringResource(R.string.save),
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            },
         )
-        Icon(
-            imageVector = Icons.Filled.Mic,
-            contentDescription = stringResource(R.string.voice_commands),
-            tint = activeColor,
+    } else {
+        Text(
+            text = state.projectName.ifEmpty { stringResource(R.string.default_project_name) }.uppercase(),
+            style =
+                MaterialTheme.typography.titleLarge.copy(
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.sp,
+                ),
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(end = CounterDimens.TopBarTitleEndPadding)
+                    .clickable(onClick = { actions.onEditingNameChange(true) }),
         )
     }
 }
@@ -1182,24 +938,6 @@ private fun rememberVibrator(): Vibrator? {
         }
     }
 }
-
-data class ProjectHeaderActions(
-    val onNameSave: (String) -> Unit,
-    val onEditingNameChange: (Boolean) -> Unit,
-    val onShowPatternInfo: () -> Unit,
-    val onShowPatternPicker: () -> Unit,
-    val onOpenPattern: () -> Unit,
-)
-
-data class ProjectCountersSectionActions(
-    val onAddCounter: () -> Unit,
-    val onIncrementCounter: (ProjectCounter) -> Unit,
-    val onDecrementCounter: (ProjectCounter) -> Unit,
-    val onRenameCounter: (Long, String) -> Unit,
-    val onResetCounter: (Long) -> Unit,
-    val onDeleteCounter: (Long) -> Unit,
-    val performHaptic: () -> Unit,
-)
 
 private data class CounterDialogActionDependencies(
     val viewModel: CounterViewModel,
@@ -1219,456 +957,13 @@ private data class CounterDialogActionDependencies(
 
 private data class CounterTopBarActionDependencies(
     val onBack: () -> Unit,
-    val onPhotoGallery: () -> Unit,
-    val projectId: Long?,
-    val onPatternViewer: (Long) -> Unit,
     val onShowProjectActions: () -> Unit,
 )
 
 private data class ProjectHeaderActionDependencies(
     val viewModel: CounterViewModel,
-    val projectId: Long?,
-    val onPatternViewer: (Long) -> Unit,
-    val onShowPatternInfo: () -> Unit,
-    val onShowPatternPicker: () -> Unit,
     val onEditingNameChange: (Boolean) -> Unit,
 )
-
-private data class CounterMainContentActions(
-    val onSurfaceIncrement: () -> Unit,
-    val onDecrement: () -> Unit,
-    val onIncrement: () -> Unit,
-    val onUndo: () -> Unit,
-    val onOpenPatternViewer: (Long) -> Unit,
-    val onDecrementSecondary: () -> Unit,
-    val onIncrementSecondary: () -> Unit,
-    val onDecrementStitch: () -> Unit,
-    val onIncrementStitch: () -> Unit,
-    val onShowTargetDialog: () -> Unit,
-    val onDismissReminder: (Long) -> Unit,
-)
-
-@Composable
-private fun CounterScreenContent(
-    scaffoldPadding: PaddingValues,
-    state: CounterUiState,
-    isEditingName: Boolean,
-    projectHeaderActions: ProjectHeaderActions,
-    actions: CounterMainContentActions,
-) {
-    Box(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .padding(scaffoldPadding)
-                .clipToBounds(),
-    ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            ProjectHeader(
-                state = state,
-                isEditingName = isEditingName,
-                actions = projectHeaderActions,
-            )
-            // Compact pattern-repeat -rivi on otsikon alapuolella; alla oleva
-            // weight-Box pitää laskurin keskellä riippumatta tämän näkyvyydestä.
-            if (state.isPro) {
-                Spacer(modifier = Modifier.height(8.dp))
-                CompactPatternRepeatRow(
-                    count = state.secondaryCount,
-                    onDecrement = actions.onDecrementSecondary,
-                    onIncrement = actions.onIncrementSecondary,
-                )
-            }
-            Box(
-                modifier =
-                    Modifier
-                        .weight(1f)
-                        .fillMaxWidth(),
-                contentAlignment = Alignment.Center,
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .clickable(onClick = actions.onSurfaceIncrement),
-                ) {
-                    CounterRowLabel(state = state, onShowTargetDialog = actions.onShowTargetDialog)
-                    CounterMainNumber(state = state)
-                    CounterTargetProgressBar(state = state, onShowTargetDialog = actions.onShowTargetDialog)
-                }
-            }
-            state.activeAlert?.let { reminder ->
-                ReminderAlertCard(
-                    reminder = reminder,
-                    currentRow = state.counter.count,
-                    onDismiss = actions.onDismissReminder,
-                    modifier = Modifier.padding(bottom = 12.dp),
-                )
-            }
-            CounterStitchTracker(state = state, actions = actions)
-            CounterButtons(
-                onDecrement = actions.onDecrement,
-                onIncrement = actions.onIncrement,
-                onUndo = actions.onUndo,
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-        }
-    }
-}
-
-@Composable
-private fun CounterStitchTracker(
-    state: CounterUiState,
-    actions: CounterMainContentActions,
-) {
-    val totalStitches = state.stitchCount?.takeIf { it > 0 } ?: return
-    if (!state.stitchTrackingEnabled) return
-
-    StitchCounter(
-        currentStitch = state.currentStitch.coerceIn(0, totalStitches),
-        totalStitches = totalStitches,
-        onIncrement = actions.onIncrementStitch,
-        onDecrement = actions.onDecrementStitch,
-        modifier = Modifier.padding(bottom = 12.dp),
-    )
-}
-
-@Composable
-private fun CounterRowLabel(
-    state: CounterUiState,
-    onShowTargetDialog: () -> Unit,
-) {
-    val labelText =
-        if (state.targetRows != null) {
-            stringResource(R.string.row_label_with_target, state.counter.count, state.targetRows)
-        } else {
-            stringResource(R.string.current_row)
-        }
-    Text(
-        text = labelText,
-        style = MaterialTheme.typography.labelSmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.clickable(onClick = onShowTargetDialog),
-    )
-}
-
-@Composable
-private fun CounterMainNumber(state: CounterUiState) {
-    val counterFontSize = (115f / LocalDensity.current.fontScale).sp
-    val counterDescription =
-        if (state.targetRows != null && state.targetRows > 0) {
-            val percent =
-                ((state.counter.count.toFloat() / state.targetRows.toFloat()) * 100)
-                    .toInt()
-                    .coerceIn(0, 100)
-            stringResource(R.string.voice_row_of_target, state.counter.count, state.targetRows, percent)
-        } else {
-            stringResource(R.string.current_row_short, state.counter.count)
-        }
-    RollingCounter(
-        count = state.counter.count,
-        textStyle =
-            MaterialTheme.typography.displayMedium.copy(
-                fontSize = counterFontSize,
-                fontWeight = FontWeight.Bold,
-                fontFeatureSettings = "tnum",
-            ),
-        contentDescription = counterDescription,
-    )
-}
-
-@Composable
-private fun CounterTargetProgressBar(
-    state: CounterUiState,
-    onShowTargetDialog: () -> Unit,
-) {
-    val target = state.targetRows ?: return
-    if (target <= 0) return
-    Spacer(modifier = Modifier.height(12.dp))
-    val fraction = (state.counter.count.toFloat() / target.toFloat()).coerceIn(0f, 1f)
-    val completed = state.counter.count >= target
-    val fillColor =
-        if (completed) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary
-    Box(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .height(2.dp)
-                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
-                .clickable(onClick = onShowTargetDialog),
-    ) {
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxWidth(fraction)
-                    .height(2.dp)
-                    .background(fillColor),
-        )
-    }
-}
-
-@Composable
-private fun ProjectHeader(
-    state: CounterUiState,
-    isEditingName: Boolean,
-    actions: ProjectHeaderActions,
-) {
-    var draftName by rememberSaveable(state.projectId) { mutableStateOf(state.projectName) }
-
-    LaunchedEffect(isEditingName, state.projectName) {
-        if (!isEditingName) {
-            draftName = state.projectName
-        }
-    }
-
-    if (isEditingName) {
-        TextField(
-            value = draftName,
-            onValueChange = { draftName = it },
-            modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text(stringResource(R.string.default_project_name)) },
-            singleLine = true,
-            shape = MaterialTheme.shapes.large,
-            colors =
-                TextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surface,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent,
-                ),
-            trailingIcon = {
-                IconButton(
-                    onClick = {
-                        actions.onNameSave(draftName)
-                        actions.onEditingNameChange(false)
-                    },
-                    enabled = draftName.isNotBlank(),
-                ) {
-                    Icon(
-                        Icons.Filled.Check,
-                        contentDescription = stringResource(R.string.save),
-                        modifier = Modifier.size(20.dp),
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
-                }
-            },
-        )
-    } else {
-        Text(
-            text = state.projectName.ifEmpty { stringResource(R.string.default_project_name) }.uppercase(),
-            style =
-                MaterialTheme.typography.headlineSmall.copy(
-                    letterSpacing = 0.5.sp,
-                ),
-            color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .clickable(onClick = { actions.onEditingNameChange(true) }),
-        )
-        Spacer(modifier = Modifier.height(6.dp))
-        PatternHeaderRow(
-            attachedPatternName = state.patternName,
-            linkedPatternName = state.linkedPattern?.name,
-            onShowPatternPicker = actions.onShowPatternPicker,
-            onOpenPattern = actions.onOpenPattern,
-            onShowPatternInfo = actions.onShowPatternInfo,
-        )
-    }
-}
-
-@Composable
-private fun PatternHeaderRow(
-    attachedPatternName: String?,
-    linkedPatternName: String?,
-    onShowPatternPicker: () -> Unit,
-    onOpenPattern: () -> Unit,
-    onShowPatternInfo: () -> Unit,
-) {
-    when {
-        !attachedPatternName.isNullOrBlank() -> {
-            Text(
-                text = attachedPatternName,
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .clickable(onClick = onOpenPattern)
-                        .padding(vertical = 2.dp),
-            )
-        }
-
-        !linkedPatternName.isNullOrBlank() -> {
-            Text(
-                text = "$linkedPatternName · Ravelry",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.primary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .clickable(onClick = onShowPatternInfo)
-                        .padding(vertical = 2.dp),
-            )
-        }
-
-        else -> {
-            Text(
-                text = stringResource(R.string.attach_pattern),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.tertiary,
-                modifier =
-                    Modifier
-                        .clickable(onClick = onShowPatternPicker)
-                        .padding(vertical = 2.dp),
-            )
-        }
-    }
-}
-
-@Composable
-private fun CounterButtons(
-    onDecrement: () -> Unit,
-    onIncrement: () -> Unit,
-    onUndo: () -> Unit,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceEvenly,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(
-            modifier =
-                Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .clickable(onClick = onDecrement),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                Icons.Filled.Remove,
-                contentDescription = stringResource(R.string.counter_decrease),
-                modifier = Modifier.size(22.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        Image(
-            painter = painterResource(R.drawable.plus_button),
-            contentDescription = stringResource(R.string.counter_increase),
-            modifier =
-                Modifier
-                    .size(144.dp)
-                    .clip(CircleShape)
-                    .clickable(onClick = onIncrement),
-            contentScale = ContentScale.Crop,
-        )
-        Box(
-            modifier =
-                Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .clickable(onClick = onUndo),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                Icons.AutoMirrored.Filled.Undo,
-                contentDescription = stringResource(R.string.counter_undo),
-                modifier = Modifier.size(22.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-}
-
-@Composable
-private fun CompactPatternRepeatRow(
-    count: Int,
-    onDecrement: () -> Unit,
-    onIncrement: () -> Unit,
-) {
-    Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-                .padding(horizontal = 14.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Text(
-            text = stringResource(R.string.counter_repeat_label),
-            style =
-                MaterialTheme.typography.labelSmall.copy(
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 12.sp,
-                    letterSpacing = 0.8.sp,
-                ),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            Box(
-                modifier =
-                    Modifier
-                        .size(28.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surface)
-                        .clickable(onClick = onDecrement),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Remove,
-                    contentDescription = stringResource(R.string.counter_decrease),
-                    modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.onSurface,
-                )
-            }
-            Text(
-                text = count.toString(),
-                style =
-                    MaterialTheme.typography.labelLarge.copy(
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp,
-                    ),
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Box(
-                modifier =
-                    Modifier
-                        .size(28.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surface)
-                        .clickable(onClick = onIncrement),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Add,
-                    contentDescription = stringResource(R.string.counter_increase),
-                    modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.onSurface,
-                )
-            }
-        }
-    }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -1699,33 +994,18 @@ private fun CountersListSheet(
             )
             if (projectCounters.isEmpty()) {
                 Text(
-                    text = stringResource(R.string.voice_counters_none),
+                    text = stringResource(R.string.counters_list_empty),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             } else {
                 projectCounters.forEach { counter ->
                     key(counter.id) {
-                        if (counter.counterType == "REPEAT_SECTION") {
-                            RepeatSectionItem(
-                                counter = counter,
-                                mainRowCount = mainRowCount,
-                                onDelete = { actions.onDeleteCounter(counter.id) },
-                            )
-                        } else {
-                            CounterListItem(
-                                counter = counter,
-                                actions =
-                                    CounterItemActions(
-                                        onIncrement = { actions.onIncrementCounter(counter) },
-                                        onDecrement = { actions.onDecrementCounter(counter) },
-                                        onRename = { actions.onRenameCounter(counter.id, it) },
-                                        onReset = { actions.onResetCounter(counter.id) },
-                                        onDelete = { actions.onDeleteCounter(counter.id) },
-                                        performHaptic = actions.performHaptic,
-                                    ),
-                            )
-                        }
+                        ProjectCounterWorkspaceItem(
+                            counter = counter,
+                            mainRowCount = mainRowCount,
+                            actions = actions,
+                        )
                     }
                 }
             }
@@ -1780,11 +1060,8 @@ private fun YarnPickerItem(
     card: YarnCard,
     onSelect: () -> Unit,
 ) {
-    val name =
-        listOfNotNull(
-            card.brand.takeIf { it.isNotBlank() },
-            card.yarnName.takeIf { it.isNotBlank() },
-        ).joinToString(" ").ifEmpty { "Yarn #${card.id}" }
+    val fallbackYarnName = stringResource(R.string.yarn_card_number_fallback, card.id)
+    val name = card.displayName { fallbackYarnName }
     Row(
         modifier =
             Modifier
@@ -1812,82 +1089,6 @@ private fun YarnPickerItem(
                 color = MaterialTheme.colorScheme.secondary,
             )
         }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun PatternInfoSheet(
-    pattern: SavedPattern,
-    onDismiss: () -> Unit,
-) {
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        containerColor = MaterialTheme.colorScheme.surface,
-    ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp)
-                    .padding(bottom = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Text(
-                text = pattern.name,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            if (pattern.designerName.isNotBlank()) {
-                Text(
-                    text = pattern.designerName,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Spacer(modifier = Modifier.height(4.dp))
-            pattern.needleSize?.let {
-                PatternDetailRow(label = stringResource(R.string.needle_size_label), value = it)
-            }
-            pattern.yarnWeight?.let {
-                PatternDetailRow(label = stringResource(R.string.filter_weight), value = it)
-            }
-            pattern.yardage?.let {
-                PatternDetailRow(
-                    label = "Yardage",
-                    value = stringResource(R.string.yardage_format, it),
-                )
-            }
-            pattern.gaugeRows?.let {
-                PatternDetailRow(label = stringResource(R.string.gauge_label), value = "$it rows")
-            }
-            pattern.difficulty?.let {
-                PatternDetailRow(
-                    label = stringResource(R.string.filter_difficulty),
-                    value = stringResource(R.string.difficulty_format, it),
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun PatternDetailRow(
-    label: String,
-    value: String,
-) {
-    Row(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.width(100.dp),
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
     }
 }
 
@@ -1955,87 +1156,6 @@ private fun NotesSheet(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun SummarySheet(
-    isLoading: Boolean,
-    summary: String?,
-    errorMessage: String?,
-    onDismiss: () -> Unit,
-) {
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        containerColor = MaterialTheme.colorScheme.surface,
-    ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp)
-                    .padding(bottom = 32.dp),
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    Icons.Outlined.FilterVintage,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp),
-                    tint = MaterialTheme.colorScheme.primary,
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = stringResource(R.string.project_summary),
-                    style = MaterialTheme.typography.titleMedium,
-                )
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            if (isLoading) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    androidx.compose.material3.CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        strokeWidth = 2.dp,
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(
-                        text = stringResource(R.string.generating_summary),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            } else {
-                SummarySheetResult(summary = summary, errorMessage = errorMessage)
-            }
-        }
-    }
-}
-
-@Composable
-private fun SummarySheetResult(
-    summary: String?,
-    errorMessage: String?,
-) {
-    if (!summary.isNullOrBlank()) {
-        Text(
-            text = summary,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurface,
-            lineHeight = MaterialTheme.typography.bodyLarge.lineHeight,
-        )
-    }
-    if (!errorMessage.isNullOrBlank()) {
-        if (!summary.isNullOrBlank()) Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = errorMessage,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
-}
-
 @Composable
 private fun KeepScreenAwake(enabled: Boolean) {
     if (!enabled) return
@@ -2048,12 +1168,6 @@ private fun KeepScreenAwake(enabled: Boolean) {
         }
     }
 }
-
-private fun hasAudioPermission(context: android.content.Context): Boolean =
-    context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) ==
-        android.content.pm.PackageManager.PERMISSION_GRANTED
-
-private fun yarnColor(yarnId: Long): androidx.compose.ui.graphics.Color = YarnColors[(yarnId % YarnColors.size).toInt()]
 
 @Composable
 private fun rememberCounterDialogActions(dependencies: CounterDialogActionDependencies): CounterDialogActions =
@@ -2113,9 +1227,8 @@ private fun rememberCounterSheetActions(
     onHideYarnManagementSheet: () -> Unit,
     onHideNotesSheet: () -> Unit,
     onExpandNotes: () -> Unit,
-    onHideSummarySheet: () -> Unit,
     onHidePatternPicker: () -> Unit,
-    onHidePatternInfoSheet: () -> Unit,
+    onImportFromRavelry: () -> Unit,
 ): CounterSheetActions =
     remember(
         viewModel,
@@ -2124,9 +1237,8 @@ private fun rememberCounterSheetActions(
         onHideYarnManagementSheet,
         onHideNotesSheet,
         onExpandNotes,
-        onHideSummarySheet,
         onHidePatternPicker,
-        onHidePatternInfoSheet,
+        onImportFromRavelry,
     ) {
         CounterSheetActions(
             onYarnSelect = {
@@ -2138,21 +1250,18 @@ private fun rememberCounterSheetActions(
                 onShowYarnPicker()
             },
             onUnlinkYarn = viewModel::unlinkYarnCard,
+            onSaveProjectYarnNote = viewModel::saveProjectYarnNote,
+            onDeleteProjectYarnNote = viewModel::deleteProjectYarnNote,
+            onSaveProjectYarnNoteToMyYarn = viewModel::saveProjectYarnNoteToMyYarn,
             onYarnPickerDismiss = onHideYarnPicker,
             onYarnManagementDismiss = onHideYarnManagementSheet,
             onNotesChange = viewModel::setNotes,
             onNotesDismiss = onHideNotesSheet,
             onNotesExpand = onExpandNotes,
-            onSummaryDismiss = {
-                onHideSummarySheet()
-                viewModel.clearSummary()
-            },
             onPatternPickerDismiss = onHidePatternPicker,
-            onPatternInfoDismiss = onHidePatternInfoSheet,
             onPatternFileSelected = viewModel::attachPattern,
-            onSavedPatternSelected = { pattern ->
-                viewModel.attachPattern(pattern.patternUrl, pattern.name)
-            },
+            onSavedPatternSelected = viewModel::attachSavedPattern,
+            onImportFromRavelry = onImportFromRavelry,
         )
     }
 
@@ -2161,8 +1270,6 @@ private fun rememberCounterTopBarActions(dependencies: CounterTopBarActionDepend
     remember(dependencies) {
         CounterTopBarActions(
             onBack = dependencies.onBack,
-            onPhotoGallery = dependencies.onPhotoGallery,
-            onShowPattern = { dependencies.projectId?.let(dependencies.onPatternViewer) },
             onShowProjectActions = dependencies.onShowProjectActions,
         )
     }
@@ -2173,9 +1280,6 @@ private fun rememberProjectHeaderActions(dependencies: ProjectHeaderActionDepend
         ProjectHeaderActions(
             onNameSave = dependencies.viewModel::setProjectName,
             onEditingNameChange = dependencies.onEditingNameChange,
-            onShowPatternInfo = dependencies.onShowPatternInfo,
-            onShowPatternPicker = dependencies.onShowPatternPicker,
-            onOpenPattern = { dependencies.projectId?.let(dependencies.onPatternViewer) },
         )
     }
 

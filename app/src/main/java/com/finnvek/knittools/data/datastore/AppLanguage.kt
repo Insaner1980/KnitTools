@@ -20,17 +20,6 @@ enum class AppLanguage(
     DUTCH("nl", "nl"),
     ;
 
-    /**
-     * Palauttaa englanninkielisen kielen nimen AI-prompteja varten
-     * (esim. "Finnish", "German"). SYSTEM seuraa laitteen oletuslocalea.
-     */
-    fun promptLanguageName(): String {
-        val tag = languageTag ?: Locale.getDefault().language.ifBlank { "en" }
-        val locale = Locale.forLanguageTag(tag)
-        val raw = locale.getDisplayLanguage(Locale.ENGLISH).ifBlank { "English" }
-        return raw.replaceFirstChar { it.uppercase() }
-    }
-
     companion object {
         fun fromValue(value: String?): AppLanguage = entries.firstOrNull { it.value == value } ?: SYSTEM
 

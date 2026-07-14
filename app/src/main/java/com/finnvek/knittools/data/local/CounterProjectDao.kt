@@ -80,6 +80,26 @@ interface CounterProjectDao {
         updatedAt: Long,
     )
 
+    @Query(
+        """
+        UPDATE counter_projects
+        SET name = :name,
+            craftType = :craftType,
+            mainCounterLabelType = :mainCounterLabelType,
+            mainCounterCustomLabel = :mainCounterCustomLabel,
+            updatedAt = :updatedAt
+        WHERE id = :id
+        """,
+    )
+    suspend fun updateProjectDetails(
+        id: Long,
+        name: String,
+        craftType: String,
+        mainCounterLabelType: String,
+        mainCounterCustomLabel: String?,
+        updatedAt: Long,
+    )
+
     @Query("UPDATE counter_projects SET notes = :notes, updatedAt = :updatedAt WHERE id = :id")
     suspend fun updateNotes(
         id: Long,
@@ -188,6 +208,44 @@ interface CounterProjectDao {
     suspend fun updatePatternRowMapping(
         id: Long,
         mapping: String?,
+        updatedAt: Long,
+    )
+
+    @Query(
+        """
+        UPDATE counter_projects
+        SET linkedPatternId = :linkedPatternId,
+            patternUri = :patternUri,
+            patternName = :patternName,
+            currentPatternPage = :currentPatternPage,
+            patternRowMapping = :patternRowMapping,
+            updatedAt = :updatedAt
+        WHERE id = :id
+        """,
+    )
+    suspend fun updatePatternAttachment(
+        id: Long,
+        linkedPatternId: Long?,
+        patternUri: String?,
+        patternName: String?,
+        currentPatternPage: Int,
+        patternRowMapping: String?,
+        updatedAt: Long,
+    )
+
+    @Query(
+        """
+        UPDATE counter_projects
+        SET readingLineEnabled = :enabled,
+            readingLineYFraction = :yFraction,
+            updatedAt = :updatedAt
+        WHERE id = :id
+        """,
+    )
+    suspend fun updateReadingLine(
+        id: Long,
+        enabled: Boolean,
+        yFraction: Float,
         updatedAt: Long,
     )
 
@@ -370,7 +428,7 @@ interface CounterProjectDao {
     @Query("SELECT * FROM counter_projects WHERE isCompleted = 0 ORDER BY updatedAt DESC, id DESC")
     fun getActiveProjects(): Flow<List<CounterProjectEntity>>
 
-    @Query("SELECT * FROM counter_projects WHERE isCompleted = 0 ORDER BY name COLLATE NOCASE ASC")
+    @Query("SELECT * FROM counter_projects WHERE isCompleted = 0 ORDER BY name COLLATE NOCASE ASC, id DESC")
     fun getActiveProjectsByName(): Flow<List<CounterProjectEntity>>
 
     @Query("SELECT * FROM counter_projects WHERE isCompleted = 0 ORDER BY createdAt DESC, id DESC")

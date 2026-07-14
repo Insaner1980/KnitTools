@@ -5,6 +5,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.finnvek.knittools.domain.model.ProjectCounterType
 
 @Entity(
     tableName = "project_counters",
@@ -29,7 +30,7 @@ data class ProjectCounterEntity(
     val sortOrder: Int = 0,
     val createdAt: Long = System.currentTimeMillis(),
     @ColumnInfo(defaultValue = "COUNT_UP")
-    val counterType: String = "COUNT_UP",
+    val counterType: String = ProjectCounterType.COUNT_UP.persistedValue,
     @ColumnInfo(defaultValue = "NULL")
     val startingStitches: Int? = null,
     @ColumnInfo(defaultValue = "NULL")
@@ -44,4 +45,6 @@ data class ProjectCounterEntity(
     val totalRepeats: Int? = null,
     @ColumnInfo(defaultValue = "NULL")
     val currentRepeat: Int? = null,
+    @ColumnInfo(defaultValue = "0")
+    val linkedToMainCounter: Boolean = false,
 )

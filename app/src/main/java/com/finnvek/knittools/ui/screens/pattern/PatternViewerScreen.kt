@@ -1,21 +1,11 @@
 package com.finnvek.knittools.ui.screens.pattern
 
-import android.content.ClipData
-import android.content.ClipboardManager
 import android.graphics.Bitmap
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.gestures.rememberTransformableState
 import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.Arrangement
@@ -27,10 +17,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -46,11 +36,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -67,12 +53,12 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
@@ -80,20 +66,31 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
-import com.finnvek.knittools.ai.CombinedInstructionResult
 import com.finnvek.knittools.data.storage.PdfPageRenderer
 import com.finnvek.knittools.di.AppDispatchers
+import com.finnvek.knittools.domain.calculator.RowMarker
+import com.finnvek.knittools.domain.calculator.createCalibrationRowMarkers
+import com.finnvek.knittools.domain.calculator.parseMapping
+import com.finnvek.knittools.domain.calculator.resolveReadingLineYFraction
+import com.finnvek.knittools.domain.model.DEFAULT_READING_LINE_Y_FRACTION
+import com.finnvek.knittools.domain.model.READING_LINE_MAX_Y_FRACTION
+import com.finnvek.knittools.domain.model.READING_LINE_MIN_Y_FRACTION
+import com.finnvek.knittools.domain.model.sanitizeReadingLineYFraction
 import com.finnvek.knittools.ui.screens.counter.CounterViewModel
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+
+private const val READING_LINE_BAND_HEIGHT_FRACTION = 0.045f
+private const val READING_LINE_BAND_ALPHA = 0.14f
 
 private data class PatternRenderState(
     val renderer: PdfPageRenderer?,
@@ -106,66 +103,81 @@ private data class PatternRenderState(
 fun PatternViewerScreen(
     onBack: () -> Unit,
     counterViewModel: CounterViewModel,
-    viewModel: PatternViewerViewModel = hiltViewModel(),
 ) {
     val counterState by counterViewModel.uiState.collectAsStateWithLifecycle()
-    val instructionState by viewModel.instructionState.collectAsStateWithLifecycle()
-    val explanationState by viewModel.explanationState.collectAsStateWithLifecycle()
-    val combineState by viewModel.combineState.collectAsStateWithLifecycle()
-    val snackbarHostState = remember { SnackbarHostState() }
-    var showExplanationSheet by rememberSaveable { mutableStateOf(false) }
     val patternUri = counterState.patternUri
     val currentPage = counterState.currentPatternPage
+    val rowMarkers = remember(counterState.patternRowMapping) { parseMapping(counterState.patternRowMapping) }
+    val hasCurrentRowMarker =
+        rowMarkers.any { marker -> marker.row == counterState.counter.count && marker.page == currentPage }
+    val hasPageRowMarkers = rowMarkers.any { marker -> marker.page == currentPage }
     val renderState =
         rememberPatternRenderState(
             patternUri = patternUri,
             currentPage = currentPage,
             onPageClamped = counterViewModel::updatePatternPage,
         )
+    var rowCalibrationState by remember(patternUri) { mutableStateOf<RowCalibrationState?>(null) }
+    var readingLinePreviewYFraction by remember(patternUri) { mutableFloatStateOf(counterState.readingLineYFraction) }
+    var isReadingLineDragging by remember(patternUri) { mutableStateOf(false) }
 
-    LaunchedEffect(
-        patternUri,
-        currentPage,
-        counterState.counter.count,
-        counterState.isPro,
-        renderState.renderedBitmap,
-    ) {
-        viewModel.onViewerContextChanged(
-            patternUri = patternUri,
-            currentPage = currentPage,
-            currentRow = counterState.counter.count,
-            renderedBitmap = renderState.renderedBitmap,
-            canDisplayInstruction = counterState.isPro,
-        )
+    LaunchedEffect(patternUri, counterState.readingLineYFraction, isReadingLineDragging) {
+        if (!isReadingLineDragging) {
+            readingLinePreviewYFraction = counterState.readingLineYFraction
+        }
     }
+
+    TrackReadingLineForCurrentRow(
+        currentRow = counterState.counter.count,
+        currentPage = currentPage,
+        patternRowMapping = counterState.patternRowMapping,
+        readingLineEnabled = counterState.readingLineEnabled,
+        readingLineYFraction = counterState.readingLineYFraction,
+        onReadingLineYFractionChange = counterViewModel::updateReadingLineYFraction,
+    )
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
-        snackbarHost = {
-            SnackbarHost(hostState = snackbarHostState)
-        },
         topBar = {
             PatternViewerTopBar(
                 state =
                     TopBarState(
                         patternName = counterState.patternName,
-                        canCombineInstructions = counterState.isPro,
-                        isCombineEnabled = renderState.renderedBitmap != null,
                         totalPages = renderState.renderer?.pageCount ?: 0,
                         currentPage = currentPage,
+                        currentRow = counterState.counter.count.takeIf { patternUri != null },
                         canDetachPattern = true,
+                        readingLineEnabled = counterState.readingLineEnabled,
+                        hasCurrentRowMarker = hasCurrentRowMarker,
+                        hasPageRowMarkers = hasPageRowMarkers,
                     ),
                 actions =
                     TopBarActions(
                         onBack = onBack,
                         onJumpToPage = counterViewModel::updatePatternPage,
-                        onCombineInstructions = {
-                            renderState.renderedBitmap?.let { bitmap ->
-                                viewModel.onCombineInstructionsTapped(
-                                    currentPage = currentPage,
-                                    pageBitmap = bitmap,
+                        onReadingLineToggle = counterViewModel::setReadingLineEnabled,
+                        onSaveReadingLineAsCurrentRow = {
+                            counterViewModel.upsertPatternRowMarker(
+                                row = counterState.counter.count,
+                                page = currentPage,
+                                yPosition = counterState.readingLineYFraction,
+                            )
+                        },
+                        onClearReadingLineRowMarker = {
+                            counterViewModel.removePatternRowMarker(
+                                row = counterState.counter.count,
+                                page = currentPage,
+                            )
+                        },
+                        onClearReadingLinePageMarkers = {
+                            counterViewModel.removePatternRowMarkersForPage(currentPage)
+                        },
+                        onStartRowCalibration = {
+                            counterViewModel.setReadingLineEnabled(true)
+                            rowCalibrationState =
+                                RowCalibrationState(
+                                    rowInput = counterState.counter.count.toString(),
                                 )
-                            }
                         },
                         onDetachPattern = {
                             counterViewModel.detachPattern()
@@ -181,14 +193,9 @@ fun PatternViewerScreen(
                         currentRow = counterState.counter.count,
                         currentPage = currentPage,
                         totalPages = renderState.renderer?.pageCount ?: 0,
-                        instructionState = instructionState,
-                        explanationState = explanationState,
-                        snackbarHostState = snackbarHostState,
                     ),
                 actions =
                     BottomBarActions(
-                        onInstructionTap = viewModel::onInstructionTapped,
-                        onExplanationTap = { showExplanationSheet = true },
                         onPreviousRow = counterViewModel::decrement,
                         onNextRow = counterViewModel::increment,
                         onPreviousPage = { counterViewModel.updatePatternPage(currentPage - 1) },
@@ -197,35 +204,261 @@ fun PatternViewerScreen(
             )
         },
     ) { scaffoldPadding ->
-        PatternViewerContent(
-            patternUri = patternUri,
-            rendererError = renderState.rendererError,
-            renderedBitmap = renderState.renderedBitmap,
-            patternName = counterState.patternName,
-            currentRow = counterState.counter.count,
-            positionPercent = instructionState.positionPercent,
+        Column(
             modifier =
                 Modifier
                     .fillMaxSize()
                     .padding(scaffoldPadding),
-        )
+        ) {
+            rowCalibrationState?.let { calibrationState ->
+                RowCalibrationPanel(
+                    state = calibrationState,
+                    onRowInputChange = { input ->
+                        rowCalibrationState =
+                            calibrationState.copy(
+                                rowInput = input.filter(Char::isDigit),
+                                showInvalidRowError = false,
+                            )
+                    },
+                    onSaveFirst = {
+                        val firstRow = calibrationState.rowInput.toIntOrNull()
+                        rowCalibrationState =
+                            if (firstRow == null) {
+                                calibrationState.copy(showInvalidRowError = true)
+                            } else {
+                                RowCalibrationState(
+                                    firstMarker =
+                                        RowMarker(
+                                            row = firstRow,
+                                            page = currentPage,
+                                            yPosition = sanitizeReadingLineYFraction(counterState.readingLineYFraction),
+                                        ),
+                                    rowInput = counterState.counter.count.toString(),
+                                )
+                            }
+                    },
+                    onSaveLast = {
+                        val markers =
+                            calibrationState.toCalibrationMarkers(
+                                currentPage = currentPage,
+                                currentYFraction = counterState.readingLineYFraction,
+                            )
+                        if (markers == null) {
+                            rowCalibrationState = calibrationState.copy(showInvalidRowError = true)
+                        } else {
+                            counterViewModel.mergePatternRowMarkers(markers)
+                            rowCalibrationState = null
+                        }
+                    },
+                    onCancel = {
+                        rowCalibrationState = null
+                    },
+                )
+            }
+            PatternViewerContent(
+                state =
+                    PatternViewerContentState(
+                        patternUri = patternUri,
+                        rendererError = renderState.rendererError,
+                        renderedBitmap = renderState.renderedBitmap,
+                        patternName = counterState.patternName,
+                        currentRow = counterState.counter.count,
+                        positionPercent = null,
+                        readingLineEnabled = counterState.readingLineEnabled,
+                        readingLineYFraction = readingLinePreviewYFraction,
+                    ),
+                actions =
+                    PatternViewerContentActions(
+                        onReadingLineDragStart = {
+                            isReadingLineDragging = true
+                        },
+                        onReadingLineYFractionChange = { yFraction ->
+                            isReadingLineDragging = true
+                            readingLinePreviewYFraction = sanitizeReadingLineYFraction(yFraction)
+                        },
+                        onReadingLineYFractionCommit = { yFraction ->
+                            val sanitizedYFraction = sanitizeReadingLineYFraction(yFraction)
+                            isReadingLineDragging = false
+                            readingLinePreviewYFraction = sanitizedYFraction
+                            counterViewModel.updateReadingLineYFraction(sanitizedYFraction)
+                            counterViewModel.upsertPatternRowMarker(
+                                row = counterState.counter.count,
+                                page = currentPage,
+                                yPosition = sanitizedYFraction,
+                            )
+                        },
+                        onReadingLineDragCancel = {
+                            isReadingLineDragging = false
+                            readingLinePreviewYFraction = counterState.readingLineYFraction
+                        },
+                    ),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+            )
+        }
+    }
+}
+
+private data class RowCalibrationState(
+    val firstMarker: RowMarker? = null,
+    val rowInput: String,
+    val showInvalidRowError: Boolean = false,
+)
+
+private val RowCalibrationState.isSecondStep: Boolean
+    get() = firstMarker != null
+
+private fun RowCalibrationState.rowLabelRes(): Int =
+    if (isSecondStep) {
+        R.string.pattern_calibration_last_row
+    } else {
+        R.string.pattern_calibration_first_row
     }
 
-    if (showExplanationSheet) {
-        ExplanationSheet(
-            instruction = instructionState.instruction.orEmpty(),
-            explanation = explanationState.explanation.orEmpty(),
-            onDismiss = { showExplanationSheet = false },
-        )
+private fun RowCalibrationState.saveButtonLabelRes(): Int =
+    if (isSecondStep) {
+        R.string.pattern_calibration_save_last
+    } else {
+        R.string.pattern_calibration_save_first
     }
 
-    if (combineState.isVisible) {
-        CombineInstructionsSheet(
-            state = combineState,
-            currentRow = counterState.counter.count,
-            snackbarHostState = snackbarHostState,
-            onDismiss = viewModel::onCombineSheetDismissed,
+private fun RowCalibrationState.saveAction(
+    onSaveFirst: () -> Unit,
+    onSaveLast: () -> Unit,
+): () -> Unit = if (isSecondStep) onSaveLast else onSaveFirst
+
+private fun RowCalibrationState.toCalibrationMarkers(
+    currentPage: Int,
+    currentYFraction: Float,
+): List<RowMarker>? {
+    val firstMarker = firstMarker ?: return null
+    val lastRow = rowInput.toIntOrNull() ?: return null
+    val markers =
+        createCalibrationRowMarkers(
+            firstRow = firstMarker.row,
+            firstPage = firstMarker.page,
+            firstYPosition = firstMarker.yPosition,
+            lastRow = lastRow,
+            lastPage = currentPage,
+            lastYPosition = currentYFraction,
         )
+    if (markers == null) return null
+    return markers
+}
+
+@Composable
+private fun RowCalibrationPanel(
+    state: RowCalibrationState,
+    onRowInputChange: (String) -> Unit,
+    onSaveFirst: () -> Unit,
+    onSaveLast: () -> Unit,
+    onCancel: () -> Unit,
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        tonalElevation = 2.dp,
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 10.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.pattern_calibrate_rows),
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold,
+            )
+            TextField(
+                value = state.rowInput,
+                onValueChange = onRowInputChange,
+                singleLine = true,
+                isError = state.showInvalidRowError,
+                label = {
+                    Text(stringResource(state.rowLabelRes()))
+                },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                supportingText = rowCalibrationSupportingText(state.showInvalidRowError),
+                shape = MaterialTheme.shapes.medium,
+                colors =
+                    TextFieldDefaults.colors(
+                        focusedContainerColor = MaterialTheme.colorScheme.surface,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    ),
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                TextButton(
+                    onClick = state.saveAction(onSaveFirst, onSaveLast),
+                    enabled = state.rowInput.toIntOrNull() != null,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(
+                        text = stringResource(state.saveButtonLabelRes()),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                TextButton(
+                    onClick = onCancel,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(
+                        text = stringResource(R.string.cancel),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun rowCalibrationSupportingText(showInvalidRowError: Boolean): (@Composable () -> Unit)? {
+    if (!showInvalidRowError) return null
+    return {
+        Text(stringResource(R.string.pattern_calibration_invalid_row))
+    }
+}
+
+@Composable
+private fun TrackReadingLineForCurrentRow(
+    currentRow: Int,
+    currentPage: Int,
+    patternRowMapping: String?,
+    readingLineEnabled: Boolean,
+    readingLineYFraction: Float,
+    onReadingLineYFractionChange: (Float) -> Unit,
+) {
+    var previousRow by remember(currentPage, patternRowMapping) { mutableIntStateOf(currentRow) }
+    val rowMarkers = remember(patternRowMapping) { parseMapping(patternRowMapping) }
+    LaunchedEffect(currentRow, currentPage, patternRowMapping, readingLineEnabled) {
+        if (!readingLineEnabled) {
+            previousRow = currentRow
+            return@LaunchedEffect
+        }
+
+        val rowDelta = currentRow - previousRow
+        val nextYFraction =
+            resolveReadingLineYFraction(
+                markers = rowMarkers,
+                currentRow = currentRow,
+                currentPage = currentPage,
+                currentYFraction = readingLineYFraction,
+                rowDelta = rowDelta,
+            )
+
+        previousRow = currentRow
+        nextYFraction
+            ?.takeIf { it != readingLineYFraction }
+            ?.let(onReadingLineYFractionChange)
     }
 }
 
@@ -237,6 +470,8 @@ fun LibraryPatternViewerScreen(
     onBack: () -> Unit,
 ) {
     var currentPage by rememberSaveable(patternUri) { mutableIntStateOf(0) }
+    var readingLineEnabled by rememberSaveable(patternUri) { mutableStateOf(false) }
+    var readingLineYFraction by rememberSaveable(patternUri) { mutableFloatStateOf(DEFAULT_READING_LINE_Y_FRACTION) }
     val renderState =
         rememberPatternRenderState(
             patternUri = patternUri,
@@ -251,17 +486,23 @@ fun LibraryPatternViewerScreen(
                 state =
                     TopBarState(
                         patternName = patternName,
-                        canCombineInstructions = false,
-                        isCombineEnabled = false,
                         totalPages = renderState.renderer?.pageCount ?: 0,
                         currentPage = currentPage,
+                        currentRow = null,
                         canDetachPattern = false,
+                        readingLineEnabled = readingLineEnabled,
+                        hasCurrentRowMarker = false,
+                        hasPageRowMarkers = false,
                     ),
                 actions =
                     TopBarActions(
                         onBack = onBack,
                         onJumpToPage = { currentPage = it },
-                        onCombineInstructions = {},
+                        onReadingLineToggle = { readingLineEnabled = it },
+                        onSaveReadingLineAsCurrentRow = {},
+                        onClearReadingLineRowMarker = {},
+                        onClearReadingLinePageMarkers = {},
+                        onStartRowCalibration = {},
                         onDetachPattern = {},
                     ),
             )
@@ -279,12 +520,24 @@ fun LibraryPatternViewerScreen(
         },
     ) { scaffoldPadding ->
         PatternViewerContent(
-            patternUri = patternUri,
-            rendererError = renderState.rendererError,
-            renderedBitmap = renderState.renderedBitmap,
-            patternName = patternName,
-            currentRow = null,
-            positionPercent = null,
+            state =
+                PatternViewerContentState(
+                    patternUri = patternUri,
+                    rendererError = renderState.rendererError,
+                    renderedBitmap = renderState.renderedBitmap,
+                    patternName = patternName,
+                    currentRow = null,
+                    positionPercent = null,
+                    readingLineEnabled = readingLineEnabled,
+                    readingLineYFraction = readingLineYFraction,
+                ),
+            actions =
+                PatternViewerContentActions(
+                    onReadingLineDragStart = {},
+                    onReadingLineYFractionChange = { readingLineYFraction = sanitizeReadingLineYFraction(it) },
+                    onReadingLineYFractionCommit = { readingLineYFraction = sanitizeReadingLineYFraction(it) },
+                    onReadingLineDragCancel = {},
+                ),
             modifier =
                 Modifier
                     .fillMaxSize()
@@ -360,17 +613,23 @@ private fun rememberPatternRenderState(
 // Tilan ja toimintojen ryhmittely PatternViewerTopBarille (S107)
 private data class TopBarState(
     val patternName: String?,
-    val canCombineInstructions: Boolean,
-    val isCombineEnabled: Boolean,
     val totalPages: Int,
     val currentPage: Int,
+    val currentRow: Int?,
     val canDetachPattern: Boolean,
+    val readingLineEnabled: Boolean,
+    val hasCurrentRowMarker: Boolean,
+    val hasPageRowMarkers: Boolean,
 )
 
 private data class TopBarActions(
     val onBack: () -> Unit,
     val onJumpToPage: (Int) -> Unit,
-    val onCombineInstructions: () -> Unit,
+    val onReadingLineToggle: (Boolean) -> Unit,
+    val onSaveReadingLineAsCurrentRow: () -> Unit,
+    val onClearReadingLineRowMarker: () -> Unit,
+    val onClearReadingLinePageMarkers: () -> Unit,
+    val onStartRowCalibration: () -> Unit,
     val onDetachPattern: () -> Unit,
 )
 
@@ -409,37 +668,14 @@ private fun PatternViewerTopBar(
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                DropdownMenu(
+                PatternViewerOverflowMenu(
                     expanded = showOverflowMenu,
                     onDismissRequest = { showOverflowMenu = false },
-                ) {
-                    if (state.canCombineInstructions) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.pattern_combine_instructions)) },
-                            onClick = {
-                                showOverflowMenu = false
-                                actions.onCombineInstructions()
-                            },
-                            enabled = state.isCombineEnabled,
-                        )
-                    }
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.pattern_page_jump)) },
-                        onClick = {
-                            showOverflowMenu = false
-                            showPageJumpDialog = true
-                        },
-                    )
-                    if (state.canDetachPattern) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.remove_pattern)) },
-                            onClick = {
-                                showOverflowMenu = false
-                                actions.onDetachPattern()
-                            },
-                        )
-                    }
-                }
+                    state = state,
+                    actions = actions,
+                    onPageJumpClick = { showPageJumpDialog = true },
+                    closeOverflowMenu = { showOverflowMenu = false },
+                )
             }
         },
         colors =
@@ -460,6 +696,112 @@ private fun PatternViewerTopBar(
             },
         )
     }
+}
+
+@Composable
+private fun PatternViewerOverflowMenu(
+    expanded: Boolean,
+    onDismissRequest: () -> Unit,
+    state: TopBarState,
+    actions: TopBarActions,
+    onPageJumpClick: () -> Unit,
+    closeOverflowMenu: () -> Unit,
+) {
+    DropdownMenu(
+        expanded = expanded,
+        onDismissRequest = onDismissRequest,
+    ) {
+        DropdownMenuItem(
+            text = { Text(stringResource(R.string.pattern_page_jump)) },
+            onClick = {
+                closeOverflowMenu()
+                onPageJumpClick()
+            },
+        )
+        PatternReadingLineMenuItem(
+            readingLineEnabled = state.readingLineEnabled,
+            onClick = {
+                closeOverflowMenu()
+                actions.onReadingLineToggle(!state.readingLineEnabled)
+            },
+        )
+        PatternRowMarkerMenuItems(
+            state = state,
+            actions = actions,
+            closeOverflowMenu = closeOverflowMenu,
+        )
+        if (state.canDetachPattern) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.remove_pattern)) },
+                onClick = {
+                    closeOverflowMenu()
+                    actions.onDetachPattern()
+                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun PatternReadingLineMenuItem(
+    readingLineEnabled: Boolean,
+    onClick: () -> Unit,
+) {
+    DropdownMenuItem(
+        text = {
+            Text(
+                stringResource(
+                    if (readingLineEnabled) {
+                        R.string.pattern_hide_reading_line
+                    } else {
+                        R.string.pattern_show_reading_line
+                    },
+                ),
+            )
+        },
+        onClick = onClick,
+    )
+}
+
+@Composable
+private fun PatternRowMarkerMenuItems(
+    state: TopBarState,
+    actions: TopBarActions,
+    closeOverflowMenu: () -> Unit,
+) {
+    val currentRow = state.currentRow ?: return
+    DropdownMenuItem(
+        text = { Text(stringResource(R.string.pattern_save_line_as_row, currentRow)) },
+        onClick = {
+            closeOverflowMenu()
+            actions.onSaveReadingLineAsCurrentRow()
+        },
+    )
+    if (state.hasCurrentRowMarker) {
+        DropdownMenuItem(
+            text = { Text(stringResource(R.string.pattern_clear_row_mark)) },
+            onClick = {
+                closeOverflowMenu()
+                actions.onClearReadingLineRowMarker()
+            },
+        )
+    }
+    if (state.hasPageRowMarkers) {
+        DropdownMenuItem(
+            text = { Text(stringResource(R.string.pattern_clear_page_marks)) },
+            onClick = {
+                closeOverflowMenu()
+                actions.onClearReadingLinePageMarkers()
+            },
+        )
+    }
+    DropdownMenuItem(
+        text = { Text(stringResource(R.string.pattern_calibrate_rows)) },
+        onClick = {
+            closeOverflowMenu()
+            actions.onStartRowCalibration()
+        },
+    )
 }
 
 @Composable
@@ -569,36 +911,38 @@ private fun LibraryPatternViewerBottomBar(
 
 @Composable
 private fun PatternViewerContent(
-    patternUri: String?,
-    rendererError: String?,
-    renderedBitmap: Bitmap?,
-    patternName: String?,
-    currentRow: Int?,
-    positionPercent: Int?,
+    state: PatternViewerContentState,
+    actions: PatternViewerContentActions,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier) {
         when {
-            patternUri == null -> {
+            state.patternUri == null -> {
                 PatternViewerMessage(message = stringResource(R.string.no_pattern_attached))
             }
 
-            rendererError != null -> {
+            state.rendererError != null -> {
                 PatternViewerMessage(
-                    message = rendererError.ifBlank { stringResource(R.string.pattern_open_failed) },
+                    message = state.rendererError.ifBlank { stringResource(R.string.pattern_open_failed) },
                 )
             }
 
-            renderedBitmap == null -> {
+            state.renderedBitmap == null -> {
                 PatternViewerMessage(message = stringResource(R.string.pattern_loading))
             }
 
             else -> {
                 PatternViewerDocument(
-                    renderedBitmap = renderedBitmap,
-                    patternName = patternName,
-                    currentRow = currentRow,
-                    positionPercent = positionPercent,
+                    state =
+                        PatternViewerDocumentState(
+                            renderedBitmap = state.renderedBitmap,
+                            patternName = state.patternName,
+                            currentRow = state.currentRow,
+                            positionPercent = state.positionPercent,
+                            readingLineEnabled = state.readingLineEnabled,
+                            readingLineYFraction = state.readingLineYFraction,
+                        ),
+                    actions = actions,
                     modifier =
                         Modifier
                             .fillMaxWidth()
@@ -609,19 +953,51 @@ private fun PatternViewerContent(
     }
 }
 
+private data class PatternViewerContentState(
+    val patternUri: String?,
+    val rendererError: String?,
+    val renderedBitmap: Bitmap?,
+    val patternName: String?,
+    val currentRow: Int?,
+    val positionPercent: Int?,
+    val readingLineEnabled: Boolean,
+    val readingLineYFraction: Float,
+)
+
+private data class PatternViewerDocumentState(
+    val renderedBitmap: Bitmap,
+    val patternName: String?,
+    val currentRow: Int?,
+    val positionPercent: Int?,
+    val readingLineEnabled: Boolean,
+    val readingLineYFraction: Float,
+)
+
+private data class PatternViewerContentActions(
+    val onReadingLineDragStart: () -> Unit,
+    val onReadingLineYFractionChange: (Float) -> Unit,
+    val onReadingLineYFractionCommit: (Float) -> Unit,
+    val onReadingLineDragCancel: () -> Unit,
+)
+
+private data class ReadingLineOverlayActions(
+    val onDragStart: () -> Unit,
+    val onYFractionChange: (Float) -> Unit,
+    val onYFractionCommit: (Float) -> Unit,
+    val onDragCancel: () -> Unit,
+)
+
 @Composable
 private fun PatternViewerDocument(
-    renderedBitmap: Bitmap,
-    patternName: String?,
-    currentRow: Int?,
-    positionPercent: Int?,
+    state: PatternViewerDocumentState,
+    actions: PatternViewerContentActions,
     modifier: Modifier = Modifier,
 ) {
     var scale by remember { mutableFloatStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
 
     val transformableState =
-        rememberTransformableState { zoomChange, panChange, _ ->
+        rememberTransformableState { _, zoomChange, panChange, _ ->
             scale = (scale * zoomChange).coerceIn(1f, 5f)
             if (scale > 1f) {
                 offset += panChange
@@ -638,7 +1014,7 @@ private fun PatternViewerDocument(
         BoxWithConstraints(
             modifier = Modifier.fillMaxWidth(),
         ) {
-            val aspectRatio = renderedBitmap.width.toFloat() / renderedBitmap.height.toFloat()
+            val aspectRatio = state.renderedBitmap.width.toFloat() / state.renderedBitmap.height.toFloat()
             Box(
                 modifier =
                     Modifier
@@ -660,23 +1036,144 @@ private fun PatternViewerDocument(
                         ),
             ) {
                 Image(
-                    bitmap = renderedBitmap.asImageBitmap(),
-                    contentDescription = patternName,
+                    bitmap = state.renderedBitmap.asImageBitmap(),
+                    contentDescription = state.patternName,
                     contentScale = ContentScale.FillWidth,
                     modifier = Modifier.fillMaxSize(),
                 )
                 RowHighlightOverlay(
-                    yPosition = positionPercent?.let { it / 100f },
+                    yPosition = state.positionPercent?.let { it / 100f },
                     modifier = Modifier.fillMaxSize(),
                     accessibilityDescription =
-                        if (currentRow != null && positionPercent != null) {
-                            stringResource(R.string.pattern_row_highlight_description, currentRow, positionPercent)
+                        if (state.currentRow != null && state.positionPercent != null) {
+                            stringResource(
+                                R.string.pattern_row_highlight_description,
+                                state.currentRow,
+                                state.positionPercent,
+                            )
                         } else {
                             null
                         },
                 )
+                if (state.readingLineEnabled) {
+                    ReadingLineOverlay(
+                        yFraction = state.readingLineYFraction,
+                        currentRow = state.currentRow,
+                        scale = scale,
+                        actions =
+                            ReadingLineOverlayActions(
+                                onDragStart = actions.onReadingLineDragStart,
+                                onYFractionChange = actions.onReadingLineYFractionChange,
+                                onYFractionCommit = actions.onReadingLineYFractionCommit,
+                                onDragCancel = actions.onReadingLineDragCancel,
+                            ),
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
             }
         }
+    }
+}
+
+@Composable
+private fun ReadingLineOverlay(
+    yFraction: Float,
+    currentRow: Int?,
+    scale: Float,
+    actions: ReadingLineOverlayActions,
+    modifier: Modifier = Modifier,
+) {
+    val sanitizedYFraction = sanitizeReadingLineYFraction(yFraction)
+    val lineColor = MaterialTheme.colorScheme.primary
+    val bandColor = MaterialTheme.colorScheme.primary.copy(alpha = READING_LINE_BAND_ALPHA)
+    val description = stringResource(R.string.pattern_reading_line_description)
+    BoxWithConstraints(
+        modifier =
+            modifier
+                .semantics { contentDescription = description }
+                .pointerInput(sanitizedYFraction, scale) {
+                    var lastYFraction = sanitizedYFraction
+                    detectVerticalDragGestures(
+                        onDragStart = {
+                            actions.onDragStart()
+                            lastYFraction = sanitizedYFraction
+                        },
+                        onDragEnd = { actions.onYFractionCommit(lastYFraction) },
+                        onDragCancel = { actions.onDragCancel() },
+                        onVerticalDrag = { change, dragAmount ->
+                            change.consume()
+                            val heightPx =
+                                size.height.toFloat().takeIf { it > 0f }
+                                    ?: return@detectVerticalDragGestures
+                            val adjustedDrag = dragAmount / scale.coerceAtLeast(1f)
+                            lastYFraction =
+                                (lastYFraction + (adjustedDrag / heightPx)).coerceIn(
+                                    READING_LINE_MIN_Y_FRACTION,
+                                    READING_LINE_MAX_Y_FRACTION,
+                                )
+                            actions.onYFractionChange(lastYFraction)
+                        },
+                    )
+                },
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val centerY = size.height * sanitizedYFraction
+            val bandHeight = (size.height * READING_LINE_BAND_HEIGHT_FRACTION).coerceAtLeast(24.dp.toPx())
+            drawRect(
+                color = bandColor,
+                topLeft = Offset(0f, centerY - (bandHeight / 2f)),
+                size = Size(size.width, bandHeight),
+            )
+            drawLine(
+                color = lineColor,
+                start = Offset(0f, centerY),
+                end = Offset(size.width, centerY),
+                strokeWidth = 2.dp.toPx(),
+            )
+        }
+        currentRow?.let { currentRow ->
+            ReadingLineRowLabel(
+                currentRow = currentRow,
+                yFraction = sanitizedYFraction,
+                containerHeight = maxHeight,
+                modifier = Modifier.align(Alignment.TopStart),
+            )
+        }
+    }
+}
+
+@Composable
+private fun ReadingLineRowLabel(
+    currentRow: Int,
+    yFraction: Float,
+    containerHeight: Dp,
+    modifier: Modifier = Modifier,
+) {
+    val verticalMargin = 4.dp
+    val labelHeight = 28.dp
+    val maxOffset = containerHeight - labelHeight - verticalMargin
+    val boundedMaxOffset = if (maxOffset > verticalMargin) maxOffset else verticalMargin
+    val labelOffset =
+        (containerHeight * yFraction - (labelHeight / 2f))
+            .coerceIn(verticalMargin, boundedMaxOffset)
+
+    Surface(
+        color = MaterialTheme.colorScheme.primaryContainer,
+        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+        shape = MaterialTheme.shapes.small,
+        tonalElevation = 2.dp,
+        modifier =
+            modifier
+                .padding(start = 8.dp)
+                .offset(y = labelOffset),
+    ) {
+        Text(
+            text = stringResource(R.string.current_row_short, currentRow),
+            style = MaterialTheme.typography.labelSmall,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+        )
     }
 }
 
@@ -685,14 +1182,9 @@ private data class BottomBarState(
     val currentRow: Int,
     val currentPage: Int,
     val totalPages: Int,
-    val instructionState: InstructionDisplayState,
-    val explanationState: ExplanationState,
-    val snackbarHostState: SnackbarHostState,
 )
 
 private data class BottomBarActions(
-    val onInstructionTap: (String) -> Unit,
-    val onExplanationTap: () -> Unit,
     val onPreviousRow: () -> Unit,
     val onNextRow: () -> Unit,
     val onPreviousPage: () -> Unit,
@@ -704,13 +1196,6 @@ private fun PatternViewerBottomBar(
     state: BottomBarState,
     actions: BottomBarActions,
 ) {
-    val copiedMessage = stringResource(R.string.pattern_instruction_copied)
-    val currentInstruction = state.instructionState.instruction.orEmpty()
-    val isExplanationForCurrentInstruction =
-        state.explanationState.isVisible &&
-            currentInstruction.isNotBlank() &&
-            state.explanationState.forInstruction == currentInstruction
-
     Surface(
         tonalElevation = 3.dp,
         color = MaterialTheme.colorScheme.surface,
@@ -722,23 +1207,6 @@ private fun PatternViewerBottomBar(
                     .padding(horizontal = 16.dp, vertical = 10.dp),
         ) {
             BottomBarNavigationRow(state = state, actions = actions)
-
-            BottomBarInstructionSection(
-                instructionState = state.instructionState,
-                isExplanationForCurrentInstruction = isExplanationForCurrentInstruction,
-                snackbarHostState = state.snackbarHostState,
-                copiedMessage = copiedMessage,
-                onInstructionTap = actions.onInstructionTap,
-            )
-
-            BottomBarExplanationSection(
-                instructionState = state.instructionState,
-                explanationState = state.explanationState,
-                isExplanationForCurrentInstruction = isExplanationForCurrentInstruction,
-                snackbarHostState = state.snackbarHostState,
-                copiedMessage = copiedMessage,
-                onExplanationTap = actions.onExplanationTap,
-            )
         }
     }
 }
@@ -805,158 +1273,6 @@ private fun BottomBarNavigationRow(
 }
 
 @Composable
-private fun BottomBarInstructionSection(
-    instructionState: InstructionDisplayState,
-    isExplanationForCurrentInstruction: Boolean,
-    snackbarHostState: SnackbarHostState,
-    copiedMessage: String,
-    onInstructionTap: (String) -> Unit,
-) {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-
-    if (instructionState.canDisplayInstruction && instructionState.isLoading) {
-        Spacer(modifier = Modifier.height(4.dp))
-        PatternInstructionPlaceholder(lineCount = 1)
-    }
-
-    AnimatedVisibility(
-        visible = instructionState.canDisplayInstruction && !instructionState.instruction.isNullOrBlank(),
-        enter = fadeIn() + slideInVertically(initialOffsetY = { it / 2 }),
-        exit = fadeOut(),
-    ) {
-        Text(
-            text = instructionState.instruction.orEmpty(),
-            style = MaterialTheme.typography.bodySmall,
-            color =
-                if (isExplanationForCurrentInstruction) {
-                    MaterialTheme.colorScheme.onSurface
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                },
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            modifier =
-                Modifier
-                    .padding(top = 4.dp)
-                    .combinedClickable(
-                        onClick = {
-                            val instruction = instructionState.instruction ?: return@combinedClickable
-                            onInstructionTap(instruction)
-                        },
-                        onLongClick = {
-                            val instruction = instructionState.instruction ?: return@combinedClickable
-                            context.getSystemService(ClipboardManager::class.java)?.setPrimaryClip(
-                                ClipData.newPlainText("pattern_instruction", instruction),
-                            )
-                            scope.launch {
-                                snackbarHostState.showSnackbar(
-                                    message = copiedMessage,
-                                    duration = SnackbarDuration.Short,
-                                )
-                            }
-                        },
-                    ),
-        )
-    }
-}
-
-@Composable
-private fun BottomBarExplanationSection(
-    instructionState: InstructionDisplayState,
-    explanationState: ExplanationState,
-    isExplanationForCurrentInstruction: Boolean,
-    snackbarHostState: SnackbarHostState,
-    copiedMessage: String,
-    onExplanationTap: () -> Unit,
-) {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-
-    if (instructionState.canDisplayInstruction &&
-        isExplanationForCurrentInstruction &&
-        explanationState.isLoading
-    ) {
-        Spacer(modifier = Modifier.height(4.dp))
-        PatternInstructionPlaceholder(lineCount = 2)
-    }
-
-    AnimatedVisibility(
-        visible =
-            instructionState.canDisplayInstruction &&
-                isExplanationForCurrentInstruction &&
-                !explanationState.explanation.isNullOrBlank(),
-        enter = fadeIn() + slideInVertically(initialOffsetY = { it / 3 }),
-        exit = fadeOut(),
-    ) {
-        Surface(
-            modifier = Modifier.padding(top = 4.dp),
-            shape = RoundedCornerShape(12.dp),
-            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
-        ) {
-            Text(
-                text = explanationState.explanation.orEmpty(),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                maxLines = 6,
-                overflow = TextOverflow.Ellipsis,
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 10.dp, vertical = 8.dp)
-                        .combinedClickable(
-                            onClick = onExplanationTap,
-                            onLongClick = {
-                                val explanation = explanationState.explanation ?: return@combinedClickable
-                                context.getSystemService(ClipboardManager::class.java)?.setPrimaryClip(
-                                    ClipData.newPlainText("pattern_explanation", explanation),
-                                )
-                                scope.launch {
-                                    snackbarHostState.showSnackbar(
-                                        message = copiedMessage,
-                                        duration = SnackbarDuration.Short,
-                                    )
-                                }
-                            },
-                        ),
-            )
-        }
-    }
-}
-
-@Composable
-private fun PatternInstructionPlaceholder(lineCount: Int) {
-    val transition = rememberInfiniteTransition(label = "patternInstructionPlaceholder")
-    val alpha by transition.animateFloat(
-        initialValue = 0.3f,
-        targetValue = 0.6f,
-        animationSpec =
-            infiniteRepeatable(
-                animation = tween(durationMillis = 1_500),
-                repeatMode = RepeatMode.Reverse,
-            ),
-        label = "patternInstructionPlaceholderAlpha",
-    )
-
-    Column(
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        repeat(lineCount.coerceAtLeast(1)) { index ->
-            Box(
-                modifier =
-                    Modifier
-                        .fillMaxWidth(if (index == lineCount - 1 && lineCount > 1) 0.8f else 0.6f)
-                        .height(16.dp)
-                        .background(
-                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = alpha),
-                            shape = RoundedCornerShape(8.dp),
-                        ),
-            )
-        }
-    }
-}
-
-@Composable
 private fun PatternViewerMessage(message: String) {
     Box(
         modifier = Modifier.fillMaxSize(),
@@ -968,187 +1284,4 @@ private fun PatternViewerMessage(message: String) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun ExplanationSheet(
-    instruction: String,
-    explanation: String,
-    onDismiss: () -> Unit,
-) {
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        containerColor = MaterialTheme.colorScheme.surface,
-    ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp)
-                    .padding(bottom = 32.dp),
-        ) {
-            if (instruction.isNotBlank()) {
-                Text(
-                    text = instruction,
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-            }
-            Text(
-                text = explanation,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-                lineHeight = MaterialTheme.typography.bodyLarge.lineHeight,
-            )
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun CombineInstructionsSheet(
-    state: CombineState,
-    currentRow: Int,
-    snackbarHostState: SnackbarHostState,
-    onDismiss: () -> Unit,
-) {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val copyMessage = stringResource(R.string.pattern_combined_instructions_copied)
-    val sheetTitle =
-        when {
-            state.result?.found == true -> state.result.title ?: stringResource(R.string.pattern_combine_instructions)
-            else -> stringResource(R.string.pattern_combine_instructions)
-        }
-    val combinedText = remember(state.result, sheetTitle) { state.result?.toClipboardText(sheetTitle) }
-
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        containerColor = MaterialTheme.colorScheme.surface,
-    ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .combinedClickable(
-                        onClick = {},
-                        onLongClick = {
-                            val textToCopy = combinedText ?: return@combinedClickable
-                            context.getSystemService(ClipboardManager::class.java)?.setPrimaryClip(
-                                ClipData.newPlainText("combined_instructions", textToCopy),
-                            )
-                            scope.launch {
-                                snackbarHostState.showSnackbar(
-                                    message = copyMessage,
-                                    duration = SnackbarDuration.Short,
-                                )
-                            }
-                        },
-                    ).padding(horizontal = 20.dp)
-                    .padding(bottom = 32.dp),
-        ) {
-            Text(
-                text = sheetTitle,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-
-            when {
-                state.isLoading -> {
-                    PatternInstructionPlaceholder(lineCount = 4)
-                }
-
-                state.messageResId != null -> {
-                    Text(
-                        text = stringResource(state.messageResId),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-
-                state.result?.found == true -> {
-                    CombinedInstructionList(
-                        result = state.result,
-                        currentRow = currentRow,
-                    )
-                }
-
-                else -> {
-                    Text(
-                        text = stringResource(R.string.pattern_combine_none_found),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun CombinedInstructionList(
-    result: CombinedInstructionResult,
-    currentRow: Int,
-) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        result.rows.forEach { row ->
-            val actualRow = result.startRow?.let { it + row.row - 1 }
-            val isCurrentRow = actualRow != null && actualRow == currentRow
-            Surface(
-                shape = RoundedCornerShape(16.dp),
-                color =
-                    if (isCurrentRow) {
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
-                    } else {
-                        Color.Transparent
-                    },
-            ) {
-                Column(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 10.dp),
-                ) {
-                    val rowLabel =
-                        buildString {
-                            append("ROW ${row.row}")
-                            row.side?.let { append(" ($it)") }
-                        }
-                    Text(
-                        text = rowLabel,
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = row.instruction,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                }
-            }
-        }
-    }
-}
-
-private fun CombinedInstructionResult.toClipboardText(heading: String): String? {
-    if (!found || rows.isEmpty()) return null
-    return buildString {
-        appendLine(heading)
-        appendLine()
-        rows.forEach { row ->
-            append("Row ${row.row}")
-            row.side?.let { append(" ($it)") }
-            append(": ")
-            appendLine(row.instruction)
-        }
-    }.trim()
 }

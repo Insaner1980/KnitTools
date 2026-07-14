@@ -2,6 +2,7 @@ package com.finnvek.knittools.domain.calculator
 
 import android.content.Context
 import com.finnvek.knittools.R
+import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.KnittingAbbreviation
 
 /**
@@ -109,13 +110,22 @@ object AbbreviationData {
     fun search(
         context: Context,
         query: String,
+        craftType: CraftType = CraftType.KNITTING,
     ): List<KnittingAbbreviation> {
+        val source = abbreviationsFor(craftType)
         val trimmed = query.trim().lowercase()
-        if (trimmed.isEmpty()) return abbreviations
-        return abbreviations.filter {
+        if (trimmed.isEmpty()) return source
+        return source.filter {
             it.abbreviation.lowercase().contains(trimmed) ||
                 context.getString(it.meaningResId).lowercase().contains(trimmed) ||
                 context.getString(it.descriptionResId).lowercase().contains(trimmed)
         }
     }
+
+    private fun abbreviationsFor(craftType: CraftType): List<KnittingAbbreviation> =
+        when (craftType) {
+            CraftType.KNITTING,
+            CraftType.CROCHET,
+            -> abbreviations
+        }
 }

@@ -1,7 +1,10 @@
 package com.finnvek.knittools.domain.calculator
 
 import com.finnvek.knittools.domain.model.ProjectCounter
+import com.finnvek.knittools.domain.model.ProjectCounterType
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ProjectCounterLogicTest {
@@ -9,6 +12,9 @@ class ProjectCounterLogicTest {
         count: Int = 0,
         stepSize: Int = 1,
         repeatAt: Int? = null,
+        counterType: ProjectCounterType = ProjectCounterType.COUNT_UP,
+        shapeEveryN: Int? = null,
+        linkedToMainCounter: Boolean = false,
     ) = ProjectCounter(
         id = 1,
         projectId = 1,
@@ -16,6 +22,9 @@ class ProjectCounterLogicTest {
         count = count,
         stepSize = stepSize,
         repeatAt = repeatAt,
+        counterType = counterType,
+        shapeEveryN = shapeEveryN,
+        linkedToMainCounter = linkedToMainCounter,
     )
 
     @Test
@@ -76,5 +85,43 @@ class ProjectCounterLogicTest {
     fun `no repeat cycling when repeatAt is null`() {
         val result = ProjectCounterLogic.increment(counter(count = 100, stepSize = 1, repeatAt = null))
         assertEquals(101, result.count)
+    }
+
+    @Test
+    fun `shaping increment tracks total count without interval reset`() {
+        val result =
+            ProjectCounterLogic.increment(
+                counter(
+                    count = 4,
+                    stepSize = 1,
+                    counterType = ProjectCounterType.SHAPING,
+                    shapeEveryN = 4,
+                ),
+            )
+
+        assertEquals(5, result.count)
+    }
+
+    @Test
+    fun `main-counter link rule clears repeat-section link state`() {
+        val result =
+            ProjectCounterLogic.enforceMainCounterLinkRules(
+                counter(
+                    counterType = ProjectCounterType.REPEAT_SECTION,
+                    linkedToMainCounter = true,
+                ),
+            )
+
+        assertFalse(result.linkedToMainCounter)
+    }
+
+    @Test
+    fun `main-counter link rule preserves supported linked counters`() {
+        val result =
+            ProjectCounterLogic.enforceMainCounterLinkRules(
+                counter(linkedToMainCounter = true),
+            )
+
+        assertTrue(result.linkedToMainCounter)
     }
 }

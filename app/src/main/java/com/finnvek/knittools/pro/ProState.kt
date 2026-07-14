@@ -1,6 +1,7 @@
 package com.finnvek.knittools.pro
 
 import androidx.compose.runtime.Immutable
+import com.finnvek.knittools.BuildConfig
 
 enum class ProStatus {
     TRIAL_ACTIVE,
@@ -13,8 +14,6 @@ enum class ProFeature {
     FULL_HISTORY,
     NOTES,
     SECONDARY_COUNTER,
-    OCR,
-    GEMINI_NANO,
     WIDGET,
     ROW_REMINDERS,
     PROGRESS_PHOTOS,
@@ -25,9 +24,6 @@ enum class ProFeature {
     INSIGHTS_CHARTS,
     STREAK,
     UNLIMITED_YARN,
-    VOICE_COMMANDS,
-    VOICE_LIVE,
-    AI_FEATURES,
 }
 
 @Immutable
@@ -43,5 +39,8 @@ data class ProState(
     // Nykyinen tuotemalli on yksi Pro-taso: feature-parametri nimeää käyttöpaikan,
     // mutta ei vielä eriytä oikeuksia ominaisuuskohtaisesti.
     @Suppress("UNUSED_PARAMETER")
-    fun hasFeature(feature: ProFeature): Boolean = isPro
+    fun hasFeature(
+        feature: ProFeature,
+        debugUnlockAllFeatures: Boolean = BuildConfig.DEBUG,
+    ): Boolean = debugUnlockAllFeatures || isPro
 }

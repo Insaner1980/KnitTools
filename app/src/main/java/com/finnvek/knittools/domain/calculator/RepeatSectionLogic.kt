@@ -1,6 +1,7 @@
 package com.finnvek.knittools.domain.calculator
 
 import com.finnvek.knittools.domain.model.ProjectCounter
+import com.finnvek.knittools.domain.model.ProjectCounterType
 
 object RepeatSectionLogic {
     fun updatePosition(
@@ -10,7 +11,7 @@ object RepeatSectionLogic {
         val startRow = counter.repeatStartRow ?: return counter
         val endRow = counter.repeatEndRow ?: return counter
         val totalRepeats = counter.totalRepeats ?: return counter
-        if (counter.counterType != "REPEAT_SECTION" || endRow < startRow || totalRepeats <= 0) {
+        if (counter.counterType != ProjectCounterType.REPEAT_SECTION || endRow < startRow || totalRepeats <= 0) {
             return counter
         }
 
@@ -37,7 +38,7 @@ object RepeatSectionLogic {
         val startRow = counter.repeatStartRow ?: return false
         val endRow = counter.repeatEndRow ?: return false
         val totalRepeats = counter.totalRepeats ?: return false
-        if (counter.counterType != "REPEAT_SECTION" || endRow < startRow || totalRepeats <= 0) {
+        if (counter.counterType != ProjectCounterType.REPEAT_SECTION || endRow < startRow || totalRepeats <= 0) {
             return false
         }
 
@@ -53,7 +54,7 @@ object RepeatSectionLogic {
         val updated = updatePosition(counter, mainRowCount)
         val startRow = counter.repeatStartRow ?: return updated.count
         val endRow = counter.repeatEndRow ?: return updated.count
-        if (counter.counterType != "REPEAT_SECTION" || endRow < startRow) {
+        if (counter.counterType != ProjectCounterType.REPEAT_SECTION || endRow < startRow) {
             return updated.count
         }
 
@@ -68,7 +69,7 @@ object RepeatSectionLogic {
         val startRow = counter.repeatStartRow ?: return 0f
         val endRow = counter.repeatEndRow ?: return 0f
         val totalRepeats = counter.totalRepeats ?: return 0f
-        if (counter.counterType != "REPEAT_SECTION" || endRow < startRow || totalRepeats <= 0) {
+        if (counter.counterType != ProjectCounterType.REPEAT_SECTION || endRow < startRow || totalRepeats <= 0) {
             return 0f
         }
 

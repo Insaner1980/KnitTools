@@ -9,6 +9,7 @@ import com.android.billingclient.api.BillingFlowParams
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.PendingPurchasesParams
 import com.android.billingclient.api.ProductDetails
+import com.android.billingclient.api.ProductDetailsResult
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.QueryProductDetailsParams
@@ -19,10 +20,14 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -39,41 +44,90 @@ class BillingManager
         private val _isProPurchased = MutableStateFlow(false)
         val isProPurchased: StateFlow<Boolean> = _isProPurchased.asStateFlow()
 
+        private val _purchaseStateReady = MutableStateFlow(false)
+        val purchaseStateReady: StateFlow<Boolean> = _purchaseStateReady.asStateFlow()
+
         private val _productDetails = MutableStateFlow<ProductDetails?>(null)
         val productDetails: StateFlow<ProductDetails?> = _productDetails.asStateFlow()
 
+        private val _productStatus = MutableStateFlow<BillingProductStatus>(BillingProductStatus.Loading)
+        val productStatus: StateFlow<BillingProductStatus> = _productStatus.asStateFlow()
+
+        private val _purchaseMessages = MutableSharedFlow<BillingUserMessage>(extraBufferCapacity = 1)
+        val purchaseMessages: SharedFlow<BillingUserMessage> = _purchaseMessages.asSharedFlow()
+
         private var billingClient: BillingClient? = null
         private val pendingAcknowledgementRetries = mutableSetOf<String>()
+        private var connectionAttempt = 0
+        private var connectionRetryJob: Job? = null
 
         fun initialize() {
+            _purchaseStateReady.value = false
+            connectionAttempt = 0
+            connectionRetryJob?.cancel()
+            connectionRetryJob = null
             billingClient =
                 BillingClient
                     .newBuilder(context)
                     .setListener(this)
                     .enablePendingPurchases(
                         PendingPurchasesParams.newBuilder().enableOneTimeProducts().build(),
-                    ).build()
+                    ).enableAutoServiceReconnection()
+                    .build()
 
-            billingClient?.startConnection(
+            startBillingConnection()
+        }
+
+        private fun startBillingConnection() {
+            val client = billingClient ?: return
+            connectionAttempt++
+            client.startConnection(
                 object : BillingClientStateListener {
                     override fun onBillingSetupFinished(result: BillingResult) {
                         if (result.responseCode == BillingClient.BillingResponseCode.OK) {
+                            connectionAttempt = 0
+                            connectionRetryJob?.cancel()
+                            connectionRetryJob = null
                             scope.launch {
                                 queryPurchases()
+                                _purchaseStateReady.value = true
                                 queryProductDetails()
                             }
+                        } else {
+                            if (scheduleConnectionRetry()) {
+                                return
+                            }
+                            _purchaseStateReady.value = true
+                            applyProductUnavailable(result.toUserMessage())
                         }
                     }
 
                     override fun onBillingServiceDisconnected() {
-                        // Yhteyttä yritetään uudelleen seuraavalla käyttäjätoiminnolla.
+                        // Billing 8:n automaattinen reconnect hoitaa seuraavan Billing API -kutsun.
                     }
                 },
             )
         }
 
+        private fun scheduleConnectionRetry(): Boolean {
+            if (connectionAttempt >= CONNECTION_MAX_ATTEMPTS) return false
+            connectionRetryJob?.cancel()
+            connectionRetryJob =
+                scope.launch {
+                    delay(CONNECTION_RETRY_DELAY_MS)
+                    connectionRetryJob = null
+                    startBillingConnection()
+                }
+            return true
+        }
+
         fun launchPurchaseFlow(activity: Activity) {
-            val details = _productDetails.value ?: return
+            val details =
+                _productDetails.value
+                    ?: run {
+                        emitPurchaseMessage(productUnavailableMessage())
+                        return
+                    }
 
             val productDetailsParams =
                 BillingFlowParams.ProductDetailsParams
@@ -87,7 +141,13 @@ class BillingManager
                     .setProductDetailsParamsList(listOf(productDetailsParams))
                     .build()
 
-            billingClient?.launchBillingFlow(activity, flowParams)
+            val result =
+                billingClient?.launchBillingFlow(activity, flowParams)
+                    ?: run {
+                        emitPurchaseMessage(BillingUserMessage.PURCHASE_FAILED)
+                        return
+                    }
+            applyPurchaseFlowResult(result)
         }
 
         fun restorePurchases() {
@@ -109,7 +169,7 @@ class BillingManager
                 }
 
                 PurchaseQueryResult.Failure -> {
-                    RestorePurchasesResult.NOT_FOUND
+                    RestorePurchasesResult.FAILED
                 }
             }
 
@@ -117,19 +177,32 @@ class BillingManager
             result: BillingResult,
             purchases: List<Purchase>?,
         ) {
-            if (result.responseCode == BillingClient.BillingResponseCode.OK) {
-                purchases?.forEach { purchase ->
-                    if (purchase.purchaseState == Purchase.PurchaseState.PURCHASED) {
-                        _isProPurchased.value = true
-                        acknowledgePurchase(purchase)
+            when (result.responseCode) {
+                BillingClient.BillingResponseCode.OK -> {
+                    purchases?.forEach { purchase ->
+                        if (purchase.purchaseState == Purchase.PurchaseState.PURCHASED) {
+                            _isProPurchased.value = true
+                            acknowledgePurchase(purchase)
+                        }
                     }
+                }
+
+                BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED -> {
+                    scope.launch { restoreAlreadyOwnedPurchase() }
+                }
+
+                else -> {
+                    emitPurchaseMessage(result.toUserMessage())
                 }
             }
         }
 
         fun destroy() {
+            connectionRetryJob?.cancel()
+            connectionRetryJob = null
             billingClient?.endConnection()
             billingClient = null
+            _purchaseStateReady.value = false
         }
 
         private suspend fun queryPurchases() {
@@ -149,6 +222,25 @@ class BillingManager
             }
         }
 
+        private suspend fun restoreAlreadyOwnedPurchase() {
+            when (val result = queryPurchasesInternal()) {
+                is PurchaseQueryResult.Success -> {
+                    _isProPurchased.value = result.proPurchases.isNotEmpty()
+                    result.proPurchases
+                        .filter { !it.isAcknowledged }
+                        .forEach { acknowledgePurchase(it) }
+                    if (result.proPurchases.isEmpty()) {
+                        emitPurchaseMessage(BillingUserMessage.ALREADY_OWNED_RESTORE_FAILED)
+                    }
+                }
+
+                PurchaseQueryResult.Failure -> {
+                    emitPurchaseMessage(BillingUserMessage.ALREADY_OWNED_RESTORE_FAILED)
+                }
+            }
+        }
+
+        @Suppress("TooGenericExceptionCaught")
         private suspend fun queryPurchasesInternal(): PurchaseQueryResult {
             val client = billingClient ?: return PurchaseQueryResult.Failure
             val params =
@@ -157,7 +249,14 @@ class BillingManager
                     .setProductType(BillingClient.ProductType.INAPP)
                     .build()
 
-            val result = client.queryPurchasesAsync(params)
+            val result =
+                try {
+                    client.queryPurchasesAsync(params)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    return PurchaseQueryResult.Failure
+                }
             if (result.billingResult.responseCode != BillingClient.BillingResponseCode.OK) {
                 return PurchaseQueryResult.Failure
             }
@@ -170,6 +269,7 @@ class BillingManager
             return PurchaseQueryResult.Success(proPurchases)
         }
 
+        @Suppress("TooGenericExceptionCaught")
         private suspend fun queryProductDetails() {
             val client = billingClient ?: return
             val product =
@@ -185,9 +285,30 @@ class BillingManager
                     .setProductList(listOf(product))
                     .build()
 
-            val result = client.queryProductDetails(params)
-            if (result.billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                _productDetails.value = result.productDetailsList?.firstOrNull()
+            val result =
+                try {
+                    client.queryProductDetails(params)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    applyProductUnavailable(BillingUserMessage.PURCHASE_FAILED)
+                    return
+                }
+            applyProductDetailsResult(result)
+        }
+
+        internal fun applyProductDetailsResult(result: ProductDetailsResult) {
+            if (result.billingResult.responseCode != BillingClient.BillingResponseCode.OK) {
+                applyProductUnavailable(result.billingResult.toUserMessage())
+                return
+            }
+
+            val details = result.productDetailsList?.firstOrNull()
+            if (details == null) {
+                applyProductUnavailable(BillingUserMessage.PURCHASE_UNAVAILABLE)
+            } else {
+                _productDetails.value = details
+                _productStatus.value = BillingProductStatus.Available
             }
         }
 
@@ -223,8 +344,58 @@ class BillingManager
             }
         }
 
+        internal fun applyPurchaseFlowResult(result: BillingResult) {
+            if (result.responseCode == BillingClient.BillingResponseCode.OK) return
+            emitPurchaseMessage(result.toUserMessage())
+        }
+
+        private fun applyProductUnavailable(message: BillingUserMessage) {
+            _productDetails.value = null
+            _productStatus.value = BillingProductStatus.Unavailable(message)
+        }
+
+        private fun productUnavailableMessage(): BillingUserMessage =
+            when (val status = _productStatus.value) {
+                BillingProductStatus.Available,
+                BillingProductStatus.Loading,
+                -> BillingUserMessage.PURCHASE_UNAVAILABLE
+
+                is BillingProductStatus.Unavailable -> status.message
+            }
+
+        private fun emitPurchaseMessage(message: BillingUserMessage) {
+            _purchaseMessages.tryEmit(message)
+        }
+
+        private fun BillingResult.toUserMessage(): BillingUserMessage =
+            when (responseCode) {
+                BillingClient.BillingResponseCode.USER_CANCELED -> {
+                    BillingUserMessage.PURCHASE_CANCELLED
+                }
+
+                BillingClient.BillingResponseCode.NETWORK_ERROR,
+                BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE,
+                BillingClient.BillingResponseCode.SERVICE_DISCONNECTED,
+                -> {
+                    BillingUserMessage.PURCHASE_NETWORK_ERROR
+                }
+
+                BillingClient.BillingResponseCode.ITEM_UNAVAILABLE,
+                BillingClient.BillingResponseCode.BILLING_UNAVAILABLE,
+                BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED,
+                -> {
+                    BillingUserMessage.PURCHASE_UNAVAILABLE
+                }
+
+                else -> {
+                    BillingUserMessage.PURCHASE_FAILED
+                }
+            }
+
         companion object {
             const val PRODUCT_ID = "knittools_pro"
+            private const val CONNECTION_MAX_ATTEMPTS = 3
+            private const val CONNECTION_RETRY_DELAY_MS = 2_000L
             private const val ACKNOWLEDGEMENT_RETRY_DELAY_MS = 5_000L
         }
     }
@@ -232,6 +403,25 @@ class BillingManager
 enum class RestorePurchasesResult {
     RESTORED,
     NOT_FOUND,
+    FAILED,
+}
+
+enum class BillingUserMessage {
+    PURCHASE_CANCELLED,
+    PURCHASE_UNAVAILABLE,
+    PURCHASE_NETWORK_ERROR,
+    PURCHASE_FAILED,
+    ALREADY_OWNED_RESTORE_FAILED,
+}
+
+sealed interface BillingProductStatus {
+    data object Loading : BillingProductStatus
+
+    data object Available : BillingProductStatus
+
+    data class Unavailable(
+        val message: BillingUserMessage,
+    ) : BillingProductStatus
 }
 
 private sealed interface PurchaseQueryResult {

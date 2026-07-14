@@ -1,6 +1,6 @@
 # KnitTools
 
-KnitTools is an Android knitting toolkit built with Kotlin, Jetpack Compose, Material 3, Hilt, Room, DataStore, Firebase AI, Ravelry integration, Play Billing, and Glance widgets.
+KnitTools is an Android knitting toolkit built with Kotlin, Jetpack Compose, Material 3, Hilt, Room, DataStore, Ravelry integration, Play Billing, and Glance widgets.
 
 For the most detailed current architecture map, use [`PROJECT.md`](PROJECT.md). Older `knittools-*.md` files are planning/delta notes unless `PROJECT.md` points to them as current source of truth.
 
@@ -13,7 +13,6 @@ For the most detailed current architecture map, use [`PROJECT.md`](PROJECT.md). 
 
 Main source packages:
 
-- `ai` - Firebase AI, Gemini Nano/on-device parsers, voice AI, journal AI
 - `auth` - Ravelry authentication
 - `billing` / `pro` - Play Billing, trial, Pro feature access, in-app review/update helpers
 - `data` - Room, DataStore, remote API models/services, local file storage
@@ -46,14 +45,13 @@ export KNITTOOLS_KEY_ALIAS=alias
 export KNITTOOLS_KEY_PASSWORD=password
 ```
 
-Ravelry is intentionally backendless. Release builds embed Ravelry credentials only after an explicit accepted-risk opt-in:
+Ravelry's old backendless accepted-risk path is superseded by `Ravelry Firebase Backend And Saved Patterns Plan.md`. Android no longer embeds Ravelry credentials or stores Ravelry tokens; Ravelry secrets belong in the Firebase backend.
+
+Android Firebase release builds require the project-specific config file locally at ignored path `app/google-services.json`. If the file is missing, Gradle can create the ignored file from `KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64` before release artifact builds. Debug builds can compile without a real Firebase project by generating an ignored local placeholder at `app/src/debug/google-services.json`.
 
 ```bash
-export KNITTOOLS_RAVELRY_BASIC_AUTH_USER=user
-export KNITTOOLS_RAVELRY_BASIC_AUTH_PASSWORD=password
-export KNITTOOLS_RAVELRY_OAUTH2_CLIENT_ID=client-id
-export KNITTOOLS_RAVELRY_OAUTH2_CLIENT_SECRET=client-secret
-export KNITTOOLS_ALLOW_EMBEDDED_RAVELRY_SECRETS=true
+export KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64=base64-encoded-google-services-json
+./gradlew assembleDebug
 ```
 
 ## Current Documentation

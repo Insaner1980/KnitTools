@@ -7,13 +7,14 @@ plugins {
     alias(libs.plugins.hilt) apply false
     alias(libs.plugins.kotlin.serialization) apply false
     alias(libs.plugins.baselineprofile) apply false
-    alias(libs.plugins.google.services) apply false
     // TODO: lisää takaisin kun dependency-analysis tukee AGP 9.x
     // alias(libs.plugins.dependency.analysis)
     alias(libs.plugins.ktlint)
     alias(libs.plugins.detekt) apply false
     alias(libs.plugins.owasp.dependency.check)
+    alias(libs.plugins.stability.analyzer) apply false
     alias(libs.plugins.sonarqube)
+    alias(libs.plugins.google.services) apply false
 }
 
 val sonarProjectProperties =

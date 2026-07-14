@@ -2,14 +2,28 @@ package com.finnvek.knittools.data.local
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "counter_projects")
+@Entity(
+    tableName = "counter_projects",
+    indices = [Index("linkedPatternId")],
+)
 data class CounterProjectEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
     val name: String = "",
     val count: Int = 0,
+    @ColumnInfo(defaultValue = "'KNITTING'")
+    val craftType: String = "KNITTING",
+    @ColumnInfo(defaultValue = "'ROWS'")
+    val mainCounterLabelType: String = "ROWS",
+    @ColumnInfo(defaultValue = "NULL")
+    val mainCounterCustomLabel: String? = null,
+    @ColumnInfo(defaultValue = "0")
+    val readingLineEnabled: Boolean = false,
+    @ColumnInfo(defaultValue = "0.5")
+    val readingLineYFraction: Float = 0.5f,
     val secondaryCount: Int = 0,
     val stepSize: Int = 1,
     val notes: String = "",

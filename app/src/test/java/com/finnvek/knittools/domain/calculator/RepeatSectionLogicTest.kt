@@ -1,6 +1,7 @@
 package com.finnvek.knittools.domain.calculator
 
 import com.finnvek.knittools.domain.model.ProjectCounter
+import com.finnvek.knittools.domain.model.ProjectCounterType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -12,7 +13,7 @@ class RepeatSectionLogicTest {
             id = 1L,
             projectId = 1L,
             name = "Sleeve repeat",
-            counterType = "REPEAT_SECTION",
+            counterType = ProjectCounterType.REPEAT_SECTION,
             repeatStartRow = 10,
             repeatEndRow = 13,
             totalRepeats = 3,

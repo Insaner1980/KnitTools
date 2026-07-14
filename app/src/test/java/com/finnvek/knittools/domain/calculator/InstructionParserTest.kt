@@ -5,14 +5,20 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class InstructionParserTest {
-    @Test(timeout = 500)
-    fun `parseWithRegex - patologinen ylipitka syote hylataan nopeasti`() {
+    @Test
+    fun `parseWithRegex - syotteen pituusraja erottaa sallitun ja ylipitkan syotteen`() {
         val suurinSallittuSyote = "INCREASE 1 ".repeat(909)
         val ylipitkaSyote = "INCREASE 1 ".repeat(50_000)
 
         assertEquals(9_999, suurinSallittuSyote.length)
-        assertTrue(InstructionParser.parseWithRegex(suurinSallittuSyote) is ParsedInstruction.Failure)
-        assertTrue(InstructionParser.parseWithRegex(ylipitkaSyote) is ParsedInstruction.Failure)
+        assertEquals(
+            ParsedInstruction.Failure("parse_failed", ParsedInstruction.ErrorType.PARSE_FAILED),
+            InstructionParser.parseWithRegex(suurinSallittuSyote),
+        )
+        assertEquals(
+            ParsedInstruction.Failure("input_too_long", ParsedInstruction.ErrorType.PARSE_FAILED),
+            InstructionParser.parseWithRegex(ylipitkaSyote),
+        )
     }
 
     // === parseResponse: key:value-vastaukset ===

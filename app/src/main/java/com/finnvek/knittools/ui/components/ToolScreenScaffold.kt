@@ -36,11 +36,13 @@ fun ToolScreenScaffold(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     onSettings: (() -> Unit)? = null,
+    snackbarHost: @Composable () -> Unit = {},
     content: @Composable (PaddingValues) -> Unit,
 ) {
     Scaffold(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.background,
+        snackbarHost = snackbarHost,
         topBar = {
             TopAppBar(
                 title = {

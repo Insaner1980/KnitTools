@@ -34,7 +34,6 @@
     <string name="tool_needle_sizes">Misure ferri</string>
     <string name="pro_trial_days_left">Prova Pro — %d giorni rimasti</string>
     <string name="unlock_all_tools">Sblocca tutti gli strumenti</string>
-    <string name="quick_tip_label">CONSIGLIO RAPIDO</string>
     <string name="desc_yarn_estimator_card">Calcola quantità di filato e numero di gomitoli</string>
 
     <!-- Bottom navigation tabs -->
@@ -61,6 +60,45 @@
     <string name="section_completed">COMPLETATI</string>
     <string name="new_project">Nuovo progetto</string>
     <string name="new_project_name_format">Progetto %1$d</string>
+    <string name="create_project">Crea progetto</string>
+    <string name="project_details">Dettagli progetto</string>
+    <string name="project_details_title">Dettagli progetto</string>
+    <string name="new_project_details_title">Nuovo progetto</string>
+    <string name="project_name_label">Nome progetto</string>
+    <string name="craft_type_label">Tipo di lavoro</string>
+    <string name="craft_type_knitting">Maglia</string>
+    <string name="craft_type_crochet">Uncinetto</string>
+    <string name="main_counter_label">Etichetta contatore principale</string>
+    <string name="main_counter_rows">Ferri</string>
+    <string name="main_counter_rounds">Giri</string>
+    <string name="main_counter_repeats">Ripetizioni</string>
+    <string name="main_counter_custom">Personalizzata</string>
+    <string name="main_counter_custom_label">Etichetta personalizzata</string>
+    <string name="main_counter_custom_label_error">Inserisci una etichetta.</string>
+    <string name="project_metadata_format">%1$s, %2$s</string>
+    <plurals name="rounds_format">
+        <item quantity="one">%1$d giro</item>
+        <item quantity="many">%1$d giri</item>
+        <item quantity="other">%1$d giri</item>
+    </plurals>
+    <plurals name="repeats_format">
+        <item quantity="one">%1$d ripetizione</item>
+        <item quantity="many">%1$d ripetizioni</item>
+        <item quantity="other">%1$d ripetizioni</item>
+    </plurals>
+    <string name="main_counter_custom_count_format">%1$d %2$s</string>
+    <string name="current_round_short">Giro %1$d</string>
+    <string name="current_repeat_short">Ripetizione %1$d</string>
+    <string name="counter_round_value_of_target_format">Giro %1$d / %2$d</string>
+    <string name="counter_repeat_value_of_target_format">Ripetizione %1$d / %2$d</string>
+    <string name="main_counter_custom_current_format">%1$s %2$d</string>
+    <string name="counter_custom_value_of_target_format">%1$s %2$d / %3$d</string>
+    <string name="counter_add_round">Aggiungi giro</string>
+    <string name="counter_decrease_round">Sottrai giro</string>
+    <string name="counter_add_repeat">Aggiungi ripetizione</string>
+    <string name="counter_decrease_repeat">Sottrai ripetizione</string>
+    <string name="counter_add_custom">Aggiungi %1$s</string>
+    <string name="counter_decrease_custom">Sottrai %1$s</string>
     <string name="no_active_projects">Nessun progetto attivo</string>
     <string name="no_completed_projects">Nessun progetto completato per ora</string>
     <string name="delete_project">Elimina</string>
@@ -83,51 +121,73 @@
     <string name="select_all">Seleziona tutto</string>
     <string name="complete_n_projects">Completare %d progetti? Verranno spostati tra quelli completati.</string>
     <string name="delete_n_projects">Eliminare %d progetti? Questa azione non può essere annullata.</string>
-    <string name="rows_format">%d ferri</string>
+    <plurals name="rows_format">
+        <item quantity="one">%1$d ferro</item>
+        <item quantity="many">%1$d ferri</item>
+        <item quantity="other">%1$d ferri</item>
+    </plurals>
     <string name="just_now">proprio ora</string>
 
     <!-- Counter Screen -->
-    <string name="current_row">FERRO ATTUALE</string>
     <string name="stitch_count_format">%s m</string>
     <string name="set_stitches">Imposta maglie</string>
     <string name="stitches_per_row">Maglie per ferro</string>
     <string name="track_stitches">Tieni traccia delle maglie</string>
     <string name="stitch_counter_compact_format">%1$d/%2$d</string>
-    <string name="stitch_previous">◄</string>
-    <string name="stitch_next">►</string>
     <string name="attach_pattern">Collega modello</string>
     <string name="remove_pattern">Rimuovi modello</string>
     <string name="no_pattern_attached">Nessun modello collegato</string>
-    <string name="show_pattern">Mostra modello</string>
     <string name="pattern_viewer_title">Visualizzatore modello</string>
     <string name="pattern_pdf_fallback_name">PDF del modello</string>
     <string name="pattern_loading">Caricamento modello…</string>
     <string name="pattern_open_failed">Impossibile aprire il modello.</string>
+    <string name="pattern_show_reading_line">Mostra riga di lettura</string>
+    <string name="pattern_hide_reading_line">Nascondi riga di lettura</string>
+    <string name="pattern_save_line_as_row">Salva linea come ferro %1$d</string>
+    <string name="pattern_clear_row_mark">Cancella segno del ferro</string>
+    <string name="pattern_clear_page_marks">Cancella segni della pagina</string>
+    <string name="pattern_calibrate_rows">Calibra ferri</string>
+    <string name="pattern_calibration_first_row">Primo ferro</string>
+    <string name="pattern_calibration_last_row">Ultimo ferro</string>
+    <string name="pattern_calibration_save_first">Salva primo</string>
+    <string name="pattern_calibration_save_last">Salva ultimo</string>
+    <string name="pattern_calibration_invalid_row">Usa due numeri di ferro diversi</string>
+    <string name="pattern_reading_line_description">Riga di lettura</string>
     <string name="pattern_page_jump">Vai alla pagina</string>
     <string name="pattern_page_number">Numero di pagina</string>
     <string name="pattern_page_indicator">Pagina %1$d di %2$d</string>
     <string name="pattern_previous_page">Pagina precedente</string>
     <string name="pattern_next_page">Pagina successiva</string>
-    <string name="pattern_combine_instructions">Combina istruzioni</string>
-    <string name="pattern_combine_none_found">Nessuna istruzione sovrapposta trovata in questa pagina.</string>
-    <string name="pattern_combine_requires_internet">Richiede una connessione internet</string>
-    <string name="pattern_combined_instructions_copied">Istruzioni combinate copiate</string>
-    <string name="pattern_picker_device_files">Scegli PDF dal dispositivo</string>
     <string name="pattern_picker_saved_patterns">Modelli salvati</string>
-    <string name="pattern_picker_camera_scan">Scansione con fotocamera</string>
-    <string name="pattern_scan_failed">La scansione del modello non può essere convertita in PDF.</string>
+    <string name="pattern_picker_import_pdf">Importa PDF</string>
+    <string name="pattern_picker_import_cloud_pdf">Importa da Drive o Dropbox</string>
+    <string name="pattern_picker_import_from_ravelry">Importa da Ravelry</string>
+    <string name="pattern_picker_camera_scan">Scatta foto del modello</string>
+    <string name="pattern_picker_continue_without_pattern">Continua senza modello</string>
+    <string name="pattern_scan_failed">La foto del modello non può essere convertita in PDF.</string>
     <string name="imported_pattern_designer">PDF importato</string>
     <string name="current_row_short">Ferro %1$d</string>
-    <string name="pattern_instruction_copied">Istruzione copiata</string>
     <string name="time_spent_minutes_format">%dm</string>
-    <string name="link_to_project">Collegare a %s?</string>
-    <string name="link_yarn">Collega filato</string>
     <string name="unlink_yarn">Scollega filato</string>
-    <string name="link">Collega</string>
     <string name="select_yarn_card">Seleziona scheda filato</string>
-    <string name="add_yarn">Aggiungi filato</string>
     <string name="linked_yarn_title">FILATO COLLEGATO</string>
     <string name="no_linked_yarn">Nessun filato collegato per ora</string>
+    <string name="choose_from_my_yarn">Scegli da My Yarn</string>
+    <string name="choose_from_my_yarn_body">Scegli un filato salvato</string>
+    <string name="add_yarn_to_project">Aggiungi filato a questo progetto</string>
+    <string name="add_yarn_to_project_body">Salva una nota rapida sul filato solo per questo progetto</string>
+    <string name="project_yarn_notes_title">FILATO DEL PROGETTO</string>
+    <string name="project_yarn_name">Nome filato</string>
+    <string name="brand_label">Marca</string>
+    <string name="project_yarn_description">Descrizione</string>
+    <string name="add_yarn_to_my_yarn">Aggiungi filato</string>
+    <string name="edit_yarn_details">Modifica dettagli</string>
+    <string name="add_yarn_photo">Aggiungi foto del filato</string>
+    <string name="change_yarn_photo">Cambia foto del filato</string>
+    <string name="manual_yarn_optional_details">Inizia con un nome. Marca, spessore, colore e bagno sono facoltativi.</string>
+    <string name="project_yarn_quantity_format">Quantità: %d</string>
+    <string name="save_to_my_yarn">Salva in My Yarn</string>
+    <string name="saved_to_my_yarn">Salvato in My Yarn</string>
     <string name="yarn_count_format">%1$d filati</string>
     <string name="linked_project_label">Progetto collegato</string>
     <string name="link_to_project_label">Collega al progetto</string>
@@ -139,10 +199,10 @@
     <string name="status_in_stash">In scorta</string>
     <string name="status_in_use">In uso</string>
     <string name="status_finished">Terminato</string>
-    <string name="linked_project_arrow">\u2192 %1$s</string>
+    <string name="yarn_not_linked">Non collegato</string>
     <string name="yarn_details_title">Dettagli</string>
+    <string name="yarn_details_empty_body">Marca, spessore, colore e bagno sono facoltativi. Aggiungi solo ciò che aiuta questo progetto.</string>
     <string name="delete_yarn_card_message">Eliminare questa scheda filato? Questa azione non può essere annullata.</string>
-    <string name="saved_to_my_yarn_toast">Salvato in Il mio filato nella Libreria</string>
     <string name="skein_count_one">%1$d gomitolo</string>
     <string name="skein_count_many">%1$d gomitoli</string>
 
@@ -156,13 +216,6 @@
     <string name="pro_full_history_hint">Passa a Pro per la cronologia completa delle sessioni</string>
 
     <!-- Settings -->
-    <string name="show_knitting_tips">Mostra consigli di maglia</string>
-    <string name="project_summary">Riepilogo progetto</string>
-    <string name="view_ai_summary">Vedi riepilogo AI</string>
-    <string name="generating_summary">Generazione riepilogo…</string>
-    <string name="ai_quota_exhausted">Limite mensile AI raggiunto</string>
-    <string name="ai_summary_fallback">Impossibile generare il riepilogo AI — vengono mostrate invece le statistiche di base</string>
-
     <!-- Row Counter -->
     <string name="default_project_name">Il mio progetto</string>
     <string name="reset_counter">Reimposta contatore</string>
@@ -173,30 +226,28 @@
     <string name="notes_editor_title">Note — %1$s</string>
     <string name="write_your_notes_here">Scrivi qui le tue note…</string>
 
-    <!-- Journal (AI journal entry) -->
-    <string name="journal_ai_badge">+ AI</string>
-    <string name="journal_add_entry_title">Aggiungi voce al diario</string>
-    <string name="journal_mode_speak">Parla</string>
-    <string name="journal_mode_type">Scrivi</string>
-    <string name="journal_speak_title">Pronuncia la tua voce</string>
-    <string name="journal_type_title">Scrivi la tua voce</string>
-    <string name="journal_listening">In ascolto…</string>
-    <string name="journal_tap_to_speak">Tocca il microfono per iniziare</string>
-    <string name="journal_type_placeholder">Che cosa è successo in questa sessione?</string>
-    <string name="journal_transcription_placeholder">Le tue parole appariranno qui…</string>
-    <string name="journal_add_button">Aggiungi voce</string>
-    <string name="journal_empty_error">La voce non può essere vuota</string>
-    <string name="journal_offline_notice">Formattazione AI non disponibile, la voce è stata salvata così com\'è.</string>
-    <string name="journal_mic_permission_required">È necessaria l\'autorizzazione al microfono</string>
-    <string name="journal_processing">Formattazione…</string>
-    <string name="journal_speech_unavailable">Il riconoscimento vocale non è disponibile su questo dispositivo</string>
-    <string name="journal_speech_network_error">Il riconoscimento vocale richiede una connessione di rete</string>
-    <string name="journal_speech_no_match">Non ho capito — riprova</string>
-    <string name="journal_speech_error">Errore di riconoscimento vocale</string>
+
 
     <string name="counter_decrease">Diminuisci</string>
     <string name="counter_increase">Aumenta</string>
-    <string name="counter_undo">Annulla</string>
+    <string name="counter_value_of_target_format">Riga %1$d / %2$d</string>
+    <string name="repeating_counter_value_format">%1$d di %2$d</string>
+    <string name="counter_decrease_named">Diminuisci %1$s</string>
+    <string name="counter_increase_named">Aumenta %1$s</string>
+    <string name="counter_actions">Azioni per %1$s</string>
+    <string name="counter_add_row">Aggiungi ferro</string>
+    <string name="counter_decrease_row">Togli ferro</string>
+    <string name="counter_undo_last_change">Annulla l’ultima modifica</string>
+    <string name="counter_target_remaining_format">Rimanenti: %1$s</string>
+    <string name="counter_target_reached">Obiettivo raggiunto</string>
+    <string name="counter_target_past_format">Oltre l’obiettivo: %1$s</string>
+    <string name="project_content_add_pattern">Aggiungi modello</string>
+    <string name="stitch_tracker_label">Maglie</string>
+    <plurals name="reminder_repeat_occurrence_format">
+        <item quantity="one">Ripeti #%1$d a ogni ferro</item>
+        <item quantity="many">Ripeti #%1$d ogni %2$d ferri</item>
+        <item quantity="other">Ripeti #%1$d ogni %2$d ferri</item>
+    </plurals>
 
     <!-- Increase / Decrease -->
     <string name="mode_increase">Aumenta</string>
@@ -298,12 +349,8 @@
     <string name="pro_feature_row_reminders">Promemoria per riga</string>
     <string name="pro_feature_progress_photos">Foto dei progressi</string>
     <string name="pro_feature_unlimited_yarn">Schede filato illimitate</string>
-    <string name="pro_feature_ocr">Scansione OCR delle etichette del filato</string>
-    <string name="pro_feature_ai_features">Strumenti AI con crediti mensili</string>
-    <string name="pro_feature_voice_commands">Comandi vocali</string>
-    <string name="pro_feature_voice_live">Voce naturale con minuti mensili</string>
     <string name="pro_feature_widget">Widget nella schermata iniziale</string>
-    <string name="pro_feature_pattern_camera_scan">Scansione del modello con fotocamera</string>
+    <string name="pro_feature_pattern_camera_scan">Foto del modello</string>
     <string name="pro_feature">Funzione Pro</string>
     <string name="upgrade_for_price">Passa a Pro per %s</string>
     <string name="one_time_purchase">Acquisto una tantum. Nessun abbonamento.</string>
@@ -316,13 +363,8 @@
     <string name="billing_purchase_failed">Impossibile completare l’acquisto. Riprova.</string>
     <string name="billing_already_owned_restore_failed">Google Play indica che possiedi già questo acquisto, ma non è stato possibile ripristinarlo. Usa Ripristina acquisti.</string>
 
-    <!-- Yarn Card / OCR -->
-    <string name="scan_yarn_label">Scansiona etichetta del filato</string>
-    <string name="yarn_scan_failed">Impossibile leggere un\'etichetta del filato da questa foto. Riprova.</string>
+    <!-- Yarn Card -->
     <string name="saved_yarns">Filati salvati</string>
-    <string name="scanned_yarn">Filato scansionato</string>
-    <string name="brand">Marca</string>
-    <string name="yarn_name">Nome del filato</string>
     <string name="fiber_content">Composizione</string>
     <string name="weight_grams">Peso (g)</string>
     <string name="length_meters">Lunghezza (m)</string>
@@ -333,14 +375,9 @@
     <string name="dye_lot">Bagno di tintura</string>
     <string name="weight_category">Categoria spessore</string>
     <string name="care_symbols">Cura</string>
-    <string name="save_and_use">Salva &amp; usa</string>
-    <string name="discard">Scarta</string>
-    <string name="use_in_calculator">Usa nel calcolatore</string>
     <string name="no_saved_yarns">Nessuna scheda filato salvata per ora</string>
-    <string name="scanning">Scansione…</string>
-    <string name="pro_required_save">Serve Pro per salvare le schede filato</string>
 
-    <!-- Gemini Nano -->
+    <!-- Instruction parser -->
     <string name="paste_instruction">Incolla istruzione</string>
     <string name="instruction_hint">Incolla qui l\'istruzione di maglia</string>
     <string name="instruction_hint_increase">es. "Aumenta 12 maglie in modo uniforme su 96 maglie"</string>
@@ -348,15 +385,11 @@
     <string name="parsing_instruction">Analisi…</string>
     <string name="instruction_parsed">Valori compilati dall\'istruzione</string>
     <string name="instruction_parse_failed">Impossibile capire l\'istruzione — prova a riformularla</string>
-    <string name="ai_error_busy">L\'AI è occupata — riprova tra poco</string>
-    <string name="ai_error_quota">Limite mensile AI raggiunto — riprova più tardi</string>
-    <string name="ai_error_unavailable">Funzione AI non disponibile su questo dispositivo</string>
-    <string name="ai_error_unknown">Qualcosa è andato storto — riprova</string>
+    <string name="generic_error_unknown">Qualcosa è andato storto — riprova</string>
 
     <!-- Camera permission -->
-    <string name="camera_permission_denied">L\'autorizzazione della fotocamera è necessaria per scansionare le etichette del filato</string>
+    <string name="camera_permission_denied">L\'autorizzazione della fotocamera è necessaria per scattare foto</string>
     <string name="camera_permission_denied_permanent">Autorizzazione fotocamera negata — attivala nelle Impostazioni</string>
-    <string name="open_settings">Impostazioni</string>
 
     <!-- Care symbol categories -->
     <string name="care_category_washing">Lavaggio</string>
@@ -364,6 +397,26 @@
     <string name="care_category_drying">Asciugatura</string>
     <string name="care_category_ironing">Stiratura</string>
     <string name="care_category_dry_cleaning">Lavaggio a secco</string>
+    <string name="care_wash_30">30°</string>
+    <string name="care_wash_40">40°</string>
+    <string name="care_wash_60">60°</string>
+    <string name="care_wash_hand">Lavaggio a mano</string>
+    <string name="care_wash_do_not">Non lavare</string>
+    <string name="care_bleach_any">Qualsiasi candeggiante</string>
+    <string name="care_bleach_non_chlorine">Candeggiante senza cloro</string>
+    <string name="care_bleach_do_not">Non candeggiare</string>
+    <string name="care_dry_tumble_low">Asciugare in asciugatrice a bassa temperatura</string>
+    <string name="care_dry_tumble_normal">Asciugare in asciugatrice a temperatura normale</string>
+    <string name="care_dry_flat">Asciugare in piano</string>
+    <string name="care_dry_do_not_tumble">Non asciugare in asciugatrice</string>
+    <string name="care_iron_low">Stirare a bassa temperatura</string>
+    <string name="care_iron_medium">Stirare a temperatura media</string>
+    <string name="care_iron_high">Stirare ad alta temperatura</string>
+    <string name="care_iron_do_not">Non stirare</string>
+    <string name="care_dryclean_any">Qualsiasi solvente</string>
+    <string name="care_dryclean_p">Solvente P</string>
+    <string name="care_dryclean_f">Solvente F</string>
+    <string name="care_dryclean_do_not">Non lavare a secco</string>
 
     <!-- Defaults -->
     <string name="yarn_card_fallback_name">Scheda filato</string>
@@ -386,10 +439,10 @@
     <string name="library_my_collection">LA MIA COLLEZIONE</string>
     <string name="library_reference">RIFERIMENTI</string>
     <string name="desc_saved_patterns">Modelli da Ravelry e file PDF</string>
-    <string name="desc_my_yarn">La tua scorta di filato — marche, pesi e colori</string>
+    <string name="desc_my_yarn">Note sul filato, quantità e progetti collegati</string>
     <string name="desc_all_photos">Foto di avanzamento di tutti i tuoi progetti</string>
     <string name="empty_saved_patterns">Nessun modello salvato per ora.\nTrova modelli nella ricerca Ravelry.</string>
-    <string name="empty_my_yarn">Nessuna scheda filato salvata per ora.</string>
+    <string name="empty_my_yarn">Nessuna nota sul filato salvata per ora.</string>
     <string name="empty_all_photos">Nessuna foto di avanzamento per ora.</string>
     <string name="filter_all">Tutti</string>
 
@@ -407,7 +460,11 @@
     <string name="insights_knitting_activity">ATTIVITÀ DI MAGLIA</string>
     <string name="insights_current_streak">Serie attuale:</string>
     <string name="insights_best_streak">Migliore:</string>
-    <string name="insights_rows_count">%1$d ferri</string>
+    <plurals name="insights_rows_count">
+        <item quantity="one">%1$d ferro</item>
+        <item quantity="many">%1$d ferri</item>
+        <item quantity="other">%1$d ferri</item>
+    </plurals>
     <string name="insights_less_than_tenth_hour">&lt;0.1h</string>
     <string name="insights_no_time">—</string>
     <string name="insights_footer_1">Ogni ferro conta — continua a lavorare!</string>
@@ -458,36 +515,6 @@
     <string name="category_increases">Aumenti</string>
     <string name="category_cables">Trecce</string>
     <string name="category_other">Altro</string>
-
-    <!-- Quick Tips -->
-    <string-array name="knitting_tips">
-        <item>Lavora sempre un campione prima di iniziare un nuovo progetto — anche se pensi di conoscere già il tuo campione.</item>
-        <item>Blocca il campione nello stesso modo in cui bloccherai il capo finito per ottenere una misura accurata.</item>
-        <item>Per evitare lo scalino quando lavori righe colorate in tondo, solleva la maglia del ferro sottostante sul ferro sinistro al secondo giro del nuovo colore.</item>
-        <item>Mantieni una tensione uniforme per ottenere bordi dall\'aspetto professionale.</item>
-        <item>Metti un marcapunti apribile ogni 20 maglie quando avvii molti punti.</item>
-        <item>Blocca i pezzi finiti — fa una grande differenza nell\'aspetto finale.</item>
-        <item>Conta le maglie alla fine di ogni ferro quando lavori motivi traforati.</item>
-        <item>Avvolgi il filato in un gomitolo prima di iniziare — eviterai grovigli.</item>
-        <item>Usa un filo guida ogni pochi ferri nei lavori traforati — fai passare un filo di scarto attraverso tutte le maglie.</item>
-        <item>Ferma le codine man mano per evitare di ritrovarti con troppo lavoro alla fine.</item>
-        <item>Compra sempre un gomitolo in più — i bagni di tintura possono variare tra una partita e l\'altra.</item>
-        <item>Prova a lavorare il campione in tondo se il tuo progetto sarà lavorato in tondo — il campione può cambiare.</item>
-        <item>Usa i marcapunti per separare le ripetizioni del motivo — contare sarà molto più semplice.</item>
-        <item>Leggi tutto il modello prima di iniziare ad avviare le maglie per evitare sorprese.</item>
-        <item>Tieni un quaderno di progetto per annotare modifiche e appunti utili per il futuro.</item>
-        <item>Quando unisci un nuovo filo, lascia almeno 15 cm di capo per fissarlo bene.</item>
-        <item>Prova le tecniche nuove su un piccolo campione prima di usarle nel progetto.</item>
-        <item>Conserva il lavoro a maglia in una project bag per mantenerlo pulito ed evitare che si impigli.</item>
-        <item>Fai pause per allungare le mani ed evitare sforzi ripetitivi.</item>
-        <item>Segna il punto del modello con un post-it o una lavagna magnetica.</item>
-        <item>Usa ferri in bambù per filati scivolosi — trattengono meglio le maglie.</item>
-        <item>Quando riprendi le maglie, usa un ferro di una misura più piccola per ottenere un bordo più ordinato.</item>
-        <item>Controlla al primo giro dopo l\'avvio che il lavoro non sia attorcigliato.</item>
-        <item>Misura il campione dopo il bloccaggio, non prima — molti filati cambiano dopo il lavaggio.</item>
-        <item>Alterna due gomitoli ogni pochi ferri per evitare differenze visibili tra bagni di tintura.</item>
-    </string-array>
-
     <!-- In-App Updates -->
     <string name="update_downloaded">Aggiornamento scaricato — riavvia per applicarlo</string>
     <string name="restart">Riavvia</string>
@@ -506,7 +533,6 @@
     <string name="repeating">Ripetuto</string>
     <string name="repeat_every">Ripeti ogni</string>
     <string name="repeat_every_rows">ferri</string>
-    <string name="repeat_count_format">Ripetizione %1$d/%2$d</string>
     <string name="dismiss">Chiudi</string>
 
     <!-- Multiple Counters -->
@@ -516,6 +542,8 @@
     <string name="counter_name_hint">es. Aumenti manica</string>
     <string name="count_up">Conta in aumento</string>
     <string name="step_size">Dimensione passo</string>
+    <string name="linked_counter">Contatore collegato</string>
+    <string name="linked_counter_description">Segue le modifiche del contatore principale.</string>
     <string name="shaping">Sagomatura</string>
     <string name="repeat_section">Ripeti sezione</string>
     <string name="starting_stitches">Maglie iniziali</string>
@@ -524,9 +552,8 @@
     <string name="repeat_section_start_row">Ferro iniziale</string>
     <string name="repeat_section_end_row">Ferro finale</string>
     <string name="total_repeats">Totale ripetizioni</string>
-    <string name="repeat_section_progress_format">Ripetizione %1$d di %2$d · Ferro %3$d di %4$d</string>
+    <string name="repeat_section_progress_format">Ripetizione %1$d/%2$d, ferro %3$d/%4$d</string>
     <string name="repeat_section_complete">Completo</string>
-    <string name="next_shaping_format">Prossima sagomatura: Ferro %1$d → %2$d m</string>
     <string name="rename_counter">Rinomina</string>
     <string name="reset_counter_name">Reimposta</string>
     <string name="delete_counter">Elimina</string>
@@ -536,78 +563,21 @@
     <!-- Progress Photos -->
     <string name="take_photo">Scatta foto</string>
     <string name="progress_photos">Foto di avanzamento</string>
-    <string name="voice_commands">Comandi vocali</string>
-    <string name="voice_mode_timeout">La modalità vocale è terminata per inattività</string>
-    <string name="voice_offline_mode">Modalità offline, solo comandi di base</string>
-    <string name="voice_quota_monthly_exhausted">Limite mensile dei comandi AI raggiunto; i comandi di base funzionano ancora</string>
-    <string name="voice_command_unknown">Non ho capito</string>
-    <string name="voice_note_saved">Nota salvata</string>
-    <string name="voice_counter_reset">Contatore reimpostato</string>
-    <string name="voice_row_current">Ferro %d</string>
-    <string name="voice_row_of_target">Ferro %1$d di %2$d, %3$d percento completato</string>
-    <string name="voice_rows_remaining">Mancano %d ferri</string>
-    <string name="voice_no_target">Nessun obiettivo impostato</string>
-    <string name="voice_back_to_row">Torna al ferro %d</string>
-    <string name="voice_undone_row">Annullato, ferro %d</string>
-    <string name="voice_remaining_done">Hai finito!</string>
-    <string name="voice_session_minutes">Stai lavorando a maglia da %d minuti</string>
-    <string name="voice_session_under_minute">Meno di un minuto</string>
-    <string name="voice_yarn_multiple">%1$s e altri %2$d</string>
-    <string name="voice_yarn_none">Nessun filato collegato</string>
-    <string name="voice_pattern_info">Modello %1$s, pagina %2$d</string>
-    <string name="voice_instruction_none">Nessun modello collegato</string>
-    <string name="voice_shaping_next">Prossima %1$s tra %2$d ferri</string>
-    <string name="voice_shaping_at">%1$s al ferro %2$d</string>
-    <string name="voice_shaping_none">Nessun contatore di sagomatura attivo</string>
-    <string name="voice_stitches_total">%1$d maglie totali, %2$d per ferro su %3$d ferri</string>
-    <string name="voice_stitches_current">%d maglie</string>
-    <string name="voice_stitches_disabled">Il conteggio maglie non è attivato</string>
-    <string name="voice_reminders_none">Nessun promemoria in arrivo</string>
-    <string name="voice_reminder_next">Prossimo promemoria: %1$s, tra %2$d ferri</string>
-    <string name="voice_reminders_multiple">Prossimo promemoria: %1$s, tra %2$d ferri. Poi ce ne sono altri %3$d</string>
-    <string name="voice_counters_none">Nessun contatore extra</string>
-    <string name="voice_counter_single">%1$s è a %2$d</string>
-    <string name="voice_counters_list">%1$d contatori: %2$s</string>
-    <string name="voice_notes_empty">Nessuna nota per ora</string>
-    <string name="voice_notes_content">Le tue note: %1$s</string>
-    <string name="voice_total_time_none">Nessun tempo registrato per ora</string>
-    <string name="voice_total_time_hours">%1$d ore e %2$d minuti totali su questo progetto</string>
-    <string name="voice_total_time_minutes">%1$d minuti totali su questo progetto</string>
-    <string name="voice_summary_none">Nessun riepilogo progetto disponibile. Apri prima il progetto per generarlo.</string>
-    <string name="voice_project_name">Stai lavorando a %1$s</string>
-    <string name="voice_section_current">Sezione attuale: %1$s</string>
-    <string name="voice_section_none">Nessuna sezione impostata</string>
-    <string name="voice_section_set">Sezione impostata su %1$s</string>
-    <string name="voice_stitch_at">Maglia %1$d</string>
-    <string name="voice_help_full">Puoi dire: avanti, indietro, annulla, reimposta, oppure un numero. Chiedi informazioni su avanzamento, ferri rimanenti, tempo, filato, modello, maglie, promemoria, contatori o note. Di\' nota per salvare una nota, oppure il nome di un contatore per modificarlo.</string>
-    <string name="voice_reminder_dismissed">Promemoria chiuso</string>
-    <string name="voice_reminder_no_active">Nessun promemoria attivo da chiudere</string>
-    <string name="voice_counter_incremented">%1$s ora è a %2$d</string>
-    <string name="voice_counter_decremented">%1$s torna a %2$d</string>
-    <string name="voice_counter_not_found">Nessun contatore chiamato %1$s</string>
-    <string name="voice_counter_ambiguous">Più contatori si chiamano %1$s. Rinomina uno di essi prima di usare i comandi vocali.</string>
-    <string name="voice_step_size_set">Passo impostato a %1$d</string>
-    <string name="voice_counter_reset_named">%1$s reimpostato a zero</string>
-    <string name="voice_page_current">Pagina %1$d</string>
-    <string name="voice_page_first">Sei già alla prima pagina</string>
-    <string name="voice_project_completed">%1$s contrassegnato come completato. Ottimo lavoro!</string>
-    <string name="voice_summary_generating">Generazione riepilogo…</string>
-    <string name="voice_summary_unavailable">Il riepilogo AI non è disponibile in questo momento</string>
-    <string name="voice_reminder_added">Promemoria impostato: %1$s al ferro %2$d</string>
-    <string name="voice_stitch_count_set">Numero di maglie impostato a %1$d per ferro</string>
-    <string name="voice_stitch_tracking_on">Conteggio maglie attivato</string>
-    <string name="voice_stitch_tracking_off">Conteggio maglie disattivato</string>
-    <string name="voice_live_error">Connessione vocale non riuscita</string>
-    <string name="voice_live_quota_exhausted">I minuti vocali di questo mese sono esauriti</string>
-    <string name="voice_natural_response">Voce naturale</string>
-    <string name="voice_live_quota_remaining">%1$.0f / %2$.0f min rimasti</string>
-    <string name="voice_recognizer_error">Errore di riconoscimento vocale</string>
+    <string name="counters_list_empty">Nessun contatore extra</string>
     <string name="row_label_format">Ferro %d</string>
     <string name="share_photo">Condividi</string>
     <string name="delete_photo">Elimina foto</string>
     <string name="delete_photo_confirm">Eliminare questa foto?</string>
-    <string name="delete_photos_confirm">Eliminare %d foto?</string>
-    <string name="delete_patterns_confirm">Eliminare %d modelli?</string>
+    <plurals name="delete_photos_confirm">
+        <item quantity="one">Eliminare %1$d foto?</item>
+        <item quantity="many">Eliminare %1$d foto?</item>
+        <item quantity="other">Eliminare %1$d foto?</item>
+    </plurals>
+    <plurals name="delete_patterns_confirm">
+        <item quantity="one">Eliminare %1$d modello?</item>
+        <item quantity="many">Eliminare %1$d modelli?</item>
+        <item quantity="other">Eliminare %1$d modelli?</item>
+    </plurals>
     <string name="delete_pattern">Elimina modello</string>
     <string name="delete_yarn_cards_confirm">Eliminare %d schede filato?</string>
     <string name="delete_yarn_card">Elimina scheda filato</string>
@@ -622,20 +592,48 @@
     <string name="ravelry_saved_patterns">Modelli salvati</string>
     <string name="start_project">Inizia progetto</string>
     <string name="save_pattern">Salva modello</string>
+    <string name="ravelry_open_saved_pattern">Apri</string>
     <string name="open_in_ravelry">Apri in Ravelry</string>
     <string name="pattern_saved">Modello salvato</string>
     <string name="no_saved_patterns">Nessun modello salvato per ora</string>
     <string name="search_hint">Cerca modelli di maglia…</string>
+    <string name="ravelry_search_requires_sign_in">Accedi a Ravelry per cercare modelli.</string>
+    <string name="ravelry_import_loading">Caricamento modello</string>
+    <string name="ravelry_import_title">Salvare questo modello?</string>
+    <string name="ravelry_import_already_saved">Modello già salvato</string>
+    <string name="ravelry_import_needs_sign_in">Accedi a Ravelry per salvare questo modello.</string>
+    <string name="ravelry_import_could_not_import">Impossibile importare questo modello.</string>
+    <string name="ravelry_import_backend_unavailable">L’importazione da Ravelry è temporaneamente non disponibile.</string>
+    <string name="saved_pattern_detail_pdf_attached">PDF allegato</string>
+    <string name="saved_pattern_detail_available_offline">Disponibile offline</string>
+    <string name="saved_pattern_detail_open_on_ravelry">Apri su Ravelry</string>
+    <string name="saved_pattern_detail_requires_ravelry">Richiede Ravelry</string>
+    <string name="saved_pattern_detail_open_pattern">Apri modello</string>
+    <string name="saved_pattern_detail_attach_to_project">Collega al progetto</string>
+    <string name="saved_pattern_detail_remove_confirm">Rimuovere questo modello salvato?</string>
+    <string name="saved_pattern_detail_thumbnail">Miniatura del modello</string>
     <string name="filter_weight">Spessore</string>
     <string name="filter_difficulty">Difficoltà</string>
     <string name="free">Gratis</string>
     <string name="paid">A pagamento</string>
+    <string name="availability_unknown">Disponibilità sconosciuta</string>
     <string name="no_results">Nessun modello trovato</string>
     <string name="search_error">Impossibile caricare i modelli. Controlla la tua connessione internet.</string>
     <string name="ravelry_search_rate_limited">Ravelry sta limitando le ricerche. Riprova più tardi.</string>
     <string name="ravelry_search_auth_error">Non è stato possibile usare l’accesso a Ravelry. Accedi di nuovo e riprova.</string>
     <string name="ravelry_search_service_error">Ravelry non è temporaneamente disponibile. Riprova più tardi.</string>
     <string name="ravelry_sign_in">Accedi con Ravelry</string>
+    <string name="ravelry_browse">Sfoglia Ravelry</string>
+    <string name="ravelry_disconnect">Disconnetti Ravelry</string>
+    <string name="ravelry_not_connected">Accedi per cercare modelli Ravelry da KnitTools.</string>
+    <string name="ravelry_connecting">Connessione a Ravelry…</string>
+    <string name="ravelry_auth_pending">Completa l’accesso a Ravelry nel browser.</string>
+    <string name="ravelry_connected">Connesso a Ravelry</string>
+    <string name="ravelry_connected_as">Connesso come %1$s</string>
+    <string name="ravelry_auth_cancelled">Accesso a Ravelry annullato.</string>
+    <string name="ravelry_auth_expired">Accesso a Ravelry scaduto. Accedi di nuovo.</string>
+    <string name="ravelry_backend_unavailable">Connessione a Ravelry temporaneamente non disponibile.</string>
+    <string name="ravelry_disconnecting">Disconnessione da Ravelry…</string>
     <string name="difficulty_format">%.1f / 5</string>
     <string name="yardage_format">%d yard</string>
 
@@ -671,11 +669,22 @@
     <string name="pattern_detail_error">Impossibile caricare i dettagli del modello. Controlla la connessione internet.</string>
     <string name="project_actions_title">Azioni progetto</string>
     <string name="project_actions_section_this_project">QUESTO PROGETTO</string>
-    <string name="project_actions_section_counters">CONTATORI</string>
+    <string name="project_actions_section_counter_tools">STRUMENTI CONTATORE</string>
     <string name="project_actions_section_project_actions">AZIONI PROGETTO</string>
-    <string name="project_actions_yarn">Filato</string>
-    <string name="project_actions_ai_summary">Riepilogo IA</string>
-    <string name="project_actions_photos">Foto</string>
+    <string name="project_content_title">Progetto</string>
+    <string name="project_content_yarn">Filato</string>
+    <string name="project_content_notes">Note</string>
+    <string name="project_content_photos">Foto</string>
+    <string name="extra_counters_title">Contatori extra</string>
     <string name="counter_repeat_label">RIPETI</string>
     <string name="counters_list_title">Contatori</string>
+
+    <!-- Täydennetyt lokalisoidut käyttöliittymätekstit -->
+    <string name="yarn_card_number_fallback">Filato #%1$d</string>
+    <string name="pattern_detail_needles">Aghi</string>
+    <string name="pattern_detail_yardage">Metraggio</string>
+    <string name="pattern_detail_sizes">Taglie</string>
+    <string name="pattern_saved_to_library">Salvato nella libreria</string>
+    <string name="show_more">Mostra di più</string>
+    <string name="show_less">Mostra meno</string>
 </resources>

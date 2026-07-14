@@ -4,15 +4,16 @@
   "scripts": {
     "deepsec": "deepsec",
     "deepsec:scan": "deepsec scan --project-id knittools",
-    "deepsec:scan:custom": "deepsec scan --project-id knittools --matchers android-exported-component,fileprovider-broad-path,android-uri-share-without-clipdata,ravelry-credential-surface,firebase-ai-without-appcheck,sensitive-android-log",
+    "deepsec:scan:custom": "deepsec scan --project-id knittools --matchers android-exported-component,android-kotlin-entrypoint-surface,android-intent-input-surface,fileprovider-broad-path,knittools-file-uri-surface,android-uri-share-without-clipdata,ravelry-firebase-callable-surface,ravelry-credential-surface,sensitive-android-log,widget-mutation-surface",
     "deepsec:process": "deepsec process --project-id knittools",
     "deepsec:revalidate": "deepsec revalidate --project-id knittools",
     "deepsec:export": "deepsec export --project-id knittools --format md-dir --out ./findings",
     "deepsec:report": "pnpm run deepsec:scan && pnpm run deepsec:process && pnpm run deepsec:revalidate && node scripts/mark-accepted-risks.mjs && pnpm run deepsec:export",
-    "deepsec:report:custom": "pnpm run deepsec:scan:custom && pnpm run deepsec:process && pnpm run deepsec:revalidate && node scripts/mark-accepted-risks.mjs && pnpm run deepsec:export"
+    "deepsec:report:custom": "pnpm run deepsec:scan:custom && pnpm run deepsec:process && pnpm run deepsec:revalidate && node scripts/mark-accepted-risks.mjs && pnpm run deepsec:export",
+    "test:matchers": "tsc --project tsconfig.json --noEmit false --outDir .tmp/test-build && node --test .tmp/test-build/matchers/knittools-kotlin-security-surface.test.js"
   },
   "dependencies": {
-    "deepsec": "2.0.9"
+    "deepsec": "2.1.2"
   },
   "devDependencies": {
     "@types/node": "^25.9.1",

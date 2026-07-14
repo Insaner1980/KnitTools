@@ -64,6 +64,7 @@ fun ActivityGrid(
     currentStreak: Int,
     bestStreak: Int,
     isPro: Boolean,
+    canUseStreak: Boolean,
     onProUpgrade: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -77,6 +78,7 @@ fun ActivityGrid(
                 dailyActivity = dailyActivity,
                 currentStreak = currentStreak,
                 bestStreak = bestStreak,
+                canUseStreak = canUseStreak,
             )
         } else {
             ActivityGridPlaceholder(onClick = onProUpgrade)
@@ -89,6 +91,7 @@ private fun ActivityGridContent(
     dailyActivity: Map<LocalDate, Int>,
     currentStreak: Int,
     bestStreak: Int,
+    canUseStreak: Boolean,
 ) {
     val locale = currentInsightsLocale()
     val firstDayOfWeek = remember(locale) { WeekFields.of(locale).firstDayOfWeek }
@@ -129,7 +132,9 @@ private fun ActivityGridContent(
             )
 
             Spacer(modifier = Modifier.height(8.dp))
-            StreakRow(currentStreak = currentStreak, bestStreak = bestStreak)
+            if (canUseStreak) {
+                StreakRow(currentStreak = currentStreak, bestStreak = bestStreak)
+            }
 
             ActivityGridTooltip(tooltipState = tooltipState, locale = locale)
         }

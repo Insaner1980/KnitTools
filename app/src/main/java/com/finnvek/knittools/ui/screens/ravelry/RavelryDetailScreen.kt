@@ -1,10 +1,7 @@
 package com.finnvek.knittools.ui.screens.ravelry
 
-import android.content.ActivityNotFoundException
-import android.content.Context
-import android.content.Intent
+import android.net.Uri
 import android.widget.Toast
-import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,7 +26,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -39,12 +35,12 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.finnvek.knittools.R
 import com.finnvek.knittools.data.remote.PatternDetail
+import com.finnvek.knittools.ui.components.CollectWithLifecycleEffect
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
 import com.finnvek.knittools.ui.theme.RavelryTeal
 
@@ -54,66 +50,62 @@ fun RavelryDetailScreen(
     onBack: () -> Unit,
     onStartProject: (Long) -> Unit,
     onUpgradeToPro: () -> Unit = {},
+    onLaunchRavelryAuth: (Uri) -> Unit = {},
+    onBrowseRavelry: () -> Unit = {},
     viewModel: RavelryViewModel = hiltViewModel(),
 ) {
     val detail by viewModel.patternDetail.collectAsStateWithLifecycle()
     val isLoading by viewModel.isDetailLoading.collectAsStateWithLifecycle()
     val isSaved by viewModel.isPatternSaved.collectAsStateWithLifecycle()
     val detailError by viewModel.detailError.collectAsStateWithLifecycle()
-    val isAuthenticated by viewModel.isAuthenticated.collectAsStateWithLifecycle()
+    val authState by viewModel.authState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val savedMessage = stringResource(R.string.pattern_saved_to_library)
-    val saveFailedMessage = stringResource(R.string.ai_error_unknown)
+    val saveFailedMessage = stringResource(R.string.generic_error_unknown)
     val openFailedMessage = stringResource(R.string.pattern_open_failed)
-    val currentOnStartProject by rememberUpdatedState(onStartProject)
-    val currentOnUpgradeToPro by rememberUpdatedState(onUpgradeToPro)
-
     LaunchedEffect(viewModel, patternId) {
+        viewModel.refreshAuthStatus()
         viewModel.loadDetail(patternId)
     }
 
-    LaunchedEffect(viewModel) {
-        viewModel.navigateToProject.collect { projectId ->
-            currentOnStartProject(projectId)
-        }
+    CollectWithLifecycleEffect(viewModel.signInLaunchRequests) { uri ->
+        onLaunchRavelryAuth(uri)
     }
 
-    LaunchedEffect(viewModel) {
-        viewModel.upgradeToPro.collect {
-            currentOnUpgradeToPro()
-        }
+    CollectWithLifecycleEffect(viewModel.navigateToProject) { projectId ->
+        onStartProject(projectId)
     }
 
-    LaunchedEffect(viewModel, savedMessage, saveFailedMessage) {
-        viewModel.patternSaveResults.collect { result ->
-            val message =
-                when (result) {
-                    PatternSaveResult.Saved -> savedMessage
-                    PatternSaveResult.Failed -> saveFailedMessage
-                }
-            Toast
-                .makeText(
-                    context,
-                    message,
-                    Toast.LENGTH_SHORT,
-                ).show()
-        }
+    CollectWithLifecycleEffect(viewModel.upgradeToPro) {
+        onUpgradeToPro()
+    }
+
+    CollectWithLifecycleEffect(viewModel.patternSaveResults) { result ->
+        val message =
+            when (result) {
+                PatternSaveResult.Saved -> savedMessage
+                PatternSaveResult.Failed -> saveFailedMessage
+            }
+        Toast
+            .makeText(
+                context,
+                message,
+                Toast.LENGTH_SHORT,
+            ).show()
     }
 
     ToolScreenScaffold(
         title = detail?.name ?: stringResource(R.string.tool_ravelry),
         onBack = onBack,
     ) { _ ->
-        val signInAction = {
-            CustomTabsIntent
-                .Builder()
-                .build()
-                .launchUrl(context, viewModel.createSignInUri())
-        }
+        val signInAction = viewModel::startSignIn
         Column(modifier = Modifier.fillMaxSize()) {
-            if (!isAuthenticated) {
-                RavelrySignInPrompt(onSignIn = signInAction)
-            }
+            RavelryAccountHeader(
+                authState = authState,
+                onSignIn = signInAction,
+                onBrowseRavelry = onBrowseRavelry,
+                onDisconnect = viewModel::disconnectRavelry,
+            )
             PatternDetailBody(
                 detail = detail,
                 detailError = detailError,
@@ -153,36 +145,8 @@ internal fun PatternDetail.ravelryUrlOrNull(): String? =
     if (permalink.isBlank()) {
         null
     } else {
-        ravelryUrl
+        ravelryExternalUrlOrNull(ravelryUrl)
     }
-
-private fun openRavelryUrl(
-    context: Context,
-    url: String,
-    failureMessage: String,
-) {
-    val opened =
-        runCatching {
-            context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri()))
-        }.fold(
-            onSuccess = { true },
-            onFailure = { error ->
-                if (error is ActivityNotFoundException) {
-                    false
-                } else {
-                    throw error
-                }
-            },
-        )
-    if (!opened) {
-        Toast
-            .makeText(
-                context,
-                failureMessage,
-                Toast.LENGTH_SHORT,
-            ).show()
-    }
-}
 
 data class PatternDetailActions(
     val onRetry: () -> Unit,

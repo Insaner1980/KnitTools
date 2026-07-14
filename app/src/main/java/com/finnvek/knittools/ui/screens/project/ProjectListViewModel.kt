@@ -6,6 +6,11 @@ import androidx.lifecycle.viewModelScope
 import com.finnvek.knittools.R
 import com.finnvek.knittools.data.datastore.PreferencesManager
 import com.finnvek.knittools.domain.model.CounterProject
+import com.finnvek.knittools.domain.model.CraftType
+import com.finnvek.knittools.domain.model.MainCounterLabelType
+import com.finnvek.knittools.domain.model.ProjectSortOrder
+import com.finnvek.knittools.domain.model.displayName
+import com.finnvek.knittools.domain.model.parseYarnCardIds
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.CounterRepository
@@ -23,6 +28,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -34,6 +40,11 @@ data class ContinueKnittingProject(
     val name: String,
     val count: Int,
     val totalMinutes: Int,
+    val sectionName: String?,
+    val targetRows: Int?,
+    val craftType: CraftType,
+    val mainCounterLabelType: MainCounterLabelType,
+    val mainCounterCustomLabel: String?,
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -56,10 +67,10 @@ class ProjectListViewModel
                 .map { it.showCompletedProjects }
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
-        val sortOrder: StateFlow<String> =
+        val sortOrder: StateFlow<ProjectSortOrder> =
             preferencesManager.preferences
                 .map { it.projectSortOrder }
-                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "updated")
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ProjectSortOrder.DEFAULT)
 
         // === Lajittelutietoiset projektilistaukset ===
 
@@ -70,9 +81,15 @@ class ProjectListViewModel
                 }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
         val completedProjects: StateFlow<List<CounterProject>> =
-            sortOrder
-                .flatMapLatest { order ->
-                    repository.getCompletedProjects(order)
+            showCompleted
+                .flatMapLatest { shouldShow ->
+                    if (shouldShow) {
+                        sortOrder.flatMapLatest { order ->
+                            repository.getCompletedProjects(order)
+                        }
+                    } else {
+                        flowOf(emptyList())
+                    }
                 }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
         val isPro: Boolean get() = proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS)
@@ -93,6 +110,9 @@ class ProjectListViewModel
         private val _projectYarnNames = MutableStateFlow<Map<Long, String>>(emptyMap())
         val projectYarnNames: StateFlow<Map<Long, String>> = _projectYarnNames.asStateFlow()
 
+        private val _projectYarnCardIds = MutableStateFlow<Map<Long, Long>>(emptyMap())
+        val projectYarnCardIds: StateFlow<Map<Long, Long>> = _projectYarnCardIds.asStateFlow()
+
         private val _projectPhotoCounts = MutableStateFlow<Map<Long, Int>>(emptyMap())
         val projectPhotoCounts: StateFlow<Map<Long, Int>> = _projectPhotoCounts.asStateFlow()
 
@@ -104,6 +124,12 @@ class ProjectListViewModel
 
         private val _navigateToProject = MutableSharedFlow<Long>()
         val navigateToProject: SharedFlow<Long> = _navigateToProject.asSharedFlow()
+
+        private val _navigateToNotesEditor = MutableSharedFlow<Long>()
+        val navigateToNotesEditor: SharedFlow<Long> = _navigateToNotesEditor.asSharedFlow()
+
+        private val _navigateToPhotoGallery = MutableSharedFlow<Long>()
+        val navigateToPhotoGallery: SharedFlow<Long> = _navigateToPhotoGallery.asSharedFlow()
 
         private val _upgradeToPro = MutableSharedFlow<Unit>()
         val upgradeToPro: SharedFlow<Unit> = _upgradeToPro.asSharedFlow()
@@ -128,7 +154,7 @@ class ProjectListViewModel
             }
         }
 
-        fun setSortOrder(order: String) {
+        fun setSortOrder(order: ProjectSortOrder) {
             viewModelScope.launch {
                 preferencesManager.setProjectSortOrder(order)
             }
@@ -193,6 +219,11 @@ class ProjectListViewModel
                         name = candidate.name,
                         count = candidate.count,
                         totalMinutes = totalMin,
+                        sectionName = candidate.sectionName,
+                        targetRows = candidate.targetRows,
+                        craftType = candidate.craftType,
+                        mainCounterLabelType = candidate.mainCounterLabelType,
+                        mainCounterCustomLabel = candidate.mainCounterCustomLabel,
                     )
                 } else {
                     null
@@ -200,29 +231,29 @@ class ProjectListViewModel
         }
 
         private suspend fun updateYarnNames(projects: List<CounterProject>) {
-            val yarnMap = mutableMapOf<Long, String>()
+            val yarnNameMap = mutableMapOf<Long, String>()
+            val yarnCardIdMap = mutableMapOf<Long, Long>()
             val allYarnIds =
                 projects
                     .flatMap { p ->
-                        p.yarnCardIds.split(",").mapNotNull { it.trim().toLongOrNull() }
+                        parseYarnCardIds(p.yarnCardIds)
                     }.distinct()
             if (allYarnIds.isNotEmpty()) {
                 val cards = yarnCardRepository.getCards(allYarnIds).associateBy { it.id }
                 projects.forEach { p ->
-                    val ids = p.yarnCardIds.split(",").mapNotNull { it.trim().toLongOrNull() }
+                    val ids = parseYarnCardIds(p.yarnCardIds)
                     val firstCard = ids.firstNotNullOfOrNull { cards[it] }
                     if (firstCard != null) {
-                        val name =
-                            listOfNotNull(
-                                firstCard.brand.takeIf { it.isNotBlank() },
-                                firstCard.yarnName.takeIf { it.isNotBlank() },
-                            ).joinToString(" ").ifEmpty { "Yarn #${firstCard.id}" }
-                        yarnMap[p.id] = name
+                        yarnNameMap[p.id] = firstCard.displayName(::fallbackYarnCardName)
+                        yarnCardIdMap[p.id] = firstCard.id
                     }
                 }
             }
-            _projectYarnNames.value = yarnMap
+            _projectYarnNames.value = yarnNameMap
+            _projectYarnCardIds.value = yarnCardIdMap
         }
+
+        private fun fallbackYarnCardName(id: Long): String = context.getString(R.string.yarn_card_number_fallback, id)
 
         private suspend fun updatePhotoCounts(projects: List<CounterProject>) {
             _projectPhotoCounts.value =
@@ -233,13 +264,24 @@ class ProjectListViewModel
 
         private suspend fun updatePatternNames(projects: List<CounterProject>) {
             val nameMap = mutableMapOf<Long, String>()
+            val linkedPatternIds =
+                projects
+                    .filter { it.patternName.isNullOrBlank() }
+                    .mapNotNull { it.linkedPatternId }
+                    .distinct()
+            val patternsById =
+                if (linkedPatternIds.isEmpty()) {
+                    emptyMap()
+                } else {
+                    savedPatternRepository.getByIds(linkedPatternIds).associateBy { it.id }
+                }
             projects.forEach { p ->
                 p.patternName?.takeIf { it.isNotBlank() }?.let {
                     nameMap[p.id] = it
                     return@forEach
                 }
                 val patternId = p.linkedPatternId ?: return@forEach
-                savedPatternRepository.getById(patternId)?.let { nameMap[p.id] = it.name }
+                patternsById[patternId]?.let { nameMap[p.id] = it.name }
             }
             _projectPatternNames.value = nameMap
         }
@@ -250,17 +292,50 @@ class ProjectListViewModel
 
         fun createProject() {
             viewModelScope.launch {
-                if (!isPro && repository.getActiveProjectCount() >= 1) {
-                    _upgradeToPro.emit(Unit)
-                    return@launch
-                }
                 val count = repository.getProjectCount()
-                val id =
-                    repository.createProject(
-                        context.getString(R.string.new_project_name_format, count + 1),
-                    ) ?: return@launch
-                _navigateToProject.emit(id)
+                createProjectInternal(
+                    name = context.getString(R.string.new_project_name_format, count + 1),
+                    craftType = CraftType.KNITTING,
+                    mainCounterLabelType = CraftType.KNITTING.defaultMainCounterLabelType(),
+                    mainCounterCustomLabel = null,
+                )
             }
+        }
+
+        fun createProject(
+            name: String,
+            craftType: CraftType,
+            mainCounterLabelType: MainCounterLabelType,
+            mainCounterCustomLabel: String?,
+        ) {
+            viewModelScope.launch {
+                createProjectInternal(
+                    name = name,
+                    craftType = craftType,
+                    mainCounterLabelType = mainCounterLabelType,
+                    mainCounterCustomLabel = mainCounterCustomLabel,
+                )
+            }
+        }
+
+        private suspend fun createProjectInternal(
+            name: String,
+            craftType: CraftType,
+            mainCounterLabelType: MainCounterLabelType,
+            mainCounterCustomLabel: String?,
+        ) {
+            if (!isPro && repository.getActiveProjectCount() >= 1) {
+                _upgradeToPro.emit(Unit)
+                return
+            }
+            val id =
+                repository.createProject(
+                    name = name,
+                    craftType = craftType,
+                    mainCounterLabelType = mainCounterLabelType,
+                    mainCounterCustomLabel = mainCounterCustomLabel,
+                ) ?: return
+            _navigateToProject.emit(id)
         }
 
         fun archiveProject(id: Long) {
@@ -292,6 +367,26 @@ class ProjectListViewModel
         fun reactivateProject(id: Long) {
             viewModelScope.launch {
                 repository.reactivateProject(id)
+            }
+        }
+
+        fun openNotesEditor(projectId: Long) {
+            viewModelScope.launch {
+                if (!proManager.hasFeature(ProFeature.NOTES)) {
+                    _upgradeToPro.emit(Unit)
+                    return@launch
+                }
+                _navigateToNotesEditor.emit(projectId)
+            }
+        }
+
+        fun openPhotoGallery(projectId: Long) {
+            viewModelScope.launch {
+                if (!proManager.hasFeature(ProFeature.PROGRESS_PHOTOS)) {
+                    _upgradeToPro.emit(Unit)
+                    return@launch
+                }
+                _navigateToPhotoGallery.emit(projectId)
             }
         }
     }

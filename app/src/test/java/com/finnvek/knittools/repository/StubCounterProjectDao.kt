@@ -47,6 +47,15 @@ open class StubCounterProjectDao(
         updatedAt: Long,
     ) = Unit
 
+    override suspend fun updateProjectDetails(
+        id: Long,
+        name: String,
+        craftType: String,
+        mainCounterLabelType: String,
+        mainCounterCustomLabel: String?,
+        updatedAt: Long,
+    ) = Unit
+
     override suspend fun updateNotes(
         id: Long,
         notes: String,
@@ -92,6 +101,16 @@ open class StubCounterProjectDao(
         updatedAt: Long,
     ) = Unit
 
+    override suspend fun updatePatternAttachment(
+        id: Long,
+        linkedPatternId: Long?,
+        patternUri: String?,
+        patternName: String?,
+        currentPatternPage: Int,
+        patternRowMapping: String?,
+        updatedAt: Long,
+    ) = Unit
+
     override suspend fun updateCurrentPatternPage(
         id: Long,
         page: Int,
@@ -101,6 +120,13 @@ open class StubCounterProjectDao(
     override suspend fun updatePatternRowMapping(
         id: Long,
         mapping: String?,
+        updatedAt: Long,
+    ) = Unit
+
+    override suspend fun updateReadingLine(
+        id: Long,
+        enabled: Boolean,
+        yFraction: Float,
         updatedAt: Long,
     ) = Unit
 

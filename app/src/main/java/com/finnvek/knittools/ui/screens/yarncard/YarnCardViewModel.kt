@@ -1,22 +1,14 @@
 package com.finnvek.knittools.ui.screens.yarncard
 
-import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.finnvek.knittools.R
-import com.finnvek.knittools.ai.AiQuotaManager
-import com.finnvek.knittools.ai.ParsedYarnLabel
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.domain.model.YarnCardStatus
-import com.finnvek.knittools.pro.ProFeature
-import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.CounterRepository
 import com.finnvek.knittools.repository.YarnCardRepository
-import com.finnvek.knittools.repository.YarnLabelScanRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -24,7 +16,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -44,8 +35,6 @@ data class YarnCardFormState(
     val weightCategory: String = "",
     val careSymbols: Long = 0L,
     val photoUri: String = "",
-    val isScanning: Boolean = false,
-    val scanError: String? = null,
     val quantityInStash: Int = 1,
     val status: String = YarnCardStatus.IN_STASH,
     val linkedProjectId: Long? = null,
@@ -59,10 +48,6 @@ class YarnCardViewModel
     constructor(
         private val repository: YarnCardRepository,
         private val counterRepository: CounterRepository,
-        private val proManager: ProManager,
-        private val scanRepository: YarnLabelScanRepository,
-        private val aiQuotaManager: AiQuotaManager,
-        @param:ApplicationContext private val context: Context,
     ) : ViewModel() {
         private val _formState = MutableStateFlow(YarnCardFormState())
         val formState: StateFlow<YarnCardFormState> = _formState.asStateFlow()
@@ -73,10 +58,6 @@ class YarnCardViewModel
                 started = SharingStarted.WhileSubscribed(5000),
                 initialValue = emptyList(),
             )
-
-        val canScanYarnLabel: Boolean get() = proManager.hasFeature(ProFeature.OCR)
-
-        val canSaveYarnCards: Boolean get() = proManager.hasFeature(ProFeature.UNLIMITED_YARN)
 
         val availableProjects: StateFlow<List<CounterProject>> =
             counterRepository
@@ -96,24 +77,7 @@ class YarnCardViewModel
                 initialValue = null,
             )
 
-        // Skannatut arvot estimaattorille (Save and Use / Use in Calculator)
-        private val _pendingCalcValues = MutableStateFlow<Triple<String, String, String>?>(null)
-        val pendingCalcValues: StateFlow<Triple<String, String, String>?> = _pendingCalcValues.asStateFlow()
-
-        private var activeScanRequestId = 0L
-
-        fun setPendingCalcValues(
-            weightGrams: String,
-            lengthMeters: String,
-            needleSize: String,
-        ) {
-            _pendingCalcValues.value = Triple(weightGrams, lengthMeters, needleSize)
-        }
-
-        fun clearPendingCalcValues() {
-            _pendingCalcValues.value = null
-        }
-
+        // Lankakortin linkitys kulkee repositorion kautta, jotta projektin vastalinkki pysyy mukana.
         fun linkCardToProject(
             cardId: Long,
             projectId: Long,
@@ -121,28 +85,6 @@ class YarnCardViewModel
             viewModelScope.launch {
                 repository.updateLinkedProjectId(cardId, projectId)
             }
-        }
-
-        fun loadFromScan(
-            parsed: ParsedYarnLabel,
-            photoUri: Uri?,
-        ) {
-            _formState.value =
-                YarnCardFormState(
-                    brand = parsed.brand,
-                    yarnName = parsed.yarnName,
-                    fiberContent = parsed.fiberContent,
-                    weightGrams = parsed.weightGrams,
-                    lengthMeters = parsed.lengthMeters,
-                    needleSize = parsed.needleSize,
-                    gaugeInfo = parsed.gaugeInfo,
-                    colorName = parsed.colorName,
-                    colorNumber = parsed.colorNumber,
-                    dyeLot = parsed.dyeLot,
-                    weightCategory = parsed.weightCategory,
-                    careSymbols = parsed.careSymbols,
-                    photoUri = photoUri?.toString() ?: "",
-                )
         }
 
         fun loadCardById(id: Long) {
@@ -171,7 +113,6 @@ class YarnCardViewModel
         }
 
         fun loadFromCard(card: YarnCard) {
-            invalidateActiveScan()
             _formState.value =
                 YarnCardFormState(
                     editingCardId = card.id,
@@ -194,101 +135,6 @@ class YarnCardViewModel
                 )
         }
 
-        fun updateField(updater: YarnCardFormState.() -> YarnCardFormState) {
-            _formState.update { it.updater() }
-        }
-
-        fun setScanning(scanning: Boolean) {
-            _formState.update { it.copy(isScanning = scanning) }
-        }
-
-        /**
-         * Skannaa lankaetikettikuva Geminillä ja täyttää lomakkeen.
-         * Kutsuu [onSuccess]-callbackia onnistumisen jälkeen (navigointi review-näytölle).
-         */
-        fun scanWithGemini(
-            photoUri: Uri,
-            onSuccess: () -> Unit,
-        ) {
-            if (!canScanYarnLabel) {
-                rejectScanWithoutPro()
-                return
-            }
-            val scanRequestId = startScanRequest()
-            viewModelScope.launch {
-                if (!isActiveScanOrDeletePhoto(scanRequestId, photoUri)) return@launch
-                _formState.update { it.copy(isScanning = true, scanError = null) }
-
-                if (!hasQuotaForActiveScan(scanRequestId)) {
-                    deletePhotoFile(photoUri.toString())
-                    return@launch
-                }
-                if (!isActiveScanOrDeletePhoto(scanRequestId, photoUri)) return@launch
-
-                val parsed = scanRepository.scanLabel(photoUri)
-                if (!isActiveScanOrDeletePhoto(scanRequestId, photoUri)) return@launch
-                finishActiveScan(scanRequestId, parsed, photoUri, onSuccess)
-            }
-        }
-
-        private fun rejectScanWithoutPro() {
-            invalidateActiveScan()
-            _formState.update { it.copy(isScanning = false, scanError = null) }
-        }
-
-        private suspend fun hasQuotaForActiveScan(scanRequestId: Long): Boolean {
-            val hasQuota = aiQuotaManager.hasQuota()
-            if (!isActiveScan(scanRequestId)) return false
-            if (hasQuota) return true
-            _formState.update {
-                it.copy(
-                    isScanning = false,
-                    scanError = context.getString(R.string.ai_quota_exhausted),
-                )
-            }
-            return false
-        }
-
-        private suspend fun finishActiveScan(
-            scanRequestId: Long,
-            parsed: ParsedYarnLabel?,
-            photoUri: Uri,
-            onSuccess: () -> Unit,
-        ) {
-            if (parsed == null) {
-                deletePhotoFile(photoUri.toString())
-                _formState.update {
-                    it.copy(
-                        isScanning = false,
-                        scanError = context.getString(R.string.yarn_scan_failed),
-                    )
-                }
-                return
-            }
-
-            aiQuotaManager.recordCall()
-            if (!isActiveScanOrDeletePhoto(scanRequestId, photoUri)) return
-            loadFromScan(parsed, photoUri)
-            onSuccess()
-        }
-
-        fun createScanPhotoUri(): Uri = scanRepository.createScanPhotoUri()
-
-        fun saveCard(onSaved: (Long) -> Unit) {
-            if (!canSaveYarnCards) return
-            viewModelScope.launch {
-                val form = _formState.value.normalizedForPersistence()
-                if (!form.canPersistYarnCard()) return@launch
-                _formState.value = form
-                val id = repository.saveCard(form.toDomain())
-                onSaved(id)
-            }
-        }
-
-        fun saveCardDomain(card: YarnCard) {
-            viewModelScope.launch { repository.saveCard(card) }
-        }
-
         fun deleteCard(
             id: Long,
             onDeleted: () -> Unit,
@@ -299,23 +145,8 @@ class YarnCardViewModel
             }
         }
 
-        fun discardScan() {
-            deletePhotoFile(_formState.value.photoUri)
-            clearFormState()
-        }
-
         fun clearFormState() {
-            invalidateActiveScan()
             _formState.value = YarnCardFormState()
-        }
-
-        fun deletePhotoFile(uriString: String) {
-            scanRepository.deleteScanPhoto(uriString)
-        }
-
-        fun getCalculatorValues(): Triple<String, String, String> {
-            val form = _formState.value
-            return Triple(form.weightGrams, form.lengthMeters, form.needleSize)
         }
 
         fun updateQuantity(delta: Int) {
@@ -330,6 +161,11 @@ class YarnCardViewModel
             viewModelScope.launch { repository.updateStatus(cardId, status) }
         }
 
+        fun updatePhotoUri(uri: Uri) {
+            val cardId = _formState.value.editingCardId ?: return
+            viewModelScope.launch { repository.updatePhotoUri(cardId, uri) }
+        }
+
         fun setLinkedProject(projectId: Long?) {
             val cardId = _formState.value.editingCardId ?: return
             val previousProjectId = _formState.value.linkedProjectId
@@ -340,71 +176,34 @@ class YarnCardViewModel
             }
         }
 
-        private fun YarnCardFormState.toDomain() =
-            YarnCard(
-                id = editingCardId ?: 0,
-                brand = brand,
-                yarnName = yarnName,
-                fiberContent = fiberContent,
-                weightGrams = weightGrams,
-                lengthMeters = lengthMeters,
-                needleSize = needleSize,
-                gaugeInfo = gaugeInfo,
-                colorName = colorName,
-                colorNumber = colorNumber,
-                dyeLot = dyeLot,
-                weightCategory = weightCategory,
-                careSymbols = careSymbols,
-                photoUri = photoUri,
-                quantityInStash = quantityInStash,
-                status = status,
-                linkedProjectId = linkedProjectId,
-            )
+        fun updateManualDetails(input: ManualYarnCardInput) {
+            val form = _formState.value
+            val cardId = form.editingCardId ?: return
+            val yarnName = input.yarnName.trim()
+            if (yarnName.isBlank()) return
 
-        private fun startScanRequest(): Long {
-            activeScanRequestId += 1
-            return activeScanRequestId
-        }
-
-        private fun invalidateActiveScan() {
-            activeScanRequestId += 1
-        }
-
-        private fun isActiveScan(scanRequestId: Long): Boolean = activeScanRequestId == scanRequestId
-
-        private fun isActiveScanOrDeletePhoto(
-            scanRequestId: Long,
-            photoUri: Uri,
-        ): Boolean {
-            if (isActiveScan(scanRequestId)) return true
-            deletePhotoFile(photoUri.toString())
-            return false
+            viewModelScope.launch {
+                repository.saveCard(
+                    YarnCard(
+                        id = cardId,
+                        brand = input.brand.trim(),
+                        yarnName = yarnName,
+                        fiberContent = form.fiberContent,
+                        weightGrams = form.weightGrams,
+                        lengthMeters = form.lengthMeters,
+                        needleSize = form.needleSize,
+                        gaugeInfo = form.gaugeInfo,
+                        colorName = input.colorName.trim(),
+                        colorNumber = input.colorNumber.trim(),
+                        dyeLot = input.dyeLot.trim(),
+                        weightCategory = input.weightCategory.trim(),
+                        careSymbols = form.careSymbols,
+                        photoUri = form.photoUri,
+                        quantityInStash = form.quantityInStash,
+                        status = form.status,
+                        linkedProjectId = form.linkedProjectId,
+                    ),
+                )
+            }
         }
     }
-
-internal fun YarnCardFormState.canPersistYarnCard(): Boolean =
-    hasYarnIdentity() &&
-        weightGrams.isBlankOrPositiveInt() &&
-        lengthMeters.isBlankOrPositiveInt()
-
-internal fun YarnCardFormState.normalizedForPersistence(): YarnCardFormState =
-    copy(
-        brand = brand.trim(),
-        yarnName = yarnName.trim(),
-        fiberContent = fiberContent.trim(),
-        weightGrams = weightGrams.trim(),
-        lengthMeters = lengthMeters.trim(),
-        needleSize = needleSize.trim(),
-        gaugeInfo = gaugeInfo.trim(),
-        colorName = colorName.trim(),
-        colorNumber = colorNumber.trim(),
-        dyeLot = dyeLot.trim(),
-        weightCategory = weightCategory.trim(),
-        photoUri = photoUri.trim(),
-        quantityInStash = quantityInStash.coerceAtLeast(0),
-        status = YarnCardStatus.normalize(status),
-    )
-
-private fun YarnCardFormState.hasYarnIdentity(): Boolean = brand.isNotBlank() || yarnName.isNotBlank()
-
-private fun String.isBlankOrPositiveInt(): Boolean = isBlank() || toIntOrNull()?.let { it > 0 } == true

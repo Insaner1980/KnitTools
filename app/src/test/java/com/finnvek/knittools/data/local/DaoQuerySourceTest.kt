@@ -25,6 +25,18 @@ class DaoQuerySourceTest {
     }
 
     @Test
+    fun `active name sort uses stable row id tiebreaker`() {
+        val dao = ProjectSourceFiles.read(COUNTER_PROJECT_DAO)
+
+        assertTrue(
+            dao.contains(
+                "SELECT * FROM counter_projects WHERE isCompleted = 0 " +
+                    "ORDER BY name COLLATE NOCASE ASC, id DESC",
+            ),
+        )
+    }
+
+    @Test
     fun `active counter entry points ignore completed projects`() {
         val dao = ProjectSourceFiles.read(COUNTER_PROJECT_DAO)
         val repository = ProjectSourceFiles.read(COUNTER_REPOSITORY)
@@ -49,18 +61,25 @@ class DaoQuerySourceTest {
     fun `saved pattern single-row lookups are deterministic`() {
         val dao = ProjectSourceFiles.read(SAVED_PATTERN_DAO)
 
+        assertTrue(dao.contains("WHERE ravelryPatternId = :ravelryPatternId"))
+        assertTrue(dao.contains("ORDER BY savedAt DESC, id DESC LIMIT 1"))
+        assertTrue(dao.contains("suspend fun getByRavelryPatternId(ravelryPatternId: Int): SavedPatternEntity?"))
         assertTrue(
             dao.contains(
-                "SELECT * FROM saved_patterns WHERE ravelryId = :ravelryId " +
-                    "ORDER BY savedAt DESC, id DESC LIMIT 1",
+                "SELECT * FROM saved_patterns WHERE localPdfUri = :localPdfUri ORDER BY savedAt DESC, id DESC LIMIT 1",
             ),
         )
         assertTrue(
             dao.contains(
-                "SELECT * FROM saved_patterns WHERE patternUrl = :patternUrl " +
-                    "ORDER BY savedAt DESC, id DESC LIMIT 1",
+                "SELECT * FROM saved_patterns WHERE canonicalUrl = :canonicalUrl ORDER BY savedAt DESC, id DESC LIMIT 1",
             ),
         )
+        assertTrue(
+            dao.contains(
+                "SELECT * FROM saved_patterns WHERE originalUrl = :originalUrl ORDER BY savedAt DESC, id DESC LIMIT 1",
+            ),
+        )
+        assertTrue(dao.contains("suspend fun getByOriginalUrl(originalUrl: String): SavedPatternEntity?"))
     }
 
     @Test

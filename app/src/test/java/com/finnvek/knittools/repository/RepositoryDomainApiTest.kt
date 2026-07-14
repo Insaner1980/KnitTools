@@ -13,6 +13,7 @@ import com.finnvek.knittools.data.local.YarnCardDao
 import com.finnvek.knittools.data.local.YarnCardEntity
 import com.finnvek.knittools.domain.model.PatternAnnotation
 import com.finnvek.knittools.domain.model.SavedPattern
+import com.finnvek.knittools.domain.model.SavedPatternSource
 import com.finnvek.knittools.domain.model.YarnCard
 import io.mockk.every
 import io.mockk.mockk
@@ -30,7 +31,7 @@ import org.junit.Before
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class RepositoryDomainApiTest {
+class SavedPatternRepositoryDomainApiTest {
     private lateinit var context: Context
 
     @Before
@@ -48,10 +49,12 @@ class RepositoryDomainApiTest {
                         listOf(
                             SavedPatternEntity(
                                 id = 1L,
-                                ravelryId = 123,
+                                source = SavedPatternSource.Ravelry.persistedValue,
+                                ravelryPatternId = 123,
                                 name = "Cardigan",
                                 designerName = "Designer",
-                                patternUrl = "https://example.com/cardigan",
+                                originalUrl = "https://example.com/cardigan",
+                                canonicalUrl = "https://example.com/cardigan",
                                 savedAt = 100L,
                             ),
                         ),
@@ -60,7 +63,7 @@ class RepositoryDomainApiTest {
                 SavedPatternRepository(
                     dao,
                     context,
-                    FakeCounterProjectDao(),
+                    RepositoryDomainFakeCounterProjectDao(),
                     ImmediateDatabaseTransactionRunner,
                     UnconfinedTestDispatcher(testScheduler),
                 )
@@ -70,10 +73,13 @@ class RepositoryDomainApiTest {
             val savedId =
                 repository.save(
                     SavedPattern(
-                        ravelryId = 456,
+                        source = SavedPatternSource.LocalFile,
+                        ravelryPatternId = 456,
                         name = "Hat",
                         designerName = "Maker",
-                        patternUrl = "content://hat",
+                        originalUrl = "content://hat",
+                        localPdfUri = "content://hat",
+                        isAvailableOffline = true,
                         savedAt = 200L,
                     ),
                 )
@@ -83,11 +89,15 @@ class RepositoryDomainApiTest {
             assertEquals(99L, savedId)
             assertEquals(
                 SavedPatternEntity(
-                    ravelryId = 456,
+                    source = SavedPatternSource.LocalFile.persistedValue,
+                    ravelryPatternId = 456,
                     name = "Hat",
                     designerName = "Maker",
-                    patternUrl = "content://hat",
+                    originalUrl = "content://hat",
+                    localPdfUri = "content://hat",
+                    isAvailableOffline = true,
                     savedAt = 200L,
+                    updatedAt = 200L,
                 ),
                 dao.lastInserted,
             )
@@ -101,7 +111,7 @@ class RepositoryDomainApiTest {
                 SavedPatternRepository(
                     dao,
                     context,
-                    FakeCounterProjectDao(),
+                    RepositoryDomainFakeCounterProjectDao(),
                     ImmediateDatabaseTransactionRunner,
                     UnconfinedTestDispatcher(testScheduler),
                 )
@@ -115,16 +125,24 @@ class RepositoryDomainApiTest {
         }
 
     @Test
-    fun `saved pattern repository reuses existing ravelry pattern`() =
+    fun `saved pattern repository exposes batch domain lookup`() =
         runTest {
             val dao =
                 FakeSavedPatternDao(
                     savedPatterns =
                         listOf(
                             SavedPatternEntity(
-                                id = 7L,
-                                ravelryId = 42,
-                                name = "Old name",
+                                id = 1L,
+                                source = SavedPatternSource.Ravelry.persistedValue,
+                                ravelryPatternId = 1,
+                                name = "Palmikot",
+                                designerName = "Designer",
+                            ),
+                            SavedPatternEntity(
+                                id = 2L,
+                                source = SavedPatternSource.Ravelry.persistedValue,
+                                ravelryPatternId = 2,
+                                name = "Ribbi",
                                 designerName = "Designer",
                             ),
                         ),
@@ -133,7 +151,39 @@ class RepositoryDomainApiTest {
                 SavedPatternRepository(
                     dao,
                     context,
-                    FakeCounterProjectDao(),
+                    RepositoryDomainFakeCounterProjectDao(),
+                    ImmediateDatabaseTransactionRunner,
+                    UnconfinedTestDispatcher(testScheduler),
+                )
+
+            val patterns = repository.getByIds(listOf(1L, 2L))
+
+            assertEquals(listOf("Palmikot", "Ribbi"), patterns.map { it.name })
+            assertEquals(listOf(1L, 2L), dao.lastRequestedIds)
+        }
+
+    @Test
+    fun `saved pattern repository reuses existing ravelry pattern`() =
+        runTest {
+            val dao =
+                FakeSavedPatternDao(
+                    savedPatterns =
+                        listOf(
+                            SavedPatternEntity(
+                                id = 7L,
+                                source = SavedPatternSource.Ravelry.persistedValue,
+                                ravelryPatternId = 42,
+                                name = "Old name",
+                                designerName = "Designer",
+                                canonicalUrl = "https://example.com/patterns/42",
+                            ),
+                        ),
+                )
+            val repository =
+                SavedPatternRepository(
+                    dao,
+                    context,
+                    RepositoryDomainFakeCounterProjectDao(),
                     ImmediateDatabaseTransactionRunner,
                     UnconfinedTestDispatcher(testScheduler),
                 )
@@ -141,9 +191,55 @@ class RepositoryDomainApiTest {
             val savedId =
                 repository.saveRavelryPatternIfMissing(
                     SavedPattern(
-                        ravelryId = 42,
+                        source = SavedPatternSource.Ravelry,
+                        ravelryPatternId = 42,
                         name = "New name",
                         designerName = "Designer",
+                        canonicalUrl = "https://example.com/patterns/42",
+                    ),
+                )
+
+            assertEquals(7L, savedId)
+            assertEquals(0, dao.insertCount)
+        }
+
+    @Test
+    fun `saved pattern repository reuses existing ravelry pattern by normalized original url`() =
+        runTest {
+            val dao =
+                FakeSavedPatternDao(
+                    savedPatterns =
+                        listOf(
+                            SavedPatternEntity(
+                                id = 7L,
+                                source = SavedPatternSource.Other.persistedValue,
+                                ravelryPatternId = null,
+                                name = "Old name",
+                                designerName = "Designer",
+                                originalUrl = "https://carts.ravelry.com/patterns/library/delight-cardigan/",
+                                canonicalUrl = "",
+                            ),
+                        ),
+                )
+            val repository =
+                SavedPatternRepository(
+                    dao,
+                    context,
+                    RepositoryDomainFakeCounterProjectDao(),
+                    ImmediateDatabaseTransactionRunner,
+                    UnconfinedTestDispatcher(testScheduler),
+                )
+
+            val savedId =
+                repository.saveRavelryPatternIfMissing(
+                    SavedPattern(
+                        source = SavedPatternSource.Ravelry,
+                        ravelryPatternId = 99,
+                        name = "Delight Cardigan",
+                        designerName = "Designer",
+                        originalUrl =
+                            "https://www.ravelry.com/patterns/library/delight-cardigan?utm_source=share#notes",
+                        canonicalUrl = "https://www.ravelry.com/patterns/library/delight-cardigan",
                     ),
                 )
 
@@ -165,10 +261,13 @@ class RepositoryDomainApiTest {
                         listOf(
                             SavedPatternEntity(
                                 id = 7L,
-                                ravelryId = 0,
+                                source = SavedPatternSource.LocalFile.persistedValue,
+                                ravelryPatternId = null,
                                 name = "Missing",
                                 designerName = "Imported",
-                                patternUrl = missingUri,
+                                originalUrl = missingUri,
+                                localPdfUri = missingUri,
+                                isAvailableOffline = true,
                             ),
                         ),
                 )
@@ -178,7 +277,7 @@ class RepositoryDomainApiTest {
                     SavedPatternRepository(
                         dao,
                         context,
-                        FakeCounterProjectDao(),
+                        RepositoryDomainFakeCounterProjectDao(),
                         ImmediateDatabaseTransactionRunner,
                         UnconfinedTestDispatcher(testScheduler),
                     )
@@ -210,15 +309,18 @@ class RepositoryDomainApiTest {
                         listOf(
                             SavedPatternEntity(
                                 id = 7L,
-                                ravelryId = 0,
+                                source = SavedPatternSource.LocalFile.persistedValue,
+                                ravelryPatternId = null,
                                 name = "Pattern.pdf",
                                 designerName = "Imported",
-                                patternUrl = existingUri,
+                                originalUrl = existingUri,
+                                localPdfUri = existingUri,
+                                isAvailableOffline = true,
                             ),
                         ),
                 )
             every { context.filesDir } returns filesDir
-            withParsedFileUris(
+            withParsedFileUrisForDomainApi(
                 existingUri to existingFile.absolutePath,
                 candidateUri to candidateFile.absolutePath,
             ) {
@@ -226,7 +328,7 @@ class RepositoryDomainApiTest {
                     SavedPatternRepository(
                         dao,
                         context,
-                        FakeCounterProjectDao(),
+                        RepositoryDomainFakeCounterProjectDao(),
                         ImmediateDatabaseTransactionRunner,
                         UnconfinedTestDispatcher(testScheduler),
                     )
@@ -238,196 +340,22 @@ class RepositoryDomainApiTest {
         }
 
     @Test
-    fun `yarn card repository exposes domain models and writes entities`() =
-        runTest {
-            val dao =
-                FakeYarnCardDao(
-                    yarnCards =
-                        listOf(
-                            YarnCardEntity(
-                                id = 2L,
-                                brand = "Finn Wool",
-                                yarnName = "Soft DK",
-                                quantityInStash = 3,
-                                status = "IN_USE",
-                            ),
-                        ),
-                )
-            val repository =
-                YarnCardRepository(
-                    dao,
-                    FakeCounterProjectDao(),
-                    context,
-                    ImmediateDatabaseTransactionRunner,
-                    UnconfinedTestDispatcher(testScheduler),
-                )
-
-            val cards: List<YarnCard> = repository.getAllCards().first()
-            val card: YarnCard? = repository.getCard(2L)
-            val savedId =
-                repository.saveCard(
-                    YarnCard(
-                        brand = "Novita",
-                        yarnName = "Nalle",
-                        createdAt = 123L,
-                        quantityInStash = 5,
-                        status = "IN_STASH",
-                    ),
-                )
-
-            assertEquals("Soft DK", cards.single().yarnName)
-            assertEquals("Finn Wool", card?.brand)
-            assertEquals(88L, savedId)
-            assertEquals(
-                YarnCardEntity(
-                    brand = "Novita",
-                    yarnName = "Nalle",
-                    createdAt = 123L,
-                    quantityInStash = 5,
-                    status = "IN_STASH",
-                ),
-                dao.lastUpserted,
-            )
-        }
-
-    @Test
-    fun `yarn card repository removes deleted card ids from projects`() =
-        runTest {
-            val yarnDao =
-                FakeYarnCardDao(
-                    yarnCards =
-                        listOf(
-                            YarnCardEntity(id = 2L, yarnName = "Deleted"),
-                        ),
-                )
-            val projectDao =
-                FakeCounterProjectDao(
-                    projects =
-                        listOf(
-                            CounterProjectEntity(id = 10L, yarnCardIds = "1,2,3"),
-                            CounterProjectEntity(id = 11L, yarnCardIds = "2"),
-                        ),
-                )
-            val repository =
-                YarnCardRepository(
-                    yarnDao,
-                    projectDao,
-                    context,
-                    ImmediateDatabaseTransactionRunner,
-                    UnconfinedTestDispatcher(testScheduler),
-                )
-
-            repository.deleteCards(listOf(2L))
-
-            assertEquals(mapOf(10L to "1,3", 11L to ""), projectDao.updatedYarnCardIds)
-            assertEquals(listOf(2L), yarnDao.deletedIds)
-        }
-
-    @Test
-    fun `yarn card repository reports rejected detail updates`() =
-        runTest {
-            val yarnDao = FakeYarnCardDao()
-            val repository =
-                YarnCardRepository(
-                    yarnDao,
-                    FakeCounterProjectDao(),
-                    context,
-                    ImmediateDatabaseTransactionRunner,
-                    UnconfinedTestDispatcher(testScheduler),
-                )
-
-            assertEquals(false, repository.updateQuantity(99L, 4))
-            assertEquals(false, repository.updateStatus(99L, "USED_UP"))
-            assertEquals(false, repository.updateLinkedProjectId(99L, null))
-        }
-
-    @Test
-    fun `yarn card save keeps linked project ids consistent`() =
-        runTest {
-            val yarnDao = FakeYarnCardDao()
-            val projectDao =
-                FakeCounterProjectDao(
-                    projects =
-                        listOf(
-                            CounterProjectEntity(id = 10L, yarnCardIds = "1,2"),
-                            CounterProjectEntity(id = 11L, yarnCardIds = "3"),
-                        ),
-                )
-            val repository =
-                YarnCardRepository(
-                    yarnDao,
-                    projectDao,
-                    context,
-                    ImmediateDatabaseTransactionRunner,
-                    UnconfinedTestDispatcher(testScheduler),
-                )
-
-            val savedId =
-                repository.saveCard(
-                    YarnCard(
-                        brand = "Novita",
-                        yarnName = "Nalle",
-                        linkedProjectId = 10L,
-                    ),
-                )
-
-            assertEquals(88L, savedId)
-            assertEquals(10L, yarnDao.lastUpserted?.linkedProjectId)
-            assertEquals(mapOf(10L to "1,2,88"), projectDao.updatedYarnCardIds)
-        }
-
-    @Test
-    fun `yarn card save removes stale project link when saved unlinked`() =
-        runTest {
-            val yarnDao =
-                FakeYarnCardDao(
-                    yarnCards =
-                        listOf(
-                            YarnCardEntity(id = 5L, yarnName = "Sock", linkedProjectId = 10L),
-                        ),
-                )
-            val projectDao =
-                FakeCounterProjectDao(
-                    projects =
-                        listOf(
-                            CounterProjectEntity(id = 10L, yarnCardIds = "1,5"),
-                        ),
-                )
-            val repository =
-                YarnCardRepository(
-                    yarnDao,
-                    projectDao,
-                    context,
-                    ImmediateDatabaseTransactionRunner,
-                    UnconfinedTestDispatcher(testScheduler),
-                )
-
-            val savedId =
-                repository.saveCard(
-                    YarnCard(
-                        id = 5L,
-                        brand = "Novita",
-                        yarnName = "Nalle",
-                        linkedProjectId = null,
-                    ),
-                )
-
-            assertEquals(5L, savedId)
-            assertEquals(null, yarnDao.lastUpserted?.linkedProjectId)
-            assertEquals(mapOf(10L to "1"), projectDao.updatedYarnCardIds)
-        }
-
-    @Test
     fun `saved pattern repository clears linked projects before deleting patterns`() =
         runTest {
             val dao =
                 FakeSavedPatternDao(
                     savedPatterns =
                         listOf(
-                            SavedPatternEntity(id = 4L, ravelryId = 4, name = "Pattern", designerName = "Designer"),
+                            SavedPatternEntity(
+                                id = 4L,
+                                source = SavedPatternSource.Ravelry.persistedValue,
+                                ravelryPatternId = 4,
+                                name = "Pattern",
+                                designerName = "Designer",
+                            ),
                         ),
                 )
-            val projectDao = FakeCounterProjectDao()
+            val projectDao = RepositoryDomainFakeCounterProjectDao()
             val repository =
                 SavedPatternRepository(
                     dao,
@@ -470,167 +398,221 @@ class RepositoryDomainApiTest {
             assertEquals(77L, addedId)
             assertEquals("M 1 1 L 2 2", dao.lastInserted?.pathData)
         }
+}
 
-    private class FakeSavedPatternDao(
-        private val savedPatterns: List<SavedPatternEntity> = emptyList(),
-    ) : SavedPatternDao {
-        var lastInserted: SavedPatternEntity? = null
-        var deletedIds: List<Long> = emptyList()
-        var insertCount: Int = 0
+internal fun detailedYarnCardEntity() =
+    YarnCardEntity(
+        id = 5L,
+        brand = "Old brand",
+        yarnName = "Old yarn",
+        fiberContent = "75% wool",
+        weightGrams = "100",
+        lengthMeters = "200",
+        needleSize = "3.5 mm",
+        gaugeInfo = "22 sts",
+        colorName = "Old color",
+        colorNumber = "12",
+        dyeLot = "A",
+        weightCategory = "DK",
+        careSymbols = 15L,
+        photoUri = "content://photo",
+        createdAt = 123L,
+        quantityInStash = 2,
+        status = "IN_USE",
+        linkedProjectId = 10L,
+    )
 
-        override fun getAll(): Flow<List<SavedPatternEntity>> = flowOf(savedPatterns)
+internal fun editedYarnCard() =
+    YarnCard(
+        id = 5L,
+        brand = "New brand",
+        yarnName = "New yarn",
+        colorName = "New color",
+        colorNumber = "34",
+        dyeLot = "B",
+        weightCategory = "Fingering",
+    )
 
-        override suspend fun getById(id: Long): SavedPatternEntity? = savedPatterns.firstOrNull { it.id == id }
+internal class FakeSavedPatternDao(
+    private val savedPatterns: List<SavedPatternEntity> = emptyList(),
+) : SavedPatternDao {
+    var lastInserted: SavedPatternEntity? = null
+    var deletedIds: List<Long> = emptyList()
+    var insertCount: Int = 0
+    var lastRequestedIds: List<Long> = emptyList()
 
-        override suspend fun getByRavelryId(ravelryId: Int): SavedPatternEntity? =
-            savedPatterns.firstOrNull { it.ravelryId == ravelryId }
+    override fun getAll(): Flow<List<SavedPatternEntity>> = flowOf(savedPatterns)
 
-        override suspend fun getByPatternUrl(patternUrl: String): SavedPatternEntity? =
-            savedPatterns.firstOrNull { it.patternUrl == patternUrl }
+    override suspend fun getById(id: Long): SavedPatternEntity? = savedPatterns.firstOrNull { it.id == id }
 
-        override suspend fun getImportedPatternsOnce(): List<SavedPatternEntity> =
-            savedPatterns.filter { it.ravelryId == 0 && it.patternUrl.isNotBlank() }
+    override suspend fun getByRavelryPatternId(ravelryPatternId: Int): SavedPatternEntity? =
+        savedPatterns.firstOrNull { it.ravelryPatternId == ravelryPatternId }
 
-        override suspend fun getByIds(ids: List<Long>): List<SavedPatternEntity> = savedPatterns.filter { it.id in ids }
+    override suspend fun getByCanonicalUrl(canonicalUrl: String): SavedPatternEntity? =
+        savedPatterns.firstOrNull { it.canonicalUrl == canonicalUrl }
 
-        override suspend fun insert(pattern: SavedPatternEntity): Long {
-            insertCount += 1
-            lastInserted = pattern
-            return 99L
+    override suspend fun getByOriginalUrl(originalUrl: String): SavedPatternEntity? =
+        savedPatterns.firstOrNull { it.originalUrl == originalUrl }
+
+    override suspend fun getByLocalPdfUri(localPdfUri: String): SavedPatternEntity? =
+        savedPatterns.firstOrNull { it.localPdfUri == localPdfUri }
+
+    override suspend fun getByTitleAndDesignerName(
+        name: String,
+        designerName: String,
+    ): SavedPatternEntity? = savedPatterns.firstOrNull { it.name == name && it.designerName == designerName }
+
+    override suspend fun getAllOnce(): List<SavedPatternEntity> = savedPatterns
+
+    override suspend fun getImportedPatternsOnce(): List<SavedPatternEntity> =
+        savedPatterns.filter {
+            it.source == SavedPatternSource.LocalFile.persistedValue && it.localPdfUri != null
         }
 
-        override suspend fun deleteById(id: Long) {
-            deletedIds = listOf(id)
-        }
-
-        override suspend fun deleteByIds(ids: List<Long>) {
-            deletedIds = ids
-        }
-
-        override fun getCount(): Flow<Int> = flowOf(savedPatterns.size)
+    override suspend fun getByIds(ids: List<Long>): List<SavedPatternEntity> {
+        lastRequestedIds = ids
+        return savedPatterns.filter { it.id in ids }
     }
 
-    private class FakeYarnCardDao(
-        private val yarnCards: List<YarnCardEntity> = emptyList(),
-    ) : YarnCardDao {
-        var lastUpserted: YarnCardEntity? = null
-        var clearedProjectId: Long? = null
-        var deletedIds: List<Long> = emptyList()
-
-        override fun getAllCards(): Flow<List<YarnCardEntity>> = flowOf(yarnCards)
-
-        override suspend fun getCard(id: Long): YarnCardEntity? = yarnCards.firstOrNull { it.id == id }
-
-        override fun observeCard(id: Long): Flow<YarnCardEntity?> = flowOf(yarnCards.firstOrNull { it.id == id })
-
-        override suspend fun getCards(ids: List<Long>): List<YarnCardEntity> = yarnCards.filter { it.id in ids }
-
-        override suspend fun upsert(card: YarnCardEntity): Long {
-            lastUpserted = card
-            return 88L
-        }
-
-        override fun getCardCount(): Flow<Int> = flowOf(yarnCards.size)
-
-        override suspend fun updateQuantity(
-            id: Long,
-            quantity: Int,
-        ): Int = if (yarnCards.any { it.id == id }) 1 else 0
-
-        override suspend fun updateStatus(
-            id: Long,
-            status: String,
-        ): Int = if (yarnCards.any { it.id == id }) 1 else 0
-
-        override suspend fun updateLinkedProjectId(
-            id: Long,
-            projectId: Long?,
-        ): Int = if (yarnCards.any { it.id == id }) 1 else 0
-
-        override suspend fun clearLinkedProject(projectId: Long) {
-            clearedProjectId = projectId
-        }
-
-        override suspend fun delete(id: Long) {
-            deletedIds = listOf(id)
-        }
-
-        override suspend fun deleteByIds(ids: List<Long>) {
-            deletedIds = ids
-        }
+    override suspend fun insert(pattern: SavedPatternEntity): Long {
+        insertCount += 1
+        lastInserted = pattern
+        return 99L
     }
 
-    private class FakeCounterProjectDao(
-        projects: List<CounterProjectEntity> = emptyList(),
-    ) : StubCounterProjectDao(projects) {
-        val updatedYarnCardIds = linkedMapOf<Long, String>()
-        var clearedPatternIds: List<Long> = emptyList()
-
-        override suspend fun updateYarnCardIds(
-            id: Long,
-            yarnCardIds: String,
-            updatedAt: Long,
-        ) {
-            updatedYarnCardIds[id] = yarnCardIds
-        }
-
-        override suspend fun clearLinkedPatternIds(
-            patternIds: List<Long>,
-            updatedAt: Long,
-        ) {
-            clearedPatternIds = patternIds
-        }
+    override suspend fun deleteById(id: Long) {
+        deletedIds = listOf(id)
     }
 
-    private class FakePatternAnnotationDao(
-        private val patternAnnotations: List<PatternAnnotationEntity> = emptyList(),
-    ) : PatternAnnotationDao {
-        var lastInserted: PatternAnnotationEntity? = null
-
-        override fun getAnnotationsForPage(
-            projectId: Long,
-            page: Int,
-        ): Flow<List<PatternAnnotationEntity>> =
-            flowOf(patternAnnotations.filter { it.projectId == projectId && it.page == page })
-
-        override suspend fun insert(annotation: PatternAnnotationEntity): Long {
-            lastInserted = annotation
-            return 77L
-        }
-
-        override suspend fun deleteForProject(projectId: Long) = Unit
-
-        override suspend fun deleteForPage(
-            projectId: Long,
-            page: Int,
-        ) = Unit
-
-        override suspend fun deleteById(id: Long) = Unit
+    override suspend fun deleteByIds(ids: List<Long>) {
+        deletedIds = ids
     }
 
-    private suspend inline fun withParsedFileUri(
-        uriString: String,
-        path: String,
-        block: suspend () -> Unit,
+    override fun getCount(): Flow<Int> = flowOf(savedPatterns.size)
+}
+
+internal class FakeYarnCardDao(
+    private val yarnCards: List<YarnCardEntity> = emptyList(),
+) : YarnCardDao {
+    var lastUpserted: YarnCardEntity? = null
+    var lastLinkedProjectUpdate: Pair<Long, Long?>? = null
+    var clearedProjectId: Long? = null
+    var deletedIds: List<Long> = emptyList()
+
+    override fun getAllCards(): Flow<List<YarnCardEntity>> = flowOf(yarnCards)
+
+    override suspend fun getCard(id: Long): YarnCardEntity? = yarnCards.firstOrNull { it.id == id }
+
+    override fun observeCard(id: Long): Flow<YarnCardEntity?> = flowOf(yarnCards.firstOrNull { it.id == id })
+
+    override suspend fun getCards(ids: List<Long>): List<YarnCardEntity> = yarnCards.filter { it.id in ids }
+
+    override suspend fun upsert(card: YarnCardEntity): Long {
+        lastUpserted = card
+        return 88L
+    }
+
+    override fun getCardCount(): Flow<Int> = flowOf(yarnCards.size)
+
+    override suspend fun updateQuantity(
+        id: Long,
+        quantity: Int,
+    ): Int = if (yarnCards.any { it.id == id }) 1 else 0
+
+    override suspend fun updateStatus(
+        id: Long,
+        status: String,
+    ): Int = if (yarnCards.any { it.id == id }) 1 else 0
+
+    override suspend fun updatePhotoUri(
+        id: Long,
+        photoUri: String,
+    ): Int = if (yarnCards.any { it.id == id }) 1 else 0
+
+    override suspend fun updateLinkedProjectId(
+        id: Long,
+        projectId: Long?,
+    ): Int {
+        if (yarnCards.none { it.id == id }) return 0
+        lastLinkedProjectUpdate = id to projectId
+        return 1
+    }
+
+    override suspend fun clearLinkedProject(projectId: Long) {
+        clearedProjectId = projectId
+    }
+
+    override suspend fun delete(id: Long) {
+        deletedIds = listOf(id)
+    }
+
+    override suspend fun deleteByIds(ids: List<Long>) {
+        deletedIds = ids
+    }
+}
+
+internal class RepositoryDomainFakeCounterProjectDao(
+    projects: List<CounterProjectEntity> = emptyList(),
+) : StubCounterProjectDao(projects) {
+    val updatedYarnCardIds = linkedMapOf<Long, String>()
+    var clearedPatternIds: List<Long> = emptyList()
+
+    override suspend fun updateYarnCardIds(
+        id: Long,
+        yarnCardIds: String,
+        updatedAt: Long,
     ) {
-        withParsedFileUris(uriString to path, block = block)
+        updatedYarnCardIds[id] = yarnCardIds
     }
 
-    private suspend inline fun withParsedFileUris(
-        vararg mappings: Pair<String, String>,
-        block: suspend () -> Unit,
+    override suspend fun clearLinkedPatternIds(
+        patternIds: List<Long>,
+        updatedAt: Long,
     ) {
-        mockkStatic(Uri::class)
-        mappings.forEach { (uriString, path) ->
-            val uri = mockk<Uri>()
-            every { Uri.parse(uriString) } returns uri
-            every { uri.scheme } returns "file"
-            every { uri.path } returns path
-        }
-        try {
-            block()
-        } finally {
-            unmockkStatic(Uri::class)
-        }
+        clearedPatternIds = patternIds
+    }
+}
+
+internal class FakePatternAnnotationDao(
+    private val patternAnnotations: List<PatternAnnotationEntity> = emptyList(),
+) : PatternAnnotationDao {
+    var lastInserted: PatternAnnotationEntity? = null
+
+    override fun getAnnotationsForPage(
+        projectId: Long,
+        page: Int,
+    ): Flow<List<PatternAnnotationEntity>> =
+        flowOf(patternAnnotations.filter { it.projectId == projectId && it.page == page })
+
+    override suspend fun insert(annotation: PatternAnnotationEntity): Long {
+        lastInserted = annotation
+        return 77L
+    }
+
+    override suspend fun deleteForProject(projectId: Long) = Unit
+
+    override suspend fun deleteForPage(
+        projectId: Long,
+        page: Int,
+    ) = Unit
+
+    override suspend fun deleteById(id: Long) = Unit
+}
+
+internal suspend inline fun withParsedFileUrisForDomainApi(
+    vararg mappings: Pair<String, String>,
+    block: suspend () -> Unit,
+) {
+    mockkStatic(Uri::class)
+    mappings.forEach { (uriString, path) ->
+        val uri = mockk<Uri>()
+        every { Uri.parse(uriString) } returns uri
+        every { uri.scheme } returns "file"
+        every { uri.path } returns path
+    }
+    try {
+        block()
+    } finally {
+        unmockkStatic(Uri::class)
     }
 }

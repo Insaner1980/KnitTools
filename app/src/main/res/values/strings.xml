@@ -34,7 +34,6 @@
     <string name="tool_needle_sizes">Needle Sizes</string>
     <string name="pro_trial_days_left" tools:ignore="PluralsCandidate">Pro trial — %d days left</string>
     <string name="unlock_all_tools">Unlock all tools</string>
-    <string name="quick_tip_label">QUICK TIP</string>
     <string name="desc_yarn_estimator_card">Calculate yardage and skeins needed</string>
 
     <!-- Bottom navigation tabs -->
@@ -61,6 +60,43 @@
     <string name="section_completed">COMPLETED</string>
     <string name="new_project">New Project</string>
     <string name="new_project_name_format">Project %1$d</string>
+    <string name="create_project">Create project</string>
+    <string name="project_details">Project details</string>
+    <string name="project_details_title">Project details</string>
+    <string name="new_project_details_title">New project</string>
+    <string name="project_name_label">Project name</string>
+    <string name="craft_type_label">Craft type</string>
+    <string name="craft_type_knitting">Knitting</string>
+    <string name="craft_type_crochet">Crochet</string>
+    <string name="main_counter_label">Main counter label</string>
+    <string name="main_counter_rows">Rows</string>
+    <string name="main_counter_rounds">Rounds</string>
+    <string name="main_counter_repeats">Repeats</string>
+    <string name="main_counter_custom">Custom</string>
+    <string name="main_counter_custom_label">Custom label</string>
+    <string name="main_counter_custom_label_error">Enter a label.</string>
+    <string name="project_metadata_format">%1$s, %2$s</string>
+    <plurals name="rounds_format">
+        <item quantity="one">%1$d round</item>
+        <item quantity="other">%1$d rounds</item>
+    </plurals>
+    <plurals name="repeats_format">
+        <item quantity="one">%1$d repeat</item>
+        <item quantity="other">%1$d repeats</item>
+    </plurals>
+    <string name="main_counter_custom_count_format">%1$d %2$s</string>
+    <string name="current_round_short">Round %1$d</string>
+    <string name="current_repeat_short">Repeat %1$d</string>
+    <string name="counter_round_value_of_target_format">Round %1$d / %2$d</string>
+    <string name="counter_repeat_value_of_target_format">Repeat %1$d / %2$d</string>
+    <string name="main_counter_custom_current_format">%1$s %2$d</string>
+    <string name="counter_custom_value_of_target_format">%1$s %2$d / %3$d</string>
+    <string name="counter_add_round">Add round</string>
+    <string name="counter_decrease_round">Subtract round</string>
+    <string name="counter_add_repeat">Add repeat</string>
+    <string name="counter_decrease_repeat">Subtract repeat</string>
+    <string name="counter_add_custom">Add %1$s</string>
+    <string name="counter_decrease_custom">Subtract %1$s</string>
     <string name="no_active_projects">No active projects</string>
     <string name="no_completed_projects">No completed projects yet</string>
     <string name="delete_project">Delete</string>
@@ -83,52 +119,73 @@
     <string name="select_all">Select All</string>
     <string name="complete_n_projects" tools:ignore="PluralsCandidate">Complete %d projects? They will be moved to your completed projects.</string>
     <string name="delete_n_projects" tools:ignore="PluralsCandidate">Delete %d projects? This cannot be undone.</string>
-    <string name="rows_format" tools:ignore="PluralsCandidate">%d rows</string>
+    <plurals name="rows_format">
+        <item quantity="one">%1$d row</item>
+        <item quantity="other">%1$d rows</item>
+    </plurals>
     <string name="just_now">just now</string>
 
     <!-- Counter Screen -->
-    <string name="current_row">CURRENT ROW</string>
     <string name="stitch_count_format" tools:ignore="UnusedResources">%s st</string>
     <string name="set_stitches" tools:ignore="UnusedResources">Set stitches</string>
     <string name="stitches_per_row">Stitches per row</string>
     <string name="track_stitches">Track stitches</string>
     <string name="stitch_counter_compact_format">%1$d/%2$d</string>
-    <string name="stitch_previous">◄</string>
-    <string name="stitch_next">►</string>
     <string name="attach_pattern">Attach pattern</string>
     <string name="remove_pattern">Remove pattern</string>
     <string name="no_pattern_attached">No pattern attached</string>
-    <string name="show_pattern">Show pattern</string>
     <string name="pattern_viewer_title">Pattern Viewer</string>
     <string name="pattern_pdf_fallback_name">Pattern PDF</string>
     <string name="pattern_loading">Loading pattern…</string>
     <string name="pattern_open_failed">Pattern could not be opened.</string>
+    <string name="pattern_show_reading_line">Show reading line</string>
+    <string name="pattern_hide_reading_line">Hide reading line</string>
+    <string name="pattern_save_line_as_row" tools:ignore="PluralsCandidate">Save line as row %1$d</string>
+    <string name="pattern_clear_row_mark">Clear row mark</string>
+    <string name="pattern_clear_page_marks">Clear page marks</string>
+    <string name="pattern_calibrate_rows">Calibrate rows</string>
+    <string name="pattern_calibration_first_row">First row</string>
+    <string name="pattern_calibration_last_row">Last row</string>
+    <string name="pattern_calibration_save_first">Save first</string>
+    <string name="pattern_calibration_save_last">Save last</string>
+    <string name="pattern_calibration_invalid_row">Use two different row numbers</string>
+    <string name="pattern_reading_line_description">Reading line</string>
     <string name="pattern_row_highlight_description" tools:ignore="PluralsCandidate">Row %1$d highlighted about %2$d percent down the page</string>
     <string name="pattern_page_jump">Page jump</string>
     <string name="pattern_page_number">Page number</string>
     <string name="pattern_page_indicator">Page %1$d of %2$d</string>
     <string name="pattern_previous_page">Previous page</string>
     <string name="pattern_next_page">Next page</string>
-    <string name="pattern_combine_instructions">Combine instructions</string>
-    <string name="pattern_combine_none_found">No overlapping instructions found on this page.</string>
-    <string name="pattern_combine_requires_internet">Requires internet connection</string>
-    <string name="pattern_combined_instructions_copied">Combined instructions copied</string>
-    <string name="pattern_picker_device_files">Choose PDF from device</string>
     <string name="pattern_picker_saved_patterns">Saved patterns</string>
-    <string name="pattern_picker_camera_scan">Camera scan</string>
-    <string name="pattern_scan_failed">Pattern scan could not be converted to PDF.</string>
+    <string name="pattern_picker_import_pdf">Import PDF</string>
+    <string name="pattern_picker_import_cloud_pdf">Import from Drive or Dropbox</string>
+    <string name="pattern_picker_import_from_ravelry">Import from Ravelry</string>
+    <string name="pattern_picker_camera_scan">Take pattern photo</string>
+    <string name="pattern_picker_continue_without_pattern">Continue without pattern</string>
+    <string name="pattern_scan_failed">Pattern photo could not be converted to PDF.</string>
     <string name="imported_pattern_designer">Imported PDF</string>
     <string name="current_row_short">Row %1$d</string>
-    <string name="pattern_instruction_copied">Instruction copied</string>
     <string name="time_spent_minutes_format" tools:ignore="PluralsCandidate">%dm</string>
-    <string name="link_to_project">Link to %s?</string>
-    <string name="link_yarn">Link yarn</string>
     <string name="unlink_yarn">Unlink yarn</string>
-    <string name="link">Link</string>
     <string name="select_yarn_card">Select yarn card</string>
-    <string name="add_yarn">Add yarn</string>
     <string name="linked_yarn_title">LINKED YARN</string>
     <string name="no_linked_yarn">No yarn linked yet</string>
+    <string name="choose_from_my_yarn">Choose from My Yarn</string>
+    <string name="choose_from_my_yarn_body">Pick an existing saved yarn</string>
+    <string name="add_yarn_to_project">Add yarn to this project</string>
+    <string name="add_yarn_to_project_body">Save a quick yarn note for this project only</string>
+    <string name="project_yarn_notes_title">PROJECT YARN</string>
+    <string name="project_yarn_name">Yarn name</string>
+    <string name="brand_label">Brand</string>
+    <string name="project_yarn_description">Description</string>
+    <string name="add_yarn_to_my_yarn">Add Yarn</string>
+    <string name="edit_yarn_details">Edit details</string>
+    <string name="add_yarn_photo">Add yarn photo</string>
+    <string name="change_yarn_photo">Change yarn photo</string>
+    <string name="manual_yarn_optional_details">Start with a name. Brand, weight, color, and dye lot are optional.</string>
+    <string name="project_yarn_quantity_format" tools:ignore="PluralsCandidate">Quantity: %d</string>
+    <string name="save_to_my_yarn">Save to My Yarn</string>
+    <string name="saved_to_my_yarn">Saved to My Yarn</string>
     <string name="yarn_count_format" tools:ignore="PluralsCandidate,UnusedResources">%1$d yarns</string>
     <string name="linked_project_label">Linked project</string>
     <string name="link_to_project_label">Link to project</string>
@@ -140,10 +197,10 @@
     <string name="status_in_stash">In Stash</string>
     <string name="status_in_use">In Use</string>
     <string name="status_finished">Finished</string>
-    <string name="linked_project_arrow">\u2192 %1$s</string>
+    <string name="yarn_not_linked">Not linked</string>
     <string name="yarn_details_title">Details</string>
+    <string name="yarn_details_empty_body">Brand, weight, color, and dye lot are optional. Add only what helps this project.</string>
     <string name="delete_yarn_card_message">Delete this yarn card? This cannot be undone.</string>
-    <string name="saved_to_my_yarn_toast">Saved to My Yarn in Library</string>
     <string name="skein_count_one" tools:ignore="PluralsCandidate">%1$d skein</string>
     <string name="skein_count_many" tools:ignore="PluralsCandidate">%1$d skeins</string>
 
@@ -157,13 +214,6 @@
     <string name="pro_full_history_hint">Upgrade to Pro for full session history</string>
 
     <!-- Settings -->
-    <string name="show_knitting_tips">Show knitting tips</string>
-    <string name="project_summary">Project Summary</string>
-    <string name="view_ai_summary" tools:ignore="UnusedResources">View AI summary</string>
-    <string name="generating_summary">Generating summary\u2026</string>
-    <string name="ai_quota_exhausted">Monthly AI limit reached</string>
-    <string name="ai_summary_fallback">Could not generate AI summary — showing basic stats instead</string>
-
     <!-- Row Counter -->
     <string name="default_project_name">My Project</string>
     <string name="reset_counter">Reset Counter</string>
@@ -175,30 +225,27 @@
     <string name="notes_editor_title">Notes \u2014 %1$s</string>
     <string name="write_your_notes_here">Write your notes here\u2026</string>
 
-    <!-- Journal (AI journal entry) -->
-    <string name="journal_ai_badge">+ AI</string>
-    <string name="journal_add_entry_title">Add journal entry</string>
-    <string name="journal_mode_speak">Speak</string>
-    <string name="journal_mode_type">Type</string>
-    <string name="journal_speak_title">Speak your entry</string>
-    <string name="journal_type_title">Type your entry</string>
-    <string name="journal_listening">Listening\u2026</string>
-    <string name="journal_tap_to_speak">Tap the microphone to start</string>
-    <string name="journal_type_placeholder">What happened this session?</string>
-    <string name="journal_transcription_placeholder">Your words appear here\u2026</string>
-    <string name="journal_add_button">Add entry</string>
-    <string name="journal_empty_error">Entry cannot be empty</string>
-    <string name="journal_offline_notice">AI formatting unavailable, entry saved as typed.</string>
-    <string name="journal_mic_permission_required">Microphone permission required</string>
-    <string name="journal_processing">Formatting\u2026</string>
-    <string name="journal_speech_unavailable">Speech recognition not available on this device</string>
-    <string name="journal_speech_network_error">Speech recognition needs a network connection</string>
-    <string name="journal_speech_no_match">Didn\u2019t catch that \u2014 try again</string>
-    <string name="journal_speech_error">Speech recognition error</string>
+
 
     <string name="counter_decrease">Decrease</string>
     <string name="counter_increase">Increase</string>
-    <string name="counter_undo">Undo</string>
+    <string name="counter_value_of_target_format">Row %1$d / %2$d</string>
+    <string name="repeating_counter_value_format">%1$d of %2$d</string>
+    <string name="counter_decrease_named">Decrease %1$s</string>
+    <string name="counter_increase_named">Increase %1$s</string>
+    <string name="counter_actions">%1$s actions</string>
+    <string name="counter_add_row">Add row</string>
+    <string name="counter_decrease_row">Subtract row</string>
+    <string name="counter_undo_last_change">Undo last change</string>
+    <string name="counter_target_remaining_format">%1$s left</string>
+    <string name="counter_target_reached">Target reached</string>
+    <string name="counter_target_past_format">%1$s past target</string>
+    <string name="project_content_add_pattern">Add Pattern</string>
+    <string name="stitch_tracker_label">Stitches</string>
+    <plurals name="reminder_repeat_occurrence_format">
+        <item quantity="one">Repeat #%1$d every row</item>
+        <item quantity="other">Repeat #%1$d every %2$d rows</item>
+    </plurals>
 
     <!-- Increase / Decrease -->
     <string name="mode_increase">Increase</string>
@@ -301,12 +348,8 @@
     <string name="pro_feature_row_reminders">Row reminders</string>
     <string name="pro_feature_progress_photos">Progress photos</string>
     <string name="pro_feature_unlimited_yarn">Unlimited yarn cards</string>
-    <string name="pro_feature_ocr">Yarn label OCR scanning</string>
-    <string name="pro_feature_ai_features">AI tools with monthly credits</string>
-    <string name="pro_feature_voice_commands">Voice commands</string>
-    <string name="pro_feature_voice_live">Natural voice with monthly minutes</string>
     <string name="pro_feature_widget">Home screen widget</string>
-    <string name="pro_feature_pattern_camera_scan">Pattern camera scan</string>
+    <string name="pro_feature_pattern_camera_scan">Pattern photo capture</string>
     <string name="pro_feature">Pro feature</string>
     <string name="upgrade_for_price">Upgrade for %s</string>
     <string name="one_time_purchase">One-time purchase. No subscription.</string>
@@ -319,13 +362,8 @@
     <string name="billing_purchase_failed">Purchase could not be completed. Try again.</string>
     <string name="billing_already_owned_restore_failed">Google Play says you already own this purchase, but it could not be restored. Try Restore purchases.</string>
 
-    <!-- Yarn Card / OCR -->
-    <string name="scan_yarn_label">Scan yarn label</string>
-    <string name="yarn_scan_failed">Could not read a yarn label from this photo. Try again.</string>
+    <!-- Yarn Card -->
     <string name="saved_yarns">Saved yarns</string>
-    <string name="scanned_yarn">Scanned Yarn</string>
-    <string name="brand">Brand</string>
-    <string name="yarn_name">Yarn name</string>
     <string name="fiber_content">Fiber content</string>
     <string name="weight_grams">Weight (g)</string>
     <string name="length_meters">Length (m)</string>
@@ -336,14 +374,9 @@
     <string name="dye_lot">Dye lot</string>
     <string name="weight_category">Weight category</string>
     <string name="care_symbols">Care</string>
-    <string name="save_and_use">Save &amp; Use</string>
-    <string name="discard">Discard</string>
-    <string name="use_in_calculator">Use in calculator</string>
     <string name="no_saved_yarns">No saved yarn cards yet</string>
-    <string name="scanning">Scanning…</string>
-    <string name="pro_required_save">Pro required to save yarn cards</string>
 
-    <!-- Gemini Nano -->
+    <!-- Instruction parser -->
     <string name="paste_instruction">Paste instruction</string>
     <string name="instruction_hint">Paste your knitting instruction here</string>
     <string name="instruction_hint_increase">e.g. "Increase 12 stitches evenly across 96 stitches"</string>
@@ -351,15 +384,11 @@
     <string name="parsing_instruction">Parsing…</string>
     <string name="instruction_parsed">Values filled from instruction</string>
     <string name="instruction_parse_failed">Couldn\'t understand the instruction — try rephrasing</string>
-    <string name="ai_error_busy">AI is busy — try again in a moment</string>
-    <string name="ai_error_quota">Monthly AI limit reached — try again later</string>
-    <string name="ai_error_unavailable">AI feature not available on this device</string>
-    <string name="ai_error_unknown">Something went wrong — try again</string>
+    <string name="generic_error_unknown">Something went wrong — try again</string>
 
     <!-- Camera permission -->
-    <string name="camera_permission_denied">Camera permission is needed to scan yarn labels</string>
+    <string name="camera_permission_denied">Camera permission is needed to take photos</string>
     <string name="camera_permission_denied_permanent">Camera permission denied — enable it in Settings</string>
-    <string name="open_settings">Settings</string>
     <string name="retry">Retry</string>
 
     <!-- Care symbol categories -->
@@ -368,9 +397,30 @@
     <string name="care_category_drying">Drying</string>
     <string name="care_category_ironing">Ironing</string>
     <string name="care_category_dry_cleaning">Dry cleaning</string>
+    <string name="care_wash_30">30°</string>
+    <string name="care_wash_40">40°</string>
+    <string name="care_wash_60">60°</string>
+    <string name="care_wash_hand">Hand wash</string>
+    <string name="care_wash_do_not">Do not wash</string>
+    <string name="care_bleach_any">Any bleach</string>
+    <string name="care_bleach_non_chlorine">Non-chlorine bleach</string>
+    <string name="care_bleach_do_not">Do not bleach</string>
+    <string name="care_dry_tumble_low">Tumble dry low</string>
+    <string name="care_dry_tumble_normal">Tumble dry normal</string>
+    <string name="care_dry_flat">Dry flat</string>
+    <string name="care_dry_do_not_tumble">Do not tumble dry</string>
+    <string name="care_iron_low">Iron low</string>
+    <string name="care_iron_medium">Iron medium</string>
+    <string name="care_iron_high">Iron high</string>
+    <string name="care_iron_do_not">Do not iron</string>
+    <string name="care_dryclean_any">Any solvent</string>
+    <string name="care_dryclean_p">P solvent</string>
+    <string name="care_dryclean_f">F solvent</string>
+    <string name="care_dryclean_do_not">Do not dry clean</string>
 
     <!-- Defaults -->
     <string name="yarn_card_fallback_name">Yarn card</string>
+    <string name="yarn_card_number_fallback">Yarn #%1$d</string>
 
     <!-- Widget -->
     <string name="widget_name">Row Counter</string>
@@ -404,10 +454,10 @@
     <string name="library_my_collection">MY COLLECTION</string>
     <string name="library_reference">REFERENCE</string>
     <string name="desc_saved_patterns">Saved patterns from Ravelry and PDFs</string>
-    <string name="desc_my_yarn">Your yarn stash — brands, weights, and colors</string>
+    <string name="desc_my_yarn">Yarn notes, quantities, and linked projects</string>
     <string name="desc_all_photos">Progress photos from all your projects</string>
     <string name="empty_saved_patterns">No saved patterns yet.\nFind patterns in Ravelry Search.</string>
-    <string name="empty_my_yarn">No yarn cards saved yet.</string>
+    <string name="empty_my_yarn">No yarn notes saved yet.</string>
     <string name="empty_all_photos">No progress photos yet.</string>
     <string name="filter_all">All</string>
 
@@ -425,7 +475,10 @@
     <string name="insights_knitting_activity">KNITTING ACTIVITY</string>
     <string name="insights_current_streak">Current streak:</string>
     <string name="insights_best_streak">Best:</string>
-    <string name="insights_rows_count" tools:ignore="PluralsCandidate">%1$d rows</string>
+    <plurals name="insights_rows_count">
+        <item quantity="one">%1$d row</item>
+        <item quantity="other">%1$d rows</item>
+    </plurals>
     <string name="insights_less_than_tenth_hour">&lt;0.1h</string>
     <string name="insights_no_time">—</string>
     <string name="insights_footer_1">Every row counts — keep knitting!</string>
@@ -736,36 +789,6 @@
     <string name="sym_marker_desc">Stitch marker position</string>
     <string name="sym_repeat_name">Repeat</string>
     <string name="sym_repeat_desc">Pattern repeat bracket</string>
-
-    <!-- Quick Tips -->
-    <string-array name="knitting_tips">
-        <item>Always swatch before starting a new project — even if you think you know your gauge.</item>
-        <item>Block your swatch the same way you plan to block your finished piece for an accurate gauge.</item>
-        <item>To avoid a jog when knitting stripes in the round, lift the stitch from the row below onto the left needle on the second row of the new color.</item>
-        <item>Keep your tension even for a professional finish on edges.</item>
-        <item>Place a locking stitch marker every 20 stitches when casting on large numbers.</item>
-        <item>Block your finished pieces — it makes a huge difference in the final look.</item>
-        <item>Count your stitches at the end of every row when working lace patterns.</item>
-        <item>Wind your yarn into a ball before starting — it prevents tangling.</item>
-        <item>Use a lifeline every few rows in lace knitting — thread waste yarn through all stitches.</item>
-        <item>Weave in ends as you go to avoid a pile-up at the end of your project.</item>
-        <item>Always buy one extra skein — dye lots may vary between batches.</item>
-        <item>Try knitting a gauge swatch in the round if your project is knit in the round — gauge can differ.</item>
-        <item>Use stitch markers to separate pattern repeats — they make counting much easier.</item>
-        <item>Read your entire pattern through before casting on to avoid surprises.</item>
-        <item>Keep a project notebook to track your modifications and notes for future reference.</item>
-        <item>When joining yarn, leave tails at least 15 cm long for secure weaving.</item>
-        <item>Practice new techniques on a small swatch before committing to your project.</item>
-        <item>Store your knitting in a project bag to keep it clean and prevent snags.</item>
-        <item>Take breaks to stretch your hands and prevent repetitive strain injuries.</item>
-        <item>Mark your place in the pattern with a sticky note or magnetic board.</item>
-        <item>Use bamboo needles for slippery yarns — they grip the stitches better.</item>
-        <item>When picking up stitches, use a needle one size smaller for a neater edge.</item>
-        <item>Twist your stitches on the first round after casting on to prevent the cast-on from twisting.</item>
-        <item>Measure your gauge after blocking, not before — many yarns change after washing.</item>
-        <item>Alternate between two skeins every few rows to avoid visible dye lot differences.</item>
-    </string-array>
-
     <!-- In-App Updates -->
     <string name="update_downloaded">Update downloaded — restart to apply</string>
     <string name="restart">Restart</string>
@@ -784,7 +807,6 @@
     <string name="repeating">Repeating</string>
     <string name="repeat_every">Repeat every</string>
     <string name="repeat_every_rows">rows</string>
-    <string name="repeat_count_format">Repeat %1$d/%2$d</string>
     <string name="dismiss">Dismiss</string>
 
     <!-- Multiple Counters -->
@@ -794,6 +816,8 @@
     <string name="counter_name_hint">e.g. Sleeve increases</string>
     <string name="count_up">Count up</string>
     <string name="step_size">Step size</string>
+    <string name="linked_counter">Linked counter</string>
+    <string name="linked_counter_description">Moves with the main counter.</string>
     <string name="shaping">Shaping</string>
     <string name="repeat_section">Repeat section</string>
     <string name="starting_stitches">Starting stitch count</string>
@@ -802,9 +826,8 @@
     <string name="repeat_section_start_row">Start row</string>
     <string name="repeat_section_end_row">End row</string>
     <string name="total_repeats">Total repeats</string>
-    <string name="repeat_section_progress_format">Repeat %1$d of %2$d · Row %3$d of %4$d</string>
+    <string name="repeat_section_progress_format">Repeat %1$d/%2$d, Row %3$d/%4$d</string>
     <string name="repeat_section_complete">Complete</string>
-    <string name="next_shaping_format">Next shaping: Row %1$d → %2$d sts</string>
     <string name="rename_counter">Rename</string>
     <string name="reset_counter_name">Reset</string>
     <string name="delete_counter">Delete</string>
@@ -814,78 +837,19 @@
     <!-- Progress Photos -->
     <string name="take_photo">Take photo</string>
     <string name="progress_photos">Progress photos</string>
-    <string name="voice_commands">Voice commands</string>
-    <string name="voice_mode_timeout">Voice mode ended due to inactivity</string>
-    <string name="voice_offline_mode">Offline mode, basic commands only</string>
-    <string name="voice_quota_monthly_exhausted">Monthly AI command limit reached; basic commands still work</string>
-    <string name="voice_command_unknown">I didn\'t understand</string>
-    <string name="voice_note_saved">Note saved</string>
-    <string name="voice_counter_reset">Counter reset</string>
-    <string name="voice_row_current" tools:ignore="PluralsCandidate">Row %d</string>
-    <string name="voice_row_of_target" tools:ignore="PluralsCandidate">Row %1$d of %2$d, %3$d percent done</string>
-    <string name="voice_rows_remaining" tools:ignore="PluralsCandidate">%d rows left</string>
-    <string name="voice_no_target">No target set</string>
-    <string name="voice_back_to_row" tools:ignore="PluralsCandidate">Back to row %d</string>
-    <string name="voice_undone_row" tools:ignore="PluralsCandidate">Undone, row %d</string>
-    <string name="voice_remaining_done">You\'re done!</string>
-    <string name="voice_session_minutes" tools:ignore="PluralsCandidate">You\'ve been knitting for %d minutes</string>
-    <string name="voice_session_under_minute">Less than a minute</string>
-    <string name="voice_yarn_multiple" tools:ignore="PluralsCandidate">%1$s and %2$d more</string>
-    <string name="voice_yarn_none">No yarn linked</string>
-    <string name="voice_pattern_info">Pattern %1$s, page %2$d</string>
-    <string name="voice_instruction_none">No pattern linked</string>
-    <string name="voice_shaping_next" tools:ignore="PluralsCandidate">Next %1$s in %2$d rows</string>
-    <string name="voice_shaping_at">%1$s at row %2$d</string>
-    <string name="voice_shaping_none">No shaping counter active</string>
-    <string name="voice_stitches_total" tools:ignore="PluralsCandidate">%1$d stitches total, %2$d per row across %3$d rows</string>
-    <string name="voice_stitches_current" tools:ignore="PluralsCandidate">%d stitches</string>
-    <string name="voice_stitches_disabled">Stitch tracking is not enabled</string>
-    <string name="voice_reminders_none">No upcoming reminders</string>
-    <string name="voice_reminder_next" tools:ignore="PluralsCandidate">Next reminder: %1$s, in %2$d rows</string>
-    <string name="voice_reminders_multiple" tools:ignore="PluralsCandidate">Next reminder: %1$s, in %2$d rows. %3$d more after that</string>
-    <string name="voice_counters_none">No extra counters</string>
-    <string name="voice_counter_single">%1$s is at %2$d</string>
-    <string name="voice_counters_list" tools:ignore="PluralsCandidate">%1$d counters: %2$s</string>
-    <string name="voice_notes_empty">No notes yet</string>
-    <string name="voice_notes_content">Your notes: %1$s</string>
-    <string name="voice_total_time_none">No time recorded yet</string>
-    <string name="voice_total_time_hours" tools:ignore="PluralsCandidate">%1$d hours and %2$d minutes total on this project</string>
-    <string name="voice_total_time_minutes" tools:ignore="PluralsCandidate">%1$d minutes total on this project</string>
-    <string name="voice_summary_none">No project summary available. Open the project first to generate one.</string>
-    <string name="voice_project_name">You\'re working on %1$s</string>
-    <string name="voice_section_current">Current section: %1$s</string>
-    <string name="voice_section_none">No section set</string>
-    <string name="voice_section_set">Section set to %1$s</string>
-    <string name="voice_stitch_at">Stitch %1$d</string>
-    <string name="voice_help_full">You can say: next, back, undo, reset, plus a number. Ask about progress, remaining rows, time, yarn, pattern, stitches, reminders, counters, or notes. Say note to save a note, or name a counter to change it.</string>
-    <string name="voice_reminder_dismissed">Reminder dismissed</string>
-    <string name="voice_reminder_no_active">No active reminder to dismiss</string>
-    <string name="voice_counter_incremented">%1$s now at %2$d</string>
-    <string name="voice_counter_decremented">%1$s back to %2$d</string>
-    <string name="voice_counter_not_found">No counter named %1$s</string>
-    <string name="voice_counter_ambiguous">Multiple counters are named %1$s. Rename one before using voice commands.</string>
-    <string name="voice_step_size_set">Step size set to %1$d</string>
-    <string name="voice_counter_reset_named">%1$s reset to zero</string>
-    <string name="voice_page_current">Page %1$d</string>
-    <string name="voice_page_first">Already on the first page</string>
-    <string name="voice_project_completed">%1$s marked as complete. Great work!</string>
-    <string name="voice_summary_generating">Generating summary…</string>
-    <string name="voice_summary_unavailable">AI summary is not available right now</string>
-    <string name="voice_reminder_added">Reminder set: %1$s at row %2$d</string>
-    <string name="voice_stitch_count_set" tools:ignore="PluralsCandidate">Stitch count set to %1$d per row</string>
-    <string name="voice_stitch_tracking_on">Stitch tracking enabled</string>
-    <string name="voice_stitch_tracking_off">Stitch tracking disabled</string>
-    <string name="voice_live_error">Voice connection failed</string>
-    <string name="voice_live_quota_exhausted">Voice minutes used up this month</string>
-    <string name="voice_natural_response">Natural voice</string>
-    <string name="voice_live_quota_remaining">%1$.0f / %2$.0f min remaining</string>
-    <string name="voice_recognizer_error">Voice recognition error</string>
+    <string name="counters_list_empty">No extra counters</string>
     <string name="row_label_format" tools:ignore="PluralsCandidate">Row %d</string>
     <string name="share_photo">Share</string>
     <string name="delete_photo">Delete photo</string>
     <string name="delete_photo_confirm">Delete this photo?</string>
-    <string name="delete_photos_confirm" tools:ignore="PluralsCandidate">Delete %d photos?</string>
-    <string name="delete_patterns_confirm" tools:ignore="PluralsCandidate">Delete %d patterns?</string>
+    <plurals name="delete_photos_confirm">
+        <item quantity="one">Delete %1$d photo?</item>
+        <item quantity="other">Delete %1$d photos?</item>
+    </plurals>
+    <plurals name="delete_patterns_confirm">
+        <item quantity="one">Delete %1$d pattern?</item>
+        <item quantity="other">Delete %1$d patterns?</item>
+    </plurals>
     <string name="delete_pattern">Delete pattern</string>
     <string name="delete_yarn_cards_confirm" tools:ignore="PluralsCandidate">Delete %d yarn cards?</string>
     <string name="delete_yarn_card">Delete yarn card</string>
@@ -900,14 +864,31 @@
     <string name="ravelry_saved_patterns">Saved Patterns</string>
     <string name="start_project">Start Project</string>
     <string name="save_pattern">Save Pattern</string>
+    <string name="ravelry_open_saved_pattern">Open</string>
     <string name="open_in_ravelry">Open in Ravelry</string>
     <string name="pattern_saved">Pattern saved</string>
     <string name="no_saved_patterns">No saved patterns yet</string>
     <string name="search_hint">Search knitting patterns…</string>
+    <string name="ravelry_search_requires_sign_in">Sign in with Ravelry to search patterns.</string>
+    <string name="ravelry_import_loading">Loading pattern</string>
+    <string name="ravelry_import_title">Save this pattern?</string>
+    <string name="ravelry_import_already_saved">Pattern already saved</string>
+    <string name="ravelry_import_needs_sign_in">Sign in with Ravelry to save this pattern.</string>
+    <string name="ravelry_import_could_not_import">Could not import this pattern.</string>
+    <string name="ravelry_import_backend_unavailable">Ravelry import is temporarily unavailable.</string>
+    <string name="saved_pattern_detail_pdf_attached">PDF attached</string>
+    <string name="saved_pattern_detail_available_offline">Available offline</string>
+    <string name="saved_pattern_detail_open_on_ravelry">Open on Ravelry</string>
+    <string name="saved_pattern_detail_requires_ravelry">Requires Ravelry</string>
+    <string name="saved_pattern_detail_open_pattern">Open Pattern</string>
+    <string name="saved_pattern_detail_attach_to_project">Attach to Project</string>
+    <string name="saved_pattern_detail_remove_confirm">Remove this saved pattern?</string>
+    <string name="saved_pattern_detail_thumbnail">Pattern thumbnail</string>
     <string name="filter_weight">Weight</string>
     <string name="filter_difficulty">Difficulty</string>
     <string name="free">Free</string>
     <string name="paid">Paid</string>
+    <string name="availability_unknown">Availability unknown</string>
     <string name="no_results">No patterns found</string>
     <string name="search_error">Could not load patterns. Check your internet connection.</string>
     <string name="search_more_error">Could not load more patterns. Check your internet connection.</string>
@@ -916,14 +897,25 @@
     <string name="ravelry_search_service_error">Ravelry is temporarily unavailable. Try again later.</string>
     <string name="pattern_detail_error">Could not load pattern details. Check your internet connection.</string>
     <string name="ravelry_sign_in">Sign in with Ravelry</string>
+    <string name="ravelry_browse">Browse Ravelry</string>
+    <string name="ravelry_disconnect">Disconnect Ravelry</string>
+    <string name="ravelry_not_connected">Sign in to search Ravelry patterns from KnitTools.</string>
+    <string name="ravelry_connecting">Connecting to Ravelry…</string>
+    <string name="ravelry_auth_pending">Finish signing in with Ravelry in the browser.</string>
+    <string name="ravelry_connected">Connected to Ravelry</string>
+    <string name="ravelry_connected_as">Connected as %1$s</string>
+    <string name="ravelry_auth_cancelled">Ravelry sign-in was cancelled.</string>
+    <string name="ravelry_auth_expired">Ravelry sign-in expired. Sign in again.</string>
+    <string name="ravelry_backend_unavailable">Ravelry connection is temporarily unavailable.</string>
+    <string name="ravelry_disconnecting">Disconnecting Ravelry…</string>
     <string name="difficulty_format">%.1f / 5</string>
     <string name="yardage_format" tools:ignore="PluralsCandidate">%d yards</string>
-    <string name="pattern_detail_needles" tools:ignore="MissingTranslation">Needles</string>
-    <string name="pattern_detail_yardage" tools:ignore="MissingTranslation">Yardage</string>
-    <string name="pattern_detail_sizes" tools:ignore="MissingTranslation">Sizes</string>
-    <string name="pattern_saved_to_library" tools:ignore="MissingTranslation">Saved to Library</string>
-    <string name="show_more" tools:ignore="MissingTranslation">Show more</string>
-    <string name="show_less" tools:ignore="MissingTranslation">Show less</string>
+    <string name="pattern_detail_needles">Needles</string>
+    <string name="pattern_detail_yardage">Yardage</string>
+    <string name="pattern_detail_sizes">Sizes</string>
+    <string name="pattern_saved_to_library">Saved to Library</string>
+    <string name="show_more">Show more</string>
+    <string name="show_less">Show less</string>
 
     <!-- Info tips -->
     <string name="tip_your_gauge_title">What is gauge?</string>
@@ -942,11 +934,13 @@
     <!-- Counter screen redesign: bottom sheet -->
     <string name="project_actions_title">Project actions</string>
     <string name="project_actions_section_this_project">THIS PROJECT</string>
-    <string name="project_actions_section_counters">COUNTERS</string>
+    <string name="project_actions_section_counter_tools">COUNTER TOOLS</string>
     <string name="project_actions_section_project_actions">PROJECT ACTIONS</string>
-    <string name="project_actions_yarn">Yarn</string>
-    <string name="project_actions_ai_summary">AI summary</string>
-    <string name="project_actions_photos">Photos</string>
+    <string name="project_content_title">Project</string>
+    <string name="project_content_yarn">Yarn</string>
+    <string name="project_content_notes">Notes</string>
+    <string name="project_content_photos">Photos</string>
+    <string name="extra_counters_title">Extra Counters</string>
     <string name="counter_repeat_label">REPEAT</string>
     <string name="counters_list_title">Counters</string>
 </resources>

@@ -3,11 +3,24 @@ package com.finnvek.knittools.data.storage
 import android.content.Context
 import android.net.Uri
 import android.os.ParcelFileDescriptor
+import androidx.core.content.FileProvider
 import androidx.core.net.toUri
 import java.io.File
 import java.io.IOException
 
 object AppFileStorage {
+    fun fileProviderAuthority(context: Context): String = "${context.packageName}.fileprovider"
+
+    fun fileProviderUri(
+        context: Context,
+        file: File,
+    ): Uri = FileProvider.getUriForFile(context, fileProviderAuthority(context), file)
+
+    fun shareUriForAppOwnedFile(
+        context: Context,
+        uri: Uri,
+    ): Uri? = resolveAppOwnedFile(context, uri)?.let { file -> fileProviderUri(context, file) }
+
     fun openReadDescriptor(
         context: Context,
         uri: Uri,
@@ -96,7 +109,7 @@ object AppFileStorage {
         context: Context,
         uri: Uri,
     ): File? {
-        if (uri.authority != "${context.packageName}.fileprovider") return null
+        if (uri.authority != fileProviderAuthority(context)) return null
         val segments: List<String> = uri.pathSegments
         val root = segments.firstOrNull() ?: return null
         val rootDir =

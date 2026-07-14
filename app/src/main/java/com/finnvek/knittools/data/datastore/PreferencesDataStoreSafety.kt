@@ -1,6 +1,5 @@
 package com.finnvek.knittools.data.datastore
 
-import android.util.Log
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
@@ -15,35 +14,32 @@ internal val DataStore<Preferences>.safePreferencesData: Flow<Preferences>
     get() =
         data.catch { exception ->
             if (exception is IOException) {
-                Log.w(DATASTORE_TAG, "Asetusten lukeminen epäonnistui, käytetään oletuksia", exception)
                 emit(emptyPreferences())
             } else {
                 throw exception
             }
         }
 
-internal suspend fun DataStore<Preferences>.readPreferencesOrNull(operation: String): Preferences? =
+internal suspend fun DataStore<Preferences>.readPreferencesOrNull(_operation: String): Preferences? =
     try {
         data.first()
-    } catch (e: IOException) {
-        Log.w(DATASTORE_TAG, "$operation epäonnistui", e)
+    } catch (_: IOException) {
         null
     }
 
 internal suspend fun DataStore<Preferences>.editPreferencesSafely(
-    operation: String,
+    _operation: String,
     transform: suspend (MutablePreferences) -> Unit,
 ): Boolean =
     try {
         edit(transform)
         true
-    } catch (e: IOException) {
-        Log.w(DATASTORE_TAG, "$operation epäonnistui", e)
+    } catch (_: IOException) {
         false
     }
 
 internal suspend fun DataStore<Preferences>.updatePreferencesSafely(
-    operation: String,
+    _operation: String,
     transform: MutablePreferences.() -> Unit,
 ): Boolean =
     try {
@@ -51,9 +47,6 @@ internal suspend fun DataStore<Preferences>.updatePreferencesSafely(
             preferences.toMutablePreferences().apply(transform)
         }
         true
-    } catch (e: IOException) {
-        Log.w(DATASTORE_TAG, "$operation epäonnistui", e)
+    } catch (_: IOException) {
         false
     }
-
-private const val DATASTORE_TAG = "DataStoreSafety"

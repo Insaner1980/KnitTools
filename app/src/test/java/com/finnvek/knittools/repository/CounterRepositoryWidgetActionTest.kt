@@ -5,13 +5,16 @@ import com.finnvek.knittools.data.local.CounterProjectDao
 import com.finnvek.knittools.data.local.CounterProjectEntity
 import com.finnvek.knittools.data.local.DatabaseTransactionRunner
 import com.finnvek.knittools.data.local.ImmediateDatabaseTransactionRunner
+import com.finnvek.knittools.data.local.ProjectCounterDao
 import com.finnvek.knittools.data.local.SessionDao
 import com.finnvek.knittools.data.storage.PatternDocumentStorage
 import com.finnvek.knittools.data.storage.ProgressPhotoStorage
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -79,6 +82,7 @@ class CounterRepositoryWidgetActionTest {
     ): CounterRepository =
         CounterRepository(
             dao = dao,
+            projectCounterDao = emptyProjectCounterDao(),
             sessionDao = mockk<SessionDao>(relaxed = true),
             photoStorage = mockk<ProgressPhotoStorage>(relaxed = true),
             patternDocumentStorage = mockk<PatternDocumentStorage>(relaxed = true),
@@ -89,6 +93,11 @@ class CounterRepositoryWidgetActionTest {
             transactionRunner = transactionRunner,
             ioDispatcher = Dispatchers.Unconfined,
         )
+
+    private fun emptyProjectCounterDao(): ProjectCounterDao =
+        mockk<ProjectCounterDao>(relaxed = true).also { projectCounterDao ->
+            every { projectCounterDao.getCountersForProject(any()) } returns flowOf(emptyList())
+        }
 
     private class RecordingTransactionRunner : DatabaseTransactionRunner {
         var runCount: Int = 0

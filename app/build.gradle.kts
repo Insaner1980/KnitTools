@@ -1,6 +1,9 @@
 import com.android.build.api.variant.BuildConfigField
+import org.gradle.api.GradleException
 import org.gradle.testing.jacoco.tasks.JacocoReport
+import java.io.File
 import java.io.StringReader
+import java.util.Base64
 import java.util.Properties
 
 plugins {
@@ -14,13 +17,132 @@ plugins {
     alias(libs.plugins.ktlint)
     alias(libs.plugins.detekt)
     alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.google.services)
+    alias(libs.plugins.stability.analyzer)
     jacoco
 }
 
 val releaseSigningEnvPrefix = "KNITTOOLS" // Change to your app name, e.g. "KNITTOOLS"
 val debugCredentialsFile = rootProject.layout.projectDirectory.file("debug.credentials.properties")
 val debugCredentialsText = providers.fileContents(debugCredentialsFile).asText.orElse("")
+val googleServicesJsonConfigFile = layout.projectDirectory.file("google-services.json")
+val debugGoogleServicesJsonConfigFile = layout.projectDirectory.file("src/debug/google-services.json")
+val googleServicesJsonBase64EnvVar = "KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64"
+val googleServicesJsonBase64Env = providers.environmentVariable(googleServicesJsonBase64EnvVar)
+val requestedTaskNames = gradle.startParameter.taskNames
+
+fun isRequestedAppTask(taskName: String): Boolean =
+    requestedTaskNames.any { requestedTaskName ->
+        requestedTaskName == taskName ||
+            requestedTaskName == ":app:$taskName" ||
+            requestedTaskName.endsWith(":$taskName")
+    }
+
+val debugFirebaseArtifactRequested =
+    listOf(
+        "assembleDebug",
+        "installDebug",
+        "processDebugGoogleServices",
+    ).any(::isRequestedAppTask)
+
+val canMaterializeGoogleServicesJson =
+    googleServicesJsonConfigFile.asFile.isFile ||
+        googleServicesJsonBase64Env.isPresent ||
+        debugFirebaseArtifactRequested
+val debugGoogleServicesPlaceholderJson =
+    """
+    {
+      "project_info": {
+        "project_number": "123456789012",
+        "project_id": "knittools-local-debug",
+        "storage_bucket": "knittools-local-debug.appspot.com"
+      },
+      "client": [
+        {
+          "client_info": {
+            "mobilesdk_app_id": "1:123456789012:android:0000000000000000",
+            "android_client_info": {
+              "package_name": "com.finnvek.knittools"
+            }
+          },
+          "oauth_client": [],
+          "api_key": [
+            {
+              "current_key": "debug-placeholder-api-key"
+            }
+          ],
+          "services": {
+            "appinvite_service": {
+              "other_platform_oauth_client": []
+            }
+          }
+        }
+      ],
+      "configuration_version": "1"
+    }
+    """.trimIndent()
+
+if (canMaterializeGoogleServicesJson) {
+    apply(plugin = "com.google.gms.google-services")
+}
+
+object GoogleServicesJsonTaskActions {
+    private const val DEBUG_PLACEHOLDER_API_KEY = "debug-placeholder-api-key"
+
+    fun writeFromEnv(
+        targetFile: File,
+        envName: String,
+        encodedConfig: String?,
+    ) {
+        if (targetFile.isFile) {
+            return
+        }
+
+        val encodedConfig = encodedConfig?.takeIf { it.isNotBlank() } ?: return
+        val decodedConfig =
+            try {
+                Base64.getMimeDecoder().decode(encodedConfig)
+            } catch (exception: IllegalArgumentException) {
+                throw GradleException(
+                    "$envName ei ole kelvollinen Base64-koodattu google-services.json.",
+                    exception,
+                )
+            }
+
+        targetFile.parentFile.mkdirs()
+        targetFile.writeBytes(decodedConfig)
+    }
+
+    fun writeDebugPlaceholder(
+        rootGoogleServicesJsonFile: File,
+        encodedConfig: String?,
+        placeholderJson: String,
+        targetFile: File,
+    ) {
+        if (rootGoogleServicesJsonFile.isFile || !encodedConfig.isNullOrBlank()) {
+            if (targetFile.isFile && targetFile.readText(Charsets.UTF_8).contains(DEBUG_PLACEHOLDER_API_KEY)) {
+                targetFile.delete()
+            }
+            return
+        }
+
+        if (targetFile.isFile) {
+            return
+        }
+
+        targetFile.parentFile.mkdirs()
+        targetFile.writeText(placeholderJson, Charsets.UTF_8)
+    }
+
+    fun verify(googleServicesJsonFile: File) {
+        if (!googleServicesJsonFile.isFile) {
+            error(
+                "Android Firebase -build vaatii tiedoston app/google-services.json. " +
+                    "Pidä tiedosto gitignored-polussa paikallisesti tai luo se CI:ssä " +
+                    "KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64 -salaisuudesta.",
+            )
+        }
+    }
+}
 
 val releaseSigningEnvNames =
     listOf(
@@ -35,17 +157,6 @@ val releaseSigningAvailable =
         providers.environmentVariable(envName).orNull?.isNotBlank() == true
     }
 
-val embeddedRavelryCredentialsAllowed =
-    providers.environmentVariable("KNITTOOLS_ALLOW_EMBEDDED_RAVELRY_SECRETS").orNull == "true"
-
-val releaseRavelryEnvNames =
-    listOf(
-        "KNITTOOLS_RAVELRY_BASIC_AUTH_USER",
-        "KNITTOOLS_RAVELRY_BASIC_AUTH_PASSWORD",
-        "KNITTOOLS_RAVELRY_OAUTH2_CLIENT_ID",
-        "KNITTOOLS_RAVELRY_OAUTH2_CLIENT_SECRET",
-    )
-
 fun missingEnvNames(names: List<String>): List<String> =
     names.filter { envName ->
         providers.environmentVariable(envName).orNull?.isBlank() != false
@@ -55,49 +166,52 @@ fun requiredReleaseEnv(name: String): String =
     providers.environmentVariable(name).orNull?.takeIf { it.isNotBlank() }
         ?: error("Release signing requires the $name environment variable.")
 
-fun releaseEnvOrEmpty(name: String): String =
-    providers
-        .environmentVariable(name)
-        .orNull
-        ?.takeIf { it.isNotBlank() }
-        .orEmpty()
+fun debugBuildConfigField(
+    name: String,
+    vararg envNames: String,
+): Provider<BuildConfigField<String>> {
+    val credentialsTextProvider = debugCredentialsText
+    val environmentValue =
+        envNames.firstNotNullOfOrNull { envName ->
+            providers.environmentVariable(envName).orNull?.takeIf { it.isNotBlank() }
+        }
 
-fun debugBuildConfigField(name: String) =
-    debugCredentialsText.map { text ->
-        val value =
+    return credentialsTextProvider.map { text ->
+        val localValue =
             Properties()
                 .also { props ->
                     StringReader(text).use { props.load(it) }
                 }.getProperty(name, "")
+        val value = environmentValue ?: localValue
         val quotedValue =
             "\"${value
                 .replace("\\", "\\\\")
                 .replace("\"", "\\\"")}\""
         BuildConfigField("String", quotedValue, null)
     }
-
-fun quotedBuildConfigValue(value: String): String =
-    "\"${value
-        .replace("\\", "\\\\")
-        .replace("\"", "\\\"")}\""
+}
 
 android {
     namespace = "com.finnvek.knittools"
-    compileSdk = 36
+    compileSdk =
+        libs.versions.androidCompileSdk
+            .get()
+            .toInt()
 
     defaultConfig {
         applicationId = "com.finnvek.knittools"
-        minSdk = 29
-        targetSdk = 36
+        minSdk =
+            libs.versions.androidMinSdk
+                .get()
+                .toInt()
+        targetSdk =
+            libs.versions.androidTargetSdk
+                .get()
+                .toInt()
         versionCode = 1
         versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
-        buildConfigField("String", "RAVELRY_BASIC_AUTH_USER", quotedBuildConfigValue(""))
-        buildConfigField("String", "RAVELRY_BASIC_AUTH_PASSWORD", quotedBuildConfigValue(""))
-        buildConfigField("String", "RAVELRY_OAUTH2_CLIENT_ID", quotedBuildConfigValue(""))
-        buildConfigField("String", "RAVELRY_OAUTH2_CLIENT_SECRET", quotedBuildConfigValue(""))
     }
 
     sourceSets {
@@ -120,26 +234,6 @@ android {
             isDebuggable = false
             isMinifyEnabled = true
             isShrinkResources = true
-            buildConfigField(
-                "String",
-                "RAVELRY_BASIC_AUTH_USER",
-                quotedBuildConfigValue(releaseEnvOrEmpty("KNITTOOLS_RAVELRY_BASIC_AUTH_USER")),
-            )
-            buildConfigField(
-                "String",
-                "RAVELRY_BASIC_AUTH_PASSWORD",
-                quotedBuildConfigValue(releaseEnvOrEmpty("KNITTOOLS_RAVELRY_BASIC_AUTH_PASSWORD")),
-            )
-            buildConfigField(
-                "String",
-                "RAVELRY_OAUTH2_CLIENT_ID",
-                quotedBuildConfigValue(releaseEnvOrEmpty("KNITTOOLS_RAVELRY_OAUTH2_CLIENT_ID")),
-            )
-            buildConfigField(
-                "String",
-                "RAVELRY_OAUTH2_CLIENT_SECRET",
-                quotedBuildConfigValue(releaseEnvOrEmpty("KNITTOOLS_RAVELRY_OAUTH2_CLIENT_SECRET")),
-            )
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
@@ -203,20 +297,8 @@ androidComponents {
                 ?: error("Debug BuildConfig -kenttiä ei voi määrittää, koska BuildConfig ei ole käytössä.")
 
         buildConfigFields.put(
-            "RAVELRY_BASIC_AUTH_USER",
-            debugBuildConfigField("ravelry.basicAuthUser"),
-        )
-        buildConfigFields.put(
-            "RAVELRY_BASIC_AUTH_PASSWORD",
-            debugBuildConfigField("ravelry.basicAuthPassword"),
-        )
-        buildConfigFields.put(
-            "RAVELRY_OAUTH2_CLIENT_ID",
-            debugBuildConfigField("ravelry.oauth2ClientId"),
-        )
-        buildConfigFields.put(
-            "RAVELRY_OAUTH2_CLIENT_SECRET",
-            debugBuildConfigField("ravelry.oauth2ClientSecret"),
+            "SENTRY_DSN",
+            debugBuildConfigField("sentry.dsn", "KNITTOOLS_SENTRY_DSN", "SENTRY_DSN"),
         )
     }
 }
@@ -294,6 +376,9 @@ gradle.taskGraph.whenReady {
             ":app:assembleRelease",
             ":app:bundleRelease",
             ":app:packageRelease",
+            ":app:packageReleaseBundle",
+            ":app:packageReleaseUniversalApk",
+            ":app:signReleaseBundle",
             ":app:publishRelease",
         )
 
@@ -304,25 +389,12 @@ gradle.taskGraph.whenReady {
 
     if (appReleaseArtifactsRequested) {
         val missingSigningEnvNames = missingEnvNames(releaseSigningEnvNames)
-        val missingRavelryEnvNames = missingEnvNames(releaseRavelryEnvNames)
         val releaseProblems =
             buildList {
                 if (missingSigningEnvNames.isNotEmpty()) {
                     add(
                         "Puuttuvat release signing -muuttujat: " +
                             missingSigningEnvNames.joinToString(),
-                    )
-                }
-                if (!embeddedRavelryCredentialsAllowed) {
-                    add(
-                        "Release build upottaa Ravelry-credentialit BuildConfigiin tietoisena riskinä. " +
-                            "Aseta KNITTOOLS_ALLOW_EMBEDDED_RAVELRY_SECRETS=true jatkaaksesi.",
-                    )
-                }
-                if (missingRavelryEnvNames.isNotEmpty()) {
-                    add(
-                        "Puuttuvat release Ravelry -muuttujat: " +
-                            missingRavelryEnvNames.joinToString(),
                     )
                 }
             }
@@ -333,6 +405,89 @@ gradle.taskGraph.whenReady {
                     releaseProblems.joinToString(separator = "\n") { "- $it" },
             )
         }
+    }
+}
+
+val writeGoogleServicesJsonFromEnv =
+    tasks.register("writeGoogleServicesJsonFromEnv") {
+        group = "build setup"
+        description = "Luo ignored app/google-services.json -tiedoston ympäristömuuttujasta tarvittaessa."
+
+        val targetFile = googleServicesJsonConfigFile.asFile
+        val envName = googleServicesJsonBase64EnvVar
+        val encodedConfig = googleServicesJsonBase64Env.orNull
+
+        inputs.property("base64EnvName", envName)
+        inputs.property("encodedConfig", encodedConfig.orEmpty())
+        outputs.file(targetFile)
+        outputs.upToDateWhen { targetFile.isFile }
+
+        doLast {
+            GoogleServicesJsonTaskActions.writeFromEnv(targetFile, envName, encodedConfig)
+        }
+    }
+
+val writeDebugGoogleServicesJson =
+    tasks.register("writeDebugGoogleServicesJson") {
+        group = "build setup"
+        description = "Luo debug-buildille ignored placeholder Firebase -konfiguraation tarvittaessa."
+        dependsOn(writeGoogleServicesJsonFromEnv)
+
+        val rootFile = googleServicesJsonConfigFile.asFile
+        val targetFile = debugGoogleServicesJsonConfigFile.asFile
+        val encodedConfig = googleServicesJsonBase64Env.orNull
+        val placeholderJson = debugGoogleServicesPlaceholderJson
+
+        inputs.files(rootFile).withPropertyName("rootGoogleServicesJsonFile")
+        inputs.property("encodedConfig", encodedConfig.orEmpty())
+        inputs.property("placeholderJson", placeholderJson)
+        outputs.file(targetFile)
+        outputs.upToDateWhen {
+            rootFile.isFile ||
+                !encodedConfig.isNullOrBlank() ||
+                targetFile.isFile
+        }
+
+        doLast {
+            GoogleServicesJsonTaskActions.writeDebugPlaceholder(
+                rootFile,
+                encodedConfig,
+                placeholderJson,
+                targetFile,
+            )
+        }
+    }
+
+val verifyGoogleServicesJson =
+    tasks.register("verifyGoogleServicesJson") {
+        group = "verification"
+        description = "Tarkistaa, että Android Firebase -konfiguraatio on paikallaan."
+        dependsOn(writeGoogleServicesJsonFromEnv)
+
+        val targetFile = googleServicesJsonConfigFile.asFile
+
+        inputs.files(targetFile).withPropertyName("googleServicesJsonFile")
+
+        doLast {
+            GoogleServicesJsonTaskActions.verify(targetFile)
+        }
+    }
+
+val firebaseConfiguredArtifactTaskNames =
+    setOf(
+        "assembleRelease",
+        "bundleRelease",
+    )
+
+tasks.configureEach {
+    if (name == "processDebugGoogleServices") {
+        dependsOn(writeGoogleServicesJsonFromEnv, writeDebugGoogleServicesJson)
+    } else if (name.startsWith("process") && name.endsWith("GoogleServices")) {
+        dependsOn(writeGoogleServicesJsonFromEnv)
+    }
+
+    if (name in firebaseConfiguredArtifactTaskNames) {
+        dependsOn(verifyGoogleServicesJson)
     }
 }
 
@@ -379,7 +534,12 @@ val jacocoCoverageExclusionPatterns =
         "**/*Hilt*.*",
         "**/*Dagger*.*",
         "**/App.*",
+        "**/App$*.*",
         "**/MainActivity.*",
+        "**/MainActivity$*.*",
+        "**/MainActivityKt*.*",
+        "**/SentryInit.*",
+        "**/SentryInit$*.*",
         "**/di/**",
         "**/ui/**",
         "**/widget/**",
@@ -390,18 +550,6 @@ val jacocoCoverageExclusionPatterns =
         "**/data/storage/**",
         "**/data/remote/**",
         "**/data/local/**",
-        "**/ai/speech/**",
-        "**/FirebaseVoiceLiveConnector*.*",
-        "**/FirebaseVoiceLiveConnection*.*",
-        "**/GeminiAiService*.*",
-        "**/AiQuotaManager*.*",
-        "**/VoiceLiveQuotaManager*.*",
-        "**/PatternRowDetector*.*",
-        "**/NanoAvailability*.*",
-        "**/ProjectSummarizer*.*",
-        "**/VoiceCommandInterpreter*.*",
-        "**/NetworkStatusProvider*.*",
-        "**/YarnLabelScanRepository*.*",
     )
 
 val jacocoCoverageExclusions =
@@ -448,17 +596,26 @@ dependencies {
         implementation(libs.kotlinx.serialization.json) {
             because("Room 2.8.x migration helpers require kotlinx.serialization 1.8.1")
         }
-        implementation(libs.ktor.client.logging) {
-            because("Firebase AI tuo Ktor 3.0.x -transitiiveja; pidetään kaikki Ktor-artefaktit samassa versiossa")
-        }
-        implementation(libs.ktor.client.websockets) {
-            because("Firebase AI tuo Ktor 3.0.x -transitiiveja; pidetään kaikki Ktor-artefaktit samassa versiossa")
-        }
         implementation(libs.guava) {
             because(
                 "kotlinx-coroutines-guava tuo Guava 31.0.1-jre:n; " +
                     "constraint nostaa Android-artefaktin korjattuun versioon",
             )
+        }
+        implementation(libs.kotlin.stdlib.jdk7) {
+            because(
+                "Kotlin stdlib tuo vanhan jdk7-artefaktin transitiivisesti; " +
+                    "constraint nostaa sen korjattuun Kotlin-versioon",
+            )
+        }
+        implementation(libs.work.runtime) {
+            because(
+                "Glance 1.1.1 tuo WorkManager 2.7.1:n, jonka inspector.jar " +
+                    "sisaltaa haavoittuvan protobuf-javaliten",
+            )
+        }
+        implementation(libs.work.runtime.ktx) {
+            because("Pidetaan WorkManager runtime ja ktx samassa korjatussa versiossa")
         }
     }
 
@@ -516,17 +673,6 @@ dependencies {
     // Google Play Billing
     implementation(libs.billing)
 
-    // Firebase
-    implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.ai)
-    implementation(libs.firebase.appcheck.playintegrity)
-
-    // ML Kit OCR
-    implementation(libs.mlkit.text.recognition)
-
-    // ML Kit GenAI (Gemini Nano on-device)
-    implementation(libs.mlkit.genai.prompt)
-
     // Glance (home screen widgets)
     implementation(libs.glance.appwidget)
     implementation(libs.glance.material3)
@@ -540,15 +686,20 @@ dependencies {
     implementation(libs.ktor.client.content.negotiation)
     implementation(libs.ktor.serialization.kotlinx.json)
 
-    // Security (encrypted token storage)
-    implementation(libs.security.crypto)
-
     // Browser (Custom Chrome Tabs)
     implementation(libs.browser)
+
+    // Firebase backend integration
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth)
+    implementation(libs.firebase.functions)
 
     // Baseline Profiles
     implementation(libs.profileinstaller)
     baselineProfile(project(":baselineprofile"))
+
+    // Sentry on vain debug-diagnostiikkaa. Release-luokkapolku tarkistetaan tools\sentry.ps1-komennolla.
+    debugImplementation(libs.sentry.android.core)
 
     // Detekt plugins
     detektPlugins(libs.detekt.compose.rules)

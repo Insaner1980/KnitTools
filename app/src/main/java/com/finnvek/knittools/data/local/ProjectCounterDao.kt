@@ -11,6 +11,9 @@ interface ProjectCounterDao {
     @Query("SELECT * FROM project_counters WHERE projectId = :projectId ORDER BY sortOrder ASC, id ASC")
     fun getCountersForProject(projectId: Long): Flow<List<ProjectCounterEntity>>
 
+    @Query("SELECT * FROM project_counters WHERE id = :id")
+    suspend fun getCounter(id: Long): ProjectCounterEntity?
+
     @Insert
     suspend fun insert(counter: ProjectCounterEntity): Long
 
@@ -25,33 +28,6 @@ interface ProjectCounterDao {
         id: Long,
         count: Int,
     )
-
-    @Query(
-        """
-        UPDATE project_counters
-        SET count = CASE
-            WHEN counterType = 'REPEAT_SECTION' THEN count
-            WHEN counterType = 'SHAPING' THEN count + stepSize
-            WHEN repeatAt IS NOT NULL AND repeatAt > 0 AND count + stepSize >= repeatAt THEN (count + stepSize) % repeatAt
-            ELSE count + stepSize
-        END
-        WHERE id = :id
-        """,
-    )
-    suspend fun incrementCount(id: Long)
-
-    @Query(
-        """
-        UPDATE project_counters
-        SET count = CASE
-            WHEN counterType = 'REPEAT_SECTION' THEN count
-            WHEN count - stepSize < 0 THEN 0
-            ELSE count - stepSize
-        END
-        WHERE id = :id
-        """,
-    )
-    suspend fun decrementCount(id: Long)
 
     @Query("UPDATE project_counters SET name = :name WHERE id = :id")
     suspend fun updateName(

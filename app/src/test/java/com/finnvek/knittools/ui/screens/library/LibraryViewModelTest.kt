@@ -3,14 +3,21 @@ package com.finnvek.knittools.ui.screens.library
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.ProgressPhoto
 import com.finnvek.knittools.domain.model.SavedPattern
+import com.finnvek.knittools.domain.model.SavedPatternSource
 import com.finnvek.knittools.domain.model.YarnCard
+import com.finnvek.knittools.domain.model.YarnCardStatus
+import com.finnvek.knittools.pro.ProFeature
+import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.CounterRepository
 import com.finnvek.knittools.repository.ProgressPhotoRepository
 import com.finnvek.knittools.repository.SavedPatternRepository
 import com.finnvek.knittools.repository.YarnCardRepository
+import com.finnvek.knittools.ui.screens.yarncard.ManualYarnCardInput
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -38,11 +45,14 @@ class LibraryViewModelTest {
     private lateinit var yarnCardRepository: YarnCardRepository
     private lateinit var progressPhotoRepository: ProgressPhotoRepository
     private lateinit var counterRepository: CounterRepository
+    private lateinit var proManager: ProManager
 
     private lateinit var savedPatterns: MutableStateFlow<List<SavedPattern>>
     private lateinit var yarnCards: MutableStateFlow<List<YarnCard>>
     private lateinit var photos: MutableStateFlow<List<ProgressPhoto>>
     private lateinit var projects: MutableStateFlow<List<CounterProject>>
+    private lateinit var progressPhotosFeature: MutableStateFlow<Boolean>
+    private lateinit var yarnCardsFeature: MutableStateFlow<Boolean>
 
     @Before
     fun setup() {
@@ -51,11 +61,14 @@ class LibraryViewModelTest {
         yarnCardRepository = mockk(relaxed = true)
         progressPhotoRepository = mockk(relaxed = true)
         counterRepository = mockk(relaxed = true)
+        proManager = mockk()
 
         savedPatterns = MutableStateFlow(emptyList())
         yarnCards = MutableStateFlow(emptyList())
         photos = MutableStateFlow(emptyList())
         projects = MutableStateFlow(emptyList())
+        progressPhotosFeature = MutableStateFlow(true)
+        yarnCardsFeature = MutableStateFlow(true)
 
         every { savedPatternRepository.getCount() } returns flowOf(0)
         every { yarnCardRepository.getCardCount() } returns flowOf(0)
@@ -64,6 +77,10 @@ class LibraryViewModelTest {
         every { yarnCardRepository.getAllCards() } returns yarnCards
         every { progressPhotoRepository.getAllPhotos() } returns photos
         every { counterRepository.getAllProjects() } returns projects
+        every { proManager.hasFeature(ProFeature.PROGRESS_PHOTOS) } answers { progressPhotosFeature.value }
+        every { proManager.hasFeatureFlow(ProFeature.PROGRESS_PHOTOS) } returns progressPhotosFeature
+        every { proManager.hasFeature(ProFeature.UNLIMITED_YARN) } answers { yarnCardsFeature.value }
+        every { proManager.hasFeatureFlow(ProFeature.UNLIMITED_YARN) } returns yarnCardsFeature
     }
 
     @After
@@ -76,6 +93,7 @@ class LibraryViewModelTest {
             savedPatternRepository = savedPatternRepository,
             yarnCardRepository = yarnCardRepository,
             progressPhotoRepository = progressPhotoRepository,
+            proManager = proManager,
             counterRepository = counterRepository,
         )
 
@@ -107,6 +125,60 @@ class LibraryViewModelTest {
             assertFalse(viewModel.isYarnSelectMode.value)
             assertTrue(viewModel.selectedYarnIds.value.isEmpty())
             assertEquals(1L, viewModel.yarnDeleteErrorId.value)
+        }
+
+    @Test
+    fun `manual yarn creation saves partial card with trimmed optional details`() =
+        runTest {
+            val savedCard = slot<YarnCard>()
+            coEvery { yarnCardRepository.saveCard(any()) } returns 9L
+            val viewModel = createViewModel()
+
+            viewModel.createManualYarnCard(
+                ManualYarnCardInput(
+                    yarnName = "  Blue sock yarn  ",
+                    brand = "  Regia  ",
+                    quantity = 0,
+                    weightCategory = "  Fingering  ",
+                    colorName = "  Blue  ",
+                    colorNumber = "  123  ",
+                    dyeLot = "  A7  ",
+                ),
+            )
+            advanceUntilIdle()
+
+            coVerify { yarnCardRepository.saveCard(capture(savedCard)) }
+            assertEquals("Blue sock yarn", savedCard.captured.yarnName)
+            assertEquals("Regia", savedCard.captured.brand)
+            assertEquals(1, savedCard.captured.quantityInStash)
+            assertEquals("Fingering", savedCard.captured.weightCategory)
+            assertEquals("Blue", savedCard.captured.colorName)
+            assertEquals("123", savedCard.captured.colorNumber)
+            assertEquals("A7", savedCard.captured.dyeLot)
+            assertEquals(YarnCardStatus.IN_STASH, savedCard.captured.status)
+        }
+
+    @Test
+    fun `manual yarn creation ignores blank yarn names`() =
+        runTest {
+            val viewModel = createViewModel()
+
+            viewModel.createManualYarnCard(ManualYarnCardInput(yarnName = " "))
+            advanceUntilIdle()
+
+            coVerify(exactly = 0) { yarnCardRepository.saveCard(any()) }
+        }
+
+    @Test
+    fun `manual yarn creation is ignored without yarn feature`() =
+        runTest {
+            yarnCardsFeature.value = false
+            val viewModel = createViewModel()
+
+            viewModel.createManualYarnCard(ManualYarnCardInput(yarnName = "Blue"))
+            advanceUntilIdle()
+
+            coVerify(exactly = 0) { yarnCardRepository.saveCard(any()) }
         }
 
     @Test
@@ -209,7 +281,8 @@ class LibraryViewModelTest {
     private fun savedPattern(id: Long) =
         SavedPattern(
             id = id,
-            ravelryId = id.toInt(),
+            source = SavedPatternSource.Ravelry,
+            ravelryPatternId = id.toInt(),
             name = "Pattern $id",
             designerName = "Designer",
         )

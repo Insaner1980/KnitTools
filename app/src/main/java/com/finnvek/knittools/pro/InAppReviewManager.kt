@@ -11,7 +11,10 @@ import com.finnvek.knittools.data.datastore.editPreferencesSafely
 import com.finnvek.knittools.data.datastore.safePreferencesData
 import com.google.android.play.core.review.ReviewManagerFactory
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -21,6 +24,15 @@ class InAppReviewManager
     constructor(
         @param:ApplicationContext private val context: Context,
     ) {
+        val reviewEligibility: Flow<Boolean> =
+            context.reviewDataStore.safePreferencesData
+                .map { prefs ->
+                    shouldRequestReview(
+                        reviewRequested = prefs[KEY_REVIEW_REQUESTED] == true,
+                        actionCount = prefs[KEY_ACTION_COUNT] ?: 0,
+                    )
+                }.distinctUntilChanged()
+
         /**
          * Tallentaa käyttäjän toiminnon (esim. laskurin increment/decrement).
          * Kun raja ylittyy, arvostelu voidaan pyytää.

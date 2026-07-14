@@ -5,7 +5,6 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.pdf.PdfDocument
 import android.net.Uri
-import androidx.core.content.FileProvider
 import androidx.core.graphics.scale
 import androidx.core.net.toUri
 import java.io.File
@@ -15,6 +14,8 @@ import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
 
+private const val PATTERN_CAPTURE_ROOT = "pattern_captures"
+
 @Singleton
 class PatternDocumentStorage
     @Inject
@@ -23,15 +24,10 @@ class PatternDocumentStorage
             context: Context,
             projectId: Long,
         ): Pair<File, Uri> {
-            val dir = File(context.filesDir, "pattern_captures/$projectId")
+            val dir = patternCaptureDir(context, projectId)
             dir.mkdirs()
             val file = StorageFileNames.uniqueTimestampedFile(dir, "", ".jpg")
-            val uri =
-                FileProvider.getUriForFile(
-                    context,
-                    "${context.packageName}.fileprovider",
-                    file,
-                )
+            val uri = AppFileStorage.fileProviderUri(context, file)
             return file to uri
         }
 
@@ -39,13 +35,30 @@ class PatternDocumentStorage
             context: Context,
             projectId: Long,
         ) {
-            val dir = File(context.filesDir, "pattern_captures/$projectId")
+            val dir = patternCaptureDir(context, projectId)
             if (dir.exists()) {
-                AppFileStorage.deleteFileOrDirectory(
-                    file = dir,
-                    failureMessagePrefix = "Pattern capture file delete failed",
-                )
+                deleteCaptureFileIfPossible(dir)
             }
+        }
+
+        fun pruneStaleCaptureImages(
+            context: Context,
+            nowMillis: Long = System.currentTimeMillis(),
+            maxAgeMillis: Long = STALE_CAPTURE_MAX_AGE_MILLIS,
+        ) {
+            val root = patternCaptureRoot(context)
+            if (!root.exists()) return
+            val staleBeforeMillis = nowMillis - maxAgeMillis
+
+            root
+                .walkBottomUp()
+                .filterNot { file -> file == root }
+                .forEach { file ->
+                    when {
+                        file.isFile && file.lastModified() <= staleBeforeMillis -> deleteCaptureFileIfPossible(file)
+                        file.isDirectory && file.listFiles()?.isEmpty() == true -> deleteCaptureFileIfPossible(file)
+                    }
+                }
         }
 
         fun convertImageToPdf(
@@ -124,9 +137,26 @@ class PatternDocumentStorage
         }
 
         private companion object {
+            const val STALE_CAPTURE_MAX_AGE_MILLIS = 7L * 24L * 60L * 60L * 1000L
             const val MAX_DIMENSION = 1800
         }
     }
+
+private fun patternCaptureDir(
+    context: Context,
+    projectId: Long,
+): File = File(patternCaptureRoot(context), projectId.toString())
+
+private fun patternCaptureRoot(context: Context): File = File(context.filesDir, PATTERN_CAPTURE_ROOT)
+
+private fun deleteCaptureFileIfPossible(file: File) {
+    runCatching {
+        AppFileStorage.deleteFileOrDirectory(
+            file = file,
+            failureMessagePrefix = "Pattern capture file delete failed",
+        )
+    }
+}
 
 internal object PatternDocumentFiles {
     fun safePdfFileName(

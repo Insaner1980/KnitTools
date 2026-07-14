@@ -34,7 +34,6 @@
     <string name="tool_needle_sizes">Pinnestørrelser</string>
     <string name="pro_trial_days_left">Pro-prøveperiode — %d dager igjen</string>
     <string name="unlock_all_tools">Lås opp alle verktøy</string>
-    <string name="quick_tip_label">RASKT TIPS</string>
     <string name="desc_yarn_estimator_card">Beregn garnmengde og antall nøster</string>
 
     <!-- Bottom navigation tabs -->
@@ -61,6 +60,43 @@
     <string name="section_completed">FULLFØRTE</string>
     <string name="new_project">Nytt prosjekt</string>
     <string name="new_project_name_format">Prosjekt %1$d</string>
+    <string name="create_project">Opprett prosjekt</string>
+    <string name="project_details">Prosjektdetaljer</string>
+    <string name="project_details_title">Prosjektdetaljer</string>
+    <string name="new_project_details_title">Nytt prosjekt</string>
+    <string name="project_name_label">Prosjektnavn</string>
+    <string name="craft_type_label">Håndarbeidstype</string>
+    <string name="craft_type_knitting">Strikking</string>
+    <string name="craft_type_crochet">Hekling</string>
+    <string name="main_counter_label">Etikett for hovedteller</string>
+    <string name="main_counter_rows">Rader</string>
+    <string name="main_counter_rounds">Runder</string>
+    <string name="main_counter_repeats">Repetisjoner</string>
+    <string name="main_counter_custom">Egendefinert</string>
+    <string name="main_counter_custom_label">Egendefinert etikett</string>
+    <string name="main_counter_custom_label_error">Angi en etikett.</string>
+    <string name="project_metadata_format">%1$s, %2$s</string>
+    <plurals name="rounds_format">
+        <item quantity="one">%1$d runde</item>
+        <item quantity="other">%1$d runder</item>
+    </plurals>
+    <plurals name="repeats_format">
+        <item quantity="one">%1$d repetisjon</item>
+        <item quantity="other">%1$d repetisjoner</item>
+    </plurals>
+    <string name="main_counter_custom_count_format">%1$d %2$s</string>
+    <string name="current_round_short">Runde %1$d</string>
+    <string name="current_repeat_short">Repetisjon %1$d</string>
+    <string name="counter_round_value_of_target_format">Runde %1$d / %2$d</string>
+    <string name="counter_repeat_value_of_target_format">Repetisjon %1$d / %2$d</string>
+    <string name="main_counter_custom_current_format">%1$s %2$d</string>
+    <string name="counter_custom_value_of_target_format">%1$s %2$d / %3$d</string>
+    <string name="counter_add_round">Legg til runde</string>
+    <string name="counter_decrease_round">Trekk fra runde</string>
+    <string name="counter_add_repeat">Legg til repetisjon</string>
+    <string name="counter_decrease_repeat">Trekk fra repetisjon</string>
+    <string name="counter_add_custom">Legg til %1$s</string>
+    <string name="counter_decrease_custom">Trekk fra %1$s</string>
     <string name="no_active_projects">Ingen aktive prosjekter</string>
     <string name="no_completed_projects">Ingen fullførte prosjekter ennå</string>
     <string name="delete_project">Slett</string>
@@ -83,51 +119,72 @@
     <string name="select_all">Velg alle</string>
     <string name="complete_n_projects">Fullføre %d prosjekter? De flyttes til fullførte prosjekter.</string>
     <string name="delete_n_projects">Slette %d prosjekter? Dette kan ikke angres.</string>
-    <string name="rows_format">%d rader</string>
+    <plurals name="rows_format">
+        <item quantity="one">%1$d rad</item>
+        <item quantity="other">%1$d rader</item>
+    </plurals>
     <string name="just_now">akkurat nå</string>
 
     <!-- Counter Screen -->
-    <string name="current_row">AKTUELL RAD</string>
     <string name="stitch_count_format">%s m</string>
     <string name="set_stitches">Angi masker</string>
     <string name="stitches_per_row">Masker per rad</string>
     <string name="track_stitches">Spor masker</string>
     <string name="stitch_counter_compact_format">%1$d/%2$d</string>
-    <string name="stitch_previous">◄</string>
-    <string name="stitch_next">►</string>
     <string name="attach_pattern">Legg til oppskrift</string>
     <string name="remove_pattern">Fjern oppskrift</string>
     <string name="no_pattern_attached">Ingen oppskrift lagt til</string>
-    <string name="show_pattern">Vis oppskrift</string>
     <string name="pattern_viewer_title">Oppskriftsviser</string>
     <string name="pattern_pdf_fallback_name">Oppskrift-PDF</string>
     <string name="pattern_loading">Laster oppskrift…</string>
     <string name="pattern_open_failed">Kunne ikke åpne oppskriften.</string>
+    <string name="pattern_show_reading_line">Vis leselinje</string>
+    <string name="pattern_hide_reading_line">Skjul leselinje</string>
+    <string name="pattern_save_line_as_row">Lagre linje som rad %1$d</string>
+    <string name="pattern_clear_row_mark">Fjern radmarkør</string>
+    <string name="pattern_clear_page_marks">Fjern sidemarkører</string>
+    <string name="pattern_calibrate_rows">Kalibrer rader</string>
+    <string name="pattern_calibration_first_row">Første rad</string>
+    <string name="pattern_calibration_last_row">Siste rad</string>
+    <string name="pattern_calibration_save_first">Lagre første</string>
+    <string name="pattern_calibration_save_last">Lagre siste</string>
+    <string name="pattern_calibration_invalid_row">Bruk to ulike radnumre</string>
+    <string name="pattern_reading_line_description">Leselinje</string>
     <string name="pattern_page_jump">Gå til side</string>
     <string name="pattern_page_number">Sidenummer</string>
     <string name="pattern_page_indicator">Side %1$d av %2$d</string>
     <string name="pattern_previous_page">Forrige side</string>
     <string name="pattern_next_page">Neste side</string>
-    <string name="pattern_combine_instructions">Kombiner instruksjoner</string>
-    <string name="pattern_combine_none_found">Ingen overlappende instruksjoner funnet på denne siden.</string>
-    <string name="pattern_combine_requires_internet">Krever internettilkobling</string>
-    <string name="pattern_combined_instructions_copied">Kombinerte instruksjoner kopiert</string>
-    <string name="pattern_picker_device_files">Velg PDF fra enheten</string>
     <string name="pattern_picker_saved_patterns">Lagrede oppskrifter</string>
-    <string name="pattern_picker_camera_scan">Kameraskanning</string>
-    <string name="pattern_scan_failed">Skannet oppskrift kunne ikke konverteres til PDF.</string>
+    <string name="pattern_picker_import_pdf">Importer PDF</string>
+    <string name="pattern_picker_import_cloud_pdf">Importer fra Drive eller Dropbox</string>
+    <string name="pattern_picker_import_from_ravelry">Importer fra Ravelry</string>
+    <string name="pattern_picker_camera_scan">Ta oppskriftsfoto</string>
+    <string name="pattern_picker_continue_without_pattern">Fortsett uten oppskrift</string>
+    <string name="pattern_scan_failed">Oppskriftsfotoet kunne ikke konverteres til PDF.</string>
     <string name="imported_pattern_designer">Importert PDF</string>
     <string name="current_row_short">Rad %1$d</string>
-    <string name="pattern_instruction_copied">Instruksjon kopiert</string>
     <string name="time_spent_minutes_format">%dm</string>
-    <string name="link_to_project">Koble til %s?</string>
-    <string name="link_yarn">Koble garn</string>
     <string name="unlink_yarn">Koble fra garn</string>
-    <string name="link">Koble</string>
     <string name="select_yarn_card">Velg garnkort</string>
-    <string name="add_yarn">Legg til garn</string>
     <string name="linked_yarn_title">KOBLET GARN</string>
     <string name="no_linked_yarn">Ingen garn koblet til ennå</string>
+    <string name="choose_from_my_yarn">Velg fra My Yarn</string>
+    <string name="choose_from_my_yarn_body">Velg et lagret garn</string>
+    <string name="add_yarn_to_project">Legg til garn i dette prosjektet</string>
+    <string name="add_yarn_to_project_body">Lagre et raskt garnnotat bare for dette prosjektet</string>
+    <string name="project_yarn_notes_title">PROSJEKTGARN</string>
+    <string name="project_yarn_name">Garnnavn</string>
+    <string name="brand_label">Merke</string>
+    <string name="project_yarn_description">Beskrivelse</string>
+    <string name="add_yarn_to_my_yarn">Legg til garn</string>
+    <string name="edit_yarn_details">Rediger detaljer</string>
+    <string name="add_yarn_photo">Legg til garnbilde</string>
+    <string name="change_yarn_photo">Bytt garnbilde</string>
+    <string name="manual_yarn_optional_details">Start med et navn. Merke, tykkelse, farge og innfargingsparti er valgfritt.</string>
+    <string name="project_yarn_quantity_format">Antall: %d</string>
+    <string name="save_to_my_yarn">Lagre i My Yarn</string>
+    <string name="saved_to_my_yarn">Lagret i My Yarn</string>
     <string name="yarn_count_format">%1$d garn</string>
     <string name="linked_project_label">Koblet prosjekt</string>
     <string name="link_to_project_label">Koble til prosjekt</string>
@@ -139,10 +196,10 @@
     <string name="status_in_stash">På lager</string>
     <string name="status_in_use">I bruk</string>
     <string name="status_finished">Ferdig</string>
-    <string name="linked_project_arrow">\u2192 %1$s</string>
+    <string name="yarn_not_linked">Ikke lenket</string>
     <string name="yarn_details_title">Detaljer</string>
+    <string name="yarn_details_empty_body">Merke, tykkelse, farge og innfargingsparti er valgfritt. Legg bare til det som hjelper dette prosjektet.</string>
     <string name="delete_yarn_card_message">Slette dette garnkortet? Dette kan ikke angres.</string>
-    <string name="saved_to_my_yarn_toast">Lagret i Mitt garn i biblioteket</string>
     <string name="skein_count_one">%1$d nøste</string>
     <string name="skein_count_many">%1$d nøster</string>
 
@@ -156,13 +213,6 @@
     <string name="pro_full_history_hint">Oppgrader til Pro for full økthistorikk</string>
 
     <!-- Settings -->
-    <string name="show_knitting_tips">Vis strikketips</string>
-    <string name="project_summary">Prosjektsammendrag</string>
-    <string name="view_ai_summary">Vis AI-sammendrag</string>
-    <string name="generating_summary">Genererer sammendrag…</string>
-    <string name="ai_quota_exhausted">Månedlig AI-grense nådd</string>
-    <string name="ai_summary_fallback">Kunne ikke lage AI-sammendrag — viser grunnleggende statistikk i stedet</string>
-
     <!-- Row Counter -->
     <string name="default_project_name">Mitt prosjekt</string>
     <string name="reset_counter">Tilbakestill teller</string>
@@ -173,30 +223,27 @@
     <string name="notes_editor_title">Notater — %1$s</string>
     <string name="write_your_notes_here">Skriv notatene dine her…</string>
 
-    <!-- Journal (AI journal entry) -->
-    <string name="journal_ai_badge">+ AI</string>
-    <string name="journal_add_entry_title">Legg til dagbokinnlegg</string>
-    <string name="journal_mode_speak">Snakk</string>
-    <string name="journal_mode_type">Skriv</string>
-    <string name="journal_speak_title">Si innlegget ditt</string>
-    <string name="journal_type_title">Skriv innlegget ditt</string>
-    <string name="journal_listening">Lytter…</string>
-    <string name="journal_tap_to_speak">Trykk på mikrofonen for å starte</string>
-    <string name="journal_type_placeholder">Hva skjedde denne økten?</string>
-    <string name="journal_transcription_placeholder">Ordene dine vises her…</string>
-    <string name="journal_add_button">Legg til innlegg</string>
-    <string name="journal_empty_error">Innlegget kan ikke være tomt</string>
-    <string name="journal_offline_notice">AI-formatering utilgjengelig, innlegget ble lagret som skrevet.</string>
-    <string name="journal_mic_permission_required">Mikrofontillatelse kreves</string>
-    <string name="journal_processing">Formaterer…</string>
-    <string name="journal_speech_unavailable">Talegjenkjenning er ikke tilgjengelig på denne enheten</string>
-    <string name="journal_speech_network_error">Talegjenkjenning krever nettverkstilkobling</string>
-    <string name="journal_speech_no_match">Fikk ikke med meg det — prøv igjen</string>
-    <string name="journal_speech_error">Feil i talegjenkjenning</string>
+
 
     <string name="counter_decrease">Fell</string>
     <string name="counter_increase">Øk</string>
-    <string name="counter_undo">Angre</string>
+    <string name="counter_value_of_target_format">Rad %1$d / %2$d</string>
+    <string name="repeating_counter_value_format">%1$d av %2$d</string>
+    <string name="counter_decrease_named">Fell %1$s</string>
+    <string name="counter_increase_named">Øk %1$s</string>
+    <string name="counter_actions">Handlinger for %1$s</string>
+    <string name="counter_add_row">Legg til rad</string>
+    <string name="counter_decrease_row">Trekk fra rad</string>
+    <string name="counter_undo_last_change">Angre siste endring</string>
+    <string name="counter_target_remaining_format">%1$s igjen</string>
+    <string name="counter_target_reached">Mål nådd</string>
+    <string name="counter_target_past_format">%1$s over målet</string>
+    <string name="project_content_add_pattern">Legg til oppskrift</string>
+    <string name="stitch_tracker_label">Masker</string>
+    <plurals name="reminder_repeat_occurrence_format">
+        <item quantity="one">Gjenta #%1$d hver rad</item>
+        <item quantity="other">Gjenta #%1$d hver %2$d. rad</item>
+    </plurals>
 
     <!-- Increase / Decrease -->
     <string name="mode_increase">Øk</string>
@@ -298,12 +345,8 @@
     <string name="pro_feature_row_reminders">Radpåminnelser</string>
     <string name="pro_feature_progress_photos">Framdriftsbilder</string>
     <string name="pro_feature_unlimited_yarn">Ubegrenset antall garnkort</string>
-    <string name="pro_feature_ocr">OCR-skanning av garnetiketter</string>
-    <string name="pro_feature_ai_features">AI-verktøy med månedlige kreditter</string>
-    <string name="pro_feature_voice_commands">Talekommandoer</string>
-    <string name="pro_feature_voice_live">Naturlig stemme med månedlige minutter</string>
     <string name="pro_feature_widget">Widget på startskjermen</string>
-    <string name="pro_feature_pattern_camera_scan">Skann oppskrift med kamera</string>
+    <string name="pro_feature_pattern_camera_scan">Oppskriftsfoto</string>
     <string name="pro_feature">Pro-funksjon</string>
     <string name="upgrade_for_price">Oppgrader for %s</string>
     <string name="one_time_purchase">Engangskjøp. Ingen abonnement.</string>
@@ -316,13 +359,8 @@
     <string name="billing_purchase_failed">Kjøpet kunne ikke fullføres. Prøv igjen.</string>
     <string name="billing_already_owned_restore_failed">Google Play sier at du allerede eier dette kjøpet, men det kunne ikke gjenopprettes. Prøv Gjenopprett kjøp.</string>
 
-    <!-- Yarn Card / OCR -->
-    <string name="scan_yarn_label">Skann garnetikett</string>
-    <string name="yarn_scan_failed">Kunne ikke lese en garnetikett fra dette bildet. Prøv igjen.</string>
+    <!-- Yarn Card -->
     <string name="saved_yarns">Lagret garn</string>
-    <string name="scanned_yarn">Skannet garn</string>
-    <string name="brand">Merke</string>
-    <string name="yarn_name">Garnnavn</string>
     <string name="fiber_content">Fiberinnhold</string>
     <string name="weight_grams">Vekt (g)</string>
     <string name="length_meters">Lengde (m)</string>
@@ -333,14 +371,9 @@
     <string name="dye_lot">Innfargingsparti</string>
     <string name="weight_category">Tykkelseskategori</string>
     <string name="care_symbols">Vedlikehold</string>
-    <string name="save_and_use">Lagre &amp; bruk</string>
-    <string name="discard">Forkast</string>
-    <string name="use_in_calculator">Bruk i kalkulator</string>
     <string name="no_saved_yarns">Ingen garnkort lagret ennå</string>
-    <string name="scanning">Skanner…</string>
-    <string name="pro_required_save">Pro kreves for å lagre garnkort</string>
 
-    <!-- Gemini Nano -->
+    <!-- Instruction parser -->
     <string name="paste_instruction">Lim inn instruksjon</string>
     <string name="instruction_hint">Lim inn strikkeinstruksjonen her</string>
     <string name="instruction_hint_increase">f.eks. "Øk 12 masker jevnt fordelt over 96 masker"</string>
@@ -348,15 +381,11 @@
     <string name="parsing_instruction">Tolker…</string>
     <string name="instruction_parsed">Verdier fylt inn fra instruksjon</string>
     <string name="instruction_parse_failed">Forsto ikke instruksjonen — prøv å formulere den annerledes</string>
-    <string name="ai_error_busy">AI er opptatt — prøv igjen om litt</string>
-    <string name="ai_error_quota">Månedlig AI-grense nådd — prøv igjen senere</string>
-    <string name="ai_error_unavailable">AI-funksjonen er ikke tilgjengelig på denne enheten</string>
-    <string name="ai_error_unknown">Noe gikk galt — prøv igjen</string>
+    <string name="generic_error_unknown">Noe gikk galt — prøv igjen</string>
 
     <!-- Camera permission -->
-    <string name="camera_permission_denied">Kameratillatelse trengs for å skanne garnetiketter</string>
+    <string name="camera_permission_denied">Kameratillatelse trengs for å ta bilder</string>
     <string name="camera_permission_denied_permanent">Kameratillatelse avslått — aktiver den i Innstillinger</string>
-    <string name="open_settings">Innstillinger</string>
 
     <!-- Care symbol categories -->
     <string name="care_category_washing">Vask</string>
@@ -364,6 +393,26 @@
     <string name="care_category_drying">Tørking</string>
     <string name="care_category_ironing">Stryking</string>
     <string name="care_category_dry_cleaning">Rens</string>
+    <string name="care_wash_30">30°</string>
+    <string name="care_wash_40">40°</string>
+    <string name="care_wash_60">60°</string>
+    <string name="care_wash_hand">Håndvask</string>
+    <string name="care_wash_do_not">Må ikke vaskes</string>
+    <string name="care_bleach_any">Alle blekemidler</string>
+    <string name="care_bleach_non_chlorine">Klorfritt blekemiddel</string>
+    <string name="care_bleach_do_not">Må ikke blekes</string>
+    <string name="care_dry_tumble_low">Tørketrommel ved lav varme</string>
+    <string name="care_dry_tumble_normal">Tørketrommel ved normal varme</string>
+    <string name="care_dry_flat">Tørkes flatt</string>
+    <string name="care_dry_do_not_tumble">Må ikke tørketromles</string>
+    <string name="care_iron_low">Strykes ved lav varme</string>
+    <string name="care_iron_medium">Strykes ved middels varme</string>
+    <string name="care_iron_high">Strykes ved høy varme</string>
+    <string name="care_iron_do_not">Må ikke strykes</string>
+    <string name="care_dryclean_any">Alle løsemidler</string>
+    <string name="care_dryclean_p">P-løsemiddel</string>
+    <string name="care_dryclean_f">F-løsemiddel</string>
+    <string name="care_dryclean_do_not">Må ikke renses</string>
 
     <!-- Defaults -->
     <string name="yarn_card_fallback_name">Garnkort</string>
@@ -386,10 +435,10 @@
     <string name="library_my_collection">MIN SAMLING</string>
     <string name="library_reference">OPPSLAG</string>
     <string name="desc_saved_patterns">Oppskrifter fra Ravelry og PDF-filer</string>
-    <string name="desc_my_yarn">Garnlageret ditt — merker, tykkelser og farger</string>
+    <string name="desc_my_yarn">Garnnotater, mengder og lenkede prosjekter</string>
     <string name="desc_all_photos">Fremdriftsbilder fra alle prosjektene dine</string>
     <string name="empty_saved_patterns">Ingen lagrede oppskrifter ennå.\nFinn oppskrifter i Ravelry-søk.</string>
-    <string name="empty_my_yarn">Ingen garnkort lagret ennå.</string>
+    <string name="empty_my_yarn">Ingen garnnotater lagret ennå.</string>
     <string name="empty_all_photos">Ingen fremdriftsbilder ennå.</string>
     <string name="filter_all">Alle</string>
 
@@ -407,7 +456,10 @@
     <string name="insights_knitting_activity">STRIKKEAKTIVITET</string>
     <string name="insights_current_streak">Nåværende streak:</string>
     <string name="insights_best_streak">Beste:</string>
-    <string name="insights_rows_count">%1$d rader</string>
+    <plurals name="insights_rows_count">
+        <item quantity="one">%1$d rad</item>
+        <item quantity="other">%1$d rader</item>
+    </plurals>
     <string name="insights_less_than_tenth_hour">&lt;0.1t</string>
     <string name="insights_no_time">—</string>
     <string name="insights_footer_1">Hver rad teller — fortsett å strikke!</string>
@@ -458,36 +510,6 @@
     <string name="category_increases">Økninger</string>
     <string name="category_cables">Fletter</string>
     <string name="category_other">Annet</string>
-
-    <!-- Quick Tips -->
-    <string-array name="knitting_tips">
-        <item>Strikk alltid en prøvelapp før du starter et nytt prosjekt — selv om du tror du kjenner fastheten din.</item>
-        <item>Blokk prøvelappen på samme måte som du planlegger å blokke det ferdige plagget for å få riktig fasthet.</item>
-        <item>For å unngå et hakk når du strikker striper rundt, løft masken fra raden under opp på venstre pinne på andre rad i den nye fargen.</item>
-        <item>Hold jevn strikkefasthet for en profesjonell finish på kantene.</item>
-        <item>Sett en låsbar maskemarkør for hver 20. maske når du legger opp mange masker.</item>
-        <item>Blokk de ferdige delene dine — det gjør en enorm forskjell på sluttresultatet.</item>
-        <item>Tell maskene på slutten av hver rad når du strikker hullmønster.</item>
-        <item>Vind garnet til en nøste før du begynner — det hindrer floker.</item>
-        <item>Bruk en sikkerhetstråd med noen raders mellomrom når du strikker hullstrikk — tre restegarn gjennom alle maskene.</item>
-        <item>Fest trådene underveis for å unngå en stor haug på slutten av prosjektet.</item>
-        <item>Kjøp alltid ett ekstra nøste — innfargingspartier kan variere mellom partier.</item>
-        <item>Prøv å strikke en prøvelapp rundt hvis prosjektet strikkes rundt — fastheten kan være annerledes.</item>
-        <item>Bruk maskemarkører til å skille mellom mønsterrepetisjoner — det gjør tellingen mye enklere.</item>
-        <item>Les hele oppskriften før du legger opp for å unngå overraskelser.</item>
-        <item>Før notater om prosjektet for å holde styr på endringer og ideer til senere.</item>
-        <item>Når du skjøter garn, la trådendene være minst 15 cm lange for sikker festing.</item>
-        <item>Øv på nye teknikker på en liten prøvelapp før du bruker dem i prosjektet.</item>
-        <item>Oppbevar strikketøyet i en prosjektpose for å holde det rent og unngå at det hekter seg fast.</item>
-        <item>Ta pauser og strekk hendene for å forebygge belastningsskader.</item>
-        <item>Marker hvor du er i oppskriften med en klistrelapp eller magnetbrett.</item>
-        <item>Bruk bambuspinner til glatt garn — de holder maskene bedre på plass.</item>
-        <item>Når du plukker opp masker, bruk en pinne som er én størrelse mindre for en penere kant.</item>
-        <item>Vri arbeidet riktig på første omgang etter opplegging for å unngå at opplegget vrir seg.</item>
-        <item>Mål fastheten etter blokkingen, ikke før — mange garn endrer seg etter vask.</item>
-        <item>Veksle mellom to nøster med noen raders mellomrom for å unngå synlige fargeforskjeller mellom partier.</item>
-    </string-array>
-
     <!-- In-App Updates -->
     <string name="update_downloaded">Oppdatering lastet ned — start på nytt for å bruke den</string>
     <string name="restart">Start på nytt</string>
@@ -506,7 +528,6 @@
     <string name="repeating">Gjenta</string>
     <string name="repeat_every">Gjenta hver</string>
     <string name="repeat_every_rows">rader</string>
-    <string name="repeat_count_format">Gjenta %1$d/%2$d</string>
     <string name="dismiss">Avvis</string>
 
     <!-- Multiple Counters -->
@@ -516,6 +537,8 @@
     <string name="counter_name_hint">f.eks. Økninger på ermet</string>
     <string name="count_up">Tell opp</string>
     <string name="step_size">Stegstørrelse</string>
+    <string name="linked_counter">Koblet teller</string>
+    <string name="linked_counter_description">Følger endringer i hovedtelleren.</string>
     <string name="shaping">Forming</string>
     <string name="repeat_section">Repeter seksjon</string>
     <string name="starting_stitches">Startantall masker</string>
@@ -524,9 +547,8 @@
     <string name="repeat_section_start_row">Startrad</string>
     <string name="repeat_section_end_row">Sluttrad</string>
     <string name="total_repeats">Totalt antall repetisjoner</string>
-    <string name="repeat_section_progress_format">Repetisjon %1$d av %2$d · Rad %3$d av %4$d</string>
+    <string name="repeat_section_progress_format">Repetisjon %1$d/%2$d, rad %3$d/%4$d</string>
     <string name="repeat_section_complete">Fullført</string>
-    <string name="next_shaping_format">Neste forming: Rad %1$d → %2$d m</string>
     <string name="rename_counter">Gi nytt navn</string>
     <string name="reset_counter_name">Tilbakestill</string>
     <string name="delete_counter">Slett</string>
@@ -536,78 +558,19 @@
     <!-- Progress Photos -->
     <string name="take_photo">Ta bilde</string>
     <string name="progress_photos">Fremdriftsbilder</string>
-    <string name="voice_commands">Talekommandoer</string>
-    <string name="voice_mode_timeout">Talemodus avsluttet på grunn av inaktivitet</string>
-    <string name="voice_offline_mode">Frakoblet modus, bare grunnleggende kommandoer</string>
-    <string name="voice_quota_monthly_exhausted">Månedlig grense for AI-kommandoer er nådd, men grunnleggende kommandoer virker fortsatt</string>
-    <string name="voice_command_unknown">Jeg forsto ikke</string>
-    <string name="voice_note_saved">Notat lagret</string>
-    <string name="voice_counter_reset">Teller tilbakestilt</string>
-    <string name="voice_row_current">Rad %d</string>
-    <string name="voice_row_of_target">Rad %1$d av %2$d, %3$d prosent ferdig</string>
-    <string name="voice_rows_remaining">%d rader igjen</string>
-    <string name="voice_no_target">Ingen mål satt</string>
-    <string name="voice_back_to_row">Tilbake til rad %d</string>
-    <string name="voice_undone_row">Angret, rad %d</string>
-    <string name="voice_remaining_done">Du er ferdig!</string>
-    <string name="voice_session_minutes">Du har strikket i %d minutter</string>
-    <string name="voice_session_under_minute">Mindre enn ett minutt</string>
-    <string name="voice_yarn_multiple">%1$s og %2$d til</string>
-    <string name="voice_yarn_none">Ingen garn koblet til</string>
-    <string name="voice_pattern_info">Oppskrift %1$s, side %2$d</string>
-    <string name="voice_instruction_none">Ingen oppskrift koblet til</string>
-    <string name="voice_shaping_next">Neste %1$s om %2$d rader</string>
-    <string name="voice_shaping_at">%1$s på rad %2$d</string>
-    <string name="voice_shaping_none">Ingen aktiv formingteller</string>
-    <string name="voice_stitches_total">%1$d masker totalt, %2$d per rad over %3$d rader</string>
-    <string name="voice_stitches_current">%d masker</string>
-    <string name="voice_stitches_disabled">Maskesporing er ikke aktivert</string>
-    <string name="voice_reminders_none">Ingen kommende påminnelser</string>
-    <string name="voice_reminder_next">Neste påminnelse: %1$s, om %2$d rader</string>
-    <string name="voice_reminders_multiple">Neste påminnelse: %1$s, om %2$d rader. Deretter kommer %3$d til</string>
-    <string name="voice_counters_none">Ingen ekstra tellere</string>
-    <string name="voice_counter_single">%1$s står på %2$d</string>
-    <string name="voice_counters_list">%1$d tellere: %2$s</string>
-    <string name="voice_notes_empty">Ingen notater ennå</string>
-    <string name="voice_notes_content">Notatene dine: %1$s</string>
-    <string name="voice_total_time_none">Ingen tid registrert ennå</string>
-    <string name="voice_total_time_hours">%1$d timer og %2$d minutter totalt på dette prosjektet</string>
-    <string name="voice_total_time_minutes">%1$d minutter totalt på dette prosjektet</string>
-    <string name="voice_summary_none">Ingen prosjektsammendrag tilgjengelig. Åpne prosjektet først for å lage et.</string>
-    <string name="voice_project_name">Du jobber med %1$s</string>
-    <string name="voice_section_current">Nåværende seksjon: %1$s</string>
-    <string name="voice_section_none">Ingen seksjon satt</string>
-    <string name="voice_section_set">Seksjon satt til %1$s</string>
-    <string name="voice_stitch_at">Maske %1$d</string>
-    <string name="voice_help_full">Du kan si: neste, tilbake, angre, tilbakestill, pluss et tall. Spør om fremdrift, gjenstående rader, tid, garn, oppskrift, masker, påminnelser, tellere eller notater. Si notat for å lagre et notat, eller navnet på en teller for å endre den.</string>
-    <string name="voice_reminder_dismissed">Påminnelse avvist</string>
-    <string name="voice_reminder_no_active">Ingen aktiv påminnelse å avvise</string>
-    <string name="voice_counter_incremented">%1$s er nå på %2$d</string>
-    <string name="voice_counter_decremented">%1$s tilbake på %2$d</string>
-    <string name="voice_counter_not_found">Fant ingen teller med navnet %1$s</string>
-    <string name="voice_counter_ambiguous">Flere tellere heter %1$s. Gi én av dem nytt navn før du bruker talekommandoer.</string>
-    <string name="voice_step_size_set">Stegstørrelse satt til %1$d</string>
-    <string name="voice_counter_reset_named">%1$s tilbakestilt til null</string>
-    <string name="voice_page_current">Side %1$d</string>
-    <string name="voice_page_first">Allerede på første side</string>
-    <string name="voice_project_completed">%1$s markert som fullført. Bra jobbet!</string>
-    <string name="voice_summary_generating">Genererer sammendrag…</string>
-    <string name="voice_summary_unavailable">AI-sammendrag er ikke tilgjengelig akkurat nå</string>
-    <string name="voice_reminder_added">Påminnelse satt: %1$s på rad %2$d</string>
-    <string name="voice_stitch_count_set">Masketall satt til %1$d per rad</string>
-    <string name="voice_stitch_tracking_on">Maskesporing aktivert</string>
-    <string name="voice_stitch_tracking_off">Maskesporing deaktivert</string>
-    <string name="voice_live_error">Taletilkoblingen mislyktes</string>
-    <string name="voice_live_quota_exhausted">Taleminuttene for denne måneden er brukt opp</string>
-    <string name="voice_natural_response">Naturlig stemme</string>
-    <string name="voice_live_quota_remaining">%1$.0f / %2$.0f min igjen</string>
-    <string name="voice_recognizer_error">Feil i talegjenkjenning</string>
+    <string name="counters_list_empty">Ingen ekstra tellere</string>
     <string name="row_label_format">Rad %d</string>
     <string name="share_photo">Del</string>
     <string name="delete_photo">Slett bilde</string>
     <string name="delete_photo_confirm">Slette dette bildet?</string>
-    <string name="delete_photos_confirm">Slette %d bilder?</string>
-    <string name="delete_patterns_confirm">Slette %d oppskrifter?</string>
+    <plurals name="delete_photos_confirm">
+        <item quantity="one">Slette %1$d bilde?</item>
+        <item quantity="other">Slette %1$d bilder?</item>
+    </plurals>
+    <plurals name="delete_patterns_confirm">
+        <item quantity="one">Slette %1$d oppskrift?</item>
+        <item quantity="other">Slette %1$d oppskrifter?</item>
+    </plurals>
     <string name="delete_pattern">Slett oppskrift</string>
     <string name="delete_yarn_cards_confirm">Slette %d garnkort?</string>
     <string name="delete_yarn_card">Slett garnkort</string>
@@ -622,20 +585,48 @@
     <string name="ravelry_saved_patterns">Lagrede oppskrifter</string>
     <string name="start_project">Start prosjekt</string>
     <string name="save_pattern">Lagre oppskrift</string>
+    <string name="ravelry_open_saved_pattern">Åpne</string>
     <string name="open_in_ravelry">Åpne i Ravelry</string>
     <string name="pattern_saved">Oppskrift lagret</string>
     <string name="no_saved_patterns">Ingen lagrede oppskrifter ennå</string>
     <string name="search_hint">Søk etter strikkeoppskrifter…</string>
+    <string name="ravelry_search_requires_sign_in">Logg inn med Ravelry for å søke etter oppskrifter.</string>
+    <string name="ravelry_import_loading">Laster oppskrift</string>
+    <string name="ravelry_import_title">Lagre denne oppskriften?</string>
+    <string name="ravelry_import_already_saved">Oppskriften er allerede lagret</string>
+    <string name="ravelry_import_needs_sign_in">Logg inn med Ravelry for å lagre denne oppskriften.</string>
+    <string name="ravelry_import_could_not_import">Kunne ikke importere denne oppskriften.</string>
+    <string name="ravelry_import_backend_unavailable">Ravelry-import er midlertidig utilgjengelig.</string>
+    <string name="saved_pattern_detail_pdf_attached">PDF vedlagt</string>
+    <string name="saved_pattern_detail_available_offline">Tilgjengelig offline</string>
+    <string name="saved_pattern_detail_open_on_ravelry">Åpne i Ravelry</string>
+    <string name="saved_pattern_detail_requires_ravelry">Krever Ravelry</string>
+    <string name="saved_pattern_detail_open_pattern">Åpne oppskrift</string>
+    <string name="saved_pattern_detail_attach_to_project">Knytt til prosjekt</string>
+    <string name="saved_pattern_detail_remove_confirm">Fjerne denne lagrede oppskriften?</string>
+    <string name="saved_pattern_detail_thumbnail">Miniatyrbilde av oppskriften</string>
     <string name="filter_weight">Tykkelse</string>
     <string name="filter_difficulty">Vanskelighetsgrad</string>
     <string name="free">Gratis</string>
     <string name="paid">Betalt</string>
+    <string name="availability_unknown">Tilgjengelighet ukjent</string>
     <string name="no_results">Ingen oppskrifter funnet</string>
     <string name="search_error">Kunne ikke laste oppskrifter. Sjekk internettilkoblingen.</string>
     <string name="ravelry_search_rate_limited">Ravelry begrenser søk. Prøv igjen senere.</string>
     <string name="ravelry_search_auth_error">Ravelry-innloggingen kunne ikke brukes. Logg inn på nytt og prøv igjen.</string>
     <string name="ravelry_search_service_error">Ravelry er midlertidig utilgjengelig. Prøv igjen senere.</string>
     <string name="ravelry_sign_in">Logg inn med Ravelry</string>
+    <string name="ravelry_browse">Bla i Ravelry</string>
+    <string name="ravelry_disconnect">Koble fra Ravelry</string>
+    <string name="ravelry_not_connected">Logg inn for å søke etter Ravelry-oppskrifter fra KnitTools.</string>
+    <string name="ravelry_connecting">Kobler til Ravelry…</string>
+    <string name="ravelry_auth_pending">Fullfør Ravelry-innloggingen i nettleseren.</string>
+    <string name="ravelry_connected">Koblet til Ravelry</string>
+    <string name="ravelry_connected_as">Koblet til som %1$s</string>
+    <string name="ravelry_auth_cancelled">Ravelry-innlogging ble avbrutt.</string>
+    <string name="ravelry_auth_expired">Ravelry-innloggingen utløp. Logg inn på nytt.</string>
+    <string name="ravelry_backend_unavailable">Ravelry-tilkoblingen er midlertidig utilgjengelig.</string>
+    <string name="ravelry_disconnecting">Kobler fra Ravelry…</string>
     <string name="difficulty_format">%.1f / 5</string>
     <string name="yardage_format">%d yard</string>
 
@@ -671,11 +662,22 @@
     <string name="pattern_detail_error">Kunne ikke laste oppskriftsdetaljer. Sjekk internettforbindelsen.</string>
     <string name="project_actions_title">Prosjekthandlinger</string>
     <string name="project_actions_section_this_project">DETTE PROSJEKTET</string>
-    <string name="project_actions_section_counters">TELLERE</string>
+    <string name="project_actions_section_counter_tools">TELLEVERKTØY</string>
     <string name="project_actions_section_project_actions">PROSJEKTHANDLINGER</string>
-    <string name="project_actions_yarn">Garn</string>
-    <string name="project_actions_ai_summary">AI-sammendrag</string>
-    <string name="project_actions_photos">Bilder</string>
+    <string name="project_content_title">Prosjekt</string>
+    <string name="project_content_yarn">Garn</string>
+    <string name="project_content_notes">Notater</string>
+    <string name="project_content_photos">Bilder</string>
+    <string name="extra_counters_title">Ekstra tellere</string>
     <string name="counter_repeat_label">GJENTA</string>
     <string name="counters_list_title">Tellere</string>
+
+    <!-- Täydennetyt lokalisoidut käyttöliittymätekstit -->
+    <string name="yarn_card_number_fallback">Garn #%1$d</string>
+    <string name="pattern_detail_needles">Nåler</string>
+    <string name="pattern_detail_yardage">Løpelengde</string>
+    <string name="pattern_detail_sizes">Størrelser</string>
+    <string name="pattern_saved_to_library">Lagret i biblioteket</string>
+    <string name="show_more">Vis mer</string>
+    <string name="show_less">Vis mindre</string>
 </resources>

@@ -8,6 +8,7 @@ import com.finnvek.knittools.data.remote.PatternSearchParams
 import com.finnvek.knittools.data.remote.PatternSearchResponse
 import com.finnvek.knittools.data.remote.RavelryApiService
 import com.finnvek.knittools.domain.model.SavedPattern
+import com.finnvek.knittools.domain.model.SavedPatternSource
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -25,31 +26,27 @@ class RavelryRepository
 
         suspend fun getPatternDetail(id: Int): PatternDetail = api.getPatternDetail(id)
 
+        suspend fun importPatternByUrl(url: String): PatternDetail = api.importPatternByUrl(url)
+
         fun getSavedPatterns(): Flow<List<SavedPattern>> = savedPatternRepository.getAll()
 
         fun getSavedPatternCount(): Flow<Int> = savedPatternRepository.getCount()
 
-        suspend fun isPatternSaved(ravelryId: Int): Boolean = savedPatternRepository.getByRavelryId(ravelryId) != null
+        suspend fun isPatternSaved(ravelryId: Int): Boolean =
+            savedPatternRepository.getByRavelryPatternId(ravelryId) != null
 
         suspend fun savePattern(detail: PatternDetail): Long =
-            savedPatternRepository.saveRavelryPatternIfMissing(
-                SavedPattern(
-                    ravelryId = detail.id,
-                    name = detail.name,
-                    designerName = detail.designer?.name ?: "",
-                    thumbnailUrl = detail.mainPhotoUrl,
-                    difficulty = detail.difficultyAverage,
-                    gaugeStitches = null,
-                    gaugeRows = detail.rowGauge,
-                    needleSize = detail.needleSizeText,
-                    yarnWeight = detail.yarnWeight?.name,
-                    yardage = detail.yardage ?: detail.yardageMax,
-                    isFree = detail.free,
-                    patternUrl = detail.ravelryUrl,
-                ),
+            savedPatternRepository.saveRavelryPatternIfMissing(detail.toSavedPattern())
+
+        suspend fun findDuplicateFor(detail: PatternDetail): SavedPattern? =
+            savedPatternRepository.findDuplicateCandidate(
+                pattern = detail.toSavedPattern(),
+                includeTitleDesigner = false,
             )
 
         suspend fun deleteSavedPattern(id: Long) = savedPatternRepository.deleteById(id)
+
+        suspend fun deleteSavedPatterns(ids: List<Long>) = savedPatternRepository.deleteByIds(ids)
 
         suspend fun getActiveProjectCount(): Int = counterProjectDao.getActiveProjectCount()
 
@@ -72,3 +69,21 @@ class RavelryRepository
                 )
             }
     }
+
+private fun PatternDetail.toSavedPattern(): SavedPattern =
+    SavedPattern(
+        source = SavedPatternSource.Ravelry,
+        ravelryPatternId = id,
+        name = name,
+        designerName = designer?.name ?: "",
+        thumbnailUrl = mainPhotoUrl,
+        difficulty = difficultyAverage,
+        gaugeStitches = null,
+        gaugeRows = rowGauge,
+        needleSize = needleSizeText,
+        yarnWeight = yarnWeight?.name,
+        yardage = yardage ?: yardageMax,
+        isFree = availability.isFree,
+        originalUrl = originalUrl.ifBlank { ravelryUrl },
+        canonicalUrl = canonicalUrl.ifBlank { ravelryUrl },
+    )

@@ -49,11 +49,10 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -66,16 +65,29 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
+import com.finnvek.knittools.domain.calculator.CounterValueFormatter
 import com.finnvek.knittools.domain.model.CounterProject
+import com.finnvek.knittools.domain.model.CraftType
+import com.finnvek.knittools.domain.model.MainCounterLabelType
+import com.finnvek.knittools.domain.model.ProjectSortOrder
+import com.finnvek.knittools.ui.components.CollectWithLifecycleEffect
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.ProjectCard
+import com.finnvek.knittools.ui.components.ProjectDetailsDialog
+import com.finnvek.knittools.ui.components.ProjectDetailsValues
 import com.finnvek.knittools.ui.components.RenameProjectDialog
+import com.finnvek.knittools.ui.components.mainCounterProjectCardCountText
+import com.finnvek.knittools.ui.components.mainCounterTargetText
+import com.finnvek.knittools.ui.components.projectMetadataText
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun ProjectListScreen(
     onProjectClick: (Long) -> Unit,
     onNotesEditor: (Long) -> Unit = {},
+    onPhotoGallery: (Long) -> Unit = {},
+    onPatternViewer: (Long) -> Unit = {},
+    onYarnCard: (Long) -> Unit = {},
     onUpgradeToPro: () -> Unit = {},
     viewModel: ProjectListViewModel = hiltViewModel(),
 ) {
@@ -83,6 +95,7 @@ fun ProjectListScreen(
     val completed by viewModel.completedProjects.collectAsStateWithLifecycle()
     val continueKnitting by viewModel.continueKnittingProject.collectAsStateWithLifecycle()
     val yarnNames by viewModel.projectYarnNames.collectAsStateWithLifecycle()
+    val yarnCardIds by viewModel.projectYarnCardIds.collectAsStateWithLifecycle()
     val photoCounts by viewModel.projectPhotoCounts.collectAsStateWithLifecycle()
     val patternNames by viewModel.projectPatternNames.collectAsStateWithLifecycle()
     val hasNotes by viewModel.projectHasNotes.collectAsStateWithLifecycle()
@@ -90,20 +103,21 @@ fun ProjectListScreen(
     val isMultiSelectMode by viewModel.isMultiSelectMode.collectAsStateWithLifecycle()
     val selectedProjectIds by viewModel.selectedProjectIds.collectAsStateWithLifecycle()
     val sortOrder by viewModel.sortOrder.collectAsStateWithLifecycle()
-    val currentOnProjectClick by rememberUpdatedState(onProjectClick)
-    val currentOnUpgradeToPro by rememberUpdatedState(onUpgradeToPro)
-
     // FAB-luonnin jälkeen navigoi uuteen projektiin
-    LaunchedEffect(viewModel) {
-        viewModel.navigateToProject.collect { projectId ->
-            currentOnProjectClick(projectId)
-        }
+    CollectWithLifecycleEffect(viewModel.navigateToProject) { projectId ->
+        onProjectClick(projectId)
     }
 
-    LaunchedEffect(viewModel) {
-        viewModel.upgradeToPro.collect {
-            currentOnUpgradeToPro()
-        }
+    CollectWithLifecycleEffect(viewModel.upgradeToPro) {
+        onUpgradeToPro()
+    }
+
+    CollectWithLifecycleEffect(viewModel.navigateToNotesEditor) { projectId ->
+        onNotesEditor(projectId)
+    }
+
+    CollectWithLifecycleEffect(viewModel.navigateToPhotoGallery) { projectId ->
+        onPhotoGallery(projectId)
     }
 
     // Multi-select back handler
@@ -121,6 +135,7 @@ fun ProjectListScreen(
     var showSortMenu by rememberSaveable { mutableStateOf(false) }
     var showMultiCompleteDialog by rememberSaveable { mutableStateOf(false) }
     var showMultiDeleteDialog by rememberSaveable { mutableStateOf(false) }
+    var showCreateProjectDialog by rememberSaveable { mutableStateOf(false) }
 
     ProjectListDialogs(
         state =
@@ -158,6 +173,30 @@ fun ProjectListScreen(
                 onMultiDeleteDismiss = { showMultiDeleteDialog = false },
             ),
     )
+
+    if (showCreateProjectDialog) {
+        ProjectDetailsDialog(
+            title = stringResource(R.string.new_project_details_title),
+            confirmText = stringResource(R.string.create_project),
+            initialValues =
+                ProjectDetailsValues(
+                    name = "",
+                    craftType = CraftType.KNITTING,
+                    mainCounterLabelType = MainCounterLabelType.ROWS,
+                    mainCounterCustomLabel = null,
+                ),
+            onConfirm = { values ->
+                viewModel.createProject(
+                    values.name,
+                    values.craftType,
+                    values.mainCounterLabelType,
+                    values.mainCounterCustomLabel,
+                )
+                showCreateProjectDialog = false
+            },
+            onDismiss = { showCreateProjectDialog = false },
+        )
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -217,6 +256,7 @@ fun ProjectListScreen(
                         completed = completed,
                         continueKnitting = continueKnitting,
                         yarnNames = yarnNames,
+                        yarnCardIds = yarnCardIds,
                         photoCounts = photoCounts,
                         patternNames = patternNames,
                         hasNotes = hasNotes,
@@ -227,7 +267,10 @@ fun ProjectListScreen(
                 actions =
                     ProjectListContentActions(
                         onProjectClick = onProjectClick,
-                        onNotesClick = onNotesEditor,
+                        onNotesClick = viewModel::openNotesEditor,
+                        onPhotoGallery = viewModel::openPhotoGallery,
+                        onPatternViewer = onPatternViewer,
+                        onYarnCard = onYarnCard,
                         onToggleSelection = { viewModel.toggleProjectSelection(it) },
                         onEnterMultiSelect = { viewModel.enterMultiSelectMode(it) },
                         onArchive = { viewModel.archiveProject(it) },
@@ -242,7 +285,7 @@ fun ProjectListScreen(
             // FAB (ei multi-select-tilassa)
             if (!isMultiSelectMode) {
                 FloatingActionButton(
-                    onClick = { viewModel.createProject() },
+                    onClick = { showCreateProjectDialog = true },
                     modifier =
                         Modifier
                             .align(Alignment.BottomEnd)
@@ -363,7 +406,7 @@ data class ProjectListTopBarState(
     val isMultiSelectMode: Boolean,
     val selectedCount: Int,
     val showCompleted: Boolean,
-    val sortOrder: String,
+    val sortOrder: ProjectSortOrder,
     val showOverflowMenu: Boolean,
     val showSortMenu: Boolean,
 )
@@ -377,7 +420,7 @@ data class ProjectListTopBarActions(
     val onShowSortMenu: () -> Unit,
     val onDismissSortMenu: () -> Unit,
     val onToggleShowCompleted: () -> Unit,
-    val onSortOrderChange: (String) -> Unit,
+    val onSortOrderChange: (ProjectSortOrder) -> Unit,
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -447,7 +490,7 @@ data class OverflowMenuState(
     val showOverflowMenu: Boolean,
     val showSortMenu: Boolean,
     val showCompleted: Boolean,
-    val sortOrder: String,
+    val sortOrder: ProjectSortOrder,
 )
 
 data class OverflowMenuActions(
@@ -457,7 +500,7 @@ data class OverflowMenuActions(
     val onShowSortMenu: () -> Unit,
     val onDismissSortMenu: () -> Unit,
     val onToggleShowCompleted: () -> Unit,
-    val onSortOrderChange: (String) -> Unit,
+    val onSortOrderChange: (ProjectSortOrder) -> Unit,
 )
 
 @Composable
@@ -516,9 +559,9 @@ private fun OverflowMenuWithSort(
 @Composable
 private fun SortSubMenu(
     expanded: Boolean,
-    sortOrder: String,
+    sortOrder: ProjectSortOrder,
     onDismiss: () -> Unit,
-    onSortOrderChange: (String) -> Unit,
+    onSortOrderChange: (ProjectSortOrder) -> Unit,
 ) {
     DropdownMenu(
         expanded = expanded,
@@ -526,18 +569,18 @@ private fun SortSubMenu(
     ) {
         SortMenuItem(
             label = stringResource(R.string.sort_name),
-            selected = sortOrder == "name",
-            onClick = { onSortOrderChange("name") },
+            selected = sortOrder == ProjectSortOrder.NAME,
+            onClick = { onSortOrderChange(ProjectSortOrder.NAME) },
         )
         SortMenuItem(
             label = stringResource(R.string.sort_last_updated),
-            selected = sortOrder == "updated",
-            onClick = { onSortOrderChange("updated") },
+            selected = sortOrder == ProjectSortOrder.UPDATED,
+            onClick = { onSortOrderChange(ProjectSortOrder.UPDATED) },
         )
         SortMenuItem(
             label = stringResource(R.string.sort_created_date),
-            selected = sortOrder == "created",
-            onClick = { onSortOrderChange("created") },
+            selected = sortOrder == ProjectSortOrder.CREATED,
+            onClick = { onSortOrderChange(ProjectSortOrder.CREATED) },
         )
     }
 }
@@ -608,11 +651,13 @@ private fun MultiSelectBottomBar(
 }
 
 // Data-luokat ProjectListContent-parametrien ryhmittelyyn (S107)
+@Immutable
 data class ProjectListContentState(
     val active: List<CounterProject>,
     val completed: List<CounterProject>,
     val continueKnitting: ContinueKnittingProject?,
     val yarnNames: Map<Long, String>,
+    val yarnCardIds: Map<Long, Long>,
     val photoCounts: Map<Long, Int>,
     val patternNames: Map<Long, String>,
     val hasNotes: Set<Long>,
@@ -624,6 +669,9 @@ data class ProjectListContentState(
 data class ProjectListContentActions(
     val onProjectClick: (Long) -> Unit,
     val onNotesClick: (Long) -> Unit,
+    val onPhotoGallery: (Long) -> Unit,
+    val onPatternViewer: (Long) -> Unit,
+    val onYarnCard: (Long) -> Unit,
     val onToggleSelection: (Long) -> Unit,
     val onEnterMultiSelect: (Long) -> Unit,
     val onArchive: (Long) -> Unit,
@@ -655,9 +703,17 @@ private fun ProjectListContent(
             state.continueKnitting?.let { ck ->
                 item {
                     ContinueKnittingCard(
-                        projectName = ck.name,
-                        rowCount = ck.count,
-                        totalMinutes = ck.totalMinutes,
+                        state =
+                            ContinueKnittingCardState(
+                                projectName = ck.name,
+                                rowCount = ck.count,
+                                totalMinutes = ck.totalMinutes,
+                                sectionName = ck.sectionName,
+                                targetRows = ck.targetRows,
+                                craftType = ck.craftType,
+                                mainCounterLabelType = ck.mainCounterLabelType,
+                                mainCounterCustomLabel = ck.mainCounterCustomLabel,
+                            ),
                         onClick = { actions.onProjectClick(ck.projectId) },
                     )
                     Spacer(modifier = Modifier.height(8.dp))
@@ -688,6 +744,7 @@ private fun ProjectListContent(
                                 isMultiSelectMode = state.isMultiSelectMode,
                                 isSelected = project.id in state.selectedProjectIds,
                                 yarnName = state.yarnNames[project.id],
+                                firstYarnCardId = state.yarnCardIds[project.id],
                                 photoCount = state.photoCounts[project.id] ?: 0,
                                 patternName = state.patternNames[project.id],
                                 hasNotes = project.id in state.hasNotes,
@@ -696,6 +753,9 @@ private fun ProjectListContent(
                             ActiveProjectItemActions(
                                 onProjectClick = actions.onProjectClick,
                                 onNotesClick = actions.onNotesClick,
+                                onPhotoGallery = actions.onPhotoGallery,
+                                onPatternViewer = actions.onPatternViewer,
+                                onYarnCard = actions.onYarnCard,
                                 onToggleSelection = actions.onToggleSelection,
                                 onEnterMultiSelect = actions.onEnterMultiSelect,
                                 onArchive = actions.onArchive,
@@ -731,6 +791,8 @@ private fun ProjectListContent(
                         onClick = { actions.onProjectClick(project.id) },
                         onLongClick = { actions.onDeleteSwipe(project.id, project.name) },
                         totalRows = project.totalRows,
+                        metadataLine = projectCardMetadataLine(project),
+                        countText = projectCardCountText(project.copy(count = project.totalRows ?: project.count)),
                     )
                 }
             }
@@ -743,6 +805,7 @@ data class ActiveProjectItemState(
     val isMultiSelectMode: Boolean,
     val isSelected: Boolean,
     val yarnName: String?,
+    val firstYarnCardId: Long?,
     val photoCount: Int,
     val patternName: String?,
     val hasNotes: Boolean = false,
@@ -751,6 +814,9 @@ data class ActiveProjectItemState(
 data class ActiveProjectItemActions(
     val onProjectClick: (Long) -> Unit,
     val onNotesClick: (Long) -> Unit,
+    val onPhotoGallery: (Long) -> Unit,
+    val onPatternViewer: (Long) -> Unit,
+    val onYarnCard: (Long) -> Unit,
     val onToggleSelection: (Long) -> Unit,
     val onEnterMultiSelect: (Long) -> Unit,
     val onArchive: (Long) -> Unit,
@@ -791,6 +857,8 @@ private fun ActiveProjectItem(
                 lastUpdated = project.updatedAt,
                 onClick = { actions.onToggleSelection(project.id) },
                 modifier = Modifier.weight(1f),
+                metadataLine = projectCardMetadataLine(project),
+                countText = projectCardCountText(project),
                 yarnName = state.yarnName,
                 yarnColorSeed = project.id,
                 photoCount = state.photoCount,
@@ -805,23 +873,67 @@ private fun ActiveProjectItem(
             lastUpdated = project.updatedAt,
             onClick = { actions.onProjectClick(project.id) },
             onLongClick = { actions.onEnterMultiSelect(project.id) },
+            metadataLine = projectCardMetadataLine(project),
+            countText = projectCardCountText(project),
             yarnName = state.yarnName,
             yarnColorSeed = project.id,
             photoCount = state.photoCount,
             patternName = state.patternName,
+            hasPatternAttachment = !project.patternUri.isNullOrBlank(),
             hasNotes = state.hasNotes,
+            onPatternClick = { actions.onPatternViewer(project.id) },
             onNotesClick = { actions.onNotesClick(project.id) },
+            onPhotosClick = { actions.onPhotoGallery(project.id) },
+            onYarnClick =
+                state.firstYarnCardId?.let { yarnCardId ->
+                    { actions.onYarnCard(yarnCardId) }
+                },
         )
     }
 }
 
+private data class ContinueKnittingCardState(
+    val projectName: String,
+    val rowCount: Int,
+    val totalMinutes: Int,
+    val sectionName: String?,
+    val targetRows: Int?,
+    val craftType: CraftType,
+    val mainCounterLabelType: MainCounterLabelType,
+    val mainCounterCustomLabel: String?,
+)
+
 @Composable
 private fun ContinueKnittingCard(
-    projectName: String,
-    rowCount: Int,
-    totalMinutes: Int,
+    state: ContinueKnittingCardState,
     onClick: () -> Unit,
 ) {
+    val mainCounterDisplay =
+        CounterValueFormatter.forMainCounter(
+            CounterProject(
+                name = state.projectName,
+                count = state.rowCount,
+                targetRows = state.targetRows,
+                craftType = state.craftType,
+                mainCounterLabelType = state.mainCounterLabelType,
+                mainCounterCustomLabel = state.mainCounterCustomLabel,
+            ),
+        )
+    val rowContext =
+        if (state.targetRows != null && state.targetRows > 0) {
+            mainCounterDisplay.targetLine?.let { mainCounterTargetText(it) }
+                ?: mainCounterProjectCardCountText(mainCounterDisplay.projectCardCount)
+        } else {
+            mainCounterProjectCardCountText(mainCounterDisplay.projectCardCount)
+        }
+    val contextLine =
+        continueKnittingContextLine(
+            sectionName = state.sectionName,
+            rowCount = state.rowCount,
+            targetRows = state.targetRows,
+            fallback = rowContext + ", " + formatMinutes(state.totalMinutes),
+        )
+
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
         shape = MaterialTheme.shapes.large,
@@ -843,12 +955,12 @@ private fun ContinueKnittingCard(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = projectName,
+                    text = state.projectName,
                     style = MaterialTheme.typography.titleLarge,
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = stringResource(R.string.rows_format, rowCount) + " · " + formatMinutes(totalMinutes),
+                    text = contextLine,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -878,6 +990,41 @@ private fun ContinueKnittingCard(
             }
         }
     }
+}
+
+@Composable
+private fun projectCardMetadataLine(project: CounterProject): String =
+    projectMetadataText(
+        craftType = project.craftType,
+        labelType = project.mainCounterLabelType,
+        customLabel = project.mainCounterCustomLabel,
+    )
+
+@Composable
+private fun projectCardCountText(project: CounterProject): String =
+    mainCounterProjectCardCountText(CounterValueFormatter.forMainCounter(project).projectCardCount)
+
+internal fun continueKnittingContextLine(
+    sectionName: String?,
+    rowCount: Int,
+    targetRows: Int?,
+    fallback: String,
+): String {
+    sectionName
+        ?.trim()
+        ?.takeIf { it.isNotEmpty() }
+        ?.let { section ->
+            return listOf(section, fallback)
+                .filter(String::isNotBlank)
+                .joinToString(", ")
+        }
+
+    val progressFallback =
+        targetRows
+            ?.takeIf { it > 0 }
+            ?.let { "$rowCount/$it" }
+            ?: rowCount.toString()
+    return fallback.ifBlank { progressFallback }
 }
 
 @Composable

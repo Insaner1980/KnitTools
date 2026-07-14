@@ -49,7 +49,7 @@ class ProUpgradeViewModel
                         when (billingManager.restorePurchasesWithResult()) {
                             RestorePurchasesResult.RESTORED -> com.finnvek.knittools.R.string.pro_restored
                             RestorePurchasesResult.NOT_FOUND -> com.finnvek.knittools.R.string.no_purchases_found
-                            RestorePurchasesResult.FAILED -> com.finnvek.knittools.R.string.ai_error_unknown
+                            RestorePurchasesResult.FAILED -> com.finnvek.knittools.R.string.generic_error_unknown
                         }
                 } finally {
                     _isRestoring.value = false

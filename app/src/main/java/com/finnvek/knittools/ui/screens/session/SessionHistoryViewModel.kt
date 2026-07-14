@@ -14,9 +14,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
@@ -45,13 +43,12 @@ class SessionHistoryViewModel
         }
 
         val isPro: StateFlow<Boolean> =
-            proManager.proState
-                .map { it.hasFeature(ProFeature.FULL_HISTORY) }
-                .distinctUntilChanged()
+            proManager
+                .hasFeatureFlow(ProFeature.FULL_HISTORY)
                 .stateIn(
                     viewModelScope,
                     SharingStarted.WhileSubscribed(5000),
-                    proManager.proState.value.hasFeature(ProFeature.FULL_HISTORY),
+                    proManager.hasFeature(ProFeature.FULL_HISTORY),
                 )
 
         val sessions: StateFlow<List<KnitSession>> =

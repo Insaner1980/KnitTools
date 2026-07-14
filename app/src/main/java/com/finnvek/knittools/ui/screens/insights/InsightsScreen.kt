@@ -48,6 +48,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -58,6 +59,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.BuildConfig
 import com.finnvek.knittools.R
+import com.finnvek.knittools.ui.theme.InsightChartColors
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
@@ -82,6 +84,7 @@ fun InsightsScreen(
     val timeRange = uiState.timeRange
     val hasSessionData = uiState.hasSessionData
     val isPro = uiState.isPro
+    val canUseStreak = uiState.canUseStreak
     val resources = LocalResources.current
 
     var showProjectPicker by remember { mutableStateOf(false) }
@@ -240,6 +243,7 @@ fun InsightsScreen(
                     currentStreak = currentStreak,
                     bestStreak = bestStreak,
                     isPro = isPro,
+                    canUseStreak = canUseStreak,
                     onProUpgrade = onProUpgrade,
                 )
             }
@@ -258,7 +262,6 @@ fun InsightsScreen(
                     data = timePerProject,
                     isPro = isPro,
                     onProUpgrade = onProUpgrade,
-                    primaryColor = MaterialTheme.colorScheme.primary,
                     animationKey = animationKey,
                 )
             }
@@ -517,17 +520,9 @@ private fun TimePerProjectChart(
     data: List<ProjectTime>,
     isPro: Boolean,
     onProUpgrade: () -> Unit,
-    primaryColor: Color,
     animationKey: Any,
 ) {
-    val barColors =
-        listOf(
-            primaryColor,
-            Color(0xFF8BA44A),
-            Color(0xFFC9A435),
-            Color(0xFFB8908F),
-            Color(0xFF5F8A8B),
-        )
+    val barColors = InsightChartColors
 
     Surface(
         shape = MaterialTheme.shapes.large,
@@ -546,7 +541,9 @@ private fun TimePerProjectChart(
                         AnimatedBar(
                             state =
                                 AnimatedBarState(
-                                    projectName = project.projectName,
+                                    projectName =
+                                        project.projectName
+                                            ?: stringResource(R.string.new_project_name_format, project.projectId),
                                     targetFraction = targetFraction,
                                     totalMinutes = project.totalMinutes,
                                     totalRows = project.totalRows,
@@ -612,7 +609,7 @@ private fun PaceStatsRow(point: PaceOverTimePoint) {
         )
         Spacer(modifier = Modifier.width(12.dp))
         Text(
-            text = stringResource(R.string.insights_rows_count, point.totalRows),
+            text = pluralStringResource(R.plurals.insights_rows_count, point.totalRows, point.totalRows),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
@@ -736,7 +733,7 @@ private fun ProjectStatsRow(
         if (showRows) {
             Spacer(modifier = Modifier.width(12.dp))
             Text(
-                text = stringResource(R.string.insights_rows_count, totalRows),
+                text = pluralStringResource(R.plurals.insights_rows_count, totalRows, totalRows),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

@@ -1,6 +1,6 @@
 package com.finnvek.knittools.ui.screens.gauge
 
-import com.finnvek.knittools.ai.nano.ParsedInstruction
+import com.finnvek.knittools.domain.calculator.ParsedInstruction
 import com.finnvek.knittools.domain.model.GaugeConversionResult
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull

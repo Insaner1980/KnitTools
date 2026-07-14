@@ -35,6 +35,9 @@ interface ProgressPhotoDao {
     @Query("SELECT * FROM progress_photos ORDER BY createdAt DESC")
     fun getAllPhotos(): Flow<List<ProgressPhotoEntity>>
 
+    @Query("SELECT * FROM progress_photos")
+    suspend fun getAllPhotosOnce(): List<ProgressPhotoEntity>
+
     @Query("SELECT COUNT(*) FROM progress_photos")
     fun getAllPhotoCount(): Flow<Int>
 

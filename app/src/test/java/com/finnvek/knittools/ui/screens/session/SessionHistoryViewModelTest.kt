@@ -2,9 +2,8 @@ package com.finnvek.knittools.ui.screens.session
 
 import androidx.lifecycle.SavedStateHandle
 import com.finnvek.knittools.domain.model.KnitSession
+import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
-import com.finnvek.knittools.pro.ProState
-import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.repository.CounterRepository
 import io.mockk.coEvery
 import io.mockk.every
@@ -35,15 +34,16 @@ class SessionHistoryViewModelTest {
 
     private lateinit var repository: CounterRepository
     private lateinit var proManager: ProManager
-    private lateinit var proState: MutableStateFlow<ProState>
+    private lateinit var fullHistoryFeature: MutableStateFlow<Boolean>
 
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         repository = mockk()
         proManager = mockk()
-        proState = MutableStateFlow(ProState())
-        every { proManager.proState } returns proState
+        fullHistoryFeature = MutableStateFlow(false)
+        every { proManager.hasFeature(ProFeature.FULL_HISTORY) } answers { fullHistoryFeature.value }
+        every { proManager.hasFeatureFlow(ProFeature.FULL_HISTORY) } returns fullHistoryFeature
     }
 
     @After
@@ -77,7 +77,7 @@ class SessionHistoryViewModelTest {
             val sessions = listOf(sessionAt(1), sessionAt(48), sessionAt(100))
             coEvery { repository.getProject(projectId) } returns mockk()
             every { repository.getSessionsForProject(projectId) } returns flowOf(sessions)
-            proState.value = ProState(status = ProStatus.PRO_PURCHASED)
+            fullHistoryFeature.value = true
 
             val vm = createViewModel()
             val result = vm.sessions.first()
@@ -133,7 +133,7 @@ class SessionHistoryViewModelTest {
             val tieHighId = older.copy(id = 3L, startedAt = timestamp)
             coEvery { repository.getProject(projectId) } returns mockk()
             every { repository.getSessionsForProject(projectId) } returns flowOf(listOf(older, tieLowId, tieHighId))
-            proState.value = ProState(status = ProStatus.PRO_PURCHASED)
+            fullHistoryFeature.value = true
 
             val result = createViewModel().sessions.first()
 
@@ -163,7 +163,7 @@ class SessionHistoryViewModelTest {
             advanceUntilIdle()
 
             assertFalse(vm.isPro.value)
-            proState.value = ProState(status = ProStatus.PRO_PURCHASED)
+            fullHistoryFeature.value = true
             advanceUntilIdle()
             assertTrue(vm.isPro.value)
 
@@ -184,7 +184,7 @@ class SessionHistoryViewModelTest {
             advanceUntilIdle()
 
             assertEquals(listOf(recentSession.id), vm.sessions.value.map { it.id })
-            proState.value = ProState(status = ProStatus.PRO_PURCHASED)
+            fullHistoryFeature.value = true
             advanceUntilIdle()
             assertEquals(listOf(recentSession.id, oldSession.id), vm.sessions.value.map { it.id })
 
@@ -196,7 +196,7 @@ class SessionHistoryViewModelTest {
         coEvery { repository.getProject(projectId) } returns mockk()
         every { repository.getSessionsForProject(projectId) } returns flowOf(emptyList())
 
-        proState.value = ProState(status = ProStatus.PRO_PURCHASED)
+        fullHistoryFeature.value = true
         assertTrue(createViewModel().isPro.value)
     }
 

@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -29,7 +28,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.ui.components.HubListItem
-import com.finnvek.knittools.ui.components.QuickTipCard
 import com.finnvek.knittools.ui.navigation.Screen
 import com.finnvek.knittools.ui.theme.RavelryTeal
 import com.finnvek.knittools.ui.theme.knitToolsColors
@@ -43,8 +41,6 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val proState by viewModel.proState.collectAsStateWithLifecycle()
-    val showTips by viewModel.showTips.collectAsStateWithLifecycle()
-    val currentTip by viewModel.currentTip.collectAsStateWithLifecycle()
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -76,7 +72,10 @@ fun HomeScreen(
             ) {
                 // Pro trial info
                 if (proState.status == ProStatus.TRIAL_ACTIVE) {
-                    item {
+                    item(
+                        key = "home-trial-status",
+                        contentType = HOME_STATUS_CONTENT_TYPE,
+                    ) {
                         Text(
                             text = stringResource(R.string.pro_trial_days_left, proState.trialDaysRemaining),
                             style = MaterialTheme.typography.bodyMedium,
@@ -88,7 +87,10 @@ fun HomeScreen(
 
                 // Trial expired
                 if (proState.status == ProStatus.TRIAL_EXPIRED) {
-                    item {
+                    item(
+                        key = "home-trial-status",
+                        contentType = HOME_STATUS_CONTENT_TYPE,
+                    ) {
                         Text(
                             text = stringResource(R.string.unlock_all_tools),
                             style = MaterialTheme.typography.bodyMedium,
@@ -104,7 +106,7 @@ fun HomeScreen(
                 }
 
                 // Laskimet — suora lista
-                item {
+                item(key = "home-tool-gauge", contentType = HOME_TOOL_CONTENT_TYPE) {
                     HubListItem(
                         title = stringResource(R.string.tool_gauge_converter),
                         description = stringResource(R.string.desc_gauge_calculator),
@@ -112,7 +114,7 @@ fun HomeScreen(
                         titleColor = MaterialTheme.colorScheme.primary,
                     )
                 }
-                item {
+                item(key = "home-tool-increase-decrease", contentType = HOME_TOOL_CONTENT_TYPE) {
                     HubListItem(
                         title = stringResource(R.string.tool_increase_decrease),
                         description = stringResource(R.string.desc_increase_decrease),
@@ -120,7 +122,7 @@ fun HomeScreen(
                         titleColor = MaterialTheme.colorScheme.secondary,
                     )
                 }
-                item {
+                item(key = "home-tool-cast-on", contentType = HOME_TOOL_CONTENT_TYPE) {
                     HubListItem(
                         title = stringResource(R.string.tool_cast_on_calculator),
                         description = stringResource(R.string.desc_cast_on),
@@ -128,7 +130,7 @@ fun HomeScreen(
                         titleColor = MaterialTheme.colorScheme.tertiary,
                     )
                 }
-                item {
+                item(key = "home-tool-yarn", contentType = HOME_TOOL_CONTENT_TYPE) {
                     HubListItem(
                         title = stringResource(R.string.tool_yarn_estimator),
                         description = stringResource(R.string.desc_yarn_estimator_card),
@@ -136,7 +138,7 @@ fun HomeScreen(
                         titleColor = MaterialTheme.knitToolsColors.brandWine,
                     )
                 }
-                item {
+                item(key = "home-tool-ravelry", contentType = HOME_TOOL_CONTENT_TYPE) {
                     HubListItem(
                         title = stringResource(R.string.tool_ravelry),
                         description = stringResource(R.string.desc_ravelry),
@@ -144,20 +146,10 @@ fun HomeScreen(
                         titleColor = RavelryTeal,
                     )
                 }
-
-                // Erotin + Quick Tip
-                if (showTips) {
-                    item {
-                        HorizontalDivider(
-                            modifier = Modifier.padding(vertical = 12.dp),
-                            color = MaterialTheme.colorScheme.outline,
-                        )
-                    }
-                    item {
-                        QuickTipCard(tipText = currentTip)
-                    }
-                }
             }
         }
     }
 }
+
+private const val HOME_STATUS_CONTENT_TYPE = "home-status"
+private const val HOME_TOOL_CONTENT_TYPE = "home-tool"

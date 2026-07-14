@@ -27,7 +27,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,7 +46,7 @@ import com.finnvek.knittools.BuildConfig
 import com.finnvek.knittools.R
 import com.finnvek.knittools.data.datastore.AppLanguage
 import com.finnvek.knittools.data.datastore.ThemeMode
-import com.finnvek.knittools.pro.ProFeature
+import com.finnvek.knittools.ui.components.CollectWithLifecycleEffect
 import com.finnvek.knittools.ui.components.InfoTip
 import com.finnvek.knittools.ui.theme.knitToolsColors
 
@@ -59,15 +58,12 @@ fun SettingsScreen(
 ) {
     val prefs by viewModel.preferences.collectAsStateWithLifecycle()
     val proState by viewModel.proState.collectAsStateWithLifecycle()
-    val voiceUsage by viewModel.voiceLiveUsage.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val resources = LocalResources.current
     val showLanguageSheet = remember { mutableStateOf(false) }
 
-    LaunchedEffect(viewModel, context, resources) {
-        viewModel.messages.collect { messageRes ->
-            Toast.makeText(context, resources.getString(messageRes), Toast.LENGTH_SHORT).show()
-        }
+    CollectWithLifecycleEffect(viewModel.messages) { messageRes ->
+        Toast.makeText(context, resources.getString(messageRes), Toast.LENGTH_SHORT).show()
     }
 
     Scaffold(
@@ -140,30 +136,6 @@ fun SettingsScreen(
                 tipTitle = stringResource(R.string.tip_imperial_units_title),
                 tipDescription = stringResource(R.string.tip_imperial_units_desc),
             )
-            SwitchRow(
-                label = stringResource(R.string.show_knitting_tips),
-                checked = prefs.showKnittingTips,
-                onCheckedChange = { viewModel.setShowKnittingTips(it) },
-            )
-            if (proState.hasFeature(ProFeature.VOICE_LIVE) || BuildConfig.DEBUG) {
-                SwitchRow(
-                    label = stringResource(R.string.voice_natural_response),
-                    checked = prefs.voiceLiveEnabled,
-                    onCheckedChange = { viewModel.setVoiceLiveEnabled(it) },
-                )
-                Text(
-                    text =
-                        stringResource(
-                            R.string.voice_live_quota_remaining,
-                            voiceUsage.remainingMinutes,
-                            voiceUsage.monthlyAllowance,
-                        ),
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.knitToolsColors.onSurfaceMuted,
-                )
-            }
-
             if (!proState.isPro) {
                 HorizontalDivider()
                 SectionHeader(stringResource(R.string.settings_section_pro))

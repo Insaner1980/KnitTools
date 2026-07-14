@@ -3,7 +3,7 @@ package com.finnvek.knittools.ui.screens.notes
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.finnvek.knittools.ai.AiQuotaManager
+import com.finnvek.knittools.di.ApplicationScope
 import com.finnvek.knittools.di.IoDispatcher
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
@@ -13,25 +13,19 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
 import javax.inject.Inject
 
 data class NotesEditorUiState(
     val projectName: String = "",
     val notes: String = "",
     val isLoaded: Boolean = false,
-    val currentRow: Int = 0,
     val isPro: Boolean = false,
-    val isAiAvailable: Boolean = false,
     val isMissingProject: Boolean = false,
 )
 
@@ -41,9 +35,9 @@ class NotesEditorViewModel
     constructor(
         private val repository: CounterRepository,
         private val proManager: ProManager,
-        private val aiQuotaManager: AiQuotaManager,
         @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
-        savedStateHandle: SavedStateHandle,
+        @param:ApplicationScope private val applicationScope: CoroutineScope,
+        private val savedStateHandle: SavedStateHandle,
     ) : ViewModel() {
         private val projectId: Long? = savedStateHandle.get<Long>("projectId")?.toPositiveRouteIdOrNull()
 
@@ -67,26 +61,58 @@ class NotesEditorViewModel
                         return@collect
                     }
                     val canEditNotes = proManager.hasFeature(ProFeature.NOTES)
-                    val hasAiFeature = proManager.hasFeature(ProFeature.AI_FEATURES)
-                    val hasQuota = hasAiFeature && aiQuotaManager.hasQuota()
+                    if (!canEditNotes) {
+                        _uiState.update { state ->
+                            state.copy(
+                                projectName = project.name,
+                                notes = "",
+                                isLoaded = true,
+                                isPro = false,
+                                isMissingProject = false,
+                            )
+                        }
+                        return@collect
+                    }
+                    val restoredDraft =
+                        if (!_uiState.value.isLoaded) {
+                            savedStateHandle.get<String>(NOTES_DRAFT_KEY)
+                        } else {
+                            null
+                        }
+                    val hasRestoredDraft = restoredDraft != null && restoredDraft != project.notes
+                    if (restoredDraft == project.notes) {
+                        clearSavedDraft()
+                    }
                     val shouldAdoptNotes =
-                        !_uiState.value.isLoaded ||
+                        hasRestoredDraft ||
+                            !_uiState.value.isLoaded ||
                             !hasLocalEdits ||
                             _uiState.value.notes == persistedNotes
                     if (shouldAdoptNotes) {
-                        persistedNotes = project.notes
-                        hasLocalEdits = false
+                        persistedNotes =
+                            if (hasRestoredDraft) {
+                                savedStateHandle.get<String>(NOTES_DRAFT_BASE_KEY) ?: project.notes
+                            } else {
+                                project.notes
+                            }
+                        hasLocalEdits = hasRestoredDraft
                     }
                     _uiState.update { state ->
                         state.copy(
                             projectName = project.name,
-                            notes = if (shouldAdoptNotes) project.notes else state.notes,
+                            notes =
+                                when {
+                                    hasRestoredDraft -> restoredDraft.orEmpty()
+                                    shouldAdoptNotes -> project.notes
+                                    else -> state.notes
+                                },
                             isLoaded = true,
-                            currentRow = project.count,
                             isPro = canEditNotes,
-                            isAiAvailable = hasAiFeature && hasQuota,
                             isMissingProject = false,
                         )
+                    }
+                    if (hasRestoredDraft) {
+                        scheduleSave(loadedProjectId, restoredDraft.orEmpty())
                     }
                 }
             }
@@ -99,12 +125,12 @@ class NotesEditorViewModel
             _uiState.update { it.copy(notes = text) }
             hasLocalEdits = text != persistedNotes
             saveJob?.cancel()
-            if (!hasLocalEdits) return
-            saveJob =
-                viewModelScope.launch {
-                    delay(DEBOUNCE_MS)
-                    persistNotes(loadedProjectId, text)
-                }
+            if (!hasLocalEdits) {
+                clearSavedDraft()
+                return
+            }
+            saveDraft(text, persistedNotes)
+            scheduleSave(loadedProjectId, text)
         }
 
         fun saveImmediately(onSaved: () -> Unit = {}) {
@@ -128,32 +154,6 @@ class NotesEditorViewModel
             }
         }
 
-        /**
-         * Liittää päiväkirjamerkinnän olemassa olevien muistiinpanojen perään.
-         * Header: "{päivämäärä} · Row {currentRow}" (row-osuus vain jos count > 0).
-         * Erotin "---" lisätään vain jos olemassa olevat muistiinpanot eivät ole tyhjät.
-         */
-        fun appendJournalEntry(cleanedText: String) {
-            val state = _uiState.value
-            if (state.isMissingProject || !state.isLoaded || !state.isPro) return
-            val date = DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT).format(LocalDate.now())
-            val rowPart = if (state.currentRow > 0) " · Row ${state.currentRow}" else ""
-            val header = "$date$rowPart"
-            val block = "$header\n\n$cleanedText"
-            val newNotes =
-                if (state.notes.isBlank()) {
-                    block
-                } else {
-                    "${state.notes.trimEnd()}\n\n---\n\n$block"
-                }
-            onNotesChanged(newNotes)
-            // Päivitä AI-käytettävyys (quota voi olla muuttunut kutsun jälkeen)
-            viewModelScope.launch {
-                val stillAvailable = proManager.hasFeature(ProFeature.AI_FEATURES) && aiQuotaManager.hasQuota()
-                _uiState.update { it.copy(isAiAvailable = stillAvailable) }
-            }
-        }
-
         private suspend fun persistNotes(
             loadedProjectId: Long,
             requestedNotes: String,
@@ -170,14 +170,42 @@ class NotesEditorViewModel
             persistedNotes = savedProject.notes
             val shouldApplySavedNotes = _uiState.value.notes == requestedNotes
             hasLocalEdits = !shouldApplySavedNotes && _uiState.value.notes != persistedNotes
+            if (hasLocalEdits) {
+                saveDraft(_uiState.value.notes, persistedNotes)
+            } else {
+                clearSavedDraft()
+            }
             _uiState.update { state ->
                 state.copy(
                     projectName = savedProject.name,
                     notes = if (shouldApplySavedNotes) savedProject.notes else state.notes,
-                    currentRow = savedProject.count,
                     isMissingProject = false,
                 )
             }
+        }
+
+        private fun scheduleSave(
+            loadedProjectId: Long,
+            notes: String,
+        ) {
+            saveJob =
+                viewModelScope.launch {
+                    delay(DEBOUNCE_MS)
+                    persistNotes(loadedProjectId, notes)
+                }
+        }
+
+        private fun saveDraft(
+            notes: String,
+            baseNotes: String,
+        ) {
+            savedStateHandle[NOTES_DRAFT_KEY] = notes
+            savedStateHandle[NOTES_DRAFT_BASE_KEY] = baseNotes
+        }
+
+        private fun clearSavedDraft() {
+            savedStateHandle.remove<String>(NOTES_DRAFT_KEY)
+            savedStateHandle.remove<String>(NOTES_DRAFT_BASE_KEY)
         }
 
         override fun onCleared() {
@@ -197,7 +225,7 @@ class NotesEditorViewModel
             super.onCleared()
             if (!shouldFlush) return
             @Suppress("TooGenericExceptionCaught")
-            CoroutineScope(ioDispatcher + NonCancellable).launch {
+            applicationScope.launch(ioDispatcher) {
                 try {
                     repository.saveProjectNotes(
                         id = loadedProjectId,
@@ -212,5 +240,7 @@ class NotesEditorViewModel
 
         companion object {
             private const val DEBOUNCE_MS = 1000L
+            private const val NOTES_DRAFT_KEY = "notesDraft"
+            private const val NOTES_DRAFT_BASE_KEY = "notesDraftBase"
         }
     }

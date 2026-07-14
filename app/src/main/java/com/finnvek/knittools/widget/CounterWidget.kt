@@ -73,7 +73,7 @@ class CounterWidget : GlanceAppWidget() {
                 context.applicationContext,
                 WidgetEntryPoint::class.java,
             )
-        val isPro = entryPoint.proManager().hasFeature(ProFeature.WIDGET)
+        val isPro = entryPoint.proManager().hasFeatureAfterInitialLoad(ProFeature.WIDGET)
         val widgetData = CounterWidgetState.loadGlance(context, id)
         val initialWidgetData =
             if (isPro) resolveInitialWidgetData(context, id, entryPoint, widgetData) else widgetData
@@ -169,6 +169,7 @@ private fun ProRequiredWidget(context: Context) {
     WidgetCard(
         context = context,
         projectId = null,
+        openProUpgrade = true,
         horizontalPadding = 12.dp,
         verticalPadding = 12.dp,
     ) {
@@ -201,7 +202,7 @@ private fun SmallWidget(
         verticalPadding = 4.dp,
         frame = WidgetCardFrame(outerPadding = 2.dp, borderWidth = 2.dp, cornerRadius = 18.dp),
     ) {
-        WidgetHeader(data = data, fontSize = 12.sp)
+        WidgetHeader(data = data, fontSize = 12.sp, showSection = false)
         Spacer(modifier = GlanceModifier.defaultWeight())
         Box(
             modifier = GlanceModifier.fillMaxWidth(),
@@ -337,11 +338,18 @@ data class WidgetCardFrame(
 private fun WidgetCard(
     context: Context,
     projectId: Long?,
+    openProUpgrade: Boolean = false,
     horizontalPadding: Dp,
     verticalPadding: Dp,
     frame: WidgetCardFrame = WidgetCardFrame(),
     content: @androidx.compose.runtime.Composable ColumnScope.() -> Unit,
 ) {
+    val launchIntent =
+        if (openProUpgrade) {
+            MainActivity.createProUpgradeLaunchIntent(context)
+        } else {
+            MainActivity.createCounterLaunchIntent(context = context, projectId = projectId)
+        }
     Box(
         modifier =
             GlanceModifier
@@ -350,12 +358,7 @@ private fun WidgetCard(
                 .cornerRadius(frame.cornerRadius)
                 .background(GlanceTheme.colors.surfaceVariant)
                 .clickable(
-                    actionStartActivity(
-                        MainActivity.createCounterLaunchIntent(
-                            context = context,
-                            projectId = projectId,
-                        ),
-                    ),
+                    actionStartActivity(launchIntent),
                 ).padding(frame.borderWidth),
         contentAlignment = Alignment.Center,
     ) {
@@ -379,6 +382,7 @@ private fun WidgetHeader(
     fontSize: TextUnit,
     centered: Boolean = false,
     maxLines: Int = 1,
+    showSection: Boolean = true,
 ) {
     val textAlign = if (centered) TextAlign.Center else TextAlign.Start
     val modifier = if (centered) GlanceModifier.fillMaxWidth() else GlanceModifier
@@ -394,18 +398,20 @@ private fun WidgetHeader(
             ),
         maxLines = maxLines,
     )
-    data.sectionName?.let { section ->
-        Text(
-            text = section,
-            modifier = modifier,
-            style =
-                TextStyle(
-                    fontSize = (fontSize.value - 2f).sp,
-                    color = GlanceTheme.colors.onSurfaceVariant,
-                    textAlign = textAlign,
-                ),
-            maxLines = 1,
-        )
+    if (showSection) {
+        data.sectionName?.let { section ->
+            Text(
+                text = section,
+                modifier = modifier,
+                style =
+                    TextStyle(
+                        fontSize = (fontSize.value - 2f).sp,
+                        color = GlanceTheme.colors.onSurfaceVariant,
+                        textAlign = textAlign,
+                    ),
+                maxLines = 1,
+            )
+        }
     }
 }
 

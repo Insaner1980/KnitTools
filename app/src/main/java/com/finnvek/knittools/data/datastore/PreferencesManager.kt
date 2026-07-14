@@ -12,6 +12,7 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.finnvek.knittools.domain.model.ProjectSortOrder
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -37,10 +38,8 @@ data class AppPreferences(
     val hapticFeedback: Boolean = true,
     val keepScreenAwake: Boolean = false,
     val useImperial: Boolean = false,
-    val showKnittingTips: Boolean = true,
     val showCompletedProjects: Boolean = false,
-    val projectSortOrder: String = "updated",
-    val voiceLiveEnabled: Boolean = true,
+    val projectSortOrder: ProjectSortOrder = ProjectSortOrder.DEFAULT,
 )
 
 @Singleton
@@ -60,10 +59,8 @@ class PreferencesManager
                     hapticFeedback = prefs[KEY_HAPTIC_FEEDBACK] ?: true,
                     keepScreenAwake = prefs[KEY_KEEP_SCREEN_AWAKE] ?: false,
                     useImperial = prefs[KEY_USE_IMPERIAL] ?: false,
-                    showKnittingTips = prefs[KEY_SHOW_KNITTING_TIPS] ?: true,
                     showCompletedProjects = prefs[KEY_SHOW_COMPLETED] ?: false,
-                    projectSortOrder = prefs[KEY_SORT_ORDER] ?: "updated",
-                    voiceLiveEnabled = prefs[KEY_VOICE_LIVE] ?: true,
+                    projectSortOrder = ProjectSortOrder.fromPersistedValue(prefs[KEY_SORT_ORDER]),
                 )
             }
 
@@ -102,27 +99,15 @@ class PreferencesManager
             }
         }
 
-        suspend fun setShowKnittingTips(enabled: Boolean) {
-            context.dataStore.editPreferencesSafely("Vinkkiasetuksen tallennus") {
-                it[KEY_SHOW_KNITTING_TIPS] = enabled
-            }
-        }
-
         suspend fun setShowCompletedProjects(show: Boolean) {
             context.dataStore.editPreferencesSafely("Valmiiden projektien asetuksen tallennus") {
                 it[KEY_SHOW_COMPLETED] = show
             }
         }
 
-        suspend fun setProjectSortOrder(order: String) {
+        suspend fun setProjectSortOrder(order: ProjectSortOrder) {
             context.dataStore.editPreferencesSafely("Projektien lajittelun tallennus") {
-                it[KEY_SORT_ORDER] = order
-            }
-        }
-
-        suspend fun setVoiceLiveEnabled(enabled: Boolean) {
-            context.dataStore.editPreferencesSafely("Live-ääniasetuksen tallennus") {
-                it[KEY_VOICE_LIVE] = enabled
+                it[KEY_SORT_ORDER] = order.persistedValue
             }
         }
 
@@ -154,6 +139,9 @@ class PreferencesManager
 
             val currentLanguage = currentAppLanguage()
             context.dataStore.editPreferencesSafely("Järjestelmän kieliasetuksen synkronointi") { prefs ->
+                if (prefs[KEY_APP_LANGUAGE_MIGRATED_TO_SYSTEM] != true) {
+                    return@editPreferencesSafely
+                }
                 if (AppLanguage.fromValue(prefs[KEY_APP_LANGUAGE]) != currentLanguage) {
                     prefs[KEY_APP_LANGUAGE] = currentLanguage.value
                 }
@@ -209,10 +197,8 @@ class PreferencesManager
             val KEY_HAPTIC_FEEDBACK = booleanPreferencesKey("haptic_feedback")
             val KEY_KEEP_SCREEN_AWAKE = booleanPreferencesKey("keep_screen_awake")
             val KEY_USE_IMPERIAL = booleanPreferencesKey("use_imperial")
-            val KEY_SHOW_KNITTING_TIPS = booleanPreferencesKey("show_knitting_tips")
             val KEY_SHOW_COMPLETED = booleanPreferencesKey("show_completed_projects")
             val KEY_SORT_ORDER = stringPreferencesKey("project_sort_order")
-            val KEY_VOICE_LIVE = booleanPreferencesKey("voice_live_enabled")
             val KEY_DISMISSED_TOOLTIPS = stringSetPreferencesKey("dismissed_tooltips")
         }
     }

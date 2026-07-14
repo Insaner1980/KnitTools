@@ -15,7 +15,10 @@ import com.finnvek.knittools.data.local.YarnCardEntity
 import com.finnvek.knittools.data.remote.PatternDetail
 import com.finnvek.knittools.data.storage.PatternDocumentStorage
 import com.finnvek.knittools.data.storage.ProgressPhotoStorage
+import com.finnvek.knittools.data.storage.YarnPhotoStorage
 import com.finnvek.knittools.domain.model.ProgressPhoto
+import com.finnvek.knittools.domain.model.SavedPattern
+import com.finnvek.knittools.domain.model.SavedPatternSource
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.coVerifyOrder
@@ -26,6 +29,9 @@ import io.mockk.unmockkStatic
 import io.mockk.verify
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -74,7 +80,15 @@ class RepositoryTransactionBoundaryTest {
             val projectDao = mockk<CounterProjectDao>(relaxed = true)
             val context = mockk<Context>(relaxed = true)
             coEvery { patternDao.getByIds(listOf(4L)) } returns
-                listOf(SavedPatternEntity(id = 4L, ravelryId = 4, name = "Pattern", designerName = "Designer"))
+                listOf(
+                    SavedPatternEntity(
+                        id = 4L,
+                        source = SavedPatternSource.Ravelry.persistedValue,
+                        ravelryPatternId = 4,
+                        name = "Pattern",
+                        designerName = "Designer",
+                    ),
+                )
             val repository =
                 SavedPatternRepository(
                     patternDao,
@@ -121,6 +135,7 @@ class RepositoryTransactionBoundaryTest {
             val repository =
                 CounterRepository(
                     dao = projectDao,
+                    projectCounterDao = mockk(relaxed = true),
                     sessionDao = sessionDao,
                     photoStorage = photoStorage,
                     patternDocumentStorage = patternDocumentStorage,
@@ -150,6 +165,7 @@ class RepositoryTransactionBoundaryTest {
             val repository =
                 CounterRepository(
                     dao = projectDao,
+                    projectCounterDao = mockk(relaxed = true),
                     sessionDao = sessionDao,
                     photoStorage = photoStorage,
                     patternDocumentStorage = mockk(relaxed = true),
@@ -178,6 +194,7 @@ class RepositoryTransactionBoundaryTest {
             val repository =
                 CounterRepository(
                     dao = projectDao,
+                    projectCounterDao = mockk(relaxed = true),
                     sessionDao = sessionDao,
                     photoStorage = photoStorage,
                     patternDocumentStorage = mockk(relaxed = true),
@@ -208,6 +225,7 @@ class RepositoryTransactionBoundaryTest {
             val repository =
                 CounterRepository(
                     dao = projectDao,
+                    projectCounterDao = mockk(relaxed = true),
                     sessionDao = sessionDao,
                     photoStorage = mockk(relaxed = true),
                     patternDocumentStorage = mockk(relaxed = true),
@@ -219,16 +237,68 @@ class RepositoryTransactionBoundaryTest {
                     ioDispatcher = UnconfinedTestDispatcher(testScheduler),
                 )
 
+            coEvery { savedPatternRepository.saveImportedPatternIfMissing("content://pattern", "Pattern") } returns 11L
             repository.attachPattern(7L, "content://pattern", "Pattern", 0, null)
 
             assertEquals(1, runner.runCount)
             coVerifyOrder {
                 savedPatternRepository.saveImportedPatternIfMissing("content://pattern", "Pattern")
                 annotationRepository.clearProject(7L)
-                projectDao.updatePattern(
+                projectDao.updatePatternAttachment(
                     id = 7L,
+                    linkedPatternId = 11L,
                     patternUri = "content://pattern",
                     patternName = "Pattern",
+                    currentPatternPage = 0,
+                    patternRowMapping = null,
+                    updatedAt = any(),
+                )
+            }
+        }
+
+    @Test
+    fun `saved pattern attachment links existing saved pattern inside one transaction`() =
+        runTest {
+            val runner = RecordingTransactionRunner()
+            val projectDao = mockk<CounterProjectDao>(relaxed = true)
+            val sessionDao = mockk<SessionDao>(relaxed = true)
+            val savedPatternRepository = mockk<SavedPatternRepository>(relaxed = true)
+            val annotationRepository = mockk<PatternAnnotationRepository>(relaxed = true)
+            coEvery { savedPatternRepository.getById(12L) } returns
+                SavedPattern(
+                    id = 12L,
+                    source = SavedPatternSource.Ravelry,
+                    name = "Cardigan",
+                    designerName = "Designer",
+                    localPdfUri = null,
+                )
+            val repository =
+                CounterRepository(
+                    dao = projectDao,
+                    projectCounterDao = mockk(relaxed = true),
+                    sessionDao = sessionDao,
+                    photoStorage = mockk(relaxed = true),
+                    patternDocumentStorage = mockk(relaxed = true),
+                    context = mockk(relaxed = true),
+                    yarnCardRepository = mockk(relaxed = true),
+                    savedPatternRepository = savedPatternRepository,
+                    patternAnnotationRepository = annotationRepository,
+                    transactionRunner = runner,
+                    ioDispatcher = UnconfinedTestDispatcher(testScheduler),
+                )
+
+            val attachedPattern = repository.attachSavedPattern(7L, 12L)
+
+            assertEquals(12L, attachedPattern?.id)
+            assertEquals(1, runner.runCount)
+            coVerifyOrder {
+                savedPatternRepository.getById(12L)
+                annotationRepository.clearProject(7L)
+                projectDao.updatePatternAttachment(
+                    id = 7L,
+                    linkedPatternId = 12L,
+                    patternUri = null,
+                    patternName = "Cardigan",
                     currentPatternPage = 0,
                     patternRowMapping = null,
                     updatedAt = any(),
@@ -276,6 +346,88 @@ class RepositoryTransactionBoundaryTest {
         }
 
     @Test
+    fun `yarn card delete cleans app owned photos when caller is cancelled after database delete`() =
+        runTest {
+            val ioDispatcher = RecordingDispatcher()
+            val runner = CancellingTransactionRunner()
+            val yarnDao = mockk<YarnCardDao>(relaxed = true)
+            val projectDao = mockk<CounterProjectDao>(relaxed = true)
+            val context = mockk<Context>(relaxed = true)
+            val filesDir =
+                Files
+                    .createTempDirectory("knittools-files")
+                    .toFile()
+            val photoFile = filesDir.resolve("yarn_photos/5/yarn.jpg")
+            val photoUri = photoFile.toURI().toString()
+            checkNotNull(photoFile.parentFile).mkdirs()
+            photoFile.writeText("photo")
+            every { context.filesDir } returns filesDir
+            coEvery { yarnDao.getCards(listOf(5L)) } returns
+                listOf(
+                    YarnCardEntity(
+                        id = 5L,
+                        photoUri = photoUri,
+                    ),
+                )
+            coEvery { projectDao.getAllProjectsOnce() } returns emptyList()
+
+            withParsedFileUri(photoUri, photoFile.absolutePath) {
+                val repository =
+                    YarnCardRepository(
+                        dao = yarnDao,
+                        counterProjectDao = projectDao,
+                        context = context,
+                        transactionRunner = runner,
+                        ioDispatcher = ioDispatcher,
+                    )
+
+                val deleteJob =
+                    launch {
+                        repository.deleteCards(listOf(5L))
+                    }
+                deleteJob.join()
+            }
+
+            assertFalse(photoFile.exists())
+            assertEquals(1, ioDispatcher.dispatchCount)
+        }
+
+    @Test
+    fun `yarn card photo update copies selected photo before saving uri`() =
+        runTest {
+            val ioDispatcher = RecordingDispatcher()
+            val runner = RecordingTransactionRunner()
+            val yarnDao = mockk<YarnCardDao>(relaxed = true)
+            val projectDao = mockk<CounterProjectDao>(relaxed = true)
+            val context = mockk<Context>(relaxed = true)
+            val storage = mockk<YarnPhotoStorage>(relaxed = true)
+            val sourceUri = mockk<Uri>()
+            coEvery { yarnDao.getCard(5L) } returns
+                YarnCardEntity(
+                    id = 5L,
+                    photoUri = "",
+                )
+            every { storage.copyPhoto(context, 5L, sourceUri) } returns "file:///new-yarn-photo.jpg"
+            coEvery { yarnDao.updatePhotoUri(5L, "file:///new-yarn-photo.jpg") } returns 1
+            val repository =
+                YarnCardRepository(
+                    dao = yarnDao,
+                    counterProjectDao = projectDao,
+                    context = context,
+                    transactionRunner = runner,
+                    ioDispatcher = ioDispatcher,
+                    yarnPhotoStorage = storage,
+                )
+
+            val updated = repository.updatePhotoUri(5L, sourceUri)
+
+            assertTrue(updated)
+            verify { storage.copyPhoto(context, 5L, sourceUri) }
+            coVerify { yarnDao.updatePhotoUri(5L, "file:///new-yarn-photo.jpg") }
+            assertEquals(2, ioDispatcher.dispatchCount)
+        }
+
+    @Test
     fun `saved pattern delete dispatches unused local file cleanup to IO dispatcher`() =
         runTest {
             val ioDispatcher = RecordingDispatcher()
@@ -294,13 +446,16 @@ class RepositoryTransactionBoundaryTest {
                 listOf(
                     SavedPatternEntity(
                         id = 4L,
-                        ravelryId = 4,
+                        source = SavedPatternSource.LocalFile.persistedValue,
+                        ravelryPatternId = null,
                         name = "Pattern",
                         designerName = "Designer",
-                        patternUrl = patternUri,
+                        originalUrl = patternUri,
+                        localPdfUri = patternUri,
+                        isAvailableOffline = true,
                     ),
                 )
-            coEvery { patternDao.getByPatternUrl(patternUri) } returns null
+            coEvery { patternDao.getByLocalPdfUri(patternUri) } returns null
             coEvery { projectDao.countProjectsUsingPatternUri(patternUri) } returns 0
             withParsedAppUri(patternUri, listOf("patterns", "4", "pdf", "pattern.pdf")) {
                 val repository =
@@ -315,7 +470,7 @@ class RepositoryTransactionBoundaryTest {
                 repository.deleteByIds(listOf(4L))
             }
 
-            assertEquals(1, ioDispatcher.dispatchCount)
+            assertEquals(2, ioDispatcher.dispatchCount)
         }
 
     @Test
@@ -331,7 +486,7 @@ class RepositoryTransactionBoundaryTest {
                     .toFile()
             val patternUri = "file://${file.absolutePath.replace('\\', '/')}"
             every { context.filesDir } returns file.parentFile
-            coEvery { patternDao.getByPatternUrl(patternUri) } returns null
+            coEvery { patternDao.getByLocalPdfUri(patternUri) } returns null
             coEvery { projectDao.countProjectsUsingPatternUri(patternUri) } returns 0
             withParsedFileUri(patternUri, file.absolutePath) {
                 val repository =
@@ -445,7 +600,10 @@ class RepositoryTransactionBoundaryTest {
                 unmockkStatic(Uri::class)
             }
         }
+}
 
+@OptIn(ExperimentalCoroutinesApi::class)
+class RavelryRepositoryTransactionBoundaryTest {
     @Test
     fun `ravelry project creation saves pattern and project inside one transaction`() =
         runTest {
@@ -472,6 +630,57 @@ class RepositoryTransactionBoundaryTest {
         }
 
     @Test
+    fun `ravelry save preserves backend canonical and original urls`() =
+        runTest {
+            val savedPatternRepository = mockk<SavedPatternRepository>(relaxed = true)
+            coEvery { savedPatternRepository.saveRavelryPatternIfMissing(any()) } returns 12L
+            val repository =
+                RavelryRepository(
+                    api = mockk(relaxed = true),
+                    savedPatternRepository = savedPatternRepository,
+                    counterProjectDao = mockk(relaxed = true),
+                    transactionRunner = ImmediateDatabaseTransactionRunner,
+                )
+
+            repository.savePattern(
+                PatternDetail(
+                    id = 99,
+                    name = "Cardigan",
+                    permalink = "cardigan",
+                    canonicalUrl = "https://www.ravelry.com/patterns/library/cardigan",
+                    originalUrl = "https://www.ravelry.com/patterns/library/cardigan?utm_source=share",
+                ),
+            )
+
+            coVerify {
+                savedPatternRepository.saveRavelryPatternIfMissing(
+                    match {
+                        it.ravelryPatternId == 99 &&
+                            it.canonicalUrl == "https://www.ravelry.com/patterns/library/cardigan" &&
+                            it.originalUrl == "https://www.ravelry.com/patterns/library/cardigan?utm_source=share"
+                    },
+                )
+            }
+        }
+
+    @Test
+    fun `ravelry saved pattern multi delete delegates batch ids`() =
+        runTest {
+            val savedPatternRepository = mockk<SavedPatternRepository>(relaxed = true)
+            val repository =
+                RavelryRepository(
+                    api = mockk(relaxed = true),
+                    savedPatternRepository = savedPatternRepository,
+                    counterProjectDao = mockk(relaxed = true),
+                    transactionRunner = ImmediateDatabaseTransactionRunner,
+                )
+
+            repository.deleteSavedPatterns(listOf(4L, 5L))
+
+            coVerify(exactly = 1) { savedPatternRepository.deleteByIds(listOf(4L, 5L)) }
+        }
+
+    @Test
     fun `ravelry project creation tekee projektin nimestä uniikin`() =
         runTest {
             val savedPatternRepository = mockk<SavedPatternRepository>(relaxed = true)
@@ -493,68 +702,33 @@ class RepositoryTransactionBoundaryTest {
                 projectDao.insert(match { it.name == "Cardigan (2)" && it.linkedPatternId == 12L })
             }
         }
+}
 
-    private class RecordingTransactionRunner : DatabaseTransactionRunner {
-        var runCount: Int = 0
+private class RecordingTransactionRunner : DatabaseTransactionRunner {
+    var runCount: Int = 0
 
-        override suspend fun <T> run(block: suspend () -> T): T {
-            runCount += 1
-            return block()
-        }
+    override suspend fun <T> run(block: suspend () -> T): T {
+        runCount += 1
+        return block()
     }
+}
 
-    private class RecordingDispatcher : CoroutineDispatcher() {
-        var dispatchCount: Int = 0
-
-        override fun dispatch(
-            context: CoroutineContext,
-            block: Runnable,
-        ) {
-            dispatchCount += 1
-            block.run()
-        }
+private class CancellingTransactionRunner : DatabaseTransactionRunner {
+    override suspend fun <T> run(block: suspend () -> T): T {
+        val result = block()
+        currentCoroutineContext()[Job]?.cancel()
+        return result
     }
+}
 
-    private suspend inline fun withParsedAppUri(
-        uriString: String,
-        pathSegments: List<String>,
-        block: suspend () -> Unit,
-    ) = withParsedUri(
-        uriString = uriString,
-        configure = { uri ->
-            every { uri.scheme } returns "content"
-            every { uri.authority } returns "com.finnvek.knittools.fileprovider"
-            every { uri.pathSegments } returns pathSegments
-        },
-        block = block,
-    )
+private class RecordingDispatcher : CoroutineDispatcher() {
+    var dispatchCount: Int = 0
 
-    private suspend inline fun withParsedFileUri(
-        uriString: String,
-        path: String,
-        block: suspend () -> Unit,
-    ) = withParsedUri(
-        uriString = uriString,
-        configure = { uri ->
-            every { uri.scheme } returns "file"
-            every { uri.path } returns path
-        },
-        block = block,
-    )
-
-    private suspend inline fun withParsedUri(
-        uriString: String,
-        configure: (Uri) -> Unit,
-        block: suspend () -> Unit,
+    override fun dispatch(
+        context: CoroutineContext,
+        block: Runnable,
     ) {
-        mockkStatic(Uri::class)
-        try {
-            val uri = mockk<Uri>(relaxed = true)
-            every { Uri.parse(uriString) } returns uri
-            configure(uri)
-            block()
-        } finally {
-            unmockkStatic(Uri::class)
-        }
+        dispatchCount += 1
+        block.run()
     }
 }

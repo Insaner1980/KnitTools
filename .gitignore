@@ -28,6 +28,7 @@
 
 # Firebase config (sisältää projektikohtaisia tunnistetietoja)
 app/google-services.json
+app/src/debug/google-services.json
 
 # Prevent CLAUDE.md files from breaking Android resource merger
 **/src/main/res/**/CLAUDE.md
@@ -39,7 +40,6 @@ app/google-services.json
 /knittools-*.md
 /insights-*-delta.md
 /delegated-painting-duckling.md
-/firebase-ai-logic-setup-guide.md
 
 # Paikalliset code review -muistiinpanot (ei commitoida)
 /claude_code_review_*.md
@@ -57,7 +57,12 @@ app/google-services.json
 /icon_splash_screen.*
 /camera-icon.webp
 /screen.png
+/screenshots/
 *.bak
+
+# Paikalliset analyysi- ja jatkomuistiinpanot
+/app/stability/
+/jatka.md
 
 # Paikalliset docs- ja launcher-assetit
 /docs/
@@ -70,3 +75,8 @@ app/google-services.json
 
 # Paikallinen pnpm-asennuskansio
 /node_modules/
+/functions/lib/
+/functions/node_modules/
+/functions/firebase-debug.log
+/functions/.runtimeconfig.json
+/functions/.secret.local

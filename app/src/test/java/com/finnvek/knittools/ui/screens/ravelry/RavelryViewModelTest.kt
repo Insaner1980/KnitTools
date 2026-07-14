@@ -1,11 +1,15 @@
 package com.finnvek.knittools.ui.screens.ravelry
 
+import android.net.Uri
 import com.finnvek.knittools.auth.RavelryAuthManager
+import com.finnvek.knittools.auth.RavelryAuthState
 import com.finnvek.knittools.data.remote.Paginator
 import com.finnvek.knittools.data.remote.PatternDetail
 import com.finnvek.knittools.data.remote.PatternSearchResponse
 import com.finnvek.knittools.data.remote.PatternSearchResult
 import com.finnvek.knittools.data.remote.RavelryHttpException
+import com.finnvek.knittools.domain.model.SavedPattern
+import com.finnvek.knittools.domain.model.SavedPatternSource
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.RavelryRepository
@@ -42,6 +46,7 @@ class RavelryViewModelTest {
     private lateinit var repository: RavelryRepository
     private lateinit var proManager: ProManager
     private lateinit var authManager: RavelryAuthManager
+    private lateinit var authState: MutableStateFlow<RavelryAuthState>
 
     @Before
     fun setup() {
@@ -50,8 +55,10 @@ class RavelryViewModelTest {
         repository = mockk(relaxed = true)
         proManager = mockk()
         authManager = mockk(relaxed = true)
+        authState = MutableStateFlow(RavelryAuthState.NotConnected)
 
-        every { authManager.isAuthenticated } returns MutableStateFlow(false)
+        every { authManager.authState } returns authState
+        coEvery { authManager.refreshAuthStatus() } returns RavelryAuthState.NotConnected
         every { repository.getSavedPatterns() } returns flowOf(emptyList())
     }
 
@@ -185,6 +192,35 @@ class RavelryViewModelTest {
         }
 
     @Test
+    fun `start sign in emits backend authorize uri`() =
+        runTest(testDispatcher) {
+            val authorizeUri = mockk<Uri>()
+            coEvery { authManager.startAuth() } returns authorizeUri
+            val vm = createViewModel(isPro = true)
+            val launchUris = mutableListOf<Uri>()
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                vm.signInLaunchRequests.collect { launchUris += it }
+            }
+
+            vm.startSignIn()
+            advanceUntilIdle()
+
+            assertEquals(listOf(authorizeUri), launchUris)
+        }
+
+    @Test
+    fun `disconnect delegates to backend auth manager`() =
+        runTest(testDispatcher) {
+            coEvery { authManager.disconnect() } returns RavelryAuthState.NotConnected
+            val vm = createViewModel(isPro = true)
+
+            vm.disconnectRavelry()
+            advanceUntilIdle()
+
+            coVerify(exactly = 1) { authManager.disconnect() }
+        }
+
+    @Test
     fun `loadMore is ignored when draft query no longer matches submitted query`() =
         runTest(testDispatcher) {
             coEvery {
@@ -222,6 +258,7 @@ class RavelryViewModelTest {
 
             vm.updateQuery("socks")
             vm.search()
+            runCurrent()
             vm.updateQuery("hat")
             vm.search()
             advanceUntilIdle()
@@ -244,6 +281,7 @@ class RavelryViewModelTest {
 
             vm.updateQuery("socks")
             vm.search()
+            runCurrent()
             vm.updateQuery("hat")
             socksResponse.complete(searchResponse(1))
             advanceUntilIdle()
@@ -281,6 +319,156 @@ class RavelryViewModelTest {
             assertEquals(RavelrySearchError.Authentication, vm.detailError.value)
             assertNull(vm.patternDetail.value)
             assertFalse(vm.isDetailLoading.value)
+        }
+
+    @Test
+    fun `import confirmation for search result exposes ready preview`() =
+        runTest(testDispatcher) {
+            authState.value = RavelryAuthState.Connected("knitter")
+            val pattern = PatternDetail(id = 42, name = "Import Pattern", permalink = "import-pattern")
+            coEvery { repository.getPatternDetail(42) } returns pattern
+            coEvery { repository.findDuplicateFor(pattern) } returns null
+            val vm = createViewModel(isPro = true)
+
+            vm.showImportConfirmationForPattern(42)
+            advanceUntilIdle()
+
+            assertEquals(RavelryImportStatus.Ready, vm.importConfirmationState.value?.status)
+            assertEquals(pattern, vm.importConfirmationState.value?.pattern)
+        }
+
+    @Test
+    fun `import confirmation for url waits for explicit user confirmation before repository url import`() =
+        runTest(testDispatcher) {
+            authState.value = RavelryAuthState.Connected("knitter")
+            val url = "https://www.ravelry.com/patterns/library/import-pattern"
+            val pattern = PatternDetail(id = 42, name = "Import Pattern", permalink = "import-pattern")
+            coEvery { repository.importPatternByUrl(url) } returns pattern
+            coEvery { repository.findDuplicateFor(pattern) } returns null
+            val vm = createViewModel(isPro = true)
+
+            vm.showImportConfirmationForUrl(url)
+            advanceUntilIdle()
+
+            assertEquals(RavelryImportStatus.AwaitingUserConfirmation, vm.importConfirmationState.value?.status)
+            coVerify(exactly = 0) { repository.importPatternByUrl(any()) }
+
+            vm.retryImportConfirmation()
+            advanceUntilIdle()
+
+            assertEquals(RavelryImportStatus.Ready, vm.importConfirmationState.value?.status)
+            coVerify(exactly = 1) { repository.importPatternByUrl(url) }
+        }
+
+    @Test
+    fun `import confirmation exposes already saved duplicate`() =
+        runTest(testDispatcher) {
+            authState.value = RavelryAuthState.Connected("knitter")
+            val pattern = PatternDetail(id = 42, name = "Import Pattern", permalink = "import-pattern")
+            coEvery { repository.getPatternDetail(42) } returns pattern
+            coEvery { repository.findDuplicateFor(pattern) } returns
+                SavedPattern(
+                    id = 7L,
+                    source = SavedPatternSource.Ravelry,
+                    ravelryPatternId = 42,
+                    name = "Import Pattern",
+                    designerName = "Designer",
+                )
+            val vm = createViewModel(isPro = true)
+
+            vm.showImportConfirmationForPattern(42)
+            advanceUntilIdle()
+
+            assertEquals(RavelryImportStatus.AlreadySaved, vm.importConfirmationState.value?.status)
+            assertEquals(7L, vm.importConfirmationState.value?.savedPatternId)
+        }
+
+    @Test
+    fun `import confirmation asks for sign in without loading when disconnected`() =
+        runTest(testDispatcher) {
+            val vm = createViewModel(isPro = true)
+
+            vm.showImportConfirmationForPattern(42)
+            advanceUntilIdle()
+
+            assertEquals(RavelryImportStatus.NeedsSignIn, vm.importConfirmationState.value?.status)
+            coVerify(exactly = 0) { repository.getPatternDetail(any()) }
+        }
+
+    @Test
+    fun `import confirmation maps failed precondition to sign in`() =
+        runTest(testDispatcher) {
+            authState.value = RavelryAuthState.Connected("knitter")
+            coEvery { repository.getPatternDetail(42) } throws RavelryHttpException(412)
+            val vm = createViewModel(isPro = true)
+
+            vm.showImportConfirmationForPattern(42)
+            advanceUntilIdle()
+
+            assertEquals(RavelryImportStatus.NeedsSignIn, vm.importConfirmationState.value?.status)
+        }
+
+    @Test
+    fun `save import pattern stores ready preview and switches to already saved`() =
+        runTest(testDispatcher) {
+            authState.value = RavelryAuthState.Connected("knitter")
+            val pattern = PatternDetail(id = 42, name = "Import Pattern", permalink = "import-pattern")
+            coEvery { repository.getPatternDetail(42) } returns pattern
+            coEvery { repository.findDuplicateFor(pattern) } returns null
+            coEvery { repository.savePattern(pattern) } returns 9L
+            val vm = createViewModel(isPro = true)
+
+            vm.showImportConfirmationForPattern(42)
+            advanceUntilIdle()
+            vm.saveImportPattern()
+            advanceUntilIdle()
+
+            assertEquals(RavelryImportStatus.AlreadySaved, vm.importConfirmationState.value?.status)
+            assertEquals(9L, vm.importConfirmationState.value?.savedPatternId)
+        }
+
+    @Test
+    fun `save import pattern does not restore dismissed sheet when save completes`() =
+        runTest(testDispatcher) {
+            authState.value = RavelryAuthState.Connected("knitter")
+            val pattern = PatternDetail(id = 42, name = "Import Pattern", permalink = "import-pattern")
+            coEvery { repository.getPatternDetail(42) } returns pattern
+            coEvery { repository.findDuplicateFor(pattern) } returns null
+            val saveResult = CompletableDeferred<Long>()
+            coEvery { repository.savePattern(pattern) } coAnswers {
+                saveResult.await()
+            }
+            val vm = createViewModel(isPro = true)
+
+            vm.showImportConfirmationForPattern(42)
+            advanceUntilIdle()
+            vm.saveImportPattern()
+            runCurrent()
+            vm.dismissImportConfirmation()
+            saveResult.complete(9L)
+            advanceUntilIdle()
+
+            assertNull(vm.importConfirmationState.value)
+        }
+
+    @Test
+    fun `delete selected saved patterns delegates one batch delete`() =
+        runTest(testDispatcher) {
+            val vm = createViewModel(isPro = true)
+
+            vm.enterSavedSelectMode(1L)
+            vm.toggleSavedSelection(2L)
+            vm.deleteSelectedSaved()
+            advanceUntilIdle()
+
+            coVerify(exactly = 1) {
+                repository.deleteSavedPatterns(
+                    match { ids -> ids.size == 2 && ids.toSet() == setOf(1L, 2L) },
+                )
+            }
+            coVerify(exactly = 0) { repository.deleteSavedPattern(any()) }
+            assertFalse(vm.isSavedSelectMode.value)
+            assertEquals(emptySet<Long>(), vm.selectedSavedIds.value)
         }
 
     private fun searchResponse(

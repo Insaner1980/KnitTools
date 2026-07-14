@@ -1,7 +1,6 @@
 package com.finnvek.knittools.ui.screens.notes
 
 import androidx.lifecycle.SavedStateHandle
-import com.finnvek.knittools.ai.AiQuotaManager
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
@@ -11,8 +10,10 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -24,6 +25,8 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -31,114 +34,68 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class NotesEditorViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
+    private val applicationScope = CoroutineScope(testDispatcher)
     private lateinit var repository: CounterRepository
     private lateinit var proManager: ProManager
-    private lateinit var quota: AiQuotaManager
 
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         repository = mockk(relaxed = true)
         proManager = mockk()
-        quota = mockk()
         every { proManager.hasFeature(ProFeature.NOTES) } returns true
-        every { proManager.hasFeature(ProFeature.AI_FEATURES) } returns true
-        coEvery { quota.hasQuota() } returns true
     }
 
     @After
     fun tearDown() {
+        applicationScope.cancel()
         Dispatchers.resetMain()
     }
 
-    private fun vm(
-        notes: String = "",
-        count: Int = 0,
-    ): NotesEditorViewModel {
+    private fun vm(notes: String = ""): NotesEditorViewModel {
         val project =
             CounterProject(
                 id = 1L,
                 name = "Test",
-                count = count,
                 notes = notes,
             )
-        coEvery { repository.observeProject(1L) } returns flowOf(project)
+        every { repository.observeProject(1L) } returns flowOf(project)
         coEvery { repository.saveProjectNotes(1L, any(), any()) } answers {
             project.copy(notes = arg(2))
         }
         return NotesEditorViewModel(
             repository = repository,
             proManager = proManager,
-            aiQuotaManager = quota,
             ioDispatcher = testDispatcher,
+            applicationScope = applicationScope,
             savedStateHandle = SavedStateHandle(mapOf("projectId" to 1L)),
         )
     }
 
     @Test
-    fun `appendJournalEntry on empty notes creates entry without separator`() =
+    fun `initial state loads project notes and Pro flag`() =
         runTest {
-            val viewModel = vm(notes = "", count = 5)
+            val viewModel = vm(notes = "hello")
             advanceUntilIdle()
-            viewModel.appendJournalEntry("Switched to smaller needles.")
-            val result = viewModel.uiState.value.notes
-            assertTrue(result.contains("Row 5"))
-            assertTrue(result.contains("Switched to smaller needles."))
-            assertTrue("should not start with separator", !result.startsWith("---"))
-            viewModel.saveImmediately()
-            advanceUntilIdle()
-        }
 
-    @Test
-    fun `appendJournalEntry on existing notes adds separator`() =
-        runTest {
-            val viewModel = vm(notes = "Previous entry.", count = 42)
-            advanceUntilIdle()
-            viewModel.appendJournalEntry("New entry.")
-            val result = viewModel.uiState.value.notes
-            assertTrue(result.startsWith("Previous entry."))
-            assertTrue(result.contains("\n\n---\n\n"))
-            assertTrue(result.contains("Row 42"))
-            assertTrue(result.endsWith("New entry."))
-            viewModel.saveImmediately()
-            advanceUntilIdle()
-        }
-
-    @Test
-    fun `appendJournalEntry with zero row omits Row label`() =
-        runTest {
-            val viewModel = vm(notes = "", count = 0)
-            advanceUntilIdle()
-            viewModel.appendJournalEntry("Some text.")
-            val result = viewModel.uiState.value.notes
-            assertTrue("should not contain 'Row'", !result.contains("Row "))
-            assertTrue(result.endsWith("Some text."))
-            viewModel.saveImmediately()
-            advanceUntilIdle()
-        }
-
-    @Test
-    fun `initial state loads project row and Pro flags`() =
-        runTest {
-            val viewModel = vm(notes = "hello", count = 12)
-            advanceUntilIdle()
             val state = viewModel.uiState.value
-            assertEquals(12, state.currentRow)
+            assertEquals("Test", state.projectName)
             assertEquals("hello", state.notes)
+            assertTrue(state.isLoaded)
             assertTrue(state.isPro)
-            assertTrue(state.isAiAvailable)
+            assertFalse(state.isMissingProject)
         }
 
     @Test
     fun `missing project marks editor for fallback and skips saves`() =
         runTest {
-            coEvery { repository.observeProject(1L) } returns flowOf(null)
+            every { repository.observeProject(1L) } returns flowOf(null)
             val viewModel =
                 NotesEditorViewModel(
                     repository = repository,
                     proManager = proManager,
-                    aiQuotaManager = quota,
                     ioDispatcher = testDispatcher,
+                    applicationScope = applicationScope,
                     savedStateHandle = SavedStateHandle(mapOf("projectId" to 1L)),
                 )
             advanceUntilIdle()
@@ -153,24 +110,24 @@ class NotesEditorViewModelTest {
         }
 
     @Test
-    fun `observed row updates while local note edits stay intact`() =
+    fun `observed external notes do not overwrite local note edits`() =
         runTest {
             val emitExternal = CompletableDeferred<Unit>()
-            coEvery { repository.observeProject(1L) } returns
+            every { repository.observeProject(1L) } returns
                 flow {
-                    emit(CounterProject(id = 1L, name = "Test", count = 3, notes = "Base"))
+                    emit(CounterProject(id = 1L, name = "Test", notes = "Base"))
                     emitExternal.await()
-                    emit(CounterProject(id = 1L, name = "Test", count = 9, notes = "External edit"))
+                    emit(CounterProject(id = 1L, name = "Test", notes = "External edit"))
                 }
             coEvery { repository.saveProjectNotes(1L, any(), any()) } answers {
-                CounterProject(id = 1L, name = "Test", count = 9, notes = arg(2))
+                CounterProject(id = 1L, name = "Test", notes = arg(2))
             }
             val viewModel =
                 NotesEditorViewModel(
                     repository = repository,
                     proManager = proManager,
-                    aiQuotaManager = quota,
                     ioDispatcher = testDispatcher,
+                    applicationScope = applicationScope,
                     savedStateHandle = SavedStateHandle(mapOf("projectId" to 1L)),
                 )
             advanceUntilIdle()
@@ -179,9 +136,7 @@ class NotesEditorViewModelTest {
             emitExternal.complete(Unit)
             runCurrent()
 
-            val state = viewModel.uiState.value
-            assertEquals("Local edit", state.notes)
-            assertEquals(9, state.currentRow)
+            assertEquals("Local edit", viewModel.uiState.value.notes)
             viewModel.saveImmediately()
             advanceUntilIdle()
         }
@@ -190,13 +145,13 @@ class NotesEditorViewModelTest {
     fun `saveImmediately waits for repository save before callback`() =
         runTest {
             val events = mutableListOf<String>()
-            val viewModel = vm(notes = "Base", count = 4)
+            val viewModel = vm(notes = "Base")
             advanceUntilIdle()
             coEvery {
                 repository.saveProjectNotes(1L, "Base", "Local edit")
             } coAnswers {
                 events += "saved"
-                CounterProject(id = 1L, name = "Test", count = 4, notes = "Local edit")
+                CounterProject(id = 1L, name = "Test", notes = "Local edit")
             }
 
             viewModel.onNotesChanged("Local edit")
@@ -211,8 +166,8 @@ class NotesEditorViewModelTest {
         runTest {
             coEvery {
                 repository.saveProjectNotes(1L, "Base", "Local edit")
-            } returns CounterProject(id = 1L, name = "Test", count = 4, notes = "Local edit")
-            val viewModel = vm(notes = "Base", count = 4)
+            } returns CounterProject(id = 1L, name = "Test", notes = "Local edit")
+            val viewModel = vm(notes = "Base")
             advanceUntilIdle()
 
             viewModel.onNotesChanged("Local edit")
@@ -223,18 +178,78 @@ class NotesEditorViewModelTest {
         }
 
     @Test
-    fun `non-pro editor does not persist note changes`() =
+    fun `local edit is stored as a saved state draft during debounce`() =
+        runTest {
+            val project = CounterProject(id = 1L, name = "Test", notes = "Base")
+            val savedStateHandle = SavedStateHandle(mapOf("projectId" to 1L))
+            every { repository.observeProject(1L) } returns flowOf(project)
+            val viewModel =
+                NotesEditorViewModel(
+                    repository = repository,
+                    proManager = proManager,
+                    ioDispatcher = testDispatcher,
+                    applicationScope = applicationScope,
+                    savedStateHandle = savedStateHandle,
+                )
+            runCurrent()
+
+            viewModel.onNotesChanged("Local edit")
+
+            assertEquals("Local edit", savedStateHandle.get<String>("notesDraft"))
+            assertEquals("Base", savedStateHandle.get<String>("notesDraftBase"))
+            coVerify(exactly = 0) { repository.saveProjectNotes(any(), any(), any()) }
+        }
+
+    @Test
+    fun `restored draft survives process recreation and is autosaved`() =
+        runTest {
+            val project = CounterProject(id = 1L, name = "Test", notes = "Base")
+            every { repository.observeProject(1L) } returns flowOf(project)
+            coEvery {
+                repository.saveProjectNotes(1L, "Base", "Local edit")
+            } returns project.copy(notes = "Local edit")
+            val savedStateHandle =
+                SavedStateHandle(
+                    mapOf(
+                        "projectId" to 1L,
+                        "notesDraft" to "Local edit",
+                        "notesDraftBase" to "Base",
+                    ),
+                )
+            val viewModel =
+                NotesEditorViewModel(
+                    repository = repository,
+                    proManager = proManager,
+                    ioDispatcher = testDispatcher,
+                    applicationScope = applicationScope,
+                    savedStateHandle = savedStateHandle,
+                )
+
+            runCurrent()
+
+            assertEquals("Local edit", viewModel.uiState.value.notes)
+            coVerify(exactly = 0) { repository.saveProjectNotes(any(), any(), any()) }
+
+            advanceTimeBy(1_000)
+            advanceUntilIdle()
+
+            coVerify(exactly = 1) { repository.saveProjectNotes(1L, "Base", "Local edit") }
+            assertNull(savedStateHandle.get<String>("notesDraft"))
+            assertNull(savedStateHandle.get<String>("notesDraftBase"))
+        }
+
+    @Test
+    fun `non-pro editor does not read or persist note changes`() =
         runTest {
             every { proManager.hasFeature(ProFeature.NOTES) } returns false
-            every { proManager.hasFeature(ProFeature.AI_FEATURES) } returns false
-            val viewModel = vm(notes = "Base", count = 4)
+            val viewModel = vm(notes = "Base")
             advanceUntilIdle()
 
             viewModel.onNotesChanged("Local edit")
             viewModel.saveImmediately()
             advanceUntilIdle()
 
-            assertEquals("Base", viewModel.uiState.value.notes)
+            assertEquals("", viewModel.uiState.value.notes)
             coVerify(exactly = 0) { repository.updateProjectNotes(any(), any()) }
             coVerify(exactly = 0) { repository.saveProjectNotes(any(), any(), any()) }
         }

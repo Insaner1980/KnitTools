@@ -1,7 +1,5 @@
 package com.finnvek.knittools.ui.screens.settings
 
-import com.finnvek.knittools.ai.live.VoiceLiveQuotaManager
-import com.finnvek.knittools.ai.live.VoiceLiveUsage
 import com.finnvek.knittools.billing.BillingManager
 import com.finnvek.knittools.data.datastore.PreferencesManager
 import com.finnvek.knittools.data.datastore.ThemeMode
@@ -11,7 +9,6 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -26,7 +23,6 @@ class SettingsViewModelTest {
 
     private lateinit var preferencesManager: PreferencesManager
     private lateinit var billingManager: BillingManager
-    private lateinit var voiceLiveQuotaManager: VoiceLiveQuotaManager
     private lateinit var proManager: ProManager
 
     @Before
@@ -34,15 +30,12 @@ class SettingsViewModelTest {
         Dispatchers.setMain(testDispatcher)
         preferencesManager = mockk(relaxed = true)
         billingManager = mockk(relaxed = true)
-        voiceLiveQuotaManager = mockk(relaxed = true)
         proManager = mockk(relaxed = true)
         every { preferencesManager.preferences } returns
-            flowOf(
+            kotlinx.coroutines.flow.flowOf(
                 com.finnvek.knittools.data.datastore
                     .AppPreferences(),
             )
-        every { voiceLiveQuotaManager.usage } returns
-            flowOf(VoiceLiveUsage(0f, VoiceLiveQuotaManager.MONTHLY_ALLOWANCE))
     }
 
     @After
@@ -50,8 +43,7 @@ class SettingsViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun createViewModel() =
-        SettingsViewModel(preferencesManager, billingManager, voiceLiveQuotaManager, proManager)
+    private fun createViewModel() = SettingsViewModel(preferencesManager, billingManager, proManager)
 
     @Test
     fun `setThemeMode calls preferencesManager`() =
@@ -87,15 +79,6 @@ class SettingsViewModelTest {
             vm.setUseImperial(true)
 
             coVerify { preferencesManager.setUseImperial(true) }
-        }
-
-    @Test
-    fun `setShowKnittingTips calls preferencesManager`() =
-        runTest {
-            val vm = createViewModel()
-            vm.setShowKnittingTips(false)
-
-            coVerify { preferencesManager.setShowKnittingTips(false) }
         }
 
     @Test

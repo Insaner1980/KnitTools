@@ -2,6 +2,7 @@ package com.finnvek.knittools.ui.screens.counter
 
 import android.Manifest
 import android.app.Activity
+import android.content.Context
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -56,11 +57,17 @@ import androidx.core.app.ActivityCompat
 import androidx.core.net.toUri
 import coil3.compose.AsyncImage
 import com.finnvek.knittools.R
-import com.finnvek.knittools.data.storage.ProgressPhotoStorage
 import com.finnvek.knittools.domain.model.ProgressPhoto
 import com.finnvek.knittools.ui.components.rememberLocaleDateFormat
-import java.io.File
 import java.util.Date
+
+data class PhotoGalleryActions(
+    val createPhotoCaptureTarget: (Long, (PhotoCaptureTarget?) -> Unit) -> Unit,
+    val deletePendingPhotoFile: (String?) -> Unit,
+    val savePhoto: (Uri) -> Unit,
+    val deletePhoto: (ProgressPhoto) -> Unit,
+    val updateNote: (Long, String?) -> Unit = { _, _ -> },
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,13 +75,9 @@ fun PhotoGalleryScreen(
     photos: List<ProgressPhoto>,
     projectId: Long?,
     onBack: () -> Unit,
-    onSavePhoto: (Uri) -> Unit,
-    onDeletePhoto: (ProgressPhoto) -> Unit,
-    onUpdateNote: (Long, String?) -> Unit = { _, _ -> },
+    actions: PhotoGalleryActions,
 ) {
     val context = LocalContext.current
-    val appContext = context.applicationContext
-    val photoStorage = remember { ProgressPhotoStorage() }
     var pendingPhotoUriString by rememberSaveable { mutableStateOf<String?>(null) }
     var pendingPhotoFilePath by rememberSaveable { mutableStateOf<String?>(null) }
     val pendingPhotoUri = pendingPhotoUriString?.toUri()
@@ -87,41 +90,33 @@ fun PhotoGalleryScreen(
 
     val cameraLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
-            if (success) pendingPhotoUri?.let { onSavePhoto(it) }
-            if (!success) deletePendingPhotoFile(pendingPhotoFilePath)
+            handlePhotoCaptureResult(
+                success = success,
+                pendingPhotoUri = pendingPhotoUri,
+                pendingPhotoFilePath = pendingPhotoFilePath,
+                actions = actions,
+            )
             pendingPhotoUriString = null
             pendingPhotoFilePath = null
         }
 
     fun startCameraCapture() {
-        projectId?.let { id ->
-            val (file, uri) = photoStorage.createPhotoFile(appContext, id)
-            pendingPhotoUriString = uri.toString()
-            pendingPhotoFilePath = file.absolutePath
-            cameraLauncher.launch(uri)
+        requestCameraCaptureTarget(projectId, actions) { captureTarget ->
+            pendingPhotoUriString = captureTarget.uri.toString()
+            pendingPhotoFilePath = captureTarget.filePath
+            cameraLauncher.launch(captureTarget.uri)
         }
     }
 
     val permissionLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-            if (granted) {
-                startCameraCapture()
-            } else {
-                val activity = context as? Activity
-                val permanentlyDenied =
-                    activity != null &&
-                        !ActivityCompat.shouldShowRequestPermissionRationale(activity, Manifest.permission.CAMERA)
-                Toast
-                    .makeText(
-                        context,
-                        if (permanentlyDenied) {
-                            cameraPermissionDeniedPermanentMessage
-                        } else {
-                            cameraPermissionDeniedMessage
-                        },
-                        Toast.LENGTH_SHORT,
-                    ).show()
-            }
+            handleCameraPermissionResult(
+                granted = granted,
+                context = context,
+                deniedMessage = cameraPermissionDeniedMessage,
+                permanentlyDeniedMessage = cameraPermissionDeniedPermanentMessage,
+                onGranted = ::startCameraCapture,
+            )
         }
 
     fun launchCamera() {
@@ -133,7 +128,7 @@ fun PhotoGalleryScreen(
         PhotoViewer(
             photo = photo,
             onDismiss = { viewingPhotoId = null },
-            onDelete = { onDeletePhoto(it) },
+            onDelete = { actions.deletePhoto(it) },
         )
     }
 
@@ -142,7 +137,7 @@ fun PhotoGalleryScreen(
         RenamePhotoDialog(
             currentNote = photo.note ?: "",
             onConfirm = { newNote ->
-                onUpdateNote(photo.id, newNote.ifBlank { null })
+                actions.updateNote(photo.id, newNote.ifBlank { null })
                 renamingPhotoId = null
             },
             onDismiss = { renamingPhotoId = null },
@@ -187,66 +182,148 @@ fun PhotoGalleryScreen(
             }
         },
     ) { padding ->
-        if (photos.isEmpty()) {
-            // Tyhjä tila
-            Column(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .padding(padding)
-                        .padding(32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
-            ) {
-                androidx.compose.foundation.Image(
-                    painter = painterResource(R.drawable.camera_icon),
-                    contentDescription = null,
-                    modifier = Modifier.size(240.dp),
-                    contentScale = ContentScale.Fit,
-                )
-                Spacer(modifier = Modifier.height(24.dp))
-                Text(
-                    text = stringResource(R.string.no_photos),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    textAlign = TextAlign.Center,
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = stringResource(R.string.take_photo),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                )
-            }
-        } else {
-            // Kuvagalleria — 2 sarakkeen grid
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .padding(padding),
-                contentPadding = PaddingValues(12.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                items(photos, key = { it.id }) { photo ->
-                    PhotoGridItem(
-                        photo = photo,
-                        onClick = { viewingPhotoId = photo.id },
-                        onLongClick = { renamingPhotoId = photo.id },
-                    )
-                }
-            }
-        }
+        PhotoGalleryContent(
+            photos = photos,
+            padding = padding,
+            onPhotoClick = { viewingPhotoId = it.id },
+            onPhotoLongClick = { renamingPhotoId = it.id },
+        )
     }
 }
 
-internal fun deletePendingPhotoFile(filePath: String?) {
-    val file = filePath?.let(::File) ?: return
-    if (file.exists() && !file.delete()) {
-        file.deleteOnExit()
+private fun handlePhotoCaptureResult(
+    success: Boolean,
+    pendingPhotoUri: Uri?,
+    pendingPhotoFilePath: String?,
+    actions: PhotoGalleryActions,
+) {
+    if (success) {
+        pendingPhotoUri?.let(actions.savePhoto)
+    } else {
+        actions.deletePendingPhotoFile(pendingPhotoFilePath)
+    }
+}
+
+private fun requestCameraCaptureTarget(
+    projectId: Long?,
+    actions: PhotoGalleryActions,
+    onCaptureTargetReady: (PhotoCaptureTarget) -> Unit,
+) {
+    val id = projectId ?: return
+    actions.createPhotoCaptureTarget(id) { captureTarget ->
+        captureTarget?.let(onCaptureTargetReady)
+    }
+}
+
+private fun handleCameraPermissionResult(
+    granted: Boolean,
+    context: Context,
+    deniedMessage: String,
+    permanentlyDeniedMessage: String,
+    onGranted: () -> Unit,
+) {
+    if (granted) {
+        onGranted()
+    } else {
+        showCameraPermissionDeniedToast(context, deniedMessage, permanentlyDeniedMessage)
+    }
+}
+
+private fun showCameraPermissionDeniedToast(
+    context: Context,
+    deniedMessage: String,
+    permanentlyDeniedMessage: String,
+) {
+    val activity = context as? Activity
+    val permanentlyDenied =
+        activity != null &&
+            !ActivityCompat.shouldShowRequestPermissionRationale(activity, Manifest.permission.CAMERA)
+    val message =
+        if (permanentlyDenied) {
+            permanentlyDeniedMessage
+        } else {
+            deniedMessage
+        }
+    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+}
+
+@Composable
+private fun PhotoGalleryContent(
+    photos: List<ProgressPhoto>,
+    padding: PaddingValues,
+    onPhotoClick: (ProgressPhoto) -> Unit,
+    onPhotoLongClick: (ProgressPhoto) -> Unit,
+) {
+    if (photos.isEmpty()) {
+        EmptyPhotoGallery(padding)
+    } else {
+        PhotoGalleryGrid(
+            photos = photos,
+            padding = padding,
+            onPhotoClick = onPhotoClick,
+            onPhotoLongClick = onPhotoLongClick,
+        )
+    }
+}
+
+@Composable
+private fun EmptyPhotoGallery(padding: PaddingValues) {
+    Column(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        androidx.compose.foundation.Image(
+            painter = painterResource(R.drawable.camera_icon),
+            contentDescription = null,
+            modifier = Modifier.size(240.dp),
+            contentScale = ContentScale.Fit,
+        )
+        Spacer(modifier = Modifier.height(24.dp))
+        Text(
+            text = stringResource(R.string.no_photos),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = stringResource(R.string.take_photo),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
+    }
+}
+
+@Composable
+private fun PhotoGalleryGrid(
+    photos: List<ProgressPhoto>,
+    padding: PaddingValues,
+    onPhotoClick: (ProgressPhoto) -> Unit,
+    onPhotoLongClick: (ProgressPhoto) -> Unit,
+) {
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(2),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(padding),
+        contentPadding = PaddingValues(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        items(photos, key = { it.id }) { photo ->
+            PhotoGridItem(
+                photo = photo,
+                onClick = { onPhotoClick(photo) },
+                onLongClick = { onPhotoLongClick(photo) },
+            )
+        }
     }
 }
 

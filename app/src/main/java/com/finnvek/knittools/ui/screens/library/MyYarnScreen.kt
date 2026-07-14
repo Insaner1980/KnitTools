@@ -1,15 +1,8 @@
 package com.finnvek.knittools.ui.screens.library
 
-import android.Manifest
-import android.app.Activity
-import android.content.Intent
-import android.net.Uri
-import android.provider.Settings
 import androidx.activity.compose.BackHandler
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.StringRes
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -21,22 +14,31 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CameraAlt
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -46,24 +48,24 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.core.app.ActivityCompat
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.YarnCard
-import com.finnvek.knittools.domain.model.YarnCardStatus
-import com.finnvek.knittools.ui.components.BadgePill
+import com.finnvek.knittools.domain.model.displayName
 import com.finnvek.knittools.ui.components.ConfirmationDialog
-import com.finnvek.knittools.ui.components.StatusMessage
-import com.finnvek.knittools.ui.components.StatusMessageType
+import com.finnvek.knittools.ui.components.ProjectYarnTextField
 import com.finnvek.knittools.ui.components.skeinCountText
-import com.finnvek.knittools.ui.screens.yarncard.handleYarnLabelCaptureResult
+import com.finnvek.knittools.ui.screens.yarncard.ManualYarnCardInput
 import com.finnvek.knittools.ui.theme.knitToolsColors
+
+private const val YARN_CARD_SUMMARY_SEPARATOR = ", "
+private val yarnCardContentPadding = 14.dp
+private val yarnCardLineSpacing = 6.dp
+private val yarnCardColorDotSize = 8.dp
 
 // Data-luokat MyYarnScreen-parametrien ryhmittelyyn (S107)
 data class MyYarnState(
@@ -71,24 +73,19 @@ data class MyYarnState(
     val activeProjectNames: Map<Long, String>,
     val isSelectMode: Boolean,
     val selectedYarnIds: Set<Long>,
-    val isScanning: Boolean = false,
-    val statusMessage: String? = null,
-    val statusActionLabel: String? = null,
+    val canCreateYarnCard: Boolean,
     val deleteErrorId: Long = 0L,
 )
 
 data class MyYarnActions(
     val onCardClick: (Long) -> Unit,
+    val onCreateYarnCard: (ManualYarnCardInput) -> Unit,
     val onEnterSelectMode: (Long) -> Unit,
     val onToggleSelection: (Long) -> Unit,
     val onSelectAll: (List<Long>) -> Unit,
     val onDeleteSelected: () -> Unit,
     val onExitSelectMode: () -> Unit,
-    val onScanLabel: (() -> Unit)? = null,
-    val onCreateScanPhotoUri: (() -> Uri?)? = null,
-    val onScanPhoto: ((Uri) -> Unit)? = null,
-    val onDeleteScanPhoto: ((String) -> Unit)? = null,
-    val onStatusAction: (() -> Unit)? = null,
+    val onUpgradeToPro: () -> Unit,
     val onBack: () -> Unit,
 )
 
@@ -99,65 +96,22 @@ fun MyYarnScreen(
     actions: MyYarnActions,
 ) {
     var showDeleteConfirmDialog by rememberSaveable { mutableStateOf(false) }
-    var pendingPhotoUriString by rememberSaveable { mutableStateOf<String?>(null) }
-    var scanPermissionMessageRes by rememberSaveable { mutableStateOf<Int?>(null) }
+    var showManualYarnSheet by rememberSaveable { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
-    val deleteFailedMessage = stringResource(R.string.ai_error_unknown)
-    val context = LocalContext.current
-    val pendingPhotoUri = pendingPhotoUriString?.let(Uri::parse)
+    val deleteFailedMessage = stringResource(R.string.generic_error_unknown)
+    val requestAddYarn = {
+        if (state.canCreateYarnCard) {
+            showManualYarnSheet = true
+        } else {
+            actions.onUpgradeToPro()
+        }
+    }
 
     LaunchedEffect(state.deleteErrorId) {
         if (state.deleteErrorId > 0) {
             snackbarHostState.showSnackbar(deleteFailedMessage)
         }
     }
-
-    val cameraLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
-            handleYarnLabelCaptureResult(
-                success = success,
-                pendingPhotoUri = pendingPhotoUri,
-                onCaptured = { uri ->
-                    actions.onScanPhoto?.invoke(uri)
-                    scanPermissionMessageRes = null
-                },
-                onDeleteUnusedPhoto = { uriString -> actions.onDeleteScanPhoto?.invoke(uriString) },
-                clearPendingPhoto = { pendingPhotoUriString = null },
-            )
-        }
-
-    val permissionLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-            scanPermissionMessageRes =
-                handlePermissionResult(
-                    granted = granted,
-                    activity = context as? Activity,
-                    onCreateScanPhotoUri = actions.onCreateScanPhotoUri,
-                    cameraLauncher = cameraLauncher,
-                    setPendingUri = { pendingPhotoUriString = it },
-                )
-        }
-
-    val displayState =
-        state.withPermissionStatus(
-            permissionMessageRes = scanPermissionMessageRes,
-            context = context,
-        )
-    val displayActions =
-        actions.withScanLaunchers(
-            onLaunchScan = {
-                actions.onScanLabel?.invoke()
-                permissionLauncher.launch(Manifest.permission.CAMERA)
-            },
-            onStatusAction = {
-                handleStatusAction(
-                    context = context,
-                    permissionMessageRes = scanPermissionMessageRes,
-                    actions = actions,
-                    permissionLauncher = permissionLauncher,
-                )
-            },
-        )
 
     BackHandler(enabled = state.isSelectMode) {
         actions.onExitSelectMode()
@@ -174,141 +128,175 @@ fun MyYarnScreen(
         )
     }
 
+    if (showManualYarnSheet) {
+        ManualYarnCardSheet(
+            onSave = { input ->
+                actions.onCreateYarnCard(input)
+                showManualYarnSheet = false
+            },
+            onDismiss = { showManualYarnSheet = false },
+        )
+    }
+
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
-        floatingActionButton = {
-            if (!displayState.isSelectMode) {
-                displayActions.onScanLabel?.let { onScan ->
-                    FloatingActionButton(
-                        onClick = onScan,
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.CameraAlt,
-                            contentDescription = stringResource(R.string.scan_yarn_label),
-                        )
-                    }
-                }
-            }
-        },
         topBar = {
             MyYarnTopBar(
-                state = displayState,
-                onExitSelectMode = displayActions.onExitSelectMode,
-                onSelectAll = { displayActions.onSelectAll(displayState.cards.map { it.id }) },
-                onBack = displayActions.onBack,
+                state = state,
+                onExitSelectMode = actions.onExitSelectMode,
+                onSelectAll = { actions.onSelectAll(state.cards.map { it.id }) },
+                onBack = actions.onBack,
             )
         },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         bottomBar = {
             SelectModeDeleteBar(
-                visible = displayState.isSelectMode && displayState.selectedYarnIds.isNotEmpty(),
+                visible = state.isSelectMode && state.selectedYarnIds.isNotEmpty(),
                 onDeleteClick = { showDeleteConfirmDialog = true },
             )
         },
+        floatingActionButton = {
+            if (!state.isSelectMode && state.cards.isNotEmpty()) {
+                FloatingActionButton(
+                    onClick = requestAddYarn,
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Add,
+                        contentDescription = stringResource(R.string.add_yarn_to_my_yarn),
+                    )
+                }
+            }
+        },
     ) { padding ->
-        if (displayState.cards.isEmpty()) {
+        if (state.cards.isEmpty()) {
             MyYarnEmptyState(
-                state = displayState,
-                actions = displayActions,
                 padding = padding,
+                onAddYarn = requestAddYarn,
             )
         } else {
             MyYarnList(
-                state = displayState,
-                actions = displayActions,
+                state = state,
+                actions = actions,
                 padding = padding,
             )
         }
     }
 }
 
-private fun MyYarnState.withPermissionStatus(
-    permissionMessageRes: Int?,
-    context: android.content.Context,
-): MyYarnState {
-    val permissionMessage = permissionMessageRes?.let(context::getString)
-    return copy(
-        statusMessage = permissionMessage ?: statusMessage,
-        statusActionLabel =
-            when {
-                permissionMessageRes == R.string.camera_permission_denied_permanent -> {
-                    context.getString(R.string.open_settings)
-                }
-
-                permissionMessage != null -> {
-                    context.getString(R.string.retry)
-                }
-
-                else -> {
-                    statusActionLabel
-                }
-            },
-    )
-}
-
-private fun MyYarnActions.withScanLaunchers(
-    onLaunchScan: () -> Unit,
-    onStatusAction: () -> Unit,
-): MyYarnActions =
-    copy(
-        onScanLabel =
-            if (onScanLabel != null && onCreateScanPhotoUri != null && onScanPhoto != null) {
-                onLaunchScan
-            } else {
-                onScanLabel
-            },
-        onStatusAction = onStatusAction,
-    )
-
-private fun handlePermissionResult(
-    granted: Boolean,
-    activity: Activity?,
-    onCreateScanPhotoUri: (() -> Uri?)?,
-    cameraLauncher: androidx.activity.result.ActivityResultLauncher<Uri>,
-    setPendingUri: (String) -> Unit,
-): Int? {
-    if (granted) {
-        onCreateScanPhotoUri?.invoke()?.let { uri ->
-            setPendingUri(uri.toString())
-            cameraLauncher.launch(uri)
-        }
-        return null
-    }
-    val permanentlyDenied =
-        activity != null &&
-            !ActivityCompat.shouldShowRequestPermissionRationale(
-                activity,
-                Manifest.permission.CAMERA,
-            )
-    return if (permanentlyDenied) {
-        R.string.camera_permission_denied_permanent
-    } else {
-        R.string.camera_permission_denied
-    }
-}
-
-private fun handleStatusAction(
-    context: android.content.Context,
-    permissionMessageRes: Int?,
-    actions: MyYarnActions,
-    permissionLauncher: androidx.activity.result.ActivityResultLauncher<String>,
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun ManualYarnCardSheet(
+    onSave: (ManualYarnCardInput) -> Unit,
+    onDismiss: () -> Unit,
+    initialInput: ManualYarnCardInput = ManualYarnCardInput(yarnName = ""),
+    @StringRes titleRes: Int = R.string.add_yarn_to_my_yarn,
+    @StringRes bodyRes: Int = R.string.manual_yarn_optional_details,
 ) {
-    if (permissionMessageRes == R.string.camera_permission_denied_permanent) {
-        context.startActivity(
-            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                data = Uri.fromParts("package", context.packageName, null)
-            },
-        )
-        return
-    }
-    val statusAction = actions.onStatusAction
-    if (statusAction != null) {
-        statusAction()
-    } else {
-        actions.onScanLabel?.invoke()
-        permissionLauncher.launch(Manifest.permission.CAMERA)
+    var yarnName by rememberSaveable { mutableStateOf(initialInput.yarnName) }
+    var brand by rememberSaveable { mutableStateOf(initialInput.brand) }
+    var quantity by rememberSaveable { mutableStateOf(initialInput.quantity.coerceAtLeast(1).toString()) }
+    var weightCategory by rememberSaveable { mutableStateOf(initialInput.weightCategory) }
+    var colorName by rememberSaveable { mutableStateOf(initialInput.colorName) }
+    var colorNumber by rememberSaveable { mutableStateOf(initialInput.colorNumber) }
+    var dyeLot by rememberSaveable { mutableStateOf(initialInput.dyeLot) }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = MaterialTheme.colorScheme.surface,
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .navigationBarsPadding()
+                    .imePadding()
+                    .padding(horizontal = 20.dp)
+                    .padding(bottom = 32.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Text(
+                text = stringResource(titleRes),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.secondary,
+            )
+            Text(
+                text = stringResource(bodyRes),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            ProjectYarnTextField(
+                value = yarnName,
+                onValueChange = { yarnName = it },
+                label = stringResource(R.string.project_yarn_name),
+                singleLine = true,
+            )
+            ProjectYarnTextField(
+                value = brand,
+                onValueChange = { brand = it },
+                label = stringResource(R.string.brand_label),
+                singleLine = true,
+            )
+            ProjectYarnTextField(
+                value = quantity,
+                onValueChange = { quantity = it.filter(Char::isDigit) },
+                label = stringResource(R.string.quantity_label),
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            )
+            ProjectYarnTextField(
+                value = weightCategory,
+                onValueChange = { weightCategory = it },
+                label = stringResource(R.string.weight_category),
+                singleLine = true,
+            )
+            ProjectYarnTextField(
+                value = colorName,
+                onValueChange = { colorName = it },
+                label = stringResource(R.string.color_name),
+                singleLine = true,
+            )
+            ProjectYarnTextField(
+                value = colorNumber,
+                onValueChange = { colorNumber = it },
+                label = stringResource(R.string.color_number),
+                singleLine = true,
+            )
+            ProjectYarnTextField(
+                value = dyeLot,
+                onValueChange = { dyeLot = it },
+                label = stringResource(R.string.dye_lot),
+                singleLine = true,
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                TextButton(onClick = onDismiss) {
+                    Text(stringResource(R.string.cancel))
+                }
+                TextButton(
+                    onClick = {
+                        onSave(
+                            ManualYarnCardInput(
+                                yarnName = yarnName,
+                                brand = brand,
+                                quantity = quantity.toIntOrNull() ?: 1,
+                                weightCategory = weightCategory,
+                                colorName = colorName,
+                                colorNumber = colorNumber,
+                                dyeLot = dyeLot,
+                            ),
+                        )
+                    },
+                    enabled = yarnName.isNotBlank(),
+                ) {
+                    Text(stringResource(R.string.save))
+                }
+            }
+        }
     }
 }
 
@@ -348,33 +336,30 @@ private fun MyYarnTopBar(
 
 @Composable
 private fun MyYarnEmptyState(
-    state: MyYarnState,
-    actions: MyYarnActions,
     padding: PaddingValues,
+    onAddYarn: () -> Unit,
 ) {
     Column(
         modifier = Modifier.fillMaxSize().padding(padding).padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        MyYarnStatusMessage(
-            state = state,
-            actions = actions,
-            modifier = Modifier.padding(bottom = 16.dp),
-        )
-        Image(
-            painter = painterResource(R.drawable.camera_icon),
-            contentDescription = null,
-            modifier = Modifier.size(280.dp),
-            contentScale = ContentScale.Fit,
-        )
-        Spacer(modifier = Modifier.height(16.dp))
         Text(
             text = stringResource(R.string.empty_my_yarn),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
+        Spacer(modifier = Modifier.height(16.dp))
+        Button(onClick = onAddYarn) {
+            Icon(
+                imageVector = Icons.Filled.Add,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+            )
+            Spacer(modifier = Modifier.size(8.dp))
+            Text(stringResource(R.string.add_yarn_to_my_yarn))
+        }
     }
 }
 
@@ -389,14 +374,6 @@ private fun MyYarnList(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item { Spacer(modifier = Modifier.height(4.dp)) }
-        if (state.isScanning || !state.statusMessage.isNullOrBlank()) {
-            item {
-                MyYarnStatusMessage(
-                    state = state,
-                    actions = actions,
-                )
-            }
-        }
         items(state.cards, key = { it.id }) { card ->
             YarnStashCardItem(
                 card = card,
@@ -418,46 +395,6 @@ private fun MyYarnList(
             )
         }
         item { Spacer(modifier = Modifier.height(8.dp)) }
-    }
-}
-
-@Composable
-private fun MyYarnStatusMessage(
-    state: MyYarnState,
-    actions: MyYarnActions,
-    modifier: Modifier = Modifier,
-) {
-    when {
-        state.isScanning -> {
-            Row(
-                modifier =
-                    modifier
-                        .fillMaxWidth()
-                        .background(
-                            color = MaterialTheme.colorScheme.surfaceContainerLow,
-                            shape = MaterialTheme.shapes.large,
-                        ).padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                Spacer(modifier = Modifier.size(12.dp))
-                Text(
-                    text = stringResource(R.string.scanning),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-
-        !state.statusMessage.isNullOrBlank() -> {
-            StatusMessage(
-                message = state.statusMessage,
-                type = StatusMessageType.Error,
-                actionLabel = state.statusActionLabel,
-                onAction = actions.onStatusAction,
-                modifier = modifier,
-            )
-        }
     }
 }
 
@@ -492,7 +429,11 @@ private fun YarnStashCardItem(
             shape = MaterialTheme.shapes.large,
             color = backgroundColor,
         ) {
-            YarnCardContent(card = card, linkedProjectName = linkedProjectName)
+            YarnCardContent(
+                card = card,
+                linkedProjectName = linkedProjectName,
+                showOpenAffordance = !isSelectMode,
+            )
         }
 
         if (isSelectMode) {
@@ -508,25 +449,21 @@ private fun YarnStashCardItem(
 private fun YarnCardContent(
     card: YarnCard,
     linkedProjectName: String?,
+    showOpenAffordance: Boolean,
 ) {
-    val displayName = card.yarnName.ifBlank { stringResource(R.string.yarn_card_fallback_name) }
+    val fallbackName = stringResource(R.string.yarn_card_number_fallback, card.id)
+    val displayName = card.displayName { fallbackName }
     val status = yarnStatusUi(card.status)
+    val projectLine = linkedProjectName ?: stringResource(R.string.yarn_not_linked)
 
-    Column(modifier = Modifier.padding(14.dp)) {
-        if (card.brand.isNotBlank()) {
-            Text(
-                text = card.brand,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.knitToolsColors.onSurfaceMuted,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-        Spacer(modifier = Modifier.height(4.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
+    Row(
+        modifier = Modifier.padding(yarnCardContentPadding),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(yarnCardLineSpacing),
         ) {
             Text(
                 text = displayName,
@@ -534,63 +471,90 @@ private fun YarnCardContent(
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f),
             )
-            if (card.weightCategory.isNotBlank()) {
-                WeightCategoryPill(text = card.weightCategory)
-            }
-        }
-        Spacer(modifier = Modifier.height(10.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            StatusPill(status = status)
-            QuantityPill(quantity = card.quantityInStash)
-        }
-        if (card.status == YarnCardStatus.IN_USE && !linkedProjectName.isNullOrBlank()) {
-            Spacer(modifier = Modifier.height(8.dp))
+            YarnCardMetaLine(card = card, status = status)
+            YarnManualColorRow(card = card)
             Text(
-                text = stringResource(R.string.linked_project_arrow, linkedProjectName),
+                text = projectLine,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.knitToolsColors.onSurfaceMuted,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
         }
+        if (showOpenAffordance) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                tint = MaterialTheme.knitToolsColors.onSurfaceMuted,
+            )
+        }
     }
 }
 
 @Composable
-private fun WeightCategoryPill(text: String) = BadgePill(text = text)
+private fun YarnCardMetaLine(
+    card: YarnCard,
+    status: YarnStatusUi,
+) {
+    val summary =
+        listOfNotNull(
+            card.weightCategory.takeIf { it.isNotBlank() },
+            skeinCountText(card.quantityInStash),
+            status.label,
+        ).joinToString(YARN_CARD_SUMMARY_SEPARATOR)
 
-@Composable
-private fun StatusPill(status: YarnStatusUi) {
     Text(
-        text = status.label,
-        style = MaterialTheme.typography.labelSmall,
-        color = status.contentColor,
-        modifier =
-            Modifier
-                .background(
-                    color = status.containerColor,
-                    shape = MaterialTheme.shapes.small,
-                ).padding(horizontal = 8.dp, vertical = 4.dp),
+        text = summary,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.knitToolsColors.onSurfaceMuted,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
     )
 }
 
 @Composable
-private fun QuantityPill(quantity: Int) {
-    Text(
-        text = skeinCountText(quantity),
-        style = MaterialTheme.typography.labelSmall,
-        color = MaterialTheme.colorScheme.tertiary,
-        modifier =
-            Modifier
-                .background(
-                    color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.16f),
-                    shape = MaterialTheme.shapes.small,
-                ).padding(horizontal = 8.dp, vertical = 4.dp),
-    )
+private fun YarnManualColorRow(card: YarnCard) {
+    val colorSummary =
+        yarnColorSummary(
+            card = card,
+            colorNumberLabel = stringResource(R.string.color_number),
+            dyeLotLabel = stringResource(R.string.dye_lot),
+        ) ?: return
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(yarnCardLineSpacing),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .size(yarnCardColorDotSize)
+                    .background(
+                        color = MaterialTheme.colorScheme.tertiary,
+                        shape = CircleShape,
+                    ),
+        )
+        Text(
+            text = colorSummary,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.knitToolsColors.onSurfaceMuted,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
 }
+
+private fun yarnColorSummary(
+    card: YarnCard,
+    colorNumberLabel: String,
+    dyeLotLabel: String,
+): String? =
+    listOfNotNull(
+        card.colorName.takeIf { it.isNotBlank() },
+        card.colorNumber.takeIf { it.isNotBlank() }?.let { "$colorNumberLabel $it" },
+        card.dyeLot.takeIf { it.isNotBlank() }?.let { "$dyeLotLabel $it" },
+    ).joinToString(YARN_CARD_SUMMARY_SEPARATOR)
+        .takeIf { it.isNotBlank() }

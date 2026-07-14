@@ -6,25 +6,6 @@ import org.junit.Test
 
 class UiStateRetentionSourceTest {
     @Test
-    fun `journal entry sheet dismiss resets transient entry state`() {
-        val editor = ProjectSourceFiles.read(NOTES_EDITOR_SCREEN)
-        val sheet = ProjectSourceFiles.read(JOURNAL_ENTRY_BOTTOM_SHEET)
-        val viewModel = ProjectSourceFiles.read(JOURNAL_ENTRY_VIEW_MODEL)
-
-        assertTrue(editor.contains("var showJournalSheet by rememberSaveable"))
-        assertTrue(editor.contains("val journalEntryViewModel: JournalEntryViewModel = hiltViewModel()"))
-        assertTrue(editor.contains("LaunchedEffect(journalEntryState.pendingEntry)"))
-        assertTrue(editor.contains("journalEntryViewModel.consumePendingEntry()"))
-        assertTrue(viewModel.contains("val pendingEntry: JournalEvent.EntryReady? = null"))
-        assertTrue(viewModel.contains("fun consumePendingEntry()"))
-        assertTrue(viewModel.contains("fun dismissEntry()"))
-        assertTrue(viewModel.contains("processingJob?.cancel()"))
-        assertTrue(viewModel.contains("JournalEntryUiState(speechAvailable = it.speechAvailable)"))
-        assertTrue(sheet.contains("viewModel.dismissEntry()"))
-        assertFalse(sheet.contains("viewModel.events.collect"))
-    }
-
-    @Test
     fun `project actions notes opens notes bottom sheet before full editor`() {
         val screen = ProjectSourceFiles.read(COUNTER_SCREEN)
 
@@ -33,18 +14,12 @@ class UiStateRetentionSourceTest {
     }
 
     @Test
-    fun `counter summary and project overlays are cleared when owning project changes`() {
+    fun `project scoped overlays are cleared when owning project changes`() {
         val screen = ProjectSourceFiles.read(COUNTER_SCREEN)
-        val viewModel = ProjectSourceFiles.read(COUNTER_VIEW_MODEL)
 
         assertTrue(screen.contains("var previousOverlayProjectId by rememberSaveable"))
         assertTrue(screen.contains("hideProjectScopedOverlays()"))
         assertTrue(screen.contains("LaunchedEffect(state.projectId)"))
-        assertTrue(viewModel.contains("private var summaryJob: Job? = null"))
-        assertTrue(viewModel.contains("val requestProjectId = state.projectId ?: return"))
-        assertTrue(viewModel.contains("if (_uiState.value.projectId != requestProjectId) return@launch"))
-        assertTrue(viewModel.contains("summaryJob?.cancel()"))
-        assertTrue(viewModel.contains("isSummaryLoading = false"))
     }
 
     @Test
@@ -56,14 +31,6 @@ class UiStateRetentionSourceTest {
         assertTrue(counterScreen.contains("key(counter.id)"))
         assertTrue(counterComponents.contains("rememberSaveable(counter.id)"))
         assertTrue(counterDao.contains("ORDER BY sortOrder ASC, id ASC"))
-    }
-
-    @Test
-    fun `voice counter commands require unique counter name matches`() {
-        val viewModel = ProjectSourceFiles.read(COUNTER_VIEW_MODEL)
-
-        assertTrue(viewModel.contains("findUniqueProjectCounterByName(name)"))
-        assertFalse(viewModel.contains("firstOrNull { it.name.equals(name, ignoreCase = true) }"))
     }
 
     @Test
@@ -125,20 +92,12 @@ class UiStateRetentionSourceTest {
     @Test
     fun `snackbar triggers are consumed before suspending display calls`() {
         val mainActivity = ProjectSourceFiles.read(MAIN_ACTIVITY)
-        val yarnEstimator = ProjectSourceFiles.read(YARN_ESTIMATOR_SCREEN)
 
         assertTrue(mainActivity.contains("var lastShownDownloadedUpdatePromptId by rememberSaveable"))
         assertTrue(mainActivity.contains("downloadedUpdatePromptId > lastShownDownloadedUpdatePromptId"))
         assertTrue(
             mainActivity.indexOf("lastShownDownloadedUpdatePromptId = downloadedUpdatePromptId") <
                 mainActivity.indexOf("snackbarHostState.showSnackbar("),
-        )
-
-        assertFalse(yarnEstimator.contains("LaunchedEffect(scanError)"))
-        assertTrue(yarnEstimator.contains(".map { it.scanError }"))
-        assertTrue(
-            yarnEstimator.indexOf("copy(scanError = null)") <
-                yarnEstimator.indexOf("showSnackbar(scanError"),
         )
     }
 
@@ -147,10 +106,6 @@ class UiStateRetentionSourceTest {
             "app/src/main/java/com/finnvek/knittools/MainActivity.kt"
         private const val NOTES_EDITOR_SCREEN =
             "app/src/main/java/com/finnvek/knittools/ui/screens/notes/NotesEditorScreen.kt"
-        private const val JOURNAL_ENTRY_BOTTOM_SHEET =
-            "app/src/main/java/com/finnvek/knittools/ui/screens/notes/JournalEntryBottomSheet.kt"
-        private const val JOURNAL_ENTRY_VIEW_MODEL =
-            "app/src/main/java/com/finnvek/knittools/ui/screens/notes/JournalEntryViewModel.kt"
         private const val TARGET_ROWS_DIALOG =
             "app/src/main/java/com/finnvek/knittools/ui/screens/counter/TargetRowsDialog.kt"
         private const val PHOTO_GALLERY_SCREEN =
@@ -159,8 +114,6 @@ class UiStateRetentionSourceTest {
             "app/src/main/java/com/finnvek/knittools/ui/screens/library/AllPhotosScreen.kt"
         private const val NAV_GRAPH =
             "app/src/main/java/com/finnvek/knittools/ui/navigation/NavGraph.kt"
-        private const val YARN_ESTIMATOR_SCREEN =
-            "app/src/main/java/com/finnvek/knittools/ui/screens/yarn/YarnEstimatorScreen.kt"
         private const val COUNTER_SCREEN =
             "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterScreen.kt"
         private const val COUNTER_VIEW_MODEL =

@@ -27,7 +27,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,6 +46,7 @@ import com.finnvek.knittools.BuildConfig
 import com.finnvek.knittools.R
 import com.finnvek.knittools.data.datastore.AppLanguage
 import com.finnvek.knittools.data.datastore.ThemeMode
+import com.finnvek.knittools.ui.components.CollectWithLifecycleEffect
 import com.finnvek.knittools.ui.components.InfoTip
 import com.finnvek.knittools.ui.theme.knitToolsColors
 
@@ -62,10 +62,8 @@ fun SettingsScreen(
     val resources = LocalResources.current
     val showLanguageSheet = remember { mutableStateOf(false) }
 
-    LaunchedEffect(viewModel, context, resources) {
-        viewModel.messages.collect { messageRes ->
-            Toast.makeText(context, resources.getString(messageRes), Toast.LENGTH_SHORT).show()
-        }
+    CollectWithLifecycleEffect(viewModel.messages) { messageRes ->
+        Toast.makeText(context, resources.getString(messageRes), Toast.LENGTH_SHORT).show()
     }
 
     Scaffold(

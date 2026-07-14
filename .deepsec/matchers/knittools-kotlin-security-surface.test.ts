@@ -56,6 +56,7 @@ test("flags FileProvider, SAF, and content resolver file boundaries", () => {
 fun copy(context: Context, uri: Uri) {
   context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
   context.contentResolver.openInputStream(uri)?.use { input -> input.copyTo(output) }
+  AppFileStorage.openReadDescriptor(context, uri)
   FileProvider.getUriForFile(context, authority, file)
 }`;
 
@@ -71,6 +72,7 @@ fun copy(context: Context, uri: Uri) {
       "Android content resolver file read",
       "Android persistable URI permission boundary",
       "File copy boundary",
+      "ParcelFileDescriptor URI read boundary",
     ],
   );
 });
@@ -94,6 +96,46 @@ class RavelryBackendClient(
   assert.deepEqual(
     matches.map((match) => match.matchedPattern).sort(),
     ["Firebase Auth boundary", "Firebase callable function boundary", "Ravelry backend callable name"],
+  );
+});
+
+test("flags widget launch-token and persisted state write boundaries", () => {
+  const tokenContent = `
+object CounterLaunchTokenStore {
+  internal fun consumeLaunchId(context: Context, launchId: String?): Boolean = false
+}`;
+  const tokenMatches = widgetMutationSurface.match(
+    tokenContent,
+    "app/src/main/java/com/finnvek/knittools/data/storage/CounterLaunchTokenStore.kt",
+  );
+
+  const stateContent = `
+suspend fun persist(context: Context, data: WidgetData, glanceId: GlanceId) {
+  CounterWidgetState.save(context, data)
+  context.widgetDataStore.updatePreferencesSafely("Widget state") {}
+  updateAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId) {}
+}`;
+  const stateMatches = widgetMutationSurface.match(
+    stateContent,
+    "app/src/main/java/com/finnvek/knittools/widget/CounterWidgetState.kt",
+  );
+
+  assert.ok(
+    widgetMutationSurface.filePatterns.includes(
+      "app/src/main/java/com/finnvek/knittools/data/storage/CounterLaunchTokenStore.kt",
+    ),
+  );
+  assert.deepEqual(
+    tokenMatches.map((match) => match.matchedPattern),
+    ["Widget launch-token trust boundary"],
+  );
+  assert.deepEqual(
+    stateMatches.map((match) => match.matchedPattern).sort(),
+    [
+      "Glance widget persisted state write",
+      "Widget persisted DataStore write",
+      "Widget persisted state boundary",
+    ],
   );
 });
 

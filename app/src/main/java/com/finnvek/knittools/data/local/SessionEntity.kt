@@ -36,4 +36,5 @@ data class SessionEntity(
     val durationSeconds: Long = durationMinutes.toLong() * 60L,
     @ColumnInfo(defaultValue = "0")
     val rowsWorked: Int = (endRow - startRow).coerceAtLeast(0),
+    val zoneId: String? = null,
 )

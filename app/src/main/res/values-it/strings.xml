@@ -75,7 +75,7 @@
     <string name="main_counter_custom">Personalizzata</string>
     <string name="main_counter_custom_label">Etichetta personalizzata</string>
     <string name="main_counter_custom_label_error">Inserisci una etichetta.</string>
-    <string name="project_metadata_format">%1$s · %2$s</string>
+    <string name="project_metadata_format">%1$s, %2$s</string>
     <plurals name="rounds_format">
         <item quantity="one">%1$d giro</item>
         <item quantity="many">%1$d giri</item>
@@ -397,6 +397,26 @@
     <string name="care_category_drying">Asciugatura</string>
     <string name="care_category_ironing">Stiratura</string>
     <string name="care_category_dry_cleaning">Lavaggio a secco</string>
+    <string name="care_wash_30">30°</string>
+    <string name="care_wash_40">40°</string>
+    <string name="care_wash_60">60°</string>
+    <string name="care_wash_hand">Lavaggio a mano</string>
+    <string name="care_wash_do_not">Non lavare</string>
+    <string name="care_bleach_any">Qualsiasi candeggiante</string>
+    <string name="care_bleach_non_chlorine">Candeggiante senza cloro</string>
+    <string name="care_bleach_do_not">Non candeggiare</string>
+    <string name="care_dry_tumble_low">Asciugare in asciugatrice a bassa temperatura</string>
+    <string name="care_dry_tumble_normal">Asciugare in asciugatrice a temperatura normale</string>
+    <string name="care_dry_flat">Asciugare in piano</string>
+    <string name="care_dry_do_not_tumble">Non asciugare in asciugatrice</string>
+    <string name="care_iron_low">Stirare a bassa temperatura</string>
+    <string name="care_iron_medium">Stirare a temperatura media</string>
+    <string name="care_iron_high">Stirare ad alta temperatura</string>
+    <string name="care_iron_do_not">Non stirare</string>
+    <string name="care_dryclean_any">Qualsiasi solvente</string>
+    <string name="care_dryclean_p">Solvente P</string>
+    <string name="care_dryclean_f">Solvente F</string>
+    <string name="care_dryclean_do_not">Non lavare a secco</string>
 
     <!-- Defaults -->
     <string name="yarn_card_fallback_name">Scheda filato</string>
@@ -440,7 +460,11 @@
     <string name="insights_knitting_activity">ATTIVITÀ DI MAGLIA</string>
     <string name="insights_current_streak">Serie attuale:</string>
     <string name="insights_best_streak">Migliore:</string>
-    <string name="insights_rows_count">%1$d ferri</string>
+    <plurals name="insights_rows_count">
+        <item quantity="one">%1$d ferro</item>
+        <item quantity="many">%1$d ferri</item>
+        <item quantity="other">%1$d ferri</item>
+    </plurals>
     <string name="insights_less_than_tenth_hour">&lt;0.1h</string>
     <string name="insights_no_time">—</string>
     <string name="insights_footer_1">Ogni ferro conta — continua a lavorare!</string>
@@ -544,8 +568,16 @@
     <string name="share_photo">Condividi</string>
     <string name="delete_photo">Elimina foto</string>
     <string name="delete_photo_confirm">Eliminare questa foto?</string>
-    <string name="delete_photos_confirm">Eliminare %d foto?</string>
-    <string name="delete_patterns_confirm">Eliminare %d modelli?</string>
+    <plurals name="delete_photos_confirm">
+        <item quantity="one">Eliminare %1$d foto?</item>
+        <item quantity="many">Eliminare %1$d foto?</item>
+        <item quantity="other">Eliminare %1$d foto?</item>
+    </plurals>
+    <plurals name="delete_patterns_confirm">
+        <item quantity="one">Eliminare %1$d modello?</item>
+        <item quantity="many">Eliminare %1$d modelli?</item>
+        <item quantity="other">Eliminare %1$d modelli?</item>
+    </plurals>
     <string name="delete_pattern">Elimina modello</string>
     <string name="delete_yarn_cards_confirm">Eliminare %d schede filato?</string>
     <string name="delete_yarn_card">Elimina scheda filato</string>
@@ -646,4 +678,13 @@
     <string name="extra_counters_title">Contatori extra</string>
     <string name="counter_repeat_label">RIPETI</string>
     <string name="counters_list_title">Contatori</string>
+
+    <!-- Täydennetyt lokalisoidut käyttöliittymätekstit -->
+    <string name="yarn_card_number_fallback">Filato #%1$d</string>
+    <string name="pattern_detail_needles">Aghi</string>
+    <string name="pattern_detail_yardage">Metraggio</string>
+    <string name="pattern_detail_sizes">Taglie</string>
+    <string name="pattern_saved_to_library">Salvato nella libreria</string>
+    <string name="show_more">Mostra di più</string>
+    <string name="show_less">Mostra meno</string>
 </resources>

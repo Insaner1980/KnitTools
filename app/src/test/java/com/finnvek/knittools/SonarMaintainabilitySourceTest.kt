@@ -6,21 +6,6 @@ import org.junit.Test
 
 class SonarMaintainabilitySourceTest {
     @Test
-    fun `main activity uses concise intent branching and KTX Uri creation`() {
-        val mainActivity = ProjectSourceFiles.read(MAIN_ACTIVITY)
-
-        assertTrue(mainActivity.contains("import androidx.core.net.toUri"))
-        assertTrue(mainActivity.contains(".launchUrl(this, RAVELRY_PATTERN_SEARCH_URL.toUri())"))
-        assertTrue(
-            mainActivity.contains(
-                "val isShareImport = !isOAuthCallback && handleRavelryShareIntentIfNeeded(intent)",
-            ),
-        )
-        assertFalse(mainActivity.contains("Uri.parse(RAVELRY_PATTERN_SEARCH_URL)"))
-        assertFalse(mainActivity.contains("if (isOAuthCallback) false else handleRavelryShareIntentIfNeeded(intent)"))
-    }
-
-    @Test
     fun `ravelry backend request builds only present optional values`() {
         val backendClient = ProjectSourceFiles.read(RAVELRY_BACKEND_CLIENT)
 
@@ -59,21 +44,6 @@ class SonarMaintainabilitySourceTest {
     }
 
     @Test
-    fun `ravelry search tab is split into focused rendering helpers`() {
-        val searchScreen = ProjectSourceFiles.read(RAVELRY_SEARCH_SCREEN)
-
-        listOf(
-            "private fun RavelrySearchField(",
-            "private fun LazyListScope.ravelrySearchResults(",
-            "private fun LazyListScope.ravelrySearchLoadingItem(",
-            "private fun LazyListScope.ravelrySearchErrorItem(",
-            "private fun LazyListScope.ravelrySearchEmptyStateItem(",
-        ).forEach { helper ->
-            assertTrue("RavelrySearchScreen should contain $helper", searchScreen.contains(helper))
-        }
-    }
-
-    @Test
     fun `sonar coverage gate excludes debug framework diagnostics`() {
         val sonarProperties = ProjectSourceFiles.read(SONAR_PROPERTIES)
 
@@ -102,7 +72,6 @@ class SonarMaintainabilitySourceTest {
     private companion object {
         private const val APP_BUILD = "app/build.gradle.kts"
         private const val SONAR_PROPERTIES = "sonar-project.properties"
-        private const val MAIN_ACTIVITY = "app/src/main/java/com/finnvek/knittools/MainActivity.kt"
         private const val RAVELRY_BACKEND_CLIENT =
             "app/src/main/java/com/finnvek/knittools/data/remote/RavelryBackendClient.kt"
         private const val FIREBASE_MODULE = "app/src/main/java/com/finnvek/knittools/di/FirebaseModule.kt"

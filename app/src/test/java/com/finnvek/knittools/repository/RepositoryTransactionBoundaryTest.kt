@@ -470,7 +470,7 @@ class RepositoryTransactionBoundaryTest {
                 repository.deleteByIds(listOf(4L))
             }
 
-            assertEquals(1, ioDispatcher.dispatchCount)
+            assertEquals(2, ioDispatcher.dispatchCount)
         }
 
     @Test

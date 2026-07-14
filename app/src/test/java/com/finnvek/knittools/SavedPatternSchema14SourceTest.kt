@@ -11,7 +11,7 @@ class SavedPatternSchema14SourceTest {
         val module = ProjectSourceFiles.read(DATABASE_MODULE)
         val entity = ProjectSourceFiles.read(SAVED_PATTERN_ENTITY)
 
-        assertTrue(database.contains("version = 15"))
+        assertTrue(database.contains("version = 16"))
         assertTrue(database.contains("MIGRATION_13_14"))
         assertTrue(module.contains("KnitToolsDatabase.MIGRATION_13_14"))
         assertTrue(entity.contains("val source: String"))

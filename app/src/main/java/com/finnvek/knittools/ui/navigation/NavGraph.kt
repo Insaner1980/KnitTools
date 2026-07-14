@@ -7,6 +7,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -34,6 +35,7 @@ import androidx.navigation.navArgument
 import androidx.navigation.navigation
 import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.SavedPattern
+import com.finnvek.knittools.ui.components.CollectWithLifecycleEffect
 import com.finnvek.knittools.ui.screens.abbreviations.AbbreviationsScreen
 import com.finnvek.knittools.ui.screens.caston.CastOnScreen
 import com.finnvek.knittools.ui.screens.chartsymbols.ChartSymbolScreen
@@ -95,6 +97,7 @@ data class KnitToolsNavActions(
     val onLaunchRavelryAuth: (Uri) -> Unit = {},
     val onBrowseRavelry: () -> Unit = {},
     val onCounterLaunchHandled: () -> Unit = {},
+    val onProUpgradeLaunchHandled: () -> Unit = {},
     val onRavelryShareImportHandled: () -> Unit = {},
 )
 
@@ -104,6 +107,7 @@ fun KnitToolsNavHost(
     navController: NavHostController = rememberNavController(),
     startDestination: String = TopLevelDestination.Projects.route,
     counterLaunchRequest: CounterLaunchRequest? = null,
+    openProUpgradeRequest: Boolean = false,
     ravelryShareImportRequest: RavelryShareImportRequest? = null,
     snackbarHostState: SnackbarHostState? = null,
     actions: KnitToolsNavActions = KnitToolsNavActions(),
@@ -122,6 +126,12 @@ fun KnitToolsNavHost(
         navController.navigateSingleTopTo(Screen.Counter.route)
     }
 
+    LaunchedEffect(openProUpgradeRequest) {
+        if (!openProUpgradeRequest) return@LaunchedEffect
+        navController.navigateSingleTopTo(Screen.ProUpgrade.route)
+        actions.onProUpgradeLaunchHandled()
+    }
+
     LaunchedEffect(ravelryShareImportRequest?.requestId) {
         val request = ravelryShareImportRequest ?: return@LaunchedEffect
         navController.navigateToTopLevel(TopLevelDestination.Tools)
@@ -131,6 +141,7 @@ fun KnitToolsNavHost(
 
     Scaffold(
         modifier = modifier,
+        containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = {
             snackbarHostState?.let { SnackbarHost(hostState = it) }
         },
@@ -844,21 +855,18 @@ private fun rememberLibraryYarnCardDetailReady(
     isDeleteInProgress: Boolean,
 ): Boolean {
     var cardRouteReady by remember(cardId) { mutableStateOf(false) }
-    val currentDeleteInProgress by rememberUpdatedState(isDeleteInProgress)
+    val cardFlow = remember(cardId, yarnCardViewModel) { yarnCardViewModel.observeCardForDetail(cardId) }
 
-    LaunchedEffect(cardId) {
-        cardRouteReady = false
-        yarnCardViewModel.observeCardForDetail(cardId).collect { card ->
-            if (card == null) {
-                cardRouteReady = false
-                yarnCardViewModel.clearFormState()
-                if (!currentDeleteInProgress) {
-                    navController.popBackStackOrNavigateToTopLevel(TopLevelDestination.Library)
-                }
-            } else {
-                yarnCardViewModel.loadFromCard(card)
-                cardRouteReady = true
+    CollectWithLifecycleEffect(cardFlow) { card ->
+        if (card == null) {
+            cardRouteReady = false
+            yarnCardViewModel.clearFormState()
+            if (!isDeleteInProgress) {
+                navController.popBackStackOrNavigateToTopLevel(TopLevelDestination.Library)
             }
+        } else {
+            yarnCardViewModel.loadFromCard(card)
+            cardRouteReady = true
         }
     }
 

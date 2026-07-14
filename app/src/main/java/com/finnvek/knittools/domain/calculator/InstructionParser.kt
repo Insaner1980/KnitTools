@@ -39,14 +39,26 @@ object InstructionParser {
     // --- Avain-arvo-vastauksen parsinta (key:value) ---
 
     internal fun parseResponse(response: String): ParsedInstruction {
+        oversizedInputFailure(response)?.let { return it }
         val text = response.trim()
-        val lines =
-            text.lines().associate { line ->
-                val parts = line.split(":", limit = 2)
-                if (parts.size == 2) parts[0].trim().uppercase() to parts[1].trim() else "" to ""
-            }
+        return parseKeyValueResponse(text) ?: parseWithRegex(text.uppercase())
+    }
 
-        // Format A: Increase/Decrease
+    private fun parseKeyValueResponse(text: String): ParsedInstruction? {
+        val lines = parseKeyValueLines(text)
+
+        parseIncreaseDecreaseResponse(lines)?.let { return it }
+        parseGaugeResponse(lines)?.let { return it }
+        return parseGaugeSwatchResponse(lines)
+    }
+
+    private fun parseKeyValueLines(text: String): Map<String, String> =
+        text.lines().associate { line ->
+            val parts = line.split(":", limit = 2)
+            if (parts.size == 2) parts[0].trim().uppercase() to parts[1].trim() else "" to ""
+        }
+
+    private fun parseIncreaseDecreaseResponse(lines: Map<String, String>): ParsedInstruction.IncreaseDecrease? {
         if (lines.containsKey("TYPE") && lines.containsKey("CURRENT") && lines.containsKey("CHANGE")) {
             val isIncrease = lines["TYPE"]?.uppercase()?.contains("INCREASE") == true
             val current = lines["CURRENT"]?.filter { it.isDigit() }?.toIntOrNull()
@@ -55,8 +67,10 @@ object InstructionParser {
                 return ParsedInstruction.IncreaseDecrease(current, change, isIncrease)
             }
         }
+        return null
+    }
 
-        // Format B: Gauge
+    private fun parseGaugeResponse(lines: Map<String, String>): ParsedInstruction.Gauge? {
         if (lines.containsKey("GAUGE_STITCHES") && lines.containsKey("GAUGE_ROWS")) {
             val stitches = lines["GAUGE_STITCHES"]?.toDoubleOrNull()
             val rows = lines["GAUGE_ROWS"]?.toDoubleOrNull()
@@ -68,8 +82,10 @@ object InstructionParser {
                 )
             }
         }
+        return null
+    }
 
-        // Format C: Swatch
+    private fun parseGaugeSwatchResponse(lines: Map<String, String>): ParsedInstruction.GaugeSwatch? {
         val swW = lines["SWATCH_WIDTH"]?.toDoubleOrNull()
         val swS = lines["SWATCH_STITCHES"]?.toIntOrNull()
         val swH = lines["SWATCH_HEIGHT"]?.toDoubleOrNull()
@@ -83,9 +99,7 @@ object InstructionParser {
                 lengthUnit = parseLengthUnit(lines["SWATCH_UNIT"]),
             )
         }
-
-        // Vapaamuotoinen key:value-vastaus - yrita regexia
-        return parseWithRegex(text.uppercase())
+        return null
     }
 
     // --- Typojen korjaus ennen regex-parsintaa ---
@@ -166,6 +180,7 @@ object InstructionParser {
     // --- Regex fallback — parsitaan suoraan englanninkielisestä tekstistä ---
 
     internal fun parseWithRegex(text: String): ParsedInstruction {
+        oversizedInputFailure(text)?.let { return it }
         val upper = fixTypos(text.uppercase())
 
         // Yritetään jokaista kategoriaa järjestyksessä
@@ -204,7 +219,9 @@ object InstructionParser {
     private fun parseIncreaseDecreaseAcross(upper: String): ParsedInstruction.IncreaseDecrease? {
         // "increase/decrease X stitches evenly across/over Y stitches"
         val incDecAcross =
-            Regex("""(INCREASE|DECREASE|INC|DEC)\s+(\d+).*?(?:ACROSS|OVER|FROM|IN|ON)\s+(\d+)""")
+            Regex(
+                """(INCREASE|DECREASE|INC|DEC)\s+(\d+).*?(?:ACROSS|OVER|FROM|IN|ON)\s+(\d+)\s*(?:STITCHES?|STS?)""",
+            )
         val match = incDecAcross.find(upper) ?: return null
         val isIncrease = match.groupValues[1].startsWith("INC")
         val change = match.groupValues[2].toIntOrNull() ?: return null
@@ -332,10 +349,12 @@ object InstructionParser {
         ) {
             return null
         }
-        val stM = Regex("""(\d+(?:\.\d+)?)\s*(?:STITCHES?|STS?)""").find(upper) ?: return null
-        val rowM = Regex("""(\d+(?:\.\d+)?)\s*(?:ROWS?|R\b)""").find(upper) ?: return null
-        val stitches = stM.groupValues[1].toDoubleOrNull() ?: return null
-        val rows = rowM.groupValues[1].toDoubleOrNull() ?: return null
+        val gaugeMatch =
+            Regex(
+                """(\d+(?:\.\d+)?)\s*(?:STITCHES?|STS?)\s*(?:AND|,|&|X|/)?\s*(\d+(?:\.\d+)?)\s*(?:ROWS?|R\b)""",
+            ).find(upper) ?: return null
+        val stitches = gaugeMatch.groupValues[1].toDoubleOrNull() ?: return null
+        val rows = gaugeMatch.groupValues[2].toDoubleOrNull() ?: return null
         return ParsedInstruction.Gauge(
             stitchesPer10cm = stitches,
             rowsPer10cm = rows,
@@ -482,4 +501,13 @@ object InstructionParser {
             value.contains("IN", ignoreCase = true) -> ParsedInstruction.LengthUnit.INCHES
             else -> null
         }
+
+    private fun oversizedInputFailure(text: String): ParsedInstruction.Failure? =
+        if (text.length > MAX_INPUT_LENGTH) {
+            ParsedInstruction.Failure("input_too_long", ParsedInstruction.ErrorType.PARSE_FAILED)
+        } else {
+            null
+        }
+
+    private const val MAX_INPUT_LENGTH = 10_000
 }

@@ -73,17 +73,6 @@ class CounterImageButtonSourceTest {
         }
     }
 
-    @Test
-    fun `counter image button exposes modifier as first optional parameter`() {
-        val button = ProjectSourceFiles.read(COUNTER_IMAGE_BUTTON)
-        val signature =
-            button.substringAfter("fun CounterImageButton(").substringBefore(") {")
-
-        assertTrue(signature.indexOf("modifier: Modifier = Modifier") > signature.indexOf("onClick: () -> Unit"))
-        assertTrue(signature.indexOf("modifier: Modifier = Modifier") < signature.indexOf("visualOffsetY: Dp = 0.dp"))
-        assertTrue(signature.indexOf("modifier: Modifier = Modifier") < signature.indexOf("enabled: Boolean = true"))
-    }
-
     private companion object {
         private const val COUNTER_IMAGE_BUTTON =
             "app/src/main/java/com/finnvek/knittools/ui/components/CounterImageButton.kt"

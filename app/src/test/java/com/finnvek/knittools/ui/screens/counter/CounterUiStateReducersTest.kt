@@ -8,6 +8,7 @@ import com.finnvek.knittools.domain.model.RowReminder
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.SavedPatternSource
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -31,6 +32,26 @@ class CounterUiStateReducersTest {
         assertEquals(60, result.totalRows)
         assertEquals(CounterState(count = 8, stepSize = 2), result.counter)
         assertNull(result.activeAlert)
+    }
+
+    @Test
+    fun `timer update does not change counter hero state`() {
+        val state =
+            CounterUiState(
+                projectName = "Sukat",
+                counter = CounterState(count = 12, stepSize = 2),
+                sessionSeconds = 5L,
+                stitchCount = 48,
+                stitchTrackingEnabled = true,
+                currentStitch = 7,
+                targetRows = 40,
+            )
+
+        val nextSecond = state.copy(sessionSeconds = 6L)
+        val nextRow = state.copy(counter = state.counter.copy(count = 13))
+
+        assertEquals(state.toCounterHeroState(), nextSecond.toCounterHeroState())
+        assertNotEquals(state.toCounterHeroState(), nextRow.toCounterHeroState())
     }
 
     @Test

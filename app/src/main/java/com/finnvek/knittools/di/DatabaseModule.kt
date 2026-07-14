@@ -46,6 +46,7 @@ object DatabaseModule {
                 KnitToolsDatabase.MIGRATION_12_13,
                 KnitToolsDatabase.MIGRATION_13_14,
                 KnitToolsDatabase.MIGRATION_14_15,
+                KnitToolsDatabase.MIGRATION_15_16,
             ).build()
 
     @Provides

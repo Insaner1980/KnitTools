@@ -62,7 +62,7 @@ import com.finnvek.knittools.ui.components.skeinCountText
 import com.finnvek.knittools.ui.screens.yarncard.ManualYarnCardInput
 import com.finnvek.knittools.ui.theme.knitToolsColors
 
-private const val YARN_CARD_SUMMARY_SEPARATOR = " · "
+private const val YARN_CARD_SUMMARY_SEPARATOR = ", "
 private val yarnCardContentPadding = 14.dp
 private val yarnCardLineSpacing = 6.dp
 private val yarnCardColorDotSize = 8.dp

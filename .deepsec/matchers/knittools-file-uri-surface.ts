@@ -9,7 +9,7 @@ export const knitToolsFileUriSurface: MatcherPlugin = {
   filePatterns: ["app/src/main/java/**/*.kt", "app/src/release/java/**/*.kt"],
   match(content, filePath): CandidateMatch[] {
     if (isTestFile(filePath)) return [];
-    if (!/\b(?:Uri|FileProvider|contentResolver|OpenDocument|CreateDocument|copyTo|copyRecursively)\b/.test(content)) {
+    if (!/\b(?:Uri|FileProvider|contentResolver|OpenDocument|CreateDocument|copyTo|copyRecursively|openReadDescriptor|openFileDescriptor)\b/.test(content)) {
       return [];
     }
 
@@ -25,6 +25,10 @@ export const knitToolsFileUriSurface: MatcherPlugin = {
       {
         regex: /\bcontentResolver\.openOutputStream\s*\(/,
         label: "Android content resolver file write",
+      },
+      {
+        regex: /\b(?:AppFileStorage\.)?openReadDescriptor\s*\(|\bcontentResolver\.openFileDescriptor\s*\(/,
+        label: "ParcelFileDescriptor URI read boundary",
       },
       {
         regex: /\btakePersistableUriPermission\s*\(/,

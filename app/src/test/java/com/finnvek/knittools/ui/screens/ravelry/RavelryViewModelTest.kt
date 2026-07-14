@@ -258,6 +258,7 @@ class RavelryViewModelTest {
 
             vm.updateQuery("socks")
             vm.search()
+            runCurrent()
             vm.updateQuery("hat")
             vm.search()
             advanceUntilIdle()
@@ -280,6 +281,7 @@ class RavelryViewModelTest {
 
             vm.updateQuery("socks")
             vm.search()
+            runCurrent()
             vm.updateQuery("hat")
             socksResponse.complete(searchResponse(1))
             advanceUntilIdle()

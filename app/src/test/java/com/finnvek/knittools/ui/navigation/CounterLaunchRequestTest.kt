@@ -3,9 +3,61 @@ package com.finnvek.knittools.ui.navigation
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CounterLaunchRequestTest {
+    @Test
+    fun `valid launch token trust creates counter request`() {
+        var consumedLaunchId: String? = null
+        val intentData =
+            CounterLaunchIntentData(
+                shouldOpenCounter = true,
+                projectId = 42L,
+                launchId = "launch-1",
+            ).withValidatedCounterLaunchTrust { launchId ->
+                consumedLaunchId = launchId
+                true
+            }
+
+        val request = CounterLaunchRequest.fromIntentData(intentData, consumedRequestId = null)
+
+        assertEquals("launch-1", consumedLaunchId)
+        assertEquals("launch-1", request?.requestId)
+        assertEquals(42L, request?.projectId)
+    }
+
+    @Test
+    fun `rejected launch token trust does not create counter request`() {
+        val intentData =
+            CounterLaunchIntentData(
+                shouldOpenCounter = true,
+                projectId = 42L,
+                launchId = "expired-launch",
+            ).withValidatedCounterLaunchTrust { false }
+
+        assertNull(CounterLaunchRequest.fromIntentData(intentData, consumedRequestId = null))
+    }
+
+    @Test
+    fun `oauth callback does not consume counter launch token`() {
+        var tokenConsumptionAttempted = false
+        val intentData =
+            CounterLaunchIntentData(
+                shouldOpenCounter = true,
+                projectId = 42L,
+                launchId = "launch-1",
+                isOAuthCallback = true,
+            ).withValidatedCounterLaunchTrust {
+                tokenConsumptionAttempted = true
+                true
+            }
+
+        assertTrue(intentData.isOAuthCallback)
+        assertNull(CounterLaunchRequest.fromIntentData(intentData, consumedRequestId = null))
+        assertEquals(false, tokenConsumptionAttempted)
+    }
+
     @Test
     fun `consumed widget launch id is ignored during activity recreation`() {
         val intentData =

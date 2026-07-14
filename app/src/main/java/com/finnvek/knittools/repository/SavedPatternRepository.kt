@@ -141,9 +141,11 @@ class SavedPatternRepository
             name: String,
         ): String? {
             val candidateFile =
-                AppFileStorage
-                    .resolveAppOwnedFile(context, candidatePatternUrl.toUri())
-                    ?.takeIf(File::exists)
+                withContext(ioDispatcher) {
+                    AppFileStorage
+                        .resolveAppOwnedFile(context, candidatePatternUrl.toUri())
+                        ?.takeIf(File::exists)
+                }
                     ?: return null
             val candidates =
                 dao
@@ -182,7 +184,8 @@ class SavedPatternRepository
         suspend fun deleteLocalPatternFileIfUnused(patternUrl: String) {
             if (patternUrl.isBlank()) return
             val uri = patternUrl.toUri()
-            if (!AppFileStorage.isAppOwnedUri(context, uri)) return
+            val isAppOwned = withContext(ioDispatcher) { AppFileStorage.isAppOwnedUri(context, uri) }
+            if (!isAppOwned) return
 
             val savedPatternStillReferencesFile = dao.getByLocalPdfUri(patternUrl) != null
             val projectStillReferencesFile = counterProjectDao.countProjectsUsingPatternUri(patternUrl) > 0
@@ -201,10 +204,12 @@ class SavedPatternRepository
                 .forEach { patternUrl -> deleteLocalPatternFileIfUnused(patternUrl) }
         }
 
-        private fun String.isAppOwnedMissingFile(): Boolean {
+        private suspend fun String.isAppOwnedMissingFile(): Boolean {
             if (isBlank()) return false
-            val file = AppFileStorage.resolveAppOwnedFile(context, toUri()) ?: return false
-            return !file.exists()
+            return withContext(ioDispatcher) {
+                val file = AppFileStorage.resolveAppOwnedFile(context, toUri()) ?: return@withContext false
+                !file.exists()
+            }
         }
 
         private fun String.normalizedOriginalUrl(): String =

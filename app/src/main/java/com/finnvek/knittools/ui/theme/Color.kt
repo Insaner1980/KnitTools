@@ -15,6 +15,7 @@ val SurfaceHighest = Color(0xFF454535) // Korkein korotus, syötekentät
 val Primary = Color(0xFFC45100) // Pääväri, + nappi, CTA:t
 val PrimaryContainer = Color(0xFFD4722A) // Vaaleampi oranssi, gradientit
 val OnPrimary = Color(0xFFFFFFFF) // Teksti/ikonit primaryn päällä
+val OnAccent = Color(0xFF161610) // Teksti ja ikonit kirkkaiden korostusvärien päällä
 
 // === Secondary — Avokado ===
 val Secondary = Color(0xFF8BA44A) // Labelit ("CURRENT ROW"), osio-otsikot
@@ -41,7 +42,7 @@ val Success = Color(0xFF8BA44A) // Sama kuin Secondary
 val SuccessContainer = Color(0xFF3A4020)
 
 // === Navigaatio ===
-val NavBackground = Color(0xFF161610) // Alanav-tausta — erittäin tumma
+val NavBackground = OnAccent // Alanav-tausta — erittäin tumma
 val NavText = Color(0xFFB0AC92) // Inaktiiviset navikohteet — vaalennettu luettavuutta varten
 val NavActive = Color(0xFFC45100) // Aktiivinen kohde — poltettu oranssi
 val NavActiveBg = Color(0xFF3A2010) // Aktiivisen tabin indikaattoritausta
@@ -74,7 +75,7 @@ val LightTertiaryContainer = Color(0xFFE8DFB5)
 
 // === Light-teeman teksti (lämmin ruskea, ei mustaa) ===
 val LightTextPrimary = Color(0xFF2E2A1E) // Tumma lämmin ruskea
-val LightTextSecondary = Color(0xFF5C5643) // Keskiväri ruskea
+val LightTextSecondary = Color(0xFF4C4634) // Keskiväri ruskea
 val LightTextMuted = Color(0xFF8A8370) // Hiljennetty ruskea
 val LightTextDisabled = Color(0xFFC0BAA5) // Disabled-tila
 val LightCounterMinusIcon = Color(0xFF211E16)

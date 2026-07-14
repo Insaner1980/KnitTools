@@ -240,6 +240,7 @@ class EntityMappersTest {
                 startRow = 12,
                 endRow = 20,
                 durationMinutes = 36,
+                zoneId = "Europe/Helsinki",
             ),
         )
     }
@@ -435,6 +436,7 @@ class EntityMappersTest {
                 startRow = entity.startRow,
                 endRow = entity.endRow,
                 durationMinutes = entity.durationMinutes,
+                zoneId = entity.zoneId,
             )
 
         assertMapsBothWays(

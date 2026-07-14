@@ -15,6 +15,7 @@ import com.finnvek.knittools.R
 import com.finnvek.knittools.data.datastore.PreferencesManager
 import com.finnvek.knittools.data.storage.AppFileStorage
 import com.finnvek.knittools.data.storage.PatternDocumentStorage
+import com.finnvek.knittools.di.ApplicationScope
 import com.finnvek.knittools.di.IoDispatcher
 import com.finnvek.knittools.domain.calculator.CounterLogic
 import com.finnvek.knittools.domain.calculator.CounterState
@@ -56,7 +57,6 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -67,6 +67,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.time.ZoneId
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
@@ -137,6 +138,7 @@ class CounterViewModel
         private val savedStateHandle: SavedStateHandle,
         @param:ApplicationContext private val context: Context,
         @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
+        @param:ApplicationScope private val applicationScope: CoroutineScope,
     ) : ViewModel() {
         private val _uiState =
             MutableStateFlow(
@@ -178,6 +180,7 @@ class CounterViewModel
 
         // Session tracking
         private var sessionStartedAt: Long = savedStateHandle[KEY_SESSION_STARTED_AT] ?: System.currentTimeMillis()
+        private var sessionZoneId: String = savedStateHandle[KEY_SESSION_ZONE_ID] ?: ZoneId.systemDefault().id
         private var sessionStartRow: Int = savedStateHandle[KEY_SESSION_START_ROW] ?: 0
         private var sessionRowsWorked: Int = savedStateHandle[KEY_SESSION_ROWS_WORKED] ?: 0
 
@@ -396,9 +399,13 @@ class CounterViewModel
         }
 
         fun saveProjectYarnNoteToMyYarn(noteId: Long) {
-            if (!proManager.hasFeature(ProFeature.UNLIMITED_YARN)) return
-            viewModelScope.launch {
-                projectYarnNoteRepository.saveToMyYarn(noteId)
+            runProjectYarnNoteSaveIfAllowed(
+                noteId = noteId,
+                canUseYarnCards = proManager.hasFeature(ProFeature.UNLIMITED_YARN),
+            ) { allowedNoteId ->
+                viewModelScope.launch {
+                    projectYarnNoteRepository.saveToMyYarn(allowedNoteId)
+                }
             }
         }
 
@@ -444,6 +451,7 @@ class CounterViewModel
                     durationMinutes = durationMinutes,
                     durationSeconds = durationSeconds,
                     rowsWorked = rowsWorked,
+                    zoneId = sessionZoneId,
                 ),
             )
             return true
@@ -475,6 +483,7 @@ class CounterViewModel
 
         private suspend fun startProjectSession(project: CounterProject) {
             sessionStartedAt = System.currentTimeMillis()
+            sessionZoneId = ZoneId.systemDefault().id
             sessionStartRow = project.count
             sessionRowsWorked = 0
             linkedYarnIdsCache = project.yarnCardIds
@@ -509,6 +518,7 @@ class CounterViewModel
         ) {
             savedStateHandle[KEY_SELECTED_PROJECT_ID] = projectId
             savedStateHandle[KEY_SESSION_STARTED_AT] = sessionStartedAt
+            savedStateHandle[KEY_SESSION_ZONE_ID] = sessionZoneId
             savedStateHandle[KEY_SESSION_START_ROW] = sessionStartRow
             savedStateHandle[KEY_SESSION_SECONDS] = sessionSeconds
             savedStateHandle[KEY_SESSION_ROWS_WORKED] = sessionRowsWorked
@@ -516,6 +526,7 @@ class CounterViewModel
 
         private fun clearPendingSessionState() {
             savedStateHandle.remove<Long>(KEY_SESSION_STARTED_AT)
+            savedStateHandle.remove<String>(KEY_SESSION_ZONE_ID)
             savedStateHandle.remove<Int>(KEY_SESSION_START_ROW)
             savedStateHandle.remove<Long>(KEY_SESSION_SECONDS)
             savedStateHandle.remove<Int>(KEY_SESSION_ROWS_WORKED)
@@ -526,6 +537,7 @@ class CounterViewModel
             startRow: Int,
         ) {
             sessionStartedAt = System.currentTimeMillis()
+            sessionZoneId = ZoneId.systemDefault().id
             sessionStartRow = startRow
             sessionRowsWorked = 0
             _uiState.update { it.copy(sessionSeconds = 0L) }
@@ -1569,7 +1581,7 @@ class CounterViewModel
             clearPendingSessionState()
             super.onCleared()
             @Suppress("TooGenericExceptionCaught")
-            CoroutineScope(ioDispatcher + NonCancellable).launch {
+            applicationScope.launch(ioDispatcher) {
                 try {
                     val projectId = state.projectId ?: return@launch
                     persistSessionSnapshotIfNeeded(
@@ -1589,8 +1601,17 @@ class CounterViewModel
             const val HISTORY_LIMIT_HOURS = 24L
             const val KEY_SELECTED_PROJECT_ID = "counter.selected_project_id"
             const val KEY_SESSION_STARTED_AT = "counter.session_started_at"
+            const val KEY_SESSION_ZONE_ID = "counter.session_zone_id"
             const val KEY_SESSION_START_ROW = "counter.session_start_row"
             const val KEY_SESSION_SECONDS = "counter.session_seconds"
             const val KEY_SESSION_ROWS_WORKED = "counter.session_rows_worked"
         }
     }
+
+internal inline fun runProjectYarnNoteSaveIfAllowed(
+    noteId: Long,
+    canUseYarnCards: Boolean,
+    save: (Long) -> Unit,
+) {
+    if (canUseYarnCards) save(noteId)
+}

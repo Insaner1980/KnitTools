@@ -26,7 +26,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -41,6 +40,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.finnvek.knittools.R
 import com.finnvek.knittools.data.remote.PatternDetail
+import com.finnvek.knittools.ui.components.CollectWithLifecycleEffect
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
 import com.finnvek.knittools.ui.theme.RavelryTeal
 
@@ -63,47 +63,35 @@ fun RavelryDetailScreen(
     val savedMessage = stringResource(R.string.pattern_saved_to_library)
     val saveFailedMessage = stringResource(R.string.generic_error_unknown)
     val openFailedMessage = stringResource(R.string.pattern_open_failed)
-    val currentOnStartProject by rememberUpdatedState(onStartProject)
-    val currentOnUpgradeToPro by rememberUpdatedState(onUpgradeToPro)
-    val currentOnLaunchRavelryAuth by rememberUpdatedState(onLaunchRavelryAuth)
-
     LaunchedEffect(viewModel, patternId) {
         viewModel.refreshAuthStatus()
         viewModel.loadDetail(patternId)
     }
 
-    LaunchedEffect(viewModel) {
-        viewModel.signInLaunchRequests.collect { uri ->
-            currentOnLaunchRavelryAuth(uri)
-        }
+    CollectWithLifecycleEffect(viewModel.signInLaunchRequests) { uri ->
+        onLaunchRavelryAuth(uri)
     }
 
-    LaunchedEffect(viewModel) {
-        viewModel.navigateToProject.collect { projectId ->
-            currentOnStartProject(projectId)
-        }
+    CollectWithLifecycleEffect(viewModel.navigateToProject) { projectId ->
+        onStartProject(projectId)
     }
 
-    LaunchedEffect(viewModel) {
-        viewModel.upgradeToPro.collect {
-            currentOnUpgradeToPro()
-        }
+    CollectWithLifecycleEffect(viewModel.upgradeToPro) {
+        onUpgradeToPro()
     }
 
-    LaunchedEffect(viewModel, savedMessage, saveFailedMessage) {
-        viewModel.patternSaveResults.collect { result ->
-            val message =
-                when (result) {
-                    PatternSaveResult.Saved -> savedMessage
-                    PatternSaveResult.Failed -> saveFailedMessage
-                }
-            Toast
-                .makeText(
-                    context,
-                    message,
-                    Toast.LENGTH_SHORT,
-                ).show()
-        }
+    CollectWithLifecycleEffect(viewModel.patternSaveResults) { result ->
+        val message =
+            when (result) {
+                PatternSaveResult.Saved -> savedMessage
+                PatternSaveResult.Failed -> saveFailedMessage
+            }
+        Toast
+            .makeText(
+                context,
+                message,
+                Toast.LENGTH_SHORT,
+            ).show()
     }
 
     ToolScreenScaffold(

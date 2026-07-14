@@ -33,3 +33,13 @@ data class CounterLaunchIntentData(
     val isTrustedCounterLaunch: Boolean = false,
     val isOAuthCallback: Boolean = false,
 )
+
+internal fun CounterLaunchIntentData.withValidatedCounterLaunchTrust(
+    consumeLaunchId: (String?) -> Boolean,
+): CounterLaunchIntentData =
+    copy(
+        isTrustedCounterLaunch =
+            shouldOpenCounter &&
+                !isOAuthCallback &&
+                consumeLaunchId(launchId),
+    )

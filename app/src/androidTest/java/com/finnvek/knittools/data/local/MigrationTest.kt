@@ -14,8 +14,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Testaa Room-migraatiot v1->v15.
- * v1->v3: AutoMigration. v3->v15: manuaaliset muutokset.
+ * Testaa Room-migraatiot v1->v16.
+ * v1->v3: AutoMigration. v3->v16: manuaaliset muutokset.
  */
 @RunWith(AndroidJUnit4::class)
 class MigrationTest {
@@ -40,9 +40,10 @@ class MigrationTest {
             KnitToolsDatabase.MIGRATION_12_13,
             KnitToolsDatabase.MIGRATION_13_14,
             KnitToolsDatabase.MIGRATION_14_15,
+            KnitToolsDatabase.MIGRATION_15_16,
         )
 
-    private val latestVersion = 15
+    private val latestVersion = 16
 
     private fun migrateToLatest(testDb: String): SupportSQLiteDatabase =
         helper.runMigrationsAndValidate(
@@ -114,6 +115,43 @@ class MigrationTest {
             )
 
         assertLinkedCleanupIndexesExist(db)
+        db.close()
+    }
+
+    @Test
+    fun migrate15to16AddsNullableSessionZoneId() {
+        val testDb = "migration-test-v15-to-v16-session-zone"
+
+        helper.createDatabase(testDb, 15).apply {
+            execSQL(
+                """
+                INSERT INTO counter_projects (
+                    id, name, count, secondaryCount, stepSize, notes, createdAt, updatedAt
+                ) VALUES (1, 'Test', 0, 0, 1, '', 1000, 1000)
+                """.trimIndent(),
+            )
+            execSQL(
+                """
+                INSERT INTO sessions (
+                    id, projectId, startedAt, endedAt, startRow, endRow,
+                    durationMinutes, durationSeconds, rowsWorked
+                ) VALUES (1, 1, 1000, 2000, 0, 1, 1, 60, 1)
+                """.trimIndent(),
+            )
+            close()
+        }
+
+        val db =
+            helper.runMigrationsAndValidate(
+                testDb,
+                16,
+                true,
+                KnitToolsDatabase.MIGRATION_15_16,
+            )
+
+        assertSingleRow(db, "SELECT zoneId FROM sessions WHERE id = 1") {
+            assertNull(getString(0))
+        }
         db.close()
     }
 

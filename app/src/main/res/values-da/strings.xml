@@ -75,7 +75,7 @@
     <string name="main_counter_custom">Egen</string>
     <string name="main_counter_custom_label">Egen label</string>
     <string name="main_counter_custom_label_error">Angiv en label.</string>
-    <string name="project_metadata_format">%1$s · %2$s</string>
+    <string name="project_metadata_format">%1$s, %2$s</string>
     <plurals name="rounds_format">
         <item quantity="one">%1$d runde</item>
         <item quantity="other">%1$d runder</item>
@@ -393,6 +393,26 @@
     <string name="care_category_drying">Tørring</string>
     <string name="care_category_ironing">Strygning</string>
     <string name="care_category_dry_cleaning">Rens</string>
+    <string name="care_wash_30">30°</string>
+    <string name="care_wash_40">40°</string>
+    <string name="care_wash_60">60°</string>
+    <string name="care_wash_hand">Håndvask</string>
+    <string name="care_wash_do_not">Må ikke vaskes</string>
+    <string name="care_bleach_any">Alle blegemidler</string>
+    <string name="care_bleach_non_chlorine">Klorfrit blegemiddel</string>
+    <string name="care_bleach_do_not">Må ikke bleges</string>
+    <string name="care_dry_tumble_low">Tørretumbling ved lav varme</string>
+    <string name="care_dry_tumble_normal">Tørretumbling ved normal varme</string>
+    <string name="care_dry_flat">Tørres fladt</string>
+    <string name="care_dry_do_not_tumble">Må ikke tørretumbles</string>
+    <string name="care_iron_low">Stryges ved lav varme</string>
+    <string name="care_iron_medium">Stryges ved middel varme</string>
+    <string name="care_iron_high">Stryges ved høj varme</string>
+    <string name="care_iron_do_not">Må ikke stryges</string>
+    <string name="care_dryclean_any">Alle opløsningsmidler</string>
+    <string name="care_dryclean_p">P-opløsningsmiddel</string>
+    <string name="care_dryclean_f">F-opløsningsmiddel</string>
+    <string name="care_dryclean_do_not">Må ikke renses</string>
 
     <!-- Defaults -->
     <string name="yarn_card_fallback_name">Garnkort</string>
@@ -436,7 +456,10 @@
     <string name="insights_knitting_activity">STRIKKEAKTIVITET</string>
     <string name="insights_current_streak">Nuværende stime:</string>
     <string name="insights_best_streak">Bedste:</string>
-    <string name="insights_rows_count">%1$d pinde</string>
+    <plurals name="insights_rows_count">
+        <item quantity="one">%1$d pind</item>
+        <item quantity="other">%1$d pinde</item>
+    </plurals>
     <string name="insights_less_than_tenth_hour">&lt;0.1t</string>
     <string name="insights_no_time">—</string>
     <string name="insights_footer_1">Hver pind tæller — bliv ved med at strikke!</string>
@@ -540,8 +563,14 @@
     <string name="share_photo">Del</string>
     <string name="delete_photo">Slet billede</string>
     <string name="delete_photo_confirm">Slette dette billede?</string>
-    <string name="delete_photos_confirm">Slette %d billeder?</string>
-    <string name="delete_patterns_confirm">Slette %d opskrifter?</string>
+    <plurals name="delete_photos_confirm">
+        <item quantity="one">Slette %1$d billede?</item>
+        <item quantity="other">Slette %1$d billeder?</item>
+    </plurals>
+    <plurals name="delete_patterns_confirm">
+        <item quantity="one">Slette %1$d opskrift?</item>
+        <item quantity="other">Slette %1$d opskrifter?</item>
+    </plurals>
     <string name="delete_pattern">Slet opskrift</string>
     <string name="delete_yarn_cards_confirm">Slette %d garnkort?</string>
     <string name="delete_yarn_card">Slet garnkort</string>
@@ -642,4 +671,13 @@
     <string name="extra_counters_title">Ekstra tællere</string>
     <string name="counter_repeat_label">GENTAG</string>
     <string name="counters_list_title">Tællere</string>
+
+    <!-- Täydennetyt lokalisoidut käyttöliittymätekstit -->
+    <string name="yarn_card_number_fallback">Garn #%1$d</string>
+    <string name="pattern_detail_needles">Nåle</string>
+    <string name="pattern_detail_yardage">Løbelængde</string>
+    <string name="pattern_detail_sizes">Størrelser</string>
+    <string name="pattern_saved_to_library">Gemt i biblioteket</string>
+    <string name="show_more">Vis mere</string>
+    <string name="show_less">Vis mindre</string>
 </resources>

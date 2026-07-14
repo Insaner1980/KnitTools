@@ -6,6 +6,33 @@ import kotlinx.serialization.Serializable
 // === Haku ===
 
 @Serializable
+enum class PatternAvailability {
+    @SerialName("free")
+    Free,
+
+    @SerialName("paid")
+    Paid,
+
+    @SerialName("unknown")
+    Unknown,
+    ;
+
+    val isFree: Boolean
+        get() = this == Free
+
+    companion object {
+        fun fromBackendValue(value: String?): PatternAvailability =
+            when (value) {
+                "free" -> Free
+                "paid" -> Paid
+                else -> Unknown
+            }
+
+        fun fromFree(free: Boolean): PatternAvailability = if (free) Free else Paid
+    }
+}
+
+@Serializable
 data class PatternSearchResponse(
     val patterns: List<PatternSearchResult> = emptyList(),
     val paginator: Paginator? = null,
@@ -29,6 +56,7 @@ data class PatternSearchResult(
     @SerialName("difficulty_average")
     val difficultyAverage: Float? = null,
     val free: Boolean = true,
+    val availability: PatternAvailability = PatternAvailability.fromFree(free),
     val permalink: String = "",
 )
 
@@ -62,6 +90,9 @@ data class PatternDetail(
     @SerialName("difficulty_average")
     val difficultyAverage: Float? = null,
     val free: Boolean = true,
+    val availability: PatternAvailability = PatternAvailability.fromFree(free),
+    val canonicalUrl: String = "",
+    val originalUrl: String = "",
     val gauge: String? = null,
     @SerialName("gauge_pattern")
     val gaugePattern: String? = null,
@@ -96,7 +127,7 @@ data class PatternDetail(
                 ?.joinToString(", ")
 
     val ravelryUrl: String
-        get() = "https://www.ravelry.com/patterns/library/$permalink"
+        get() = canonicalUrl.ifBlank { "https://www.ravelry.com/patterns/library/$permalink" }
 }
 
 @Serializable

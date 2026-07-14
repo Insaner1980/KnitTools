@@ -75,7 +75,7 @@
     <string name="main_counter_custom">Custom</string>
     <string name="main_counter_custom_label">Custom label</string>
     <string name="main_counter_custom_label_error">Enter a label.</string>
-    <string name="project_metadata_format">%1$s · %2$s</string>
+    <string name="project_metadata_format">%1$s, %2$s</string>
     <plurals name="rounds_format">
         <item quantity="one">%1$d round</item>
         <item quantity="other">%1$d rounds</item>
@@ -119,7 +119,10 @@
     <string name="select_all">Select All</string>
     <string name="complete_n_projects" tools:ignore="PluralsCandidate">Complete %d projects? They will be moved to your completed projects.</string>
     <string name="delete_n_projects" tools:ignore="PluralsCandidate">Delete %d projects? This cannot be undone.</string>
-    <string name="rows_format" tools:ignore="PluralsCandidate">%d rows</string>
+    <plurals name="rows_format">
+        <item quantity="one">%1$d row</item>
+        <item quantity="other">%1$d rows</item>
+    </plurals>
     <string name="just_now">just now</string>
 
     <!-- Counter Screen -->
@@ -234,16 +237,10 @@
     <string name="counter_add_row">Add row</string>
     <string name="counter_decrease_row">Subtract row</string>
     <string name="counter_undo_last_change">Undo last change</string>
-    <plurals name="counter_target_rows_left">
-        <item quantity="one">%1$d row left</item>
-        <item quantity="other">%1$d rows left</item>
-    </plurals>
+    <string name="counter_target_remaining_format">%1$s left</string>
     <string name="counter_target_reached">Target reached</string>
-    <plurals name="counter_target_rows_past">
-        <item quantity="one">%1$d row past target</item>
-        <item quantity="other">%1$d rows past target</item>
-    </plurals>
-    <string name="project_content_pattern">Pattern</string>
+    <string name="counter_target_past_format">%1$s past target</string>
+    <string name="project_content_add_pattern">Add Pattern</string>
     <string name="stitch_tracker_label">Stitches</string>
     <plurals name="reminder_repeat_occurrence_format">
         <item quantity="one">Repeat #%1$d every row</item>
@@ -400,10 +397,30 @@
     <string name="care_category_drying">Drying</string>
     <string name="care_category_ironing">Ironing</string>
     <string name="care_category_dry_cleaning">Dry cleaning</string>
+    <string name="care_wash_30">30°</string>
+    <string name="care_wash_40">40°</string>
+    <string name="care_wash_60">60°</string>
+    <string name="care_wash_hand">Hand wash</string>
+    <string name="care_wash_do_not">Do not wash</string>
+    <string name="care_bleach_any">Any bleach</string>
+    <string name="care_bleach_non_chlorine">Non-chlorine bleach</string>
+    <string name="care_bleach_do_not">Do not bleach</string>
+    <string name="care_dry_tumble_low">Tumble dry low</string>
+    <string name="care_dry_tumble_normal">Tumble dry normal</string>
+    <string name="care_dry_flat">Dry flat</string>
+    <string name="care_dry_do_not_tumble">Do not tumble dry</string>
+    <string name="care_iron_low">Iron low</string>
+    <string name="care_iron_medium">Iron medium</string>
+    <string name="care_iron_high">Iron high</string>
+    <string name="care_iron_do_not">Do not iron</string>
+    <string name="care_dryclean_any">Any solvent</string>
+    <string name="care_dryclean_p">P solvent</string>
+    <string name="care_dryclean_f">F solvent</string>
+    <string name="care_dryclean_do_not">Do not dry clean</string>
 
     <!-- Defaults -->
     <string name="yarn_card_fallback_name">Yarn card</string>
-    <string name="yarn_card_number_fallback" tools:ignore="MissingTranslation">Yarn #%1$d</string>
+    <string name="yarn_card_number_fallback">Yarn #%1$d</string>
 
     <!-- Widget -->
     <string name="widget_name">Row Counter</string>
@@ -458,7 +475,10 @@
     <string name="insights_knitting_activity">KNITTING ACTIVITY</string>
     <string name="insights_current_streak">Current streak:</string>
     <string name="insights_best_streak">Best:</string>
-    <string name="insights_rows_count" tools:ignore="PluralsCandidate">%1$d rows</string>
+    <plurals name="insights_rows_count">
+        <item quantity="one">%1$d row</item>
+        <item quantity="other">%1$d rows</item>
+    </plurals>
     <string name="insights_less_than_tenth_hour">&lt;0.1h</string>
     <string name="insights_no_time">—</string>
     <string name="insights_footer_1">Every row counts — keep knitting!</string>
@@ -822,8 +842,14 @@
     <string name="share_photo">Share</string>
     <string name="delete_photo">Delete photo</string>
     <string name="delete_photo_confirm">Delete this photo?</string>
-    <string name="delete_photos_confirm" tools:ignore="PluralsCandidate">Delete %d photos?</string>
-    <string name="delete_patterns_confirm" tools:ignore="PluralsCandidate">Delete %d patterns?</string>
+    <plurals name="delete_photos_confirm">
+        <item quantity="one">Delete %1$d photo?</item>
+        <item quantity="other">Delete %1$d photos?</item>
+    </plurals>
+    <plurals name="delete_patterns_confirm">
+        <item quantity="one">Delete %1$d pattern?</item>
+        <item quantity="other">Delete %1$d patterns?</item>
+    </plurals>
     <string name="delete_pattern">Delete pattern</string>
     <string name="delete_yarn_cards_confirm" tools:ignore="PluralsCandidate">Delete %d yarn cards?</string>
     <string name="delete_yarn_card">Delete yarn card</string>
@@ -862,6 +888,7 @@
     <string name="filter_difficulty">Difficulty</string>
     <string name="free">Free</string>
     <string name="paid">Paid</string>
+    <string name="availability_unknown">Availability unknown</string>
     <string name="no_results">No patterns found</string>
     <string name="search_error">Could not load patterns. Check your internet connection.</string>
     <string name="search_more_error">Could not load more patterns. Check your internet connection.</string>
@@ -883,12 +910,12 @@
     <string name="ravelry_disconnecting">Disconnecting Ravelry…</string>
     <string name="difficulty_format">%.1f / 5</string>
     <string name="yardage_format" tools:ignore="PluralsCandidate">%d yards</string>
-    <string name="pattern_detail_needles" tools:ignore="MissingTranslation">Needles</string>
-    <string name="pattern_detail_yardage" tools:ignore="MissingTranslation">Yardage</string>
-    <string name="pattern_detail_sizes" tools:ignore="MissingTranslation">Sizes</string>
-    <string name="pattern_saved_to_library" tools:ignore="MissingTranslation">Saved to Library</string>
-    <string name="show_more" tools:ignore="MissingTranslation">Show more</string>
-    <string name="show_less" tools:ignore="MissingTranslation">Show less</string>
+    <string name="pattern_detail_needles">Needles</string>
+    <string name="pattern_detail_yardage">Yardage</string>
+    <string name="pattern_detail_sizes">Sizes</string>
+    <string name="pattern_saved_to_library">Saved to Library</string>
+    <string name="show_more">Show more</string>
+    <string name="show_less">Show less</string>
 
     <!-- Info tips -->
     <string name="tip_your_gauge_title">What is gauge?</string>

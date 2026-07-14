@@ -27,11 +27,25 @@ class FeatureGateRaceSourceTest {
         assertFalse(screen.contains("Manifest.permission.RECORD_AUDIO"))
     }
 
+    @Test
+    fun `counter history pruning waits for initial purchase state`() {
+        val viewModel = ProjectSourceFiles.read(COUNTER_VIEW_MODEL)
+        val proManager = ProjectSourceFiles.read(PRO_MANAGER)
+
+        assertTrue(proManager.contains("billingManager.purchaseStateReady"))
+        assertTrue(proManager.contains("_initialStateReady.value = purchaseStateReady"))
+        assertTrue(viewModel.contains("combine(proManager.proState, proManager.initialStateReady)"))
+        assertTrue(viewModel.contains("if (initialStateReady && !proState.isPro)"))
+        assertFalse(viewModel.contains("if (!proState.isPro) {\n                        pruneHistoryForFree()"))
+    }
+
     private companion object {
         const val PATTERN_PICKER_SHEET =
             "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternPickerSheet.kt"
         const val COUNTER_VIEW_MODEL =
             "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterViewModel.kt"
+        const val PRO_MANAGER =
+            "app/src/main/java/com/finnvek/knittools/pro/ProManager.kt"
         const val COUNTER_SCREEN =
             "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterScreen.kt"
     }

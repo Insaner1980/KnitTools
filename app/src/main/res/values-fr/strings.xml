@@ -75,7 +75,7 @@
     <string name="main_counter_custom">Personnalisé</string>
     <string name="main_counter_custom_label">Libellé personnalisé</string>
     <string name="main_counter_custom_label_error">Saisissez un libellé.</string>
-    <string name="project_metadata_format">%1$s · %2$s</string>
+    <string name="project_metadata_format">%1$s, %2$s</string>
     <plurals name="rounds_format">
         <item quantity="one">%1$d tour</item>
         <item quantity="many">%1$d de tours</item>
@@ -121,7 +121,11 @@
     <string name="select_all">Tout sélectionner</string>
     <string name="complete_n_projects">Terminer %d projets ? Ils seront déplacés dans vos projets terminés.</string>
     <string name="delete_n_projects">Supprimer %d projets ? Cette action est irréversible.</string>
-    <string name="rows_format">%d rangs</string>
+    <plurals name="rows_format">
+        <item quantity="one">%1$d rang</item>
+        <item quantity="many">%1$d rangs</item>
+        <item quantity="other">%1$d rangs</item>
+    </plurals>
     <string name="just_now">à l’instant</string>
 
     <!-- Counter Screen -->
@@ -234,18 +238,10 @@
     <string name="counter_add_row">Ajouter un rang</string>
     <string name="counter_decrease_row">Retirer un rang</string>
     <string name="counter_undo_last_change">Annuler la dernière modification</string>
-    <plurals name="counter_target_rows_left">
-        <item quantity="one">%1$d rang restant</item>
-        <item quantity="many">%1$d rangs restants</item>
-        <item quantity="other">%1$d rangs restants</item>
-    </plurals>
+    <string name="counter_target_remaining_format">Il reste %1$s</string>
     <string name="counter_target_reached">Objectif atteint</string>
-    <plurals name="counter_target_rows_past">
-        <item quantity="one">%1$d rang au-delà de l’objectif</item>
-        <item quantity="many">%1$d rangs au-delà de l’objectif</item>
-        <item quantity="other">%1$d rangs au-delà de l’objectif</item>
-    </plurals>
-    <string name="project_content_pattern">Modèle</string>
+    <string name="counter_target_past_format">%1$s au-delà de l’objectif</string>
+    <string name="project_content_add_pattern">Ajouter un modèle</string>
     <string name="stitch_tracker_label">Mailles</string>
     <plurals name="reminder_repeat_occurrence_format">
         <item quantity="one">Répéter #%1$d à chaque rang</item>
@@ -401,6 +397,26 @@
     <string name="care_category_drying">Séchage</string>
     <string name="care_category_ironing">Repassage</string>
     <string name="care_category_dry_cleaning">Nettoyage à sec</string>
+    <string name="care_wash_30">30°</string>
+    <string name="care_wash_40">40°</string>
+    <string name="care_wash_60">60°</string>
+    <string name="care_wash_hand">Lavage à la main</string>
+    <string name="care_wash_do_not">Ne pas laver</string>
+    <string name="care_bleach_any">Tout agent de blanchiment</string>
+    <string name="care_bleach_non_chlorine">Agent de blanchiment sans chlore</string>
+    <string name="care_bleach_do_not">Ne pas blanchir</string>
+    <string name="care_dry_tumble_low">Séchage en machine à basse température</string>
+    <string name="care_dry_tumble_normal">Séchage en machine à température normale</string>
+    <string name="care_dry_flat">Sécher à plat</string>
+    <string name="care_dry_do_not_tumble">Ne pas sécher en machine</string>
+    <string name="care_iron_low">Repassage à basse température</string>
+    <string name="care_iron_medium">Repassage à température moyenne</string>
+    <string name="care_iron_high">Repassage à haute température</string>
+    <string name="care_iron_do_not">Ne pas repasser</string>
+    <string name="care_dryclean_any">Tous solvants</string>
+    <string name="care_dryclean_p">Solvant P</string>
+    <string name="care_dryclean_f">Solvant F</string>
+    <string name="care_dryclean_do_not">Ne pas nettoyer à sec</string>
 
     <!-- Defaults -->
     <string name="yarn_card_fallback_name">Fiche de fil</string>
@@ -444,7 +460,11 @@
     <string name="insights_knitting_activity">ACTIVITÉ TRICOT</string>
     <string name="insights_current_streak">Série actuelle :</string>
     <string name="insights_best_streak">Meilleure :</string>
-    <string name="insights_rows_count">%1$d rangs</string>
+    <plurals name="insights_rows_count">
+        <item quantity="one">%1$d rang</item>
+        <item quantity="many">%1$d rangs</item>
+        <item quantity="other">%1$d rangs</item>
+    </plurals>
     <string name="insights_less_than_tenth_hour">&lt;0.1h</string>
     <string name="insights_no_time">—</string>
     <string name="insights_footer_1">Chaque rang compte ; continuez à tricoter !</string>
@@ -548,8 +568,16 @@
     <string name="share_photo">Partager</string>
     <string name="delete_photo">Supprimer la photo</string>
     <string name="delete_photo_confirm">Supprimer cette photo ?</string>
-    <string name="delete_photos_confirm">Supprimer %d photos ?</string>
-    <string name="delete_patterns_confirm">Supprimer %d modèles ?</string>
+    <plurals name="delete_photos_confirm">
+        <item quantity="one">Supprimer %1$d photo ?</item>
+        <item quantity="many">Supprimer %1$d photos ?</item>
+        <item quantity="other">Supprimer %1$d photos ?</item>
+    </plurals>
+    <plurals name="delete_patterns_confirm">
+        <item quantity="one">Supprimer %1$d modèle ?</item>
+        <item quantity="many">Supprimer %1$d modèles ?</item>
+        <item quantity="other">Supprimer %1$d modèles ?</item>
+    </plurals>
     <string name="delete_pattern">Supprimer le modèle</string>
     <string name="delete_yarn_cards_confirm">Supprimer %d fiches de fil ?</string>
     <string name="delete_yarn_card">Supprimer la fiche de fil</string>
@@ -588,6 +616,7 @@
     <string name="filter_difficulty">Difficulté</string>
     <string name="free">Gratuit</string>
     <string name="paid">Payant</string>
+    <string name="availability_unknown">Disponibilité inconnue</string>
     <string name="no_results">Aucun modèle trouvé</string>
     <string name="search_error">Impossible de charger les modèles. Vérifiez votre connexion Internet.</string>
     <string name="ravelry_search_rate_limited">Ravelry limite les recherches. Réessayez plus tard.</string>
@@ -649,4 +678,13 @@
     <string name="extra_counters_title">Compteurs supplémentaires</string>
     <string name="counter_repeat_label">RÉPÉTITION</string>
     <string name="counters_list_title">Compteurs</string>
+
+    <!-- Täydennetyt lokalisoidut käyttöliittymätekstit -->
+    <string name="yarn_card_number_fallback">Fil #%1$d</string>
+    <string name="pattern_detail_needles">Aiguilles</string>
+    <string name="pattern_detail_yardage">Métrage</string>
+    <string name="pattern_detail_sizes">Tailles</string>
+    <string name="pattern_saved_to_library">Enregistré dans la bibliothèque</string>
+    <string name="show_more">Afficher plus</string>
+    <string name="show_less">Afficher moins</string>
 </resources>

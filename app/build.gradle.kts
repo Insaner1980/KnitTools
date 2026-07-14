@@ -550,7 +550,6 @@ val jacocoCoverageExclusionPatterns =
         "**/data/storage/**",
         "**/data/remote/**",
         "**/data/local/**",
-        "**/PatternRowDetector*.*",
     )
 
 val jacocoCoverageExclusions =

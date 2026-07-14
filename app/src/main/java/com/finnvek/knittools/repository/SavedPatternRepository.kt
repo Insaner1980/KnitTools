@@ -22,6 +22,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.InputStream
+import java.net.URI
 import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -140,9 +141,11 @@ class SavedPatternRepository
             name: String,
         ): String? {
             val candidateFile =
-                AppFileStorage
-                    .resolveAppOwnedFile(context, candidatePatternUrl.toUri())
-                    ?.takeIf(File::exists)
+                withContext(ioDispatcher) {
+                    AppFileStorage
+                        .resolveAppOwnedFile(context, candidatePatternUrl.toUri())
+                        ?.takeIf(File::exists)
+                }
                     ?: return null
             val candidates =
                 dao
@@ -181,7 +184,8 @@ class SavedPatternRepository
         suspend fun deleteLocalPatternFileIfUnused(patternUrl: String) {
             if (patternUrl.isBlank()) return
             val uri = patternUrl.toUri()
-            if (!AppFileStorage.isAppOwnedUri(context, uri)) return
+            val isAppOwned = withContext(ioDispatcher) { AppFileStorage.isAppOwnedUri(context, uri) }
+            if (!isAppOwned) return
 
             val savedPatternStillReferencesFile = dao.getByLocalPdfUri(patternUrl) != null
             val projectStillReferencesFile = counterProjectDao.countProjectsUsingPatternUri(patternUrl) > 0
@@ -200,16 +204,38 @@ class SavedPatternRepository
                 .forEach { patternUrl -> deleteLocalPatternFileIfUnused(patternUrl) }
         }
 
-        private fun String.isAppOwnedMissingFile(): Boolean {
+        private suspend fun String.isAppOwnedMissingFile(): Boolean {
             if (isBlank()) return false
-            val file = AppFileStorage.resolveAppOwnedFile(context, toUri()) ?: return false
-            return !file.exists()
+            return withContext(ioDispatcher) {
+                val file = AppFileStorage.resolveAppOwnedFile(context, toUri()) ?: return@withContext false
+                !file.exists()
+            }
         }
 
         private fun String.normalizedOriginalUrl(): String =
-            trim()
-                .removeSuffix("/")
-                .lowercase(Locale.US)
+            normalizedRavelryPatternUrl()
+                ?: trim()
+                    .removeSuffix("/")
+                    .lowercase(Locale.US)
+
+        private fun String.normalizedRavelryPatternUrl(): String? {
+            val uri = runCatching { URI(trim()) }.getOrNull() ?: return null
+            val host = uri.host?.lowercase(Locale.US) ?: return null
+            if (host !in RAVELRY_PATTERN_HOSTS) return null
+
+            val segments =
+                uri.path
+                    ?.split("/")
+                    ?.filter { it.isNotBlank() }
+                    ?: return null
+            if (segments.size < 3 || segments[0] != "patterns" || segments[1] != "library") return null
+
+            return segments[2]
+                .trim()
+                .takeIf { it.isNotBlank() }
+                ?.lowercase(Locale.US)
+                ?.let { patternSlug -> "$RAVELRY_PATTERN_KEY_PREFIX$patternSlug" }
+        }
 
         private fun filesHaveSameContent(
             first: File,
@@ -246,4 +272,14 @@ class SavedPatternRepository
             (0 until byteCount).all { index ->
                 first[index] == second[index]
             }
+
+        private companion object {
+            const val RAVELRY_PATTERN_KEY_PREFIX = "ravelry:"
+            val RAVELRY_PATTERN_HOSTS =
+                setOf(
+                    "ravelry.com",
+                    "www.ravelry.com",
+                    "carts.ravelry.com",
+                )
+        }
     }

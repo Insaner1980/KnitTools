@@ -7,6 +7,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -34,6 +35,7 @@ import androidx.navigation.navArgument
 import androidx.navigation.navigation
 import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.SavedPattern
+import com.finnvek.knittools.ui.components.CollectWithLifecycleEffect
 import com.finnvek.knittools.ui.screens.abbreviations.AbbreviationsScreen
 import com.finnvek.knittools.ui.screens.caston.CastOnScreen
 import com.finnvek.knittools.ui.screens.chartsymbols.ChartSymbolScreen
@@ -95,6 +97,7 @@ data class KnitToolsNavActions(
     val onLaunchRavelryAuth: (Uri) -> Unit = {},
     val onBrowseRavelry: () -> Unit = {},
     val onCounterLaunchHandled: () -> Unit = {},
+    val onProUpgradeLaunchHandled: () -> Unit = {},
     val onRavelryShareImportHandled: () -> Unit = {},
 )
 
@@ -104,6 +107,7 @@ fun KnitToolsNavHost(
     navController: NavHostController = rememberNavController(),
     startDestination: String = TopLevelDestination.Projects.route,
     counterLaunchRequest: CounterLaunchRequest? = null,
+    openProUpgradeRequest: Boolean = false,
     ravelryShareImportRequest: RavelryShareImportRequest? = null,
     snackbarHostState: SnackbarHostState? = null,
     actions: KnitToolsNavActions = KnitToolsNavActions(),
@@ -122,6 +126,12 @@ fun KnitToolsNavHost(
         navController.navigateSingleTopTo(Screen.Counter.route)
     }
 
+    LaunchedEffect(openProUpgradeRequest) {
+        if (!openProUpgradeRequest) return@LaunchedEffect
+        navController.navigateSingleTopTo(Screen.ProUpgrade.route)
+        actions.onProUpgradeLaunchHandled()
+    }
+
     LaunchedEffect(ravelryShareImportRequest?.requestId) {
         val request = ravelryShareImportRequest ?: return@LaunchedEffect
         navController.navigateToTopLevel(TopLevelDestination.Tools)
@@ -131,6 +141,7 @@ fun KnitToolsNavHost(
 
     Scaffold(
         modifier = modifier,
+        containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = {
             snackbarHostState?.let { SnackbarHost(hostState = it) }
         },
@@ -287,6 +298,12 @@ private fun NavGraphBuilder.projectsGraph(
             val counterViewModel: CounterViewModel = hiltViewModel(parentEntry)
             val allPhotos by counterViewModel.allPhotos.collectAsStateWithLifecycle()
             val state by counterViewModel.uiState.collectAsStateWithLifecycle()
+            if (!state.canUseProgressPhotos) {
+                LaunchedEffect(state.canUseProgressPhotos) {
+                    navController.navigateSingleTopTo(Screen.ProUpgrade.route)
+                }
+                return@composable
+            }
             PhotoGalleryScreen(
                 photos = allPhotos,
                 projectId = state.projectId,
@@ -358,6 +375,18 @@ private fun NavGraphBuilder.projectsGraph(
             val projectId = backStackEntry.positiveLongArgument(ARG_PROJECT_ID)
             if (projectId == null) {
                 RouteArgumentFallback(navController, TopLevelDestination.Projects)
+                return@composable
+            }
+            val parentEntry =
+                remember(backStackEntry) {
+                    navController.getBackStackEntry(TopLevelDestination.Projects.route)
+                }
+            val counterViewModel: CounterViewModel = hiltViewModel(parentEntry)
+            val state by counterViewModel.uiState.collectAsStateWithLifecycle()
+            if (!state.canUseNotes) {
+                LaunchedEffect(state.canUseNotes) {
+                    navController.navigateSingleTopTo(Screen.ProUpgrade.route)
+                }
                 return@composable
             }
             NotesEditorScreen(
@@ -497,6 +526,7 @@ private fun NavGraphBuilder.libraryGraph(
             val libraryViewModel: LibraryViewModel = hiltViewModel(parentEntry)
             LibraryScreen(
                 onNavigate = { screen -> navController.navigateSingleTopTo(screen.route) },
+                onUpgradeToPro = { navController.navigateSingleTopTo(Screen.ProUpgrade.route) },
                 viewModel = libraryViewModel,
             )
         }
@@ -604,6 +634,7 @@ private fun NavGraphBuilder.savedPatternDetailRoute(navController: NavHostContro
                 navController.getBackStackEntry(TopLevelDestination.Projects.route)
             }
         val counterViewModel: CounterViewModel = hiltViewModel(projectsEntry)
+        val patternDeleteErrorId by libraryViewModel.patternDeleteErrorId.collectAsStateWithLifecycle()
         var patternRouteState by remember(savedPatternId) { mutableStateOf<SavedPattern?>(null) }
         var patternRouteLoaded by remember(savedPatternId) { mutableStateOf(false) }
         LaunchedEffect(savedPatternId) {
@@ -636,6 +667,7 @@ private fun NavGraphBuilder.savedPatternDetailRoute(navController: NavHostContro
                     navController.popBackStackOrNavigateToTopLevel(TopLevelDestination.Library)
                 }
             },
+            deleteErrorId = patternDeleteErrorId,
         )
     }
 }
@@ -724,6 +756,7 @@ private fun NavGraphBuilder.libraryMyYarnRoute(navController: NavHostController)
         val isYarnSelectMode by libraryViewModel.isYarnSelectMode.collectAsStateWithLifecycle()
         val selectedYarnIds by libraryViewModel.selectedYarnIds.collectAsStateWithLifecycle()
         val yarnDeleteErrorId by libraryViewModel.yarnDeleteErrorId.collectAsStateWithLifecycle()
+        val canUseYarnCards by libraryViewModel.canUseYarnCards.collectAsStateWithLifecycle()
 
         MyYarnScreen(
             state =
@@ -732,6 +765,7 @@ private fun NavGraphBuilder.libraryMyYarnRoute(navController: NavHostController)
                     activeProjectNames = activeProjectNames,
                     isSelectMode = isYarnSelectMode,
                     selectedYarnIds = selectedYarnIds,
+                    canCreateYarnCard = canUseYarnCards,
                     deleteErrorId = yarnDeleteErrorId,
                 ),
             actions =
@@ -756,6 +790,9 @@ private fun myYarnActions(
     onSelectAll = libraryViewModel::selectAllYarn,
     onDeleteSelected = libraryViewModel::deleteSelectedYarn,
     onExitSelectMode = libraryViewModel::exitYarnSelectMode,
+    onUpgradeToPro = {
+        navController.navigateSingleTopTo(Screen.ProUpgrade.route)
+    },
     onBack = { navController.popBackStack() },
 )
 
@@ -818,21 +855,18 @@ private fun rememberLibraryYarnCardDetailReady(
     isDeleteInProgress: Boolean,
 ): Boolean {
     var cardRouteReady by remember(cardId) { mutableStateOf(false) }
-    val currentDeleteInProgress by rememberUpdatedState(isDeleteInProgress)
+    val cardFlow = remember(cardId, yarnCardViewModel) { yarnCardViewModel.observeCardForDetail(cardId) }
 
-    LaunchedEffect(cardId) {
-        cardRouteReady = false
-        yarnCardViewModel.observeCardForDetail(cardId).collect { card ->
-            if (card == null) {
-                cardRouteReady = false
-                yarnCardViewModel.clearFormState()
-                if (!currentDeleteInProgress) {
-                    navController.popBackStackOrNavigateToTopLevel(TopLevelDestination.Library)
-                }
-            } else {
-                yarnCardViewModel.loadFromCard(card)
-                cardRouteReady = true
+    CollectWithLifecycleEffect(cardFlow) { card ->
+        if (card == null) {
+            cardRouteReady = false
+            yarnCardViewModel.clearFormState()
+            if (!isDeleteInProgress) {
+                navController.popBackStackOrNavigateToTopLevel(TopLevelDestination.Library)
             }
+        } else {
+            yarnCardViewModel.loadFromCard(card)
+            cardRouteReady = true
         }
     }
 
@@ -856,6 +890,13 @@ private fun NavGraphBuilder.libraryAllPhotosRoute(navController: NavHostControll
         val isPhotoSelectMode by libraryViewModel.isPhotoSelectMode.collectAsStateWithLifecycle()
         val selectedPhotoIds by libraryViewModel.selectedPhotoIds.collectAsStateWithLifecycle()
         val photoDeleteErrorId by libraryViewModel.photoDeleteErrorId.collectAsStateWithLifecycle()
+        val canUseProgressPhotos by libraryViewModel.canUseProgressPhotos.collectAsStateWithLifecycle()
+        if (!canUseProgressPhotos) {
+            LaunchedEffect(canUseProgressPhotos) {
+                navController.navigateSingleTopTo(Screen.ProUpgrade.route)
+            }
+            return@composable
+        }
         AllPhotosScreen(
             state =
                 AllPhotosState(

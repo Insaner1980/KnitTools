@@ -75,7 +75,7 @@
     <string name="main_counter_custom">Aangepast</string>
     <string name="main_counter_custom_label">Aangepast label</string>
     <string name="main_counter_custom_label_error">Voer een label in.</string>
-    <string name="project_metadata_format">%1$s · %2$s</string>
+    <string name="project_metadata_format">%1$s, %2$s</string>
     <plurals name="rounds_format">
         <item quantity="one">%1$d ronde</item>
         <item quantity="other">%1$d rondes</item>
@@ -119,7 +119,10 @@
     <string name="select_all">Alles selecteren</string>
     <string name="complete_n_projects">%d projecten voltooien? Ze worden naar je voltooide projecten verplaatst.</string>
     <string name="delete_n_projects">%d projecten verwijderen? Dit kan niet ongedaan worden gemaakt.</string>
-    <string name="rows_format">%d toeren</string>
+    <plurals name="rows_format">
+        <item quantity="one">%1$d toer</item>
+        <item quantity="other">%1$d toeren</item>
+    </plurals>
     <string name="just_now">zojuist</string>
 
     <!-- Counter Screen -->
@@ -232,16 +235,10 @@
     <string name="counter_add_row">Toer toevoegen</string>
     <string name="counter_decrease_row">Toer aftrekken</string>
     <string name="counter_undo_last_change">Laatste wijziging ongedaan maken</string>
-    <plurals name="counter_target_rows_left">
-        <item quantity="one">Nog %1$d toer</item>
-        <item quantity="other">Nog %1$d toeren</item>
-    </plurals>
+    <string name="counter_target_remaining_format">Nog %1$s</string>
     <string name="counter_target_reached">Doel bereikt</string>
-    <plurals name="counter_target_rows_past">
-        <item quantity="one">%1$d toer voorbij doel</item>
-        <item quantity="other">%1$d toeren voorbij doel</item>
-    </plurals>
-    <string name="project_content_pattern">Patroon</string>
+    <string name="counter_target_past_format">%1$s voorbij doel</string>
+    <string name="project_content_add_pattern">Patroon toevoegen</string>
     <string name="stitch_tracker_label">Steken</string>
     <plurals name="reminder_repeat_occurrence_format">
         <item quantity="one">Herhaal #%1$d elke toer</item>
@@ -396,6 +393,26 @@
     <string name="care_category_drying">Drogen</string>
     <string name="care_category_ironing">Strijken</string>
     <string name="care_category_dry_cleaning">Chemisch reinigen</string>
+    <string name="care_wash_30">30°</string>
+    <string name="care_wash_40">40°</string>
+    <string name="care_wash_60">60°</string>
+    <string name="care_wash_hand">Handwas</string>
+    <string name="care_wash_do_not">Niet wassen</string>
+    <string name="care_bleach_any">Alle bleekmiddelen</string>
+    <string name="care_bleach_non_chlorine">Chloorvrij bleekmiddel</string>
+    <string name="care_bleach_do_not">Niet bleken</string>
+    <string name="care_dry_tumble_low">Drogen in de droogtrommel op lage temperatuur</string>
+    <string name="care_dry_tumble_normal">Drogen in de droogtrommel op normale temperatuur</string>
+    <string name="care_dry_flat">Liggend drogen</string>
+    <string name="care_dry_do_not_tumble">Niet in de droogtrommel drogen</string>
+    <string name="care_iron_low">Strijken op lage temperatuur</string>
+    <string name="care_iron_medium">Strijken op gemiddelde temperatuur</string>
+    <string name="care_iron_high">Strijken op hoge temperatuur</string>
+    <string name="care_iron_do_not">Niet strijken</string>
+    <string name="care_dryclean_any">Alle oplosmiddelen</string>
+    <string name="care_dryclean_p">P-oplosmiddel</string>
+    <string name="care_dryclean_f">F-oplosmiddel</string>
+    <string name="care_dryclean_do_not">Niet chemisch reinigen</string>
 
     <!-- Defaults -->
     <string name="yarn_card_fallback_name">Garenkaart</string>
@@ -439,7 +456,10 @@
     <string name="insights_knitting_activity">BREIACTIVITEIT</string>
     <string name="insights_current_streak">Huidige reeks:</string>
     <string name="insights_best_streak">Beste:</string>
-    <string name="insights_rows_count">%1$d toeren</string>
+    <plurals name="insights_rows_count">
+        <item quantity="one">%1$d toer</item>
+        <item quantity="other">%1$d toeren</item>
+    </plurals>
     <string name="insights_less_than_tenth_hour">&lt;0.1u</string>
     <string name="insights_no_time">—</string>
     <string name="insights_footer_1">Elke toer telt — blijf breien!</string>
@@ -543,8 +563,14 @@
     <string name="share_photo">Delen</string>
     <string name="delete_photo">Foto verwijderen</string>
     <string name="delete_photo_confirm">Deze foto verwijderen?</string>
-    <string name="delete_photos_confirm">%d foto\'s verwijderen?</string>
-    <string name="delete_patterns_confirm">%d patronen verwijderen?</string>
+    <plurals name="delete_photos_confirm">
+        <item quantity="one">%1$d foto verwijderen?</item>
+        <item quantity="other">%1$d foto\'s verwijderen?</item>
+    </plurals>
+    <plurals name="delete_patterns_confirm">
+        <item quantity="one">%1$d patroon verwijderen?</item>
+        <item quantity="other">%1$d patronen verwijderen?</item>
+    </plurals>
     <string name="delete_pattern">Patroon verwijderen</string>
     <string name="delete_yarn_cards_confirm">%d garenkaarten verwijderen?</string>
     <string name="delete_yarn_card">Garenkaart verwijderen</string>
@@ -583,6 +609,7 @@
     <string name="filter_difficulty">Moeilijkheidsgraad</string>
     <string name="free">Gratis</string>
     <string name="paid">Betaald</string>
+    <string name="availability_unknown">Beschikbaarheid onbekend</string>
     <string name="no_results">Geen patronen gevonden</string>
     <string name="search_error">Patronen konden niet worden geladen. Controleer je internetverbinding.</string>
     <string name="ravelry_search_rate_limited">Ravelry beperkt zoekopdrachten. Probeer het later opnieuw.</string>
@@ -644,4 +671,13 @@
     <string name="extra_counters_title">Extra tellers</string>
     <string name="counter_repeat_label">HERHALING</string>
     <string name="counters_list_title">Tellers</string>
+
+    <!-- Täydennetyt lokalisoidut käyttöliittymätekstit -->
+    <string name="yarn_card_number_fallback">Garen #%1$d</string>
+    <string name="pattern_detail_needles">Naalden</string>
+    <string name="pattern_detail_yardage">Looplengte</string>
+    <string name="pattern_detail_sizes">Maten</string>
+    <string name="pattern_saved_to_library">Opgeslagen in bibliotheek</string>
+    <string name="show_more">Laat meer zien</string>
+    <string name="show_less">Laat minder zien</string>
 </resources>

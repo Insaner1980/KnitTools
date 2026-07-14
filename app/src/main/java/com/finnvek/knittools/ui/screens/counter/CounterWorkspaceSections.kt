@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -30,12 +31,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.sp
 import com.finnvek.knittools.R
+import com.finnvek.knittools.domain.calculator.CounterState
 import com.finnvek.knittools.domain.calculator.CounterValueFormatter
+import com.finnvek.knittools.domain.calculator.MainCounterCountSlot
+import com.finnvek.knittools.domain.calculator.MainCounterTargetSlot
 import com.finnvek.knittools.domain.model.CounterProject
+import com.finnvek.knittools.domain.model.CraftType
+import com.finnvek.knittools.domain.model.MainCounterLabelType
 import com.finnvek.knittools.domain.model.ProjectCounter
 import com.finnvek.knittools.domain.model.ProjectCounterType
 import com.finnvek.knittools.ui.components.CounterImageButton
@@ -47,6 +56,7 @@ import com.finnvek.knittools.ui.components.StitchCounter
 import com.finnvek.knittools.ui.components.mainCounterCountText
 import com.finnvek.knittools.ui.components.mainCounterDecreaseContentDescription
 import com.finnvek.knittools.ui.components.mainCounterIncreaseContentDescription
+import com.finnvek.knittools.ui.components.mainCounterProjectCardCountText
 import com.finnvek.knittools.ui.components.mainCounterTargetText
 import com.finnvek.knittools.ui.theme.CounterDimens
 
@@ -86,6 +96,31 @@ data class CounterWorkspaceActions(
     val onDismissReminder: (Long) -> Unit,
 )
 
+internal data class CounterHeroState(
+    val counter: CounterState,
+    val craftType: CraftType,
+    val mainCounterLabelType: MainCounterLabelType,
+    val mainCounterCustomLabel: String?,
+    val targetRows: Int?,
+    val canUseSecondaryCounter: Boolean,
+    val secondaryCount: Int,
+    val visibleStitchTotal: Int?,
+    val currentStitch: Int,
+)
+
+internal fun CounterUiState.toCounterHeroState(): CounterHeroState =
+    CounterHeroState(
+        counter = counter,
+        craftType = craftType,
+        mainCounterLabelType = mainCounterLabelType,
+        mainCounterCustomLabel = mainCounterCustomLabel,
+        targetRows = targetRows,
+        canUseSecondaryCounter = canUseSecondaryCounter,
+        secondaryCount = secondaryCount,
+        visibleStitchTotal = stitchCount?.takeIf { stitchTrackingEnabled && it > 0 },
+        currentStitch = currentStitch,
+    )
+
 @Composable
 fun CounterWorkspace(
     scaffoldPadding: PaddingValues,
@@ -110,7 +145,7 @@ fun CounterWorkspace(
     ) {
         item(key = "counter-hero") {
             CounterHero(
-                state = state,
+                state = state.toCounterHeroState(),
                 actions = actions,
                 modifier = Modifier.fillParentMaxHeight(),
             )
@@ -121,9 +156,10 @@ fun CounterWorkspace(
         item(key = "project-content") {
             ProjectContentCards(
                 onCardClick = { kind -> actions.onProjectContentClick(kind, state) },
+                hasPattern = state.patternUri != null || state.linkedPattern != null,
             )
         }
-        if (state.projectCounters.isNotEmpty()) {
+        if (state.canUseMultipleCounters && state.projectCounters.isNotEmpty()) {
             item(key = "extra-counters-title") {
                 WorkspaceSectionTitle(
                     title = stringResource(R.string.extra_counters_title),
@@ -139,13 +175,15 @@ fun CounterWorkspace(
                 )
             }
         }
-        state.activeAlert?.let { reminder ->
-            item(key = "active-reminder-alert") {
-                ReminderAlertCard(
-                    reminder = reminder,
-                    currentRow = state.counter.count,
-                    onDismiss = actions.onDismissReminder,
-                )
+        if (state.canUseRowReminders && state.activeAlert != null) {
+            state.activeAlert.let { reminder ->
+                item(key = "active-reminder-alert") {
+                    ReminderAlertCard(
+                        reminder = reminder,
+                        currentRow = state.counter.count,
+                        onDismiss = actions.onDismissReminder,
+                    )
+                }
             }
         }
     }
@@ -173,7 +211,7 @@ private fun CounterWorkspaceActions.onProjectContentClick(
 
 @Composable
 private fun CounterHero(
-    state: CounterUiState,
+    state: CounterHeroState,
     actions: CounterWorkspaceActions,
     modifier: Modifier = Modifier,
 ) {
@@ -211,8 +249,9 @@ private fun CounterHero(
         }
         CounterRowLabel(state = state, onShowTargetDialog = actions.onShowTargetDialog)
         CounterMainNumber(state = state)
+        val display = CounterValueFormatter.forMainCounter(state.toMainCounterProject())
         CounterTargetHelperLabel(
-            helperText = counterTargetHelperText(state.counter.count, state.targetRows),
+            helperText = counterTargetHelperText(display.targetLine),
             onShowTargetDialog = actions.onShowTargetDialog,
         )
         Spacer(modifier = Modifier.height(heroButtonSpacing))
@@ -231,12 +270,9 @@ private fun CounterHero(
     }
 }
 
-private val CounterUiState.visibleStitchTotal: Int?
-    get() = stitchCount?.takeIf { stitchTrackingEnabled && it > 0 }
-
 @Composable
 private fun CounterStitchTracker(
-    state: CounterUiState,
+    state: CounterHeroState,
     actions: CounterWorkspaceActions,
 ) {
     val totalStitches = state.visibleStitchTotal ?: return
@@ -252,7 +288,7 @@ private fun CounterStitchTracker(
 
 @Composable
 private fun CounterRowLabel(
-    state: CounterUiState,
+    state: CounterHeroState,
     onShowTargetDialog: () -> Unit,
 ) {
     val display = CounterValueFormatter.forMainCounter(state.toMainCounterProject())
@@ -272,50 +308,105 @@ private fun CounterRowLabel(
 }
 
 @Composable
-private fun CounterMainNumber(state: CounterUiState) {
+private fun CounterMainNumber(state: CounterHeroState) {
     val display = CounterValueFormatter.forMainCounter(state.toMainCounterProject())
     val counterDescription =
         display.targetLine?.let { mainCounterTargetText(it) }
             ?: mainCounterCountText(display.heroTitle)
-    RollingCounter(
-        count = state.counter.count,
-        textStyle =
-            MaterialTheme.typography.displayMedium.copy(
-                fontSize = CounterDimens.CounterMainNumberFontSize,
-                fontWeight = FontWeight.Bold,
-                fontFeatureSettings = "tnum",
-            ),
-        contentDescription = counterDescription,
-    )
+    val countText = state.counter.count.toString()
+    val baseTextStyle =
+        MaterialTheme.typography.displayMedium.copy(
+            fontSize = CounterDimens.CounterMainNumberFontSize,
+            fontWeight = FontWeight.Bold,
+            fontFeatureSettings = "tnum",
+        )
+    BoxWithConstraints(
+        modifier = Modifier.fillMaxWidth(),
+        contentAlignment = Alignment.Center,
+    ) {
+        val textMeasurer = rememberTextMeasurer()
+        val fittedFontSize =
+            counterMainNumberFittedFontSize(
+                maxFontSize = CounterDimens.CounterMainNumberFontSize,
+                minFontSize = CounterDimens.CounterMainNumberMinimumFontSize,
+                maxWidthPx = constraints.maxWidth,
+                measureWidth = { candidateFontSize ->
+                    textMeasurer
+                        .measure(
+                            text = countText,
+                            style = baseTextStyle.copy(fontSize = candidateFontSize),
+                            softWrap = false,
+                            maxLines = 1,
+                        ).size.width
+                },
+            )
+        RollingCounter(
+            count = state.counter.count,
+            textStyle = baseTextStyle.copy(fontSize = fittedFontSize),
+            contentDescription = counterDescription,
+        )
+    }
 }
 
 internal sealed interface CounterTargetHelperText {
-    data object OneRowLeft : CounterTargetHelperText
-
-    data class RowsLeft(
-        val rows: Int,
+    data class ItemsLeft(
+        val countSlot: MainCounterCountSlot,
     ) : CounterTargetHelperText
 
     data object TargetReached : CounterTargetHelperText
 
     data class PastTarget(
-        val rows: Int,
+        val countSlot: MainCounterCountSlot,
     ) : CounterTargetHelperText
 }
 
-internal fun counterTargetHelperText(
-    count: Int,
-    targetRows: Int?,
-): CounterTargetHelperText? {
-    val target = targetRows?.takeIf { it > 0 } ?: return null
-    val rowsUntilTarget = target - count
+internal fun counterTargetHelperText(targetLine: MainCounterTargetSlot?): CounterTargetHelperText? {
+    val slot = targetLine ?: return null
+    val itemsUntilTarget = slot.target - slot.count
+
+    fun countSlot(count: Int): MainCounterCountSlot =
+        MainCounterCountSlot(
+            count = count,
+            labelType = slot.labelType,
+            customLabel = slot.customLabel,
+        )
     return when {
-        rowsUntilTarget > 1 -> CounterTargetHelperText.RowsLeft(rowsUntilTarget)
-        rowsUntilTarget == 1 -> CounterTargetHelperText.OneRowLeft
-        rowsUntilTarget == 0 -> CounterTargetHelperText.TargetReached
-        rowsUntilTarget == -1 -> CounterTargetHelperText.PastTarget(1)
-        else -> CounterTargetHelperText.PastTarget(-rowsUntilTarget)
+        itemsUntilTarget > 0 -> CounterTargetHelperText.ItemsLeft(countSlot(itemsUntilTarget))
+        itemsUntilTarget == 0 -> CounterTargetHelperText.TargetReached
+        else -> CounterTargetHelperText.PastTarget(countSlot(-itemsUntilTarget))
     }
+}
+
+internal fun counterMainNumberFittedFontSize(
+    maxFontSize: TextUnit,
+    minFontSize: TextUnit,
+    maxWidthPx: Int,
+    measureWidth: (TextUnit) -> Int,
+): TextUnit {
+    if (maxWidthPx == Constraints.Infinity) {
+        return maxFontSize
+    }
+    if (maxWidthPx <= 0) {
+        return minFontSize
+    }
+    if (measureWidth(maxFontSize) <= maxWidthPx) {
+        return maxFontSize
+    }
+    if (measureWidth(minFontSize) > maxWidthPx) {
+        return minFontSize
+    }
+
+    var lowFontSize = minFontSize
+    var highFontSize = maxFontSize
+    repeat(CounterDimens.CounterMainNumberFitIterations) {
+        val candidateFontSize = ((lowFontSize.value + highFontSize.value) / 2f).sp
+        if (measureWidth(candidateFontSize) <= maxWidthPx) {
+            lowFontSize = candidateFontSize
+        } else {
+            highFontSize = candidateFontSize
+        }
+    }
+    return lowFontSize
 }
 
 @Composable
@@ -325,14 +416,17 @@ private fun CounterTargetHelperLabel(
 ) {
     val text =
         when (helperText) {
-            is CounterTargetHelperText.RowsLeft ->
-                pluralStringResource(R.plurals.counter_target_rows_left, helperText.rows, helperText.rows)
-
-            CounterTargetHelperText.OneRowLeft ->
-                pluralStringResource(R.plurals.counter_target_rows_left, 1, 1)
+            is CounterTargetHelperText.ItemsLeft ->
+                stringResource(
+                    R.string.counter_target_remaining_format,
+                    mainCounterProjectCardCountText(helperText.countSlot),
+                )
             CounterTargetHelperText.TargetReached -> stringResource(R.string.counter_target_reached)
             is CounterTargetHelperText.PastTarget ->
-                pluralStringResource(R.plurals.counter_target_rows_past, helperText.rows, helperText.rows)
+                stringResource(
+                    R.string.counter_target_past_format,
+                    mainCounterProjectCardCountText(helperText.countSlot),
+                )
 
             null -> return
         }
@@ -350,7 +444,7 @@ private fun CounterTargetHelperLabel(
 
 @Composable
 private fun CounterButtons(
-    state: CounterUiState,
+    state: CounterHeroState,
     onDecrement: () -> Unit,
     onIncrement: () -> Unit,
     onUndo: () -> Unit,
@@ -398,10 +492,8 @@ private fun CounterButtons(
     }
 }
 
-private fun CounterUiState.toMainCounterProject(): CounterProject =
+private fun CounterHeroState.toMainCounterProject(): CounterProject =
     CounterProject(
-        id = projectId ?: 0L,
-        name = projectName,
         count = counter.count,
         craftType = craftType,
         mainCounterLabelType = mainCounterLabelType,

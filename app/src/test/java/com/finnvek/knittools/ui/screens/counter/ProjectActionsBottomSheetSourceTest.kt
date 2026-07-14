@@ -46,6 +46,18 @@ class ProjectActionsBottomSheetSourceTest {
         }
     }
 
+    @Test
+    fun `track stitches switch stays reachable so missing count can open setup dialog`() {
+        val source = ProjectSourceFiles.read(PROJECT_ACTIONS_BOTTOM_SHEET)
+        val trackStitchesSwitch =
+            source
+                .substringAfter("label = stringResource(R.string.track_stitches)")
+                .substringBefore("SectionDivider()")
+
+        assertTrue(trackStitchesSwitch.contains("onCheckedChange = callbacks.onToggleStitchTracking"))
+        assertFalse(trackStitchesSwitch.contains("enabled = (state.stitchCount ?: 0) > 0"))
+    }
+
     private companion object {
         private const val PROJECT_ACTIONS_BOTTOM_SHEET =
             "app/src/main/java/com/finnvek/knittools/ui/screens/counter/ProjectActionsBottomSheet.kt"

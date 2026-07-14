@@ -7,8 +7,9 @@ import {
 } from "../config";
 import type { RavelryCurrentUserClient } from "./client";
 import type { OAuthStateStore } from "./oauthStateStore";
-import type { OAuthTokenExchange } from "./oauth2";
+import type { OAuthTokenExchange, OAuthTokenRefresh } from "./oauth2";
 import { RAVELRY_AUTHORIZATION_URL } from "./oauth2";
+import { getUsableRavelryToken } from "./tokenAccess";
 import type { RavelryTokenStore } from "./tokenStore";
 
 type RandomLabel = "state" | "code-verifier";
@@ -37,6 +38,7 @@ interface UserTokenOptions {
 
 interface CurrentUserOptions extends UserTokenOptions {
   readonly client: RavelryCurrentUserClient;
+  readonly refresh?: OAuthTokenRefresh;
   readonly nowMillis?: () => number;
 }
 
@@ -108,6 +110,13 @@ function requireState(value: string | undefined): string {
   return value;
 }
 
+function redirectExpiredStateOrThrow(error: unknown, state: string): CallbackResponse {
+  if (error instanceof RavelryAuthFlowError && error.code === "expired_state") {
+    return { redirectUrl: appRedirectUrl(state, "state_expired") };
+  }
+  throw error;
+}
+
 function tokenForStorage(
   uid: string,
   token: Awaited<ReturnType<OAuthTokenExchange>>,
@@ -149,6 +158,16 @@ async function markStateUsedOrReject(
 ) {
   const marked = await stateStore.markStateUsed(state, nowMillis);
   if (!marked) {
+    const storedState = await stateStore.getState(state);
+    if (!storedState) {
+      throw new RavelryAuthFlowError("invalid_state", 400);
+    }
+    if (storedState.usedAtMillis != null) {
+      throw new RavelryAuthFlowError("used_state", 400);
+    }
+    if (storedState.expiresAtMillis <= nowMillis) {
+      throw new RavelryAuthFlowError("expired_state", 400);
+    }
     throw new RavelryAuthFlowError("used_state", 400);
   }
 }
@@ -230,11 +249,21 @@ export async function completeRavelryOAuthCallback({
 }: CompleteCallbackOptions): Promise<CallbackResponse> {
   const now = nowMillis();
   const state = requireState(queryString(query, "state"));
-  const storedState = await loadUsableState(stateStore, state, now);
+  const storedState = await loadUsableState(stateStore, state, now).catch((error: unknown) =>
+    redirectExpiredStateOrThrow(error, state),
+  );
+  if ("redirectUrl" in storedState) {
+    return storedState;
+  }
   const ravelryError = queryString(query, "error");
 
   if (ravelryError) {
-    await markStateUsedOrReject(stateStore, state, now);
+    const expiredResult = await markStateUsedOrReject(stateStore, state, now).catch((error: unknown) =>
+      redirectExpiredStateOrThrow(error, state),
+    );
+    if (expiredResult) {
+      return expiredResult;
+    }
     return { redirectUrl: appRedirectUrl(state, ravelryError) };
   }
 
@@ -243,7 +272,12 @@ export async function completeRavelryOAuthCallback({
     throw new RavelryAuthFlowError("missing_code", 400);
   }
 
-  await markStateUsedOrReject(stateStore, state, now);
+  const expiredResult = await markStateUsedOrReject(stateStore, state, now).catch((error: unknown) =>
+    redirectExpiredStateOrThrow(error, state),
+  );
+  if (expiredResult) {
+    return expiredResult;
+  }
   const token = await exchange({
     code,
     codeVerifier: storedState.codeVerifier,
@@ -277,9 +311,15 @@ export async function getRavelryCurrentUser({
   uid,
   tokenStore,
   client,
+  refresh,
   nowMillis = Date.now,
 }: CurrentUserOptions): Promise<CurrentUserResponse> {
-  const token = await tokenStore.getToken(uid);
+  const token = await getUsableRavelryToken({
+    uid,
+    tokenStore,
+    refresh,
+    nowMillis,
+  });
   if (!token) {
     return { connected: false };
   }

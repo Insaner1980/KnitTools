@@ -15,8 +15,10 @@ import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
@@ -36,6 +38,7 @@ class InsightsViewModelTest {
     private lateinit var repository: CounterRepository
     private lateinit var proManager: ProManager
     private lateinit var insightsFeature: MutableStateFlow<Boolean>
+    private lateinit var streakFeature: MutableStateFlow<Boolean>
 
     @Before
     fun setup() {
@@ -43,11 +46,14 @@ class InsightsViewModelTest {
         repository = mockk()
         proManager = mockk()
         insightsFeature = MutableStateFlow(false)
+        streakFeature = MutableStateFlow(false)
         every { repository.getAllProjects() } returns flowOf(emptyList())
         every { repository.getSessionsForInsights(null, null) } returns flowOf(emptyList())
         every { repository.getSessionsForInsights(null, any()) } returns flowOf(emptyList())
         every { proManager.hasFeature(ProFeature.INSIGHTS_CHARTS) } answers { insightsFeature.value }
         every { proManager.hasFeatureFlow(ProFeature.INSIGHTS_CHARTS) } returns insightsFeature
+        every { proManager.hasFeature(ProFeature.STREAK) } answers { streakFeature.value }
+        every { proManager.hasFeatureFlow(ProFeature.STREAK) } returns streakFeature
     }
 
     @After
@@ -161,6 +167,42 @@ class InsightsViewModelTest {
     }
 
     @Test
+    fun `ranged pace keeps a session-local bucket after the device zone changes`() {
+        val sessionZone = ZoneId.of("Pacific/Kiritimati")
+        val currentDeviceZone = ZoneId.of("Pacific/Honolulu")
+        val currentDeviceDate = LocalDate.now(currentDeviceZone)
+        val sessionDate = currentDeviceDate.plusDays(1)
+        val startedAt = instantMillis(sessionDate, 0, 30, sessionZone)
+        val session =
+            KnitSession(
+                projectId = 1L,
+                startedAt = startedAt,
+                endedAt = startedAt + 30 * 60 * 1_000L,
+                startRow = 0,
+                endRow = 10,
+                durationMinutes = 30,
+                durationSeconds = 30 * 60L,
+                rowsWorked = 10,
+                zoneId = sessionZone.id,
+            )
+
+        val points =
+            InsightsViewModel.buildPaceOverTime(
+                sessions = listOf(session),
+                timeRange = TimeRange.THIS_MONTH,
+                rangeStartMillis =
+                    currentDeviceDate
+                        .withDayOfMonth(1)
+                        .atStartOfDay(currentDeviceZone)
+                        .toInstant()
+                        .toEpochMilli(),
+                zone = currentDeviceZone,
+            )
+
+        assertEquals(listOf(sessionDate), points.filter { it.totalMinutes > 0 }.map { it.bucketStart })
+    }
+
+    @Test
     fun `pace over time groups all time by month and sorts out of order sessions`() {
         val zone = ZoneId.of("UTC")
         val january = LocalDate.of(2026, 1, 12)
@@ -268,6 +310,30 @@ class InsightsViewModelTest {
         assertEquals(0, InsightsViewModel.calculateStreak(listOf(session)))
         assertEquals(0, InsightsViewModel.calculateCurrentStreak(listOf(session)))
     }
+
+    @Test
+    fun `local date changes emits again after midnight`() =
+        runTest {
+            val zone = ZoneId.of("Europe/Helsinki")
+            val firstDate = LocalDate.of(2026, 7, 12)
+            var nowMillis = instantMillis(firstDate, 23, 59, zone) + 50_000L
+            val dates = mutableListOf<LocalDate>()
+            val job =
+                launch {
+                    localDateChanges(
+                        nowMillis = { nowMillis },
+                        zoneProvider = { zone },
+                    ).take(2).toList(dates)
+                }
+
+            runCurrent()
+            nowMillis += 10_000L
+            advanceTimeBy(10_000L)
+            runCurrent()
+
+            assertEquals(listOf(firstDate, firstDate.plusDays(1)), dates)
+            job.cancel()
+        }
 
     private fun instantMillis(
         date: LocalDate,

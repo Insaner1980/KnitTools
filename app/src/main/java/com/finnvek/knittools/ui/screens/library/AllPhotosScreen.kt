@@ -49,6 +49,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -201,7 +202,7 @@ private fun AllPhotosDeleteDialog(
 ) {
     ConfirmationDialog(
         title = stringResource(R.string.delete_photo),
-        message = stringResource(R.string.delete_photos_confirm, selectedCount),
+        message = pluralStringResource(R.plurals.delete_photos_confirm, selectedCount, selectedCount),
         confirmText = stringResource(R.string.delete),
         isDestructive = true,
         onConfirm = onConfirm,

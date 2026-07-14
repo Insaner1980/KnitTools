@@ -258,6 +258,7 @@ class RavelryViewModelTest {
 
             vm.updateQuery("socks")
             vm.search()
+            runCurrent()
             vm.updateQuery("hat")
             vm.search()
             advanceUntilIdle()
@@ -280,6 +281,7 @@ class RavelryViewModelTest {
 
             vm.updateQuery("socks")
             vm.search()
+            runCurrent()
             vm.updateQuery("hat")
             socksResponse.complete(searchResponse(1))
             advanceUntilIdle()
@@ -423,6 +425,30 @@ class RavelryViewModelTest {
 
             assertEquals(RavelryImportStatus.AlreadySaved, vm.importConfirmationState.value?.status)
             assertEquals(9L, vm.importConfirmationState.value?.savedPatternId)
+        }
+
+    @Test
+    fun `save import pattern does not restore dismissed sheet when save completes`() =
+        runTest(testDispatcher) {
+            authState.value = RavelryAuthState.Connected("knitter")
+            val pattern = PatternDetail(id = 42, name = "Import Pattern", permalink = "import-pattern")
+            coEvery { repository.getPatternDetail(42) } returns pattern
+            coEvery { repository.findDuplicateFor(pattern) } returns null
+            val saveResult = CompletableDeferred<Long>()
+            coEvery { repository.savePattern(pattern) } coAnswers {
+                saveResult.await()
+            }
+            val vm = createViewModel(isPro = true)
+
+            vm.showImportConfirmationForPattern(42)
+            advanceUntilIdle()
+            vm.saveImportPattern()
+            runCurrent()
+            vm.dismissImportConfirmation()
+            saveResult.complete(9L)
+            advanceUntilIdle()
+
+            assertNull(vm.importConfirmationState.value)
         }
 
     @Test

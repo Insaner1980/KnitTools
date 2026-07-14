@@ -374,11 +374,13 @@ class RavelryViewModel
             val currentState = _importConfirmationState.value ?: return
             val detail = currentState.pattern ?: return
             if (currentState.status != RavelryImportStatus.Ready || isImportSaveInFlight) return
+            val requestId = importRequestId
             isImportSaveInFlight = true
             _importConfirmationState.value = currentState.copy(isSaving = true)
             viewModelScope.launch {
                 try {
                     val savedId = repository.savePattern(detail)
+                    if (requestId != importRequestId) return@launch
                     _importConfirmationState.value =
                         currentState.copy(
                             status = RavelryImportStatus.AlreadySaved,
@@ -388,13 +390,17 @@ class RavelryViewModel
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
-                    _importConfirmationState.value =
-                        currentState.copy(
-                            status = e.toImportStatus(),
-                            isSaving = false,
-                        )
+                    if (requestId == importRequestId) {
+                        _importConfirmationState.value =
+                            currentState.copy(
+                                status = e.toImportStatus(),
+                                isSaving = false,
+                            )
+                    }
                 } finally {
-                    isImportSaveInFlight = false
+                    if (requestId == importRequestId) {
+                        isImportSaveInFlight = false
+                    }
                 }
             }
         }

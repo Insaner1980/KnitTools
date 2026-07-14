@@ -6,6 +6,7 @@ import com.finnvek.knittools.data.local.CounterProjectDao
 import com.finnvek.knittools.data.local.CounterProjectEntity
 import com.finnvek.knittools.data.local.DatabaseTransactionRunner
 import com.finnvek.knittools.data.local.YarnCardDao
+import com.finnvek.knittools.data.local.YarnCardEntity
 import com.finnvek.knittools.data.local.toDomain
 import com.finnvek.knittools.data.local.toEntity
 import com.finnvek.knittools.data.storage.AppFileStorage
@@ -52,13 +53,14 @@ class YarnCardRepository
         internal suspend fun saveCardInCurrentTransaction(card: YarnCard): Long {
             val existingCard = card.id.takeIf { it != 0L }?.let { dao.getCard(it) }
             val projects = counterProjectDao.getAllProjectsOnce()
+            val cardWithPreservedDetails = card.preserveSameCardDetails(existingCard)
             val linkedProjectId =
-                card.linkedProjectId?.takeIf { projectId ->
+                cardWithPreservedDetails.linkedProjectId?.takeIf { projectId ->
                     projects.any { it.id == projectId }
                 }
             val normalizedCard =
-                card.copy(
-                    status = YarnCardStatus.normalize(card.status),
+                cardWithPreservedDetails.copy(
+                    status = YarnCardStatus.normalize(cardWithPreservedDetails.status),
                     linkedProjectId = linkedProjectId,
                 )
             val upsertedId = dao.upsert(normalizedCard.toEntity())
@@ -74,6 +76,23 @@ class YarnCardRepository
             }
             return savedId
         }
+
+        private fun YarnCard.preserveSameCardDetails(existingCard: YarnCardEntity?): YarnCard =
+            existingCard?.let {
+                copy(
+                    fiberContent = it.fiberContent,
+                    weightGrams = it.weightGrams,
+                    lengthMeters = it.lengthMeters,
+                    needleSize = it.needleSize,
+                    gaugeInfo = it.gaugeInfo,
+                    careSymbols = it.careSymbols,
+                    photoUri = it.photoUri,
+                    createdAt = it.createdAt,
+                    quantityInStash = it.quantityInStash,
+                    status = it.status,
+                    linkedProjectId = it.linkedProjectId,
+                )
+            } ?: this
 
         fun getCardCount() = dao.getCardCount()
 
@@ -154,7 +173,7 @@ class YarnCardRepository
                     dao.deleteByIds(ids)
                     cards
                 }
-            withContext(ioDispatcher) {
+            withContext(ioDispatcher + NonCancellable) {
                 cards.forEach { card -> AppFileStorage.deleteIfAppOwned(context, card.photoUri) }
             }
         }

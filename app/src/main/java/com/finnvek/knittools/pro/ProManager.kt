@@ -1,6 +1,5 @@
 package com.finnvek.knittools.pro
 
-import android.util.Log
 import com.finnvek.knittools.billing.BillingManager
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -51,41 +50,43 @@ class ProManager
                     combine(
                         trialManager.trialState,
                         billingManager.isProPurchased,
-                    ) { trial, isPurchased ->
-                        when {
-                            isPurchased -> {
-                                ProState(
-                                    status = ProStatus.PRO_PURCHASED,
-                                    trialDaysRemaining = 0,
-                                    trialStartTimestamp = trial.startTimestamp,
-                                    purchaseTimestamp = System.currentTimeMillis(),
-                                )
-                            }
+                        billingManager.purchaseStateReady,
+                    ) { trial, isPurchased, purchaseStateReady ->
+                        val state =
+                            when {
+                                isPurchased -> {
+                                    ProState(
+                                        status = ProStatus.PRO_PURCHASED,
+                                        trialDaysRemaining = 0,
+                                        trialStartTimestamp = trial.startTimestamp,
+                                        purchaseTimestamp = System.currentTimeMillis(),
+                                    )
+                                }
 
-                            trial.isActive -> {
-                                ProState(
-                                    status = ProStatus.TRIAL_ACTIVE,
-                                    trialDaysRemaining = trial.daysRemaining,
-                                    trialStartTimestamp = trial.startTimestamp,
-                                )
-                            }
+                                trial.isActive -> {
+                                    ProState(
+                                        status = ProStatus.TRIAL_ACTIVE,
+                                        trialDaysRemaining = trial.daysRemaining,
+                                        trialStartTimestamp = trial.startTimestamp,
+                                    )
+                                }
 
-                            else -> {
-                                ProState(
-                                    status = ProStatus.TRIAL_EXPIRED,
-                                    trialDaysRemaining = 0,
-                                    trialStartTimestamp = trial.startTimestamp,
-                                )
+                                else -> {
+                                    ProState(
+                                        status = ProStatus.TRIAL_EXPIRED,
+                                        trialDaysRemaining = 0,
+                                        trialStartTimestamp = trial.startTimestamp,
+                                    )
+                                }
                             }
-                        }
-                    }.collect { state ->
+                        state to purchaseStateReady
+                    }.collect { (state, purchaseStateReady) ->
                         _proState.value = state
-                        _initialStateReady.value = true
+                        _initialStateReady.value = purchaseStateReady
                     }
                 } catch (e: CancellationException) {
                     throw e
-                } catch (e: Exception) {
-                    Log.e(TAG, "Pro-tilan alustus epäonnistui", e)
+                } catch (_: Exception) {
                     _initialStateReady.value = false
                     initialized = false
                 }
@@ -122,7 +123,6 @@ class ProManager
         }
 
         private companion object {
-            const val TAG = "ProManager"
             private const val INITIAL_STATE_WAIT_TIMEOUT_MS = 2_000L
         }
     }

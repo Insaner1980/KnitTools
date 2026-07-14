@@ -30,6 +30,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -189,7 +190,7 @@ private fun ProjectCardStatsRow(
     Column {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = stats.countText ?: stringResource(R.string.rows_format, stats.rowCount),
+                text = stats.countText ?: pluralStringResource(R.plurals.rows_format, stats.rowCount, stats.rowCount),
                 style = MaterialTheme.typography.headlineSmall,
                 color = rowCountColor,
             )

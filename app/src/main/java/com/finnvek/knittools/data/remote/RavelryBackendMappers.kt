@@ -24,11 +24,15 @@ internal object RavelryBackendMappers {
 
     fun patternDetailFrom(data: Any?): PatternDetail {
         val pattern = data.asMap()
-        val ravelryPatternId = pattern.int("ravelryPatternId") ?: 0
+        val ravelryPatternId =
+            requireNotNull(pattern.int("ravelryPatternId")?.takeIf { it > 0 }) {
+                "Missing ravelryPatternId in Ravelry pattern detail response"
+            }
         val title = pattern.string("title")
         val designerName = pattern.string("designerName")
         val thumbnailUrl = pattern.optionalString("thumbnailUrl")
         val canonicalUrl = pattern.optionalString("canonicalUrl")
+        val availability = PatternAvailability.fromBackendValue(pattern.optionalString("availability"))
         val permalink = permalinkFrom(canonicalUrl, ravelryPatternId)
 
         return PatternDetail(
@@ -37,7 +41,10 @@ internal object RavelryBackendMappers {
             permalink = permalink,
             designer = PatternDesigner(name = designerName),
             photos = thumbnailUrl?.let { listOf(PatternPhoto(mediumUrl = it, small2Url = it)) } ?: emptyList(),
-            free = pattern.string("availability") == "free",
+            free = availability.isFree,
+            availability = availability,
+            canonicalUrl = canonicalUrl.orEmpty(),
+            originalUrl = pattern.optionalString("originalUrl").orEmpty(),
         )
     }
 
@@ -45,13 +52,15 @@ internal object RavelryBackendMappers {
         val ravelryPatternId = int("ravelryPatternId") ?: return null
         val thumbnailUrl = optionalString("thumbnailUrl")
         val canonicalUrl = optionalString("canonicalUrl")
+        val availability = PatternAvailability.fromBackendValue(optionalString("availability"))
 
         return PatternSearchResult(
             id = ravelryPatternId,
             name = string("title"),
             designer = PatternDesigner(name = string("designerName")),
             firstPhoto = thumbnailUrl?.let { PatternPhoto(small2Url = it, mediumUrl = it) },
-            free = string("availability") == "free",
+            free = availability.isFree,
+            availability = availability,
             permalink = permalinkFrom(canonicalUrl, ravelryPatternId),
         )
     }

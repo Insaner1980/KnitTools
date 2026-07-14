@@ -9,7 +9,7 @@ class RavelryDetailFlowSourceTest {
     fun `detail screen reports save result from view model events`() {
         val detailScreen = ProjectSourceFiles.read(RAVELRY_DETAIL_SCREEN)
 
-        assertTrue(detailScreen.contains("patternSaveResults.collect"))
+        assertTrue(detailScreen.contains("CollectWithLifecycleEffect(viewModel.patternSaveResults)"))
         assertTrue(detailScreen.contains("PatternSaveResult.Saved"))
         assertTrue(detailScreen.contains("PatternSaveResult.Failed"))
         assertTrue(detailScreen.contains("onSave = { viewModel.savePattern() }"))
@@ -26,6 +26,15 @@ class RavelryDetailFlowSourceTest {
         assertTrue(detailScreen.contains("openRavelryUrl("))
         assertTrue(externalLinks.contains("ActivityNotFoundException"))
         assertTrue(externalLinks.contains("runCatching"))
+    }
+
+    @Test
+    fun `external ravelry link helper validates URL before launching view intent`() {
+        val externalLinks = ProjectSourceFiles.read(RAVELRY_EXTERNAL_LINKS)
+
+        assertTrue(externalLinks.contains("ravelryExternalUriOrNull(url)"))
+        assertTrue(externalLinks.contains("Intent(Intent.ACTION_VIEW, uri)"))
+        assertFalse(externalLinks.contains("Intent(Intent.ACTION_VIEW, url.toUri())"))
     }
 
     @Test

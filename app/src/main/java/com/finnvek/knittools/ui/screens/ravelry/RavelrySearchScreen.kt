@@ -47,6 +47,7 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -60,6 +61,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
@@ -68,7 +70,9 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.auth.RavelryAuthState
+import com.finnvek.knittools.data.remote.PatternAvailability
 import com.finnvek.knittools.domain.model.SavedPattern
+import com.finnvek.knittools.ui.components.CollectWithLifecycleEffect
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.StatusMessage
 import com.finnvek.knittools.ui.components.StatusMessageType
@@ -104,8 +108,6 @@ fun RavelrySearchScreen(
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     var showDeleteConfirmDialog by rememberSaveable { mutableStateOf(false) }
     val keyboardController = LocalSoftwareKeyboardController.current
-    val currentOnLaunchRavelryAuth by rememberUpdatedState(actions.onLaunchRavelryAuth)
-
     BackHandler(enabled = isSavedSelectMode) {
         viewModel.exitSavedSelectMode()
     }
@@ -114,10 +116,8 @@ fun RavelrySearchScreen(
         viewModel.refreshAuthStatus()
     }
 
-    LaunchedEffect(viewModel) {
-        viewModel.signInLaunchRequests.collect { uri ->
-            currentOnLaunchRavelryAuth(uri)
-        }
+    CollectWithLifecycleEffect(viewModel.signInLaunchRequests) { uri ->
+        actions.onLaunchRavelryAuth(uri)
     }
 
     LaunchedEffect(viewModel, importUrl) {
@@ -127,7 +127,12 @@ fun RavelrySearchScreen(
     if (showDeleteConfirmDialog) {
         ConfirmationDialog(
             title = stringResource(R.string.delete_pattern),
-            message = stringResource(R.string.delete_patterns_confirm, selectedSavedIds.size),
+            message =
+                pluralStringResource(
+                    R.plurals.delete_patterns_confirm,
+                    selectedSavedIds.size,
+                    selectedSavedIds.size,
+                ),
             confirmText = stringResource(R.string.delete),
             isDestructive = true,
             onConfirm = {
@@ -312,6 +317,7 @@ fun RavelrySearchScreen(
     }
 }
 
+@Immutable
 private data class SearchTabState(
     val searchQuery: String,
     val submittedQuery: String,
@@ -528,7 +534,7 @@ private fun LazyListScope.ravelrySearchResults(
                     designerName = pattern.designer?.name ?: "",
                     thumbnailUrl = pattern.firstPhoto?.small2Url,
                     difficulty = pattern.difficultyAverage,
-                    isFree = pattern.free,
+                    availability = pattern.availability,
                 ),
             onClick = { onPatternClick(pattern.id) },
             actionContent = {
@@ -734,7 +740,7 @@ private fun SavedPatternItem(
                     designerName = pattern.designerName,
                     thumbnailUrl = pattern.thumbnailUrl,
                     difficulty = pattern.difficulty,
-                    isFree = pattern.isFree,
+                    availability = PatternAvailability.fromFree(pattern.isFree),
                 ),
             onClick = {
                 if (isSelectMode) {

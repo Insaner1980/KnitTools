@@ -40,9 +40,9 @@ Nykytilan kannalta hyödyllinen järjestys:
 - `baselineprofile`-moduulin `compileSdk` / `targetSdk` / `minSdk`: samat version catalog -arvot `36 / 36 / 29`
 - Java target: `17`
 - Gradle wrapper: `9.4.1`
-- AGP: `9.1.0`
-- Kotlin Compose plugin: `2.3.10`
-- KSP: `2.3.6`
+- AGP: `9.1.1`
+- Kotlin Compose plugin: `2.3.21`
+- KSP: `2.3.9`
 - Compose BOM: `2026.05.01`
 - Room: `2.8.4`
 - Glance: `1.1.1`
@@ -190,7 +190,7 @@ Build-huomiot:
 - root-buildissä `dependency-analysis` on tarkoituksella kommentoitu pois AGP 9.x -yhteensopivuuden takia
 - Sonar-konfiguraatio delegoi Gradlen hallitsemat source/binary-polut Gradle-pluginille ja ajaa `:app:jacocoDebugUnitTestReport` ennen `sonar`-taskia
 - root `sonar`-task lukee `sonar-project.properties`-tiedoston, mutta ei syötä Gradlen itse hallitsemia source/binary/test/library-propertyjä Sonar-pluginille; app-moduulille asetetaan erikseen `sonar.coverage.jacoco.xmlReportPaths`
-- `sonar-project.properties` rajaa coverage-portin domain-, repository- ja parserilogiikkaan; coverage-exclusion-listalla ovat muun muassa `App.kt`, `MainActivity.kt`, debug/release-source-setien `SentryInit.kt`, `di`, `ui`, `widget`, `auth`, `billing`, `pro`, `data/*` ja `PatternRowDetector.kt`
+- `sonar-project.properties` rajaa coverage-portin domain-, repository- ja parserilogiikkaan; coverage-exclusion-listalla ovat muun muassa `App.kt`, `MainActivity.kt`, debug/release-source-setien `SentryInit.kt`, `di`, `ui`, `widget`, `auth`, `billing`, `pro` ja `data/*`
 - `tools/sonar.ps1` ajaa nykyisin vain `.\gradlew.bat sonar --console=plain`, ei `assembleDebug sonar`; siksi Sonar-skannaus ei ole sidottu Firebase artifact -buildin `app/google-services.json`-porttiin, vaikka Gradlen `sonar`-task ajaa JaCoCo-raportin ennen analyysiä
 - `compileSdk`, `minSdk` ja `targetSdk` tulevat version catalogista myös `:app`- ja `:baselineprofile`-build-skripteissä; älä etsi näille kovakoodattuja numeroita moduulien `android {}` -lohkoista
 - release signing on ympäristömuuttujapohjainen ja käyttää neljää `KNITTOOLS_*`-muuttujaa: `KNITTOOLS_KEYSTORE_PATH`, `KNITTOOLS_KEYSTORE_PASSWORD`, `KNITTOOLS_KEY_ALIAS` ja `KNITTOOLS_KEY_PASSWORD`
@@ -778,8 +778,8 @@ Keskeiset rajat:
 Ensimmäisen viewportin järjestys on tarkoituksella rauhallinen laskurityökalu:
 
 - top bar näyttää vain back-nuolen, projektinimen ja overflow-menun
-- ensimmäinen `LazyColumn`-item on `counter-hero`, jonka sisällä ovat mahdollinen repeat/section-rivi, row label, iso rivinumero, target progress/helper ja `CounterImageButton`-päälaskurikontrollit
-- aktiivinen reminder-alert, `ProjectContentCards`, extra counters ja stitch tracking alkavat vasta hero-scrollin jälkeen
+- ensimmäinen `LazyColumn`-item on `counter-hero`, jonka sisällä ovat mahdollinen repeat/section-rivi, row label, iso rivinumero, target progress/helper, `CounterImageButton`-päälaskurikontrollit ja aktiivinen stitch tracker silloin kun silmukkaseuranta on käytössä
+- aktiivinen reminder-alert, `ProjectContentCards` ja extra counters alkavat vasta hero-scrollin jälkeen
 - `Screen.Counter.route` ei kuulu `HIDE_BOTTOM_BAR_ROUTES`-joukkoon, joten alanavigaatio pysyy näkyvissä counterissa
 
 Päälaskurin nappimalli:

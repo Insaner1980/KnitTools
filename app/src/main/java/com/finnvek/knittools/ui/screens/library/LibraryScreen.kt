@@ -29,11 +29,13 @@ import com.finnvek.knittools.ui.theme.knitToolsColors
 @Composable
 fun LibraryScreen(
     onNavigate: (Screen) -> Unit,
+    onUpgradeToPro: () -> Unit = {},
     viewModel: LibraryViewModel = hiltViewModel(),
 ) {
     val savedPatternCount by viewModel.savedPatternCount.collectAsStateWithLifecycle(initialValue = 0)
     val yarnCardCount by viewModel.yarnCardCount.collectAsStateWithLifecycle(initialValue = 0)
     val photoCount by viewModel.photoCount.collectAsStateWithLifecycle(initialValue = 0)
+    val canUseProgressPhotos by viewModel.canUseProgressPhotos.collectAsStateWithLifecycle()
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -87,7 +89,13 @@ fun LibraryScreen(
                 HubListItem(
                     title = stringResource(R.string.all_photos_title),
                     description = stringResource(R.string.desc_all_photos),
-                    onClick = { onNavigate(Screen.AllPhotos) },
+                    onClick = {
+                        if (canUseProgressPhotos) {
+                            onNavigate(Screen.AllPhotos)
+                        } else {
+                            onUpgradeToPro()
+                        }
+                    },
                     titleColor = MaterialTheme.colorScheme.tertiary,
                     trailingText = photoCount.toString(),
                 )

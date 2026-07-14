@@ -58,6 +58,8 @@ class DomainModelCoverageTest {
 
         assertEquals(MainCounterLabelType.REPEATS, MainCounterLabelType.fromPersistedValue("REPEATS"))
         assertEquals(MainCounterLabelType.ROWS, MainCounterLabelType.fromPersistedValue(null))
+
+        assertEquals(ProjectCounterType.COUNT_UP, ProjectCounterType.fromPersistedValue("unknown"))
     }
 
     @Test

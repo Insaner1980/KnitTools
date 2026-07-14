@@ -102,7 +102,7 @@ private fun CareChip(
             tint = tint,
         )
         Text(
-            text = symbol.label,
+            text = stringResource(symbol.labelRes),
             style = MaterialTheme.typography.labelSmall,
             color = tint,
         )

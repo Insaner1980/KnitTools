@@ -75,7 +75,7 @@
     <string name="main_counter_custom">Oma</string>
     <string name="main_counter_custom_label">Oma nimi</string>
     <string name="main_counter_custom_label_error">Anna nimi.</string>
-    <string name="project_metadata_format">%1$s · %2$s</string>
+    <string name="project_metadata_format">%1$s, %2$s</string>
     <plurals name="rounds_format">
         <item quantity="one">%1$d kerros</item>
         <item quantity="other">%1$d kerrosta</item>
@@ -119,7 +119,10 @@
     <string name="select_all">Valitse kaikki</string>
     <string name="complete_n_projects">Merkitäänkö %d projektia valmistuneiksi? Ne siirretään valmiisiin projekteihin.</string>
     <string name="delete_n_projects">Poistetaanko %d projektia? Tätä ei voi kumota.</string>
-    <string name="rows_format">%d kerrosta</string>
+    <plurals name="rows_format">
+        <item quantity="one">%1$d kerros</item>
+        <item quantity="other">%1$d kerrosta</item>
+    </plurals>
     <string name="just_now">juuri nyt</string>
 
     <!-- Laskurinäkymä -->
@@ -232,16 +235,10 @@
     <string name="counter_add_row">Lisää kerros</string>
     <string name="counter_decrease_row">Vähennä kerros</string>
     <string name="counter_undo_last_change">Peru viimeisin muutos</string>
-    <plurals name="counter_target_rows_left">
-        <item quantity="one">%1$d kerros jäljellä</item>
-        <item quantity="other">%1$d kerrosta jäljellä</item>
-    </plurals>
+    <string name="counter_target_remaining_format">%1$s jäljellä</string>
     <string name="counter_target_reached">Tavoite saavutettu</string>
-    <plurals name="counter_target_rows_past">
-        <item quantity="one">%1$d kerros yli tavoitteen</item>
-        <item quantity="other">%1$d kerrosta yli tavoitteen</item>
-    </plurals>
-    <string name="project_content_pattern">Ohje</string>
+    <string name="counter_target_past_format">%1$s yli tavoitteen</string>
+    <string name="project_content_add_pattern">Lisää ohje</string>
     <string name="stitch_tracker_label">Silmukat</string>
     <plurals name="reminder_repeat_occurrence_format">
         <item quantity="one">Toisto #%1$d joka kerros</item>
@@ -396,6 +393,26 @@
     <string name="care_category_drying">Kuivaus</string>
     <string name="care_category_ironing">Silitys</string>
     <string name="care_category_dry_cleaning">Kemiallinen pesu</string>
+    <string name="care_wash_30">30°</string>
+    <string name="care_wash_40">40°</string>
+    <string name="care_wash_60">60°</string>
+    <string name="care_wash_hand">Käsinpesu</string>
+    <string name="care_wash_do_not">Ei vesipesua</string>
+    <string name="care_bleach_any">Valkaisu sallittu</string>
+    <string name="care_bleach_non_chlorine">Vain happivalkaisu</string>
+    <string name="care_bleach_do_not">Ei valkaisua</string>
+    <string name="care_dry_tumble_low">Rumpukuivaus matalassa lämpötilassa</string>
+    <string name="care_dry_tumble_normal">Rumpukuivaus normaalissa lämpötilassa</string>
+    <string name="care_dry_flat">Tasokuivaus</string>
+    <string name="care_dry_do_not_tumble">Ei rumpukuivausta</string>
+    <string name="care_iron_low">Silitys matalassa lämpötilassa</string>
+    <string name="care_iron_medium">Silitys keskilämmöllä</string>
+    <string name="care_iron_high">Silitys korkeassa lämpötilassa</string>
+    <string name="care_iron_do_not">Ei silitystä</string>
+    <string name="care_dryclean_any">Kaikki liuottimet</string>
+    <string name="care_dryclean_p">P-liuotin</string>
+    <string name="care_dryclean_f">F-liuotin</string>
+    <string name="care_dryclean_do_not">Ei kemiallista pesua</string>
 
     <!-- Oletukset -->
     <string name="yarn_card_fallback_name">Lankakortti</string>
@@ -448,7 +465,10 @@
     <string name="insights_knitting_activity">NEULONTA-AKTIIVISUUS</string>
     <string name="insights_current_streak">Nykyinen putki:</string>
     <string name="insights_best_streak">Paras:</string>
-    <string name="insights_rows_count">%1$d kerrosta</string>
+    <plurals name="insights_rows_count">
+        <item quantity="one">%1$d kerros</item>
+        <item quantity="other">%1$d kerrosta</item>
+    </plurals>
     <string name="insights_less_than_tenth_hour">&lt;0,1 h</string>
     <string name="insights_no_time">—</string>
     <string name="insights_footer_1">Jokainen kerros lasketaan — jatka neulomista!</string>
@@ -812,8 +832,14 @@
     <string name="share_photo">Jaa</string>
     <string name="delete_photo">Poista kuva</string>
     <string name="delete_photo_confirm">Poistetaanko tämä kuva?</string>
-    <string name="delete_photos_confirm">Poistetaanko %d kuvaa?</string>
-    <string name="delete_patterns_confirm">Poistetaanko %d ohjetta?</string>
+    <plurals name="delete_photos_confirm">
+        <item quantity="one">Poistetaanko %1$d kuva?</item>
+        <item quantity="other">Poistetaanko %1$d kuvaa?</item>
+    </plurals>
+    <plurals name="delete_patterns_confirm">
+        <item quantity="one">Poistetaanko %1$d ohje?</item>
+        <item quantity="other">Poistetaanko %1$d ohjetta?</item>
+    </plurals>
     <string name="delete_pattern">Poista ohje</string>
     <string name="delete_yarn_cards_confirm">Poistetaanko %d lankakorttia?</string>
     <string name="delete_yarn_card">Poista lankakortti</string>
@@ -852,6 +878,7 @@
     <string name="filter_difficulty">Vaikeus</string>
     <string name="free">Ilmainen</string>
     <string name="paid">Maksullinen</string>
+    <string name="availability_unknown">Saatavuus tuntematon</string>
     <string name="no_results">Ohjeita ei löytynyt</string>
     <string name="search_error">Ohjeita ei voitu ladata. Tarkista internetyhteytesi.</string>
     <string name="ravelry_search_rate_limited">Ravelry rajoittaa hakuja. Yritä myöhemmin uudelleen.</string>
@@ -912,4 +939,5 @@
     <string name="widget_target_reached">Tavoite saavutettu</string>
     <string name="search_more_error">Lisää ohjeita ei voitu ladata. Tarkista internet-yhteys.</string>
     <string name="pattern_detail_error">Ohjeen tietoja ei voitu ladata. Tarkista internet-yhteys.</string>
+    <string name="yarn_card_number_fallback">Lanka #%1$d</string>
 </resources>

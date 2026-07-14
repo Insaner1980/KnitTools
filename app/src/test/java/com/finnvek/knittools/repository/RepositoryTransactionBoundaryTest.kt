@@ -29,6 +29,9 @@ import io.mockk.unmockkStatic
 import io.mockk.verify
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -343,6 +346,53 @@ class RepositoryTransactionBoundaryTest {
         }
 
     @Test
+    fun `yarn card delete cleans app owned photos when caller is cancelled after database delete`() =
+        runTest {
+            val ioDispatcher = RecordingDispatcher()
+            val runner = CancellingTransactionRunner()
+            val yarnDao = mockk<YarnCardDao>(relaxed = true)
+            val projectDao = mockk<CounterProjectDao>(relaxed = true)
+            val context = mockk<Context>(relaxed = true)
+            val filesDir =
+                Files
+                    .createTempDirectory("knittools-files")
+                    .toFile()
+            val photoFile = filesDir.resolve("yarn_photos/5/yarn.jpg")
+            val photoUri = photoFile.toURI().toString()
+            checkNotNull(photoFile.parentFile).mkdirs()
+            photoFile.writeText("photo")
+            every { context.filesDir } returns filesDir
+            coEvery { yarnDao.getCards(listOf(5L)) } returns
+                listOf(
+                    YarnCardEntity(
+                        id = 5L,
+                        photoUri = photoUri,
+                    ),
+                )
+            coEvery { projectDao.getAllProjectsOnce() } returns emptyList()
+
+            withParsedFileUri(photoUri, photoFile.absolutePath) {
+                val repository =
+                    YarnCardRepository(
+                        dao = yarnDao,
+                        counterProjectDao = projectDao,
+                        context = context,
+                        transactionRunner = runner,
+                        ioDispatcher = ioDispatcher,
+                    )
+
+                val deleteJob =
+                    launch {
+                        repository.deleteCards(listOf(5L))
+                    }
+                deleteJob.join()
+            }
+
+            assertFalse(photoFile.exists())
+            assertEquals(1, ioDispatcher.dispatchCount)
+        }
+
+    @Test
     fun `yarn card photo update copies selected photo before saving uri`() =
         runTest {
             val ioDispatcher = RecordingDispatcher()
@@ -420,7 +470,7 @@ class RepositoryTransactionBoundaryTest {
                 repository.deleteByIds(listOf(4L))
             }
 
-            assertEquals(1, ioDispatcher.dispatchCount)
+            assertEquals(2, ioDispatcher.dispatchCount)
         }
 
     @Test
@@ -550,7 +600,10 @@ class RepositoryTransactionBoundaryTest {
                 unmockkStatic(Uri::class)
             }
         }
+}
 
+@OptIn(ExperimentalCoroutinesApi::class)
+class RavelryRepositoryTransactionBoundaryTest {
     @Test
     fun `ravelry project creation saves pattern and project inside one transaction`() =
         runTest {
@@ -573,6 +626,40 @@ class RepositoryTransactionBoundaryTest {
             coVerifyOrder {
                 savedPatternRepository.saveRavelryPatternIfMissing(any())
                 projectDao.insert(match { it.name == "Cardigan" && it.linkedPatternId == 12L })
+            }
+        }
+
+    @Test
+    fun `ravelry save preserves backend canonical and original urls`() =
+        runTest {
+            val savedPatternRepository = mockk<SavedPatternRepository>(relaxed = true)
+            coEvery { savedPatternRepository.saveRavelryPatternIfMissing(any()) } returns 12L
+            val repository =
+                RavelryRepository(
+                    api = mockk(relaxed = true),
+                    savedPatternRepository = savedPatternRepository,
+                    counterProjectDao = mockk(relaxed = true),
+                    transactionRunner = ImmediateDatabaseTransactionRunner,
+                )
+
+            repository.savePattern(
+                PatternDetail(
+                    id = 99,
+                    name = "Cardigan",
+                    permalink = "cardigan",
+                    canonicalUrl = "https://www.ravelry.com/patterns/library/cardigan",
+                    originalUrl = "https://www.ravelry.com/patterns/library/cardigan?utm_source=share",
+                ),
+            )
+
+            coVerify {
+                savedPatternRepository.saveRavelryPatternIfMissing(
+                    match {
+                        it.ravelryPatternId == 99 &&
+                            it.canonicalUrl == "https://www.ravelry.com/patterns/library/cardigan" &&
+                            it.originalUrl == "https://www.ravelry.com/patterns/library/cardigan?utm_source=share"
+                    },
+                )
             }
         }
 
@@ -615,25 +702,33 @@ class RepositoryTransactionBoundaryTest {
                 projectDao.insert(match { it.name == "Cardigan (2)" && it.linkedPatternId == 12L })
             }
         }
+}
 
-    private class RecordingTransactionRunner : DatabaseTransactionRunner {
-        var runCount: Int = 0
+private class RecordingTransactionRunner : DatabaseTransactionRunner {
+    var runCount: Int = 0
 
-        override suspend fun <T> run(block: suspend () -> T): T {
-            runCount += 1
-            return block()
-        }
+    override suspend fun <T> run(block: suspend () -> T): T {
+        runCount += 1
+        return block()
     }
+}
 
-    private class RecordingDispatcher : CoroutineDispatcher() {
-        var dispatchCount: Int = 0
+private class CancellingTransactionRunner : DatabaseTransactionRunner {
+    override suspend fun <T> run(block: suspend () -> T): T {
+        val result = block()
+        currentCoroutineContext()[Job]?.cancel()
+        return result
+    }
+}
 
-        override fun dispatch(
-            context: CoroutineContext,
-            block: Runnable,
-        ) {
-            dispatchCount += 1
-            block.run()
-        }
+private class RecordingDispatcher : CoroutineDispatcher() {
+    var dispatchCount: Int = 0
+
+    override fun dispatch(
+        context: CoroutineContext,
+        block: Runnable,
+    ) {
+        dispatchCount += 1
+        block.run()
     }
 }

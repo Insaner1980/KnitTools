@@ -102,6 +102,35 @@ class CounterValueFormatterTest {
     }
 
     @Test
+    fun `main counter formatter falls back from blank custom label to craft default in every slot`() {
+        listOf(
+            CraftType.KNITTING to MainCounterLabelType.ROWS,
+            CraftType.CROCHET to MainCounterLabelType.ROUNDS,
+        ).forEach { (craftType, expectedLabelType) ->
+            val display =
+                CounterValueFormatter.forMainCounter(
+                    mainProject(
+                        craftType = craftType,
+                        labelType = MainCounterLabelType.CUSTOM,
+                        customLabel = "   ",
+                    ),
+                )
+            val targetLine = checkNotNull(display.targetLine)
+
+            assertEquals(expectedLabelType, display.heroTitle.labelType)
+            assertNull(display.heroTitle.customLabel)
+            assertEquals(expectedLabelType, targetLine.labelType)
+            assertNull(targetLine.customLabel)
+            assertEquals(expectedLabelType, display.increaseContentDescription.labelType)
+            assertNull(display.increaseContentDescription.customLabel)
+            assertEquals(expectedLabelType, display.decreaseContentDescription.labelType)
+            assertNull(display.decreaseContentDescription.customLabel)
+            assertEquals(expectedLabelType, display.projectCardCount.labelType)
+            assertNull(display.projectCardCount.customLabel)
+        }
+    }
+
+    @Test
     fun `main counter formatter omits target slot when project has no target`() {
         val display = CounterValueFormatter.forMainCounter(mainProject(targetRows = null))
 

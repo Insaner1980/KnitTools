@@ -75,7 +75,7 @@
     <string name="main_counter_custom">Eigenes</string>
     <string name="main_counter_custom_label">Eigenes Label</string>
     <string name="main_counter_custom_label_error">Label eingeben.</string>
-    <string name="project_metadata_format">%1$s · %2$s</string>
+    <string name="project_metadata_format">%1$s, %2$s</string>
     <plurals name="rounds_format">
         <item quantity="one">%1$d Runde</item>
         <item quantity="other">%1$d Runden</item>
@@ -119,7 +119,10 @@
     <string name="select_all">Alle auswählen</string>
     <string name="complete_n_projects">%d Projekte fertigstellen? Sie werden zu deinen fertigen Projekten verschoben.</string>
     <string name="delete_n_projects">%d Projekte löschen? Dies kann nicht rückgängig gemacht werden.</string>
-    <string name="rows_format">%d Reihen</string>
+    <plurals name="rows_format">
+        <item quantity="one">%1$d Reihe</item>
+        <item quantity="other">%1$d Reihen</item>
+    </plurals>
     <string name="just_now">gerade eben</string>
 
     <!-- Counter Screen -->
@@ -232,16 +235,10 @@
     <string name="counter_add_row">Reihe hinzufügen</string>
     <string name="counter_decrease_row">Reihe abziehen</string>
     <string name="counter_undo_last_change">Letzte Änderung rückgängig machen</string>
-    <plurals name="counter_target_rows_left">
-        <item quantity="one">Noch %1$d Reihe</item>
-        <item quantity="other">Noch %1$d Reihen</item>
-    </plurals>
+    <string name="counter_target_remaining_format">Noch %1$s</string>
     <string name="counter_target_reached">Ziel erreicht</string>
-    <plurals name="counter_target_rows_past">
-        <item quantity="one">%1$d Reihe über dem Ziel</item>
-        <item quantity="other">%1$d Reihen über dem Ziel</item>
-    </plurals>
-    <string name="project_content_pattern">Anleitung</string>
+    <string name="counter_target_past_format">%1$s über dem Ziel</string>
+    <string name="project_content_add_pattern">Anleitung hinzufügen</string>
     <string name="stitch_tracker_label">Maschen</string>
     <plurals name="reminder_repeat_occurrence_format">
         <item quantity="one">Wiederholung #%1$d jede Reihe</item>
@@ -396,6 +393,26 @@
     <string name="care_category_drying">Trocknen</string>
     <string name="care_category_ironing">Bügeln</string>
     <string name="care_category_dry_cleaning">Chemische Reinigung</string>
+    <string name="care_wash_30">30°</string>
+    <string name="care_wash_40">40°</string>
+    <string name="care_wash_60">60°</string>
+    <string name="care_wash_hand">Handwäsche</string>
+    <string name="care_wash_do_not">Nicht waschen</string>
+    <string name="care_bleach_any">Alle Bleichmittel</string>
+    <string name="care_bleach_non_chlorine">Chlorfreies Bleichmittel</string>
+    <string name="care_bleach_do_not">Nicht bleichen</string>
+    <string name="care_dry_tumble_low">Schonend trocknen</string>
+    <string name="care_dry_tumble_normal">Normal trocknen</string>
+    <string name="care_dry_flat">Liegend trocknen</string>
+    <string name="care_dry_do_not_tumble">Nicht im Trockner trocknen</string>
+    <string name="care_iron_low">Niedrig bügeln</string>
+    <string name="care_iron_medium">Mittel heiß bügeln</string>
+    <string name="care_iron_high">Heiß bügeln</string>
+    <string name="care_iron_do_not">Nicht bügeln</string>
+    <string name="care_dryclean_any">Alle Lösungsmittel</string>
+    <string name="care_dryclean_p">P-Lösungsmittel</string>
+    <string name="care_dryclean_f">F-Lösungsmittel</string>
+    <string name="care_dryclean_do_not">Nicht chemisch reinigen</string>
 
     <!-- Defaults -->
     <string name="yarn_card_fallback_name">Garnkarte</string>
@@ -439,7 +456,10 @@
     <string name="insights_knitting_activity">STRICKAKTIVITÄT</string>
     <string name="insights_current_streak">Aktuelle Serie:</string>
     <string name="insights_best_streak">Beste:</string>
-    <string name="insights_rows_count">%1$d Reihen</string>
+    <plurals name="insights_rows_count">
+        <item quantity="one">%1$d Reihe</item>
+        <item quantity="other">%1$d Reihen</item>
+    </plurals>
     <string name="insights_less_than_tenth_hour">&lt;0.1h</string>
     <string name="insights_no_time">—</string>
     <string name="insights_footer_1">Jede Reihe zählt — weiterstricken!</string>
@@ -543,8 +563,14 @@
     <string name="share_photo">Teilen</string>
     <string name="delete_photo">Foto löschen</string>
     <string name="delete_photo_confirm">Dieses Foto löschen?</string>
-    <string name="delete_photos_confirm">%d Fotos löschen?</string>
-    <string name="delete_patterns_confirm">%d Anleitungen löschen?</string>
+    <plurals name="delete_photos_confirm">
+        <item quantity="one">%1$d Foto löschen?</item>
+        <item quantity="other">%1$d Fotos löschen?</item>
+    </plurals>
+    <plurals name="delete_patterns_confirm">
+        <item quantity="one">%1$d Anleitung löschen?</item>
+        <item quantity="other">%1$d Anleitungen löschen?</item>
+    </plurals>
     <string name="delete_pattern">Anleitung löschen</string>
     <string name="delete_yarn_cards_confirm">%d Garnkarten löschen?</string>
     <string name="delete_yarn_card">Garnkarte löschen</string>
@@ -583,6 +609,7 @@
     <string name="filter_difficulty">Schwierigkeit</string>
     <string name="free">Kostenlos</string>
     <string name="paid">Kostenpflichtig</string>
+    <string name="availability_unknown">Verfügbarkeit unbekannt</string>
     <string name="no_results">Keine Anleitungen gefunden</string>
     <string name="search_error">Anleitungen konnten nicht geladen werden. Überprüfe deine Internetverbindung.</string>
     <string name="ravelry_search_rate_limited">Ravelry begrenzt Suchanfragen. Versuche es später erneut.</string>
@@ -644,4 +671,13 @@
     <string name="extra_counters_title">Zusätzliche Zähler</string>
     <string name="counter_repeat_label">WIEDERHOLUNG</string>
     <string name="counters_list_title">Zähler</string>
+
+    <!-- Täydennetyt lokalisoidut käyttöliittymätekstit -->
+    <string name="yarn_card_number_fallback">Garn #%1$d</string>
+    <string name="pattern_detail_needles">Nadeln</string>
+    <string name="pattern_detail_yardage">Lauflänge</string>
+    <string name="pattern_detail_sizes">Größen</string>
+    <string name="pattern_saved_to_library">In der Bibliothek gespeichert</string>
+    <string name="show_more">Mehr anzeigen</string>
+    <string name="show_less">Weniger anzeigen</string>
 </resources>

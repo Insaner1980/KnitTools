@@ -63,7 +63,6 @@ fun KnitToolsBottomBar(navController: NavController) {
                     style = labelStyle,
                     maxWidth = availablePerTab,
                     maxFontSize = labelStyle.fontSize,
-                    minFontSize = 8.sp,
                 )
 
             NavigationBar(
@@ -119,26 +118,35 @@ private fun rememberSharedLabelFontSize(
     style: TextStyle,
     maxWidth: Dp,
     maxFontSize: TextUnit,
-    minFontSize: TextUnit,
 ): TextUnit {
     val textMeasurer = rememberTextMeasurer()
     val density = LocalDensity.current
     val maxWidthPx = with(density) { maxWidth.toPx() }
-    return remember(labels, maxWidthPx, style, maxFontSize, minFontSize) {
-        val max = maxFontSize.value
-        val min = minFontSize.value
-        var candidate = max
-        val step = 0.5f
-        while (candidate >= min) {
-            val testStyle = style.copy(fontSize = candidate.sp)
-            val allFit =
+    return remember(labels, maxWidthPx, style, maxFontSize, textMeasurer) {
+        sharedBottomNavigationLabelFontSize(
+            maxFontSize = maxFontSize,
+            step = 0.5.sp,
+            allLabelsFit = { candidate ->
+                val testStyle = style.copy(fontSize = candidate, fontWeight = FontWeight.SemiBold)
                 labels.all { label ->
                     val result = textMeasurer.measure(label, testStyle, maxLines = 1)
                     result.size.width <= maxWidthPx
                 }
-            if (allFit) return@remember candidate.sp
-            candidate -= step
-        }
-        minFontSize
+            },
+        )
     }
+}
+
+internal fun sharedBottomNavigationLabelFontSize(
+    maxFontSize: TextUnit,
+    step: TextUnit,
+    allLabelsFit: (TextUnit) -> Boolean,
+): TextUnit {
+    var candidate = maxFontSize.value
+    while (candidate > step.value) {
+        val candidateFontSize = candidate.sp
+        if (allLabelsFit(candidateFontSize)) return candidateFontSize
+        candidate -= step.value
+    }
+    return step
 }

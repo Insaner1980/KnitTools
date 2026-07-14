@@ -54,17 +54,19 @@ export function createOAuthStateStore(firestore: Firestore): OAuthStateStore {
     },
     async markStateUsed(state, usedAtMillis) {
       const reference = collection.doc(state);
-      let marked = false;
-      await firestore.runTransaction(async (transaction) => {
+      return firestore.runTransaction(async (transaction) => {
         const snapshot = await transaction.get(reference);
         const storedState = toStoredOAuthState(snapshot.data());
-        if (!storedState || storedState.usedAtMillis != null) {
-          return;
+        if (
+          !storedState ||
+          storedState.usedAtMillis != null ||
+          storedState.expiresAtMillis <= usedAtMillis
+        ) {
+          return false;
         }
         transaction.update(reference, { usedAtMillis });
-        marked = true;
+        return true;
       });
-      return marked;
     },
     async expireUnusedStatesForUid(uid, expiresAtMillis) {
       const snapshot = await collection.where("uid", "==", uid).where("usedAtMillis", "==", null).get();

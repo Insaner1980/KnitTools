@@ -63,7 +63,7 @@ fun mainCounterTargetText(slot: MainCounterTargetSlot): String =
 @Composable
 fun mainCounterProjectCardCountText(slot: MainCounterCountSlot): String =
     when (slot.labelType) {
-        MainCounterLabelType.ROWS -> stringResource(R.string.rows_format, slot.count)
+        MainCounterLabelType.ROWS -> pluralStringResource(R.plurals.rows_format, slot.count, slot.count)
         MainCounterLabelType.ROUNDS -> pluralStringResource(R.plurals.rounds_format, slot.count, slot.count)
         MainCounterLabelType.REPEATS -> pluralStringResource(R.plurals.repeats_format, slot.count, slot.count)
         MainCounterLabelType.CUSTOM ->

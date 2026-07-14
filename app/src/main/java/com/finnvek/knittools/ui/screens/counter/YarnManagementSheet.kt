@@ -45,6 +45,7 @@ import com.finnvek.knittools.ui.theme.YarnColors
 fun YarnManagementSheet(
     linkedYarns: List<Pair<Long, String>>,
     projectYarnNotes: List<ProjectYarnNote>,
+    canSaveToMyYarn: Boolean,
     actions: YarnManagementSheetActions,
 ) {
     var showProjectYarnForm by rememberSaveable { mutableStateOf(false) }
@@ -85,6 +86,7 @@ fun YarnManagementSheet(
 
             ProjectYarnNotesSection(
                 notes = projectYarnNotes,
+                canSaveToMyYarn = canSaveToMyYarn,
                 onDeleteProjectYarnNote = actions.onDeleteProjectYarnNote,
                 onSaveProjectYarnNoteToMyYarn = actions.onSaveProjectYarnNoteToMyYarn,
             )
@@ -166,6 +168,7 @@ private fun LinkedYarnRow(
 @Composable
 private fun ProjectYarnNotesSection(
     notes: List<ProjectYarnNote>,
+    canSaveToMyYarn: Boolean,
     onDeleteProjectYarnNote: (Long) -> Unit,
     onSaveProjectYarnNoteToMyYarn: (Long) -> Unit,
 ) {
@@ -179,6 +182,7 @@ private fun ProjectYarnNotesSection(
     notes.forEach { note ->
         ProjectYarnNoteRow(
             note = note,
+            canSaveToMyYarn = canSaveToMyYarn,
             onDeleteProjectYarnNote = onDeleteProjectYarnNote,
             onSaveProjectYarnNoteToMyYarn = onSaveProjectYarnNoteToMyYarn,
         )
@@ -188,6 +192,7 @@ private fun ProjectYarnNotesSection(
 @Composable
 private fun ProjectYarnNoteRow(
     note: ProjectYarnNote,
+    canSaveToMyYarn: Boolean,
     onDeleteProjectYarnNote: (Long) -> Unit,
     onSaveProjectYarnNoteToMyYarn: (Long) -> Unit,
 ) {
@@ -227,7 +232,7 @@ private fun ProjectYarnNoteRow(
         )
         TextButton(
             onClick = { onSaveProjectYarnNoteToMyYarn(note.id) },
-            enabled = note.savedYarnCardId == null,
+            enabled = note.savedYarnCardId == null && canSaveToMyYarn,
         ) {
             Text(
                 text =

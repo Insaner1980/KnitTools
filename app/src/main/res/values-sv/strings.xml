@@ -75,7 +75,7 @@
     <string name="main_counter_custom">Egen</string>
     <string name="main_counter_custom_label">Egen etikett</string>
     <string name="main_counter_custom_label_error">Ange en etikett.</string>
-    <string name="project_metadata_format">%1$s · %2$s</string>
+    <string name="project_metadata_format">%1$s, %2$s</string>
     <plurals name="rounds_format">
         <item quantity="one">%1$d omgång</item>
         <item quantity="other">%1$d omgångar</item>
@@ -119,7 +119,10 @@
     <string name="select_all">Välj alla</string>
     <string name="complete_n_projects">Slutföra %d projekt? De flyttas till dina färdiga projekt.</string>
     <string name="delete_n_projects">Ta bort %d projekt? Detta kan inte ångras.</string>
-    <string name="rows_format">%d varv</string>
+    <plurals name="rows_format">
+        <item quantity="one">%1$d varv</item>
+        <item quantity="other">%1$d varv</item>
+    </plurals>
     <string name="just_now">just nu</string>
 
     <!-- Counter Screen -->
@@ -232,16 +235,10 @@
     <string name="counter_add_row">Lägg till varv</string>
     <string name="counter_decrease_row">Dra bort varv</string>
     <string name="counter_undo_last_change">Ångra senaste ändringen</string>
-    <plurals name="counter_target_rows_left">
-        <item quantity="one">%1$d varv kvar</item>
-        <item quantity="other">%1$d varv kvar</item>
-    </plurals>
+    <string name="counter_target_remaining_format">%1$s kvar</string>
     <string name="counter_target_reached">Mål uppnått</string>
-    <plurals name="counter_target_rows_past">
-        <item quantity="one">%1$d varv över målet</item>
-        <item quantity="other">%1$d varv över målet</item>
-    </plurals>
-    <string name="project_content_pattern">Mönster</string>
+    <string name="counter_target_past_format">%1$s över målet</string>
+    <string name="project_content_add_pattern">Lägg till mönster</string>
     <string name="stitch_tracker_label">Maskor</string>
     <plurals name="reminder_repeat_occurrence_format">
         <item quantity="one">Upprepa #%1$d varje varv</item>
@@ -396,6 +393,26 @@
     <string name="care_category_drying">Torkning</string>
     <string name="care_category_ironing">Strykning</string>
     <string name="care_category_dry_cleaning">Kemtvätt</string>
+    <string name="care_wash_30">30°</string>
+    <string name="care_wash_40">40°</string>
+    <string name="care_wash_60">60°</string>
+    <string name="care_wash_hand">Handtvätt</string>
+    <string name="care_wash_do_not">Tvätta inte</string>
+    <string name="care_bleach_any">Alla blekmedel</string>
+    <string name="care_bleach_non_chlorine">Klorfritt blekmedel</string>
+    <string name="care_bleach_do_not">Blek inte</string>
+    <string name="care_dry_tumble_low">Torktumla vid låg värme</string>
+    <string name="care_dry_tumble_normal">Torktumla vid normal värme</string>
+    <string name="care_dry_flat">Plantorka</string>
+    <string name="care_dry_do_not_tumble">Torktumla inte</string>
+    <string name="care_iron_low">Stryk på låg värme</string>
+    <string name="care_iron_medium">Stryk på medelhög värme</string>
+    <string name="care_iron_high">Stryk på hög värme</string>
+    <string name="care_iron_do_not">Stryk inte</string>
+    <string name="care_dryclean_any">Alla lösningsmedel</string>
+    <string name="care_dryclean_p">P-lösningsmedel</string>
+    <string name="care_dryclean_f">F-lösningsmedel</string>
+    <string name="care_dryclean_do_not">Kemtvätta inte</string>
 
     <!-- Defaults -->
     <string name="yarn_card_fallback_name">Garnkort</string>
@@ -439,7 +456,10 @@
     <string name="insights_knitting_activity">STICKAKTIVITET</string>
     <string name="insights_current_streak">Nuvarande svit:</string>
     <string name="insights_best_streak">Bästa:</string>
-    <string name="insights_rows_count">%1$d varv</string>
+    <plurals name="insights_rows_count">
+        <item quantity="one">%1$d varv</item>
+        <item quantity="other">%1$d varv</item>
+    </plurals>
     <string name="insights_less_than_tenth_hour">&lt;0.1t</string>
     <string name="insights_no_time">—</string>
     <string name="insights_footer_1">Varje varv räknas — fortsätt sticka!</string>
@@ -543,8 +563,14 @@
     <string name="share_photo">Dela</string>
     <string name="delete_photo">Ta bort foto</string>
     <string name="delete_photo_confirm">Ta bort det här fotot?</string>
-    <string name="delete_photos_confirm">Ta bort %d bilder?</string>
-    <string name="delete_patterns_confirm">Ta bort %d mönster?</string>
+    <plurals name="delete_photos_confirm">
+        <item quantity="one">Ta bort %1$d bild?</item>
+        <item quantity="other">Ta bort %1$d bilder?</item>
+    </plurals>
+    <plurals name="delete_patterns_confirm">
+        <item quantity="one">Ta bort %1$d mönster?</item>
+        <item quantity="other">Ta bort %1$d mönster?</item>
+    </plurals>
     <string name="delete_pattern">Ta bort mönster</string>
     <string name="delete_yarn_cards_confirm">Ta bort %d garnkort?</string>
     <string name="delete_yarn_card">Ta bort garnkort</string>
@@ -583,6 +609,7 @@
     <string name="filter_difficulty">Svårighet</string>
     <string name="free">Gratis</string>
     <string name="paid">Betald</string>
+    <string name="availability_unknown">Tillgänglighet okänd</string>
     <string name="no_results">Inga mönster hittades</string>
     <string name="search_error">Kunde inte ladda mönster. Kontrollera internetanslutningen.</string>
     <string name="ravelry_search_rate_limited">Ravelry begränsar sökningar. Försök igen senare.</string>
@@ -644,4 +671,13 @@
     <string name="extra_counters_title">Extra räknare</string>
     <string name="counter_repeat_label">UPPREPA</string>
     <string name="counters_list_title">Räknare</string>
+
+    <!-- Täydennetyt lokalisoidut käyttöliittymätekstit -->
+    <string name="yarn_card_number_fallback">Garn #%1$d</string>
+    <string name="pattern_detail_needles">Nålar</string>
+    <string name="pattern_detail_yardage">Löplängd</string>
+    <string name="pattern_detail_sizes">Storlekar</string>
+    <string name="pattern_saved_to_library">Sparad i biblioteket</string>
+    <string name="show_more">Visa mer</string>
+    <string name="show_less">Visa mindre</string>
 </resources>

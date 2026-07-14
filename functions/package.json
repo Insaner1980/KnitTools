@@ -16,12 +16,10 @@
   "overrides": {
     "form-data": "4.0.6",
     "js-yaml": "5.2.0",
-    "ts-deepmerge": "8.0.0",
     "uuid": "11.1.1"
   },
   "devDependencies": {
     "@types/node": "25.9.3",
-    "firebase-functions-test": "3.5.0",
     "typescript": "6.0.3"
   }
 }

@@ -49,11 +49,10 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -71,7 +70,7 @@ import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.MainCounterLabelType
 import com.finnvek.knittools.domain.model.ProjectSortOrder
-import com.finnvek.knittools.domain.model.parseYarnCardIds
+import com.finnvek.knittools.ui.components.CollectWithLifecycleEffect
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.ProjectCard
 import com.finnvek.knittools.ui.components.ProjectDetailsDialog
@@ -96,6 +95,7 @@ fun ProjectListScreen(
     val completed by viewModel.completedProjects.collectAsStateWithLifecycle()
     val continueKnitting by viewModel.continueKnittingProject.collectAsStateWithLifecycle()
     val yarnNames by viewModel.projectYarnNames.collectAsStateWithLifecycle()
+    val yarnCardIds by viewModel.projectYarnCardIds.collectAsStateWithLifecycle()
     val photoCounts by viewModel.projectPhotoCounts.collectAsStateWithLifecycle()
     val patternNames by viewModel.projectPatternNames.collectAsStateWithLifecycle()
     val hasNotes by viewModel.projectHasNotes.collectAsStateWithLifecycle()
@@ -103,20 +103,21 @@ fun ProjectListScreen(
     val isMultiSelectMode by viewModel.isMultiSelectMode.collectAsStateWithLifecycle()
     val selectedProjectIds by viewModel.selectedProjectIds.collectAsStateWithLifecycle()
     val sortOrder by viewModel.sortOrder.collectAsStateWithLifecycle()
-    val currentOnProjectClick by rememberUpdatedState(onProjectClick)
-    val currentOnUpgradeToPro by rememberUpdatedState(onUpgradeToPro)
-
     // FAB-luonnin jälkeen navigoi uuteen projektiin
-    LaunchedEffect(viewModel) {
-        viewModel.navigateToProject.collect { projectId ->
-            currentOnProjectClick(projectId)
-        }
+    CollectWithLifecycleEffect(viewModel.navigateToProject) { projectId ->
+        onProjectClick(projectId)
     }
 
-    LaunchedEffect(viewModel) {
-        viewModel.upgradeToPro.collect {
-            currentOnUpgradeToPro()
-        }
+    CollectWithLifecycleEffect(viewModel.upgradeToPro) {
+        onUpgradeToPro()
+    }
+
+    CollectWithLifecycleEffect(viewModel.navigateToNotesEditor) { projectId ->
+        onNotesEditor(projectId)
+    }
+
+    CollectWithLifecycleEffect(viewModel.navigateToPhotoGallery) { projectId ->
+        onPhotoGallery(projectId)
     }
 
     // Multi-select back handler
@@ -255,6 +256,7 @@ fun ProjectListScreen(
                         completed = completed,
                         continueKnitting = continueKnitting,
                         yarnNames = yarnNames,
+                        yarnCardIds = yarnCardIds,
                         photoCounts = photoCounts,
                         patternNames = patternNames,
                         hasNotes = hasNotes,
@@ -265,8 +267,8 @@ fun ProjectListScreen(
                 actions =
                     ProjectListContentActions(
                         onProjectClick = onProjectClick,
-                        onNotesClick = onNotesEditor,
-                        onPhotoGallery = onPhotoGallery,
+                        onNotesClick = viewModel::openNotesEditor,
+                        onPhotoGallery = viewModel::openPhotoGallery,
                         onPatternViewer = onPatternViewer,
                         onYarnCard = onYarnCard,
                         onToggleSelection = { viewModel.toggleProjectSelection(it) },
@@ -649,11 +651,13 @@ private fun MultiSelectBottomBar(
 }
 
 // Data-luokat ProjectListContent-parametrien ryhmittelyyn (S107)
+@Immutable
 data class ProjectListContentState(
     val active: List<CounterProject>,
     val completed: List<CounterProject>,
     val continueKnitting: ContinueKnittingProject?,
     val yarnNames: Map<Long, String>,
+    val yarnCardIds: Map<Long, Long>,
     val photoCounts: Map<Long, Int>,
     val patternNames: Map<Long, String>,
     val hasNotes: Set<Long>,
@@ -740,6 +744,7 @@ private fun ProjectListContent(
                                 isMultiSelectMode = state.isMultiSelectMode,
                                 isSelected = project.id in state.selectedProjectIds,
                                 yarnName = state.yarnNames[project.id],
+                                firstYarnCardId = state.yarnCardIds[project.id],
                                 photoCount = state.photoCounts[project.id] ?: 0,
                                 patternName = state.patternNames[project.id],
                                 hasNotes = project.id in state.hasNotes,
@@ -800,6 +805,7 @@ data class ActiveProjectItemState(
     val isMultiSelectMode: Boolean,
     val isSelected: Boolean,
     val yarnName: String?,
+    val firstYarnCardId: Long?,
     val photoCount: Int,
     val patternName: String?,
     val hasNotes: Boolean = false,
@@ -860,7 +866,6 @@ private fun ActiveProjectItem(
             )
         }
     } else {
-        val firstYarnCardId = parseYarnCardIds(project.yarnCardIds).firstOrNull()
         ProjectCard(
             name = project.name,
             rowCount = project.count,
@@ -880,7 +885,7 @@ private fun ActiveProjectItem(
             onNotesClick = { actions.onNotesClick(project.id) },
             onPhotosClick = { actions.onPhotoGallery(project.id) },
             onYarnClick =
-                firstYarnCardId?.let { yarnCardId ->
+                state.firstYarnCardId?.let { yarnCardId ->
                     { actions.onYarnCard(yarnCardId) }
                 },
         )
@@ -926,7 +931,7 @@ private fun ContinueKnittingCard(
             sectionName = state.sectionName,
             rowCount = state.rowCount,
             targetRows = state.targetRows,
-            fallback = rowContext + " · " + formatMinutes(state.totalMinutes),
+            fallback = rowContext + ", " + formatMinutes(state.totalMinutes),
         )
 
     Card(
@@ -999,7 +1004,7 @@ private fun projectCardMetadataLine(project: CounterProject): String =
 private fun projectCardCountText(project: CounterProject): String =
     mainCounterProjectCardCountText(CounterValueFormatter.forMainCounter(project).projectCardCount)
 
-private fun continueKnittingContextLine(
+internal fun continueKnittingContextLine(
     sectionName: String?,
     rowCount: Int,
     targetRows: Int?,
@@ -1011,7 +1016,7 @@ private fun continueKnittingContextLine(
         ?.let { section ->
             return listOf(section, fallback)
                 .filter(String::isNotBlank)
-                .joinToString(" · ")
+                .joinToString(", ")
         }
 
     val progressFallback =

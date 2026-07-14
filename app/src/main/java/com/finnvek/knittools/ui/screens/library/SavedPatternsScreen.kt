@@ -42,10 +42,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
+import com.finnvek.knittools.data.remote.PatternAvailability
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.screens.ravelry.PatternCard
@@ -179,7 +181,7 @@ private fun SavedPatternsDeleteDialog(
 ) {
     ConfirmationDialog(
         title = stringResource(R.string.delete_pattern),
-        message = stringResource(R.string.delete_patterns_confirm, selectedCount),
+        message = pluralStringResource(R.plurals.delete_patterns_confirm, selectedCount, selectedCount),
         confirmText = stringResource(R.string.delete),
         isDestructive = true,
         onConfirm = onConfirm,
@@ -311,7 +313,7 @@ private fun SavedPatternItem(
                     designerName = pattern.designerName,
                     thumbnailUrl = pattern.thumbnailUrl,
                     difficulty = pattern.difficulty,
-                    isFree = pattern.isFree,
+                    availability = PatternAvailability.fromFree(pattern.isFree),
                 ),
             onClick = onClick,
             modifier = Modifier.background(backgroundColor, MaterialTheme.shapes.large),

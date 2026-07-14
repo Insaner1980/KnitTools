@@ -49,11 +49,10 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -71,6 +70,7 @@ import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.MainCounterLabelType
 import com.finnvek.knittools.domain.model.ProjectSortOrder
+import com.finnvek.knittools.ui.components.CollectWithLifecycleEffect
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.ProjectCard
 import com.finnvek.knittools.ui.components.ProjectDetailsDialog
@@ -103,34 +103,21 @@ fun ProjectListScreen(
     val isMultiSelectMode by viewModel.isMultiSelectMode.collectAsStateWithLifecycle()
     val selectedProjectIds by viewModel.selectedProjectIds.collectAsStateWithLifecycle()
     val sortOrder by viewModel.sortOrder.collectAsStateWithLifecycle()
-    val currentOnProjectClick by rememberUpdatedState(onProjectClick)
-    val currentOnNotesEditor by rememberUpdatedState(onNotesEditor)
-    val currentOnPhotoGallery by rememberUpdatedState(onPhotoGallery)
-    val currentOnUpgradeToPro by rememberUpdatedState(onUpgradeToPro)
-
     // FAB-luonnin jälkeen navigoi uuteen projektiin
-    LaunchedEffect(viewModel) {
-        viewModel.navigateToProject.collect { projectId ->
-            currentOnProjectClick(projectId)
-        }
+    CollectWithLifecycleEffect(viewModel.navigateToProject) { projectId ->
+        onProjectClick(projectId)
     }
 
-    LaunchedEffect(viewModel) {
-        viewModel.upgradeToPro.collect {
-            currentOnUpgradeToPro()
-        }
+    CollectWithLifecycleEffect(viewModel.upgradeToPro) {
+        onUpgradeToPro()
     }
 
-    LaunchedEffect(viewModel) {
-        viewModel.navigateToNotesEditor.collect { projectId ->
-            currentOnNotesEditor(projectId)
-        }
+    CollectWithLifecycleEffect(viewModel.navigateToNotesEditor) { projectId ->
+        onNotesEditor(projectId)
     }
 
-    LaunchedEffect(viewModel) {
-        viewModel.navigateToPhotoGallery.collect { projectId ->
-            currentOnPhotoGallery(projectId)
-        }
+    CollectWithLifecycleEffect(viewModel.navigateToPhotoGallery) { projectId ->
+        onPhotoGallery(projectId)
     }
 
     // Multi-select back handler
@@ -664,6 +651,7 @@ private fun MultiSelectBottomBar(
 }
 
 // Data-luokat ProjectListContent-parametrien ryhmittelyyn (S107)
+@Immutable
 data class ProjectListContentState(
     val active: List<CounterProject>,
     val completed: List<CounterProject>,
@@ -943,7 +931,7 @@ private fun ContinueKnittingCard(
             sectionName = state.sectionName,
             rowCount = state.rowCount,
             targetRows = state.targetRows,
-            fallback = rowContext + " · " + formatMinutes(state.totalMinutes),
+            fallback = rowContext + ", " + formatMinutes(state.totalMinutes),
         )
 
     Card(
@@ -1016,7 +1004,7 @@ private fun projectCardMetadataLine(project: CounterProject): String =
 private fun projectCardCountText(project: CounterProject): String =
     mainCounterProjectCardCountText(CounterValueFormatter.forMainCounter(project).projectCardCount)
 
-private fun continueKnittingContextLine(
+internal fun continueKnittingContextLine(
     sectionName: String?,
     rowCount: Int,
     targetRows: Int?,
@@ -1028,7 +1016,7 @@ private fun continueKnittingContextLine(
         ?.let { section ->
             return listOf(section, fallback)
                 .filter(String::isNotBlank)
-                .joinToString(" · ")
+                .joinToString(", ")
         }
 
     val progressFallback =

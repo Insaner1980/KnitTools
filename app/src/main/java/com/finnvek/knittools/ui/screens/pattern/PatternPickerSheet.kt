@@ -156,10 +156,15 @@ private fun rememberPatternPickerActions(
             if (!canStartPatternCameraScan(pendingProjectId, currentCanUseCameraScan)) {
                 return@rememberLauncherForActivityResult
             }
-            val (file, uri) = patternStorage.createCaptureImageFile(context, pendingProjectId)
-            pendingCaptureImageUriString = uri.toString()
-            pendingCaptureFilePath = file.absolutePath
-            cameraLauncher.launch(uri)
+            scope.launch {
+                val (file, uri) =
+                    withContext(AppDispatchers.IO) {
+                        patternStorage.createCaptureImageFile(context, pendingProjectId)
+                    }
+                pendingCaptureImageUriString = uri.toString()
+                pendingCaptureFilePath = file.absolutePath
+                cameraLauncher.launch(uri)
+            }
         }
 
     val openPdfDocumentPicker = { openDocumentLauncher.launch(pdfMimeTypes()) }

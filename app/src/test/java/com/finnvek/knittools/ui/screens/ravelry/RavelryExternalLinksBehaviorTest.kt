@@ -7,6 +7,22 @@ import org.junit.Test
 
 class RavelryExternalLinksBehaviorTest {
     @Test
+    fun `external ravelry URL rejects non-https scheme`() {
+        assertNull(ravelryExternalUrlOrNull("http://www.ravelry.com/patterns/library/cozy-hat"))
+    }
+
+    @Test
+    fun `external ravelry URL rejects host confusion`() {
+        assertNull(ravelryExternalUrlOrNull("https://www.ravelry.com.evil.example/patterns/library/cozy-hat"))
+        assertNull(ravelryExternalUrlOrNull("https://www.ravelry.com@evil.example/patterns/library/cozy-hat"))
+    }
+
+    @Test
+    fun `external ravelry URL rejects malformed input`() {
+        assertNull(ravelryExternalUrlOrNull("not a url"))
+    }
+
+    @Test
     fun `detail ravelry URL rejects non-ravelry canonical URL`() {
         val detail =
             PatternDetail(

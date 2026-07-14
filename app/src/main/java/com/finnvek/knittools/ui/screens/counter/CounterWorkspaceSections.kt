@@ -38,10 +38,13 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
 import com.finnvek.knittools.R
+import com.finnvek.knittools.domain.calculator.CounterState
 import com.finnvek.knittools.domain.calculator.CounterValueFormatter
 import com.finnvek.knittools.domain.calculator.MainCounterCountSlot
 import com.finnvek.knittools.domain.calculator.MainCounterTargetSlot
 import com.finnvek.knittools.domain.model.CounterProject
+import com.finnvek.knittools.domain.model.CraftType
+import com.finnvek.knittools.domain.model.MainCounterLabelType
 import com.finnvek.knittools.domain.model.ProjectCounter
 import com.finnvek.knittools.domain.model.ProjectCounterType
 import com.finnvek.knittools.ui.components.CounterImageButton
@@ -93,6 +96,31 @@ data class CounterWorkspaceActions(
     val onDismissReminder: (Long) -> Unit,
 )
 
+internal data class CounterHeroState(
+    val counter: CounterState,
+    val craftType: CraftType,
+    val mainCounterLabelType: MainCounterLabelType,
+    val mainCounterCustomLabel: String?,
+    val targetRows: Int?,
+    val canUseSecondaryCounter: Boolean,
+    val secondaryCount: Int,
+    val visibleStitchTotal: Int?,
+    val currentStitch: Int,
+)
+
+internal fun CounterUiState.toCounterHeroState(): CounterHeroState =
+    CounterHeroState(
+        counter = counter,
+        craftType = craftType,
+        mainCounterLabelType = mainCounterLabelType,
+        mainCounterCustomLabel = mainCounterCustomLabel,
+        targetRows = targetRows,
+        canUseSecondaryCounter = canUseSecondaryCounter,
+        secondaryCount = secondaryCount,
+        visibleStitchTotal = stitchCount?.takeIf { stitchTrackingEnabled && it > 0 },
+        currentStitch = currentStitch,
+    )
+
 @Composable
 fun CounterWorkspace(
     scaffoldPadding: PaddingValues,
@@ -117,7 +145,7 @@ fun CounterWorkspace(
     ) {
         item(key = "counter-hero") {
             CounterHero(
-                state = state,
+                state = state.toCounterHeroState(),
                 actions = actions,
                 modifier = Modifier.fillParentMaxHeight(),
             )
@@ -183,7 +211,7 @@ private fun CounterWorkspaceActions.onProjectContentClick(
 
 @Composable
 private fun CounterHero(
-    state: CounterUiState,
+    state: CounterHeroState,
     actions: CounterWorkspaceActions,
     modifier: Modifier = Modifier,
 ) {
@@ -242,12 +270,9 @@ private fun CounterHero(
     }
 }
 
-private val CounterUiState.visibleStitchTotal: Int?
-    get() = stitchCount?.takeIf { stitchTrackingEnabled && it > 0 }
-
 @Composable
 private fun CounterStitchTracker(
-    state: CounterUiState,
+    state: CounterHeroState,
     actions: CounterWorkspaceActions,
 ) {
     val totalStitches = state.visibleStitchTotal ?: return
@@ -263,7 +288,7 @@ private fun CounterStitchTracker(
 
 @Composable
 private fun CounterRowLabel(
-    state: CounterUiState,
+    state: CounterHeroState,
     onShowTargetDialog: () -> Unit,
 ) {
     val display = CounterValueFormatter.forMainCounter(state.toMainCounterProject())
@@ -283,7 +308,7 @@ private fun CounterRowLabel(
 }
 
 @Composable
-private fun CounterMainNumber(state: CounterUiState) {
+private fun CounterMainNumber(state: CounterHeroState) {
     val display = CounterValueFormatter.forMainCounter(state.toMainCounterProject())
     val counterDescription =
         display.targetLine?.let { mainCounterTargetText(it) }
@@ -419,7 +444,7 @@ private fun CounterTargetHelperLabel(
 
 @Composable
 private fun CounterButtons(
-    state: CounterUiState,
+    state: CounterHeroState,
     onDecrement: () -> Unit,
     onIncrement: () -> Unit,
     onUndo: () -> Unit,
@@ -467,10 +492,8 @@ private fun CounterButtons(
     }
 }
 
-private fun CounterUiState.toMainCounterProject(): CounterProject =
+private fun CounterHeroState.toMainCounterProject(): CounterProject =
     CounterProject(
-        id = projectId ?: 0L,
-        name = projectName,
         count = counter.count,
         craftType = craftType,
         mainCounterLabelType = mainCounterLabelType,

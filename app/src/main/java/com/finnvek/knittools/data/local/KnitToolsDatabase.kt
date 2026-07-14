@@ -19,7 +19,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         SavedPatternEntity::class,
         PatternAnnotationEntity::class,
     ],
-    version = 15,
+    version = 16,
     exportSchema = true,
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
@@ -408,6 +408,13 @@ abstract class KnitToolsDatabase : RoomDatabase() {
                         "CREATE INDEX IF NOT EXISTS `index_yarn_cards_linkedProjectId` " +
                             "ON `yarn_cards` (`linkedProjectId`)",
                     )
+                }
+            }
+
+        val MIGRATION_15_16 =
+            object : Migration(15, 16) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL("ALTER TABLE sessions ADD COLUMN zoneId TEXT")
                 }
             }
     }

@@ -72,7 +72,10 @@ fun HomeScreen(
             ) {
                 // Pro trial info
                 if (proState.status == ProStatus.TRIAL_ACTIVE) {
-                    item {
+                    item(
+                        key = "home-trial-status",
+                        contentType = HOME_STATUS_CONTENT_TYPE,
+                    ) {
                         Text(
                             text = stringResource(R.string.pro_trial_days_left, proState.trialDaysRemaining),
                             style = MaterialTheme.typography.bodyMedium,
@@ -84,7 +87,10 @@ fun HomeScreen(
 
                 // Trial expired
                 if (proState.status == ProStatus.TRIAL_EXPIRED) {
-                    item {
+                    item(
+                        key = "home-trial-status",
+                        contentType = HOME_STATUS_CONTENT_TYPE,
+                    ) {
                         Text(
                             text = stringResource(R.string.unlock_all_tools),
                             style = MaterialTheme.typography.bodyMedium,
@@ -100,7 +106,7 @@ fun HomeScreen(
                 }
 
                 // Laskimet — suora lista
-                item {
+                item(key = "home-tool-gauge", contentType = HOME_TOOL_CONTENT_TYPE) {
                     HubListItem(
                         title = stringResource(R.string.tool_gauge_converter),
                         description = stringResource(R.string.desc_gauge_calculator),
@@ -108,7 +114,7 @@ fun HomeScreen(
                         titleColor = MaterialTheme.colorScheme.primary,
                     )
                 }
-                item {
+                item(key = "home-tool-increase-decrease", contentType = HOME_TOOL_CONTENT_TYPE) {
                     HubListItem(
                         title = stringResource(R.string.tool_increase_decrease),
                         description = stringResource(R.string.desc_increase_decrease),
@@ -116,7 +122,7 @@ fun HomeScreen(
                         titleColor = MaterialTheme.colorScheme.secondary,
                     )
                 }
-                item {
+                item(key = "home-tool-cast-on", contentType = HOME_TOOL_CONTENT_TYPE) {
                     HubListItem(
                         title = stringResource(R.string.tool_cast_on_calculator),
                         description = stringResource(R.string.desc_cast_on),
@@ -124,7 +130,7 @@ fun HomeScreen(
                         titleColor = MaterialTheme.colorScheme.tertiary,
                     )
                 }
-                item {
+                item(key = "home-tool-yarn", contentType = HOME_TOOL_CONTENT_TYPE) {
                     HubListItem(
                         title = stringResource(R.string.tool_yarn_estimator),
                         description = stringResource(R.string.desc_yarn_estimator_card),
@@ -132,7 +138,7 @@ fun HomeScreen(
                         titleColor = MaterialTheme.knitToolsColors.brandWine,
                     )
                 }
-                item {
+                item(key = "home-tool-ravelry", contentType = HOME_TOOL_CONTENT_TYPE) {
                     HubListItem(
                         title = stringResource(R.string.tool_ravelry),
                         description = stringResource(R.string.desc_ravelry),
@@ -144,3 +150,6 @@ fun HomeScreen(
         }
     }
 }
+
+private const val HOME_STATUS_CONTENT_TYPE = "home-status"
+private const val HOME_TOOL_CONTENT_TYPE = "home-tool"

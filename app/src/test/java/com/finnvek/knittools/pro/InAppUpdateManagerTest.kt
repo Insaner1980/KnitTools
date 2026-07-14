@@ -1,6 +1,5 @@
 package com.finnvek.knittools.pro
 
-import android.util.Log
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.IntentSenderRequest
 import app.cash.turbine.test
@@ -15,31 +14,14 @@ import com.google.android.play.core.install.model.InstallStatus
 import com.google.android.play.core.install.model.UpdateAvailability
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.mockkStatic
-import io.mockk.unmockkStatic
 import io.mockk.verify
 import kotlinx.coroutines.test.runTest
-import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Before
 import org.junit.Test
 
 class InAppUpdateManagerTest {
     private val appUpdateManager = mockk<AppUpdateManager>(relaxed = true)
     private val resultLauncher = mockk<ActivityResultLauncher<IntentSenderRequest>>(relaxed = true)
-
-    @Before
-    fun setup() {
-        mockkStatic(Log::class)
-        every { Log.i(any(), any()) } returns 0
-        every { Log.w(any(), any<String>()) } returns 0
-        every { Log.w(any(), any<String>(), any<Throwable>()) } returns 0
-    }
-
-    @After
-    fun tearDown() {
-        unmockkStatic(Log::class)
-    }
 
     @Test
     fun `checkForUpdate does not start update flow after activity becomes unavailable`() {
@@ -63,11 +45,10 @@ class InAppUpdateManagerTest {
                 any<AppUpdateOptions>(),
             )
         }
-        verify { Log.w(TAG, "Päivitysflow'ta ei käynnistetty, koska Activity ei ole enää käytettävissä") }
     }
 
     @Test
-    fun `checkForUpdate logs and clears in-progress state when update flow does not start`() {
+    fun `checkForUpdate clears in-progress state when update flow does not start`() {
         val updateInfo = flexibleUpdateInfo()
         every { appUpdateManager.appUpdateInfo } returns successTask(updateInfo)
         every {
@@ -89,11 +70,10 @@ class InAppUpdateManagerTest {
                 any<AppUpdateOptions>(),
             )
         }
-        verify(exactly = 2) { Log.w(TAG, "Päivitysflow'n käynnistys palautti false") }
     }
 
     @Test
-    fun `checkForUpdate logs and clears in-progress state when launcher is unavailable`() {
+    fun `checkForUpdate clears in-progress state when launcher is unavailable`() {
         val updateInfo = flexibleUpdateInfo()
         val failure = IllegalStateException("launcher destroyed")
         every { appUpdateManager.appUpdateInfo } returns successTask(updateInfo)
@@ -116,18 +96,6 @@ class InAppUpdateManagerTest {
                 any<AppUpdateOptions>(),
             )
         }
-        verify(exactly = 2) { Log.w(TAG, "Päivitysflow'n käynnistys epäonnistui", failure) }
-    }
-
-    @Test
-    fun `failed update flow result is logged`() {
-        val manager = InAppUpdateManager(appUpdateManager)
-
-        manager.onUpdateFlowResult(
-            com.google.android.play.core.install.model.ActivityResult.RESULT_IN_APP_UPDATE_FAILED,
-        )
-
-        verify { Log.w(TAG, "Sovelluspäivitys epäonnistui Play UI:ssa") }
     }
 
     @Test
@@ -152,7 +120,7 @@ class InAppUpdateManagerTest {
         }
 
     @Test
-    fun `completeUpdate failure logs and re-emits downloaded prompt`() =
+    fun `completeUpdate failure re-emits downloaded prompt`() =
         runTest {
             val failure = IllegalStateException("install failed")
             every { appUpdateManager.completeUpdate() } returns failureTask(failure)
@@ -164,7 +132,6 @@ class InAppUpdateManagerTest {
                 manager.completeUpdate()
                 assertEquals(1L, awaitItem())
             }
-            verify { Log.w(TAG, "Päivityksen viimeistely epäonnistui", failure) }
         }
 
     private fun flexibleUpdateInfo(): AppUpdateInfo =
@@ -214,9 +181,5 @@ class InAppUpdateManagerTest {
         fun succeed(value: T) {
             successListeners.forEach { it.onSuccess(value) }
         }
-    }
-
-    private companion object {
-        private const val TAG = "InAppUpdateManager"
     }
 }

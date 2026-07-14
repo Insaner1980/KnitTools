@@ -2,8 +2,10 @@ package com.finnvek.knittools.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.DeviceFontFamilyName
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontLoadingStrategy
 import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
@@ -14,16 +16,24 @@ private fun outfitFont(weight: FontWeight) =
     Font(
         resId = R.font.outfit,
         weight = weight,
+        loadingStrategy = FontLoadingStrategy.OptionalLocal,
         variationSettings = FontVariation.Settings(FontVariation.weight(weight.weight)),
     )
 
 val OutfitFontFamily =
     FontFamily(
-        outfitFont(FontWeight.Normal),
-        outfitFont(FontWeight.Medium),
-        outfitFont(FontWeight.SemiBold),
-        outfitFont(FontWeight.Bold),
-        outfitFont(FontWeight.ExtraBold),
+        listOf(
+            FontWeight.Normal,
+            FontWeight.Medium,
+            FontWeight.SemiBold,
+            FontWeight.Bold,
+            FontWeight.ExtraBold,
+        ).flatMap { weight ->
+            listOf(
+                outfitFont(weight),
+                Font(DeviceFontFamilyName("sans-serif"), weight = weight),
+            )
+        },
     )
 
 val AppTypography =

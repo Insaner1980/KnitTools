@@ -4,13 +4,17 @@ import android.app.Application
 import com.finnvek.knittools.billing.BillingManager
 import com.finnvek.knittools.data.datastore.PreferencesManager
 import com.finnvek.knittools.data.storage.PatternDocumentStorage
+import com.finnvek.knittools.di.ApplicationScope
+import com.finnvek.knittools.di.IoDispatcher
+import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.YarnCardRepository
+import com.finnvek.knittools.widget.CounterWidgetState
 import dagger.hilt.android.HiltAndroidApp
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -31,7 +35,13 @@ class App : Application() {
     @Inject
     lateinit var patternDocumentStorage: dagger.Lazy<PatternDocumentStorage>
 
-    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    @Inject
+    @ApplicationScope
+    lateinit var applicationScope: CoroutineScope
+
+    @Inject
+    @IoDispatcher
+    lateinit var ioDispatcher: CoroutineDispatcher
 
     override fun onCreate() {
         super.onCreate()
@@ -42,11 +52,22 @@ class App : Application() {
         applicationScope.launch {
             yarnCardRepository.get().pruneUnreferencedPhotoFiles()
         }
-        applicationScope.launch {
+        applicationScope.launch(ioDispatcher) {
             patternDocumentStorage.get().pruneStaleCaptureImages(this@App)
         }
         billingManager.get().initialize()
         proManager.get().initialize()
+        observeWidgetProState()
+    }
+
+    private fun observeWidgetProState() {
+        applicationScope.launch {
+            val manager = proManager.get()
+            manager.initialStateReady.first { it }
+            manager
+                .hasFeatureFlow(ProFeature.WIDGET)
+                .collect { CounterWidgetState.refreshAll(this@App) }
+        }
     }
 
     override fun onTerminate() {

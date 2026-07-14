@@ -1,8 +1,6 @@
 package com.finnvek.knittools.pro
 
-import android.app.Activity
 import android.content.Context
-import android.util.Log
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.IntentSenderRequest
 import com.google.android.play.core.appupdate.AppUpdateInfo
@@ -20,7 +18,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import javax.inject.Inject
 import javax.inject.Singleton
-import com.google.android.play.core.install.model.ActivityResult as PlayUpdateActivityResult
 
 @Singleton
 class InAppUpdateManager
@@ -67,8 +64,7 @@ class InAppUpdateManager
                             canStartUpdateFlow = canStartUpdateFlow,
                         )
                     }
-                }.addOnFailureListener { error ->
-                    Log.w(TAG, "Päivitystietojen haku epäonnistui", error)
+                }.addOnFailureListener {
                     updateFlowInProgress = false
                 }
         }
@@ -83,20 +79,13 @@ class InAppUpdateManager
                     if (info.installStatus() == InstallStatus.DOWNLOADED) {
                         notifyUpdateDownloaded()
                     }
-                }.addOnFailureListener { error ->
-                    Log.w(TAG, "Ladatun päivityksen tarkistus epäonnistui", error)
                 }
         }
 
-        fun onUpdateFlowResult(resultCode: Int) {
+        fun onUpdateFlowResult(
+            @Suppress("UNUSED_PARAMETER") resultCode: Int,
+        ) {
             updateFlowInProgress = false
-            when (resultCode) {
-                Activity.RESULT_OK -> Unit
-                Activity.RESULT_CANCELED -> Log.i(TAG, "Käyttäjä perui sovelluspäivityksen")
-                PlayUpdateActivityResult.RESULT_IN_APP_UPDATE_FAILED ->
-                    Log.w(TAG, "Sovelluspäivitys epäonnistui Play UI:ssa")
-                else -> Log.w(TAG, "Tuntematon sovelluspäivityksen tuloskoodi: $resultCode")
-            }
         }
 
         /** Käynnistää sovelluksen uudelleen asentaakseen ladatun päivityksen. */
@@ -104,8 +93,7 @@ class InAppUpdateManager
             updateDownloadedNotified = false
             appUpdateManager
                 .completeUpdate()
-                .addOnFailureListener { error ->
-                    Log.w(TAG, "Päivityksen viimeistely epäonnistui", error)
+                .addOnFailureListener {
                     notifyUpdateDownloaded()
                 }
         }
@@ -125,7 +113,6 @@ class InAppUpdateManager
             canStartUpdateFlow: () -> Boolean,
         ) {
             if (!canStartUpdateFlow()) {
-                Log.w(TAG, "Päivitysflow'ta ei käynnistetty, koska Activity ei ole enää käytettävissä")
                 return
             }
             updateFlowInProgress = true
@@ -136,14 +123,12 @@ class InAppUpdateManager
                         resultLauncher,
                         AppUpdateOptions.newBuilder(AppUpdateType.FLEXIBLE).build(),
                     )
-                } catch (error: IllegalStateException) {
+                } catch (_: IllegalStateException) {
                     updateFlowInProgress = false
-                    Log.w(TAG, "Päivitysflow'n käynnistys epäonnistui", error)
                     return
                 }
             if (!started) {
                 updateFlowInProgress = false
-                Log.w(TAG, "Päivitysflow'n käynnistys palautti false")
             }
         }
 
@@ -163,9 +148,5 @@ class InAppUpdateManager
                 appUpdateManager.registerListener(installStateListener)
                 listenerRegistered = true
             }
-        }
-
-        private companion object {
-            private const val TAG = "InAppUpdateManager"
         }
     }

@@ -16,8 +16,8 @@ import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -26,8 +26,8 @@ import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.formatIntegerForDisplay
 import com.finnvek.knittools.ui.components.HubListItem
 import com.finnvek.knittools.ui.components.SectionLabel
-import com.finnvek.knittools.ui.components.scrolledTopBarDivider
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
+import com.finnvek.knittools.ui.components.scrolledTopBarDivider
 import com.finnvek.knittools.ui.navigation.Screen
 import com.finnvek.knittools.ui.theme.knitToolsColors
 

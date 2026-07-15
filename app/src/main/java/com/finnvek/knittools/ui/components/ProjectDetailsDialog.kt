@@ -26,8 +26,8 @@ import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.MainCounterLabelType
-import com.finnvek.knittools.ui.theme.knitToolsColors
 import com.finnvek.knittools.domain.model.sanitizeMainCounterCustomLabel
+import com.finnvek.knittools.ui.theme.knitToolsColors
 
 data class ProjectDetailsValues(
     val name: String,

@@ -14,6 +14,7 @@ val SurfaceHighest = Color(0xFF454535) // Korkein korotus, syötekentät
 // === Primary — Poltettu oranssi ===
 val Primary = Color(0xFFC45100) // Pääväri, + nappi, CTA:t
 val PrimaryContainer = Color(0xFFD4722A) // Vaaleampi oranssi, gradientit
+
 // Fablen ehdottamaa #D4722A-arvoa vaalennettu hieman, jotta 14–16 sp teksti
 // ylittää 4,5:1-rajan myös korttien Surface-taustalla.
 val AccentTextPrimary = Color(0xFFDC7B32)

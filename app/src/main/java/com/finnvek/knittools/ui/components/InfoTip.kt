@@ -17,8 +17,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.finnvek.knittools.ui.theme.knitToolsColors
 import com.finnvek.knittools.R
+import com.finnvek.knittools.ui.theme.knitToolsColors
 
 @Composable
 fun InfoTip(

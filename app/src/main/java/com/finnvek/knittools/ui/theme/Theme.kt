@@ -166,7 +166,14 @@ private val LightExtendedColors =
         modalContainer = LightBackground,
         insightChartPalette =
             InsightChartPalette(
-                colors = listOf(LightAccentTextPrimary, LightSecondary, LightTertiary, LightDustyRose, LightRavelryTeal),
+                colors =
+                    listOf(
+                        LightAccentTextPrimary,
+                        LightSecondary,
+                        LightTertiary,
+                        LightDustyRose,
+                        LightRavelryTeal,
+                    ),
                 gridLine = LightDivider,
                 emptyCell = LightDivider,
             ),

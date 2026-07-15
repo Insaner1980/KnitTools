@@ -152,9 +152,33 @@ enum class TopLevelDestination(
     val unselectedIcon: ImageVector,
     val startRoute: String,
 ) {
-    Projects("projects_tab", R.string.tab_projects, Icons.Filled.Folder, Icons.Outlined.FolderOpen, Screen.ProjectList.route),
-    Library("library_tab", R.string.tab_library, Icons.Filled.AutoStories, Icons.Outlined.AutoStories, Screen.Library.route),
+    Projects(
+        "projects_tab",
+        R.string.tab_projects,
+        Icons.Filled.Folder,
+        Icons.Outlined.FolderOpen,
+        Screen.ProjectList.route,
+    ),
+    Library(
+        "library_tab",
+        R.string.tab_library,
+        Icons.Filled.AutoStories,
+        Icons.Outlined.AutoStories,
+        Screen.Library.route,
+    ),
     Tools("tools_tab", R.string.tab_tools, Icons.Filled.Build, Icons.Outlined.Build, Screen.Tools.route),
-    Insights("insights_tab", R.string.tab_insights, Icons.Filled.BarChart, Icons.Outlined.BarChart, Screen.Insights.route),
-    Settings("settings_tab", R.string.tab_settings, Icons.Filled.Settings, Icons.Outlined.Settings, Screen.Settings.route),
+    Insights(
+        "insights_tab",
+        R.string.tab_insights,
+        Icons.Filled.BarChart,
+        Icons.Outlined.BarChart,
+        Screen.Insights.route,
+    ),
+    Settings(
+        "settings_tab",
+        R.string.tab_settings,
+        Icons.Filled.Settings,
+        Icons.Outlined.Settings,
+        Screen.Settings.route,
+    ),
 }

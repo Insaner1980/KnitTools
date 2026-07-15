@@ -1,6 +1,5 @@
 package com.finnvek.knittools.ui.screens.home
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,12 +11,15 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
@@ -28,6 +30,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.ui.components.HubListItem
+import com.finnvek.knittools.ui.components.scrolledTopBarDivider
 import com.finnvek.knittools.ui.navigation.Screen
 import com.finnvek.knittools.ui.theme.RavelryTeal
 import com.finnvek.knittools.ui.theme.knitToolsColors
@@ -41,11 +44,14 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val proState by viewModel.proState.collectAsStateWithLifecycle()
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
 
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
+                modifier = Modifier.scrolledTopBarDivider(scrollBehavior),
                 title = {
                     Text(
                         text = stringResource(R.string.tools_title),
@@ -55,7 +61,9 @@ fun HomeScreen(
                 colors =
                     TopAppBarDefaults.topAppBarColors(
                         containerColor = Color.Transparent,
+                        scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
                     ),
+                scrollBehavior = scrollBehavior,
             )
         },
     ) { padding ->
@@ -91,17 +99,20 @@ fun HomeScreen(
                         key = "home-trial-status",
                         contentType = HOME_STATUS_CONTENT_TYPE,
                     ) {
-                        Text(
-                            text = stringResource(R.string.unlock_all_tools),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.knitToolsColors.accentTextPrimary,
-                            textAlign = TextAlign.Center,
+                        TextButton(
+                            onClick = { onNavigate(Screen.ProUpgrade) },
                             modifier =
                                 Modifier
                                     .fillMaxWidth()
-                                    .clickable { onNavigate(Screen.ProUpgrade) }
                                     .padding(vertical = 8.dp),
-                        )
+                        ) {
+                            Text(
+                                text = stringResource(R.string.unlock_all_tools),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.knitToolsColors.accentTextPrimary,
+                                textAlign = TextAlign.Center,
+                            )
+                        }
                     }
                 }
 

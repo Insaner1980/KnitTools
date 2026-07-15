@@ -62,6 +62,7 @@ import com.finnvek.knittools.ui.components.mainCounterProjectCardCountText
 import com.finnvek.knittools.ui.components.mainCounterTargetText
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
 import com.finnvek.knittools.ui.theme.CounterDimens
+import com.finnvek.knittools.ui.theme.SectionLabelStyle
 
 data class ProjectHeaderActions(
     val onNameSave: (String) -> Unit,
@@ -528,11 +529,7 @@ private fun CompactPatternRepeatRow(
     ) {
         Text(
             text = stringResource(R.string.counter_repeat_label).localizedUppercase(),
-            style =
-                MaterialTheme.typography.labelMedium.copy(
-                    fontSize = CounterDimens.CounterRepeatLabelFontSize,
-                    fontWeight = FontWeight.SemiBold,
-                ),
+            style = SectionLabelStyle,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Row(

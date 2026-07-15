@@ -34,7 +34,6 @@ object CounterDimens {
     val CounterRepeatHeight = 48.dp
     val CounterRepeatCornerRadius = 24.dp
     val CounterRepeatHorizontalPadding = 16.dp
-    val CounterRepeatLabelFontSize = 15.sp
     val CounterRepeatValueFontSize = 21.sp
     val CounterRepeatButtonTouchSize = 48.dp
     val CounterRepeatButtonVisualSize = 32.dp

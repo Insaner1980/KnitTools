@@ -454,6 +454,7 @@
     <string name="completed_label">Completati</string>
     <string name="time_format_hours">%.1fh</string>
     <string name="pace_format">%.0f f/h</string>
+    <string name="insights_latest_pace_format">Ultimo %1$s</string>
     <string name="streak_format">%d giorni</string>
     <string name="all_projects">Tutti i progetti</string>
     <string name="insights_all_time">Sempre</string>

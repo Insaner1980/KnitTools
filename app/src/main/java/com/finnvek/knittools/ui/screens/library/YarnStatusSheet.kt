@@ -41,7 +41,7 @@ fun YarnStatusSheet(
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        containerColor = MaterialTheme.colorScheme.surface,
+        containerColor = MaterialTheme.knitToolsColors.modalContainer,
     ) {
         Column(
             modifier =

@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import com.finnvek.knittools.R
+import com.finnvek.knittools.ui.theme.knitToolsColors
 
 @Composable
 fun RenameProjectDialog(
@@ -21,6 +22,7 @@ fun RenameProjectDialog(
     onDismiss: () -> Unit,
 ) {
     AlertDialog(
+        containerColor = MaterialTheme.knitToolsColors.modalContainer,
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.rename_project)) },
         text = {

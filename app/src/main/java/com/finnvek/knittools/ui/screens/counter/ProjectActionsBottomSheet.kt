@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AddCircle
 import androidx.compose.material.icons.outlined.CheckCircle
@@ -23,6 +22,7 @@ import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Numbers
 import androidx.compose.material.icons.outlined.Restore
+import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -44,6 +44,8 @@ import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.formatIntegerForDisplay
 import com.finnvek.knittools.ui.components.localizedUppercase
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
+import com.finnvek.knittools.ui.theme.SheetShape
+import com.finnvek.knittools.ui.theme.knitToolsColors
 
 data class ProjectActionsSheetCallbacks(
     val onDismiss: () -> Unit,
@@ -77,8 +79,8 @@ fun ProjectActionsBottomSheet(
     ModalBottomSheet(
         onDismissRequest = callbacks.onDismiss,
         sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.background,
-        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        containerColor = MaterialTheme.knitToolsColors.modalContainer,
+        shape = SheetShape,
     ) {
         Column(modifier = Modifier.padding(bottom = 18.dp)) {
             ProjectActionsSection(title = stringResource(R.string.project_actions_section_this_project)) {
@@ -128,7 +130,7 @@ fun ProjectActionsBottomSheet(
                     onClick = callbacks.onOpenSessionHistory,
                 )
                 ActionRow(
-                    icon = Icons.Outlined.Edit,
+                    icon = Icons.Outlined.Tune,
                     label = stringResource(R.string.project_details),
                     onClick = callbacks.onOpenProjectDetails,
                 )
@@ -150,7 +152,7 @@ fun ProjectActionsBottomSheet(
                     onClick = callbacks.onShowCompleteDialog,
                     showChevron = false,
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                SectionDivider()
                 ActionRow(
                     icon = Icons.Outlined.DeleteOutline,
                     label = stringResource(R.string.delete_project),

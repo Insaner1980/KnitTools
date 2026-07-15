@@ -342,7 +342,7 @@ private fun LanguagePickerBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.surface,
+        containerColor = MaterialTheme.knitToolsColors.modalContainer,
     ) {
         Column(
             modifier =

@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -19,6 +20,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
+import com.finnvek.knittools.ui.theme.knitToolsColors
 
 @Composable
 fun TargetRowsDialog(
@@ -31,6 +33,7 @@ fun TargetRowsDialog(
     val parsed = text.toIntOrNull()?.takeIf { it > 0 }
 
     AlertDialog(
+        containerColor = MaterialTheme.knitToolsColors.modalContainer,
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.target_rows_dialog_title)) },
         text = {

@@ -314,7 +314,7 @@ private fun ActivityCell(
 
     val hasActivity = !isFuture && minutes > 0
     val fillColor = cellFillColor(minutes = minutes, isFuture = isFuture)
-    val outlineColor = MaterialTheme.knitToolsColors.onSurfaceMuted.copy(alpha = 0.2f)
+    val outlineColor = MaterialTheme.knitToolsColors.insightChartPalette.emptyCell.copy(alpha = 0.65f)
     val todayBorderColor = MaterialTheme.colorScheme.primary
 
     Box(

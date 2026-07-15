@@ -40,6 +40,7 @@ import com.finnvek.knittools.domain.model.ProjectYarnNote
 import com.finnvek.knittools.ui.components.ProjectYarnTextField
 import com.finnvek.knittools.ui.components.localizedUppercase
 import com.finnvek.knittools.ui.theme.YarnColors
+import com.finnvek.knittools.ui.theme.knitToolsColors
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,7 +54,7 @@ fun YarnManagementSheet(
 
     ModalBottomSheet(
         onDismissRequest = actions.onDismiss,
-        containerColor = MaterialTheme.colorScheme.surface,
+        containerColor = MaterialTheme.knitToolsColors.modalContainer,
     ) {
         Column(
             modifier =

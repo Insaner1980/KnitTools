@@ -42,6 +42,7 @@ import com.finnvek.knittools.R
 import com.finnvek.knittools.data.storage.PatternDocumentStorage
 import com.finnvek.knittools.di.AppDispatchers
 import com.finnvek.knittools.domain.model.SavedPattern
+import com.finnvek.knittools.ui.theme.knitToolsColors
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -84,7 +85,7 @@ fun PatternPickerSheet(
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        containerColor = MaterialTheme.colorScheme.surface,
+        containerColor = MaterialTheme.knitToolsColors.modalContainer,
     ) {
         PatternPickerSheetContent(
             savedPatterns = savedPatterns,

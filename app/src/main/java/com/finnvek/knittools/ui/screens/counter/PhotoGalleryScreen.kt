@@ -59,6 +59,7 @@ import coil3.compose.AsyncImage
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.ProgressPhoto
 import com.finnvek.knittools.ui.components.rememberLocaleDateFormat
+import com.finnvek.knittools.ui.theme.knitToolsColors
 import java.util.Date
 
 data class PhotoGalleryActions(
@@ -397,6 +398,7 @@ private fun RenamePhotoDialog(
     var text by rememberSaveable(currentNote) { mutableStateOf(currentNote) }
 
     androidx.compose.material3.AlertDialog(
+        containerColor = MaterialTheme.knitToolsColors.modalContainer,
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.rename_photo)) },
         text = {

@@ -87,6 +87,7 @@ import com.finnvek.knittools.domain.model.READING_LINE_MAX_Y_FRACTION
 import com.finnvek.knittools.domain.model.READING_LINE_MIN_Y_FRACTION
 import com.finnvek.knittools.domain.model.sanitizeReadingLineYFraction
 import com.finnvek.knittools.ui.screens.counter.CounterViewModel
+import com.finnvek.knittools.ui.theme.knitToolsColors
 import kotlinx.coroutines.withContext
 
 private const val READING_LINE_BAND_HEIGHT_FRACTION = 0.045f
@@ -708,6 +709,7 @@ private fun PatternViewerOverflowMenu(
     closeOverflowMenu: () -> Unit,
 ) {
     DropdownMenu(
+        containerColor = MaterialTheme.knitToolsColors.modalContainer,
         expanded = expanded,
         onDismissRequest = onDismissRequest,
     ) {
@@ -816,6 +818,7 @@ private fun PatternPageJumpDialog(
     val isValidPage = parsedPage != null && parsedPage in 1..totalPages.coerceAtLeast(1)
 
     AlertDialog(
+        containerColor = MaterialTheme.knitToolsColors.modalContainer,
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.pattern_page_jump)) },
         text = {

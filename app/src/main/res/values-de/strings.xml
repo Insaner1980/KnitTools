@@ -450,6 +450,7 @@
     <string name="completed_label">Fertig</string>
     <string name="time_format_hours">%.1fh</string>
     <string name="pace_format">%.0f R/h</string>
+    <string name="insights_latest_pace_format">Zuletzt %1$s</string>
     <string name="streak_format">%d Tage</string>
     <string name="all_projects">Alle Projekte</string>
     <string name="insights_all_time">Gesamte Zeit</string>

@@ -8,6 +8,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.finnvek.knittools.R
+import com.finnvek.knittools.ui.theme.knitToolsColors
 
 /**
  * Yhtenäinen vahvistusdialogi destruktiivisille ja muille toiminnoille.
@@ -23,6 +24,7 @@ fun ConfirmationDialog(
     onDismiss: () -> Unit,
 ) {
     AlertDialog(
+        containerColor = MaterialTheme.knitToolsColors.modalContainer,
         onDismissRequest = onDismiss,
         title = { Text(title) },
         text = { Text(message) },

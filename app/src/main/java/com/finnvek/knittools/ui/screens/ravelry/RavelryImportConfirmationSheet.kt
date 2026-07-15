@@ -23,6 +23,7 @@ import com.finnvek.knittools.R
 import com.finnvek.knittools.data.remote.PatternDetail
 import com.finnvek.knittools.ui.components.StatusMessage
 import com.finnvek.knittools.ui.components.StatusMessageType
+import com.finnvek.knittools.ui.theme.knitToolsColors
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,7 +38,7 @@ fun RavelryImportConfirmationSheet(
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        containerColor = MaterialTheme.colorScheme.surface,
+        containerColor = MaterialTheme.knitToolsColors.modalContainer,
     ) {
         Column(
             modifier =

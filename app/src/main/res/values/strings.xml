@@ -469,6 +469,7 @@
     <string name="completed_label">Completed</string>
     <string name="time_format_hours">%.1fh</string>
     <string name="pace_format">%.0f r/hr</string>
+    <string name="insights_latest_pace_format">Latest %1$s</string>
     <string name="streak_format" tools:ignore="PluralsCandidate">%d days</string>
     <string name="all_projects">All Projects</string>
     <string name="insights_all_time">All Time</string>

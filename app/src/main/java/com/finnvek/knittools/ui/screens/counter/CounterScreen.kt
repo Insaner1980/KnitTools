@@ -36,7 +36,9 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -50,6 +52,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -76,8 +79,10 @@ import com.finnvek.knittools.ui.components.ProjectDetailsDialog
 import com.finnvek.knittools.ui.components.ProjectDetailsValues
 import com.finnvek.knittools.ui.components.RenameProjectDialog
 import com.finnvek.knittools.ui.components.localizedUppercase
+import com.finnvek.knittools.ui.components.scrolledTopBarDivider
 import com.finnvek.knittools.ui.screens.pattern.PatternPickerSheet
 import com.finnvek.knittools.ui.theme.CounterDimens
+import com.finnvek.knittools.ui.theme.knitToolsColors
 
 data class CounterScreenActions(
     val onBack: () -> Unit = {},
@@ -106,6 +111,7 @@ fun CounterScreen(
     val onNotesEditor = actions.onNotesEditor
     val onUpgradeToPro = actions.onUpgradeToPro
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val topBarScrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
 
     var showResetDialog by rememberSaveable { mutableStateOf(false) }
     var showProjectActionsSheet by rememberSaveable { mutableStateOf(false) }
@@ -496,9 +502,11 @@ fun CounterScreen(
     }
 
     Scaffold(
+        modifier = Modifier.nestedScroll(topBarScrollBehavior.nestedScrollConnection),
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             CounterTopBar(
+                scrollBehavior = topBarScrollBehavior,
                 state = state,
                 isEditingName = isEditingName,
                 projectHeaderActions = projectHeaderActions,
@@ -686,6 +694,7 @@ private fun StitchCountDialog(
         mutableStateOf(currentStitchCount?.toString() ?: "")
     }
     AlertDialog(
+        containerColor = MaterialTheme.knitToolsColors.modalContainer,
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.stitches_per_row)) },
         text = {
@@ -826,8 +835,10 @@ private fun CounterTopBar(
     isEditingName: Boolean,
     projectHeaderActions: ProjectHeaderActions,
     actions: CounterTopBarActions,
+    scrollBehavior: TopAppBarScrollBehavior,
 ) {
     TopAppBar(
+        modifier = Modifier.scrolledTopBarDivider(scrollBehavior),
         title = {
             CounterTopBarTitle(
                 state = state,
@@ -856,8 +867,9 @@ private fun CounterTopBar(
         colors =
             TopAppBarDefaults.topAppBarColors(
                 containerColor = Color.Transparent,
-                scrolledContainerColor = Color.Transparent,
+                scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
             ),
+        scrollBehavior = scrollBehavior,
     )
 }
 
@@ -981,7 +993,7 @@ private fun CountersListSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.surface,
+        containerColor = MaterialTheme.knitToolsColors.modalContainer,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
     ) {
         Column(
@@ -1026,7 +1038,7 @@ private fun YarnPickerSheet(
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        containerColor = MaterialTheme.colorScheme.surface,
+        containerColor = MaterialTheme.knitToolsColors.modalContainer,
     ) {
         Column(
             modifier =
@@ -1107,7 +1119,7 @@ private fun NotesSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = MaterialTheme.colorScheme.surface,
+        containerColor = MaterialTheme.knitToolsColors.modalContainer,
     ) {
         Column(
             modifier =

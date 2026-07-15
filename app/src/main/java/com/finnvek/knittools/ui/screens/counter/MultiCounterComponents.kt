@@ -61,6 +61,7 @@ import com.finnvek.knittools.ui.components.NumberInputOptions
 import com.finnvek.knittools.ui.components.SegmentedToggle
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
 import com.finnvek.knittools.ui.theme.CounterDimens
+import com.finnvek.knittools.ui.theme.knitToolsColors
 
 private const val DISABLED_CONTENT_ALPHA = 0.38f
 
@@ -265,6 +266,7 @@ private fun CounterOverflowMenu(
             )
         }
         DropdownMenu(
+            containerColor = MaterialTheme.knitToolsColors.modalContainer,
             expanded = expanded,
             onDismissRequest = { onExpandedChange(false) },
         ) {
@@ -311,6 +313,7 @@ private fun RenameCounterDialog(
     var name by rememberSaveable { mutableStateOf(currentName) }
 
     AlertDialog(
+        containerColor = MaterialTheme.knitToolsColors.modalContainer,
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.rename_counter)) },
         text = {
@@ -394,6 +397,7 @@ fun AddCounterDialog(
         isAddCounterFormValid(formParams)
 
     AlertDialog(
+        containerColor = MaterialTheme.knitToolsColors.modalContainer,
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.add_counter)) },
         text = {

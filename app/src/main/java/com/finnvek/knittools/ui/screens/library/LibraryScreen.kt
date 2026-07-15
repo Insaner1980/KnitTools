@@ -12,9 +12,11 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -24,6 +26,7 @@ import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.formatIntegerForDisplay
 import com.finnvek.knittools.ui.components.HubListItem
 import com.finnvek.knittools.ui.components.SectionLabel
+import com.finnvek.knittools.ui.components.scrolledTopBarDivider
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
 import com.finnvek.knittools.ui.navigation.Screen
 import com.finnvek.knittools.ui.theme.knitToolsColors
@@ -40,18 +43,26 @@ fun LibraryScreen(
     val yarnCardCount by viewModel.yarnCardCount.collectAsStateWithLifecycle(initialValue = 0)
     val photoCount by viewModel.photoCount.collectAsStateWithLifecycle(initialValue = 0)
     val canUseProgressPhotos by viewModel.canUseProgressPhotos.collectAsStateWithLifecycle()
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
 
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
+                modifier = Modifier.scrolledTopBarDivider(scrollBehavior),
                 title = {
                     Text(
                         text = stringResource(R.string.library_title),
                         style = MaterialTheme.typography.headlineMedium,
                     )
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+                colors =
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent,
+                        scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    ),
+                scrollBehavior = scrollBehavior,
             )
         },
     ) { padding ->

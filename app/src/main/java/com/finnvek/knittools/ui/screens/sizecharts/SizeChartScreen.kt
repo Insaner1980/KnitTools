@@ -39,6 +39,7 @@ import com.finnvek.knittools.domain.model.SizeLabel
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
 import com.finnvek.knittools.ui.screens.home.HomeViewModel
+import com.finnvek.knittools.ui.theme.knitToolsColors
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -100,6 +101,7 @@ fun SizeChartScreen(
                             ),
                     )
                     ExposedDropdownMenu(
+                        containerColor = MaterialTheme.knitToolsColors.modalContainer,
                         expanded = dropdownExpanded,
                         onDismissRequest = { dropdownExpanded = false },
                     ) {

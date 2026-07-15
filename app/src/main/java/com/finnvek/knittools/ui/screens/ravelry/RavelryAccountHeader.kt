@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.auth.RavelryAuthState
 import com.finnvek.knittools.ui.components.ConfirmationDialog
+import com.finnvek.knittools.ui.theme.knitToolsColors
 
 @Composable
 internal fun RavelryAccountHeader(
@@ -136,6 +137,7 @@ private fun RavelryAccountMenu(onDisconnect: () -> Unit) {
         )
     }
     DropdownMenu(
+        containerColor = MaterialTheme.knitToolsColors.modalContainer,
         expanded = expanded,
         onDismissRequest = { expanded = false },
     ) {

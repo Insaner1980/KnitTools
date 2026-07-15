@@ -16,6 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import com.finnvek.knittools.R
 import com.finnvek.knittools.ui.theme.CounterDimens
+import com.finnvek.knittools.ui.theme.SectionLabelStyle
 
 @Composable
 fun StitchCounter(
@@ -48,8 +49,8 @@ fun StitchCounter(
             horizontalArrangement = Arrangement.spacedBy(CounterDimens.StitchTrackerContentSpacing),
         ) {
             Text(
-                text = label,
-                style = MaterialTheme.typography.labelMedium,
+                text = label.localizedUppercase(),
+                style = SectionLabelStyle,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             CounterStepperButton(

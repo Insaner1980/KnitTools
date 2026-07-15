@@ -450,6 +450,7 @@
     <string name="completed_label">Färdiga</string>
     <string name="time_format_hours">%.1ft</string>
     <string name="pace_format">%.0f v/t</string>
+    <string name="insights_latest_pace_format">Senaste %1$s</string>
     <string name="streak_format">%d dagar</string>
     <string name="all_projects">Alla projekt</string>
     <string name="insights_all_time">All tid</string>

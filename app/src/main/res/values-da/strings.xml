@@ -450,6 +450,7 @@
     <string name="completed_label">Afsluttet</string>
     <string name="time_format_hours">%.1ft</string>
     <string name="pace_format">%.0f p/t</string>
+    <string name="insights_latest_pace_format">Seneste %1$s</string>
     <string name="streak_format">%d dage</string>
     <string name="all_projects">Alle projekter</string>
     <string name="insights_all_time">Hele tiden</string>

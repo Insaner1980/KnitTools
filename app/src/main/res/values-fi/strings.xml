@@ -459,6 +459,7 @@
     <string name="completed_label">Valmiit</string>
     <string name="time_format_hours">%.1f h</string>
     <string name="pace_format">%.0f krs/h</string>
+    <string name="insights_latest_pace_format">Uusin %1$s</string>
     <string name="streak_format">%d päivää</string>
     <string name="all_projects">Kaikki projektit</string>
     <string name="insights_all_time">Kaikki</string>

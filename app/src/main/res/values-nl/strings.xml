@@ -450,6 +450,7 @@
     <string name="completed_label">Voltooid</string>
     <string name="time_format_hours">%.1fu</string>
     <string name="pace_format">%.0f t/u</string>
+    <string name="insights_latest_pace_format">Laatste %1$s</string>
     <string name="streak_format">%d dagen</string>
     <string name="all_projects">Alle projecten</string>
     <string name="insights_all_time">Altijd</string>

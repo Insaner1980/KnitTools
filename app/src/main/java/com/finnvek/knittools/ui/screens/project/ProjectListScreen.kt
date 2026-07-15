@@ -48,6 +48,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TopAppBarScrollBehavior
+import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
@@ -60,6 +62,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -81,6 +84,7 @@ import com.finnvek.knittools.ui.components.localizedUppercase
 import com.finnvek.knittools.ui.components.mainCounterProjectCardCountText
 import com.finnvek.knittools.ui.components.mainCounterTargetText
 import com.finnvek.knittools.ui.components.projectMetadataText
+import com.finnvek.knittools.ui.components.scrolledTopBarDivider
 import com.finnvek.knittools.ui.theme.Dimens
 import com.finnvek.knittools.ui.theme.knitToolsColors
 
@@ -140,6 +144,7 @@ fun ProjectListScreen(
     var showMultiCompleteDialog by rememberSaveable { mutableStateOf(false) }
     var showMultiDeleteDialog by rememberSaveable { mutableStateOf(false) }
     var showCreateProjectDialog by rememberSaveable { mutableStateOf(false) }
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
 
     ProjectListDialogs(
         state =
@@ -203,9 +208,11 @@ fun ProjectListScreen(
     }
 
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             ProjectListTopBar(
+                scrollBehavior = scrollBehavior,
                 state =
                     ProjectListTopBarState(
                         isMultiSelectMode = isMultiSelectMode,
@@ -373,6 +380,7 @@ private fun MultiCompleteDialog(
     onDismiss: () -> Unit,
 ) {
     AlertDialog(
+        containerColor = MaterialTheme.knitToolsColors.modalContainer,
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.complete_project)) },
         text = { Text(stringResource(R.string.complete_n_projects, selectedCount)) },
@@ -432,8 +440,10 @@ data class ProjectListTopBarActions(
 private fun ProjectListTopBar(
     state: ProjectListTopBarState,
     actions: ProjectListTopBarActions,
+    scrollBehavior: TopAppBarScrollBehavior,
 ) {
     TopAppBar(
+        modifier = Modifier.scrolledTopBarDivider(scrollBehavior),
         title = {
             Text(
                 text =
@@ -485,7 +495,9 @@ private fun ProjectListTopBar(
         colors =
             TopAppBarDefaults.topAppBarColors(
                 containerColor = Color.Transparent,
+                scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
             ),
+        scrollBehavior = scrollBehavior,
     )
 }
 
@@ -520,6 +532,7 @@ private fun OverflowMenuWithSort(
             )
         }
         DropdownMenu(
+            containerColor = MaterialTheme.knitToolsColors.modalContainer,
             expanded = state.showOverflowMenu && !state.showSortMenu,
             onDismissRequest = actions.onDismissOverflowMenu,
         ) {
@@ -568,6 +581,7 @@ private fun SortSubMenu(
     onSortOrderChange: (ProjectSortOrder) -> Unit,
 ) {
     DropdownMenu(
+        containerColor = MaterialTheme.knitToolsColors.modalContainer,
         expanded = expanded,
         onDismissRequest = onDismiss,
     ) {

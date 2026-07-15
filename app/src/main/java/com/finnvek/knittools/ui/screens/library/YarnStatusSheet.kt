@@ -22,6 +22,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.YarnCardStatus
+import com.finnvek.knittools.ui.components.localizedUppercase
 import com.finnvek.knittools.ui.theme.knitToolsColors
 
 data class YarnStatusUi(
@@ -51,7 +52,7 @@ fun YarnStatusSheet(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(
-                text = stringResource(R.string.status_label).uppercase(),
+                text = stringResource(R.string.status_label).localizedUppercase(),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.secondary,
             )

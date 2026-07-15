@@ -334,7 +334,7 @@ private fun PhotoGridItem(
     onClick: () -> Unit,
     onLongClick: () -> Unit,
 ) {
-    val dateFormat = rememberLocaleDateFormat("d MMM")
+    val dateFormat = rememberLocaleDateFormat("MMMd")
     val displayName = photo.note ?: stringResource(R.string.row_label_format, photo.rowNumber)
 
     Card(

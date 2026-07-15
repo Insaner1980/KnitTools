@@ -30,6 +30,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.CastOnCalculator
+import com.finnvek.knittools.domain.calculator.formatDecimalForDisplay
 import com.finnvek.knittools.domain.model.CastOnResult
 import com.finnvek.knittools.ui.components.AnimatedResultNumber
 import com.finnvek.knittools.ui.components.InfoNote
@@ -38,6 +39,7 @@ import com.finnvek.knittools.ui.components.NumberInputField
 import com.finnvek.knittools.ui.components.NumberInputOptions
 import com.finnvek.knittools.ui.components.ResultCard
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
+import com.finnvek.knittools.ui.components.rememberCurrentLocale
 import com.finnvek.knittools.ui.screens.home.HomeViewModel
 
 @Composable
@@ -160,6 +162,8 @@ private fun CastOnResultSection(
     unit: String,
     edgeCount: Int,
 ) {
+    val locale = rememberCurrentLocale()
+    val actualWidth = formatDecimalForDisplay(result.actualWidth, locale, 1, 1)
     ResultCard(title = stringResource(R.string.result)) {
         AnimatedResultNumber(
             targetValue = stringResource(R.string.stitches_result, result.stitches),
@@ -172,18 +176,19 @@ private fun CastOnResultSection(
         }
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = stringResource(R.string.actual_width, "%.1f".format(result.actualWidth), unit),
+            text = stringResource(R.string.actual_width, actualWidth, unit),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         result.adjustedDown?.let { down ->
+            val adjustedWidth = result.adjustedDownWidth ?: return@let
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text =
                     stringResource(
                         R.string.adjusted_down,
                         down,
-                        "%.1f".format(result.adjustedDownWidth),
+                        formatDecimalForDisplay(adjustedWidth, locale, 1, 1),
                         unit,
                     ),
                 style = MaterialTheme.typography.bodyMedium,
@@ -191,9 +196,16 @@ private fun CastOnResultSection(
             )
         }
         result.adjustedUp?.let { up ->
+            val adjustedWidth = result.adjustedUpWidth ?: return@let
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = stringResource(R.string.adjusted_up, up, "%.1f".format(result.adjustedUpWidth), unit),
+                text =
+                    stringResource(
+                        R.string.adjusted_up,
+                        up,
+                        formatDecimalForDisplay(adjustedWidth, locale, 1, 1),
+                        unit,
+                    ),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -201,6 +213,6 @@ private fun CastOnResultSection(
     }
     if (edgeCount > 0) {
         Spacer(modifier = Modifier.height(8.dp))
-        InfoNote(text = stringResource(R.string.edge_stitches_optional) + ": $edgeCount")
+        InfoNote(text = stringResource(R.string.edge_stitches_total_format, edgeCount))
     }
 }

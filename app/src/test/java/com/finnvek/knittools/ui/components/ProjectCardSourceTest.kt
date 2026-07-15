@@ -46,6 +46,7 @@ class ProjectCardSourceTest {
     fun `project card visual order keeps metadata below section row`() {
         val source = ProjectSourceFiles.read(PROJECT_CARD)
 
+        assertTrue(source.contains("text = name"))
         assertTrue(source.indexOf("text = name") < source.indexOf("text = secondaryLine"))
         assertTrue(source.indexOf("text = secondaryLine") < source.indexOf("ProjectCardStatsRow("))
         assertTrue(source.indexOf("ProjectCardStatsRow(") < source.indexOf("ProjectCardYarnLine("))

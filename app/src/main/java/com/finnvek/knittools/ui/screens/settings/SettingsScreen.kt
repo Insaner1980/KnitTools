@@ -48,6 +48,7 @@ import com.finnvek.knittools.data.datastore.AppLanguage
 import com.finnvek.knittools.data.datastore.ThemeMode
 import com.finnvek.knittools.ui.components.CollectWithLifecycleEffect
 import com.finnvek.knittools.ui.components.InfoTip
+import com.finnvek.knittools.ui.components.localizedUppercase
 import com.finnvek.knittools.ui.theme.knitToolsColors
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -191,7 +192,7 @@ fun SettingsScreen(
 @Composable
 private fun SectionHeader(title: String) {
     Text(
-        text = title,
+        text = title.localizedUppercase(),
         modifier =
             Modifier
                 .padding(horizontal = 16.dp, vertical = 8.dp)

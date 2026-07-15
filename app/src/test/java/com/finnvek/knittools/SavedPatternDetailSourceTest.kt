@@ -55,6 +55,7 @@ class SavedPatternDetailSourceTest {
             detail
                 .substringAfter("fun SavedPatternDetailScreen(")
                 .substringBefore(") {")
+        assertTrue(detailSignature.contains("modifier: Modifier = Modifier"))
         assertTrue(
             "modifier must be the first optional parameter",
             detailSignature.indexOf("modifier: Modifier = Modifier") <

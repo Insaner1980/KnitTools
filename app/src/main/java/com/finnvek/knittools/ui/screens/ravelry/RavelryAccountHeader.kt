@@ -28,6 +28,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.auth.RavelryAuthState
+import com.finnvek.knittools.ui.components.ConfirmationDialog
 
 @Composable
 internal fun RavelryAccountHeader(
@@ -112,6 +113,21 @@ private fun RavelryAccountActions(
 @Composable
 private fun RavelryAccountMenu(onDisconnect: () -> Unit) {
     var expanded by rememberSaveable { mutableStateOf(false) }
+    var showDisconnectDialog by rememberSaveable { mutableStateOf(false) }
+
+    if (showDisconnectDialog) {
+        ConfirmationDialog(
+            title = stringResource(R.string.ravelry_disconnect),
+            message = stringResource(R.string.ravelry_disconnect_confirm),
+            confirmText = stringResource(R.string.ravelry_disconnect),
+            isDestructive = true,
+            onConfirm = {
+                showDisconnectDialog = false
+                onDisconnect()
+            },
+            onDismiss = { showDisconnectDialog = false },
+        )
+    }
 
     IconButton(onClick = { expanded = true }) {
         Icon(
@@ -127,7 +143,7 @@ private fun RavelryAccountMenu(onDisconnect: () -> Unit) {
             text = { Text(stringResource(R.string.ravelry_disconnect)) },
             onClick = {
                 expanded = false
-                onDisconnect()
+                showDisconnectDialog = true
             },
         )
     }

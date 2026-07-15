@@ -18,25 +18,9 @@ class ProjectListWorkspaceSourceTest {
     }
 
     @Test
-    fun `continue knitting context includes section before row progress`() {
-        assertEquals(
-            "Sleeve, Row 12 / 40",
-            continueKnittingContextLine(
-                sectionName = "Sleeve",
-                rowCount = 12,
-                targetRows = 40,
-                fallback = "Row 12 / 40",
-            ),
-        )
-        assertEquals(
-            "Row 12 / 40",
-            continueKnittingContextLine(
-                sectionName = " ",
-                rowCount = 12,
-                targetRows = 40,
-                fallback = "Row 12 / 40",
-            ),
-        )
+    fun `continue knitting section name is normalized before localized formatting`() {
+        assertEquals("Sleeve", normalizedContinueKnittingSectionName(" Sleeve "))
+        assertEquals(null, normalizedContinueKnittingSectionName(" "))
     }
 
     @Test
@@ -84,6 +68,14 @@ class ProjectListWorkspaceSourceTest {
         assertTrue(navGraph.contains("onYarnCard = { cardId ->"))
         assertTrue(navGraph.contains("navController.navigateToTopLevel(TopLevelDestination.Library)"))
         assertTrue(navGraph.contains("navController.navigateSingleTopTo(Screen.YarnCardDetail(cardId).route)"))
+    }
+
+    @Test
+    fun `project card yarn color uses the linked yarn card id`() {
+        val screen = ProjectSourceFiles.read(PROJECT_LIST_SCREEN)
+
+        assertEquals(2, "yarnColorSeed = state.firstYarnCardId".toRegex().findAll(screen).count())
+        assertFalse(screen.contains("yarnColorSeed = project.id"))
     }
 
     private companion object {

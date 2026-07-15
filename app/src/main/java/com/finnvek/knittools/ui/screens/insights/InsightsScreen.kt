@@ -59,10 +59,13 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.BuildConfig
 import com.finnvek.knittools.R
+import com.finnvek.knittools.domain.calculator.formatIntegerForDisplay
+import com.finnvek.knittools.ui.components.localizedDateTimePattern
+import com.finnvek.knittools.ui.components.localizedUppercase
+import com.finnvek.knittools.ui.components.rememberCurrentLocale
 import com.finnvek.knittools.ui.theme.InsightChartColors
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import java.time.format.TextStyle
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -72,6 +75,7 @@ fun InsightsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val totalMinutes = uiState.totalMinutes
+    val locale = rememberCurrentLocale()
     val avgPace = uiState.avgPace
     val completedCount = uiState.completedCount
     val currentStreak = uiState.currentStreak
@@ -200,7 +204,7 @@ fun InsightsScreen(
                     AnimatedMetricCard(
                         label = stringResource(R.string.completed_label),
                         targetValue = completedCount.toFloat(),
-                        formatValue = { "%.0f".format(it) },
+                        formatValue = { formatIntegerForDisplay(it.toLong(), locale) },
                         labelColor = MaterialTheme.colorScheme.tertiary,
                         animationDelay = 160,
                         animationKey = animationKey,
@@ -212,7 +216,7 @@ fun InsightsScreen(
             item {
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = stringResource(R.string.avg_pace_label),
+                    text = stringResource(R.string.avg_pace_label).localizedUppercase(),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.secondary,
                 )
@@ -231,7 +235,7 @@ fun InsightsScreen(
             item {
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = stringResource(R.string.insights_knitting_activity),
+                    text = stringResource(R.string.insights_knitting_activity).localizedUppercase(),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.secondary,
                 )
@@ -251,7 +255,7 @@ fun InsightsScreen(
             item {
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = stringResource(R.string.time_per_project),
+                    text = stringResource(R.string.time_per_project).localizedUppercase(),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.secondary,
                 )
@@ -360,7 +364,7 @@ private fun AnimatedMetricCard(
             verticalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(
-                text = label,
+                text = label.localizedUppercase(),
                 style = MaterialTheme.typography.labelSmall,
                 color = labelColor,
                 maxLines = 2,
@@ -622,14 +626,19 @@ private fun formatPaceBucketLabel(point: PaceOverTimePoint): String {
     val locale = currentInsightsLocale()
     return when (point.interval) {
         PaceGroupingInterval.DAY -> {
-            val day = point.bucketStart.dayOfWeek.getDisplayName(TextStyle.SHORT, locale)
-            val formatter = remember(locale) { DateTimeFormatter.ofPattern("d.M.", locale) }
-            "$day ${point.bucketStart.format(formatter)}"
+            val formatter =
+                remember(locale) {
+                    DateTimeFormatter.ofPattern(localizedDateTimePattern(locale, "EMMMd"), locale)
+                }
+            point.bucketStart.format(formatter)
         }
 
         PaceGroupingInterval.MONTH -> {
-            val month = point.bucketStart.month.getDisplayName(TextStyle.SHORT, locale)
-            "$month ${point.bucketStart.year}"
+            val formatter =
+                remember(locale) {
+                    DateTimeFormatter.ofPattern(localizedDateTimePattern(locale, "yMMM"), locale)
+                }
+            point.bucketStart.format(formatter)
         }
     }
 }

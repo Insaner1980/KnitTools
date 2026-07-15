@@ -24,7 +24,7 @@ fun BadgePill(
                 .padding(horizontal = 8.dp, vertical = 4.dp),
     ) {
         Text(
-            text = text.uppercase(),
+            text = text.localizedUppercase(),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.primary,
         )

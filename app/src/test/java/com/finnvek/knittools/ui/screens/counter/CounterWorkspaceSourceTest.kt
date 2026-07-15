@@ -118,7 +118,7 @@ class CounterWorkspaceSourceTest {
         val dimens = ProjectSourceFiles.read(COUNTER_DIMENS)
         assertTrue(workspace.contains("import androidx.compose.foundation.layout.BoxWithConstraints"))
         assertTrue(workspace.contains("import androidx.compose.ui.text.rememberTextMeasurer"))
-        assertTrue(workspace.contains("val countText = state.counter.count.toString()"))
+        assertTrue(workspace.contains("val countText = formatIntegerForDisplay(state.counter.count.toLong(), locale)"))
         assertTrue(workspace.contains("BoxWithConstraints("))
         assertTrue(workspace.contains("modifier = Modifier.fillMaxWidth()"))
         assertTrue(workspace.contains("contentAlignment = Alignment.Center"))
@@ -257,6 +257,22 @@ class CounterWorkspaceSourceTest {
                 .substringAfter("private val HIDE_BOTTOM_BAR_ROUTES =")
                 .substringBefore(")")
         assertFalse(hiddenRoutesBlock.contains("Screen.Counter.route"))
+    }
+
+    @Test
+    fun `counter keep awake flag follows route lifecycle and project changes`() {
+        val counterScreen = ProjectSourceFiles.read(COUNTER_SCREEN)
+
+        assertTrue(
+            counterScreen.contains(
+                "KeepScreenAwake(enabled = state.keepScreenAwake, projectId = state.projectId)",
+            ),
+        )
+        assertTrue(counterScreen.contains("val lifecycleOwner = LocalLifecycleOwner.current"))
+        assertTrue(counterScreen.contains("DisposableEffect(view, lifecycleOwner, projectId)"))
+        assertTrue(counterScreen.contains("Lifecycle.Event.ON_START"))
+        assertTrue(counterScreen.contains("Lifecycle.Event.ON_STOP"))
+        assertTrue(counterScreen.contains("window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)"))
     }
 
     @Test

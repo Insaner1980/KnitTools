@@ -36,6 +36,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.YarnEstimator
+import com.finnvek.knittools.domain.calculator.formatDecimalForDisplay
 import com.finnvek.knittools.domain.model.YarnEstimate
 import com.finnvek.knittools.ui.components.AnimatedResultNumber
 import com.finnvek.knittools.ui.components.BadgePill
@@ -44,6 +45,7 @@ import com.finnvek.knittools.ui.components.NumberInputField
 import com.finnvek.knittools.ui.components.NumberInputOptions
 import com.finnvek.knittools.ui.components.ResultCard
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
+import com.finnvek.knittools.ui.components.rememberCurrentLocale
 import com.finnvek.knittools.ui.components.skeinCountText
 import com.finnvek.knittools.ui.screens.home.HomeViewModel
 import java.util.Locale
@@ -186,6 +188,7 @@ private fun YarnInputFields(
 
 @Composable
 private fun YarnResultCard(result: YarnEstimate) {
+    val locale = rememberCurrentLocale()
     ResultCard(title = stringResource(R.string.result)) {
         AnimatedResultNumber(
             targetValue = skeinCountText(result.skeinsNeeded),
@@ -198,11 +201,19 @@ private fun YarnResultCard(result: YarnEstimate) {
         }
         Spacer(modifier = Modifier.height(8.dp))
         BadgePill(
-            text = stringResource(R.string.total_weight, "%.0f".format(result.totalWeight)),
+            text =
+                stringResource(
+                    R.string.total_weight,
+                    formatDecimalForDisplay(result.totalWeight, locale, 0, 0),
+                ),
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = stringResource(R.string.estimated_skeins, formatSkeinsEstimateForDisplay(result.exactSkeins)),
+            text =
+                stringResource(
+                    R.string.estimated_skeins,
+                    formatSkeinsEstimateForDisplay(result.exactSkeins, locale),
+                ),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -223,9 +234,12 @@ private fun calculateYarnEstimate(
     return YarnEstimator.estimate(total, perSkein, weight)
 }
 
-private fun formatSkeinsEstimateForDisplay(exactSkeins: Double): String {
+private fun formatSkeinsEstimateForDisplay(
+    exactSkeins: Double,
+    locale: Locale,
+): String {
     val roundedUp = ceil(exactSkeins * 100.0 - DISPLAY_ROUNDING_EPSILON) / 100.0
-    return String.format(Locale.US, "%.2f", roundedUp)
+    return formatDecimalForDisplay(roundedUp, locale, minimumFractionDigits = 2, maximumFractionDigits = 2)
 }
 
 private const val DISPLAY_ROUNDING_EPSILON = 1e-9

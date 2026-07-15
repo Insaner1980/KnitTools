@@ -37,9 +37,17 @@ class YarnCardRepository
         @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
         private val yarnPhotoStorage: YarnPhotoStorage = YarnPhotoStorage(),
     ) {
-        fun getAllCards(): Flow<List<YarnCard>> = dao.getAllCards().map { cards -> cards.map { it.toDomain() } }
+        fun getAllCards(): Flow<List<YarnCard>> =
+            dao
+                .getAllCards()
+                .map { cards -> cards.map { it.toDomain() } }
+                .retryOnRepositoryReadFailure()
 
-        fun observeCard(id: Long): Flow<YarnCard?> = dao.observeCard(id).map { it?.toDomain() }
+        fun observeCard(id: Long): Flow<YarnCard?> =
+            dao
+                .observeCard(id)
+                .map { it?.toDomain() }
+                .retryOnRepositoryReadFailure()
 
         suspend fun getCard(id: Long): YarnCard? = dao.getCard(id)?.toDomain()
 
@@ -94,7 +102,7 @@ class YarnCardRepository
                 )
             } ?: this
 
-        fun getCardCount() = dao.getCardCount()
+        fun getCardCount(): Flow<Int> = dao.getCardCount().retryOnRepositoryReadFailure()
 
         suspend fun updateQuantity(
             id: Long,

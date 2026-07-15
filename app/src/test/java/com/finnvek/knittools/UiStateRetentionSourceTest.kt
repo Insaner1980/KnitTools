@@ -95,6 +95,7 @@ class UiStateRetentionSourceTest {
 
         assertTrue(mainActivity.contains("var lastShownDownloadedUpdatePromptId by rememberSaveable"))
         assertTrue(mainActivity.contains("downloadedUpdatePromptId > lastShownDownloadedUpdatePromptId"))
+        assertTrue(mainActivity.contains("lastShownDownloadedUpdatePromptId = downloadedUpdatePromptId"))
         assertTrue(
             mainActivity.indexOf("lastShownDownloadedUpdatePromptId = downloadedUpdatePromptId") <
                 mainActivity.indexOf("snackbarHostState.showSnackbar("),

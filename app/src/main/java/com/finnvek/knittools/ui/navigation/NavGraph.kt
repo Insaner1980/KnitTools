@@ -44,6 +44,7 @@ import com.finnvek.knittools.ui.screens.counter.CounterScreenActions
 import com.finnvek.knittools.ui.screens.counter.CounterViewModel
 import com.finnvek.knittools.ui.screens.counter.PhotoGalleryActions
 import com.finnvek.knittools.ui.screens.counter.PhotoGalleryScreen
+import com.finnvek.knittools.ui.screens.counter.shouldLeaveCounter
 import com.finnvek.knittools.ui.screens.gauge.GaugeScreen
 import com.finnvek.knittools.ui.screens.home.HomeScreen
 import com.finnvek.knittools.ui.screens.increase.IncreaseDecreaseScreen
@@ -101,20 +102,24 @@ data class KnitToolsNavActions(
     val onRavelryShareImportHandled: () -> Unit = {},
 )
 
+data class KnitToolsNavRequests(
+    val counterLaunch: CounterLaunchRequest? = null,
+    val openProUpgrade: Boolean = false,
+    val ravelryShareImport: RavelryShareImportRequest? = null,
+)
+
 @Composable
 fun KnitToolsNavHost(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
     startDestination: String = TopLevelDestination.Projects.route,
-    counterLaunchRequest: CounterLaunchRequest? = null,
-    openProUpgradeRequest: Boolean = false,
-    ravelryShareImportRequest: RavelryShareImportRequest? = null,
+    requests: KnitToolsNavRequests = KnitToolsNavRequests(),
     snackbarHostState: SnackbarHostState? = null,
     actions: KnitToolsNavActions = KnitToolsNavActions(),
 ) {
     // Ravelry "Start Project" käyttää samaa mekanismia kuin widget-launch
     var internalCounterLaunch by remember { mutableStateOf<CounterLaunchRequest?>(null) }
-    val effectiveCounterLaunch = counterLaunchRequest ?: internalCounterLaunch
+    val effectiveCounterLaunch = requests.counterLaunch ?: internalCounterLaunch
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -126,14 +131,14 @@ fun KnitToolsNavHost(
         navController.navigateSingleTopTo(Screen.Counter.route)
     }
 
-    LaunchedEffect(openProUpgradeRequest) {
-        if (!openProUpgradeRequest) return@LaunchedEffect
+    LaunchedEffect(requests.openProUpgrade) {
+        if (!requests.openProUpgrade) return@LaunchedEffect
         navController.navigateSingleTopTo(Screen.ProUpgrade.route)
         actions.onProUpgradeLaunchHandled()
     }
 
-    LaunchedEffect(ravelryShareImportRequest?.requestId) {
-        val request = ravelryShareImportRequest ?: return@LaunchedEffect
+    LaunchedEffect(requests.ravelryShareImport?.requestId) {
+        val request = requests.ravelryShareImport ?: return@LaunchedEffect
         navController.navigateToTopLevel(TopLevelDestination.Tools)
         navController.navigateSingleTopTo(Screen.RavelryImport(request.url).route)
         actions.onRavelryShareImportHandled()
@@ -255,12 +260,17 @@ private fun NavGraphBuilder.projectsGraph(
                     navController.getBackStackEntry(TopLevelDestination.Projects.route)
                 }
             val counterViewModel: CounterViewModel = hiltViewModel(parentEntry)
+            val counterState by counterViewModel.uiState.collectAsStateWithLifecycle()
             LaunchedEffect(counterLaunchRequest?.requestId) {
                 val launchRequest = counterLaunchRequest ?: return@LaunchedEffect
                 launchRequest.projectId?.let { projectId ->
                     counterViewModel.selectProjectByIdForLaunch(projectId)
                 }
                 onCounterLaunchHandled()
+            }
+            if (counterState.shouldLeaveCounter) {
+                RouteArgumentFallback(navController, TopLevelDestination.Projects)
+                return@composable
             }
             CounterScreen(
                 actions =

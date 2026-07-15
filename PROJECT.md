@@ -998,7 +998,7 @@ Brand:
 
 - `Primary` `#C45100` — poltettu oranssi (CTA, + nappi)
 - `PrimaryContainer` `#D4722A` — vaaleampi oranssi, gradientit
-- `Secondary` `#8BA44A` — avokado (labelit, osio-otsikot, "CURRENT ROW")
+- `Secondary` `#93AE4F` — avokado (labelit, osio-otsikot, "CURRENT ROW")
 - `SecondaryMuted` `#6B8A35`, `SecondaryContainer` `#3A4020`
 - `Tertiary` `#C9A435` — sinappi (vinkit, aksentit)
 - `TertiaryContainer` `#3A3520`
@@ -1007,7 +1007,7 @@ Teksti:
 
 - `TextPrimary` `#E8E4D0` — lämmin kerma
 - `TextSecondary` `#B8B4A0`
-- `TextMuted` `#8A866E`
+- `TextMuted` `#A8A491`
 - `TextDisabled` `#5A5840`
 
 Aksentti:
@@ -1017,7 +1017,7 @@ Aksentti:
 Status:
 
 - `Error` `#C44D4D`, `ErrorContainer` `#3A2020`
-- `Success` `#8BA44A` (= Secondary), `SuccessContainer` `#3A4020`
+- `Success` `#8BA44A`, `SuccessContainer` `#3A4020`
 
 Navigaatio (alanavi):
 
@@ -1041,7 +1041,7 @@ Taustat (light):
 
 Brand (primary jaettu darkin kanssa):
 
-- `LightSecondary` `#6B8A2E` — tummempi avokado
+- `LightSecondary` `#394B18` — tummempi avokado
 - `LightSecondaryMuted` `#5A7525`, `LightSecondaryContainer` `#D0DDB5`
 - `LightTertiary` `#9A7B18` — tumma kulta/sinappi
 - `LightTertiaryContainer` `#E8DFB5`
@@ -1049,8 +1049,8 @@ Brand (primary jaettu darkin kanssa):
 Teksti (lämmin ruskea, ei mustaa):
 
 - `LightTextPrimary` `#2E2A1E`
-- `LightTextSecondary` `#5C5643`
-- `LightTextMuted` `#8A8370`
+- `LightTextSecondary` `#4C4634`
+- `LightTextMuted` `#4A473C`
 - `LightTextDisabled` `#C0BAA5`
 
 Aksentti (light): `LightDustyRose` `#9E706E`.

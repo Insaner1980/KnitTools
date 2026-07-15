@@ -95,22 +95,19 @@ object SizeChartData {
 
     private fun res(resId: Int): SizeLabel = SizeLabel.Resource(resId)
 
-    fun formatMeasurement(
+    fun formatMeasurementValue(
         measurement: SizeMeasurement,
         useImperial: Boolean,
-        cmUnit: String,
-        inchUnit: String,
         locale: Locale = Locale.getDefault(),
     ): String {
         val value = if (useImperial) measurement.inches else measurement.cm
-        val unit = if (useImperial) inchUnit else cmUnit
-        val formatted =
-            if (value == value.toLong().toDouble()) {
-                value.toLong().toString()
-            } else {
-                String.format(locale, "%.1f", value)
-            }
-        return "$formatted $unit"
+        val fractionDigits = if (value == value.toLong().toDouble()) 0 else 1
+        return formatDecimalForDisplay(
+            value = value,
+            locale = locale,
+            minimumFractionDigits = fractionDigits,
+            maximumFractionDigits = fractionDigits,
+        )
     }
 
     private val babyEntries =

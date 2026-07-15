@@ -39,5 +39,16 @@ class StorageFileNamesTest {
         assertEquals("42_2.jpg", file.name)
     }
 
+    @Test
+    fun `timestamped file reserves returned name before next allocation`() {
+        val directory = tempDirectory()
+
+        val first = StorageFileNames.uniqueTimestampedFile(directory, "", ".jpg", timestampMillis = 42L)
+        val second = StorageFileNames.uniqueTimestampedFile(directory, "", ".jpg", timestampMillis = 42L)
+
+        assertEquals("42.jpg", first.name)
+        assertEquals("42_1.jpg", second.name)
+    }
+
     private fun tempDirectory(): File = Files.createTempDirectory("storage-file-names").toFile()
 }

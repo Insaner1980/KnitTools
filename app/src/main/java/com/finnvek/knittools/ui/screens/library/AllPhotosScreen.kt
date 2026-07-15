@@ -390,7 +390,7 @@ private fun PhotoGridItem(
     onClick: () -> Unit,
     onLongClick: () -> Unit,
 ) {
-    val dateFormat = rememberLocaleDateFormat("d MMM")
+    val dateFormat = rememberLocaleDateFormat("MMMd")
 
     // Valittu kortti saa kevyen primäärivärisen taustan
     val backgroundColor =

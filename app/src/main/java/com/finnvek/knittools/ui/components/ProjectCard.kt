@@ -35,6 +35,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
+import com.finnvek.knittools.domain.calculator.formatIntegerForDisplay
 import com.finnvek.knittools.ui.theme.YarnColors
 import com.finnvek.knittools.ui.theme.knitToolsColors
 import java.text.SimpleDateFormat
@@ -55,7 +56,7 @@ fun ProjectCard(
     metadataLine: String? = null,
     countText: String? = null,
     yarnName: String? = null,
-    yarnColorSeed: Long = 0L,
+    yarnColorSeed: Long? = null,
     onYarnClick: (() -> Unit)? = null,
     photoCount: Int = 0,
     patternName: String? = null,
@@ -179,7 +180,7 @@ private fun ProjectCardStatsRow(
     onNotesClick: (() -> Unit)? = null,
     onPhotosClick: (() -> Unit)? = null,
 ) {
-    val dateFormat = rememberLocaleDateFormat("MMM d")
+    val dateFormat = rememberLocaleDateFormat("MMMd")
     val rowCountColor =
         if (stats.rowCount == 0) {
             MaterialTheme.knitToolsColors.onSurfaceMuted
@@ -239,7 +240,7 @@ private fun ProjectCardAttachmentActionsRow(
             ProjectCardAttachmentAction(
                 icon = Icons.Filled.CameraAlt,
                 contentDescription = stringResource(R.string.progress_photos),
-                label = "$photoCount",
+                label = formatIntegerForDisplay(photoCount.toLong(), rememberCurrentLocale()),
                 onClick = onPhotosClick,
             )
         }
@@ -293,10 +294,10 @@ private fun ProjectCardAttachmentAction(
 @Composable
 private fun ProjectCardYarnLine(
     yarnName: String?,
-    yarnColorSeed: Long,
+    yarnColorSeed: Long?,
     onClick: (() -> Unit)? = null,
 ) {
-    if (yarnName != null) {
+    if (yarnName != null && yarnColorSeed != null) {
         Spacer(modifier = Modifier.height(4.dp))
         Row(
             modifier =

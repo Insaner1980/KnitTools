@@ -4,13 +4,15 @@ import com.finnvek.knittools.R
 import com.finnvek.knittools.ui.components.skeinCountStringRes
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import java.util.Locale
 
 class YarnEstimatorScreenTest {
     @Test
     fun `displayed skein estimate rounds up so whole skein result is not contradicted`() {
-        assertEquals("2.01", formatSkeinsEstimateForDisplay(2.0001))
-        assertEquals("2.25", formatSkeinsEstimateForDisplay(2.25))
-        assertEquals("2.00", formatSkeinsEstimateForDisplay(2.0))
+        assertEquals("2.01", formatSkeinsEstimateForDisplay(2.0001, Locale.US))
+        assertEquals("2.25", formatSkeinsEstimateForDisplay(2.25, Locale.US))
+        assertEquals("2.00", formatSkeinsEstimateForDisplay(2.0, Locale.US))
+        assertEquals("2,25", formatSkeinsEstimateForDisplay(2.25, Locale.forLanguageTag("fi-FI")))
     }
 
     @Test
@@ -19,9 +21,12 @@ class YarnEstimatorScreenTest {
         assertEquals(R.string.skein_count_many, skeinCountStringRes(2))
     }
 
-    private fun formatSkeinsEstimateForDisplay(exactSkeins: Double): String =
-        screenMethod("formatSkeinsEstimateForDisplay", Double::class.javaPrimitiveType!!)
-            .invoke(null, exactSkeins) as String
+    private fun formatSkeinsEstimateForDisplay(
+        exactSkeins: Double,
+        locale: Locale,
+    ): String =
+        screenMethod("formatSkeinsEstimateForDisplay", Double::class.javaPrimitiveType!!, Locale::class.java)
+            .invoke(null, exactSkeins, locale) as String
 
     private fun screenMethod(
         name: String,

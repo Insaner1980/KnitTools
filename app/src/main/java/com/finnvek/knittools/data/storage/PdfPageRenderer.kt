@@ -47,6 +47,7 @@ class PdfPageRenderer(
     val pageCount: Int
         get() = renderer.pageCount
 
+    @Synchronized
     fun renderPage(
         pageIndex: Int,
         targetWidth: Int,
@@ -66,9 +67,13 @@ class PdfPageRenderer(
         }
     }
 
+    @Synchronized
     override fun close() {
-        renderer.close()
-        fileDescriptor.close()
+        try {
+            renderer.close()
+        } finally {
+            fileDescriptor.close()
+        }
     }
 
     private fun createRenderer(fileDescriptor: ParcelFileDescriptor): PdfRenderer =

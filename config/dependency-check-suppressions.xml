@@ -77,7 +77,7 @@
         Kotlin stdlib jdk7 runtime -JAR matchautuu JetBrains Kotlin -tuotteen CPE:hen, mutta
         CVE-2026-53914 koskee build cache -metadataa eikä sovelluksen runtime-luokkapolkua.
         ]]></notes>
-        <packageUrl regex="true">^pkg:maven/org\.jetbrains\.kotlin/kotlin-stdlib-jdk7@2\.3\.10$</packageUrl>
+        <packageUrl regex="true">^pkg:maven/org\.jetbrains\.kotlin/kotlin-stdlib-jdk7@2\.3\.21$</packageUrl>
         <cve>CVE-2026-53914</cve>
     </suppress>
 

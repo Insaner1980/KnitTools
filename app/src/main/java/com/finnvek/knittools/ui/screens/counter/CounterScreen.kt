@@ -59,6 +59,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.getSystemService
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.ProjectCounter
@@ -72,6 +75,7 @@ import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.ProjectDetailsDialog
 import com.finnvek.knittools.ui.components.ProjectDetailsValues
 import com.finnvek.knittools.ui.components.RenameProjectDialog
+import com.finnvek.knittools.ui.components.localizedUppercase
 import com.finnvek.knittools.ui.screens.pattern.PatternPickerSheet
 import com.finnvek.knittools.ui.theme.CounterDimens
 
@@ -201,7 +205,7 @@ fun CounterScreen(
             }
         }
 
-    KeepScreenAwake(state.keepScreenAwake)
+    KeepScreenAwake(enabled = state.keepScreenAwake, projectId = state.projectId)
     TriggerAlertHaptic(
         alertId = state.activeAlert?.id,
         hasActiveAlert = state.activeAlert != null,
@@ -908,7 +912,7 @@ private fun CounterTopBarTitle(
         )
     } else {
         Text(
-            text = state.projectName.ifEmpty { stringResource(R.string.default_project_name) }.uppercase(),
+            text = state.projectName.ifEmpty { stringResource(R.string.default_project_name) }.localizedUppercase(),
             style =
                 MaterialTheme.typography.titleLarge.copy(
                     fontWeight = FontWeight.Bold,
@@ -1032,7 +1036,7 @@ private fun YarnPickerSheet(
                     .padding(bottom = 32.dp),
         ) {
             Text(
-                text = stringResource(R.string.select_yarn_card).uppercase(),
+                text = stringResource(R.string.select_yarn_card).localizedUppercase(),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.secondary,
                 modifier = Modifier.padding(bottom = 12.dp),
@@ -1117,7 +1121,7 @@ private fun NotesSheet(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = stringResource(R.string.notes).uppercase(),
+                    text = stringResource(R.string.notes).localizedUppercase(),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.secondary,
                     modifier = Modifier.weight(1f),
@@ -1157,13 +1161,32 @@ private fun NotesSheet(
 }
 
 @Composable
-private fun KeepScreenAwake(enabled: Boolean) {
+private fun KeepScreenAwake(
+    enabled: Boolean,
+    projectId: Long?,
+) {
     if (!enabled) return
     val view = LocalView.current
-    DisposableEffect(view) {
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(view, lifecycleOwner, projectId) {
         val window = (view.context as? android.app.Activity)?.window
-        window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        val lifecycle = lifecycleOwner.lifecycle
+        val observer =
+            LifecycleEventObserver { _, event ->
+                when (event) {
+                    Lifecycle.Event.ON_START ->
+                        window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                    Lifecycle.Event.ON_STOP ->
+                        window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                    else -> Unit
+                }
+            }
+        lifecycle.addObserver(observer)
+        if (lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
+            window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
         onDispose {
+            lifecycle.removeObserver(observer)
             window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         }
     }
@@ -1303,6 +1326,5 @@ private fun rememberProjectCountersSectionActions(
             onRenameCounter = viewModel::renameProjectCounter,
             onResetCounter = viewModel::resetProjectCounter,
             onDeleteCounter = viewModel::deleteProjectCounter,
-            performHaptic = performHaptic,
         )
     }

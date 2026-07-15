@@ -39,11 +39,11 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.min
 import com.finnvek.knittools.R
+import com.finnvek.knittools.ui.components.localizedDateTimePattern
 import com.finnvek.knittools.ui.theme.knitToolsColors
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
 import java.time.format.TextStyle
 import java.time.temporal.TemporalAdjusters
 import java.time.temporal.WeekFields
@@ -242,8 +242,10 @@ private fun ActivityGridTooltip(
 ) {
     tooltipState?.let { (date, minutes) ->
         Spacer(modifier = Modifier.height(8.dp))
-        val formatter = remember(locale) { DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale) }
-        val dayName = date.dayOfWeek.getDisplayName(TextStyle.SHORT, locale)
+        val formatter =
+            remember(locale) {
+                DateTimeFormatter.ofPattern(localizedDateTimePattern(locale, "yEMMMd"), locale)
+            }
         val dateStr = date.format(formatter)
         val minutesText =
             if (minutes > 0) {
@@ -252,7 +254,7 @@ private fun ActivityGridTooltip(
                 stringResource(R.string.no_knitting)
             }
         Text(
-            text = "$dayName $dateStr — $minutesText",
+            text = stringResource(R.string.activity_grid_tooltip_format, dateStr, minutesText),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

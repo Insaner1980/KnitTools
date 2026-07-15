@@ -92,6 +92,7 @@ data class CounterUiState(
     val canUsePatternCameraScan: Boolean = false,
     val canUseYarnCards: Boolean = false,
     val projects: List<CounterProject> = emptyList(),
+    val projectsLoaded: Boolean = false,
     val sectionName: String? = null,
     val stitchCount: Int? = null,
     val stitchTrackingEnabled: Boolean = false,
@@ -213,7 +214,7 @@ class CounterViewModel
 
         init {
             ProcessLifecycleOwner.get().lifecycle.addObserver(lifecycleObserver)
-            loadOrCreateProject()
+            observeProjects()
             startTimer()
             observePreferences()
             observeProState()
@@ -256,17 +257,27 @@ class CounterViewModel
             }
         }
 
-        private fun loadOrCreateProject() {
+        private fun observeProjects() {
             viewModelScope.launch {
                 repository.getActiveProjects().collect { list ->
+                    _uiState.update {
+                        it.copy(
+                            projects = list,
+                            projectsLoaded = true,
+                            projectId =
+                                it.projectId?.takeIf { projectId ->
+                                    list.any { project -> project.id == projectId }
+                                },
+                        )
+                    }
                     if (list.isEmpty()) {
-                        repository.createProject(context.getString(R.string.default_project_name))
+                        clearPendingSessionState()
+                        clearSelectedProject()
                     } else {
                         if (!didRecoverPendingSession) {
                             recoverPendingSessionIfNeeded(list)
                             didRecoverPendingSession = true
                         }
-                        _uiState.update { it.copy(projects = list) }
 
                         val currentId = _uiState.value.projectId ?: savedStateHandle.get<Long>(KEY_SELECTED_PROJECT_ID)
                         val targetProject =
@@ -1581,7 +1592,7 @@ class CounterViewModel
             clearPendingSessionState()
             super.onCleared()
             @Suppress("TooGenericExceptionCaught")
-            applicationScope.launch(ioDispatcher) {
+            applicationScope.launch {
                 try {
                     val projectId = state.projectId ?: return@launch
                     persistSessionSnapshotIfNeeded(

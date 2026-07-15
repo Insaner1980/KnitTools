@@ -30,23 +30,30 @@ class ProgressPhotoRepository
         @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
     ) {
         fun getAllPhotos(): Flow<List<ProgressPhoto>> =
-            dao.getAllPhotos().map { photos ->
-                availablePhotos(photos)
-            }
+            dao
+                .getAllPhotos()
+                .map { photos -> availablePhotos(photos) }
+                .retryOnRepositoryReadFailure()
 
         fun getAllPhotoCount(): Flow<Int> =
             flow {
                 pruneUnavailablePhotos(dao.getAllPhotosOnce())
                 emitAll(dao.getAllPhotoCount())
-            }
+            }.retryOnRepositoryReadFailure()
 
         fun getPhotosForProject(projectId: Long): Flow<List<ProgressPhoto>> =
-            dao.getPhotosForProject(projectId).map { photos -> availablePhotos(photos) }
+            dao
+                .getPhotosForProject(projectId)
+                .map { photos -> availablePhotos(photos) }
+                .retryOnRepositoryReadFailure()
 
         fun getLatestPhotos(projectId: Long): Flow<List<ProgressPhoto>> =
-            dao.getLatestPhotos(projectId).map { photos -> availablePhotos(photos) }
+            dao
+                .getLatestPhotos(projectId)
+                .map { photos -> availablePhotos(photos) }
+                .retryOnRepositoryReadFailure()
 
-        fun getPhotoCount(projectId: Long): Flow<Int> = dao.getPhotoCount(projectId)
+        fun getPhotoCount(projectId: Long): Flow<Int> = dao.getPhotoCount(projectId).retryOnRepositoryReadFailure()
 
         suspend fun createPhotoCaptureTarget(projectId: Long): Pair<File, Uri> =
             withContext(ioDispatcher) {

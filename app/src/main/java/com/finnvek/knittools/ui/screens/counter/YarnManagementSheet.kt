@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.ProjectYarnNote
 import com.finnvek.knittools.ui.components.ProjectYarnTextField
+import com.finnvek.knittools.ui.components.localizedUppercase
 import com.finnvek.knittools.ui.theme.YarnColors
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -63,7 +64,7 @@ fun YarnManagementSheet(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
-                text = stringResource(R.string.linked_yarn_title),
+                text = stringResource(R.string.linked_yarn_title).localizedUppercase(),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.secondary,
             )
@@ -175,7 +176,7 @@ private fun ProjectYarnNotesSection(
     if (notes.isEmpty()) return
 
     Text(
-        text = stringResource(R.string.project_yarn_notes_title),
+        text = stringResource(R.string.project_yarn_notes_title).localizedUppercase(),
         style = MaterialTheme.typography.labelSmall,
         color = MaterialTheme.colorScheme.secondary,
     )

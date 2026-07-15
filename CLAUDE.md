@@ -49,7 +49,7 @@
 
 ## Google Play
 
-- SplashScreen: `installSplashScreen()` ennen `super.onCreate()`, teema `values/themes.xml` (light/dark)
+- SplashScreen: `installSplashScreen()` ennen `super.onCreate()`; yksi kiinteä brändisplash tulee `values/themes.xml`-tiedostosta ilman järjestelmän light/dark-resurssihaaraa, ja varsinainen sovellusteema ratkaistaan `PreferencesManager.preferences`-arvosta ennen splashin poistamista
 - In-App Review: triggerit Pro-osto tai 20+ laskuritoimintoa, pyydetään kerran (DataStore)
 - In-App Updates: flexible mode, checkForUpdate (onCreate), checkDownloadedOnResume (onResume)
 - Baseline Profiles: `:baselineprofile`-moduuli, generoi `./gradlew :app:generateBaselineProfile`

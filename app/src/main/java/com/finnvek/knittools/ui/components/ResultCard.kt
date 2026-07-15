@@ -33,7 +33,7 @@ fun ResultCard(
     ) {
         Column(modifier = Modifier.padding(24.dp)) {
             Text(
-                text = title.uppercase(),
+                text = title.localizedUppercase(),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.outline,
             )

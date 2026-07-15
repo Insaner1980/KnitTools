@@ -21,15 +21,17 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.text.TextStyle
+import com.finnvek.knittools.domain.calculator.formatIntegerForDisplay
 
 @Composable
 fun RollingCounter(
     count: Int,
     modifier: Modifier = Modifier,
     textStyle: TextStyle = MaterialTheme.typography.displayMedium,
-    contentDescription: String = count.toString(),
+    contentDescription: String,
 ) {
-    val countStr = count.toString()
+    val locale = rememberCurrentLocale()
+    val countStr = remember(count, locale) { formatIntegerForDisplay(count.toLong(), locale) }
     var previousCount by remember { mutableIntStateOf(count) }
     val goingUp = count >= previousCount
 

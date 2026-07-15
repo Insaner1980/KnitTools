@@ -184,10 +184,8 @@ internal object SessionMetrics {
             val cumulativeSeconds = scaledSeconds(activeSeconds, cumulativeFraction)
             val seconds = (cumulativeSeconds - allocatedSeconds).coerceAtLeast(0L)
             allocatedSeconds = cumulativeSeconds
-            if (!date.isBefore(earliestDate)) {
-                if (seconds > 0L) {
-                    contributions[date] = (contributions[date] ?: 0L) + seconds
-                }
+            if (!date.isBefore(earliestDate) && seconds > 0L) {
+                contributions[date] = (contributions[date] ?: 0L) + seconds
             }
             cursor = segmentEnd
         }

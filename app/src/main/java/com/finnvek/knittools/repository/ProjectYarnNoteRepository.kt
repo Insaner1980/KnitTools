@@ -21,7 +21,10 @@ class ProjectYarnNoteRepository
         private val transactionRunner: DatabaseTransactionRunner,
     ) {
         fun observeForProject(projectId: Long): Flow<List<ProjectYarnNote>> =
-            dao.observeForProject(projectId).map { notes -> notes.map { it.toDomain() } }
+            dao
+                .observeForProject(projectId)
+                .map { notes -> notes.map { it.toDomain() } }
+                .retryOnRepositoryReadFailure()
 
         suspend fun save(note: ProjectYarnNote): Long =
             transactionRunner.run {

@@ -53,12 +53,16 @@ class CounterRepository
         @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
     ) {
         fun getAllProjects(): Flow<List<CounterProject>> =
-            dao.getAllProjects().map { projects ->
-                projects.map { it.toDomain() }
-            }
+            dao
+                .getAllProjects()
+                .map { projects -> projects.map { it.toDomain() } }
+                .retryOnRepositoryReadFailure()
 
         fun getActiveProjects(): Flow<List<CounterProject>> =
-            dao.getActiveProjects().map { projects -> projects.map { it.toDomain() } }
+            dao
+                .getActiveProjects()
+                .map { projects -> projects.map { it.toDomain() } }
+                .retryOnRepositoryReadFailure()
 
         fun getActiveProjects(sortOrder: ProjectSortOrder): Flow<List<CounterProject>> =
             when (sortOrder) {
@@ -66,9 +70,13 @@ class CounterRepository
                 ProjectSortOrder.CREATED -> dao.getActiveProjectsByCreated()
                 ProjectSortOrder.UPDATED -> dao.getActiveProjects()
             }.map { projects -> projects.map { it.toDomain() } }
+                .retryOnRepositoryReadFailure()
 
         fun getCompletedProjects(): Flow<List<CounterProject>> =
-            dao.getCompletedProjects().map { projects -> projects.map { it.toDomain() } }
+            dao
+                .getCompletedProjects()
+                .map { projects -> projects.map { it.toDomain() } }
+                .retryOnRepositoryReadFailure()
 
         fun getCompletedProjects(sortOrder: ProjectSortOrder): Flow<List<CounterProject>> =
             when (sortOrder) {
@@ -76,12 +84,17 @@ class CounterRepository
                 ProjectSortOrder.CREATED -> dao.getCompletedProjectsByCreated()
                 ProjectSortOrder.UPDATED -> dao.getCompletedProjects()
             }.map { projects -> projects.map { it.toDomain() } }
+                .retryOnRepositoryReadFailure()
 
         suspend fun getActiveProjectCount(): Int = dao.getActiveProjectCount()
 
         suspend fun getProject(id: Long): CounterProject? = dao.getProject(id)?.toDomain()
 
-        fun observeProject(id: Long): Flow<CounterProject?> = dao.observeProject(id).map { it?.toDomain() }
+        fun observeProject(id: Long): Flow<CounterProject?> =
+            dao
+                .observeProject(id)
+                .map { it?.toDomain() }
+                .retryOnRepositoryReadFailure()
 
         suspend fun createProject(
             name: String,
@@ -556,7 +569,7 @@ class CounterRepository
         fun getAllSessions(projectId: Long?): Flow<List<KnitSession>> =
             sessionDao.getAllSessions(projectId).toDomainSessions()
 
-        fun getCompletedProjectCount(): Flow<Int> = sessionDao.getCompletedProjectCount()
+        fun getCompletedProjectCount(): Flow<Int> = sessionDao.getCompletedProjectCount().retryOnRepositoryReadFailure()
 
         fun getSessionsForInsights(
             projectId: Long?,
@@ -594,6 +607,7 @@ class CounterRepository
             distinctUntilChanged()
                 .map { sessions -> sessions.map { it.toDomain() } }
                 .flowOn(ioDispatcher)
+                .retryOnRepositoryReadFailure()
     }
 
 internal fun mergeProjectNotes(

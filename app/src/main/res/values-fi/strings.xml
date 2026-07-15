@@ -6,7 +6,6 @@
     <string name="cancel">Peruuta</string>
     <string name="confirm">Vahvista</string>
     <string name="ok">OK</string>
-    <string name="add">Lisää</string>
     <string name="delete">Poista</string>
     <string name="reset">Nollaa</string>
     <string name="result">Tulos</string>
@@ -15,6 +14,7 @@
 
     <!-- Yksiköt -->
     <string name="unit_cm">cm</string>
+    <string name="measurement_with_unit_format">%1$s %2$s</string>
     <string name="unit_inches">tuumaa</string>
     <string name="unit_st">s</string>
     <string name="unit_rows">krs</string>
@@ -37,11 +37,11 @@
     <string name="desc_yarn_estimator_card">Laske tarvittava lankamäärä ja kerien lukumäärä</string>
 
     <!-- Alapalkin välilehdet -->
-    <string name="tab_projects">PROJEKTIT</string>
-    <string name="tab_library">KIRJASTO</string>
-    <string name="tab_tools">TYÖKALUT</string>
-    <string name="tab_insights">TILASTOT</string>
-    <string name="tab_settings">ASETUKSET</string>
+    <string name="tab_projects">Projektit</string>
+    <string name="tab_library">Kirjasto</string>
+    <string name="tab_tools">Työkalut</string>
+    <string name="tab_insights">Tilastot</string>
+    <string name="tab_settings">Asetukset</string>
 
     <!-- Näyttöjen otsikot -->
     <string name="tools_title">Työkalut</string>
@@ -55,9 +55,9 @@
 
     <!-- Projektilista -->
     <string name="project_list_title">Projektit</string>
-    <string name="continue_knitting">JATKA NEULOMISTA</string>
-    <string name="section_active">AKTIIVISET</string>
-    <string name="section_completed">VALMIIT</string>
+    <string name="continue_knitting">Jatka neulomista</string>
+    <string name="section_active">Aktiiviset</string>
+    <string name="section_completed">Valmiit</string>
     <string name="new_project">Uusi projekti</string>
     <string name="new_project_name_format">Projekti %1$d</string>
     <string name="create_project">Luo projekti</string>
@@ -167,13 +167,13 @@
     <string name="time_spent_minutes_format">%dm</string>
     <string name="unlink_yarn">Poista lankalinkki</string>
     <string name="select_yarn_card">Valitse lankakortti</string>
-    <string name="linked_yarn_title">LIITETTY LANKA</string>
+    <string name="linked_yarn_title">Liitetty lanka</string>
     <string name="no_linked_yarn">Lankaa ei ole vielä liitetty</string>
     <string name="choose_from_my_yarn">Valitse My Yarnista</string>
     <string name="choose_from_my_yarn_body">Valitse jo tallennettu lanka</string>
     <string name="add_yarn_to_project">Lisää lanka tähän projektiin</string>
     <string name="add_yarn_to_project_body">Tallenna nopea lankamuistiinpano vain tähän projektiin</string>
-    <string name="project_yarn_notes_title">PROJEKTIN LANGAT</string>
+    <string name="project_yarn_notes_title">Projektin langat</string>
     <string name="project_yarn_name">Langan nimi</string>
     <string name="brand_label">Merkki</string>
     <string name="project_yarn_description">Kuvaus</string>
@@ -256,7 +256,7 @@
     <string name="invalid_input">Virheellinen syöte</string>
     <string name="easy_to_remember">Helppo muistaa</string>
     <string name="balanced">Tasainen</string>
-    <string name="total_stitches_format">YHTEENSÄ: %1$d %2$s</string>
+    <string name="total_stitches_format">Yhteensä: %1$d %2$s</string>
     <string name="increase_decrease_error_current_positive">Nykyisen silmukkamäärän on oltava suurempi kuin 0</string>
     <string name="increase_decrease_error_change_positive">Muutettavien silmukoiden määrän on oltava suurempi kuin 0</string>
     <string name="increase_decrease_error_cannot_decrease">Käytettävissä oleva silmukkamäärä: %2$d. Pyydetty kavennus: %1$d.</string>
@@ -282,6 +282,7 @@
     <string name="stitch_gauge">Silmukkatiheys</string>
     <string name="pattern_repeat_optional">Mallikerta (valinnainen)</string>
     <string name="edge_stitches_optional">Reunasilmukat yhteensä</string>
+    <string name="edge_stitches_total_format">Reunasilmukoita yhteensä: %1$d</string>
     <string name="stitches_result">%d silmukkaa</string>
     <string name="actual_width">Todellinen leveys: %1$s %2$s</string>
     <string name="adjusted_down">Pyöristetty alas: %1$d s (%2$s %3$s)</string>
@@ -307,7 +308,7 @@
     <string name="theme_system">Järjestelmä</string>
     <string name="theme_light">Vaalea</string>
     <string name="theme_dark">Tumma</string>
-    <string name="settings_section_settings">ASETUKSET</string>
+    <string name="settings_section_settings">Asetukset</string>
     <string name="settings_section_pro">PRO</string>
     <string name="settings_section_info">TIETOA</string>
     <string name="settings_language">Sovelluksen kieli</string>
@@ -441,8 +442,8 @@
     <string name="desc_chart_symbols">Tavallisten neulekaaviomerkkien opas</string>
 
     <!-- Kirjasto — oma kokoelma -->
-    <string name="library_my_collection">OMA KOKOELMA</string>
-    <string name="library_reference">VIITTEET</string>
+    <string name="library_my_collection">Oma kokoelma</string>
+    <string name="library_reference">Viitteet</string>
     <string name="desc_saved_patterns">Ravelrystä tallentamasi ohjeet ja PDF-tiedostot</string>
     <string name="desc_my_yarn">Lankamuistiinpanot, määrät ja linkitetyt projektit</string>
     <string name="desc_all_photos">Kaikkien projektiesi edistymiskuvat</string>
@@ -452,9 +453,9 @@
     <string name="filter_all">Kaikki</string>
 
     <!-- Tilastot -->
-    <string name="total_time_label">KOKONAIS-\nAIKA</string>
-    <string name="avg_pace_label">KESKITAHTI</string>
-    <string name="completed_label">VALMIIT</string>
+    <string name="total_time_label">Kokonais-\naika</string>
+    <string name="avg_pace_label">Keskitahti</string>
+    <string name="completed_label">Valmiit</string>
     <string name="time_format_hours">%.1f h</string>
     <string name="pace_format">%.0f krs/h</string>
     <string name="streak_format">%d päivää</string>
@@ -462,7 +463,8 @@
     <string name="insights_all_time">Kaikki</string>
     <string name="insights_this_week">Tämä viikko</string>
     <string name="insights_this_month">Tämä kuukausi</string>
-    <string name="insights_knitting_activity">NEULONTA-AKTIIVISUUS</string>
+    <string name="insights_knitting_activity">Neulonta-aktiivisuus</string>
+    <string name="activity_grid_tooltip_format">%1$s — %2$s</string>
     <string name="insights_current_streak">Nykyinen putki:</string>
     <string name="insights_best_streak">Paras:</string>
     <plurals name="insights_rows_count">
@@ -482,7 +484,7 @@
     <string name="relative_time_weeks_ago">%1$dv sitten</string>
     <string name="relative_time_months_ago">%1$dkk sitten</string>
     <string name="no_knitting">Ei neulontaa</string>
-    <string name="time_per_project">AIKA PROJEKTEITTAIN</string>
+    <string name="time_per_project">Aika projekteittain</string>
 
     <!-- Asetukset -->
     <string name="help_and_guide">Ohjeet ja opas</string>
@@ -887,6 +889,7 @@
     <string name="ravelry_sign_in">Kirjaudu Ravelryyn</string>
     <string name="ravelry_browse">Selaa Ravelryä</string>
     <string name="ravelry_disconnect">Katkaise Ravelry-yhteys</string>
+    <string name="ravelry_disconnect_confirm">Katkaistaanko Ravelry-yhteys? Ravelry-toimintojen käyttö edellyttää uutta kirjautumista.</string>
     <string name="ravelry_not_connected">Kirjaudu sisään hakeaksesi Ravelry-ohjeita KnitToolsissa.</string>
     <string name="ravelry_connecting">Yhdistetään Ravelryyn…</string>
     <string name="ravelry_auth_pending">Viimeistele Ravelry-kirjautuminen selaimessa.</string>
@@ -921,15 +924,15 @@
 
     <!-- Laskurinäytön redesign: bottom sheet -->
     <string name="project_actions_title">Projektin toiminnot</string>
-    <string name="project_actions_section_this_project">TÄMÄ PROJEKTI</string>
-    <string name="project_actions_section_counter_tools">LASKURITYÖKALUT</string>
-    <string name="project_actions_section_project_actions">PROJEKTIN TOIMINNOT</string>
+    <string name="project_actions_section_this_project">Tämä projekti</string>
+    <string name="project_actions_section_counter_tools">Laskurityökalut</string>
+    <string name="project_actions_section_project_actions">Projektin toiminnot</string>
     <string name="project_content_title">Projekti</string>
     <string name="project_content_yarn">Lanka</string>
     <string name="project_content_notes">Muistiinpanot</string>
     <string name="project_content_photos">Kuvat</string>
     <string name="extra_counters_title">Lisälaskurit</string>
-    <string name="counter_repeat_label">TOISTO</string>
+    <string name="counter_repeat_label">Toisto</string>
     <string name="counters_list_title">Laskurit</string>
     <string name="pattern_row_highlight_description">Rivi %1$d korostettu noin %2$d prosenttia sivun alusta</string>
     <string name="open_notes_editor">Avaa muistiinpanot</string>

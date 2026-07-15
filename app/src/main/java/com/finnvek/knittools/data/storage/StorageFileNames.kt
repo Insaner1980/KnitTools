@@ -13,7 +13,7 @@ internal object StorageFileNames {
         while (true) {
             val suffixText = if (suffix == 0) "" else "_$suffix"
             val candidate = File(directory, "$prefix$timestampMillis$suffixText$extension")
-            if (!candidate.exists()) return candidate
+            if (candidate.createNewFile()) return candidate
             suffix += 1
         }
     }

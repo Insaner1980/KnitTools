@@ -32,7 +32,7 @@ fun SessionItem(
     modifier: Modifier = Modifier,
     onDelete: (() -> Unit)? = null,
 ) {
-    val dateFormat = rememberLocaleDateFormat("MMM d, HH:mm")
+    val dateFormat = rememberLocaleDateFormat("MMMd", includeTime = true)
 
     Surface(
         modifier = modifier.fillMaxWidth(),

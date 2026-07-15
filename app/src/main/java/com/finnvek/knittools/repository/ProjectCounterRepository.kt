@@ -19,7 +19,10 @@ class ProjectCounterRepository
         private val transactionRunner: DatabaseTransactionRunner,
     ) {
         fun getCountersForProject(projectId: Long): Flow<List<ProjectCounter>> =
-            dao.getCountersForProject(projectId).map { counters -> counters.map { it.toDomain() } }
+            dao
+                .getCountersForProject(projectId)
+                .map { counters -> counters.map { it.toDomain() } }
+                .retryOnRepositoryReadFailure()
 
         suspend fun addCounter(counter: ProjectCounter): Long =
             dao.insert(

@@ -8,12 +8,34 @@ import com.finnvek.knittools.domain.model.RowReminder
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.SavedPatternSource
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CounterUiStateReducersTest {
+    @Test
+    fun `counter route waits for initial project load before leaving`() {
+        assertFalse(CounterUiState().shouldLeaveCounter)
+    }
+
+    @Test
+    fun `counter route leaves after an empty project list is loaded`() {
+        assertTrue(CounterUiState(projectsLoaded = true).shouldLeaveCounter)
+    }
+
+    @Test
+    fun `counter route stays when a project exists`() {
+        val state =
+            CounterUiState(
+                projectsLoaded = true,
+                projects = listOf(CounterProject(id = 2L, name = "Sukat")),
+            )
+
+        assertFalse(state.shouldLeaveCounter)
+    }
+
     @Test
     fun `started project copies target rows immediately`() {
         val result =

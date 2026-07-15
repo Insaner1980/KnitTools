@@ -6,7 +6,6 @@
     <string name="cancel">Avbryt</string>
     <string name="confirm">Bekräfta</string>
     <string name="ok">OK</string>
-    <string name="add">Lägg till</string>
     <string name="delete">Ta bort</string>
     <string name="reset">Nollställ</string>
     <string name="result">Resultat</string>
@@ -15,6 +14,7 @@
 
     <!-- Units -->
     <string name="unit_cm">cm</string>
+    <string name="measurement_with_unit_format">%1$s %2$s</string>
     <string name="unit_inches">tum</string>
     <string name="unit_st">m</string>
     <string name="unit_rows">varv</string>
@@ -37,11 +37,11 @@
     <string name="desc_yarn_estimator_card">Beräkna garnåtgång och antal nystan</string>
 
     <!-- Bottom navigation tabs -->
-    <string name="tab_projects">PROJEKT</string>
-    <string name="tab_library">BIBLIOTEK</string>
-    <string name="tab_tools">VERKTYG</string>
-    <string name="tab_insights">INSIKTER</string>
-    <string name="tab_settings">INSTÄLLNINGAR</string>
+    <string name="tab_projects">Projekt</string>
+    <string name="tab_library">Bibliotek</string>
+    <string name="tab_tools">Verktyg</string>
+    <string name="tab_insights">Insikter</string>
+    <string name="tab_settings">Inställningar</string>
 
     <!-- Screen titles -->
     <string name="tools_title">Verktyg</string>
@@ -55,9 +55,9 @@
 
     <!-- Project List -->
     <string name="project_list_title">Projekt</string>
-    <string name="continue_knitting">FORTSÄTT STICKA</string>
-    <string name="section_active">AKTIVA</string>
-    <string name="section_completed">FÄRDIGA</string>
+    <string name="continue_knitting">Fortsätt sticka</string>
+    <string name="section_active">Aktiva</string>
+    <string name="section_completed">Färdiga</string>
     <string name="new_project">Nytt projekt</string>
     <string name="new_project_name_format">Projekt %1$d</string>
     <string name="create_project">Skapa projekt</string>
@@ -167,13 +167,13 @@
     <string name="time_spent_minutes_format">%dm</string>
     <string name="unlink_yarn">Ta bort garnlänk</string>
     <string name="select_yarn_card">Välj garnkort</string>
-    <string name="linked_yarn_title">LÄNKAT GARN</string>
+    <string name="linked_yarn_title">Länkat garn</string>
     <string name="no_linked_yarn">Inget garn länkat ännu</string>
     <string name="choose_from_my_yarn">Välj från My Yarn</string>
     <string name="choose_from_my_yarn_body">Välj ett sparat garn</string>
     <string name="add_yarn_to_project">Lägg till garn i detta projekt</string>
     <string name="add_yarn_to_project_body">Spara en snabb garnanteckning bara för detta projekt</string>
-    <string name="project_yarn_notes_title">PROJEKTGARN</string>
+    <string name="project_yarn_notes_title">Projektgarn</string>
     <string name="project_yarn_name">Garnnamn</string>
     <string name="brand_label">Märke</string>
     <string name="project_yarn_description">Beskrivning</string>
@@ -256,7 +256,7 @@
     <string name="invalid_input">Ogiltig inmatning</string>
     <string name="easy_to_remember">Lätt att komma ihåg</string>
     <string name="balanced">Jämn</string>
-    <string name="total_stitches_format">TOTALT: %1$d %2$s</string>
+    <string name="total_stitches_format">Totalt: %1$d %2$s</string>
     <string name="increase_decrease_error_current_positive">Nuvarande maskantal måste vara större än 0</string>
     <string name="increase_decrease_error_change_positive">Antalet maskor som ändras måste vara större än 0</string>
     <string name="increase_decrease_error_cannot_decrease">Tillgängligt maskantal: %2$d. Begärd minskning: %1$d.</string>
@@ -282,6 +282,7 @@
     <string name="stitch_gauge">Masktäthet</string>
     <string name="pattern_repeat_optional">Mönsterrapport (valfritt)</string>
     <string name="edge_stitches_optional">Kantmaskor totalt</string>
+    <string name="edge_stitches_total_format">Kantmaskor totalt: %1$d</string>
     <string name="stitches_result">%d maskor</string>
     <string name="actual_width">Faktisk bredd: %1$s %2$s</string>
     <string name="adjusted_down">Avrundat nedåt: %1$d m (%2$s %3$s)</string>
@@ -307,7 +308,7 @@
     <string name="theme_system">System</string>
     <string name="theme_light">Ljust</string>
     <string name="theme_dark">Mörkt</string>
-    <string name="settings_section_settings">INSTÄLLNINGAR</string>
+    <string name="settings_section_settings">Inställningar</string>
     <string name="settings_section_pro">PRO</string>
     <string name="settings_section_info">INFO</string>
     <string name="settings_language">Appspråk</string>
@@ -432,8 +433,8 @@
     <string name="desc_chart_symbols">Guide till vanliga diagramsymboler</string>
 
     <!-- Library — My Collection -->
-    <string name="library_my_collection">MIN SAMLING</string>
-    <string name="library_reference">REFERENS</string>
+    <string name="library_my_collection">Min samling</string>
+    <string name="library_reference">Referens</string>
     <string name="desc_saved_patterns">Mönster från Ravelry och PDF-filer</string>
     <string name="desc_my_yarn">Garnanteckningar, mängder och länkade projekt</string>
     <string name="desc_all_photos">Framstegsbilder från alla dina projekt</string>
@@ -443,9 +444,9 @@
     <string name="filter_all">Alla</string>
 
     <!-- Insights -->
-    <string name="total_time_label">TOTAL TID</string>
-    <string name="avg_pace_label">MEDELTAKT</string>
-    <string name="completed_label">FÄRDIGA</string>
+    <string name="total_time_label">Total tid</string>
+    <string name="avg_pace_label">Medeltakt</string>
+    <string name="completed_label">Färdiga</string>
     <string name="time_format_hours">%.1ft</string>
     <string name="pace_format">%.0f v/t</string>
     <string name="streak_format">%d dagar</string>
@@ -453,7 +454,8 @@
     <string name="insights_all_time">All tid</string>
     <string name="insights_this_week">Den här veckan</string>
     <string name="insights_this_month">Den här månaden</string>
-    <string name="insights_knitting_activity">STICKAKTIVITET</string>
+    <string name="insights_knitting_activity">Stickaktivitet</string>
+    <string name="activity_grid_tooltip_format">%1$s — %2$s</string>
     <string name="insights_current_streak">Nuvarande svit:</string>
     <string name="insights_best_streak">Bästa:</string>
     <plurals name="insights_rows_count">
@@ -473,7 +475,7 @@
     <string name="relative_time_weeks_ago">%1$dv sedan</string>
     <string name="relative_time_months_ago">%1$dmån sedan</string>
     <string name="no_knitting">Ingen stickning</string>
-    <string name="time_per_project">TID PER PROJEKT</string>
+    <string name="time_per_project">Tid per projekt</string>
 
     <!-- Settings -->
     <string name="help_and_guide">Hjälp och guide</string>
@@ -618,6 +620,7 @@
     <string name="ravelry_sign_in">Logga in med Ravelry</string>
     <string name="ravelry_browse">Bläddra i Ravelry</string>
     <string name="ravelry_disconnect">Koppla från Ravelry</string>
+    <string name="ravelry_disconnect_confirm">Koppla från Ravelry? Du måste logga in igen för att använda Ravelry-funktionerna.</string>
     <string name="ravelry_not_connected">Logga in för att söka efter Ravelry-mönster från KnitTools.</string>
     <string name="ravelry_connecting">Ansluter till Ravelry…</string>
     <string name="ravelry_auth_pending">Slutför Ravelry-inloggningen i webbläsaren.</string>
@@ -661,15 +664,15 @@
     <string name="search_more_error">Kunde inte läsa in fler mönster. Kontrollera internetanslutningen.</string>
     <string name="pattern_detail_error">Kunde inte läsa in mönsterdetaljer. Kontrollera internetanslutningen.</string>
     <string name="project_actions_title">Projektåtgärder</string>
-    <string name="project_actions_section_this_project">DETTA PROJEKT</string>
-    <string name="project_actions_section_counter_tools">RÄKNARVERKTYG</string>
-    <string name="project_actions_section_project_actions">PROJEKTÅTGÄRDER</string>
+    <string name="project_actions_section_this_project">Detta projekt</string>
+    <string name="project_actions_section_counter_tools">Räknarverktyg</string>
+    <string name="project_actions_section_project_actions">Projektåtgärder</string>
     <string name="project_content_title">Projekt</string>
     <string name="project_content_yarn">Garn</string>
     <string name="project_content_notes">Anteckningar</string>
     <string name="project_content_photos">Foton</string>
     <string name="extra_counters_title">Extra räknare</string>
-    <string name="counter_repeat_label">UPPREPA</string>
+    <string name="counter_repeat_label">Upprepa</string>
     <string name="counters_list_title">Räknare</string>
 
     <!-- Täydennetyt lokalisoidut käyttöliittymätekstit -->

@@ -131,27 +131,31 @@ class SizeChartDataTest {
     }
 
     @Test
-    fun `measurement formatter appends selected unit`() {
+    fun `measurement formatter localizes the numeric value`() {
         val measurement = SizeMeasurement(cm = 10.0, inches = 3.937)
 
         assertEquals(
-            "10 cm",
-            SizeChartData.formatMeasurement(
+            "10",
+            SizeChartData.formatMeasurementValue(
                 measurement,
                 useImperial = false,
-                cmUnit = "cm",
-                inchUnit = "in",
                 locale = Locale.US,
             ),
         )
         assertEquals(
-            "3.9 in",
-            SizeChartData.formatMeasurement(
+            "3.9",
+            SizeChartData.formatMeasurementValue(
                 measurement,
                 useImperial = true,
-                cmUnit = "cm",
-                inchUnit = "in",
                 locale = Locale.US,
+            ),
+        )
+        assertEquals(
+            "3,9",
+            SizeChartData.formatMeasurementValue(
+                measurement,
+                useImperial = true,
+                locale = Locale.forLanguageTag("fi-FI"),
             ),
         )
     }

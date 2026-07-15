@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.finnvek.knittools.ui.components.localizedUppercase
 import com.finnvek.knittools.ui.theme.knitToolsColors
 
 private val NavBarHorizontalPadding = 6.dp
@@ -89,7 +90,7 @@ fun KnitToolsBottomBar(navController: NavController) {
                         },
                         label = {
                             Text(
-                                text = stringResource(destination.labelRes),
+                                text = stringResource(destination.labelRes).localizedUppercase(),
                                 style = labelStyle.copy(color = LocalContentColor.current),
                                 fontSize = sharedLabelFontSize,
                                 fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,

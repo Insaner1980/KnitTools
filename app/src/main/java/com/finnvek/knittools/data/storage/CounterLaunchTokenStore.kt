@@ -1,5 +1,6 @@
 package com.finnvek.knittools.data.storage
 
+import android.annotation.SuppressLint
 import android.content.Context
 import java.util.UUID
 
@@ -60,6 +61,8 @@ object CounterLaunchTokenStore {
             ?.toList()
             .orEmpty()
 
+    // KTX edit ei palauta commit-tulosta, jota kertakäyttöisen tunnisteen kulutus tarvitsee.
+    @SuppressLint("UseKtx")
     private fun android.content.SharedPreferences.writeLaunchTokens(tokens: List<LaunchToken>): Boolean =
         edit()
             .putString(KEY_LAUNCH_IDS, tokens.joinToString("\n", transform = LaunchToken::serialize))

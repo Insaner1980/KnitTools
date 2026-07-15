@@ -16,7 +16,10 @@ class ReminderRepository
         private val dao: RowReminderDao,
     ) {
         fun getRemindersForProject(projectId: Long): Flow<List<RowReminder>> =
-            dao.getRemindersForProject(projectId).map { reminders -> reminders.map { it.toDomain() } }
+            dao
+                .getRemindersForProject(projectId)
+                .map { reminders -> reminders.map { it.toDomain() } }
+                .retryOnRepositoryReadFailure()
 
         suspend fun insert(reminder: RowReminder): Long = dao.insert(reminder.toEntity())
 

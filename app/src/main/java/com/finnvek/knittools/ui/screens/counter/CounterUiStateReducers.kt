@@ -5,6 +5,9 @@ import com.finnvek.knittools.domain.calculator.ReminderLogic
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.RowReminder
 
+internal val CounterUiState.shouldLeaveCounter: Boolean
+    get() = projectsLoaded && projects.isEmpty()
+
 internal fun CounterUiState.withStartedProject(project: CounterProject): CounterUiState =
     copy(
         projectId = project.id,

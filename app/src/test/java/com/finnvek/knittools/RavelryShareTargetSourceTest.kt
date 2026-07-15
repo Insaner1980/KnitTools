@@ -37,8 +37,8 @@ class RavelryShareTargetSourceTest {
         assertTrue(screen.contains("const val ARG_IMPORT_URL"))
         assertTrue(screen.contains("const val ROUTE = \"ravelry_import/{\$ARG_IMPORT_URL}\""))
 
-        assertTrue(navGraph.contains("ravelryShareImportRequest: RavelryShareImportRequest? = null"))
-        assertTrue(navGraph.contains("LaunchedEffect(ravelryShareImportRequest?.requestId)"))
+        assertTrue(navGraph.contains("ravelryShareImport: RavelryShareImportRequest? = null"))
+        assertTrue(navGraph.contains("LaunchedEffect(requests.ravelryShareImport?.requestId)"))
         assertTrue(navGraph.contains("navController.navigateToTopLevel(TopLevelDestination.Tools)"))
         assertTrue(navGraph.contains("navController.navigateSingleTopTo(Screen.RavelryImport(request.url).route)"))
         assertTrue(navGraph.contains("onRavelryShareImportHandled()"))

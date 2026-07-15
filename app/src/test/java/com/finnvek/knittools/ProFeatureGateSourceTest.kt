@@ -47,7 +47,7 @@ class ProFeatureGateSourceTest {
         assertTrue(widget.contains("MainActivity.createProUpgradeLaunchIntent(context)"))
         assertTrue(mainActivity.contains("fun createProUpgradeLaunchIntent(context: Context)"))
         assertTrue(mainActivity.contains("openProUpgradeRequest = intent?.action == ACTION_OPEN_PRO_UPGRADE"))
-        assertTrue(navGraph.contains("if (!openProUpgradeRequest) return@LaunchedEffect"))
+        assertTrue(navGraph.contains("if (!requests.openProUpgrade) return@LaunchedEffect"))
         assertTrue(navGraph.contains("navController.navigateSingleTopTo(Screen.ProUpgrade.route)"))
     }
 

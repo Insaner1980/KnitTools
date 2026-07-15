@@ -267,6 +267,10 @@ android {
         }
     }
 
+    sourceSets {
+        getByName("comparison").kotlin.directories.add("src/debugShared/kotlin")
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17

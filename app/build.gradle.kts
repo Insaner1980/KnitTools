@@ -231,6 +231,7 @@ android {
 
     sourceSets {
         getByName("androidTest").assets.directories.add("$projectDir/schemas")
+        getByName("debug").kotlin.directories.add("src/debugShared/kotlin")
     }
 
     signingConfigs {

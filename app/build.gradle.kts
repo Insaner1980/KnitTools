@@ -26,6 +26,7 @@ val debugCredentialsFile = rootProject.layout.projectDirectory.file("debug.crede
 val debugCredentialsText = providers.fileContents(debugCredentialsFile).asText.orElse("")
 val googleServicesJsonConfigFile = layout.projectDirectory.file("google-services.json")
 val debugGoogleServicesJsonConfigFile = layout.projectDirectory.file("src/debug/google-services.json")
+val comparisonGoogleServicesJsonConfigFile = layout.projectDirectory.file("src/comparison/google-services.json")
 val googleServicesJsonBase64EnvVar = "KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64"
 val googleServicesJsonBase64Env = providers.environmentVariable(googleServicesJsonBase64EnvVar)
 val requestedTaskNames = gradle.startParameter.taskNames
@@ -43,11 +44,20 @@ val debugFirebaseArtifactRequested =
         "installDebug",
         "processDebugGoogleServices",
     ).any(::isRequestedAppTask)
+val comparisonFirebaseArtifactRequested =
+    listOf(
+        "assembleComparison",
+        "installComparison",
+        "processComparisonGoogleServices",
+    ).any(::isRequestedAppTask)
 
 val canMaterializeGoogleServicesJson =
-    googleServicesJsonConfigFile.asFile.isFile ||
-        googleServicesJsonBase64Env.isPresent ||
-        debugFirebaseArtifactRequested
+    listOf(
+        googleServicesJsonConfigFile.asFile.isFile,
+        googleServicesJsonBase64Env.isPresent,
+        debugFirebaseArtifactRequested,
+        comparisonFirebaseArtifactRequested,
+    ).any { it }
 val debugGoogleServicesPlaceholderJson =
     """
     {
@@ -80,6 +90,11 @@ val debugGoogleServicesPlaceholderJson =
       "configuration_version": "1"
     }
     """.trimIndent()
+val comparisonGoogleServicesPlaceholderJson =
+    debugGoogleServicesPlaceholderJson.replace(
+        "\"package_name\": \"com.finnvek.knittools\"",
+        "\"package_name\": \"com.finnvek.knittools.fable\"",
+    )
 
 if (canMaterializeGoogleServicesJson) {
     apply(plugin = "com.google.gms.google-services")
@@ -230,6 +245,13 @@ android {
     }
 
     buildTypes {
+        create("comparison") {
+            initWith(getByName("debug"))
+            applicationIdSuffix = ".fable"
+            versionNameSuffix = "-fable"
+            matchingFallbacks += listOf("debug")
+        }
+
         release {
             isDebuggable = false
             isMinifyEnabled = true
@@ -458,6 +480,37 @@ val writeDebugGoogleServicesJson =
         }
     }
 
+val writeComparisonGoogleServicesJson =
+    tasks.register("writeComparisonGoogleServicesJson") {
+        group = "build setup"
+        description = "Luo rinnakkaiselle Fable-vertailubuildille Firebase-placeholderin tarvittaessa."
+        dependsOn(writeGoogleServicesJsonFromEnv)
+
+        val rootFile = googleServicesJsonConfigFile.asFile
+        val targetFile = comparisonGoogleServicesJsonConfigFile.asFile
+        val encodedConfig = googleServicesJsonBase64Env.orNull
+        val placeholderJson = comparisonGoogleServicesPlaceholderJson
+
+        inputs.files(rootFile).withPropertyName("rootGoogleServicesJsonFile")
+        inputs.property("encodedConfig", encodedConfig.orEmpty())
+        inputs.property("placeholderJson", placeholderJson)
+        outputs.file(targetFile)
+        outputs.upToDateWhen {
+            rootFile.isFile ||
+                !encodedConfig.isNullOrBlank() ||
+                targetFile.isFile
+        }
+
+        doLast {
+            GoogleServicesJsonTaskActions.writeDebugPlaceholder(
+                rootFile,
+                encodedConfig,
+                placeholderJson,
+                targetFile,
+            )
+        }
+    }
+
 val verifyGoogleServicesJson =
     tasks.register("verifyGoogleServicesJson") {
         group = "verification"
@@ -482,6 +535,8 @@ val firebaseConfiguredArtifactTaskNames =
 tasks.configureEach {
     if (name == "processDebugGoogleServices") {
         dependsOn(writeGoogleServicesJsonFromEnv, writeDebugGoogleServicesJson)
+    } else if (name == "processComparisonGoogleServices") {
+        dependsOn(writeGoogleServicesJsonFromEnv, writeComparisonGoogleServicesJson)
     } else if (name.startsWith("process") && name.endsWith("GoogleServices")) {
         dependsOn(writeGoogleServicesJsonFromEnv)
     }

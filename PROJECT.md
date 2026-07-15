@@ -35,7 +35,7 @@ Nykytilan kannalta hyödyllinen järjestys:
 - Debug-diagnostiikka: Sentry Android Core vain debug-luokkapolussa
 - Paikalliset lisäominaisuudet: regex-pohjainen laskuriohjeparseri `domain/calculator/InstructionParser.kt`
 - Lokalisaatio: `localeConfig` + useat `values-*`-hakemistot
-- Room schema version: `14`
+- Room schema version: `16`
 - `compileSdk` / `targetSdk` / `minSdk`: `36 / 36 / 29`, kaikki `gradle/libs.versions.toml`-avaimista `androidCompileSdk`, `androidTargetSdk` ja `androidMinSdk`
 - `baselineprofile`-moduulin `compileSdk` / `targetSdk` / `minSdk`: samat version catalog -arvot `36 / 36 / 29`
 - Java target: `17`
@@ -55,7 +55,7 @@ Nykytilan kannalta hyödyllinen järjestys:
 - Functions runtime: `nodejs22`
 - `firebase-functions`: `7.2.5`
 - `firebase-admin`: `13.10.0`
-- TypeScript: `6.0.3`
+- TypeScript: `7.0.2`
 - DeepSec: `2.1.2`
 - versionCode / versionName: `1 / 1.0.0`
 
@@ -215,14 +215,14 @@ Ravelry Firebase -backend:
 - Firebase Functions v2 TypeScript `functions/src`
 - root `firebase.json` määrittää `functions`-sourcen ja `nodejs22` runtimen
 - root `firestore.rules` kieltää client read/write -pääsyn `ravelryOAuthStates/{state}`- ja `ravelryTokens/{uid}`-kokoelmiin
-- `functions/package.json` omistaa backendin versiontotuuden: `node` engine `22`, `firebase-functions 7.2.5`, `firebase-admin 13.10.0`, `typescript 6.0.3` ja `firebase-functions-test 3.5.0`
+- `functions/package.json` omistaa backendin versiontotuuden: `node` engine `22`, `firebase-functions 7.2.5`, `firebase-admin 13.10.0`, `typescript 7.0.2` ja `@types/node 26.1.1`; `firebase-functions-test` ei kuulu nykyiseen dependency-surfaceen
 - `functions/src/config.ts` omistaa alueen `europe-west1`, kokoelmanimet ja Secret Manager -sidokset `RAVELRY_CLIENT_ID` / `RAVELRY_CLIENT_SECRET`
 - `functions/src/ravelry/auth.ts` julkaisee `ravelryStartAuth`, `ravelryCallback`, `ravelryAuthStatus`, `ravelryDisconnect` ja `ravelryCurrentUser`
 - `functions/src/ravelry/authCore.ts`, `oauthStateStore.ts`, `oauth2.ts`, `tokenStore.ts` ja `client.ts` omistavat backend-OAuth2-flow'n, PKCE state -tallennuksen, server-side token exchangen, token tallennuksen ja current-user API-kutsun
 - `functions/src/ravelry/patternImport.ts`, `urlParsing.ts`, `client.ts` ja `sanitizedTypes.ts` omistavat backend-haun ja metadata-only importin: `ravelrySearchPatterns`, `ravelryImportPatternById` ja `ravelryImportPatternByUrl` palauttavat vain sallitut Ravelry ID/title/designer/thumbnail/canonical/original URL/availability/pagination -kentät eivätkä lataa pattern-PDF:iä
-- `functions/package.json` sisältää npm `overrides` -lukitukset `form-data 4.0.6`, `js-yaml 5.2.0`, `ts-deepmerge 8.0.0` ja `uuid 11.1.1`; nämä ovat osa nykyistä dependency-surfacea, eivät Android-riippuvuuksia
+- `functions/package.json` sisältää npm `overrides` -lukitukset `form-data 4.0.6`, `js-yaml 5.2.0` ja `uuid 11.1.1`; nämä ovat osa nykyistä dependency-surfacea, eivät Android-riippuvuuksia
 - Androidissa on Firebase Auth/Functions -riippuvuudet sekä `RavelryBackendClient` callable-rajalle; `RavelryAuthManager` omistaa backend-auth-statuksen, start/disconnect-kutsut ja token-free `knittools://ravelry-auth-complete` callbackin; auth avataan Auth Tabilla ja Custom Tabs jää fallbackiksi
-- Saved patterns ovat Room schema 14 -lähdemetadatassa: `source`, nullable `ravelryPatternId`, `originalUrl`, `canonicalUrl`, nullable `localPdfUri`, `isAvailableOffline`, `updatedAt` ja nullable `lastSyncedAt`
+- Saved patterns siirrettiin Room schema 14:ssa lähdemetadataksi: `source`, nullable `ravelryPatternId`, `originalUrl`, `canonicalUrl`, nullable `localPdfUri`, `isAvailableOffline`, `updatedAt` ja nullable `lastSyncedAt`; tietokannan nykyversio on 16
 - Phase 8 UI-polku on valmis: `RavelryImportConfirmationSheet` hoitaa hakutulos- ja jaetun URL:n import-vahvistuksen, `SavedPatternDetailScreen` hoitaa metadata-availabilityn ja toiminnot, PatternPickerSheet listaa kaikki saved patternit, ja projektin pattern-kortti avaa metadata-only linkit detailiin ilman PDF-vieweriä
 - Phase 9 release-surface -vahti sallii vain Firebase Auth/Functions/Google Services -pinnan tälle backendille, kieltää Firebase AI/ML Kit/Gemini/voice-riippuvuudet, estää trackatut `app/google-services.json`- ja `app/src/debug/google-services.json` -tiedostot ja skannaa tunnetut paikalliset/env Ravelry-secret-arvot tulostamatta niitä
 - `firebase-admin` on lukittu uusimpaan `firebase-functions@7.2.5`:n peer dependencyyn sopivaan 13.x-versioon, ei suunnitelman yhteensopimattomaan 14.x-versioon
@@ -234,9 +234,12 @@ Nykyinen käynnistyslogiikka:
 
 1. `App.onCreate()`
    - alustaa source-set-kohtaisen `SentryInit`-polun; debug voi käyttää Sentryä, release on no-op
-   - `PreferencesManager.applyStoredAppLanguage()`
+   - käynnistää `PreferencesManager.applyStoredAppLanguage()`-kutsun `@ApplicationScope`ssa ilman `runBlocking`ia
+   - käynnistää `YarnCardRepository.pruneUnreferencedPhotoFiles()`-siivouksen, joka vertaa `yarn_photos`-tiedostoja Roomin lankakorttien `photoUri`-viitteisiin
+   - käynnistää `PatternDocumentStorage.pruneStaleCaptureImages(...)`-siivouksen injektoidulla `@IoDispatcher`illa
    - `BillingManager.initialize()`
    - `ProManager.initialize()`
+   - odottaa `ProManager.initialStateReady`-tilaa ja päivittää kaikki widgetit aina, kun `ProFeature.WIDGET`-käyttöoikeus muuttuu
 2. `MainActivity.onCreate()`
    - `installSplashScreen()` ennen `super.onCreate()`
    - lukee mahdollisen `CounterLaunchRequest`in intentistä
@@ -245,6 +248,7 @@ Nykyinen käynnistyslogiikka:
    - lukee teeman suoraan `PreferencesManager.preferences`-flow'sta
    - pitää splashin näkyvissä kunnes startup-teema on ratkaistu
    - ottaa `enableEdgeToEdge()`-tilan käyttöön vasta kun light/dark-teema tiedetään
+   - käärii Composen `ProvidePreferenceAwareHapticFeedback(...)`-provideriin, jotta DataStoren `hapticFeedback`-asetus koskee myös komponenttien oletushaptiikkaa kuten `combinedClickable`-pitkäpainalluksia
    - renderöi `KnitToolsNavHost`in
 3. `MainActivity.onResume()`
    - kutsuu `inAppUpdateManager.checkDownloadedOnResume()`
@@ -493,8 +497,8 @@ Huomio:
 Migraatiotilanne:
 
 - automaattiset migraatiot: `1 -> 2`, `2 -> 3`
-- käsinkirjoitetut migraatiot: `3 -> 4`, `4 -> 5`, `5 -> 6`, `6 -> 7`, `7 -> 8`, `8 -> 9`, `9 -> 10`, `10 -> 11`, `11 -> 12`, `12 -> 13`, `13 -> 14`
-- schema exportataan hakemistoon `app/schemas/com.finnvek.knittools.data.local.KnitToolsDatabase/`, jossa uusin export on `14.json`
+- käsinkirjoitetut migraatiot: `3 -> 4`, `4 -> 5`, `5 -> 6`, `6 -> 7`, `7 -> 8`, `8 -> 9`, `9 -> 10`, `10 -> 11`, `11 -> 12`, `12 -> 13`, `13 -> 14`, `14 -> 15`, `15 -> 16`
+- schema exportataan hakemistoon `app/schemas/com.finnvek.knittools.data.local.KnitToolsDatabase/`, jossa uusin export on `16.json`
 
 Näkyvä uusin lisäys:
 
@@ -504,14 +508,37 @@ Näkyvä uusin lisäys:
 - `counter_projects.craftType`, `counter_projects.mainCounterLabelType`, `counter_projects.mainCounterCustomLabel`, `counter_projects.readingLineEnabled`, `counter_projects.readingLineYFraction` ja `project_counters.linkedToMainCounter` lisättiin migraatiossa `12 -> 13`
 - `saved_patterns` uudelleenmuotoiltiin migraatiossa `13 -> 14`: vanhat `ravelryId` / `patternUrl` -sentinelit muunnetaan lähdemetadataksi `source`, `ravelryPatternId`, `originalUrl`, `canonicalUrl`, `localPdfUri`, `isAvailableOffline`, `updatedAt` ja `lastSyncedAt`
 - schema 14 lisää saved-pattern-hakuihin indeksit `ravelryPatternId`, `canonicalUrl`, `originalUrl` ja `localPdfUri`
+- migraatio `14 -> 15` lisää indeksit `counter_projects.linkedPatternId`- ja `yarn_cards.linkedProjectId`-kentille; se ei muuta domain-mallia
+- migraatio `15 -> 16` lisää nullable `sessions.zoneId` -kentän; vanhat sessiot jäävät tarkoituksella ilman aikavyöhykettä
 - `sessions.startedAt`-indeksi on migraatiossa `8 -> 9`
 - `counter_projects.targetRows` on migraatiossa `7 -> 8`
 
 Session-laskennan nykyrajat:
 
-- `KnitSession` ja `SessionEntity` kantavat sekä display-minuutit että tarkat `durationSeconds` / `rowsWorked` -kentät
+- `KnitSession` ja `SessionEntity` kantavat display-minuutit, tarkat `durationSeconds` / `rowsWorked` -kentät ja nullable `zoneId`-arvon
 - `SessionDao.getTotalMinutes(...)` summaa `durationSeconds`-kentän ja pyöristää ylöspäin minuutteihin
-- Insights käyttää `SessionMetrics`-apuria, joka jakaa cross-midnight-sessiot laitteen paikallisiin päiviin ja laskee pace-arvot sekunneista ja tehdyistä riveistä
+- uusi sessio tallentaa session alussa `ZoneId.systemDefault().id`-arvon `CounterViewModel`in `sessionZoneId`-tilaan; sama arvo säilyy `SavedStateHandle`ssa recreationin yli
+- Insights käyttää `SessionMetrics`-apuria, joka jakaa cross-midnight-sessiot session omassa aikavyöhykkeessä päivä- ja pace-bucketeihin; legacy-null tai virheellinen `zoneId` putoaa nykyiseen laitteen aikavyöhykkeeseen
+- range-rajaus käyttää pyydetyn analyysivyöhykkeen päivänalkua, mutta session sisäinen päivä-/bucket-jako käyttää `KnitSession.analyticsZoneOr(...)`-ratkaisua
+
+### Repository-, transaktio- ja coroutine-rajat
+
+Source of truth:
+
+- `data/local/DatabaseTransactionRunner.kt`
+- `di/DispatchersModule.kt`
+- `repository/RepositoryFlowResilience.kt`
+- repository-luokat `repository/`-hakemistossa
+
+Nykyiset invariantit:
+
+- usean DAO:n kirjoitukset kulkevat `DatabaseTransactionRunner.run { ... }` -rajasta, jonka tuotantototeutus käyttää `RoomDatabase.withTransaction`
+- UI ei saa pilkkoa pattern attach/detach-, yarn/project-linkki- tai päälaskurin count/history/linked-counter -kirjoituksia erillisiksi Room-operaatioiksi
+- UI:lle nousevat Room-havaintovirrat käyttävät DAO->domain-mäppäyksen jälkeen `retryOnRepositoryReadFailure()`-rajaa `CounterRepository`ssa, `ProjectCounterRepository`ssa, `ProjectYarnNoteRepository`ssa, `ReminderRepository`ssa, `ProgressPhotoRepository`ssa, `PatternAnnotationRepository`ssa, `SavedPatternRepository`ssa ja `YarnCardRepository`ssa
+- retry ei niele `CancellationException`ia eikä ei-`Exception`-tyyppisiä vakavia virheitä; tavallinen luku- tai mapping-poikkeus käynnistää virran uudelleen viiveillä `250`, `500`, `1000`, `2000`, `4000`, jonka jälkeen viive on rajattu `5000` millisekuntiin
+- IO-dispatcher tulee Hiltin `@IoDispatcher`-qualifierilla; repositoryjen ja ViewModelien ei pidä kovakoodata `Dispatchers.IO`:ta
+- prosessin eliniän työ käyttää Hiltin `@ApplicationScope`-scopea (`SupervisorJob + Dispatchers.Main.immediate`); blokkaava työ valitsee silti erikseen injektoidun IO-dispatcherin
+- `CounterViewModel.onCleared()` käyttää application-scopea vain viimeiseen sessiosnapshotin tallennukseen, ja `NotesEditorViewModel.onCleared()` vain viimeiseen debounce-editorin poistumistallennukseen; normaalit ruututyöt pysyvät `viewModelScope`ssa
 
 ### Päälaskurin ja lisälaskureiden domain
 
@@ -558,6 +585,14 @@ Lisäksi käytössä on erillisiä DataStoreja:
 - `review_state`
 - `counter_widget`
 
+DataStore- ja token-rajat:
+
+- `PreferencesDataStoreSafety.kt` käsittelee vain `IOException`-virheet fallbackina; muut poikkeukset etenevät kutsujalle eikä ohjelmointivirheitä muuteta hiljaisiksi oletusarvoiksi
+- `trial_state` sisältää trialin aloituksen, monotonisesti kasvavan last-known-timestampin ja pysyvän clock-tampered-lipun; yli tunnin kellon taaksepäin siirto lukitsee trialin, ja refresh rajataan normaalisti enintään 15 minuutin välein sekä päivänvaihtoon
+- `review_state` säilyttää action countin ja sen, onko review jo pyydetty; eligibility-raja on 20 toimintoa ja requested merkitään ennen Play review flow'n käynnistämistä
+- `counter_widget` on kaikkien Glance-instanssien jaettu aktiivisen projektin tila; widget ei sido eri projektia jokaiseen instanssiin
+- widget-counter-launch-tokenit eivät ole DataStoressa vaan synkronoidussa SharedPreferences-storessa `counter_launch_tokens`; `CounterLaunchTokenStore` pitää enintään 100 tokenia, hyväksyy vain 24 tuntia voimassa olevan appin itse antaman tokenin ja käyttää synkronista `commit()`-kirjoitusta kertakäyttökulutuksen onnistumisen varmistamiseen
+
 ### Paikallinen tiedostodata
 
 Entry pointit:
@@ -580,6 +615,9 @@ Tallennuspolut nykykoodissa:
 - `file_paths.xml` exposeeraa vain `progress_photos` ja `pattern_captures`; `yarn_photos` ja `pattern_pdfs` eivät ole nykyisiä FileProvider-share-rootteja
 - `AppFileStorage` tunnistaa silti sisäistä lukua/siivousta varten app-owned `file://`-URI:t sekä legacy FileProvider-rootit `yarn_photos`, `progress_photos`, `pattern_captures`, `pattern_pdfs` ja `patterns`
 - lankakortin kuvan vaihto poistaa vanhan app-owned kuvan vain jos uuden kuvan URI tallentui onnistuneesti; epäonnistunut tallennus siivoaa vasta kopioidun uuden kuvan
+- `App.onCreate()` käynnistää lankakuvien orphan-siivoamisen: vain Roomissa viitatut, ei-tyhjät `photoUri`-arvot säilytetään; keskeytyneen kuvanvaihdon jättämä tiedosto voidaan siis siivota seuraavassa prosessikäynnistyksessä
+- `PdfPageRenderer` sulkee konstruktorissa avatun `ParcelFileDescriptor`in myös silloin, kun `PdfRenderer`-konstruktio epäonnistuu; `renderPage()` ja `close()` ovat synkronoituja, ja `close()` sulkee descriptorin `finally`-haarassa
+- PDF-bitmapin kumpikin dimensio rajataan enintään `4096` pikseliin `calculatePdfRenderBitmapSize(...)`-apurissa; sivun aspect ratio säilytetään ja epäkelvot nolla-/negatiiviset mitat normalisoidaan vähintään yhteen pikseliin
 
 ### Pattern PDF, import ja reading line
 
@@ -609,7 +647,7 @@ Nykyiset rajat:
 - reading line -overlay näyttää projektin viewerissä nykyisen rivin pienenä labelina viivan vieressä; library-only viewer näyttää vain paikallisen viivan ilman rivimerkintöjen persistointia
 - kahden pisteen kalibrointi yhdistää ensimmäisen ja viimeisen ankkurin `mergePatternRowMarkers(...)` -polulla ilman skeemamuutosta
 - riviliikkeen ratkaisu on `domain/calculator/resolveReadingLineYFraction(...)`-apurin vastuulla: täsmäankkuri voittaa, kaksi saman sivun ankkuria interpoloi, yksipuolinen ankkuri ei lukitse viivaa ja toisen sivun ankkurit eivät liikuta nykyistä sivua
-- `ReadingLine.sanitizeYFraction(...)` rajoittaa arvon välille `0.05f..0.95f`, oletus on `0.5f`
+- `sanitizeReadingLineYFraction(...)` rajoittaa äärellisen arvon välille `0.05f..0.95f`, ja oletusarvo on `0.5f`; funktio käyttää suoraan `Float.coerceIn(...)`-kutsua eikä tee erillistä `NaN`-normalisointia
 - library-only pattern viewer käyttää `rememberSaveable(patternUri)` -tilaa sivulle ja reading linelle; se ei luo saved-pattern-skeemapolkua pelkän katselun takia
 - jatkuva Drive/Dropbox-sync on tulevaa speksiä `config/future-sync-spec.md`:ssä, ei nykyominaisuus; ennen sitä pitää määritellä Pro-gate, konfliktit, offline-käytös, OAuth/token storage ja background sync
 
@@ -680,6 +718,13 @@ Nykyinen Android-koodi Phase 8:n jälkeen:
 - callable-virheet mapataan nykyiseen Ravelry HTTP -poikkeusmalliin: 400, 401, 404, 412, 429, 503 tai 500
 - Ravelry-hakupyynnön optional-parametrit rakennetaan `PatternSearchParams.toBackendData()`-apurilla: `query`, `page` ja `pageSize` lähetetään aina, mutta `craft`, `availability`, `pc`, `weight`, `difficultyFrom` ja `difficultyTo` lisätään vain, kun arvo on olemassa; nykyinen koodi ei käytä nullable-arvojen yleistä `.filterValues { it != null }` -siivousta
 - `FirebaseModule` sitoo `FirebaseRavelryBackendClient`in `RavelryBackendClient`-rajapintaan `fun interface FirebaseBindingsModule` -moduulilla, ja `FirebaseFunctions` instansioidaan alueelle `europe-west1`
+- backend julkaisee seitsemän callable-funktiota (`ravelryStartAuth`, `ravelryAuthStatus`, `ravelryDisconnect`, `ravelryCurrentUser`, `ravelrySearchPatterns`, `ravelryImportPatternById`, `ravelryImportPatternByUrl`) sekä yhden HTTP callbackin (`ravelryCallback`); exportit omistaa `functions/src/index.ts`
+- `functions/src/config.ts` omistaa alueen `europe-west1`, Firestore-kokoelmat `ravelryOAuthStates`, `ravelryTokens` ja `ravelryRateLimits`, Secret Manager -sidokset `RAVELRY_CLIENT_ID` / `RAVELRY_CLIENT_SECRET`, parametrin `RAVELRY_CALLBACK_URL`, 10 minuutin OAuth state TTL:n ja app-redirectin `knittools://ravelry-auth-complete`
+- callable-rajat vaativat Firebase Auth UID:n; `functions/src/ravelry/callable.ts` muuntaa backendin 400/401/404/429/5xx-virheet Firebase Functions -virheiksi ja käyttää muissa sopimusvirheissä `failed-precondition`/`internal`-koodeja
+- OAuth käyttää PKCE S256 -haastetta, state kulutetaan transaktionaalisesti vain kerran, code exchange ja token storage pysyvät serverillä, ja vanhentunut access token päivitetään `tokenAccess.ts`-rajassa; rotated refresh token korvaa vanhan tallennetun arvon
+- Firestore-rate-limitit ovat UID-kohtaisia ja transaktionaalisia: auth `10/min`, search `30/min`, import `20/min`
+- Ravelry API -kutsut käyttävät Bearer-tokenia vain `api.ravelry.com`-hostiin; URL-import hyväksyy vain HTTP(S)-URL:n muodossa `ravelry.com/patterns/library/{slug}` ja normalisoi canonical URL:n
+- `firestore.rules` kieltää client read/write -pääsyn sekä Ravelry-kokoelmiin että oletuksena kaikkiin muihin dokumentteihin; Admin SDK:ta käyttävät Functions-funktiot omistavat tallennuksen
 
 BuildConfig-kentät:
 
@@ -702,6 +747,10 @@ Huomio source of truthista:
 Billing-tuote:
 
 - `BillingManager.PRODUCT_ID = "knittools_pro"`
+- tuotetyyppi on `BillingClient.ProductType.INAPP`, ei subscription
+- Billing 8:n automaattisen reconnectin lisäksi ensimmäisen non-OK setupin ympärillä on kolme yritystä kahden sekunnin välein; yritysten loputtua purchase state merkitään valmiiksi mutta unavailable-tilaan
+- startup-query hyväksyy Pro-ostoksi vain `PURCHASED`-tilan ja acknowledgeaa tarvittaessa; acknowledge-uusintaviive on viisi sekuntia
+- restore-polun tulosmalli erottaa `RESTORED`, `NOT_FOUND` ja `FAILED`
 
 `ProStatus`:
 
@@ -731,6 +780,8 @@ Huomio nykytilasta:
 - release- ja non-debug-käytössä `ProState.hasFeature(feature, debugUnlockAllFeatures = false)` vastaa yhtä Pro-tasoa: trial active tai purchase avaa ominaisuudet
 - debug-buildissä `ProState.hasFeature(...)` avaa feature-gatet `BuildConfig.DEBUG`-oletuksella muuttamatta `isPro`-arvoa, billing-ostotilaa, trial-tilaa, `purchaseTimestamp`ia tai upgrade UI:n ostoväitteitä
 - per-feature-gating on UI- ja käyttölogiikassa nimetty, mutta ostotasoja on edelleen vain yksi
+- `ProManager` yhdistää trial- ja ostotilan prioriteetilla purchased > active trial > expired; `initialStateReady` seuraa billing-readinessiä
+- `hasFeatureAfterInitialLoad(...)` odottaa Pro- ja purchase-tilan alustusta enintään kaksi sekuntia ja tarkistaa vielä billing-flagin, jotta maksettu käyttäjä ei fail-closea cold startissa
 - trialin pituus on `14` päivää
 
 ### Paikallinen parseri
@@ -941,6 +992,8 @@ Nykyinen Glance-widget:
   - fallbackina `CounterRepository.getLatestActiveProject()`
 - viimeisenä `CounterWidgetState.defaultData(...)`
 - widget-toiminnot kulkevat `CounterRepository.applyWidgetCountChange(...)` -metodin kautta, joka käyttää samaa `applyMainCounterChange(...)`-semantiikkaa kuin appin päälaskuri ja päivittää count/history/current-stitch-resetin sekä linked-to-main-lisälaskurit transaktiona
+- cold start -Pro-portti käyttää `ProManager.hasFeatureAfterInitialLoad(...)`-polkua eikä tulkitse oletus-`ProState`a lopulliseksi ennen billing/trial-readinessiä
+- action receiver on `exported=false`, käyttää `goAsync()`-työtä ja Hilt `WidgetEntryPoint` -rajaa; widget-mutaatio ei kulje exported `MainActivity`-extraan luottamalla
 
 UI-tila juuri nyt:
 
@@ -1175,7 +1228,7 @@ Huomio:
 GitHub Actions:
 
 - `.github/workflows/build.yml` ajaa push- ja pull request -tapahtumissa `assembleDebug`, `test`, `:app:ktlintCheck`, `:app:detekt` ja `lint`
-- build-workflow käyttää pinnejä `actions/checkout` v6.0.3, `actions/setup-java` v5.3.0 ja `gradle/actions/setup-gradle` v6.2.0; versio näkyy kommentissa, mutta hash on varsinainen lukitus
+- build-workflow käyttää pinnejä `actions/checkout` v6.0.3, `actions/setup-java` v5.5.0 ja `gradle/actions/setup-gradle` v6.2.0; versio näkyy kommentissa, mutta hash on varsinainen lukitus
 - `.github/workflows/codeql.yml` ajaa push-, pull request- ja maanantaiaikataululla Java/Kotlin CodeQL -analyysin manuaalibuildilla; se käyttää `assembleDebug --no-daemon`, `android-actions/setup-android` v4.0.1 ja `github/codeql-action` v4.36.2 pin-hasheilla
 - `.github/dependabot.yml` seuraa Gradle-riippuvuuksia rootissa, GitHub Actions -riippuvuuksia rootissa, npm-riippuvuuksia `.deepsec`-hakemistossa sekä npm-riippuvuuksia `functions`-hakemistossa; CodeQL action -päivitykset ryhmitellään `codeql-action`-ryhmään
 
@@ -1271,7 +1324,7 @@ Julkaisuvalmiuden muistilista:
 - session history
 - pattern-PDF:n liittäminen projektiin
 - saved patternin metadata-only liittäminen projektiin `linkedPatternId`-polulla; jos saved patternilla on `localPdfUri`, sama attachment voi avata PDF-viewerin
-- pattern viewer + annotations
+- pattern viewer + pysyvä reading line / row-marker -overlay; `PatternAnnotationEntity`, DAO ja repository ovat olemassa persistence-rajana, mutta nykyisessä UI-koodissa ei ole drawing/annotation-käyttäjävirtaa
 - projektin attached-PDF:n reading line tallentuu projektiriville, ja rivikartta tallentuu `patternRowMapping`-kenttään `RowMarker(row,page,yPosition)` -ankkureina; library-only viewerin reading line on vain katselusession tila
 - projektin pattern viewer tukee reading line -rivin tallennusta, rivimerkkien poistoa ja kahden pisteen rivikalibrointia; library-only viewer ei tallenna näitä Roomiin
 - Drive/Dropbox-copy on nykykoodissa SAF PDF -pickerin käyttäjätekstiä, ei jatkuvaa pilvisynkkaa
@@ -1319,6 +1372,188 @@ Julkaisuvalmiuden muistilista:
 - feature-nimet on mallinnettu `ProFeature`-enumilla
 - debug-build avaa feature-gatet `ProState.hasFeature(...)`-polussa muuttamatta ostotilaa tai trial-tilaa
 
+## Koodintarkistuskysymysten tarkastuspintakartta
+
+Tämä osio on tarkoitettu tarkkojen review-kysymysten muodostamiseen. Hyvä kysymys nimeää tutkittavan entry pointin, invariantin, hyväksytyn toteutusrajan ja vaaditun todisteen. Pelkkä luokan tai ominaisuuden nimi ei riitä, koska useat KnitToolsin riskit syntyvät kahden kerroksen välissä.
+
+### 1. Room, relaatiot ja migraatiot
+
+Tarkista yhdessä vähintään:
+
+- `KnitToolsDatabase.kt`, `DatabaseModule.kt`, uusin `16.json`, relevantit `*Entity.kt`-tiedostot ja DAO:t
+- domain-mallit sekä `EntityMappers.kt`; pelkkä schema ei todista persisted enumien fallbackia tai sanitointia
+- kaikki migraatiopolut vanhimmasta tuetusta versiosta 16:een, ei vain viimeinen `15 -> 16`
+
+Kriittiset faktat:
+
+- oikea `ON DELETE CASCADE` koskee projektin lapsitauluja `counter_history`, `sessions`, `row_reminders`, `progress_photos`, `project_counters`, `project_yarn_notes` ja `pattern_annotations`
+- `yarn_cards.linkedProjectId`, `counter_projects.linkedPatternId`, `counter_projects.yarnCardIds` ja `project_yarn_notes.savedYarnCardId` eivät ole tietokantatason foreign key -suhteita; niiden eheys riippuu repository-koodista
+- legacy `counter_projects.secondaryCount` on eri konsepti kuin nimetyt `project_counters`-rivit; migraatio tai UI-boundary ei saa luoda siitä automaattista `Pattern repeat` -kopiota
+- schema 13:n craft/label/reading-line/link-to-main -kentät, schema 14:n saved-pattern-lähdemetadata, schema 15:n indeksit ja schema 16:n session zone pitää tarkistaa erillisinä muutoksina
+- `saved_patterns.ravelryPatternId` on nullable ja vain positiivinen ID on Ravelry-identiteetti; domainin `ravelryId`/`patternUrl` ovat compatibility-propertyjä, eivät nykyisiä persisted sentinelejä
+
+Sopivia review-kysymysrajoja ovat esimerkiksi migraation idempotenssi, backfillin tietohävikki, nullable/default-muutos, indeksin vastaavuus todelliseen kyselyyn, enum-fallback ja repositoryllä ylläpidetyn soft-relaation rikkoutuminen.
+
+### 2. Päälaskuri, history ja linkitetyt laskurit
+
+Yhteinen todistusketju:
+
+- UI-event: `CounterScreen.kt` / `CounterWorkspaceSections.kt`
+- state orchestration: `CounterViewModel.kt`
+- kirjoitusraja: `CounterRepository.applyMainCounterChange(...)`
+- domain-sääntö: `MainCounterChange`, `ProjectCounterLogic`, `RepeatSectionLogic`, `ShapingCounterLogic`
+- Room-kirjoitukset: `CounterProjectDao`, `CounterHistoryDao`, `ProjectCounterDao`
+- widgetin rinnakkaispolku: `CounterWidgetActions` -> `CounterRepository.applyWidgetCountChange(...)`
+
+Invarianssit:
+
+- valmistunutta projektia ei muuteta
+- uusi count ei mene negatiiviseksi, ja linked-counter saa toteutuneen deltan eikä pyydettyä deltaa
+- count, history, current-stitch reset ja sallitut linked-counter-deltat ovat yksi Room-transaktio
+- undo palauttaa viimeisen history-rivin `previousValue`-arvon, poistaa käytetyn history-rivin ja kääntää linked-counter-deltan
+- repeat-section ei saa olla `linkedToMainCounter`, koska sen tila johdetaan päälaskurin riveistä
+- widgetin plus/miinus ei saa toteuttaa suppeampaa semantiikkaa kuin appin vastaava toiminto
+
+### 3. Sessio, lifecycle ja Insights
+
+Tarkista `CounterViewModel`in session-start/stop/snapshot-polut, `SessionEntity`, mapperit, `SessionDao`, `SessionMetrics` ja `InsightsViewModel` yhtenä kokonaisuutena.
+
+Invarianssit:
+
+- session aloitushetken zone tallentuu ja säilyy recreationin yli
+- `durationSeconds` ja `rowsWorked` ovat laskennan tarkat lähteet; `durationMinutes` on näyttö-/legacy-kenttä
+- cross-midnight-segmentointi, heatmap-päivä ja pace bucket käyttävät session zonea; vain legacy-null tai virheellinen zone käyttää nykyistä laitezonea
+- DST-siirtymä, aikavyöhykkeen vaihto session jälkeen, nolla-/negatiivinen kesto, range-boundary ja rivien suhteellinen allokointi ovat olennaisia reunatapauksia
+- raskas historiadata lasketaan upstreamissa injektoidulla IO-dispatcherilla ennen yhden `InsightsUiState`-tilan keräämistä Composessa
+- `CounterViewModel.onCleared()`-snapshot ja `NotesEditorViewModel.onCleared()`-flush ovat tarkoitukselliset application-lifetime-poikkeukset; muu ViewModel-työ ei saa vuotaa `@ApplicationScope`en
+
+### 4. Pattern PDF, reading line ja tiedosto-omistajuus
+
+Tarkista vähintään `PatternPickerSheet`, `PatternAttachmentUriResolver`, `CounterViewModel`, `CounterRepository`, `SavedPatternRepository`, `PatternDocumentStorage`, `AppFileStorage`, `PdfPageRenderer`, `RowMappingParser` ja `ReadingLine`.
+
+Invarianssit:
+
+- ulkoinen PDF tulee SAF `OpenDocument(application/pdf)` -polusta ja kopioidaan app-owned `pattern_pdfs/<projectId>`-hakemistoon ennen attachia
+- DB-linkitys ja tiedoston lifecycle eivät ole sama transaktio: vanha tiedosto poistetaan vasta onnistuneen kirjoituksen jälkeen ja vain, jos yksikään projekti tai saved pattern ei enää viittaa siihen
+- FileProvider ei exposeeraa `pattern_pdfs`- eikä `yarn_photos`-juurta
+- projektin reading line / row markerit ovat Room-tilaa; library viewerin sivu ja viiva ovat vain saveable UI-tilaa
+- saman sivun kaksi ankkuria voi interpoloida; toisen sivun ankkuri ei saa liikuttaa nykyistä sivua
+- `PdfPageRenderer.renderPage()` ja `close()` ovat serialisoituja, descriptor suljetaan myös konstruktorivirheessä ja bitmap rajataan 4096 pikseliin kummassakin dimensiossa
+- `PatternAnnotation`-persistence ei yksin todista näkyvää piirto-/annotointiominaisuutta
+
+### 5. Kuvat ja file-before/DB-before-delete -järjestys
+
+Progress photo-, yarn photo- ja pattern capture -virtoja ei pidä arvioida yhtenä geneerisenä file helper -polkuna:
+
+- progress capture target ja abandoned capture -siivous kuuluvat `ProgressPhotoRepository`lle ja `ProgressPhotoStorage`lle
+- yarn photo replacement kopioi uuden, persistoituu, poistaa vanhan vasta onnistumisen jälkeen ja siivoaa epäonnistuneen uuden kopion
+- projektin poisto siivoaa progress- ja capture-tiedostot IO-dispatcherilla, nollaa soft-linkit transaktiossa ja tarkistaa pattern-PDF:n viitteet lopuksi
+- yarn-card batch delete irrottaa projektien CSV-linkit ja DB-rivit transaktiossa sekä poistaa tiedostot `NonCancellable + @IoDispatcher` -rajassa
+- startup orphan-prune on recovery-polku, ei korvike normaalin replacement/delete-polun rollbackille
+- app-owned URI -tarkistus on kanonisoitava `AppFileStorage`ssa ennen poistoa; ulkoista `content://`-mediaa ei saa poistaa app-owned-tiedostona
+
+### 6. Yarn-, pattern- ja project-soft-linkit
+
+Reviewn pitää kattaa linkin molemmat suunnat:
+
+- yarn: `YarnCard.linkedProjectId` + `CounterProject.yarnCardIds`
+- pattern: `CounterProject.linkedPatternId` + optional `patternUri` + `SavedPattern.localPdfUri`
+- project yarn note: note-rivi + optional `savedYarnCardId`
+
+Invarianssit:
+
+- `YarnCardRepository.updateLinkedProjectId(...)` on eksplisiittisen relinkin kanoninen writer
+- `saveCard(...)` normalisoi puuttuvaan projektiin osoittavan linkin pois ja pitää kaikkien projektien CSV-listat synkassa
+- `ProjectYarnNoteRepository.saveToMyYarn(...)` luo lankakortin ja kirjoittaa `savedYarnCardId`-viitteen samassa transaktiossa mutta ei poista projektin note-riviä
+- saved-pattern-duplikaattijärjestys on positive Ravelry ID -> canonical URL -> exact/normalized original URL -> title+designer vain eksplisiittisesti pyydettäessä
+- pattern detach/delete ei saa poistaa paikallista PDF:ää, jos toinen projekti tai saved pattern viittaa samaan URIin
+
+### 7. Exported Android -pinta, intentit ja widget-launch
+
+Tarkista manifesti yhdessä varsinaisen intentin kuluttajan kanssa:
+
+- `MainActivity` on exported launcher, OAuth callback- ja `ACTION_SEND text/plain` -entry point
+- `CounterWidgetReceiver` on exported vain `BIND_APPWIDGET`-suojauksella; varsinainen action receiver `CounterWidgetActions` on non-exported
+- OAuth callback ei saa kuluttaa counter-tokenia eikä counter-extra saa laukaista OAuth/share-polun sivuvaikutusta
+- widget-counteriin siirtyminen hyväksyy vain `CounterLaunchTokenStore`n appin itse antaman, kuluttamattoman, alle 24 tuntia vanhan request ID:n
+- tokenin kulutus on atominen, consumed ID säilyy recreationin yli ja intent-extrat tyhjennetään kulutuksen jälkeen
+- share-import hyväksyy vain validoidun Ravelry pattern URL:n ja URL route-enkoodataan ennen navigointia
+- FileProvider on non-exported, grant URI permissions on käytössä ja root-lista pysyy kapeana
+
+### 8. Pro, trial, billing ja cold start
+
+Tarkista sekä näkyvä UI-gate että toiminnon route/ViewModel/repository-entry. Passiivinen disabled UI ei yksin suojaa suoraa navigointia tai widget-actionia.
+
+Invarianssit:
+
+- yksi INAPP-tuote `knittools_pro`; trial ja purchase avaavat saman yhden Pro-tason
+- purchase state -oletus ei ole vahvistettu free-tila ennen `purchaseStateReady`/`initialStateReady`-signaalia
+- trialin kellomanipulaation lippu on pysyvä ja last-known-aika monotoninen
+- debug unlock vaikuttaa `hasFeature`-päätökseen, ei `isPro`-, trial-, purchase- tai upgrade-copy-tilaan
+- widget käyttää cold-start-safe `hasFeatureAfterInitialLoad(...)`-porttia
+- historia-, muistiinpano-, kamera-, insights-, reminder-, photo-, extra-counter- ja yarn-rajoja pitää tarkistaa varsinaisesta mutaatiopinnasta, ei vain composablen näkyvyydestä
+
+### 9. Ravelry Android <-> Functions -sopimus
+
+Review-kysymyksessä kannattaa nimetä sekä Android callable että backend export:
+
+- Android: `FirebaseAnonymousAuthGateway`, `RavelryBackendClient`, `RavelryBackendMappers`, `RavelryAuthManager`, `RavelryApiService`
+- backend: `functions/src/index.ts`, `config.ts`, `callable.ts`, `authCore.ts`, `oauthStateStore.ts`, `oauth2.ts`, `tokenAccess.ts`, `rateLimit.ts`, `patternImport.ts`, `urlParsing.ts`, `sanitizedTypes.ts`
+
+Invarianssit:
+
+- callable-nimi, payload-key, nullable/required-kenttä ja response mapper täsmäävät molemmilla puolilla
+- Android ei vastaanota client secretiä, access tokenia, refresh tokenia eikä authorization codea app callbackissa
+- state on kertakäyttöinen, vanhenee 10 minuutissa ja PKCE verifier sidotaan server-side stateen
+- token refresh tapahtuu ennen current-user/search/import-kutsua ja rotated refresh token tallennetaan
+- search/import on UID-rate-limitattu ja palauttaa vain sanitisoitua metadataa; backend ei lataa pattern-PDF:ää
+- URL-import ei saa hyväksyä mielivaltaista hostia tai Ravelryn muuta URL-pintaa
+- availability, canonical URL ja original URL säilyvät mapperissa; puuttuva/ei-positiivinen Ravelry ID ei saa muuttua persisted ID 0:ksi
+- Firestore-client ei saa lukea tai kirjoittaa OAuth state-, token- tai rate-limit-dokumentteja
+
+### 10. Navigaatio, shared state ja UI-sopimukset
+
+Tarkista `Screen.kt`, `NavGraph.kt`, `TopLevelNavigation.kt` ja relevantti ViewModel yhdessä.
+
+Invarianssit:
+
+- `TopLevelDestination` omistaa viisi tabia ja niiden start-route-arvot
+- `CounterViewModel` on Projects-graafin ja `LibraryViewModel` Library-graafin shared state; väärä back-stack-entry voi luoda rinnakkaisen tilan tai kadottaa valinnan
+- `counter`-route ei kanna project ID:tä; project selection tapahtuu shared `CounterViewModel`in kautta myös widget-, Ravelry-, project list- ja yarn detail -entryissä
+- route-argumentti validoidaan ja enkoodataan; erityisesti `ravelry_import/{importUrl}` ei saa sisältää raakaa URL-segmenttiä
+- yarn detail poistuu, kun observe-flow kertoo rivin kadonneen; optimistic local-only edit ei saa pitää poistettua korttia näkyvissä
+- counterin ensimmäinen viewport-, top bar-, fixed five-card grid- ja theme-token-sopimukset ovat nykyisiä tuotepäätöksiä, eivät vain visuaalisia mieltymyksiä
+- haptic-preferenssi vaikuttaa sekä eksplisiittisiin counter-värinöihin että `LocalHapticFeedback`in kautta komponenttien oletushaptiikkaan
+
+### 11. Testituloksen tulkinta
+
+Testikerrokset todistavat eri asioita:
+
+- `app/src/test`: JVM-unit-testit, ViewModel/repository-testit ja suuri joukko source-contract-testejä
+- `app/src/androidTest`: oikeat Room migration/transaction- ja Compose semantics -instrumentaatiotestit
+- `functions/src/**/*.test.ts`: Node-testit OAuth-, state-, rate-limit- ja pattern-import-logiikalle
+- `baselineprofile`: käynnistyksen macrobenchmark/baseline profile -generaattori
+
+Reviewssa pitää erottaa:
+
+- behavioral-testi, joka suorittaa logiikan
+- fake/DAO-testitupla, joka todistaa repository-sekvenssin mutta ei Roomin oikeaa rollbackia
+- source-testi, joka etsii toteutuksesta merkkijonoja tai rakennetta
+- instrumentation-testi, joka käyttää oikeaa Android/Room/Compose-runtimea
+
+Source-testin vihreä tulos ei todista, että etsitty ankkuri löytyi, ellei testi ensin varmista ankkurin olemassaoloa. `indexOf`, `substringAfter`, `substringBefore` ja niiden yhdistelmät ovat erityinen false-positive-pinta. Toisaalta source-testin rikkoutuminen voi olla tarkoituksellinen arkkitehtuurisopimuksen hälytys, vaikka runtime-koodi muuten kääntyisi.
+
+### 12. Toteuttamattomat asiat, joita review-kysymys ei saa olettaa
+
+- ei jatkuvaa Drive/Dropbox-syncia, provider SDK:ta, provider OAuthia, background cloud syncia tai multi-device-konfliktimallia
+- ei voice/microphone/SpeechRecognizer/TextToSpeech/conversational AI -ominaisuutta
+- ei model-backed instruction parseria; `InstructionParser` on regex-only
+- ei näkyvää pattern drawing/annotation -käyttäjävirtaa, vaikka persistence-luokat ovat olemassa
+- ei WorkManager Worker -arkkitehtuuria appin tuotantokoodissa; WorkManager-version kohdistus on Glancen transitiivista build-surfacea
+- ei release-Sentryä, analyticsia, tracingia, replayta tai source-context uploadia
+- ei Androidissa Ravelry Basic Authia, client secretiä, token storagea tai suoraa Ravelry API -kutsua
+- ei erillisiä Pro-tuotetasoja feature-enumin perusteella; `ProFeature` nimeää gateja yhden Pro-tason sisällä
+
 ## Asiat jotka vanhenevat helposti
 
 Näihin kannattaa suhtautua epäluuloisesti vanhoissa dokumenteissa:
@@ -1326,8 +1561,9 @@ Näihin kannattaa suhtautua epäluuloisesti vanhoissa dokumenteissa:
 - build-versiot muuttuvat usein `gradle/libs.versions.toml`-tiedostossa; älä kopioi niitä muistista
 - Android SDK -arvojen source of truth on version catalog: `androidCompileSdk`, `androidTargetSdk` ja `androidMinSdk`; `app/build.gradle.kts` ja `baselineprofile/build.gradle.kts` lukevat nämä `libs.versions.*.get().toInt()` -polulla
 - `allowBackup`: nykyinen on `false`, ei `true`
-- Room schema version: nykyinen on `14`; tarkista aina `KnitToolsDatabase.version`, `MIGRATION_13_14` ja `app/schemas/.../14.json`
-- schema 14:n helposti unohtuvat saved-pattern-kentät ovat `source`, `ravelryPatternId`, `originalUrl`, `canonicalUrl`, `localPdfUri`, `isAvailableOffline`, `updatedAt` ja `lastSyncedAt`; schema 13:n projektikentät ovat edelleen `craftType`, `mainCounterLabelType`, `mainCounterCustomLabel`, `readingLineEnabled`, `readingLineYFraction` ja `linkedToMainCounter`
+- Room schema version: nykyinen on `16`; tarkista aina `KnitToolsDatabase.version`, koko rekisteröity migraatioketju `DatabaseModule.kt`:ssa ja `app/schemas/.../16.json`
+- schema 14:n helposti unohtuvat saved-pattern-kentät ovat `source`, `ravelryPatternId`, `originalUrl`, `canonicalUrl`, `localPdfUri`, `isAvailableOffline`, `updatedAt` ja `lastSyncedAt`; schema 15 lisää foreign-key-hakujen indeksit ja schema 16 nullable `sessions.zoneId` -kentän
+- session päivä- ja pace-jako ei saa käyttää aina nykyistä laitteen zonea: uusi sessio tallentaa aloitusvyöhykkeen ja vain legacy-null/virheellinen `zoneId` käyttää nykyistä laitevyöhykettä fallbackina
 - `ravelry_import/{importUrl}` on URL-enkoodattu route; älä käytä raakaa URL:ää route-segmenttinä
 - `KnitToolsNavHost`, `CounterScreen` ja `RavelrySearchScreen` eivät enää ota kaikkia reittitoimintoja irrallisina callback-parametreina; nykyiset action-mallit ovat `KnitToolsNavActions`, `CounterScreenActions` ja `RavelrySearchActions`
 - `PatternCard` ei enää ota erillisiä `name` / `designerName` / `thumbnailUrl` / `difficulty` / `isFree` -parametreja, vaan `PatternCardState`-mallin

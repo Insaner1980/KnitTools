@@ -96,9 +96,9 @@ class ArchitectureSingleSourceSourceTest {
     fun `PROJECT document matches current architecture decisions`() {
         val project = ProjectSourceFiles.read(PROJECT_MD)
 
-        assertTrue(project.contains("Room schema version: `14`"))
+        assertTrue(project.contains("Room schema version: `16`"))
         assertFalse(project.contains("VoiceCommandParser.kt"))
-        assertFalse(project.contains("SpeechRecognizer"))
+        assertTrue(project.contains("ei voice/microphone/SpeechRecognizer/TextToSpeech"))
         assertFalse(project.contains("YarnLabelPhotoStorage"))
     }
 

@@ -29,8 +29,6 @@ class CounterSmallStepSymbolsSourceTest {
             "enabled: Boolean = true",
             "prominent: Boolean = true",
             "enabled = enabled",
-            "indication = null",
-            "interactionSource = null",
             "data class CounterStepButtonFaceAppearance",
             "CounterStepButtonFace(",
             "border(",
@@ -39,6 +37,8 @@ class CounterSmallStepSymbolsSourceTest {
         ).forEach { required ->
             assertTrue("CounterStepperButton should contain $required", stepperButton.contains(required))
         }
+        assertFalse(stepperButton.contains("indication = null"))
+        assertFalse(stepperButton.contains("interactionSource = null"))
 
         listOf(
             "CounterRepeatButtonTouchSize = 48.dp",

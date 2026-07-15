@@ -24,6 +24,7 @@ class CounterStringResourcesSourceTest {
                 "counter_target_reached",
                 "counter_target_past_format",
                 "project_content_add_pattern",
+                "project_content_pattern",
                 "stitch_tracker_label",
             ).forEach { key ->
                 assertTrue("Missing $key in $stringsFile", hasStringResource(strings, key))
@@ -55,7 +56,6 @@ class CounterStringResourcesSourceTest {
                 "counter_target_past_many",
                 "counter_target_rows_left",
                 "counter_target_rows_past",
-                "project_content_pattern",
                 "counter_undo",
                 "current_row",
                 "project_content_open_pattern",

@@ -38,7 +38,7 @@ class InAppReviewManager
          * Kun raja ylittyy, arvostelu voidaan pyytää.
          */
         suspend fun recordAction() {
-            context.reviewDataStore.editPreferencesSafely("Arvostelulaskurin tallennus") { prefs ->
+            context.reviewDataStore.editPreferencesSafely { prefs ->
                 prefs[KEY_ACTION_COUNT] = (prefs[KEY_ACTION_COUNT] ?: 0) + 1
             }
         }
@@ -57,7 +57,7 @@ class InAppReviewManager
             if (!shouldRequestReview(prefs[KEY_REVIEW_REQUESTED] == true, actions)) return
 
             val saved =
-                context.reviewDataStore.editPreferencesSafely("Arvostelupyynnön tallennus") {
+                context.reviewDataStore.editPreferencesSafely {
                     it[KEY_REVIEW_REQUESTED] = true
                 }
             if (!saved) return

@@ -18,7 +18,7 @@ val OnPrimary = Color(0xFFFFFFFF) // Teksti/ikonit primaryn päällä
 val OnAccent = Color(0xFF161610) // Teksti ja ikonit kirkkaiden korostusvärien päällä
 
 // === Secondary — Avokado ===
-val Secondary = Color(0xFF8BA44A) // Labelit ("CURRENT ROW"), osio-otsikot
+val Secondary = Color(0xFF93AE4F) // Labelit ("CURRENT ROW"), osio-otsikot
 val SecondaryMuted = Color(0xFF6B8A35) // Himmeämpi vihreä
 val SecondaryContainer = Color(0xFF3A4020) // Vihreä konttitausta
 
@@ -29,7 +29,7 @@ val TertiaryContainer = Color(0xFF3A3520)
 // === Teksti ===
 val TextPrimary = Color(0xFFE8E4D0) // Pääteksti — lämmin kerma
 val TextSecondary = Color(0xFFB8B4A0) // Kuvaukset, toissijainen info
-val TextMuted = Color(0xFF8A866E) // Hiljennetty teksti, chevronit, aikaleimat
+val TextMuted = Color(0xFFA8A491) // Hiljennetty teksti, chevronit, aikaleimat
 val TextDisabled = Color(0xFF5A5840) // Disabled-tila
 
 // === Aksentti ===
@@ -38,7 +38,7 @@ val DustyRose = Color(0xFFB8908F) // Pro trial -teksti, yarn card
 // === Status ===
 val Error = Color(0xFFC44D4D)
 val ErrorContainer = Color(0xFF3A2020)
-val Success = Color(0xFF8BA44A) // Sama kuin Secondary
+val Success = Color(0xFF8BA44A) // Onnistumisen vihreä
 val SuccessContainer = Color(0xFF3A4020)
 
 // === Navigaatio ===
@@ -65,7 +65,7 @@ val LightSurfaceMediumHigh = Color(0xFFC8C3A8) // Dialogit, popupit
 val LightSurfaceHighest = Color(0xFFA49D80) // Korkein korotus, syötekentät
 
 // === Light-teeman Secondary — Tummempi avokado (kontrasti vaalealla taustalla) ===
-val LightSecondary = Color(0xFF6B8A2E)
+val LightSecondary = Color(0xFF394B18)
 val LightSecondaryMuted = Color(0xFF5A7525)
 val LightSecondaryContainer = Color(0xFFD0DDB5)
 
@@ -76,7 +76,7 @@ val LightTertiaryContainer = Color(0xFFE8DFB5)
 // === Light-teeman teksti (lämmin ruskea, ei mustaa) ===
 val LightTextPrimary = Color(0xFF2E2A1E) // Tumma lämmin ruskea
 val LightTextSecondary = Color(0xFF4C4634) // Keskiväri ruskea
-val LightTextMuted = Color(0xFF8A8370) // Hiljennetty ruskea
+val LightTextMuted = Color(0xFF4A473C) // Hiljennetty ruskea
 val LightTextDisabled = Color(0xFFC0BAA5) // Disabled-tila
 val LightCounterMinusIcon = Color(0xFF211E16)
 

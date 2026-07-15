@@ -66,7 +66,6 @@ class NotesEditorViewModelTest {
         return NotesEditorViewModel(
             repository = repository,
             proManager = proManager,
-            ioDispatcher = testDispatcher,
             applicationScope = applicationScope,
             savedStateHandle = SavedStateHandle(mapOf("projectId" to 1L)),
         )
@@ -94,7 +93,6 @@ class NotesEditorViewModelTest {
                 NotesEditorViewModel(
                     repository = repository,
                     proManager = proManager,
-                    ioDispatcher = testDispatcher,
                     applicationScope = applicationScope,
                     savedStateHandle = SavedStateHandle(mapOf("projectId" to 1L)),
                 )
@@ -126,7 +124,6 @@ class NotesEditorViewModelTest {
                 NotesEditorViewModel(
                     repository = repository,
                     proManager = proManager,
-                    ioDispatcher = testDispatcher,
                     applicationScope = applicationScope,
                     savedStateHandle = SavedStateHandle(mapOf("projectId" to 1L)),
                 )
@@ -187,7 +184,6 @@ class NotesEditorViewModelTest {
                 NotesEditorViewModel(
                     repository = repository,
                     proManager = proManager,
-                    ioDispatcher = testDispatcher,
                     applicationScope = applicationScope,
                     savedStateHandle = savedStateHandle,
                 )
@@ -220,7 +216,6 @@ class NotesEditorViewModelTest {
                 NotesEditorViewModel(
                     repository = repository,
                     proManager = proManager,
-                    ioDispatcher = testDispatcher,
                     applicationScope = applicationScope,
                     savedStateHandle = savedStateHandle,
                 )

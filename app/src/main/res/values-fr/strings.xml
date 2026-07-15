@@ -6,7 +6,6 @@
     <string name="cancel">Annuler</string>
     <string name="confirm">Confirmer</string>
     <string name="ok">OK</string>
-    <string name="add">Ajouter</string>
     <string name="delete">Supprimer</string>
     <string name="reset">Réinitialiser</string>
     <string name="result">Résultat</string>
@@ -15,6 +14,7 @@
 
     <!-- Units -->
     <string name="unit_cm">cm</string>
+    <string name="measurement_with_unit_format">%1$s %2$s</string>
     <string name="unit_inches">pouces</string>
     <string name="unit_st">m</string>
     <string name="unit_rows">rangs</string>
@@ -37,11 +37,11 @@
     <string name="desc_yarn_estimator_card">Calcule le métrage et le nombre de pelotes nécessaires</string>
 
     <!-- Bottom navigation tabs -->
-    <string name="tab_projects">PROJETS</string>
-    <string name="tab_library">BIBLIOTHÈQUE</string>
-    <string name="tab_tools">OUTILS</string>
-    <string name="tab_insights">STATISTIQUES</string>
-    <string name="tab_settings">PARAMÈTRES</string>
+    <string name="tab_projects">Projets</string>
+    <string name="tab_library">Bibliothèque</string>
+    <string name="tab_tools">Outils</string>
+    <string name="tab_insights">Statistiques</string>
+    <string name="tab_settings">Paramètres</string>
 
     <!-- Screen titles -->
     <string name="tools_title">Outils</string>
@@ -55,9 +55,9 @@
 
     <!-- Project List -->
     <string name="project_list_title">Projets</string>
-    <string name="continue_knitting">CONTINUER À TRICOTER</string>
-    <string name="section_active">ACTIFS</string>
-    <string name="section_completed">TERMINÉS</string>
+    <string name="continue_knitting">Continuer à tricoter</string>
+    <string name="section_active">Actifs</string>
+    <string name="section_completed">Terminés</string>
     <string name="new_project">Nouveau projet</string>
     <string name="new_project_name_format">Projet %1$d</string>
     <string name="create_project">Créer le projet</string>
@@ -170,13 +170,13 @@
     <string name="time_spent_minutes_format">%dm</string>
     <string name="unlink_yarn">Délier le fil</string>
     <string name="select_yarn_card">Sélectionner une fiche de fil</string>
-    <string name="linked_yarn_title">FIL LIÉ</string>
+    <string name="linked_yarn_title">Fil lié</string>
     <string name="no_linked_yarn">Aucun fil lié pour le moment</string>
     <string name="choose_from_my_yarn">Choisir dans My Yarn</string>
     <string name="choose_from_my_yarn_body">Choisir un fil enregistré</string>
     <string name="add_yarn_to_project">Ajouter du fil à ce projet</string>
     <string name="add_yarn_to_project_body">Enregistrer une note de fil rapide uniquement pour ce projet</string>
-    <string name="project_yarn_notes_title">FIL DU PROJET</string>
+    <string name="project_yarn_notes_title">Fil du projet</string>
     <string name="project_yarn_name">Nom du fil</string>
     <string name="brand_label">Marque</string>
     <string name="project_yarn_description">Description</string>
@@ -260,7 +260,7 @@
     <string name="invalid_input">Saisie invalide</string>
     <string name="easy_to_remember">Facile à mémoriser</string>
     <string name="balanced">Équilibré</string>
-    <string name="total_stitches_format">TOTAL : %1$d %2$s</string>
+    <string name="total_stitches_format">Total : %1$d %2$s</string>
     <string name="increase_decrease_error_current_positive">Le nombre de mailles actuel doit être supérieur à 0</string>
     <string name="increase_decrease_error_change_positive">Le nombre de mailles à modifier doit être supérieur à 0</string>
     <string name="increase_decrease_error_cannot_decrease">Nombre de mailles disponible : %2$d. Diminution demandée : %1$d.</string>
@@ -286,6 +286,7 @@
     <string name="stitch_gauge">Densité en mailles</string>
     <string name="pattern_repeat_optional">Répétition du motif (optionnel)</string>
     <string name="edge_stitches_optional">Mailles lisière au total</string>
+    <string name="edge_stitches_total_format">Total des mailles lisière : %1$d</string>
     <string name="stitches_result">%d mailles</string>
     <string name="actual_width">Largeur réelle : %1$s %2$s</string>
     <string name="adjusted_down">Ajusté à la baisse : %1$d m (%2$s %3$s)</string>
@@ -311,7 +312,7 @@
     <string name="theme_system">Système</string>
     <string name="theme_light">Clair</string>
     <string name="theme_dark">Sombre</string>
-    <string name="settings_section_settings">PARAMÈTRES</string>
+    <string name="settings_section_settings">Paramètres</string>
     <string name="settings_section_pro">PRO</string>
     <string name="settings_section_info">INFO</string>
     <string name="settings_language">Langue de l’app</string>
@@ -436,8 +437,8 @@
     <string name="desc_chart_symbols">Guide des symboles standards de grille de tricot</string>
 
     <!-- Library — My Collection -->
-    <string name="library_my_collection">MA COLLECTION</string>
-    <string name="library_reference">RÉFÉRENCE</string>
+    <string name="library_my_collection">Ma collection</string>
+    <string name="library_reference">Référence</string>
     <string name="desc_saved_patterns">Modèles de Ravelry et fichiers PDF</string>
     <string name="desc_my_yarn">Notes de fil, quantités et projets liés</string>
     <string name="desc_all_photos">Photos de progression de tous vos projets</string>
@@ -447,9 +448,9 @@
     <string name="filter_all">Tout</string>
 
     <!-- Insights -->
-    <string name="total_time_label">TEMPS TOTAL</string>
-    <string name="avg_pace_label">RYTHME MOYEN</string>
-    <string name="completed_label">TERMINÉS</string>
+    <string name="total_time_label">Temps total</string>
+    <string name="avg_pace_label">Rythme moyen</string>
+    <string name="completed_label">Terminés</string>
     <string name="time_format_hours">%.1fh</string>
     <string name="pace_format">%.0f r/h</string>
     <string name="streak_format">%d jours</string>
@@ -457,7 +458,8 @@
     <string name="insights_all_time">Depuis toujours</string>
     <string name="insights_this_week">Cette semaine</string>
     <string name="insights_this_month">Ce mois-ci</string>
-    <string name="insights_knitting_activity">ACTIVITÉ TRICOT</string>
+    <string name="insights_knitting_activity">Activité tricot</string>
+    <string name="activity_grid_tooltip_format">%1$s — %2$s</string>
     <string name="insights_current_streak">Série actuelle :</string>
     <string name="insights_best_streak">Meilleure :</string>
     <plurals name="insights_rows_count">
@@ -478,7 +480,7 @@
     <string name="relative_time_weeks_ago">il y a %1$d sem</string>
     <string name="relative_time_months_ago">il y a %1$d mois</string>
     <string name="no_knitting">Aucun tricot</string>
-    <string name="time_per_project">TEMPS PAR PROJET</string>
+    <string name="time_per_project">Temps par projet</string>
 
     <!-- Settings -->
     <string name="help_and_guide">Aide et guide</string>
@@ -625,6 +627,7 @@
     <string name="ravelry_sign_in">Se connecter avec Ravelry</string>
     <string name="ravelry_browse">Parcourir Ravelry</string>
     <string name="ravelry_disconnect">Déconnecter Ravelry</string>
+    <string name="ravelry_disconnect_confirm">Déconnecter Ravelry ? Vous devrez vous reconnecter pour utiliser les fonctions Ravelry.</string>
     <string name="ravelry_not_connected">Connectez-vous pour rechercher des modèles Ravelry depuis KnitTools.</string>
     <string name="ravelry_connecting">Connexion à Ravelry…</string>
     <string name="ravelry_auth_pending">Terminez la connexion à Ravelry dans le navigateur.</string>
@@ -668,15 +671,15 @@
     <string name="search_more_error">Impossible de charger plus de modèles. Vérifiez votre connexion internet.</string>
     <string name="pattern_detail_error">Impossible de charger les détails du modèle. Vérifiez votre connexion internet.</string>
     <string name="project_actions_title">Actions du projet</string>
-    <string name="project_actions_section_this_project">CE PROJET</string>
-    <string name="project_actions_section_counter_tools">OUTILS DE COMPTEURS</string>
-    <string name="project_actions_section_project_actions">ACTIONS DU PROJET</string>
+    <string name="project_actions_section_this_project">Ce projet</string>
+    <string name="project_actions_section_counter_tools">Outils de compteurs</string>
+    <string name="project_actions_section_project_actions">Actions du projet</string>
     <string name="project_content_title">Projet</string>
     <string name="project_content_yarn">Fil</string>
     <string name="project_content_notes">Notes</string>
     <string name="project_content_photos">Photos</string>
     <string name="extra_counters_title">Compteurs supplémentaires</string>
-    <string name="counter_repeat_label">RÉPÉTITION</string>
+    <string name="counter_repeat_label">Répétition</string>
     <string name="counters_list_title">Compteurs</string>
 
     <!-- Täydennetyt lokalisoidut käyttöliittymätekstit -->

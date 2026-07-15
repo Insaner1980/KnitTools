@@ -34,6 +34,9 @@ sealed class ParsedInstruction {
 }
 
 object InstructionParser {
+    private val gaugeStitchesPattern = Regex("""(\d+(?:\.\d+)?)\s*(?:STITCHES?|STS?)""")
+    private val gaugeRowsPattern = Regex("""^\s*(?:AND|[,/&X])?\s*(\d+(?:\.\d+)?)\s*(?:ROWS?|R\b)""")
+
     fun parse(instruction: String): ParsedInstruction = parseWithRegex(instruction)
 
     // --- Avain-arvo-vastauksen parsinta (key:value) ---
@@ -349,12 +352,11 @@ object InstructionParser {
         ) {
             return null
         }
-        val gaugeMatch =
-            Regex(
-                """(\d+(?:\.\d+)?)\s*(?:STITCHES?|STS?)\s*(?:AND|,|&|X|/)?\s*(\d+(?:\.\d+)?)\s*(?:ROWS?|R\b)""",
-            ).find(upper) ?: return null
-        val stitches = gaugeMatch.groupValues[1].toDoubleOrNull() ?: return null
-        val rows = gaugeMatch.groupValues[2].toDoubleOrNull() ?: return null
+        val stitchesMatch = gaugeStitchesPattern.find(upper) ?: return null
+        val textAfterStitches = upper.substring(stitchesMatch.range.last + 1)
+        val rowsMatch = gaugeRowsPattern.find(textAfterStitches) ?: return null
+        val stitches = stitchesMatch.groupValues[1].toDoubleOrNull() ?: return null
+        val rows = rowsMatch.groupValues[1].toDoubleOrNull() ?: return null
         return ParsedInstruction.Gauge(
             stitchesPer10cm = stitches,
             rowsPer10cm = rows,

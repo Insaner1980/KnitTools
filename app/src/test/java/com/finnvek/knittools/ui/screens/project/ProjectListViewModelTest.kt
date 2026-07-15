@@ -240,6 +240,20 @@ class ProjectListViewModelTest {
         }
 
     @Test
+    fun `show completed toggle delegates each request to transactional preference toggle`() =
+        runTest {
+            every { preferencesManager.preferences } returns flowOf(AppPreferences())
+
+            val vm = createViewModel()
+
+            vm.toggleShowCompleted()
+            vm.toggleShowCompleted()
+            runCurrent()
+
+            coVerify(exactly = 2) { preferencesManager.toggleShowCompletedProjects() }
+        }
+
+    @Test
     fun `renameProject calls repository`() =
         runTest {
             every { proManager.hasFeature(any()) } returns true

@@ -48,6 +48,24 @@ class PdfPageRendererSourceTest {
         )
     }
 
+    @Test
+    fun `pdf rendering and close are serialized on the renderer instance`() {
+        val source = ProjectSourceFiles.read(PDF_PAGE_RENDERER)
+
+        assertTrue(
+            "Pdf page rendering must hold the same instance monitor as close.",
+            source.contains("@Synchronized\n    fun renderPage("),
+        )
+        assertTrue(
+            "Pdf renderer close must hold the same instance monitor as rendering.",
+            source.contains("@Synchronized\n    override fun close()"),
+        )
+        assertTrue(
+            "Pdf descriptor must close even if PdfRenderer.close fails.",
+            source.contains("renderer.close()\n        } finally {\n            fileDescriptor.close()"),
+        )
+    }
+
     private companion object {
         const val PDF_PAGE_RENDERER =
             "app/src/main/java/com/finnvek/knittools/data/storage/PdfPageRenderer.kt"

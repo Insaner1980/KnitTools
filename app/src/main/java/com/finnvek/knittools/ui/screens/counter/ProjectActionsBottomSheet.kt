@@ -41,6 +41,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.finnvek.knittools.R
+import com.finnvek.knittools.domain.calculator.formatIntegerForDisplay
+import com.finnvek.knittools.ui.components.localizedUppercase
+import com.finnvek.knittools.ui.components.rememberCurrentLocale
 
 data class ProjectActionsSheetCallbacks(
     val onDismiss: () -> Unit,
@@ -166,7 +169,7 @@ private fun ProjectActionsSection(
     content: @Composable () -> Unit,
 ) {
     Text(
-        text = title,
+        text = title.localizedUppercase(),
         style =
             MaterialTheme.typography.labelSmall.copy(
                 fontWeight = FontWeight.Bold,
@@ -189,6 +192,7 @@ private fun ActionRow(
     showChevron: Boolean = true,
     isDanger: Boolean = false,
 ) {
+    val locale = rememberCurrentLocale()
     val contentColor =
         when {
             isDanger -> MaterialTheme.colorScheme.error
@@ -217,7 +221,7 @@ private fun ActionRow(
         )
         if (trailingCount != null) {
             Text(
-                text = trailingCount.toString(),
+                text = formatIntegerForDisplay(trailingCount.toLong(), locale),
                 style = MaterialTheme.typography.labelMedium,
                 color = mutedColor,
                 modifier = Modifier.padding(end = 8.dp),

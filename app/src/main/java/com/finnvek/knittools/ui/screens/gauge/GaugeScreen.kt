@@ -36,6 +36,8 @@ import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.GaugeConverter
 import com.finnvek.knittools.domain.calculator.GaugeSwatchCalculator
 import com.finnvek.knittools.domain.calculator.ParsedInstruction
+import com.finnvek.knittools.domain.calculator.formatDecimalForDisplay
+import com.finnvek.knittools.domain.calculator.formatSignedDecimalForDisplay
 import com.finnvek.knittools.domain.model.GaugeConversionResult
 import com.finnvek.knittools.domain.model.GaugeSwatchResult
 import com.finnvek.knittools.ui.components.AnimatedResultNumber
@@ -48,10 +50,11 @@ import com.finnvek.knittools.ui.components.ResultCard
 import com.finnvek.knittools.ui.components.SectionHeader
 import com.finnvek.knittools.ui.components.SegmentedToggle
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
+import com.finnvek.knittools.ui.components.rememberCurrentLocale
 import com.finnvek.knittools.ui.screens.home.HomeViewModel
 import com.finnvek.knittools.util.extensions.convertFieldValue
 import com.finnvek.knittools.util.extensions.convertGaugeValue
-import java.util.Locale
+import com.finnvek.knittools.util.extensions.formatCanonicalDecimal
 
 @Composable
 fun GaugeScreen(
@@ -87,8 +90,8 @@ fun GaugeScreen(
     LaunchedEffect(swatchResult, gaugeInputMode) {
         if (gaugeInputMode != 0) return@LaunchedEffect
         val result = swatchResult ?: return@LaunchedEffect
-        val autoFilledSt = String.format(Locale.US, "%.1f", result.stitchesPerGaugeUnit)
-        val autoFilledRows = String.format(Locale.US, "%.1f", result.rowsPerGaugeUnit)
+        val autoFilledSt = formatCanonicalDecimal(result.stitchesPerGaugeUnit, fractionDigits = 1)
+        val autoFilledRows = formatCanonicalDecimal(result.rowsPerGaugeUnit, fractionDigits = 1)
 
         if (yourSt.isBlank() || yourSt == lastAutoFilledYourSt) {
             yourSt = autoFilledSt
@@ -487,6 +490,7 @@ private fun PatternInputSection(
 
 @Composable
 private fun GaugeResultCard(result: GaugeConversionResult) {
+    val locale = rememberCurrentLocale()
     ResultCard(title = stringResource(R.string.adjusted_for_your_gauge)) {
         AnimatedResultNumber(
             targetValue = stringResource(R.string.adjusted_result, result.adjustedStitches, result.adjustedRows),
@@ -502,8 +506,8 @@ private fun GaugeResultCard(result: GaugeConversionResult) {
             text =
                 stringResource(
                     R.string.exact_result,
-                    "%.1f".format(result.adjustedStitchesExact),
-                    "%.1f".format(result.adjustedRowsExact),
+                    formatDecimalForDisplay(result.adjustedStitchesExact, locale, 1, 1),
+                    formatDecimalForDisplay(result.adjustedRowsExact, locale, 1, 1),
                 ),
             style = MaterialTheme.typography.bodySmall,
         )
@@ -512,22 +516,17 @@ private fun GaugeResultCard(result: GaugeConversionResult) {
             text =
                 stringResource(
                     R.string.stitch_gauge_diff,
-                    formatPercentDifference(result.stitchPercentDifference),
+                    formatSignedDecimalForDisplay(result.stitchPercentDifference, locale, fractionDigits = 1),
                 ),
         )
         BadgePill(
             text =
                 stringResource(
                     R.string.row_gauge_diff,
-                    formatPercentDifference(result.rowPercentDifference),
+                    formatSignedDecimalForDisplay(result.rowPercentDifference, locale, fractionDigits = 1),
                 ),
         )
     }
-}
-
-private fun formatPercentDifference(value: Double): String {
-    val sign = if (value >= 0) "+" else ""
-    return "$sign${"%.1f".format(value)}"
 }
 
 internal data class GaugeFields(

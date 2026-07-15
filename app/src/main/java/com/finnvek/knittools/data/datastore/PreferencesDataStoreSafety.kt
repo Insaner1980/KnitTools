@@ -20,7 +20,7 @@ internal val DataStore<Preferences>.safePreferencesData: Flow<Preferences>
             }
         }
 
-internal suspend fun DataStore<Preferences>.readPreferencesOrNull(_operation: String): Preferences? =
+internal suspend fun DataStore<Preferences>.readPreferencesOrNull(): Preferences? =
     try {
         data.first()
     } catch (_: IOException) {
@@ -28,7 +28,6 @@ internal suspend fun DataStore<Preferences>.readPreferencesOrNull(_operation: St
     }
 
 internal suspend fun DataStore<Preferences>.editPreferencesSafely(
-    _operation: String,
     transform: suspend (MutablePreferences) -> Unit,
 ): Boolean =
     try {
@@ -39,7 +38,6 @@ internal suspend fun DataStore<Preferences>.editPreferencesSafely(
     }
 
 internal suspend fun DataStore<Preferences>.updatePreferencesSafely(
-    _operation: String,
     transform: MutablePreferences.() -> Unit,
 ): Boolean =
     try {

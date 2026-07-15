@@ -68,6 +68,7 @@ class RavelryLocalizationSourceTest {
                 "saved_pattern_detail_thumbnail",
                 "ravelry_browse",
                 "ravelry_disconnect",
+                "ravelry_disconnect_confirm",
                 "ravelry_not_connected",
                 "ravelry_connecting",
                 "ravelry_auth_pending",

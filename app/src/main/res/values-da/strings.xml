@@ -6,7 +6,6 @@
     <string name="cancel">Annuller</string>
     <string name="confirm">Bekræft</string>
     <string name="ok">OK</string>
-    <string name="add">Tilføj</string>
     <string name="delete">Slet</string>
     <string name="reset">Nulstil</string>
     <string name="result">Resultat</string>
@@ -15,6 +14,7 @@
 
     <!-- Units -->
     <string name="unit_cm">cm</string>
+    <string name="measurement_with_unit_format">%1$s %2$s</string>
     <string name="unit_inches">tommer</string>
     <string name="unit_st">m</string>
     <string name="unit_rows">pinde</string>
@@ -37,11 +37,11 @@
     <string name="desc_yarn_estimator_card">Beregn garnforbrug og antal nøgler</string>
 
     <!-- Bottom navigation tabs -->
-    <string name="tab_projects">PROJEKTER</string>
-    <string name="tab_library">BIBLIOTEK</string>
-    <string name="tab_tools">VÆRKTØJER</string>
-    <string name="tab_insights">INDSIGT</string>
-    <string name="tab_settings">INDSTILLINGER</string>
+    <string name="tab_projects">Projekter</string>
+    <string name="tab_library">Bibliotek</string>
+    <string name="tab_tools">Værktøjer</string>
+    <string name="tab_insights">Indsigt</string>
+    <string name="tab_settings">Indstillinger</string>
 
     <!-- Screen titles -->
     <string name="tools_title">Værktøjer</string>
@@ -55,9 +55,9 @@
 
     <!-- Project List -->
     <string name="project_list_title">Projekter</string>
-    <string name="continue_knitting">FORTSÆT MED AT STRIKKE</string>
-    <string name="section_active">AKTIVE</string>
-    <string name="section_completed">AFSLUTTEDE</string>
+    <string name="continue_knitting">Fortsæt med at strikke</string>
+    <string name="section_active">Aktive</string>
+    <string name="section_completed">Afsluttede</string>
     <string name="new_project">Nyt projekt</string>
     <string name="new_project_name_format">Projekt %1$d</string>
     <string name="create_project">Opret projekt</string>
@@ -167,13 +167,13 @@
     <string name="time_spent_minutes_format">%dm</string>
     <string name="unlink_yarn">Fjern garnkobling</string>
     <string name="select_yarn_card">Vælg garnkort</string>
-    <string name="linked_yarn_title">TILKNYTTET GARN</string>
+    <string name="linked_yarn_title">Tilknyttet garn</string>
     <string name="no_linked_yarn">Intet garn tilknyttet endnu</string>
     <string name="choose_from_my_yarn">Vælg fra My Yarn</string>
     <string name="choose_from_my_yarn_body">Vælg et allerede gemt garn</string>
     <string name="add_yarn_to_project">Tilføj garn til dette projekt</string>
     <string name="add_yarn_to_project_body">Gem en hurtig garnnote kun for dette projekt</string>
-    <string name="project_yarn_notes_title">PROJEKTGARN</string>
+    <string name="project_yarn_notes_title">Projektgarn</string>
     <string name="project_yarn_name">Garnnavn</string>
     <string name="brand_label">Mærke</string>
     <string name="project_yarn_description">Beskrivelse</string>
@@ -256,7 +256,7 @@
     <string name="invalid_input">Ugyldigt input</string>
     <string name="easy_to_remember">Let at huske</string>
     <string name="balanced">Balanceret</string>
-    <string name="total_stitches_format">I ALT: %1$d %2$s</string>
+    <string name="total_stitches_format">I alt: %1$d %2$s</string>
     <string name="increase_decrease_error_current_positive">Nuværende masker skal være større end 0</string>
     <string name="increase_decrease_error_change_positive">Antallet af masker der ændres skal være større end 0</string>
     <string name="increase_decrease_error_cannot_decrease">Tilgængeligt maskeantal: %2$d. Ønsket indtagning: %1$d.</string>
@@ -282,6 +282,7 @@
     <string name="stitch_gauge">Maskefasthed</string>
     <string name="pattern_repeat_optional">Mønsterrapport (valgfrit)</string>
     <string name="edge_stitches_optional">Kantmasker i alt</string>
+    <string name="edge_stitches_total_format">Kantmasker i alt: %1$d</string>
     <string name="stitches_result">%d masker</string>
     <string name="actual_width">Faktisk bredde: %1$s %2$s</string>
     <string name="adjusted_down">Justeret ned: %1$d m (%2$s %3$s)</string>
@@ -307,7 +308,7 @@
     <string name="theme_system">System</string>
     <string name="theme_light">Lyst</string>
     <string name="theme_dark">Mørkt</string>
-    <string name="settings_section_settings">INDSTILLINGER</string>
+    <string name="settings_section_settings">Indstillinger</string>
     <string name="settings_section_pro">PRO</string>
     <string name="settings_section_info">INFO</string>
     <string name="settings_language">App-sprog</string>
@@ -432,8 +433,8 @@
     <string name="desc_chart_symbols">Guide til standard diagramsymboler</string>
 
     <!-- Library — My Collection -->
-    <string name="library_my_collection">MIN SAMLING</string>
-    <string name="library_reference">OPSLAG</string>
+    <string name="library_my_collection">Min samling</string>
+    <string name="library_reference">Opslag</string>
     <string name="desc_saved_patterns">Opskrifter fra Ravelry og PDF-filer</string>
     <string name="desc_my_yarn">Garnnoter, mængder og tilknyttede projekter</string>
     <string name="desc_all_photos">Fremdriftsbilleder fra alle dine projekter</string>
@@ -443,9 +444,9 @@
     <string name="filter_all">Alle</string>
 
     <!-- Insights -->
-    <string name="total_time_label">SAMLET TID</string>
-    <string name="avg_pace_label">GENNEMSNITLIGT TEMPO</string>
-    <string name="completed_label">AFSLUTTET</string>
+    <string name="total_time_label">Samlet tid</string>
+    <string name="avg_pace_label">Gennemsnitligt tempo</string>
+    <string name="completed_label">Afsluttet</string>
     <string name="time_format_hours">%.1ft</string>
     <string name="pace_format">%.0f p/t</string>
     <string name="streak_format">%d dage</string>
@@ -453,7 +454,8 @@
     <string name="insights_all_time">Hele tiden</string>
     <string name="insights_this_week">Denne uge</string>
     <string name="insights_this_month">Denne måned</string>
-    <string name="insights_knitting_activity">STRIKKEAKTIVITET</string>
+    <string name="insights_knitting_activity">Strikkeaktivitet</string>
+    <string name="activity_grid_tooltip_format">%1$s — %2$s</string>
     <string name="insights_current_streak">Nuværende stime:</string>
     <string name="insights_best_streak">Bedste:</string>
     <plurals name="insights_rows_count">
@@ -473,7 +475,7 @@
     <string name="relative_time_weeks_ago">%1$du siden</string>
     <string name="relative_time_months_ago">%1$dmdr siden</string>
     <string name="no_knitting">Ingen strikning</string>
-    <string name="time_per_project">TID PR. PROJEKT</string>
+    <string name="time_per_project">Tid pr. projekt</string>
 
     <!-- Settings -->
     <string name="help_and_guide">Hjælp og guide</string>
@@ -618,6 +620,7 @@
     <string name="ravelry_sign_in">Log ind med Ravelry</string>
     <string name="ravelry_browse">Gennemse Ravelry</string>
     <string name="ravelry_disconnect">Afbryd Ravelry</string>
+    <string name="ravelry_disconnect_confirm">Afbryd forbindelsen til Ravelry? Du skal logge ind igen for at bruge Ravelry-funktionerne.</string>
     <string name="ravelry_not_connected">Log ind for at søge efter Ravelry-opskrifter fra KnitTools.</string>
     <string name="ravelry_connecting">Opretter forbindelse til Ravelry…</string>
     <string name="ravelry_auth_pending">Færdiggør login med Ravelry i browseren.</string>
@@ -661,15 +664,15 @@
     <string name="search_more_error">Kunne ikke indlæse flere opskrifter. Tjek din internetforbindelse.</string>
     <string name="pattern_detail_error">Kunne ikke indlæse opskriftsdetaljer. Tjek din internetforbindelse.</string>
     <string name="project_actions_title">Projekthandlinger</string>
-    <string name="project_actions_section_this_project">DETTE PROJEKT</string>
-    <string name="project_actions_section_counter_tools">TÆLLERVÆRKTØJER</string>
-    <string name="project_actions_section_project_actions">PROJEKTHANDLINGER</string>
+    <string name="project_actions_section_this_project">Dette projekt</string>
+    <string name="project_actions_section_counter_tools">Tællerværktøjer</string>
+    <string name="project_actions_section_project_actions">Projekthandlinger</string>
     <string name="project_content_title">Projekt</string>
     <string name="project_content_yarn">Garn</string>
     <string name="project_content_notes">Noter</string>
     <string name="project_content_photos">Fotos</string>
     <string name="extra_counters_title">Ekstra tællere</string>
-    <string name="counter_repeat_label">GENTAG</string>
+    <string name="counter_repeat_label">Gentag</string>
     <string name="counters_list_title">Tællere</string>
 
     <!-- Täydennetyt lokalisoidut käyttöliittymätekstit -->

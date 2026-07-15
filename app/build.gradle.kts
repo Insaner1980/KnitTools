@@ -593,9 +593,6 @@ dependencies {
         implementation(libs.kotlinx.serialization.core) {
             because("Room 2.8.x migration helpers require kotlinx.serialization 1.8.1")
         }
-        implementation(libs.kotlinx.serialization.json) {
-            because("Room 2.8.x migration helpers require kotlinx.serialization 1.8.1")
-        }
         implementation(libs.guava) {
             because(
                 "kotlinx-coroutines-guava tuo Guava 31.0.1-jre:n; " +
@@ -637,7 +634,9 @@ dependencies {
 
     // Lifecycle
     implementation(libs.lifecycle.process)
+    implementation(libs.lifecycle.runtime.ktx)
     implementation(libs.lifecycle.runtime.compose)
+    implementation(libs.lifecycle.viewmodel.ktx)
 
     // Room
     implementation(libs.room.runtime)
@@ -652,6 +651,9 @@ dependencies {
     // Coroutines
     implementation(libs.coroutines.core)
     implementation(libs.coroutines.android)
+
+    // Serialization
+    implementation(libs.kotlinx.serialization.json)
 
     // DataStore
     implementation(libs.datastore.preferences)

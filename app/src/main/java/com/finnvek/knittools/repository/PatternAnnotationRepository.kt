@@ -19,7 +19,10 @@ class PatternAnnotationRepository
             projectId: Long,
             page: Int,
         ): Flow<List<PatternAnnotation>> =
-            dao.getAnnotationsForPage(projectId, page).map { annotations -> annotations.map { it.toDomain() } }
+            dao
+                .getAnnotationsForPage(projectId, page)
+                .map { annotations -> annotations.map { it.toDomain() } }
+                .retryOnRepositoryReadFailure()
 
         suspend fun addAnnotation(
             projectId: Long,

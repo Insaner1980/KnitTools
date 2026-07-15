@@ -22,9 +22,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.OffsetMapping
+import androidx.compose.ui.text.input.TransformedText
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import java.text.DecimalFormatSymbols
+import java.util.Locale
 
 data class NumberInputOptions(
     val isDecimal: Boolean = false,
@@ -45,6 +51,15 @@ fun NumberInputField(
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
     val inputFieldShape = RoundedCornerShape(14.dp)
+    val locale = rememberCurrentLocale()
+    val visualTransformation =
+        remember(options.isDecimal, locale) {
+            if (options.isDecimal) {
+                localizedDecimalVisualTransformation(locale)
+            } else {
+                VisualTransformation.None
+            }
+        }
 
     Column(modifier = modifier) {
         Text(
@@ -85,6 +100,7 @@ fun NumberInputField(
                     onDone = { focusManager.clearFocus() },
                 ),
             singleLine = true,
+            visualTransformation = visualTransformation,
             suffix =
                 options.suffix?.let {
                     {
@@ -108,6 +124,19 @@ fun NumberInputField(
         )
     }
 }
+
+internal fun localizeDecimalSeparatorForDisplay(
+    value: String,
+    locale: Locale,
+): String = value.replace('.', DecimalFormatSymbols.getInstance(locale).decimalSeparator)
+
+private fun localizedDecimalVisualTransformation(locale: Locale): VisualTransformation =
+    VisualTransformation { text ->
+        TransformedText(
+            text = AnnotatedString(localizeDecimalSeparatorForDisplay(text.text, locale)),
+            offsetMapping = OffsetMapping.Identity,
+        )
+    }
 
 private fun numericKeyboardType(
     isDecimal: Boolean,

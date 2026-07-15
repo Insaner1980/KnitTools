@@ -33,6 +33,7 @@ class CounterStitchTrackingSourceTest {
 
         assertFalse(workspace.contains("""item(key = "stitch-tracker")"""))
         assertTrue(hero.contains("CounterControlsToStitchTrackerSpacing"))
+        assertTrue(hero.contains("CounterButtons("))
         assertTrue(hero.indexOf("CounterButtons(") < hero.indexOf("CounterStitchTracker("))
         assertTrue(stitchCounter.contains("symbol = CounterStepSymbol.Minus"))
         assertTrue(stitchCounter.contains("symbol = CounterStepSymbol.Plus"))

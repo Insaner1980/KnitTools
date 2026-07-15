@@ -49,6 +49,7 @@ import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.CounterValueDisplay
 import com.finnvek.knittools.domain.calculator.CounterValueFormatter
 import com.finnvek.knittools.domain.calculator.RepeatSectionLogic
+import com.finnvek.knittools.domain.calculator.formatIntegerForDisplay
 import com.finnvek.knittools.domain.model.ProjectCounter
 import com.finnvek.knittools.domain.model.ProjectCounterDraft
 import com.finnvek.knittools.domain.model.ProjectCounterType
@@ -58,6 +59,7 @@ import com.finnvek.knittools.ui.components.CounterStepperButton
 import com.finnvek.knittools.ui.components.NumberInputField
 import com.finnvek.knittools.ui.components.NumberInputOptions
 import com.finnvek.knittools.ui.components.SegmentedToggle
+import com.finnvek.knittools.ui.components.rememberCurrentLocale
 import com.finnvek.knittools.ui.theme.CounterDimens
 
 private const val DISABLED_CONTENT_ALPHA = 0.38f
@@ -68,7 +70,6 @@ data class CounterItemActions(
     val onRename: (String) -> Unit,
     val onReset: () -> Unit,
     val onDelete: () -> Unit,
-    val performHaptic: () -> Unit,
 )
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -83,9 +84,9 @@ fun CounterListItem(
     val onRename = actions.onRename
     val onReset = actions.onReset
     val onDelete = actions.onDelete
-    val performHaptic = actions.performHaptic
     var showContextMenu by rememberSaveable(counter.id) { mutableStateOf(false) }
     var showRenameDialog by rememberSaveable(counter.id) { mutableStateOf(false) }
+    var showResetDialog by rememberSaveable(counter.id) { mutableStateOf(false) }
     var showDeleteDialog by rememberSaveable(counter.id) { mutableStateOf(false) }
     val canDecrement = counter.count > 0
     val incrementProminent = extraCounterIncrementIsProminent(counter)
@@ -129,7 +130,7 @@ fun CounterListItem(
                 expanded = showContextMenu,
                 onExpandedChange = { showContextMenu = it },
                 onRename = { showRenameDialog = true },
-                onReset = onReset,
+                onReset = { showResetDialog = true },
                 onDelete = { showDeleteDialog = true },
             )
         }
@@ -142,10 +143,7 @@ fun CounterListItem(
                 symbol = CounterStepSymbol.Minus,
                 isIncrement = false,
                 contentDescription = stringResource(R.string.counter_decrease_named, counter.name),
-                onClick = {
-                    performHaptic()
-                    onDecrement()
-                },
+                onClick = onDecrement,
                 enabled = canDecrement,
             )
 
@@ -166,10 +164,7 @@ fun CounterListItem(
                 symbol = CounterStepSymbol.Plus,
                 isIncrement = true,
                 contentDescription = stringResource(R.string.counter_increase_named, counter.name),
-                onClick = {
-                    performHaptic()
-                    onIncrement()
-                },
+                onClick = onIncrement,
                 prominent = incrementProminent,
             )
         }
@@ -183,6 +178,20 @@ fun CounterListItem(
                 showRenameDialog = false
             },
             onDismiss = { showRenameDialog = false },
+        )
+    }
+
+    if (showResetDialog) {
+        ConfirmationDialog(
+            title = stringResource(R.string.reset_counter),
+            message = stringResource(R.string.reset_counter_message),
+            confirmText = stringResource(R.string.reset_counter_name),
+            isDestructive = true,
+            onConfirm = {
+                showResetDialog = false
+                onReset()
+            },
+            onDismiss = { showResetDialog = false },
         )
     }
 
@@ -212,7 +221,7 @@ internal fun extraCounterIncrementIsProminent(counter: ProjectCounter): Boolean 
 @Composable
 internal fun CounterValueDisplay.asText(): String =
     when (this) {
-        is CounterValueDisplay.Plain -> count.toString()
+        is CounterValueDisplay.Plain -> formatIntegerForDisplay(count.toLong(), rememberCurrentLocale())
         is CounterValueDisplay.Cycle ->
             stringResource(R.string.repeating_counter_value_format, current, length)
         is CounterValueDisplay.Section ->

@@ -65,14 +65,14 @@ class PreferencesManager
             }
 
         suspend fun setThemeMode(mode: ThemeMode) {
-            context.dataStore.editPreferencesSafely("Teeman tallennus") {
+            context.dataStore.editPreferencesSafely {
                 it[KEY_THEME_MODE] = mode.value
             }
         }
 
         suspend fun setAppLanguage(language: AppLanguage) {
             val saved =
-                context.dataStore.editPreferencesSafely("Kieliasetuksen tallennus") {
+                context.dataStore.editPreferencesSafely {
                     it[KEY_APP_LANGUAGE] = language.value
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                         it[KEY_APP_LANGUAGE_MIGRATED_TO_SYSTEM] = true
@@ -82,31 +82,31 @@ class PreferencesManager
         }
 
         suspend fun setHapticFeedback(enabled: Boolean) {
-            context.dataStore.editPreferencesSafely("Haptiikka-asetuksen tallennus") {
+            context.dataStore.editPreferencesSafely {
                 it[KEY_HAPTIC_FEEDBACK] = enabled
             }
         }
 
         suspend fun setKeepScreenAwake(enabled: Boolean) {
-            context.dataStore.editPreferencesSafely("Näytön hereilläpidon tallennus") {
+            context.dataStore.editPreferencesSafely {
                 it[KEY_KEEP_SCREEN_AWAKE] = enabled
             }
         }
 
         suspend fun setUseImperial(imperial: Boolean) {
-            context.dataStore.editPreferencesSafely("Yksikköasetuksen tallennus") {
+            context.dataStore.editPreferencesSafely {
                 it[KEY_USE_IMPERIAL] = imperial
             }
         }
 
-        suspend fun setShowCompletedProjects(show: Boolean) {
-            context.dataStore.editPreferencesSafely("Valmiiden projektien asetuksen tallennus") {
-                it[KEY_SHOW_COMPLETED] = show
+        suspend fun toggleShowCompletedProjects() {
+            context.dataStore.editPreferencesSafely {
+                it[KEY_SHOW_COMPLETED] = !(it[KEY_SHOW_COMPLETED] ?: false)
             }
         }
 
         suspend fun setProjectSortOrder(order: ProjectSortOrder) {
-            context.dataStore.editPreferencesSafely("Projektien lajittelun tallennus") {
+            context.dataStore.editPreferencesSafely {
                 it[KEY_SORT_ORDER] = order.persistedValue
             }
         }
@@ -119,14 +119,14 @@ class PreferencesManager
             }
 
         suspend fun dismissTooltip(id: String) {
-            context.dataStore.editPreferencesSafely("Tooltipin kuittauksen tallennus") { prefs ->
+            context.dataStore.editPreferencesSafely { prefs ->
                 val current = prefs[KEY_DISMISSED_TOOLTIPS] ?: emptySet()
                 prefs[KEY_DISMISSED_TOOLTIPS] = current + id
             }
         }
 
         suspend fun applyStoredAppLanguage() {
-            val prefs = context.dataStore.readPreferencesOrNull("Kieliasetusten lukeminen") ?: return
+            val prefs = context.dataStore.readPreferencesOrNull() ?: return
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 migrateStoredLanguageToSystemIfNeeded(prefs)
             } else {
@@ -138,7 +138,7 @@ class PreferencesManager
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
 
             val currentLanguage = currentAppLanguage()
-            context.dataStore.editPreferencesSafely("Järjestelmän kieliasetuksen synkronointi") { prefs ->
+            context.dataStore.editPreferencesSafely { prefs ->
                 if (prefs[KEY_APP_LANGUAGE_MIGRATED_TO_SYSTEM] != true) {
                     return@editPreferencesSafely
                 }
@@ -165,7 +165,7 @@ class PreferencesManager
                 applyAppLanguage(storedLanguage)
             }
 
-            context.dataStore.editPreferencesSafely("Kieliasetuksen migraatio") {
+            context.dataStore.editPreferencesSafely {
                 val languageToStore =
                     currentAppLanguage().takeIf { language -> language != AppLanguage.SYSTEM }
                         ?: storedLanguage

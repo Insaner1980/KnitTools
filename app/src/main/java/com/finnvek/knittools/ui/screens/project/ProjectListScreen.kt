@@ -76,6 +76,7 @@ import com.finnvek.knittools.ui.components.ProjectCard
 import com.finnvek.knittools.ui.components.ProjectDetailsDialog
 import com.finnvek.knittools.ui.components.ProjectDetailsValues
 import com.finnvek.knittools.ui.components.RenameProjectDialog
+import com.finnvek.knittools.ui.components.localizedUppercase
 import com.finnvek.knittools.ui.components.mainCounterProjectCardCountText
 import com.finnvek.knittools.ui.components.mainCounterTargetText
 import com.finnvek.knittools.ui.components.projectMetadataText
@@ -860,7 +861,7 @@ private fun ActiveProjectItem(
                 metadataLine = projectCardMetadataLine(project),
                 countText = projectCardCountText(project),
                 yarnName = state.yarnName,
-                yarnColorSeed = project.id,
+                yarnColorSeed = state.firstYarnCardId,
                 photoCount = state.photoCount,
                 patternName = state.patternName,
             )
@@ -876,7 +877,7 @@ private fun ActiveProjectItem(
             metadataLine = projectCardMetadataLine(project),
             countText = projectCardCountText(project),
             yarnName = state.yarnName,
-            yarnColorSeed = project.id,
+            yarnColorSeed = state.firstYarnCardId,
             photoCount = state.photoCount,
             patternName = state.patternName,
             hasPatternAttachment = !project.patternUri.isNullOrBlank(),
@@ -926,13 +927,11 @@ private fun ContinueKnittingCard(
         } else {
             mainCounterProjectCardCountText(mainCounterDisplay.projectCardCount)
         }
+    val rowAndTime = stringResource(R.string.project_metadata_format, rowContext, formatMinutes(state.totalMinutes))
     val contextLine =
-        continueKnittingContextLine(
-            sectionName = state.sectionName,
-            rowCount = state.rowCount,
-            targetRows = state.targetRows,
-            fallback = rowContext + ", " + formatMinutes(state.totalMinutes),
-        )
+        normalizedContinueKnittingSectionName(state.sectionName)?.let { sectionName ->
+            stringResource(R.string.project_metadata_format, sectionName, rowAndTime)
+        } ?: rowAndTime
 
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
@@ -949,7 +948,7 @@ private fun ContinueKnittingCard(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = stringResource(R.string.continue_knitting),
+                    text = stringResource(R.string.continue_knitting).localizedUppercase(),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary,
                 )
@@ -1004,28 +1003,8 @@ private fun projectCardMetadataLine(project: CounterProject): String =
 private fun projectCardCountText(project: CounterProject): String =
     mainCounterProjectCardCountText(CounterValueFormatter.forMainCounter(project).projectCardCount)
 
-internal fun continueKnittingContextLine(
-    sectionName: String?,
-    rowCount: Int,
-    targetRows: Int?,
-    fallback: String,
-): String {
-    sectionName
-        ?.trim()
-        ?.takeIf { it.isNotEmpty() }
-        ?.let { section ->
-            return listOf(section, fallback)
-                .filter(String::isNotBlank)
-                .joinToString(", ")
-        }
-
-    val progressFallback =
-        targetRows
-            ?.takeIf { it > 0 }
-            ?.let { "$rowCount/$it" }
-            ?: rowCount.toString()
-    return fallback.ifBlank { progressFallback }
-}
+internal fun normalizedContinueKnittingSectionName(sectionName: String?): String? =
+    sectionName?.trim()?.takeIf(String::isNotEmpty)
 
 @Composable
 private fun formatMinutes(minutes: Int): String =
@@ -1037,7 +1016,7 @@ private fun formatMinutes(minutes: Int): String =
 @Composable
 private fun SectionLabel(text: String) {
     Text(
-        text = text,
+        text = text.localizedUppercase(),
         style = MaterialTheme.typography.labelSmall,
         color = MaterialTheme.colorScheme.secondary,
         modifier = Modifier.padding(vertical = 8.dp),

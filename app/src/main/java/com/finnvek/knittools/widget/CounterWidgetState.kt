@@ -61,7 +61,7 @@ object CounterWidgetState {
         context: Context,
         data: WidgetData,
     ) {
-        context.widgetDataStore.updatePreferencesSafely("Widget-tilan tallennus") {
+        context.widgetDataStore.updatePreferencesSafely {
             applyWidgetData(data)
         }
     }

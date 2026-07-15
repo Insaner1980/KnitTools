@@ -59,8 +59,8 @@ object IncreaseDecreaseCalculator {
                 null
             }
 
-        val easyPattern = buildEasyPattern(availableForKnit, changeBy, mode, style, totalStitches)
-        val balancedPattern = buildBalancedPattern(availableForKnit, changeBy, mode, style, totalStitches)
+        val easyPattern = buildEasyPattern(availableForKnit, changeBy, mode, style)
+        val balancedPattern = buildBalancedPattern(availableForKnit, changeBy, mode, style)
 
         return IncreaseDecreaseResult(
             totalStitches = totalStitches,
@@ -76,7 +76,6 @@ object IncreaseDecreaseCalculator {
         sections: Int,
         mode: IncreaseDecreaseMode,
         style: KnittingStyle,
-        totalStitches: Int,
     ): String {
         val actionAbbrev =
             when (mode) {
@@ -88,8 +87,8 @@ object IncreaseDecreaseCalculator {
         val remainder = availableForKnit % sections
 
         return when (style) {
-            KnittingStyle.FLAT -> buildFlatEasy(base, sections, remainder, actionAbbrev, totalStitches)
-            KnittingStyle.CIRCULAR -> buildCircularEasy(base, sections, remainder, actionAbbrev, totalStitches)
+            KnittingStyle.FLAT -> buildFlatEasy(base, sections, remainder, actionAbbrev)
+            KnittingStyle.CIRCULAR -> buildCircularEasy(base, sections, remainder, actionAbbrev)
         }
     }
 
@@ -98,10 +97,9 @@ object IncreaseDecreaseCalculator {
         sections: Int,
         remainder: Int,
         actionAbbrev: String,
-        totalStitches: Int,
     ): String {
         if (remainder == 0) {
-            return "${formatRepeatedActionGroup(base, actionAbbrev, sections)} — total: $totalStitches stitches"
+            return formatRepeatedActionGroup(base, actionAbbrev, sections)
         }
         val half = remainder / 2
         val parts = mutableListOf<String>()
@@ -109,7 +107,7 @@ object IncreaseDecreaseCalculator {
         parts.add(formatRepeatedActionGroup(base, actionAbbrev, sections))
         val trailing = remainder - half
         if (trailing > 0) parts.add("K$trailing")
-        return "${parts.joinToString(", ")} — total: $totalStitches stitches"
+        return parts.joinToString(", ")
     }
 
     private fun buildCircularEasy(
@@ -117,10 +115,9 @@ object IncreaseDecreaseCalculator {
         sections: Int,
         remainder: Int,
         actionAbbrev: String,
-        totalStitches: Int,
     ): String {
         if (remainder == 0) {
-            return "${formatRepeatedActionGroup(base, actionAbbrev, sections)} — total: $totalStitches stitches"
+            return formatRepeatedActionGroup(base, actionAbbrev, sections)
         }
         val mainSections = sections - remainder
         val biggerSections = remainder
@@ -129,7 +126,7 @@ object IncreaseDecreaseCalculator {
             parts.add(formatRepeatedActionGroup(base, actionAbbrev, mainSections))
         }
         parts.add(formatRepeatedActionGroup(base + 1, actionAbbrev, biggerSections))
-        return "${parts.joinToString(", ")} — total: $totalStitches stitches"
+        return parts.joinToString(", ")
     }
 
     private fun buildBalancedPattern(
@@ -137,18 +134,16 @@ object IncreaseDecreaseCalculator {
         sections: Int,
         mode: IncreaseDecreaseMode,
         style: KnittingStyle,
-        totalStitches: Int,
     ): String =
         when (style) {
-            KnittingStyle.FLAT -> buildFlatBalancedPattern(availableForKnit, sections, mode, totalStitches)
-            KnittingStyle.CIRCULAR -> buildCircularBalancedPattern(availableForKnit, sections, mode, totalStitches)
+            KnittingStyle.FLAT -> buildFlatBalancedPattern(availableForKnit, sections, mode)
+            KnittingStyle.CIRCULAR -> buildCircularBalancedPattern(availableForKnit, sections, mode)
         }
 
     private fun buildFlatBalancedPattern(
         availableForKnit: Int,
         sections: Int,
         mode: IncreaseDecreaseMode,
-        totalStitches: Int,
     ): String {
         val gaps = sections + 1
         val trailingKnit = availableForKnit / gaps + if (availableForKnit % gaps > 0) 1 else 0
@@ -157,14 +152,13 @@ object IncreaseDecreaseCalculator {
         if (trailingKnit > 0) {
             parts.add("K$trailingKnit")
         }
-        return "${parts.joinToString(", ")} — total: $totalStitches stitches"
+        return parts.joinToString(", ")
     }
 
     private fun buildCircularBalancedPattern(
         availableForKnit: Int,
         sections: Int,
         mode: IncreaseDecreaseMode,
-        totalStitches: Int,
     ): String {
         val groups =
             buildBalancedActionGroups(
@@ -172,7 +166,7 @@ object IncreaseDecreaseCalculator {
                 sections,
                 mode,
             ).joinToString(", ")
-        return "$groups — total: $totalStitches stitches"
+        return groups
     }
 
     private fun buildBalancedActionGroups(

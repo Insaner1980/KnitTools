@@ -152,6 +152,7 @@ class RavelryViewModel
 
         private var currentPage = 1
         private var totalPages = 1
+        private var isProjectCreationInFlight = false
         private var isSaveInFlight = false
         private var isImportSaveInFlight = false
         private var importRequestId = 0L
@@ -455,13 +456,19 @@ class RavelryViewModel
 
         fun createProjectFromPattern() {
             val detail = _patternDetail.value ?: return
+            if (isProjectCreationInFlight) return
+            isProjectCreationInFlight = true
             viewModelScope.launch {
-                if (!isPro && repository.getActiveProjectCount() >= 1) {
-                    _upgradeToPro.emit(Unit)
-                    return@launch
-                }
-                repository.createProjectFromPattern(detail)?.let { projectId ->
-                    _navigateToProject.emit(projectId)
+                try {
+                    if (!isPro && repository.getActiveProjectCount() >= 1) {
+                        _upgradeToPro.emit(Unit)
+                        return@launch
+                    }
+                    repository.createProjectFromPattern(detail)?.let { projectId ->
+                        _navigateToProject.emit(projectId)
+                    }
+                } finally {
+                    isProjectCreationInFlight = false
                 }
             }
         }

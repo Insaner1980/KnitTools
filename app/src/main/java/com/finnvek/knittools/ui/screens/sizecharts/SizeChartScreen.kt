@@ -37,6 +37,7 @@ import com.finnvek.knittools.domain.calculator.SizeChartData
 import com.finnvek.knittools.domain.model.SizeChartEntry
 import com.finnvek.knittools.domain.model.SizeLabel
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
+import com.finnvek.knittools.ui.components.rememberCurrentLocale
 import com.finnvek.knittools.ui.screens.home.HomeViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -164,6 +165,7 @@ private fun SizeChartDataRow(
     val context = LocalContext.current
     val cmUnit = stringResource(R.string.unit_cm)
     val inchUnit = stringResource(R.string.unit_inches)
+    val locale = rememberCurrentLocale()
 
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
@@ -177,14 +179,15 @@ private fun SizeChartDataRow(
         )
         // Loput sarakkeet = mitat
         entry.measurements.forEach { measurement ->
+            val measurementValue =
+                SizeChartData.formatMeasurementValue(
+                    measurement = measurement,
+                    useImperial = useImperial,
+                    locale = locale,
+                )
+            val unit = if (useImperial) inchUnit else cmUnit
             Text(
-                text =
-                    SizeChartData.formatMeasurement(
-                        measurement = measurement,
-                        useImperial = useImperial,
-                        cmUnit = cmUnit,
-                        inchUnit = inchUnit,
-                    ),
+                text = stringResource(R.string.measurement_with_unit_format, measurementValue, unit),
                 modifier = Modifier.weight(1f),
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center,

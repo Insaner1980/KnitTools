@@ -4,13 +4,11 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.finnvek.knittools.di.ApplicationScope
-import com.finnvek.knittools.di.IoDispatcher
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.CounterRepository
 import com.finnvek.knittools.ui.navigation.toPositiveRouteIdOrNull
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -35,7 +33,6 @@ class NotesEditorViewModel
     constructor(
         private val repository: CounterRepository,
         private val proManager: ProManager,
-        @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
         @param:ApplicationScope private val applicationScope: CoroutineScope,
         private val savedStateHandle: SavedStateHandle,
     ) : ViewModel() {
@@ -225,7 +222,7 @@ class NotesEditorViewModel
             super.onCleared()
             if (!shouldFlush) return
             @Suppress("TooGenericExceptionCaught")
-            applicationScope.launch(ioDispatcher) {
+            applicationScope.launch {
                 try {
                     repository.saveProjectNotes(
                         id = loadedProjectId,

@@ -102,6 +102,30 @@ class RavelryViewModelTest {
         }
 
     @Test
+    fun `createProjectFromPattern ignores repeated taps while creation is in flight`() =
+        runTest(testDispatcher) {
+            val pattern = PatternDetail(id = 42, name = "Test Pattern", permalink = "test-pattern")
+            coEvery { repository.getPatternDetail(42) } returns pattern
+            coEvery { repository.isPatternSaved(42) } returns false
+            val creationResult = CompletableDeferred<Long?>()
+            coEvery { repository.createProjectFromPattern(pattern) } coAnswers {
+                creationResult.await()
+            }
+            val vm = createViewModel(isPro = true)
+            vm.loadDetail(42)
+            advanceUntilIdle()
+
+            vm.createProjectFromPattern()
+            runCurrent()
+            vm.createProjectFromPattern()
+            runCurrent()
+            creationResult.complete(7L)
+            advanceUntilIdle()
+
+            coVerify(exactly = 1) { repository.createProjectFromPattern(pattern) }
+        }
+
+    @Test
     fun `savePattern ignores repeated taps while save is in flight`() =
         runTest(testDispatcher) {
             val pattern = PatternDetail(id = 42, name = "Test Pattern", permalink = "test-pattern")

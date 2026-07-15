@@ -39,9 +39,13 @@ class SavedPatternRepository
     ) {
         private val saveMutex = Mutex()
 
-        fun getAll(): Flow<List<SavedPattern>> = dao.getAll().map { patterns -> patterns.map { it.toDomain() } }
+        fun getAll(): Flow<List<SavedPattern>> =
+            dao
+                .getAll()
+                .map { patterns -> patterns.map { it.toDomain() } }
+                .retryOnRepositoryReadFailure()
 
-        fun getCount(): Flow<Int> = dao.getCount()
+        fun getCount(): Flow<Int> = dao.getCount().retryOnRepositoryReadFailure()
 
         suspend fun getById(id: Long): SavedPattern? = dao.getById(id)?.toDomain()
 

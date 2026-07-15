@@ -35,7 +35,8 @@ class DispatcherDisciplineSourceTest {
         assertTrue(dispatchers.contains("fun provideApplicationScope(): CoroutineScope"))
         listOf(counterViewModel, notesViewModel).forEach { source ->
             assertTrue(source.contains("@param:ApplicationScope private val applicationScope: CoroutineScope"))
-            assertTrue(source.contains("applicationScope.launch(ioDispatcher)"))
+            assertTrue(source.contains("applicationScope.launch {"))
+            assertFalse(source.contains("applicationScope.launch(ioDispatcher)"))
             assertFalse(source.contains("CoroutineScope(ioDispatcher + NonCancellable)"))
         }
     }

@@ -42,10 +42,12 @@ import com.finnvek.knittools.di.IoDispatcher
 import com.finnvek.knittools.pro.InAppReviewManager
 import com.finnvek.knittools.pro.InAppUpdateManager
 import com.finnvek.knittools.ravelry.RavelryShareImportUrls
+import com.finnvek.knittools.ui.ProvidePreferenceAwareHapticFeedback
 import com.finnvek.knittools.ui.navigation.CounterLaunchIntentData
 import com.finnvek.knittools.ui.navigation.CounterLaunchRequest
 import com.finnvek.knittools.ui.navigation.KnitToolsNavActions
 import com.finnvek.knittools.ui.navigation.KnitToolsNavHost
+import com.finnvek.knittools.ui.navigation.KnitToolsNavRequests
 import com.finnvek.knittools.ui.navigation.RavelryShareImportRequest
 import com.finnvek.knittools.ui.navigation.TopLevelDestination
 import com.finnvek.knittools.ui.navigation.withValidatedCounterLaunchTrust
@@ -139,40 +141,47 @@ class MainActivity : AppCompatActivity() {
                 snackbarHostState = snackbarHostState,
             )
 
-            KnitToolsTheme(isDarkTheme = isDarkTheme) {
-                Surface(modifier = Modifier.fillMaxSize()) {
-                    KnitToolsNavHost(
-                        startDestination = TopLevelDestination.Projects.route,
-                        counterLaunchRequest = counterLaunchRequest,
-                        openProUpgradeRequest = openProUpgradeRequest,
-                        ravelryShareImportRequest = ravelryShareImportRequest,
-                        snackbarHostState = snackbarHostState,
-                        actions =
-                            KnitToolsNavActions(
-                                onPurchasePro = billingManager::launchPurchaseFlow,
-                                onLaunchRavelryAuth = ::launchRavelryAuth,
-                                onBrowseRavelry = ::launchRavelryBrowse,
-                                onCounterLaunchHandled = {
-                                    counterLaunchRequest?.let {
-                                        consumedCounterLaunchRequestId = it.requestId
-                                    }
-                                    counterLaunchRequest = null
-                                    clearCounterLaunchIntent()
-                                },
-                                onProUpgradeLaunchHandled = {
-                                    openProUpgradeRequest = false
-                                    clearProUpgradeLaunchIntent()
-                                },
-                                onRavelryShareImportHandled = {
-                                    ravelryShareImportRequest = null
-                                    clearRavelryShareIntent()
-                                },
-                            ),
-                    )
+            ProvidePreferenceAwareHapticFeedback(enabled = prefs?.hapticFeedback == true) {
+                KnitToolsTheme(isDarkTheme = isDarkTheme) {
+                    Surface(modifier = Modifier.fillMaxSize()) {
+                        KnitToolsNavHost(
+                            startDestination = TopLevelDestination.Projects.route,
+                            requests =
+                                KnitToolsNavRequests(
+                                    counterLaunch = counterLaunchRequest,
+                                    openProUpgrade = openProUpgradeRequest,
+                                    ravelryShareImport = ravelryShareImportRequest,
+                                ),
+                            snackbarHostState = snackbarHostState,
+                            actions = createNavActions(),
+                        )
+                    }
                 }
             }
         }
     }
+
+    private fun createNavActions() =
+        KnitToolsNavActions(
+            onPurchasePro = billingManager::launchPurchaseFlow,
+            onLaunchRavelryAuth = ::launchRavelryAuth,
+            onBrowseRavelry = ::launchRavelryBrowse,
+            onCounterLaunchHandled = {
+                counterLaunchRequest?.let {
+                    consumedCounterLaunchRequestId = it.requestId
+                }
+                counterLaunchRequest = null
+                clearCounterLaunchIntent()
+            },
+            onProUpgradeLaunchHandled = {
+                openProUpgradeRequest = false
+                clearProUpgradeLaunchIntent()
+            },
+            onRavelryShareImportHandled = {
+                ravelryShareImportRequest = null
+                clearRavelryShareIntent()
+            },
+        )
 
     private fun startLaunchRequestInitialization(savedInstanceState: Bundle?) {
         launchRequestJob?.cancel()

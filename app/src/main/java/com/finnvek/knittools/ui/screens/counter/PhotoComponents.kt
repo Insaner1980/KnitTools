@@ -84,7 +84,7 @@ fun PhotoViewer(
 ) {
     var showDeleteConfirm by rememberSaveable { mutableStateOf(false) }
     val context = LocalContext.current
-    val dateFormat = rememberLocaleDateFormat("d MMM yyyy, HH:mm")
+    val dateFormat = rememberLocaleDateFormat("yMMMd", includeTime = true)
 
     if (showDeleteConfirm) {
         ConfirmationDialog(

@@ -150,7 +150,7 @@ class ProjectListViewModel
 
         fun toggleShowCompleted() {
             viewModelScope.launch {
-                preferencesManager.setShowCompletedProjects(!showCompleted.value)
+                preferencesManager.toggleShowCompletedProjects()
             }
         }
 

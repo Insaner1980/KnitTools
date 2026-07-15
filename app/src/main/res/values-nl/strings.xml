@@ -6,7 +6,6 @@
     <string name="cancel">Annuleren</string>
     <string name="confirm">Bevestigen</string>
     <string name="ok">OK</string>
-    <string name="add">Toevoegen</string>
     <string name="delete">Verwijderen</string>
     <string name="reset">Resetten</string>
     <string name="result">Resultaat</string>
@@ -15,6 +14,7 @@
 
     <!-- Units -->
     <string name="unit_cm">cm</string>
+    <string name="measurement_with_unit_format">%1$s %2$s</string>
     <string name="unit_inches">inch</string>
     <string name="unit_st">st</string>
     <string name="unit_rows">toeren</string>
@@ -37,11 +37,11 @@
     <string name="desc_yarn_estimator_card">Bereken garenverbruik en aantal strengen</string>
 
     <!-- Bottom navigation tabs -->
-    <string name="tab_projects">PROJECTEN</string>
-    <string name="tab_library">BIBLIOTHEEK</string>
-    <string name="tab_tools">TOOLS</string>
-    <string name="tab_insights">INZICHTEN</string>
-    <string name="tab_settings">INSTELLINGEN</string>
+    <string name="tab_projects">Projecten</string>
+    <string name="tab_library">Bibliotheek</string>
+    <string name="tab_tools">Tools</string>
+    <string name="tab_insights">Inzichten</string>
+    <string name="tab_settings">Instellingen</string>
 
     <!-- Screen titles -->
     <string name="tools_title">Tools</string>
@@ -55,9 +55,9 @@
 
     <!-- Project List -->
     <string name="project_list_title">Projecten</string>
-    <string name="continue_knitting">VERDER BREIEN</string>
-    <string name="section_active">ACTIEF</string>
-    <string name="section_completed">VOLTOOID</string>
+    <string name="continue_knitting">Verder breien</string>
+    <string name="section_active">Actief</string>
+    <string name="section_completed">Voltooid</string>
     <string name="new_project">Nieuw project</string>
     <string name="new_project_name_format">Project %1$d</string>
     <string name="create_project">Project maken</string>
@@ -167,13 +167,13 @@
     <string name="time_spent_minutes_format">%dm</string>
     <string name="unlink_yarn">Garen ontkoppelen</string>
     <string name="select_yarn_card">Garenkaart selecteren</string>
-    <string name="linked_yarn_title">GEKOPPELD GAREN</string>
+    <string name="linked_yarn_title">Gekoppeld garen</string>
     <string name="no_linked_yarn">Nog geen garen gekoppeld</string>
     <string name="choose_from_my_yarn">Kiezen uit My Yarn</string>
     <string name="choose_from_my_yarn_body">Kies een opgeslagen garen</string>
     <string name="add_yarn_to_project">Garen aan dit project toevoegen</string>
     <string name="add_yarn_to_project_body">Sla een snelle garennotitie alleen voor dit project op</string>
-    <string name="project_yarn_notes_title">PROJECTGAREN</string>
+    <string name="project_yarn_notes_title">Projectgaren</string>
     <string name="project_yarn_name">Garennaam</string>
     <string name="brand_label">Merk</string>
     <string name="project_yarn_description">Beschrijving</string>
@@ -256,7 +256,7 @@
     <string name="invalid_input">Ongeldige invoer</string>
     <string name="easy_to_remember">Makkelijk te onthouden</string>
     <string name="balanced">Gebalanceerd</string>
-    <string name="total_stitches_format">TOTAAL: %1$d %2$s</string>
+    <string name="total_stitches_format">Totaal: %1$d %2$s</string>
     <string name="increase_decrease_error_current_positive">Het huidige aantal steken moet groter zijn dan 0</string>
     <string name="increase_decrease_error_change_positive">Het aantal te wijzigen steken moet groter zijn dan 0</string>
     <string name="increase_decrease_error_cannot_decrease">Beschikbaar aantal steken: %2$d. Gevraagde mindering: %1$d.</string>
@@ -282,6 +282,7 @@
     <string name="stitch_gauge">Stekenproef steken</string>
     <string name="pattern_repeat_optional">Patroonherhaling (optioneel)</string>
     <string name="edge_stitches_optional">Kantsteken totaal</string>
+    <string name="edge_stitches_total_format">Kantsteken totaal: %1$d</string>
     <string name="stitches_result">%d steken</string>
     <string name="actual_width">Werkelijke breedte: %1$s %2$s</string>
     <string name="adjusted_down">Naar beneden aangepast: %1$d st (%2$s %3$s)</string>
@@ -307,7 +308,7 @@
     <string name="theme_system">Systeem</string>
     <string name="theme_light">Licht</string>
     <string name="theme_dark">Donker</string>
-    <string name="settings_section_settings">INSTELLINGEN</string>
+    <string name="settings_section_settings">Instellingen</string>
     <string name="settings_section_pro">PRO</string>
     <string name="settings_section_info">INFO</string>
     <string name="settings_language">App-taal</string>
@@ -432,8 +433,8 @@
     <string name="desc_chart_symbols">Gids voor standaard breischema-symbolen</string>
 
     <!-- Library — My Collection -->
-    <string name="library_my_collection">MIJN COLLECTIE</string>
-    <string name="library_reference">NASLAG</string>
+    <string name="library_my_collection">Mijn collectie</string>
+    <string name="library_reference">Naslag</string>
     <string name="desc_saved_patterns">Patronen van Ravelry en PDF-bestanden</string>
     <string name="desc_my_yarn">Garennotities, hoeveelheden en gekoppelde projecten</string>
     <string name="desc_all_photos">Voortgangsfoto\'s van al je projecten</string>
@@ -443,9 +444,9 @@
     <string name="filter_all">Alles</string>
 
     <!-- Insights -->
-    <string name="total_time_label">TOTALE TIJD</string>
-    <string name="avg_pace_label">GEMIDDELD TEMPO</string>
-    <string name="completed_label">VOLTOOID</string>
+    <string name="total_time_label">Totale tijd</string>
+    <string name="avg_pace_label">Gemiddeld tempo</string>
+    <string name="completed_label">Voltooid</string>
     <string name="time_format_hours">%.1fu</string>
     <string name="pace_format">%.0f t/u</string>
     <string name="streak_format">%d dagen</string>
@@ -453,7 +454,8 @@
     <string name="insights_all_time">Altijd</string>
     <string name="insights_this_week">Deze week</string>
     <string name="insights_this_month">Deze maand</string>
-    <string name="insights_knitting_activity">BREIACTIVITEIT</string>
+    <string name="insights_knitting_activity">Breiactiviteit</string>
+    <string name="activity_grid_tooltip_format">%1$s — %2$s</string>
     <string name="insights_current_streak">Huidige reeks:</string>
     <string name="insights_best_streak">Beste:</string>
     <plurals name="insights_rows_count">
@@ -473,7 +475,7 @@
     <string name="relative_time_weeks_ago">%1$dw geleden</string>
     <string name="relative_time_months_ago">%1$dmnd geleden</string>
     <string name="no_knitting">Niet gebreid</string>
-    <string name="time_per_project">TIJD PER PROJECT</string>
+    <string name="time_per_project">Tijd per project</string>
 
     <!-- Settings -->
     <string name="help_and_guide">Hulp en gids</string>
@@ -618,6 +620,7 @@
     <string name="ravelry_sign_in">Inloggen met Ravelry</string>
     <string name="ravelry_browse">Ravelry verkennen</string>
     <string name="ravelry_disconnect">Ravelry loskoppelen</string>
+    <string name="ravelry_disconnect_confirm">Ravelry loskoppelen? Je moet opnieuw inloggen om de Ravelry-functies te gebruiken.</string>
     <string name="ravelry_not_connected">Log in om Ravelry-patronen vanuit KnitTools te zoeken.</string>
     <string name="ravelry_connecting">Verbinden met Ravelry…</string>
     <string name="ravelry_auth_pending">Voltooi de Ravelry-login in de browser.</string>
@@ -661,15 +664,15 @@
     <string name="search_more_error">Kan niet meer patronen laden. Controleer je internetverbinding.</string>
     <string name="pattern_detail_error">Kan patroondetails niet laden. Controleer je internetverbinding.</string>
     <string name="project_actions_title">Projectacties</string>
-    <string name="project_actions_section_this_project">DIT PROJECT</string>
-    <string name="project_actions_section_counter_tools">TELLERHULPMIDDELEN</string>
-    <string name="project_actions_section_project_actions">PROJECTACTIES</string>
+    <string name="project_actions_section_this_project">Dit project</string>
+    <string name="project_actions_section_counter_tools">Tellerhulpmiddelen</string>
+    <string name="project_actions_section_project_actions">Projectacties</string>
     <string name="project_content_title">Project</string>
     <string name="project_content_yarn">Garen</string>
     <string name="project_content_notes">Notities</string>
     <string name="project_content_photos">Foto’s</string>
     <string name="extra_counters_title">Extra tellers</string>
-    <string name="counter_repeat_label">HERHALING</string>
+    <string name="counter_repeat_label">Herhaling</string>
     <string name="counters_list_title">Tellers</string>
 
     <!-- Täydennetyt lokalisoidut käyttöliittymätekstit -->

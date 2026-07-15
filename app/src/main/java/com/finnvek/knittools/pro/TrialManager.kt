@@ -57,7 +57,7 @@ class TrialManager
             val now = System.currentTimeMillis()
             val nextLastKnown = calculateNextLastKnownTimestamp(now, lastKnown)
 
-            context.trialDataStore.editPreferencesSafely("Kokeilujakson aikaleiman päivitys") {
+            context.trialDataStore.editPreferencesSafely {
                 it[KEY_LAST_KNOWN_TIMESTAMP] = nextLastKnown
             }
         }
@@ -86,7 +86,7 @@ class TrialManager
                 )
             val nextLastKnown = calculateNextLastKnownTimestamp(now, lastKnown)
 
-            context.trialDataStore.editPreferencesSafely("Kokeilujakson tilan tallennus") {
+            context.trialDataStore.editPreferencesSafely {
                 if (isFirstLaunch) {
                     it[KEY_TRIAL_START] = actualStartTimestamp
                 }

@@ -16,7 +16,8 @@ class IncreaseDecreaseCalculatorTest {
         val result = IncreaseDecreaseCalculator.calculate(120, 8, IncreaseDecreaseMode.INCREASE)
         assertTrue(result.isValid)
         assertEquals(128, result.totalStitches)
-        assertTrue(result.easyPattern.contains("128"))
+        assertFalse(result.easyPattern.contains("total:"))
+        assertFalse(result.balancedPattern.contains("total:"))
     }
 
     @Test
@@ -66,7 +67,7 @@ class IncreaseDecreaseCalculatorTest {
         // Pattern must consume exactly 35 stitches
         // With availableForKnit=27: (K3, K2tog)×5, (K4, K2tog)×3 = 5*5+3*6 = 43 ≠ 35 WRONG
         // With availableForKnit=19: (K2, K2tog)×5, (K3, K2tog)×3 = 5*4+3*5 = 35 ✓
-        assertEquals("K1, (K2, K2tog) × 8, K2 — total: 27 stitches", result.easyPattern)
+        assertEquals("K1, (K2, K2tog) × 8, K2", result.easyPattern)
     }
 
     @Test
@@ -164,7 +165,7 @@ class IncreaseDecreaseCalculatorTest {
         val result = IncreaseDecreaseCalculator.calculate(2, 1, IncreaseDecreaseMode.DECREASE)
         assertTrue(result.isValid)
         assertEquals(1, result.totalStitches)
-        assertEquals("K2tog — total: 1 stitches", result.easyPattern)
+        assertEquals("K2tog", result.easyPattern)
         assertFalse(result.easyPattern.contains("K0"))
         assertFalse(result.balancedPattern.contains("K0"))
     }
@@ -174,7 +175,7 @@ class IncreaseDecreaseCalculatorTest {
         val result = IncreaseDecreaseCalculator.calculate(4, 2, IncreaseDecreaseMode.DECREASE, KnittingStyle.CIRCULAR)
         assertTrue(result.isValid)
         assertEquals(2, result.totalStitches)
-        assertEquals("K2tog × 2 — total: 2 stitches", result.easyPattern)
+        assertEquals("K2tog × 2", result.easyPattern)
         assertFalse(result.easyPattern.contains("K0"))
         assertFalse(result.balancedPattern.contains("K0"))
     }

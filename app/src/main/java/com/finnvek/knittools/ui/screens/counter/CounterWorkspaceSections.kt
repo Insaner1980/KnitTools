@@ -42,6 +42,7 @@ import com.finnvek.knittools.domain.calculator.CounterState
 import com.finnvek.knittools.domain.calculator.CounterValueFormatter
 import com.finnvek.knittools.domain.calculator.MainCounterCountSlot
 import com.finnvek.knittools.domain.calculator.MainCounterTargetSlot
+import com.finnvek.knittools.domain.calculator.formatIntegerForDisplay
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.MainCounterLabelType
@@ -53,11 +54,13 @@ import com.finnvek.knittools.ui.components.CounterStepButtonFaceAppearance
 import com.finnvek.knittools.ui.components.CounterStepSymbol
 import com.finnvek.knittools.ui.components.RollingCounter
 import com.finnvek.knittools.ui.components.StitchCounter
+import com.finnvek.knittools.ui.components.localizedUppercase
 import com.finnvek.knittools.ui.components.mainCounterCountText
 import com.finnvek.knittools.ui.components.mainCounterDecreaseContentDescription
 import com.finnvek.knittools.ui.components.mainCounterIncreaseContentDescription
 import com.finnvek.knittools.ui.components.mainCounterProjectCardCountText
 import com.finnvek.knittools.ui.components.mainCounterTargetText
+import com.finnvek.knittools.ui.components.rememberCurrentLocale
 import com.finnvek.knittools.ui.theme.CounterDimens
 
 data class ProjectHeaderActions(
@@ -72,7 +75,6 @@ data class ProjectCountersSectionActions(
     val onRenameCounter: (Long, String) -> Unit,
     val onResetCounter: (Long) -> Unit,
     val onDeleteCounter: (Long) -> Unit,
-    val performHaptic: () -> Unit,
 )
 
 data class CounterWorkspaceActions(
@@ -309,11 +311,12 @@ private fun CounterRowLabel(
 
 @Composable
 private fun CounterMainNumber(state: CounterHeroState) {
+    val locale = rememberCurrentLocale()
     val display = CounterValueFormatter.forMainCounter(state.toMainCounterProject())
     val counterDescription =
         display.targetLine?.let { mainCounterTargetText(it) }
             ?: mainCounterCountText(display.heroTitle)
-    val countText = state.counter.count.toString()
+    val countText = formatIntegerForDisplay(state.counter.count.toLong(), locale)
     val baseTextStyle =
         MaterialTheme.typography.displayMedium.copy(
             fontSize = CounterDimens.CounterMainNumberFontSize,
@@ -508,6 +511,7 @@ private fun CompactPatternRepeatRow(
     onDecrement: () -> Unit,
     onIncrement: () -> Unit,
 ) {
+    val locale = rememberCurrentLocale()
     Row(
         modifier =
             Modifier
@@ -524,7 +528,7 @@ private fun CompactPatternRepeatRow(
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Text(
-            text = stringResource(R.string.counter_repeat_label),
+            text = stringResource(R.string.counter_repeat_label).localizedUppercase(),
             style =
                 MaterialTheme.typography.labelMedium.copy(
                     fontSize = CounterDimens.CounterRepeatLabelFontSize,
@@ -543,7 +547,7 @@ private fun CompactPatternRepeatRow(
                 enabled = count > 0,
             )
             Text(
-                text = count.toString(),
+                text = formatIntegerForDisplay(count.toLong(), locale),
                 style =
                     MaterialTheme.typography.titleMedium.copy(
                         fontSize = CounterDimens.CounterRepeatValueFontSize,
@@ -668,7 +672,6 @@ internal fun ProjectCounterWorkspaceItem(
                     onRename = { actions.onRenameCounter(counter.id, it) },
                     onReset = { actions.onResetCounter(counter.id) },
                     onDelete = { actions.onDeleteCounter(counter.id) },
-                    performHaptic = actions.performHaptic,
                 ),
         )
     }

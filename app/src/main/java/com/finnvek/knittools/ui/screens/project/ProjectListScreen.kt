@@ -76,10 +76,13 @@ import com.finnvek.knittools.ui.components.ProjectCard
 import com.finnvek.knittools.ui.components.ProjectDetailsDialog
 import com.finnvek.knittools.ui.components.ProjectDetailsValues
 import com.finnvek.knittools.ui.components.RenameProjectDialog
+import com.finnvek.knittools.ui.components.SectionLabel
 import com.finnvek.knittools.ui.components.localizedUppercase
 import com.finnvek.knittools.ui.components.mainCounterProjectCardCountText
 import com.finnvek.knittools.ui.components.mainCounterTargetText
 import com.finnvek.knittools.ui.components.projectMetadataText
+import com.finnvek.knittools.ui.theme.Dimens
+import com.finnvek.knittools.ui.theme.knitToolsColors
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -696,8 +699,14 @@ private fun ProjectListContent(
         }
 
     LazyColumn(
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding =
+            PaddingValues(
+                start = Dimens.Space16,
+                top = Dimens.Space8,
+                end = Dimens.Space16,
+                bottom = Dimens.FabClearance,
+            ),
+        verticalArrangement = Arrangement.spacedBy(Dimens.ListSpacing),
     ) {
         // Continue Knitting -herokortti (ei multi-select-tilassa)
         if (!state.isMultiSelectMode) {
@@ -950,7 +959,7 @@ private fun ContinueKnittingCard(
                 Text(
                     text = stringResource(R.string.continue_knitting).localizedUppercase(),
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = MaterialTheme.knitToolsColors.accentTextPrimary,
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
@@ -1012,16 +1021,6 @@ private fun formatMinutes(minutes: Int): String =
         minutes < 60 -> stringResource(R.string.time_spent_minutes_format, minutes)
         else -> stringResource(R.string.session_duration_format, minutes / 60, minutes % 60)
     }
-
-@Composable
-private fun SectionLabel(text: String) {
-    Text(
-        text = text.localizedUppercase(),
-        style = MaterialTheme.typography.labelSmall,
-        color = MaterialTheme.colorScheme.secondary,
-        modifier = Modifier.padding(vertical = 8.dp),
-    )
-}
 
 @Composable
 private fun DeleteProjectDialog(

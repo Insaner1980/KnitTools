@@ -61,6 +61,7 @@ import com.finnvek.knittools.domain.model.ProgressPhoto
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.rememberLocaleDateFormat
 import com.finnvek.knittools.ui.screens.counter.PhotoViewer
+import com.finnvek.knittools.ui.theme.knitToolsColors
 import java.util.Date
 
 // Data-luokat AllPhotosScreen-parametrien ryhmittelyyn (S107)
@@ -425,7 +426,7 @@ private fun PhotoGridItem(
                     Text(
                         text = projectName,
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = MaterialTheme.knitToolsColors.accentTextPrimary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )

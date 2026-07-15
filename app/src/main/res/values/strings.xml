@@ -241,6 +241,7 @@
     <string name="counter_target_reached">Target reached</string>
     <string name="counter_target_past_format">%1$s past target</string>
     <string name="project_content_add_pattern">Add Pattern</string>
+    <string name="project_content_pattern">Pattern</string>
     <string name="stitch_tracker_label">Stitches</string>
     <plurals name="reminder_repeat_occurrence_format">
         <item quantity="one">Repeat #%1$d every row</item>

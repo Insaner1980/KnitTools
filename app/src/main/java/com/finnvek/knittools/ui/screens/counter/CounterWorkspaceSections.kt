@@ -158,7 +158,6 @@ fun CounterWorkspace(
         item(key = "project-content") {
             ProjectContentCards(
                 onCardClick = { kind -> actions.onProjectContentClick(kind, state) },
-                hasPattern = state.patternUri != null || state.linkedPattern != null,
             )
         }
         if (state.canUseMultipleCounters && state.projectCounters.isNotEmpty()) {

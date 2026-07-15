@@ -77,6 +77,7 @@ import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.StatusMessage
 import com.finnvek.knittools.ui.components.StatusMessageType
 import com.finnvek.knittools.ui.screens.library.SelectionIndicator
+import com.finnvek.knittools.ui.theme.knitToolsColors
 
 data class RavelrySearchActions(
     val onPatternClick: (Int) -> Unit,
@@ -614,7 +615,7 @@ private fun RavelrySearchResultActionContent(
                 Text(
                     text = stringResource(R.string.pattern_saved),
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = MaterialTheme.knitToolsColors.accentTextPrimary,
                 )
                 TextButton(
                     onClick = onOpen,

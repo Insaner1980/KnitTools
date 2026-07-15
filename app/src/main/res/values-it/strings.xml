@@ -242,6 +242,7 @@
     <string name="counter_target_reached">Obiettivo raggiunto</string>
     <string name="counter_target_past_format">Oltre l’obiettivo: %1$s</string>
     <string name="project_content_add_pattern">Aggiungi modello</string>
+    <string name="project_content_pattern">Modello</string>
     <string name="stitch_tracker_label">Maglie</string>
     <plurals name="reminder_repeat_occurrence_format">
         <item quantity="one">Ripeti #%1$d a ogni ferro</item>

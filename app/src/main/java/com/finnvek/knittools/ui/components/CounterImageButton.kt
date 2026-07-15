@@ -4,12 +4,17 @@ import androidx.annotation.DrawableRes
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -36,6 +41,7 @@ fun CounterImageButton(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
+    val isFocused by interactionSource.collectIsFocusedAsState()
     val pressProgress by animateFloatAsState(
         targetValue = if (isPressed && enabled) 1f else 0f,
         animationSpec = tween(durationMillis = 90),
@@ -47,7 +53,16 @@ fun CounterImageButton(
             modifier
                 .semantics {
                     this.contentDescription = contentDescription
-                }.clickable(
+                }.then(
+                    if (isFocused) {
+                        Modifier.border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                    } else {
+                        Modifier
+                    },
+                ).focusable(
+                    enabled = enabled,
+                    interactionSource = interactionSource,
+                ).clickable(
                     interactionSource = interactionSource,
                     indication = null,
                     enabled = enabled,
@@ -65,7 +80,7 @@ fun CounterImageButton(
                     .size(visualSize)
                     .offset(y = visualOffsetY)
                     .graphicsLayer {
-                        val scale = 1f - pressProgress * 0.018f
+                        val scale = 1f - pressProgress * 0.04f
                         scaleX = scale
                         scaleY = scale
                         translationY = pressProgress * 1.5.dp.toPx()

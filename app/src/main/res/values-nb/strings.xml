@@ -239,6 +239,7 @@
     <string name="counter_target_reached">Mål nådd</string>
     <string name="counter_target_past_format">%1$s over målet</string>
     <string name="project_content_add_pattern">Legg til oppskrift</string>
+    <string name="project_content_pattern">Oppskrift</string>
     <string name="stitch_tracker_label">Masker</string>
     <plurals name="reminder_repeat_occurrence_format">
         <item quantity="one">Gjenta #%1$d hver rad</item>

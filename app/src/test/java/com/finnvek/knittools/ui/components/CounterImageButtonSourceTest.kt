@@ -62,12 +62,15 @@ class CounterImageButtonSourceTest {
             "visualOffsetY: Dp = 0.dp",
             "MutableInteractionSource",
             "collectIsPressedAsState()",
+            "collectIsFocusedAsState()",
+            "focusable(",
             "Role.Button",
             "indication = null",
             "painterResource(id = imageRes)",
             ".size(visualSize)",
             ".offset(y = visualOffsetY)",
             "contentDescription = contentDescription",
+            "pressProgress * 0.04f",
         ).forEach { required ->
             assertTrue("Counter image button should contain $required", button.contains(required))
         }

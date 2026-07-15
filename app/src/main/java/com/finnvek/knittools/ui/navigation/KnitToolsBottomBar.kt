@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.finnvek.knittools.ui.components.localizedUppercase
+import com.finnvek.knittools.ui.theme.NavLabel
 import com.finnvek.knittools.ui.theme.knitToolsColors
 
 private val NavBarHorizontalPadding = 6.dp
@@ -45,10 +46,7 @@ fun KnitToolsBottomBar(navController: NavController) {
 
     val destinations = TopLevelDestination.entries
     val labels = destinations.map { stringResource(it.labelRes) }
-    val labelStyle =
-        MaterialTheme.typography.labelSmall.copy(
-            letterSpacing = 0.sp,
-        )
+    val labelStyle = NavLabel
 
     Surface(
         color = MaterialTheme.knitToolsColors.navBarContainer,
@@ -84,7 +82,7 @@ fun KnitToolsBottomBar(navController: NavController) {
                         },
                         icon = {
                             Icon(
-                                imageVector = destination.icon,
+                                imageVector = if (selected) destination.selectedIcon else destination.unselectedIcon,
                                 contentDescription = stringResource(destination.labelRes),
                             )
                         },
@@ -101,8 +99,8 @@ fun KnitToolsBottomBar(navController: NavController) {
                         colors =
                             NavigationBarItemDefaults.colors(
                                 selectedIconColor = MaterialTheme.colorScheme.primary,
-                                selectedTextColor = MaterialTheme.colorScheme.primary,
-                                indicatorColor = MaterialTheme.knitToolsColors.navBarContainer,
+                                selectedTextColor = MaterialTheme.knitToolsColors.accentTextPrimary,
+                                indicatorColor = MaterialTheme.knitToolsColors.navBarIndicator,
                                 unselectedIconColor = MaterialTheme.knitToolsColors.inactiveContent,
                                 unselectedTextColor = MaterialTheme.knitToolsColors.inactiveContent,
                             ),

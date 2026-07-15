@@ -94,7 +94,7 @@ fun HomeScreen(
                         Text(
                             text = stringResource(R.string.unlock_all_tools),
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.primary,
+                            color = MaterialTheme.knitToolsColors.accentTextPrimary,
                             textAlign = TextAlign.Center,
                             modifier =
                                 Modifier

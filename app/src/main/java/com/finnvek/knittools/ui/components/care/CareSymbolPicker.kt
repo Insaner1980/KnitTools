@@ -19,6 +19,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
+import com.finnvek.knittools.ui.theme.knitToolsColors
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -31,7 +32,7 @@ fun CareSymbolPicker(
         Text(
             text = stringResource(R.string.care_symbols),
             style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.primary,
+            color = MaterialTheme.knitToolsColors.accentTextPrimary,
         )
 
         CareCategory.entries.forEach { category ->

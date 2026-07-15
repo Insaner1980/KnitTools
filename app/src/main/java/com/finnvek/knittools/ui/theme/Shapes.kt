@@ -10,3 +10,5 @@ val AppShapes =
         medium = RoundedCornerShape(12.dp),
         large = RoundedCornerShape(16.dp),
     )
+
+val SheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)

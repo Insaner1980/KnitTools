@@ -11,6 +11,13 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 
 @Immutable
+data class InsightChartPalette(
+    val colors: List<Color>,
+    val gridLine: Color,
+    val emptyCell: Color,
+)
+
+@Immutable
 data class KnitToolsExtendedColors(
     val surfaceTint: Color,
     val secondaryOutline: Color,
@@ -20,6 +27,10 @@ data class KnitToolsExtendedColors(
     val inactiveContent: Color,
     val navBarContainer: Color,
     val navBarIndicator: Color,
+    val accentTextPrimary: Color,
+    val inputPlaceholder: Color,
+    val modalContainer: Color,
+    val insightChartPalette: InsightChartPalette,
 )
 
 val LocalKnitToolsColors =
@@ -33,6 +44,15 @@ val LocalKnitToolsColors =
             inactiveContent = Color.Unspecified,
             navBarContainer = Color.Unspecified,
             navBarIndicator = Color.Unspecified,
+            accentTextPrimary = Color.Unspecified,
+            inputPlaceholder = Color.Unspecified,
+            modalContainer = Color.Unspecified,
+            insightChartPalette =
+                InsightChartPalette(
+                    colors = emptyList(),
+                    gridLine = Color.Unspecified,
+                    emptyCell = Color.Unspecified,
+                ),
         )
     }
 
@@ -85,6 +105,15 @@ private val DarkExtendedColors =
         inactiveContent = NavText,
         navBarContainer = NavBackground,
         navBarIndicator = NavActiveBg,
+        accentTextPrimary = AccentTextPrimary,
+        inputPlaceholder = TextMuted,
+        modalContainer = SurfaceHigh,
+        insightChartPalette =
+            InsightChartPalette(
+                colors = listOf(Primary, Secondary, Tertiary, DustyRose, RavelryTeal),
+                gridLine = Divider,
+                emptyCell = Divider,
+            ),
     )
 
 // === Light color scheme ===
@@ -132,6 +161,15 @@ private val LightExtendedColors =
         inactiveContent = LightNavText,
         navBarContainer = LightNavBackground,
         navBarIndicator = LightNavActiveBg,
+        accentTextPrimary = LightAccentTextPrimary,
+        inputPlaceholder = LightTextPrimary,
+        modalContainer = LightBackground,
+        insightChartPalette =
+            InsightChartPalette(
+                colors = listOf(LightAccentTextPrimary, LightSecondary, LightTertiary, LightDustyRose, LightRavelryTeal),
+                gridLine = LightDivider,
+                emptyCell = LightDivider,
+            ),
     )
 
 @Composable

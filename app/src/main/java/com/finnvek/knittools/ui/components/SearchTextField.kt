@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.finnvek.knittools.ui.theme.knitToolsColors
 
 @Composable
 fun SearchTextField(
@@ -30,10 +31,12 @@ fun SearchTextField(
         shape = MaterialTheme.shapes.medium,
         colors =
             TextFieldDefaults.colors(
-                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
                 focusedIndicatorColor = Color.Transparent,
                 unfocusedIndicatorColor = Color.Transparent,
+                focusedLabelColor = MaterialTheme.knitToolsColors.inputPlaceholder,
+                unfocusedLabelColor = MaterialTheme.knitToolsColors.inputPlaceholder,
             ),
     )
 }

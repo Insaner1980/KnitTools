@@ -4,6 +4,11 @@ import android.net.Uri
 import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoStories
+import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.AutoStories
 import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.Build
 import androidx.compose.material.icons.outlined.FolderOpen
@@ -143,12 +148,13 @@ sealed class Screen(
 enum class TopLevelDestination(
     val route: String,
     @param:StringRes val labelRes: Int,
-    val icon: ImageVector,
+    val selectedIcon: ImageVector,
+    val unselectedIcon: ImageVector,
     val startRoute: String,
 ) {
-    Projects("projects_tab", R.string.tab_projects, Icons.Outlined.FolderOpen, Screen.ProjectList.route),
-    Library("library_tab", R.string.tab_library, Icons.Filled.AutoStories, Screen.Library.route),
-    Tools("tools_tab", R.string.tab_tools, Icons.Outlined.Build, Screen.Tools.route),
-    Insights("insights_tab", R.string.tab_insights, Icons.Outlined.BarChart, Screen.Insights.route),
-    Settings("settings_tab", R.string.tab_settings, Icons.Outlined.Settings, Screen.Settings.route),
+    Projects("projects_tab", R.string.tab_projects, Icons.Filled.Folder, Icons.Outlined.FolderOpen, Screen.ProjectList.route),
+    Library("library_tab", R.string.tab_library, Icons.Filled.AutoStories, Icons.Outlined.AutoStories, Screen.Library.route),
+    Tools("tools_tab", R.string.tab_tools, Icons.Filled.Build, Icons.Outlined.Build, Screen.Tools.route),
+    Insights("insights_tab", R.string.tab_insights, Icons.Filled.BarChart, Icons.Outlined.BarChart, Screen.Insights.route),
+    Settings("settings_tab", R.string.tab_settings, Icons.Filled.Settings, Icons.Outlined.Settings, Screen.Settings.route),
 }

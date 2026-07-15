@@ -239,6 +239,7 @@
     <string name="counter_target_reached">Doel bereikt</string>
     <string name="counter_target_past_format">%1$s voorbij doel</string>
     <string name="project_content_add_pattern">Patroon toevoegen</string>
+    <string name="project_content_pattern">Patroon</string>
     <string name="stitch_tracker_label">Steken</string>
     <plurals name="reminder_repeat_occurrence_format">
         <item quantity="one">Herhaal #%1$d elke toer</item>

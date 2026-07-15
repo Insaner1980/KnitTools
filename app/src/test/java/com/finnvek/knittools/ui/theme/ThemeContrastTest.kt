@@ -25,6 +25,18 @@ class ThemeContrastTest {
         assertMinimumContrast(OnPrimary, listOf(LightSecondary))
     }
 
+    @Test
+    fun `pieni aksenttiteksti täyttää kontrastirajan todellisilla pinnoilla`() {
+        assertMinimumContrast(AccentTextPrimary, listOf(Background, Surface))
+        assertMinimumContrast(LightAccentTextPrimary, listOf(LightBackground, LightSurface))
+    }
+
+    @Test
+    fun `hakukentän placeholder täyttää kontrastirajan`() {
+        assertMinimumContrast(TextMuted, listOf(SurfaceHigh))
+        assertMinimumContrast(LightTextPrimary, listOf(LightSurfaceHigh))
+    }
+
     private fun assertMinimumContrast(
         foreground: Color,
         backgrounds: List<Color>,

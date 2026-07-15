@@ -50,7 +50,7 @@ class CounterWorkspaceSourceTest {
         assertTrue(workspace.contains("ProjectContentCards("))
 
         listOf(
-            "project_content_add_pattern",
+            "project_content_pattern",
             "project_content_yarn",
             "project_content_notes",
             "project_content_photos",
@@ -59,26 +59,21 @@ class CounterWorkspaceSourceTest {
             assertTrue("Project content string missing: $key", strings.contains("""<string name="$key">"""))
             assertTrue("Project content source does not reference: $key", contentCards.contains("R.string.$key"))
         }
-        assertTrue(contentCards.contains("R.string.saved_pattern_detail_open_pattern"))
+        assertFalse(contentCards.contains("R.string.saved_pattern_detail_open_pattern"))
         assertFalse(contentCards.contains("R.string.project_content_open_pattern"))
         assertFalse(contentCards.contains("R.string.project_content_attach_pattern"))
     }
 
     @Test
-    fun `pattern content card title follows attachment state`() {
+    fun `pattern content card title stays a noun regardless of attachment state`() {
         val workspace = ProjectSourceFiles.read(COUNTER_WORKSPACE_SECTIONS)
         val contentCards = ProjectSourceFiles.read(COUNTER_PROJECT_CONTENT_CARDS)
         val strings = ProjectSourceFiles.read(STRINGS)
 
-        assertTrue(workspace.contains("hasPattern = state.patternUri != null || state.linkedPattern != null"))
-        assertTrue(contentCards.contains("hasPattern: Boolean"))
-        assertTrue(contentCards.contains("titleRes = patternContentTitleRes(hasPattern)"))
-        assertTrue(
-            contentCards.contains(
-                "if (hasPattern) R.string.saved_pattern_detail_open_pattern else R.string.project_content_add_pattern",
-            ),
-        )
-        assertTrue(strings.contains("""<string name="project_content_add_pattern">Add Pattern</string>"""))
+        assertFalse(workspace.contains("hasPattern = state.patternUri != null || state.linkedPattern != null"))
+        assertFalse(contentCards.contains("hasPattern: Boolean"))
+        assertTrue(contentCards.contains("titleRes = R.string.project_content_pattern"))
+        assertTrue(strings.contains("""<string name="project_content_pattern">Pattern</string>"""))
         assertFalse(contentCards.contains("R.string.project_content_attach_pattern"))
     }
 
@@ -280,10 +275,9 @@ class CounterWorkspaceSourceTest {
         STRING_FILES.forEach { stringsFile ->
             val strings = ProjectSourceFiles.read(stringsFile)
             assertTrue(
-                "Add-pattern card label missing in $stringsFile",
-                strings.contains("""<string name="project_content_add_pattern">"""),
+                "Pattern card noun label missing in $stringsFile",
+                strings.contains("""<string name="project_content_pattern">"""),
             )
-            assertFalse(strings.contains("""<string name="project_content_pattern">"""))
             assertFalse(strings.contains("""<string name="project_content_open_pattern">"""))
             assertFalse(strings.contains("""<string name="project_content_attach_pattern">"""))
             assertFalse(strings.contains("""<string name="project_content_attach_pattern_body">"""))

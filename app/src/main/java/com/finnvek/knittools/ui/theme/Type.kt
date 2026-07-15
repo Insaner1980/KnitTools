@@ -139,3 +139,19 @@ val AppTypography =
                 letterSpacing = 1.5.sp,
             ),
     )
+
+val NavLabel =
+    TextStyle(
+        fontFamily = OutfitFontFamily,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 11.sp,
+        letterSpacing = 0.sp,
+    )
+
+val SectionLabelStyle =
+    TextStyle(
+        fontFamily = OutfitFontFamily,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 11.sp,
+        letterSpacing = 1.5.sp,
+    )

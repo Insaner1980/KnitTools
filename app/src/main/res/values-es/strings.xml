@@ -242,6 +242,7 @@
     <string name="counter_target_reached">Objetivo alcanzado</string>
     <string name="counter_target_past_format">%1$s por encima del objetivo</string>
     <string name="project_content_add_pattern">Añadir patrón</string>
+    <string name="project_content_pattern">Patrón</string>
     <string name="stitch_tracker_label">Puntos</string>
     <plurals name="reminder_repeat_occurrence_format">
         <item quantity="one">Repetir #%1$d cada vuelta</item>

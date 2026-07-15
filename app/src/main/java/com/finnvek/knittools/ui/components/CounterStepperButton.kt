@@ -89,8 +89,6 @@ fun CounterStepperButton(
             modifier
                 .size(CounterDimens.ExtraCounterStepperTouchSize)
                 .clickable(
-                    interactionSource = null,
-                    indication = null,
                     enabled = enabled,
                     onClick = onClick,
                 ),

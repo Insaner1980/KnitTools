@@ -63,7 +63,7 @@ import com.finnvek.knittools.domain.calculator.formatIntegerForDisplay
 import com.finnvek.knittools.ui.components.localizedDateTimePattern
 import com.finnvek.knittools.ui.components.localizedUppercase
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
-import com.finnvek.knittools.ui.theme.InsightChartColors
+import com.finnvek.knittools.ui.theme.knitToolsColors
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -526,7 +526,7 @@ private fun TimePerProjectChart(
     onProUpgrade: () -> Unit,
     animationKey: Any,
 ) {
-    val barColors = InsightChartColors
+    val barColors = MaterialTheme.knitToolsColors.insightChartPalette.colors
 
     Surface(
         shape = MaterialTheme.shapes.large,

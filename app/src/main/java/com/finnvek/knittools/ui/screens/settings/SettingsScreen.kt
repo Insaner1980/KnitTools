@@ -243,7 +243,7 @@ private fun SettingsSelectionRow(
         Text(
             text = valueText,
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.primary,
+            color = MaterialTheme.knitToolsColors.accentTextPrimary,
         )
     }
 }

@@ -242,6 +242,7 @@
     <string name="counter_target_reached">Objectif atteint</string>
     <string name="counter_target_past_format">%1$s au-delà de l’objectif</string>
     <string name="project_content_add_pattern">Ajouter un modèle</string>
+    <string name="project_content_pattern">Modèle</string>
     <string name="stitch_tracker_label">Mailles</string>
     <plurals name="reminder_repeat_occurrence_format">
         <item quantity="one">Répéter #%1$d à chaque rang</item>

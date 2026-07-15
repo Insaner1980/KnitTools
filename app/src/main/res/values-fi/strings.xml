@@ -239,6 +239,7 @@
     <string name="counter_target_reached">Tavoite saavutettu</string>
     <string name="counter_target_past_format">%1$s yli tavoitteen</string>
     <string name="project_content_add_pattern">Lisää ohje</string>
+    <string name="project_content_pattern">Ohje</string>
     <string name="stitch_tracker_label">Silmukat</string>
     <plurals name="reminder_repeat_occurrence_format">
         <item quantity="one">Toisto #%1$d joka kerros</item>

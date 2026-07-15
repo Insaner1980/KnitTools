@@ -29,6 +29,7 @@ import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.KnittingAbbreviation
 import com.finnvek.knittools.ui.components.SearchTextField
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
+import com.finnvek.knittools.ui.theme.knitToolsColors
 
 @Composable
 fun AbbreviationsScreen(
@@ -109,7 +110,7 @@ private fun AbbreviationItem(
             Text(
                 text = abbreviation.abbreviation,
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary,
+                color = MaterialTheme.knitToolsColors.accentTextPrimary,
             )
             Text(
                 text = stringResource(abbreviation.meaningResId),

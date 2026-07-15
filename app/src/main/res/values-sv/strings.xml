@@ -239,6 +239,7 @@
     <string name="counter_target_reached">Mål uppnått</string>
     <string name="counter_target_past_format">%1$s över målet</string>
     <string name="project_content_add_pattern">Lägg till mönster</string>
+    <string name="project_content_pattern">Mönster</string>
     <string name="stitch_tracker_label">Maskor</string>
     <plurals name="reminder_repeat_occurrence_format">
         <item quantity="one">Upprepa #%1$d varje varv</item>

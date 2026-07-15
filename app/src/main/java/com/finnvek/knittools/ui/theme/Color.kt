@@ -14,6 +14,9 @@ val SurfaceHighest = Color(0xFF454535) // Korkein korotus, syötekentät
 // === Primary — Poltettu oranssi ===
 val Primary = Color(0xFFC45100) // Pääväri, + nappi, CTA:t
 val PrimaryContainer = Color(0xFFD4722A) // Vaaleampi oranssi, gradientit
+// Fablen ehdottamaa #D4722A-arvoa vaalennettu hieman, jotta 14–16 sp teksti
+// ylittää 4,5:1-rajan myös korttien Surface-taustalla.
+val AccentTextPrimary = Color(0xFFDC7B32)
 val OnPrimary = Color(0xFFFFFFFF) // Teksti/ikonit primaryn päällä
 val OnAccent = Color(0xFF161610) // Teksti ja ikonit kirkkaiden korostusvärien päällä
 
@@ -48,7 +51,7 @@ val NavActive = Color(0xFFC45100) // Aktiivinen kohde — poltettu oranssi
 val NavActiveBg = Color(0xFF3A2010) // Aktiivisen tabin indikaattoritausta
 
 // === Erotin ===
-val Divider = Color(0xFF3A3A2A)
+val Divider = Color(0xFF4A4A38)
 
 // === Ravelry ===
 val RavelryTeal = Color(0xFF5F8A8B)
@@ -79,6 +82,7 @@ val LightTextSecondary = Color(0xFF4C4634) // Keskiväri ruskea
 val LightTextMuted = Color(0xFF4A473C) // Hiljennetty ruskea
 val LightTextDisabled = Color(0xFFC0BAA5) // Disabled-tila
 val LightCounterMinusIcon = Color(0xFF211E16)
+val LightAccentTextPrimary = Color(0xFF943A00)
 
 // === Light-teeman aksentti ===
 val LightDustyRose = Color(0xFF9E706E) // Syvempi dusty rose
@@ -106,13 +110,4 @@ val YarnColors =
         Color(0xFF5A8A7A), // Teal
         Color(0xFF9A82AA), // Laventeli
         Color(0xFFA85A3A), // Ruosteenpunainen
-    )
-
-val InsightChartColors =
-    listOf(
-        Primary,
-        Secondary,
-        Tertiary,
-        DustyRose,
-        RavelryTeal,
     )

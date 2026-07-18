@@ -7,7 +7,6 @@ import androidx.lifecycle.viewModelScope
 import com.finnvek.knittools.data.storage.PatternAnnotationRenderStyle
 import com.finnvek.knittools.data.storage.PatternPdfExporter
 import com.finnvek.knittools.domain.calculator.ChartTrackerHighlight
-import com.finnvek.knittools.domain.calculator.isPointNearStroke
 import com.finnvek.knittools.domain.calculator.resolveChartTrackerHighlight
 import com.finnvek.knittools.domain.calculator.scalePatternAnnotation
 import com.finnvek.knittools.domain.calculator.simplifyFreehandPoints
@@ -394,13 +393,7 @@ class PatternAnnotationViewModel
             point: NormalizedPatternPoint,
             tolerance: Float = PatternAnnotationTokens.ERASER_HIT_TOLERANCE,
         ) {
-            val hit =
-                editableAnnotations()
-                    .sortedWith(compareByDescending<PatternAnnotation> { it.zIndex }.thenByDescending { it.id })
-                    .firstOrNull { annotation ->
-                        val payload = annotation.payload as? FreehandPayload ?: return@firstOrNull false
-                        isPointNearStroke(point, payload.points, tolerance)
-                    } ?: return
+            val hit = topmostAnnotationAt(editableAnnotations(), point, tolerance) ?: return
             executeCommand(PatternAnnotationCommand.Delete(hit))
         }
 

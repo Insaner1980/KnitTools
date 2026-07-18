@@ -17,6 +17,7 @@ import com.finnvek.knittools.domain.model.PatternAnnotationDocumentKey
 import com.finnvek.knittools.domain.model.PatternAnnotationKind
 import com.finnvek.knittools.domain.model.PatternAnnotationLayer
 import com.finnvek.knittools.domain.model.PatternAnnotationOwner
+import com.finnvek.knittools.domain.model.ShapePayload
 import com.finnvek.knittools.repository.CounterRepository
 import com.finnvek.knittools.repository.PatternAnnotationLayerRepository
 import com.finnvek.knittools.repository.PatternAnnotationRepository
@@ -491,6 +492,48 @@ class PatternAnnotationViewModelTest {
             viewModel.redo()
             advanceUntilIdle()
             coVerify(exactly = 1) { annotationRepository.restoreBatch(match { it.single().id == 61L }) }
+        }
+
+    @Test
+    fun `eraser deletes the topmost editable shape`() =
+        runTest {
+            val layerRepository = mockk<PatternAnnotationLayerRepository>()
+            val annotationRepository = mockk<PatternAnnotationRepository>(relaxed = true)
+            val documentKey = PatternAnnotationDocumentKey.savedPattern(12L)
+            coEvery { layerRepository.getOrCreateMasterLayer(12L, documentKey) } returns
+                layer(id = 31L, owner = PatternAnnotationOwner.SavedPattern(12L, documentKey))
+            every { annotationRepository.observePage(31L, 0) } returns
+                flowOf(
+                    listOf(
+                        PatternAnnotation(
+                            id = 61L,
+                            layerId = 31L,
+                            page = 0,
+                            kind = PatternAnnotationKind.RECTANGLE,
+                            payload =
+                                ShapePayload(
+                                    start = NormalizedPatternPoint(0.2f, 0.3f),
+                                    end = NormalizedPatternPoint(0.7f, 0.8f),
+                                    strokeArgb = 0xFF000000.toInt(),
+                                    strokeWidth = 2f,
+                                ),
+                            zIndex = 4L,
+                        ),
+                    ),
+                )
+            val viewModel =
+                PatternAnnotationViewModel(
+                    SavedStateHandle(mapOf("savedPatternId" to 12L)),
+                    mockk(relaxed = true),
+                    layerRepository,
+                    annotationRepository,
+                )
+            advanceUntilIdle()
+
+            viewModel.eraseStrokeAt(NormalizedPatternPoint(0.2f, 0.5f))
+            advanceUntilIdle()
+
+            coVerify(exactly = 1) { annotationRepository.deleteAnnotation(61L) }
         }
 
     @Test

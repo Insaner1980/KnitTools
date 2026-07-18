@@ -28,26 +28,6 @@ val googleServicesJsonConfigFile = layout.projectDirectory.file("google-services
 val debugGoogleServicesJsonConfigFile = layout.projectDirectory.file("src/debug/google-services.json")
 val googleServicesJsonBase64EnvVar = "KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64"
 val googleServicesJsonBase64Env = providers.environmentVariable(googleServicesJsonBase64EnvVar)
-val requestedTaskNames = gradle.startParameter.taskNames
-
-fun isRequestedAppTask(taskName: String): Boolean =
-    requestedTaskNames.any { requestedTaskName ->
-        requestedTaskName == taskName ||
-            requestedTaskName == ":app:$taskName" ||
-            requestedTaskName.endsWith(":$taskName")
-    }
-
-val debugFirebaseArtifactRequested =
-    listOf(
-        "assembleDebug",
-        "installDebug",
-        "processDebugGoogleServices",
-    ).any(::isRequestedAppTask)
-
-val canMaterializeGoogleServicesJson =
-    googleServicesJsonConfigFile.asFile.isFile ||
-        googleServicesJsonBase64Env.isPresent ||
-        debugFirebaseArtifactRequested
 val debugGoogleServicesPlaceholderJson =
     """
     {
@@ -81,9 +61,7 @@ val debugGoogleServicesPlaceholderJson =
     }
     """.trimIndent()
 
-if (canMaterializeGoogleServicesJson) {
-    apply(plugin = "com.google.gms.google-services")
-}
+apply(plugin = "com.google.gms.google-services")
 
 object GoogleServicesJsonTaskActions {
     private const val DEBUG_PLACEHOLDER_API_KEY = "debug-placeholder-api-key"

@@ -7,7 +7,7 @@ import java.nio.file.Files
 
 class RavelryFirebaseIntegrationSourceTest {
     @Test
-    fun `gradle declares firebase auth functions bom and google services gate`() {
+    fun `gradle declares firebase auth functions bom and stable google services wiring`() {
         val versionCatalog = ProjectSourceFiles.read("gradle/libs.versions.toml")
         val rootBuild = ProjectSourceFiles.read("build.gradle.kts")
         val appBuild = ProjectSourceFiles.read("app/build.gradle.kts")
@@ -33,7 +33,10 @@ class RavelryFirebaseIntegrationSourceTest {
         assertTrue(appBuild.contains("dependsOn(writeGoogleServicesJsonFromEnv)"))
         assertTrue(appBuild.contains("processDebugGoogleServices"))
         assertTrue(appBuild.contains("debugGoogleServicesPlaceholderJson"))
-        assertTrue(appBuild.contains("debugFirebaseArtifactRequested"))
+        assertTrue(appBuild.contains("apply(plugin = \"com.google.gms.google-services\")"))
+        assertFalse(appBuild.contains("debugFirebaseArtifactRequested"))
+        assertFalse(appBuild.contains("canMaterializeGoogleServicesJson"))
+        assertFalse(appBuild.contains("if (canMaterializeGoogleServicesJson)"))
         assertTrue(appBuild.contains("firebaseConfiguredArtifactTaskNames"))
         assertTrue(appBuild.contains("\"assembleRelease\""))
         assertTrue(appBuild.contains("\"bundleRelease\""))

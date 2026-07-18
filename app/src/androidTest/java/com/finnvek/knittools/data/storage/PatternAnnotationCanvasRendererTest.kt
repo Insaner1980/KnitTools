@@ -29,7 +29,6 @@ import org.junit.runner.RunWith
 class PatternAnnotationCanvasRendererTest {
     @Test
     fun rendererDrawsSupportedPayloadsOnAndroidCanvas() {
-        val bitmap = Bitmap.createBitmap(320, 480, Bitmap.Config.ARGB_8888)
         val annotations =
             listOf(
                 annotation(
@@ -106,11 +105,60 @@ class PatternAnnotationCanvasRendererTest {
                 ),
             )
 
+        annotations.forEach { annotation ->
+            val bitmap = render(annotation)
+            assertTrue(
+                "${annotation.kind} did not render visible pixels",
+                bitmap.nonTransparentPixels().isNotEmpty(),
+            )
+            bitmap.recycle()
+        }
+    }
+
+    @Test
+    fun textPayloadsStayInsideTheirBounds() {
+        listOf(
+            annotation(
+                PatternAnnotationKind.TEXT_BOX,
+                TextBoxPayload(
+                    bounds = TEXT_BOUNDS,
+                    text = "A very long annotation that must wrap inside its box",
+                    textSizeSp = 48f,
+                    textArgb = Color.BLUE,
+                ),
+            ),
+            annotation(
+                PatternAnnotationKind.CALLOUT,
+                CalloutPayload(
+                    bounds = TEXT_BOUNDS,
+                    symbol = PatternCalloutSymbol.NOTE,
+                    title = "A very long callout title",
+                    description = "A long description that must remain inside",
+                    argb = Color.MAGENTA,
+                ),
+            ),
+        ).forEach { annotation ->
+            val bitmap = render(annotation)
+            val outsidePixels =
+                bitmap.nonTransparentPixels().filter { (x, y) ->
+                    x < TEXT_BOUNDS.left * bitmap.width ||
+                        x > TEXT_BOUNDS.right * bitmap.width ||
+                        y < TEXT_BOUNDS.top * bitmap.height ||
+                        y > TEXT_BOUNDS.bottom * bitmap.height
+                }
+
+            assertTrue("${annotation.kind} rendered outside its bounds", outsidePixels.isEmpty())
+            bitmap.recycle()
+        }
+    }
+
+    private fun render(annotation: PatternAnnotation): Bitmap {
+        val bitmap = Bitmap.createBitmap(320, 480, Bitmap.Config.ARGB_8888)
         PatternAnnotationCanvasRenderer.render(
             canvas = Canvas(bitmap),
             width = bitmap.width.toFloat(),
             height = bitmap.height.toFloat(),
-            annotations = annotations,
+            annotations = listOf(annotation),
             style = TEST_STYLE,
             trackerHighlights =
                 mapOf(
@@ -122,13 +170,17 @@ class PatternAnnotationCanvasRendererTest {
                         ),
                 ),
         )
-
-        val pixels = IntArray(bitmap.width * bitmap.height)
-        bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
-        assertTrue(pixels.any { Color.alpha(it) > 0 })
-        assertTrue(Color.alpha(bitmap.getPixel(176, 298)) > 0)
-        bitmap.recycle()
+        return bitmap
     }
+
+    private fun Bitmap.nonTransparentPixels(): List<Pair<Int, Int>> =
+        buildList {
+            for (y in 0 until height) {
+                for (x in 0 until width) {
+                    if (Color.alpha(getPixel(x, y)) > 0) add(x to y)
+                }
+            }
+        }
 
     private fun annotation(
         kind: PatternAnnotationKind,
@@ -145,6 +197,7 @@ class PatternAnnotationCanvasRendererTest {
 
     private companion object {
         const val TRACKER_ID = 99L
+        val TEXT_BOUNDS = NormalizedPatternBounds(0.1f, 0.1f, 0.35f, 0.3f)
         val TEST_STYLE =
             PatternAnnotationRenderStyle(
                 referencePageSize = 1_000f,

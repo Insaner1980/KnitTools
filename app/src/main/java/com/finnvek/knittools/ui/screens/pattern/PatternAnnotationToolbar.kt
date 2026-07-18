@@ -1,8 +1,8 @@
 package com.finnvek.knittools.ui.screens.pattern
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -36,6 +37,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -169,7 +171,7 @@ internal fun PatternAnnotationToolbar(
             },
         )
     }
-    if (showChartTrackerEditor) {
+    if (showChartTrackerEditor && state.chartCounterOptions.isNotEmpty()) {
         PatternChartTrackerDialog(
             counterOptions = state.chartCounterOptions,
             onDismiss = { showChartTrackerEditor = false },
@@ -450,7 +452,6 @@ private fun PatternStrokeStyleControls(
     onPressureEnabledChange: (Boolean) -> Unit,
     showPressureToggle: Boolean = true,
 ) {
-    val colorDescription = stringResource(R.string.pattern_annotation_color_option)
     Row(
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -458,6 +459,11 @@ private fun PatternStrokeStyleControls(
     ) {
         PatternAnnotationTokens.COLOR_PALETTE_ARGB.forEach { argb ->
             val selected = selectedArgb.rgbOnly() == argb.rgbOnly()
+            val colorDescription =
+                stringResource(
+                    R.string.pattern_annotation_color_option,
+                    stringResource(annotationColorLabel(argb)),
+                )
             Box(
                 modifier =
                     Modifier
@@ -473,8 +479,11 @@ private fun PatternStrokeStyleControls(
                                     MaterialTheme.colorScheme.outline
                                 },
                             shape = CircleShape,
-                        ).clickable { onArgbChange(argb) }
-                        .semantics { contentDescription = colorDescription },
+                        ).selectable(
+                            selected = selected,
+                            onClick = { onArgbChange(argb) },
+                            role = Role.RadioButton,
+                        ).semantics { contentDescription = colorDescription },
             )
         }
     }
@@ -503,6 +512,17 @@ private fun PatternStrokeStyleControls(
         }
     }
 }
+
+@StringRes
+private fun annotationColorLabel(argb: Int): Int =
+    when (argb.rgbOnly()) {
+        0x001F1F1F -> R.string.pattern_annotation_color_black
+        0x00D32F2F -> R.string.pattern_annotation_color_red
+        0x001976D2 -> R.string.pattern_annotation_color_blue
+        0x00388E3C -> R.string.pattern_annotation_color_green
+        0x00FFC107 -> R.string.pattern_annotation_color_yellow
+        else -> R.string.pattern_annotation_color_custom
+    }
 
 @Composable
 private fun HighlighterAxisControls(

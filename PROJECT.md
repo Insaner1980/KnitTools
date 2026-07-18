@@ -497,8 +497,8 @@ Huomio:
 Migraatiotilanne:
 
 - automaattiset migraatiot: `1 -> 2`, `2 -> 3`
-- käsinkirjoitetut migraatiot: `3 -> 4`, `4 -> 5`, `5 -> 6`, `6 -> 7`, `7 -> 8`, `8 -> 9`, `9 -> 10`, `10 -> 11`, `11 -> 12`, `12 -> 13`, `13 -> 14`, `14 -> 15`, `15 -> 16`
-- schema exportataan hakemistoon `app/schemas/com.finnvek.knittools.data.local.KnitToolsDatabase/`, jossa uusin export on `16.json`
+- käsinkirjoitetut migraatiot: `3 -> 4`, `4 -> 5`, `5 -> 6`, `6 -> 7`, `7 -> 8`, `8 -> 9`, `9 -> 10`, `10 -> 11`, `11 -> 12`, `12 -> 13`, `13 -> 14`, `14 -> 15`, `15 -> 16`, `16 -> 17`
+- schema exportataan hakemistoon `app/schemas/com.finnvek.knittools.data.local.KnitToolsDatabase/`, jossa uusin export on `17.json`
 
 Näkyvä uusin lisäys:
 
@@ -1380,16 +1380,17 @@ Tämä osio on tarkoitettu tarkkojen review-kysymysten muodostamiseen. Hyvä kys
 
 Tarkista yhdessä vähintään:
 
-- `KnitToolsDatabase.kt`, `DatabaseModule.kt`, uusin `16.json`, relevantit `*Entity.kt`-tiedostot ja DAO:t
+- `KnitToolsDatabase.kt`, `DatabaseModule.kt`, uusin `17.json`, relevantit `*Entity.kt`-tiedostot ja DAO:t
 - domain-mallit sekä `EntityMappers.kt`; pelkkä schema ei todista persisted enumien fallbackia tai sanitointia
-- kaikki migraatiopolut vanhimmasta tuetusta versiosta 16:een, ei vain viimeinen `15 -> 16`
+- kaikki migraatiopolut vanhimmasta tuetusta versiosta 17:ään, ei vain viimeinen `16 -> 17`
 
 Kriittiset faktat:
 
-- oikea `ON DELETE CASCADE` koskee projektin lapsitauluja `counter_history`, `sessions`, `row_reminders`, `progress_photos`, `project_counters`, `project_yarn_notes` ja `pattern_annotations`
+- oikea `ON DELETE CASCADE` koskee projektin lapsitauluja `counter_history`, `sessions`, `row_reminders`, `progress_photos`, `project_counters`, `project_yarn_notes` ja `pattern_annotation_layers`; tason poisto poistaa sen `pattern_annotations`-rivit
 - `yarn_cards.linkedProjectId`, `counter_projects.linkedPatternId`, `counter_projects.yarnCardIds` ja `project_yarn_notes.savedYarnCardId` eivät ole tietokantatason foreign key -suhteita; niiden eheys riippuu repository-koodista
 - legacy `counter_projects.secondaryCount` on eri konsepti kuin nimetyt `project_counters`-rivit; migraatio tai UI-boundary ei saa luoda siitä automaattista `Pattern repeat` -kopiota
-- schema 13:n craft/label/reading-line/link-to-main -kentät, schema 14:n saved-pattern-lähdemetadata, schema 15:n indeksit ja schema 16:n session zone pitää tarkistaa erillisinä muutoksina
+- schema 13:n craft/label/reading-line/link-to-main -kentät, schema 14:n saved-pattern-lähdemetadata, schema 15:n indeksit, schema 16:n session zone sekä schema 17:n yhden omistajan annotaatiotasot ja versioidut payloadit pitää tarkistaa erillisinä muutoksina
+- `pattern_annotation_layers`-rivillä on täsmälleen yksi omistaja (`projectId` tai `savedPatternId`), projektilla voi olla vain yksi aktiivinen taso ja projektin tai tallennetun ohjeen poisto siivoaa tasot sekä niiden annotaatiot ketjutetulla cascadella
 - `saved_patterns.ravelryPatternId` on nullable ja vain positiivinen ID on Ravelry-identiteetti; domainin `ravelryId`/`patternUrl` ovat compatibility-propertyjä, eivät nykyisiä persisted sentinelejä
 
 Sopivia review-kysymysrajoja ovat esimerkiksi migraation idempotenssi, backfillin tietohävikki, nullable/default-muutos, indeksin vastaavuus todelliseen kyselyyn, enum-fallback ja repositoryllä ylläpidetyn soft-relaation rikkoutuminen.

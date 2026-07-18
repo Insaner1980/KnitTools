@@ -955,7 +955,13 @@
     <string name="pattern_annotation_tool_pen">Pen</string>
     <string name="pattern_annotation_tool_highlighter">Highlighter</string>
     <string name="pattern_annotation_tool_eraser">Eraser</string>
-    <string name="pattern_annotation_color_option">Annotation color</string>
+    <string name="pattern_annotation_color_option">Annotation color: %1$s</string>
+    <string name="pattern_annotation_color_black">Black</string>
+    <string name="pattern_annotation_color_red">Red</string>
+    <string name="pattern_annotation_color_blue">Blue</string>
+    <string name="pattern_annotation_color_green">Green</string>
+    <string name="pattern_annotation_color_yellow">Yellow</string>
+    <string name="pattern_annotation_color_custom">Custom</string>
     <string name="pattern_annotation_stroke_width">Width: %1$.1f</string>
     <string name="pattern_annotation_pressure">Pressure-sensitive pen</string>
     <string name="pattern_annotation_axis_free">Free</string>
@@ -1011,4 +1017,5 @@
     <string name="pattern_annotation_export_pdf">Export annotated PDF</string>
     <string name="pattern_annotation_export_progress">Exporting %1$d/%2$d</string>
     <string name="pattern_annotation_export_failed">PDF export failed. The original PDF was not changed.</string>
+    <string name="pattern_annotation_export_default_name">pattern</string>
 </resources>

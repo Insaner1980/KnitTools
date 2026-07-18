@@ -81,6 +81,22 @@ class PatternAnnotationViewModelTest {
                 annotationRepository,
             )
         }
+        assertThrows(IllegalArgumentException::class.java) {
+            PatternAnnotationViewModel(
+                SavedStateHandle(mapOf("projectId" to 0L)),
+                counterRepository,
+                layerRepository,
+                annotationRepository,
+            )
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            PatternAnnotationViewModel(
+                SavedStateHandle(mapOf("savedPatternId" to -1L)),
+                counterRepository,
+                layerRepository,
+                annotationRepository,
+            )
+        }
     }
 
     @Test
@@ -176,6 +192,52 @@ class PatternAnnotationViewModelTest {
 
             assertFalse(viewModel.uiState.value.masterLayerVisible)
             assertFalse(viewModel.uiState.value.projectLayerVisible)
+        }
+
+    @Test
+    fun `selection ignores annotations in hidden layers`() =
+        runTest {
+            val counterRepository = mockk<CounterRepository>()
+            val layerRepository = mockk<PatternAnnotationLayerRepository>()
+            val annotationRepository = mockk<PatternAnnotationRepository>()
+            val documentKey = PatternAnnotationDocumentKey.savedPattern(12L)
+            val projectOwner = PatternAnnotationOwner.Project(7L, documentKey)
+            val projectLayer = layer(id = 41L, owner = projectOwner)
+            val masterLayer = layer(id = 31L, owner = PatternAnnotationOwner.SavedPattern(12L, documentKey))
+            every { counterRepository.observeProject(7L) } returns
+                flowOf(CounterProject(id = 7L, linkedPatternId = 12L))
+            every { layerRepository.observeLayers(projectOwner) } returns flowOf(listOf(projectLayer))
+            coEvery { layerRepository.getOrCreateMasterLayer(12L, documentKey) } returns masterLayer
+            every { annotationRepository.observePage(31L, 0) } returns flowOf(listOf(annotation(31L, 0)))
+            every { annotationRepository.observePage(41L, 0) } returns flowOf(listOf(annotation(41L, 0)))
+            val viewModel =
+                PatternAnnotationViewModel(
+                    SavedStateHandle(mapOf("projectId" to 7L)),
+                    counterRepository,
+                    layerRepository,
+                    annotationRepository,
+                )
+            advanceUntilIdle()
+            val hitPoint = NormalizedPatternPoint(0.5f, 0.5f)
+
+            viewModel.setProjectLayerVisible(false)
+            advanceUntilIdle()
+            viewModel.selectAnnotationAt(hitPoint)
+            runCurrent()
+            assertEquals(31L, viewModel.uiState.value.selectedAnnotationId)
+
+            viewModel.setProjectLayerVisible(true)
+            viewModel.setMasterLayerVisible(false)
+            advanceUntilIdle()
+            viewModel.selectAnnotationAt(hitPoint)
+            runCurrent()
+            assertEquals(41L, viewModel.uiState.value.selectedAnnotationId)
+
+            viewModel.setProjectLayerVisible(false)
+            advanceUntilIdle()
+            viewModel.selectAnnotationAt(hitPoint)
+            runCurrent()
+            assertEquals(null, viewModel.uiState.value.selectedAnnotationId)
         }
 
     @Test

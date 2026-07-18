@@ -610,9 +610,9 @@ private fun rememberPatternRenderState(
         key1 = renderer,
         key2 = currentPage,
     ) {
+        value = null
         val activeRenderer =
             renderer ?: run {
-                value = null
                 return@produceState
             }
         value =
@@ -941,6 +941,12 @@ private fun PatternViewerContent(
             val source = state.patternUri?.toUri()
             if (source != null && destination != null) actions.onExport(source, destination, exportStyle)
         }
+    val editableLayerVisible =
+        when (state.annotationState.owner) {
+            is PatternAnnotationOwner.Project -> state.annotationState.projectLayerVisible
+            is PatternAnnotationOwner.SavedPattern -> state.annotationState.masterLayerVisible
+        }
+    val fallbackPatternName = stringResource(R.string.pattern_annotation_export_default_name)
     Column(modifier = modifier) {
         if (state.patternUri != null) {
             PatternAnnotationLayerPanel(
@@ -955,7 +961,7 @@ private fun PatternViewerContent(
             TextButton(
                 enabled = !state.annotationState.isExporting,
                 onClick = {
-                    val baseName = state.patternName?.substringBeforeLast('.')?.ifBlank { null } ?: "pattern"
+                    val baseName = state.patternName?.substringBeforeLast('.')?.ifBlank { null } ?: fallbackPatternName
                     exportLauncher.launch("$baseName-annotated.pdf")
                 },
             ) {
@@ -1017,13 +1023,6 @@ private fun PatternViewerContent(
                                     null
                                 },
                         )
-                        val editableLayerVisible =
-                            when (state.annotationState.owner) {
-                                is PatternAnnotationOwner.Project ->
-                                    state.annotationState.projectLayerVisible
-                                is PatternAnnotationOwner.SavedPattern ->
-                                    state.annotationState.masterLayerVisible
-                            }
                         PatternAnnotationOverlay(
                             masterAnnotations = state.annotationState.masterAnnotations,
                             projectAnnotations = state.annotationState.projectAnnotations,
@@ -1052,7 +1051,7 @@ private fun PatternViewerContent(
                         }
                     },
                     interactionOverlay = { viewport ->
-                        if (state.annotationState.activeTool != PatternAnnotationTool.BROWSE) {
+                        if (editableLayerVisible && state.annotationState.activeTool != PatternAnnotationTool.BROWSE) {
                             PatternAnnotationInputOverlay(
                                 activeTool = state.annotationState.activeTool,
                                 coordinateTransform = viewport.coordinateTransform,

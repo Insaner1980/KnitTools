@@ -28,6 +28,24 @@ class PatternAnnotationAccessibilitySourceTest {
         assertTrue(tokens.contains("TOOL_TOUCH_TARGET = 48.dp"))
     }
 
+    @Test
+    fun `layer switches and color choices expose named selection semantics`() {
+        val toolbar = ProjectSourceFiles.read(TOOLBAR)
+        val layerPanel = ProjectSourceFiles.read(LAYER_PANEL)
+
+        assertTrue(layerPanel.contains("contentDescription = title"))
+        assertTrue(toolbar.contains(".selectable("))
+        assertTrue(toolbar.contains("role = Role.RadioButton"))
+        assertTrue(toolbar.contains("stringResource(annotationColorLabel(argb))"))
+    }
+
+    @Test
+    fun `chart dialog is not rendered without counter options`() {
+        val toolbar = ProjectSourceFiles.read(TOOLBAR)
+
+        assertTrue(toolbar.contains("showChartTrackerEditor && state.chartCounterOptions.isNotEmpty()"))
+    }
+
     private fun annotationNames(xml: String): Set<String> =
         NAME_REGEX.findAll(xml).map { match -> match.groupValues[1] }.toSet()
 
@@ -35,6 +53,8 @@ class PatternAnnotationAccessibilitySourceTest {
         const val DEFAULT_STRINGS = "app/src/main/res/values/strings.xml"
         const val TOOLBAR =
             "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternAnnotationToolbar.kt"
+        const val LAYER_PANEL =
+            "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternAnnotationLayerPanel.kt"
         const val TOKENS = "app/src/main/java/com/finnvek/knittools/ui/theme/PatternAnnotationTokens.kt"
         val NAME_REGEX = Regex("name=\"(pattern_annotations?_[^\"]+)\"")
         val LOCALES =

@@ -6,6 +6,10 @@ import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.RectF
+import android.text.Layout
+import android.text.StaticLayout
+import android.text.TextPaint
+import android.text.TextUtils
 import androidx.core.graphics.PathParser
 import com.finnvek.knittools.domain.calculator.ChartTrackerHighlight
 import com.finnvek.knittools.domain.model.CalloutPayload
@@ -166,15 +170,11 @@ object PatternAnnotationCanvasRenderer {
         val bounds = payload.bounds.toRect(width, height)
         payload.backgroundArgb?.let { canvas.drawRect(bounds, fillPaint(it, payload.backgroundAlpha)) }
         val paint =
-            Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = payload.textArgb
                 textSize = payload.textSizeSp * min(width, height) / style.referencePageSize
             }
-        var baseline = bounds.top - paint.fontMetrics.top
-        payload.text.lineSequence().forEach { line ->
-            if (baseline <= bounds.bottom) canvas.drawText(line, bounds.left, baseline, paint)
-            baseline += paint.fontSpacing
-        }
+        drawBoundedText(canvas, bounds, payload.text, paint)
     }
 
     private fun renderCallout(
@@ -188,16 +188,44 @@ object PatternAnnotationCanvasRenderer {
         val cornerRadius = style.calloutCornerRadius * min(width, height) / style.referencePageSize
         canvas.drawRoundRect(bounds, cornerRadius, cornerRadius, fillPaint(payload.argb, style.calloutBackgroundAlpha))
         val paint =
-            Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = payload.argb
                 textSize = style.calloutTextSize * min(width, height) / style.referencePageSize
             }
         val text = listOf(payload.title, payload.description).filter(String::isNotBlank)
-        var baseline = bounds.top - paint.fontMetrics.top
-        text.forEach { line ->
-            if (baseline <= bounds.bottom) canvas.drawText(line, bounds.left + paint.textSize / 2f, baseline, paint)
-            baseline += paint.fontSpacing
-        }
+        drawBoundedText(
+            canvas = canvas,
+            bounds = bounds,
+            text = text.joinToString("\n"),
+            paint = paint,
+            horizontalPadding = paint.textSize / 2f,
+        )
+    }
+
+    private fun drawBoundedText(
+        canvas: Canvas,
+        bounds: RectF,
+        text: String,
+        paint: TextPaint,
+        horizontalPadding: Float = 0f,
+    ) {
+        if (text.isBlank() || bounds.width() <= 0f || bounds.height() <= 0f) return
+        val availableWidth = (bounds.width() - horizontalPadding * 2f).toInt().coerceAtLeast(1)
+        val maxLines = (bounds.height() / paint.fontSpacing).toInt().coerceAtLeast(1)
+        val layout =
+            StaticLayout
+                .Builder
+                .obtain(text, 0, text.length, paint, availableWidth)
+                .setAlignment(Layout.Alignment.ALIGN_NORMAL)
+                .setIncludePad(false)
+                .setEllipsize(TextUtils.TruncateAt.END)
+                .setMaxLines(maxLines)
+                .build()
+        val saveCount = canvas.save()
+        canvas.clipRect(bounds)
+        canvas.translate(bounds.left + horizontalPadding, bounds.top)
+        layout.draw(canvas)
+        canvas.restoreToCount(saveCount)
     }
 
     private fun renderChartRegion(

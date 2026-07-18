@@ -394,8 +394,12 @@ class PatternAnnotationViewModel
             point: NormalizedPatternPoint,
             tolerance: Float = PatternAnnotationTokens.SELECTION_HIT_TOLERANCE,
         ) {
+            val state = uiState.value
             val candidates =
-                editableAnnotations() + uiState.value.masterAnnotations.filterNot { it in editableAnnotations() }
+                buildList {
+                    if (state.projectLayerVisible) addAll(state.projectAnnotations)
+                    if (state.masterLayerVisible) addAll(state.masterAnnotations)
+                }
             val selected = topmostAnnotationAt(candidates, point, tolerance)
             interaction.update { it.copy(selectedAnnotationId = selected?.id) }
         }

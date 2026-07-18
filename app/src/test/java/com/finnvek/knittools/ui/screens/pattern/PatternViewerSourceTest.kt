@@ -460,6 +460,34 @@ class PatternViewerSourceTest {
         assertTrue(viewport.contains("toPageCoordinateTransform(pageSize)"))
     }
 
+    @Test
+    fun `hidden editable annotation layer disables pointer input`() {
+        val viewer = ProjectSourceFiles.read(PATTERN_VIEWER_SCREEN)
+        val interactionOverlay = viewer.blockBetween("interactionOverlay =", "PatternAnnotationInputOverlay(")
+
+        assertTrue(interactionOverlay.contains("editableLayerVisible"))
+        assertTrue(interactionOverlay.contains("PatternAnnotationTool.BROWSE"))
+    }
+
+    @Test
+    fun `page render clears the previous bitmap before rendering the next page`() {
+        val viewer = ProjectSourceFiles.read(PATTERN_VIEWER_SCREEN)
+        val renderProducer = viewer.blockBetween("val renderedBitmap by produceState", "return PatternRenderState(")
+        val resetIndex = renderProducer.indexOf("value = null")
+        val rendererLookupIndex = renderProducer.indexOf("val activeRenderer")
+
+        assertTrue(resetIndex >= 0)
+        assertTrue(resetIndex < rendererLookupIndex)
+    }
+
+    @Test
+    fun `annotated export fallback filename comes from string resources`() {
+        val viewer = ProjectSourceFiles.read(PATTERN_VIEWER_SCREEN)
+
+        assertTrue(viewer.contains("R.string.pattern_annotation_export_default_name"))
+        assertFalse(viewer.contains("?: \"pattern\""))
+    }
+
     private companion object {
         const val PATTERN_VIEWER_SCREEN =
             "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternViewerScreen.kt"

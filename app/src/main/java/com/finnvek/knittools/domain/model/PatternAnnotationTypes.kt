@@ -67,6 +67,8 @@ data class FreehandPayload(
     val argb: Int,
     val strokeWidth: Float,
     val pressureEnabled: Boolean = false,
+    val legacyPathData: String? = null,
+    val legacyColor: String? = null,
 ) : PatternAnnotationPayload
 
 @Serializable

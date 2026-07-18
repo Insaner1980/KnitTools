@@ -1,8 +1,8 @@
 package com.finnvek.knittools.repository
 
 import com.finnvek.knittools.data.local.PatternAnnotationDao
-import com.finnvek.knittools.data.local.PatternAnnotationEntity
 import com.finnvek.knittools.data.local.toDomain
+import com.finnvek.knittools.data.local.toEntity
 import com.finnvek.knittools.domain.model.PatternAnnotation
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -15,38 +15,34 @@ class PatternAnnotationRepository
     constructor(
         private val dao: PatternAnnotationDao,
     ) {
-        fun getAnnotationsForPage(
-            projectId: Long,
+        fun observePage(
+            layerId: Long,
             page: Int,
         ): Flow<List<PatternAnnotation>> =
             dao
-                .getAnnotationsForPage(projectId, page)
-                .map { annotations -> annotations.map { it.toDomain() } }
+                .observePage(layerId, page)
+                .map { annotations -> annotations.mapNotNull { it.toDomain() } }
                 .retryOnRepositoryReadFailure()
 
-        suspend fun addAnnotation(
-            projectId: Long,
-            page: Int,
-            pathData: String,
-            color: String,
-            strokeWidth: Float,
-        ): Long =
-            dao.insert(
-                PatternAnnotationEntity(
-                    projectId = projectId,
-                    page = page,
-                    pathData = pathData,
-                    color = color,
-                    strokeWidth = strokeWidth,
-                ),
-            )
+        suspend fun insertAnnotation(annotation: PatternAnnotation): Long = dao.insert(annotation.toEntity())
+
+        suspend fun updateAnnotation(annotation: PatternAnnotation) = dao.update(annotation.toEntity())
 
         suspend fun clearProject(projectId: Long) = dao.deleteForProject(projectId)
 
         suspend fun clearPage(
-            projectId: Long,
+            layerId: Long,
             page: Int,
-        ) = dao.deleteForPage(projectId, page)
+        ) = dao.deleteForPage(layerId, page)
 
         suspend fun deleteById(id: Long) = dao.deleteById(id)
+
+        suspend fun restoreBatch(annotations: List<PatternAnnotation>) =
+            dao.restoreBatch(annotations.map(PatternAnnotation::toEntity))
+
+        suspend fun reorderAnnotation(
+            id: Long,
+            zIndex: Long,
+            updatedAt: Long,
+        ) = dao.updateZIndex(id, zIndex, updatedAt)
     }

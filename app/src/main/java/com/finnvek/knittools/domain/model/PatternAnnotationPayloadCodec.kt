@@ -127,7 +127,8 @@ private fun sanitizePayload(
     }
 
 private fun FreehandPayload.sanitize(): FreehandPayload? {
-    if (points.isEmpty() || points.size > PatternAnnotationLimits.MAX_FREEHAND_POINTS) return null
+    if (points.isEmpty() && legacyPathData.isNullOrBlank()) return null
+    if (points.size > PatternAnnotationLimits.MAX_FREEHAND_POINTS) return null
     val sanitizedPoints = points.map { point -> point.sanitize() ?: return null }
     val sanitizedWidth = strokeWidth.sanitizeStrokeWidth() ?: return null
     return copy(points = sanitizedPoints, strokeWidth = sanitizedWidth)

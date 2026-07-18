@@ -6,6 +6,8 @@ import com.finnvek.knittools.data.local.CounterProjectDao
 import com.finnvek.knittools.data.local.DatabaseTransactionRunner
 import com.finnvek.knittools.data.local.KnitToolsDatabase
 import com.finnvek.knittools.data.local.PatternAnnotationDao
+import com.finnvek.knittools.data.local.PatternAnnotationLayerDao
+import com.finnvek.knittools.data.local.PatternAnnotationSchemaConstraints
 import com.finnvek.knittools.data.local.ProgressPhotoDao
 import com.finnvek.knittools.data.local.ProjectCounterDao
 import com.finnvek.knittools.data.local.ProjectYarnNoteDao
@@ -33,21 +35,9 @@ object DatabaseModule {
     ): KnitToolsDatabase =
         Room
             .databaseBuilder(context, KnitToolsDatabase::class.java, DB_NAME)
-            .addMigrations(
-                KnitToolsDatabase.MIGRATION_3_4,
-                KnitToolsDatabase.MIGRATION_4_5,
-                KnitToolsDatabase.MIGRATION_5_6,
-                KnitToolsDatabase.MIGRATION_6_7,
-                KnitToolsDatabase.MIGRATION_7_8,
-                KnitToolsDatabase.MIGRATION_8_9,
-                KnitToolsDatabase.MIGRATION_9_10,
-                KnitToolsDatabase.MIGRATION_10_11,
-                KnitToolsDatabase.MIGRATION_11_12,
-                KnitToolsDatabase.MIGRATION_12_13,
-                KnitToolsDatabase.MIGRATION_13_14,
-                KnitToolsDatabase.MIGRATION_14_15,
-                KnitToolsDatabase.MIGRATION_15_16,
-            ).build()
+            .addMigrations(*KnitToolsDatabase.ALL_MANUAL_MIGRATIONS)
+            .addCallback(PatternAnnotationSchemaConstraints.callback)
+            .build()
 
     @Provides
     @Singleton
@@ -77,6 +67,10 @@ object DatabaseModule {
 
     @Provides
     fun provideSavedPatternDao(db: KnitToolsDatabase): SavedPatternDao = db.savedPatternDao()
+
+    @Provides
+    fun providePatternAnnotationLayerDao(db: KnitToolsDatabase): PatternAnnotationLayerDao =
+        db.patternAnnotationLayerDao()
 
     @Provides
     fun providePatternAnnotationDao(db: KnitToolsDatabase): PatternAnnotationDao = db.patternAnnotationDao()

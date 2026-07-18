@@ -247,7 +247,9 @@ class PatternAnnotationViewModel
                     isSaving = feedback.interaction.isSaving,
                     writeError = feedback.interaction.writeError,
                     selectedAnnotationId = feedback.interaction.selectedAnnotationId,
-                    selectedAnnotationIsEditable = selectedAnnotation?.layerId == selection.editableLayerId,
+                    selectedAnnotationIsEditable =
+                        selectedAnnotation != null &&
+                            selectedAnnotation.layerId == selection.editableLayerId,
                     selectedAnnotationSupportsChartTracker =
                         selectedAnnotation?.payload is ChartRegionPayload ||
                             selectedAnnotation?.payload is ChartTrackerPayload,

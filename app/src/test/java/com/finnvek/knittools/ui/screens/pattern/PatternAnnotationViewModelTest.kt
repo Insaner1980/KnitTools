@@ -274,6 +274,7 @@ class PatternAnnotationViewModelTest {
 
             runCurrent()
             assertEquals(PatternAnnotationLoadError.READ_FAILED, viewModel.uiState.value.loadError)
+            assertFalse(viewModel.uiState.value.selectedAnnotationIsEditable)
             advanceTimeBy(PatternAnnotationViewModel.RETRY_DELAY_MS)
             advanceUntilIdle()
 

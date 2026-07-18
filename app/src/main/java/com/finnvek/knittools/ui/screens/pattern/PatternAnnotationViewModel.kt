@@ -262,9 +262,11 @@ class PatternAnnotationViewModel
 
         fun setCurrentPage(page: Int) {
             require(page >= 0) { "Pattern annotation page must be non-negative" }
-            if (page != currentPage.value && interaction.value.draftStroke != null) {
+            if (page == currentPage.value) return
+            if (interaction.value.draftStroke != null) {
                 commitStroke(DEFAULT_SIMPLIFICATION_TOLERANCE)
             }
+            interaction.update { state -> state.copy(selectedAnnotationId = null) }
             currentPage.value = page
         }
 
@@ -395,12 +397,19 @@ class PatternAnnotationViewModel
             tolerance: Float = PatternAnnotationTokens.SELECTION_HIT_TOLERANCE,
         ) {
             val state = uiState.value
-            val candidates =
-                buildList {
-                    if (state.projectLayerVisible) addAll(state.projectAnnotations)
-                    if (state.masterLayerVisible) addAll(state.masterAnnotations)
+            val projectSelection =
+                if (state.projectLayerVisible) {
+                    topmostAnnotationAt(state.projectAnnotations, point, tolerance)
+                } else {
+                    null
                 }
-            val selected = topmostAnnotationAt(candidates, point, tolerance)
+            val selected =
+                projectSelection
+                    ?: if (state.masterLayerVisible) {
+                        topmostAnnotationAt(state.masterAnnotations, point, tolerance)
+                    } else {
+                        null
+                    }
             interaction.update { it.copy(selectedAnnotationId = selected?.id) }
         }
 

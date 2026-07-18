@@ -133,10 +133,15 @@ class PatternAnnotationViewModelTest {
                     .isEmpty(),
             )
 
+            viewModel.selectAnnotationAt(NormalizedPatternPoint(0.5f, 0.5f))
+            runCurrent()
+            assertEquals(31L, viewModel.uiState.value.selectedAnnotationId)
+
             viewModel.setCurrentPage(3)
             advanceUntilIdle()
 
             assertEquals(3, viewModel.uiState.value.currentPage)
+            assertEquals(null, viewModel.uiState.value.selectedAnnotationId)
             assertEquals(
                 3,
                 viewModel.uiState.value.masterAnnotations
@@ -195,7 +200,7 @@ class PatternAnnotationViewModelTest {
         }
 
     @Test
-    fun `selection ignores annotations in hidden layers`() =
+    fun `selection prioritizes project layer and ignores annotations in hidden layers`() =
         runTest {
             val counterRepository = mockk<CounterRepository>()
             val layerRepository = mockk<PatternAnnotationLayerRepository>()
@@ -208,7 +213,8 @@ class PatternAnnotationViewModelTest {
                 flowOf(CounterProject(id = 7L, linkedPatternId = 12L))
             every { layerRepository.observeLayers(projectOwner) } returns flowOf(listOf(projectLayer))
             coEvery { layerRepository.getOrCreateMasterLayer(12L, documentKey) } returns masterLayer
-            every { annotationRepository.observePage(31L, 0) } returns flowOf(listOf(annotation(31L, 0)))
+            every { annotationRepository.observePage(31L, 0) } returns
+                flowOf(listOf(annotation(layerId = 31L, page = 0, zIndex = 100L)))
             every { annotationRepository.observePage(41L, 0) } returns flowOf(listOf(annotation(41L, 0)))
             val viewModel =
                 PatternAnnotationViewModel(
@@ -219,6 +225,10 @@ class PatternAnnotationViewModelTest {
                 )
             advanceUntilIdle()
             val hitPoint = NormalizedPatternPoint(0.5f, 0.5f)
+
+            viewModel.selectAnnotationAt(hitPoint)
+            runCurrent()
+            assertEquals(41L, viewModel.uiState.value.selectedAnnotationId)
 
             viewModel.setProjectLayerVisible(false)
             advanceUntilIdle()
@@ -536,6 +546,7 @@ class PatternAnnotationViewModelTest {
     private fun annotation(
         layerId: Long,
         page: Int,
+        zIndex: Long = 0L,
     ) = PatternAnnotation(
         id = layerId,
         layerId = layerId,
@@ -547,6 +558,6 @@ class PatternAnnotationViewModelTest {
                 argb = 0xFF000000.toInt(),
                 strokeWidth = 2f,
             ),
-        zIndex = 0L,
+        zIndex = zIndex,
     )
 }

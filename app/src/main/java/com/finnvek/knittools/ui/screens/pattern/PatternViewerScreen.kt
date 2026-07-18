@@ -103,6 +103,7 @@ private data class PatternRenderState(
 fun PatternViewerScreen(
     onBack: () -> Unit,
     counterViewModel: CounterViewModel,
+    annotationViewModel: PatternAnnotationViewModel,
 ) {
     val counterState by counterViewModel.uiState.collectAsStateWithLifecycle()
     val patternUri = counterState.patternUri
@@ -120,6 +121,10 @@ fun PatternViewerScreen(
     var rowCalibrationState by remember(patternUri) { mutableStateOf<RowCalibrationState?>(null) }
     var readingLinePreviewYFraction by remember(patternUri) { mutableFloatStateOf(counterState.readingLineYFraction) }
     var isReadingLineDragging by remember(patternUri) { mutableStateOf(false) }
+
+    LaunchedEffect(currentPage) {
+        annotationViewModel.setCurrentPage(currentPage)
+    }
 
     LaunchedEffect(patternUri, counterState.readingLineYFraction, isReadingLineDragging) {
         if (!isReadingLineDragging) {
@@ -468,10 +473,14 @@ fun LibraryPatternViewerScreen(
     patternUri: String?,
     patternName: String?,
     onBack: () -> Unit,
+    annotationViewModel: PatternAnnotationViewModel,
 ) {
     var currentPage by rememberSaveable(patternUri) { mutableIntStateOf(0) }
     var readingLineEnabled by rememberSaveable(patternUri) { mutableStateOf(false) }
     var readingLineYFraction by rememberSaveable(patternUri) { mutableFloatStateOf(DEFAULT_READING_LINE_Y_FRACTION) }
+    LaunchedEffect(currentPage) {
+        annotationViewModel.setCurrentPage(currentPage)
+    }
     val renderState =
         rememberPatternRenderState(
             patternUri = patternUri,

@@ -3,6 +3,7 @@ package com.finnvek.knittools
 import android.app.Application
 import com.finnvek.knittools.billing.BillingManager
 import com.finnvek.knittools.data.datastore.PreferencesManager
+import com.finnvek.knittools.data.local.DatabaseTransactionRunner
 import com.finnvek.knittools.data.local.KnitToolsDatabase
 import com.finnvek.knittools.data.storage.PatternDocumentStorage
 import com.finnvek.knittools.di.ApplicationScope
@@ -40,6 +41,9 @@ class App : Application() {
     lateinit var database: dagger.Lazy<KnitToolsDatabase>
 
     @Inject
+    lateinit var transactionRunner: dagger.Lazy<DatabaseTransactionRunner>
+
+    @Inject
     @ApplicationScope
     lateinit var applicationScope: CoroutineScope
 
@@ -59,7 +63,7 @@ class App : Application() {
         applicationScope.launch(ioDispatcher) {
             patternDocumentStorage.get().pruneStaleCaptureImages(this@App)
         }
-        DemoDataSeeder.seedIfNeeded(applicationScope, ioDispatcher, database)
+        DemoDataSeeder.seedIfNeeded(applicationScope, ioDispatcher, database, transactionRunner)
         billingManager.get().initialize()
         proManager.get().initialize()
         observeWidgetProState()

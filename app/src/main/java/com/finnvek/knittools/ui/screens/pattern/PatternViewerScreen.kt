@@ -74,6 +74,7 @@ import com.finnvek.knittools.domain.calculator.createCalibrationRowMarkers
 import com.finnvek.knittools.domain.calculator.parseMapping
 import com.finnvek.knittools.domain.calculator.resolveReadingLineYFraction
 import com.finnvek.knittools.domain.model.DEFAULT_READING_LINE_Y_FRACTION
+import com.finnvek.knittools.domain.model.PatternAnnotationOwner
 import com.finnvek.knittools.domain.model.READING_LINE_MAX_Y_FRACTION
 import com.finnvek.knittools.domain.model.READING_LINE_MIN_Y_FRACTION
 import com.finnvek.knittools.domain.model.sanitizeReadingLineYFraction
@@ -291,6 +292,8 @@ fun PatternViewerScreen(
                         },
                         onMasterLayerVisibilityChange = annotationViewModel::setMasterLayerVisible,
                         onProjectLayerVisibilityChange = annotationViewModel::setProjectLayerVisible,
+                        annotationInputActions = annotationViewModel.patternInputActions(),
+                        annotationToolbarActions = annotationViewModel.patternToolbarActions(),
                     ),
                 modifier =
                     Modifier
@@ -545,6 +548,8 @@ fun LibraryPatternViewerScreen(
                     onReadingLineDragCancel = {},
                     onMasterLayerVisibilityChange = annotationViewModel::setMasterLayerVisible,
                     onProjectLayerVisibilityChange = annotationViewModel::setProjectLayerVisible,
+                    annotationInputActions = annotationViewModel.patternInputActions(),
+                    annotationToolbarActions = annotationViewModel.patternToolbarActions(),
                 ),
             modifier =
                 Modifier
@@ -930,6 +935,10 @@ private fun PatternViewerContent(
                 onMasterVisibilityChange = actions.onMasterLayerVisibilityChange,
                 onProjectVisibilityChange = actions.onProjectLayerVisibilityChange,
             )
+            PatternAnnotationToolbar(
+                state = state.annotationState,
+                actions = actions.annotationToolbarActions,
+            )
         }
         when {
             state.patternUri == null -> {
@@ -954,44 +963,66 @@ private fun PatternViewerContent(
                         Modifier
                             .fillMaxWidth()
                             .weight(1f),
-                ) { viewport ->
-                    RowHighlightOverlay(
-                        yPosition = state.positionPercent?.let { it / 100f },
-                        modifier = Modifier.fillMaxSize(),
-                        accessibilityDescription =
-                            if (state.currentRow != null && state.positionPercent != null) {
-                                stringResource(
-                                    R.string.pattern_row_highlight_description,
-                                    state.currentRow,
-                                    state.positionPercent,
-                                )
-                            } else {
-                                null
-                            },
-                    )
-                    PatternAnnotationOverlay(
-                        masterAnnotations = state.annotationState.masterAnnotations,
-                        projectAnnotations = state.annotationState.projectAnnotations,
-                        masterVisible = state.annotationState.masterLayerVisible,
-                        projectVisible = state.annotationState.projectLayerVisible,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                    if (state.readingLineEnabled) {
-                        ReadingLineOverlay(
-                            yFraction = state.readingLineYFraction,
-                            currentRow = state.currentRow,
-                            scale = viewport.state.scale,
-                            actions =
-                                ReadingLineOverlayActions(
-                                    onDragStart = actions.onReadingLineDragStart,
-                                    onYFractionChange = actions.onReadingLineYFractionChange,
-                                    onYFractionCommit = actions.onReadingLineYFractionCommit,
-                                    onDragCancel = actions.onReadingLineDragCancel,
-                                ),
+                    overlay = { viewport ->
+                        RowHighlightOverlay(
+                            yPosition = state.positionPercent?.let { it / 100f },
+                            modifier = Modifier.fillMaxSize(),
+                            accessibilityDescription =
+                                if (state.currentRow != null && state.positionPercent != null) {
+                                    stringResource(
+                                        R.string.pattern_row_highlight_description,
+                                        state.currentRow,
+                                        state.positionPercent,
+                                    )
+                                } else {
+                                    null
+                                },
+                        )
+                        val editableLayerVisible =
+                            when (state.annotationState.owner) {
+                                is PatternAnnotationOwner.Project ->
+                                    state.annotationState.projectLayerVisible
+                                is PatternAnnotationOwner.SavedPattern ->
+                                    state.annotationState.masterLayerVisible
+                            }
+                        PatternAnnotationOverlay(
+                            masterAnnotations = state.annotationState.masterAnnotations,
+                            projectAnnotations = state.annotationState.projectAnnotations,
+                            masterVisible = state.annotationState.masterLayerVisible,
+                            projectVisible = state.annotationState.projectLayerVisible,
+                            inProgressAnnotation = state.annotationState.inProgressAnnotation,
+                            inProgressVisible = editableLayerVisible,
                             modifier = Modifier.fillMaxSize(),
                         )
-                    }
-                }
+                        if (state.readingLineEnabled) {
+                            ReadingLineOverlay(
+                                yFraction = state.readingLineYFraction,
+                                currentRow = state.currentRow,
+                                scale = viewport.state.scale,
+                                actions =
+                                    ReadingLineOverlayActions(
+                                        onDragStart = actions.onReadingLineDragStart,
+                                        onYFractionChange = actions.onReadingLineYFractionChange,
+                                        onYFractionCommit = actions.onReadingLineYFractionCommit,
+                                        onDragCancel = actions.onReadingLineDragCancel,
+                                    ),
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                        }
+                    },
+                    interactionOverlay = { viewport ->
+                        if (state.annotationState.activeTool != PatternAnnotationTool.BROWSE) {
+                            PatternAnnotationInputOverlay(
+                                activeTool = state.annotationState.activeTool,
+                                coordinateTransform = viewport.coordinateTransform,
+                                viewportScale = viewport.state.scale,
+                                pressureEnabled = state.annotationState.pressureEnabled,
+                                actions = actions.annotationInputActions,
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                        }
+                    },
+                )
             }
         }
     }
@@ -1016,7 +1047,29 @@ private data class PatternViewerContentActions(
     val onReadingLineDragCancel: () -> Unit,
     val onMasterLayerVisibilityChange: (Boolean) -> Unit,
     val onProjectLayerVisibilityChange: (Boolean) -> Unit,
+    val annotationInputActions: PatternAnnotationInputActions,
+    val annotationToolbarActions: PatternAnnotationToolbarActions,
 )
+
+private fun PatternAnnotationViewModel.patternInputActions() =
+    PatternAnnotationInputActions(
+        onBeginStroke = ::beginStroke,
+        onAppendStrokePoint = ::appendStrokePoint,
+        onCommitStroke = ::commitStroke,
+        onCancelStroke = ::cancelStroke,
+        onEraseStroke = ::eraseStrokeAt,
+    )
+
+private fun PatternAnnotationViewModel.patternToolbarActions() =
+    PatternAnnotationToolbarActions(
+        onToolSelected = ::setActiveTool,
+        onPenArgbChange = ::setPenArgb,
+        onHighlighterArgbChange = ::setHighlighterArgb,
+        onPenStrokeWidthChange = ::setPenStrokeWidth,
+        onHighlighterStrokeWidthChange = ::setHighlighterStrokeWidth,
+        onPressureEnabledChange = ::setPressureEnabled,
+        onHighlighterAxisLockChange = ::setHighlighterAxisLock,
+    )
 
 private data class ReadingLineOverlayActions(
     val onDragStart: () -> Unit,

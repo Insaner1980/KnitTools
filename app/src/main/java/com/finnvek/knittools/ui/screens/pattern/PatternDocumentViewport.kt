@@ -78,6 +78,7 @@ internal fun PatternDocumentViewport(
     contentDescription: String?,
     modifier: Modifier = Modifier,
     overlay: @Composable BoxScope.(PatternViewportLayout) -> Unit = {},
+    interactionOverlay: @Composable BoxScope.(PatternViewportLayout) -> Unit = {},
 ) {
     var viewportState by remember { mutableStateOf(PatternViewportState()) }
     val transformableState =
@@ -108,21 +109,28 @@ internal fun PatternDocumentViewport(
                         .height(maxWidth / aspectRatio)
                         .pointerInput(Unit) {
                             detectTapGestures(onDoubleTap = { viewportState = viewportState.reset() })
-                        }.transformable(state = transformableState)
-                        .graphicsLayer(
-                            scaleX = viewportState.scale,
-                            scaleY = viewportState.scale,
-                            translationX = viewportState.offset.x,
-                            translationY = viewportState.offset.y,
-                        ),
+                        }.transformable(state = transformableState),
             ) {
-                Image(
-                    bitmap = renderedBitmap.asImageBitmap(),
-                    contentDescription = contentDescription,
-                    contentScale = ContentScale.FillWidth,
-                    modifier = Modifier.fillMaxSize(),
-                )
-                overlay(layout)
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .graphicsLayer(
+                                scaleX = viewportState.scale,
+                                scaleY = viewportState.scale,
+                                translationX = viewportState.offset.x,
+                                translationY = viewportState.offset.y,
+                            ),
+                ) {
+                    Image(
+                        bitmap = renderedBitmap.asImageBitmap(),
+                        contentDescription = contentDescription,
+                        contentScale = ContentScale.FillWidth,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                    overlay(layout)
+                }
+                interactionOverlay(layout)
             }
         }
     }

@@ -7,6 +7,19 @@ import androidx.compose.ui.graphics.toArgb
 import com.finnvek.knittools.data.storage.PatternAnnotationRenderStyle
 
 internal object PatternAnnotationTokens {
+    const val PEN_DEFAULT_ARGB = 0xFF1F1F1F.toInt()
+    const val HIGHLIGHTER_DEFAULT_ARGB = 0x60FFD54F
+    const val PEN_DEFAULT_WIDTH = 4f
+    const val HIGHLIGHTER_DEFAULT_WIDTH = 20f
+    const val ERASER_HIT_TOLERANCE = 0.02f
+    val COLOR_PALETTE_ARGB =
+        listOf(
+            0xFF1F1F1F.toInt(),
+            0xFFD32F2F.toInt(),
+            0xFF1976D2.toInt(),
+            0xFF388E3C.toInt(),
+            0xFFFFC107.toInt(),
+        )
     const val REFERENCE_PAGE_SIZE = 1_000f
     const val HIGHLIGHTER_DEFAULT_ALPHA = 96
     const val CALLOUT_BACKGROUND_ALPHA = 0.16f
@@ -15,6 +28,7 @@ internal object PatternAnnotationTokens {
     const val CHART_GRID_WIDTH = 2f
     const val ARROW_HEAD_MULTIPLIER = 4f
     const val ARROW_HEAD_ANGLE = 0.55f
+    const val MINIMUM_PRESSURE_SCALE = 0.15f
 }
 
 @Composable
@@ -31,6 +45,7 @@ internal fun rememberPatternAnnotationRenderStyle(): PatternAnnotationRenderStyl
             chartGridWidth = PatternAnnotationTokens.CHART_GRID_WIDTH,
             arrowHeadMultiplier = PatternAnnotationTokens.ARROW_HEAD_MULTIPLIER,
             arrowHeadAngle = PatternAnnotationTokens.ARROW_HEAD_ANGLE,
+            minimumPressureScale = PatternAnnotationTokens.MINIMUM_PRESSURE_SCALE,
         )
     }
 }

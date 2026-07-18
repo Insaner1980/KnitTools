@@ -115,6 +115,7 @@ class PatternAnnotationCanvasRendererTest {
                 chartGridWidth = 2f,
                 arrowHeadMultiplier = 4f,
                 arrowHeadAngle = 0.55f,
+                minimumPressureScale = 0.15f,
             )
     }
 }

@@ -13,8 +13,10 @@ import com.finnvek.knittools.repository.CounterRepository
 import com.finnvek.knittools.repository.PatternAnnotationLayerRepository
 import com.finnvek.knittools.repository.PatternAnnotationRepository
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
@@ -192,6 +194,135 @@ class PatternAnnotationViewModelTest {
 
             assertEquals(PatternAnnotationLoadError.NONE, viewModel.uiState.value.loadError)
             assertEquals(31L, viewModel.uiState.value.editableLayerId)
+        }
+
+    @Test
+    fun `pointer moves stay in memory and gesture end persists one pressure stroke`() =
+        runTest {
+            val layerRepository = mockk<PatternAnnotationLayerRepository>()
+            val annotationRepository = mockk<PatternAnnotationRepository>()
+            val documentKey = PatternAnnotationDocumentKey.savedPattern(12L)
+            val masterLayer = layer(id = 31L, owner = PatternAnnotationOwner.SavedPattern(12L, documentKey))
+            coEvery { layerRepository.getOrCreateMasterLayer(12L, documentKey) } returns masterLayer
+            every { annotationRepository.observePage(31L, 0) } returns flowOf(emptyList())
+            coEvery { annotationRepository.insertAnnotation(any()) } returns 55L
+            val viewModel =
+                PatternAnnotationViewModel(
+                    SavedStateHandle(mapOf("savedPatternId" to 12L)),
+                    mockk(relaxed = true),
+                    layerRepository,
+                    annotationRepository,
+                )
+            advanceUntilIdle()
+
+            viewModel.setActiveTool(PatternAnnotationTool.PEN)
+            viewModel.beginStroke(NormalizedPatternPoint(0.1f, 0.2f, pressure = 0.35f))
+            viewModel.appendStrokePoint(NormalizedPatternPoint(0.4f, 0.5f, pressure = 0.8f))
+            runCurrent()
+
+            coVerify(exactly = 0) { annotationRepository.insertAnnotation(any()) }
+            assertEquals(
+                2,
+                viewModel.uiState.value.draftStroke
+                    ?.points
+                    ?.size,
+            )
+
+            viewModel.commitStroke(simplificationTolerance = 0f)
+            advanceUntilIdle()
+
+            coVerify(exactly = 1) {
+                annotationRepository.insertAnnotation(
+                    match { saved ->
+                        val payload = saved.payload as FreehandPayload
+                        saved.kind == PatternAnnotationKind.FREEHAND &&
+                            payload.pressureEnabled &&
+                            payload.points.last().pressure == 0.8f
+                    },
+                )
+            }
+            assertEquals(null, viewModel.uiState.value.draftStroke)
+        }
+
+    @Test
+    fun `failed stroke write keeps draft available for retry`() =
+        runTest {
+            val layerRepository = mockk<PatternAnnotationLayerRepository>()
+            val annotationRepository = mockk<PatternAnnotationRepository>()
+            val documentKey = PatternAnnotationDocumentKey.savedPattern(12L)
+            coEvery { layerRepository.getOrCreateMasterLayer(12L, documentKey) } returns
+                layer(id = 31L, owner = PatternAnnotationOwner.SavedPattern(12L, documentKey))
+            every { annotationRepository.observePage(31L, 0) } returns flowOf(emptyList())
+            coEvery { annotationRepository.insertAnnotation(any()) } throws IOException("write failed")
+            val viewModel =
+                PatternAnnotationViewModel(
+                    SavedStateHandle(mapOf("savedPatternId" to 12L)),
+                    mockk(relaxed = true),
+                    layerRepository,
+                    annotationRepository,
+                )
+            advanceUntilIdle()
+
+            viewModel.setActiveTool(PatternAnnotationTool.HIGHLIGHTER)
+            viewModel.beginStroke(NormalizedPatternPoint(0.1f, 0.2f))
+            viewModel.appendStrokePoint(NormalizedPatternPoint(0.8f, 0.2f))
+            viewModel.commitStroke(simplificationTolerance = 0f)
+            advanceUntilIdle()
+
+            assertEquals(PatternAnnotationWriteError.WRITE_FAILED, viewModel.uiState.value.writeError)
+            assertEquals(
+                2,
+                viewModel.uiState.value.draftStroke
+                    ?.points
+                    ?.size,
+            )
+        }
+
+    @Test
+    fun `tool change cannot cancel an active stroke write`() =
+        runTest {
+            val layerRepository = mockk<PatternAnnotationLayerRepository>()
+            val annotationRepository = mockk<PatternAnnotationRepository>()
+            val documentKey = PatternAnnotationDocumentKey.savedPattern(12L)
+            val writeGate = CompletableDeferred<Unit>()
+            coEvery { layerRepository.getOrCreateMasterLayer(12L, documentKey) } returns
+                layer(id = 31L, owner = PatternAnnotationOwner.SavedPattern(12L, documentKey))
+            every { annotationRepository.observePage(31L, 0) } returns flowOf(emptyList())
+            coEvery { annotationRepository.insertAnnotation(any()) } coAnswers {
+                writeGate.await()
+                55L
+            }
+            val viewModel =
+                PatternAnnotationViewModel(
+                    SavedStateHandle(mapOf("savedPatternId" to 12L)),
+                    mockk(relaxed = true),
+                    layerRepository,
+                    annotationRepository,
+                )
+            advanceUntilIdle()
+
+            viewModel.setActiveTool(PatternAnnotationTool.PEN)
+            viewModel.beginStroke(NormalizedPatternPoint(0.1f, 0.2f))
+            viewModel.appendStrokePoint(NormalizedPatternPoint(0.4f, 0.5f))
+            viewModel.commitStroke(simplificationTolerance = 0f)
+            runCurrent()
+
+            viewModel.setActiveTool(PatternAnnotationTool.BROWSE)
+            runCurrent()
+
+            assertTrue(viewModel.uiState.value.isSaving)
+            assertEquals(
+                2,
+                viewModel.uiState.value.draftStroke
+                    ?.points
+                    ?.size,
+            )
+
+            writeGate.complete(Unit)
+            advanceUntilIdle()
+
+            assertFalse(viewModel.uiState.value.isSaving)
+            assertEquals(null, viewModel.uiState.value.draftStroke)
         }
 
     private fun layer(

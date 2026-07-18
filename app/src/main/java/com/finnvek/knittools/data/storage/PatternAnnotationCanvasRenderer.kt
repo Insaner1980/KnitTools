@@ -64,6 +64,15 @@ object PatternAnnotationCanvasRenderer {
         }
         if (payload.points.isNotEmpty()) {
             val first = payload.points.first()
+            if (payload.pressureEnabled && payload.points.size > 1) {
+                payload.points.zipWithNext().forEach { (start, end) ->
+                    paint.strokeWidth =
+                        scaledStrokeWidth(payload.strokeWidth, width, height, style) *
+                        ((start.pressure + end.pressure) / 2f).coerceAtLeast(style.minimumPressureScale)
+                    canvas.drawLine(start.x * width, start.y * height, end.x * width, end.y * height, paint)
+                }
+                return
+            }
             val path = Path().apply { moveTo(first.x * width, first.y * height) }
             payload.points.drop(1).forEach { point -> path.lineTo(point.x * width, point.y * height) }
             if (payload.points.size == 1) {
@@ -293,4 +302,5 @@ data class PatternAnnotationRenderStyle(
     val chartGridWidth: Float,
     val arrowHeadMultiplier: Float,
     val arrowHeadAngle: Float,
+    val minimumPressureScale: Float,
 )

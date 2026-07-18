@@ -9,10 +9,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
@@ -31,6 +33,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -72,12 +76,21 @@ internal fun PatternAnnotationToolbar(
     actions: PatternAnnotationToolbarActions,
     modifier: Modifier = Modifier,
 ) {
+    val hapticFeedback = LocalHapticFeedback.current
     var showTextEditor by rememberSaveable { mutableStateOf(false) }
     var showCalloutEditor by rememberSaveable { mutableStateOf(false) }
     var showChartTrackerEditor by rememberSaveable { mutableStateOf(false) }
     Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(PatternAnnotationTokens.TOOLBAR_ITEM_SPACING),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .heightIn(max = PatternAnnotationTokens.TOOLBAR_MAX_HEIGHT)
+                .verticalScroll(rememberScrollState())
+                .padding(
+                    horizontal = PatternAnnotationTokens.TOOLBAR_HORIZONTAL_PADDING,
+                    vertical = PatternAnnotationTokens.TOOLBAR_VERTICAL_PADDING,
+                ),
     ) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -92,8 +105,10 @@ internal fun PatternAnnotationToolbar(
                             PatternAnnotationTool.CALLOUT -> showCalloutEditor = true
                             else -> actions.onToolSelected(item.tool)
                         }
+                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                     },
                     label = { Text(stringResource(item.labelRes)) },
+                    modifier = Modifier.heightIn(min = PatternAnnotationTokens.TOOL_TOUCH_TARGET),
                 )
             }
         }
@@ -419,6 +434,7 @@ private fun <T> ChartChoiceRow(
                 selected = choice == selected,
                 onClick = { onSelected(choice) },
                 label = { Text(label(choice)) },
+                modifier = Modifier.heightIn(min = PatternAnnotationTokens.TOOL_TOUCH_TARGET),
             )
         }
     }
@@ -445,7 +461,7 @@ private fun PatternStrokeStyleControls(
             Box(
                 modifier =
                     Modifier
-                        .size(40.dp)
+                        .size(PatternAnnotationTokens.TOOL_TOUCH_TARGET)
                         .clip(CircleShape)
                         .background(Color(argb))
                         .border(
@@ -502,6 +518,7 @@ private fun HighlighterAxisControls(
                 selected = selected == item.axisLock,
                 onClick = { onSelected(item.axisLock) },
                 label = { Text(stringResource(item.labelRes)) },
+                modifier = Modifier.heightIn(min = PatternAnnotationTokens.TOOL_TOUCH_TARGET),
             )
         }
     }

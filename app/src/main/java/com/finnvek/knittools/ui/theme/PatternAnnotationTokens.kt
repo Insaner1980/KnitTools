@@ -4,6 +4,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.data.storage.PatternAnnotationRenderStyle
 
 internal object PatternAnnotationTokens {
@@ -36,6 +37,11 @@ internal object PatternAnnotationTokens {
     const val ARROW_HEAD_MULTIPLIER = 4f
     const val ARROW_HEAD_ANGLE = 0.55f
     const val MINIMUM_PRESSURE_SCALE = 0.15f
+    val TOOL_TOUCH_TARGET = 48.dp
+    val TOOLBAR_MAX_HEIGHT = 280.dp
+    val TOOLBAR_HORIZONTAL_PADDING = 12.dp
+    val TOOLBAR_VERTICAL_PADDING = 8.dp
+    val TOOLBAR_ITEM_SPACING = 8.dp
 }
 
 @Composable

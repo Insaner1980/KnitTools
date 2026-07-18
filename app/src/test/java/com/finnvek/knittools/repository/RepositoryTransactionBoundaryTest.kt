@@ -307,6 +307,44 @@ class RepositoryTransactionBoundaryTest {
         }
 
     @Test
+    fun `pattern detachment clears related database state inside one transaction`() =
+        runTest {
+            val runner = RecordingTransactionRunner()
+            val projectDao = mockk<CounterProjectDao>(relaxed = true)
+            val annotationRepository = mockk<PatternAnnotationRepository>(relaxed = true)
+            val repository =
+                CounterRepository(
+                    dao = projectDao,
+                    projectCounterDao = mockk(relaxed = true),
+                    sessionDao = mockk(relaxed = true),
+                    photoStorage = mockk(relaxed = true),
+                    patternDocumentStorage = mockk(relaxed = true),
+                    context = mockk(relaxed = true),
+                    yarnCardRepository = mockk(relaxed = true),
+                    savedPatternRepository = mockk(relaxed = true),
+                    patternAnnotationRepository = annotationRepository,
+                    transactionRunner = runner,
+                    ioDispatcher = UnconfinedTestDispatcher(testScheduler),
+                )
+
+            repository.detachPattern(7L)
+
+            assertEquals(1, runner.runCount)
+            coVerifyOrder {
+                annotationRepository.clearProject(7L)
+                projectDao.updatePatternAttachment(
+                    id = 7L,
+                    linkedPatternId = null,
+                    patternUri = null,
+                    patternName = null,
+                    currentPatternPage = 0,
+                    patternRowMapping = null,
+                    updatedAt = any(),
+                )
+            }
+        }
+
+    @Test
     fun `yarn card delete dispatches app owned photo cleanup to IO dispatcher`() =
         runTest {
             val ioDispatcher = RecordingDispatcher()

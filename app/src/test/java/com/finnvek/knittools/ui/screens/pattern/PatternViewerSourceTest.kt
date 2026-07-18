@@ -35,6 +35,21 @@ class PatternViewerSourceTest {
     }
 
     @Test
+    fun `library pattern viewer does not receive or write project state`() {
+        val source = ProjectSourceFiles.read(PATTERN_VIEWER_SCREEN)
+        val libraryViewer =
+            source.blockBetween(
+                "fun LibraryPatternViewerScreen(",
+                "@Composable\nprivate fun rememberPatternRenderState",
+            )
+
+        assertFalse(libraryViewer.contains("CounterViewModel"))
+        assertFalse(libraryViewer.contains("counterViewModel"))
+        assertFalse(libraryViewer.contains("projectId"))
+        assertFalse(libraryViewer.contains("PatternAnnotationRepository"))
+    }
+
+    @Test
     fun `reading line is toggled from pattern viewer overflow and drawn in transformed pdf layer`() {
         val source = ProjectSourceFiles.read(PATTERN_VIEWER_SCREEN)
 

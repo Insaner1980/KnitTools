@@ -569,9 +569,9 @@ private fun rememberPatternRenderState(
         createdRenderer
             .onSuccess { pdfRenderer ->
                 renderer = pdfRenderer
-                val maxPage = (pdfRenderer.pageCount - 1).coerceAtLeast(0)
-                if (currentPage > maxPage) {
-                    onPageClamped(maxPage)
+                val clampedPage = clampPatternPage(currentPage, pdfRenderer.pageCount)
+                if (currentPage != clampedPage) {
+                    onPageClamped(clampedPage)
                 }
             }.onFailure {
                 rendererError = patternOpenFailed
@@ -993,17 +993,11 @@ private fun PatternViewerDocument(
     actions: PatternViewerContentActions,
     modifier: Modifier = Modifier,
 ) {
-    var scale by remember { mutableFloatStateOf(1f) }
-    var offset by remember { mutableStateOf(Offset.Zero) }
+    var viewportState by remember { mutableStateOf(PatternViewportState()) }
 
     val transformableState =
         rememberTransformableState { _, zoomChange, panChange, _ ->
-            scale = (scale * zoomChange).coerceIn(1f, 5f)
-            if (scale > 1f) {
-                offset += panChange
-            } else {
-                offset = Offset.Zero
-            }
+            viewportState = viewportState.applyTransform(zoomChange, panChange)
         }
 
     Column(
@@ -1023,16 +1017,15 @@ private fun PatternViewerDocument(
                         .pointerInput(Unit) {
                             detectTapGestures(
                                 onDoubleTap = {
-                                    scale = 1f
-                                    offset = Offset.Zero
+                                    viewportState = viewportState.reset()
                                 },
                             )
                         }.transformable(state = transformableState)
                         .graphicsLayer(
-                            scaleX = scale,
-                            scaleY = scale,
-                            translationX = offset.x,
-                            translationY = offset.y,
+                            scaleX = viewportState.scale,
+                            scaleY = viewportState.scale,
+                            translationX = viewportState.offset.x,
+                            translationY = viewportState.offset.y,
                         ),
             ) {
                 Image(
@@ -1059,7 +1052,7 @@ private fun PatternViewerDocument(
                     ReadingLineOverlay(
                         yFraction = state.readingLineYFraction,
                         currentRow = state.currentRow,
-                        scale = scale,
+                        scale = viewportState.scale,
                         actions =
                             ReadingLineOverlayActions(
                                 onDragStart = actions.onReadingLineDragStart,

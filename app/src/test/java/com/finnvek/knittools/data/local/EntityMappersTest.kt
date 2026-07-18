@@ -460,7 +460,7 @@ class EntityMappersTest {
         val entity = domain.toEntity()
 
         assertEquals(domain, entity.toDomain())
-        assertEquals(entity, domain.toEntity())
+        assertEquals(entity, requireNotNull(entity.toDomain()).toEntity())
     }
 
     private fun <Entity, Domain> assertMapsBothWays(

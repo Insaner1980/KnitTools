@@ -71,10 +71,14 @@ internal object PatternAnnotationMigration17 {
                     WHEN projects.patternUri IS NOT NULL OR projects.linkedPatternId IS NOT NULL THEN 1
                     ELSE 0
                 END,
-                MIN(annotations.createdAt),
-                MAX(annotations.createdAt)
-            FROM `pattern_annotations` AS annotations
-            INNER JOIN `counter_projects` AS projects ON projects.id = annotations.projectId
+                COALESCE(MIN(annotations.createdAt), projects.createdAt),
+                COALESCE(MAX(annotations.createdAt), projects.updatedAt)
+            FROM `counter_projects` AS projects
+            LEFT JOIN `pattern_annotations` AS annotations ON annotations.projectId = projects.id
+            WHERE
+                projects.patternUri IS NOT NULL OR
+                projects.linkedPatternId IS NOT NULL OR
+                annotations.projectId IS NOT NULL
             GROUP BY projects.id
             """.trimIndent(),
         )

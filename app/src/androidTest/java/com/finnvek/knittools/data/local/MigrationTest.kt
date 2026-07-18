@@ -1679,18 +1679,23 @@ class MigrationTest {
         assertSingleRow(
             db,
             """
-            SELECT page, kind, payloadVersion, payloadJson, zIndex, createdAt, updatedAt
+            SELECT layerId, page, kind, payloadVersion, payloadJson, zIndex, createdAt, updatedAt
             FROM pattern_annotations WHERE id = 1
             """.trimIndent(),
         ) {
-            assertEquals(3, getInt(0))
-            assertEquals("FREEHAND", getString(1))
-            assertEquals(1, getInt(2))
-            assertTrue(getString(3).contains("M 0 0 L 10 10"))
-            assertTrue(getString(3).contains("#FF0000"))
-            assertEquals(0L, getLong(4))
-            assertEquals(4000L, getLong(5))
-            assertEquals(4000L, getLong(6))
+            assertMigratedLegacyFreehand(
+                layerId = getLong(0),
+                page = getInt(1),
+                kind = getString(2),
+                payloadVersion = getInt(3),
+                payloadJson = getString(4),
+                zIndex = getLong(5),
+                createdAt = getLong(6),
+                updatedAt = getLong(7),
+                expectedPathData = "M 0 0 L 10 10",
+                expectedColor = "#FF0000",
+                expectedStrokeWidth = 2.5f,
+            )
         }
         assertStartedAtIndexExists(db)
 

@@ -30,7 +30,16 @@ class PatternAnnotationRepository
             if (layerIds.isEmpty()) {
                 emptyList()
             } else {
-                dao.getForLayers(layerIds).mapNotNull { it.toDomain() }
+                val layerOrder = layerIds.withIndex().associate { (index, layerId) -> layerId to index }
+                dao
+                    .getForLayers(layerIds)
+                    .mapNotNull { it.toDomain() }
+                    .sortedWith(
+                        compareBy<PatternAnnotation> { layerOrder[it.layerId] ?: Int.MAX_VALUE }
+                            .thenBy(PatternAnnotation::page)
+                            .thenBy(PatternAnnotation::zIndex)
+                            .thenBy(PatternAnnotation::id),
+                    )
             }
 
         suspend fun updateAnnotation(annotation: PatternAnnotation) = dao.update(annotation.toEntity())

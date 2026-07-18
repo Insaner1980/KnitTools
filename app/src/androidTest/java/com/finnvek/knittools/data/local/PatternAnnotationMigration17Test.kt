@@ -66,20 +66,25 @@ class PatternAnnotationMigration17Test {
         db
             .query(
                 """
-                SELECT id, page, kind, payloadVersion, payloadJson, zIndex, createdAt, updatedAt
+                SELECT id, layerId, page, kind, payloadVersion, payloadJson, zIndex, createdAt, updatedAt
                 FROM pattern_annotations
                 """.trimIndent(),
             ).use { cursor ->
                 assertTrue(cursor.moveToFirst())
                 assertEquals(81L, cursor.getLong(0))
-                assertEquals(3, cursor.getInt(1))
-                assertEquals("FREEHAND", cursor.getString(2))
-                assertEquals(1, cursor.getInt(3))
-                assertTrue(cursor.getString(4).contains("M 0 0 L 10 10"))
-                assertTrue(cursor.getString(4).contains("#FFAA00"))
-                assertEquals(0L, cursor.getLong(5))
-                assertEquals(1_700_000_701L, cursor.getLong(6))
-                assertEquals(1_700_000_701L, cursor.getLong(7))
+                assertMigratedLegacyFreehand(
+                    layerId = cursor.getLong(1),
+                    page = cursor.getInt(2),
+                    kind = cursor.getString(3),
+                    payloadVersion = cursor.getInt(4),
+                    payloadJson = cursor.getString(5),
+                    zIndex = cursor.getLong(6),
+                    createdAt = cursor.getLong(7),
+                    updatedAt = cursor.getLong(8),
+                    expectedPathData = "M 0 0 L 10 10",
+                    expectedColor = "#FFAA00",
+                    expectedStrokeWidth = 4.5f,
+                )
                 assertFalse(cursor.moveToNext())
             }
         db.close()
@@ -110,6 +115,42 @@ class PatternAnnotationMigration17Test {
 
         assertSingleString(db, "SELECT documentKey FROM pattern_annotation_layers", "legacy-project:9")
         assertEquals(1, countRows(db, "pattern_annotations"))
+        db.close()
+    }
+
+    @Test
+    fun migrate16to17CreatesActiveLayerForAttachedPdfWithoutLegacyAnnotations() {
+        val testDb = "migration-test-v16-to-v17-attached-pdf-without-annotations"
+        helper.createDatabase(testDb, 16).apply {
+            insertProject(id = 10L, linkedPatternId = 12L, patternUri = "content://pattern.pdf")
+            insertSavedPattern(id = 12L)
+            close()
+        }
+
+        val db =
+            helper.runMigrationsAndValidate(
+                testDb,
+                17,
+                true,
+                KnitToolsDatabase.MIGRATION_16_17,
+            )
+
+        db
+            .query(
+                """
+                SELECT projectId, documentKey, isActive, createdAt, updatedAt
+                FROM pattern_annotation_layers
+                """.trimIndent(),
+            ).use { cursor ->
+                assertTrue(cursor.moveToFirst())
+                assertEquals(10L, cursor.getLong(0))
+                assertEquals("saved:12:v1", cursor.getString(1))
+                assertEquals(1, cursor.getInt(2))
+                assertEquals(1_000L, cursor.getLong(3))
+                assertEquals(1_000L, cursor.getLong(4))
+                assertFalse(cursor.moveToNext())
+            }
+        assertEquals(0, countRows(db, "pattern_annotations"))
         db.close()
     }
 

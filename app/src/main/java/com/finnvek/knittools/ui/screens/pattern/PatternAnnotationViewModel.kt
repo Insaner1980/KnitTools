@@ -731,12 +731,16 @@ class PatternAnnotationViewModel
                         if (project == null) {
                             flowOf(AnnotationLayerSelection(owner = owner))
                         } else {
-                            val documentKey =
+                            val linkedDocumentKey =
                                 project.linkedPatternId?.let(PatternAnnotationDocumentKey::savedPattern)
-                                    ?: PatternAnnotationDocumentKey.legacyProject(project.id)
-                            val currentOwner = PatternAnnotationOwner.Project(project.id, documentKey)
-                            layerRepository.observeLayers(currentOwner).mapLatest { projectLayers ->
+                            val defaultDocumentKey =
+                                linkedDocumentKey ?: PatternAnnotationDocumentKey.legacyProject(project.id)
+                            val defaultOwner = PatternAnnotationOwner.Project(project.id, defaultDocumentKey)
+                            layerRepository.observeLayers(defaultOwner).mapLatest { projectLayers ->
                                 val projectLayer = projectLayers.firstOrNull { it.isActive }
+                                val documentKey =
+                                    linkedDocumentKey ?: projectLayer?.owner?.documentKey ?: defaultDocumentKey
+                                val currentOwner = PatternAnnotationOwner.Project(project.id, documentKey)
                                 val masterLayer =
                                     project.linkedPatternId?.let { savedPatternId ->
                                         layerRepository.getOrCreateMasterLayer(savedPatternId, documentKey)

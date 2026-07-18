@@ -28,6 +28,7 @@ import io.mockk.mockk
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
@@ -252,6 +253,45 @@ class PatternAnnotationViewModelTest {
             viewModel.selectAnnotationAt(hitPoint)
             runCurrent()
             assertEquals(null, viewModel.uiState.value.selectedAnnotationId)
+        }
+
+    @Test
+    fun `project keeps active annotation document when saved pattern link disappears`() =
+        runTest {
+            val counterRepository = mockk<CounterRepository>()
+            val layerRepository = mockk<PatternAnnotationLayerRepository>()
+            val annotationRepository = mockk<PatternAnnotationRepository>()
+            val documentKey = PatternAnnotationDocumentKey.savedPattern(12L)
+            val projectOwner = PatternAnnotationOwner.Project(7L, documentKey)
+            val projectLayer = layer(id = 41L, owner = projectOwner)
+            val masterLayer = layer(id = 31L, owner = PatternAnnotationOwner.SavedPattern(12L, documentKey))
+            val project = MutableStateFlow(CounterProject(id = 7L, linkedPatternId = 12L))
+            every { counterRepository.observeProject(7L) } returns project
+            every { layerRepository.observeLayers(any()) } returns flowOf(listOf(projectLayer))
+            coEvery { layerRepository.getOrCreateMasterLayer(12L, documentKey) } returns masterLayer
+            every { annotationRepository.observePage(31L, 0) } returns flowOf(emptyList())
+            every { annotationRepository.observePage(41L, 0) } returns
+                flowOf(listOf(annotation(layerId = 41L, page = 0)))
+            val viewModel =
+                PatternAnnotationViewModel(
+                    SavedStateHandle(mapOf("projectId" to 7L)),
+                    counterRepository,
+                    layerRepository,
+                    annotationRepository,
+                )
+            advanceUntilIdle()
+
+            project.value = project.value.copy(linkedPatternId = null)
+            advanceUntilIdle()
+
+            assertEquals(projectOwner, viewModel.uiState.value.owner)
+            assertEquals(41L, viewModel.uiState.value.editableLayerId)
+            assertEquals(
+                41L,
+                viewModel.uiState.value.projectAnnotations
+                    .single()
+                    .layerId,
+            )
         }
 
     @Test

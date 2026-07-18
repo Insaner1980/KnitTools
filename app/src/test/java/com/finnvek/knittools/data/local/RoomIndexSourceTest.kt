@@ -15,12 +15,12 @@ class RoomIndexSourceTest {
 
         assertTrue(counterProjectEntity.contains("Index(\"linkedPatternId\")"))
         assertTrue(yarnCardEntity.contains("Index(\"linkedProjectId\")"))
-        assertTrue(database.contains("version = 16"))
+        assertTrue(database.contains("version = 17"))
         assertTrue(database.contains("MIGRATION_14_15"))
         assertTrue(database.contains("index_counter_projects_linkedPatternId"))
         assertTrue(database.contains("index_yarn_cards_linkedProjectId"))
-        assertTrue(databaseModule.contains("KnitToolsDatabase.MIGRATION_14_15"))
-        assertTrue(migrationTest.contains("KnitToolsDatabase.MIGRATION_14_15"))
+        assertTrue(databaseModule.contains("KnitToolsDatabase.ALL_MANUAL_MIGRATIONS"))
+        assertTrue(migrationTest.contains("KnitToolsDatabase.ALL_MANUAL_MIGRATIONS"))
     }
 
     private companion object {

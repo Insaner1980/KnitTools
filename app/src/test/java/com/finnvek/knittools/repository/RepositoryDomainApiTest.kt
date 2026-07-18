@@ -11,7 +11,12 @@ import com.finnvek.knittools.data.local.SavedPatternDao
 import com.finnvek.knittools.data.local.SavedPatternEntity
 import com.finnvek.knittools.data.local.YarnCardDao
 import com.finnvek.knittools.data.local.YarnCardEntity
+import com.finnvek.knittools.data.local.toDomain
+import com.finnvek.knittools.data.local.toEntity
+import com.finnvek.knittools.domain.model.FreehandPayload
+import com.finnvek.knittools.domain.model.NormalizedPatternPoint
 import com.finnvek.knittools.domain.model.PatternAnnotation
+import com.finnvek.knittools.domain.model.PatternAnnotationKind
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.SavedPatternSource
 import com.finnvek.knittools.domain.model.YarnCard
@@ -378,26 +383,43 @@ class SavedPatternRepositoryDomainApiTest {
                 FakePatternAnnotationDao(
                     patternAnnotations =
                         listOf(
-                            PatternAnnotationEntity(
+                            PatternAnnotation(
                                 id = 4L,
-                                projectId = 7L,
+                                layerId = 7L,
                                 page = 2,
-                                pathData = "M 0 0 L 1 1",
-                                color = "#123456",
-                                strokeWidth = 3f,
+                                kind = PatternAnnotationKind.FREEHAND,
+                                payload = freehandPayload(argb = 0xFF123456.toInt()),
+                                zIndex = 0L,
                                 createdAt = 400L,
-                            ),
+                                updatedAt = 500L,
+                            ).toEntity(),
                         ),
                 )
             val repository = PatternAnnotationRepository(dao)
+            val added =
+                PatternAnnotation(
+                    layerId = 7L,
+                    page = 2,
+                    kind = PatternAnnotationKind.FREEHAND,
+                    payload = freehandPayload(argb = 0xFF654321.toInt()),
+                    zIndex = 1L,
+                    createdAt = 600L,
+                )
 
-            val annotations: List<PatternAnnotation> = repository.getAnnotationsForPage(7L, 2).first()
-            val addedId = repository.addAnnotation(7L, 2, "M 1 1 L 2 2", "#654321", 4f)
+            val annotations: List<PatternAnnotation> = repository.observePage(7L, 2).first()
+            val addedId = repository.insertAnnotation(added)
 
-            assertEquals("#123456", annotations.single().color)
+            assertEquals(0xFF123456.toInt(), (annotations.single().payload as FreehandPayload).argb)
             assertEquals(77L, addedId)
-            assertEquals("M 1 1 L 2 2", dao.lastInserted?.pathData)
+            assertEquals(0xFF654321.toInt(), (dao.lastInserted?.toDomain()?.payload as FreehandPayload).argb)
         }
+
+    private fun freehandPayload(argb: Int) =
+        FreehandPayload(
+            points = listOf(NormalizedPatternPoint(0f, 0f), NormalizedPatternPoint(1f, 1f)),
+            argb = argb,
+            strokeWidth = 3f,
+        )
 }
 
 internal fun detailedYarnCardEntity() =
@@ -578,25 +600,36 @@ internal class FakePatternAnnotationDao(
 ) : PatternAnnotationDao {
     var lastInserted: PatternAnnotationEntity? = null
 
-    override fun getAnnotationsForPage(
-        projectId: Long,
+    override fun observePage(
+        layerId: Long,
         page: Int,
     ): Flow<List<PatternAnnotationEntity>> =
-        flowOf(patternAnnotations.filter { it.projectId == projectId && it.page == page })
+        flowOf(patternAnnotations.filter { it.layerId == layerId && it.page == page })
+
+    override suspend fun getForLayers(layerIds: List<Long>): List<PatternAnnotationEntity> =
+        patternAnnotations.filter { it.layerId in layerIds }
 
     override suspend fun insert(annotation: PatternAnnotationEntity): Long {
         lastInserted = annotation
         return 77L
     }
 
-    override suspend fun deleteForProject(projectId: Long) = Unit
+    override suspend fun restoreBatch(annotations: List<PatternAnnotationEntity>) = Unit
+
+    override suspend fun update(annotation: PatternAnnotationEntity) = Unit
 
     override suspend fun deleteForPage(
-        projectId: Long,
+        layerId: Long,
         page: Int,
     ) = Unit
 
     override suspend fun deleteById(id: Long) = Unit
+
+    override suspend fun updateZIndex(
+        id: Long,
+        zIndex: Long,
+        updatedAt: Long,
+    ) = Unit
 }
 
 internal suspend inline fun withParsedFileUrisForDomainApi(

@@ -49,7 +49,7 @@ class CounterRepositoryDomainApiTest {
                 context = mockk<Context>(relaxed = true),
                 yarnCardRepository = yarnCardRepository,
                 savedPatternRepository = savedPatternRepository,
-                patternAnnotationRepository = mockk(relaxed = true),
+                patternAnnotationLayerRepository = mockk(relaxed = true),
                 transactionRunner = ImmediateDatabaseTransactionRunner,
                 ioDispatcher = Dispatchers.Unconfined,
             )

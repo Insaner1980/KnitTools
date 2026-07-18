@@ -2,9 +2,12 @@ package com.finnvek.knittools.data.local
 
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.CraftType
+import com.finnvek.knittools.domain.model.FreehandPayload
 import com.finnvek.knittools.domain.model.KnitSession
 import com.finnvek.knittools.domain.model.MainCounterLabelType
+import com.finnvek.knittools.domain.model.NormalizedPatternPoint
 import com.finnvek.knittools.domain.model.PatternAnnotation
+import com.finnvek.knittools.domain.model.PatternAnnotationKind
 import com.finnvek.knittools.domain.model.ProgressPhoto
 import com.finnvek.knittools.domain.model.ProjectCounter
 import com.finnvek.knittools.domain.model.ProjectCounterType
@@ -248,14 +251,20 @@ class EntityMappersTest {
     @Test
     fun `pattern annotation mapper preserves all fields`() {
         assertPatternAnnotationMapping(
-            PatternAnnotationEntity(
+            PatternAnnotation(
                 id = 81L,
-                projectId = 11L,
+                layerId = 11L,
                 page = 3,
-                pathData = "M 0 0 L 10 10",
-                color = "#FFAA00",
-                strokeWidth = 4.5f,
+                kind = PatternAnnotationKind.FREEHAND,
+                payload =
+                    FreehandPayload(
+                        points = listOf(NormalizedPatternPoint(0.1f, 0.2f), NormalizedPatternPoint(0.8f, 0.9f)),
+                        argb = 0xFFFFAA00.toInt(),
+                        strokeWidth = 4.5f,
+                    ),
+                zIndex = 5L,
                 createdAt = 1_700_000_701L,
+                updatedAt = 1_700_000_801L,
             ),
         )
     }
@@ -447,24 +456,11 @@ class EntityMappersTest {
         )
     }
 
-    private fun assertPatternAnnotationMapping(entity: PatternAnnotationEntity) {
-        val domain =
-            PatternAnnotation(
-                id = entity.id,
-                projectId = entity.projectId,
-                page = entity.page,
-                pathData = entity.pathData,
-                color = entity.color,
-                strokeWidth = entity.strokeWidth,
-                createdAt = entity.createdAt,
-            )
+    private fun assertPatternAnnotationMapping(domain: PatternAnnotation) {
+        val entity = domain.toEntity()
 
-        assertMapsBothWays(
-            entity = entity,
-            domain = domain,
-            toDomain = PatternAnnotationEntity::toDomain,
-            toEntity = PatternAnnotation::toEntity,
-        )
+        assertEquals(domain, entity.toDomain())
+        assertEquals(entity, requireNotNull(entity.toDomain()).toEntity())
     }
 
     private fun <Entity, Domain> assertMapsBothWays(

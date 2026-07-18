@@ -1,13 +1,12 @@
 package com.finnvek.knittools.ui.screens.pattern
 
 import android.graphics.Bitmap
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
-import androidx.compose.foundation.gestures.rememberTransformableState
-import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -20,9 +19,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
@@ -60,10 +57,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -76,6 +70,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
+import com.finnvek.knittools.data.storage.PatternAnnotationRenderStyle
 import com.finnvek.knittools.data.storage.PdfPageRenderer
 import com.finnvek.knittools.di.AppDispatchers
 import com.finnvek.knittools.domain.calculator.RowMarker
@@ -83,10 +78,12 @@ import com.finnvek.knittools.domain.calculator.createCalibrationRowMarkers
 import com.finnvek.knittools.domain.calculator.parseMapping
 import com.finnvek.knittools.domain.calculator.resolveReadingLineYFraction
 import com.finnvek.knittools.domain.model.DEFAULT_READING_LINE_Y_FRACTION
+import com.finnvek.knittools.domain.model.PatternAnnotationOwner
 import com.finnvek.knittools.domain.model.READING_LINE_MAX_Y_FRACTION
 import com.finnvek.knittools.domain.model.READING_LINE_MIN_Y_FRACTION
 import com.finnvek.knittools.domain.model.sanitizeReadingLineYFraction
 import com.finnvek.knittools.ui.screens.counter.CounterViewModel
+import com.finnvek.knittools.ui.theme.rememberPatternAnnotationRenderStyle
 import kotlinx.coroutines.withContext
 
 private const val READING_LINE_BAND_HEIGHT_FRACTION = 0.045f
@@ -103,8 +100,10 @@ private data class PatternRenderState(
 fun PatternViewerScreen(
     onBack: () -> Unit,
     counterViewModel: CounterViewModel,
+    annotationViewModel: PatternAnnotationViewModel,
 ) {
     val counterState by counterViewModel.uiState.collectAsStateWithLifecycle()
+    val annotationState by annotationViewModel.uiState.collectAsStateWithLifecycle()
     val patternUri = counterState.patternUri
     val currentPage = counterState.currentPatternPage
     val rowMarkers = remember(counterState.patternRowMapping) { parseMapping(counterState.patternRowMapping) }
@@ -120,6 +119,10 @@ fun PatternViewerScreen(
     var rowCalibrationState by remember(patternUri) { mutableStateOf<RowCalibrationState?>(null) }
     var readingLinePreviewYFraction by remember(patternUri) { mutableFloatStateOf(counterState.readingLineYFraction) }
     var isReadingLineDragging by remember(patternUri) { mutableStateOf(false) }
+
+    LaunchedEffect(currentPage) {
+        annotationViewModel.setCurrentPage(currentPage)
+    }
 
     LaunchedEffect(patternUri, counterState.readingLineYFraction, isReadingLineDragging) {
         if (!isReadingLineDragging) {
@@ -266,6 +269,7 @@ fun PatternViewerScreen(
                         positionPercent = null,
                         readingLineEnabled = counterState.readingLineEnabled,
                         readingLineYFraction = readingLinePreviewYFraction,
+                        annotationState = annotationState,
                     ),
                 actions =
                     PatternViewerContentActions(
@@ -291,6 +295,11 @@ fun PatternViewerScreen(
                             isReadingLineDragging = false
                             readingLinePreviewYFraction = counterState.readingLineYFraction
                         },
+                        onMasterLayerVisibilityChange = annotationViewModel::setMasterLayerVisible,
+                        onProjectLayerVisibilityChange = annotationViewModel::setProjectLayerVisible,
+                        annotationInputActions = annotationViewModel.patternInputActions(),
+                        annotationToolbarActions = annotationViewModel.patternToolbarActions(),
+                        onExport = annotationViewModel::exportAnnotatedPdf,
                     ),
                 modifier =
                     Modifier
@@ -468,10 +477,15 @@ fun LibraryPatternViewerScreen(
     patternUri: String?,
     patternName: String?,
     onBack: () -> Unit,
+    annotationViewModel: PatternAnnotationViewModel,
 ) {
+    val annotationState by annotationViewModel.uiState.collectAsStateWithLifecycle()
     var currentPage by rememberSaveable(patternUri) { mutableIntStateOf(0) }
     var readingLineEnabled by rememberSaveable(patternUri) { mutableStateOf(false) }
     var readingLineYFraction by rememberSaveable(patternUri) { mutableFloatStateOf(DEFAULT_READING_LINE_Y_FRACTION) }
+    LaunchedEffect(currentPage) {
+        annotationViewModel.setCurrentPage(currentPage)
+    }
     val renderState =
         rememberPatternRenderState(
             patternUri = patternUri,
@@ -530,6 +544,7 @@ fun LibraryPatternViewerScreen(
                     positionPercent = null,
                     readingLineEnabled = readingLineEnabled,
                     readingLineYFraction = readingLineYFraction,
+                    annotationState = annotationState,
                 ),
             actions =
                 PatternViewerContentActions(
@@ -537,6 +552,11 @@ fun LibraryPatternViewerScreen(
                     onReadingLineYFractionChange = { readingLineYFraction = sanitizeReadingLineYFraction(it) },
                     onReadingLineYFractionCommit = { readingLineYFraction = sanitizeReadingLineYFraction(it) },
                     onReadingLineDragCancel = {},
+                    onMasterLayerVisibilityChange = annotationViewModel::setMasterLayerVisible,
+                    onProjectLayerVisibilityChange = annotationViewModel::setProjectLayerVisible,
+                    annotationInputActions = annotationViewModel.patternInputActions(),
+                    annotationToolbarActions = annotationViewModel.patternToolbarActions(),
+                    onExport = annotationViewModel::exportAnnotatedPdf,
                 ),
             modifier =
                 Modifier
@@ -569,9 +589,9 @@ private fun rememberPatternRenderState(
         createdRenderer
             .onSuccess { pdfRenderer ->
                 renderer = pdfRenderer
-                val maxPage = (pdfRenderer.pageCount - 1).coerceAtLeast(0)
-                if (currentPage > maxPage) {
-                    onPageClamped(maxPage)
+                val clampedPage = clampPatternPage(currentPage, pdfRenderer.pageCount)
+                if (currentPage != clampedPage) {
+                    onPageClamped(clampedPage)
                 }
             }.onFailure {
                 rendererError = patternOpenFailed
@@ -590,9 +610,9 @@ private fun rememberPatternRenderState(
         key1 = renderer,
         key2 = currentPage,
     ) {
+        value = null
         val activeRenderer =
             renderer ?: run {
-                value = null
                 return@produceState
             }
         value =
@@ -915,7 +935,55 @@ private fun PatternViewerContent(
     actions: PatternViewerContentActions,
     modifier: Modifier = Modifier,
 ) {
+    val exportStyle = rememberPatternAnnotationRenderStyle()
+    val exportLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { destination ->
+            val source = state.patternUri?.toUri()
+            if (source != null && destination != null) actions.onExport(source, destination, exportStyle)
+        }
+    val editableLayerVisible =
+        when (state.annotationState.owner) {
+            is PatternAnnotationOwner.Project -> state.annotationState.projectLayerVisible
+            is PatternAnnotationOwner.SavedPattern -> state.annotationState.masterLayerVisible
+        }
+    val fallbackPatternName = stringResource(R.string.pattern_annotation_export_default_name)
+    val exportBaseName = state.patternName?.substringBeforeLast('.')?.ifBlank { null } ?: fallbackPatternName
+    val exportFilename = stringResource(R.string.pattern_annotation_export_filename, exportBaseName)
     Column(modifier = modifier) {
+        if (state.patternUri != null) {
+            PatternAnnotationLayerPanel(
+                state = state.annotationState,
+                onMasterVisibilityChange = actions.onMasterLayerVisibilityChange,
+                onProjectVisibilityChange = actions.onProjectLayerVisibilityChange,
+            )
+            PatternAnnotationToolbar(
+                state = state.annotationState,
+                actions = actions.annotationToolbarActions,
+            )
+            TextButton(
+                enabled = !state.annotationState.isExporting,
+                onClick = { exportLauncher.launch(exportFilename) },
+            ) {
+                val exportText =
+                    if (state.annotationState.isExporting) {
+                        stringResource(
+                            R.string.pattern_annotation_export_progress,
+                            state.annotationState.exportCompletedPages,
+                            state.annotationState.exportTotalPages,
+                        )
+                    } else {
+                        stringResource(R.string.pattern_annotation_export_pdf)
+                    }
+                Text(exportText)
+            }
+            if (state.annotationState.exportFailed) {
+                Text(
+                    text = stringResource(R.string.pattern_annotation_export_failed),
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(horizontal = 12.dp),
+                )
+            }
+        }
         when {
             state.patternUri == null -> {
                 PatternViewerMessage(message = stringResource(R.string.no_pattern_attached))
@@ -932,21 +1000,67 @@ private fun PatternViewerContent(
             }
 
             else -> {
-                PatternViewerDocument(
-                    state =
-                        PatternViewerDocumentState(
-                            renderedBitmap = state.renderedBitmap,
-                            patternName = state.patternName,
-                            currentRow = state.currentRow,
-                            positionPercent = state.positionPercent,
-                            readingLineEnabled = state.readingLineEnabled,
-                            readingLineYFraction = state.readingLineYFraction,
-                        ),
-                    actions = actions,
+                PatternDocumentViewport(
+                    renderedBitmap = state.renderedBitmap,
+                    contentDescription = state.patternName,
                     modifier =
                         Modifier
                             .fillMaxWidth()
                             .weight(1f),
+                    overlay = { viewport ->
+                        RowHighlightOverlay(
+                            yPosition = state.positionPercent?.let { it / 100f },
+                            modifier = Modifier.fillMaxSize(),
+                            accessibilityDescription =
+                                if (state.currentRow != null && state.positionPercent != null) {
+                                    stringResource(
+                                        R.string.pattern_row_highlight_description,
+                                        state.currentRow,
+                                        state.positionPercent,
+                                    )
+                                } else {
+                                    null
+                                },
+                        )
+                        PatternAnnotationOverlay(
+                            masterAnnotations = state.annotationState.masterAnnotations,
+                            projectAnnotations = state.annotationState.projectAnnotations,
+                            masterVisible = state.annotationState.masterLayerVisible,
+                            projectVisible = state.annotationState.projectLayerVisible,
+                            inProgressAnnotation = state.annotationState.inProgressAnnotation,
+                            inProgressVisible = editableLayerVisible,
+                            selectedAnnotationId = state.annotationState.selectedAnnotationId,
+                            trackerHighlights = state.annotationState.trackerHighlights,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                        if (state.readingLineEnabled) {
+                            ReadingLineOverlay(
+                                yFraction = state.readingLineYFraction,
+                                currentRow = state.currentRow,
+                                scale = viewport.state.scale,
+                                actions =
+                                    ReadingLineOverlayActions(
+                                        onDragStart = actions.onReadingLineDragStart,
+                                        onYFractionChange = actions.onReadingLineYFractionChange,
+                                        onYFractionCommit = actions.onReadingLineYFractionCommit,
+                                        onDragCancel = actions.onReadingLineDragCancel,
+                                    ),
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                        }
+                    },
+                    interactionOverlay = { viewport ->
+                        if (editableLayerVisible && state.annotationState.activeTool != PatternAnnotationTool.BROWSE) {
+                            PatternAnnotationInputOverlay(
+                                activeTool = state.annotationState.activeTool,
+                                coordinateTransform = viewport.coordinateTransform,
+                                viewportScale = viewport.state.scale,
+                                pressureEnabled = state.annotationState.pressureEnabled,
+                                actions = actions.annotationInputActions,
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                        }
+                    },
                 )
             }
         }
@@ -962,15 +1076,7 @@ private data class PatternViewerContentState(
     val positionPercent: Int?,
     val readingLineEnabled: Boolean,
     val readingLineYFraction: Float,
-)
-
-private data class PatternViewerDocumentState(
-    val renderedBitmap: Bitmap,
-    val patternName: String?,
-    val currentRow: Int?,
-    val positionPercent: Int?,
-    val readingLineEnabled: Boolean,
-    val readingLineYFraction: Float,
+    val annotationState: PatternAnnotationUiState,
 )
 
 private data class PatternViewerContentActions(
@@ -978,7 +1084,45 @@ private data class PatternViewerContentActions(
     val onReadingLineYFractionChange: (Float) -> Unit,
     val onReadingLineYFractionCommit: (Float) -> Unit,
     val onReadingLineDragCancel: () -> Unit,
+    val onMasterLayerVisibilityChange: (Boolean) -> Unit,
+    val onProjectLayerVisibilityChange: (Boolean) -> Unit,
+    val annotationInputActions: PatternAnnotationInputActions,
+    val annotationToolbarActions: PatternAnnotationToolbarActions,
+    val onExport: (Uri, Uri, PatternAnnotationRenderStyle) -> Unit,
 )
+
+private fun PatternAnnotationViewModel.patternInputActions() =
+    PatternAnnotationInputActions(
+        onBeginStroke = ::beginStroke,
+        onAppendStrokePoint = ::appendStrokePoint,
+        onCommitStroke = ::commitStroke,
+        onCancelStroke = ::cancelStroke,
+        onEraseStroke = ::eraseStrokeAt,
+        onSelectAnnotation = ::selectAnnotationAt,
+    )
+
+private fun PatternAnnotationViewModel.patternToolbarActions() =
+    PatternAnnotationToolbarActions(
+        onToolSelected = ::setActiveTool,
+        onPenArgbChange = ::setPenArgb,
+        onHighlighterArgbChange = ::setHighlighterArgb,
+        onPenStrokeWidthChange = ::setPenStrokeWidth,
+        onHighlighterStrokeWidthChange = ::setHighlighterStrokeWidth,
+        onPressureEnabledChange = ::setPressureEnabled,
+        onHighlighterAxisLockChange = ::setHighlighterAxisLock,
+        onMoveSelected = ::moveSelected,
+        onResizeSelected = ::resizeSelected,
+        onDuplicateSelected = ::duplicateSelected,
+        onDeleteSelected = ::deleteSelected,
+        onBringSelectedForward = ::bringSelectedForward,
+        onSendSelectedBackward = ::sendSelectedBackward,
+        onAddTextBox = { text -> addTextBox(text) },
+        onAddCallout = { title, description, symbol -> addCallout(title, description, symbol) },
+        onUndo = ::undo,
+        onRedo = ::redo,
+        onClearPage = ::clearEditablePage,
+        onAddChartTracker = ::addChartTrackerFromSelected,
+    )
 
 private data class ReadingLineOverlayActions(
     val onDragStart: () -> Unit,
@@ -986,94 +1130,6 @@ private data class ReadingLineOverlayActions(
     val onYFractionCommit: (Float) -> Unit,
     val onDragCancel: () -> Unit,
 )
-
-@Composable
-private fun PatternViewerDocument(
-    state: PatternViewerDocumentState,
-    actions: PatternViewerContentActions,
-    modifier: Modifier = Modifier,
-) {
-    var scale by remember { mutableFloatStateOf(1f) }
-    var offset by remember { mutableStateOf(Offset.Zero) }
-
-    val transformableState =
-        rememberTransformableState { _, zoomChange, panChange, _ ->
-            scale = (scale * zoomChange).coerceIn(1f, 5f)
-            if (scale > 1f) {
-                offset += panChange
-            } else {
-                offset = Offset.Zero
-            }
-        }
-
-    Column(
-        modifier =
-            modifier
-                .verticalScroll(rememberScrollState()),
-    ) {
-        BoxWithConstraints(
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            val aspectRatio = state.renderedBitmap.width.toFloat() / state.renderedBitmap.height.toFloat()
-            Box(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .height(maxWidth / aspectRatio)
-                        .pointerInput(Unit) {
-                            detectTapGestures(
-                                onDoubleTap = {
-                                    scale = 1f
-                                    offset = Offset.Zero
-                                },
-                            )
-                        }.transformable(state = transformableState)
-                        .graphicsLayer(
-                            scaleX = scale,
-                            scaleY = scale,
-                            translationX = offset.x,
-                            translationY = offset.y,
-                        ),
-            ) {
-                Image(
-                    bitmap = state.renderedBitmap.asImageBitmap(),
-                    contentDescription = state.patternName,
-                    contentScale = ContentScale.FillWidth,
-                    modifier = Modifier.fillMaxSize(),
-                )
-                RowHighlightOverlay(
-                    yPosition = state.positionPercent?.let { it / 100f },
-                    modifier = Modifier.fillMaxSize(),
-                    accessibilityDescription =
-                        if (state.currentRow != null && state.positionPercent != null) {
-                            stringResource(
-                                R.string.pattern_row_highlight_description,
-                                state.currentRow,
-                                state.positionPercent,
-                            )
-                        } else {
-                            null
-                        },
-                )
-                if (state.readingLineEnabled) {
-                    ReadingLineOverlay(
-                        yFraction = state.readingLineYFraction,
-                        currentRow = state.currentRow,
-                        scale = scale,
-                        actions =
-                            ReadingLineOverlayActions(
-                                onDragStart = actions.onReadingLineDragStart,
-                                onYFractionChange = actions.onReadingLineYFractionChange,
-                                onYFractionCommit = actions.onReadingLineYFractionCommit,
-                                onDragCancel = actions.onReadingLineDragCancel,
-                            ),
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                }
-            }
-        }
-    }
-}
 
 @Composable
 private fun ReadingLineOverlay(

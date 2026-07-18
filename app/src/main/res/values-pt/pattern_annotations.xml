@@ -72,4 +72,5 @@
     <string name="pattern_annotation_export_progress">A exportar %1$d/%2$d</string>
     <string name="pattern_annotation_export_failed">A exportação do PDF falhou. O PDF original não foi alterado.</string>
     <string name="pattern_annotation_export_default_name">padrão</string>
+    <string name="pattern_annotation_export_filename">%1$s-anotado.pdf</string>
 </resources>

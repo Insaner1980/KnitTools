@@ -1,9 +1,10 @@
 package com.finnvek.knittools.data.local
 
+import com.finnvek.knittools.domain.model.ProjectCounter
 import com.finnvek.knittools.domain.model.ProjectCounterType
 import com.finnvek.knittools.domain.model.SavedPatternSource
+import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.domain.model.YarnCardStatus
-import com.finnvek.knittools.domain.model.formatYarnCardIds
 import dagger.Lazy
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -19,15 +20,25 @@ object DebugDemoDataSeeder {
         ioDispatcher: CoroutineDispatcher,
         database: Lazy<KnitToolsDatabase>,
         transactionRunner: Lazy<DatabaseTransactionRunner>,
+        addCounter: suspend (ProjectCounter) -> Long,
+        saveYarnCard: suspend (YarnCard) -> Long,
     ) {
         applicationScope.launch(ioDispatcher) {
             transactionRunner.get().run {
-                seedDatabaseIfNeeded(database.get())
+                seedDatabaseIfNeeded(
+                    database = database.get(),
+                    addCounter = addCounter,
+                    saveYarnCard = saveYarnCard,
+                )
             }
         }
     }
 
-    private suspend fun seedDatabaseIfNeeded(database: KnitToolsDatabase) {
+    private suspend fun seedDatabaseIfNeeded(
+        database: KnitToolsDatabase,
+        addCounter: suspend (ProjectCounter) -> Long,
+        saveYarnCard: suspend (YarnCard) -> Long,
+    ) {
         val projectDao = database.counterProjectDao()
         if (projectDao.getAllProjectsOnce().any { it.name == MARKER_PROJECT_NAME }) {
             return
@@ -146,72 +157,71 @@ object DebugDemoDataSeeder {
                 ),
             )
 
-        seedCounters(database, cardiganId, socksId, bagId, blanketId, now)
+        seedCounters(addCounter, cardiganId, socksId, bagId, blanketId, now)
         seedReminders(database, cardiganId, socksId, bagId, blanketId, now)
-        seedYarn(database, cardiganId, socksId, bagId, blanketId, now)
+        seedYarn(database, saveYarnCard, cardiganId, socksId, bagId, blanketId, now)
         seedSessions(database, cardiganId, socksId, bagId, blanketId, beanieId, now)
         seedHistory(database, cardiganId, socksId, bagId, now)
     }
 
     private suspend fun seedCounters(
-        database: KnitToolsDatabase,
+        addCounter: suspend (ProjectCounter) -> Long,
         cardiganId: Long,
         socksId: Long,
         bagId: Long,
         blanketId: Long,
         now: Long,
     ) {
-        val dao = database.projectCounterDao()
-        dao.insert(
-            ProjectCounterEntity(
+        addCounter(
+            ProjectCounter(
                 projectId = cardiganId,
                 name = "Cable repeat",
                 count = 5,
                 repeatAt = 8,
                 sortOrder = 0,
                 createdAt = now - 35L * DAY_MILLIS,
-                counterType = ProjectCounterType.REPEATING.persistedValue,
+                counterType = ProjectCounterType.REPEATING,
             ),
         )
-        dao.insert(
-            ProjectCounterEntity(
+        addCounter(
+            ProjectCounter(
                 projectId = cardiganId,
                 name = "Sleeve increases",
                 count = 7,
                 sortOrder = 1,
                 createdAt = now - 21L * DAY_MILLIS,
-                counterType = ProjectCounterType.SHAPING.persistedValue,
+                counterType = ProjectCounterType.SHAPING,
                 startingStitches = 76,
                 stitchChange = 2,
                 shapeEveryN = 6,
             ),
         )
-        dao.insert(
-            ProjectCounterEntity(
+        addCounter(
+            ProjectCounter(
                 projectId = socksId,
                 name = "Heel turns",
                 count = 9,
                 sortOrder = 0,
                 createdAt = now - 8L * DAY_MILLIS,
-                counterType = ProjectCounterType.COUNT_UP.persistedValue,
+                counterType = ProjectCounterType.COUNT_UP,
             ),
         )
-        dao.insert(
-            ProjectCounterEntity(
+        addCounter(
+            ProjectCounter(
                 projectId = bagId,
                 name = "Mesh repeat",
                 count = 2,
                 sortOrder = 0,
                 createdAt = now - 6L * DAY_MILLIS,
-                counterType = ProjectCounterType.REPEAT_SECTION.persistedValue,
+                counterType = ProjectCounterType.REPEAT_SECTION,
                 repeatStartRow = 13,
                 repeatEndRow = 20,
                 totalRepeats = 4,
                 currentRepeat = 2,
             ),
         )
-        dao.insert(
-            ProjectCounterEntity(
+        addCounter(
+            ProjectCounter(
                 projectId = blanketId,
                 name = "Color stripe",
                 count = 16,
@@ -263,37 +273,35 @@ object DebugDemoDataSeeder {
 
     private suspend fun seedYarn(
         database: KnitToolsDatabase,
+        saveYarnCard: suspend (YarnCard) -> Long,
         cardiganId: Long,
         socksId: Long,
         bagId: Long,
         blanketId: Long,
         now: Long,
     ) {
-        val yarnDao = database.yarnCardDao()
-        val projectDao = database.counterProjectDao()
-        val mossId =
-            yarnDao.upsert(
-                YarnCardEntity(
-                    brand = "North Mill",
-                    yarnName = "Willow DK",
-                    fiberContent = "100% merino wool",
-                    weightGrams = "100 g",
-                    lengthMeters = "220 m",
-                    needleSize = "4.0 mm",
-                    gaugeInfo = "20 sts / 28 rows",
-                    colorName = "Forest Moss",
-                    colorNumber = "318",
-                    dyeLot = "D24-07",
-                    weightCategory = "DK",
-                    createdAt = now - 40L * DAY_MILLIS,
-                    quantityInStash = 6,
-                    status = YarnCardStatus.IN_USE,
-                    linkedProjectId = cardiganId,
-                ),
-            )
+        saveYarnCard(
+            YarnCard(
+                brand = "North Mill",
+                yarnName = "Willow DK",
+                fiberContent = "100% merino wool",
+                weightGrams = "100 g",
+                lengthMeters = "220 m",
+                needleSize = "4.0 mm",
+                gaugeInfo = "20 sts / 28 rows",
+                colorName = "Forest Moss",
+                colorNumber = "318",
+                dyeLot = "D24-07",
+                weightCategory = "DK",
+                createdAt = now - 40L * DAY_MILLIS,
+                quantityInStash = 6,
+                status = YarnCardStatus.IN_USE,
+                linkedProjectId = cardiganId,
+            ),
+        )
         val creamId =
-            yarnDao.upsert(
-                YarnCardEntity(
+            saveYarnCard(
+                YarnCard(
                     brand = "North Mill",
                     yarnName = "Willow DK",
                     fiberContent = "100% merino wool",
@@ -311,69 +319,61 @@ object DebugDemoDataSeeder {
                     linkedProjectId = cardiganId,
                 ),
             )
-        val sockId =
-            yarnDao.upsert(
-                YarnCardEntity(
-                    brand = "Cloudbird",
-                    yarnName = "Everyday Sock",
-                    fiberContent = "75% wool, 25% nylon",
-                    weightGrams = "100 g",
-                    lengthMeters = "420 m",
-                    needleSize = "2.5 mm",
-                    gaugeInfo = "30 sts / 42 rows",
-                    colorName = "Stormy Sea",
-                    colorNumber = "07",
-                    dyeLot = "S18",
-                    weightCategory = "Fingering",
-                    createdAt = now - 18L * DAY_MILLIS,
-                    quantityInStash = 1,
-                    status = YarnCardStatus.IN_USE,
-                    linkedProjectId = socksId,
-                ),
-            )
-        val linenId =
-            yarnDao.upsert(
-                YarnCardEntity(
-                    brand = "Summer Thread Co.",
-                    yarnName = "Pure Linen",
-                    fiberContent = "100% linen",
-                    weightGrams = "50 g",
-                    lengthMeters = "130 m",
-                    needleSize = "3.5–4.0 mm",
-                    colorName = "Terracotta",
-                    colorNumber = "42",
-                    dyeLot = "L09",
-                    weightCategory = "Sport",
-                    createdAt = now - 10L * DAY_MILLIS,
-                    quantityInStash = 4,
-                    status = YarnCardStatus.IN_USE,
-                    linkedProjectId = bagId,
-                ),
-            )
-        val apricotId =
-            yarnDao.upsert(
-                YarnCardEntity(
-                    brand = "Soft Nest",
-                    yarnName = "Baby Cotton",
-                    fiberContent = "100% organic cotton",
-                    weightGrams = "50 g",
-                    lengthMeters = "125 m",
-                    needleSize = "3.5 mm",
-                    colorName = "Apricot",
-                    colorNumber = "214",
-                    dyeLot = "B31",
-                    weightCategory = "Sport",
-                    createdAt = now - 60L * DAY_MILLIS,
-                    quantityInStash = 3,
-                    status = YarnCardStatus.IN_USE,
-                    linkedProjectId = blanketId,
-                ),
-            )
-
-        projectDao.updateYarnCardIds(cardiganId, formatYarnCardIds(listOf(mossId, creamId)), now)
-        projectDao.updateYarnCardIds(socksId, formatYarnCardIds(listOf(sockId)), now)
-        projectDao.updateYarnCardIds(bagId, formatYarnCardIds(listOf(linenId)), now)
-        projectDao.updateYarnCardIds(blanketId, formatYarnCardIds(listOf(apricotId)), now)
+        saveYarnCard(
+            YarnCard(
+                brand = "Cloudbird",
+                yarnName = "Everyday Sock",
+                fiberContent = "75% wool, 25% nylon",
+                weightGrams = "100 g",
+                lengthMeters = "420 m",
+                needleSize = "2.5 mm",
+                gaugeInfo = "30 sts / 42 rows",
+                colorName = "Stormy Sea",
+                colorNumber = "07",
+                dyeLot = "S18",
+                weightCategory = "Fingering",
+                createdAt = now - 18L * DAY_MILLIS,
+                quantityInStash = 1,
+                status = YarnCardStatus.IN_USE,
+                linkedProjectId = socksId,
+            ),
+        )
+        saveYarnCard(
+            YarnCard(
+                brand = "Summer Thread Co.",
+                yarnName = "Pure Linen",
+                fiberContent = "100% linen",
+                weightGrams = "50 g",
+                lengthMeters = "130 m",
+                needleSize = "3.5–4.0 mm",
+                colorName = "Terracotta",
+                colorNumber = "42",
+                dyeLot = "L09",
+                weightCategory = "Sport",
+                createdAt = now - 10L * DAY_MILLIS,
+                quantityInStash = 4,
+                status = YarnCardStatus.IN_USE,
+                linkedProjectId = bagId,
+            ),
+        )
+        saveYarnCard(
+            YarnCard(
+                brand = "Soft Nest",
+                yarnName = "Baby Cotton",
+                fiberContent = "100% organic cotton",
+                weightGrams = "50 g",
+                lengthMeters = "125 m",
+                needleSize = "3.5 mm",
+                colorName = "Apricot",
+                colorNumber = "214",
+                dyeLot = "B31",
+                weightCategory = "Sport",
+                createdAt = now - 60L * DAY_MILLIS,
+                quantityInStash = 3,
+                status = YarnCardStatus.IN_USE,
+                linkedProjectId = blanketId,
+            ),
+        )
         database.projectYarnNoteDao().upsert(
             ProjectYarnNoteEntity(
                 projectId = cardiganId,

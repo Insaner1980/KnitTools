@@ -72,4 +72,5 @@
     <string name="pattern_annotation_export_progress">Eksporterer %1$d/%2$d</string>
     <string name="pattern_annotation_export_failed">PDF-eksporten mislyktes. Den opprinnelige PDF-en ble ikke endret.</string>
     <string name="pattern_annotation_export_default_name">oppskrift</string>
+    <string name="pattern_annotation_export_filename">%1$s-med-merknader.pdf</string>
 </resources>

@@ -19,7 +19,7 @@ class DemoDataSeederSourceTest {
             "ProjectCounterType.REPEATING",
             "ProjectCounterType.SHAPING",
             "SessionEntity(",
-            "YarnCardEntity(",
+            "YarnCard(",
             "SavedPatternEntity(",
         ).forEach { expected -> assertTrue(source.contains(expected)) }
     }
@@ -30,9 +30,17 @@ class DemoDataSeederSourceTest {
         val writerSource = debugSeedWriterSource()
 
         assertTrue(facadeSource.contains("DebugDemoDataSeeder.seedIfNeeded"))
+        assertTrue(facadeSource.contains("projectCounterRepository.get().addCounter"))
+        assertTrue(facadeSource.contains("yarnCardRepository.get().saveCardInCurrentTransaction"))
         assertFalse(facadeSource.contains("CounterProjectEntity"))
         assertFalse(facadeSource.contains("counterProjectDao"))
         assertTrue(writerSource.contains("transactionRunner.get().run"))
+        assertTrue(writerSource.contains("addCounter("))
+        assertTrue(writerSource.contains("saveYarnCard("))
+        assertFalse(writerSource.contains("com.finnvek.knittools.repository"))
+        assertFalse(writerSource.contains("projectCounterDao()"))
+        assertFalse(writerSource.contains("yarnCardDao()"))
+        assertFalse(writerSource.contains("updateYarnCardIds"))
         assertFalse(writerSource.contains("withTransaction"))
     }
 

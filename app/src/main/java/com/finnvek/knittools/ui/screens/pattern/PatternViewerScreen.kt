@@ -947,6 +947,8 @@ private fun PatternViewerContent(
             is PatternAnnotationOwner.SavedPattern -> state.annotationState.masterLayerVisible
         }
     val fallbackPatternName = stringResource(R.string.pattern_annotation_export_default_name)
+    val exportBaseName = state.patternName?.substringBeforeLast('.')?.ifBlank { null } ?: fallbackPatternName
+    val exportFilename = stringResource(R.string.pattern_annotation_export_filename, exportBaseName)
     Column(modifier = modifier) {
         if (state.patternUri != null) {
             PatternAnnotationLayerPanel(
@@ -960,10 +962,7 @@ private fun PatternViewerContent(
             )
             TextButton(
                 enabled = !state.annotationState.isExporting,
-                onClick = {
-                    val baseName = state.patternName?.substringBeforeLast('.')?.ifBlank { null } ?: fallbackPatternName
-                    exportLauncher.launch("$baseName-annotated.pdf")
-                },
+                onClick = { exportLauncher.launch(exportFilename) },
             ) {
                 val exportText =
                     if (state.annotationState.isExporting) {

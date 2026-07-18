@@ -464,9 +464,13 @@ class PatternViewerSourceTest {
     fun `hidden editable annotation layer disables pointer input`() {
         val viewer = ProjectSourceFiles.read(PATTERN_VIEWER_SCREEN)
         val interactionOverlay = viewer.blockBetween("interactionOverlay =", "PatternAnnotationInputOverlay(")
+        val normalizedGuard = interactionOverlay.replace(Regex("\\s+"), " ")
 
-        assertTrue(interactionOverlay.contains("editableLayerVisible"))
-        assertTrue(interactionOverlay.contains("PatternAnnotationTool.BROWSE"))
+        assertTrue(
+            normalizedGuard.contains(
+                "if (editableLayerVisible && state.annotationState.activeTool != PatternAnnotationTool.BROWSE)",
+            ),
+        )
     }
 
     @Test
@@ -481,11 +485,13 @@ class PatternViewerSourceTest {
     }
 
     @Test
-    fun `annotated export fallback filename comes from string resources`() {
+    fun `annotated export filename comes from string resources`() {
         val viewer = ProjectSourceFiles.read(PATTERN_VIEWER_SCREEN)
 
         assertTrue(viewer.contains("R.string.pattern_annotation_export_default_name"))
+        assertTrue(viewer.contains("R.string.pattern_annotation_export_filename"))
         assertFalse(viewer.contains("?: \"pattern\""))
+        assertFalse(viewer.contains("-annotated.pdf"))
     }
 
     private companion object {

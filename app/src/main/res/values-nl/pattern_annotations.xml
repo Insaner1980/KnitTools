@@ -72,4 +72,5 @@
     <string name="pattern_annotation_export_progress">Exporteren %1$d/%2$d</string>
     <string name="pattern_annotation_export_failed">PDF-export mislukt. De oorspronkelijke PDF is niet gewijzigd.</string>
     <string name="pattern_annotation_export_default_name">patroon</string>
+    <string name="pattern_annotation_export_filename">%1$s-geannoteerd.pdf</string>
 </resources>

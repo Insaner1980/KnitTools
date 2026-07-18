@@ -22,7 +22,7 @@ androidxTestRunner = "1.7.0"
 kotlinxSerialization = "1.8.1"
 guava = "33.5.0-android"
 
-dependencyAnalysis = "3.5.1"
+dependencyAnalysis = "3.17.0"
 ktlintGradle = "14.1.0"
 detekt = "2.0.0-alpha.5"
 owaspDependencyCheck = "12.2.2"

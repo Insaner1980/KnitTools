@@ -7,7 +7,7 @@ import java.nio.file.Files
 
 class RavelryFirebaseIntegrationSourceTest {
     @Test
-    fun `gradle declares firebase auth functions bom and google services gate`() {
+    fun `gradle declares firebase auth functions bom and stable google services wiring`() {
         val versionCatalog = ProjectSourceFiles.read("gradle/libs.versions.toml")
         val rootBuild = ProjectSourceFiles.read("build.gradle.kts")
         val appBuild = ProjectSourceFiles.read("app/build.gradle.kts")
@@ -30,10 +30,12 @@ class RavelryFirebaseIntegrationSourceTest {
         assertTrue(appBuild.contains("verifyGoogleServicesJson"))
         assertTrue(appBuild.contains("writeGoogleServicesJsonFromEnv"))
         assertTrue(appBuild.contains("writeDebugGoogleServicesJson"))
-        assertTrue(appBuild.contains("dependsOn(writeGoogleServicesJsonFromEnv)"))
-        assertTrue(appBuild.contains("processDebugGoogleServices"))
+        assertDebugGoogleServicesTaskWiring(appBuild)
         assertTrue(appBuild.contains("debugGoogleServicesPlaceholderJson"))
-        assertTrue(appBuild.contains("debugFirebaseArtifactRequested"))
+        assertTrue(appBuild.contains("apply(plugin = \"com.google.gms.google-services\")"))
+        assertFalse(appBuild.contains("debugFirebaseArtifactRequested"))
+        assertFalse(appBuild.contains("canMaterializeGoogleServicesJson"))
+        assertFalse(appBuild.contains("if (canMaterializeGoogleServicesJson)"))
         assertTrue(appBuild.contains("firebaseConfiguredArtifactTaskNames"))
         assertTrue(appBuild.contains("\"assembleRelease\""))
         assertTrue(appBuild.contains("\"bundleRelease\""))
@@ -61,6 +63,26 @@ class RavelryFirebaseIntegrationSourceTest {
         assertFalse(codeQlWorkflow.contains("Missing KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64 secret"))
         assertFalse(buildWorkflow.contains("secrets.KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64"))
         assertFalse(codeQlWorkflow.contains("secrets.KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64"))
+    }
+
+    private fun assertDebugGoogleServicesTaskWiring(appBuild: String) {
+        assertTrue(
+            appBuild.contains(
+                """
+                tasks.configureEach {
+                    if (name == "processDebugGoogleServices") {
+                        dependsOn(writeGoogleServicesJsonFromEnv, writeDebugGoogleServicesJson)
+                    } else if (name.startsWith("process") && name.endsWith("GoogleServices")) {
+                        dependsOn(writeGoogleServicesJsonFromEnv)
+                    }
+
+                    if (name in firebaseConfiguredArtifactTaskNames) {
+                        dependsOn(verifyGoogleServicesJson)
+                    }
+                }
+                """.trimIndent(),
+            ),
+        )
     }
 
     @Test

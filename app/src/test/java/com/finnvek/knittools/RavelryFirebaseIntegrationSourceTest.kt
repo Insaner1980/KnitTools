@@ -30,8 +30,23 @@ class RavelryFirebaseIntegrationSourceTest {
         assertTrue(appBuild.contains("verifyGoogleServicesJson"))
         assertTrue(appBuild.contains("writeGoogleServicesJsonFromEnv"))
         assertTrue(appBuild.contains("writeDebugGoogleServicesJson"))
-        assertTrue(appBuild.contains("dependsOn(writeGoogleServicesJsonFromEnv)"))
-        assertTrue(appBuild.contains("processDebugGoogleServices"))
+        assertTrue(
+            appBuild.contains(
+                """
+                tasks.configureEach {
+                    if (name == "processDebugGoogleServices") {
+                        dependsOn(writeGoogleServicesJsonFromEnv, writeDebugGoogleServicesJson)
+                    } else if (name.startsWith("process") && name.endsWith("GoogleServices")) {
+                        dependsOn(writeGoogleServicesJsonFromEnv)
+                    }
+
+                    if (name in firebaseConfiguredArtifactTaskNames) {
+                        dependsOn(verifyGoogleServicesJson)
+                    }
+                }
+                """.trimIndent(),
+            ),
+        )
         assertTrue(appBuild.contains("debugGoogleServicesPlaceholderJson"))
         assertTrue(appBuild.contains("apply(plugin = \"com.google.gms.google-services\")"))
         assertFalse(appBuild.contains("debugFirebaseArtifactRequested"))

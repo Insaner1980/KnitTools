@@ -30,23 +30,7 @@ class RavelryFirebaseIntegrationSourceTest {
         assertTrue(appBuild.contains("verifyGoogleServicesJson"))
         assertTrue(appBuild.contains("writeGoogleServicesJsonFromEnv"))
         assertTrue(appBuild.contains("writeDebugGoogleServicesJson"))
-        assertTrue(
-            appBuild.contains(
-                """
-                tasks.configureEach {
-                    if (name == "processDebugGoogleServices") {
-                        dependsOn(writeGoogleServicesJsonFromEnv, writeDebugGoogleServicesJson)
-                    } else if (name.startsWith("process") && name.endsWith("GoogleServices")) {
-                        dependsOn(writeGoogleServicesJsonFromEnv)
-                    }
-
-                    if (name in firebaseConfiguredArtifactTaskNames) {
-                        dependsOn(verifyGoogleServicesJson)
-                    }
-                }
-                """.trimIndent(),
-            ),
-        )
+        assertDebugGoogleServicesTaskWiring(appBuild)
         assertTrue(appBuild.contains("debugGoogleServicesPlaceholderJson"))
         assertTrue(appBuild.contains("apply(plugin = \"com.google.gms.google-services\")"))
         assertFalse(appBuild.contains("debugFirebaseArtifactRequested"))
@@ -79,6 +63,26 @@ class RavelryFirebaseIntegrationSourceTest {
         assertFalse(codeQlWorkflow.contains("Missing KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64 secret"))
         assertFalse(buildWorkflow.contains("secrets.KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64"))
         assertFalse(codeQlWorkflow.contains("secrets.KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64"))
+    }
+
+    private fun assertDebugGoogleServicesTaskWiring(appBuild: String) {
+        assertTrue(
+            appBuild.contains(
+                """
+                tasks.configureEach {
+                    if (name == "processDebugGoogleServices") {
+                        dependsOn(writeGoogleServicesJsonFromEnv, writeDebugGoogleServicesJson)
+                    } else if (name.startsWith("process") && name.endsWith("GoogleServices")) {
+                        dependsOn(writeGoogleServicesJsonFromEnv)
+                    }
+
+                    if (name in firebaseConfiguredArtifactTaskNames) {
+                        dependsOn(verifyGoogleServicesJson)
+                    }
+                }
+                """.trimIndent(),
+            ),
+        )
     }
 
     @Test

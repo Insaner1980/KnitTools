@@ -987,4 +987,25 @@
     <string name="pattern_annotation_callout_editor_title">Add note</string>
     <string name="pattern_annotation_callout_title_label">Title</string>
     <string name="pattern_annotation_callout_description_label">Description</string>
+    <string name="pattern_annotation_tool_chart">Chart area</string>
+    <string name="pattern_annotation_link_chart">Link selected chart to a counter</string>
+    <string name="pattern_annotation_chart_setup_title">Chart tracking</string>
+    <string name="pattern_annotation_chart_rows">Rows</string>
+    <string name="pattern_annotation_chart_columns">Columns</string>
+    <string name="pattern_annotation_chart_bottom_to_top">Bottom to top</string>
+    <string name="pattern_annotation_chart_top_to_bottom">Top to bottom</string>
+    <string name="pattern_annotation_chart_left_to_right">Left to right</string>
+    <string name="pattern_annotation_chart_right_to_left">Right to left</string>
+    <string name="pattern_annotation_chart_alternating">Alternating</string>
+    <string name="pattern_annotation_chart_active_row">Active row</string>
+    <string name="pattern_annotation_chart_active_column">Active column</string>
+    <string name="pattern_annotation_chart_crosshair">Crosshair</string>
+    <string name="pattern_annotation_chart_completed">Completed cells</string>
+    <string name="pattern_annotation_chart_c2c">C2C diagonal</string>
+    <string name="pattern_annotation_chart_grid_start">Starting cell index</string>
+    <string name="pattern_annotation_chart_wrap">Wrap at chart end</string>
+    <string name="pattern_annotation_chart_top_left">Top left</string>
+    <string name="pattern_annotation_chart_top_right">Top right</string>
+    <string name="pattern_annotation_chart_bottom_left">Bottom left</string>
+    <string name="pattern_annotation_chart_bottom_right">Bottom right</string>
 </resources>

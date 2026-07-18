@@ -17,6 +17,7 @@ import androidx.compose.ui.input.pointer.changedToDownIgnoreConsumed
 import androidx.compose.ui.input.pointer.changedToUpIgnoreConsumed
 import androidx.compose.ui.input.pointer.pointerInput
 import com.finnvek.knittools.data.storage.PatternAnnotationCanvasRenderer
+import com.finnvek.knittools.domain.calculator.ChartTrackerHighlight
 import com.finnvek.knittools.domain.calculator.PatternPageCoordinateTransform
 import com.finnvek.knittools.domain.calculator.PatternScreenPoint
 import com.finnvek.knittools.domain.calculator.patternAnnotationBounds
@@ -34,6 +35,7 @@ internal fun PatternAnnotationOverlay(
     inProgressAnnotation: PatternAnnotation?,
     inProgressVisible: Boolean,
     selectedAnnotationId: Long?,
+    trackerHighlights: Map<Long, ChartTrackerHighlight>,
     modifier: Modifier = Modifier,
 ) {
     val renderStyle = rememberPatternAnnotationRenderStyle()
@@ -55,6 +57,7 @@ internal fun PatternAnnotationOverlay(
                 height = size.height,
                 annotations = annotationsWithDraft,
                 style = renderStyle,
+                trackerHighlights = trackerHighlights,
             )
         }
         visibleAnnotations

@@ -4,10 +4,15 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.finnvek.knittools.domain.calculator.ChartCell
+import com.finnvek.knittools.domain.calculator.ChartTrackerHighlight
 import com.finnvek.knittools.domain.model.CalloutPayload
 import com.finnvek.knittools.domain.model.ChartColumnDirection
+import com.finnvek.knittools.domain.model.ChartCounterType
 import com.finnvek.knittools.domain.model.ChartRegionPayload
 import com.finnvek.knittools.domain.model.ChartRowDirection
+import com.finnvek.knittools.domain.model.ChartTrackerPayload
+import com.finnvek.knittools.domain.model.ChartTrackingMode
 import com.finnvek.knittools.domain.model.FreehandPayload
 import com.finnvek.knittools.domain.model.NormalizedPatternBounds
 import com.finnvek.knittools.domain.model.NormalizedPatternPoint
@@ -76,6 +81,29 @@ class PatternAnnotationCanvasRendererTest {
                         columnDirection = ChartColumnDirection.LEFT_TO_RIGHT,
                     ),
                 ),
+                annotation(
+                    kind = PatternAnnotationKind.CHART_TRACKER,
+                    payload =
+                        ChartTrackerPayload(
+                            region =
+                                ChartRegionPayload(
+                                    bounds = NormalizedPatternBounds(0.5f, 0.6f, 0.9f, 0.9f),
+                                    name = "Tracked chart",
+                                    rows = 4,
+                                    columns = 5,
+                                    rowDirection = ChartRowDirection.TOP_TO_BOTTOM,
+                                    columnDirection = ChartColumnDirection.LEFT_TO_RIGHT,
+                                ),
+                            trackingMode = ChartTrackingMode.ACTIVE_ROW,
+                            counterType = ChartCounterType.MAIN,
+                            counterStartValue = 0,
+                            gridStartIndex = 0,
+                            wrapAtEnd = false,
+                            highlightArgb = Color.YELLOW,
+                            highlightAlpha = 0.5f,
+                        ),
+                    id = TRACKER_ID,
+                ),
             )
 
         PatternAnnotationCanvasRenderer.render(
@@ -84,18 +112,30 @@ class PatternAnnotationCanvasRendererTest {
             height = bitmap.height.toFloat(),
             annotations = annotations,
             style = TEST_STYLE,
+            trackerHighlights =
+                mapOf(
+                    TRACKER_ID to
+                        ChartTrackerHighlight(
+                            cells = setOf(ChartCell(0, 0)),
+                            activeCell = ChartCell(0, 0),
+                            counterAvailable = true,
+                        ),
+                ),
         )
 
         val pixels = IntArray(bitmap.width * bitmap.height)
         bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
         assertTrue(pixels.any { Color.alpha(it) > 0 })
+        assertTrue(Color.alpha(bitmap.getPixel(176, 298)) > 0)
         bitmap.recycle()
     }
 
     private fun annotation(
         kind: PatternAnnotationKind,
         payload: com.finnvek.knittools.domain.model.PatternAnnotationPayload,
+        id: Long = 0L,
     ) = PatternAnnotation(
+        id = id,
         layerId = 1L,
         page = 0,
         kind = kind,
@@ -104,6 +144,7 @@ class PatternAnnotationCanvasRendererTest {
     )
 
     private companion object {
+        const val TRACKER_ID = 99L
         val TEST_STYLE =
             PatternAnnotationRenderStyle(
                 referencePageSize = 1_000f,

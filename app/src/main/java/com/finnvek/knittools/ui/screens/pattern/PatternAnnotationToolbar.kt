@@ -23,6 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -35,6 +36,10 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
+import com.finnvek.knittools.domain.model.ChartColumnDirection
+import com.finnvek.knittools.domain.model.ChartCorner
+import com.finnvek.knittools.domain.model.ChartRowDirection
+import com.finnvek.knittools.domain.model.ChartTrackingMode
 import com.finnvek.knittools.domain.model.PatternAnnotationLimits
 import com.finnvek.knittools.domain.model.PatternCalloutSymbol
 import com.finnvek.knittools.ui.theme.PatternAnnotationTokens
@@ -58,6 +63,7 @@ internal data class PatternAnnotationToolbarActions(
     val onUndo: () -> Unit,
     val onRedo: () -> Unit,
     val onClearPage: () -> Unit,
+    val onAddChartTracker: (PatternChartTrackerDraft) -> Unit,
 )
 
 @Composable
@@ -68,6 +74,7 @@ internal fun PatternAnnotationToolbar(
 ) {
     var showTextEditor by rememberSaveable { mutableStateOf(false) }
     var showCalloutEditor by rememberSaveable { mutableStateOf(false) }
+    var showChartTrackerEditor by rememberSaveable { mutableStateOf(false) }
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         modifier = modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
@@ -120,6 +127,11 @@ internal fun PatternAnnotationToolbar(
             else -> Unit
         }
         AnnotationHistoryControls(state, actions)
+        if (state.selectedAnnotationId != null && state.chartCounterOptions.isNotEmpty()) {
+            TextButton(onClick = { showChartTrackerEditor = true }) {
+                Text(stringResource(R.string.pattern_annotation_link_chart))
+            }
+        }
         if (state.selectedAnnotationId != null) {
             AnnotationSelectionControls(actions)
         }
@@ -139,6 +151,16 @@ internal fun PatternAnnotationToolbar(
             onConfirm = { title, description ->
                 actions.onAddCallout(title, description, PatternCalloutSymbol.NOTE)
                 showCalloutEditor = false
+            },
+        )
+    }
+    if (showChartTrackerEditor) {
+        PatternChartTrackerDialog(
+            counterOptions = state.chartCounterOptions,
+            onDismiss = { showChartTrackerEditor = false },
+            onConfirm = { draft ->
+                actions.onAddChartTracker(draft)
+                showChartTrackerEditor = false
             },
         )
     }
@@ -270,6 +292,139 @@ private fun PatternCalloutEditorDialog(
 }
 
 @Composable
+private fun PatternChartTrackerDialog(
+    counterOptions: List<PatternChartCounterOption>,
+    onDismiss: () -> Unit,
+    onConfirm: (PatternChartTrackerDraft) -> Unit,
+) {
+    var rows by rememberSaveable { mutableStateOf(DEFAULT_CHART_DIMENSION.toString()) }
+    var columns by rememberSaveable { mutableStateOf(DEFAULT_CHART_DIMENSION.toString()) }
+    var gridStartIndex by rememberSaveable { mutableStateOf("0") }
+    var rowDirection by rememberSaveable { mutableStateOf(ChartRowDirection.BOTTOM_TO_TOP) }
+    var columnDirection by rememberSaveable { mutableStateOf(ChartColumnDirection.LEFT_TO_RIGHT) }
+    var trackingMode by rememberSaveable { mutableStateOf(ChartTrackingMode.ACTIVE_ROW) }
+    var selectedCounterIndex by rememberSaveable { mutableIntStateOf(0) }
+    var wrapAtEnd by rememberSaveable { mutableStateOf(false) }
+    var c2cOrigin by rememberSaveable { mutableStateOf(ChartCorner.BOTTOM_LEFT) }
+    val validRows = rows.toIntOrNull()?.takeIf { it in 1..MAX_CHART_DIMENSION }
+    val validColumns = columns.toIntOrNull()?.takeIf { it in 1..MAX_CHART_DIMENSION }
+    val validGridStart = gridStartIndex.toIntOrNull()
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.pattern_annotation_chart_setup_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = rows,
+                        onValueChange = { rows = it },
+                        label = { Text(stringResource(R.string.pattern_annotation_chart_rows)) },
+                        modifier = Modifier.weight(1f),
+                    )
+                    OutlinedTextField(
+                        value = columns,
+                        onValueChange = { columns = it },
+                        label = { Text(stringResource(R.string.pattern_annotation_chart_columns)) },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                ChartChoiceRow(
+                    choices = ChartRowDirection.entries,
+                    selected = rowDirection,
+                    label = { direction ->
+                        if (direction == ChartRowDirection.BOTTOM_TO_TOP) {
+                            stringResource(R.string.pattern_annotation_chart_bottom_to_top)
+                        } else {
+                            stringResource(R.string.pattern_annotation_chart_top_to_bottom)
+                        }
+                    },
+                    onSelected = { rowDirection = it },
+                )
+                ChartChoiceRow(
+                    choices = ChartColumnDirection.entries,
+                    selected = columnDirection,
+                    label = { direction -> stringResource(direction.columnDirectionLabel()) },
+                    onSelected = { columnDirection = it },
+                )
+                ChartChoiceRow(
+                    choices = ChartTrackingMode.entries,
+                    selected = trackingMode,
+                    label = { mode -> stringResource(mode.trackingModeLabel()) },
+                    onSelected = { trackingMode = it },
+                )
+                ChartChoiceRow(
+                    choices = counterOptions.indices.toList(),
+                    selected = selectedCounterIndex.coerceIn(counterOptions.indices),
+                    label = { index -> counterOptions[index].name },
+                    onSelected = { selectedCounterIndex = it },
+                )
+                OutlinedTextField(
+                    value = gridStartIndex,
+                    onValueChange = { gridStartIndex = it },
+                    label = { Text(stringResource(R.string.pattern_annotation_chart_grid_start)) },
+                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(stringResource(R.string.pattern_annotation_chart_wrap), modifier = Modifier.weight(1f))
+                    Switch(checked = wrapAtEnd, onCheckedChange = { wrapAtEnd = it })
+                }
+                if (trackingMode == ChartTrackingMode.C2C_DIAGONAL) {
+                    ChartChoiceRow(
+                        choices = ChartCorner.entries,
+                        selected = c2cOrigin,
+                        label = { corner -> stringResource(corner.cornerLabel()) },
+                        onSelected = { c2cOrigin = it },
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = validRows != null && validColumns != null && validGridStart != null,
+                onClick = {
+                    onConfirm(
+                        PatternChartTrackerDraft(
+                            rows = checkNotNull(validRows),
+                            columns = checkNotNull(validColumns),
+                            rowDirection = rowDirection,
+                            columnDirection = columnDirection,
+                            trackingMode = trackingMode,
+                            counter = counterOptions[selectedCounterIndex.coerceIn(counterOptions.indices)],
+                            gridStartIndex = checkNotNull(validGridStart),
+                            wrapAtEnd = wrapAtEnd,
+                            c2cOrigin = c2cOrigin,
+                        ),
+                    )
+                },
+            ) {
+                Text(stringResource(R.string.save))
+            }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
+    )
+}
+
+@Composable
+private fun <T> ChartChoiceRow(
+    choices: List<T>,
+    selected: T,
+    label: @Composable (T) -> String,
+    onSelected: (T) -> Unit,
+) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        modifier = Modifier.horizontalScroll(rememberScrollState()),
+    ) {
+        choices.forEach { choice ->
+            FilterChip(
+                selected = choice == selected,
+                onClick = { onSelected(choice) },
+                label = { Text(label(choice)) },
+            )
+        }
+    }
+}
+
+@Composable
 private fun PatternStrokeStyleControls(
     selectedArgb: Int,
     strokeWidth: Float,
@@ -375,6 +530,7 @@ private val TOOL_ITEMS =
         ToolItem(PatternAnnotationTool.ELLIPSE, R.string.pattern_annotation_tool_ellipse),
         ToolItem(PatternAnnotationTool.TEXT, R.string.pattern_annotation_tool_text),
         ToolItem(PatternAnnotationTool.CALLOUT, R.string.pattern_annotation_tool_callout),
+        ToolItem(PatternAnnotationTool.CHART, R.string.pattern_annotation_tool_chart),
     )
 
 private val AXIS_ITEMS =
@@ -389,6 +545,32 @@ private fun Int.rgbOnly(): Int = this and 0x00FFFFFF
 
 private fun Int.withHighlighterAlpha(): Int = rgbOnly() or PatternAnnotationTokens.HIGHLIGHTER_DEFAULT_ALPHA.shl(24)
 
+private fun ChartColumnDirection.columnDirectionLabel(): Int =
+    when (this) {
+        ChartColumnDirection.LEFT_TO_RIGHT -> R.string.pattern_annotation_chart_left_to_right
+        ChartColumnDirection.RIGHT_TO_LEFT -> R.string.pattern_annotation_chart_right_to_left
+        ChartColumnDirection.ALTERNATING -> R.string.pattern_annotation_chart_alternating
+    }
+
+private fun ChartTrackingMode.trackingModeLabel(): Int =
+    when (this) {
+        ChartTrackingMode.ACTIVE_ROW -> R.string.pattern_annotation_chart_active_row
+        ChartTrackingMode.ACTIVE_COLUMN -> R.string.pattern_annotation_chart_active_column
+        ChartTrackingMode.CROSSHAIR -> R.string.pattern_annotation_chart_crosshair
+        ChartTrackingMode.COMPLETED_CELLS -> R.string.pattern_annotation_chart_completed
+        ChartTrackingMode.C2C_DIAGONAL -> R.string.pattern_annotation_chart_c2c
+    }
+
+private fun ChartCorner.cornerLabel(): Int =
+    when (this) {
+        ChartCorner.TOP_LEFT -> R.string.pattern_annotation_chart_top_left
+        ChartCorner.TOP_RIGHT -> R.string.pattern_annotation_chart_top_right
+        ChartCorner.BOTTOM_LEFT -> R.string.pattern_annotation_chart_bottom_left
+        ChartCorner.BOTTOM_RIGHT -> R.string.pattern_annotation_chart_bottom_right
+    }
+
 private const val SELECTION_NUDGE = 0.01f
 private const val SELECTION_SCALE_DOWN = 0.9f
 private const val SELECTION_SCALE_UP = 1.1f
+private const val DEFAULT_CHART_DIMENSION = 10
+private const val MAX_CHART_DIMENSION = 999

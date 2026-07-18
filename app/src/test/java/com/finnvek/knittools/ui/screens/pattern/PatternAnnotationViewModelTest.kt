@@ -1,8 +1,16 @@
 package com.finnvek.knittools.ui.screens.pattern
 
 import androidx.lifecycle.SavedStateHandle
+import com.finnvek.knittools.domain.model.ChartColumnDirection
+import com.finnvek.knittools.domain.model.ChartCorner
+import com.finnvek.knittools.domain.model.ChartCounterType
+import com.finnvek.knittools.domain.model.ChartRegionPayload
+import com.finnvek.knittools.domain.model.ChartRowDirection
+import com.finnvek.knittools.domain.model.ChartTrackerPayload
+import com.finnvek.knittools.domain.model.ChartTrackingMode
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.FreehandPayload
+import com.finnvek.knittools.domain.model.NormalizedPatternBounds
 import com.finnvek.knittools.domain.model.NormalizedPatternPoint
 import com.finnvek.knittools.domain.model.PatternAnnotation
 import com.finnvek.knittools.domain.model.PatternAnnotationDocumentKey
@@ -12,6 +20,7 @@ import com.finnvek.knittools.domain.model.PatternAnnotationOwner
 import com.finnvek.knittools.repository.CounterRepository
 import com.finnvek.knittools.repository.PatternAnnotationLayerRepository
 import com.finnvek.knittools.repository.PatternAnnotationRepository
+import com.finnvek.knittools.repository.ProjectCounterRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -365,6 +374,90 @@ class PatternAnnotationViewModelTest {
             viewModel.redo()
             advanceUntilIdle()
             coVerify(exactly = 1) { annotationRepository.restoreBatch(match { it.single().id == 61L }) }
+        }
+
+    @Test
+    @Suppress("LongMethod")
+    fun `selected master chart region is copied to project tracker`() =
+        runTest {
+            val layerRepository = mockk<PatternAnnotationLayerRepository>()
+            val annotationRepository = mockk<PatternAnnotationRepository>(relaxed = true)
+            val counterRepository = mockk<CounterRepository>()
+            val projectCounterRepository = mockk<ProjectCounterRepository>()
+            val documentKey = PatternAnnotationDocumentKey.savedPattern(12L)
+            val projectOwner = PatternAnnotationOwner.Project(7L, documentKey)
+            val masterLayer = layer(id = 31L, owner = PatternAnnotationOwner.SavedPattern(12L, documentKey))
+            val projectLayer = layer(id = 41L, owner = projectOwner)
+            val region =
+                ChartRegionPayload(
+                    bounds = NormalizedPatternBounds(0.2f, 0.2f, 0.8f, 0.8f),
+                    name = "Master chart",
+                    rows = 8,
+                    columns = 9,
+                    rowDirection = ChartRowDirection.BOTTOM_TO_TOP,
+                    columnDirection = ChartColumnDirection.LEFT_TO_RIGHT,
+                )
+            every { counterRepository.observeProject(7L) } returns
+                flowOf(CounterProject(id = 7L, name = "Project", count = 14, linkedPatternId = 12L))
+            every { projectCounterRepository.getCountersForProject(7L) } returns flowOf(emptyList())
+            every { layerRepository.observeLayers(projectOwner) } returns flowOf(listOf(projectLayer))
+            coEvery { layerRepository.getOrCreateMasterLayer(12L, documentKey) } returns masterLayer
+            every { annotationRepository.observePage(31L, 0) } returns
+                flowOf(
+                    listOf(
+                        PatternAnnotation(
+                            id = 101L,
+                            layerId = 31L,
+                            page = 0,
+                            kind = PatternAnnotationKind.CHART_REGION,
+                            payload = region,
+                            zIndex = 0L,
+                        ),
+                    ),
+                )
+            every { annotationRepository.observePage(41L, 0) } returns flowOf(emptyList())
+            coEvery { annotationRepository.insertAnnotation(any()) } returns 202L
+            val viewModel =
+                PatternAnnotationViewModel(
+                    SavedStateHandle(mapOf("projectId" to 7L)),
+                    counterRepository,
+                    layerRepository,
+                    annotationRepository,
+                    projectCounterRepository,
+                )
+            advanceUntilIdle()
+
+            viewModel.selectAnnotationAt(NormalizedPatternPoint(0.5f, 0.5f))
+            viewModel.addChartTrackerFromSelected(
+                PatternChartTrackerDraft(
+                    rows = 6,
+                    columns = 7,
+                    rowDirection = ChartRowDirection.TOP_TO_BOTTOM,
+                    columnDirection = ChartColumnDirection.ALTERNATING,
+                    trackingMode = ChartTrackingMode.CROSSHAIR,
+                    counter =
+                        viewModel.uiState.value.chartCounterOptions
+                            .single(),
+                    gridStartIndex = 2,
+                    wrapAtEnd = true,
+                    c2cOrigin = ChartCorner.TOP_LEFT,
+                ),
+            )
+            advanceUntilIdle()
+
+            coVerify(exactly = 1) {
+                annotationRepository.insertAnnotation(
+                    match { annotation ->
+                        val tracker = annotation.payload as ChartTrackerPayload
+                        annotation.layerId == 41L &&
+                            tracker.counterType == ChartCounterType.MAIN &&
+                            tracker.counterStartValue == 14 &&
+                            tracker.region.rows == 6 &&
+                            tracker.region.columns == 7 &&
+                            tracker.wrapAtEnd
+                    },
+                )
+            }
         }
 
     private fun layer(

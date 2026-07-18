@@ -993,6 +993,7 @@ private fun PatternViewerContent(
                             inProgressAnnotation = state.annotationState.inProgressAnnotation,
                             inProgressVisible = editableLayerVisible,
                             selectedAnnotationId = state.annotationState.selectedAnnotationId,
+                            trackerHighlights = state.annotationState.trackerHighlights,
                             modifier = Modifier.fillMaxSize(),
                         )
                         if (state.readingLineEnabled) {
@@ -1082,6 +1083,7 @@ private fun PatternAnnotationViewModel.patternToolbarActions() =
         onUndo = ::undo,
         onRedo = ::redo,
         onClearPage = ::clearEditablePage,
+        onAddChartTracker = ::addChartTrackerFromSelected,
     )
 
 private data class ReadingLineOverlayActions(

@@ -7,6 +7,7 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.RectF
 import androidx.core.graphics.PathParser
+import com.finnvek.knittools.domain.calculator.ChartTrackerHighlight
 import com.finnvek.knittools.domain.model.CalloutPayload
 import com.finnvek.knittools.domain.model.ChartRegionPayload
 import com.finnvek.knittools.domain.model.ChartTrackerPayload
@@ -28,9 +29,12 @@ object PatternAnnotationCanvasRenderer {
         height: Float,
         annotations: List<PatternAnnotation>,
         style: PatternAnnotationRenderStyle,
+        trackerHighlights: Map<Long, ChartTrackerHighlight> = emptyMap(),
     ) {
         if (width <= 0f || height <= 0f) return
-        annotations.forEach { annotation -> renderAnnotation(canvas, width, height, annotation, style) }
+        annotations.forEach { annotation ->
+            renderAnnotation(canvas, width, height, annotation, style, trackerHighlights[annotation.id])
+        }
     }
 
     private fun renderAnnotation(
@@ -39,6 +43,7 @@ object PatternAnnotationCanvasRenderer {
         height: Float,
         annotation: PatternAnnotation,
         style: PatternAnnotationRenderStyle,
+        trackerHighlight: ChartTrackerHighlight?,
     ) {
         when (val payload = annotation.payload) {
             is FreehandPayload -> renderFreehand(canvas, width, height, annotation.kind, payload, style)
@@ -46,7 +51,7 @@ object PatternAnnotationCanvasRenderer {
             is TextBoxPayload -> renderTextBox(canvas, width, height, payload, style)
             is CalloutPayload -> renderCallout(canvas, width, height, payload, style)
             is ChartRegionPayload -> renderChartRegion(canvas, width, height, payload, style)
-            is ChartTrackerPayload -> renderChartTracker(canvas, width, height, payload, style)
+            is ChartTrackerPayload -> renderChartTracker(canvas, width, height, payload, trackerHighlight, style)
         }
     }
 
@@ -222,10 +227,21 @@ object PatternAnnotationCanvasRenderer {
         width: Float,
         height: Float,
         payload: ChartTrackerPayload,
+        highlight: ChartTrackerHighlight?,
         style: PatternAnnotationRenderStyle,
     ) {
         val bounds = payload.region.bounds.toRect(width, height)
-        canvas.drawRect(bounds, fillPaint(payload.highlightArgb, payload.highlightAlpha))
+        highlight?.cells?.forEach { cell ->
+            val cellWidth = bounds.width() / payload.region.columns
+            val cellHeight = bounds.height() / payload.region.rows
+            canvas.drawRect(
+                bounds.left + cell.column * cellWidth,
+                bounds.top + cell.row * cellHeight,
+                bounds.left + (cell.column + 1) * cellWidth,
+                bounds.top + (cell.row + 1) * cellHeight,
+                fillPaint(payload.highlightArgb, payload.highlightAlpha),
+            )
+        }
         renderChartRegion(canvas, width, height, payload.region, style)
     }
 

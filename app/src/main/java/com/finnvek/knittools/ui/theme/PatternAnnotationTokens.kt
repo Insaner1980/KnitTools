@@ -18,6 +18,7 @@ internal object PatternAnnotationTokens {
     const val TEXT_BACKGROUND_ARGB = 0xFFFFFFFF.toInt()
     const val TEXT_BACKGROUND_ALPHA = 0.85f
     const val CALLOUT_DEFAULT_ARGB = 0xFF6750A4.toInt()
+    const val CHART_HIGHLIGHT_ALPHA = 0.35f
     val COLOR_PALETTE_ARGB =
         listOf(
             0xFF1F1F1F.toInt(),

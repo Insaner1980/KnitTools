@@ -16,6 +16,7 @@ import com.finnvek.knittools.data.remote.PatternDetail
 import com.finnvek.knittools.data.storage.PatternDocumentStorage
 import com.finnvek.knittools.data.storage.ProgressPhotoStorage
 import com.finnvek.knittools.data.storage.YarnPhotoStorage
+import com.finnvek.knittools.domain.model.PatternAnnotationDocumentKey
 import com.finnvek.knittools.domain.model.ProgressPhoto
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.SavedPatternSource
@@ -116,7 +117,6 @@ class RepositoryTransactionBoundaryTest {
             val sessionDao = mockk<SessionDao>(relaxed = true)
             val yarnRepository = mockk<YarnCardRepository>(relaxed = true)
             val savedPatternRepository = mockk<SavedPatternRepository>(relaxed = true)
-            val annotationRepository = mockk<PatternAnnotationRepository>(relaxed = true)
             val photoStorage = mockk<ProgressPhotoStorage>(relaxed = true)
             val patternDocumentStorage = mockk<PatternDocumentStorage>(relaxed = true)
             val context = mockk<Context>(relaxed = true)
@@ -142,7 +142,7 @@ class RepositoryTransactionBoundaryTest {
                     context = context,
                     yarnCardRepository = yarnRepository,
                     savedPatternRepository = savedPatternRepository,
-                    patternAnnotationRepository = annotationRepository,
+                    patternAnnotationLayerRepository = mockk(relaxed = true),
                     transactionRunner = runner,
                     ioDispatcher = UnconfinedTestDispatcher(testScheduler),
                 )
@@ -172,7 +172,7 @@ class RepositoryTransactionBoundaryTest {
                     context = context,
                     yarnCardRepository = yarnRepository,
                     savedPatternRepository = mockk(relaxed = true),
-                    patternAnnotationRepository = mockk(relaxed = true),
+                    patternAnnotationLayerRepository = mockk(relaxed = true),
                     transactionRunner = RecordingTransactionRunner(),
                     ioDispatcher = ioDispatcher,
                 )
@@ -201,7 +201,7 @@ class RepositoryTransactionBoundaryTest {
                     context = context,
                     yarnCardRepository = yarnRepository,
                     savedPatternRepository = mockk(relaxed = true),
-                    patternAnnotationRepository = mockk(relaxed = true),
+                    patternAnnotationLayerRepository = mockk(relaxed = true),
                     transactionRunner = RecordingTransactionRunner(),
                     ioDispatcher = UnconfinedTestDispatcher(testScheduler),
                 )
@@ -221,7 +221,7 @@ class RepositoryTransactionBoundaryTest {
             val sessionDao = mockk<SessionDao>(relaxed = true)
             val yarnRepository = mockk<YarnCardRepository>(relaxed = true)
             val savedPatternRepository = mockk<SavedPatternRepository>(relaxed = true)
-            val annotationRepository = mockk<PatternAnnotationRepository>(relaxed = true)
+            val layerRepository = mockk<PatternAnnotationLayerRepository>(relaxed = true)
             val repository =
                 CounterRepository(
                     dao = projectDao,
@@ -232,7 +232,7 @@ class RepositoryTransactionBoundaryTest {
                     context = mockk(relaxed = true),
                     yarnCardRepository = yarnRepository,
                     savedPatternRepository = savedPatternRepository,
-                    patternAnnotationRepository = annotationRepository,
+                    patternAnnotationLayerRepository = layerRepository,
                     transactionRunner = runner,
                     ioDispatcher = UnconfinedTestDispatcher(testScheduler),
                 )
@@ -243,7 +243,10 @@ class RepositoryTransactionBoundaryTest {
             assertEquals(1, runner.runCount)
             coVerifyOrder {
                 savedPatternRepository.saveImportedPatternIfMissing("content://pattern", "Pattern")
-                annotationRepository.clearProject(7L)
+                layerRepository.activateProjectLayerInTransaction(
+                    7L,
+                    PatternAnnotationDocumentKey.savedPattern(11L),
+                )
                 projectDao.updatePatternAttachment(
                     id = 7L,
                     linkedPatternId = 11L,
@@ -263,7 +266,7 @@ class RepositoryTransactionBoundaryTest {
             val projectDao = mockk<CounterProjectDao>(relaxed = true)
             val sessionDao = mockk<SessionDao>(relaxed = true)
             val savedPatternRepository = mockk<SavedPatternRepository>(relaxed = true)
-            val annotationRepository = mockk<PatternAnnotationRepository>(relaxed = true)
+            val layerRepository = mockk<PatternAnnotationLayerRepository>(relaxed = true)
             coEvery { savedPatternRepository.getById(12L) } returns
                 SavedPattern(
                     id = 12L,
@@ -282,7 +285,7 @@ class RepositoryTransactionBoundaryTest {
                     context = mockk(relaxed = true),
                     yarnCardRepository = mockk(relaxed = true),
                     savedPatternRepository = savedPatternRepository,
-                    patternAnnotationRepository = annotationRepository,
+                    patternAnnotationLayerRepository = layerRepository,
                     transactionRunner = runner,
                     ioDispatcher = UnconfinedTestDispatcher(testScheduler),
                 )
@@ -293,7 +296,10 @@ class RepositoryTransactionBoundaryTest {
             assertEquals(1, runner.runCount)
             coVerifyOrder {
                 savedPatternRepository.getById(12L)
-                annotationRepository.clearProject(7L)
+                layerRepository.activateProjectLayerInTransaction(
+                    7L,
+                    PatternAnnotationDocumentKey.savedPattern(12L),
+                )
                 projectDao.updatePatternAttachment(
                     id = 7L,
                     linkedPatternId = 12L,
@@ -307,11 +313,11 @@ class RepositoryTransactionBoundaryTest {
         }
 
     @Test
-    fun `pattern detachment clears related database state inside one transaction`() =
+    fun `pattern detachment deactivates annotation layer inside one transaction`() =
         runTest {
             val runner = RecordingTransactionRunner()
             val projectDao = mockk<CounterProjectDao>(relaxed = true)
-            val annotationRepository = mockk<PatternAnnotationRepository>(relaxed = true)
+            val layerRepository = mockk<PatternAnnotationLayerRepository>(relaxed = true)
             val repository =
                 CounterRepository(
                     dao = projectDao,
@@ -322,7 +328,7 @@ class RepositoryTransactionBoundaryTest {
                     context = mockk(relaxed = true),
                     yarnCardRepository = mockk(relaxed = true),
                     savedPatternRepository = mockk(relaxed = true),
-                    patternAnnotationRepository = annotationRepository,
+                    patternAnnotationLayerRepository = layerRepository,
                     transactionRunner = runner,
                     ioDispatcher = UnconfinedTestDispatcher(testScheduler),
                 )
@@ -331,7 +337,7 @@ class RepositoryTransactionBoundaryTest {
 
             assertEquals(1, runner.runCount)
             coVerifyOrder {
-                annotationRepository.clearProject(7L)
+                layerRepository.deactivateProjectLayersInTransaction(7L)
                 projectDao.updatePatternAttachment(
                     id = 7L,
                     linkedPatternId = null,

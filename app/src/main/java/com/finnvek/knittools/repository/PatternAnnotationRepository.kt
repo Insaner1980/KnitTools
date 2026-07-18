@@ -28,14 +28,12 @@ class PatternAnnotationRepository
 
         suspend fun updateAnnotation(annotation: PatternAnnotation) = dao.update(annotation.toEntity())
 
-        suspend fun clearProject(projectId: Long) = dao.deleteForProject(projectId)
-
         suspend fun clearPage(
             layerId: Long,
             page: Int,
         ) = dao.deleteForPage(layerId, page)
 
-        suspend fun deleteById(id: Long) = dao.deleteById(id)
+        suspend fun deleteAnnotation(id: Long) = dao.deleteById(id)
 
         suspend fun restoreBatch(annotations: List<PatternAnnotation>) =
             dao.restoreBatch(annotations.map(PatternAnnotation::toEntity))

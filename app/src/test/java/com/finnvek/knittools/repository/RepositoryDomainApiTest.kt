@@ -615,8 +615,6 @@ internal class FakePatternAnnotationDao(
 
     override suspend fun update(annotation: PatternAnnotationEntity) = Unit
 
-    override suspend fun deleteForProject(projectId: Long) = Unit
-
     override suspend fun deleteForPage(
         layerId: Long,
         page: Int,

@@ -27,6 +27,9 @@ interface PatternAnnotationLayerDao {
         documentKey: String,
     ): PatternAnnotationLayerEntity?
 
+    @Query("SELECT * FROM pattern_annotation_layers WHERE projectId = :projectId AND isActive = 1 LIMIT 1")
+    suspend fun getActiveProjectLayer(projectId: Long): PatternAnnotationLayerEntity?
+
     @Insert
     suspend fun insert(layer: PatternAnnotationLayerEntity): Long
 

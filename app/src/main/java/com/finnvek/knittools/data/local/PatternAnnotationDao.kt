@@ -30,16 +30,6 @@ interface PatternAnnotationDao {
     @Update
     suspend fun update(annotation: PatternAnnotationEntity)
 
-    @Query(
-        """
-        DELETE FROM pattern_annotations
-        WHERE layerId IN (
-            SELECT id FROM pattern_annotation_layers WHERE projectId = :projectId
-        )
-        """,
-    )
-    suspend fun deleteForProject(projectId: Long)
-
     @Query("DELETE FROM pattern_annotations WHERE layerId = :layerId AND page = :page")
     suspend fun deleteForPage(
         layerId: Long,

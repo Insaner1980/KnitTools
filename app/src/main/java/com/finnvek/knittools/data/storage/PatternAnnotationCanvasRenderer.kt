@@ -99,7 +99,9 @@ object PatternAnnotationCanvasRenderer {
     ) {
         val path =
             runCatching { PathParser.createPathFromPathData(payload.legacyPathData.orEmpty()) }.getOrNull() ?: return
-        val bounds = RectF().also(path::computeBounds)
+
+        @Suppress("DEPRECATION")
+        val bounds = RectF().also { path.computeBounds(it, true) }
         if (bounds.right <= NORMALIZED_LEGACY_PATH_LIMIT && bounds.bottom <= NORMALIZED_LEGACY_PATH_LIMIT) {
             path.transform(Matrix().apply { setScale(width, height) })
         }

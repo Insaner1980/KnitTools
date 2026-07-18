@@ -325,6 +325,48 @@ class PatternAnnotationViewModelTest {
             assertEquals(null, viewModel.uiState.value.draftStroke)
         }
 
+    @Test
+    fun `shape insertion supports forward undo and redo`() =
+        runTest {
+            val layerRepository = mockk<PatternAnnotationLayerRepository>()
+            val annotationRepository = mockk<PatternAnnotationRepository>(relaxed = true)
+            val documentKey = PatternAnnotationDocumentKey.savedPattern(12L)
+            coEvery { layerRepository.getOrCreateMasterLayer(12L, documentKey) } returns
+                layer(id = 31L, owner = PatternAnnotationOwner.SavedPattern(12L, documentKey))
+            every { annotationRepository.observePage(31L, 0) } returns flowOf(emptyList())
+            coEvery { annotationRepository.insertAnnotation(any()) } returns 61L
+            val viewModel =
+                PatternAnnotationViewModel(
+                    SavedStateHandle(mapOf("savedPatternId" to 12L)),
+                    mockk(relaxed = true),
+                    layerRepository,
+                    annotationRepository,
+                )
+            advanceUntilIdle()
+
+            viewModel.setActiveTool(PatternAnnotationTool.RECTANGLE)
+            viewModel.beginStroke(NormalizedPatternPoint(0.2f, 0.3f))
+            viewModel.appendStrokePoint(NormalizedPatternPoint(0.7f, 0.8f))
+            viewModel.commitStroke(simplificationTolerance = 0f)
+            advanceUntilIdle()
+
+            coVerify(exactly = 1) {
+                annotationRepository.insertAnnotation(
+                    match { it.kind == PatternAnnotationKind.RECTANGLE },
+                )
+            }
+            assertTrue(viewModel.uiState.value.canUndo)
+
+            viewModel.undo()
+            advanceUntilIdle()
+            coVerify(exactly = 1) { annotationRepository.deleteAnnotation(61L) }
+            assertTrue(viewModel.uiState.value.canRedo)
+
+            viewModel.redo()
+            advanceUntilIdle()
+            coVerify(exactly = 1) { annotationRepository.restoreBatch(match { it.single().id == 61L }) }
+        }
+
     private fun layer(
         id: Long,
         owner: PatternAnnotationOwner,

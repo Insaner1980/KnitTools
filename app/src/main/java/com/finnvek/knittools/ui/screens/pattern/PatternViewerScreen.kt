@@ -992,6 +992,7 @@ private fun PatternViewerContent(
                             projectVisible = state.annotationState.projectLayerVisible,
                             inProgressAnnotation = state.annotationState.inProgressAnnotation,
                             inProgressVisible = editableLayerVisible,
+                            selectedAnnotationId = state.annotationState.selectedAnnotationId,
                             modifier = Modifier.fillMaxSize(),
                         )
                         if (state.readingLineEnabled) {
@@ -1058,6 +1059,7 @@ private fun PatternAnnotationViewModel.patternInputActions() =
         onCommitStroke = ::commitStroke,
         onCancelStroke = ::cancelStroke,
         onEraseStroke = ::eraseStrokeAt,
+        onSelectAnnotation = ::selectAnnotationAt,
     )
 
 private fun PatternAnnotationViewModel.patternToolbarActions() =
@@ -1069,6 +1071,17 @@ private fun PatternAnnotationViewModel.patternToolbarActions() =
         onHighlighterStrokeWidthChange = ::setHighlighterStrokeWidth,
         onPressureEnabledChange = ::setPressureEnabled,
         onHighlighterAxisLockChange = ::setHighlighterAxisLock,
+        onMoveSelected = ::moveSelected,
+        onResizeSelected = ::resizeSelected,
+        onDuplicateSelected = ::duplicateSelected,
+        onDeleteSelected = ::deleteSelected,
+        onBringSelectedForward = ::bringSelectedForward,
+        onSendSelectedBackward = ::sendSelectedBackward,
+        onAddTextBox = { text -> addTextBox(text) },
+        onAddCallout = { title, description, symbol -> addCallout(title, description, symbol) },
+        onUndo = ::undo,
+        onRedo = ::redo,
+        onClearPage = ::clearEditablePage,
     )
 
 private data class ReadingLineOverlayActions(

@@ -12,6 +12,12 @@ internal object PatternAnnotationTokens {
     const val PEN_DEFAULT_WIDTH = 4f
     const val HIGHLIGHTER_DEFAULT_WIDTH = 20f
     const val ERASER_HIT_TOLERANCE = 0.02f
+    const val SELECTION_HIT_TOLERANCE = 0.025f
+    const val SELECTION_OUTLINE_WIDTH = 3f
+    const val TEXT_DEFAULT_SIZE = 18f
+    const val TEXT_BACKGROUND_ARGB = 0xFFFFFFFF.toInt()
+    const val TEXT_BACKGROUND_ALPHA = 0.85f
+    const val CALLOUT_DEFAULT_ARGB = 0xFF6750A4.toInt()
     val COLOR_PALETTE_ARGB =
         listOf(
             0xFF1F1F1F.toInt(),

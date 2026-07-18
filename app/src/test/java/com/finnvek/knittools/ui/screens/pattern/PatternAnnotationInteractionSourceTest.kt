@@ -13,7 +13,7 @@ class PatternAnnotationInteractionSourceTest {
         val commitBlock = viewModel.substringAfter("fun commitStroke(").substringBefore("fun cancelStroke(")
 
         assertFalse(appendBlock.contains("annotationRepository"))
-        assertTrue(commitBlock.contains("annotationRepository.insertAnnotation(annotation)"))
+        assertTrue(commitBlock.contains("executeCommand(PatternAnnotationCommand.Insert(annotation))"))
     }
 
     @Test

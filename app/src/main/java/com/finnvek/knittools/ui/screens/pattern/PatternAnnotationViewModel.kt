@@ -4,8 +4,13 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.finnvek.knittools.domain.calculator.isPointNearStroke
+import com.finnvek.knittools.domain.calculator.scalePatternAnnotation
 import com.finnvek.knittools.domain.calculator.simplifyFreehandPoints
+import com.finnvek.knittools.domain.calculator.topmostAnnotationAt
+import com.finnvek.knittools.domain.calculator.translatePatternAnnotation
+import com.finnvek.knittools.domain.model.CalloutPayload
 import com.finnvek.knittools.domain.model.FreehandPayload
+import com.finnvek.knittools.domain.model.NormalizedPatternBounds
 import com.finnvek.knittools.domain.model.NormalizedPatternPoint
 import com.finnvek.knittools.domain.model.PatternAnnotation
 import com.finnvek.knittools.domain.model.PatternAnnotationDocumentKey
@@ -13,6 +18,9 @@ import com.finnvek.knittools.domain.model.PatternAnnotationKind
 import com.finnvek.knittools.domain.model.PatternAnnotationLayer
 import com.finnvek.knittools.domain.model.PatternAnnotationLimits
 import com.finnvek.knittools.domain.model.PatternAnnotationOwner
+import com.finnvek.knittools.domain.model.PatternCalloutSymbol
+import com.finnvek.knittools.domain.model.ShapePayload
+import com.finnvek.knittools.domain.model.TextBoxPayload
 import com.finnvek.knittools.repository.CounterRepository
 import com.finnvek.knittools.repository.PatternAnnotationLayerRepository
 import com.finnvek.knittools.repository.PatternAnnotationRepository
@@ -74,10 +82,15 @@ data class PatternAnnotationUiState(
     val inProgressAnnotation: PatternAnnotation? = null,
     val isSaving: Boolean = false,
     val writeError: PatternAnnotationWriteError = PatternAnnotationWriteError.NONE,
+    val selectedAnnotationId: Long? = null,
+    val canUndo: Boolean = false,
+    val canRedo: Boolean = false,
 )
 
 @HiltViewModel
 @OptIn(ExperimentalCoroutinesApi::class)
+// Reittikohtainen ViewModel tarjoaa Compose-kerrokselle jokaisen editorin käyttäjäaikeen erillisenä metodina.
+@Suppress("TooManyFunctions")
 class PatternAnnotationViewModel
     @Inject
     constructor(
@@ -175,6 +188,9 @@ class PatternAnnotationViewModel
                         ),
                     isSaving = feedback.interaction.isSaving,
                     writeError = feedback.interaction.writeError,
+                    selectedAnnotationId = feedback.interaction.selectedAnnotationId,
+                    canUndo = feedback.interaction.undoStack.isNotEmpty(),
+                    canRedo = feedback.interaction.redoStack.isNotEmpty(),
                 )
             }.stateIn(
                 scope = viewModelScope,
@@ -287,21 +303,8 @@ class PatternAnnotationViewModel
                     page = currentPage.value,
                     zIndex = nextEditableZIndex(),
                 ) ?: return
-            interaction.update { it.copy(isSaving = true, writeError = PatternAnnotationWriteError.NONE) }
-            viewModelScope.launch {
-                runCatching { annotationRepository.insertAnnotation(annotation) }
-                    .onSuccess {
-                        interaction.update { state ->
-                            state.copy(
-                                draftStroke = state.draftStroke.takeUnless { it == originalDraft },
-                                isSaving = false,
-                            )
-                        }
-                    }.onFailure {
-                        interaction.update { state ->
-                            state.copy(isSaving = false, writeError = PatternAnnotationWriteError.WRITE_FAILED)
-                        }
-                    }
+            executeCommand(PatternAnnotationCommand.Insert(annotation)) { state ->
+                state.copy(draftStroke = state.draftStroke.takeUnless { it == originalDraft })
             }
         }
 
@@ -322,14 +325,111 @@ class PatternAnnotationViewModel
                         val payload = annotation.payload as? FreehandPayload ?: return@firstOrNull false
                         isPointNearStroke(point, payload.points, tolerance)
                     } ?: return
-            viewModelScope.launch {
-                runCatching { annotationRepository.deleteAnnotation(hit.id) }
-                    .onFailure {
-                        interaction.update { state ->
-                            state.copy(writeError = PatternAnnotationWriteError.WRITE_FAILED)
-                        }
-                    }
+            executeCommand(PatternAnnotationCommand.Delete(hit))
+        }
+
+        fun selectAnnotationAt(
+            point: NormalizedPatternPoint,
+            tolerance: Float = PatternAnnotationTokens.SELECTION_HIT_TOLERANCE,
+        ) {
+            val selected = topmostAnnotationAt(editableAnnotations(), point, tolerance)
+            interaction.update { it.copy(selectedAnnotationId = selected?.id) }
+        }
+
+        fun moveSelected(
+            deltaX: Float,
+            deltaY: Float,
+        ) {
+            updateSelected { annotation -> translatePatternAnnotation(annotation, deltaX, deltaY) }
+        }
+
+        fun resizeSelected(scale: Float) {
+            updateSelected { annotation -> scalePatternAnnotation(annotation, scale) }
+        }
+
+        fun duplicateSelected() {
+            val selected = selectedAnnotation() ?: return
+            val duplicate =
+                translatePatternAnnotation(selected, DUPLICATE_OFFSET, DUPLICATE_OFFSET).copy(
+                    id = 0L,
+                    zIndex = nextEditableZIndex(),
+                    createdAt = System.currentTimeMillis(),
+                )
+            executeCommand(PatternAnnotationCommand.Insert(duplicate))
+        }
+
+        fun deleteSelected() {
+            val selected = selectedAnnotation() ?: return
+            executeCommand(PatternAnnotationCommand.Delete(selected)) { state ->
+                state.copy(selectedAnnotationId = null)
             }
+        }
+
+        fun bringSelectedForward() {
+            val selected = selectedAnnotation() ?: return
+            updateSelected { selected.copy(zIndex = nextEditableZIndex(), updatedAt = System.currentTimeMillis()) }
+        }
+
+        fun sendSelectedBackward() {
+            val selected = selectedAnnotation() ?: return
+            val bottomZIndex = editableAnnotations().minOfOrNull(PatternAnnotation::zIndex)?.minus(1L) ?: 0L
+            updateSelected { selected.copy(zIndex = bottomZIndex, updatedAt = System.currentTimeMillis()) }
+        }
+
+        fun addTextBox(
+            text: String,
+            bounds: NormalizedPatternBounds = DEFAULT_EDITOR_BOUNDS,
+        ) {
+            if (text.isBlank()) return
+            insertPayload(
+                kind = PatternAnnotationKind.TEXT_BOX,
+                payload =
+                    TextBoxPayload(
+                        bounds = bounds,
+                        text = text,
+                        textSizeSp = PatternAnnotationTokens.TEXT_DEFAULT_SIZE,
+                        textArgb = PatternAnnotationTokens.PEN_DEFAULT_ARGB,
+                        backgroundArgb = PatternAnnotationTokens.TEXT_BACKGROUND_ARGB,
+                        backgroundAlpha = PatternAnnotationTokens.TEXT_BACKGROUND_ALPHA,
+                    ),
+            )
+        }
+
+        fun addCallout(
+            title: String,
+            description: String,
+            symbol: PatternCalloutSymbol,
+            bounds: NormalizedPatternBounds = DEFAULT_EDITOR_BOUNDS,
+        ) {
+            if (title.isBlank() && description.isBlank()) return
+            insertPayload(
+                kind = PatternAnnotationKind.CALLOUT,
+                payload =
+                    CalloutPayload(
+                        bounds = bounds,
+                        symbol = symbol,
+                        title = title,
+                        description = description,
+                        argb = PatternAnnotationTokens.CALLOUT_DEFAULT_ARGB,
+                    ),
+            )
+        }
+
+        fun clearEditablePage() {
+            val annotations = editableAnnotations()
+            val layerId = uiState.value.editableLayerId ?: return
+            if (annotations.isEmpty()) return
+            executeCommand(PatternAnnotationCommand.ClearPage(layerId, currentPage.value, annotations)) { state ->
+                state.copy(selectedAnnotationId = null)
+            }
+        }
+
+        fun undo() {
+            executeHistoryCommand(isUndo = true)
+        }
+
+        fun redo() {
+            executeHistoryCommand(isUndo = false)
         }
 
         fun clearWriteError() {
@@ -341,6 +441,91 @@ class PatternAnnotationViewModel
                 is PatternAnnotationOwner.Project -> uiState.value.projectAnnotations
                 is PatternAnnotationOwner.SavedPattern -> uiState.value.masterAnnotations
             }
+
+        private fun selectedAnnotation(): PatternAnnotation? {
+            val selectedId = interaction.value.selectedAnnotationId ?: return null
+            return editableAnnotations().firstOrNull { it.id == selectedId }
+        }
+
+        private fun updateSelected(transform: (PatternAnnotation) -> PatternAnnotation) {
+            val before = selectedAnnotation() ?: return
+            val after = transform(before)
+            if (before != after) executeCommand(PatternAnnotationCommand.Update(before, after))
+        }
+
+        private fun insertPayload(
+            kind: PatternAnnotationKind,
+            payload: com.finnvek.knittools.domain.model.PatternAnnotationPayload,
+        ) {
+            val layerId = uiState.value.editableLayerId ?: return
+            executeCommand(
+                PatternAnnotationCommand.Insert(
+                    PatternAnnotation(
+                        layerId = layerId,
+                        page = currentPage.value,
+                        kind = kind,
+                        payload = payload,
+                        zIndex = nextEditableZIndex(),
+                    ),
+                ),
+            )
+        }
+
+        private fun executeCommand(
+            command: PatternAnnotationCommand,
+            onSuccess: (PatternAnnotationInteractionState) -> PatternAnnotationInteractionState = { it },
+        ) {
+            if (interaction.value.isSaving) return
+            interaction.update { it.copy(isSaving = true, writeError = PatternAnnotationWriteError.NONE) }
+            viewModelScope.launch {
+                runCatching { command.apply(annotationRepository) }
+                    .onSuccess { inverse ->
+                        interaction.update { state ->
+                            onSuccess(state).copy(
+                                undoStack = (state.undoStack + inverse).takeLast(HISTORY_LIMIT),
+                                redoStack = emptyList(),
+                                isSaving = false,
+                            )
+                        }
+                    }.onFailure {
+                        interaction.update { state ->
+                            state.copy(isSaving = false, writeError = PatternAnnotationWriteError.WRITE_FAILED)
+                        }
+                    }
+            }
+        }
+
+        private fun executeHistoryCommand(isUndo: Boolean) {
+            val state = interaction.value
+            if (state.isSaving) return
+            val source = if (isUndo) state.undoStack else state.redoStack
+            val command = source.lastOrNull() ?: return
+            interaction.value = state.copy(isSaving = true, writeError = PatternAnnotationWriteError.NONE)
+            viewModelScope.launch {
+                runCatching { command.apply(annotationRepository) }
+                    .onSuccess { inverse ->
+                        interaction.update { current ->
+                            if (isUndo) {
+                                current.copy(
+                                    undoStack = current.undoStack.dropLast(1),
+                                    redoStack = (current.redoStack + inverse).takeLast(HISTORY_LIMIT),
+                                    isSaving = false,
+                                )
+                            } else {
+                                current.copy(
+                                    undoStack = (current.undoStack + inverse).takeLast(HISTORY_LIMIT),
+                                    redoStack = current.redoStack.dropLast(1),
+                                    isSaving = false,
+                                )
+                            }
+                        }
+                    }.onFailure {
+                        interaction.update { current ->
+                            current.copy(isSaving = false, writeError = PatternAnnotationWriteError.WRITE_FAILED)
+                        }
+                    }
+            }
+        }
 
         private fun nextEditableZIndex(): Long =
             editableAnnotations().maxOfOrNull(PatternAnnotation::zIndex)?.plus(1L) ?: 0L
@@ -438,11 +623,19 @@ private data class PatternAnnotationInteractionState(
     val draftStroke: PatternStrokeDraft? = null,
     val isSaving: Boolean = false,
     val writeError: PatternAnnotationWriteError = PatternAnnotationWriteError.NONE,
+    val selectedAnnotationId: Long? = null,
+    val undoStack: List<PatternAnnotationCommand> = emptyList(),
+    val redoStack: List<PatternAnnotationCommand> = emptyList(),
 ) {
     fun styleForTool(): PatternStrokeStyle? =
         when (activeTool) {
             PatternAnnotationTool.PEN -> PatternStrokeStyle(penArgb, penStrokeWidth)
             PatternAnnotationTool.HIGHLIGHTER -> PatternStrokeStyle(highlighterArgb, highlighterStrokeWidth)
+            PatternAnnotationTool.LINE,
+            PatternAnnotationTool.ARROW,
+            PatternAnnotationTool.RECTANGLE,
+            PatternAnnotationTool.ELLIPSE,
+            -> PatternStrokeStyle(penArgb, penStrokeWidth)
             else -> null
         }
 }
@@ -463,28 +656,58 @@ private fun PatternStrokeDraft.toAnnotation(
     zIndex: Long,
 ): PatternAnnotation? {
     val targetLayerId = layerId ?: return null
-    val kind =
-        when (tool) {
-            PatternAnnotationTool.PEN -> PatternAnnotationKind.FREEHAND
-            PatternAnnotationTool.HIGHLIGHTER -> PatternAnnotationKind.HIGHLIGHTER
+    val kind = tool.toAnnotationKind() ?: return null
+    val annotationPayload =
+        when (kind) {
+            PatternAnnotationKind.FREEHAND,
+            PatternAnnotationKind.HIGHLIGHTER,
+            ->
+                FreehandPayload(
+                    points = points,
+                    argb = argb,
+                    strokeWidth = strokeWidth,
+                    pressureEnabled = pressureEnabled,
+                )
+            PatternAnnotationKind.LINE,
+            PatternAnnotationKind.ARROW,
+            PatternAnnotationKind.RECTANGLE,
+            PatternAnnotationKind.ELLIPSE,
+            -> {
+                val start = points.firstOrNull() ?: return null
+                val end = points.lastOrNull() ?: return null
+                ShapePayload(
+                    start = start,
+                    end = end,
+                    strokeArgb = argb,
+                    strokeWidth = strokeWidth,
+                )
+            }
             else -> return null
         }
     return PatternAnnotation(
         layerId = targetLayerId,
         page = page,
         kind = kind,
-        payload =
-            FreehandPayload(
-                points = points,
-                argb = argb,
-                strokeWidth = strokeWidth,
-                pressureEnabled = pressureEnabled,
-            ),
+        payload = annotationPayload,
         zIndex = zIndex,
     )
 }
 
+private fun PatternAnnotationTool.toAnnotationKind(): PatternAnnotationKind? =
+    when (this) {
+        PatternAnnotationTool.PEN -> PatternAnnotationKind.FREEHAND
+        PatternAnnotationTool.HIGHLIGHTER -> PatternAnnotationKind.HIGHLIGHTER
+        PatternAnnotationTool.LINE -> PatternAnnotationKind.LINE
+        PatternAnnotationTool.ARROW -> PatternAnnotationKind.ARROW
+        PatternAnnotationTool.RECTANGLE -> PatternAnnotationKind.RECTANGLE
+        PatternAnnotationTool.ELLIPSE -> PatternAnnotationKind.ELLIPSE
+        else -> null
+    }
+
 private const val DEFAULT_SIMPLIFICATION_TOLERANCE = 0.001f
+private const val DUPLICATE_OFFSET = 0.02f
+private const val HISTORY_LIMIT = 50
+private val DEFAULT_EDITOR_BOUNDS = NormalizedPatternBounds(0.2f, 0.2f, 0.8f, 0.4f)
 
 private fun SavedStateHandle.requirePatternAnnotationOwner(): PatternAnnotationOwner {
     val projectId = get<Long>(PatternAnnotationViewModel.PROJECT_ID_KEY)?.takeIf { it > 0L }

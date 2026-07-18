@@ -2,8 +2,12 @@ package com.finnvek.knittools.ui.screens.pattern
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.PointerEvent
@@ -15,8 +19,10 @@ import androidx.compose.ui.input.pointer.pointerInput
 import com.finnvek.knittools.data.storage.PatternAnnotationCanvasRenderer
 import com.finnvek.knittools.domain.calculator.PatternPageCoordinateTransform
 import com.finnvek.knittools.domain.calculator.PatternScreenPoint
+import com.finnvek.knittools.domain.calculator.patternAnnotationBounds
 import com.finnvek.knittools.domain.model.NormalizedPatternPoint
 import com.finnvek.knittools.domain.model.PatternAnnotation
+import com.finnvek.knittools.ui.theme.PatternAnnotationTokens
 import com.finnvek.knittools.ui.theme.rememberPatternAnnotationRenderStyle
 
 @Composable
@@ -27,9 +33,11 @@ internal fun PatternAnnotationOverlay(
     projectVisible: Boolean,
     inProgressAnnotation: PatternAnnotation?,
     inProgressVisible: Boolean,
+    selectedAnnotationId: Long?,
     modifier: Modifier = Modifier,
 ) {
     val renderStyle = rememberPatternAnnotationRenderStyle()
+    val selectionColor = MaterialTheme.colorScheme.primary
     val visibleAnnotations =
         visiblePatternAnnotations(
             masterAnnotations = masterAnnotations,
@@ -49,6 +57,17 @@ internal fun PatternAnnotationOverlay(
                 style = renderStyle,
             )
         }
+        visibleAnnotations
+            .firstOrNull { it.id == selectedAnnotationId }
+            ?.let(::patternAnnotationBounds)
+            ?.let { bounds ->
+                drawRect(
+                    color = selectionColor,
+                    topLeft = Offset(bounds.left * size.width, bounds.top * size.height),
+                    size = Size((bounds.right - bounds.left) * size.width, (bounds.bottom - bounds.top) * size.height),
+                    style = Stroke(width = PatternAnnotationTokens.SELECTION_OUTLINE_WIDTH),
+                )
+            }
     }
 }
 
@@ -58,6 +77,7 @@ internal data class PatternAnnotationInputActions(
     val onCommitStroke: (Float) -> Unit,
     val onCancelStroke: () -> Unit,
     val onEraseStroke: (NormalizedPatternPoint) -> Unit,
+    val onSelectAnnotation: (NormalizedPatternPoint) -> Unit,
 )
 
 @Composable
@@ -169,7 +189,7 @@ private fun beginAnnotationPointerGesture(
             )
     val point =
         if (handlesPointer) {
-            down?.toNormalizedPoint(coordinateTransform, pressureEnabled)
+            down.toNormalizedPoint(coordinateTransform, pressureEnabled)
         } else {
             null
         }
@@ -177,10 +197,10 @@ private fun beginAnnotationPointerGesture(
         return state.copy(finished = event.changes.none(PointerInputChange::pressed))
     }
     val gestureTool = resolvedAnnotationTool(activeTool, pointerType)
-    if (gestureTool == PatternAnnotationTool.ERASER) {
-        actions.onEraseStroke(point)
-    } else {
-        actions.onBeginStroke(point)
+    when (gestureTool) {
+        PatternAnnotationTool.ERASER -> actions.onEraseStroke(point)
+        PatternAnnotationTool.SELECT -> actions.onSelectAnnotation(point)
+        else -> actions.onBeginStroke(point)
     }
     down.consume()
     return state.copy(activePointerId = down.id.value, gestureTool = gestureTool)
@@ -203,10 +223,10 @@ private fun updateAnnotationPointerGesture(
         return state.copy(finished = true)
     }
     val point = change.toNormalizedPoint(coordinateTransform, pressureEnabled) ?: return state
-    if (state.gestureTool == PatternAnnotationTool.ERASER) {
-        actions.onEraseStroke(point)
-    } else {
-        actions.onAppendStrokePoint(point)
+    when (state.gestureTool) {
+        PatternAnnotationTool.ERASER -> actions.onEraseStroke(point)
+        PatternAnnotationTool.SELECT -> Unit
+        else -> actions.onAppendStrokePoint(point)
     }
     change.consume()
     return state

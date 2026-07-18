@@ -9,7 +9,7 @@ Use [`CLAUDE.md`](/home/emma/dev/KnitTools/CLAUDE.md) when product wording, visu
 - Android app in `app` plus `baselineprofile`; Ravelry Firebase backend in `functions`
 - Kotlin + Jetpack Compose + Material 3
 - Hilt, Room, DataStore, Glance
-- Room schema version `16`
+- Room schema version `17`
 - AGP `9.1.1` + Kotlin Compose plugin `2.3.21`
 
 ## Architecture
@@ -43,6 +43,9 @@ Use [`CLAUDE.md`](/home/emma/dev/KnitTools/CLAUDE.md) when product wording, visu
 - Drive/Dropbox sync is future-spec work tracked in `config/future-sync-spec.md`. Manual export/import or backup/restore comes before continuous sync. Do not market cross-device sync until conflict handling, background sync, offline behavior, OAuth/token storage, and the Pro gate are specified and implemented
 - Attached project PDF reading-line state persists on `counter_projects.readingLineEnabled` and `readingLineYFraction`; row anchors live in `counter_projects.patternRowMapping` as serialized `RowMarker(row,page,yPosition)` values owned by `domain/calculator/RowMappingParser`; drag commit creates or updates the current row/page anchor through `CounterViewModel.upsertPatternRowMarker`, calibration merges two anchors through `mergePatternRowMarkers`, and live drag uses project-viewer preview state before commit. Library-only pattern viewer state remains session/rotation-saveable and must not create a saved-pattern schema path in v1
 - Pattern viewer row movement is resolved through `domain/calculator/resolveReadingLineYFraction`: exact row anchors win, two anchors interpolate, one-sided anchors fall back to row-step movement, and page-specific anchors must not affect other pages
+- Pattern PDF annotations use Room schema 17 tables `pattern_annotation_layers` and `pattern_annotations`: a saved-pattern master layer is reusable and read-only in project viewers, while each project owns an editable overlay layer keyed by the same `documentKey`; attach activates or creates the project layer, detach deactivates it without deleting edits, and project/saved-pattern deletion cascades through layer ownership.
+- Annotation geometry is stored in normalized page coordinates and transformed exactly once by `PatternPageCoordinateTransform`; pointer moves stay in ViewModel memory and persistence occurs at gesture/command boundaries. `PatternAnnotationCanvasRenderer` is the single renderer for viewer overlays and rasterized export.
+- Annotated PDF export uses SAF `CreateDocument(application/pdf)`, renders bounded bitmaps page by page through `PdfPageRenderer`, writes a cache temp PDF before copying to the destination, reports progress, preserves the source PDF, and always cleans its temp file on success, failure, or cancellation.
 - Pattern camera capture is a photo-to-PDF flow: user-facing copy must use photo/PDF wording instead of scan/scanner wording, temp images live under `pattern_captures/<projectId>`, and only pattern/progress photo paths are exposed through FileProvider; FileProvider authority and share URI creation go through `AppFileStorage`, while legacy `patterns/...` and `yarn_photos/...` URIs are resolved internally by `AppFileStorage` for cleanup/read compatibility
 - Progress photo capture-target creation and abandoned-capture cleanup go through `ProgressPhotoRepository` and `CounterViewModel` on `@IoDispatcher`; composables must not instantiate `ProgressPhotoStorage` or delete progress-photo files directly
 - Keep business logic out of composables when a ViewModel or use case should own it

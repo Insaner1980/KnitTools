@@ -35,7 +35,7 @@ Nykytilan kannalta hyödyllinen järjestys:
 - Debug-diagnostiikka: Sentry Android Core vain debug-luokkapolussa
 - Paikalliset lisäominaisuudet: regex-pohjainen laskuriohjeparseri `domain/calculator/InstructionParser.kt`
 - Lokalisaatio: `localeConfig` + useat `values-*`-hakemistot
-- Room schema version: `16`
+- Room schema version: `17`
 - `compileSdk` / `targetSdk` / `minSdk`: `36 / 36 / 29`, kaikki `gradle/libs.versions.toml`-avaimista `androidCompileSdk`, `androidTargetSdk` ja `androidMinSdk`
 - `baselineprofile`-moduulin `compileSdk` / `targetSdk` / `minSdk`: samat version catalog -arvot `36 / 36 / 29`
 - Java target: `17`
@@ -222,7 +222,7 @@ Ravelry Firebase -backend:
 - `functions/src/ravelry/patternImport.ts`, `urlParsing.ts`, `client.ts` ja `sanitizedTypes.ts` omistavat backend-haun ja metadata-only importin: `ravelrySearchPatterns`, `ravelryImportPatternById` ja `ravelryImportPatternByUrl` palauttavat vain sallitut Ravelry ID/title/designer/thumbnail/canonical/original URL/availability/pagination -kentät eivätkä lataa pattern-PDF:iä
 - `functions/package.json` sisältää npm `overrides` -lukitukset `form-data 4.0.6`, `js-yaml 5.2.0` ja `uuid 11.1.1`; nämä ovat osa nykyistä dependency-surfacea, eivät Android-riippuvuuksia
 - Androidissa on Firebase Auth/Functions -riippuvuudet sekä `RavelryBackendClient` callable-rajalle; `RavelryAuthManager` omistaa backend-auth-statuksen, start/disconnect-kutsut ja token-free `knittools://ravelry-auth-complete` callbackin; auth avataan Auth Tabilla ja Custom Tabs jää fallbackiksi
-- Saved patterns siirrettiin Room schema 14:ssa lähdemetadataksi: `source`, nullable `ravelryPatternId`, `originalUrl`, `canonicalUrl`, nullable `localPdfUri`, `isAvailableOffline`, `updatedAt` ja nullable `lastSyncedAt`; tietokannan nykyversio on 16
+- Saved patterns siirrettiin Room schema 14:ssa lähdemetadataksi: `source`, nullable `ravelryPatternId`, `originalUrl`, `canonicalUrl`, nullable `localPdfUri`, `isAvailableOffline`, `updatedAt` ja nullable `lastSyncedAt`; tietokannan nykyversio on 17
 - Phase 8 UI-polku on valmis: `RavelryImportConfirmationSheet` hoitaa hakutulos- ja jaetun URL:n import-vahvistuksen, `SavedPatternDetailScreen` hoitaa metadata-availabilityn ja toiminnot, PatternPickerSheet listaa kaikki saved patternit, ja projektin pattern-kortti avaa metadata-only linkit detailiin ilman PDF-vieweriä
 - Phase 9 release-surface -vahti sallii vain Firebase Auth/Functions/Google Services -pinnan tälle backendille, kieltää Firebase AI/ML Kit/Gemini/voice-riippuvuudet, estää trackatut `app/google-services.json`- ja `app/src/debug/google-services.json` -tiedostot ja skannaa tunnetut paikalliset/env Ravelry-secret-arvot tulostamatta niitä
 - `firebase-admin` on lukittu uusimpaan `firebase-functions@7.2.5`:n peer dependencyyn sopivaan 13.x-versioon, ei suunnitelman yhteensopimattomaan 14.x-versioon
@@ -1324,7 +1324,7 @@ Julkaisuvalmiuden muistilista:
 - session history
 - pattern-PDF:n liittäminen projektiin
 - saved patternin metadata-only liittäminen projektiin `linkedPatternId`-polulla; jos saved patternilla on `localPdfUri`, sama attachment voi avata PDF-viewerin
-- pattern viewer + pysyvä reading line / row-marker -overlay; `PatternAnnotationEntity`, DAO ja repository ovat olemassa persistence-rajana, mutta nykyisessä UI-koodissa ei ole drawing/annotation-käyttäjävirtaa
+- pattern viewer + pysyvä reading line / row-marker -overlay sekä Free-tason PDF-annotointi: kynä, korostus, muodot, tekstimuistiinpanot, huomautukset, undo/redo, master/project-tasot, laskuriin yhdistetty kaavion seuranta ja SAF-vienti
 - projektin attached-PDF:n reading line tallentuu projektiriville, ja rivikartta tallentuu `patternRowMapping`-kenttään `RowMarker(row,page,yPosition)` -ankkureina; library-only viewerin reading line on vain katselusession tila
 - projektin pattern viewer tukee reading line -rivin tallennusta, rivimerkkien poistoa ja kahden pisteen rivikalibrointia; library-only viewer ei tallenna näitä Roomiin
 - Drive/Dropbox-copy on nykykoodissa SAF PDF -pickerin käyttäjätekstiä, ei jatkuvaa pilvisynkkaa
@@ -1439,7 +1439,7 @@ Invarianssit:
 - projektin reading line / row markerit ovat Room-tilaa; library viewerin sivu ja viiva ovat vain saveable UI-tilaa
 - saman sivun kaksi ankkuria voi interpoloida; toisen sivun ankkuri ei saa liikuttaa nykyistä sivua
 - `PdfPageRenderer.renderPage()` ja `close()` ovat serialisoituja, descriptor suljetaan myös konstruktorivirheessä ja bitmap rajataan 4096 pikseliin kummassakin dimensiossa
-- `PatternAnnotation`-persistence ei yksin todista näkyvää piirto-/annotointiominaisuutta
+- näkyvä annotointivirta käyttää `PatternAnnotationViewModel`ia, normalisoituja sivukoordinaatteja ja yhteistä `PatternAnnotationCanvasRenderer`-rendereriä; projektissa master-taso on vain luettava ja projektitaso muokattava
 
 ### 5. Kuvat ja file-before/DB-before-delete -järjestys
 
@@ -1548,7 +1548,6 @@ Source-testin vihreä tulos ei todista, että etsitty ankkuri löytyi, ellei tes
 - ei jatkuvaa Drive/Dropbox-syncia, provider SDK:ta, provider OAuthia, background cloud syncia tai multi-device-konfliktimallia
 - ei voice/microphone/SpeechRecognizer/TextToSpeech/conversational AI -ominaisuutta
 - ei model-backed instruction parseria; `InstructionParser` on regex-only
-- ei näkyvää pattern drawing/annotation -käyttäjävirtaa, vaikka persistence-luokat ovat olemassa
 - ei WorkManager Worker -arkkitehtuuria appin tuotantokoodissa; WorkManager-version kohdistus on Glancen transitiivista build-surfacea
 - ei release-Sentryä, analyticsia, tracingia, replayta tai source-context uploadia
 - ei Androidissa Ravelry Basic Authia, client secretiä, token storagea tai suoraa Ravelry API -kutsua
@@ -1561,8 +1560,8 @@ Näihin kannattaa suhtautua epäluuloisesti vanhoissa dokumenteissa:
 - build-versiot muuttuvat usein `gradle/libs.versions.toml`-tiedostossa; älä kopioi niitä muistista
 - Android SDK -arvojen source of truth on version catalog: `androidCompileSdk`, `androidTargetSdk` ja `androidMinSdk`; `app/build.gradle.kts` ja `baselineprofile/build.gradle.kts` lukevat nämä `libs.versions.*.get().toInt()` -polulla
 - `allowBackup`: nykyinen on `false`, ei `true`
-- Room schema version: nykyinen on `16`; tarkista aina `KnitToolsDatabase.version`, koko rekisteröity migraatioketju `DatabaseModule.kt`:ssa ja `app/schemas/.../16.json`
-- schema 14:n helposti unohtuvat saved-pattern-kentät ovat `source`, `ravelryPatternId`, `originalUrl`, `canonicalUrl`, `localPdfUri`, `isAvailableOffline`, `updatedAt` ja `lastSyncedAt`; schema 15 lisää foreign-key-hakujen indeksit ja schema 16 nullable `sessions.zoneId` -kentän
+- Room schema version: nykyinen on `17`; tarkista aina `KnitToolsDatabase.version`, koko rekisteröity migraatioketju `DatabaseModule.kt`:ssa ja `app/schemas/.../17.json`
+- schema 14:n helposti unohtuvat saved-pattern-kentät ovat `source`, `ravelryPatternId`, `originalUrl`, `canonicalUrl`, `localPdfUri`, `isAvailableOffline`, `updatedAt` ja `lastSyncedAt`; schema 15 lisää foreign-key-hakujen indeksit, schema 16 nullable `sessions.zoneId` -kentän ja schema 17 annotaatiotasot sekä versioidut payloadit
 - session päivä- ja pace-jako ei saa käyttää aina nykyistä laitteen zonea: uusi sessio tallentaa aloitusvyöhykkeen ja vain legacy-null/virheellinen `zoneId` käyttää nykyistä laitevyöhykettä fallbackina
 - `ravelry_import/{importUrl}` on URL-enkoodattu route; älä käytä raakaa URL:ää route-segmenttinä
 - `KnitToolsNavHost`, `CounterScreen` ja `RavelrySearchScreen` eivät enää ota kaikkia reittitoimintoja irrallisina callback-parametreina; nykyiset action-mallit ovat `KnitToolsNavActions`, `CounterScreenActions` ja `RavelrySearchActions`

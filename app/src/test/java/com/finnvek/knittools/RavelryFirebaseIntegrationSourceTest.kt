@@ -3,6 +3,7 @@ package com.finnvek.knittools
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.nio.file.Files
 
 class RavelryFirebaseIntegrationSourceTest {
     @Test
@@ -11,6 +12,8 @@ class RavelryFirebaseIntegrationSourceTest {
         val rootBuild = ProjectSourceFiles.read("build.gradle.kts")
         val appBuild = ProjectSourceFiles.read("app/build.gradle.kts")
         val gitignore = ProjectSourceFiles.read(".gitignore")
+        val debugFirebaseOptions =
+            ProjectSourceFiles.file("app/src/debug/res/values/debug_firebase_options.xml")
         val buildWorkflow = ProjectSourceFiles.read(".github/workflows/build.yml")
         val codeQlWorkflow = ProjectSourceFiles.read(".github/workflows/codeql.yml")
 
@@ -53,6 +56,7 @@ class RavelryFirebaseIntegrationSourceTest {
         assertFalse(appBuild.contains("@get:InputFile\n    @get:Optional"))
         assertTrue(appBuild.contains("app/google-services.json"))
         assertTrue(gitignore.contains("app/src/debug/google-services.json"))
+        assertFalse(Files.exists(debugFirebaseOptions))
         assertFalse(buildWorkflow.contains("Missing KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64 secret"))
         assertFalse(codeQlWorkflow.contains("Missing KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64 secret"))
         assertFalse(buildWorkflow.contains("secrets.KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64"))

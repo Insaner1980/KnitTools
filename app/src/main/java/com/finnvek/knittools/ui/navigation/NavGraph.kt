@@ -64,6 +64,7 @@ import com.finnvek.knittools.ui.screens.library.SavedPatternsState
 import com.finnvek.knittools.ui.screens.needles.NeedleSizeScreen
 import com.finnvek.knittools.ui.screens.notes.NotesEditorScreen
 import com.finnvek.knittools.ui.screens.pattern.LibraryPatternViewerScreen
+import com.finnvek.knittools.ui.screens.pattern.PatternAnnotationViewModel
 import com.finnvek.knittools.ui.screens.pattern.PatternViewerScreen
 import com.finnvek.knittools.ui.screens.pro.ProUpgradeScreen
 import com.finnvek.knittools.ui.screens.project.ProjectListScreen
@@ -342,6 +343,7 @@ private fun NavGraphBuilder.projectsGraph(
                     navController.getBackStackEntry(TopLevelDestination.Projects.route)
                 }
             val counterViewModel: CounterViewModel = hiltViewModel(parentEntry)
+            val annotationViewModel: PatternAnnotationViewModel = hiltViewModel(backStackEntry)
             val counterState by counterViewModel.uiState.collectAsStateWithLifecycle()
             var routeProjectReady by remember(projectId) { mutableStateOf(false) }
             LaunchedEffect(projectId, counterState.projectId) {
@@ -362,6 +364,7 @@ private fun NavGraphBuilder.projectsGraph(
             PatternViewerScreen(
                 onBack = { navController.popBackStack() },
                 counterViewModel = counterViewModel,
+                annotationViewModel = annotationViewModel,
             )
         }
         composable(
@@ -697,6 +700,7 @@ private fun NavGraphBuilder.libraryPatternViewerRoute(navController: NavHostCont
                 navController.getBackStackEntry(TopLevelDestination.Library.route)
             }
         val libraryViewModel: LibraryViewModel = hiltViewModel(parentEntry)
+        val annotationViewModel: PatternAnnotationViewModel = hiltViewModel(backStackEntry)
         var patternRouteState by remember(savedPatternId) { mutableStateOf<Pair<String, String>?>(null) }
         LaunchedEffect(savedPatternId) {
             libraryViewModel.loadSavedPattern(savedPatternId) { pattern ->
@@ -713,6 +717,7 @@ private fun NavGraphBuilder.libraryPatternViewerRoute(navController: NavHostCont
             patternUri = pattern.first,
             patternName = pattern.second,
             onBack = { navController.popBackStack() },
+            annotationViewModel = annotationViewModel,
         )
     }
 }

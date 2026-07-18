@@ -14,8 +14,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Testaa Room-migraatiot v1->v16.
- * v1->v3: AutoMigration. v3->v16: manuaaliset muutokset.
+ * Testaa Room-migraatiot v1->v17.
+ * v1->v3: AutoMigration. v3->v17: manuaaliset muutokset.
  */
 @RunWith(AndroidJUnit4::class)
 class MigrationTest {
@@ -26,24 +26,9 @@ class MigrationTest {
             KnitToolsDatabase::class.java,
         )
 
-    private val allMigrations =
-        arrayOf(
-            KnitToolsDatabase.MIGRATION_3_4,
-            KnitToolsDatabase.MIGRATION_4_5,
-            KnitToolsDatabase.MIGRATION_5_6,
-            KnitToolsDatabase.MIGRATION_6_7,
-            KnitToolsDatabase.MIGRATION_7_8,
-            KnitToolsDatabase.MIGRATION_8_9,
-            KnitToolsDatabase.MIGRATION_9_10,
-            KnitToolsDatabase.MIGRATION_10_11,
-            KnitToolsDatabase.MIGRATION_11_12,
-            KnitToolsDatabase.MIGRATION_12_13,
-            KnitToolsDatabase.MIGRATION_13_14,
-            KnitToolsDatabase.MIGRATION_14_15,
-            KnitToolsDatabase.MIGRATION_15_16,
-        )
+    private val allMigrations = KnitToolsDatabase.ALL_MANUAL_MIGRATIONS
 
-    private val latestVersion = 16
+    private val latestVersion = 17
 
     private fun migrateToLatest(testDb: String): SupportSQLiteDatabase =
         helper.runMigrationsAndValidate(
@@ -1693,13 +1678,24 @@ class MigrationTest {
         }
         assertSingleRow(
             db,
-            "SELECT page, pathData, color, strokeWidth, createdAt FROM pattern_annotations WHERE id = 1",
+            """
+            SELECT layerId, page, kind, payloadVersion, payloadJson, zIndex, createdAt, updatedAt
+            FROM pattern_annotations WHERE id = 1
+            """.trimIndent(),
         ) {
-            assertEquals(3, getInt(0))
-            assertEquals("M 0 0 L 10 10", getString(1))
-            assertEquals("#FF0000", getString(2))
-            assertEquals(2.5, getDouble(3), 0.0)
-            assertEquals(4000L, getLong(4))
+            assertMigratedLegacyFreehand(
+                layerId = getLong(0),
+                page = getInt(1),
+                kind = getString(2),
+                payloadVersion = getInt(3),
+                payloadJson = getString(4),
+                zIndex = getLong(5),
+                createdAt = getLong(6),
+                updatedAt = getLong(7),
+                expectedPathData = "M 0 0 L 10 10",
+                expectedColor = "#FF0000",
+                expectedStrokeWidth = 2.5f,
+            )
         }
         assertStartedAtIndexExists(db)
 

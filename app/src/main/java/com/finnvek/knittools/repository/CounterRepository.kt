@@ -19,6 +19,7 @@ import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.KnitSession
 import com.finnvek.knittools.domain.model.MainCounterChange
 import com.finnvek.knittools.domain.model.MainCounterLabelType
+import com.finnvek.knittools.domain.model.PatternAnnotationDocumentKey
 import com.finnvek.knittools.domain.model.ProjectCounterType
 import com.finnvek.knittools.domain.model.ProjectSortOrder
 import com.finnvek.knittools.domain.model.SavedPattern
@@ -48,7 +49,7 @@ class CounterRepository
         @param:ApplicationContext private val context: Context,
         private val yarnCardRepository: YarnCardRepository,
         private val savedPatternRepository: SavedPatternRepository,
-        private val patternAnnotationRepository: PatternAnnotationRepository,
+        private val patternAnnotationLayerRepository: PatternAnnotationLayerRepository,
         private val transactionRunner: DatabaseTransactionRunner,
         @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
     ) {
@@ -299,7 +300,10 @@ class CounterRepository
             val previousPatternUri = dao.getProject(id)?.patternUri
             transactionRunner.run {
                 val linkedPatternId = savedPatternRepository.saveImportedPatternIfMissing(patternUri, patternName)
-                patternAnnotationRepository.clearProject(id)
+                val documentKey =
+                    linkedPatternId?.let(PatternAnnotationDocumentKey::savedPattern)
+                        ?: PatternAnnotationDocumentKey.legacyProject(id)
+                patternAnnotationLayerRepository.activateProjectLayerInTransaction(id, documentKey)
                 updatePatternAttachment(
                     id = id,
                     linkedPatternId = linkedPatternId,
@@ -322,7 +326,10 @@ class CounterRepository
             val pattern = savedPatternRepository.getById(savedPatternId) ?: return null
             val patternUri = pattern.localPdfUri
             transactionRunner.run {
-                patternAnnotationRepository.clearProject(projectId)
+                patternAnnotationLayerRepository.activateProjectLayerInTransaction(
+                    projectId,
+                    PatternAnnotationDocumentKey.savedPattern(pattern.id),
+                )
                 updatePatternAttachment(
                     id = projectId,
                     linkedPatternId = pattern.id,
@@ -341,7 +348,7 @@ class CounterRepository
         suspend fun detachPattern(id: Long) {
             val patternUri = dao.getProject(id)?.patternUri
             transactionRunner.run {
-                patternAnnotationRepository.clearProject(id)
+                patternAnnotationLayerRepository.deactivateProjectLayersInTransaction(id)
                 updatePatternAttachment(
                     id = id,
                     linkedPatternId = null,

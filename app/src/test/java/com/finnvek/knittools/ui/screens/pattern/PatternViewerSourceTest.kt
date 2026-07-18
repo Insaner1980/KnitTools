@@ -35,12 +35,28 @@ class PatternViewerSourceTest {
     }
 
     @Test
+    fun `library pattern viewer does not receive or write project state`() {
+        val source = ProjectSourceFiles.read(PATTERN_VIEWER_SCREEN)
+        val libraryViewer =
+            source.blockBetween(
+                "fun LibraryPatternViewerScreen(",
+                "@Composable\nprivate fun rememberPatternRenderState",
+            )
+
+        assertFalse(libraryViewer.contains("CounterViewModel"))
+        assertFalse(libraryViewer.contains("counterViewModel"))
+        assertFalse(libraryViewer.contains("projectId"))
+        assertFalse(libraryViewer.contains("PatternAnnotationRepository"))
+    }
+
+    @Test
     fun `reading line is toggled from pattern viewer overflow and drawn in transformed pdf layer`() {
         val source = ProjectSourceFiles.read(PATTERN_VIEWER_SCREEN)
+        val viewport = ProjectSourceFiles.read(PATTERN_DOCUMENT_VIEWPORT)
 
         assertTrue(source.contains("R.string.pattern_show_reading_line"))
         assertTrue(source.contains("R.string.pattern_hide_reading_line"))
-        assertTrue(source.contains(".transformable(state = transformableState)"))
+        assertTrue(viewport.contains(".transformable(state = transformableState)"))
         assertTrue(source.contains("ReadingLineOverlay("))
         assertTrue(source.contains("dragAmount / scale"))
         assertTrue(source.contains("READING_LINE_MIN_Y_FRACTION"))
@@ -65,7 +81,7 @@ class PatternViewerSourceTest {
         val source = ProjectSourceFiles.read(PATTERN_VIEWER_SCREEN)
         val documentBlock =
             source.blockBetween(
-                "private fun PatternViewerDocument(",
+                "PatternDocumentViewport(",
                 "@Composable\nprivate fun ReadingLineOverlay",
             )
         val overlayBlock =
@@ -431,9 +447,58 @@ class PatternViewerSourceTest {
         assertFalse(counterScreen.contains("ReadingLineOverlay"))
     }
 
+    @Test
+    fun `pdf viewport owns zoom pan reset scroll and coordinate transform`() {
+        val viewer = ProjectSourceFiles.read(PATTERN_VIEWER_SCREEN)
+        val viewport = ProjectSourceFiles.read(PATTERN_DOCUMENT_VIEWPORT)
+
+        assertTrue(viewer.contains("PatternDocumentViewport("))
+        assertFalse(viewer.contains("rememberTransformableState"))
+        assertTrue(viewport.contains("rememberTransformableState"))
+        assertTrue(viewport.contains("viewportState.reset()"))
+        assertTrue(viewport.contains("verticalScroll(rememberScrollState())"))
+        assertTrue(viewport.contains("toPageCoordinateTransform(pageSize)"))
+    }
+
+    @Test
+    fun `hidden editable annotation layer disables pointer input`() {
+        val viewer = ProjectSourceFiles.read(PATTERN_VIEWER_SCREEN)
+        val interactionOverlay = viewer.blockBetween("interactionOverlay =", "PatternAnnotationInputOverlay(")
+        val normalizedGuard = interactionOverlay.replace(Regex("\\s+"), " ")
+
+        assertTrue(
+            normalizedGuard.contains(
+                "if (editableLayerVisible && state.annotationState.activeTool != PatternAnnotationTool.BROWSE)",
+            ),
+        )
+    }
+
+    @Test
+    fun `page render clears the previous bitmap before rendering the next page`() {
+        val viewer = ProjectSourceFiles.read(PATTERN_VIEWER_SCREEN)
+        val renderProducer = viewer.blockBetween("val renderedBitmap by produceState", "return PatternRenderState(")
+        val resetIndex = renderProducer.indexOf("value = null")
+        val rendererLookupIndex = renderProducer.indexOf("val activeRenderer")
+
+        assertTrue(resetIndex >= 0)
+        assertTrue(resetIndex < rendererLookupIndex)
+    }
+
+    @Test
+    fun `annotated export filename comes from string resources`() {
+        val viewer = ProjectSourceFiles.read(PATTERN_VIEWER_SCREEN)
+
+        assertTrue(viewer.contains("R.string.pattern_annotation_export_default_name"))
+        assertTrue(viewer.contains("R.string.pattern_annotation_export_filename"))
+        assertFalse(viewer.contains("?: \"pattern\""))
+        assertFalse(viewer.contains("-annotated.pdf"))
+    }
+
     private companion object {
         const val PATTERN_VIEWER_SCREEN =
             "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternViewerScreen.kt"
+        const val PATTERN_DOCUMENT_VIEWPORT =
+            "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternDocumentViewport.kt"
         const val COUNTER_SCREEN =
             "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterScreen.kt"
         const val COUNTER_VIEW_MODEL =

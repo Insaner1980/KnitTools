@@ -269,7 +269,7 @@ class CounterRepositoryMainCounterChangeTest {
             context = mockk<Context>(relaxed = true),
             yarnCardRepository = mockk(relaxed = true),
             savedPatternRepository = mockk(relaxed = true),
-            patternAnnotationRepository = mockk(relaxed = true),
+            patternAnnotationLayerRepository = mockk(relaxed = true),
             transactionRunner = transactionRunner,
             ioDispatcher = Dispatchers.Unconfined,
         )

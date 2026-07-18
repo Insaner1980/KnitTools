@@ -5,6 +5,10 @@ import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.KnitSession
 import com.finnvek.knittools.domain.model.MainCounterLabelType
 import com.finnvek.knittools.domain.model.PatternAnnotation
+import com.finnvek.knittools.domain.model.PatternAnnotationKind
+import com.finnvek.knittools.domain.model.PatternAnnotationLayer
+import com.finnvek.knittools.domain.model.PatternAnnotationOwner
+import com.finnvek.knittools.domain.model.PatternAnnotationPayloadCodec
 import com.finnvek.knittools.domain.model.ProgressPhoto
 import com.finnvek.knittools.domain.model.ProjectCounter
 import com.finnvek.knittools.domain.model.ProjectCounterType
@@ -316,24 +320,71 @@ fun KnitSession.toEntity(): SessionEntity =
         zoneId = zoneId,
     )
 
-fun PatternAnnotationEntity.toDomain(): PatternAnnotation =
-    PatternAnnotation(
+fun PatternAnnotationLayerEntity.toDomain(): PatternAnnotationLayer? {
+    val owner =
+        when {
+            projectId != null && savedPatternId == null -> PatternAnnotationOwner.Project(projectId, documentKey)
+            projectId == null && savedPatternId != null ->
+                PatternAnnotationOwner.SavedPattern(
+                    savedPatternId,
+                    documentKey,
+                )
+            else -> null
+        } ?: return null
+    return PatternAnnotationLayer(
         id = id,
-        projectId = projectId,
-        page = page,
-        pathData = pathData,
-        color = color,
-        strokeWidth = strokeWidth,
+        owner = owner,
+        isActive = isActive,
         createdAt = createdAt,
+        updatedAt = updatedAt,
+    )
+}
+
+fun PatternAnnotationLayer.toEntity(): PatternAnnotationLayerEntity =
+    PatternAnnotationLayerEntity(
+        id = id,
+        projectId = (owner as? PatternAnnotationOwner.Project)?.projectId,
+        savedPatternId = (owner as? PatternAnnotationOwner.SavedPattern)?.savedPatternId,
+        documentKey = owner.documentKey,
+        isActive = isActive,
+        createdAt = createdAt,
+        updatedAt = updatedAt,
     )
 
-fun PatternAnnotation.toEntity(): PatternAnnotationEntity =
-    PatternAnnotationEntity(
+fun PatternAnnotationEntity.toDomain(): PatternAnnotation? {
+    if (page < 0) return null
+    val annotationKind = runCatching { PatternAnnotationKind.valueOf(kind) }.getOrNull() ?: return null
+    val annotationPayload =
+        PatternAnnotationPayloadCodec.decode(
+            kind = annotationKind,
+            payloadVersion = payloadVersion,
+            json = payloadJson,
+        ) ?: return null
+    return PatternAnnotation(
         id = id,
-        projectId = projectId,
+        layerId = layerId,
         page = page,
-        pathData = pathData,
-        color = color,
-        strokeWidth = strokeWidth,
+        kind = annotationKind,
+        payload = annotationPayload,
+        zIndex = zIndex,
         createdAt = createdAt,
+        updatedAt = updatedAt,
     )
+}
+
+fun PatternAnnotation.toEntity(): PatternAnnotationEntity =
+    requireNotNull(PatternAnnotationPayloadCodec.encode(kind, payload)) {
+        "Pattern annotation payload is invalid"
+    }.let { encoded ->
+        PatternAnnotationEntity(
+            id = id,
+            layerId = layerId,
+            page = page,
+            kind = kind.name,
+            payloadVersion = encoded.payloadVersion,
+            payloadJson = encoded.payloadJson,
+            zIndex = zIndex,
+            createdAt = createdAt,
+            updatedAt = updatedAt,
+        )
+    }

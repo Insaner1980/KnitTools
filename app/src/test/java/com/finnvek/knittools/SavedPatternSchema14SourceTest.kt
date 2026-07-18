@@ -11,9 +11,9 @@ class SavedPatternSchema14SourceTest {
         val module = ProjectSourceFiles.read(DATABASE_MODULE)
         val entity = ProjectSourceFiles.read(SAVED_PATTERN_ENTITY)
 
-        assertTrue(database.contains("version = 16"))
+        assertTrue(database.contains("version = 17"))
         assertTrue(database.contains("MIGRATION_13_14"))
-        assertTrue(module.contains("KnitToolsDatabase.MIGRATION_13_14"))
+        assertTrue(module.contains("KnitToolsDatabase.ALL_MANUAL_MIGRATIONS"))
         assertTrue(entity.contains("val source: String"))
         assertTrue(entity.contains("val ravelryPatternId: Int? = null"))
         assertTrue(entity.contains("val originalUrl: String = \"\""))

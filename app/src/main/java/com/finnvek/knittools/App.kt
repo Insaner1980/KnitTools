@@ -3,11 +3,14 @@ package com.finnvek.knittools
 import android.app.Application
 import com.finnvek.knittools.billing.BillingManager
 import com.finnvek.knittools.data.datastore.PreferencesManager
+import com.finnvek.knittools.data.local.DatabaseTransactionRunner
+import com.finnvek.knittools.data.local.KnitToolsDatabase
 import com.finnvek.knittools.data.storage.PatternDocumentStorage
 import com.finnvek.knittools.di.ApplicationScope
 import com.finnvek.knittools.di.IoDispatcher
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
+import com.finnvek.knittools.repository.ProjectCounterRepository
 import com.finnvek.knittools.repository.YarnCardRepository
 import com.finnvek.knittools.widget.CounterWidgetState
 import dagger.hilt.android.HiltAndroidApp
@@ -33,7 +36,16 @@ class App : Application() {
     lateinit var yarnCardRepository: dagger.Lazy<YarnCardRepository>
 
     @Inject
+    lateinit var projectCounterRepository: dagger.Lazy<ProjectCounterRepository>
+
+    @Inject
     lateinit var patternDocumentStorage: dagger.Lazy<PatternDocumentStorage>
+
+    @Inject
+    lateinit var database: dagger.Lazy<KnitToolsDatabase>
+
+    @Inject
+    lateinit var transactionRunner: dagger.Lazy<DatabaseTransactionRunner>
 
     @Inject
     @ApplicationScope
@@ -55,6 +67,14 @@ class App : Application() {
         applicationScope.launch(ioDispatcher) {
             patternDocumentStorage.get().pruneStaleCaptureImages(this@App)
         }
+        DemoDataSeeder.seedIfNeeded(
+            applicationScope,
+            ioDispatcher,
+            database,
+            transactionRunner,
+            projectCounterRepository,
+            yarnCardRepository,
+        )
         billingManager.get().initialize()
         proManager.get().initialize()
         observeWidgetProState()

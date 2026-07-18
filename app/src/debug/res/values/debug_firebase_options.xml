@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <!-- Paikallinen debug-build ei käytä tuotannon Firebase-projektia. -->
-    <string name="google_app_id" translatable="false">1:123456789012:android:0000000000000000</string>
-    <string name="google_api_key" translatable="false">debug-placeholder-api-key</string>
-    <string name="project_id" translatable="false">knittools-local-debug</string>
-</resources>

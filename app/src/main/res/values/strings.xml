@@ -946,4 +946,9 @@
     <string name="extra_counters_title">Extra Counters</string>
     <string name="counter_repeat_label">Repeat</string>
     <string name="counters_list_title">Counters</string>
+    <string name="pattern_annotations_layers">Annotation layers</string>
+    <string name="pattern_annotations_master">Pattern notes</string>
+    <string name="pattern_annotations_project">Project notes</string>
+    <string name="pattern_annotations_read_only">Read only</string>
+    <string name="pattern_annotations_count">%1$s (%2$d)</string>
 </resources>

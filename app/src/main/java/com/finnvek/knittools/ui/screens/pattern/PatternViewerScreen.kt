@@ -97,6 +97,7 @@ fun PatternViewerScreen(
     annotationViewModel: PatternAnnotationViewModel,
 ) {
     val counterState by counterViewModel.uiState.collectAsStateWithLifecycle()
+    val annotationState by annotationViewModel.uiState.collectAsStateWithLifecycle()
     val patternUri = counterState.patternUri
     val currentPage = counterState.currentPatternPage
     val rowMarkers = remember(counterState.patternRowMapping) { parseMapping(counterState.patternRowMapping) }
@@ -262,6 +263,7 @@ fun PatternViewerScreen(
                         positionPercent = null,
                         readingLineEnabled = counterState.readingLineEnabled,
                         readingLineYFraction = readingLinePreviewYFraction,
+                        annotationState = annotationState,
                     ),
                 actions =
                     PatternViewerContentActions(
@@ -287,6 +289,8 @@ fun PatternViewerScreen(
                             isReadingLineDragging = false
                             readingLinePreviewYFraction = counterState.readingLineYFraction
                         },
+                        onMasterLayerVisibilityChange = annotationViewModel::setMasterLayerVisible,
+                        onProjectLayerVisibilityChange = annotationViewModel::setProjectLayerVisible,
                     ),
                 modifier =
                     Modifier
@@ -466,6 +470,7 @@ fun LibraryPatternViewerScreen(
     onBack: () -> Unit,
     annotationViewModel: PatternAnnotationViewModel,
 ) {
+    val annotationState by annotationViewModel.uiState.collectAsStateWithLifecycle()
     var currentPage by rememberSaveable(patternUri) { mutableIntStateOf(0) }
     var readingLineEnabled by rememberSaveable(patternUri) { mutableStateOf(false) }
     var readingLineYFraction by rememberSaveable(patternUri) { mutableFloatStateOf(DEFAULT_READING_LINE_Y_FRACTION) }
@@ -530,6 +535,7 @@ fun LibraryPatternViewerScreen(
                     positionPercent = null,
                     readingLineEnabled = readingLineEnabled,
                     readingLineYFraction = readingLineYFraction,
+                    annotationState = annotationState,
                 ),
             actions =
                 PatternViewerContentActions(
@@ -537,6 +543,8 @@ fun LibraryPatternViewerScreen(
                     onReadingLineYFractionChange = { readingLineYFraction = sanitizeReadingLineYFraction(it) },
                     onReadingLineYFractionCommit = { readingLineYFraction = sanitizeReadingLineYFraction(it) },
                     onReadingLineDragCancel = {},
+                    onMasterLayerVisibilityChange = annotationViewModel::setMasterLayerVisible,
+                    onProjectLayerVisibilityChange = annotationViewModel::setProjectLayerVisible,
                 ),
             modifier =
                 Modifier
@@ -916,6 +924,13 @@ private fun PatternViewerContent(
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier) {
+        if (state.patternUri != null) {
+            PatternAnnotationLayerPanel(
+                state = state.annotationState,
+                onMasterVisibilityChange = actions.onMasterLayerVisibilityChange,
+                onProjectVisibilityChange = actions.onProjectLayerVisibilityChange,
+            )
+        }
         when {
             state.patternUri == null -> {
                 PatternViewerMessage(message = stringResource(R.string.no_pattern_attached))
@@ -954,6 +969,13 @@ private fun PatternViewerContent(
                                 null
                             },
                     )
+                    PatternAnnotationOverlay(
+                        masterAnnotations = state.annotationState.masterAnnotations,
+                        projectAnnotations = state.annotationState.projectAnnotations,
+                        masterVisible = state.annotationState.masterLayerVisible,
+                        projectVisible = state.annotationState.projectLayerVisible,
+                        modifier = Modifier.fillMaxSize(),
+                    )
                     if (state.readingLineEnabled) {
                         ReadingLineOverlay(
                             yFraction = state.readingLineYFraction,
@@ -984,6 +1006,7 @@ private data class PatternViewerContentState(
     val positionPercent: Int?,
     val readingLineEnabled: Boolean,
     val readingLineYFraction: Float,
+    val annotationState: PatternAnnotationUiState,
 )
 
 private data class PatternViewerContentActions(
@@ -991,6 +1014,8 @@ private data class PatternViewerContentActions(
     val onReadingLineYFractionChange: (Float) -> Unit,
     val onReadingLineYFractionCommit: (Float) -> Unit,
     val onReadingLineDragCancel: () -> Unit,
+    val onMasterLayerVisibilityChange: (Boolean) -> Unit,
+    val onProjectLayerVisibilityChange: (Boolean) -> Unit,
 )
 
 private data class ReadingLineOverlayActions(

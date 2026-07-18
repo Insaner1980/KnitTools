@@ -144,12 +144,12 @@ internal fun PatternAnnotationToolbar(
             else -> Unit
         }
         AnnotationHistoryControls(state, actions)
-        if (state.selectedAnnotationId != null && state.chartCounterOptions.isNotEmpty()) {
+        if (state.selectedAnnotationSupportsChartTracker && state.chartCounterOptions.isNotEmpty()) {
             TextButton(onClick = { showChartTrackerEditor = true }) {
                 Text(stringResource(R.string.pattern_annotation_link_chart))
             }
         }
-        if (state.selectedAnnotationId != null) {
+        if (state.selectedAnnotationIsEditable) {
             AnnotationSelectionControls(actions)
         }
     }

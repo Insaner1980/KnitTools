@@ -229,12 +229,16 @@ class PatternAnnotationViewModelTest {
             viewModel.selectAnnotationAt(hitPoint)
             runCurrent()
             assertEquals(41L, viewModel.uiState.value.selectedAnnotationId)
+            assertTrue(viewModel.uiState.value.selectedAnnotationIsEditable)
+            assertFalse(viewModel.uiState.value.selectedAnnotationSupportsChartTracker)
 
             viewModel.setProjectLayerVisible(false)
             advanceUntilIdle()
             viewModel.selectAnnotationAt(hitPoint)
             runCurrent()
             assertEquals(31L, viewModel.uiState.value.selectedAnnotationId)
+            assertFalse(viewModel.uiState.value.selectedAnnotationIsEditable)
+            assertFalse(viewModel.uiState.value.selectedAnnotationSupportsChartTracker)
 
             viewModel.setProjectLayerVisible(true)
             viewModel.setMasterLayerVisible(false)
@@ -500,6 +504,9 @@ class PatternAnnotationViewModelTest {
             advanceUntilIdle()
 
             viewModel.selectAnnotationAt(NormalizedPatternPoint(0.5f, 0.5f))
+            runCurrent()
+            assertFalse(viewModel.uiState.value.selectedAnnotationIsEditable)
+            assertTrue(viewModel.uiState.value.selectedAnnotationSupportsChartTracker)
             viewModel.addChartTrackerFromSelected(
                 PatternChartTrackerDraft(
                     rows = 6,

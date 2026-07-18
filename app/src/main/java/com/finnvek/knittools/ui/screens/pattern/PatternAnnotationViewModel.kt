@@ -117,6 +117,8 @@ data class PatternAnnotationUiState(
     val isSaving: Boolean = false,
     val writeError: PatternAnnotationWriteError = PatternAnnotationWriteError.NONE,
     val selectedAnnotationId: Long? = null,
+    val selectedAnnotationIsEditable: Boolean = false,
+    val selectedAnnotationSupportsChartTracker: Boolean = false,
     val canUndo: Boolean = false,
     val canRedo: Boolean = false,
     val chartCounterOptions: List<PatternChartCounterOption> = emptyList(),
@@ -213,6 +215,10 @@ class PatternAnnotationViewModel
                         .maxOfOrNull(PatternAnnotation::zIndex)
                         ?.plus(1L)
                         ?: 0L
+                val selectedAnnotation =
+                    feedback.interaction.selectedAnnotationId?.let { selectedId ->
+                        (annotations.master + annotations.project).firstOrNull { it.id == selectedId }
+                    }
                 PatternAnnotationUiState(
                     owner = selection.owner,
                     currentPage = page,
@@ -241,6 +247,10 @@ class PatternAnnotationViewModel
                     isSaving = feedback.interaction.isSaving,
                     writeError = feedback.interaction.writeError,
                     selectedAnnotationId = feedback.interaction.selectedAnnotationId,
+                    selectedAnnotationIsEditable = selectedAnnotation?.layerId == selection.editableLayerId,
+                    selectedAnnotationSupportsChartTracker =
+                        selectedAnnotation?.payload is ChartRegionPayload ||
+                            selectedAnnotation?.payload is ChartTrackerPayload,
                     canUndo = feedback.interaction.undoStack.isNotEmpty(),
                     canRedo = feedback.interaction.redoStack.isNotEmpty(),
                     chartCounterOptions = feedback.counterContext.options,

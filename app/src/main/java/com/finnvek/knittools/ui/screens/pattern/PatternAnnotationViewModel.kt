@@ -1,8 +1,11 @@
 package com.finnvek.knittools.ui.screens.pattern
 
+import android.net.Uri
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.finnvek.knittools.data.storage.PatternAnnotationRenderStyle
+import com.finnvek.knittools.data.storage.PatternPdfExporter
 import com.finnvek.knittools.domain.calculator.ChartTrackerHighlight
 import com.finnvek.knittools.domain.calculator.isPointNearStroke
 import com.finnvek.knittools.domain.calculator.resolveChartTrackerHighlight
@@ -118,6 +121,12 @@ data class PatternAnnotationUiState(
     val canRedo: Boolean = false,
     val chartCounterOptions: List<PatternChartCounterOption> = emptyList(),
     val trackerHighlights: Map<Long, ChartTrackerHighlight> = emptyMap(),
+    val masterLayerId: Long? = null,
+    val projectLayerId: Long? = null,
+    val isExporting: Boolean = false,
+    val exportCompletedPages: Int = 0,
+    val exportTotalPages: Int = 0,
+    val exportFailed: Boolean = false,
 )
 
 @HiltViewModel
@@ -132,6 +141,7 @@ class PatternAnnotationViewModel
         private val layerRepository: PatternAnnotationLayerRepository,
         private val annotationRepository: PatternAnnotationRepository,
         private val projectCounterRepository: ProjectCounterRepository? = null,
+        private val pdfExporter: PatternPdfExporter? = null,
     ) : ViewModel() {
         private val routeOwner = savedStateHandle.requirePatternAnnotationOwner()
         private val currentPage = MutableStateFlow(0)
@@ -211,6 +221,8 @@ class PatternAnnotationViewModel
                     masterAnnotations = annotations.master,
                     projectAnnotations = annotations.project,
                     editableLayerId = selection.editableLayerId,
+                    masterLayerId = selection.masterLayer?.id,
+                    projectLayerId = selection.projectLayer?.id,
                     loadError = feedback.loadError,
                     activeTool = feedback.interaction.activeTool,
                     penArgb = feedback.interaction.penArgb,
@@ -237,6 +249,10 @@ class PatternAnnotationViewModel
                             annotations.master + annotations.project,
                             feedback.counterContext,
                         ),
+                    isExporting = feedback.interaction.isExporting,
+                    exportCompletedPages = feedback.interaction.exportCompletedPages,
+                    exportTotalPages = feedback.interaction.exportTotalPages,
+                    exportFailed = feedback.interaction.exportFailed,
                 )
             }.stateIn(
                 scope = viewModelScope,
@@ -520,6 +536,53 @@ class PatternAnnotationViewModel
             interaction.update { it.copy(writeError = PatternAnnotationWriteError.NONE) }
         }
 
+        fun exportAnnotatedPdf(
+            sourceUri: Uri,
+            destinationUri: Uri,
+            style: PatternAnnotationRenderStyle,
+        ) {
+            val exporter = pdfExporter ?: return
+            if (interaction.value.isExporting) return
+            val state = uiState.value
+            val layerIds =
+                buildList {
+                    if (state.masterLayerVisible) state.masterLayerId?.let(::add)
+                    if (state.projectLayerVisible) state.projectLayerId?.let(::add)
+                }
+            interaction.update {
+                it.copy(
+                    isExporting = true,
+                    exportCompletedPages = 0,
+                    exportTotalPages = 0,
+                    exportFailed = false,
+                )
+            }
+            viewModelScope.launch {
+                runCatching {
+                    val annotations = annotationRepository.getForLayers(layerIds)
+                    exporter.export(
+                        sourceUri = sourceUri,
+                        destinationUri = destinationUri,
+                        annotations = annotations,
+                        trackerHighlights = resolveTrackerHighlights(annotations, counterContext.value),
+                        style = style,
+                    ) { progress ->
+                        interaction.update {
+                            it.copy(
+                                exportCompletedPages = progress.completedPages,
+                                exportTotalPages = progress.totalPages,
+                            )
+                        }
+                    }
+                }.onSuccess {
+                    interaction.update { it.copy(isExporting = false) }
+                }.onFailure { failure ->
+                    if (failure is kotlinx.coroutines.CancellationException) throw failure
+                    interaction.update { it.copy(isExporting = false, exportFailed = true) }
+                }
+            }
+        }
+
         private fun editableAnnotations(): List<PatternAnnotation> =
             when (uiState.value.owner) {
                 is PatternAnnotationOwner.Project -> uiState.value.projectAnnotations
@@ -722,6 +785,10 @@ private data class PatternAnnotationInteractionState(
     val selectedAnnotationId: Long? = null,
     val undoStack: List<PatternAnnotationCommand> = emptyList(),
     val redoStack: List<PatternAnnotationCommand> = emptyList(),
+    val isExporting: Boolean = false,
+    val exportCompletedPages: Int = 0,
+    val exportTotalPages: Int = 0,
+    val exportFailed: Boolean = false,
 ) {
     fun styleForTool(): PatternStrokeStyle? =
         when (activeTool) {

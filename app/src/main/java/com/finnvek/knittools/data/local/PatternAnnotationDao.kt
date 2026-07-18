@@ -21,6 +21,15 @@ interface PatternAnnotationDao {
         page: Int,
     ): Flow<List<PatternAnnotationEntity>>
 
+    @Query(
+        """
+        SELECT * FROM pattern_annotations
+        WHERE layerId IN (:layerIds)
+        ORDER BY page ASC, zIndex ASC, id ASC
+        """,
+    )
+    suspend fun getForLayers(layerIds: List<Long>): List<PatternAnnotationEntity>
+
     @Insert
     suspend fun insert(annotation: PatternAnnotationEntity): Long
 

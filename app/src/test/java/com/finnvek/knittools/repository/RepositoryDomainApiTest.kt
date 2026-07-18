@@ -606,6 +606,9 @@ internal class FakePatternAnnotationDao(
     ): Flow<List<PatternAnnotationEntity>> =
         flowOf(patternAnnotations.filter { it.layerId == layerId && it.page == page })
 
+    override suspend fun getForLayers(layerIds: List<Long>): List<PatternAnnotationEntity> =
+        patternAnnotations.filter { it.layerId in layerIds }
+
     override suspend fun insert(annotation: PatternAnnotationEntity): Long {
         lastInserted = annotation
         return 77L

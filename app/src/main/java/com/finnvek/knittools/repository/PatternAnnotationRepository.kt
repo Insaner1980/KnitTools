@@ -26,6 +26,13 @@ class PatternAnnotationRepository
 
         suspend fun insertAnnotation(annotation: PatternAnnotation): Long = dao.insert(annotation.toEntity())
 
+        suspend fun getForLayers(layerIds: List<Long>): List<PatternAnnotation> =
+            if (layerIds.isEmpty()) {
+                emptyList()
+            } else {
+                dao.getForLayers(layerIds).mapNotNull { it.toDomain() }
+            }
+
         suspend fun updateAnnotation(annotation: PatternAnnotation) = dao.update(annotation.toEntity())
 
         suspend fun clearPage(

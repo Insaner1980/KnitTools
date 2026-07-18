@@ -1,6 +1,9 @@
 package com.finnvek.knittools.ui.screens.pattern
 
 import android.graphics.Bitmap
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
@@ -67,6 +70,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
+import com.finnvek.knittools.data.storage.PatternAnnotationRenderStyle
 import com.finnvek.knittools.data.storage.PdfPageRenderer
 import com.finnvek.knittools.di.AppDispatchers
 import com.finnvek.knittools.domain.calculator.RowMarker
@@ -79,6 +83,7 @@ import com.finnvek.knittools.domain.model.READING_LINE_MAX_Y_FRACTION
 import com.finnvek.knittools.domain.model.READING_LINE_MIN_Y_FRACTION
 import com.finnvek.knittools.domain.model.sanitizeReadingLineYFraction
 import com.finnvek.knittools.ui.screens.counter.CounterViewModel
+import com.finnvek.knittools.ui.theme.rememberPatternAnnotationRenderStyle
 import kotlinx.coroutines.withContext
 
 private const val READING_LINE_BAND_HEIGHT_FRACTION = 0.045f
@@ -294,6 +299,7 @@ fun PatternViewerScreen(
                         onProjectLayerVisibilityChange = annotationViewModel::setProjectLayerVisible,
                         annotationInputActions = annotationViewModel.patternInputActions(),
                         annotationToolbarActions = annotationViewModel.patternToolbarActions(),
+                        onExport = annotationViewModel::exportAnnotatedPdf,
                     ),
                 modifier =
                     Modifier
@@ -550,6 +556,7 @@ fun LibraryPatternViewerScreen(
                     onProjectLayerVisibilityChange = annotationViewModel::setProjectLayerVisible,
                     annotationInputActions = annotationViewModel.patternInputActions(),
                     annotationToolbarActions = annotationViewModel.patternToolbarActions(),
+                    onExport = annotationViewModel::exportAnnotatedPdf,
                 ),
             modifier =
                 Modifier
@@ -928,6 +935,12 @@ private fun PatternViewerContent(
     actions: PatternViewerContentActions,
     modifier: Modifier = Modifier,
 ) {
+    val exportStyle = rememberPatternAnnotationRenderStyle()
+    val exportLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { destination ->
+            val source = state.patternUri?.toUri()
+            if (source != null && destination != null) actions.onExport(source, destination, exportStyle)
+        }
     Column(modifier = modifier) {
         if (state.patternUri != null) {
             PatternAnnotationLayerPanel(
@@ -939,6 +952,32 @@ private fun PatternViewerContent(
                 state = state.annotationState,
                 actions = actions.annotationToolbarActions,
             )
+            TextButton(
+                enabled = !state.annotationState.isExporting,
+                onClick = {
+                    val baseName = state.patternName?.substringBeforeLast('.')?.ifBlank { null } ?: "pattern"
+                    exportLauncher.launch("$baseName-annotated.pdf")
+                },
+            ) {
+                val exportText =
+                    if (state.annotationState.isExporting) {
+                        stringResource(
+                            R.string.pattern_annotation_export_progress,
+                            state.annotationState.exportCompletedPages,
+                            state.annotationState.exportTotalPages,
+                        )
+                    } else {
+                        stringResource(R.string.pattern_annotation_export_pdf)
+                    }
+                Text(exportText)
+            }
+            if (state.annotationState.exportFailed) {
+                Text(
+                    text = stringResource(R.string.pattern_annotation_export_failed),
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(horizontal = 12.dp),
+                )
+            }
         }
         when {
             state.patternUri == null -> {
@@ -1051,6 +1090,7 @@ private data class PatternViewerContentActions(
     val onProjectLayerVisibilityChange: (Boolean) -> Unit,
     val annotationInputActions: PatternAnnotationInputActions,
     val annotationToolbarActions: PatternAnnotationToolbarActions,
+    val onExport: (Uri, Uri, PatternAnnotationRenderStyle) -> Unit,
 )
 
 private fun PatternAnnotationViewModel.patternInputActions() =

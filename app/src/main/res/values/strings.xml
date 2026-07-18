@@ -1008,4 +1008,7 @@
     <string name="pattern_annotation_chart_top_right">Top right</string>
     <string name="pattern_annotation_chart_bottom_left">Bottom left</string>
     <string name="pattern_annotation_chart_bottom_right">Bottom right</string>
+    <string name="pattern_annotation_export_pdf">Export annotated PDF</string>
+    <string name="pattern_annotation_export_progress">Exporting %1$d/%2$d</string>
+    <string name="pattern_annotation_export_failed">PDF export failed. The original PDF was not changed.</string>
 </resources>

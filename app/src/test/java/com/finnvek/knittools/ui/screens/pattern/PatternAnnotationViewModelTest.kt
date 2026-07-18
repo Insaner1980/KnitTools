@@ -500,27 +500,26 @@ class PatternAnnotationViewModelTest {
             val layerRepository = mockk<PatternAnnotationLayerRepository>()
             val annotationRepository = mockk<PatternAnnotationRepository>(relaxed = true)
             val documentKey = PatternAnnotationDocumentKey.savedPattern(12L)
+            val lowerShape =
+                PatternAnnotation(
+                    id = 60L,
+                    layerId = 31L,
+                    page = 0,
+                    kind = PatternAnnotationKind.RECTANGLE,
+                    payload =
+                        ShapePayload(
+                            start = NormalizedPatternPoint(0.2f, 0.3f),
+                            end = NormalizedPatternPoint(0.7f, 0.8f),
+                            strokeArgb = 0xFF000000.toInt(),
+                            strokeWidth = 2f,
+                        ),
+                    zIndex = 3L,
+                )
+            val topShape = lowerShape.copy(id = 61L, zIndex = 4L)
             coEvery { layerRepository.getOrCreateMasterLayer(12L, documentKey) } returns
                 layer(id = 31L, owner = PatternAnnotationOwner.SavedPattern(12L, documentKey))
             every { annotationRepository.observePage(31L, 0) } returns
-                flowOf(
-                    listOf(
-                        PatternAnnotation(
-                            id = 61L,
-                            layerId = 31L,
-                            page = 0,
-                            kind = PatternAnnotationKind.RECTANGLE,
-                            payload =
-                                ShapePayload(
-                                    start = NormalizedPatternPoint(0.2f, 0.3f),
-                                    end = NormalizedPatternPoint(0.7f, 0.8f),
-                                    strokeArgb = 0xFF000000.toInt(),
-                                    strokeWidth = 2f,
-                                ),
-                            zIndex = 4L,
-                        ),
-                    ),
-                )
+                flowOf(listOf(lowerShape, topShape))
             val viewModel =
                 PatternAnnotationViewModel(
                     SavedStateHandle(mapOf("savedPatternId" to 12L)),
@@ -534,6 +533,7 @@ class PatternAnnotationViewModelTest {
             advanceUntilIdle()
 
             coVerify(exactly = 1) { annotationRepository.deleteAnnotation(61L) }
+            coVerify(exactly = 0) { annotationRepository.deleteAnnotation(60L) }
         }
 
     @Test

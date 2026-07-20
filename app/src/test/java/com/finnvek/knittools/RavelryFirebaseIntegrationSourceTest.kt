@@ -29,9 +29,9 @@ class RavelryFirebaseIntegrationSourceTest {
         assertTrue(appBuild.contains("implementation(libs.firebase.functions)"))
         assertTrue(appBuild.contains("verifyGoogleServicesJson"))
         assertTrue(appBuild.contains("writeGoogleServicesJsonFromEnv"))
-        assertTrue(appBuild.contains("writeDebugGoogleServicesJson"))
-        assertDebugGoogleServicesTaskWiring(appBuild)
-        assertTrue(appBuild.contains("debugGoogleServicesPlaceholderJson"))
+        assertGoogleServicesPlaceholderVariants(appBuild)
+        assertGoogleServicesTaskWiring(appBuild)
+        assertTrue(appBuild.contains("googleServicesPlaceholderJson"))
         assertTrue(appBuild.contains("apply(plugin = \"com.google.gms.google-services\")"))
         assertFalse(appBuild.contains("debugFirebaseArtifactRequested"))
         assertFalse(appBuild.contains("canMaterializeGoogleServicesJson"))
@@ -47,17 +47,17 @@ class RavelryFirebaseIntegrationSourceTest {
         assertTrue(appBuild.contains("inputs.files(targetFile).withPropertyName(\"googleServicesJsonFile\")"))
         assertTrue(appBuild.contains("object GoogleServicesJsonTaskActions"))
         assertTrue(appBuild.contains("tasks.register(\"writeGoogleServicesJsonFromEnv\")"))
-        assertTrue(appBuild.contains("tasks.register(\"writeDebugGoogleServicesJson\")"))
+        assertTrue(appBuild.contains("tasks.register(\"write\${taskSuffix}GoogleServicesJson\")"))
         assertTrue(appBuild.contains("tasks.register(\"verifyGoogleServicesJson\")"))
         assertTrue(appBuild.contains("GoogleServicesJsonTaskActions.writeFromEnv("))
-        assertTrue(appBuild.contains("GoogleServicesJsonTaskActions.writeDebugPlaceholder("))
+        assertTrue(appBuild.contains("GoogleServicesJsonTaskActions.writePlaceholder("))
         assertTrue(appBuild.contains("GoogleServicesJsonTaskActions.verify("))
         assertFalse(appBuild.contains("WriteGoogleServicesJsonFromEnvTask : DefaultTask"))
         assertFalse(appBuild.contains("WriteDebugGoogleServicesJsonTask : DefaultTask"))
         assertFalse(appBuild.contains("VerifyGoogleServicesJsonTask : DefaultTask"))
         assertFalse(appBuild.contains("@get:InputFile\n    @get:Optional"))
         assertTrue(appBuild.contains("app/google-services.json"))
-        assertTrue(gitignore.contains("app/src/debug/google-services.json"))
+        assertTrue(gitignore.contains("app/src/*/google-services.json"))
         assertFalse(Files.exists(debugFirebaseOptions))
         assertFalse(buildWorkflow.contains("Missing KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64 secret"))
         assertFalse(codeQlWorkflow.contains("Missing KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64 secret"))
@@ -65,15 +65,33 @@ class RavelryFirebaseIntegrationSourceTest {
         assertFalse(codeQlWorkflow.contains("secrets.KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64"))
     }
 
-    private fun assertDebugGoogleServicesTaskWiring(appBuild: String) {
+    // Placeholder-config kuuluu vain varianteille, jotka eivät päädy jakeluun.
+    // Release-artefaktit nojaavat edelleen verifyGoogleServicesJson-tarkistukseen.
+    private fun assertGoogleServicesPlaceholderVariants(appBuild: String) {
+        assertTrue(
+            appBuild.contains(
+                "val googleServicesPlaceholderVariants = " +
+                    "listOf(\"debug\", \"benchmarkRelease\", \"nonMinifiedRelease\")",
+            ),
+        )
+        assertTrue(appBuild.contains("layout.projectDirectory.file(\"src/\$variantName/google-services.json\")"))
+    }
+
+    private fun assertGoogleServicesTaskWiring(appBuild: String) {
         assertTrue(
             appBuild.contains(
                 """
                 tasks.configureEach {
-                    if (name == "processDebugGoogleServices") {
-                        dependsOn(writeGoogleServicesJsonFromEnv, writeDebugGoogleServicesJson)
-                    } else if (name.startsWith("process") && name.endsWith("GoogleServices")) {
+                    if (name.startsWith("process") && name.endsWith("GoogleServices")) {
                         dependsOn(writeGoogleServicesJsonFromEnv)
+
+                        // processBenchmarkReleaseGoogleServices -> benchmarkRelease
+                        val variantName =
+                            name
+                                .removePrefix("process")
+                                .removeSuffix("GoogleServices")
+                                .replaceFirstChar { it.lowercaseChar() }
+                        writeGoogleServicesPlaceholderTasks[variantName]?.let { dependsOn(it) }
                     }
 
                     if (name in firebaseConfiguredArtifactTaskNames) {

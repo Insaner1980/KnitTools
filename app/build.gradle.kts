@@ -25,10 +25,17 @@ val releaseSigningEnvPrefix = "KNITTOOLS" // Change to your app name, e.g. "KNIT
 val debugCredentialsFile = rootProject.layout.projectDirectory.file("debug.credentials.properties")
 val debugCredentialsText = providers.fileContents(debugCredentialsFile).asText.orElse("")
 val googleServicesJsonConfigFile = layout.projectDirectory.file("google-services.json")
-val debugGoogleServicesJsonConfigFile = layout.projectDirectory.file("src/debug/google-services.json")
+
+// Variantit, jotka eivät päädy jakeluun ja joille riittää paikallinen placeholder-config.
+// benchmarkRelease ja nonMinifiedRelease tulevat baselineprofile-pluginista.
+val googleServicesPlaceholderVariants = listOf("debug", "benchmarkRelease", "nonMinifiedRelease")
+
+fun googleServicesJsonFileFor(variantName: String) =
+    layout.projectDirectory.file("src/$variantName/google-services.json")
+
 val googleServicesJsonBase64EnvVar = "KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64"
 val googleServicesJsonBase64Env = providers.environmentVariable(googleServicesJsonBase64EnvVar)
-val debugGoogleServicesPlaceholderJson =
+val googleServicesPlaceholderJson =
     """
     {
       "project_info": {
@@ -64,7 +71,7 @@ val debugGoogleServicesPlaceholderJson =
 apply(plugin = "com.google.gms.google-services")
 
 object GoogleServicesJsonTaskActions {
-    private const val DEBUG_PLACEHOLDER_API_KEY = "debug-placeholder-api-key"
+    private const val PLACEHOLDER_API_KEY = "debug-placeholder-api-key"
 
     fun writeFromEnv(
         targetFile: File,
@@ -90,14 +97,14 @@ object GoogleServicesJsonTaskActions {
         targetFile.writeBytes(decodedConfig)
     }
 
-    fun writeDebugPlaceholder(
+    fun writePlaceholder(
         rootGoogleServicesJsonFile: File,
         encodedConfig: String?,
         placeholderJson: String,
         targetFile: File,
     ) {
         if (rootGoogleServicesJsonFile.isFile || !encodedConfig.isNullOrBlank()) {
-            if (targetFile.isFile && targetFile.readText(Charsets.UTF_8).contains(DEBUG_PLACEHOLDER_API_KEY)) {
+            if (targetFile.isFile && targetFile.readText(Charsets.UTF_8).contains(PLACEHOLDER_API_KEY)) {
                 targetFile.delete()
             }
             return
@@ -406,34 +413,37 @@ val writeGoogleServicesJsonFromEnv =
         }
     }
 
-val writeDebugGoogleServicesJson =
-    tasks.register("writeDebugGoogleServicesJson") {
-        group = "build setup"
-        description = "Luo debug-buildille ignored placeholder Firebase -konfiguraation tarvittaessa."
-        dependsOn(writeGoogleServicesJsonFromEnv)
+val writeGoogleServicesPlaceholderTasks =
+    googleServicesPlaceholderVariants.associateWith { variantName ->
+        val taskSuffix = variantName.replaceFirstChar { it.uppercaseChar() }
+        tasks.register("write${taskSuffix}GoogleServicesJson") {
+            group = "build setup"
+            description = "Luo $variantName-buildille ignored placeholder Firebase -konfiguraation tarvittaessa."
+            dependsOn(writeGoogleServicesJsonFromEnv)
 
-        val rootFile = googleServicesJsonConfigFile.asFile
-        val targetFile = debugGoogleServicesJsonConfigFile.asFile
-        val encodedConfig = googleServicesJsonBase64Env.orNull
-        val placeholderJson = debugGoogleServicesPlaceholderJson
+            val rootFile = googleServicesJsonConfigFile.asFile
+            val targetFile = googleServicesJsonFileFor(variantName).asFile
+            val encodedConfig = googleServicesJsonBase64Env.orNull
+            val placeholderJson = googleServicesPlaceholderJson
 
-        inputs.files(rootFile).withPropertyName("rootGoogleServicesJsonFile")
-        inputs.property("encodedConfig", encodedConfig.orEmpty())
-        inputs.property("placeholderJson", placeholderJson)
-        outputs.file(targetFile)
-        outputs.upToDateWhen {
-            rootFile.isFile ||
-                !encodedConfig.isNullOrBlank() ||
-                targetFile.isFile
-        }
+            inputs.files(rootFile).withPropertyName("rootGoogleServicesJsonFile")
+            inputs.property("encodedConfig", encodedConfig.orEmpty())
+            inputs.property("placeholderJson", placeholderJson)
+            outputs.file(targetFile)
+            outputs.upToDateWhen {
+                rootFile.isFile ||
+                    !encodedConfig.isNullOrBlank() ||
+                    targetFile.isFile
+            }
 
-        doLast {
-            GoogleServicesJsonTaskActions.writeDebugPlaceholder(
-                rootFile,
-                encodedConfig,
-                placeholderJson,
-                targetFile,
-            )
+            doLast {
+                GoogleServicesJsonTaskActions.writePlaceholder(
+                    rootFile,
+                    encodedConfig,
+                    placeholderJson,
+                    targetFile,
+                )
+            }
         }
     }
 
@@ -459,10 +469,16 @@ val firebaseConfiguredArtifactTaskNames =
     )
 
 tasks.configureEach {
-    if (name == "processDebugGoogleServices") {
-        dependsOn(writeGoogleServicesJsonFromEnv, writeDebugGoogleServicesJson)
-    } else if (name.startsWith("process") && name.endsWith("GoogleServices")) {
+    if (name.startsWith("process") && name.endsWith("GoogleServices")) {
         dependsOn(writeGoogleServicesJsonFromEnv)
+
+        // processBenchmarkReleaseGoogleServices -> benchmarkRelease
+        val variantName =
+            name
+                .removePrefix("process")
+                .removeSuffix("GoogleServices")
+                .replaceFirstChar { it.lowercaseChar() }
+        writeGoogleServicesPlaceholderTasks[variantName]?.let { dependsOn(it) }
     }
 
     if (name in firebaseConfiguredArtifactTaskNames) {

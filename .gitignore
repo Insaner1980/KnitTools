@@ -27,8 +27,9 @@
 /.tmp/
 
 # Firebase config (sisältää projektikohtaisia tunnistetietoja)
+# Varianttikohtaiset tiedostot ovat aina generoituja placeholdereita tai secretejä
 app/google-services.json
-app/src/debug/google-services.json
+app/src/*/google-services.json
 
 # Prevent CLAUDE.md files from breaking Android resource merger
 **/src/main/res/**/CLAUDE.md

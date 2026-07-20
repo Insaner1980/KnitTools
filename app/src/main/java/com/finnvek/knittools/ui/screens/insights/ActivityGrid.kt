@@ -34,7 +34,6 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.min
@@ -57,6 +56,7 @@ private val DAY_LABEL_WIDTH = 20.dp
 private val MAX_CELL_SIZE = 28.dp
 private val CARD_PADDING_H = 16.dp
 private val CARD_PADDING_V = 12.dp
+private const val FUTURE_CELL_ALPHA = 0.35f
 
 @Composable
 fun ActivityGrid(
@@ -224,12 +224,14 @@ private fun StreakRow(
             modifier = Modifier.weight(1f),
             label = stringResource(R.string.insights_current_streak),
             value = stringResource(R.string.streak_format, currentStreak),
+            valueColor = MaterialTheme.colorScheme.primary,
         )
         Spacer(modifier = Modifier.width(12.dp))
         StreakStat(
             modifier = Modifier.weight(1f),
             label = stringResource(R.string.insights_best_streak),
             value = stringResource(R.string.streak_format, bestStreak),
+            valueColor = MaterialTheme.colorScheme.onSurface,
             alignEnd = true,
         )
     }
@@ -265,6 +267,7 @@ private fun ActivityGridTooltip(
 private fun StreakStat(
     label: String,
     value: String,
+    valueColor: Color,
     modifier: Modifier = Modifier,
     alignEnd: Boolean = false,
 ) {
@@ -280,9 +283,8 @@ private fun StreakStat(
         )
         Text(
             text = value,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurface,
-            fontWeight = FontWeight.Medium,
+            style = MaterialTheme.typography.titleMedium,
+            color = valueColor,
             maxLines = 1,
         )
     }
@@ -312,9 +314,7 @@ private fun ActivityCell(
         )
     }
 
-    val hasActivity = !isFuture && minutes > 0
     val fillColor = cellFillColor(minutes = minutes, isFuture = isFuture)
-    val outlineColor = MaterialTheme.knitToolsColors.onSurfaceMuted.copy(alpha = 0.2f)
     val todayBorderColor = MaterialTheme.colorScheme.primary
 
     Box(
@@ -327,8 +327,6 @@ private fun ActivityCell(
                 .then(
                     if (isToday) {
                         Modifier.border(2.dp, todayBorderColor, CELL_SHAPE)
-                    } else if (!hasActivity) {
-                        Modifier.border(1.dp, outlineColor, CELL_SHAPE)
                     } else {
                         Modifier
                     },
@@ -344,13 +342,15 @@ private fun cellFillColor(
     minutes: Int,
     isFuture: Boolean,
 ): Color {
-    if (isFuture) return Color.Transparent
-    val tertiary = MaterialTheme.colorScheme.tertiary
+    val emptyColor = MaterialTheme.knitToolsColors.activityCellEmpty
+    if (isFuture) return emptyColor.copy(alpha = FUTURE_CELL_ALPHA)
+    val ramp = MaterialTheme.knitToolsColors.activityRamp
     return when {
-        minutes <= 0 -> Color.Transparent
-        minutes <= 15 -> tertiary.copy(alpha = 0.4f)
-        minutes <= 45 -> tertiary.copy(alpha = 0.7f)
-        else -> tertiary
+        minutes <= 0 -> emptyColor
+        minutes <= 15 -> ramp[0]
+        minutes <= 30 -> ramp[1]
+        minutes <= 60 -> ramp[2]
+        else -> ramp[3]
     }
 }
 

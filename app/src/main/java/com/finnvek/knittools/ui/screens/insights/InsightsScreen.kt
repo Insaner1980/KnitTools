@@ -43,10 +43,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathMeasure
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -64,6 +67,7 @@ import com.finnvek.knittools.ui.components.localizedDateTimePattern
 import com.finnvek.knittools.ui.components.localizedUppercase
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
 import com.finnvek.knittools.ui.theme.InsightChartColors
+import com.finnvek.knittools.ui.theme.knitToolsColors
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -188,6 +192,7 @@ fun InsightsScreen(
                         targetValue = totalMinutes / 60f,
                         formatValue = { resources.getString(R.string.time_format_hours, it) },
                         labelColor = MaterialTheme.colorScheme.primary,
+                        containerColor = MaterialTheme.knitToolsColors.primaryTintContainer,
                         animationDelay = 0,
                         animationKey = animationKey,
                         modifier = Modifier.weight(1f).fillMaxHeight(),
@@ -197,6 +202,7 @@ fun InsightsScreen(
                         targetValue = avgPace,
                         formatValue = { resources.getString(R.string.pace_format, it) },
                         labelColor = MaterialTheme.colorScheme.secondary,
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
                         animationDelay = 80,
                         animationKey = animationKey,
                         modifier = Modifier.weight(1f).fillMaxHeight(),
@@ -206,6 +212,7 @@ fun InsightsScreen(
                         targetValue = completedCount.toFloat(),
                         formatValue = { formatIntegerForDisplay(it.toLong(), locale) },
                         labelColor = MaterialTheme.colorScheme.tertiary,
+                        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                         animationDelay = 160,
                         animationKey = animationKey,
                         modifier = Modifier.weight(1f).fillMaxHeight(),
@@ -332,6 +339,7 @@ private fun AnimatedMetricCard(
     targetValue: Float,
     formatValue: (Float) -> String,
     labelColor: Color,
+    containerColor: Color,
     animationDelay: Int,
     animationKey: Any,
     modifier: Modifier = Modifier,
@@ -354,7 +362,7 @@ private fun AnimatedMetricCard(
     Surface(
         modifier = modifier,
         shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.surfaceVariant,
+        color = containerColor,
     ) {
         Column(
             modifier =
@@ -373,8 +381,7 @@ private fun AnimatedMetricCard(
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = formatValue(animatable.value),
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.headlineMedium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -414,7 +421,7 @@ private fun AnimatedPaceLineChart(
             .maxOf { point -> point.rowsPerHour.takeIf { it.isFinite() } ?: 0f }
             .coerceAtLeast(1f)
     val trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
-    val pointColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val pointRingColor = MaterialTheme.colorScheme.surfaceVariant
 
     LaunchedEffect(data, animationKey) {
         animatable.snapTo(0f)
@@ -422,7 +429,7 @@ private fun AnimatedPaceLineChart(
             targetValue = 1f,
             animationSpec =
                 tween(
-                    durationMillis = 550,
+                    durationMillis = 700,
                     delayMillis = 240,
                     easing = FastOutSlowInEasing,
                 ),
@@ -491,26 +498,66 @@ private fun AnimatedPaceLineChart(
                             chartWidth * (index / (data.size - 1).toFloat())
                         }
                     val valueFraction = (point.rowsPerHour / maxPace).coerceIn(0f, 1f)
-                    val y = chartHeight - (chartHeight * valueFraction * animatable.value)
-                    Offset(x, y)
+                    Offset(x, chartHeight - chartHeight * valueFraction)
                 }
 
-            if (points.size > 1) {
-                val path =
+            // Viiva piirtyy vasemmalta oikealle; täyttö paljastuu ja pisteet ponnahtavat kynän mukana
+            val progress = animatable.value
+            var penX = points.first().x
+
+            if (points.size > 1 && progress > 0f) {
+                val linePath = smoothedLinePath(points)
+                val pathMeasure = PathMeasure().apply { setPath(linePath, forceClosed = false) }
+                val drawnLength = pathMeasure.length * progress
+                penX = pathMeasure.getPosition(drawnLength).x
+
+                val fillPath =
                     Path().apply {
-                        moveTo(points.first().x, points.first().y)
-                        points.drop(1).forEach { point -> lineTo(point.x, point.y) }
+                        addPath(linePath)
+                        lineTo(points.last().x, zeroY)
+                        lineTo(points.first().x, zeroY)
+                        close()
                     }
-                drawPath(
-                    path = path,
-                    color = primaryColor,
-                    style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round),
-                )
+                clipRect(right = penX) {
+                    drawPath(
+                        path = fillPath,
+                        brush =
+                            Brush.verticalGradient(
+                                colors =
+                                    listOf(
+                                        primaryColor.copy(alpha = 0.30f),
+                                        primaryColor.copy(alpha = 0.02f),
+                                    ),
+                                startY = 0f,
+                                endY = zeroY,
+                            ),
+                    )
+                }
+
+                val drawnLinePath = Path()
+                if (pathMeasure.getSegment(0f, drawnLength, drawnLinePath, startWithMoveTo = true)) {
+                    drawPath(
+                        path = drawnLinePath,
+                        color = primaryColor,
+                        style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round),
+                    )
+                }
             }
 
-            points.forEach { point ->
-                drawCircle(color = pointColor, radius = 3.dp.toPx(), center = point)
-                drawCircle(color = primaryColor, radius = 2.dp.toPx(), center = point)
+            if (progress > 0f) {
+                val popRamp = 24.dp.toPx()
+                points.forEach { point ->
+                    val dotScale =
+                        if (points.size == 1) {
+                            progress
+                        } else {
+                            ((penX - point.x + popRamp) / popRamp).coerceIn(0f, 1f)
+                        }
+                    if (dotScale > 0f) {
+                        drawCircle(color = pointRingColor, radius = 5.dp.toPx() * dotScale, center = point)
+                        drawCircle(color = primaryColor, radius = 3.dp.toPx() * dotScale, center = point)
+                    }
+                }
             }
         }
 
@@ -518,6 +565,18 @@ private fun AnimatedPaceLineChart(
         PaceStatsRow(point = data.last())
     }
 }
+
+// Pehmennetty käyrä pisteiden välisillä keskipistekontrolleilla
+private fun smoothedLinePath(points: List<Offset>): Path =
+    Path().apply {
+        moveTo(points.first().x, points.first().y)
+        for (index in 1 until points.size) {
+            val previous = points[index - 1]
+            val current = points[index]
+            val midX = (previous.x + current.x) / 2f
+            cubicTo(midX, previous.y, midX, current.y, current.x, current.y)
+        }
+    }
 
 @Composable
 private fun TimePerProjectChart(

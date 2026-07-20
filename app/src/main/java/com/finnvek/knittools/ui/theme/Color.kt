@@ -116,3 +116,12 @@ val InsightChartColors =
         DustyRose,
         RavelryTeal,
     )
+
+// === Insights — aktiviteettiruudukon ramppi (kylmä → lämmin), solidit värit ilman alpha-sekoitusta ===
+val ActivityCellEmpty = Color(0xFF464633) // Tyhjä päivä — hieman korttia vaaleampi
+val LightActivityCellEmpty = Color(0xFFAFA98C) // Tyhjä päivä light-teemassa — hieman korttia tummempi
+val LightActivityLow = Color(0xFFB8C47A) // Vaalea avokado, rampin matalin taso light-teemassa
+
+// === Insights — oranssisävyinen metriikkakortin konttitausta ===
+val PrimaryTintContainer = Color(0xFF3A2513)
+val LightPrimaryTintContainer = Color(0xFFE6CFAC)

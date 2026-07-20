@@ -22,10 +22,12 @@ import com.finnvek.knittools.repository.CounterRepository
 import com.finnvek.knittools.repository.PatternAnnotationLayerRepository
 import com.finnvek.knittools.repository.PatternAnnotationRepository
 import com.finnvek.knittools.repository.ProjectCounterRepository
+import com.finnvek.knittools.repository.repositoryReadRetryDelayMillis
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -155,30 +157,14 @@ class PatternAnnotationViewModelTest {
     @Test
     fun `project route combines read only master and editable project annotations`() =
         runTest {
-            val counterRepository = mockk<CounterRepository>()
-            val layerRepository = mockk<PatternAnnotationLayerRepository>()
-            val annotationRepository = mockk<PatternAnnotationRepository>()
-            val documentKey = PatternAnnotationDocumentKey.savedPattern(12L)
-            val projectOwner = PatternAnnotationOwner.Project(7L, documentKey)
-            val projectLayer = layer(id = 41L, owner = projectOwner)
-            val masterLayer = layer(id = 31L, owner = PatternAnnotationOwner.SavedPattern(12L, documentKey))
-            every { counterRepository.observeProject(7L) } returns
-                flowOf(CounterProject(id = 7L, linkedPatternId = 12L))
-            every { layerRepository.observeLayers(projectOwner) } returns flowOf(listOf(projectLayer))
-            coEvery { layerRepository.getOrCreateMasterLayer(12L, documentKey) } returns masterLayer
-            every { annotationRepository.observePage(31L, 0) } returns flowOf(listOf(annotation(31L, 0)))
-            every { annotationRepository.observePage(41L, 0) } returns flowOf(listOf(annotation(41L, 0)))
+            val route = projectRoute()
+            every { route.annotationRepository.observePage(31L, 0) } returns flowOf(listOf(annotation(31L, 0)))
+            every { route.annotationRepository.observePage(41L, 0) } returns flowOf(listOf(annotation(41L, 0)))
 
-            val viewModel =
-                PatternAnnotationViewModel(
-                    SavedStateHandle(mapOf("projectId" to 7L)),
-                    counterRepository,
-                    layerRepository,
-                    annotationRepository,
-                )
+            val viewModel = route.viewModel()
             advanceUntilIdle()
 
-            assertEquals(projectOwner, viewModel.uiState.value.owner)
+            assertEquals(route.projectOwner, viewModel.uiState.value.owner)
             assertEquals(41L, viewModel.uiState.value.editableLayerId)
             assertEquals(
                 31L,
@@ -204,27 +190,11 @@ class PatternAnnotationViewModelTest {
     @Test
     fun `selection prioritizes project layer and ignores annotations in hidden layers`() =
         runTest {
-            val counterRepository = mockk<CounterRepository>()
-            val layerRepository = mockk<PatternAnnotationLayerRepository>()
-            val annotationRepository = mockk<PatternAnnotationRepository>()
-            val documentKey = PatternAnnotationDocumentKey.savedPattern(12L)
-            val projectOwner = PatternAnnotationOwner.Project(7L, documentKey)
-            val projectLayer = layer(id = 41L, owner = projectOwner)
-            val masterLayer = layer(id = 31L, owner = PatternAnnotationOwner.SavedPattern(12L, documentKey))
-            every { counterRepository.observeProject(7L) } returns
-                flowOf(CounterProject(id = 7L, linkedPatternId = 12L))
-            every { layerRepository.observeLayers(projectOwner) } returns flowOf(listOf(projectLayer))
-            coEvery { layerRepository.getOrCreateMasterLayer(12L, documentKey) } returns masterLayer
-            every { annotationRepository.observePage(31L, 0) } returns
+            val route = projectRoute()
+            every { route.annotationRepository.observePage(31L, 0) } returns
                 flowOf(listOf(annotation(layerId = 31L, page = 0, zIndex = 100L)))
-            every { annotationRepository.observePage(41L, 0) } returns flowOf(listOf(annotation(41L, 0)))
-            val viewModel =
-                PatternAnnotationViewModel(
-                    SavedStateHandle(mapOf("projectId" to 7L)),
-                    counterRepository,
-                    layerRepository,
-                    annotationRepository,
-                )
+            every { route.annotationRepository.observePage(41L, 0) } returns flowOf(listOf(annotation(41L, 0)))
+            val viewModel = route.viewModel()
             advanceUntilIdle()
             val hitPoint = NormalizedPatternPoint(0.5f, 0.5f)
 
@@ -259,33 +229,24 @@ class PatternAnnotationViewModelTest {
     @Test
     fun `project keeps active annotation document when saved pattern link disappears`() =
         runTest {
-            val counterRepository = mockk<CounterRepository>()
-            val layerRepository = mockk<PatternAnnotationLayerRepository>()
-            val annotationRepository = mockk<PatternAnnotationRepository>()
-            val documentKey = PatternAnnotationDocumentKey.savedPattern(12L)
-            val projectOwner = PatternAnnotationOwner.Project(7L, documentKey)
-            val projectLayer = layer(id = 41L, owner = projectOwner)
-            val masterLayer = layer(id = 31L, owner = PatternAnnotationOwner.SavedPattern(12L, documentKey))
-            val project = MutableStateFlow(CounterProject(id = 7L, linkedPatternId = 12L))
-            every { counterRepository.observeProject(7L) } returns project
-            every { layerRepository.observeLayers(any()) } returns flowOf(listOf(projectLayer))
-            coEvery { layerRepository.getOrCreateMasterLayer(12L, documentKey) } returns masterLayer
-            every { annotationRepository.observePage(31L, 0) } returns flowOf(emptyList())
-            every { annotationRepository.observePage(41L, 0) } returns
+            val route = projectRoute()
+            // Linkin kadotessa kerrokset kysytään legacy-avaimella, mutta aktiivinen
+            // kerros palauttaa omistajalle alkuperäisen dokumenttiavaimen
+            val legacyOwner =
+                PatternAnnotationOwner.Project(7L, PatternAnnotationDocumentKey.legacyProject(7L))
+            every { route.layerRepository.observeLayers(legacyOwner) } returns
+                flowOf(listOf(route.projectLayer))
+            every { route.annotationRepository.observePage(31L, 0) } returns flowOf(emptyList())
+            every { route.annotationRepository.observePage(41L, 0) } returns
                 flowOf(listOf(annotation(layerId = 41L, page = 0)))
-            val viewModel =
-                PatternAnnotationViewModel(
-                    SavedStateHandle(mapOf("projectId" to 7L)),
-                    counterRepository,
-                    layerRepository,
-                    annotationRepository,
-                )
+            val viewModel = route.viewModel()
             advanceUntilIdle()
 
-            project.value = project.value.copy(linkedPatternId = null)
+            route.project.value = route.project.value.copy(linkedPatternId = null)
             advanceUntilIdle()
 
-            assertEquals(projectOwner, viewModel.uiState.value.owner)
+            verify { route.layerRepository.observeLayers(legacyOwner) }
+            assertEquals(route.projectOwner, viewModel.uiState.value.owner)
             assertEquals(41L, viewModel.uiState.value.editableLayerId)
             assertEquals(
                 41L,
@@ -316,7 +277,7 @@ class PatternAnnotationViewModelTest {
             runCurrent()
             assertEquals(PatternAnnotationLoadError.READ_FAILED, viewModel.uiState.value.loadError)
             assertFalse(viewModel.uiState.value.selectedAnnotationIsEditable)
-            advanceTimeBy(PatternAnnotationViewModel.RETRY_DELAY_MS)
+            advanceTimeBy(repositoryReadRetryDelayMillis(attempt = 0))
             advanceUntilIdle()
 
             assertEquals(PatternAnnotationLoadError.NONE, viewModel.uiState.value.loadError)
@@ -622,6 +583,48 @@ class PatternAnnotationViewModelTest {
                 )
             }
         }
+
+    // Project-reitin jaettu alustus: sama mock-kokoonpano toistui kolmessa testissä
+    private class ProjectRoute(
+        val counterRepository: CounterRepository,
+        val layerRepository: PatternAnnotationLayerRepository,
+        val annotationRepository: PatternAnnotationRepository,
+        val projectOwner: PatternAnnotationOwner.Project,
+        val projectLayer: PatternAnnotationLayer,
+        val project: MutableStateFlow<CounterProject>,
+    ) {
+        fun viewModel() =
+            PatternAnnotationViewModel(
+                SavedStateHandle(mapOf("projectId" to 7L)),
+                counterRepository,
+                layerRepository,
+                annotationRepository,
+            )
+    }
+
+    private fun projectRoute(): ProjectRoute {
+        val counterRepository = mockk<CounterRepository>()
+        val layerRepository = mockk<PatternAnnotationLayerRepository>()
+        val annotationRepository = mockk<PatternAnnotationRepository>()
+        val documentKey = PatternAnnotationDocumentKey.savedPattern(12L)
+        val projectOwner = PatternAnnotationOwner.Project(7L, documentKey)
+        val projectLayer = layer(id = 41L, owner = projectOwner)
+        val masterLayer = layer(id = 31L, owner = PatternAnnotationOwner.SavedPattern(12L, documentKey))
+        val project = MutableStateFlow(CounterProject(id = 7L, linkedPatternId = 12L))
+
+        every { counterRepository.observeProject(7L) } returns project
+        coEvery { layerRepository.getOrCreateMasterLayer(12L, documentKey) } returns masterLayer
+        every { layerRepository.observeLayers(projectOwner) } returns flowOf(listOf(projectLayer))
+
+        return ProjectRoute(
+            counterRepository = counterRepository,
+            layerRepository = layerRepository,
+            annotationRepository = annotationRepository,
+            projectOwner = projectOwner,
+            projectLayer = projectLayer,
+            project = project,
+        )
+    }
 
     private fun layer(
         id: Long,

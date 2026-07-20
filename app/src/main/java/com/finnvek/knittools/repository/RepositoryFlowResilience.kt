@@ -9,11 +9,15 @@ private const val INITIAL_RETRY_DELAY_MS = 250L
 private const val MAX_RETRY_DELAY_MS = 5_000L
 private const val MAX_RETRY_EXPONENT = 5
 
-internal fun <T> Flow<T>.retryOnRepositoryReadFailure(): Flow<T> =
+// onReadFailure kutsutaan jokaisesta uudelleenyritettävästä lukuvirheestä, jotta
+// kutsuja voi näyttää virhetilan ilman omaa retry-toteutusta.
+internal fun <T> Flow<T>.retryOnRepositoryReadFailure(onReadFailure: () -> Unit = {}): Flow<T> =
     retryWhen { cause, attempt ->
         if (cause is CancellationException || cause !is Exception) {
             return@retryWhen false
         }
+
+        onReadFailure()
 
         // Havaintovirta luodaan uudelleen viiveellä, jotta yksittäinen lukuvirhe ei pysäytä UI-päivityksiä.
         delay(repositoryReadRetryDelayMillis(attempt))

@@ -38,10 +38,10 @@ import com.finnvek.knittools.repository.CounterRepository
 import com.finnvek.knittools.repository.PatternAnnotationLayerRepository
 import com.finnvek.knittools.repository.PatternAnnotationRepository
 import com.finnvek.knittools.repository.ProjectCounterRepository
+import com.finnvek.knittools.repository.retryOnRepositoryReadFailure
 import com.finnvek.knittools.ui.theme.PatternAnnotationTokens
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -52,7 +52,6 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.retryWhen
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -755,18 +754,12 @@ class PatternAnnotationViewModel
             layer?.let { annotationRepository.observePage(it.id, page) } ?: flowOf(emptyList())
 
         private fun <T> Flow<T>.withReadRecovery(readFailed: MutableStateFlow<Boolean>): Flow<T> =
-            retryWhen { _, _ ->
-                readFailed.value = true
-                delay(RETRY_DELAY_MS)
-                true
-            }.onEach {
-                readFailed.value = false
-            }
+            retryOnRepositoryReadFailure { readFailed.value = true }
+                .onEach { readFailed.value = false }
 
         companion object {
             const val PROJECT_ID_KEY = "projectId"
             const val SAVED_PATTERN_ID_KEY = "savedPatternId"
-            const val RETRY_DELAY_MS = 250L
         }
     }
 

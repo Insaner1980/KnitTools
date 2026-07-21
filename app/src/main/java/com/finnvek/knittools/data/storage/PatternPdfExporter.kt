@@ -68,16 +68,22 @@ class PatternPdfExporter
                                         pageIndex + 1,
                                     ).create()
                             val page = document.startPage(pageInfo)
-                            page.canvas.drawBitmap(bitmap, 0f, 0f, null)
-                            PatternAnnotationCanvasRenderer.render(
-                                canvas = page.canvas,
-                                width = bitmap.width.toFloat(),
-                                height = bitmap.height.toFloat(),
-                                annotations = annotations.filter { it.page == pageIndex },
-                                style = style,
-                                trackerHighlights = trackerHighlights,
-                            )
-                            document.finishPage(page)
+                            try {
+                                page.canvas.drawBitmap(bitmap, 0f, 0f, null)
+                                PatternAnnotationCanvasRenderer.render(
+                                    canvas = page.canvas,
+                                    width = bitmap.width.toFloat(),
+                                    height = bitmap.height.toFloat(),
+                                    annotations = annotations.filter { it.page == pageIndex },
+                                    style = style,
+                                    trackerHighlights = trackerHighlights,
+                                )
+                            } finally {
+                                // Jokainen aloitettu sivu on suljettava ennen kuin mahdollinen
+                                // renderöintipoikkeus etenee, jotta document.close() ei jää
+                                // sulkemaan keskeneräistä sivua ja peitä alkuperäistä virhettä.
+                                document.finishPage(page)
+                            }
                         } finally {
                             bitmap.recycle()
                         }

@@ -56,7 +56,7 @@ Nykytilan kannalta hyödyllinen järjestys:
 - `firebase-functions`: `7.2.5`
 - `firebase-admin`: `13.10.0`
 - TypeScript: `7.0.2`
-- DeepSec: `2.1.2`
+- DeepSec: `2.2.1`
 - versionCode / versionName: `1 / 1.0.0`
 
 Source of truth:
@@ -1228,7 +1228,7 @@ Huomio:
 GitHub Actions:
 
 - `.github/workflows/build.yml` ajaa push- ja pull request -tapahtumissa `assembleDebug`, `test`, `:app:ktlintCheck`, `:app:detekt` ja `lint`
-- build-workflow käyttää pinnejä `actions/checkout` v6.0.3, `actions/setup-java` v5.5.0 ja `gradle/actions/setup-gradle` v6.2.0; versio näkyy kommentissa, mutta hash on varsinainen lukitus
+- build-workflow käyttää pinnejä `actions/checkout` v6.0.3, `actions/setup-java` v5.6.0 ja `gradle/actions/setup-gradle` v6.2.0; versio näkyy kommentissa, mutta hash on varsinainen lukitus
 - `.github/workflows/codeql.yml` ajaa push-, pull request- ja maanantaiaikataululla Java/Kotlin CodeQL -analyysin manuaalibuildilla; se käyttää `assembleDebug --no-daemon`, `android-actions/setup-android` v4.0.1 ja `github/codeql-action` v4.36.2 pin-hasheilla
 - `.github/dependabot.yml` seuraa Gradle-riippuvuuksia rootissa, GitHub Actions -riippuvuuksia rootissa, npm-riippuvuuksia `.deepsec`-hakemistossa sekä npm-riippuvuuksia `functions`-hakemistossa; CodeQL action -päivitykset ryhmitellään `codeql-action`-ryhmään
 
@@ -1245,7 +1245,7 @@ OSV ja dependency-surface:
 
 DeepSec:
 
-- `.deepsec/package.json` käyttää `deepsec 2.1.2`:ta ja sisältää `deepsec:scan`, `deepsec:scan:custom`, `deepsec:process`, `deepsec:revalidate`, `deepsec:export`, `deepsec:report`, `deepsec:report:custom` ja `test:matchers` -skriptit
+- `.deepsec/package.json` käyttää `deepsec 2.2.1`:ta ja sisältää `deepsec:scan`, `deepsec:scan:custom`, `deepsec:process`, `deepsec:revalidate`, `deepsec:export`, `deepsec:report`, `deepsec:report:custom` ja `test:matchers` -skriptit
 - custom scan ajaa matcherit `android-exported-component`, `android-kotlin-entrypoint-surface`, `android-intent-input-surface`, `fileprovider-broad-path`, `knittools-file-uri-surface`, `android-uri-share-without-clipdata`, `ravelry-firebase-callable-surface`, `ravelry-credential-surface`, `sensitive-android-log` ja `widget-mutation-surface`
 - `.deepsec/deepsec.config.ts` rajaa KnitTools-projektin rootiksi `..`, lisää prioriteettipoluiksi Android-manifestin, `auth/`, `widget/` ja `data/storage/` -pinnat ja ohjaa tarkastusta exported component-, OAuth callback-, FileProvider URI grant-, widget mutation-, Ravelry credential- ja sensitive logging -riskeihin
 - uudet Kotlin-matcherit nostavat tarkastuspintaan Android activity/receiver/service/worker-entrypointit, intent data/extras -luvut, FileProvider/SAF/contentResolver/file-copy/file-delete -rajat, Firebase Auth/Functions callable -rajat, Ravelry callable -nimet ja widgetin counter-mutaatiot

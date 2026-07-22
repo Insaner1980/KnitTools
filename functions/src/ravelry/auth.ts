@@ -28,11 +28,12 @@ function stores() {
 export const ravelryStartAuth = onCall(ravelrySecretOptions, async (request) => {
   try {
     const uid = requireUid(request.auth);
-    const { rateLimiter, stateStore } = stores();
+    const { rateLimiter, stateStore, tokenStore } = stores();
     await rateLimiter.consume(uid, "auth");
     return await startRavelryOAuth({
       uid,
       stateStore,
+      tokenStore,
       clientId: ravelryClientId.value(),
       backendCallbackUrl: resolveBackendCallbackUrl(ravelryCallbackUrl.value()),
     });

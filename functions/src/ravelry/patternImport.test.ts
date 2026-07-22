@@ -14,9 +14,11 @@ import type { OAuthTokenRefresh } from "./oauth2";
 import {
   importPatternById,
   importPatternByUrl,
+  RAVELRY_SEARCH_MAX_PAGE_SIZE,
   ravelrySearchPatterns,
   ravelryImportPatternById,
   ravelryImportPatternByUrl,
+  ravelrySearchQueryFromData,
   searchPatternsForUser,
 } from "./patternImport";
 import {
@@ -31,16 +33,36 @@ import { parseRavelryPatternUrl } from "./urlParsing";
 class MemoryTokenStore implements RavelryTokenStore {
   readonly collectionPath = "ravelryTokens";
   readonly tokens = new Map<string, StoredRavelryToken>();
+  private readonly generations = new Map<string, number>();
 
   async getToken(uid: string): Promise<StoredRavelryToken | null> {
     return this.tokens.get(uid) ?? null;
   }
 
-  async saveToken(token: StoredRavelryToken): Promise<void> {
-    this.tokens.set(token.uid, token);
+  async getConnectionGeneration(uid: string): Promise<number> {
+    return this.generations.get(uid) ?? this.tokens.get(uid)?.connectionGeneration ?? 0;
   }
 
-  async deleteToken(uid: string): Promise<void> {
+  async saveToken(token: StoredRavelryToken): Promise<void> {
+    const connectionGeneration = token.connectionGeneration ?? await this.getConnectionGeneration(token.uid);
+    this.generations.set(token.uid, connectionGeneration);
+    this.tokens.set(token.uid, { ...token, connectionGeneration });
+  }
+
+  async saveTokenIfGenerationCurrent(
+    token: StoredRavelryToken,
+    expectedGeneration: number,
+  ): Promise<boolean> {
+    if (await this.getConnectionGeneration(token.uid) !== expectedGeneration) {
+      return false;
+    }
+    this.generations.set(token.uid, expectedGeneration);
+    this.tokens.set(token.uid, { ...token, connectionGeneration: expectedGeneration });
+    return true;
+  }
+
+  async deleteToken(uid: string, _nowMillis?: number): Promise<void> {
+    this.generations.set(uid, await this.getConnectionGeneration(uid) + 1);
     this.tokens.delete(uid);
   }
 }
@@ -56,7 +78,7 @@ class RecordingRateLimiter implements RavelryRateLimiter {
 class BlockingRateLimiter implements RavelryRateLimiter {
   async consume(_uid: string, bucket: RavelryRateLimitBucket): Promise<void> {
     const rule = RAVELRY_RATE_LIMIT_RULES[bucket];
-    throw new RavelryRateLimitError(bucket, rule.limit, rule.windowMillis);
+    throw new RavelryRateLimitError(bucket, "uid", rule.limit, rule.windowMillis);
   }
 }
 
@@ -99,6 +121,17 @@ describe("Ravelry backend search and import", () => {
   it("rejects malformed percent-encoded Ravelry pattern slugs", () => {
     assert.equal(parseRavelryPatternUrl("https://www.ravelry.com/patterns/library/%"), null);
     assert.equal(parseRavelryPatternUrl("https://www.ravelry.com/patterns/library/%ZZ"), null);
+  });
+
+  it("rejects oversized Ravelry search page sizes before backend work", () => {
+    assert.throws(
+      () => ravelrySearchQueryFromData({ query: "hat", pageSize: RAVELRY_SEARCH_MAX_PAGE_SIZE + 1 }),
+      /invalid_page_size/,
+    );
+    assert.deepEqual(
+      ravelrySearchQueryFromData({ query: "hat", pageSize: RAVELRY_SEARCH_MAX_PAGE_SIZE }),
+      { query: "hat", pageSize: RAVELRY_SEARCH_MAX_PAGE_SIZE },
+    );
   });
 
   it("searches Ravelry with a bearer token and returns only sanitized fields plus pagination", async () => {
@@ -368,8 +401,69 @@ describe("Ravelry backend search and import", () => {
     assert.equal(searchCount, 0);
   });
 
+  it("does not refresh expired Ravelry tokens before search or import buckets are consumed", async () => {
+    const tokenStore = new MemoryTokenStore();
+    await tokenStore.saveToken({
+      uid: "uid",
+      authType: "oauth2",
+      accessToken: "expired-access-token",
+      refreshToken: "refresh-token",
+      expiresAtMillis: 999,
+      createdAtMillis: 100,
+      updatedAtMillis: 100,
+    });
+    let refreshCount = 0;
+    const refresh: OAuthTokenRefresh = async () => {
+      refreshCount += 1;
+      return {
+        accessToken: "fresh-access-token",
+        refreshToken: "fresh-refresh-token",
+        expiresAtMillis: 10_000,
+      };
+    };
+    const client = {
+      async getCurrentUser() {
+        throw new Error("not used");
+      },
+      async searchPatterns() {
+        throw new Error("not used");
+      },
+      async getPatternById() {
+        throw new Error("not used");
+      },
+    };
+
+    await assert.rejects(
+      searchPatternsForUser({
+        uid: "uid",
+        tokenStore,
+        client,
+        rateLimiter: new BlockingRateLimiter(),
+        refresh,
+        nowMillis: () => 1_000,
+        query: { query: "hat" },
+      }),
+      /ravelry_rate_limited/,
+    );
+    await assert.rejects(
+      importPatternById({
+        uid: "uid",
+        tokenStore,
+        client,
+        rateLimiter: new BlockingRateLimiter(),
+        refresh,
+        nowMillis: () => 1_000,
+        ravelryPatternId: 42,
+      }),
+      /ravelry_rate_limited/,
+    );
+    assert.equal(refreshCount, 0);
+    assert.equal((await tokenStore.getToken("uid"))?.accessToken, "expired-access-token");
+  });
+
   it("does not call Ravelry when the Firebase user has no stored Ravelry token", async () => {
     const tokenStore = new MemoryTokenStore();
+    const rateLimiter = new RecordingRateLimiter();
     let searchCount = 0;
     const client = {
       async getCurrentUser() {
@@ -389,11 +483,13 @@ describe("Ravelry backend search and import", () => {
         uid: "uid",
         tokenStore,
         client,
+        rateLimiter,
         query: { query: "hat" },
       }),
       /ravelry_not_connected/,
     );
     assert.equal(searchCount, 0);
+    assert.deepEqual(rateLimiter.calls, []);
   });
 
   it("rejects unauthenticated Ravelry callables before backend work or request data validation", async () => {
@@ -468,6 +564,7 @@ describe("Ravelry backend search and import", () => {
       expiresAtMillis: 10_000,
       createdAtMillis: 100,
       updatedAtMillis: 1_000,
+      connectionGeneration: 0,
     });
   });
 

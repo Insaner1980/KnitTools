@@ -45,16 +45,36 @@ class MemoryOAuthStateStore implements OAuthStateStore {
 class MemoryTokenStore implements RavelryTokenStore {
   readonly collectionPath = "ravelryTokens";
   readonly tokens = new Map<string, StoredRavelryToken>();
+  private readonly generations = new Map<string, number>();
 
   async getToken(uid: string): Promise<StoredRavelryToken | null> {
     return this.tokens.get(uid) ?? null;
   }
 
-  async saveToken(token: StoredRavelryToken): Promise<void> {
-    this.tokens.set(token.uid, token);
+  async getConnectionGeneration(uid: string): Promise<number> {
+    return this.generations.get(uid) ?? this.tokens.get(uid)?.connectionGeneration ?? 0;
   }
 
-  async deleteToken(uid: string): Promise<void> {
+  async saveToken(token: StoredRavelryToken): Promise<void> {
+    const connectionGeneration = token.connectionGeneration ?? await this.getConnectionGeneration(token.uid);
+    this.generations.set(token.uid, connectionGeneration);
+    this.tokens.set(token.uid, { ...token, connectionGeneration });
+  }
+
+  async saveTokenIfGenerationCurrent(
+    token: StoredRavelryToken,
+    expectedGeneration: number,
+  ): Promise<boolean> {
+    if (await this.getConnectionGeneration(token.uid) !== expectedGeneration) {
+      return false;
+    }
+    this.generations.set(token.uid, expectedGeneration);
+    this.tokens.set(token.uid, { ...token, connectionGeneration: expectedGeneration });
+    return true;
+  }
+
+  async deleteToken(uid: string, _nowMillis?: number): Promise<void> {
+    this.generations.set(uid, await this.getConnectionGeneration(uid) + 1);
     this.tokens.delete(uid);
   }
 }
@@ -62,10 +82,12 @@ class MemoryTokenStore implements RavelryTokenStore {
 describe("Ravelry OAuth2 auth core", () => {
   it("starts OAuth with state, PKCE, expiry, and no returned secrets", async () => {
     const stateStore = new MemoryOAuthStateStore();
+    const tokenStore = new MemoryTokenStore();
 
     const result = await startRavelryOAuth({
       uid: "firebase-uid",
       stateStore,
+      tokenStore,
       clientId: "client-id",
       backendCallbackUrl: "https://example.cloudfunctions.net/ravelryCallback",
       nowMillis: () => 1_000,
@@ -88,6 +110,7 @@ describe("Ravelry OAuth2 auth core", () => {
     assert.equal(storedState?.uid, "firebase-uid");
     assert.equal(storedState?.authType, "oauth2");
     assert.equal(storedState?.codeVerifier, "code-verifier-random");
+    assert.equal(storedState?.connectionGeneration, 0);
     assert.equal(storedState?.usedAtMillis, null);
   });
 
@@ -208,7 +231,107 @@ describe("Ravelry OAuth2 auth core", () => {
       expiresAtMillis: 8_000,
       createdAtMillis: 1_000,
       updatedAtMillis: 1_000,
+      connectionGeneration: 0,
     });
+  });
+
+  it("does not restore a disconnected token when OAuth callback exchange finishes late", async () => {
+    const stateStore = new MemoryOAuthStateStore();
+    const tokenStore = new MemoryTokenStore();
+
+    await stateStore.saveState({
+      state: "disconnect-race",
+      uid: "uid",
+      authType: "oauth2",
+      createdAtMillis: 0,
+      expiresAtMillis: 2_000,
+      usedAtMillis: null,
+      redirectUri: "https://callback",
+      codeVerifier: "verifier",
+      codeChallenge: "challenge",
+      codeChallengeMethod: "S256",
+    });
+
+    const result = await completeRavelryOAuthCallback({
+      query: { state: "disconnect-race", code: "auth-code" },
+      stateStore,
+      tokenStore,
+      exchange: async () => {
+        await disconnectRavelry({
+          uid: "uid",
+          tokenStore,
+          stateStore,
+          nowMillis: () => 1_500,
+        });
+        return {
+          accessToken: "late-access-token",
+          refreshToken: "late-refresh-token",
+        };
+      },
+      nowMillis: () => 1_000,
+    });
+
+    assert.equal(
+      result.redirectUrl,
+      "knittools://ravelry-auth-complete?state=disconnect-race&error=state_expired",
+    );
+    assert.equal(await tokenStore.getToken("uid"), null);
+    assert.equal(await tokenStore.getConnectionGeneration("uid"), 1);
+  });
+
+  it("does not restore a disconnected token when disconnect wins before callback generation is selected", async () => {
+    const stateStore = new MemoryOAuthStateStore();
+    let disconnected = false;
+    const tokenStore = new class extends MemoryTokenStore {
+      async getConnectionGeneration(uid: string): Promise<number> {
+        if (!disconnected) {
+          disconnected = true;
+          await disconnectRavelry({
+            uid,
+            tokenStore: this,
+            stateStore,
+            nowMillis: () => 1_500,
+          });
+        }
+        return super.getConnectionGeneration(uid);
+      }
+    }();
+    let exchangeCount = 0;
+
+    await stateStore.saveState({
+      state: "generation-race",
+      uid: "uid",
+      authType: "oauth2",
+      createdAtMillis: 0,
+      expiresAtMillis: 2_000,
+      usedAtMillis: null,
+      redirectUri: "https://callback",
+      codeVerifier: "verifier",
+      codeChallenge: "challenge",
+      codeChallengeMethod: "S256",
+    });
+
+    const result = await completeRavelryOAuthCallback({
+      query: { state: "generation-race", code: "auth-code" },
+      stateStore,
+      tokenStore,
+      exchange: async () => {
+        exchangeCount += 1;
+        return {
+          accessToken: "late-access-token",
+          refreshToken: "late-refresh-token",
+        };
+      },
+      nowMillis: () => 1_000,
+    });
+
+    assert.equal(
+      result.redirectUrl,
+      "knittools://ravelry-auth-complete?state=generation-race&error=state_expired",
+    );
+    assert.equal(exchangeCount, 0);
+    assert.equal(await tokenStore.getToken("uid"), null);
+    assert.equal(await tokenStore.getConnectionGeneration("uid"), 1);
   });
 
   it("does not persist undefined optional token fields", async () => {
@@ -386,6 +509,44 @@ describe("Ravelry OAuth2 auth core", () => {
     assert.equal(await tokenStore.getToken("uid"), null);
   });
 
+  it("does not restore a disconnected token when current-user verification finishes late", async () => {
+    const stateStore = new MemoryOAuthStateStore();
+    const tokenStore = new MemoryTokenStore();
+    const client: RavelryCurrentUserClient = {
+      async getCurrentUser(accessToken) {
+        assert.equal(accessToken, "access-token");
+        await disconnectRavelry({
+          uid: "uid",
+          tokenStore,
+          stateStore,
+          nowMillis: () => 1_500,
+        });
+        return { ravelryUserId: "42", ravelryUsername: "knitter" };
+      },
+    };
+
+    await tokenStore.saveToken({
+      uid: "uid",
+      authType: "oauth2",
+      accessToken: "access-token",
+      refreshToken: "refresh-token",
+      createdAtMillis: 1_000,
+      updatedAtMillis: 1_000,
+    });
+
+    assert.deepEqual(
+      await getRavelryCurrentUser({
+        uid: "uid",
+        tokenStore,
+        client,
+        nowMillis: () => 2_000,
+      }),
+      { connected: false },
+    );
+    assert.equal(await tokenStore.getToken("uid"), null);
+    assert.equal(await tokenStore.getConnectionGeneration("uid"), 1);
+  });
+
   it("refreshes an expired token before fetching the current Ravelry user", async () => {
     const tokenStore = new MemoryTokenStore();
     const client: RavelryCurrentUserClient = {
@@ -438,6 +599,51 @@ describe("Ravelry OAuth2 auth core", () => {
       createdAtMillis: 100,
       updatedAtMillis: 1_000,
       lastVerifiedAtMillis: 1_000,
+      connectionGeneration: 0,
     });
+  });
+
+  it("does not use a refreshed token when disconnect wins during refresh", async () => {
+    const tokenStore = new MemoryTokenStore();
+    let currentUserCalled = false;
+    const client: RavelryCurrentUserClient = {
+      async getCurrentUser() {
+        currentUserCalled = true;
+        return { ravelryUserId: "42", ravelryUsername: "knitter" };
+      },
+    };
+    const refresh: OAuthTokenRefresh = async ({ refreshToken }) => {
+      assert.equal(refreshToken, "old-refresh-token");
+      await tokenStore.deleteToken("uid", 1_500);
+      return {
+        accessToken: "fresh-access-token",
+        refreshToken: "rotated-refresh-token",
+        expiresAtMillis: 10_000,
+      };
+    };
+
+    await tokenStore.saveToken({
+      uid: "uid",
+      authType: "oauth2",
+      accessToken: "expired-access-token",
+      refreshToken: "old-refresh-token",
+      expiresAtMillis: 999,
+      createdAtMillis: 100,
+      updatedAtMillis: 100,
+    });
+
+    assert.deepEqual(
+      await getRavelryCurrentUser({
+        uid: "uid",
+        tokenStore,
+        client,
+        refresh,
+        nowMillis: () => 1_000,
+      }),
+      { connected: false },
+    );
+    assert.equal(currentUserCalled, false);
+    assert.equal(await tokenStore.getToken("uid"), null);
+    assert.equal(await tokenStore.getConnectionGeneration("uid"), 1);
   });
 });

@@ -1,6 +1,7 @@
 import type { Firestore } from "firebase-admin/firestore";
 
 import { RAVELRY_OAUTH_STATES_COLLECTION } from "../config";
+import { connectionGenerationFromData } from "./connectionGeneration";
 
 export interface StoredOAuthState {
   readonly state: string;
@@ -39,17 +40,8 @@ function toStoredOAuthState(value: FirebaseFirestore.DocumentData | undefined): 
     codeVerifier: String(value.codeVerifier),
     codeChallenge: String(value.codeChallenge),
     codeChallengeMethod: "S256",
-    connectionGeneration: generationFromData(value),
+    connectionGeneration: connectionGenerationFromData(value),
   };
-}
-
-function finiteNumber(value: unknown): number | undefined {
-  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
-}
-
-function generationFromData(value: FirebaseFirestore.DocumentData | undefined): number {
-  const generation = finiteNumber(value?.connectionGeneration);
-  return generation !== undefined && generation >= 0 ? Math.trunc(generation) : 0;
 }
 
 export function createOAuthStateStore(firestore: Firestore): OAuthStateStore {

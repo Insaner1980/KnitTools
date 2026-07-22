@@ -1,6 +1,7 @@
 import type { Firestore } from "firebase-admin/firestore";
 
 import { RAVELRY_TOKENS_COLLECTION } from "../config";
+import { connectionGenerationFromData } from "./connectionGeneration";
 
 export interface StoredRavelryToken {
   readonly uid: string;
@@ -28,15 +29,6 @@ export interface RavelryTokenStore {
   deleteToken(uid: string, nowMillis?: number): Promise<void>;
 }
 
-function finiteNumber(value: unknown): number | undefined {
-  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
-}
-
-function generationFromData(value: FirebaseFirestore.DocumentData | undefined): number {
-  const generation = finiteNumber(value?.connectionGeneration);
-  return generation !== undefined && generation >= 0 ? Math.trunc(generation) : 0;
-}
-
 function toStoredToken(value: FirebaseFirestore.DocumentData | undefined): StoredRavelryToken | null {
   if (!value || typeof value.uid !== "string" || typeof value.accessToken !== "string") {
     return null;
@@ -53,7 +45,7 @@ function toStoredToken(value: FirebaseFirestore.DocumentData | undefined): Store
     createdAtMillis: Number(value.createdAtMillis),
     updatedAtMillis: Number(value.updatedAtMillis),
     lastVerifiedAtMillis: value.lastVerifiedAtMillis == null ? undefined : Number(value.lastVerifiedAtMillis),
-    connectionGeneration: generationFromData(value),
+    connectionGeneration: connectionGenerationFromData(value),
   };
 }
 
@@ -92,13 +84,14 @@ export function createTokenStore(firestore: Firestore): RavelryTokenStore {
     },
     async getConnectionGeneration(uid) {
       const snapshot = await collection.doc(uid).get();
-      return generationFromData(snapshot.data());
+      return connectionGenerationFromData(snapshot.data());
     },
     async saveToken(token) {
       const ref = collection.doc(token.uid);
       await firestore.runTransaction(async (transaction) => {
         const snapshot = await transaction.get(ref);
-        const connectionGeneration = token.connectionGeneration ?? generationFromData(snapshot.data());
+        const connectionGeneration =
+          token.connectionGeneration ?? connectionGenerationFromData(snapshot.data());
         transaction.set(ref, withoutUndefinedValues({ ...token, connectionGeneration }));
       });
     },
@@ -106,7 +99,7 @@ export function createTokenStore(firestore: Firestore): RavelryTokenStore {
       const ref = collection.doc(token.uid);
       return firestore.runTransaction(async (transaction) => {
         const snapshot = await transaction.get(ref);
-        const currentGeneration = generationFromData(snapshot.data());
+        const currentGeneration = connectionGenerationFromData(snapshot.data());
         if (currentGeneration !== expectedGeneration) {
           return false;
         }
@@ -122,7 +115,7 @@ export function createTokenStore(firestore: Firestore): RavelryTokenStore {
       const ref = collection.doc(uid);
       await firestore.runTransaction(async (transaction) => {
         const snapshot = await transaction.get(ref);
-        const nextGeneration = generationFromData(snapshot.data()) + 1;
+        const nextGeneration = connectionGenerationFromData(snapshot.data()) + 1;
         transaction.set(ref, disconnectedTokenMarker(uid, nextGeneration, nowMillis));
       });
     },

@@ -2,9 +2,11 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import {
+  RAVELRY_GLOBAL_RATE_LIMIT_RULES,
   RAVELRY_RATE_LIMIT_RULES,
   RavelryRateLimitError,
   nextRavelryRateLimitState,
+  ravelryRateLimitTargets,
 } from "./rateLimit";
 
 describe("Ravelry callable rate limits", () => {
@@ -42,9 +44,20 @@ describe("Ravelry callable rate limits", () => {
 
   it("maps exhausted buckets to a backend HTTP error", () => {
     const rule = RAVELRY_RATE_LIMIT_RULES.auth;
-    const error = new RavelryRateLimitError("auth", rule.limit, rule.windowMillis);
+    const error = new RavelryRateLimitError("auth", "global", rule.limit, rule.windowMillis);
 
     assert.equal(error.code, "ravelry_rate_limited");
     assert.equal(error.httpStatus, 429);
+  });
+
+  it("adds a shared global target alongside the per-uid target", () => {
+    const firstUidTargets = ravelryRateLimitTargets("first-uid", "search");
+    const secondUidTargets = ravelryRateLimitTargets("second-uid", "search");
+
+    assert.deepEqual(firstUidTargets.map((target) => target.scope), ["uid", "global"]);
+    assert.notEqual(firstUidTargets[0].documentId, secondUidTargets[0].documentId);
+    assert.equal(firstUidTargets[1].documentId, secondUidTargets[1].documentId);
+    assert.deepEqual(firstUidTargets[0].rule, RAVELRY_RATE_LIMIT_RULES.search);
+    assert.deepEqual(firstUidTargets[1].rule, RAVELRY_GLOBAL_RATE_LIMIT_RULES.search);
   });
 });

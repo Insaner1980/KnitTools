@@ -5,7 +5,11 @@ import { httpsErrorFor, requireUid } from "./callable";
 import { createRavelryClient, type RavelryClient, type RavelrySearchQuery } from "./client";
 import { refreshRavelryAccessToken } from "./oauthSecretRefresh";
 import type { OAuthTokenRefresh } from "./oauth2";
-import { disabledRavelryRateLimiter, type RavelryRateLimiter } from "./rateLimit";
+import {
+  disabledRavelryRateLimiter,
+  type RavelryRateLimitBucket,
+  type RavelryRateLimiter,
+} from "./rateLimit";
 import type { SanitizedPattern } from "./sanitizedTypes";
 import { createRavelryBackendStores } from "./stores";
 import { getUsableRavelryToken } from "./tokenAccess";
@@ -33,6 +37,8 @@ interface ImportPatternByUrlOptions extends UserPatternOptions {
   readonly url: string;
 }
 
+export const RAVELRY_SEARCH_MAX_PAGE_SIZE = 50;
+
 export class RavelryPatternImportError extends Error {
   constructor(
     readonly code: string,
@@ -46,23 +52,45 @@ async function requireAccessToken({
   uid,
   tokenStore,
   refresh,
+  beforeRefresh,
   nowMillis,
 }: {
   readonly uid: string;
   readonly tokenStore: RavelryTokenStore;
   readonly refresh?: OAuthTokenRefresh;
+  readonly beforeRefresh?: () => Promise<void>;
   readonly nowMillis?: () => number;
 }): Promise<string> {
   const token = await getUsableRavelryToken({
     uid,
     tokenStore,
     refresh,
+    beforeRefresh,
     nowMillis,
   });
   if (!token) {
     throw new RavelryPatternImportError("ravelry_not_connected", 412);
   }
   return token.accessToken;
+}
+
+async function requireAccessTokenForOperation(
+  options: UserPatternOptions,
+  bucket: RavelryRateLimitBucket,
+): Promise<string> {
+  let consumed = false;
+  const consumeRateLimit = async () => {
+    if (!consumed) {
+      await rateLimiterFor(options).consume(options.uid, bucket);
+      consumed = true;
+    }
+  };
+  const accessToken = await requireAccessToken({
+    ...options,
+    beforeRefresh: consumeRateLimit,
+  });
+  await consumeRateLimit();
+  return accessToken;
 }
 
 function withOriginalUrl(pattern: SanitizedPattern, originalUrl: string): SanitizedPattern {
@@ -74,6 +102,21 @@ function withOriginalUrl(pattern: SanitizedPattern, originalUrl: string): Saniti
 
 function positiveInteger(value: unknown): number | undefined {
   return typeof value === "number" && Number.isInteger(value) && value > 0 ? value : undefined;
+}
+
+function optionalBoundedPositiveInteger(
+  value: unknown,
+  maxValue: number,
+  errorCode: string,
+): number | undefined {
+  if (value == null) {
+    return undefined;
+  }
+  const integer = positiveInteger(value);
+  if (integer == null || integer > maxValue) {
+    throw new RavelryPatternImportError(errorCode, 400);
+  }
+  return integer;
 }
 
 function optionalNumber(value: unknown): number | undefined {
@@ -88,12 +131,17 @@ function dataObject(data: unknown): Record<string, unknown> {
   return typeof data === "object" && data !== null ? (data as Record<string, unknown>) : {};
 }
 
-function queryFromData(data: unknown): RavelrySearchQuery {
+export function ravelrySearchQueryFromData(data: unknown): RavelrySearchQuery {
   const value = dataObject(data);
   const query = optionalString(value.query);
   if (!query) {
     throw new RavelryPatternImportError("missing_query", 400);
   }
+  const pageSize = optionalBoundedPositiveInteger(
+    value.pageSize,
+    RAVELRY_SEARCH_MAX_PAGE_SIZE,
+    "invalid_page_size",
+  );
   return {
     query,
     ...(optionalString(value.craft) ? { craft: optionalString(value.craft) } : {}),
@@ -105,13 +153,12 @@ function queryFromData(data: unknown): RavelrySearchQuery {
       : {}),
     ...(optionalNumber(value.difficultyTo) != null ? { difficultyTo: optionalNumber(value.difficultyTo) } : {}),
     ...(positiveInteger(value.page) != null ? { page: positiveInteger(value.page) } : {}),
-    ...(positiveInteger(value.pageSize) != null ? { pageSize: positiveInteger(value.pageSize) } : {}),
+    ...(pageSize != null ? { pageSize } : {}),
   };
 }
 
 export async function searchPatternsForUser(options: SearchPatternsOptions) {
-  const accessToken = await requireAccessToken(options);
-  await rateLimiterFor(options).consume(options.uid, "search");
+  const accessToken = await requireAccessTokenForOperation(options, "search");
   return options.client.searchPatterns(accessToken, options.query);
 }
 
@@ -120,8 +167,7 @@ export async function importPatternById(options: ImportPatternByIdOptions): Prom
     throw new RavelryPatternImportError("invalid_pattern_id", 400);
   }
 
-  const accessToken = await requireAccessToken(options);
-  await rateLimiterFor(options).consume(options.uid, "import");
+  const accessToken = await requireAccessTokenForOperation(options, "import");
   const pattern = await options.client.getPatternById(accessToken, options.ravelryPatternId);
   if (!pattern) {
     throw new RavelryPatternImportError("pattern_not_found", 404);
@@ -202,7 +248,7 @@ export const ravelrySearchPatterns = onCall(ravelrySecretOptions, async (request
       rateLimiter,
       client: createRavelryClient(),
       refresh: refreshRavelryAccessToken,
-      query: queryFromData(request.data),
+      query: ravelrySearchQueryFromData(request.data),
     });
   } catch (error) {
     throw httpsErrorFor(error, "ravelry_search_failed");

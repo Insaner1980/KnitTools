@@ -17,6 +17,7 @@ type RandomLabel = "state" | "code-verifier";
 interface StartOAuthOptions {
   readonly uid: string;
   readonly stateStore: OAuthStateStore;
+  readonly tokenStore: RavelryTokenStore;
   readonly clientId: string;
   readonly backendCallbackUrl: string;
   readonly nowMillis?: () => number;
@@ -121,6 +122,7 @@ function tokenForStorage(
   uid: string,
   token: Awaited<ReturnType<OAuthTokenExchange>>,
   nowMillis: number,
+  connectionGeneration: number,
 ) {
   return {
     uid,
@@ -130,6 +132,7 @@ function tokenForStorage(
     ...(token.expiresAtMillis != null ? { expiresAtMillis: token.expiresAtMillis } : {}),
     createdAtMillis: nowMillis,
     updatedAtMillis: nowMillis,
+    connectionGeneration,
   };
 }
 
@@ -200,6 +203,7 @@ export function resolveBackendCallbackUrl(
 export async function startRavelryOAuth({
   uid,
   stateStore,
+  tokenStore,
   clientId,
   backendCallbackUrl,
   nowMillis = Date.now,
@@ -210,6 +214,7 @@ export async function startRavelryOAuth({
   const state = randomString("state");
   const codeVerifier = randomString("code-verifier");
   const codeChallenge = codeChallengeFor(codeVerifier);
+  const connectionGeneration = await tokenStore.getConnectionGeneration(uid);
 
   await stateStore.saveState({
     state,
@@ -222,6 +227,7 @@ export async function startRavelryOAuth({
     codeVerifier,
     codeChallenge,
     codeChallengeMethod: "S256",
+    connectionGeneration,
   });
 
   const authorizeUrl = new URL(RAVELRY_AUTHORIZATION_URL);
@@ -272,11 +278,15 @@ export async function completeRavelryOAuthCallback({
     throw new RavelryAuthFlowError("missing_code", 400);
   }
 
+  const connectionGeneration = storedState.connectionGeneration ?? 0;
   const expiredResult = await markStateUsedOrReject(stateStore, state, now).catch((error: unknown) =>
     redirectExpiredStateOrThrow(error, state),
   );
   if (expiredResult) {
     return expiredResult;
+  }
+  if (await tokenStore.getConnectionGeneration(storedState.uid) !== connectionGeneration) {
+    return { redirectUrl: appRedirectUrl(state, "state_expired") };
   }
   const token = await exchange({
     code,
@@ -284,7 +294,13 @@ export async function completeRavelryOAuthCallback({
     redirectUri: storedState.redirectUri,
   });
 
-  await tokenStore.saveToken(tokenForStorage(storedState.uid, token, now));
+  const saved = await tokenStore.saveTokenIfGenerationCurrent(
+    tokenForStorage(storedState.uid, token, now, connectionGeneration),
+    connectionGeneration,
+  );
+  if (!saved) {
+    return { redirectUrl: appRedirectUrl(state, "state_expired") };
+  }
 
   return { redirectUrl: appRedirectUrl(state) };
 }
@@ -326,13 +342,18 @@ export async function getRavelryCurrentUser({
 
   const currentUser = await client.getCurrentUser(token.accessToken);
   const now = nowMillis();
-  await tokenStore.saveToken({
+  const connectionGeneration = token.connectionGeneration ?? 0;
+  const saved = await tokenStore.saveTokenIfGenerationCurrent({
     ...token,
     ravelryUserId: currentUser.ravelryUserId,
     ravelryUsername: currentUser.ravelryUsername,
     updatedAtMillis: now,
     lastVerifiedAtMillis: now,
-  });
+    connectionGeneration,
+  }, connectionGeneration);
+  if (!saved) {
+    return { connected: false };
+  }
 
   return {
     connected: true,
@@ -348,7 +369,7 @@ export async function disconnectRavelry({
   nowMillis = Date.now,
 }: DisconnectOptions): Promise<{ disconnected: true }> {
   const now = nowMillis();
-  await tokenStore.deleteToken(uid);
+  await tokenStore.deleteToken(uid, now);
   await stateStore.expireUnusedStatesForUid(uid, now);
   return { disconnected: true };
 }

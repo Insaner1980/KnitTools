@@ -13,6 +13,7 @@ export interface StoredOAuthState {
   readonly codeVerifier: string;
   readonly codeChallenge: string;
   readonly codeChallengeMethod: "S256";
+  readonly connectionGeneration?: number;
 }
 
 export interface OAuthStateStore {
@@ -38,7 +39,17 @@ function toStoredOAuthState(value: FirebaseFirestore.DocumentData | undefined): 
     codeVerifier: String(value.codeVerifier),
     codeChallenge: String(value.codeChallenge),
     codeChallengeMethod: "S256",
+    connectionGeneration: generationFromData(value),
   };
+}
+
+function finiteNumber(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
+
+function generationFromData(value: FirebaseFirestore.DocumentData | undefined): number {
+  const generation = finiteNumber(value?.connectionGeneration);
+  return generation !== undefined && generation >= 0 ? Math.trunc(generation) : 0;
 }
 
 export function createOAuthStateStore(firestore: Firestore): OAuthStateStore {

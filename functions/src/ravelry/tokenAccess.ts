@@ -5,6 +5,7 @@ interface UsableTokenOptions {
   readonly uid: string;
   readonly tokenStore: RavelryTokenStore;
   readonly refresh?: OAuthTokenRefresh;
+  readonly beforeRefresh?: () => Promise<void>;
   readonly nowMillis?: () => number;
 }
 
@@ -30,6 +31,7 @@ function refreshedToken(
     createdAtMillis: token.createdAtMillis,
     updatedAtMillis,
     ...(token.lastVerifiedAtMillis != null ? { lastVerifiedAtMillis: token.lastVerifiedAtMillis } : {}),
+    connectionGeneration: token.connectionGeneration ?? 0,
   };
 }
 
@@ -37,6 +39,7 @@ export async function getUsableRavelryToken({
   uid,
   tokenStore,
   refresh,
+  beforeRefresh,
   nowMillis = Date.now,
 }: UsableTokenOptions): Promise<StoredRavelryToken | null> {
   const token = await tokenStore.getToken(uid);
@@ -53,7 +56,12 @@ export async function getUsableRavelryToken({
     return null;
   }
 
+  await beforeRefresh?.();
   const nextToken = refreshedToken(token, await refresh({ refreshToken: token.refreshToken }), now);
-  await tokenStore.saveToken(nextToken);
+  const connectionGeneration = token.connectionGeneration ?? 0;
+  const saved = await tokenStore.saveTokenIfGenerationCurrent(nextToken, connectionGeneration);
+  if (!saved) {
+    return null;
+  }
   return nextToken;
 }

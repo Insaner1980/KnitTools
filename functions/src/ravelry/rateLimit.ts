@@ -31,7 +31,6 @@ export interface RavelryRateLimiter {
 }
 
 export interface RavelryRateLimitRuntimeState {
-  readonly completedLegacyMigrations: Set<RavelryRateLimitBucket>;
   readonly saturatedGlobalWindows: Map<RavelryRateLimitBucket, number>;
 }
 
@@ -51,7 +50,6 @@ export const RAVELRY_GLOBAL_RATE_LIMIT_SHARD_COUNT = 10;
 
 export function createRavelryRateLimitRuntimeState(): RavelryRateLimitRuntimeState {
   return {
-    completedLegacyMigrations: new Set(),
     saturatedGlobalWindows: new Map(),
   };
 }
@@ -145,6 +143,11 @@ interface ReferencedRateLimitTarget extends RavelryRateLimitTarget {
   readonly ref: DocumentReference;
 }
 
+interface ReferencedRateLimitTargets {
+  readonly uid: ReferencedRateLimitTarget;
+  readonly global: ReferencedRateLimitTarget;
+}
+
 export function createRavelryRateLimiter(
   firestore: Firestore,
   nowMillis: () => number = Date.now,
@@ -156,30 +159,6 @@ export function createRavelryRateLimiter(
       const collection = firestore.collection(RAVELRY_RATE_LIMITS_COLLECTION);
       const currentMillis = nowMillis();
       const globalRule = RAVELRY_GLOBAL_RATE_LIMIT_RULES[bucket];
-
-      if (!runtimeState.completedLegacyMigrations.has(bucket)) {
-        const legacyTargets = referencedTargets(
-          collection,
-          ravelryLegacyRateLimitTargets(uid, bucket),
-        );
-        const legacyOutcome = await consumeRateLimitTargets({
-          firestore,
-          targets: legacyTargets,
-          uid,
-          bucket,
-          currentMillis,
-          globalDecisionMillis: currentMillis,
-          requireActiveGlobalWindow: true,
-        });
-        if (legacyOutcome === "consumed") {
-          return;
-        }
-        if (legacyOutcome === "global-full") {
-          throw globalRateLimitError(bucket);
-        }
-        runtimeState.completedLegacyMigrations.add(bucket);
-      }
-
       const globalWindowStart = fixedWindowStartMillis(
         currentMillis,
         globalRule.windowMillis,
@@ -190,6 +169,26 @@ export function createRavelryRateLimiter(
       }
       if (saturatedWindowStart != null) {
         runtimeState.saturatedGlobalWindows.delete(bucket);
+      }
+
+      const legacyTargets = referencedTargets(
+        collection,
+        ravelryLegacyRateLimitTargets(uid, bucket),
+      );
+      const legacyOutcome = await consumeRateLimitTargets({
+        firestore,
+        targets: legacyTargets,
+        uid,
+        bucket,
+        currentMillis,
+        globalDecisionMillis: currentMillis,
+        requireActiveGlobalWindow: true,
+      });
+      if (legacyOutcome === "consumed") {
+        return;
+      }
+      if (legacyOutcome === "global-full") {
+        throw globalRateLimitError(bucket);
       }
 
       const startShard = Math.min(
@@ -232,7 +231,7 @@ async function consumeRateLimitTargets({
   requireActiveGlobalWindow,
 }: {
   readonly firestore: Firestore;
-  readonly targets: readonly ReferencedRateLimitTarget[];
+  readonly targets: ReferencedRateLimitTargets;
   readonly uid: string;
   readonly bucket: RavelryRateLimitBucket;
   readonly currentMillis: number;
@@ -240,31 +239,34 @@ async function consumeRateLimitTargets({
   readonly requireActiveGlobalWindow: boolean;
 }): Promise<RateLimitTransactionOutcome> {
   return firestore.runTransaction(async (transaction) => {
-    const snapshots = await Promise.all(
-      targets.map((target) => transaction.get(target.ref)),
-    );
-    const globalTarget = targets[1];
-    const globalStored = snapshots[1].data();
+    const [uidSnapshot, globalSnapshot] = await Promise.all([
+      transaction.get(targets.uid.ref),
+      transaction.get(targets.global.ref),
+    ]);
+    const globalStored = globalSnapshot.data();
     if (
       requireActiveGlobalWindow &&
-      activeRavelryRateLimitState(globalStored, currentMillis, globalTarget.rule) == null
+      activeRavelryRateLimitState(globalStored, currentMillis, targets.global.rule) == null
     ) {
       return "global-inactive";
     }
 
-    const decisions = snapshots.map((snapshot, index) => {
-      const target = targets[index];
-      return {
-        target,
-        decision: nextRavelryRateLimitState(
-          snapshot.data(),
-          target.scope === "global" ? globalDecisionMillis : currentMillis,
-          target.rule,
-        ),
-      };
-    });
-    const uidDecision = decisions[0];
-    const globalDecision = decisions[1];
+    const uidDecision = {
+      target: targets.uid,
+      decision: nextRavelryRateLimitState(
+        uidSnapshot.data(),
+        currentMillis,
+        targets.uid.rule,
+      ),
+    };
+    const globalDecision = {
+      target: targets.global,
+      decision: nextRavelryRateLimitState(
+        globalStored,
+        globalDecisionMillis,
+        targets.global.rule,
+      ),
+    };
     if (!uidDecision.decision.allowed) {
       throw new RavelryRateLimitError(
         bucket,
@@ -277,7 +279,7 @@ async function consumeRateLimitTargets({
       return "global-full";
     }
 
-    for (const { target, decision } of decisions) {
+    for (const { target, decision } of [uidDecision, globalDecision]) {
       transaction.set(target.ref, {
         ...(target.scope === "uid" ? { uid } : {}),
         bucket,
@@ -294,11 +296,22 @@ async function consumeRateLimitTargets({
 function referencedTargets(
   collection: ReturnType<Firestore["collection"]>,
   targets: readonly RavelryRateLimitTarget[],
-): readonly ReferencedRateLimitTarget[] {
-  return targets.map((target) => ({
-    ...target,
-    ref: collection.doc(target.documentId),
-  }));
+): ReferencedRateLimitTargets {
+  const referencedTarget = (scope: RavelryRateLimitScope): ReferencedRateLimitTarget => {
+    const matchingTargets = targets.filter((target) => target.scope === scope);
+    if (matchingTargets.length !== 1) {
+      throw new Error(`ravelry_rate_limit_requires_one_${scope}_target`);
+    }
+    const target = matchingTargets[0];
+    return {
+      ...target,
+      ref: collection.doc(target.documentId),
+    };
+  };
+  return {
+    uid: referencedTarget("uid"),
+    global: referencedTarget("global"),
+  };
 }
 
 function ravelryLegacyRateLimitTargets(

@@ -154,7 +154,6 @@ describe("Ravelry callable rate limits", () => {
 
   it("preserves an active legacy global bucket until its window expires", async () => {
     const firestore = new FakeFirestore();
-    const runtimeState = createRavelryRateLimitRuntimeState();
     let currentMillis = 61_000;
     firestore.documents.set("search_global", {
       windowStartMillis: 60_000,
@@ -164,21 +163,41 @@ describe("Ravelry callable rate limits", () => {
       firestore as unknown as Firestore,
       () => currentMillis,
       () => 0,
-      runtimeState,
+      createRavelryRateLimitRuntimeState(),
     );
 
     await limiter.consume("uid", "search");
 
     assert.equal(firestore.documents.get("search_global")?.count, 6);
     assert.equal(firestore.documents.has("search_global_0"), false);
-    assert.equal(runtimeState.completedLegacyMigrations.has("search"), false);
 
     currentMillis = 121_000;
     await limiter.consume("uid", "search");
 
     assert.equal(firestore.documents.get("search_global")?.count, 6);
     assert.equal(firestore.documents.get("search_global_0")?.count, 1);
-    assert.equal(runtimeState.completedLegacyMigrations.has("search"), true);
+  });
+
+  it("detects a legacy global bucket created after an earlier missing check", async () => {
+    const firestore = new FakeFirestore();
+    const limiter = createRavelryRateLimiter(
+      firestore as unknown as Firestore,
+      () => 61_000,
+      () => 0,
+      createRavelryRateLimitRuntimeState(),
+    );
+
+    await limiter.consume("first-uid", "search");
+    assert.equal(firestore.documents.get("search_global_0")?.count, 1);
+
+    firestore.documents.set("search_global", {
+      windowStartMillis: 60_000,
+      count: 5,
+    });
+    await limiter.consume("second-uid", "search");
+
+    assert.equal(firestore.documents.get("search_global")?.count, 6);
+    assert.equal(firestore.documents.get("search_global_0")?.count, 1);
   });
 
   it("does not admit sharded traffic while an active legacy bucket is full", async () => {

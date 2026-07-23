@@ -42,6 +42,8 @@ export const RAVELRY_GLOBAL_RATE_LIMIT_RULES: Record<RavelryRateLimitBucket, Rav
   import: { limit: 80, windowMillis: 60_000 },
 };
 
+export const RAVELRY_GLOBAL_RATE_LIMIT_SHARD_COUNT = 10;
+
 export const disabledRavelryRateLimiter: RavelryRateLimiter = {
   async consume() {
     return;
@@ -96,7 +98,13 @@ export function nextRavelryRateLimitState(
 export function ravelryRateLimitTargets(
   uid: string,
   bucket: RavelryRateLimitBucket,
+  globalShard: number,
 ): readonly RavelryRateLimitTarget[] {
+  const globalRule = RAVELRY_GLOBAL_RATE_LIMIT_RULES[bucket];
+  const globalShardLimit = globalRule.limit / RAVELRY_GLOBAL_RATE_LIMIT_SHARD_COUNT;
+  if (!Number.isInteger(globalShardLimit)) {
+    throw new Error("ravelry_global_rate_limit_must_divide_evenly_across_shards");
+  }
   return [
     {
       scope: "uid",
@@ -105,55 +113,110 @@ export function ravelryRateLimitTargets(
     },
     {
       scope: "global",
-      documentId: globalRateLimitDocumentId(bucket),
-      rule: RAVELRY_GLOBAL_RATE_LIMIT_RULES[bucket],
+      documentId: globalRateLimitDocumentId(bucket, globalShard),
+      rule: {
+        limit: globalShardLimit,
+        windowMillis: globalRule.windowMillis,
+      },
     },
   ];
+}
+
+export function ravelryGlobalShardOrder(startShard: number): readonly number[] {
+  return Array.from(
+    { length: RAVELRY_GLOBAL_RATE_LIMIT_SHARD_COUNT },
+    (_, offset) => (startShard + offset) % RAVELRY_GLOBAL_RATE_LIMIT_SHARD_COUNT,
+  );
+}
+
+export function fixedWindowStartMillis(nowMillis: number, windowMillis: number): number {
+  return Math.floor(nowMillis / windowMillis) * windowMillis;
+}
+
+class RavelryGlobalShardFullError extends Error {
+  constructor() {
+    super("ravelry_global_rate_limit_shard_full");
+  }
 }
 
 export function createRavelryRateLimiter(
   firestore: Firestore,
   nowMillis: () => number = Date.now,
+  random: () => number = Math.random,
 ): RavelryRateLimiter {
   return {
     async consume(uid, bucket) {
       const collection = firestore.collection(RAVELRY_RATE_LIMITS_COLLECTION);
-      const targets = ravelryRateLimitTargets(uid, bucket).map((target) => ({
-        ...target,
-        ref: collection.doc(target.documentId),
-      }));
-      await firestore.runTransaction(async (transaction) => {
-        const snapshots = await Promise.all(targets.map((target) => transaction.get(target.ref)));
-        const currentMillis = nowMillis();
-        const decisions = snapshots.map((snapshot, index) => ({
-          target: targets[index],
-          decision: nextRavelryRateLimitState(
-            snapshot.data(),
-            currentMillis,
-            targets[index].rule,
-          ),
-        }));
-        const rejected = decisions.find(({ decision }) => !decision.allowed);
-        if (rejected) {
-          throw new RavelryRateLimitError(
-            bucket,
-            rejected.target.scope,
-            rejected.target.rule.limit,
-            rejected.target.rule.windowMillis,
-          );
-        }
+      const currentMillis = nowMillis();
+      const startShard = Math.min(
+        Math.floor(Math.max(random(), 0) * RAVELRY_GLOBAL_RATE_LIMIT_SHARD_COUNT),
+        RAVELRY_GLOBAL_RATE_LIMIT_SHARD_COUNT - 1,
+      );
 
-        for (const { target, decision } of decisions) {
-          transaction.set(target.ref, {
-            ...(target.scope === "uid" ? { uid } : {}),
-            bucket,
-            scope: target.scope,
-            windowStartMillis: decision.state.windowStartMillis,
-            count: decision.state.count,
-            updatedAtMillis: currentMillis,
+      for (const globalShard of ravelryGlobalShardOrder(startShard)) {
+        const targets = ravelryRateLimitTargets(uid, bucket, globalShard).map((target) => ({
+          ...target,
+          ref: collection.doc(target.documentId),
+        }));
+        try {
+          await firestore.runTransaction(async (transaction) => {
+            const snapshots = await Promise.all(
+              targets.map((target) => transaction.get(target.ref)),
+            );
+            const decisions = snapshots.map((snapshot, index) => {
+              const target = targets[index];
+              const decisionMillis = target.scope === "global"
+                ? fixedWindowStartMillis(currentMillis, target.rule.windowMillis)
+                : currentMillis;
+              return {
+                target,
+                decision: nextRavelryRateLimitState(
+                  snapshot.data(),
+                  decisionMillis,
+                  target.rule,
+                ),
+              };
+            });
+            const uidDecision = decisions[0];
+            const globalDecision = decisions[1];
+            if (!uidDecision.decision.allowed) {
+              throw new RavelryRateLimitError(
+                bucket,
+                "uid",
+                uidDecision.target.rule.limit,
+                uidDecision.target.rule.windowMillis,
+              );
+            }
+            if (!globalDecision.decision.allowed) {
+              throw new RavelryGlobalShardFullError();
+            }
+
+            for (const { target, decision } of decisions) {
+              transaction.set(target.ref, {
+                ...(target.scope === "uid" ? { uid } : {}),
+                bucket,
+                scope: target.scope,
+                windowStartMillis: decision.state.windowStartMillis,
+                count: decision.state.count,
+                updatedAtMillis: currentMillis,
+              });
+            }
           });
+          return;
+        } catch (error) {
+          if (!(error instanceof RavelryGlobalShardFullError)) {
+            throw error;
+          }
         }
-      });
+      }
+
+      const globalRule = RAVELRY_GLOBAL_RATE_LIMIT_RULES[bucket];
+      throw new RavelryRateLimitError(
+        bucket,
+        "global",
+        globalRule.limit,
+        globalRule.windowMillis,
+      );
     },
   };
 }
@@ -176,6 +239,6 @@ function rateLimitDocumentId(uid: string, bucket: RavelryRateLimitBucket): strin
   return `${bucket}_${Buffer.from(uid).toString("base64url")}`;
 }
 
-function globalRateLimitDocumentId(bucket: RavelryRateLimitBucket): string {
-  return `${bucket}_global`;
+function globalRateLimitDocumentId(bucket: RavelryRateLimitBucket, shard: number): string {
+  return `${bucket}_global_${shard}`;
 }

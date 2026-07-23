@@ -1,4 +1,4 @@
-import type { Firestore } from "firebase-admin/firestore";
+import type { DocumentReference, Firestore } from "firebase-admin/firestore";
 
 import { RAVELRY_RATE_LIMITS_COLLECTION } from "../config";
 
@@ -30,6 +30,11 @@ export interface RavelryRateLimiter {
   consume(uid: string, bucket: RavelryRateLimitBucket): Promise<void>;
 }
 
+export interface RavelryRateLimitRuntimeState {
+  readonly completedLegacyMigrations: Set<RavelryRateLimitBucket>;
+  readonly saturatedGlobalWindows: Map<RavelryRateLimitBucket, number>;
+}
+
 export const RAVELRY_RATE_LIMIT_RULES: Record<RavelryRateLimitBucket, RavelryRateLimitRule> = {
   auth: { limit: 10, windowMillis: 60_000 },
   search: { limit: 30, windowMillis: 60_000 },
@@ -43,6 +48,15 @@ export const RAVELRY_GLOBAL_RATE_LIMIT_RULES: Record<RavelryRateLimitBucket, Rav
 };
 
 export const RAVELRY_GLOBAL_RATE_LIMIT_SHARD_COUNT = 10;
+
+export function createRavelryRateLimitRuntimeState(): RavelryRateLimitRuntimeState {
+  return {
+    completedLegacyMigrations: new Set(),
+    saturatedGlobalWindows: new Map(),
+  };
+}
+
+const processRateLimitRuntimeState = createRavelryRateLimitRuntimeState();
 
 export const disabledRavelryRateLimiter: RavelryRateLimiter = {
   async consume() {
@@ -69,12 +83,8 @@ export function nextRavelryRateLimitState(
   nowMillis: number,
   rule: RavelryRateLimitRule,
 ): RavelryRateLimitDecision {
-  const current = storedRavelryRateLimit(stored);
-  if (
-    current != null &&
-    nowMillis >= current.windowStartMillis &&
-    nowMillis - current.windowStartMillis < rule.windowMillis
-  ) {
+  const current = activeRavelryRateLimitState(stored, nowMillis, rule);
+  if (current != null) {
     const state = {
       windowStartMillis: current.windowStartMillis,
       count: current.count + 1,
@@ -106,11 +116,7 @@ export function ravelryRateLimitTargets(
     throw new Error("ravelry_global_rate_limit_must_divide_evenly_across_shards");
   }
   return [
-    {
-      scope: "uid",
-      documentId: rateLimitDocumentId(uid, bucket),
-      rule: RAVELRY_RATE_LIMIT_RULES[bucket],
-    },
+    uidRateLimitTarget(uid, bucket),
     {
       scope: "global",
       documentId: globalRateLimitDocumentId(bucket, globalShard),
@@ -133,92 +139,209 @@ export function fixedWindowStartMillis(nowMillis: number, windowMillis: number):
   return Math.floor(nowMillis / windowMillis) * windowMillis;
 }
 
-class RavelryGlobalShardFullError extends Error {
-  constructor() {
-    super("ravelry_global_rate_limit_shard_full");
-  }
+type RateLimitTransactionOutcome = "consumed" | "global-full" | "global-inactive";
+
+interface ReferencedRateLimitTarget extends RavelryRateLimitTarget {
+  readonly ref: DocumentReference;
 }
 
 export function createRavelryRateLimiter(
   firestore: Firestore,
   nowMillis: () => number = Date.now,
   random: () => number = Math.random,
+  runtimeState: RavelryRateLimitRuntimeState = processRateLimitRuntimeState,
 ): RavelryRateLimiter {
   return {
     async consume(uid, bucket) {
       const collection = firestore.collection(RAVELRY_RATE_LIMITS_COLLECTION);
       const currentMillis = nowMillis();
+      const globalRule = RAVELRY_GLOBAL_RATE_LIMIT_RULES[bucket];
+
+      if (!runtimeState.completedLegacyMigrations.has(bucket)) {
+        const legacyTargets = referencedTargets(
+          collection,
+          ravelryLegacyRateLimitTargets(uid, bucket),
+        );
+        const legacyOutcome = await consumeRateLimitTargets({
+          firestore,
+          targets: legacyTargets,
+          uid,
+          bucket,
+          currentMillis,
+          globalDecisionMillis: currentMillis,
+          requireActiveGlobalWindow: true,
+        });
+        if (legacyOutcome === "consumed") {
+          return;
+        }
+        if (legacyOutcome === "global-full") {
+          throw globalRateLimitError(bucket);
+        }
+        runtimeState.completedLegacyMigrations.add(bucket);
+      }
+
+      const globalWindowStart = fixedWindowStartMillis(
+        currentMillis,
+        globalRule.windowMillis,
+      );
+      const saturatedWindowStart = runtimeState.saturatedGlobalWindows.get(bucket);
+      if (saturatedWindowStart === globalWindowStart) {
+        throw globalRateLimitError(bucket);
+      }
+      if (saturatedWindowStart != null) {
+        runtimeState.saturatedGlobalWindows.delete(bucket);
+      }
+
       const startShard = Math.min(
         Math.floor(Math.max(random(), 0) * RAVELRY_GLOBAL_RATE_LIMIT_SHARD_COUNT),
         RAVELRY_GLOBAL_RATE_LIMIT_SHARD_COUNT - 1,
       );
 
       for (const globalShard of ravelryGlobalShardOrder(startShard)) {
-        const targets = ravelryRateLimitTargets(uid, bucket, globalShard).map((target) => ({
-          ...target,
-          ref: collection.doc(target.documentId),
-        }));
-        try {
-          await firestore.runTransaction(async (transaction) => {
-            const snapshots = await Promise.all(
-              targets.map((target) => transaction.get(target.ref)),
-            );
-            const decisions = snapshots.map((snapshot, index) => {
-              const target = targets[index];
-              const decisionMillis = target.scope === "global"
-                ? fixedWindowStartMillis(currentMillis, target.rule.windowMillis)
-                : currentMillis;
-              return {
-                target,
-                decision: nextRavelryRateLimitState(
-                  snapshot.data(),
-                  decisionMillis,
-                  target.rule,
-                ),
-              };
-            });
-            const uidDecision = decisions[0];
-            const globalDecision = decisions[1];
-            if (!uidDecision.decision.allowed) {
-              throw new RavelryRateLimitError(
-                bucket,
-                "uid",
-                uidDecision.target.rule.limit,
-                uidDecision.target.rule.windowMillis,
-              );
-            }
-            if (!globalDecision.decision.allowed) {
-              throw new RavelryGlobalShardFullError();
-            }
-
-            for (const { target, decision } of decisions) {
-              transaction.set(target.ref, {
-                ...(target.scope === "uid" ? { uid } : {}),
-                bucket,
-                scope: target.scope,
-                windowStartMillis: decision.state.windowStartMillis,
-                count: decision.state.count,
-                updatedAtMillis: currentMillis,
-              });
-            }
-          });
+        const targets = referencedTargets(
+          collection,
+          ravelryRateLimitTargets(uid, bucket, globalShard),
+        );
+        const outcome = await consumeRateLimitTargets({
+          firestore,
+          targets,
+          uid,
+          bucket,
+          currentMillis,
+          globalDecisionMillis: globalWindowStart,
+          requireActiveGlobalWindow: false,
+        });
+        if (outcome === "consumed") {
           return;
-        } catch (error) {
-          if (!(error instanceof RavelryGlobalShardFullError)) {
-            throw error;
-          }
         }
       }
 
-      const globalRule = RAVELRY_GLOBAL_RATE_LIMIT_RULES[bucket];
-      throw new RavelryRateLimitError(
-        bucket,
-        "global",
-        globalRule.limit,
-        globalRule.windowMillis,
-      );
+      runtimeState.saturatedGlobalWindows.set(bucket, globalWindowStart);
+      throw globalRateLimitError(bucket);
     },
   };
+}
+
+async function consumeRateLimitTargets({
+  firestore,
+  targets,
+  uid,
+  bucket,
+  currentMillis,
+  globalDecisionMillis,
+  requireActiveGlobalWindow,
+}: {
+  readonly firestore: Firestore;
+  readonly targets: readonly ReferencedRateLimitTarget[];
+  readonly uid: string;
+  readonly bucket: RavelryRateLimitBucket;
+  readonly currentMillis: number;
+  readonly globalDecisionMillis: number;
+  readonly requireActiveGlobalWindow: boolean;
+}): Promise<RateLimitTransactionOutcome> {
+  return firestore.runTransaction(async (transaction) => {
+    const snapshots = await Promise.all(
+      targets.map((target) => transaction.get(target.ref)),
+    );
+    const globalTarget = targets[1];
+    const globalStored = snapshots[1].data();
+    if (
+      requireActiveGlobalWindow &&
+      activeRavelryRateLimitState(globalStored, currentMillis, globalTarget.rule) == null
+    ) {
+      return "global-inactive";
+    }
+
+    const decisions = snapshots.map((snapshot, index) => {
+      const target = targets[index];
+      return {
+        target,
+        decision: nextRavelryRateLimitState(
+          snapshot.data(),
+          target.scope === "global" ? globalDecisionMillis : currentMillis,
+          target.rule,
+        ),
+      };
+    });
+    const uidDecision = decisions[0];
+    const globalDecision = decisions[1];
+    if (!uidDecision.decision.allowed) {
+      throw new RavelryRateLimitError(
+        bucket,
+        "uid",
+        uidDecision.target.rule.limit,
+        uidDecision.target.rule.windowMillis,
+      );
+    }
+    if (!globalDecision.decision.allowed) {
+      return "global-full";
+    }
+
+    for (const { target, decision } of decisions) {
+      transaction.set(target.ref, {
+        ...(target.scope === "uid" ? { uid } : {}),
+        bucket,
+        scope: target.scope,
+        windowStartMillis: decision.state.windowStartMillis,
+        count: decision.state.count,
+        updatedAtMillis: currentMillis,
+      });
+    }
+    return "consumed";
+  });
+}
+
+function referencedTargets(
+  collection: ReturnType<Firestore["collection"]>,
+  targets: readonly RavelryRateLimitTarget[],
+): readonly ReferencedRateLimitTarget[] {
+  return targets.map((target) => ({
+    ...target,
+    ref: collection.doc(target.documentId),
+  }));
+}
+
+function ravelryLegacyRateLimitTargets(
+  uid: string,
+  bucket: RavelryRateLimitBucket,
+): readonly RavelryRateLimitTarget[] {
+  return [
+    uidRateLimitTarget(uid, bucket),
+    {
+      scope: "global",
+      documentId: legacyGlobalRateLimitDocumentId(bucket),
+      rule: RAVELRY_GLOBAL_RATE_LIMIT_RULES[bucket],
+    },
+  ];
+}
+
+function uidRateLimitTarget(
+  uid: string,
+  bucket: RavelryRateLimitBucket,
+): RavelryRateLimitTarget {
+  return {
+    scope: "uid",
+    documentId: rateLimitDocumentId(uid, bucket),
+    rule: RAVELRY_RATE_LIMIT_RULES[bucket],
+  };
+}
+
+function globalRateLimitError(bucket: RavelryRateLimitBucket): RavelryRateLimitError {
+  const rule = RAVELRY_GLOBAL_RATE_LIMIT_RULES[bucket];
+  return new RavelryRateLimitError(bucket, "global", rule.limit, rule.windowMillis);
+}
+
+function activeRavelryRateLimitState(
+  stored: unknown,
+  nowMillis: number,
+  rule: RavelryRateLimitRule,
+): StoredRavelryRateLimit | null {
+  const current = storedRavelryRateLimit(stored);
+  return current != null &&
+    nowMillis >= current.windowStartMillis &&
+    nowMillis - current.windowStartMillis < rule.windowMillis
+    ? current
+    : null;
 }
 
 function storedRavelryRateLimit(stored: unknown): StoredRavelryRateLimit | null {
@@ -241,4 +364,8 @@ function rateLimitDocumentId(uid: string, bucket: RavelryRateLimitBucket): strin
 
 function globalRateLimitDocumentId(bucket: RavelryRateLimitBucket, shard: number): string {
   return `${bucket}_global_${shard}`;
+}
+
+function legacyGlobalRateLimitDocumentId(bucket: RavelryRateLimitBucket): string {
+  return `${bucket}_global`;
 }

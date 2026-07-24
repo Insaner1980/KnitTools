@@ -30,6 +30,10 @@ class FakeTransaction {
     };
   }
 
+  async getAll(...references: FakeDocumentReference[]) {
+    return Promise.all(references.map((reference) => this.get(reference)));
+  }
+
   set(reference: FakeDocumentReference, value: Record<string, unknown>) {
     this.writes.set(reference.id, value);
   }

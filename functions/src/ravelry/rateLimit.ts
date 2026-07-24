@@ -171,6 +171,8 @@ export function createRavelryRateLimiter(
         runtimeState.saturatedGlobalWindows.delete(bucket);
       }
 
+      // Väliaikainen rollout-suoja poistetaan vasta, kun legacy-dokumentteja
+      // kirjoittavat revisiot on vahvistettu poistuneiksi liikenteestä.
       const legacyTargets = referencedTargets(
         collection,
         ravelryLegacyRateLimitTargets(uid, bucket),
@@ -239,10 +241,10 @@ async function consumeRateLimitTargets({
   readonly requireActiveGlobalWindow: boolean;
 }): Promise<RateLimitTransactionOutcome> {
   return firestore.runTransaction(async (transaction) => {
-    const [uidSnapshot, globalSnapshot] = await Promise.all([
-      transaction.get(targets.uid.ref),
-      transaction.get(targets.global.ref),
-    ]);
+    const [uidSnapshot, globalSnapshot] = await transaction.getAll(
+      targets.uid.ref,
+      targets.global.ref,
+    );
     const globalStored = globalSnapshot.data();
     if (
       requireActiveGlobalWindow &&

@@ -8,6 +8,7 @@ import {
   RAVELRY_RATE_LIMIT_RULES,
   RavelryRateLimitError,
   createRavelryRateLimiter,
+  createRavelryRateLimitRuntimeState,
   fixedWindowStartMillis,
   nextRavelryRateLimitState,
   ravelryGlobalShardOrder,
@@ -29,6 +30,10 @@ class FakeTransaction {
     };
   }
 
+  async getAll(...references: FakeDocumentReference[]) {
+    return Promise.all(references.map((reference) => this.get(reference)));
+  }
+
   set(reference: FakeDocumentReference, value: Record<string, unknown>) {
     this.writes.set(reference.id, value);
   }
@@ -42,6 +47,7 @@ class FakeTransaction {
 
 class FakeFirestore {
   readonly documents = new Map<string, Record<string, unknown>>();
+  transactionCount = 0;
 
   collection() {
     return {
@@ -50,6 +56,7 @@ class FakeFirestore {
   }
 
   async runTransaction<T>(updateFunction: (transaction: FakeTransaction) => Promise<T>): Promise<T> {
+    this.transactionCount += 1;
     const transaction = new FakeTransaction(this.documents);
     const result = await updateFunction(transaction);
     transaction.commit();
@@ -139,6 +146,7 @@ describe("Ravelry callable rate limits", () => {
       firestore as unknown as Firestore,
       () => 61_000,
       () => 0,
+      createRavelryRateLimitRuntimeState(),
     );
 
     await limiter.consume("uid", "search");
@@ -148,8 +156,80 @@ describe("Ravelry callable rate limits", () => {
     assert.equal(firestore.documents.get("search_dWlk")?.count, 1);
   });
 
-  it("reports the configured global limit only after every shard is full", async () => {
+  it("preserves an active legacy global bucket until its window expires", async () => {
     const firestore = new FakeFirestore();
+    let currentMillis = 61_000;
+    firestore.documents.set("search_global", {
+      windowStartMillis: 60_000,
+      count: 5,
+    });
+    const limiter = createRavelryRateLimiter(
+      firestore as unknown as Firestore,
+      () => currentMillis,
+      () => 0,
+      createRavelryRateLimitRuntimeState(),
+    );
+
+    await limiter.consume("uid", "search");
+
+    assert.equal(firestore.documents.get("search_global")?.count, 6);
+    assert.equal(firestore.documents.has("search_global_0"), false);
+
+    currentMillis = 121_000;
+    await limiter.consume("uid", "search");
+
+    assert.equal(firestore.documents.get("search_global")?.count, 6);
+    assert.equal(firestore.documents.get("search_global_0")?.count, 1);
+  });
+
+  it("detects a legacy global bucket created after an earlier missing check", async () => {
+    const firestore = new FakeFirestore();
+    const limiter = createRavelryRateLimiter(
+      firestore as unknown as Firestore,
+      () => 61_000,
+      () => 0,
+      createRavelryRateLimitRuntimeState(),
+    );
+
+    await limiter.consume("first-uid", "search");
+    assert.equal(firestore.documents.get("search_global_0")?.count, 1);
+
+    firestore.documents.set("search_global", {
+      windowStartMillis: 60_000,
+      count: 5,
+    });
+    await limiter.consume("second-uid", "search");
+
+    assert.equal(firestore.documents.get("search_global")?.count, 6);
+    assert.equal(firestore.documents.get("search_global_0")?.count, 1);
+  });
+
+  it("does not admit sharded traffic while an active legacy bucket is full", async () => {
+    const firestore = new FakeFirestore();
+    firestore.documents.set("auth_global", {
+      windowStartMillis: 60_000,
+      count: RAVELRY_GLOBAL_RATE_LIMIT_RULES.auth.limit,
+    });
+    const limiter = createRavelryRateLimiter(
+      firestore as unknown as Firestore,
+      () => 61_000,
+      () => 0,
+      createRavelryRateLimitRuntimeState(),
+    );
+
+    await assert.rejects(
+      limiter.consume("uid", "auth"),
+      (error: unknown) =>
+        error instanceof RavelryRateLimitError &&
+        error.scope === "global" &&
+        error.limit === RAVELRY_GLOBAL_RATE_LIMIT_RULES.auth.limit,
+    );
+    assert.equal(firestore.documents.has("auth_global_0"), false);
+  });
+
+  it("caches a saturated global window after checking every shard", async () => {
+    const firestore = new FakeFirestore();
+    const runtimeState = createRavelryRateLimitRuntimeState();
     const globalShardRule = ravelryRateLimitTargets("uid", "import", 0)[1].rule;
     for (let shard = 0; shard < RAVELRY_GLOBAL_RATE_LIMIT_SHARD_COUNT; shard += 1) {
       firestore.documents.set(`import_global_${shard}`, {
@@ -161,6 +241,7 @@ describe("Ravelry callable rate limits", () => {
       firestore as unknown as Firestore,
       () => 61_000,
       () => 0,
+      runtimeState,
     );
 
     await assert.rejects(
@@ -170,5 +251,19 @@ describe("Ravelry callable rate limits", () => {
         error.scope === "global" &&
         error.limit === RAVELRY_GLOBAL_RATE_LIMIT_RULES.import.limit,
     );
+    const firstRejectionTransactions = firestore.transactionCount;
+    assert.equal(
+      runtimeState.saturatedGlobalWindows.get("import"),
+      fixedWindowStartMillis(61_000, RAVELRY_GLOBAL_RATE_LIMIT_RULES.import.windowMillis),
+    );
+
+    await assert.rejects(
+      limiter.consume("another-uid", "import"),
+      (error: unknown) =>
+        error instanceof RavelryRateLimitError &&
+        error.scope === "global" &&
+        error.limit === RAVELRY_GLOBAL_RATE_LIMIT_RULES.import.limit,
+    );
+    assert.equal(firestore.transactionCount, firstRejectionTransactions);
   });
 });

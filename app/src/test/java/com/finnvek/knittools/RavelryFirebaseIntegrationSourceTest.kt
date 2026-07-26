@@ -17,7 +17,7 @@ class RavelryFirebaseIntegrationSourceTest {
         val buildWorkflow = ProjectSourceFiles.read(".github/workflows/build.yml")
         val codeQlWorkflow = ProjectSourceFiles.read(".github/workflows/codeql.yml")
 
-        assertTrue(versionCatalog.contains("firebaseBom = \"34.14.0\""))
+        assertTrue(versionCatalog.contains("firebaseBom = \"34.16.0\""))
         assertTrue(versionCatalog.contains("googleServices = \"4.4.4\""))
         assertTrue(versionCatalog.contains("firebase-bom"))
         assertTrue(versionCatalog.contains("firebase-auth"))

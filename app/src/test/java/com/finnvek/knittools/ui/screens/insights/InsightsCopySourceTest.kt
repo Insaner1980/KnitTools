@@ -42,8 +42,14 @@ class InsightsCopySourceTest {
         ProjectSourceFiles.localizedStringFiles().forEach { file ->
             val source = file.toFile().readText()
 
-            assertFalse("$file still defines insights_range_since_format", source.contains("name=\"insights_range_since_format\""))
-            assertTrue("$file is missing insights_range_open_format", source.contains("name=\"insights_range_open_format\""))
+            assertFalse(
+                "$file still defines insights_range_since_format",
+                source.contains("name=\"insights_range_since_format\""),
+            )
+            assertTrue(
+                "$file is missing insights_range_open_format",
+                source.contains("name=\"insights_range_open_format\""),
+            )
         }
     }
 

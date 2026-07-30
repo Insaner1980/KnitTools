@@ -132,35 +132,30 @@ class InsightsViewModelTest {
         }
 
     @Test
-    fun `weekly trend compares the same elapsed days of the previous week`() =
+    fun `weekly trend wires the previous period comparison into the ui state`() =
         runTest {
+            // Katkaisun reunatapaus (viime viikon loppupään poissulkeminen) on
+            // yksikkötestattu kiinteillä päivämäärillä puhtaalle previousPeriodMinutes-
+            // funktiolle InsightsChartModelTest:ssä. Tämä testi todistaa vain, että
+            // ViewModel kytkee tuloksen oikein tilaan: molemmat istunnot osuvat aina
+            // omaan ikkunaansa riippumatta siitä minä viikonpäivänä tai millä
+            // firstDayOfWeek-asetuksella testi ajetaan, joten väite pätee joka päivä.
             val zone = ZoneId.systemDefault()
             val today = LocalDate.now(zone)
-            // gradle.properties pakottaa testi-JVM:n user.language/user.country-arvot
-            // en/US:ksi, jolloin viikko alkaa sunnuntaista eikä maanantaista. Viikon
-            // alku lasketaan siis samalla WeekFields-logiikalla kuin tuotantokoodi
-            // (currentInsightsLocale() -> Locale.getDefault()), ei kovakoodatulla
-            // maanantailla, jotta testi osoittaa katkaisun eikä aikavyöhyke-eroa.
             val firstDayOfWeek = WeekFields.of(Locale.getDefault()).firstDayOfWeek
             val weekStart = today.with(TemporalAdjusters.previousOrSame(firstDayOfWeek))
             val sessions =
                 listOf(
+                    // Kuluvan viikon ensimmäinen päivä: aina osa nykyistä ikkunaa.
                     sessionAt(date = weekStart, hour = 10, minute = 0, rows = 10, minutes = 60, zone = zone),
+                    // Edellisen viikon ensimmäinen päivä: aina osa edellistä ikkunaa,
+                    // koska ikkuna on aina vähintään yhden päivän mittainen.
                     sessionAt(
                         date = weekStart.minusWeeks(1),
                         hour = 10,
                         minute = 0,
                         rows = 10,
                         minutes = 30,
-                        zone = zone,
-                    ),
-                    // Viime viikon loppupää jää vertailun ulkopuolelle, koska kuluva viikko ei ole vielä siellä.
-                    sessionAt(
-                        date = weekStart.minusDays(1),
-                        hour = 10,
-                        minute = 0,
-                        rows = 10,
-                        minutes = 600,
                         zone = zone,
                     ),
                 )

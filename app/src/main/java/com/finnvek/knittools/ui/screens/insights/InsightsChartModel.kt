@@ -140,6 +140,30 @@ internal fun insightsTrend(
 }
 
 /**
+ * Edellinen jakso katkaistaan samaan kuluneeseen päivämäärään: keskiviikkoa
+ * verrataan viime viikon keskiviikkoon asti, ei koko viikkoon. Muuten kesken
+ * oleva jakso näyttäisi aina laskulta.
+ *
+ * Puhdas funktio päivämäärien vertailulle: [today] ratkaisee kuinka monta
+ * päivää nykyisestä jaksosta on kulunut, ja sama määrä päiviä lasketaan
+ * edellisestä jaksosta alkaen [previousStart]:sta. [currentStart] tarvitaan
+ * vain kuluneiden päivien laskemiseen, ei minkään suodattamiseen.
+ */
+internal fun previousPeriodMinutes(
+    dailyMinutes: Map<LocalDate, Int>,
+    previousStart: LocalDate,
+    currentStart: LocalDate,
+    today: LocalDate,
+): Int {
+    val elapsedDays = ChronoUnit.DAYS.between(currentStart, today) + 1
+    val previousEndExclusive = previousStart.plusDays(elapsedDays)
+    return dailyMinutes
+        .entries
+        .filter { (date, _) -> date >= previousStart && date < previousEndExclusive }
+        .sumOf { (_, minutes) -> minutes }
+}
+
+/**
  * Akselille mahtuu vain kourallinen leimoja. Askel lasketaan ylöspäin pyöristäen,
  * jolloin leimoja on aina korkeintaan [maxLabels] ja ensimmäinen ämpäri on aina
  * leimattu — akselin vasen pää on käyttäjän ankkuri.

@@ -454,10 +454,10 @@
     </plurals>
     <string name="insights_duration_hours_minutes">%1$d t %2$d min</string>
     <string name="insights_range_format">%1$s – %2$s</string>
-    <string name="insights_range_since_format">Sedan %1$s</string>
+    <string name="insights_range_open_format">%1$s –</string>
     <string name="insights_hero_lead_in_week">Den här veckan ägnade du</string>
     <string name="insights_hero_lead_in_month">Den här månaden ägnade du</string>
-    <string name="insights_hero_lead_in_all_time">Sedan %1$s har du ägnat</string>
+    <string name="insights_hero_lead_in_all_time">Totalt har du ägnat</string>
     <plurals name="insights_hero_trailing_projects">
         <item quantity="one">åt ett projekt.</item>
         <item quantity="other">åt %1$d projekt.</item>

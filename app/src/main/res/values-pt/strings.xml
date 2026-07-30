@@ -460,10 +460,10 @@
     </plurals>
     <string name="insights_duration_hours_minutes">%1$d h %2$d min</string>
     <string name="insights_range_format">%1$s – %2$s</string>
-    <string name="insights_range_since_format">Desde %1$s</string>
+    <string name="insights_range_open_format">%1$s –</string>
     <string name="insights_hero_lead_in_week">Esta semana passaste</string>
     <string name="insights_hero_lead_in_month">Este mês passaste</string>
-    <string name="insights_hero_lead_in_all_time">Desde %1$s passaste</string>
+    <string name="insights_hero_lead_in_all_time">No total passaste</string>
     <plurals name="insights_hero_trailing_projects">
         <item quantity="one">em %1$d projeto.</item>
         <item quantity="many">em %1$d projetos.</item>

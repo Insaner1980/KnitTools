@@ -338,14 +338,14 @@ private fun insightsRangeLabel(uiState: InsightsUiState): String {
     val end = uiState.rangeEnd
     val monthFormatter =
         remember(locale) {
-            DateTimeFormatter.ofPattern(localizedDateTimePattern(locale, "yMMM"), locale)
+            DateTimeFormatter.ofPattern(localizedDateTimePattern(locale, "yMMMM"), locale)
         }
     val dayMonthFormatter =
         remember(locale) {
             DateTimeFormatter.ofPattern(localizedDateTimePattern(locale, "MMMd"), locale)
         }
     return if (uiState.timeRange == TimeRange.ALL_TIME || start == null) {
-        stringResource(R.string.insights_range_since_format, (start ?: end).format(monthFormatter))
+        stringResource(R.string.insights_range_open_format, (start ?: end).format(monthFormatter))
     } else {
         val startLabel =
             if (start.month == end.month && start.year == end.year) {

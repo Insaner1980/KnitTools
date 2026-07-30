@@ -474,12 +474,14 @@ internal fun bucketLabel(
     interval: PaceGroupingInterval,
 ): String {
     val locale = currentInsightsLocale()
-    val skeleton = if (interval == PaceGroupingInterval.MONTH) "yMMM" else "EMMMd"
+    val skeleton = if (interval == PaceGroupingInterval.MONTH) "yMMMM" else "EMMMd"
     val formatter =
         remember(locale, skeleton) {
             DateTimeFormatter.ofPattern(localizedDateTimePattern(locale, skeleton), locale)
         }
-    return bucketStart.format(formatter).uppercaseForDisplay(locale)
+    val label = bucketStart.format(formatter)
+    // Versaalit sopivat viikonpäivälyhenteelle, eivät kuukauden nimelle: "HEINÄKUU 2026" huutaa.
+    return if (interval == PaceGroupingInterval.MONTH) label else label.uppercaseForDisplay(locale)
 }
 
 @Composable

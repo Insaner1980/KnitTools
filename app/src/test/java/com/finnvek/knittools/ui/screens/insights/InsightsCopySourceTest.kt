@@ -27,6 +27,26 @@ class InsightsCopySourceTest {
         assertFalse("Finnish weeks must not read as years: $weeks", Regex("\\bv\\b").containsMatchIn(weeks))
     }
 
+    @Test
+    fun `all time lead-in never interpolates a date`() {
+        ProjectSourceFiles.localizedStringFiles().forEach { file ->
+            val source = file.toFile().readText()
+            val leadIn = stringValue(source, "insights_hero_lead_in_all_time")
+
+            assertFalse("$file interpolates a date into the hero sentence: $leadIn", leadIn.contains("%1"))
+        }
+    }
+
+    @Test
+    fun `the removed since-format is gone from every locale`() {
+        ProjectSourceFiles.localizedStringFiles().forEach { file ->
+            val source = file.toFile().readText()
+
+            assertFalse("$file still defines insights_range_since_format", source.contains("name=\"insights_range_since_format\""))
+            assertTrue("$file is missing insights_range_open_format", source.contains("name=\"insights_range_open_format\""))
+        }
+    }
+
     private fun stringValue(
         source: String,
         name: String,

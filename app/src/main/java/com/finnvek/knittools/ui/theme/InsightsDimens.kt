@@ -53,7 +53,7 @@ object InsightsDimens {
     val RuleHairlineAlpha = 0.15f
 
     @Suppress("MayBeConstant")
-    val ChartGridlineAlpha = 0.16f
+    val ChartGridlineAlpha = 0.55f
 
     // Osioiden otsikot
     val SectionTopPadding = 20.dp
@@ -79,15 +79,9 @@ object InsightsDimens {
     val ChartMonthBarWidth = 10.dp
     val ChartAllTimeBarWidth = 22.dp
 
-    /** Nollapäivän merkki: hiusviivapätkä perusviivassa, ei luettavaa pylvästä. */
-    val ChartZeroTickHeight = 3.dp
-
     // Valinnan merkki akselin ja pylväiden välissä
     val ChartSelectionDotBand = 12.dp
     val ChartSelectionDotSize = 5.dp
-
-    @Suppress("MayBeConstant")
-    val ChartZeroTickAlpha = 0.45f
 
     // Lukema kaavion yllä
     val ReadoutTopPadding = 2.dp

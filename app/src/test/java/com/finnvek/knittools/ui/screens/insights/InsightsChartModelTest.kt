@@ -200,4 +200,31 @@ class InsightsChartModelTest {
 
         assertEquals(InsightsTrend(percentChange = 100, direction = InsightsTrendDirection.DOWN), trend)
     }
+
+    @Test
+    fun `short axes label every bucket`() {
+        assertEquals(listOf(0, 1, 2, 3, 4, 5, 6), axisLabelIndices(bucketCount = 7, maxLabels = 7))
+    }
+
+    @Test
+    fun `long axes thin labels out evenly from the first bucket`() {
+        assertEquals(listOf(0, 7, 14, 21, 28), axisLabelIndices(bucketCount = 31, maxLabels = 5))
+    }
+
+    @Test
+    fun `labels stay within range and never exceed the maximum`() {
+        (6..60).forEach { count ->
+            val indices = axisLabelIndices(bucketCount = count, maxLabels = 5)
+
+            assertTrue("count=$count produced ${indices.size} labels", indices.size <= 5)
+            assertTrue("count=$count produced out of range indices", indices.all { it in 0 until count })
+            assertEquals("count=$count produced duplicates", indices.distinct(), indices)
+            assertEquals("count=$count did not anchor the left edge", 0, indices.first())
+        }
+    }
+
+    @Test
+    fun `empty axis has no labels`() {
+        assertEquals(emptyList<Int>(), axisLabelIndices(bucketCount = 0, maxLabels = 5))
+    }
 }

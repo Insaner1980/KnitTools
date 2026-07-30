@@ -66,6 +66,16 @@ class InsightsRedesignSourceTest {
         assertTrue(chart.contains("clearAndSetSemantics"))
     }
 
+    @Test
+    fun `range chips announce their selection and meet the touch target minimum`() {
+        val screen = ProjectSourceFiles.read(INSIGHTS_SCREEN)
+
+        assertTrue("Range chips must use selectable semantics", screen.contains("selectable("))
+        assertTrue("Range chips must be grouped for screen readers", screen.contains("selectableGroup()"))
+        assertTrue("Chips must reserve a 48dp touch target", screen.contains("heightIn(min = ChipMinTouchTarget)"))
+        assertFalse("Range chips must not fall back to plain clickable", screen.contains("clickable(role = Role.Tab)"))
+    }
+
     private companion object {
         const val INSIGHTS_SCREEN =
             "app/src/main/java/com/finnvek/knittools/ui/screens/insights/InsightsScreen.kt"

@@ -515,9 +515,9 @@
     <string name="insights_footer_5">Suuret asiat alkavat yhdestä silmukasta.</string>
     <string name="relative_time_today">tänään</string>
     <string name="relative_time_yesterday">eilen</string>
-    <string name="relative_time_days_ago">%1$dpv sitten</string>
-    <string name="relative_time_weeks_ago">%1$dv sitten</string>
-    <string name="relative_time_months_ago">%1$dkk sitten</string>
+    <string name="relative_time_days_ago">%1$d pv sitten</string>
+    <string name="relative_time_weeks_ago">%1$d vk sitten</string>
+    <string name="relative_time_months_ago">%1$d kk sitten</string>
     <string name="insights_no_time_logged">Ei kirjattua aikaa</string>
 
     <!-- Asetukset -->

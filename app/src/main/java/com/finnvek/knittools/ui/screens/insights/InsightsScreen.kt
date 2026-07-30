@@ -5,18 +5,22 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -52,6 +56,7 @@ import com.finnvek.knittools.ui.components.durationText
 import com.finnvek.knittools.ui.components.localizedDateTimePattern
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
 import com.finnvek.knittools.ui.theme.InsightsDimens
+import com.finnvek.knittools.ui.theme.yarnColorForId
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -61,6 +66,9 @@ private val ChipVerticalPadding = 10.dp
 private val ChipSpacing = 8.dp
 private val ChipIndicatorSpacing = 4.dp
 private val ChipIndicatorSize = 18.dp
+private val ChipMinTouchTarget = 48.dp
+private val ChipDotSize = 10.dp
+private val ChipDotSpacing = 8.dp
 
 @Composable
 fun InsightsScreen(
@@ -165,51 +173,100 @@ private fun LazyListScope.insightsContent(
     item { Spacer(modifier = Modifier.height(InsightsDimens.ContentBottomPadding)) }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun InsightsFilters(
     uiState: InsightsUiState,
     onSelectRange: (TimeRange) -> Unit,
     onSelectProject: (Long?) -> Unit,
 ) {
-    var showProjectPicker by remember { mutableStateOf(false) }
-    val allProjectsLabel = stringResource(R.string.all_projects)
-
-    FlowRow(
+    Column(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .padding(top = InsightsDimens.FiltersTopPadding),
-        horizontalArrangement = Arrangement.spacedBy(ChipSpacing),
         verticalArrangement = Arrangement.spacedBy(ChipSpacing),
     ) {
-        InsightsChip(
-            label = stringResource(R.string.insights_this_week),
-            selected = uiState.timeRange == TimeRange.THIS_WEEK,
-            onClick = { onSelectRange(TimeRange.THIS_WEEK) },
+        // Aikaväli on yksi valintaryhmä: ruudunlukija ilmoittaa "valittu 3:sta".
+        Row(
+            modifier = Modifier.selectableGroup(),
+            horizontalArrangement = Arrangement.spacedBy(ChipSpacing),
+        ) {
+            InsightsRangeChip(
+                label = stringResource(R.string.insights_this_week),
+                selected = uiState.timeRange == TimeRange.THIS_WEEK,
+                onClick = { onSelectRange(TimeRange.THIS_WEEK) },
+            )
+            InsightsRangeChip(
+                label = stringResource(R.string.insights_this_month),
+                selected = uiState.timeRange == TimeRange.THIS_MONTH,
+                onClick = { onSelectRange(TimeRange.THIS_MONTH) },
+            )
+            InsightsRangeChip(
+                label = stringResource(R.string.insights_all_time),
+                selected = uiState.timeRange == TimeRange.ALL_TIME,
+                onClick = { onSelectRange(TimeRange.ALL_TIME) },
+            )
+        }
+        InsightsProjectFilter(uiState = uiState, onSelectProject = onSelectProject)
+    }
+}
+
+/** Aikavälisiru: täytetty kun valittu, ja valintatila kulkee semantiikassa. */
+@Composable
+private fun InsightsRangeChip(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    val backgroundModifier =
+        if (selected) {
+            Modifier.background(MaterialTheme.colorScheme.primary)
+        } else {
+            Modifier.border(1.dp, MaterialTheme.colorScheme.outlineVariant, ChipShape)
+        }
+    Row(
+        modifier =
+            Modifier
+                .heightIn(min = ChipMinTouchTarget)
+                .clip(ChipShape)
+                .then(backgroundModifier)
+                .selectable(selected = selected, role = Role.Tab, onClick = onClick)
+                .padding(horizontal = ChipHorizontalPadding, vertical = ChipVerticalPadding),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelLarge,
+            color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
-        InsightsChip(
-            label = stringResource(R.string.insights_this_month),
-            selected = uiState.timeRange == TimeRange.THIS_MONTH,
-            onClick = { onSelectRange(TimeRange.THIS_MONTH) },
-        )
-        InsightsChip(
-            label = stringResource(R.string.insights_all_time),
-            selected = uiState.timeRange == TimeRange.ALL_TIME,
-            onClick = { onSelectRange(TimeRange.ALL_TIME) },
-        )
-        Box {
-            // Suodatin avaa valikon, joten se ei ole neljäs aikaväli: rooli ja
-            // laajennustila kertovat ruudunlukijalle mitä napautus tekee, ja
-            // kärkikolmio erottaa sen aikavälisiruista myös katseella.
-            InsightsChip(
-                label = uiState.selectedProjectName ?: allProjectsLabel,
-                selected = uiState.selectedProjectId != null,
-                onClick = { showProjectPicker = !showProjectPicker },
-                role = Role.DropdownList,
-                showMenuIndicator = true,
-                modifier =
-                    Modifier.semantics {
+    }
+}
+
+/**
+ * Projektisuodatin ei ole neljäs aikaväli, joten se ei koskaan saa täytettyä
+ * primary-tyyliä: valittu projekti tunnistetaan omasta väripisteestään, joka on
+ * sama väri kuin kaaviossa ja listassa.
+ */
+@Composable
+private fun InsightsProjectFilter(
+    uiState: InsightsUiState,
+    onSelectProject: (Long?) -> Unit,
+) {
+    var showProjectPicker by remember { mutableStateOf(false) }
+    val allProjectsLabel = stringResource(R.string.all_projects)
+    val selectedId = uiState.selectedProjectId
+
+    Box {
+        Row(
+            modifier =
+                Modifier
+                    .heightIn(min = ChipMinTouchTarget)
+                    .clip(ChipShape)
+                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, ChipShape)
+                    .clickable(role = Role.DropdownList) { showProjectPicker = !showProjectPicker }
+                    .semantics {
                         if (showProjectPicker) {
                             collapse {
                                 showProjectPicker = false
@@ -221,80 +278,56 @@ private fun InsightsFilters(
                                 true
                             }
                         }
-                    },
-            )
-            DropdownMenu(
-                expanded = showProjectPicker,
-                onDismissRequest = { showProjectPicker = false },
-            ) {
-                DropdownMenuItem(
-                    text = { Text(allProjectsLabel) },
-                    onClick = {
-                        onSelectProject(null)
-                        showProjectPicker = false
-                    },
+                    }.padding(horizontal = ChipHorizontalPadding, vertical = ChipVerticalPadding),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (selectedId != null) {
+                Box(
+                    modifier =
+                        Modifier
+                            .size(ChipDotSize)
+                            .background(yarnColorForId(selectedId), CircleShape),
                 )
-                uiState.projects.forEach { project ->
-                    DropdownMenuItem(
-                        text = { Text(project.name) },
-                        onClick = {
-                            onSelectProject(project.id)
-                            showProjectPicker = false
-                        },
-                    )
-                }
+                Spacer(modifier = Modifier.width(ChipDotSpacing))
             }
-        }
-    }
-}
-
-@Composable
-private fun InsightsChip(
-    label: String,
-    selected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    role: Role = Role.Tab,
-    showMenuIndicator: Boolean = false,
-) {
-    val backgroundModifier =
-        if (selected) {
-            Modifier.background(MaterialTheme.colorScheme.primary)
-        } else {
-            Modifier.border(1.dp, MaterialTheme.colorScheme.outlineVariant, ChipShape)
-        }
-    val contentColor =
-        if (selected) {
-            MaterialTheme.colorScheme.onPrimary
-        } else {
-            MaterialTheme.colorScheme.onSurfaceVariant
-        }
-    Row(
-        modifier =
-            modifier
-                .clip(ChipShape)
-                .then(backgroundModifier)
-                .clickable(role = role, onClick = onClick)
-                .padding(horizontal = ChipHorizontalPadding, vertical = ChipVerticalPadding),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelLarge,
-            color = contentColor,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        if (showMenuIndicator) {
+            Text(
+                text = uiState.selectedProjectName ?: allProjectsLabel,
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false),
+            )
             Icon(
                 imageVector = Icons.Filled.ArrowDropDown,
                 contentDescription = null,
-                tint = contentColor,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier =
                     Modifier
                         .padding(start = ChipIndicatorSpacing)
                         .size(ChipIndicatorSize),
             )
+        }
+        DropdownMenu(
+            expanded = showProjectPicker,
+            onDismissRequest = { showProjectPicker = false },
+        ) {
+            DropdownMenuItem(
+                text = { Text(allProjectsLabel) },
+                onClick = {
+                    onSelectProject(null)
+                    showProjectPicker = false
+                },
+            )
+            uiState.projects.forEach { project ->
+                DropdownMenuItem(
+                    text = { Text(project.name) },
+                    onClick = {
+                        onSelectProject(project.id)
+                        showProjectPicker = false
+                    },
+                )
+            }
         }
     }
 }

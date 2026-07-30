@@ -68,6 +68,23 @@ internal fun InsightsHairline(modifier: Modifier = Modifier) {
     )
 }
 
+/** Aikaväli omana rivinään: sijamuodoton väliviivanotaatio, ei osa virkettä. */
+@Composable
+internal fun InsightsRangeKicker(text: String) {
+    Text(
+        text = text,
+        style =
+            MaterialTheme.typography.labelMedium.copy(
+                fontSize = InsightsDimens.KickerFontSize,
+                fontWeight = FontWeight.Medium,
+            ),
+        color = MaterialTheme.knitToolsColors.onSurfaceMuted,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier.padding(top = InsightsDimens.KickerTopPadding),
+    )
+}
+
 /**
  * Näytön ainoa hallitseva elementti. Numero ei enää katkaise virkettä: aikaväli on
  * johdannossa ja projektit päätöslauseessa, jolloin molemmat puoliskot ovat
@@ -167,12 +184,14 @@ internal fun InsightsStatsRow(state: InsightsUiState) {
             value = minutesPerRowText(state.minutesPerRow),
             label = stringResource(R.string.insights_stat_min_per_row),
             modifier = Modifier.weight(1f),
+            horizontalAlignment = if (state.canUseStreak) Alignment.Start else Alignment.End,
         )
         if (state.canUseStreak) {
             InsightsStat(
                 value = formatIntegerForDisplay(state.currentStreak.toLong(), locale),
                 label = stringResource(R.string.insights_stat_day_streak),
                 modifier = Modifier.weight(1f),
+                horizontalAlignment = Alignment.End,
             )
         }
     }
@@ -193,8 +212,9 @@ private fun InsightsStat(
     value: String,
     label: String,
     modifier: Modifier = Modifier,
+    horizontalAlignment: Alignment.Horizontal = Alignment.Start,
 ) {
-    Column(modifier = modifier) {
+    Column(modifier = modifier, horizontalAlignment = horizontalAlignment) {
         BasicText(
             text = value,
             style =

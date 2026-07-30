@@ -5,6 +5,7 @@ import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 import java.time.temporal.TemporalAdjusters
 import kotlin.math.abs
+import kotlin.math.ceil
 import kotlin.math.roundToInt
 
 /** Kuinka monta kuukausipylvästä All Time näyttää enintään. */
@@ -136,4 +137,19 @@ internal fun insightsTrend(
             else -> InsightsTrendDirection.FLAT
         }
     return InsightsTrend(percentChange = abs(change), direction = direction)
+}
+
+/**
+ * Akselille mahtuu vain kourallinen leimoja. Askel lasketaan ylöspäin pyöristäen,
+ * jolloin leimoja on aina korkeintaan [maxLabels] ja ensimmäinen ämpäri on aina
+ * leimattu — akselin vasen pää on käyttäjän ankkuri.
+ */
+internal fun axisLabelIndices(
+    bucketCount: Int,
+    maxLabels: Int,
+): List<Int> {
+    if (bucketCount <= 0 || maxLabels <= 0) return emptyList()
+    if (bucketCount <= maxLabels) return (0 until bucketCount).toList()
+    val step = ceil(bucketCount / maxLabels.toDouble()).toInt().coerceAtLeast(1)
+    return (0 until bucketCount step step).toList()
 }

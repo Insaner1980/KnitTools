@@ -40,7 +40,6 @@ import com.finnvek.knittools.domain.calculator.MinutesPerRowDisplay
 import com.finnvek.knittools.domain.calculator.formatIntegerForDisplay
 import com.finnvek.knittools.ui.components.DurationHero
 import com.finnvek.knittools.ui.components.durationText
-import com.finnvek.knittools.ui.components.localizedDateTimePattern
 import com.finnvek.knittools.ui.components.localizedUppercase
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
 import com.finnvek.knittools.ui.theme.InsightsDimens
@@ -49,7 +48,6 @@ import com.finnvek.knittools.ui.theme.yarnColorForId
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 
 /** Vahva viiva hero-lohkon alla. */
@@ -106,25 +104,16 @@ private fun HeroSentenceText(text: String) {
     )
 }
 
-/** All Time nimeää ensimmäisen istunnon kuukauden; viikko ja kuukausi kertovat itsensä. */
+/** Aikaväli ei ole enää lauseessa: se luetaan kicker-riviltä, joten mikään kieli ei tarvitse sijamuotoa. */
 @Composable
 private fun heroLeadInText(state: InsightsUiState): String =
-    when (state.timeRange) {
-        TimeRange.THIS_WEEK -> stringResource(R.string.insights_hero_lead_in_week)
-        TimeRange.THIS_MONTH -> stringResource(R.string.insights_hero_lead_in_month)
-        TimeRange.ALL_TIME ->
-            stringResource(R.string.insights_hero_lead_in_all_time, heroSinceMonthText(state))
-    }
-
-@Composable
-private fun heroSinceMonthText(state: InsightsUiState): String {
-    val locale = rememberCurrentLocale()
-    val formatter =
-        remember(locale) {
-            DateTimeFormatter.ofPattern(localizedDateTimePattern(locale, "yMMM"), locale)
-        }
-    return (state.rangeStart ?: state.rangeEnd).format(formatter)
-}
+    stringResource(
+        when (state.timeRange) {
+            TimeRange.THIS_WEEK -> R.string.insights_hero_lead_in_week
+            TimeRange.THIS_MONTH -> R.string.insights_hero_lead_in_month
+            TimeRange.ALL_TIME -> R.string.insights_hero_lead_in_all_time
+        },
+    )
 
 /**
  * Projektien määrä on konkreettisempi päätös kuin roikkuva gerundi, ja se on

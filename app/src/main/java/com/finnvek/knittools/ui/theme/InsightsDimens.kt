@@ -41,6 +41,10 @@ object InsightsDimens {
     val StatValueLetterSpacing = (-0.03f).em
     val StatLabelTopMargin = 9.dp
 
+    // Trendirivi
+    val TrendFontSize = 14.sp
+    val TrendBottomPadding = 14.dp
+
     // Viivat: näytöllä on tasan kaksi painoa
     @Suppress("MayBeConstant")
     val RuleStrongAlpha = 0.32f

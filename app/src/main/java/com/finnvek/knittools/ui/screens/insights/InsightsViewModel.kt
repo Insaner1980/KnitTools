@@ -76,6 +76,7 @@ data class InsightsUiState(
     val daysInRange: Int = 0,
     val currentStreak: Int = 0,
     val bestStreak: Int = 0,
+    val trend: InsightsTrend? = null,
     val projects: List<CounterProject> = emptyList(),
     val selectedProjectId: Long? = null,
     val selectedProjectName: String? = null,
@@ -229,6 +230,14 @@ class InsightsViewModel
                 SessionMetrics
                     .activityDates(sessions, rangeEarliestDate(params.startMillis, zone), zone)
                     .size
+            val previousMinutes =
+                previousPeriodMinutes(
+                    sessions = sessions,
+                    timeRange = params.timeRange,
+                    today = today,
+                    firstDayOfWeek = firstDayOfWeek,
+                    zone = zone,
+                )
 
             return InsightsUiState(
                 isLoading = false,
@@ -244,6 +253,7 @@ class InsightsViewModel
                 daysInRange = daysInRange(params.timeRange, today, firstSessionDate, firstDayOfWeek),
                 currentStreak = streakMetrics.current,
                 bestStreak = streakMetrics.best,
+                trend = previousMinutes?.let { insightsTrend(rangeMetrics.totalMinutes, it) },
                 projects = projectList,
                 selectedProjectId = params.projectId,
                 selectedProjectName = projectList.firstOrNull { it.id == params.projectId }?.name,
@@ -486,6 +496,35 @@ class InsightsViewModel
                     ?.atStartOfDay(systemDefault())
                     ?.toInstant()
                     ?.toEpochMilli()
+
+            /**
+             * Edellinen jakso katkaistaan samaan kuluneeseen päivämäärään: keskiviikkoa
+             * verrataan viime viikon keskiviikkoon asti, ei koko viikkoon. Muuten
+             * kesken oleva jakso näyttäisi aina laskulta.
+             */
+            private fun previousPeriodMinutes(
+                sessions: List<KnitSession>,
+                timeRange: TimeRange,
+                today: LocalDate,
+                firstDayOfWeek: DayOfWeek,
+                zone: ZoneId,
+            ): Int? {
+                if (timeRange == TimeRange.ALL_TIME) return null
+                val currentStart = rangeStartDate(timeRange, today, firstDayOfWeek) ?: return null
+                val previousStart =
+                    when (timeRange) {
+                        TimeRange.THIS_WEEK -> currentStart.minusWeeks(1)
+                        TimeRange.THIS_MONTH -> currentStart.minusMonths(1)
+                        TimeRange.ALL_TIME -> return null
+                    }
+                val elapsedDays = ChronoUnit.DAYS.between(currentStart, today) + 1
+                val previousEndExclusive = previousStart.plusDays(elapsedDays)
+                return SessionMetrics
+                    .dailyActivityMinutes(sessions, previousStart, zone)
+                    .entries
+                    .filter { (date, _) -> date >= previousStart && date < previousEndExclusive }
+                    .sumOf { (_, minutes) -> minutes }
+            }
 
             private fun firstSessionDate(
                 sessions: List<KnitSession>,

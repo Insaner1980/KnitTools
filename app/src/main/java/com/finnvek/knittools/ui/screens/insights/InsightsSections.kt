@@ -38,6 +38,7 @@ import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.DurationDisplayFormatter
 import com.finnvek.knittools.domain.calculator.MinutesPerRowDisplay
 import com.finnvek.knittools.domain.calculator.formatIntegerForDisplay
+import com.finnvek.knittools.domain.calculator.formatPercentForDisplay
 import com.finnvek.knittools.ui.components.DurationHero
 import com.finnvek.knittools.ui.components.durationText
 import com.finnvek.knittools.ui.components.localizedUppercase
@@ -194,6 +195,55 @@ internal fun InsightsStatsRow(state: InsightsUiState) {
                 horizontalAlignment = Alignment.End,
             )
         }
+    }
+}
+
+/**
+ * Yksi vaimea rivi tilastojen alla: kesken oleva jakso suhteessa edelliseen, tai
+ * All Time -näkymässä paras putki, joka muuten laskettaisiin turhaan.
+ */
+@Composable
+internal fun InsightsTrendLine(state: InsightsUiState) {
+    val text = trendLineText(state) ?: return
+    Text(
+        text = text,
+        style =
+            MaterialTheme.typography.bodySmall.copy(
+                fontSize = InsightsDimens.TrendFontSize,
+                fontWeight = FontWeight.Medium,
+            ),
+        color = MaterialTheme.knitToolsColors.onSurfaceMuted,
+        maxLines = 2,
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier.padding(bottom = InsightsDimens.TrendBottomPadding),
+    )
+}
+
+@Composable
+private fun trendLineText(state: InsightsUiState): String? {
+    val locale = rememberCurrentLocale()
+    if (state.timeRange == TimeRange.ALL_TIME) {
+        if (!state.canUseStreak || state.bestStreak <= 0) return null
+        return pluralStringResource(R.plurals.insights_best_streak, state.bestStreak, state.bestStreak)
+    }
+    val trend = state.trend ?: return null
+    val percent = formatPercentForDisplay(trend.percentChange / 100.0, locale)
+    val isWeek = state.timeRange == TimeRange.THIS_WEEK
+    return when (trend.direction) {
+        InsightsTrendDirection.UP ->
+            stringResource(
+                if (isWeek) R.string.insights_trend_more_week else R.string.insights_trend_more_month,
+                percent,
+            )
+
+        InsightsTrendDirection.DOWN ->
+            stringResource(
+                if (isWeek) R.string.insights_trend_less_week else R.string.insights_trend_less_month,
+                percent,
+            )
+
+        InsightsTrendDirection.FLAT ->
+            stringResource(if (isWeek) R.string.insights_trend_same_week else R.string.insights_trend_same_month)
     }
 }
 

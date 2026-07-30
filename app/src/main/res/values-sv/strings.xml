@@ -469,6 +469,16 @@
     <string name="insights_stat_rows">Varv</string>
     <string name="insights_stat_min_per_row">Min per varv</string>
     <string name="insights_stat_day_streak">Dagssvit</string>
+    <string name="insights_trend_more_week">%1$s mer än förra veckan</string>
+    <string name="insights_trend_less_week">%1$s mindre än förra veckan</string>
+    <string name="insights_trend_same_week">Samma som förra veckan</string>
+    <string name="insights_trend_more_month">%1$s mer än förra månaden</string>
+    <string name="insights_trend_less_month">%1$s mindre än förra månaden</string>
+    <string name="insights_trend_same_month">Samma som förra månaden</string>
+    <plurals name="insights_best_streak">
+        <item quantity="one">Bästa svit %1$d dag</item>
+        <item quantity="other">Bästa svit %1$d dagar</item>
+    </plurals>
     <string name="insights_stat_no_value">—</string>
     <string name="insights_stat_under_one">&lt;1</string>
     <string name="insights_section_every_day">Varje dag</string>

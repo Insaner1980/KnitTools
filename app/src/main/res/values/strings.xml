@@ -488,6 +488,16 @@
     <string name="insights_stat_rows">Rows</string>
     <string name="insights_stat_min_per_row">Min per row</string>
     <string name="insights_stat_day_streak">Day streak</string>
+    <string name="insights_trend_more_week">%1$s more than last week</string>
+    <string name="insights_trend_less_week">%1$s less than last week</string>
+    <string name="insights_trend_same_week">Same as last week</string>
+    <string name="insights_trend_more_month">%1$s more than last month</string>
+    <string name="insights_trend_less_month">%1$s less than last month</string>
+    <string name="insights_trend_same_month">Same as last month</string>
+    <plurals name="insights_best_streak">
+        <item quantity="one">Best streak %1$d day</item>
+        <item quantity="other">Best streak %1$d days</item>
+    </plurals>
     <string name="insights_stat_no_value">—</string>
     <string name="insights_stat_under_one">&lt;1</string>
     <string name="insights_section_every_day">Every day</string>

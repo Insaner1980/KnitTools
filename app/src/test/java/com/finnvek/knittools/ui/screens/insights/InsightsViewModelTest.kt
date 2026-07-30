@@ -25,6 +25,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -32,6 +33,9 @@ import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZonedDateTime
+import java.time.temporal.TemporalAdjusters
+import java.time.temporal.WeekFields
+import java.util.Locale
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class InsightsViewModelTest {
@@ -125,6 +129,68 @@ class InsightsViewModelTest {
             assertEquals(state.daysInRange, state.chartBuckets.size)
             assertEquals(today, state.chartBuckets.last().bucketStart)
             assertTrue(state.chartBuckets.all { it.totalMinutes == 0 })
+        }
+
+    @Test
+    fun `weekly trend compares the same elapsed days of the previous week`() =
+        runTest {
+            val zone = ZoneId.systemDefault()
+            val today = LocalDate.now(zone)
+            // gradle.properties pakottaa testi-JVM:n user.language/user.country-arvot
+            // en/US:ksi, jolloin viikko alkaa sunnuntaista eikä maanantaista. Viikon
+            // alku lasketaan siis samalla WeekFields-logiikalla kuin tuotantokoodi
+            // (currentInsightsLocale() -> Locale.getDefault()), ei kovakoodatulla
+            // maanantailla, jotta testi osoittaa katkaisun eikä aikavyöhyke-eroa.
+            val firstDayOfWeek = WeekFields.of(Locale.getDefault()).firstDayOfWeek
+            val weekStart = today.with(TemporalAdjusters.previousOrSame(firstDayOfWeek))
+            val sessions =
+                listOf(
+                    sessionAt(date = weekStart, hour = 10, minute = 0, rows = 10, minutes = 60, zone = zone),
+                    sessionAt(
+                        date = weekStart.minusWeeks(1),
+                        hour = 10,
+                        minute = 0,
+                        rows = 10,
+                        minutes = 30,
+                        zone = zone,
+                    ),
+                    // Viime viikon loppupää jää vertailun ulkopuolelle, koska kuluva viikko ei ole vielä siellä.
+                    sessionAt(
+                        date = weekStart.minusDays(1),
+                        hour = 10,
+                        minute = 0,
+                        rows = 10,
+                        minutes = 600,
+                        zone = zone,
+                    ),
+                )
+            every { repository.getSessionsForInsights(null, null) } returns flowOf(sessions)
+
+            val viewModel = createViewModel()
+            viewModel.selectTimeRange(TimeRange.THIS_WEEK)
+            advanceUntilIdle()
+
+            val state = viewModel.uiState.first { !it.isLoading }
+
+            assertEquals(InsightsTrendDirection.UP, state.trend?.direction)
+            assertEquals(100, state.trend?.percentChange)
+        }
+
+    @Test
+    fun `all time has no previous period to compare against`() =
+        runTest {
+            val zone = ZoneId.systemDefault()
+            val today = LocalDate.now(zone)
+            every { repository.getSessionsForInsights(null, null) } returns
+                flowOf(listOf(sessionAt(date = today, hour = 10, minute = 0, rows = 10, minutes = 60, zone = zone)))
+
+            val viewModel = createViewModel()
+            viewModel.selectTimeRange(TimeRange.ALL_TIME)
+            advanceUntilIdle()
+
+            val state = viewModel.uiState.first { !it.isLoading }
+
+            assertNull(state.trend)
         }
 
     @Test

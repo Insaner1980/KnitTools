@@ -121,6 +121,7 @@ private fun LazyListScope.insightsContent(
     item { InsightsHero(state = uiState) }
     item { InsightsStrongRule() }
     item { InsightsStatsRow(state = uiState) }
+    item { InsightsTrendLine(state = uiState) }
     item { InsightsHairline() }
 
     item {

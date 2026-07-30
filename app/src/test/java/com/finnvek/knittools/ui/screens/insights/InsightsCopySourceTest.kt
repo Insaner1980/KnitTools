@@ -12,8 +12,8 @@ import org.junit.Test
 class InsightsCopySourceTest {
     @Test
     fun `finnish relative units are separated from the number and weeks are not years`() {
-        val finnish = ProjectSourceFiles.read(FRENCH_STRINGS)
-        val gluedUnit = Regex("%1${'$'}d\\p{L}")
+        val finnish = ProjectSourceFiles.read(FINNISH_STRINGS)
+        val gluedUnit = Regex("%1\\${'$'}d\\p{L}")
 
         RELATIVE_TIME_NAMES.forEach { name ->
             val value = stringValue(finnish, name)
@@ -38,7 +38,7 @@ class InsightsCopySourceTest {
             ?: error("Missing string $name")
 
     private companion object {
-        const val FRENCH_STRINGS = "app/src/main/res/values-fi/strings.xml"
+        const val FINNISH_STRINGS = "app/src/main/res/values-fi/strings.xml"
 
         val RELATIVE_TIME_NAMES =
             listOf(

@@ -478,6 +478,16 @@
     <string name="insights_stat_rows">Kerroksia</string>
     <string name="insights_stat_min_per_row">Min / kerros</string>
     <string name="insights_stat_day_streak">Päiväputki</string>
+    <string name="insights_trend_more_week">%1$s enemmän kuin viime viikolla</string>
+    <string name="insights_trend_less_week">%1$s vähemmän kuin viime viikolla</string>
+    <string name="insights_trend_same_week">Sama kuin viime viikolla</string>
+    <string name="insights_trend_more_month">%1$s enemmän kuin viime kuussa</string>
+    <string name="insights_trend_less_month">%1$s vähemmän kuin viime kuussa</string>
+    <string name="insights_trend_same_month">Sama kuin viime kuussa</string>
+    <plurals name="insights_best_streak">
+        <item quantity="one">Paras putki %1$d päivä</item>
+        <item quantity="other">Paras putki %1$d päivää</item>
+    </plurals>
     <string name="insights_stat_no_value">—</string>
     <string name="insights_stat_under_one">&lt;1</string>
     <string name="insights_section_every_day">Joka päivä</string>

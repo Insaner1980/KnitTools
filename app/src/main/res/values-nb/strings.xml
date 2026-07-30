@@ -469,6 +469,16 @@
     <string name="insights_stat_rows">Rader</string>
     <string name="insights_stat_min_per_row">Min per rad</string>
     <string name="insights_stat_day_streak">Dagsrekke</string>
+    <string name="insights_trend_more_week">%1$s mer enn forrige uke</string>
+    <string name="insights_trend_less_week">%1$s mindre enn forrige uke</string>
+    <string name="insights_trend_same_week">Samme som forrige uke</string>
+    <string name="insights_trend_more_month">%1$s mer enn forrige måned</string>
+    <string name="insights_trend_less_month">%1$s mindre enn forrige måned</string>
+    <string name="insights_trend_same_month">Samme som forrige måned</string>
+    <plurals name="insights_best_streak">
+        <item quantity="one">Beste rekke %1$d dag</item>
+        <item quantity="other">Beste rekke %1$d dager</item>
+    </plurals>
     <string name="insights_stat_no_value">—</string>
     <string name="insights_stat_under_one">&lt;1</string>
     <string name="insights_section_every_day">Hver dag</string>

@@ -476,6 +476,16 @@
     <string name="insights_stat_rows">Vueltas</string>
     <string name="insights_stat_min_per_row">Min por vuelta</string>
     <string name="insights_stat_day_streak">Racha de días</string>
+    <string name="insights_trend_more_week">%1$s más que la semana pasada</string>
+    <string name="insights_trend_less_week">%1$s menos que la semana pasada</string>
+    <string name="insights_trend_same_week">Igual que la semana pasada</string>
+    <string name="insights_trend_more_month">%1$s más que el mes pasado</string>
+    <string name="insights_trend_less_month">%1$s menos que el mes pasado</string>
+    <string name="insights_trend_same_month">Igual que el mes pasado</string>
+    <plurals name="insights_best_streak">
+        <item quantity="one">Mejor racha %1$d día</item>
+        <item quantity="other">Mejor racha %1$d días</item>
+    </plurals>
     <string name="insights_stat_no_value">—</string>
     <string name="insights_stat_under_one">&lt;1</string>
     <string name="insights_section_every_day">Cada día</string>

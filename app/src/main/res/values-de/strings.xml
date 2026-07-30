@@ -469,6 +469,16 @@
     <string name="insights_stat_rows">Reihen</string>
     <string name="insights_stat_min_per_row">Min pro Reihe</string>
     <string name="insights_stat_day_streak">Tage-Serie</string>
+    <string name="insights_trend_more_week">%1$s mehr als letzte Woche</string>
+    <string name="insights_trend_less_week">%1$s weniger als letzte Woche</string>
+    <string name="insights_trend_same_week">Genauso viel wie letzte Woche</string>
+    <string name="insights_trend_more_month">%1$s mehr als letzten Monat</string>
+    <string name="insights_trend_less_month">%1$s weniger als letzten Monat</string>
+    <string name="insights_trend_same_month">Genauso viel wie letzten Monat</string>
+    <plurals name="insights_best_streak">
+        <item quantity="one">Beste Serie %1$d Tag</item>
+        <item quantity="other">Beste Serie %1$d Tage</item>
+    </plurals>
     <string name="insights_stat_no_value">—</string>
     <string name="insights_stat_under_one">&lt;1</string>
     <string name="insights_section_every_day">Jeden Tag</string>

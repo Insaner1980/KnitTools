@@ -476,6 +476,16 @@
     <string name="insights_stat_rows">Carreiras</string>
     <string name="insights_stat_min_per_row">Min por carreira</string>
     <string name="insights_stat_day_streak">Sequência de dias</string>
+    <string name="insights_trend_more_week">%1$s mais do que na semana passada</string>
+    <string name="insights_trend_less_week">%1$s menos do que na semana passada</string>
+    <string name="insights_trend_same_week">Igual à semana passada</string>
+    <string name="insights_trend_more_month">%1$s mais do que no mês passado</string>
+    <string name="insights_trend_less_month">%1$s menos do que no mês passado</string>
+    <string name="insights_trend_same_month">Igual ao mês passado</string>
+    <plurals name="insights_best_streak">
+        <item quantity="one">Melhor sequência %1$d dia</item>
+        <item quantity="other">Melhor sequência %1$d dias</item>
+    </plurals>
     <string name="insights_stat_no_value">—</string>
     <string name="insights_stat_under_one">&lt;1</string>
     <string name="insights_section_every_day">Todos os dias</string>

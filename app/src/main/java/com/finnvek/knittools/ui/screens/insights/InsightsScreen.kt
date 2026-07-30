@@ -117,6 +117,7 @@ private fun LazyListScope.insightsContent(
     onSelectBucket: (Int) -> Unit,
     onProUpgrade: () -> Unit,
 ) {
+    item { InsightsRangeKicker(text = rangeLabel) }
     item { InsightsHero(state = uiState) }
     item { InsightsStrongRule() }
     item { InsightsStatsRow(state = uiState) }

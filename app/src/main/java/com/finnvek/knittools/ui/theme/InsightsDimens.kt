@@ -16,17 +16,21 @@ object InsightsDimens {
     // Suodatinsirut
     val FiltersTopPadding = 12.dp
 
+    // Kicker
+    val KickerTopPadding = 14.dp
+    val KickerFontSize = 13.sp
+
     // Hero
-    val HeroTopPadding = 20.dp
-    val HeroBottomPadding = 8.dp
+    val HeroTopPadding = 8.dp
+    val HeroBottomPadding = 6.dp
     val HeroRangeTopMargin = 6.dp
-    val HeroLeadFontSize = 26.sp
-    val HeroPrimaryNumberFontSize = 96.sp
-    val HeroPrimaryNumberMinFontSize = 64.sp
-    val HeroPrimaryUnitFontSize = 32.sp
-    val HeroSecondaryNumberFontSize = 58.sp
-    val HeroSecondaryUnitFontSize = 24.sp
-    val HeroUnitToMinutesSpacing = 14.dp
+    val HeroLeadFontSize = 20.sp
+    val HeroPrimaryNumberFontSize = 76.sp
+    val HeroPrimaryNumberMinFontSize = 52.sp
+    val HeroPrimaryUnitFontSize = 26.sp
+    val HeroSecondaryNumberFontSize = 46.sp
+    val HeroSecondaryUnitFontSize = 20.sp
+    val HeroUnitToMinutesSpacing = 11.dp
     val HeroNumberLetterSpacing = (-0.055f).em
 
     // Tilastorivi

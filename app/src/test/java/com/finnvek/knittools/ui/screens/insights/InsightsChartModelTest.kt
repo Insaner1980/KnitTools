@@ -166,4 +166,38 @@ class InsightsChartModelTest {
 
         assertNull(defaultSelectedBucketIndex(buckets))
     }
+
+    @Test
+    fun `trend reports growth against the previous period`() {
+        val trend = insightsTrend(currentMinutes = 120, previousMinutes = 100)
+
+        assertEquals(InsightsTrend(percentChange = 20, direction = InsightsTrendDirection.UP), trend)
+    }
+
+    @Test
+    fun `trend reports decline as a positive magnitude`() {
+        val trend = insightsTrend(currentMinutes = 80, previousMinutes = 100)
+
+        assertEquals(InsightsTrend(percentChange = 20, direction = InsightsTrendDirection.DOWN), trend)
+    }
+
+    @Test
+    fun `equal periods are flat`() {
+        val trend = insightsTrend(currentMinutes = 100, previousMinutes = 100)
+
+        assertEquals(InsightsTrend(percentChange = 0, direction = InsightsTrendDirection.FLAT), trend)
+    }
+
+    @Test
+    fun `trend is unavailable without a previous period to divide by`() {
+        assertNull(insightsTrend(currentMinutes = 90, previousMinutes = 0))
+        assertNull(insightsTrend(currentMinutes = 0, previousMinutes = 0))
+    }
+
+    @Test
+    fun `dropping to zero is a full decline`() {
+        val trend = insightsTrend(currentMinutes = 0, previousMinutes = 100)
+
+        assertEquals(InsightsTrend(percentChange = 100, direction = InsightsTrendDirection.DOWN), trend)
+    }
 }

@@ -4,6 +4,8 @@ import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 import java.time.temporal.TemporalAdjusters
+import kotlin.math.abs
+import kotlin.math.roundToInt
 
 /** Kuinka monta kuukausipylvästä All Time näyttää enintään. */
 internal const val ALL_TIME_MONTH_BUCKET_LIMIT = 12
@@ -30,6 +32,18 @@ data class InsightsChartBucket(
 data class InsightsChartAxis(
     val interval: PaceGroupingInterval,
     val bucketStarts: List<LocalDate>,
+)
+
+enum class InsightsTrendDirection {
+    UP,
+    DOWN,
+    FLAT,
+}
+
+/** Muutos edelliseen jaksoon. Suuruus on itseisarvo, suunta erikseen. */
+data class InsightsTrend(
+    val percentChange: Int,
+    val direction: InsightsTrendDirection,
 )
 
 /**
@@ -103,3 +117,23 @@ internal fun fillChartBuckets(
  */
 internal fun defaultSelectedBucketIndex(buckets: List<InsightsChartBucket>): Int? =
     buckets.indexOfLast { it.totalMinutes > 0 }.takeIf { it >= 0 }
+
+/**
+ * Ilman edellisen jakson minuutteja prosenttimuutosta ei ole olemassa: nollalla
+ * jakaminen tuottaisi äärettömän kasvun, joka näyttäisi ensimmäisellä viikolla
+ * mielivaltaiselta luvulta. Silloin rivi jätetään kokonaan pois.
+ */
+internal fun insightsTrend(
+    currentMinutes: Int,
+    previousMinutes: Int,
+): InsightsTrend? {
+    if (previousMinutes <= 0) return null
+    val change = ((currentMinutes - previousMinutes) * 100.0 / previousMinutes).roundToInt()
+    val direction =
+        when {
+            change > 0 -> InsightsTrendDirection.UP
+            change < 0 -> InsightsTrendDirection.DOWN
+            else -> InsightsTrendDirection.FLAT
+        }
+    return InsightsTrend(percentChange = abs(change), direction = direction)
+}

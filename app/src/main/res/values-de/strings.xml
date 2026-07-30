@@ -46,7 +46,6 @@
     <!-- Screen titles -->
     <string name="tools_title">Werkzeuge</string>
     <string name="library_title">Bibliothek</string>
-    <string name="insights_title">Einblicke</string>
     <string name="saved_patterns_title">Gespeicherte Anleitungen</string>
     <string name="my_yarn_title">Mein Garn</string>
     <string name="all_photos_title">Fotos</string>
@@ -444,38 +443,73 @@
     <string name="filter_all">Alle</string>
 
     <!-- Insights -->
-    <string name="total_time_label">Gesamtzeit</string>
-    <string name="avg_pace_label">Durchschnitts-\nTempo</string>
-    <string name="completed_label">Fertig</string>
-    <string name="time_format_hours">%.1fh</string>
-    <string name="pace_format">%.0f R/h</string>
-    <string name="streak_format">%d Tage</string>
+    <!-- Insights: kestot, hero ja kaavio -->
+    <plurals name="insights_duration_minutes">
+        <item quantity="one">%1$d min</item>
+        <item quantity="other">%1$d min</item>
+    </plurals>
+    <plurals name="insights_duration_hours">
+        <item quantity="one">%1$d h</item>
+        <item quantity="other">%1$d h</item>
+    </plurals>
+    <string name="insights_duration_hours_minutes">%1$d h %2$d min</string>
+    <string name="insights_range_format">%1$s – %2$s</string>
+    <string name="insights_range_since_format">Seit %1$s</string>
+    <string name="insights_hero_lead_in_week">Diese Woche hast du</string>
+    <string name="insights_hero_lead_in_month">Diesen Monat hast du</string>
+    <string name="insights_hero_lead_in_all_time">Seit %1$s hast du</string>
+    <plurals name="insights_hero_trailing_projects">
+        <item quantity="one">für ein Projekt verbracht.</item>
+        <item quantity="other">für %1$d Projekte verbracht.</item>
+    </plurals>
+    <string name="insights_hero_trailing_project">für %1$s verbracht.</string>
+    <string name="insights_craft_verb_knitting">Stricken</string>
+    <string name="insights_craft_verb_crocheting">Häkeln</string>
+    <string name="insights_craft_verb_making">Handarbeit</string>
+    <string name="insights_stat_rows">Reihen</string>
+    <string name="insights_stat_min_per_row">Min pro Reihe</string>
+    <string name="insights_stat_day_streak">Tage-Serie</string>
+    <string name="insights_stat_no_value">—</string>
+    <string name="insights_stat_under_one">&lt;1</string>
+    <string name="insights_section_every_day">Jeden Tag</string>
+    <string name="insights_section_where_time_went">Wohin die Zeit ging</string>
+    <plurals name="insights_days_meta_format">
+        <item quantity="one">%1$d von %2$d Tag</item>
+        <item quantity="other">%1$d von %2$d Tagen</item>
+    </plurals>
+    <string name="insights_chart_hint_day">Tippe auf einen Tag, um ihn zu sehen.</string>
+    <string name="insights_chart_hint_month">Tippe auf einen Monat, um ihn zu sehen.</string>
+    <string name="insights_chart_axis_today">heute</string>
+    <string name="insights_no_sessions_yet">Noch keine Sitzungen</string>
+    <string name="insights_chart_a11y_daily">Tägliche Zeit für %1$s, %2$s, %3$s, am längsten %4$s</string>
+    <string name="insights_chart_a11y_monthly">Monatliche Zeit für %1$s, %2$s, %3$s, am längsten %4$s</string>
+    <string name="insights_project_sub_format">%1$s, %2$s</string>
+    <string name="insights_empty_title">Noch keine Zeit an den Nadeln.</string>
+    <string name="insights_empty_body">Öffne ein Projekt und beginne zu zählen. Deine Zeit erscheint hier.</string>
+    <string name="insights_nothing_yet_week">Diese Woche noch nichts.</string>
+    <string name="insights_nothing_yet_month">Diesen Monat noch nichts.</string>
+    <string name="insights_nothing_yet_all_time">Noch nichts.</string>
+    <string name="insights_pro_chart_title">Sieh deinen Tagesrhythmus</string>
+    <string name="insights_pro_chart_body">Pro zeigt jede Sitzung als Diagramm, plus deine Serie.</string>
     <string name="all_projects">Alle Projekte</string>
     <string name="insights_all_time">Gesamte Zeit</string>
     <string name="insights_this_week">Diese Woche</string>
     <string name="insights_this_month">Diesen Monat</string>
-    <string name="insights_knitting_activity">Strickaktivität</string>
-    <string name="activity_grid_tooltip_format">%1$s — %2$s</string>
-    <string name="insights_current_streak">Aktuelle Serie:</string>
-    <string name="insights_best_streak">Beste:</string>
     <plurals name="insights_rows_count">
         <item quantity="one">%1$d Reihe</item>
         <item quantity="other">%1$d Reihen</item>
     </plurals>
-    <string name="insights_less_than_tenth_hour">&lt;0.1h</string>
-    <string name="insights_no_time">—</string>
-    <string name="insights_footer_1">Jede Reihe zählt — weiterstricken!</string>
-    <string name="insights_footer_2">Deine Nadeln warten schon.</string>
+    <string name="insights_footer_1">Jede Reihe zählt — weitermachen!</string>
+    <string name="insights_footer_2">Dein Projekt wartet schon.</string>
     <string name="insights_footer_3">Noch eine Reihe?</string>
     <string name="insights_footer_4">Masche für Masche, Reihe für Reihe.</string>
-    <string name="insights_footer_5">Große Dinge beginnen mit einem einzigen Anschlag.</string>
+    <string name="insights_footer_5">Große Dinge beginnen mit einer einzigen Masche.</string>
     <string name="relative_time_today">heute</string>
     <string name="relative_time_yesterday">gestern</string>
     <string name="relative_time_days_ago">vor %1$d T</string>
     <string name="relative_time_weeks_ago">vor %1$d W</string>
     <string name="relative_time_months_ago">vor %1$d Mon</string>
-    <string name="no_knitting">Kein Stricken</string>
-    <string name="time_per_project">Zeit pro Projekt</string>
+    <string name="insights_no_time_logged">Keine Zeit erfasst</string>
 
     <!-- Settings -->
     <string name="help_and_guide">Hilfe und Anleitung</string>

@@ -46,7 +46,6 @@
     <!-- Screen titles -->
     <string name="tools_title">Strumenti</string>
     <string name="library_title">Libreria</string>
-    <string name="insights_title">Statistiche</string>
     <string name="saved_patterns_title">Modelli salvati</string>
     <string name="my_yarn_title">Il mio filato</string>
     <string name="all_photos_title">Foto</string>
@@ -448,39 +447,78 @@
     <string name="filter_all">Tutti</string>
 
     <!-- Insights -->
-    <string name="total_time_label">Tempo totale</string>
-    <string name="avg_pace_label">Ritmo medio</string>
-    <string name="completed_label">Completati</string>
-    <string name="time_format_hours">%.1fh</string>
-    <string name="pace_format">%.0f f/h</string>
-    <string name="streak_format">%d giorni</string>
+    <!-- Insights: kestot, hero ja kaavio -->
+    <plurals name="insights_duration_minutes">
+        <item quantity="one">%1$d min</item>
+        <item quantity="many">%1$d min</item>
+        <item quantity="other">%1$d min</item>
+    </plurals>
+    <plurals name="insights_duration_hours">
+        <item quantity="one">%1$d h</item>
+        <item quantity="many">%1$d h</item>
+        <item quantity="other">%1$d h</item>
+    </plurals>
+    <string name="insights_duration_hours_minutes">%1$d h %2$d min</string>
+    <string name="insights_range_format">%1$s – %2$s</string>
+    <string name="insights_range_since_format">Da %1$s</string>
+    <string name="insights_hero_lead_in_week">Questa settimana hai dedicato</string>
+    <string name="insights_hero_lead_in_month">Questo mese hai dedicato</string>
+    <string name="insights_hero_lead_in_all_time">Da %1$s hai dedicato</string>
+    <plurals name="insights_hero_trailing_projects">
+        <item quantity="one">a un progetto.</item>
+        <item quantity="many">a %1$d progetti.</item>
+        <item quantity="other">a %1$d progetti.</item>
+    </plurals>
+    <string name="insights_hero_trailing_project">a %1$s.</string>
+    <string name="insights_craft_verb_knitting">lavorare a maglia</string>
+    <string name="insights_craft_verb_crocheting">lavorare a uncinetto</string>
+    <string name="insights_craft_verb_making">creare</string>
+    <string name="insights_stat_rows">Ferri</string>
+    <string name="insights_stat_min_per_row">Min per ferro</string>
+    <string name="insights_stat_day_streak">Serie di giorni</string>
+    <string name="insights_stat_no_value">—</string>
+    <string name="insights_stat_under_one">&lt;1</string>
+    <string name="insights_section_every_day">Ogni giorno</string>
+    <string name="insights_section_where_time_went">Dove è andato il tempo</string>
+    <plurals name="insights_days_meta_format">
+        <item quantity="one">%1$d su %2$d giorno</item>
+        <item quantity="many">%1$d su %2$d giorni</item>
+        <item quantity="other">%1$d su %2$d giorni</item>
+    </plurals>
+    <string name="insights_chart_hint_day">Tocca un giorno per vederlo.</string>
+    <string name="insights_chart_hint_month">Tocca un mese per vederlo.</string>
+    <string name="insights_chart_axis_today">oggi</string>
+    <string name="insights_no_sessions_yet">Ancora nessuna sessione</string>
+    <string name="insights_chart_a11y_daily">Tempo giornaliero per %1$s, %2$s, %3$s, il più lungo %4$s</string>
+    <string name="insights_chart_a11y_monthly">Tempo mensile per %1$s, %2$s, %3$s, il più lungo %4$s</string>
+    <string name="insights_project_sub_format">%1$s, %2$s</string>
+    <string name="insights_empty_title">Ancora nessun tempo sui ferri.</string>
+    <string name="insights_empty_body">Apri un progetto e inizia a contare. Il tuo tempo comparirà qui.</string>
+    <string name="insights_nothing_yet_week">Ancora nulla questa settimana.</string>
+    <string name="insights_nothing_yet_month">Ancora nulla questo mese.</string>
+    <string name="insights_nothing_yet_all_time">Ancora nulla.</string>
+    <string name="insights_pro_chart_title">Scopri il tuo ritmo quotidiano</string>
+    <string name="insights_pro_chart_body">Pro mostra ogni sessione come grafico, oltre alla tua serie.</string>
     <string name="all_projects">Tutti i progetti</string>
     <string name="insights_all_time">Sempre</string>
     <string name="insights_this_week">Questa settimana</string>
     <string name="insights_this_month">Questo mese</string>
-    <string name="insights_knitting_activity">Attività di maglia</string>
-    <string name="activity_grid_tooltip_format">%1$s — %2$s</string>
-    <string name="insights_current_streak">Serie attuale:</string>
-    <string name="insights_best_streak">Migliore:</string>
     <plurals name="insights_rows_count">
         <item quantity="one">%1$d ferro</item>
         <item quantity="many">%1$d ferri</item>
         <item quantity="other">%1$d ferri</item>
     </plurals>
-    <string name="insights_less_than_tenth_hour">&lt;0.1h</string>
-    <string name="insights_no_time">—</string>
     <string name="insights_footer_1">Ogni ferro conta — continua a lavorare!</string>
-    <string name="insights_footer_2">I tuoi ferri ti stanno aspettando.</string>
+    <string name="insights_footer_2">Il tuo progetto ti sta aspettando.</string>
     <string name="insights_footer_3">Ancora un ferro?</string>
     <string name="insights_footer_4">Maglia dopo maglia, ferro dopo ferro.</string>
-    <string name="insights_footer_5">Le grandi cose iniziano con un solo avvio.</string>
+    <string name="insights_footer_5">Le grandi cose iniziano con una sola maglia.</string>
     <string name="relative_time_today">oggi</string>
     <string name="relative_time_yesterday">ieri</string>
     <string name="relative_time_days_ago">%1$dg fa</string>
     <string name="relative_time_weeks_ago">%1$dsett fa</string>
     <string name="relative_time_months_ago">%1$dm fa</string>
-    <string name="no_knitting">Nessun lavoro a maglia</string>
-    <string name="time_per_project">Tempo per progetto</string>
+    <string name="insights_no_time_logged">Nessun tempo registrato</string>
 
     <!-- Settings -->
     <string name="help_and_guide">Aiuto e guida</string>

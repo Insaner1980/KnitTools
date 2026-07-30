@@ -46,7 +46,6 @@
     <!-- Screen titles -->
     <string name="tools_title">Værktøjer</string>
     <string name="library_title">Bibliotek</string>
-    <string name="insights_title">Indsigt</string>
     <string name="saved_patterns_title">Gemte opskrifter</string>
     <string name="my_yarn_title">Mit garn</string>
     <string name="all_photos_title">Billeder</string>
@@ -444,38 +443,73 @@
     <string name="filter_all">Alle</string>
 
     <!-- Insights -->
-    <string name="total_time_label">Samlet tid</string>
-    <string name="avg_pace_label">Gennemsnitligt tempo</string>
-    <string name="completed_label">Afsluttet</string>
-    <string name="time_format_hours">%.1ft</string>
-    <string name="pace_format">%.0f p/t</string>
-    <string name="streak_format">%d dage</string>
+    <!-- Insights: kestot, hero ja kaavio -->
+    <plurals name="insights_duration_minutes">
+        <item quantity="one">%1$d min</item>
+        <item quantity="other">%1$d min</item>
+    </plurals>
+    <plurals name="insights_duration_hours">
+        <item quantity="one">%1$d t</item>
+        <item quantity="other">%1$d t</item>
+    </plurals>
+    <string name="insights_duration_hours_minutes">%1$d t %2$d min</string>
+    <string name="insights_range_format">%1$s – %2$s</string>
+    <string name="insights_range_since_format">Siden %1$s</string>
+    <string name="insights_hero_lead_in_week">I denne uge brugte du</string>
+    <string name="insights_hero_lead_in_month">I denne måned brugte du</string>
+    <string name="insights_hero_lead_in_all_time">Siden %1$s har du brugt</string>
+    <plurals name="insights_hero_trailing_projects">
+        <item quantity="one">på ét projekt.</item>
+        <item quantity="other">på %1$d projekter.</item>
+    </plurals>
+    <string name="insights_hero_trailing_project">på %1$s.</string>
+    <string name="insights_craft_verb_knitting">strikning</string>
+    <string name="insights_craft_verb_crocheting">hækling</string>
+    <string name="insights_craft_verb_making">håndarbejde</string>
+    <string name="insights_stat_rows">Pinde</string>
+    <string name="insights_stat_min_per_row">Min pr. pind</string>
+    <string name="insights_stat_day_streak">Dagsstribe</string>
+    <string name="insights_stat_no_value">—</string>
+    <string name="insights_stat_under_one">&lt;1</string>
+    <string name="insights_section_every_day">Hver dag</string>
+    <string name="insights_section_where_time_went">Hvor tiden gik</string>
+    <plurals name="insights_days_meta_format">
+        <item quantity="one">%1$d af %2$d dag</item>
+        <item quantity="other">%1$d af %2$d dage</item>
+    </plurals>
+    <string name="insights_chart_hint_day">Tryk på en dag for at se den.</string>
+    <string name="insights_chart_hint_month">Tryk på en måned for at se den.</string>
+    <string name="insights_chart_axis_today">i dag</string>
+    <string name="insights_no_sessions_yet">Ingen sessioner endnu</string>
+    <string name="insights_chart_a11y_daily">Daglig tid til %1$s, %2$s, %3$s, længst %4$s</string>
+    <string name="insights_chart_a11y_monthly">Månedlig tid til %1$s, %2$s, %3$s, længst %4$s</string>
+    <string name="insights_project_sub_format">%1$s, %2$s</string>
+    <string name="insights_empty_title">Ingen tid på pindene endnu.</string>
+    <string name="insights_empty_body">Åbn et projekt, og begynd at tælle. Din tid dukker op her.</string>
+    <string name="insights_nothing_yet_week">Intet endnu i denne uge.</string>
+    <string name="insights_nothing_yet_month">Intet endnu i denne måned.</string>
+    <string name="insights_nothing_yet_all_time">Intet endnu.</string>
+    <string name="insights_pro_chart_title">Se din daglige rytme</string>
+    <string name="insights_pro_chart_body">Pro viser hver session som et diagram plus din stribe.</string>
     <string name="all_projects">Alle projekter</string>
     <string name="insights_all_time">Hele tiden</string>
     <string name="insights_this_week">Denne uge</string>
     <string name="insights_this_month">Denne måned</string>
-    <string name="insights_knitting_activity">Strikkeaktivitet</string>
-    <string name="activity_grid_tooltip_format">%1$s — %2$s</string>
-    <string name="insights_current_streak">Nuværende stime:</string>
-    <string name="insights_best_streak">Bedste:</string>
     <plurals name="insights_rows_count">
         <item quantity="one">%1$d pind</item>
         <item quantity="other">%1$d pinde</item>
     </plurals>
-    <string name="insights_less_than_tenth_hour">&lt;0.1t</string>
-    <string name="insights_no_time">—</string>
-    <string name="insights_footer_1">Hver pind tæller — bliv ved med at strikke!</string>
-    <string name="insights_footer_2">Dine pinde venter.</string>
+    <string name="insights_footer_1">Hver pind tæller — bliv ved!</string>
+    <string name="insights_footer_2">Dit projekt venter.</string>
     <string name="insights_footer_3">Én pind mere?</string>
     <string name="insights_footer_4">Maske for maske, pind for pind.</string>
-    <string name="insights_footer_5">Store ting begynder med en enkelt opslagning.</string>
+    <string name="insights_footer_5">Store ting begynder med en enkelt maske.</string>
     <string name="relative_time_today">i dag</string>
     <string name="relative_time_yesterday">i går</string>
     <string name="relative_time_days_ago">%1$dd siden</string>
     <string name="relative_time_weeks_ago">%1$du siden</string>
     <string name="relative_time_months_ago">%1$dmdr siden</string>
-    <string name="no_knitting">Ingen strikning</string>
-    <string name="time_per_project">Tid pr. projekt</string>
+    <string name="insights_no_time_logged">Ingen tid registreret</string>
 
     <!-- Settings -->
     <string name="help_and_guide">Hjælp og guide</string>

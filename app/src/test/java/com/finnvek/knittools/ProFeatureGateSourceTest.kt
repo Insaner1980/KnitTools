@@ -101,7 +101,7 @@ class ProFeatureGateSourceTest {
         val myYarnScreen = ProjectSourceFiles.read(MY_YARN_SCREEN)
         val navGraph = ProjectSourceFiles.read(NAV_GRAPH)
         val insightsViewModel = ProjectSourceFiles.read(INSIGHTS_VIEW_MODEL)
-        val activityGrid = ProjectSourceFiles.read(ACTIVITY_GRID)
+        val insightsSections = ProjectSourceFiles.read(INSIGHTS_SECTIONS)
 
         assertTrue(libraryViewModel.contains("hasFeatureFlow(ProFeature.UNLIMITED_YARN)"))
         assertTrue(libraryViewModel.contains("if (!canUseYarnCards.value) return"))
@@ -112,8 +112,8 @@ class ProFeatureGateSourceTest {
 
         assertTrue(insightsViewModel.contains("hasFeatureFlow(ProFeature.STREAK)"))
         assertTrue(insightsViewModel.contains("canUseStreak"))
-        assertTrue(activityGrid.contains("canUseStreak: Boolean"))
-        assertTrue(activityGrid.contains("if (canUseStreak)"))
+        assertTrue(insightsViewModel.contains("val canUseStreak: Boolean"))
+        assertTrue(insightsSections.contains("if (state.canUseStreak)"))
     }
 
     @Test
@@ -184,8 +184,8 @@ class ProFeatureGateSourceTest {
             "app/src/main/java/com/finnvek/knittools/ui/navigation/NavGraph.kt"
         const val INSIGHTS_VIEW_MODEL =
             "app/src/main/java/com/finnvek/knittools/ui/screens/insights/InsightsViewModel.kt"
-        const val ACTIVITY_GRID =
-            "app/src/main/java/com/finnvek/knittools/ui/screens/insights/ActivityGrid.kt"
+        const val INSIGHTS_SECTIONS =
+            "app/src/main/java/com/finnvek/knittools/ui/screens/insights/InsightsSections.kt"
         const val PRO_STATE =
             "app/src/main/java/com/finnvek/knittools/pro/ProState.kt"
         const val PRO_MANAGER =

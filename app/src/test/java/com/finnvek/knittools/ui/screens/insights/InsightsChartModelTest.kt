@@ -202,6 +202,64 @@ class InsightsChartModelTest {
     }
 
     @Test
+    fun `previous period is truncated to the same elapsed days and excludes the tail of last period`() {
+        // Nykyinen jakso: 2026-07-27 (ma) .. 2026-07-30 (to) = 4 kulunutta päivää.
+        // Edellinen jakso katkaistaan siis 2026-07-20 .. 2026-07-24 (pl.), jolloin
+        // viime viikon loppupää (pe-su) jää tarkoituksella pois.
+        val dailyMinutes =
+            mapOf(
+                LocalDate.of(2026, 7, 20) to 30, // sisältyy: jakson ensimmäinen päivä
+                LocalDate.of(2026, 7, 23) to 10, // sisältyy: viimeinen kulunut päivä
+                LocalDate.of(2026, 7, 24) to 600, // ei sisälly: tasan katkaisurajalla
+                LocalDate.of(2026, 7, 26) to 999, // ei sisälly: viime viikon loppupää
+            )
+
+        val minutes =
+            previousPeriodMinutes(
+                dailyMinutes = dailyMinutes,
+                previousStart = LocalDate.of(2026, 7, 20),
+                currentStart = LocalDate.of(2026, 7, 27),
+                today = LocalDate.of(2026, 7, 30),
+            )
+
+        assertEquals(40, minutes)
+    }
+
+    @Test
+    fun `previous period covers the full period when the current period has fully elapsed`() {
+        // Nykyinen jakso on kokonaan kulunut (7 päivää), joten edellinen jakso ei
+        // enää katkea vaan kattaa koko edellisen viikon eikä mitään jää pois.
+        val dailyMinutes =
+            mapOf(
+                LocalDate.of(2026, 7, 20) to 30,
+                LocalDate.of(2026, 7, 26) to 999,
+            )
+
+        val minutes =
+            previousPeriodMinutes(
+                dailyMinutes = dailyMinutes,
+                previousStart = LocalDate.of(2026, 7, 20),
+                currentStart = LocalDate.of(2026, 7, 27),
+                today = LocalDate.of(2026, 8, 2),
+            )
+
+        assertEquals(1029, minutes)
+    }
+
+    @Test
+    fun `previous period without matching activity is zero`() {
+        val minutes =
+            previousPeriodMinutes(
+                dailyMinutes = mapOf(LocalDate.of(2026, 6, 1) to 45),
+                previousStart = LocalDate.of(2026, 7, 20),
+                currentStart = LocalDate.of(2026, 7, 27),
+                today = LocalDate.of(2026, 7, 30),
+            )
+
+        assertEquals(0, minutes)
+    }
+
+    @Test
     fun `short axes label every bucket`() {
         assertEquals(listOf(0, 1, 2, 3, 4, 5, 6), axisLabelIndices(bucketCount = 7, maxLabels = 7))
     }

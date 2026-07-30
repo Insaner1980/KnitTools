@@ -498,9 +498,10 @@ class InsightsViewModel
                     ?.toEpochMilli()
 
             /**
-             * Edellinen jakso katkaistaan samaan kuluneeseen päivämäärään: keskiviikkoa
-             * verrataan viime viikon keskiviikkoon asti, ei koko viikkoon. Muuten
-             * kesken oleva jakso näyttäisi aina laskulta.
+             * Ratkaisee edellisen jakson rajat aikavälistä ja delegoi summauksen
+             * puhtaalle [previousPeriodMinutes]-funktiolle (InsightsChartModel.kt),
+             * jossa katkaisun päivämäärälaskenta on yksikkötestattu kiinteillä
+             * päivämäärillä.
              */
             private fun previousPeriodMinutes(
                 sessions: List<KnitSession>,
@@ -517,13 +518,8 @@ class InsightsViewModel
                         TimeRange.THIS_MONTH -> currentStart.minusMonths(1)
                         TimeRange.ALL_TIME -> return null
                     }
-                val elapsedDays = ChronoUnit.DAYS.between(currentStart, today) + 1
-                val previousEndExclusive = previousStart.plusDays(elapsedDays)
-                return SessionMetrics
-                    .dailyActivityMinutes(sessions, previousStart, zone)
-                    .entries
-                    .filter { (date, _) -> date >= previousStart && date < previousEndExclusive }
-                    .sumOf { (_, minutes) -> minutes }
+                val dailyMinutes = SessionMetrics.dailyActivityMinutes(sessions, previousStart, zone)
+                return previousPeriodMinutes(dailyMinutes, previousStart, currentStart, today)
             }
 
             private fun firstSessionDate(

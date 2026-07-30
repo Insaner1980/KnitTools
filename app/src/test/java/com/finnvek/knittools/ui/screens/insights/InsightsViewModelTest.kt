@@ -1,5 +1,6 @@
 package com.finnvek.knittools.ui.screens.insights
 
+import com.finnvek.knittools.domain.calculator.MinutesPerRowDisplay
 import com.finnvek.knittools.domain.model.KnitSession
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
@@ -27,6 +28,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZonedDateTime
@@ -49,7 +51,6 @@ class InsightsViewModelTest {
         streakFeature = MutableStateFlow(false)
         every { repository.getAllProjects() } returns flowOf(emptyList())
         every { repository.getSessionsForInsights(null, null) } returns flowOf(emptyList())
-        every { repository.getSessionsForInsights(null, any()) } returns flowOf(emptyList())
         every { proManager.hasFeature(ProFeature.INSIGHTS_CHARTS) } answers { insightsFeature.value }
         every { proManager.hasFeatureFlow(ProFeature.INSIGHTS_CHARTS) } returns insightsFeature
         every { proManager.hasFeature(ProFeature.STREAK) } answers { streakFeature.value }
@@ -95,53 +96,53 @@ class InsightsViewModelTest {
             val state = viewModel.uiState.first { it.hasSessionData }
 
             assertEquals(30, state.totalMinutes)
-            assertEquals(emptyList<ProjectTime>(), state.timePerProject)
-            assertEquals(emptyList<PaceOverTimePoint>(), state.paceOverTime)
-            assertEquals(emptyMap<LocalDate, Int>(), state.dailyActivity)
+            assertEquals(12, state.totalRows)
+            assertEquals(emptyList<InsightsChartBucket>(), state.chartBuckets)
+            assertEquals(listOf(1L), state.timePerProject.map { it.projectId })
         }
 
     @Test
-    fun `daily activity keeps heatmap lookback when time range changes`() =
+    fun `range without sessions keeps the all time flag so the empty state stays intentional`() =
         runTest {
             insightsFeature.value = true
             val zone = ZoneId.systemDefault()
-            val activityDate = LocalDate.now(zone).minusDays(30)
-            val activityStart = instantMillis(activityDate, 10, 0, zone)
-            val session =
-                KnitSession(
-                    projectId = 1L,
-                    startedAt = activityStart,
-                    endedAt = activityStart + 30 * 60 * 1_000L,
-                    startRow = 0,
-                    endRow = 10,
-                    durationMinutes = 30,
-                    durationSeconds = 30 * 60L,
-                    rowsWorked = 10,
-                )
-            val recentBoundary =
-                LocalDate
-                    .now(zone)
-                    .minusDays(20)
-                    .atStartOfDay(zone)
-                    .toInstant()
-                    .toEpochMilli()
-            every { repository.getSessionsForInsights(null, match { it < recentBoundary }) } returns
-                flowOf(listOf(session))
-            every { repository.getSessionsForInsights(null, match { it >= recentBoundary }) } returns
-                flowOf(emptyList())
+            val today = LocalDate.now(zone)
+            val oldDate = today.minusDays(40)
+            val session = sessionAt(date = oldDate, hour = 10, minute = 0, rows = 10, minutes = 30, zone = zone)
+            every { repository.getSessionsForInsights(null, null) } returns flowOf(listOf(session))
 
             val viewModel = createViewModel()
-            val initialActivity = viewModel.dailyActivity.first { it.isNotEmpty() }
-
             viewModel.selectTimeRange(TimeRange.THIS_WEEK)
             advanceUntilIdle()
+            val state = viewModel.uiState.first { !it.isLoading && it.timeRange == TimeRange.THIS_WEEK }
 
-            assertEquals(30, initialActivity[activityDate])
-            assertEquals(30, viewModel.dailyActivity.value[activityDate])
+            assertTrue(state.hasAnySessionData)
+            assertFalse(state.hasSessionData)
+            assertEquals(0, state.totalMinutes)
+            assertEquals(emptyList<ProjectTime>(), state.timePerProject)
+            // Pylväitä on tasan yhtä monta kuin osion "x / y päivää" lupaa, eikä
+            // akselille piirretä vielä tulematta olevia päiviä.
+            assertEquals(state.daysInRange, state.chartBuckets.size)
+            assertEquals(today, state.chartBuckets.last().bucketStart)
+            assertTrue(state.chartBuckets.all { it.totalMinutes == 0 })
         }
 
     @Test
-    fun `pace over time uses daily buckets sorted by bucket start for ranged views`() {
+    fun `minutes per row replaces rows per hour in the stats row`() =
+        runTest {
+            val zone = ZoneId.systemDefault()
+            val today = LocalDate.now(zone)
+            val session = sessionAt(date = today, hour = 10, minute = 0, rows = 10, minutes = 90, zone = zone)
+            every { repository.getSessionsForInsights(null, null) } returns flowOf(listOf(session))
+
+            val viewModel = createViewModel()
+            val state = viewModel.uiState.first { it.hasSessionData }
+
+            assertEquals(MinutesPerRowDisplay.Minutes(9), state.minutesPerRow)
+        }
+
+    @Test
+    fun `chart buckets use daily grouping for ranged views`() {
         val zone = ZoneId.systemDefault()
         val today = LocalDate.now(zone)
         val yesterday = today.minusDays(1)
@@ -151,23 +152,36 @@ class InsightsViewModelTest {
                 sessionAt(date = yesterday, hour = 10, minute = 0, rows = 10, minutes = 20, zone = zone),
             )
         val rangeStart = yesterday.atStartOfDay(zone).toInstant().toEpochMilli()
-
-        val points =
-            InsightsViewModel.buildPaceOverTime(
-                sessions = sessions,
-                timeRange = TimeRange.THIS_WEEK,
-                rangeStartMillis = rangeStart,
-                zone = zone,
+        val axis =
+            InsightsChartAxis(
+                interval = PaceGroupingInterval.DAY,
+                bucketStarts = listOf(yesterday, today),
             )
 
-        assertEquals(listOf(yesterday, today), points.map { it.bucketStart })
-        assertTrue(points.all { it.interval == PaceGroupingInterval.DAY })
-        assertEquals(30f, points.first().rowsPerHour, 0.01f)
-        assertEquals(48f, points.last().rowsPerHour, 0.01f)
+        val buckets =
+            fillChartBuckets(
+                axis = axis,
+                measured =
+                    InsightsViewModel.measuredChartBuckets(
+                        sessions = sessions,
+                        params =
+                            InsightsQueryParams(
+                                timeRange = TimeRange.THIS_WEEK,
+                                startMillis = rangeStart,
+                                currentDate = today,
+                            ),
+                        axis = axis,
+                        zone = zone,
+                    ),
+            )
+
+        assertEquals(listOf(yesterday, today), buckets.map { it.bucketStart })
+        assertEquals(listOf(20, 30), buckets.map { it.totalMinutes })
+        assertEquals(listOf(10, 24), buckets.map { it.totalRows })
     }
 
     @Test
-    fun `ranged pace keeps a session-local bucket after the device zone changes`() {
+    fun `ranged chart keeps a session-local bucket after the device zone changes`() {
         val sessionZone = ZoneId.of("Pacific/Kiritimati")
         val currentDeviceZone = ZoneId.of("Pacific/Honolulu")
         val currentDeviceDate = LocalDate.now(currentDeviceZone)
@@ -185,25 +199,40 @@ class InsightsViewModelTest {
                 rowsWorked = 10,
                 zoneId = sessionZone.id,
             )
-
-        val points =
-            InsightsViewModel.buildPaceOverTime(
-                sessions = listOf(session),
+        val axis =
+            insightsChartAxis(
                 timeRange = TimeRange.THIS_MONTH,
-                rangeStartMillis =
-                    currentDeviceDate
-                        .withDayOfMonth(1)
-                        .atStartOfDay(currentDeviceZone)
-                        .toInstant()
-                        .toEpochMilli(),
+                today = currentDeviceDate,
+                firstSessionDate = sessionDate,
+                firstDayOfWeek = DayOfWeek.MONDAY,
+            )
+
+        val measured =
+            InsightsViewModel.measuredChartBuckets(
+                sessions = listOf(session),
+                params =
+                    InsightsQueryParams(
+                        timeRange = TimeRange.THIS_MONTH,
+                        startMillis =
+                            currentDeviceDate
+                                .withDayOfMonth(1)
+                                .atStartOfDay(currentDeviceZone)
+                                .toInstant()
+                                .toEpochMilli(),
+                        currentDate = currentDeviceDate,
+                    ),
+                axis = axis,
                 zone = currentDeviceZone,
             )
 
-        assertEquals(listOf(sessionDate), points.filter { it.totalMinutes > 0 }.map { it.bucketStart })
+        assertEquals(
+            listOf(sessionDate),
+            measured.values.filter { it.totalMinutes > 0 }.map { it.bucketStart },
+        )
     }
 
     @Test
-    fun `pace over time groups all time by month and sorts out of order sessions`() {
+    fun `all time chart groups out of order sessions by month`() {
         val zone = ZoneId.of("UTC")
         val january = LocalDate.of(2026, 1, 12)
         val february = LocalDate.of(2026, 2, 2)
@@ -212,62 +241,116 @@ class InsightsViewModelTest {
                 sessionAt(date = february, hour = 9, minute = 0, rows = 20, minutes = 30, zone = zone),
                 sessionAt(date = january, hour = 9, minute = 0, rows = 10, minutes = 30, zone = zone),
             )
-
-        val points =
-            InsightsViewModel.buildPaceOverTime(
-                sessions = sessions,
+        val axis =
+            insightsChartAxis(
                 timeRange = TimeRange.ALL_TIME,
-                rangeStartMillis = null,
-                zone = zone,
+                today = february,
+                firstSessionDate = january,
+                firstDayOfWeek = DayOfWeek.MONDAY,
             )
 
-        assertEquals(listOf(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 2, 1)), points.map { it.bucketStart })
-        assertTrue(points.all { it.interval == PaceGroupingInterval.MONTH })
+        val buckets =
+            fillChartBuckets(
+                axis = axis,
+                measured =
+                    InsightsViewModel.measuredChartBuckets(
+                        sessions = sessions,
+                        params = InsightsQueryParams(timeRange = TimeRange.ALL_TIME, currentDate = february),
+                        axis = axis,
+                        zone = zone,
+                    ),
+            )
+
+        assertEquals(PaceGroupingInterval.MONTH, axis.interval)
+        assertEquals(
+            listOf(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 2, 1)),
+            buckets.map { it.bucketStart },
+        )
     }
 
     @Test
-    fun `pace over time is empty when sessions have no rows`() {
+    fun `chart keeps minutes for sessions that recorded no rows`() {
         val zone = ZoneId.systemDefault()
         val today = LocalDate.now(zone)
         val session = sessionAt(date = today, hour = 10, minute = 0, rows = 0, minutes = 30, zone = zone)
+        val axis =
+            InsightsChartAxis(interval = PaceGroupingInterval.DAY, bucketStarts = listOf(today))
 
-        val points =
-            InsightsViewModel.buildPaceOverTime(
-                sessions = listOf(session),
-                timeRange = TimeRange.THIS_MONTH,
-                rangeStartMillis = today.atStartOfDay(zone).toInstant().toEpochMilli(),
-                zone = zone,
+        val buckets =
+            fillChartBuckets(
+                axis = axis,
+                measured =
+                    InsightsViewModel.measuredChartBuckets(
+                        sessions = listOf(session),
+                        params =
+                            InsightsQueryParams(
+                                timeRange = TimeRange.THIS_MONTH,
+                                startMillis = today.atStartOfDay(zone).toInstant().toEpochMilli(),
+                                currentDate = today,
+                            ),
+                        axis = axis,
+                        zone = zone,
+                    ),
             )
 
-        assertEquals(emptyList<PaceOverTimePoint>(), points)
+        assertEquals(30, buckets.single().totalMinutes)
+        assertEquals(0, buckets.single().totalRows)
     }
 
     @Test
-    fun `pace over time keeps extreme pace finite`() {
-        val zone = ZoneId.systemDefault()
-        val today = LocalDate.now(zone)
-        val startedAt = instantMillis(today, 10, 0, zone)
-        val session =
-            KnitSession(
-                projectId = 1L,
-                startedAt = startedAt,
-                endedAt = startedAt + 1_000L,
-                startRow = 0,
-                endRow = Int.MAX_VALUE,
-                durationMinutes = 1,
-                durationSeconds = 1L,
-                rowsWorked = Int.MAX_VALUE,
+    fun `chart buckets stack by project in the given order and sum to the bucket total`() {
+        val zone = ZoneId.of("UTC")
+        val day = LocalDate.of(2026, 3, 4)
+        val sessions =
+            listOf(
+                sessionAt(date = day, hour = 9, minute = 0, rows = 10, minutes = 30, zone = zone)
+                    .copy(projectId = 7L),
+                sessionAt(date = day, hour = 12, minute = 0, rows = 4, minutes = 45, zone = zone)
+                    .copy(projectId = 3L),
             )
+        val axis = InsightsChartAxis(interval = PaceGroupingInterval.DAY, bucketStarts = listOf(day))
 
-        val points =
-            InsightsViewModel.buildPaceOverTime(
-                sessions = listOf(session),
-                timeRange = TimeRange.ALL_TIME,
-                rangeStartMillis = null,
-                zone = zone,
-            )
+        val bucket =
+            InsightsViewModel
+                .measuredChartBuckets(
+                    sessions = sessions,
+                    params = InsightsQueryParams(timeRange = TimeRange.ALL_TIME, currentDate = day),
+                    axis = axis,
+                    zone = zone,
+                    projectOrder = listOf(3L, 7L),
+                ).getValue(day)
 
-        assertTrue(points.single().rowsPerHour.isFinite())
+        assertEquals(listOf(3L, 7L), bucket.segments.map { it.projectId })
+        assertEquals(listOf(45, 30), bucket.segments.map { it.minutes })
+        assertEquals(bucket.totalMinutes, bucket.segments.sumOf { it.minutes })
+        assertEquals(14, bucket.totalRows)
+    }
+
+    @Test
+    fun `days in range counts the elapsed days of the selected range`() {
+        val today = LocalDate.of(2026, 7, 28)
+
+        assertEquals(
+            28,
+            InsightsViewModel.daysInRange(TimeRange.THIS_MONTH, today, null, DayOfWeek.MONDAY),
+        )
+        assertEquals(
+            2,
+            InsightsViewModel.daysInRange(TimeRange.THIS_WEEK, today, null, DayOfWeek.MONDAY),
+        )
+        assertEquals(
+            0,
+            InsightsViewModel.daysInRange(TimeRange.ALL_TIME, today, null, DayOfWeek.MONDAY),
+        )
+        assertEquals(
+            10,
+            InsightsViewModel.daysInRange(
+                TimeRange.ALL_TIME,
+                today,
+                LocalDate.of(2026, 7, 19),
+                DayOfWeek.MONDAY,
+            ),
+        )
     }
 
     @Test

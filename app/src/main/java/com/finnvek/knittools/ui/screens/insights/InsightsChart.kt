@@ -226,9 +226,6 @@ private fun ChartPlot(
     val barWidth = chartBarWidth(timeRange)
     val fallbackBarColor = MaterialTheme.colorScheme.primary
     val gridColor = MaterialTheme.colorScheme.onSurface.copy(alpha = InsightsDimens.ChartGridlineAlpha)
-    // Nollamerkki nojaa outline-rooliin, joka on mitoitettu erottumaan taustasta
-    // molemmissa teemoissa. Pintasävyllä tumma teema jäi 1.6:1-kontrastiin.
-    val zeroTickColor = MaterialTheme.colorScheme.outline.copy(alpha = InsightsDimens.ChartZeroTickAlpha)
     val selectionColor = MaterialTheme.colorScheme.onSurface
     // Pinon värit tulevat samasta apurista kuin projektilistan pisteet, jolloin
     // kaavio ja lista luetaan samoilla väreillä.
@@ -273,23 +270,15 @@ private fun ChartPlot(
         val barWidthPx = minOf(barWidth.toPx(), pitch - minGapPx).coerceAtLeast(1f)
         val cornerPx = InsightsDimens.ChartBarCorner.toPx()
         val minBarHeightPx = InsightsDimens.ChartMinBarHeight.toPx()
-        val zeroTickPx = InsightsDimens.ChartZeroTickHeight.toPx()
         // Maksimiarvo päättyy tasan yläapuviivaan: viivan paksuus varataan pois
         // mitta-alueesta, jottei korkein pylväs työnny sen yli.
         val plotHeightPx = (barBottomY - gridStrokePx).coerceAtLeast(0f)
 
         buckets.forEachIndexed { index, bucket ->
             val left = pitch * index + (pitch - barWidthPx) / 2f
-            val isEmptyBucket = bucket.totalMinutes <= 0 || maxMinutes <= 0
-            if (isEmptyBucket) {
-                drawBarFromBaseline(
-                    color = zeroTickColor,
-                    topLeft = Offset(left, barBottomY - zeroTickPx),
-                    barSize = Size(barWidthPx, zeroTickPx),
-                    cornerPx = 0f,
-                )
-                return@forEachIndexed
-            }
+            // Tyhjä päivä on tyhjä sarake: jatkuva perusviiva kertoo sen jo, ja
+            // erillinen tikku lukeutui pieneksi arvoksi.
+            if (bucket.totalMinutes <= 0 || maxMinutes <= 0) return@forEachIndexed
             val barHeight =
                 maxOf(minBarHeightPx, plotHeightPx * bucket.totalMinutes / maxMinutes.toFloat())
             drawStackedBar(

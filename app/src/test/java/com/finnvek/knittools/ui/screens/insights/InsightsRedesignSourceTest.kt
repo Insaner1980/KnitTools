@@ -62,7 +62,6 @@ class InsightsRedesignSourceTest {
     fun `zero buckets render as baseline ticks and the chart is one accessibility element`() {
         val chart = ProjectSourceFiles.read(INSIGHTS_CHART)
 
-        assertTrue(chart.contains("InsightsDimens.ChartZeroTickHeight"))
         assertTrue(chart.contains("clearAndSetSemantics"))
     }
 

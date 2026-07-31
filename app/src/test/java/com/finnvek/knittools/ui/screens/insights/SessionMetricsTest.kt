@@ -57,7 +57,7 @@ class SessionMetricsTest {
     }
 
     @Test
-    fun `daily activity splits minutes over local dates`() {
+    fun `daily activity splits seconds over local dates`() {
         val zone = ZoneId.of("Europe/Helsinki")
         val session =
             KnitSession(
@@ -73,14 +73,14 @@ class SessionMetricsTest {
             )
 
         val activity =
-            SessionMetrics.dailyActivityMinutes(
+            SessionMetrics.dailyActivitySeconds(
                 sessions = listOf(session),
                 earliestDate = LocalDate.of(2026, 1, 1),
                 zone = zone,
             )
 
-        assertEquals(10, activity[LocalDate.of(2026, 1, 1)])
-        assertEquals(20, activity[LocalDate.of(2026, 1, 2)])
+        assertEquals(600L, activity[LocalDate.of(2026, 1, 1)])
+        assertEquals(1_200L, activity[LocalDate.of(2026, 1, 2)])
     }
 
     @Test
@@ -102,13 +102,13 @@ class SessionMetricsTest {
             )
 
         val activity =
-            SessionMetrics.dailyActivityMinutes(
+            SessionMetrics.dailyActivitySeconds(
                 sessions = listOf(session),
                 earliestDate = LocalDate.of(2026, 1, 1),
                 zone = currentDeviceZone,
             )
 
-        assertEquals(mapOf(LocalDate.of(2026, 1, 2) to 30), activity)
+        assertEquals(mapOf(LocalDate.of(2026, 1, 2) to 1_800L), activity)
     }
 
     @Test
@@ -129,7 +129,7 @@ class SessionMetricsTest {
             )
 
         val activity =
-            SessionMetrics.dailyActivityMinutes(
+            SessionMetrics.dailyActivitySeconds(
                 sessions = listOf(session),
                 earliestDate = LocalDate.of(2026, 1, 1),
                 zone = zone,
@@ -142,7 +142,7 @@ class SessionMetricsTest {
                 zone = zone,
             )
 
-        assertEquals(1, activity.values.sum())
+        assertEquals(1L, activity.values.sum())
         assertEquals(1L, paceBuckets.values.sumOf { it.totalSeconds })
         assertEquals(1, paceBuckets.values.sumOf { it.totalRows })
     }

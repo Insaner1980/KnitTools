@@ -54,17 +54,6 @@ internal object SessionMetrics {
         )
     }
 
-    fun dailyActivityMinutes(
-        sessions: List<KnitSession>,
-        earliestDate: LocalDate,
-        zone: ZoneId,
-    ): Map<LocalDate, Int> =
-        dailyActivitySeconds(
-            sessions = sessions,
-            earliestDate = earliestDate,
-            zone = zone,
-        ).mapValues { (_, seconds) -> secondsToDisplayMinutes(seconds) }
-
     fun activityDates(
         sessions: List<KnitSession>,
         earliestDate: LocalDate,
@@ -109,7 +98,12 @@ internal object SessionMetrics {
         }
     }
 
-    private fun dailyActivitySeconds(
+    /**
+     * Päiväkohtaiset sekunnit ilman pyöristystä. Kutsuja pyöristää minuuteiksi vasta
+     * kun se on summannut haluamansa ikkunan, jolloin jokainen aktiivinen päivä ei
+     * kasvata summaa omalla ylöspäin pyöristyksellään.
+     */
+    fun dailyActivitySeconds(
         sessions: List<KnitSession>,
         earliestDate: LocalDate,
         zone: ZoneId,

@@ -110,6 +110,7 @@ object InsightsDimens {
     val ProjectSubFontSize = 13.sp
     val ProjectSubTopMargin = 2.dp
     val ProjectDurationFontSize = 19.sp
+    val ProjectShareFontSize = 13.sp
 
     // Tyhjät tilat
     val EmptyTitleFontSize = 32.sp

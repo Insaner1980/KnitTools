@@ -2,7 +2,6 @@ package com.finnvek.knittools.ui.screens.insights
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -87,12 +87,10 @@ internal fun InsightsChart(
                     maxMinutes = maxMinutes,
                     onSelectBucket = onSelectBucket,
                 )
-                // Akselirivi säilyy tässä tehtävässä ennallaan; tehtävä 12 vaihtaa
-                // sen parametrit väliakselileimoihin.
                 ChartAxisLabels(
-                    firstBucketStart = buckets.firstOrNull()?.bucketStart,
-                    lastBucketStart = buckets.lastOrNull()?.bucketStart,
+                    buckets = buckets,
                     interval = interval,
+                    timeRange = timeRange,
                     today = today,
                 )
             }
@@ -445,44 +443,58 @@ private fun DrawScope.drawChartGridlines(
 }
 
 /**
- * Reunaleimat kertovat akselin todelliset päät. "Tänään" näytetään vain kun oikea
- * reuna todella on tämä päivä — muuten leima väittäisi väärää sarakkeesta.
+ * Akselileimat sijoitetaan ämpärin kohdalle painotetuilla soluilla, jolloin leima
+ * osuu pylvään keskelle myös kun ämpäreitä on 31. Leima saa levitä naapurisolun
+ * tyhjän tilan päälle, koska kapea solu ei mahduta edes kahta numeroa.
  */
 @Composable
 private fun ChartAxisLabels(
-    firstBucketStart: LocalDate?,
-    lastBucketStart: LocalDate?,
+    buckets: List<InsightsChartBucket>,
     interval: PaceGroupingInterval,
+    timeRange: TimeRange,
     today: LocalDate,
 ) {
+    if (buckets.isEmpty()) return
+    val maxLabels =
+        when {
+            timeRange == TimeRange.THIS_WEEK -> buckets.size
+            interval == PaceGroupingInterval.MONTH -> MONTH_AXIS_MAX_LABELS
+            else -> DAY_AXIS_MAX_LABELS
+        }
+    val labelled = remember(buckets.size, maxLabels) { axisLabelIndices(buckets.size, maxLabels).toSet() }
+    val lastIndex = buckets.lastIndex
+
     Row(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .height(InsightsDimens.ChartAxisBandHeight),
-        horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        ChartAxisLabel(text = firstBucketStart?.let { axisLabel(it, interval) }.orEmpty())
-        ChartAxisLabel(
-            text =
-                when {
-                    lastBucketStart == null || lastBucketStart == firstBucketStart -> ""
-                    interval == PaceGroupingInterval.DAY && lastBucketStart == today ->
-                        stringResource(R.string.insights_chart_axis_today)
-
-                    else -> axisLabel(lastBucketStart, interval)
-                },
-            textAlign = TextAlign.End,
-        )
+        buckets.forEachIndexed { index, bucket ->
+            Box(
+                modifier = Modifier.weight(1f),
+                contentAlignment =
+                    when (index) {
+                        0 -> Alignment.CenterStart
+                        lastIndex -> Alignment.CenterEnd
+                        else -> Alignment.Center
+                    },
+            ) {
+                // Oikea reuna on "tänään" vain kun se todella on tämä päivä.
+                val isToday = interval == PaceGroupingInterval.DAY && index == lastIndex && bucket.bucketStart == today
+                if (isToday) {
+                    ChartAxisLabel(text = stringResource(R.string.insights_chart_axis_today))
+                } else if (index in labelled) {
+                    ChartAxisLabel(text = axisLabel(bucket.bucketStart, interval, timeRange))
+                }
+            }
+        }
     }
 }
 
 @Composable
-private fun ChartAxisLabel(
-    text: String,
-    textAlign: TextAlign = TextAlign.Start,
-) {
+private fun ChartAxisLabel(text: String) {
     Text(
         text = text,
         style =
@@ -491,8 +503,10 @@ private fun ChartAxisLabel(
                 fontWeight = FontWeight.SemiBold,
             ),
         color = MaterialTheme.knitToolsColors.onSurfaceMuted,
-        textAlign = textAlign,
         maxLines = 1,
+        softWrap = false,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.wrapContentWidth(unbounded = true),
     )
 }
 
@@ -520,16 +534,30 @@ internal fun bucketLabel(
     return if (interval == PaceGroupingInterval.MONTH) label else label.uppercaseForDisplay(locale)
 }
 
+/**
+ * Tick-leima on lyhin mahdollinen: viikolla viikonpäivä, kuukaudessa päivän numero,
+ * All Timessa kuukauden lyhenne. Lyhenne on oikea muoto akselilla, vaikka se ei
+ * kelpaa lauseeseen.
+ */
 @Composable
 private fun axisLabel(
     bucketStart: LocalDate,
     interval: PaceGroupingInterval,
+    timeRange: TimeRange,
 ): String {
     val locale: Locale = currentInsightsLocale()
-    val skeleton = if (interval == PaceGroupingInterval.MONTH) "yMMM" else "MMMd"
+    val skeleton =
+        when {
+            interval == PaceGroupingInterval.MONTH -> "MMM"
+            timeRange == TimeRange.THIS_WEEK -> "E"
+            else -> "d"
+        }
     val formatter =
         remember(locale, skeleton) {
             DateTimeFormatter.ofPattern(localizedDateTimePattern(locale, skeleton), locale)
         }
     return bucketStart.format(formatter)
 }
+
+private const val DAY_AXIS_MAX_LABELS = 5
+private const val MONTH_AXIS_MAX_LABELS = 6

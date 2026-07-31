@@ -211,49 +211,21 @@ class InsightsViewModel
             val timePerProject = buildTimePerProject(sessions, projectList, params.startMillis, zone)
             val streakMetrics = buildStreakMetrics(sessions, params.startMillis, featureGates.canUseStreak)
             val chartBuckets =
-                if (featureGates.canUseCharts) {
-                    // Pinon järjestys seuraa projektilistaa, jotta kaavio ja lista
-                    // luetaan samassa järjestyksessä.
-                    val measured =
-                        measuredChartBuckets(
-                            sessions = sessions,
-                            params = params,
-                            axis = axis,
-                            zone = zone,
-                            projectOrder = timePerProject.map { it.projectId },
-                        )
-                    fillChartBuckets(axis, measured)
-                } else {
-                    emptyList()
-                }
-            val activeDays =
-                SessionMetrics
-                    .activityDates(sessions, rangeEarliestDate(params.startMillis, zone), zone)
-                    .size
-            val previousMinutes =
-                previousPeriodMinutes(
-                    sessions = sessions,
-                    timeRange = params.timeRange,
-                    today = today,
-                    firstDayOfWeek = firstDayOfWeek,
-                    zone = zone,
-                )
+                buildChartBuckets(sessions, params, axis, zone, timePerProject, featureGates.canUseCharts)
+            val minutesPerRow =
+                MinutesPerRowFormatter.fromTotals(rangeMetrics.totalMinutes, rangeMetrics.totalRows)
 
             return InsightsUiState(
                 isLoading = false,
                 totalDuration = DurationDisplayFormatter.fromMinutes(rangeMetrics.totalMinutes),
                 totalMinutes = rangeMetrics.totalMinutes,
                 totalRows = rangeMetrics.totalRows,
-                minutesPerRow =
-                    MinutesPerRowFormatter.fromTotals(
-                        totalMinutes = rangeMetrics.totalMinutes,
-                        totalRows = rangeMetrics.totalRows,
-                    ),
-                activeDays = activeDays,
+                minutesPerRow = minutesPerRow,
+                activeDays = activeDaysInRange(sessions, params.startMillis, zone),
                 daysInRange = daysInRange(params.timeRange, today, firstSessionDate, firstDayOfWeek),
                 currentStreak = streakMetrics.current,
                 bestStreak = streakMetrics.best,
-                trend = previousMinutes?.let { insightsTrend(rangeMetrics.totalMinutes, it) },
+                trend = buildTrend(sessions, params, today, firstDayOfWeek, zone, rangeMetrics.totalMinutes),
                 projects = projectList,
                 selectedProjectId = params.projectId,
                 selectedProjectName = projectList.firstOrNull { it.id == params.projectId }?.name,
@@ -284,6 +256,60 @@ class InsightsViewModel
             } else {
                 StreakMetrics(current = 0, best = 0)
             }
+
+        /**
+         * Kaavion ämpärit nolla-täydennettynä akselin mittaan. Ilman Pro-oikeutta
+         * kaaviota ei piirretä lainkaan, jolloin ämpäreitä ei myöskään lasketa.
+         *
+         * [timePerProject] antaa pinon järjestyksen: kaavio ja projektilista
+         * luetaan samassa järjestyksessä.
+         */
+        private fun buildChartBuckets(
+            sessions: List<KnitSession>,
+            params: InsightsQueryParams,
+            axis: InsightsChartAxis,
+            zone: ZoneId,
+            timePerProject: List<ProjectTime>,
+            canUseCharts: Boolean,
+        ): List<InsightsChartBucket> {
+            if (!canUseCharts) return emptyList()
+            val measured =
+                measuredChartBuckets(
+                    sessions = sessions,
+                    params = params,
+                    axis = axis,
+                    zone = zone,
+                    projectOrder = timePerProject.map { it.projectId },
+                )
+            return fillChartBuckets(axis, measured)
+        }
+
+        /** Niiden päivien määrä, joilla välillä on istuntoja. */
+        private fun activeDaysInRange(
+            sessions: List<KnitSession>,
+            rangeStartMillis: Long?,
+            zone: ZoneId,
+        ): Int = activityDates(sessions, rangeStartMillis, zone).size
+
+        /**
+         * Trendi vertaa välin minuutteja edelliseen samanmittaiseen jaksoon.
+         * All Timella vertailukohtaa ei ole, jolloin trendiä ei näytetä.
+         */
+        private fun buildTrend(
+            sessions: List<KnitSession>,
+            params: InsightsQueryParams,
+            today: LocalDate,
+            firstDayOfWeek: DayOfWeek,
+            zone: ZoneId,
+            totalMinutes: Int,
+        ): InsightsTrend? =
+            previousPeriodMinutes(
+                sessions = sessions,
+                timeRange = params.timeRange,
+                today = today,
+                firstDayOfWeek = firstDayOfWeek,
+                zone = zone,
+            )?.let { insightsTrend(totalMinutes, it) }
 
         fun selectProject(projectId: Long?) {
             _selectedProjectId.value = projectId

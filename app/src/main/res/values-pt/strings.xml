@@ -484,6 +484,7 @@
     <string name="insights_trend_same_month">Igual ao mês passado</string>
     <plurals name="insights_best_streak">
         <item quantity="one">Melhor sequência %1$d dia</item>
+        <item quantity="many">Melhor sequência %1$d dias</item>
         <item quantity="other">Melhor sequência %1$d dias</item>
     </plurals>
     <string name="insights_stat_no_value">—</string>

@@ -217,7 +217,7 @@ private fun ChartReadout(
                     .semantics { liveRegion = LiveRegionMode.Polite },
         ) {
             ChartReadoutValue(bucket = bucket, hasValue = hasValue, hasAnyData = hasAnyData)
-            ChartReadoutContext(labelText = labelText, rows = bucket?.totalRows ?: 0, modifier = Modifier)
+            ChartReadoutContext(labelText = labelText, rows = bucket?.totalRows ?: 0)
         }
     } else {
         Row(
@@ -283,7 +283,7 @@ private fun ChartReadoutValue(
 private fun ChartReadoutContext(
     labelText: String,
     rows: Int,
-    modifier: Modifier,
+    modifier: Modifier = Modifier,
 ) {
     Text(
         text = readoutContextText(labelText, rows),

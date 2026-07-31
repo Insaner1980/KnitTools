@@ -81,6 +81,36 @@ class InsightsRedesignSourceTest {
     }
 
     @Test
+    fun `the hero sentence never carries a date and the range has its own line`() {
+        val screen = ProjectSourceFiles.read(INSIGHTS_SCREEN)
+        val sections = ProjectSourceFiles.read(INSIGHTS_SECTIONS)
+
+        assertTrue("The range needs a kicker row of its own", screen.contains("InsightsRangeKicker"))
+        assertTrue(
+            "The open-ended range format must be rendered somewhere on the screen",
+            sections.contains("R.string.insights_range_open_format") ||
+                screen.contains("R.string.insights_range_open_format"),
+        )
+        assertFalse("Hero must not format a month into the sentence", sections.contains("heroSinceMonthText"))
+        assertFalse(
+            "The case-bound since-format must not come back into the sentence",
+            sections.contains("R.string.insights_range_since_format"),
+        )
+    }
+
+    @Test
+    fun `chart scale and axis carry their own labels`() {
+        val chart = ProjectSourceFiles.read(INSIGHTS_CHART)
+
+        assertTrue(
+            "The scale maximum belongs to the plot, not to the readout row",
+            chart.contains("R.string.insights_chart_max_format"),
+        )
+        assertTrue("The axis must thin its labels, not drop them", chart.contains("axisLabelIndices"))
+        assertTrue("Narrow buckets need drag selection", chart.contains("detectHorizontalDragGestures"))
+    }
+
+    @Test
     fun `range chips announce their selection and meet the touch target minimum`() {
         val screen = ProjectSourceFiles.read(INSIGHTS_SCREEN)
 

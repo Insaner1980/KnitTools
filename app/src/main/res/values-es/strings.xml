@@ -484,6 +484,7 @@
     <string name="insights_trend_same_month">Igual que el mes pasado</string>
     <plurals name="insights_best_streak">
         <item quantity="one">Mejor racha %1$d día</item>
+        <item quantity="many">Mejor racha %1$d días</item>
         <item quantity="other">Mejor racha %1$d días</item>
     </plurals>
     <string name="insights_stat_no_value">—</string>

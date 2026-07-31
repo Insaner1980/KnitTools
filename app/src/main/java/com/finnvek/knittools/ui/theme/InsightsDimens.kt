@@ -23,7 +23,6 @@ object InsightsDimens {
     // Hero
     val HeroTopPadding = 8.dp
     val HeroBottomPadding = 6.dp
-    val HeroRangeTopMargin = 6.dp
     val HeroLeadFontSize = 20.sp
     val HeroPrimaryNumberFontSize = 76.sp
     val HeroPrimaryNumberMinFontSize = 52.sp

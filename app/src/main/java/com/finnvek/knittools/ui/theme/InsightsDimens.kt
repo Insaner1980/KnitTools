@@ -102,6 +102,7 @@ object InsightsDimens {
     val ChartReadoutStackFontScale = 1.3f
 
     // Projektilista
+    val ProjectRowMinHeight = 48.dp
     val ProjectRowVerticalPadding = 15.dp
     val ProjectRowGap = 14.dp
     val ProjectDotSize = 14.dp

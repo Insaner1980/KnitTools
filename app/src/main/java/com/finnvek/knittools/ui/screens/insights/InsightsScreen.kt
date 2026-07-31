@@ -73,6 +73,7 @@ private val ChipDotSpacing = 8.dp
 @Composable
 fun InsightsScreen(
     onProUpgrade: () -> Unit = {},
+    onLaunchCounter: (Long) -> Unit = {},
     viewModel: InsightsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -112,6 +113,7 @@ fun InsightsScreen(
                         selectedBucketIndex = effectiveBucketIndex,
                         onSelectBucket = { selectedBucketIndex = it },
                         onProUpgrade = onProUpgrade,
+                        onLaunchCounter = onLaunchCounter,
                     )
             }
         }
@@ -124,6 +126,7 @@ private fun LazyListScope.insightsContent(
     selectedBucketIndex: Int?,
     onSelectBucket: (Int) -> Unit,
     onProUpgrade: () -> Unit,
+    onLaunchCounter: (Long) -> Unit,
 ) {
     item { InsightsRangeKicker(text = rangeLabel) }
     item { InsightsHero(state = uiState) }
@@ -162,7 +165,11 @@ private fun LazyListScope.insightsContent(
     } else {
         item { InsightsHairline() }
         itemsIndexed(uiState.timePerProject, key = { _, project -> project.projectId }) { index, project ->
-            InsightsProjectRow(project = project, today = uiState.rangeEnd)
+            InsightsProjectRow(
+                project = project,
+                today = uiState.rangeEnd,
+                onClick = { onLaunchCounter(project.projectId) },
+            )
             if (index < uiState.timePerProject.lastIndex) {
                 InsightsHairline()
             }

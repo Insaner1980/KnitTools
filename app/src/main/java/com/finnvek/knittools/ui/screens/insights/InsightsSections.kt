@@ -344,6 +344,7 @@ internal fun InsightsSectionHeader(
 internal fun InsightsProjectRow(
     project: ProjectTime,
     today: LocalDate,
+    rangeTotalMinutes: Int,
     onClick: () -> Unit,
 ) {
     Row(
@@ -399,17 +400,38 @@ internal fun InsightsProjectRow(
             )
         }
         Spacer(modifier = Modifier.width(InsightsDimens.ProjectRowGap))
-        Text(
-            text = durationText(DurationDisplayFormatter.fromMinutes(project.totalMinutes)),
-            style =
-                MaterialTheme.typography.titleMedium.copy(
-                    fontSize = InsightsDimens.ProjectDurationFontSize,
-                    fontWeight = FontWeight.Bold,
-                ),
-            color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 1,
-            softWrap = false,
-        )
+        Column(horizontalAlignment = Alignment.End) {
+            Text(
+                text = durationText(DurationDisplayFormatter.fromMinutes(project.totalMinutes)),
+                style =
+                    MaterialTheme.typography.titleMedium.copy(
+                        fontSize = InsightsDimens.ProjectDurationFontSize,
+                        fontWeight = FontWeight.Bold,
+                    ),
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                softWrap = false,
+            )
+            // "Mihin aika meni" on osuuskysymys, joten osuus kuuluu riville.
+            if (rangeTotalMinutes > 0) {
+                Text(
+                    text =
+                        formatPercentForDisplay(
+                            project.totalMinutes / rangeTotalMinutes.toDouble(),
+                            rememberCurrentLocale(),
+                        ),
+                    style =
+                        MaterialTheme.typography.bodySmall.copy(
+                            fontSize = InsightsDimens.ProjectShareFontSize,
+                            fontWeight = FontWeight.Medium,
+                        ),
+                    color = MaterialTheme.knitToolsColors.onSurfaceMuted,
+                    maxLines = 1,
+                    softWrap = false,
+                    modifier = Modifier.padding(top = InsightsDimens.ProjectSubTopMargin),
+                )
+            }
+        }
     }
 }
 

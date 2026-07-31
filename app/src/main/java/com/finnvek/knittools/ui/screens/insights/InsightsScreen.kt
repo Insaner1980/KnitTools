@@ -168,6 +168,7 @@ private fun LazyListScope.insightsContent(
             InsightsProjectRow(
                 project = project,
                 today = uiState.rangeEnd,
+                rangeTotalMinutes = uiState.totalMinutes,
                 onClick = { onLaunchCounter(project.projectId) },
             )
             if (index < uiState.timePerProject.lastIndex) {

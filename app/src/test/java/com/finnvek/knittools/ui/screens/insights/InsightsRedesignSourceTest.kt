@@ -67,17 +67,15 @@ class InsightsRedesignSourceTest {
         assertTrue("Selection must be reachable without touch", chart.contains("customActions"))
         assertTrue("Readout must announce changes", chart.contains("liveRegion"))
         assertFalse("Zero ticks were replaced by the continuous baseline", chart.contains("ChartZeroTickHeight"))
-        // Reunatapaus ei saa raportoida onnistumista: kummankin toiminnon on kuljettava
-        // saman vartioidun apurin kautta, joka palauttaa false kun valinta ei liiku.
-        assertTrue(
-            "A boundary must report failure, not a silent success",
-            chart.contains("if (target == selectedIndex) return false"),
-        )
+        // Live region kuuluu solmuun jolla on itsellään tekstiä: paljas säiliö ei
+        // yhdistä jälkeläisiään, jolloin ruudunlukija ei saa mitään luettavaa.
         assertEquals(
-            "Both actions must delegate to the guarded selection helper",
+            "The readout live region must sit on a merging node",
             2,
-            Regex("""CustomAccessibilityAction\(\w+\) \{\s*moveChartSelection\(""").findAll(chart).count(),
+            Regex("""semantics\(mergeDescendants = true\) \{ liveRegion""").findAll(chart).count(),
         )
+        // Reunatapausten ja askelten käyttäytyminen todistetaan kutsumalla
+        // moveChartSelection-funktiota InsightsChartSelectionTest:ssä.
     }
 
     @Test

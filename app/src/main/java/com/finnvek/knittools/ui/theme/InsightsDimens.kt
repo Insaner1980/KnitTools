@@ -96,6 +96,10 @@ object InsightsDimens {
     val ChartAxisLabelFontSize = 13.sp
     val ChartHintFontSize = 12.sp
     val ChartHintTopPadding = 8.dp
+    val ChartScaleLabelBand = 18.dp
+
+    @Suppress("MayBeConstant")
+    val ChartReadoutStackFontScale = 1.3f
 
     // Projektilista
     val ProjectRowVerticalPadding = 15.dp

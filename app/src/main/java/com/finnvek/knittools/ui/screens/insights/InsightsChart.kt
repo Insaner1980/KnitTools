@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -26,6 +27,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -68,7 +70,7 @@ internal fun InsightsChart(
             bucket = selectedIndex?.let(buckets::getOrNull),
             interval = interval,
             fallbackLabel = buckets.firstOrNull()?.bucketStart,
-            maxMinutes = maxMinutes,
+            hasAnyData = maxMinutes > 0,
         )
         Box(
             modifier =
@@ -77,6 +79,7 @@ internal fun InsightsChart(
                     .clearAndSetSemantics { this.contentDescription = contentDescription },
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
+                Spacer(modifier = Modifier.height(InsightsDimens.ChartScaleLabelBand))
                 ChartPlot(
                     buckets = buckets,
                     timeRange = timeRange,
@@ -84,11 +87,32 @@ internal fun InsightsChart(
                     maxMinutes = maxMinutes,
                     onSelectBucket = onSelectBucket,
                 )
+                // Akselirivi säilyy tässä tehtävässä ennallaan; tehtävä 12 vaihtaa
+                // sen parametrit väliakselileimoihin.
                 ChartAxisLabels(
                     firstBucketStart = buckets.firstOrNull()?.bucketStart,
                     lastBucketStart = buckets.lastOrNull()?.bucketStart,
                     interval = interval,
                     today = today,
+                )
+            }
+            if (maxMinutes > 0) {
+                // Maksimi istuu kiinni yläapuviivassa, jolloin sitä ei lueta
+                // oikeanpuoleisimman pylvään arvoksi eikä valitun päivän pariksi.
+                Text(
+                    text =
+                        stringResource(
+                            R.string.insights_chart_max_format,
+                            durationText(DurationDisplayFormatter.fromMinutes(maxMinutes)),
+                        ),
+                    style =
+                        MaterialTheme.typography.labelMedium.copy(
+                            fontSize = InsightsDimens.ChartScaleLabelFontSize,
+                            fontWeight = FontWeight.SemiBold,
+                        ),
+                    color = MaterialTheme.knitToolsColors.onSurfaceMuted,
+                    maxLines = 1,
+                    modifier = Modifier.align(Alignment.TopEnd),
                 )
             }
         }
@@ -113,90 +137,99 @@ internal fun InsightsChart(
 }
 
 /**
- * Yksi rivi kaavion yllä: valitun ämpärin lukema isolla vasemmalla, aikavälin
- * maksimi oikeassa reunassa. Maksimi on samalla rivillä eikä omana kaistanaan
- * plotin yllä, jottei se lukeudu oikeanpuoleisimman pylvään arvoksi.
+ * Valitun ämpärin lukema. Rivillä on vain yksi kesto, jotta kahta eri merkityksistä
+ * lukua ei lueta välinä; asteikon maksimi asuu plotin yläreunassa.
  */
 @Composable
 private fun ChartReadout(
     bucket: InsightsChartBucket?,
     interval: PaceGroupingInterval,
     fallbackLabel: LocalDate?,
-    maxMinutes: Int,
+    hasAnyData: Boolean,
 ) {
     val label = bucket?.bucketStart ?: fallbackLabel
     val labelText = label?.let { bucketLabel(it, interval) }.orEmpty()
     val hasValue = bucket != null && bucket.totalMinutes > 0
-    // Kaikki ajot samalle perusviivalle. Alignment.Bottom tasaisi laatikoiden pohjat,
-    // jolloin 14sp leima valui 28sp keston alapuolelle.
-    Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(top = InsightsDimens.ReadoutTopPadding),
-    ) {
-        if (hasValue) {
-            Text(
-                text = durationText(DurationDisplayFormatter.fromMinutes(bucket.totalMinutes)),
-                style =
-                    MaterialTheme.typography.headlineSmall.copy(
-                        fontSize = InsightsDimens.ReadoutDurationFontSize,
-                        fontWeight = FontWeight.Bold,
-                    ),
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
-                modifier = Modifier.alignByBaseline(),
-            )
-        } else {
-            Text(
-                text =
-                    stringResource(
-                        if (maxMinutes > 0) {
-                            R.string.insights_no_time_logged
-                        } else {
-                            R.string.insights_no_sessions_yet
-                        },
-                    ),
-                style =
-                    MaterialTheme.typography.bodyMedium.copy(
-                        fontSize = InsightsDimens.ReadoutRowsFontSize,
-                    ),
-                color = MaterialTheme.knitToolsColors.onSurfaceMuted,
-                maxLines = 1,
-                modifier = Modifier.alignByBaseline(),
-            )
+    val stacked = LocalDensity.current.fontScale > InsightsDimens.ChartReadoutStackFontScale
+
+    if (stacked) {
+        // Suurilla fonttikoeilla kolme yhden rivin tekstiä ei mahdu vierekkäin.
+        Column(modifier = Modifier.fillMaxWidth().padding(top = InsightsDimens.ReadoutTopPadding)) {
+            ChartReadoutValue(bucket = bucket, hasValue = hasValue, hasAnyData = hasAnyData)
+            ChartReadoutContext(labelText = labelText, rows = bucket?.totalRows ?: 0, modifier = Modifier)
         }
-        Text(
-            text = readoutContextText(labelText, bucket?.totalRows ?: 0),
-            style =
-                MaterialTheme.typography.labelLarge.copy(
-                    fontSize = InsightsDimens.ReadoutLabelFontSize,
-                    fontWeight = FontWeight.SemiBold,
-                ),
-            color = MaterialTheme.knitToolsColors.onSurfaceMuted,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            // Täyttää välitilan, jolloin maksimi asettuu oikeaan reunaan.
-            modifier =
-                Modifier
-                    .weight(1f)
-                    .alignByBaseline()
-                    .padding(horizontal = InsightsDimens.ReadoutLabelGap),
-        )
-        if (maxMinutes > 0) {
-            Text(
-                text = durationText(DurationDisplayFormatter.fromMinutes(maxMinutes)),
-                style =
-                    MaterialTheme.typography.labelMedium.copy(
-                        fontSize = InsightsDimens.ChartScaleLabelFontSize,
-                        fontWeight = FontWeight.SemiBold,
-                    ),
-                color = MaterialTheme.knitToolsColors.onSurfaceMuted,
-                maxLines = 1,
+    } else {
+        Row(modifier = Modifier.fillMaxWidth().padding(top = InsightsDimens.ReadoutTopPadding)) {
+            ChartReadoutValue(
+                bucket = bucket,
+                hasValue = hasValue,
+                hasAnyData = hasAnyData,
                 modifier = Modifier.alignByBaseline(),
+            )
+            ChartReadoutContext(
+                labelText = labelText,
+                rows = bucket?.totalRows ?: 0,
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .alignByBaseline()
+                        .padding(start = InsightsDimens.ReadoutLabelGap),
             )
         }
     }
+}
+
+@Composable
+private fun ChartReadoutValue(
+    bucket: InsightsChartBucket?,
+    hasValue: Boolean,
+    hasAnyData: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    if (hasValue && bucket != null) {
+        Text(
+            text = durationText(DurationDisplayFormatter.fromMinutes(bucket.totalMinutes)),
+            style =
+                MaterialTheme.typography.headlineSmall.copy(
+                    fontSize = InsightsDimens.ReadoutDurationFontSize,
+                    fontWeight = FontWeight.Bold,
+                ),
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+            modifier = modifier,
+        )
+    } else {
+        Text(
+            text =
+                stringResource(
+                    if (hasAnyData) R.string.insights_no_time_logged else R.string.insights_no_sessions_yet,
+                ),
+            style = MaterialTheme.typography.bodyMedium.copy(fontSize = InsightsDimens.ReadoutRowsFontSize),
+            color = MaterialTheme.knitToolsColors.onSurfaceMuted,
+            maxLines = 1,
+            modifier = modifier,
+        )
+    }
+}
+
+@Composable
+private fun ChartReadoutContext(
+    labelText: String,
+    rows: Int,
+    modifier: Modifier,
+) {
+    Text(
+        text = readoutContextText(labelText, rows),
+        style =
+            MaterialTheme.typography.labelLarge.copy(
+                fontSize = InsightsDimens.ReadoutLabelFontSize,
+                fontWeight = FontWeight.SemiBold,
+            ),
+        color = MaterialTheme.knitToolsColors.onSurfaceMuted,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        modifier = modifier,
+    )
 }
 
 /** "WED, 29 JUL" tai "WED, 29 JUL, 12 rows" — sama yhdistelmämuoto kuin projektiriveillä. */

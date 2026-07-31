@@ -506,8 +506,8 @@
         <item quantity="one">%1$d of %2$d day</item>
         <item quantity="other">%1$d of %2$d days</item>
     </plurals>
-    <string name="insights_chart_hint_day">Tap a day to see it.</string>
-    <string name="insights_chart_hint_month">Tap a month to see it.</string>
+    <string name="insights_chart_hint_day">Tap or drag across the days.</string>
+    <string name="insights_chart_hint_month">Tap or drag across the months.</string>
     <string name="insights_chart_axis_today">today</string>
     <string name="insights_chart_max_format">max %1$s</string>
     <string name="insights_no_sessions_yet">No sessions yet</string>

@@ -487,8 +487,8 @@
         <item quantity="one">%1$d av %2$d dag</item>
         <item quantity="other">%1$d av %2$d dagar</item>
     </plurals>
-    <string name="insights_chart_hint_day">Tryck på en dag för att se den.</string>
-    <string name="insights_chart_hint_month">Tryck på en månad för att se den.</string>
+    <string name="insights_chart_hint_day">Tryck eller dra över dagarna.</string>
+    <string name="insights_chart_hint_month">Tryck eller dra över månaderna.</string>
     <string name="insights_chart_axis_today">idag</string>
     <string name="insights_chart_max_format">max %1$s</string>
     <string name="insights_no_sessions_yet">Inga pass än</string>

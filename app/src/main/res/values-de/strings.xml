@@ -490,6 +490,7 @@
     <string name="insights_chart_hint_day">Tippe auf einen Tag, um ihn zu sehen.</string>
     <string name="insights_chart_hint_month">Tippe auf einen Monat, um ihn zu sehen.</string>
     <string name="insights_chart_axis_today">heute</string>
+    <string name="insights_chart_max_format">max. %1$s</string>
     <string name="insights_no_sessions_yet">Noch keine Sitzungen</string>
     <string name="insights_chart_a11y_daily">Tägliche Zeit für %1$s, %2$s, %3$s, am längsten %4$s</string>
     <string name="insights_chart_a11y_monthly">Monatliche Zeit für %1$s, %2$s, %3$s, am längsten %4$s</string>

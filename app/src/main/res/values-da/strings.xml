@@ -490,6 +490,7 @@
     <string name="insights_chart_hint_day">Tryk på en dag for at se den.</string>
     <string name="insights_chart_hint_month">Tryk på en måned for at se den.</string>
     <string name="insights_chart_axis_today">i dag</string>
+    <string name="insights_chart_max_format">maks. %1$s</string>
     <string name="insights_no_sessions_yet">Ingen sessioner endnu</string>
     <string name="insights_chart_a11y_daily">Daglig tid til %1$s, %2$s, %3$s, længst %4$s</string>
     <string name="insights_chart_a11y_monthly">Månedlig tid til %1$s, %2$s, %3$s, længst %4$s</string>

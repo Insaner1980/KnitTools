@@ -490,6 +490,7 @@
     <string name="insights_chart_hint_day">Tik op een dag om die te zien.</string>
     <string name="insights_chart_hint_month">Tik op een maand om die te zien.</string>
     <string name="insights_chart_axis_today">vandaag</string>
+    <string name="insights_chart_max_format">max. %1$s</string>
     <string name="insights_no_sessions_yet">Nog geen sessies</string>
     <string name="insights_chart_a11y_daily">Dagelijkse tijd voor %1$s, %2$s, %3$s, langst %4$s</string>
     <string name="insights_chart_a11y_monthly">Maandelijkse tijd voor %1$s, %2$s, %3$s, langst %4$s</string>

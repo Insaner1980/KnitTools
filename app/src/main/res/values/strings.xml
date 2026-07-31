@@ -509,6 +509,7 @@
     <string name="insights_chart_hint_day">Tap a day to see it.</string>
     <string name="insights_chart_hint_month">Tap a month to see it.</string>
     <string name="insights_chart_axis_today">today</string>
+    <string name="insights_chart_max_format">max %1$s</string>
     <string name="insights_no_sessions_yet">No sessions yet</string>
     <string name="insights_chart_a11y_daily">Daily %1$s time, %2$s, %3$s, longest %4$s</string>
     <string name="insights_chart_a11y_monthly">Monthly %1$s time, %2$s, %3$s, longest %4$s</string>

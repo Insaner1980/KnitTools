@@ -498,6 +498,7 @@
     <string name="insights_chart_hint_day">Toca num dia para o veres.</string>
     <string name="insights_chart_hint_month">Toca num mês para o veres.</string>
     <string name="insights_chart_axis_today">hoje</string>
+    <string name="insights_chart_max_format">máx. %1$s</string>
     <string name="insights_no_sessions_yet">Ainda sem sessões</string>
     <string name="insights_chart_a11y_daily">Tempo diário a %1$s, %2$s, %3$s, mais longo %4$s</string>
     <string name="insights_chart_a11y_monthly">Tempo mensal a %1$s, %2$s, %3$s, mais longo %4$s</string>

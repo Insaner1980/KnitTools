@@ -499,6 +499,7 @@
     <string name="insights_chart_hint_day">Paina päivää nähdäksesi sen.</string>
     <string name="insights_chart_hint_month">Paina kuukautta nähdäksesi sen.</string>
     <string name="insights_chart_axis_today">tänään</string>
+    <string name="insights_chart_max_format">enint. %1$s</string>
     <string name="insights_no_sessions_yet">Ei istuntoja</string>
     <string name="insights_chart_a11y_daily">Päivittäinen aika: %1$s, %2$s, %3$s, pisin %4$s</string>
     <string name="insights_chart_a11y_monthly">Kuukausittainen aika: %1$s, %2$s, %3$s, pisin %4$s</string>

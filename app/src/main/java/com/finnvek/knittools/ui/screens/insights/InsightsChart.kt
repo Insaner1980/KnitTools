@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -79,6 +78,19 @@ internal fun InsightsChart(
     // Vihje on kertakäyttöinen opaste: kun käyttäjä on kerran koskenut kaavioon,
     // rivi on pelkkää kohinaa lukeman alla.
     var hasInteracted by rememberSaveable { mutableStateOf(false) }
+    // Yksi valintapolku kaikille tavoille valita: kosketus, veto ja ruudunlukijan
+    // omat toiminnot. Erillinen raaka onSelectBucket jätti vihjeen ikuisesti
+    // näkyviin sille, joka käyttää kaaviota pelkällä ruudunlukijalla.
+    val selectBucket: (Int) -> Unit = { index ->
+        hasInteracted = true
+        onSelectBucket(index)
+    }
+    // Asteikkoleima on yksi rivi sp-tekstiä kaavion päällä: sen korkeus kasvaa
+    // fonttiskaalan mukana, joten kiinteä kaista leikkasi leiman plotin päälle heti
+    // kun järjestelmän fonttikoko oli suurennettu. Skaalataan kaista samalla
+    // kertoimella; pienemmillä asetuksilla pidetään suunniteltu kiinteä mitta.
+    val scaleLabelBand =
+        InsightsDimens.ChartScaleLabelBand * LocalDensity.current.fontScale.coerceAtLeast(1f)
 
     Column(modifier = modifier.fillMaxWidth()) {
         ChartReadout(
@@ -100,25 +112,22 @@ internal fun InsightsChart(
                         customActions =
                             listOf(
                                 CustomAccessibilityAction(nextLabel) {
-                                    moveChartSelection(buckets, selectedIndex, STEP_NEXT, onSelectBucket)
+                                    moveChartSelection(buckets, selectedIndex, STEP_NEXT, selectBucket)
                                 },
                                 CustomAccessibilityAction(previousLabel) {
-                                    moveChartSelection(buckets, selectedIndex, STEP_PREVIOUS, onSelectBucket)
+                                    moveChartSelection(buckets, selectedIndex, STEP_PREVIOUS, selectBucket)
                                 },
                             )
                     },
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
-                Spacer(modifier = Modifier.height(InsightsDimens.ChartScaleLabelBand))
+                Spacer(modifier = Modifier.height(scaleLabelBand))
                 ChartPlot(
                     buckets = buckets,
                     timeRange = timeRange,
                     selectedIndex = selectedIndex,
                     maxMinutes = maxMinutes,
-                    onSelectBucket = { index ->
-                        hasInteracted = true
-                        onSelectBucket(index)
-                    },
+                    onSelectBucket = selectBucket,
                 )
                 ChartAxisLabels(
                     buckets = buckets,
@@ -176,7 +185,7 @@ internal fun InsightsChart(
  * Ilman valintaa molemmat suunnat osuvat ensimmäiseen ämpäriin, koska
  * askeleelle ei ole vielä lähtöpistettä.
  */
-private fun moveChartSelection(
+internal fun moveChartSelection(
     buckets: List<InsightsChartBucket>,
     selectedIndex: Int?,
     step: Int,
@@ -207,6 +216,8 @@ private fun ChartReadout(
 
     // Lukema on live region kummassakin asettelussa: kun valinta siirtyy
     // ruudunlukijan toiminnolla, uusi arvo luetaan ilman uutta fokusointia.
+    // Säiliö yhdistää jälkeläistensä tekstit, jotta live region istuu solmussa
+    // jolla on itsellään luettavaa sisältöä eikä pelkän asettelun päällä.
     if (stacked) {
         // Suurilla fonttikoeilla kolme yhden rivin tekstiä ei mahdu vierekkäin.
         Column(
@@ -214,7 +225,7 @@ private fun ChartReadout(
                 Modifier
                     .fillMaxWidth()
                     .padding(top = InsightsDimens.ReadoutTopPadding)
-                    .semantics { liveRegion = LiveRegionMode.Polite },
+                    .semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite },
         ) {
             ChartReadoutValue(bucket = bucket, hasValue = hasValue, hasAnyData = hasAnyData)
             ChartReadoutContext(labelText = labelText, rows = bucket?.totalRows ?: 0)
@@ -225,7 +236,7 @@ private fun ChartReadout(
                 Modifier
                     .fillMaxWidth()
                     .padding(top = InsightsDimens.ReadoutTopPadding)
-                    .semantics { liveRegion = LiveRegionMode.Polite },
+                    .semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite },
         ) {
             ChartReadoutValue(
                 bucket = bucket,
@@ -371,18 +382,18 @@ private fun ChartPlot(
                     // Viimeksi valittu sarake pidetään eleen omassa muuttujassa. Parametrina
                     // saatu selectedIndex jäisi eleen käynnistyshetken arvoon, jolloin naksu
                     // toistuisi joka osoitintapahtumalla eikä vain sarakkeen vaihtuessa.
-                    var lastIndex = -1
+                    var lastSelectedIndex = -1
                     detectHorizontalDragGestures(
                         onDragStart = { offset ->
                             if (buckets.isEmpty()) return@detectHorizontalDragGestures
-                            lastIndex = bucketIndexAt(offset.x, size.width)
-                            onSelectBucket(lastIndex)
+                            lastSelectedIndex = bucketIndexAt(offset.x, size.width)
+                            onSelectBucket(lastSelectedIndex)
                         },
                     ) { change, _ ->
                         if (buckets.isEmpty()) return@detectHorizontalDragGestures
                         val index = bucketIndexAt(change.position.x, size.width)
-                        if (index != lastIndex) {
-                            lastIndex = index
+                        if (index != lastSelectedIndex) {
+                            lastSelectedIndex = index
                             haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                             onSelectBucket(index)
                         }
@@ -399,9 +410,12 @@ private fun ChartPlot(
             return@Canvas
         }
         val pitch = size.width / buckets.size.toFloat()
+        // Valinta ratkaistaan kerran: kaista piirretään pylväiden alle ja merkki
+        // apuviivojen jälkeen, mutta molemmat tarkoittavat samaa saraketta.
+        val selectedBucketIndex = selectedIndex?.takeIf { it in buckets.indices }
         // Valintakaista pylväiden alle, jotta pylväät jäävät sen päälle eikä kaista
         // himmennä muita sarakkeita — se korostaa vain valitun taustan.
-        selectedIndex?.takeIf { it in buckets.indices }?.let { index ->
+        selectedBucketIndex?.let { index ->
             drawRect(
                 color = selectionBandColor,
                 topLeft = Offset(pitch * index, 0f),
@@ -439,7 +453,7 @@ private fun ChartPlot(
         drawChartGridlines(gridColor, baselineY, gridStrokePx)
 
         // Merkkiviiva apuviivojen jälkeen, jottei perusviiva peitä sitä.
-        selectedIndex?.takeIf { it in buckets.indices }?.let { index ->
+        selectedBucketIndex?.let { index ->
             val markerHeightPx = InsightsDimens.ChartSelectionMarkerHeight.toPx()
             val markerLeft = pitch * index + (pitch - barWidthPx) / 2f
             drawRect(
@@ -660,7 +674,7 @@ private fun axisLabel(
     return bucketStart.format(formatter)
 }
 
-private const val STEP_NEXT = 1
-private const val STEP_PREVIOUS = -1
+internal const val STEP_NEXT = 1
+internal const val STEP_PREVIOUS = -1
 private const val DAY_AXIS_MAX_LABELS = 5
 private const val MONTH_AXIS_MAX_LABELS = 6

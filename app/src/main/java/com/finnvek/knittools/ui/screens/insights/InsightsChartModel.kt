@@ -144,23 +144,35 @@ internal fun insightsTrend(
  * verrataan viime viikon keskiviikkoon asti, ei koko viikkoon. Muuten kesken
  * oleva jakso näyttäisi aina laskulta.
  *
+ * Mittatapa on sama kuin nykyisellä jaksolla: sekunnit summataan ikkunan yli ja
+ * pyöristetään minuuteiksi vasta kerran lopuksi. Päiväkohtaisten minuuttien
+ * summaaminen kasvatti vertailukohtaa jokaisen aktiivisen päivän pyöristyksellä
+ * ja vinoutti trendin systemaattisesti laskun suuntaan.
+ *
  * Puhdas funktio päivämäärien vertailulle: [today] ratkaisee kuinka monta
  * päivää nykyisestä jaksosta on kulunut, ja sama määrä päiviä lasketaan
- * edellisestä jaksosta alkaen [previousStart]:sta. [currentStart] tarvitaan
- * vain kuluneiden päivien laskemiseen, ei minkään suodattamiseen.
+ * edellisestä jaksosta alkaen [previousStart]:sta.
+ *
+ * Ikkuna katkaistaan aina viimeistään [currentStart]:iin. Kuukausilla kuluneet
+ * päivät lasketaan nykyisestä kuukaudesta mutta lisätään edellisen kuukauden
+ * alkuun, joten lyhyempi edellinen kuukausi vuotaisi muuten nykyiseen: esimerkiksi
+ * 31.3. ikkuna olisi 1.2.–4.3. ja laskisi maaliskuun alun sekä vertailukohtaan
+ * että nykyiseen jaksoon.
  */
 internal fun previousPeriodMinutes(
-    dailyMinutes: Map<LocalDate, Int>,
+    dailySeconds: Map<LocalDate, Long>,
     previousStart: LocalDate,
     currentStart: LocalDate,
     today: LocalDate,
 ): Int {
     val elapsedDays = ChronoUnit.DAYS.between(currentStart, today) + 1
-    val previousEndExclusive = previousStart.plusDays(elapsedDays)
-    return dailyMinutes
-        .entries
-        .filter { (date, _) -> date >= previousStart && date < previousEndExclusive }
-        .sumOf { (_, minutes) -> minutes }
+    val previousEndExclusive = minOf(previousStart.plusDays(elapsedDays), currentStart)
+    val windowSeconds =
+        dailySeconds
+            .entries
+            .filter { (date, _) -> date >= previousStart && date < previousEndExclusive }
+            .sumOf { (_, seconds) -> seconds }
+    return secondsToDisplayMinutes(windowSeconds)
 }
 
 /**

@@ -206,17 +206,17 @@ class InsightsChartModelTest {
         // Nykyinen jakso: 2026-07-27 (ma) .. 2026-07-30 (to) = 4 kulunutta päivää.
         // Edellinen jakso katkaistaan siis 2026-07-20 .. 2026-07-24 (pl.), jolloin
         // viime viikon loppupää (pe-su) jää tarkoituksella pois.
-        val dailyMinutes =
+        val dailySeconds =
             mapOf(
-                LocalDate.of(2026, 7, 20) to 30, // sisältyy: jakson ensimmäinen päivä
-                LocalDate.of(2026, 7, 23) to 10, // sisältyy: viimeinen kulunut päivä
-                LocalDate.of(2026, 7, 24) to 600, // ei sisälly: tasan katkaisurajalla
-                LocalDate.of(2026, 7, 26) to 999, // ei sisälly: viime viikon loppupää
+                LocalDate.of(2026, 7, 20) to minutesAsSeconds(30), // sisältyy: jakson ensimmäinen päivä
+                LocalDate.of(2026, 7, 23) to minutesAsSeconds(10), // sisältyy: viimeinen kulunut päivä
+                LocalDate.of(2026, 7, 24) to minutesAsSeconds(600), // ei sisälly: tasan katkaisurajalla
+                LocalDate.of(2026, 7, 26) to minutesAsSeconds(999), // ei sisälly: viime viikon loppupää
             )
 
         val minutes =
             previousPeriodMinutes(
-                dailyMinutes = dailyMinutes,
+                dailySeconds = dailySeconds,
                 previousStart = LocalDate.of(2026, 7, 20),
                 currentStart = LocalDate.of(2026, 7, 27),
                 today = LocalDate.of(2026, 7, 30),
@@ -229,15 +229,15 @@ class InsightsChartModelTest {
     fun `previous period covers the full period when the current period has fully elapsed`() {
         // Nykyinen jakso on kokonaan kulunut (7 päivää), joten edellinen jakso ei
         // enää katkea vaan kattaa koko edellisen viikon eikä mitään jää pois.
-        val dailyMinutes =
+        val dailySeconds =
             mapOf(
-                LocalDate.of(2026, 7, 20) to 30,
-                LocalDate.of(2026, 7, 26) to 999,
+                LocalDate.of(2026, 7, 20) to minutesAsSeconds(30),
+                LocalDate.of(2026, 7, 26) to minutesAsSeconds(999),
             )
 
         val minutes =
             previousPeriodMinutes(
-                dailyMinutes = dailyMinutes,
+                dailySeconds = dailySeconds,
                 previousStart = LocalDate.of(2026, 7, 20),
                 currentStart = LocalDate.of(2026, 7, 27),
                 today = LocalDate.of(2026, 8, 2),
@@ -250,7 +250,7 @@ class InsightsChartModelTest {
     fun `previous period without matching activity is zero`() {
         val minutes =
             previousPeriodMinutes(
-                dailyMinutes = mapOf(LocalDate.of(2026, 6, 1) to 45),
+                dailySeconds = mapOf(LocalDate.of(2026, 6, 1) to minutesAsSeconds(45)),
                 previousStart = LocalDate.of(2026, 7, 20),
                 currentStart = LocalDate.of(2026, 7, 27),
                 today = LocalDate.of(2026, 7, 30),
@@ -258,6 +258,78 @@ class InsightsChartModelTest {
 
         assertEquals(0, minutes)
     }
+
+    @Test
+    fun `previous month window never reaches into the current month on a long month end`() {
+        // 31.3.: kuluneita päiviä on 31, mutta helmikuussa niitä on vain 28. Ilman
+        // katkaisua ikkuna jatkuisi 4.3. asti ja laskisi maaliskuun alun sekä
+        // vertailukohtaan että nykyiseen jaksoon.
+        val dailySeconds =
+            mapOf(
+                LocalDate.of(2026, 2, 1) to minutesAsSeconds(20), // sisältyy: edellisen jakson alku
+                LocalDate.of(2026, 2, 28) to minutesAsSeconds(25), // sisältyy: helmikuun viimeinen päivä
+                LocalDate.of(2026, 3, 1) to minutesAsSeconds(600), // ei sisälly: kuuluu nykyiseen jaksoon
+                LocalDate.of(2026, 3, 3) to minutesAsSeconds(900), // ei sisälly: kuuluu nykyiseen jaksoon
+            )
+
+        val minutes =
+            previousPeriodMinutes(
+                dailySeconds = dailySeconds,
+                previousStart = LocalDate.of(2026, 2, 1),
+                currentStart = LocalDate.of(2026, 3, 1),
+                today = LocalDate.of(2026, 3, 31),
+            )
+
+        assertEquals(45, minutes)
+    }
+
+    @Test
+    fun `an ordinary mid month window still stops at the elapsed days`() {
+        // 10.3.: kuluneita päiviä on 10, ikkuna 1.2.-11.2. (pl.) mahtuu helmikuuhun
+        // eikä katkaisu saa lyhentää sitä.
+        val dailySeconds =
+            mapOf(
+                LocalDate.of(2026, 2, 1) to minutesAsSeconds(20),
+                LocalDate.of(2026, 2, 10) to minutesAsSeconds(25),
+                LocalDate.of(2026, 2, 11) to minutesAsSeconds(600), // ei sisälly: tasan katkaisurajalla
+                LocalDate.of(2026, 2, 28) to minutesAsSeconds(900), // ei sisälly: kuluneiden päivien jälkeen
+            )
+
+        val minutes =
+            previousPeriodMinutes(
+                dailySeconds = dailySeconds,
+                previousStart = LocalDate.of(2026, 2, 1),
+                currentStart = LocalDate.of(2026, 3, 1),
+                today = LocalDate.of(2026, 3, 10),
+            )
+
+        assertEquals(45, minutes)
+    }
+
+    @Test
+    fun `previous period rounds once over the window instead of once per active day`() {
+        // Kolme päivää, joista jokainen jäisi omalla pyöristyksellään minuutin yli:
+        // 3 x 90 s = 270 s = 5 min. Päiväkohtaisesti pyöristettynä summa olisi 6 min,
+        // eli vertailukohta kasvaisi ja trendi näyttäisi laskua jota ei ole.
+        val dailySeconds =
+            mapOf(
+                LocalDate.of(2026, 7, 20) to 90L,
+                LocalDate.of(2026, 7, 21) to 90L,
+                LocalDate.of(2026, 7, 22) to 90L,
+            )
+
+        val minutes =
+            previousPeriodMinutes(
+                dailySeconds = dailySeconds,
+                previousStart = LocalDate.of(2026, 7, 20),
+                currentStart = LocalDate.of(2026, 7, 27),
+                today = LocalDate.of(2026, 8, 2),
+            )
+
+        assertEquals(5, minutes)
+    }
+
+    private fun minutesAsSeconds(minutes: Int): Long = minutes * 60L
 
     @Test
     fun `short axes label every bucket`() {

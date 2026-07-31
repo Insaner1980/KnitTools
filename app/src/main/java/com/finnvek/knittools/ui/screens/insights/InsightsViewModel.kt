@@ -303,7 +303,7 @@ class InsightsViewModel
             zone: ZoneId,
             totalMinutes: Int,
         ): InsightsTrend? =
-            previousPeriodMinutes(
+            resolvePreviousPeriodMinutes(
                 sessions = sessions,
                 timeRange = params.timeRange,
                 today = today,
@@ -527,9 +527,10 @@ class InsightsViewModel
              * Ratkaisee edellisen jakson rajat aikavälistä ja delegoi summauksen
              * puhtaalle [previousPeriodMinutes]-funktiolle (InsightsChartModel.kt),
              * jossa katkaisun päivämäärälaskenta on yksikkötestattu kiinteillä
-             * päivämäärillä.
+             * päivämäärillä. Sekunnit viedään perille pyöristämättöminä, jotta
+             * vertailukohta mitataan samalla tavalla kuin nykyinen jakso.
              */
-            private fun previousPeriodMinutes(
+            private fun resolvePreviousPeriodMinutes(
                 sessions: List<KnitSession>,
                 timeRange: TimeRange,
                 today: LocalDate,
@@ -544,8 +545,8 @@ class InsightsViewModel
                         TimeRange.THIS_MONTH -> currentStart.minusMonths(1)
                         TimeRange.ALL_TIME -> return null
                     }
-                val dailyMinutes = SessionMetrics.dailyActivityMinutes(sessions, previousStart, zone)
-                return previousPeriodMinutes(dailyMinutes, previousStart, currentStart, today)
+                val dailySeconds = SessionMetrics.dailyActivitySeconds(sessions, previousStart, zone)
+                return previousPeriodMinutes(dailySeconds, previousStart, currentStart, today)
             }
 
             private fun firstSessionDate(

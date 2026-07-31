@@ -495,8 +495,8 @@
         <item quantity="many">%1$d su %2$d giorni</item>
         <item quantity="other">%1$d su %2$d giorni</item>
     </plurals>
-    <string name="insights_chart_hint_day">Tocca un giorno per vederlo.</string>
-    <string name="insights_chart_hint_month">Tocca un mese per vederlo.</string>
+    <string name="insights_chart_hint_day">Tocca o trascina sui giorni.</string>
+    <string name="insights_chart_hint_month">Tocca o trascina sui mesi.</string>
     <string name="insights_chart_axis_today">oggi</string>
     <string name="insights_chart_max_format">max %1$s</string>
     <string name="insights_no_sessions_yet">Ancora nessuna sessione</string>

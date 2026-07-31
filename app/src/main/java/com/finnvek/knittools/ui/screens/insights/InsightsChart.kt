@@ -1,6 +1,7 @@
 package com.finnvek.knittools.ui.screens.insights
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,7 +15,11 @@ import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
@@ -26,8 +31,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -64,6 +71,9 @@ internal fun InsightsChart(
     modifier: Modifier = Modifier,
 ) {
     val maxMinutes = buckets.maxOfOrNull { it.totalMinutes } ?: 0
+    // Vihje on kertakäyttöinen opaste: kun käyttäjä on kerran koskenut kaavioon,
+    // rivi on pelkkää kohinaa lukeman alla.
+    var hasInteracted by rememberSaveable { mutableStateOf(false) }
 
     Column(modifier = modifier.fillMaxWidth()) {
         ChartReadout(
@@ -85,7 +95,10 @@ internal fun InsightsChart(
                     timeRange = timeRange,
                     selectedIndex = selectedIndex,
                     maxMinutes = maxMinutes,
-                    onSelectBucket = onSelectBucket,
+                    onSelectBucket = { index ->
+                        hasInteracted = true
+                        onSelectBucket(index)
+                    },
                 )
                 ChartAxisLabels(
                     buckets = buckets,
@@ -114,23 +127,25 @@ internal fun InsightsChart(
                 )
             }
         }
-        Text(
-            text =
-                stringResource(
-                    if (interval == PaceGroupingInterval.MONTH) {
-                        R.string.insights_chart_hint_month
-                    } else {
-                        R.string.insights_chart_hint_day
-                    },
-                ),
-            style =
-                MaterialTheme.typography.bodySmall.copy(
-                    fontSize = InsightsDimens.ChartHintFontSize,
-                    fontWeight = FontWeight.Medium,
-                ),
-            color = MaterialTheme.knitToolsColors.onSurfaceMuted,
-            modifier = Modifier.padding(top = InsightsDimens.ChartHintTopPadding),
-        )
+        if (!hasInteracted) {
+            Text(
+                text =
+                    stringResource(
+                        if (interval == PaceGroupingInterval.MONTH) {
+                            R.string.insights_chart_hint_month
+                        } else {
+                            R.string.insights_chart_hint_day
+                        },
+                    ),
+                style =
+                    MaterialTheme.typography.bodySmall.copy(
+                        fontSize = InsightsDimens.ChartHintFontSize,
+                        fontWeight = FontWeight.Medium,
+                    ),
+                color = MaterialTheme.knitToolsColors.onSurfaceMuted,
+                modifier = Modifier.padding(top = InsightsDimens.ChartHintTopPadding),
+            )
+        }
     }
 }
 
@@ -271,6 +286,17 @@ private fun ChartPlot(
                 .associateWith(::yarnColorForId)
         }
 
+    val haptics = LocalHapticFeedback.current
+
+    // Eleiden oma sarakehaku; piirto laskee pitchin erikseen omasta DrawScopen koostaan.
+    fun bucketIndexAt(
+        x: Float,
+        width: Int,
+    ): Int {
+        val pitch = width / buckets.size.toFloat()
+        return (x / pitch).toInt().coerceIn(0, buckets.lastIndex)
+    }
+
     Canvas(
         modifier =
             Modifier
@@ -282,9 +308,30 @@ private fun ChartPlot(
                 .pointerInput(buckets.size) {
                     detectTapGestures { offset ->
                         if (buckets.isEmpty()) return@detectTapGestures
-                        val pitch = size.width / buckets.size.toFloat()
-                        val index = (offset.x / pitch).toInt().coerceIn(0, buckets.lastIndex)
-                        onSelectBucket(index)
+                        onSelectBucket(bucketIndexAt(offset.x, size.width))
+                    }
+                }
+                // Vetoele tekee kapeista kuukausipylväistä käytettäviä: 12dp osumatarkkuus
+                // ei riitä napautukselle, mutta sormen seuraaminen ei vaadi tarkkuutta.
+                .pointerInput(buckets.size) {
+                    // Viimeksi valittu sarake pidetään eleen omassa muuttujassa. Parametrina
+                    // saatu selectedIndex jäisi eleen käynnistyshetken arvoon, jolloin naksu
+                    // toistuisi joka osoitintapahtumalla eikä vain sarakkeen vaihtuessa.
+                    var lastIndex = -1
+                    detectHorizontalDragGestures(
+                        onDragStart = { offset ->
+                            if (buckets.isEmpty()) return@detectHorizontalDragGestures
+                            lastIndex = bucketIndexAt(offset.x, size.width)
+                            onSelectBucket(lastIndex)
+                        },
+                    ) { change, _ ->
+                        if (buckets.isEmpty()) return@detectHorizontalDragGestures
+                        val index = bucketIndexAt(change.position.x, size.width)
+                        if (index != lastIndex) {
+                            lastIndex = index
+                            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            onSelectBucket(index)
+                        }
                     }
                 },
     ) {

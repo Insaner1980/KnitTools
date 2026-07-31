@@ -496,8 +496,8 @@
         <item quantity="one">%1$d / %2$d päivä</item>
         <item quantity="other">%1$d / %2$d päivää</item>
     </plurals>
-    <string name="insights_chart_hint_day">Paina päivää nähdäksesi sen.</string>
-    <string name="insights_chart_hint_month">Paina kuukautta nähdäksesi sen.</string>
+    <string name="insights_chart_hint_day">Napauta tai vedä päivien yli.</string>
+    <string name="insights_chart_hint_month">Napauta tai vedä kuukausien yli.</string>
     <string name="insights_chart_axis_today">tänään</string>
     <string name="insights_chart_max_format">enint. %1$s</string>
     <string name="insights_no_sessions_yet">Ei istuntoja</string>

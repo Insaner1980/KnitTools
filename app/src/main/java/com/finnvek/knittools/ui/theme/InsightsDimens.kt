@@ -79,9 +79,12 @@ object InsightsDimens {
     val ChartMonthBarWidth = 10.dp
     val ChartAllTimeBarWidth = 22.dp
 
-    // Valinnan merkki akselin ja pylväiden välissä
-    val ChartSelectionDotBand = 12.dp
-    val ChartSelectionDotSize = 5.dp
+    // Valinnan korostus: vaimea kaista pylvään takana ja merkkiviiva perusviivassa
+    val ChartSelectionMarkerBand = 12.dp
+    val ChartSelectionMarkerHeight = 3.dp
+
+    @Suppress("MayBeConstant")
+    val ChartSelectionBandAlpha = 0.08f
 
     // Lukema kaavion yllä
     val ReadoutTopPadding = 2.dp

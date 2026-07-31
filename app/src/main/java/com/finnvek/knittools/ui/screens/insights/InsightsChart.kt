@@ -227,6 +227,8 @@ private fun ChartPlot(
     val fallbackBarColor = MaterialTheme.colorScheme.primary
     val gridColor = MaterialTheme.colorScheme.onSurface.copy(alpha = InsightsDimens.ChartGridlineAlpha)
     val selectionColor = MaterialTheme.colorScheme.onSurface
+    val selectionBandColor =
+        MaterialTheme.colorScheme.onSurface.copy(alpha = InsightsDimens.ChartSelectionBandAlpha)
     // Pinon värit tulevat samasta apurista kuin projektilistan pisteet, jolloin
     // kaavio ja lista luetaan samoilla väreillä.
     val segmentColors =
@@ -242,7 +244,7 @@ private fun ChartPlot(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .height(InsightsDimens.ChartPlotHeight + InsightsDimens.ChartSelectionDotBand)
+                .height(InsightsDimens.ChartPlotHeight + InsightsDimens.ChartSelectionMarkerBand)
                 // Dokumentoitu poikkeus: kuukausinäkymässä 28-31 osumakohdetta ei mahdu
                 // 48dp minimiin puhelimen leveydelle. Kosketus on täydentävä polku, sillä
                 // asteikkoteksti ja lukemarivi kertovat arvot ilman vuorovaikutusta.
@@ -256,15 +258,24 @@ private fun ChartPlot(
                 },
     ) {
         val gridStrokePx = InsightsDimens.ChartGridlineStroke.toPx()
-        val dotBandPx = InsightsDimens.ChartSelectionDotBand.toPx()
+        val markerBandPx = InsightsDimens.ChartSelectionMarkerBand.toPx()
         // Perusviiva jättää alaosaan kaistan valinnan merkille.
-        val baselineY = size.height - dotBandPx
+        val baselineY = size.height - markerBandPx
         val barBottomY = baselineY - gridStrokePx
         if (buckets.isEmpty()) {
             drawChartGridlines(gridColor, baselineY, gridStrokePx)
             return@Canvas
         }
         val pitch = size.width / buckets.size.toFloat()
+        // Valintakaista pylväiden alle, jotta pylväät jäävät sen päälle eikä kaista
+        // himmennä muita sarakkeita — se korostaa vain valitun taustan.
+        selectedIndex?.takeIf { it in buckets.indices }?.let { index ->
+            drawRect(
+                color = selectionBandColor,
+                topLeft = Offset(pitch * index, 0f),
+                size = Size(pitch, baselineY),
+            )
+        }
         // Pylväiden väliin jää aina rako, jottei tiheä akseli lukeudu yhtenä möykkynä.
         val minGapPx = InsightsDimens.ChartBarMinGap.toPx()
         val barWidthPx = minOf(barWidth.toPx(), pitch - minGapPx).coerceAtLeast(1f)
@@ -295,11 +306,14 @@ private fun ChartPlot(
         // Apuviivat pylväiden päälle, jottei korkein pylväs peitä maksimiviivaa.
         drawChartGridlines(gridColor, baselineY, gridStrokePx)
 
+        // Merkkiviiva apuviivojen jälkeen, jottei perusviiva peitä sitä.
         selectedIndex?.takeIf { it in buckets.indices }?.let { index ->
-            drawCircle(
+            val markerHeightPx = InsightsDimens.ChartSelectionMarkerHeight.toPx()
+            val markerLeft = pitch * index + (pitch - barWidthPx) / 2f
+            drawRect(
                 color = selectionColor,
-                radius = InsightsDimens.ChartSelectionDotSize.toPx() / 2f,
-                center = Offset(pitch * index + pitch / 2f, baselineY + dotBandPx / 2f),
+                topLeft = Offset(markerLeft, baselineY + (markerBandPx - markerHeightPx) / 2f),
+                size = Size(barWidthPx, markerHeightPx),
             )
         }
     }

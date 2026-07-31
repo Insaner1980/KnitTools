@@ -494,6 +494,8 @@
     <string name="insights_no_sessions_yet">Inga pass än</string>
     <string name="insights_chart_a11y_daily">Daglig tid för %1$s, %2$s, %3$s, längst %4$s</string>
     <string name="insights_chart_a11y_monthly">Månatlig tid för %1$s, %2$s, %3$s, längst %4$s</string>
+    <string name="insights_chart_a11y_next">Nästa stapel</string>
+    <string name="insights_chart_a11y_previous">Föregående stapel</string>
     <string name="insights_project_sub_format">%1$s, %2$s</string>
     <string name="insights_empty_title">Ingen tid på stickorna än.</string>
     <string name="insights_empty_body">Öppna ett projekt och börja räkna. Din tid dyker upp här.</string>

@@ -494,6 +494,8 @@
     <string name="insights_no_sessions_yet">Ingen økter ennå</string>
     <string name="insights_chart_a11y_daily">Daglig tid til %1$s, %2$s, %3$s, lengst %4$s</string>
     <string name="insights_chart_a11y_monthly">Månedlig tid til %1$s, %2$s, %3$s, lengst %4$s</string>
+    <string name="insights_chart_a11y_next">Neste stolpe</string>
+    <string name="insights_chart_a11y_previous">Forrige stolpe</string>
     <string name="insights_project_sub_format">%1$s, %2$s</string>
     <string name="insights_empty_title">Ingen tid på pinnene ennå.</string>
     <string name="insights_empty_body">Åpne et prosjekt og begynn å telle. Tiden din dukker opp her.</string>

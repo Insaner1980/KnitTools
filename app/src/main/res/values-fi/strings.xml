@@ -503,6 +503,8 @@
     <string name="insights_no_sessions_yet">Ei istuntoja</string>
     <string name="insights_chart_a11y_daily">Päivittäinen aika: %1$s, %2$s, %3$s, pisin %4$s</string>
     <string name="insights_chart_a11y_monthly">Kuukausittainen aika: %1$s, %2$s, %3$s, pisin %4$s</string>
+    <string name="insights_chart_a11y_next">Seuraava pylväs</string>
+    <string name="insights_chart_a11y_previous">Edellinen pylväs</string>
     <string name="insights_project_sub_format">%1$s, %2$s</string>
     <string name="insights_empty_title">Puikoilla ei ole vielä aikaa.</string>
     <string name="insights_empty_body">Avaa projekti ja aloita laskeminen. Aikasi näkyy täällä.</string>

@@ -37,8 +37,13 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -82,11 +87,36 @@ internal fun InsightsChart(
             fallbackLabel = buckets.firstOrNull()?.bucketStart,
             hasAnyData = maxMinutes > 0,
         )
+        val nextLabel = stringResource(R.string.insights_chart_a11y_next)
+        val previousLabel = stringResource(R.string.insights_chart_a11y_previous)
         Box(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .clearAndSetSemantics { this.contentDescription = contentDescription },
+                    // Kaavio luetaan yhtenä elementtinä, mutta se ei saa olla umpi:
+                    // valinta liikkuu ruudunlukijalla omilla toiminnoillaan.
+                    .clearAndSetSemantics {
+                        this.contentDescription = contentDescription
+                        customActions =
+                            listOf(
+                                CustomAccessibilityAction(nextLabel) {
+                                    if (buckets.isEmpty()) {
+                                        false
+                                    } else {
+                                        onSelectBucket(((selectedIndex ?: -1) + 1).coerceAtMost(buckets.lastIndex))
+                                        true
+                                    }
+                                },
+                                CustomAccessibilityAction(previousLabel) {
+                                    if (buckets.isEmpty()) {
+                                        false
+                                    } else {
+                                        onSelectBucket(((selectedIndex ?: 0) - 1).coerceAtLeast(0))
+                                        true
+                                    }
+                                },
+                            )
+                    },
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
                 Spacer(modifier = Modifier.height(InsightsDimens.ChartScaleLabelBand))
@@ -165,14 +195,28 @@ private fun ChartReadout(
     val hasValue = bucket != null && bucket.totalMinutes > 0
     val stacked = LocalDensity.current.fontScale > InsightsDimens.ChartReadoutStackFontScale
 
+    // Lukema on live region kummassakin asettelussa: kun valinta siirtyy
+    // ruudunlukijan toiminnolla, uusi arvo luetaan ilman uutta fokusointia.
     if (stacked) {
         // Suurilla fonttikoeilla kolme yhden rivin tekstiä ei mahdu vierekkäin.
-        Column(modifier = Modifier.fillMaxWidth().padding(top = InsightsDimens.ReadoutTopPadding)) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = InsightsDimens.ReadoutTopPadding)
+                    .semantics { liveRegion = LiveRegionMode.Polite },
+        ) {
             ChartReadoutValue(bucket = bucket, hasValue = hasValue, hasAnyData = hasAnyData)
             ChartReadoutContext(labelText = labelText, rows = bucket?.totalRows ?: 0, modifier = Modifier)
         }
     } else {
-        Row(modifier = Modifier.fillMaxWidth().padding(top = InsightsDimens.ReadoutTopPadding)) {
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = InsightsDimens.ReadoutTopPadding)
+                    .semantics { liveRegion = LiveRegionMode.Polite },
+        ) {
             ChartReadoutValue(
                 bucket = bucket,
                 hasValue = hasValue,

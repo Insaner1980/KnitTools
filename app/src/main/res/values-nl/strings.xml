@@ -494,6 +494,8 @@
     <string name="insights_no_sessions_yet">Nog geen sessies</string>
     <string name="insights_chart_a11y_daily">Dagelijkse tijd voor %1$s, %2$s, %3$s, langst %4$s</string>
     <string name="insights_chart_a11y_monthly">Maandelijkse tijd voor %1$s, %2$s, %3$s, langst %4$s</string>
+    <string name="insights_chart_a11y_next">Volgende balk</string>
+    <string name="insights_chart_a11y_previous">Vorige balk</string>
     <string name="insights_project_sub_format">%1$s, %2$s</string>
     <string name="insights_empty_title">Nog geen tijd op de naalden.</string>
     <string name="insights_empty_body">Open een project en begin met tellen. Je tijd verschijnt hier.</string>

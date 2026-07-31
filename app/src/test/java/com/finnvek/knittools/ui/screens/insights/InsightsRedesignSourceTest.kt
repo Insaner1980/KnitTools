@@ -59,10 +59,13 @@ class InsightsRedesignSourceTest {
     }
 
     @Test
-    fun `zero buckets render as baseline ticks and the chart is one accessibility element`() {
+    fun `the chart is one accessibility element that can still be operated`() {
         val chart = ProjectSourceFiles.read(INSIGHTS_CHART)
 
         assertTrue(chart.contains("clearAndSetSemantics"))
+        assertTrue("Selection must be reachable without touch", chart.contains("customActions"))
+        assertTrue("Readout must announce changes", chart.contains("liveRegion"))
+        assertFalse("Zero ticks were replaced by the continuous baseline", chart.contains("ChartZeroTickHeight"))
     }
 
     @Test

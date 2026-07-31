@@ -100,20 +100,10 @@ internal fun InsightsChart(
                         customActions =
                             listOf(
                                 CustomAccessibilityAction(nextLabel) {
-                                    if (buckets.isEmpty()) {
-                                        false
-                                    } else {
-                                        onSelectBucket(((selectedIndex ?: -1) + 1).coerceAtMost(buckets.lastIndex))
-                                        true
-                                    }
+                                    moveChartSelection(buckets, selectedIndex, STEP_NEXT, onSelectBucket)
                                 },
                                 CustomAccessibilityAction(previousLabel) {
-                                    if (buckets.isEmpty()) {
-                                        false
-                                    } else {
-                                        onSelectBucket(((selectedIndex ?: 0) - 1).coerceAtLeast(0))
-                                        true
-                                    }
+                                    moveChartSelection(buckets, selectedIndex, STEP_PREVIOUS, onSelectBucket)
                                 },
                             )
                     },
@@ -177,6 +167,26 @@ internal fun InsightsChart(
             )
         }
     }
+}
+
+/**
+ * Siirtää valintaa yhden ämpärin verran ruudunlukijan toiminnolle. Palauttaa false,
+ * kun mitään ei liikahda — tyhjässä kaaviossa ja reunassa — jolloin alusta osaa
+ * kertoa ettei liike jatku, samoin kuin sisäänrakennetut vieritystoiminnot.
+ * Ilman valintaa molemmat suunnat osuvat ensimmäiseen ämpäriin, koska
+ * askeleelle ei ole vielä lähtöpistettä.
+ */
+private fun moveChartSelection(
+    buckets: List<InsightsChartBucket>,
+    selectedIndex: Int?,
+    step: Int,
+    onSelectBucket: (Int) -> Unit,
+): Boolean {
+    if (buckets.isEmpty()) return false
+    val target = if (selectedIndex == null) 0 else (selectedIndex + step).coerceIn(0, buckets.lastIndex)
+    if (target == selectedIndex) return false
+    onSelectBucket(target)
+    return true
 }
 
 /**
@@ -650,5 +660,7 @@ private fun axisLabel(
     return bucketStart.format(formatter)
 }
 
+private const val STEP_NEXT = 1
+private const val STEP_PREVIOUS = -1
 private const val DAY_AXIS_MAX_LABELS = 5
 private const val MONTH_AXIS_MAX_LABELS = 6

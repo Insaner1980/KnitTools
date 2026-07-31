@@ -1,6 +1,7 @@
 package com.finnvek.knittools.ui.screens.insights
 
 import com.finnvek.knittools.ProjectSourceFiles
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -66,6 +67,17 @@ class InsightsRedesignSourceTest {
         assertTrue("Selection must be reachable without touch", chart.contains("customActions"))
         assertTrue("Readout must announce changes", chart.contains("liveRegion"))
         assertFalse("Zero ticks were replaced by the continuous baseline", chart.contains("ChartZeroTickHeight"))
+        // Reunatapaus ei saa raportoida onnistumista: kummankin toiminnon on kuljettava
+        // saman vartioidun apurin kautta, joka palauttaa false kun valinta ei liiku.
+        assertTrue(
+            "A boundary must report failure, not a silent success",
+            chart.contains("if (target == selectedIndex) return false"),
+        )
+        assertEquals(
+            "Both actions must delegate to the guarded selection helper",
+            2,
+            Regex("""CustomAccessibilityAction\(\w+\) \{\s*moveChartSelection\(""").findAll(chart).count(),
+        )
     }
 
     @Test

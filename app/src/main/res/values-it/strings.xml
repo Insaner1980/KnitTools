@@ -502,6 +502,8 @@
     <string name="insights_no_sessions_yet">Ancora nessuna sessione</string>
     <string name="insights_chart_a11y_daily">Tempo giornaliero per %1$s, %2$s, %3$s, il più lungo %4$s</string>
     <string name="insights_chart_a11y_monthly">Tempo mensile per %1$s, %2$s, %3$s, il più lungo %4$s</string>
+    <string name="insights_chart_a11y_next">Barra successiva</string>
+    <string name="insights_chart_a11y_previous">Barra precedente</string>
     <string name="insights_project_sub_format">%1$s, %2$s</string>
     <string name="insights_empty_title">Ancora nessun tempo sui ferri.</string>
     <string name="insights_empty_body">Apri un progetto e inizia a contare. Il tuo tempo comparirà qui.</string>

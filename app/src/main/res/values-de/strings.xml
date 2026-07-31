@@ -494,6 +494,8 @@
     <string name="insights_no_sessions_yet">Noch keine Sitzungen</string>
     <string name="insights_chart_a11y_daily">Tägliche Zeit für %1$s, %2$s, %3$s, am längsten %4$s</string>
     <string name="insights_chart_a11y_monthly">Monatliche Zeit für %1$s, %2$s, %3$s, am längsten %4$s</string>
+    <string name="insights_chart_a11y_next">Nächster Balken</string>
+    <string name="insights_chart_a11y_previous">Vorheriger Balken</string>
     <string name="insights_project_sub_format">%1$s, %2$s</string>
     <string name="insights_empty_title">Noch keine Zeit an den Nadeln.</string>
     <string name="insights_empty_body">Öffne ein Projekt und beginne zu zählen. Deine Zeit erscheint hier.</string>

@@ -513,6 +513,8 @@
     <string name="insights_no_sessions_yet">No sessions yet</string>
     <string name="insights_chart_a11y_daily">Daily %1$s time, %2$s, %3$s, longest %4$s</string>
     <string name="insights_chart_a11y_monthly">Monthly %1$s time, %2$s, %3$s, longest %4$s</string>
+    <string name="insights_chart_a11y_next">Next bar</string>
+    <string name="insights_chart_a11y_previous">Previous bar</string>
     <string name="insights_project_sub_format">%1$s, %2$s</string>
     <string name="insights_empty_title">No time on the needles yet.</string>
     <string name="insights_empty_body">Open a project and start counting. Your time shows up here.</string>

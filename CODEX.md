@@ -10,7 +10,7 @@ Use [`CLAUDE.md`](/home/emma/dev/KnitTools/CLAUDE.md) when product wording, visu
 - Kotlin + Jetpack Compose + Material 3
 - Hilt, Room, DataStore, Glance
 - Room schema version `17`
-- AGP `9.1.1` + Kotlin Compose plugin `2.3.21`
+- AGP `9.3.1` + Kotlin Compose plugin `2.3.21`
 
 ## Architecture
 

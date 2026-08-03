@@ -271,8 +271,6 @@ android {
             )
 
         checkGeneratedSources = false
-        htmlReport = true
-        xmlReport = true
     }
 }
 

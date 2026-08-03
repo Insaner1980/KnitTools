@@ -46,7 +46,6 @@
     <!-- Screen titles -->
     <string name="tools_title">Tools</string>
     <string name="library_title">Library</string>
-    <string name="insights_title">Insights</string>
     <string name="saved_patterns_title">Saved Patterns</string>
     <string name="my_yarn_title">My Yarn</string>
     <string name="all_photos_title">Photos</string>
@@ -463,38 +462,87 @@
     <string name="filter_all">All</string>
 
     <!-- Insights -->
-    <string name="total_time_label">Total time</string>
-    <string name="avg_pace_label">Avg pace</string>
-    <string name="completed_label">Completed</string>
-    <string name="time_format_hours">%.1fh</string>
-    <string name="pace_format">%.0f r/hr</string>
-    <string name="streak_format" tools:ignore="PluralsCandidate">%d days</string>
+    <!-- Insights: kestot, hero ja kaavio -->
+    <plurals name="insights_duration_minutes">
+        <item quantity="one">%1$dmin</item>
+        <item quantity="other">%1$dmin</item>
+    </plurals>
+    <plurals name="insights_duration_hours">
+        <item quantity="one">%1$dh</item>
+        <item quantity="other">%1$dh</item>
+    </plurals>
+    <string name="insights_duration_hours_minutes">%1$dh %2$dmin</string>
+    <string name="insights_range_format">%1$s – %2$s</string>
+    <string name="insights_range_open_format">%1$s –</string>
+    <string name="insights_hero_lead_in_week">This week you spent</string>
+    <string name="insights_hero_lead_in_month">This month you spent</string>
+    <string name="insights_hero_lead_in_all_time">In total you have spent</string>
+    <plurals name="insights_hero_trailing_projects">
+        <item quantity="one">on one project.</item>
+        <item quantity="other">across %1$d projects.</item>
+    </plurals>
+    <string name="insights_hero_trailing_project">on %1$s.</string>
+    <string name="insights_craft_verb_knitting">knitting</string>
+    <string name="insights_craft_verb_crocheting">crocheting</string>
+    <string name="insights_craft_verb_making">making</string>
+    <string name="insights_stat_rows">Rows</string>
+    <string name="insights_stat_min_per_row">Min per row</string>
+    <string name="insights_stat_day_streak">Day streak</string>
+    <string name="insights_trend_more_week">%1$s more than last week</string>
+    <string name="insights_trend_less_week">%1$s less than last week</string>
+    <string name="insights_trend_same_week">Same as last week</string>
+    <string name="insights_trend_more_month">%1$s more than last month</string>
+    <string name="insights_trend_less_month">%1$s less than last month</string>
+    <string name="insights_trend_same_month">Same as last month</string>
+    <plurals name="insights_best_streak">
+        <item quantity="one">Best streak %1$d day</item>
+        <item quantity="other">Best streak %1$d days</item>
+    </plurals>
+    <string name="insights_stat_no_value">—</string>
+    <string name="insights_stat_under_one">&lt;1</string>
+    <string name="insights_section_every_day">Every day</string>
+    <string name="insights_section_where_time_went">Where the time went</string>
+    <plurals name="insights_days_meta_format">
+        <item quantity="one">%1$d of %2$d day</item>
+        <item quantity="other">%1$d of %2$d days</item>
+    </plurals>
+    <string name="insights_chart_hint_day">Tap or drag across the days.</string>
+    <string name="insights_chart_hint_month">Tap or drag across the months.</string>
+    <string name="insights_chart_axis_today">today</string>
+    <string name="insights_chart_max_format">max %1$s</string>
+    <string name="insights_no_sessions_yet">No sessions yet</string>
+    <string name="insights_chart_a11y_daily">Daily %1$s time, %2$s, %3$s, longest %4$s</string>
+    <string name="insights_chart_a11y_monthly">Monthly %1$s time, %2$s, %3$s, longest %4$s</string>
+    <string name="insights_chart_a11y_next">Next bar</string>
+    <string name="insights_chart_a11y_previous">Previous bar</string>
+    <string name="insights_project_sub_format">%1$s, %2$s</string>
+    <string name="insights_empty_title">No time on the needles yet.</string>
+    <string name="insights_empty_body">Open a project and start counting. Your time shows up here.</string>
+    <string name="insights_nothing_yet_week">Nothing yet this week.</string>
+    <string name="insights_nothing_yet_month">Nothing yet this month.</string>
+    <string name="insights_nothing_yet_all_time">Nothing yet.</string>
+    <string name="insights_pro_chart_title">See your daily rhythm</string>
+    <string name="insights_pro_chart_body">Pro shows every session as a chart, plus your streak.</string>
     <string name="all_projects">All Projects</string>
     <string name="insights_all_time">All Time</string>
     <string name="insights_this_week">This Week</string>
     <string name="insights_this_month">This Month</string>
-    <string name="insights_knitting_activity">Knitting activity</string>
-    <string name="activity_grid_tooltip_format">%1$s — %2$s</string>
-    <string name="insights_current_streak">Current streak:</string>
-    <string name="insights_best_streak">Best:</string>
     <plurals name="insights_rows_count">
         <item quantity="one">%1$d row</item>
         <item quantity="other">%1$d rows</item>
     </plurals>
-    <string name="insights_less_than_tenth_hour">&lt;0.1h</string>
-    <string name="insights_no_time">—</string>
-    <string name="insights_footer_1">Every row counts — keep knitting!</string>
-    <string name="insights_footer_2">Your needles are waiting.</string>
+    <!-- Alaviitteet näkyvät myös virkkaajalle: ei puikkoja eikä neulontaverbejä -->
+    <string name="insights_footer_1">Every row counts — keep going!</string>
+    <string name="insights_footer_2">Your project is waiting.</string>
     <string name="insights_footer_3">One more row?</string>
     <string name="insights_footer_4">Stitch by stitch, row by row.</string>
-    <string name="insights_footer_5">Great things start with a single cast on.</string>
+    <string name="insights_footer_5">Great things start with a single stitch.</string>
     <string name="relative_time_today">today</string>
     <string name="relative_time_yesterday">yesterday</string>
     <string name="relative_time_days_ago">%1$dd ago</string>
     <string name="relative_time_weeks_ago">%1$dw ago</string>
     <string name="relative_time_months_ago">%1$dmo ago</string>
-    <string name="no_knitting">No knitting</string>
-    <string name="time_per_project">Time per project</string>
+    <string name="insights_no_time_logged">No time logged</string>
 
     <!-- Settings -->
     <string name="help_and_guide">Help &amp; Guide</string>

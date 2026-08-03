@@ -54,17 +54,6 @@ internal object SessionMetrics {
         )
     }
 
-    fun dailyActivityMinutes(
-        sessions: List<KnitSession>,
-        earliestDate: LocalDate,
-        zone: ZoneId,
-    ): Map<LocalDate, Int> =
-        dailyActivitySeconds(
-            sessions = sessions,
-            earliestDate = earliestDate,
-            zone = zone,
-        ).mapValues { (_, seconds) -> secondsToDisplayMinutes(seconds) }
-
     fun activityDates(
         sessions: List<KnitSession>,
         earliestDate: LocalDate,
@@ -109,7 +98,12 @@ internal object SessionMetrics {
         }
     }
 
-    private fun dailyActivitySeconds(
+    /**
+     * Päiväkohtaiset sekunnit ilman pyöristystä. Kutsuja pyöristää minuuteiksi vasta
+     * kun se on summannut haluamansa ikkunan, jolloin jokainen aktiivinen päivä ei
+     * kasvata summaa omalla ylöspäin pyöristyksellään.
+     */
+    fun dailyActivitySeconds(
         sessions: List<KnitSession>,
         earliestDate: LocalDate,
         zone: ZoneId,
@@ -289,7 +283,7 @@ private fun KnitSession.workedRows(): Int =
         else -> 0
     }
 
-private fun KnitSession.analyticsZoneOr(fallback: ZoneId): ZoneId =
+internal fun KnitSession.analyticsZoneOr(fallback: ZoneId): ZoneId =
     zoneId
         ?.let { persistedZoneId -> runCatching { ZoneId.of(persistedZoneId) }.getOrNull() }
         ?: fallback
@@ -315,3 +309,37 @@ internal fun secondsToDisplayMinutes(seconds: Long): Int =
         seconds <= 0L -> 0
         else -> ((seconds + 59L) / 60L).toInt()
     }
+
+/**
+ * Jakaa osien sekunnit näyttöminuuteiksi niin, että osien summa on sama kuin
+ * kokonaisuudesta laskettu minuuttiluku. Ilman tätä jokainen erikseen ylöspäin
+ * pyöristetty osuus kasvattaisi listan summaa hero-lukemaan verrattuna.
+ *
+ * Jokainen mitattu osuus näkyy vähintään minuuttina, jottei listalla ole rivejä
+ * lukemalla "0 min". Jos osuuksia on enemmän kuin kokonaisuudessa on minuutteja,
+ * minimi voittaa ja summa jää tarkoituksella hieman kokonaisuutta suuremmaksi.
+ */
+internal fun apportionDisplayMinutes(secondsParts: List<Long>): List<Int> {
+    if (secondsParts.isEmpty()) return emptyList()
+    val target = secondsToDisplayMinutes(secondsParts.sum())
+    val minutes =
+        IntArray(secondsParts.size) { index ->
+            val seconds = secondsParts[index]
+            if (seconds <= 0L) 0 else maxOf(1, (seconds / 60L).toInt())
+        }
+    var remaining = target - minutes.sum()
+    if (remaining <= 0) return minutes.toList()
+
+    // Loput minuutit suurimman jäännöksen mukaan, jotta pyöristys osuu sinne missä
+    // sekunteja jäi eniten yli.
+    secondsParts.indices
+        .filter { secondsParts[it] > 0L }
+        .sortedByDescending { secondsParts[it] % 60L }
+        .forEach { index ->
+            if (remaining > 0) {
+                minutes[index]++
+                remaining--
+            }
+        }
+    return minutes.toList()
+}

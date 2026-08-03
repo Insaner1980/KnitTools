@@ -62,7 +62,6 @@ app/src/*/google-services.json
 *.bak
 
 # Paikalliset analyysi- ja jatkomuistiinpanot
-/app/stability/
 /jatka.md
 
 # Paikalliset docs- ja launcher-assetit
@@ -76,8 +75,13 @@ app/src/*/google-services.json
 
 # Paikallinen pnpm-asennuskansio
 /node_modules/
+/.deepsec/.tmp/
 /functions/lib/
 /functions/node_modules/
 /functions/firebase-debug.log
 /functions/.runtimeconfig.json
 /functions/.secret.local
+
+# Compose-vakauden paikallinen tarkistus käyttää debug-baselinea.
+/app/stability/*
+!/app/stability/app-debug.stability

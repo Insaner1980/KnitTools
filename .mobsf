@@ -6,12 +6,9 @@ ignore-paths:
   - .kotlin/
   - .sonar/
   - app/build/
-  - app/src/main/res/values
-  - app/src/androidTest/
-  - app/src/test/
   - baselineprofile/build/
   - node_modules/
   - reports/
-ignore-rules:
-  # Mobsfscan lukee lähdemanifestia eikä näe Gradlen targetSdk=36-arvoa.
-  - android_task_hijacking2
+severity-filter:
+  - WARNING
+  - ERROR

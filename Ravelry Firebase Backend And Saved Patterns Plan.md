@@ -4,7 +4,7 @@
 - Scope: implement the backend/data/auth plan, with UI integration points aligned to the local `codex_ravelry_ui_plan.md`.
 - Current audited state: KnitTools uses Ravelry OAuth2 Authorization Code + PKCE, but Android exchanges tokens itself, stores tokens in `EncryptedSharedPreferences`, and embeds Ravelry OAuth2/Basic Auth credentials through `BuildConfig`.
 - Target state: Android contains no Ravelry secrets or Ravelry tokens. Firebase Auth anonymous UID + Cloud Functions v2 own auth, token exchange, Ravelry API calls, status, disconnect, search, and URL import.
-- Defaults: OAuth2 branch, Firebase Functions v2 TypeScript, region `europe-west1`, Firebase BoM `34.14.0`, Google Services plugin `4.4.4`, AndroidX Browser `1.10.0`.
+- Defaults: OAuth2 branch, Firebase Functions v2 TypeScript, region `europe-west1`, Firebase BoM `34.14.0`, Google Services plugin `4.5.0`, AndroidX Browser `1.10.0`.
 
 ## Implementation Plan
 1. **Audit and Progress Baseline**

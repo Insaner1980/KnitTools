@@ -36,21 +36,27 @@ Nykytilan kannalta hyödyllinen järjestys:
 - Paikalliset lisäominaisuudet: regex-pohjainen laskuriohjeparseri `domain/calculator/InstructionParser.kt`
 - Lokalisaatio: `localeConfig` + useat `values-*`-hakemistot
 - Room schema version: `17`
-- `compileSdk` / `targetSdk` / `minSdk`: `36 / 36 / 29`, kaikki `gradle/libs.versions.toml`-avaimista `androidCompileSdk`, `androidTargetSdk` ja `androidMinSdk`
-- `baselineprofile`-moduulin `compileSdk` / `targetSdk` / `minSdk`: samat version catalog -arvot `36 / 36 / 29`
-- Java target: `17`
+- `compileSdk` / `targetSdk` / `minSdk`: `37 / 37 / 29`, kaikki `gradle/libs.versions.toml`-avaimista `androidCompileSdk`, `androidTargetSdk` ja `androidMinSdk`
+- `baselineprofile`-moduulin `compileSdk` / `targetSdk` / `minSdk`: samat version catalog -arvot `37 / 37 / 29`
+- Java source/target: `17`; Gradle-daemon ja CI käyttävät Eclipse Temurin JDK `17`:ää
 - Gradle wrapper: `9.5.0`
 - AGP: `9.3.1`
-- Kotlin Compose plugin: `2.3.21`
-- KSP: `2.3.9`
-- Compose BOM: `2026.05.01`
+- Kotlin Compose plugin: `2.4.10`
+- KSP: `2.3.10`
+- Compose BOM: `2026.06.01`
+- Activity Compose: `1.13.0`
+- AndroidX Core KTX: `1.19.0`
+- Lifecycle: `2.11.0`
+- AndroidX Hilt: `1.4.0`
+- Coil 3: `3.5.0`
+- Compose Stability Analyzer: `0.12.0`
 - Room: `2.8.4`
 - Glance: `1.1.1`
 - Ktor: `3.5.1`
-- Billing: `8.3.0`
+- Billing: `9.1.0`
 - Sentry Android Core: `8.43.1` debug-only
 - AndroidX Browser: `1.10.0`
-- Firebase BOM: `34.16.0`
+- Firebase BOM: `34.17.0`
 - Google Services Gradle plugin: `4.5.0`
 - Functions runtime: `nodejs22`
 - `firebase-functions`: `7.3.2`

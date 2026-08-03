@@ -75,6 +75,7 @@ app/src/*/google-services.json
 
 # Paikallinen pnpm-asennuskansio
 /node_modules/
+/.deepsec/.tmp/
 /functions/lib/
 /functions/node_modules/
 /functions/firebase-debug.log

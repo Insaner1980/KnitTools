@@ -1,6 +1,7 @@
 package com.finnvek.knittools.data.local
 
 import android.graphics.Color
+import androidx.core.graphics.toColorInt
 import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
@@ -178,7 +179,7 @@ internal object PatternAnnotationMigration17 {
         strokeWidth: Float,
     ): String {
         val safeStrokeWidth = strokeWidth.takeIf(Float::isFinite) ?: 1f
-        val argb = runCatching { Color.parseColor(color) }.getOrDefault(Color.BLACK)
+        val argb = runCatching { color.toColorInt() }.getOrDefault(Color.BLACK)
         return """
             {
                 "points":[],

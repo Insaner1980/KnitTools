@@ -17,6 +17,22 @@ plugins {
     alias(libs.plugins.google.services) apply false
 }
 
+val turvallinenWireRuntime = libs.wire.runtime.get()
+
+subprojects {
+    configurations.configureEach {
+        resolutionStrategy.eachDependency {
+            if (
+                requested.group == turvallinenWireRuntime.module.group &&
+                requested.name == turvallinenWireRuntime.module.name
+            ) {
+                useVersion(turvallinenWireRuntime.versionConstraint.requiredVersion)
+                because("Wire-dekoodauksen negatiivisen pituuden tarkistus korjattiin versiossa 6.3.0")
+            }
+        }
+    }
+}
+
 val sonarProjectProperties =
     java.util.Properties().apply {
         val file = rootProject.file("sonar-project.properties")

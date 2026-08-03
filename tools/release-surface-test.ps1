@@ -10,6 +10,7 @@ $ScriptPath = Join-Path $PSScriptRoot "release-surface.ps1"
 $TempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("knittools-release-surface-" + [Guid]::NewGuid().ToString("N"))
 $Passed = 0
 $Failed = 0
+$OriginalRavelryClientSecret = [Environment]::GetEnvironmentVariable("KNITTOOLS_RAVELRY_OAUTH2_CLIENT_SECRET", "Process")
 
 function Add-SelfTestResult {
     param(
@@ -108,6 +109,19 @@ function Set-FileText {
     Set-Content -LiteralPath $Path -Value $Text -Encoding UTF8
 }
 
+function Restore-ProcessEnvironmentVariable {
+    param(
+        [string]$Name,
+        [AllowNull()]$Value
+    )
+
+    if ($null -eq $Value) {
+        Remove-Item -LiteralPath "Env:\$Name" -ErrorAction SilentlyContinue
+    } else {
+        [Environment]::SetEnvironmentVariable($Name, $Value, "Process")
+    }
+}
+
 function Run-ReleaseSurface {
     param(
         [string]$Fixture
@@ -177,7 +191,7 @@ function Test-SecretScanReadFailure {
         if ($null -ne $stream) {
             $stream.Dispose()
         }
-        [Environment]::SetEnvironmentVariable($secretName, $previousSecret, "Process")
+        Restore-ProcessEnvironmentVariable -Name $secretName -Value $previousSecret
     }
 }
 
@@ -340,6 +354,16 @@ try {
             }
 
         Test-Mutation `
+            -Name "release-sentry-missing-noop" `
+            -ExpectedStatus "FAIL" `
+            -ExpectedCheck "sentry-boundary" `
+            -PassMessage "missing release Sentry no-op mutation detected" `
+            -Mutate {
+                param($fixture)
+                Remove-Item -LiteralPath (Join-Path $fixture "app/src/release/java/com/finnvek/knittools/SentryInit.kt") -Force
+            }
+
+        Test-Mutation `
             -Name "room-version" `
             -ExpectedStatus "FAIL" `
             -ExpectedCheck "room-schema" `
@@ -355,6 +379,62 @@ try {
                 }
                 $nextVersion = ([int]$versionMatch.Groups[2].Value) + 1
                 Set-FileText -Path $path -Text ($versionPattern.Replace($text, ('${1}' + $nextVersion), 1))
+            }
+
+        Test-Mutation `
+            -Name "room-migration-edge" `
+            -ExpectedStatus "FAIL" `
+            -ExpectedCheck "room-schema" `
+            -PassMessage "Room migration edge mutation detected" `
+            -Mutate {
+                param($fixture)
+                $path = Join-Path $fixture "app/src/main/java/com/finnvek/knittools/data/local/KnitToolsDatabase.kt"
+                $text = Get-Content -Raw -LiteralPath $path
+                $mutated = [regex]::Replace($text, '(?m)^\s*MIGRATION_16_17,\s*\r?\n', "", 1)
+                if ($mutated -ceq $text) {
+                    throw "Room migration edge not found"
+                }
+                Set-FileText -Path $path -Text $mutated
+            }
+
+        Test-Mutation `
+            -Name "room-migration-registration" `
+            -ExpectedStatus "FAIL" `
+            -ExpectedCheck "room-schema" `
+            -PassMessage "Room migration registration-call mutation detected" `
+            -Mutate {
+                param($fixture)
+                $path = Join-Path $fixture "app/src/main/java/com/finnvek/knittools/di/DatabaseModule.kt"
+                $text = Get-Content -Raw -LiteralPath $path
+                $mutated = $text.Replace(".addMigrations(*KnitToolsDatabase.ALL_MANUAL_MIGRATIONS)", ".alsoRegisterMigrations(*KnitToolsDatabase.ALL_MANUAL_MIGRATIONS)")
+                if ($mutated -ceq $text) {
+                    throw "Room migration registration call not found"
+                }
+                Set-FileText -Path $path -Text $mutated
+            }
+
+        Test-Mutation `
+            -Name "room-migration-registration-pruned-history" `
+            -ExpectedStatus "FAIL" `
+            -ExpectedCheck "room-schema" `
+            -PassMessage "Room migration registration remains blocking with pruned schema history" `
+            -Mutate {
+                param($fixture)
+                $registrationPath = Join-Path $fixture "app/src/main/java/com/finnvek/knittools/di/DatabaseModule.kt"
+                $registrationText = Get-Content -Raw -LiteralPath $registrationPath
+                $mutated = $registrationText.Replace(
+                    ".addMigrations(*KnitToolsDatabase.ALL_MANUAL_MIGRATIONS)",
+                    ".alsoRegisterMigrations(*KnitToolsDatabase.ALL_MANUAL_MIGRATIONS)"
+                )
+                if ($mutated -ceq $registrationText) {
+                    throw "Room migration registration call not found"
+                }
+                Set-FileText -Path $registrationPath -Text $mutated
+                $firstSchema =
+                    Join-Path `
+                        $fixture `
+                        "app/schemas/com.finnvek.knittools.data.local.KnitToolsDatabase/1.json"
+                Remove-Item -LiteralPath $firstSchema -Force
             }
 
         Test-Mutation `
@@ -378,7 +458,11 @@ try {
                 param($fixture)
                 $path = Join-Path $fixture "app/src/main/java/com/finnvek/knittools/MainActivity.kt"
                 $text = Get-Content -Raw -LiteralPath $path
-                Set-FileText -Path $path -Text ($text.Replace("CounterLaunchTokenStore.consumeLaunchId(this@MainActivity, launchId)", "false"))
+                $mutated = $text.Replace("CounterLaunchTokenStore.consumeLaunchId(this@MainActivity, candidateLaunchId)", "false")
+                if ($mutated -ceq $text) {
+                    throw "Widget launch token consumption call not found"
+                }
+                Set-FileText -Path $path -Text $mutated
             }
 
         Test-Mutation `
@@ -395,6 +479,14 @@ try {
             }
     }
 } finally {
+    Restore-ProcessEnvironmentVariable `
+        -Name "KNITTOOLS_RAVELRY_OAUTH2_CLIENT_SECRET" `
+        -Value $OriginalRavelryClientSecret
+    Add-SelfTestResult `
+        -Condition ([Environment]::GetEnvironmentVariable("KNITTOOLS_RAVELRY_OAUTH2_CLIENT_SECRET", "Process") -ceq $OriginalRavelryClientSecret) `
+        -Message "mutation environment restored" `
+        -Details "originalNull=$($null -eq $OriginalRavelryClientSecret); currentNull=$($null -eq [Environment]::GetEnvironmentVariable('KNITTOOLS_RAVELRY_OAUTH2_CLIENT_SECRET', 'Process'))"
+
     if ($KeepTemp) {
         Write-Output "[WARN] selftest: kept temp fixture root $TempRoot"
     } elseif (Test-Path -LiteralPath $TempRoot) {

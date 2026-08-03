@@ -194,7 +194,12 @@ fun KnitToolsNavHost(
                     internalCounterLaunch = CounterLaunchRequest(projectId = projectId)
                 },
             )
-            insightsGraph(navController)
+            insightsGraph(
+                navController = navController,
+                onLaunchCounter = { projectId ->
+                    internalCounterLaunch = CounterLaunchRequest(projectId = projectId)
+                },
+            )
             settingsGraph(navController)
 
             // Globaalit reitit (ei välilehdissä)
@@ -935,7 +940,10 @@ private fun NavGraphBuilder.libraryAllPhotosRoute(navController: NavHostControll
     }
 }
 
-private fun NavGraphBuilder.insightsGraph(navController: NavHostController) {
+private fun NavGraphBuilder.insightsGraph(
+    navController: NavHostController,
+    onLaunchCounter: (Long) -> Unit,
+) {
     navigation(
         startDestination = Screen.Insights.route,
         route = TopLevelDestination.Insights.route,
@@ -943,6 +951,7 @@ private fun NavGraphBuilder.insightsGraph(navController: NavHostController) {
         composable(Screen.Insights.route) {
             InsightsScreen(
                 onProUpgrade = { navController.navigateSingleTopTo(Screen.ProUpgrade.route) },
+                onLaunchCounter = onLaunchCounter,
             )
         }
     }

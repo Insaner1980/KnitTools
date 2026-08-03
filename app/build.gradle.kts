@@ -388,6 +388,22 @@ gradle.taskGraph.whenReady {
         allTasks.any { task ->
             task.path in appReleaseArtifactTasks
         }
+    val releaseLintRequested =
+        allTasks.any { task ->
+            task.path == ":app:lintRelease"
+        }
+    val firebaseConfigAvailable =
+        googleServicesJsonConfigFile.asFile.isFile ||
+            !googleServicesJsonBase64Env.orNull.isNullOrBlank()
+
+    // Release-lint ei tuota jaeltavaa artefaktia. Ilman Firebase-konfiguraatiota
+    // Google Services -resurssien generointi voidaan jättää lint-only-graafissa väliin,
+    // mutta kaikki release-artefaktipolut säilyvät aidon konfiguraation takana.
+    if (releaseLintRequested && !appReleaseArtifactsRequested && !firebaseConfigAvailable) {
+        allTasks
+            .firstOrNull { task -> task.path == ":app:processReleaseGoogleServices" }
+            ?.enabled = false
+    }
 
     if (appReleaseArtifactsRequested) {
         val missingSigningEnvNames = missingEnvNames(releaseSigningEnvNames)

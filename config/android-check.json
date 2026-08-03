@@ -27,6 +27,7 @@
     "ktlintTasks": [":app:ktlintCheck"],
     "detektTasks": [":app:detekt"],
     "lintTasks": [":app:lintDebug"],
+    "fullLintTasks": [":app:lintDebug", ":app:lintRelease"],
     "stabilityTasks": [":app:debugStabilityCheck"],
     "dependencyConfigurations": ["debugRuntimeClasspath", "releaseRuntimeClasspath"],
     "dependencyCheckTasks": [":app:dependencyCheckAggregate"],

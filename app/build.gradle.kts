@@ -322,7 +322,23 @@ dependencyCheck {
     hostedSuppressions {
         enabled = false
     }
+    val dependencyCheckPnpmPath =
+        providers.environmentVariable("DEPENDENCY_CHECK_PNPM_PATH").orNull
+            ?: providers
+                .environmentVariable("PATH")
+                .orNull
+                ?.split(File.pathSeparatorChar)
+                ?.asSequence()
+                ?.filter(String::isNotBlank)
+                ?.flatMap { directory ->
+                    sequenceOf("pnpm.cmd", "pnpm.exe", "pnpm")
+                        .map { executable -> File(directory, executable) }
+                }?.firstOrNull(File::isFile)
+                ?.absolutePath
     analyzers {
+        nodeAudit {
+            dependencyCheckPnpmPath?.let { pnpmPath = it }
+        }
         kev {
             enabled = false
         }

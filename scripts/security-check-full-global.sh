@@ -1,15 +1,16 @@
 #!/usr/bin/env bash
-# security-check-full — globaali wrapper täydelle security-ajolle.
-# Käyttö: security-check-full [polku]
-
-set -uo pipefail
+set -euo pipefail
 
 PROJECT_ARG="${1:-.}"
+if (($# > 0)); then
+  shift
+fi
 PROJECT_DIR="$(cd "$PROJECT_ARG" && pwd)"
 REPO_LOCAL_SCRIPT="$PROJECT_DIR/scripts/security-check-full.sh"
 
-if [[ -x "$REPO_LOCAL_SCRIPT" ]]; then
-    exec "$REPO_LOCAL_SCRIPT"
+if [[ ! -f "$REPO_LOCAL_SCRIPT" ]]; then
+  printf 'SECURITY_CHECK_ENTRYPOINT_MISSING: %s\n' "$REPO_LOCAL_SCRIPT" >&2
+  exit 2
 fi
 
-DEPENDENCY_CHECK_ENABLED=true exec /home/emma/bin/security-check "$PROJECT_DIR"
+exec "$REPO_LOCAL_SCRIPT" "$@"

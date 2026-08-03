@@ -32,3 +32,16 @@ fun formatSignedDecimalForDisplay(
         positivePrefix = "+"
         format(value)
     }
+
+/**
+ * Osuus prosentteina ilman desimaaleja. Prosenttimerkin paikka ja sitä edeltävä
+ * väli tulevat lokaalilta, joten merkkiä ei liimata Kotlinissa.
+ */
+fun formatPercentForDisplay(
+    fraction: Double,
+    locale: Locale,
+): String =
+    NumberFormat
+        .getPercentInstance(locale)
+        .apply { maximumFractionDigits = 0 }
+        .format(fraction)

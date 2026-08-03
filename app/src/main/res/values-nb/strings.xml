@@ -46,7 +46,6 @@
     <!-- Screen titles -->
     <string name="tools_title">Verktøy</string>
     <string name="library_title">Bibliotek</string>
-    <string name="insights_title">Innsikt</string>
     <string name="saved_patterns_title">Lagrede oppskrifter</string>
     <string name="my_yarn_title">Mitt garn</string>
     <string name="all_photos_title">Bilder</string>
@@ -444,38 +443,86 @@
     <string name="filter_all">Alle</string>
 
     <!-- Insights -->
-    <string name="total_time_label">Total tid</string>
-    <string name="avg_pace_label">Gjennomsnittlig tempo</string>
-    <string name="completed_label">Fullført</string>
-    <string name="time_format_hours">%.1ft</string>
-    <string name="pace_format">%.0f r/t</string>
-    <string name="streak_format">%d dager</string>
+    <!-- Insights: kestot, hero ja kaavio -->
+    <plurals name="insights_duration_minutes">
+        <item quantity="one">%1$d min</item>
+        <item quantity="other">%1$d min</item>
+    </plurals>
+    <plurals name="insights_duration_hours">
+        <item quantity="one">%1$d t</item>
+        <item quantity="other">%1$d t</item>
+    </plurals>
+    <string name="insights_duration_hours_minutes">%1$d t %2$d min</string>
+    <string name="insights_range_format">%1$s – %2$s</string>
+    <string name="insights_range_open_format">%1$s –</string>
+    <string name="insights_hero_lead_in_week">Denne uken brukte du</string>
+    <string name="insights_hero_lead_in_month">Denne måneden brukte du</string>
+    <string name="insights_hero_lead_in_all_time">Totalt har du brukt</string>
+    <plurals name="insights_hero_trailing_projects">
+        <item quantity="one">på ett prosjekt.</item>
+        <item quantity="other">på %1$d prosjekter.</item>
+    </plurals>
+    <string name="insights_hero_trailing_project">på %1$s.</string>
+    <string name="insights_craft_verb_knitting">strikking</string>
+    <string name="insights_craft_verb_crocheting">hekling</string>
+    <string name="insights_craft_verb_making">håndarbeid</string>
+    <string name="insights_stat_rows">Rader</string>
+    <string name="insights_stat_min_per_row">Min per rad</string>
+    <string name="insights_stat_day_streak">Dagsrekke</string>
+    <string name="insights_trend_more_week">%1$s mer enn forrige uke</string>
+    <string name="insights_trend_less_week">%1$s mindre enn forrige uke</string>
+    <string name="insights_trend_same_week">Samme som forrige uke</string>
+    <string name="insights_trend_more_month">%1$s mer enn forrige måned</string>
+    <string name="insights_trend_less_month">%1$s mindre enn forrige måned</string>
+    <string name="insights_trend_same_month">Samme som forrige måned</string>
+    <plurals name="insights_best_streak">
+        <item quantity="one">Beste rekke %1$d dag</item>
+        <item quantity="other">Beste rekke %1$d dager</item>
+    </plurals>
+    <string name="insights_stat_no_value">—</string>
+    <string name="insights_stat_under_one">&lt;1</string>
+    <string name="insights_section_every_day">Hver dag</string>
+    <string name="insights_section_where_time_went">Hvor tiden ble av</string>
+    <plurals name="insights_days_meta_format">
+        <item quantity="one">%1$d av %2$d dag</item>
+        <item quantity="other">%1$d av %2$d dager</item>
+    </plurals>
+    <string name="insights_chart_hint_day">Trykk eller dra over dagene.</string>
+    <string name="insights_chart_hint_month">Trykk eller dra over månedene.</string>
+    <string name="insights_chart_axis_today">i dag</string>
+    <string name="insights_chart_max_format">maks. %1$s</string>
+    <string name="insights_no_sessions_yet">Ingen økter ennå</string>
+    <string name="insights_chart_a11y_daily">Daglig tid til %1$s, %2$s, %3$s, lengst %4$s</string>
+    <string name="insights_chart_a11y_monthly">Månedlig tid til %1$s, %2$s, %3$s, lengst %4$s</string>
+    <string name="insights_chart_a11y_next">Neste stolpe</string>
+    <string name="insights_chart_a11y_previous">Forrige stolpe</string>
+    <string name="insights_project_sub_format">%1$s, %2$s</string>
+    <string name="insights_empty_title">Ingen tid på pinnene ennå.</string>
+    <string name="insights_empty_body">Åpne et prosjekt og begynn å telle. Tiden din dukker opp her.</string>
+    <string name="insights_nothing_yet_week">Ingenting ennå denne uken.</string>
+    <string name="insights_nothing_yet_month">Ingenting ennå denne måneden.</string>
+    <string name="insights_nothing_yet_all_time">Ingenting ennå.</string>
+    <string name="insights_pro_chart_title">Se din daglige rytme</string>
+    <string name="insights_pro_chart_body">Pro viser hver økt som et diagram, pluss rekken din.</string>
     <string name="all_projects">Alle prosjekter</string>
     <string name="insights_all_time">Hele tiden</string>
     <string name="insights_this_week">Denne uken</string>
     <string name="insights_this_month">Denne måneden</string>
-    <string name="insights_knitting_activity">Strikkeaktivitet</string>
-    <string name="activity_grid_tooltip_format">%1$s — %2$s</string>
-    <string name="insights_current_streak">Nåværende streak:</string>
-    <string name="insights_best_streak">Beste:</string>
     <plurals name="insights_rows_count">
         <item quantity="one">%1$d rad</item>
         <item quantity="other">%1$d rader</item>
     </plurals>
-    <string name="insights_less_than_tenth_hour">&lt;0.1t</string>
-    <string name="insights_no_time">—</string>
-    <string name="insights_footer_1">Hver rad teller — fortsett å strikke!</string>
-    <string name="insights_footer_2">Pinnene dine venter.</string>
+    <string name="insights_footer_1">Hver rad teller — fortsett!</string>
+    <string name="insights_footer_2">Prosjektet ditt venter.</string>
     <string name="insights_footer_3">Én rad til?</string>
     <string name="insights_footer_4">Maske for maske, rad for rad.</string>
-    <string name="insights_footer_5">Store ting begynner med én opplegging.</string>
+    <string name="insights_footer_5">Store ting begynner med én maske.</string>
     <string name="relative_time_today">i dag</string>
     <string name="relative_time_yesterday">i går</string>
     <string name="relative_time_days_ago">for %1$dd siden</string>
     <string name="relative_time_weeks_ago">for %1$du siden</string>
     <string name="relative_time_months_ago">for %1$dmnd siden</string>
-    <string name="no_knitting">Ingen strikking</string>
-    <string name="time_per_project">Tid per prosjekt</string>
+    <string name="insights_no_time_logged">Ingen tid registrert</string>
 
     <!-- Settings -->
     <string name="help_and_guide">Hjelp og veiledning</string>

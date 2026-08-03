@@ -46,7 +46,6 @@
     <!-- Screen titles -->
     <string name="tools_title">Outils</string>
     <string name="library_title">Bibliothèque</string>
-    <string name="insights_title">Statistiques</string>
     <string name="saved_patterns_title">Modèles enregistrés</string>
     <string name="my_yarn_title">Mon fil</string>
     <string name="all_photos_title">Photos</string>
@@ -448,39 +447,92 @@
     <string name="filter_all">Tout</string>
 
     <!-- Insights -->
-    <string name="total_time_label">Temps total</string>
-    <string name="avg_pace_label">Rythme moyen</string>
-    <string name="completed_label">Terminés</string>
-    <string name="time_format_hours">%.1fh</string>
-    <string name="pace_format">%.0f r/h</string>
-    <string name="streak_format">%d jours</string>
+    <!-- Insights: kestot, hero ja kaavio -->
+    <plurals name="insights_duration_minutes">
+        <item quantity="one">%1$d min</item>
+        <item quantity="many">%1$d min</item>
+        <item quantity="other">%1$d min</item>
+    </plurals>
+    <plurals name="insights_duration_hours">
+        <item quantity="one">%1$d h</item>
+        <item quantity="many">%1$d h</item>
+        <item quantity="other">%1$d h</item>
+    </plurals>
+    <string name="insights_duration_hours_minutes">%1$d h %2$d min</string>
+    <string name="insights_range_format">%1$s – %2$s</string>
+    <string name="insights_range_open_format">%1$s –</string>
+    <string name="insights_hero_lead_in_week">Cette semaine vous avez passé</string>
+    <string name="insights_hero_lead_in_month">Ce mois-ci vous avez passé</string>
+    <string name="insights_hero_lead_in_all_time">Au total, vous avez passé</string>
+    <plurals name="insights_hero_trailing_projects">
+        <item quantity="one">sur %1$d projet.</item>
+        <item quantity="many">sur %1$d projets.</item>
+        <item quantity="other">sur %1$d projets.</item>
+    </plurals>
+    <string name="insights_hero_trailing_project">sur %1$s.</string>
+    <string name="insights_craft_verb_knitting">à tricoter</string>
+    <string name="insights_craft_verb_crocheting">à crocheter</string>
+    <string name="insights_craft_verb_making">à créer</string>
+    <string name="insights_stat_rows">Rangs</string>
+    <string name="insights_stat_min_per_row">Min par rang</string>
+    <string name="insights_stat_day_streak">Série de jours</string>
+    <string name="insights_trend_more_week">%1$s de plus que la semaine dernière</string>
+    <string name="insights_trend_less_week">%1$s de moins que la semaine dernière</string>
+    <string name="insights_trend_same_week">Comme la semaine dernière</string>
+    <string name="insights_trend_more_month">%1$s de plus que le mois dernier</string>
+    <string name="insights_trend_less_month">%1$s de moins que le mois dernier</string>
+    <string name="insights_trend_same_month">Comme le mois dernier</string>
+    <plurals name="insights_best_streak">
+        <item quantity="one">Meilleure série %1$d jour</item>
+        <item quantity="many">Meilleure série %1$d jours</item>
+        <item quantity="other">Meilleure série %1$d jours</item>
+    </plurals>
+    <string name="insights_stat_no_value">—</string>
+    <string name="insights_stat_under_one">&lt;1</string>
+    <string name="insights_section_every_day">Chaque jour</string>
+    <string name="insights_section_where_time_went">Où le temps est passé</string>
+    <plurals name="insights_days_meta_format">
+        <item quantity="one">%1$d sur %2$d jour</item>
+        <item quantity="many">%1$d sur %2$d jours</item>
+        <item quantity="other">%1$d sur %2$d jours</item>
+    </plurals>
+    <string name="insights_chart_hint_day">Touchez ou faites glisser sur les jours.</string>
+    <string name="insights_chart_hint_month">Touchez ou faites glisser sur les mois.</string>
+    <string name="insights_chart_axis_today">aujourd’hui</string>
+    <string name="insights_chart_max_format">max %1$s</string>
+    <string name="insights_no_sessions_yet">Aucune séance</string>
+    <string name="insights_chart_a11y_daily">Temps quotidien pour %1$s, %2$s, %3$s, plus long %4$s</string>
+    <string name="insights_chart_a11y_monthly">Temps mensuel pour %1$s, %2$s, %3$s, plus long %4$s</string>
+    <string name="insights_chart_a11y_next">Barre suivante</string>
+    <string name="insights_chart_a11y_previous">Barre précédente</string>
+    <string name="insights_project_sub_format">%1$s, %2$s</string>
+    <string name="insights_empty_title">Pas encore de temps sur les aiguilles.</string>
+    <string name="insights_empty_body">Ouvrez un projet et commencez à compter. Votre temps apparaîtra ici.</string>
+    <string name="insights_nothing_yet_week">Rien encore cette semaine.</string>
+    <string name="insights_nothing_yet_month">Rien encore ce mois-ci.</string>
+    <string name="insights_nothing_yet_all_time">Rien encore.</string>
+    <string name="insights_pro_chart_title">Voyez votre rythme quotidien</string>
+    <string name="insights_pro_chart_body">Pro affiche chaque séance sous forme de graphique, ainsi que votre série.</string>
     <string name="all_projects">Tous les projets</string>
     <string name="insights_all_time">Depuis toujours</string>
     <string name="insights_this_week">Cette semaine</string>
     <string name="insights_this_month">Ce mois-ci</string>
-    <string name="insights_knitting_activity">Activité tricot</string>
-    <string name="activity_grid_tooltip_format">%1$s — %2$s</string>
-    <string name="insights_current_streak">Série actuelle :</string>
-    <string name="insights_best_streak">Meilleure :</string>
     <plurals name="insights_rows_count">
         <item quantity="one">%1$d rang</item>
         <item quantity="many">%1$d rangs</item>
         <item quantity="other">%1$d rangs</item>
     </plurals>
-    <string name="insights_less_than_tenth_hour">&lt;0.1h</string>
-    <string name="insights_no_time">—</string>
-    <string name="insights_footer_1">Chaque rang compte ; continuez à tricoter !</string>
-    <string name="insights_footer_2">Vos aiguilles vous attendent.</string>
+    <string name="insights_footer_1">Chaque rang compte ; continuez !</string>
+    <string name="insights_footer_2">Votre projet vous attend.</string>
     <string name="insights_footer_3">Encore un rang ?</string>
     <string name="insights_footer_4">Maille après maille, rang après rang.</string>
-    <string name="insights_footer_5">Les grandes choses commencent par un seul montage.</string>
+    <string name="insights_footer_5">Les grandes choses commencent par une seule maille.</string>
     <string name="relative_time_today">aujourd’hui</string>
     <string name="relative_time_yesterday">hier</string>
     <string name="relative_time_days_ago">il y a %1$d j</string>
     <string name="relative_time_weeks_ago">il y a %1$d sem</string>
     <string name="relative_time_months_ago">il y a %1$d mois</string>
-    <string name="no_knitting">Aucun tricot</string>
-    <string name="time_per_project">Temps par projet</string>
+    <string name="insights_no_time_logged">Aucun temps enregistré</string>
 
     <!-- Settings -->
     <string name="help_and_guide">Aide et guide</string>

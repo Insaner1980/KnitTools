@@ -11,6 +11,7 @@ import android.text.StaticLayout
 import android.text.TextPaint
 import android.text.TextUtils
 import androidx.core.graphics.PathParser
+import androidx.core.graphics.withClip
 import com.finnvek.knittools.domain.calculator.ChartTrackerHighlight
 import com.finnvek.knittools.domain.model.CalloutPayload
 import com.finnvek.knittools.domain.model.ChartRegionPayload
@@ -221,11 +222,10 @@ object PatternAnnotationCanvasRenderer {
                 .setEllipsize(TextUtils.TruncateAt.END)
                 .setMaxLines(maxLines)
                 .build()
-        val saveCount = canvas.save()
-        canvas.clipRect(bounds)
-        canvas.translate(bounds.left + horizontalPadding, bounds.top)
-        layout.draw(canvas)
-        canvas.restoreToCount(saveCount)
+        canvas.withClip(bounds) {
+            translate(bounds.left + horizontalPadding, bounds.top)
+            layout.draw(this)
+        }
     }
 
     private fun renderChartRegion(

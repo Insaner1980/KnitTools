@@ -36,6 +36,7 @@ class RavelryFirebaseIntegrationSourceTest {
         assertFalse(appBuild.contains("debugFirebaseArtifactRequested"))
         assertFalse(appBuild.contains("canMaterializeGoogleServicesJson"))
         assertFalse(appBuild.contains("if (canMaterializeGoogleServicesJson)"))
+        assertReleaseLintWiring(appBuild)
         assertTrue(appBuild.contains("firebaseConfiguredArtifactTaskNames"))
         assertTrue(appBuild.contains("\"assembleRelease\""))
         assertTrue(appBuild.contains("\"bundleRelease\""))
@@ -103,6 +104,15 @@ class RavelryFirebaseIntegrationSourceTest {
         )
     }
 
+    private fun assertReleaseLintWiring(appBuild: String) {
+        assertTrue(
+            appBuild.contains(
+                "releaseLintRequested && !appReleaseArtifactsRequested && !firebaseConfigAvailable",
+            ),
+        )
+        assertTrue(appBuild.contains("task.path == \":app:processReleaseGoogleServices\""))
+    }
+
     @Test
     fun `pull request workflows let Gradle materialize debug Firebase config`() {
         val buildWorkflow = ProjectSourceFiles.read(".github/workflows/build.yml")
@@ -123,7 +133,8 @@ class RavelryFirebaseIntegrationSourceTest {
 
         assertTrue(rootBuild.contains("dependsOn(\":app:jacocoDebugUnitTestReport\")"))
         assertTrue(sonarWrapper.contains("Command: reports/sonar.txt :: ./gradlew sonar"))
-        assertTrue(sonarWrapper.contains("& .\\gradlew.bat \"sonar\" \"--console=plain\""))
+        assertTrue(sonarWrapper.contains("Invoke-ManagedProcess"))
+        assertTrue(sonarWrapper.contains("-Arguments @(\"sonar\", \"--console=plain\")"))
         assertFalse(sonarWrapper.contains("assembleDebug"))
     }
 

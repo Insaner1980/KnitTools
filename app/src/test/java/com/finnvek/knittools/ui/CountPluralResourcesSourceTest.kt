@@ -40,7 +40,7 @@ class CountPluralResourcesSourceTest {
             )
         val SOURCE_USAGES =
             mapOf(
-                "app/src/main/java/com/finnvek/knittools/ui/screens/insights/InsightsScreen.kt" to
+                "app/src/main/java/com/finnvek/knittools/ui/screens/insights/InsightsSections.kt" to
                     "insights_rows_count",
                 "app/src/main/java/com/finnvek/knittools/ui/screens/library/AllPhotosScreen.kt" to
                     "delete_photos_confirm",

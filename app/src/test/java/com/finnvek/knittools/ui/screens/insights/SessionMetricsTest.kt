@@ -57,7 +57,7 @@ class SessionMetricsTest {
     }
 
     @Test
-    fun `daily activity splits minutes over local dates`() {
+    fun `daily activity splits seconds over local dates`() {
         val zone = ZoneId.of("Europe/Helsinki")
         val session =
             KnitSession(
@@ -73,14 +73,14 @@ class SessionMetricsTest {
             )
 
         val activity =
-            SessionMetrics.dailyActivityMinutes(
+            SessionMetrics.dailyActivitySeconds(
                 sessions = listOf(session),
                 earliestDate = LocalDate.of(2026, 1, 1),
                 zone = zone,
             )
 
-        assertEquals(10, activity[LocalDate.of(2026, 1, 1)])
-        assertEquals(20, activity[LocalDate.of(2026, 1, 2)])
+        assertEquals(600L, activity[LocalDate.of(2026, 1, 1)])
+        assertEquals(1_200L, activity[LocalDate.of(2026, 1, 2)])
     }
 
     @Test
@@ -102,13 +102,13 @@ class SessionMetricsTest {
             )
 
         val activity =
-            SessionMetrics.dailyActivityMinutes(
+            SessionMetrics.dailyActivitySeconds(
                 sessions = listOf(session),
                 earliestDate = LocalDate.of(2026, 1, 1),
                 zone = currentDeviceZone,
             )
 
-        assertEquals(mapOf(LocalDate.of(2026, 1, 2) to 30), activity)
+        assertEquals(mapOf(LocalDate.of(2026, 1, 2) to 1_800L), activity)
     }
 
     @Test
@@ -129,7 +129,7 @@ class SessionMetricsTest {
             )
 
         val activity =
-            SessionMetrics.dailyActivityMinutes(
+            SessionMetrics.dailyActivitySeconds(
                 sessions = listOf(session),
                 earliestDate = LocalDate.of(2026, 1, 1),
                 zone = zone,
@@ -142,7 +142,7 @@ class SessionMetricsTest {
                 zone = zone,
             )
 
-        assertEquals(1, activity.values.sum())
+        assertEquals(1L, activity.values.sum())
         assertEquals(1L, paceBuckets.values.sumOf { it.totalSeconds })
         assertEquals(1, paceBuckets.values.sumOf { it.totalRows })
     }
@@ -212,6 +212,28 @@ class SessionMetricsTest {
         assertEquals(0, summary.totalRows)
         assertEquals(0, summary.sessionCount)
         assertEquals(0f, summary.rowsPerHour, 0.01f)
+    }
+
+    @Test
+    fun `apportioned minutes sum to the total instead of each part rounding up`() {
+        // Erikseen ylöspäin pyöristettynä osuudet tuottaisivat 565 minuuttia.
+        val parts = listOf(11_430L, 9_150L, 5_670L, 4_830L, 2_670L)
+
+        val minutes = apportionDisplayMinutes(parts)
+
+        assertEquals(secondsToDisplayMinutes(parts.sum()), minutes.sum())
+        assertEquals(listOf(191, 153, 95, 80, 44), minutes)
+    }
+
+    @Test
+    fun `apportioned minutes give every measured part at least a minute`() {
+        assertEquals(listOf(1, 0, 60), apportionDisplayMinutes(listOf(20L, 0L, 3_600L)))
+    }
+
+    @Test
+    fun `apportioned minutes stay empty without measured seconds`() {
+        assertEquals(listOf(0, 0), apportionDisplayMinutes(listOf(0L, 0L)))
+        assertEquals(emptyList<Int>(), apportionDisplayMinutes(emptyList()))
     }
 
     private fun instantMillis(

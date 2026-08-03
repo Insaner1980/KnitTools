@@ -229,9 +229,18 @@ function Get-RelativeFilesForRoots {
 function Invoke-Git {
     param([string[]]$Arguments)
 
-    $output = & git -C $RepoRoot @Arguments 2>$null
+    $previousErrorActionPreference = $ErrorActionPreference
+    try {
+        # Windows PowerShell 5.1 muuntaa natiiviprosessin stderr-rivit virhetietueiksi.
+        # Exit-koodi on tämän sopimuksen lähdetotuus, joten kerää tulos ilman terminating erroria.
+        $ErrorActionPreference = "Continue"
+        $output = & git -C $RepoRoot @Arguments 2>$null
+        $exitCode = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+    }
     [pscustomobject]@{
-        ExitCode = $LASTEXITCODE
+        ExitCode = $exitCode
         Output = @($output)
     }
 }
@@ -647,8 +656,10 @@ function Test-SentryBoundary {
 
         $releaseInit = "app/src/release/java/com/finnvek/knittools/SentryInit.kt"
         if (-not (Test-Path -LiteralPath (Join-RepoPath $releaseInit))) {
-            Add-Warn -Check $check -Message "release no-op SentryInit.kt not found; manual review needed" -RelativePath $releaseInit
-            return
+            $problems += "release no-op SentryInit.kt not found"
+            if ($null -eq $firstLine) {
+                $firstPath = $releaseInit
+            }
         }
 
         if ($problems.Count -gt 0) {
@@ -924,6 +935,63 @@ function Test-MigrationPath {
     return $false
 }
 
+function Get-RegisteredManualMigrationEdges {
+    param(
+        [string]$SourceRoot,
+        [string]$DatabaseText
+    )
+
+    $edges = @()
+    $problems = @()
+    $registrationFound = $false
+    $spreadListProcessed = $false
+
+    foreach ($file in Get-RelativeFiles -RelativeDirectory $SourceRoot -Filter "*.kt") {
+        $codeText = ((Get-CodeLines $file | ForEach-Object { $_.Text }) -join "`n")
+        foreach ($registration in [regex]::Matches($codeText, '(?s)\.addMigrations\s*\((.*?)\)')) {
+            $registrationFound = $true
+            $arguments = $registration.Groups[1].Value
+
+            foreach ($match in [regex]::Matches($arguments, '\bKnitToolsDatabase\.MIGRATION_(\d+)_(\d+)\b')) {
+                $edges += [pscustomobject]@{ From = [int]$match.Groups[1].Value; To = [int]$match.Groups[2].Value }
+            }
+
+            if ($arguments -match '\*\s*KnitToolsDatabase\.ALL_MANUAL_MIGRATIONS\b' -and -not $spreadListProcessed) {
+                $spreadListProcessed = $true
+                $manualMigrations = [regex]::Match(
+                    $DatabaseText,
+                    '(?s)ALL_MANUAL_MIGRATIONS\s*:\s*Array<Migration>.*?arrayOf\s*\((.*?)\)'
+                )
+                if (-not $manualMigrations.Success) {
+                    $problems += "ALL_MANUAL_MIGRATIONS could not be parsed"
+                } else {
+                    foreach ($match in [regex]::Matches($manualMigrations.Groups[1].Value, '\bMIGRATION_(\d+)_(\d+)\b')) {
+                        $edges += [pscustomobject]@{ From = [int]$match.Groups[1].Value; To = [int]$match.Groups[2].Value }
+                    }
+                }
+            }
+
+            $unparsedArguments = [regex]::Replace(
+                $arguments,
+                '\bKnitToolsDatabase\.MIGRATION_\d+_\d+\b|\*\s*KnitToolsDatabase\.ALL_MANUAL_MIGRATIONS\b',
+                ""
+            ) -replace '[\s,]', ''
+            if (-not [string]::IsNullOrWhiteSpace($unparsedArguments)) {
+                $problems += "unsupported addMigrations arguments in $file"
+            }
+        }
+    }
+
+    if (-not $registrationFound) {
+        $problems += "Room migrations are not registered with addMigrations"
+    }
+
+    [pscustomobject]@{
+        Edges = @($edges | Sort-Object From, To -Unique)
+        Problems = @($problems | Sort-Object -Unique)
+    }
+}
+
 function Test-RoomSchema {
     $check = "room-schema"
     $sourceRoot = "app/src/main/java"
@@ -1008,12 +1076,9 @@ function Test-RoomSchema {
             $edges += [pscustomobject]@{ From = [int]$match.Groups[1].Value; To = [int]$match.Groups[2].Value }
         }
 
-        foreach ($file in Get-RelativeFiles -RelativeDirectory $sourceRoot -Filter "*.kt") {
-            $text = Read-TextFile $file
-            foreach ($match in [regex]::Matches($text, 'KnitToolsDatabase\.MIGRATION_(\d+)_(\d+)')) {
-                $edges += [pscustomobject]@{ From = [int]$match.Groups[1].Value; To = [int]$match.Groups[2].Value }
-            }
-        }
+        $manualMigrations = Get-RegisteredManualMigrationEdges -SourceRoot $sourceRoot -DatabaseText $databaseText
+        $edges += @($manualMigrations.Edges)
+        $problems += @($manualMigrations.Problems)
 
         $edges = @($edges | Sort-Object From, To -Unique)
         $startVersion = [int]($schemaVersions | Measure-Object -Minimum).Minimum

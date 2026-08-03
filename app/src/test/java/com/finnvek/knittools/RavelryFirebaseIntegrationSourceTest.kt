@@ -123,7 +123,8 @@ class RavelryFirebaseIntegrationSourceTest {
 
         assertTrue(rootBuild.contains("dependsOn(\":app:jacocoDebugUnitTestReport\")"))
         assertTrue(sonarWrapper.contains("Command: reports/sonar.txt :: ./gradlew sonar"))
-        assertTrue(sonarWrapper.contains("& .\\gradlew.bat \"sonar\" \"--console=plain\""))
+        assertTrue(sonarWrapper.contains("Invoke-ManagedProcess"))
+        assertTrue(sonarWrapper.contains("-Arguments @(\"sonar\", \"--console=plain\")"))
         assertFalse(sonarWrapper.contains("assembleDebug"))
     }
 

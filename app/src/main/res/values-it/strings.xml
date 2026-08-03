@@ -470,9 +470,9 @@
         <item quantity="other">a %1$d progetti.</item>
     </plurals>
     <string name="insights_hero_trailing_project">a %1$s.</string>
-    <string name="insights_craft_verb_knitting">lavorare a maglia</string>
-    <string name="insights_craft_verb_crocheting">lavorare a uncinetto</string>
-    <string name="insights_craft_verb_making">creare</string>
+    <string name="insights_craft_verb_knitting">a lavorare a maglia</string>
+    <string name="insights_craft_verb_crocheting">a lavorare all’uncinetto</string>
+    <string name="insights_craft_verb_making">a creare</string>
     <string name="insights_stat_rows">Ferri</string>
     <string name="insights_stat_min_per_row">Min per ferro</string>
     <string name="insights_stat_day_streak">Serie di giorni</string>
@@ -529,9 +529,9 @@
     <string name="insights_footer_5">Le grandi cose iniziano con una sola maglia.</string>
     <string name="relative_time_today">oggi</string>
     <string name="relative_time_yesterday">ieri</string>
-    <string name="relative_time_days_ago">%1$dg fa</string>
-    <string name="relative_time_weeks_ago">%1$dsett fa</string>
-    <string name="relative_time_months_ago">%1$dm fa</string>
+    <string name="relative_time_days_ago">%1$d g fa</string>
+    <string name="relative_time_weeks_ago">%1$d sett fa</string>
+    <string name="relative_time_months_ago">%1$d m fa</string>
     <string name="insights_no_time_logged">Nessun tempo registrato</string>
 
     <!-- Settings -->

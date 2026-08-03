@@ -461,9 +461,9 @@
     <string name="insights_duration_hours_minutes">%1$d h %2$d min</string>
     <string name="insights_range_format">%1$s – %2$s</string>
     <string name="insights_range_open_format">%1$s –</string>
-    <string name="insights_hero_lead_in_week">Esta semana passaste</string>
-    <string name="insights_hero_lead_in_month">Este mês passaste</string>
-    <string name="insights_hero_lead_in_all_time">No total passaste</string>
+    <string name="insights_hero_lead_in_week">Esta semana dedicou</string>
+    <string name="insights_hero_lead_in_month">Este mês dedicou</string>
+    <string name="insights_hero_lead_in_all_time">No total dedicou</string>
     <plurals name="insights_hero_trailing_projects">
         <item quantity="one">em %1$d projeto.</item>
         <item quantity="many">em %1$d projetos.</item>
@@ -496,8 +496,8 @@
         <item quantity="many">%1$d de %2$d dias</item>
         <item quantity="other">%1$d de %2$d dias</item>
     </plurals>
-    <string name="insights_chart_hint_day">Toca ou arrasta pelos dias.</string>
-    <string name="insights_chart_hint_month">Toca ou arrasta pelos meses.</string>
+    <string name="insights_chart_hint_day">Toque ou arraste pelos dias.</string>
+    <string name="insights_chart_hint_month">Toque ou arraste pelos meses.</string>
     <string name="insights_chart_axis_today">hoje</string>
     <string name="insights_chart_max_format">máx. %1$s</string>
     <string name="insights_no_sessions_yet">Ainda sem sessões</string>
@@ -507,12 +507,12 @@
     <string name="insights_chart_a11y_previous">Barra anterior</string>
     <string name="insights_project_sub_format">%1$s, %2$s</string>
     <string name="insights_empty_title">Ainda sem tempo nas agulhas.</string>
-    <string name="insights_empty_body">Abre um projeto e começa a contar. O teu tempo aparece aqui.</string>
+    <string name="insights_empty_body">Abra um projeto e comece a contar. O seu tempo aparecerá aqui.</string>
     <string name="insights_nothing_yet_week">Ainda nada esta semana.</string>
     <string name="insights_nothing_yet_month">Ainda nada este mês.</string>
     <string name="insights_nothing_yet_all_time">Ainda nada.</string>
-    <string name="insights_pro_chart_title">Vê o teu ritmo diário</string>
-    <string name="insights_pro_chart_body">O Pro mostra cada sessão como um gráfico, além da tua sequência.</string>
+    <string name="insights_pro_chart_title">Veja o seu ritmo diário</string>
+    <string name="insights_pro_chart_body">O Pro mostra cada sessão como um gráfico, além da sua sequência.</string>
     <string name="all_projects">Todos os projetos</string>
     <string name="insights_all_time">Sempre</string>
     <string name="insights_this_week">Esta semana</string>
@@ -522,8 +522,8 @@
         <item quantity="many">%1$d carreiras</item>
         <item quantity="other">%1$d carreiras</item>
     </plurals>
-    <string name="insights_footer_1">Cada carreira conta — continua!</string>
-    <string name="insights_footer_2">O teu projeto está à espera.</string>
+    <string name="insights_footer_1">Cada carreira conta — continue!</string>
+    <string name="insights_footer_2">O seu projeto está à espera.</string>
     <string name="insights_footer_3">Mais uma carreira?</string>
     <string name="insights_footer_4">Ponto a ponto, carreira a carreira.</string>
     <string name="insights_footer_5">Grandes coisas começam com um único ponto.</string>

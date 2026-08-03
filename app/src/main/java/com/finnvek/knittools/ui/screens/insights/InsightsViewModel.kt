@@ -27,6 +27,8 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import java.time.DayOfWeek
 import java.time.Instant
@@ -39,6 +41,22 @@ import java.time.temporal.WeekFields
 import javax.inject.Inject
 
 private const val DATE_CHANGE_CHECK_INTERVAL_MILLIS = 60_000L
+
+private sealed interface RepositoryLoad<out T> {
+    val value: T?
+
+    data object Loading : RepositoryLoad<Nothing> {
+        override val value: Nothing? = null
+    }
+
+    data class Loaded<T>(
+        override val value: T,
+    ) : RepositoryLoad<T>
+}
+
+private fun <T> Flow<T>.withLoadingState(): Flow<RepositoryLoad<T>> =
+    map<T, RepositoryLoad<T>> { RepositoryLoad.Loaded(it) }
+        .onStart { emit(RepositoryLoad.Loading) }
 
 data class ProjectTime(
     val projectId: Long,
@@ -145,15 +163,16 @@ class InsightsViewModel
                     LocalDate.now(systemDefault()),
                 )
 
-        val projects: StateFlow<List<CounterProject>> =
+        private val projectLoad: StateFlow<RepositoryLoad<List<CounterProject>>> =
             counterRepository
                 .getAllProjects()
                 .distinctUntilChanged()
+                .withLoadingState()
                 .flowOn(ioDispatcher)
                 .stateIn(
                     viewModelScope,
                     SharingStarted.WhileSubscribed(5000),
-                    emptyList(),
+                    RepositoryLoad.Loading,
                 )
 
         private val queryParams: StateFlow<InsightsQueryParams> =
@@ -170,27 +189,50 @@ class InsightsViewModel
          * Kaikki valitun projektin istunnot. Aikaväli rajataan muistissa, jolloin
          * hero, kaavio ja "onko dataa lainkaan" -tarkistus tulevat yhdestä kyselystä.
          */
-        private val sessions: StateFlow<List<KnitSession>> =
+        private val sessionLoad: StateFlow<RepositoryLoad<List<KnitSession>>> =
             selectedProjectId
                 .flatMapLatest { projectId ->
-                    counterRepository.getSessionsForInsights(projectId, null)
+                    counterRepository
+                        .getSessionsForInsights(projectId, null)
+                        .distinctUntilChanged()
+                        .withLoadingState()
                 }.distinctUntilChanged()
                 .flowOn(ioDispatcher)
-                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), RepositoryLoad.Loading)
 
         val uiState: StateFlow<InsightsUiState> =
             combine(
-                sessions,
-                projects,
+                sessionLoad,
+                projectLoad,
                 queryParams,
                 proFeatureGates,
-            ) { sessionList, projectList, params, featureGates ->
-                buildUiState(
-                    sessions = sessionList,
-                    projectList = projectList,
-                    params = params,
-                    featureGates = featureGates,
-                )
+            ) { loadedSessions, loadedProjects, params, featureGates ->
+                val sessionList = loadedSessions.value
+                val projectList = loadedProjects.value
+                if (sessionList == null || projectList == null) {
+                    InsightsUiState(
+                        projects = projectList.orEmpty(),
+                        selectedProjectId = params.projectId,
+                        selectedProjectName = projectList?.firstOrNull { it.id == params.projectId }?.name,
+                        rangeStart =
+                            rangeStartDate(
+                                params.timeRange,
+                                params.currentDate,
+                                WeekFields.of(currentInsightsLocale()).firstDayOfWeek,
+                            ),
+                        rangeEnd = params.currentDate,
+                        timeRange = params.timeRange,
+                        isPro = featureGates.canUseCharts,
+                        canUseStreak = featureGates.canUseStreak,
+                    )
+                } else {
+                    buildUiState(
+                        sessions = sessionList,
+                        projectList = projectList,
+                        params = params,
+                        featureGates = featureGates,
+                    )
+                }
             }.distinctUntilChanged()
                 .flowOn(ioDispatcher)
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), InsightsUiState())
@@ -213,7 +255,7 @@ class InsightsViewModel
             val chartBuckets =
                 buildChartBuckets(sessions, params, axis, zone, timePerProject, featureGates.canUseCharts)
             val minutesPerRow =
-                MinutesPerRowFormatter.fromTotals(rangeMetrics.totalMinutes, rangeMetrics.totalRows)
+                MinutesPerRowFormatter.fromSeconds(rangeMetrics.totalSeconds, rangeMetrics.totalRows)
 
             return InsightsUiState(
                 isLoading = false,
@@ -549,13 +591,17 @@ class InsightsViewModel
                 return previousPeriodMinutes(dailySeconds, previousStart, currentStart, today)
             }
 
-            private fun firstSessionDate(
+            internal fun firstSessionDate(
                 sessions: List<KnitSession>,
                 zone: ZoneId,
             ): LocalDate? =
                 sessions
-                    .minOfOrNull { it.startedAt }
-                    ?.let { Instant.ofEpochMilli(it).atZone(zone).toLocalDate() }
+                    .minOfOrNull { session ->
+                        Instant
+                            .ofEpochMilli(session.startedAt)
+                            .atZone(session.analyticsZoneOr(zone))
+                            .toLocalDate()
+                    }
 
             private fun activityDayKeys(
                 sessions: List<KnitSession>,

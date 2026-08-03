@@ -1260,7 +1260,7 @@ OSV ja dependency-surface:
 
 DeepSec:
 
-- `.deepsec/package.json` käyttää `deepsec 2.2.1`:ta ja sisältää `deepsec:scan`, `deepsec:scan:custom`, `deepsec:process`, `deepsec:revalidate`, `deepsec:export`, `deepsec:report`, `deepsec:report:custom` ja `test:matchers` -skriptit
+- `.deepsec/package.json` käyttää `deepsec 2.2.9`:ää ja sisältää `deepsec:scan`, `deepsec:scan:custom`, `deepsec:process`, `deepsec:revalidate`, `deepsec:export`, `deepsec:report`, `deepsec:report:custom` ja `test:matchers` -skriptit
 - custom scan ajaa matcherit `android-exported-component`, `android-kotlin-entrypoint-surface`, `android-intent-input-surface`, `fileprovider-broad-path`, `knittools-file-uri-surface`, `android-uri-share-without-clipdata`, `ravelry-firebase-callable-surface`, `ravelry-credential-surface`, `sensitive-android-log` ja `widget-mutation-surface`
 - `.deepsec/deepsec.config.ts` rajaa KnitTools-projektin rootiksi `..`, lisää prioriteettipoluiksi Android-manifestin, `auth/`, `widget/` ja `data/storage/` -pinnat ja ohjaa tarkastusta exported component-, OAuth callback-, FileProvider URI grant-, widget mutation-, Ravelry credential- ja sensitive logging -riskeihin
 - uudet Kotlin-matcherit nostavat tarkastuspintaan Android activity/receiver/service/worker-entrypointit, intent data/extras -luvut, FileProvider/SAF/contentResolver/file-copy/file-delete -rajat, Firebase Auth/Functions callable -rajat, Ravelry callable -nimet ja widgetin counter-mutaatiot

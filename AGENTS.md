@@ -30,7 +30,7 @@ Use [`CLAUDE.md`](/home/emma/dev/KnitTools/CLAUDE.md) when product wording, visu
 - Extra-counter linked state is stored in `ProjectCounter.linkedToMainCounter` from the add/edit counter draft; repeat-section counters must not be marked linked because they already derive progress from main-counter rows
 - Project note replacement writes go through `CounterRepository.saveProjectNotes`, which merges against the editor's base notes so concurrent editor flows are preserved instead of overwritten
 - Session rows store display minutes, exact `durationSeconds`/`rowsWorked`, and nullable `zoneId`; new sessions capture the device zone at session start, legacy null zones fall back to the current device zone, and insights must use the session zone for cross-midnight day and pace-bucket splitting
-- Insights screen state is aggregated in `InsightsUiState`; heavy session-history calculations should run upstream with `@IoDispatcher` before Compose collects the single UI state
+- Insights screen state is aggregated in `InsightsUiState`; repository session/project flows carry an explicit loading state so seeded empty lists cannot replace the skeleton before Room emits, exact minutes-per-row uses `durationSeconds`, and heavy session-history calculations should run upstream with `@IoDispatcher` before Compose collects the single UI state
 - Legacy secondary counter state lives in `counter_projects.secondaryCount`; `project_counters` is only for named extra, repeating, shaping, and repeat-section counters, migrations must not duplicate `secondaryCount` into `project_counters`, and old generated `Pattern repeat` backfill copies are ignored at the counter UI boundary
 - Extra counter type rules are owned by `domain/model/ProjectCounterType` plus `domain/calculator/ProjectCounterLogic`; repositories should apply those domain rules inside a transaction instead of duplicating counter behavior in DAO SQL
 - Yarn/project link writes go through `YarnCardRepository`: `saveCard` normalizes any persisted `linkedProjectId`, and `updateLinkedProjectId` is the canonical explicit relink writer for `yarn_cards.linkedProjectId` plus `counter_projects.yarnCardIds`
@@ -134,6 +134,7 @@ Use [`CLAUDE.md`](/home/emma/dev/KnitTools/CLAUDE.md) when product wording, visu
 - `tools/sc.ps1` is the only security-check source of truth. Bash scripts under `scripts/` are compatibility delegates and must fail closed instead of implementing separate scanners.
 - `app/stability/app-debug.stability` is the versioned Compose stability baseline; other variant dumps remain local and ignored.
 - `tools/sonar.ps1 -PlanOnly` is read-only; an actual Sonar upload requires `-AllowExternalUpload` and runs through a bounded managed Gradle process.
+- `tools/sonar.ps1` resolves shared checker modules from `ANDROID_CHECK_ROOT` when set and otherwise uses `C:\Dev\Android-check`; a missing module fails closed before analysis.
 - Typical commands: `./gradlew assembleDebug`, `./gradlew test`, `./gradlew :app:detekt`, `./gradlew lint`
 - Do not run the user's wrapper scripts such as `lc` or `sc`
 - Never commit generated `reports/`

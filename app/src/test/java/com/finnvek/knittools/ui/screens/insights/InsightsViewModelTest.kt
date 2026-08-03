@@ -1,6 +1,7 @@
 package com.finnvek.knittools.ui.screens.insights
 
 import com.finnvek.knittools.domain.calculator.MinutesPerRowDisplay
+import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.KnitSession
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
@@ -9,6 +10,7 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
@@ -203,6 +205,52 @@ class InsightsViewModelTest {
         }
 
     @Test
+    fun `minutes per row uses exact session seconds`() =
+        runTest {
+            val zone = ZoneId.systemDefault()
+            val startedAt = instantMillis(LocalDate.now(zone), 10, 0, zone)
+            val session =
+                KnitSession(
+                    projectId = 1L,
+                    startedAt = startedAt,
+                    endedAt = startedAt + 61_000L,
+                    startRow = 0,
+                    endRow = 1,
+                    durationMinutes = 2,
+                    durationSeconds = 61L,
+                    rowsWorked = 1,
+                    zoneId = zone.id,
+                )
+            every { repository.getSessionsForInsights(null, null) } returns flowOf(listOf(session))
+
+            val state = createViewModel().uiState.first { !it.isLoading }
+
+            assertEquals(MinutesPerRowDisplay.Minutes(1), state.minutesPerRow)
+        }
+
+    @Test
+    fun `loading remains visible until both repository flows emit`() =
+        runTest {
+            val projectRows = MutableSharedFlow<List<CounterProject>>(replay = 1)
+            val sessionRows = MutableSharedFlow<List<KnitSession>>(replay = 1)
+            every { repository.getAllProjects() } returns projectRows
+            every { repository.getSessionsForInsights(null, null) } returns sessionRows
+            val viewModel = createViewModel()
+            val observed = mutableListOf<InsightsUiState>()
+            val job = launch { viewModel.uiState.take(2).toList(observed) }
+            runCurrent()
+
+            assertTrue(viewModel.uiState.value.isLoading)
+
+            projectRows.emit(emptyList())
+            sessionRows.emit(emptyList())
+            advanceUntilIdle()
+
+            assertFalse(viewModel.uiState.value.isLoading)
+            job.cancel()
+        }
+
+    @Test
     fun `chart buckets use daily grouping for ranged views`() {
         val zone = ZoneId.systemDefault()
         val today = LocalDate.now(zone)
@@ -289,6 +337,36 @@ class InsightsViewModelTest {
         assertEquals(
             listOf(sessionDate),
             measured.values.filter { it.totalMinutes > 0 }.map { it.bucketStart },
+        )
+
+        // Akseli päättyy nykyiseen laitepäivään, joten tuleva paikallinen päivä
+        // rajataan tarkoituksella pois renderöidyistä pylväistä.
+        val rendered = fillChartBuckets(axis, measured)
+        assertTrue(rendered.none { it.bucketStart == sessionDate })
+    }
+
+    @Test
+    fun `all time start uses each session persisted zone`() {
+        val sessionZone = ZoneId.of("Pacific/Kiritimati")
+        val currentDeviceZone = ZoneId.of("Pacific/Honolulu")
+        val sessionDate = LocalDate.of(2026, 1, 2)
+        val startedAt = instantMillis(sessionDate, 0, 30, sessionZone)
+        val session =
+            KnitSession(
+                projectId = 1L,
+                startedAt = startedAt,
+                endedAt = startedAt + 30 * 60 * 1_000L,
+                startRow = 0,
+                endRow = 10,
+                durationMinutes = 30,
+                durationSeconds = 30 * 60L,
+                rowsWorked = 10,
+                zoneId = sessionZone.id,
+            )
+
+        assertEquals(
+            sessionDate,
+            InsightsViewModel.firstSessionDate(listOf(session), currentDeviceZone),
         )
     }
 

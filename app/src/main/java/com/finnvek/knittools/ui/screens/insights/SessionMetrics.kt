@@ -283,7 +283,7 @@ private fun KnitSession.workedRows(): Int =
         else -> 0
     }
 
-private fun KnitSession.analyticsZoneOr(fallback: ZoneId): ZoneId =
+internal fun KnitSession.analyticsZoneOr(fallback: ZoneId): ZoneId =
     zoneId
         ?.let { persistedZoneId -> runCatching { ZoneId.of(persistedZoneId) }.getOrNull() }
         ?: fallback

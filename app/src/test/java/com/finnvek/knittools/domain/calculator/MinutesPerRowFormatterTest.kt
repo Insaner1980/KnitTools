@@ -39,4 +39,12 @@ class MinutesPerRowFormatterTest {
             MinutesPerRowFormatter.fromTotals(totalMinutes = 3, totalRows = 4),
         )
     }
+
+    @Test
+    fun `exact seconds are rounded only after pace is calculated`() {
+        assertEquals(
+            MinutesPerRowDisplay.Minutes(1),
+            MinutesPerRowFormatter.fromSeconds(totalSeconds = 61L, totalRows = 1),
+        )
+    }
 }

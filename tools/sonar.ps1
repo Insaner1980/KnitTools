@@ -74,9 +74,26 @@ function Get-SonarProjectProperties {
     return $properties
 }
 
+function Import-SharedCheckerModule {
+    param([string]$ModuleName)
+
+    $sharedCheckerRoot =
+        if ([string]::IsNullOrWhiteSpace($env:ANDROID_CHECK_ROOT)) {
+            "C:\Dev\Android-check"
+        } else {
+            $env:ANDROID_CHECK_ROOT
+        }
+    $modulePath = Join-Path (Join-Path $sharedCheckerRoot "tools") "$ModuleName.psm1"
+    if (-not (Test-Path -LiteralPath $modulePath -PathType Leaf)) {
+        throw "SHARED_CHECKER_MODULE_MISSING: $modulePath"
+    }
+    Import-Module $modulePath -Force -ErrorAction Stop
+}
+
 if ($SonarArgs.Count -gt 0) {
     if (-not $AllowExternalUpload) {
-        throw "EXTERNAL_SERVICE_APPROVAL_REQUIRED: sonar.exe-komennot vaativat -AllowExternalUpload-valitsimen."
+        Write-Error "EXTERNAL_UPLOAD_APPROVAL_REQUIRED: sonar.exe-komennot vaativat -AllowExternalUpload-valitsimen."
+        exit 2
     }
     Invoke-SonarCli -Arguments $SonarArgs
 }
@@ -144,7 +161,7 @@ try {
     }
 
     try {
-        Import-Module "C:\Dev\Android-check\tools\CheckRuntime.psm1" -Force -ErrorAction Stop
+        Import-SharedCheckerModule -ModuleName "CheckRuntime"
         $scanResult = Invoke-ManagedProcess `
             -Executable (Join-Path $repoRoot "gradlew.bat") `
             -Arguments @("sonar", "--console=plain") `
@@ -178,7 +195,7 @@ try {
     }
 
     try {
-        Import-Module "C:\Dev\Android-check\tools\SonarProjectChecks.psm1" -Force -ErrorAction Stop
+        Import-SharedCheckerModule -ModuleName "SonarProjectChecks"
         Invoke-SonarIssueExport `
             -Executable $cli.Source `
             -Arguments @("list", "issues", "--project", $projectKey, "--statuses", "OPEN,CONFIRMED", "--format", "json") `

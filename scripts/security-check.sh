@@ -27,19 +27,21 @@ if [[ ! -f "$CANONICAL_ENTRYPOINT" ]]; then
   exit 2
 fi
 
+POWERSHELL_ENTRYPOINT="$CANONICAL_ENTRYPOINT"
+if command -v cygpath >/dev/null 2>&1; then
+  POWERSHELL_ENTRYPOINT="$(cygpath -w "$CANONICAL_ENTRYPOINT")"
+fi
+
 if command -v pwsh >/dev/null 2>&1; then
-  exec pwsh -NoProfile -File "$CANONICAL_ENTRYPOINT" "${POWERSHELL_ARGS[@]}"
+  exec pwsh -NoProfile -File "$POWERSHELL_ENTRYPOINT" ${POWERSHELL_ARGS[@]+"${POWERSHELL_ARGS[@]}"}
 fi
 
 if command -v powershell.exe >/dev/null 2>&1; then
-  if command -v cygpath >/dev/null 2>&1; then
-    CANONICAL_ENTRYPOINT="$(cygpath -w "$CANONICAL_ENTRYPOINT")"
-  fi
-  exec powershell.exe -NoProfile -File "$CANONICAL_ENTRYPOINT" "${POWERSHELL_ARGS[@]}"
+  exec powershell.exe -NoProfile -File "$POWERSHELL_ENTRYPOINT" ${POWERSHELL_ARGS[@]+"${POWERSHELL_ARGS[@]}"}
 fi
 
 if command -v powershell >/dev/null 2>&1; then
-  exec powershell -NoProfile -File "$CANONICAL_ENTRYPOINT" "${POWERSHELL_ARGS[@]}"
+  exec powershell -NoProfile -File "$POWERSHELL_ENTRYPOINT" ${POWERSHELL_ARGS[@]+"${POWERSHELL_ARGS[@]}"}
 fi
 
 printf 'SECURITY_CHECK_POWERSHELL_MISSING: pwsh tai powershell ei ole PATHissa.\n' >&2

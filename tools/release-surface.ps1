@@ -958,6 +958,8 @@ function Get-RegisteredManualMigrationEdges {
 
             if ($arguments -match '\*\s*KnitToolsDatabase\.ALL_MANUAL_MIGRATIONS\b' -and -not $spreadListProcessed) {
                 $spreadListProcessed = $true
+                # Parseri edellyttää Array<Migration>-tyyppistä arrayOf-listaa;
+                # inline Migration(...)-alkiot tai muotoilun muutos voivat katkaista suljehaun.
                 $manualMigrations = [regex]::Match(
                     $DatabaseText,
                     '(?s)ALL_MANUAL_MIGRATIONS\s*:\s*Array<Migration>.*?arrayOf\s*\((.*?)\)'
@@ -1083,6 +1085,9 @@ function Test-RoomSchema {
         $edges = @($edges | Sort-Object From, To -Unique)
         $startVersion = [int]($schemaVersions | Measure-Object -Minimum).Minimum
         if ($startVersion -gt 1) {
+            if ($problems.Count -gt 0) {
+                Add-Fail -Check $check -Message ($problems -join "; ") -RelativePath $firstPath -Line $firstLine
+            }
             Add-Warn -Check $check -Message "schema history starts at $startVersion; path checked from first exported schema only" -RelativePath $schemaRelativeDir
             return
         }

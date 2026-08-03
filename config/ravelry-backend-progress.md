@@ -199,7 +199,7 @@ Completed phase: Phase 5 - Android Firebase Integration
   - Firebase BoM `34.14.0`
   - `firebase-auth`
   - `firebase-functions`
-  - Google Services Gradle plugin `4.4.4`
+  - Google Services Gradle plugin `4.5.0`
 - Added conditional Google Services plugin application in `app/build.gradle.kts` so unit tests and static Android lint can still resolve without a local Firebase JSON, while release build artifact tasks require `app/google-services.json` and debug artifact tasks may generate an ignored placeholder.
 - Added `verifyGoogleServicesJson`, which fails release artifact tasks unless the ignored local `app/google-services.json` exists.
 - Added CI setup in `.github/workflows/build.yml` and `.github/workflows/codeql.yml` to generate `app/google-services.json` from `KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64`.
@@ -222,7 +222,7 @@ Completed phase: Phase 5 - Android Firebase Integration
 ## Version notes
 
 - Official Firebase Android release notes list BoM `34.14.0` as the current BoM update for this plan step.
-- Official Google Services Gradle Plugin docs show `com.google.gms:google-services:4.4.4`.
+- Official Google Services Gradle Plugin docs show `com.google.gms:google-services:4.5.0`.
 - Firebase Android setup docs now direct Kotlin apps to depend on the main Firebase modules instead of the removed KTX modules in BoM 34.x, so Phase 5 uses `firebase-auth` and `firebase-functions`, not KTX artifacts.
 
 ## TDD and verification

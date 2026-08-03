@@ -46,17 +46,17 @@ Nykytilan kannalta hyödyllinen järjestys:
 - Compose BOM: `2026.05.01`
 - Room: `2.8.4`
 - Glance: `1.1.1`
-- Ktor: `3.5.0`
+- Ktor: `3.5.1`
 - Billing: `8.3.0`
 - Sentry Android Core: `8.43.1` debug-only
 - AndroidX Browser: `1.10.0`
 - Firebase BOM: `34.14.0`
 - Google Services Gradle plugin: `4.4.4`
 - Functions runtime: `nodejs22`
-- `firebase-functions`: `7.2.5`
-- `firebase-admin`: `13.10.0`
+- `firebase-functions`: `7.3.0`
+- `firebase-admin`: `14.2.0`
 - TypeScript: `7.0.2`
-- DeepSec: `2.2.1`
+- DeepSec: `2.2.9`
 - versionCode / versionName: `1 / 1.0.0`
 
 Source of truth:
@@ -191,7 +191,7 @@ Build-huomiot:
 - Sonar-konfiguraatio delegoi Gradlen hallitsemat source/binary-polut Gradle-pluginille ja ajaa `:app:jacocoDebugUnitTestReport` ennen `sonar`-taskia
 - root `sonar`-task lukee `sonar-project.properties`-tiedoston, mutta ei syötä Gradlen itse hallitsemia source/binary/test/library-propertyjä Sonar-pluginille; app-moduulille asetetaan erikseen `sonar.coverage.jacoco.xmlReportPaths`
 - `sonar-project.properties` rajaa coverage-portin domain-, repository- ja parserilogiikkaan; coverage-exclusion-listalla ovat muun muassa `App.kt`, `MainActivity.kt`, debug/release-source-setien `SentryInit.kt`, `di`, `ui`, `widget`, `auth`, `billing`, `pro` ja `data/*`
-- `tools/sonar.ps1` ajaa nykyisin vain `.\gradlew.bat sonar --console=plain`, ei `assembleDebug sonar`; siksi Sonar-skannaus ei ole sidottu Firebase artifact -buildin `app/google-services.json`-porttiin, vaikka Gradlen `sonar`-task ajaa JaCoCo-raportin ennen analyysiä
+- `tools/sonar.ps1` ajaa vain `sonar --console=plain` -Gradle-taskin hallitussa prosessissa oletuksena tunnin aikakatkaisulla, ei `assembleDebug sonar` -yhdistelmää; `-PlanOnly` ei lähetä mitään ja varsinainen analyysi vaatii nimenomaisen `-AllowExternalUpload`-luvan
 - `compileSdk`, `minSdk` ja `targetSdk` tulevat version catalogista myös `:app`- ja `:baselineprofile`-build-skripteissä; älä etsi näille kovakoodattuja numeroita moduulien `android {}` -lohkoista
 - release signing on ympäristömuuttujapohjainen ja käyttää neljää `KNITTOOLS_*`-muuttujaa: `KNITTOOLS_KEYSTORE_PATH`, `KNITTOOLS_KEYSTORE_PASSWORD`, `KNITTOOLS_KEY_ALIAS` ja `KNITTOOLS_KEY_PASSWORD`
 - `gradle.taskGraph.whenReady` pysäyttää release signing -portilla nämä app-release-artifactit, jos signing-muuttujia puuttuu: `:app:assembleRelease`, `:app:bundleRelease`, `:app:packageRelease`, `:app:packageReleaseBundle`, `:app:packageReleaseUniversalApk`, `:app:signReleaseBundle` ja `:app:publishRelease`
@@ -214,18 +214,19 @@ Ravelry Firebase -backend:
 
 - Firebase Functions v2 TypeScript `functions/src`
 - root `firebase.json` määrittää `functions`-sourcen ja `nodejs22` runtimen
-- root `firestore.rules` kieltää client read/write -pääsyn `ravelryOAuthStates/{state}`- ja `ravelryTokens/{uid}`-kokoelmiin
-- `functions/package.json` omistaa backendin versiontotuuden: `node` engine `22`, `firebase-functions 7.2.5`, `firebase-admin 13.10.0`, `typescript 7.0.2` ja `@types/node 26.1.1`; `firebase-functions-test` ei kuulu nykyiseen dependency-surfaceen
+- root `firestore.rules` kieltää client read/write -pääsyn `ravelryOAuthStates/{state}`- ja `ravelryTokens/{uid}`-kokoelmiin sekä oletuksena koko muuhun Firestore-dokumenttipintaan; tämä kattaa myös `ravelryRateLimits`-kokoelman
+- `functions/package.json` omistaa backendin versiontotuuden: `node` engine `22`, `firebase-functions 7.3.0`, `firebase-admin 14.2.0`, `typescript 7.0.2` ja `@types/node 26.1.1`; `firebase-functions-test` ei kuulu nykyiseen dependency-surfaceen
 - `functions/src/config.ts` omistaa alueen `europe-west1`, kokoelmanimet ja Secret Manager -sidokset `RAVELRY_CLIENT_ID` / `RAVELRY_CLIENT_SECRET`
 - `functions/src/ravelry/auth.ts` julkaisee `ravelryStartAuth`, `ravelryCallback`, `ravelryAuthStatus`, `ravelryDisconnect` ja `ravelryCurrentUser`
-- `functions/src/ravelry/authCore.ts`, `oauthStateStore.ts`, `oauth2.ts`, `tokenStore.ts` ja `client.ts` omistavat backend-OAuth2-flow'n, PKCE state -tallennuksen, server-side token exchangen, token tallennuksen ja current-user API-kutsun
+- `functions/src/ravelry/authCore.ts`, `oauthStateStore.ts`, `oauth2.ts`, `tokenStore.ts`, `tokenAccess.ts`, `connectionGeneration.ts` ja `client.ts` omistavat backend-OAuth2-flow'n, PKCE state -tallennuksen, server-side token exchangen, token tallennuksen, generation-suojatun refresh/current-user-kirjoituksen ja current-user API-kutsun
+- `functions/src/ravelry/rateLimit.ts` omistaa auth/search/import-kutsujen UID-kohtaiset sekä backend-globaalit fixed-window-rajoittimet; limiter ajetaan ennen access-tokenin mahdollista server-side refreshiä
 - `functions/src/ravelry/patternImport.ts`, `urlParsing.ts`, `client.ts` ja `sanitizedTypes.ts` omistavat backend-haun ja metadata-only importin: `ravelrySearchPatterns`, `ravelryImportPatternById` ja `ravelryImportPatternByUrl` palauttavat vain sallitut Ravelry ID/title/designer/thumbnail/canonical/original URL/availability/pagination -kentät eivätkä lataa pattern-PDF:iä
-- `functions/package.json` sisältää npm `overrides` -lukitukset `form-data 4.0.6`, `js-yaml 5.2.0` ja `uuid 11.1.1`; nämä ovat osa nykyistä dependency-surfacea, eivät Android-riippuvuuksia
+- `functions/package.json` sisältää npm `overrides` -lukitukset `body-parser 1.20.6`, `form-data 4.0.6`, `js-yaml 5.2.0`, `protobufjs 7.6.5` ja `uuid 11.1.1`; nämä ovat osa nykyistä dependency-surfacea, eivät Android-riippuvuuksia
 - Androidissa on Firebase Auth/Functions -riippuvuudet sekä `RavelryBackendClient` callable-rajalle; `RavelryAuthManager` omistaa backend-auth-statuksen, start/disconnect-kutsut ja token-free `knittools://ravelry-auth-complete` callbackin; auth avataan Auth Tabilla ja Custom Tabs jää fallbackiksi
 - Saved patterns siirrettiin Room schema 14:ssa lähdemetadataksi: `source`, nullable `ravelryPatternId`, `originalUrl`, `canonicalUrl`, nullable `localPdfUri`, `isAvailableOffline`, `updatedAt` ja nullable `lastSyncedAt`; tietokannan nykyversio on 17
 - Phase 8 UI-polku on valmis: `RavelryImportConfirmationSheet` hoitaa hakutulos- ja jaetun URL:n import-vahvistuksen, `SavedPatternDetailScreen` hoitaa metadata-availabilityn ja toiminnot, PatternPickerSheet listaa kaikki saved patternit, ja projektin pattern-kortti avaa metadata-only linkit detailiin ilman PDF-vieweriä
 - Phase 9 release-surface -vahti sallii vain Firebase Auth/Functions/Google Services -pinnan tälle backendille, kieltää Firebase AI/ML Kit/Gemini/voice-riippuvuudet, estää trackatut `app/google-services.json`- ja `app/src/debug/google-services.json` -tiedostot ja skannaa tunnetut paikalliset/env Ravelry-secret-arvot tulostamatta niitä
-- `firebase-admin` on lukittu uusimpaan `firebase-functions@7.2.5`:n peer dependencyyn sopivaan 13.x-versioon, ei suunnitelman yhteensopimattomaan 14.x-versioon
+- `firebase-functions 7.3.0` ja `firebase-admin 14.2.0` ovat nykyisen `functions/package.json`- ja `package-lock.json`-pinnan lukitut tuotantoversiot; versionvaihdossa niiden npm peer dependency -yhteensopivuus ja lukitustiedosto pitää tarkistaa yhdessä
 - Release artifact -build ei ole konfiguroitavissa tyhjästä checkoutista ilman oikeaa Firebase-konfigia: `:app:assembleRelease` ja `:app:bundleRelease` riippuvat `verifyGoogleServicesJson`-tehtävästä, joka vaatii ignored `app/google-services.json` -tiedoston. Lisäksi release signing -portti kattaa alemman tason release package/sign/publish -taskit, vaikka Firebase-configin taskiriippuvuus on nykykoodissa sidottu vain `assembleRelease`- ja `bundleRelease`-nimiin. Debug artifact -build voi käyttää ignored placeholderia paikalliseen käännökseen.
 
 ## Käynnistys ja runtime
@@ -417,7 +418,7 @@ Huomio:
   - `AppLanguage.kt`
   - `PreferencesManager.kt`
 - `data/local/`
-  - Room entityt, DAO:t ja `KnitToolsDatabase`
+  - Room entityt, DAO:t, `KnitToolsDatabase`, `DatabaseTransactionRunner`, schema 17:n `PatternAnnotationMigration17` ja annotaatiotasojen `PatternAnnotationSchemaConstraints`
 - `data/remote/`
   - `RavelryApiService.kt`
   - `RavelryBackendClient.kt` sisältää sekä `RavelryBackendClient`-rajapinnan että Firebase Functions -toteutuksen `FirebaseRavelryBackendClient`
@@ -448,6 +449,7 @@ Huomio:
   - `TrialManager.kt`
 - `repository/`
   - `CounterRepository.kt`
+  - `PatternAnnotationLayerRepository.kt`
   - `PatternAnnotationRepository.kt`
   - `ProgressPhotoRepository.kt`
   - `ProjectNameRules.kt`
@@ -492,6 +494,7 @@ Huomio:
 - `ProjectCounterEntity`
 - `ProjectYarnNoteEntity`
 - `SavedPatternEntity`
+- `PatternAnnotationLayerEntity`
 - `PatternAnnotationEntity`
 
 Migraatiotilanne:
@@ -512,6 +515,10 @@ Näkyvä uusin lisäys:
 - migraatio `15 -> 16` lisää nullable `sessions.zoneId` -kentän; vanhat sessiot jäävät tarkoituksella ilman aikavyöhykettä
 - `sessions.startedAt`-indeksi on migraatiossa `8 -> 9`
 - `counter_projects.targetRows` on migraatiossa `7 -> 8`
+- migraatio `16 -> 17` luo omistajakerroksen `pattern_annotation_layers`, muuntaa vanhat projektikohtaiset freehand-rivit uuden `layerId`-relaation alle ja korvaa vanhan path/color/strokeWidth-rakenteen versioidulla `kind` + `payloadVersion` + `payloadJson` -mallilla
+- schema 17:n `pattern_annotation_layers` viittaa `ON DELETE CASCADE` -foreign keyllä joko projektiin tai saved patterniin; `pattern_annotations.layerId` viittaa vastaavasti tasoon cascadella
+- kaksi Room-callbackissa ja migraatiossa luotavaa triggeriparia pakottaa tasolle täsmälleen yhden omistajan (`projectId` xor `savedPatternId`) sekä enintään yhden aktiivisen annotaatiotason projektia kohti
+- kerroksen uniikkiavaimet ovat `(projectId, documentKey)` ja `(savedPatternId, documentKey)`; annotaatioiden lukujärjestystä tukeva indeksi on `(layerId, page, zIndex)`
 
 Session-laskennan nykyrajat:
 
@@ -534,7 +541,7 @@ Nykyiset invariantit:
 
 - usean DAO:n kirjoitukset kulkevat `DatabaseTransactionRunner.run { ... }` -rajasta, jonka tuotantototeutus käyttää `RoomDatabase.withTransaction`
 - UI ei saa pilkkoa pattern attach/detach-, yarn/project-linkki- tai päälaskurin count/history/linked-counter -kirjoituksia erillisiksi Room-operaatioiksi
-- UI:lle nousevat Room-havaintovirrat käyttävät DAO->domain-mäppäyksen jälkeen `retryOnRepositoryReadFailure()`-rajaa `CounterRepository`ssa, `ProjectCounterRepository`ssa, `ProjectYarnNoteRepository`ssa, `ReminderRepository`ssa, `ProgressPhotoRepository`ssa, `PatternAnnotationRepository`ssa, `SavedPatternRepository`ssa ja `YarnCardRepository`ssa
+- UI:lle nousevat Room-havaintovirrat käyttävät DAO->domain-mäppäyksen jälkeen `retryOnRepositoryReadFailure()`-rajaa `CounterRepository`ssa, `ProjectCounterRepository`ssa, `ProjectYarnNoteRepository`ssa, `ReminderRepository`ssa, `ProgressPhotoRepository`ssa, `PatternAnnotationLayerRepository`ssa, `PatternAnnotationRepository`ssa, `SavedPatternRepository`ssa ja `YarnCardRepository`ssa
 - retry ei niele `CancellationException`ia eikä ei-`Exception`-tyyppisiä vakavia virheitä; tavallinen luku- tai mapping-poikkeus käynnistää virran uudelleen viiveillä `250`, `500`, `1000`, `2000`, `4000`, jonka jälkeen viive on rajattu `5000` millisekuntiin
 - IO-dispatcher tulee Hiltin `@IoDispatcher`-qualifierilla; repositoryjen ja ViewModelien ei pidä kovakoodata `Dispatchers.IO`:ta
 - prosessin eliniän työ käyttää Hiltin `@ApplicationScope`-scopea (`SupervisorJob + Dispatchers.Main.immediate`); blokkaava työ valitsee silti erikseen injektoidun IO-dispatcherin
@@ -721,8 +728,16 @@ Nykyinen Android-koodi Phase 8:n jälkeen:
 - backend julkaisee seitsemän callable-funktiota (`ravelryStartAuth`, `ravelryAuthStatus`, `ravelryDisconnect`, `ravelryCurrentUser`, `ravelrySearchPatterns`, `ravelryImportPatternById`, `ravelryImportPatternByUrl`) sekä yhden HTTP callbackin (`ravelryCallback`); exportit omistaa `functions/src/index.ts`
 - `functions/src/config.ts` omistaa alueen `europe-west1`, Firestore-kokoelmat `ravelryOAuthStates`, `ravelryTokens` ja `ravelryRateLimits`, Secret Manager -sidokset `RAVELRY_CLIENT_ID` / `RAVELRY_CLIENT_SECRET`, parametrin `RAVELRY_CALLBACK_URL`, 10 minuutin OAuth state TTL:n ja app-redirectin `knittools://ravelry-auth-complete`
 - callable-rajat vaativat Firebase Auth UID:n; `functions/src/ravelry/callable.ts` muuntaa backendin 400/401/404/429/5xx-virheet Firebase Functions -virheiksi ja käyttää muissa sopimusvirheissä `failed-precondition`/`internal`-koodeja
-- OAuth käyttää PKCE S256 -haastetta, state kulutetaan transaktionaalisesti vain kerran, code exchange ja token storage pysyvät serverillä, ja vanhentunut access token päivitetään `tokenAccess.ts`-rajassa; rotated refresh token korvaa vanhan tallennetun arvon
-- Firestore-rate-limitit ovat UID-kohtaisia ja transaktionaalisia: auth `10/min`, search `30/min`, import `20/min`
+- OAuth käyttää PKCE S256 -haastetta, state kulutetaan transaktionaalisesti vain kerran ja code exchange sekä token storage pysyvät serverillä
+- OAuth-start lukee `ravelryTokens/{uid}`-dokumentin nykyisen `connectionGeneration`-arvon ja tallentaa sen PKCE stateen; puuttuva, ei-äärellinen tai negatiivinen persisted-arvo normalisoituu nollaksi ja desimaali katkaistaan kokonaisluvuksi `connectionGenerationFromData(...)`-apurissa
+- callback, current-user-metadatan päivitys ja access-token refresh tallentavat vain, jos token-dokumentin generation vastaa operaation odottamaa generationia; disconnect ei poista dokumenttia kokonaan vaan kasvattaa generationia ja jättää tombstonen, jolloin myöhäinen callback tai refresh ei voi luoda katkaistua yhteyttä uudelleen
+- vanhentunut access token päivitetään `tokenAccess.ts`-rajassa vasta kutsutyypin rate limiterin jälkeen; rotated refresh token korvaa vanhan tallennetun arvon vain generation-tarkistetussa transaktiossa
+- UID-kohtaiset Firestore fixed-window -rajat ovat auth `10/min`, search `30/min` ja import `20/min`; UID-dokumentin tunniste on `<bucket>_<base64url(uid)>`
+- backend-globaalit fixed-window -rajat ovat auth `60/min`, search `120/min` ja import `80/min`; jokainen bucket jaetaan kymmeneen dokumenttiin `<bucket>_global_<0..9>`, jolloin yhden shard-dokumentin rajat ovat vastaavasti `6`, `12` ja `8` pyyntöä minuutissa
+- limiter valitsee satunnaisen aloitusshardin ja käy saman minuutti-ikkunan kaikki kymmenen shardipaikkaa kiertävässä järjestyksessä; UID-rivi ja valittu globaali shard luetaan ja päivitetään samassa Firestore-transaktiossa
+- rollout-yhteensopivuuden vuoksi aktiivinen vanha yhden dokumentin `<bucket>_global`-ikkuna tarkistetaan ennen shardattua polkua; tämä on väliaikainen migraatioraja, joka poistetaan erillisessä muutoksessa vasta kun vanhat writer-revisiot ovat poistuneet liikenteestä
+- kun warm Functions -prosessi on varmistanut kaikkien shardien olevan täynnä, se cachettaa bucketin kylläisen window startin ja palauttaa saman ikkunan myöhemmät globaalit ylitykset ilman uutta shardiskannausta; cache tyhjennetään ikkunan vaihtuessa
+- UID-ylitys ja globaali ylitys palautuvat molemmat `ravelry_rate_limited` / HTTP 429 -virheenä, mutta `RavelryRateLimitError.scope` erottaa `uid`- ja `global`-tapauksen backend-testauksessa
 - Ravelry API -kutsut käyttävät Bearer-tokenia vain `api.ravelry.com`-hostiin; URL-import hyväksyy vain HTTP(S)-URL:n muodossa `ravelry.com/patterns/library/{slug}` ja normalisoi canonical URL:n
 - `firestore.rules` kieltää client read/write -pääsyn sekä Ravelry-kokoelmiin että oletuksena kaikkiin muihin dokumentteihin; Admin SDK:ta käyttävät Functions-funktiot omistavat tallennuksen
 
@@ -1302,6 +1317,7 @@ Julkaisuvalmiuden muistilista:
 - pidä `ktlintCheck`, detekt ja Android lint pakollisina CI:ssä; nykyinen build-workflow ajaa `assembleDebug`, `test`, `:app:ktlintCheck`, `:app:detekt` ja `lint`
 - CodeQL-workflow on manuaalibuildinen Java/Kotlin-analyysi ja rakentaa `assembleDebug --no-daemon`
 - `release-surface.ps1` ei korvaa linttiä, dependency-checkiä tai Semgrepiä; se tarkistaa vain tässä repossa sovitut manifest-, FileProvider-, credential-, Sentry-, Firebase/AI/voice-, Room-, widget-launch- ja lokalisaatiorajat. Ravelry Firebase -migraation aikana sallittu Firebase-pinta on rajattu Firebase Auth/Functions/Google Services -polkuun. Skripti hylkää trackatun `app/google-services.json`in ja etsii paikallisesti/envistä tunnettuja Ravelry-secret-arvoja lähteistä, resursseista, generated BuildConfig -vakioista, Gradle-tiedostoista, manifesteista, testeistä, APK:sta ja AAB:sta tulostamatta arvoja.
+- `tools/sc.ps1` on security-checkin ainoa toteutusraja; `scripts/security-check*.sh`- ja global-entrypointit ovat fail-closed-yhteensopivuusdelegaatteja eivätkä toteuta omia skannereita.
 
 Älä käytä agenttityössä käyttäjän wrapper-skriptejä `lint-check` tai `security-check`.
 
@@ -1499,15 +1515,18 @@ Invarianssit:
 Review-kysymyksessä kannattaa nimetä sekä Android callable että backend export:
 
 - Android: `FirebaseAnonymousAuthGateway`, `RavelryBackendClient`, `RavelryBackendMappers`, `RavelryAuthManager`, `RavelryApiService`
-- backend: `functions/src/index.ts`, `config.ts`, `callable.ts`, `authCore.ts`, `oauthStateStore.ts`, `oauth2.ts`, `tokenAccess.ts`, `rateLimit.ts`, `patternImport.ts`, `urlParsing.ts`, `sanitizedTypes.ts`
+- backend: `functions/src/index.ts`, `config.ts`, `callable.ts`, `authCore.ts`, `oauthStateStore.ts`, `oauth2.ts`, `tokenStore.ts`, `tokenAccess.ts`, `connectionGeneration.ts`, `rateLimit.ts`, `patternImport.ts`, `urlParsing.ts`, `sanitizedTypes.ts`
 
 Invarianssit:
 
 - callable-nimi, payload-key, nullable/required-kenttä ja response mapper täsmäävät molemmilla puolilla
 - Android ei vastaanota client secretiä, access tokenia, refresh tokenia eikä authorization codea app callbackissa
-- state on kertakäyttöinen, vanhenee 10 minuutissa ja PKCE verifier sidotaan server-side stateen
-- token refresh tapahtuu ennen current-user/search/import-kutsua ja rotated refresh token tallennetaan
-- search/import on UID-rate-limitattu ja palauttaa vain sanitisoitua metadataa; backend ei lataa pattern-PDF:ää
+- state on kertakäyttöinen, vanhenee 10 minuutissa ja PKCE verifier sekä tokenin `connectionGeneration` sidotaan server-side stateen
+- callback-, refresh- ja current-user-kirjoitus saa onnistua vain, jos sen generation on yhä token-dokumentin nykyinen generation; disconnectin tombstone estää vanhan async-operaation tokenin palautumisen
+- access-token refresh tapahtuu vasta kyseisen auth/search/import-polun rate limiterin jälkeen, ja rotated refresh token tallennetaan generation-ehdollisesti
+- auth/search/import on sekä UID- että backend-globaalisti rate-limitattu; globaali raja on jaettu kymmeneen shard-dokumenttiin, mutta aktiivinen legacy `<bucket>_global` -ikkuna on rollout-vaiheessa edelleen määräävä
+- globaali limiter ei saa ylittää bucketin kokonaisrajaa shardien satunnaisesta aloituskohdasta, Firestore-transaction retryistä tai warm-process saturation cachesta huolimatta
+- search/import palauttaa vain sanitisoitua metadataa; backend ei lataa pattern-PDF:ää
 - URL-import ei saa hyväksyä mielivaltaista hostia tai Ravelryn muuta URL-pintaa
 - availability, canonical URL ja original URL säilyvät mapperissa; puuttuva/ei-positiivinen Ravelry ID ei saa muuttua persisted ID 0:ksi
 - Firestore-client ei saa lukea tai kirjoittaa OAuth state-, token- tai rate-limit-dokumentteja
@@ -1532,7 +1551,7 @@ Testikerrokset todistavat eri asioita:
 
 - `app/src/test`: JVM-unit-testit, ViewModel/repository-testit ja suuri joukko source-contract-testejä
 - `app/src/androidTest`: oikeat Room migration/transaction- ja Compose semantics -instrumentaatiotestit
-- `functions/src/**/*.test.ts`: Node-testit OAuth-, state-, rate-limit- ja pattern-import-logiikalle
+- `functions/src/**/*.test.ts`: Node-testit OAuth-, state-, connection-generation-, token-race-, rate-limit- ja pattern-import-logiikalle
 - `baselineprofile`: käynnistyksen macrobenchmark/baseline profile -generaattori
 
 Reviewssa pitää erottaa:
@@ -1573,7 +1592,7 @@ Näihin kannattaa suhtautua epäluuloisesti vanhoissa dokumenteissa:
 - älä sekoita release signing -porttia ja Firebase-config-porttia: signing gate tarkistaa `appReleaseArtifactTasks`-joukon seitsemän `:app:*Release*`-artifact-taskia, kun taas `verifyGoogleServicesJson` on nykykoodissa `firebaseConfiguredArtifactTaskNames = setOf("assembleRelease", "bundleRelease")`
 - Sonar-wrapper ei nykyisin aja `assembleDebug`-taskia; jos Sonar-skannaus pysähtyy Firebase JSON -porttiin, tarkista ensin ettei wrapperia tai Gradle-taskigraafia ole palautettu vanhaan `assembleDebug sonar` -malliin
 - Android-check-wrapperien onnistuminen/epäonnistuminen tulee nyt niiden delegoiman prosessin exit-koodista; jos wrapper näyttää hiljaisesti onnistuvan, tarkista että tiedostossa on edelleen `exit $LASTEXITCODE`
-- `gradle/osv-scanner.toml` ei saa palata yleiseen `ignore = true` -malliin koko verification metadata -pinnalle; nykyinen malli on pakettikohtaiset false-positive-poikkeukset
+- `gradle/osv-scanner.toml` ei saa palata yleiseen `ignore = true` -malliin koko verification metadata -pinnalle; nykyinen malli käyttää yksilöllisiä, perusteltuja ja määräaikaisia `IgnoredVulns`-advisorypoikkeuksia, ja poikkeukseton raakaskannaus säilyy ensisijaisena
 - DeepSec custom scan ei ole enää vain manifest/FileProvider/Ravelry credential/logging -pinta; nykyinen custom matcher -lista sisältää myös Kotlin entrypointit, intent-inputit, KnitTools file/URI -rajat, Ravelry Firebase callable -rajat ja widget-mutaatiot
 - `.deepsec/data/knittools/INFO.md` on scannerin kontekstiteksti eikä toteutuksen source of truth; jos se on ristiriidassa nykyisen koodin, `config/security-decisions.md`-päätöksen tai tämän tiedoston kanssa, tarkista koodi ennen findingin hyväksymistä
 - `ProState.hasFeature(...)` ei ole pelkkä `isPro` debug-buildissä; debug avaa feature-gatet erillisenä kehittäjäpolkuna

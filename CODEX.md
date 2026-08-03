@@ -14,6 +14,7 @@ Use [`CLAUDE.md`](/home/emma/dev/KnitTools/CLAUDE.md) when product wording, visu
 
 ## Architecture
 
+- Scanneripoikkeukset ovat `config/check-exceptions.json`-rekisterissä. MobSF-poikkeus vaatii yhden säännön ja yhden täsmällisen `findingPath`-polun; `.mobsf` ei saa piilottaa sääntöä globaalisti.
 - `data/` owns Room, DataStore, storage, Android framework access
 - `domain/` owns calculation logic and domain models
 - `repository/` is the seam between storage/framework details and UI consumers
@@ -129,6 +130,9 @@ Use [`CLAUDE.md`](/home/emma/dev/KnitTools/CLAUDE.md) when product wording, visu
 - `pc` runs PMD CPD duplicate detection with KnitTools' default `PMD_CPD_MINIMUM_TOKENS=100`, `cr` runs compose-rules through ktlint/detekt, `ga` runs Android Lint with Google Android Security Lints, and `cs` is available for Compose Stability Analyzer projects.
 - `sentry` verifies that debug includes `io.sentry`, release does not include `io.sentry`, and writes `reports/sentry.txt`
 - `sc` runs dependency, secret, and light Semgrep checks; `sc -Full` also runs the Android-specific `ac` path and DeepSec custom report
+- `tools/sc.ps1` is the only security-check source of truth. Bash scripts under `scripts/` are compatibility delegates and must fail closed instead of implementing separate scanners.
+- `app/stability/app-debug.stability` is the versioned Compose stability baseline; other variant dumps remain local and ignored.
+- `tools/sonar.ps1 -PlanOnly` is read-only; an actual Sonar upload requires `-AllowExternalUpload` and runs through a bounded managed Gradle process.
 - Typical commands: `./gradlew assembleDebug`, `./gradlew test`, `./gradlew :app:detekt`, `./gradlew lint`
 - Do not run the user's wrapper scripts such as `lc` or `sc`
 - Never commit generated `reports/`

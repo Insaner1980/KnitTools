@@ -50,7 +50,7 @@ Nykytilan kannalta hyödyllinen järjestys:
 - Billing: `8.3.0`
 - Sentry Android Core: `8.43.1` debug-only
 - AndroidX Browser: `1.10.0`
-- Firebase BOM: `34.14.0`
+- Firebase BOM: `34.16.0`
 - Google Services Gradle plugin: `4.4.4`
 - Functions runtime: `nodejs22`
 - `firebase-functions`: `7.3.0`

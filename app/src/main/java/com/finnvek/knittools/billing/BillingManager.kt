@@ -217,7 +217,7 @@ class BillingManager
                 }
 
                 PurchaseQueryResult.Failure -> {
-                    // Säilytä viimeksi tunnettu ostotila, jos Play-kysely epäonnistuu.
+                    Unit
                 }
             }
         }

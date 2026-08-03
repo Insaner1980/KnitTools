@@ -44,7 +44,7 @@
         Compose Stability Analyzer julkaistaan com.github.skydoves-ryhmällä, mutta artefakti
         ei ole GitHub Enterprise Server. Nämä CVE:t ovat geneerisen github-CPE:n false positiveja.
         ]]></notes>
-        <packageUrl regex="true">^pkg:maven/com\.github\.skydoves/compose-stability-runtime-android@0\.12\.0$</packageUrl>
+        <packageUrl regex="true">^pkg:maven/com\.github\.skydoves/compose-stability-runtime-android@0\.7\.5$</packageUrl>
         <cve>CVE-2020-10518</cve>
         <cve>CVE-2020-10519</cve>
         <cve>CVE-2012-2055</cve>
@@ -56,7 +56,7 @@
         Daggerin lint-AAR käyttää artifact-kuvauksessa sanaa distribution, mutta artefakti ei ole
         OCI registry distribution -palvelin. Nämä ovat väärän distribution-CPE:n false positiveja.
         ]]></notes>
-        <packageUrl regex="true">^pkg:maven/com\.google\.dagger/dagger-lint-aar@2\.60\.1$</packageUrl>
+        <packageUrl regex="true">^pkg:maven/com\.google\.dagger/dagger-lint-aar@2\.59\.2$</packageUrl>
         <cpe>cpe:/a:distribution:distribution</cpe>
         <cpe>cpe:/a:distribution_project:distribution</cpe>
     </suppress>
@@ -68,7 +68,7 @@
         Rajaus pidetään nykyisissä raportoiduissa PURL-versioissa, jotta uusi Kotlin-versio
         pakottaa arvioimaan tilanteen uudelleen.
         ]]></notes>
-        <packageUrl regex="true">^pkg:maven/org\.jetbrains\.kotlin/kotlin-stdlib@2\.4\.10$</packageUrl>
+        <packageUrl regex="true">^pkg:maven/org\.jetbrains\.kotlin/kotlin-stdlib@2\.3\.21$</packageUrl>
         <cve>CVE-2026-53914</cve>
     </suppress>
 
@@ -77,7 +77,7 @@
         Kotlin stdlib jdk7 runtime -JAR matchautuu JetBrains Kotlin -tuotteen CPE:hen, mutta
         CVE-2026-53914 koskee build cache -metadataa eikä sovelluksen runtime-luokkapolkua.
         ]]></notes>
-        <packageUrl regex="true">^pkg:maven/org\.jetbrains\.kotlin/kotlin-stdlib-jdk7@2\.4\.10$</packageUrl>
+        <packageUrl regex="true">^pkg:maven/org\.jetbrains\.kotlin/kotlin-stdlib-jdk7@2\.3\.21$</packageUrl>
         <cve>CVE-2026-53914</cve>
     </suppress>
 

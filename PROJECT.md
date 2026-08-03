@@ -51,9 +51,9 @@ Nykytilan kannalta hyödyllinen järjestys:
 - Sentry Android Core: `8.43.1` debug-only
 - AndroidX Browser: `1.10.0`
 - Firebase BOM: `34.16.0`
-- Google Services Gradle plugin: `4.4.4`
+- Google Services Gradle plugin: `4.5.0`
 - Functions runtime: `nodejs22`
-- `firebase-functions`: `7.3.0`
+- `firebase-functions`: `7.3.2`
 - `firebase-admin`: `14.2.0`
 - TypeScript: `7.0.2`
 - DeepSec: `2.2.9`

@@ -39,8 +39,8 @@ Nykytilan kannalta hyödyllinen järjestys:
 - `compileSdk` / `targetSdk` / `minSdk`: `36 / 36 / 29`, kaikki `gradle/libs.versions.toml`-avaimista `androidCompileSdk`, `androidTargetSdk` ja `androidMinSdk`
 - `baselineprofile`-moduulin `compileSdk` / `targetSdk` / `minSdk`: samat version catalog -arvot `36 / 36 / 29`
 - Java target: `17`
-- Gradle wrapper: `9.4.1`
-- AGP: `9.1.1`
+- Gradle wrapper: `9.5.0`
+- AGP: `9.3.1`
 - Kotlin Compose plugin: `2.3.21`
 - KSP: `2.3.9`
 - Compose BOM: `2026.05.01`

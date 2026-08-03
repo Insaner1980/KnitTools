@@ -470,9 +470,9 @@
         <item quantity="other">a %1$d proyectos.</item>
     </plurals>
     <string name="insights_hero_trailing_project">a %1$s.</string>
-    <string name="insights_craft_verb_knitting">tejer</string>
-    <string name="insights_craft_verb_crocheting">el ganchillo</string>
-    <string name="insights_craft_verb_making">crear</string>
+    <string name="insights_craft_verb_knitting">a tejer</string>
+    <string name="insights_craft_verb_crocheting">a hacer ganchillo</string>
+    <string name="insights_craft_verb_making">a crear</string>
     <string name="insights_stat_rows">Vueltas</string>
     <string name="insights_stat_min_per_row">Min por vuelta</string>
     <string name="insights_stat_day_streak">Racha de días</string>

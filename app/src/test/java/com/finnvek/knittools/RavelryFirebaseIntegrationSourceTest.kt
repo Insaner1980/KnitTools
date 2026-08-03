@@ -36,8 +36,7 @@ class RavelryFirebaseIntegrationSourceTest {
         assertFalse(appBuild.contains("debugFirebaseArtifactRequested"))
         assertFalse(appBuild.contains("canMaterializeGoogleServicesJson"))
         assertFalse(appBuild.contains("if (canMaterializeGoogleServicesJson)"))
-        assertTrue(appBuild.contains("releaseLintRequested && !appReleaseArtifactsRequested && !firebaseConfigAvailable"))
-        assertTrue(appBuild.contains("task.path == \":app:processReleaseGoogleServices\""))
+        assertReleaseLintWiring(appBuild)
         assertTrue(appBuild.contains("firebaseConfiguredArtifactTaskNames"))
         assertTrue(appBuild.contains("\"assembleRelease\""))
         assertTrue(appBuild.contains("\"bundleRelease\""))
@@ -103,6 +102,15 @@ class RavelryFirebaseIntegrationSourceTest {
                 """.trimIndent(),
             ),
         )
+    }
+
+    private fun assertReleaseLintWiring(appBuild: String) {
+        assertTrue(
+            appBuild.contains(
+                "releaseLintRequested && !appReleaseArtifactsRequested && !firebaseConfigAvailable",
+            ),
+        )
+        assertTrue(appBuild.contains("task.path == \":app:processReleaseGoogleServices\""))
     }
 
     @Test

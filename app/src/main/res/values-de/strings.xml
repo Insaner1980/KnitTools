@@ -463,9 +463,9 @@
         <item quantity="other">für %1$d Projekte verbracht.</item>
     </plurals>
     <string name="insights_hero_trailing_project">für %1$s verbracht.</string>
-    <string name="insights_craft_verb_knitting">Stricken</string>
-    <string name="insights_craft_verb_crocheting">Häkeln</string>
-    <string name="insights_craft_verb_making">Handarbeit</string>
+    <string name="insights_craft_verb_knitting">mit dem Stricken</string>
+    <string name="insights_craft_verb_crocheting">mit dem Häkeln</string>
+    <string name="insights_craft_verb_making">mit Handarbeit</string>
     <string name="insights_stat_rows">Reihen</string>
     <string name="insights_stat_min_per_row">Min pro Reihe</string>
     <string name="insights_stat_day_streak">Tage-Serie</string>

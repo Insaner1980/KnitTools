@@ -46,7 +46,7 @@ class InsightsRedesignSourceTest {
         val viewModel = ProjectSourceFiles.read(INSIGHTS_VIEW_MODEL)
         val sections = ProjectSourceFiles.read(INSIGHTS_SECTIONS)
 
-        assertTrue(viewModel.contains("MinutesPerRowFormatter.fromTotals"))
+        assertTrue(viewModel.contains("MinutesPerRowFormatter.fromSeconds"))
         assertTrue(sections.contains("R.string.insights_stat_min_per_row"))
     }
 
@@ -114,7 +114,10 @@ class InsightsRedesignSourceTest {
 
         assertTrue("Range chips must use selectable semantics", screen.contains("selectable("))
         assertTrue("Range chips must be grouped for screen readers", screen.contains("selectableGroup()"))
-        assertTrue("Chips must reserve a 48dp touch target", screen.contains("heightIn(min = ChipMinTouchTarget)"))
+        assertTrue(
+            "Chips must reserve the centralized touch target",
+            screen.contains("heightIn(min = InsightsDimens.FilterChipMinTouchTarget)"),
+        )
         assertFalse("Range chips must not fall back to plain clickable", screen.contains("clickable(role = Role.Tab)"))
     }
 

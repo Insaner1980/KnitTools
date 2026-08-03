@@ -21,7 +21,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.DropdownMenu
@@ -46,7 +45,6 @@ import androidx.compose.ui.semantics.collapse
 import androidx.compose.ui.semantics.expand
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
@@ -59,16 +57,6 @@ import com.finnvek.knittools.ui.theme.InsightsDimens
 import com.finnvek.knittools.ui.theme.yarnColorForId
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-
-private val ChipShape = RoundedCornerShape(percent = 50)
-private val ChipHorizontalPadding = 16.dp
-private val ChipVerticalPadding = 10.dp
-private val ChipSpacing = 8.dp
-private val ChipIndicatorSpacing = 4.dp
-private val ChipIndicatorSize = 18.dp
-private val ChipMinTouchTarget = 48.dp
-private val ChipDotSize = 10.dp
-private val ChipDotSpacing = 8.dp
 
 @Composable
 fun InsightsScreen(
@@ -192,12 +180,12 @@ private fun InsightsFilters(
             Modifier
                 .fillMaxWidth()
                 .padding(top = InsightsDimens.FiltersTopPadding),
-        verticalArrangement = Arrangement.spacedBy(ChipSpacing),
+        verticalArrangement = Arrangement.spacedBy(InsightsDimens.FilterChipSpacing),
     ) {
         // Aikaväli on yksi valintaryhmä: ruudunlukija ilmoittaa "valittu 3:sta".
         Row(
             modifier = Modifier.selectableGroup(),
-            horizontalArrangement = Arrangement.spacedBy(ChipSpacing),
+            horizontalArrangement = Arrangement.spacedBy(InsightsDimens.FilterChipSpacing),
         ) {
             InsightsRangeChip(
                 label = stringResource(R.string.insights_this_week),
@@ -230,16 +218,23 @@ private fun InsightsRangeChip(
         if (selected) {
             Modifier.background(MaterialTheme.colorScheme.primary)
         } else {
-            Modifier.border(1.dp, MaterialTheme.colorScheme.outlineVariant, ChipShape)
+            Modifier.border(
+                InsightsDimens.FilterChipBorderWidth,
+                MaterialTheme.colorScheme.outlineVariant,
+                InsightsDimens.FilterChipShape,
+            )
         }
     Row(
         modifier =
             Modifier
-                .heightIn(min = ChipMinTouchTarget)
-                .clip(ChipShape)
+                .heightIn(min = InsightsDimens.FilterChipMinTouchTarget)
+                .clip(InsightsDimens.FilterChipShape)
                 .then(backgroundModifier)
                 .selectable(selected = selected, role = Role.Tab, onClick = onClick)
-                .padding(horizontal = ChipHorizontalPadding, vertical = ChipVerticalPadding),
+                .padding(
+                    horizontal = InsightsDimens.FilterChipHorizontalPadding,
+                    vertical = InsightsDimens.FilterChipVerticalPadding,
+                ),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -270,10 +265,13 @@ private fun InsightsProjectFilter(
         Row(
             modifier =
                 Modifier
-                    .heightIn(min = ChipMinTouchTarget)
-                    .clip(ChipShape)
-                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, ChipShape)
-                    .clickable(role = Role.DropdownList) { showProjectPicker = !showProjectPicker }
+                    .heightIn(min = InsightsDimens.FilterChipMinTouchTarget)
+                    .clip(InsightsDimens.FilterChipShape)
+                    .border(
+                        InsightsDimens.FilterChipBorderWidth,
+                        MaterialTheme.colorScheme.outlineVariant,
+                        InsightsDimens.FilterChipShape,
+                    ).clickable(role = Role.DropdownList) { showProjectPicker = !showProjectPicker }
                     .semantics {
                         if (showProjectPicker) {
                             collapse {
@@ -286,17 +284,20 @@ private fun InsightsProjectFilter(
                                 true
                             }
                         }
-                    }.padding(horizontal = ChipHorizontalPadding, vertical = ChipVerticalPadding),
+                    }.padding(
+                        horizontal = InsightsDimens.FilterChipHorizontalPadding,
+                        vertical = InsightsDimens.FilterChipVerticalPadding,
+                    ),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (selectedId != null) {
                 Box(
                     modifier =
                         Modifier
-                            .size(ChipDotSize)
+                            .size(InsightsDimens.FilterChipDotSize)
                             .background(yarnColorForId(selectedId), CircleShape),
                 )
-                Spacer(modifier = Modifier.width(ChipDotSpacing))
+                Spacer(modifier = Modifier.width(InsightsDimens.FilterChipDotSpacing))
             }
             Text(
                 text = uiState.selectedProjectName ?: allProjectsLabel,
@@ -312,8 +313,8 @@ private fun InsightsProjectFilter(
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier =
                     Modifier
-                        .padding(start = ChipIndicatorSpacing)
-                        .size(ChipIndicatorSize),
+                        .padding(start = InsightsDimens.FilterChipIndicatorSpacing)
+                        .size(InsightsDimens.FilterChipIndicatorSize),
             )
         }
         DropdownMenu(
@@ -383,21 +384,50 @@ private fun insightsRangeLabel(uiState: InsightsUiState): String {
         remember(locale) {
             DateTimeFormatter.ofPattern(localizedDateTimePattern(locale, "yMMMM"), locale)
         }
+    val dayMonthPattern = remember(locale) { localizedDateTimePattern(locale, "MMMd") }
     val dayMonthFormatter =
-        remember(locale) {
-            DateTimeFormatter.ofPattern(localizedDateTimePattern(locale, "MMMd"), locale)
+        remember(locale, dayMonthPattern) {
+            DateTimeFormatter.ofPattern(dayMonthPattern, locale)
         }
     return if (uiState.timeRange == TimeRange.ALL_TIME || start == null) {
         stringResource(R.string.insights_range_open_format, (start ?: end).format(monthFormatter))
     } else {
         val startLabel =
-            if (start.month == end.month && start.year == end.year) {
+            if (
+                start.month == end.month &&
+                start.year == end.year &&
+                datePatternPlacesDayBeforeMonth(dayMonthPattern)
+            ) {
                 formatIntegerForDisplay(start.dayOfMonth.toLong(), locale)
             } else {
                 start.format(dayMonthFormatter)
             }
         stringResource(R.string.insights_range_format, startLabel, end.format(dayMonthFormatter))
     }
+}
+
+internal fun datePatternPlacesDayBeforeMonth(pattern: String): Boolean {
+    var quoted = false
+    var dayIndex = -1
+    var monthIndex = -1
+    var index = 0
+    while (index < pattern.length) {
+        val character = pattern[index]
+        if (character == '\'') {
+            if (index + 1 < pattern.length && pattern[index + 1] == '\'') {
+                index++
+            } else {
+                quoted = !quoted
+            }
+        } else if (!quoted) {
+            when (character) {
+                'd' -> if (dayIndex < 0) dayIndex = index
+                'M', 'L' -> if (monthIndex < 0) monthIndex = index
+            }
+        }
+        index++
+    }
+    return dayIndex >= 0 && monthIndex >= 0 && dayIndex < monthIndex
 }
 
 private fun footerMessageResource(): Int {

@@ -13,4 +13,4 @@ if [[ ! -f "$REPO_LOCAL_SCRIPT" ]]; then
   exit 2
 fi
 
-exec "$REPO_LOCAL_SCRIPT" "$@"
+exec bash "$REPO_LOCAL_SCRIPT" "$@"

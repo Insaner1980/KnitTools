@@ -25,9 +25,14 @@ object MinutesPerRowFormatter {
     fun fromTotals(
         totalMinutes: Int,
         totalRows: Int,
+    ): MinutesPerRowDisplay = fromSeconds(totalMinutes.coerceAtLeast(0).toLong() * 60L, totalRows)
+
+    fun fromSeconds(
+        totalSeconds: Long,
+        totalRows: Int,
     ): MinutesPerRowDisplay {
         if (totalRows <= 0) return MinutesPerRowDisplay.Unavailable
-        val rounded = (totalMinutes.coerceAtLeast(0).toDouble() / totalRows).roundToInt()
+        val rounded = (totalSeconds.coerceAtLeast(0).toDouble() / 60.0 / totalRows).roundToInt()
         return if (rounded <= 0) {
             MinutesPerRowDisplay.UnderOneMinute
         } else {

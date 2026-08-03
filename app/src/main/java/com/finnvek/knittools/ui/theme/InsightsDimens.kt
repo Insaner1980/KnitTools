@@ -1,5 +1,6 @@
 package com.finnvek.knittools.ui.theme
 
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
@@ -15,6 +16,16 @@ object InsightsDimens {
 
     // Suodatinsirut
     val FiltersTopPadding = 12.dp
+    val FilterChipShape = RoundedCornerShape(percent = 50)
+    val FilterChipHorizontalPadding = 16.dp
+    val FilterChipVerticalPadding = 10.dp
+    val FilterChipSpacing = 8.dp
+    val FilterChipIndicatorSpacing = 4.dp
+    val FilterChipIndicatorSize = 18.dp
+    val FilterChipMinTouchTarget = 48.dp
+    val FilterChipDotSize = 10.dp
+    val FilterChipDotSpacing = 8.dp
+    val FilterChipBorderWidth = 1.dp
 
     // Kicker
     val KickerTopPadding = 14.dp

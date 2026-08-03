@@ -357,12 +357,9 @@ try {
             -Name "release-sentry-missing-noop" `
             -ExpectedStatus "FAIL" `
             -ExpectedCheck "sentry-boundary" `
-            -PassMessage "release-visible Sentry and missing no-op mutation detected" `
+            -PassMessage "missing release Sentry no-op mutation detected" `
             -Mutate {
                 param($fixture)
-                $buildPath = Join-Path $fixture "app/build.gradle.kts"
-                $buildText = Get-Content -Raw -LiteralPath $buildPath
-                Set-FileText -Path $buildPath -Text ($buildText -replace '(debugImplementation\(libs\.sentry\.android\.core\))', "`$1`r`n    implementation(libs.sentry.android.core)")
                 Remove-Item -LiteralPath (Join-Path $fixture "app/src/release/java/com/finnvek/knittools/SentryInit.kt") -Force
             }
 
@@ -393,7 +390,11 @@ try {
                 param($fixture)
                 $path = Join-Path $fixture "app/src/main/java/com/finnvek/knittools/data/local/KnitToolsDatabase.kt"
                 $text = Get-Content -Raw -LiteralPath $path
-                Set-FileText -Path $path -Text ([regex]::Replace($text, '(?m)^\s*MIGRATION_16_17,\s*\r?\n', "", 1))
+                $mutated = [regex]::Replace($text, '(?m)^\s*MIGRATION_16_17,\s*\r?\n', "", 1)
+                if ($mutated -ceq $text) {
+                    throw "Room migration edge not found"
+                }
+                Set-FileText -Path $path -Text $mutated
             }
 
         Test-Mutation `
@@ -410,6 +411,30 @@ try {
                     throw "Room migration registration call not found"
                 }
                 Set-FileText -Path $path -Text $mutated
+            }
+
+        Test-Mutation `
+            -Name "room-migration-registration-pruned-history" `
+            -ExpectedStatus "FAIL" `
+            -ExpectedCheck "room-schema" `
+            -PassMessage "Room migration registration remains blocking with pruned schema history" `
+            -Mutate {
+                param($fixture)
+                $registrationPath = Join-Path $fixture "app/src/main/java/com/finnvek/knittools/di/DatabaseModule.kt"
+                $registrationText = Get-Content -Raw -LiteralPath $registrationPath
+                $mutated = $registrationText.Replace(
+                    ".addMigrations(*KnitToolsDatabase.ALL_MANUAL_MIGRATIONS)",
+                    ".alsoRegisterMigrations(*KnitToolsDatabase.ALL_MANUAL_MIGRATIONS)"
+                )
+                if ($mutated -ceq $registrationText) {
+                    throw "Room migration registration call not found"
+                }
+                Set-FileText -Path $registrationPath -Text $mutated
+                $firstSchema =
+                    Join-Path `
+                        $fixture `
+                        "app/schemas/com.finnvek.knittools.data.local.KnitToolsDatabase/1.json"
+                Remove-Item -LiteralPath $firstSchema -Force
             }
 
         Test-Mutation `
@@ -433,7 +458,11 @@ try {
                 param($fixture)
                 $path = Join-Path $fixture "app/src/main/java/com/finnvek/knittools/MainActivity.kt"
                 $text = Get-Content -Raw -LiteralPath $path
-                Set-FileText -Path $path -Text ($text.Replace("CounterLaunchTokenStore.consumeLaunchId(this@MainActivity, candidateLaunchId)", "false"))
+                $mutated = $text.Replace("CounterLaunchTokenStore.consumeLaunchId(this@MainActivity, candidateLaunchId)", "false")
+                if ($mutated -ceq $text) {
+                    throw "Widget launch token consumption call not found"
+                }
+                Set-FileText -Path $path -Text $mutated
             }
 
         Test-Mutation `

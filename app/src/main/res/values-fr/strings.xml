@@ -470,9 +470,9 @@
         <item quantity="other">sur %1$d projets.</item>
     </plurals>
     <string name="insights_hero_trailing_project">sur %1$s.</string>
-    <string name="insights_craft_verb_knitting">tricoter</string>
-    <string name="insights_craft_verb_crocheting">crocheter</string>
-    <string name="insights_craft_verb_making">créer</string>
+    <string name="insights_craft_verb_knitting">à tricoter</string>
+    <string name="insights_craft_verb_crocheting">à crocheter</string>
+    <string name="insights_craft_verb_making">à créer</string>
     <string name="insights_stat_rows">Rangs</string>
     <string name="insights_stat_min_per_row">Min par rang</string>
     <string name="insights_stat_day_streak">Série de jours</string>

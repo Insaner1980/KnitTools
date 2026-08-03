@@ -14,6 +14,7 @@ Use [`CLAUDE.md`](/home/emma/dev/KnitTools/CLAUDE.md) when product wording, visu
 
 ## Architecture
 
+- Scanneripoikkeukset ovat `config/check-exceptions.json`-rekisterissä. MobSF-poikkeus vaatii yhden säännön ja yhden täsmällisen `findingPath`-polun; `.mobsf` ei saa piilottaa sääntöä globaalisti.
 - `data/` owns Room, DataStore, storage, Android framework access
 - `domain/` owns calculation logic and domain models
 - `repository/` is the seam between storage/framework details and UI consumers
@@ -29,7 +30,7 @@ Use [`CLAUDE.md`](/home/emma/dev/KnitTools/CLAUDE.md) when product wording, visu
 - Extra-counter linked state is stored in `ProjectCounter.linkedToMainCounter` from the add/edit counter draft; repeat-section counters must not be marked linked because they already derive progress from main-counter rows
 - Project note replacement writes go through `CounterRepository.saveProjectNotes`, which merges against the editor's base notes so concurrent editor flows are preserved instead of overwritten
 - Session rows store display minutes, exact `durationSeconds`/`rowsWorked`, and nullable `zoneId`; new sessions capture the device zone at session start, legacy null zones fall back to the current device zone, and insights must use the session zone for cross-midnight day and pace-bucket splitting
-- Insights screen state is aggregated in `InsightsUiState`; heavy session-history calculations should run upstream with `@IoDispatcher` before Compose collects the single UI state
+- Insights screen state is aggregated in `InsightsUiState`; repository session/project flows carry an explicit loading state so seeded empty lists cannot replace the skeleton before Room emits, exact minutes-per-row uses `durationSeconds`, and heavy session-history calculations should run upstream with `@IoDispatcher` before Compose collects the single UI state
 - Legacy secondary counter state lives in `counter_projects.secondaryCount`; `project_counters` is only for named extra, repeating, shaping, and repeat-section counters, migrations must not duplicate `secondaryCount` into `project_counters`, and old generated `Pattern repeat` backfill copies are ignored at the counter UI boundary
 - Extra counter type rules are owned by `domain/model/ProjectCounterType` plus `domain/calculator/ProjectCounterLogic`; repositories should apply those domain rules inside a transaction instead of duplicating counter behavior in DAO SQL
 - Yarn/project link writes go through `YarnCardRepository`: `saveCard` normalizes any persisted `linkedProjectId`, and `updateLinkedProjectId` is the canonical explicit relink writer for `yarn_cards.linkedProjectId` plus `counter_projects.yarnCardIds`
@@ -96,7 +97,7 @@ Use [`CLAUDE.md`](/home/emma/dev/KnitTools/CLAUDE.md) when product wording, visu
 - Do not add back `org.jetbrains.kotlin.android`
 - Do not reintroduce `android.disallowKotlinSourceSets`, `android.newDsl`, or `android.builtInKotlin` toggles unless absolutely necessary
 - Release signing must stay environment-variable-driven
-- Android Firebase config belongs in ignored `app/google-services.json` locally or is generated from `KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64`; release artifact tasks materialize the ignored file from that env value when needed and still require the config, while debug artifact tasks may generate ignored `app/src/debug/google-services.json` placeholder config for local buildability; Google Services -pluginin generoimat resurssit ovat debug-Firebase-arvojen ainoa lähde, joten `google_app_id`-, `google_api_key`- tai `project_id`-arvoja ei saa ylläpitää erillisessä debug XML:ssä; static Android lint must be able to run without the local file; Ravelry credentials must not be added to Android `BuildConfig`, `debug.credentials.properties`, `local.properties`, resources, or source code
+- Android Firebase config belongs in ignored `app/google-services.json` locally or is generated from `KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64`; release artifact tasks materialize the ignored file from that env value when needed and still require the config, while debug artifact tasks may generate ignored `app/src/debug/google-services.json` placeholder config for local buildability; lint-only `lintRelease` may skip `processReleaseGoogleServices` when neither real config source exists, but this exception must never apply when a release artifact task is present; Google Services -pluginin generoimat resurssit ovat debug-Firebase-arvojen ainoa lähde, joten `google_app_id`-, `google_api_key`- tai `project_id`-arvoja ei saa ylläpitää erillisessä debug XML:ssä; Ravelry credentials must not be added to Android `BuildConfig`, `debug.credentials.properties`, `local.properties`, resources, or source code
 - Debug-only Sentry DSN belongs in `KNITTOOLS_SENTRY_DSN`, `SENTRY_DSN`, or ignored `debug.credentials.properties` as `sentry.dsn`; do not hardcode or commit it
 - Firebase and Google Services are allowed only for the Ravelry backend migration phases documented in `Ravelry Firebase Backend And Saved Patterns Plan.md`; do not add Firebase AI, ML Kit, Gemini, App Check, or model-backed parser dependencies as transitive convenience dependencies
 - Functions runtime is `nodejs22`; `firebase-functions` and `firebase-admin` versions must satisfy npm peer dependencies instead of being forced with `--legacy-peer-deps`
@@ -122,13 +123,18 @@ Use [`CLAUDE.md`](/home/emma/dev/KnitTools/CLAUDE.md) when product wording, visu
 ## Verification
 
 - Prefer the smallest useful check
-- Project-local PowerShell wrappers are two-letter `tools/*.ps1` scripts; check wrappers delegate to `C:\Dev\Android-check\tools\AndroidProjectChecks.psm1`, and `ad` delegates to `C:\Dev\Android-check\tools\InstallDebugToDevice.ps1`
-- `lc` runs ktlint, detekt, and Android lint into `reports/ktlint.txt`, `reports/detekt.txt`, and `reports/lint.txt`
-- `ad`, `ac`, `dc`, `ss`, `ds`, `ms`, `os`, `ql`, `db`, `pc`, `cs`, `cr`, `ga`, `sentry`, and `sc` are project-local wrappers; use `-PlanOnly` or `-ResolveOnly` for dry checks where supported
+- Project-local PowerShell wrappers are mostly short `tools/*.ps1` scripts; check wrappers delegate to `C:\Dev\Android-check\tools\InvokeProjectCheck.ps1`, `ad` delegates to `C:\Dev\Android-check\tools\InstallDebugToDevice.ps1`, and release-surface wrappers are repo-local.
+- `lc` runs ktlint, detekt, and debug Android lint into `reports/ktlint.txt`, `reports/detekt.txt`, and `reports/lint.txt`; the shared checker parses fresh analyzer-owned reports separately, surfaces Detekt baseline entries and toolchain diagnostics, records the before/after Git and lint-input fingerprints in the run manifest plus `reports/input-state.txt`, and fails if lint inputs change during execution. `lc -Full` also runs release lint, while `lc -Fresh` adds `--rerun-tasks --no-build-cache` for an explicit uncached audit.
+- `ad`, `ac`, `dc`, `ss`, `ds`, `ms`, `os`, `ql`, `db`, `pc`, `cs`, `cr`, `ga`, `sentry`, `rs`, `rst`, and `sc` are project-local wrappers; use `-PlanOnly` or `-ResolveOnly` for dry checks where supported
 - `ad` builds `assembleDebug`, resolves `adb.exe` from `local.properties` `sdk.dir`, and installs `app/build/outputs/apk/debug/app-debug.apk` with `adb install -r`; use `ad -NoBuild` to install an already-built APK
 - `pc` runs PMD CPD duplicate detection with KnitTools' default `PMD_CPD_MINIMUM_TOKENS=100`, `cr` runs compose-rules through ktlint/detekt, `ga` runs Android Lint with Google Android Security Lints, and `cs` is available for Compose Stability Analyzer projects.
 - `sentry` verifies that debug includes `io.sentry`, release does not include `io.sentry`, and writes `reports/sentry.txt`
+- `rs` delegates to `tools/release-surface.ps1`; `rst` delegates to `tools/release-surface-test.ps1`. These guard KnitTools-specific release and architecture boundaries and must stay repo-local.
 - `sc` runs dependency, secret, and light Semgrep checks; `sc -Full` also runs the Android-specific `ac` path and DeepSec custom report
+- `tools/sc.ps1` is the only security-check source of truth. Bash scripts under `scripts/` are compatibility delegates and must fail closed instead of implementing separate scanners.
+- `app/stability/app-debug.stability` is the versioned Compose stability baseline; other variant dumps remain local and ignored.
+- `tools/sonar.ps1 -PlanOnly` is read-only; an actual Sonar upload requires `-AllowExternalUpload` and runs through a bounded managed Gradle process.
+- `tools/sonar.ps1` resolves shared checker modules from `ANDROID_CHECK_ROOT` when set and otherwise uses `C:\Dev\Android-check`; a missing module fails closed before analysis.
 - Typical commands: `./gradlew assembleDebug`, `./gradlew test`, `./gradlew :app:detekt`, `./gradlew lint`
 - Do not run the user's wrapper scripts such as `lc` or `sc`
 - Never commit generated `reports/`

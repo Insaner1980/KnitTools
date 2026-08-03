@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "exceptionsFile": "config/check-exceptions.json",
+  "projectId": "knittools",
+  "modules": [
+    {
+      "path": ":app",
+      "relativePath": "app",
+      "kind": "android-application",
+      "required": true,
+      "variants": ["debug", "release"],
+      "sourceSets": ["main", "debug", "debugShared", "release", "test", "androidTest"]
+    },
+    {
+      "path": ":baselineprofile",
+      "relativePath": "baselineprofile",
+      "kind": "android-test",
+      "required": true,
+      "variants": ["benchmark"],
+      "sourceSets": ["main"]
+    }
+  ],
+  "buildTasks": [":app:assembleDebug", ":baselineprofile:assemble"],
+  "testTasks": [":app:testDebugUnitTest"],
+  "includedBuilds": [],
+  "checks": {
+    "ktlintTasks": [":app:ktlintCheck"],
+    "detektTasks": [":app:detekt"],
+    "lintTasks": [":app:lintDebug"],
+    "fullLintTasks": [":app:lintDebug", ":app:lintRelease"],
+    "stabilityTasks": [":app:debugStabilityCheck"],
+    "dependencyConfigurations": ["debugRuntimeClasspath", "releaseRuntimeClasspath"],
+    "dependencyCheckTasks": [":app:dependencyCheckAggregate"],
+    "semgrepConfig": "config/semgrep/knittools-security.yml"
+  }
+}

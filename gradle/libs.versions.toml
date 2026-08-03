@@ -29,10 +29,11 @@ owaspDependencyCheck = "12.2.2"
 detektComposeRules = "0.5.8"
 androidSecurityLint = "1.0.4"
 composeStabilityAnalyzer = "0.8.0"
-sonarqube = "7.3.0.8198"
+sonarqube = "7.3.1.8318"
 sentry = "8.43.1"
 
 baselineprofile = "1.5.0-alpha06"
+wire = "6.3.0"
 profileinstaller = "1.4.1"
 splashscreen = "1.2.0"
 playReview = "2.0.2"
@@ -149,6 +150,7 @@ sentry-android-core = { group = "io.sentry", name = "sentry-android-core", versi
 
 # Baseline Profiles
 benchmark-macro-junit4 = { group = "androidx.benchmark", name = "benchmark-macro-junit4", version.ref = "baselineprofile" }
+wire-runtime = { group = "com.squareup.wire", name = "wire-runtime", version.ref = "wire" }
 profileinstaller = { group = "androidx.profileinstaller", name = "profileinstaller", version.ref = "profileinstaller" }
 
 [plugins]

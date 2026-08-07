@@ -26,6 +26,10 @@ object InsightsDimens {
     val FilterChipDotSize = 10.dp
     val FilterChipDotSpacing = 8.dp
     val FilterChipBorderWidth = 1.dp
+    val RangeSelectorHeight = 44.dp
+    val RangeSelectorIndicatorPadding = 3.dp
+    val RangeSelectorProjectSpacing = 4.dp
+    const val RangeSelectorFallbackFontScale = 1.3f
 
     // Kicker
     val KickerTopPadding = 14.dp

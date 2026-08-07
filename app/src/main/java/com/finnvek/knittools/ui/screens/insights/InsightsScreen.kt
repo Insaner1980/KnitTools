@@ -342,6 +342,7 @@ private fun InsightsSegmentedRangeSelector(
                             color = MaterialTheme.colorScheme.onPrimary,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.clearAndSetSemantics {},
                         )
                     }
                 }

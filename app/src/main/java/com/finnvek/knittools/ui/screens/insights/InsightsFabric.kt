@@ -202,8 +202,8 @@ internal fun InsightsFabric(
                                         dayIndexAtPosition(position)?.also { index ->
                                             if (index != currentSelectedIndex) {
                                                 haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                                currentOnSelectDay(index)
                                             }
-                                            currentOnSelectDay(index)
                                         }
                                 },
                             ) { change, _ ->

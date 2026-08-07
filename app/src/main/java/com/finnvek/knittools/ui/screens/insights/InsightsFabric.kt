@@ -13,7 +13,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -83,6 +85,8 @@ internal fun InsightsFabric(
             }
         val cellSize = with(density) { cellSizePx.toDp() }
         val effectiveSelectedIndex = resolveFabricSelectedDayIndex(slice, selectedIndex)
+        val currentSelectedIndex by rememberUpdatedState(effectiveSelectedIndex)
+        val currentOnSelectDay by rememberUpdatedState(onSelectDay)
         val selectedDay = effectiveSelectedIndex?.let(model.days::getOrNull)
         val monthLabelIndices =
             remember(slice, model.firstDayOfWeek) {
@@ -167,27 +171,37 @@ internal fun InsightsFabric(
                                         }
                                     },
                                 )
-                        }.pointerInput(slice, cellSizePx, effectiveSelectedIndex, onSelectDay) {
+                        }.pointerInput(
+                            slice.originalStartIndex,
+                            slice.days.size,
+                            slice.weekCount,
+                            cellSizePx,
+                        ) {
                             fun selectWithHaptic(index: Int) {
-                                if (index != effectiveSelectedIndex) {
+                                if (index != currentSelectedIndex) {
                                     haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                 }
-                                onSelectDay(index)
+                                currentOnSelectDay(index)
                             }
 
                             detectTapGestures { position ->
                                 dayIndexAtPosition(position)?.let(::selectWithHaptic)
                             }
-                        }.pointerInput(slice, cellSizePx, effectiveSelectedIndex, onSelectDay) {
+                        }.pointerInput(
+                            slice.originalStartIndex,
+                            slice.days.size,
+                            slice.weekCount,
+                            cellSizePx,
+                        ) {
                             var lastSelectedIndex: Int? = null
                             detectHorizontalDragGestures(
                                 onDragStart = { position ->
                                     lastSelectedIndex =
                                         dayIndexAtPosition(position)?.also { index ->
-                                            if (index != effectiveSelectedIndex) {
+                                            if (index != currentSelectedIndex) {
                                                 haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                             }
-                                            onSelectDay(index)
+                                            currentOnSelectDay(index)
                                         }
                                 },
                             ) { change, _ ->
@@ -195,7 +209,7 @@ internal fun InsightsFabric(
                                 if (index != null && index != lastSelectedIndex) {
                                     lastSelectedIndex = index
                                     haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    onSelectDay(index)
+                                    currentOnSelectDay(index)
                                 }
                             }
                         },

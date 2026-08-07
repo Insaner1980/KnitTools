@@ -66,6 +66,7 @@ import com.finnvek.knittools.ui.theme.InsightsDimens
 import com.finnvek.knittools.ui.theme.yarnColorForId
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import kotlin.math.floor
 
 @Composable
 fun InsightsScreen(
@@ -181,6 +182,14 @@ private fun LazyListScope.insightsContent(
 internal fun useRangeSelectorFallback(fontScale: Float): Boolean =
     fontScale > InsightsDimens.RangeSelectorFallbackFontScale
 
+internal fun rangeSelectorIndicatorLabelIndex(
+    indicatorOffsetFraction: Float,
+    segmentCount: Int,
+): Int =
+    floor((indicatorOffsetFraction * segmentCount) + 0.5f)
+        .toInt()
+        .coerceIn(0, segmentCount - 1)
+
 @Composable
 private fun InsightsFilters(
     uiState: InsightsUiState,
@@ -235,6 +244,11 @@ private fun InsightsSegmentedRangeSelector(
         animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing),
         label = "Insights range indicator",
     )
+    val indicatorLabelIndex =
+        rangeSelectorIndicatorLabelIndex(
+            indicatorOffsetFraction = indicatorOffsetFraction,
+            segmentCount = insightsRangeOptions.size,
+        )
     BoxWithConstraints(
         modifier =
             Modifier
@@ -274,8 +288,9 @@ private fun InsightsSegmentedRangeSelector(
         Row(
             modifier = Modifier.fillMaxSize(),
         ) {
-            insightsRangeOptions.forEach { option ->
+            insightsRangeOptions.forEachIndexed { index, option ->
                 val selected = option.range == selectedRange
+                val indicatorIsBehindLabel = index == indicatorLabelIndex
                 Box(
                     modifier =
                         Modifier
@@ -292,7 +307,7 @@ private fun InsightsSegmentedRangeSelector(
                         text = stringResource(option.labelResource),
                         style = MaterialTheme.typography.labelLarge,
                         color =
-                            if (selected) {
+                            if (indicatorIsBehindLabel) {
                                 MaterialTheme.colorScheme.onPrimary
                             } else {
                                 MaterialTheme.colorScheme.onSurfaceVariant

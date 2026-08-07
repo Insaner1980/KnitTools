@@ -65,16 +65,15 @@ internal object SessionMetrics {
             zone = zone,
         ).keys
 
-    fun paceBuckets(
+    fun dailyPaceBuckets(
         sessions: List<KnitSession>,
         rangeStartMillis: Long?,
-        interval: PaceGroupingInterval,
         zone: ZoneId,
     ): Map<LocalDate, PaceBucketMetric> {
         val buckets = mutableMapOf<LocalDate, MutablePaceBucket>()
         sessions.forEach { session ->
             session
-                .paceBucketContributions(rangeStartMillis, interval, zone)
+                .dailyPaceBucketContributions(rangeStartMillis, zone)
                 .forEach { (bucketStart, contribution) ->
                     val bucket = buckets.getOrPut(bucketStart) { MutablePaceBucket() }
                     bucket.seconds += contribution.seconds
@@ -187,9 +186,8 @@ internal object SessionMetrics {
         return contributions
     }
 
-    private fun KnitSession.paceBucketContributions(
+    private fun KnitSession.dailyPaceBucketContributions(
         rangeStartMillis: Long?,
-        interval: PaceGroupingInterval,
         zone: ZoneId,
     ): Map<LocalDate, PaceBucketContribution> {
         val activeSeconds = activeDurationSeconds()
@@ -212,10 +210,9 @@ internal object SessionMetrics {
                     .ofEpochMilli(cursor)
                     .atZone(sessionZone)
                     .toLocalDate()
-                    .bucketStart(interval)
             val nextBucketStartMillis =
                 bucketStart
-                    .nextBucketStart(interval)
+                    .plusDays(1)
                     .atStartOfDay(sessionZone)
                     .toInstant()
                     .toEpochMilli()

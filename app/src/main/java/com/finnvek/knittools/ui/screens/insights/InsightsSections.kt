@@ -1,8 +1,8 @@
 package com.finnvek.knittools.ui.screens.insights
 
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -61,6 +61,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
+import kotlin.math.roundToInt
 
 /** Vahva viiva hero-lohkon alla. */
 @Composable
@@ -104,12 +105,13 @@ internal fun InsightsRangeKicker(text: String) {
  */
 @Composable
 internal fun InsightsHero(state: InsightsUiState) {
-    val animatedMinutes by
-        animateIntAsState(
-            targetValue = state.totalMinutes,
+    val animatedMinutes = remember { Animatable(0f) }
+    LaunchedEffect(state.totalMinutes) {
+        animatedMinutes.animateTo(
+            targetValue = state.totalMinutes.toFloat(),
             animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing),
-            label = "insightsHeroDuration",
         )
+    }
     Column(
         modifier =
             Modifier
@@ -118,7 +120,7 @@ internal fun InsightsHero(state: InsightsUiState) {
     ) {
         HeroSentenceText(text = heroLeadInText(state))
         DurationHero(
-            display = DurationDisplayFormatter.fromMinutes(animatedMinutes),
+            display = DurationDisplayFormatter.fromMinutes(animatedMinutes.value.roundToInt()),
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.fillMaxWidth(),
         )

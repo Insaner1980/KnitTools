@@ -135,10 +135,9 @@ class SessionMetricsTest {
                 zone = zone,
             )
         val paceBuckets =
-            SessionMetrics.paceBuckets(
+            SessionMetrics.dailyPaceBuckets(
                 sessions = listOf(session),
                 rangeStartMillis = null,
-                interval = PaceGroupingInterval.DAY,
                 zone = zone,
             )
 
@@ -177,10 +176,9 @@ class SessionMetricsTest {
 
         val bucket =
             SessionMetrics
-                .paceBuckets(
+                .dailyPaceBuckets(
                     sessions = listOf(productiveSession, zeroRowSession),
                     rangeStartMillis = null,
-                    interval = PaceGroupingInterval.DAY,
                     zone = zone,
                 ).values
                 .single()

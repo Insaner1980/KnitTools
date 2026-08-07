@@ -66,11 +66,6 @@ data class ProjectTime(
     val lastSessionAt: Long,
 )
 
-enum class PaceGroupingInterval {
-    DAY,
-    MONTH,
-}
-
 enum class TimeRange {
     ALL_TIME,
     THIS_WEEK,
@@ -443,10 +438,9 @@ class InsightsViewModel
                     sessions
                         .groupBy { it.projectId }
                         .mapValues { (_, projectSessions) ->
-                            SessionMetrics.paceBuckets(
+                            SessionMetrics.dailyPaceBuckets(
                                 sessions = projectSessions,
                                 rangeStartMillis = params.startMillis,
-                                interval = PaceGroupingInterval.DAY,
                                 zone = zone,
                             )
                         }
@@ -688,15 +682,3 @@ private data class MeasuredProject(
     val totalRows: Int,
     val lastSessionAt: Long,
 )
-
-internal fun LocalDate.bucketStart(interval: PaceGroupingInterval): LocalDate =
-    when (interval) {
-        PaceGroupingInterval.DAY -> this
-        PaceGroupingInterval.MONTH -> withDayOfMonth(1)
-    }
-
-internal fun LocalDate.nextBucketStart(interval: PaceGroupingInterval): LocalDate =
-    when (interval) {
-        PaceGroupingInterval.DAY -> plusDays(1)
-        PaceGroupingInterval.MONTH -> plusMonths(1)
-    }

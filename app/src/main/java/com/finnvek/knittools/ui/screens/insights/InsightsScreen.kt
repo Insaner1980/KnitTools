@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -50,6 +51,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.collapse
 import androidx.compose.ui.semantics.expand
 import androidx.compose.ui.semantics.semantics
@@ -66,7 +68,6 @@ import com.finnvek.knittools.ui.theme.InsightsDimens
 import com.finnvek.knittools.ui.theme.yarnColorForId
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import kotlin.math.floor
 
 @Composable
 fun InsightsScreen(
@@ -189,14 +190,6 @@ private fun LazyListScope.insightsContent(
 internal fun useRangeSelectorFallback(fontScale: Float): Boolean =
     fontScale > InsightsDimens.RANGE_SELECTOR_FALLBACK_FONT_SCALE
 
-internal fun rangeSelectorIndicatorLabelIndex(
-    indicatorOffsetFraction: Float,
-    segmentCount: Int,
-): Int =
-    floor((indicatorOffsetFraction * segmentCount) + 0.5f)
-        .toInt()
-        .coerceIn(0, segmentCount - 1)
-
 @Composable
 private fun InsightsFilters(
     uiState: InsightsUiState,
@@ -229,7 +222,7 @@ private val insightsRangeOptions =
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun InsightsRangeSelector(
+internal fun InsightsRangeSelector(
     selectedRange: TimeRange,
     onSelectRange: (TimeRange) -> Unit,
 ) {
@@ -251,11 +244,6 @@ private fun InsightsSegmentedRangeSelector(
         animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing),
         label = "Insights range indicator",
     )
-    val indicatorLabelIndex =
-        rangeSelectorIndicatorLabelIndex(
-            indicatorOffsetFraction = indicatorOffsetFraction,
-            segmentCount = insightsRangeOptions.size,
-        )
     BoxWithConstraints(
         modifier =
             Modifier
@@ -263,6 +251,7 @@ private fun InsightsSegmentedRangeSelector(
                 .heightIn(min = InsightsDimens.FilterChipMinTouchTarget)
                 .selectableGroup(),
     ) {
+        val selectorWidth = maxWidth
         val availableIndicatorWidth = maxWidth - (InsightsDimens.RangeSelectorIndicatorPadding * 2)
         val indicatorWidth = availableIndicatorWidth / insightsRangeOptions.size
         val indicatorOffset =
@@ -295,9 +284,8 @@ private fun InsightsSegmentedRangeSelector(
         Row(
             modifier = Modifier.fillMaxSize(),
         ) {
-            insightsRangeOptions.forEachIndexed { index, option ->
+            insightsRangeOptions.forEach { option ->
                 val selected = option.range == selectedRange
-                val indicatorIsBehindLabel = index == indicatorLabelIndex
                 Box(
                     modifier =
                         Modifier
@@ -313,15 +301,49 @@ private fun InsightsSegmentedRangeSelector(
                     Text(
                         text = stringResource(option.labelResource),
                         style = MaterialTheme.typography.labelLarge,
-                        color =
-                            if (indicatorIsBehindLabel) {
-                                MaterialTheme.colorScheme.onPrimary
-                            } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                            },
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
+                }
+            }
+        }
+
+        Box(
+            modifier =
+                Modifier
+                    .align(Alignment.CenterStart)
+                    .offset(x = indicatorOffset)
+                    .width(indicatorWidth)
+                    .height(InsightsDimens.RangeSelectorHeight)
+                    .padding(InsightsDimens.RangeSelectorIndicatorPadding)
+                    .clip(InsightsDimens.FilterChipShape)
+                    .clearAndSetSemantics {},
+        ) {
+            Row(
+                modifier =
+                    Modifier
+                        .offset(x = -(indicatorOffset + InsightsDimens.RangeSelectorIndicatorPadding))
+                        .requiredWidth(selectorWidth)
+                        .fillMaxHeight(),
+            ) {
+                insightsRangeOptions.forEach { option ->
+                    Box(
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
+                                .padding(horizontal = InsightsDimens.RangeSelectorIndicatorPadding),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = stringResource(option.labelResource),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
                 }
             }
         }

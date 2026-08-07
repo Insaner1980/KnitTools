@@ -100,6 +100,37 @@ class InsightsFabricModelTest {
     }
 
     @Test
+    fun `zero minute day has no dominant project when cross midnight rounding allocates rows`() {
+        val zone = ZoneId.of("UTC")
+        val secondDate = LocalDate.of(2026, 1, 2)
+        val midnight = instantMillis(secondDate, hour = 0, minute = 0, zone = zone)
+        val session =
+            KnitSession(
+                projectId = 7L,
+                startedAt = midnight - 100L,
+                endedAt = midnight + 900L,
+                startRow = 0,
+                endRow = 10,
+                durationMinutes = 0,
+                durationSeconds = 0L,
+                rowsWorked = 10,
+                zoneId = zone.id,
+            )
+
+        val firstDay =
+            buildInsightsFabricModel(
+                sessions = listOf(session),
+                today = secondDate,
+                firstDayOfWeek = DayOfWeek.MONDAY,
+                zone = zone,
+            ).days.single { it.date == secondDate.minusDays(1) }
+
+        assertEquals(0, firstDay.totalMinutes)
+        assertEquals(1, firstDay.totalRows)
+        assertEquals(null, firstDay.dominantProjectId)
+    }
+
+    @Test
     fun `daily minutes use the existing per-project display allocation`() {
         val zone = ZoneId.of("UTC")
         val day = LocalDate.of(2026, 4, 8)

@@ -10,7 +10,9 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -206,10 +208,12 @@ internal fun InsightsFabric(
                                 },
                             ) { change, _ ->
                                 val index = dayIndexAtPosition(change.position)
-                                if (index != null && index != lastSelectedIndex) {
+                                if (index != null && index != lastSelectedIndex && index != currentSelectedIndex) {
                                     lastSelectedIndex = index
                                     haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                     currentOnSelectDay(index)
+                                } else if (index != null) {
+                                    lastSelectedIndex = index
                                 }
                             }
                         },
@@ -285,6 +289,16 @@ internal fun InsightsFabric(
                     )
                 }
             }
+            Text(
+                text = stringResource(R.string.insights_chart_hint_day),
+                style =
+                    MaterialTheme.typography.bodySmall.copy(
+                        fontSize = InsightsDimens.ChartHintFontSize,
+                        fontWeight = FontWeight.Medium,
+                    ),
+                color = MaterialTheme.knitToolsColors.onSurfaceMuted,
+                modifier = Modifier.padding(top = InsightsDimens.ChartHintTopPadding),
+            )
         }
     }
 }

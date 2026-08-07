@@ -31,10 +31,9 @@ internal fun buildInsightsFabricModel(
         sessions
             .groupBy { it.projectId }
             .mapValues { (_, projectSessions) ->
-                SessionMetrics.paceBuckets(
+                SessionMetrics.dailyPaceBuckets(
                     sessions = projectSessions,
                     rangeStartMillis = null,
-                    interval = PaceGroupingInterval.DAY,
                     zone = zone,
                 )
             }
@@ -73,7 +72,8 @@ internal fun buildInsightsFabricModel(
                         .minWithOrNull(
                             compareByDescending<Pair<Long, PaceBucketMetric>> { it.second.totalSeconds }
                                 .thenBy { it.first },
-                        )?.first,
+                        )?.first
+                        ?.takeIf { totalMinutes > 0 },
                 level =
                     when {
                         totalMinutes == 0 -> 0

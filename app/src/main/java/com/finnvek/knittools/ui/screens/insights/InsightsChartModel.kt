@@ -8,9 +8,6 @@ import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.math.roundToInt
 
-/** Kuinka monta kuukausipylvästä All Time näyttää enintään. */
-internal const val ALL_TIME_MONTH_BUCKET_LIMIT = 12
-
 /** Kuinka monta viikkosaraketta All Time -silmukkakangas näyttää enintään. */
 internal const val FABRIC_MAX_WEEKS = 26
 
@@ -34,7 +31,6 @@ data class InsightsChartBucket(
 
 /** Kaavion akseli: ryhmittelyväli ja kaikki ämpärialut järjestyksessä. */
 data class InsightsChartAxis(
-    val interval: PaceGroupingInterval,
     val bucketStarts: List<LocalDate>,
 )
 
@@ -57,24 +53,23 @@ data class InsightsTrend(
  * väittäisi ettei käyttäjä tehnyt mitään päivänä jota ei ole vielä ollut, ja
  * ämpärimäärä vastaa näin osion "x / y päivää" -lukemaa.
  *
- * All Time ryhmittelee kuukausiin, mutta jos dataa on alle kahdelta kuukaudelta,
- * palataan päiväämpäreihin ensimmäisestä istunnosta alkaen, jottei kaavio ole yksi
- * yksinäinen pylväs eikä ala tyhjillä päivillä ennen ensimmäistä istuntoa.
+ * All Time käyttää erillistä silmukkakangasta eikä sillä ole pylväsakselia.
  */
 internal fun insightsChartAxis(
     timeRange: TimeRange,
     today: LocalDate,
-    firstSessionDate: LocalDate?,
     firstDayOfWeek: DayOfWeek,
-): InsightsChartAxis =
-    when (timeRange) {
+): InsightsChartAxis {
+    require(timeRange != TimeRange.ALL_TIME) { "All Time uses the stitch fabric" }
+    return when (timeRange) {
         TimeRange.THIS_WEEK ->
             dayAxis(today.with(TemporalAdjusters.previousOrSame(firstDayOfWeek)), today)
 
         TimeRange.THIS_MONTH -> dayAxis(today.withDayOfMonth(1), today)
 
-        TimeRange.ALL_TIME -> allTimeAxis(today, firstSessionDate)
+        TimeRange.ALL_TIME -> error("Checked above")
     }
+}
 
 private fun dayAxis(
     start: LocalDate,
@@ -83,26 +78,7 @@ private fun dayAxis(
     val firstDay = if (start.isAfter(today)) today else start
     val dayCount = ChronoUnit.DAYS.between(firstDay, today).toInt() + 1
     return InsightsChartAxis(
-        interval = PaceGroupingInterval.DAY,
         bucketStarts = (0 until dayCount).map { firstDay.plusDays(it.toLong()) },
-    )
-}
-
-private fun allTimeAxis(
-    today: LocalDate,
-    firstSessionDate: LocalDate?,
-): InsightsChartAxis {
-    val currentMonth = today.withDayOfMonth(1)
-    val firstMonth = firstSessionDate?.withDayOfMonth(1) ?: return dayAxis(currentMonth, today)
-    val monthSpan = ChronoUnit.MONTHS.between(firstMonth, currentMonth) + 1
-    if (monthSpan < 2) return dayAxis(firstSessionDate, today)
-
-    val earliestShownMonth = currentMonth.minusMonths(ALL_TIME_MONTH_BUCKET_LIMIT - 1L)
-    val start = if (firstMonth.isAfter(earliestShownMonth)) firstMonth else earliestShownMonth
-    val bucketCount = ChronoUnit.MONTHS.between(start, currentMonth).toInt() + 1
-    return InsightsChartAxis(
-        interval = PaceGroupingInterval.MONTH,
-        bucketStarts = (0 until bucketCount).map { start.plusMonths(it.toLong()) },
     )
 }
 

@@ -132,6 +132,7 @@ class InsightsViewModelTest {
 
             assertEquals(20, activeDays.sumOf { it.totalMinutes })
             assertEquals(setOf(2L), activeDays.mapNotNull { it.dominantProjectId }.toSet())
+            assertEquals(emptyList<InsightsChartBucket>(), state.chartBuckets)
         }
 
     @Test
@@ -290,10 +291,7 @@ class InsightsViewModelTest {
             )
         val rangeStart = yesterday.atStartOfDay(zone).toInstant().toEpochMilli()
         val axis =
-            InsightsChartAxis(
-                interval = PaceGroupingInterval.DAY,
-                bucketStarts = listOf(yesterday, today),
-            )
+            InsightsChartAxis(bucketStarts = listOf(yesterday, today))
 
         val buckets =
             fillChartBuckets(
@@ -340,7 +338,6 @@ class InsightsViewModelTest {
             insightsChartAxis(
                 timeRange = TimeRange.THIS_MONTH,
                 today = currentDeviceDate,
-                firstSessionDate = sessionDate,
                 firstDayOfWeek = DayOfWeek.MONDAY,
             )
 
@@ -399,49 +396,11 @@ class InsightsViewModelTest {
     }
 
     @Test
-    fun `all time chart groups out of order sessions by month`() {
-        val zone = ZoneId.of("UTC")
-        val january = LocalDate.of(2026, 1, 12)
-        val february = LocalDate.of(2026, 2, 2)
-        val sessions =
-            listOf(
-                sessionAt(date = february, hour = 9, minute = 0, rows = 20, minutes = 30, zone = zone),
-                sessionAt(date = january, hour = 9, minute = 0, rows = 10, minutes = 30, zone = zone),
-            )
-        val axis =
-            insightsChartAxis(
-                timeRange = TimeRange.ALL_TIME,
-                today = february,
-                firstSessionDate = january,
-                firstDayOfWeek = DayOfWeek.MONDAY,
-            )
-
-        val buckets =
-            fillChartBuckets(
-                axis = axis,
-                measured =
-                    InsightsViewModel.measuredChartBuckets(
-                        sessions = sessions,
-                        params = InsightsQueryParams(timeRange = TimeRange.ALL_TIME, currentDate = february),
-                        axis = axis,
-                        zone = zone,
-                    ),
-            )
-
-        assertEquals(PaceGroupingInterval.MONTH, axis.interval)
-        assertEquals(
-            listOf(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 2, 1)),
-            buckets.map { it.bucketStart },
-        )
-    }
-
-    @Test
     fun `chart keeps minutes for sessions that recorded no rows`() {
         val zone = ZoneId.systemDefault()
         val today = LocalDate.now(zone)
         val session = sessionAt(date = today, hour = 10, minute = 0, rows = 0, minutes = 30, zone = zone)
-        val axis =
-            InsightsChartAxis(interval = PaceGroupingInterval.DAY, bucketStarts = listOf(today))
+        val axis = InsightsChartAxis(bucketStarts = listOf(today))
 
         val buckets =
             fillChartBuckets(
@@ -475,7 +434,7 @@ class InsightsViewModelTest {
                 sessionAt(date = day, hour = 12, minute = 0, rows = 4, minutes = 45, zone = zone)
                     .copy(projectId = 3L),
             )
-        val axis = InsightsChartAxis(interval = PaceGroupingInterval.DAY, bucketStarts = listOf(day))
+        val axis = InsightsChartAxis(bucketStarts = listOf(day))
 
         val bucket =
             InsightsViewModel

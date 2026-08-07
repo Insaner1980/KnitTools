@@ -29,7 +29,7 @@ object InsightsDimens {
     val RangeSelectorHeight = 44.dp
     val RangeSelectorIndicatorPadding = 3.dp
     val RangeSelectorProjectSpacing = 4.dp
-    const val RangeSelectorFallbackFontScale = 1.3f
+    const val RANGE_SELECTOR_FALLBACK_FONT_SCALE = 1.3f
 
     // Kicker
     val KickerTopPadding = 14.dp
@@ -91,7 +91,24 @@ object InsightsDimens {
     val ChartBarCorner = 3.dp
     val ChartWeekBarWidth = 34.dp
     val ChartMonthBarWidth = 10.dp
-    val ChartAllTimeBarWidth = 22.dp
+
+    // All Time -silmukkakangas
+    val FabricMinCellSize = 11.dp
+
+    @Suppress("MayBeConstant")
+    val FabricStitchStrokeRatio = 4.5f
+
+    val FabricSelectedOutlineWidth = 1.5.dp
+    val FabricLabelBandHeight = 22.dp
+
+    @Suppress("MayBeConstant")
+    val FabricInkLevel1 = 0.45f
+
+    @Suppress("MayBeConstant")
+    val FabricInkLevel2 = 0.7f
+
+    @Suppress("MayBeConstant")
+    val FabricInkLevel3 = 1f
 
     // Valinnan korostus: merkkiviiva perusviivassa ja muut pylväät himmennetään.
     val ChartSelectionMarkerBand = 12.dp

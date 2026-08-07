@@ -14,8 +14,8 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -75,14 +75,12 @@ fun InsightsScreen(
     viewModel: InsightsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    var selectedBucketIndex by remember { mutableStateOf<Int?>(null) }
+    var selectedDataIndex by remember { mutableStateOf<Int?>(null) }
 
     // Valinta on ohimenevää käyttöliittymätilaa: se nollautuu, kun aikaväli tai projektisuodatin vaihtuu.
     LaunchedEffect(uiState.timeRange, uiState.selectedProjectId) {
-        selectedBucketIndex = null
+        selectedDataIndex = null
     }
-    val effectiveBucketIndex =
-        selectedBucketIndex ?: defaultSelectedBucketIndex(uiState.chartBuckets)
     val rangeLabel = insightsRangeLabel(uiState)
 
     Scaffold(containerColor = MaterialTheme.colorScheme.background) { padding ->
@@ -108,8 +106,8 @@ fun InsightsScreen(
                     insightsContent(
                         uiState = uiState,
                         rangeLabel = rangeLabel,
-                        selectedBucketIndex = effectiveBucketIndex,
-                        onSelectBucket = { selectedBucketIndex = it },
+                        selectedDataIndex = selectedDataIndex,
+                        onSelectData = { selectedDataIndex = it },
                         onProUpgrade = onProUpgrade,
                         onLaunchCounter = onLaunchCounter,
                     )
@@ -121,8 +119,8 @@ fun InsightsScreen(
 private fun LazyListScope.insightsContent(
     uiState: InsightsUiState,
     rangeLabel: String,
-    selectedBucketIndex: Int?,
-    onSelectBucket: (Int) -> Unit,
+    selectedDataIndex: Int?,
+    onSelectData: (Int) -> Unit,
     onProUpgrade: () -> Unit,
     onLaunchCounter: (Long) -> Unit,
 ) {
@@ -141,15 +139,24 @@ private fun LazyListScope.insightsContent(
     }
     item {
         if (uiState.isPro) {
-            InsightsChart(
-                buckets = uiState.chartBuckets,
-                interval = uiState.chartInterval,
-                timeRange = uiState.timeRange,
-                today = uiState.rangeEnd,
-                selectedIndex = selectedBucketIndex,
-                contentDescription = chartContentDescription(uiState, rangeLabel),
-                onSelectBucket = onSelectBucket,
-            )
+            if (uiState.timeRange == TimeRange.ALL_TIME) {
+                uiState.fabric?.let { fabric ->
+                    InsightsFabric(
+                        model = fabric,
+                        selectedIndex = selectedDataIndex,
+                        onSelectDay = onSelectData,
+                    )
+                }
+            } else {
+                InsightsChart(
+                    buckets = uiState.chartBuckets,
+                    timeRange = uiState.timeRange,
+                    today = uiState.rangeEnd,
+                    selectedIndex = selectedDataIndex ?: defaultSelectedBucketIndex(uiState.chartBuckets),
+                    contentDescription = chartContentDescription(uiState, rangeLabel),
+                    onSelectBucket = onSelectData,
+                )
+            }
         } else {
             InsightsProChartCard(onProUpgrade = onProUpgrade)
         }
@@ -180,7 +187,7 @@ private fun LazyListScope.insightsContent(
 }
 
 internal fun useRangeSelectorFallback(fontScale: Float): Boolean =
-    fontScale > InsightsDimens.RangeSelectorFallbackFontScale
+    fontScale > InsightsDimens.RANGE_SELECTOR_FALLBACK_FONT_SCALE
 
 internal fun rangeSelectorIndicatorLabelIndex(
     indicatorOffsetFraction: Float,
@@ -484,11 +491,7 @@ private fun chartContentDescription(
 ): String {
     val longestMinutes = uiState.chartBuckets.maxOfOrNull { it.totalMinutes } ?: 0
     return stringResource(
-        if (uiState.chartInterval == PaceGroupingInterval.MONTH) {
-            R.string.insights_chart_a11y_monthly
-        } else {
-            R.string.insights_chart_a11y_daily
-        },
+        R.string.insights_chart_a11y_daily,
         craftVerbText(uiState.craftMix),
         rangeLabel,
         daysMetaText(uiState),

@@ -65,13 +65,12 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 /**
- * Päivä- tai kuukausipylväät asteikolla. Käyttäjä näkee arvon ilman kosketusta:
+ * Päiväpylväät asteikolla. Käyttäjä näkee arvon ilman kosketusta:
  * maksimi on merkitty apuviivalle ja valittu ämpäri lukemarivillä.
  */
 @Composable
 internal fun InsightsChart(
     buckets: List<InsightsChartBucket>,
-    interval: PaceGroupingInterval,
     timeRange: TimeRange,
     today: LocalDate,
     selectedIndex: Int?,
@@ -99,9 +98,11 @@ internal fun InsightsChart(
 
     Column(modifier = modifier.fillMaxWidth()) {
         ChartReadout(
-            bucket = selectedIndex?.let(buckets::getOrNull),
-            interval = interval,
-            fallbackLabel = buckets.firstOrNull()?.bucketStart,
+            readout =
+                selectedIndex?.let(buckets::getOrNull)?.let { bucket ->
+                    InsightsReadout(bucket.bucketStart, bucket.totalMinutes, bucket.totalRows)
+                },
+            fallbackDate = buckets.firstOrNull()?.bucketStart,
             hasAnyData = maxMinutes > 0,
         )
         val nextLabel = stringResource(R.string.insights_chart_a11y_next)
@@ -117,10 +118,10 @@ internal fun InsightsChart(
                         customActions =
                             listOf(
                                 CustomAccessibilityAction(nextLabel) {
-                                    moveChartSelection(buckets, selectedIndex, STEP_NEXT, selectBucket)
+                                    moveSelection(buckets.size, selectedIndex, STEP_NEXT, selectBucket)
                                 },
                                 CustomAccessibilityAction(previousLabel) {
-                                    moveChartSelection(buckets, selectedIndex, STEP_PREVIOUS, selectBucket)
+                                    moveSelection(buckets.size, selectedIndex, STEP_PREVIOUS, selectBucket)
                                 },
                             )
                     },
@@ -136,7 +137,6 @@ internal fun InsightsChart(
                 )
                 ChartAxisLabels(
                     buckets = buckets,
-                    interval = interval,
                     timeRange = timeRange,
                     today = today,
                 )
@@ -165,11 +165,7 @@ internal fun InsightsChart(
             Text(
                 text =
                     stringResource(
-                        if (interval == PaceGroupingInterval.MONTH) {
-                            R.string.insights_chart_hint_month
-                        } else {
-                            R.string.insights_chart_hint_day
-                        },
+                        R.string.insights_chart_hint_day,
                     ),
                 style =
                     MaterialTheme.typography.bodySmall.copy(
@@ -184,22 +180,23 @@ internal fun InsightsChart(
 }
 
 /**
- * Siirtää valintaa yhden ämpärin verran ruudunlukijan toiminnolle. Palauttaa false,
- * kun mitään ei liikahda — tyhjässä kaaviossa ja reunassa — jolloin alusta osaa
+ * Siirtää valintaa yhden kohteen verran ruudunlukijan toiminnolle. Palauttaa false,
+ * kun mitään ei liikahda — tyhjässä listassa ja reunassa — jolloin alusta osaa
  * kertoa ettei liike jatku, samoin kuin sisäänrakennetut vieritystoiminnot.
  * Ilman valintaa molemmat suunnat osuvat ensimmäiseen ämpäriin, koska
- * askeleelle ei ole vielä lähtöpistettä.
+ * askeleelle ei ole vielä lähtöpistettä. Sama logiikka palvelee pylväitä ja fabricin
+ * näkyvää päiväsliceä.
  */
-internal fun moveChartSelection(
-    buckets: List<InsightsChartBucket>,
+internal fun moveSelection(
+    itemCount: Int,
     selectedIndex: Int?,
     step: Int,
-    onSelectBucket: (Int) -> Unit,
+    onSelect: (Int) -> Unit,
 ): Boolean {
-    if (buckets.isEmpty()) return false
-    val target = if (selectedIndex == null) 0 else (selectedIndex + step).coerceIn(0, buckets.lastIndex)
+    if (itemCount <= 0) return false
+    val target = if (selectedIndex == null) 0 else (selectedIndex + step).coerceIn(0, itemCount - 1)
     if (target == selectedIndex) return false
-    onSelectBucket(target)
+    onSelect(target)
     return true
 }
 
@@ -225,16 +222,20 @@ internal fun chartBarGrowthHeight(
  * Valitun ämpärin lukema. Rivillä on vain yksi kesto, jotta kahta eri merkityksistä
  * lukua ei lueta välinä; asteikon maksimi asuu plotin yläreunassa.
  */
+internal data class InsightsReadout(
+    val date: LocalDate,
+    val totalMinutes: Int,
+    val totalRows: Int,
+)
+
 @Composable
-private fun ChartReadout(
-    bucket: InsightsChartBucket?,
-    interval: PaceGroupingInterval,
-    fallbackLabel: LocalDate?,
+internal fun ChartReadout(
+    readout: InsightsReadout?,
+    fallbackDate: LocalDate?,
     hasAnyData: Boolean,
 ) {
-    val label = bucket?.bucketStart ?: fallbackLabel
-    val labelText = label?.let { bucketLabel(it, interval) }.orEmpty()
-    val hasValue = bucket != null && bucket.totalMinutes > 0
+    val labelText = (readout?.date ?: fallbackDate)?.let { bucketLabel(it) }.orEmpty()
+    val hasValue = readout != null && readout.totalMinutes > 0
     val stacked = LocalDensity.current.fontScale > InsightsDimens.ChartReadoutStackFontScale
 
     // Lukema on live region kummassakin asettelussa: kun valinta siirtyy
@@ -250,8 +251,8 @@ private fun ChartReadout(
                     .padding(top = InsightsDimens.ReadoutTopPadding)
                     .semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite },
         ) {
-            ChartReadoutValue(bucket = bucket, hasValue = hasValue, hasAnyData = hasAnyData)
-            ChartReadoutContext(labelText = labelText, rows = bucket?.totalRows ?: 0)
+            ChartReadoutValue(readout = readout, hasValue = hasValue, hasAnyData = hasAnyData)
+            ChartReadoutContext(labelText = labelText, rows = readout?.totalRows ?: 0)
         }
     } else {
         Row(
@@ -262,14 +263,14 @@ private fun ChartReadout(
                     .semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite },
         ) {
             ChartReadoutValue(
-                bucket = bucket,
+                readout = readout,
                 hasValue = hasValue,
                 hasAnyData = hasAnyData,
                 modifier = Modifier.alignByBaseline(),
             )
             ChartReadoutContext(
                 labelText = labelText,
-                rows = bucket?.totalRows ?: 0,
+                rows = readout?.totalRows ?: 0,
                 modifier =
                     Modifier
                         .weight(1f)
@@ -282,14 +283,14 @@ private fun ChartReadout(
 
 @Composable
 private fun ChartReadoutValue(
-    bucket: InsightsChartBucket?,
+    readout: InsightsReadout?,
     hasValue: Boolean,
     hasAnyData: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    if (hasValue && bucket != null) {
+    if (hasValue && readout != null) {
         Text(
-            text = durationText(DurationDisplayFormatter.fromMinutes(bucket.totalMinutes)),
+            text = durationText(DurationDisplayFormatter.fromMinutes(readout.totalMinutes)),
             style =
                 MaterialTheme.typography.headlineSmall.copy(
                     fontSize = InsightsDimens.ReadoutDurationFontSize,
@@ -608,7 +609,6 @@ private fun DrawScope.drawChartGridlines(
 @Composable
 private fun ChartAxisLabels(
     buckets: List<InsightsChartBucket>,
-    interval: PaceGroupingInterval,
     timeRange: TimeRange,
     today: LocalDate,
 ) {
@@ -616,7 +616,6 @@ private fun ChartAxisLabels(
     val maxLabels =
         when {
             timeRange == TimeRange.THIS_WEEK -> buckets.size
-            interval == PaceGroupingInterval.MONTH -> MONTH_AXIS_MAX_LABELS
             else -> DAY_AXIS_MAX_LABELS
         }
     val labelled = remember(buckets.size, maxLabels) { axisLabelIndices(buckets.size, maxLabels).toSet() }
@@ -640,11 +639,11 @@ private fun ChartAxisLabels(
                     },
             ) {
                 // Oikea reuna on "tänään" vain kun se todella on tämä päivä.
-                val isToday = interval == PaceGroupingInterval.DAY && index == lastIndex && bucket.bucketStart == today
+                val isToday = index == lastIndex && bucket.bucketStart == today
                 if (isToday) {
                     ChartAxisLabel(text = stringResource(R.string.insights_chart_axis_today))
                 } else if (index in labelled) {
-                    ChartAxisLabel(text = axisLabel(bucket.bucketStart, interval, timeRange))
+                    ChartAxisLabel(text = axisLabel(bucket.bucketStart, timeRange))
                 }
             }
         }
@@ -670,46 +669,35 @@ private fun ChartAxisLabel(text: String) {
 
 /** Pylvään leveys vaihtelee aikavälin ämpärimäärän mukaan; pyöristys on kaikilla sama. */
 private fun chartBarWidth(timeRange: TimeRange): Dp =
-    when (timeRange) {
-        TimeRange.THIS_WEEK -> InsightsDimens.ChartWeekBarWidth
-        TimeRange.THIS_MONTH -> InsightsDimens.ChartMonthBarWidth
-        TimeRange.ALL_TIME -> InsightsDimens.ChartAllTimeBarWidth
+    if (timeRange == TimeRange.THIS_WEEK) {
+        InsightsDimens.ChartWeekBarWidth
+    } else {
+        InsightsDimens.ChartMonthBarWidth
     }
 
 @Composable
-internal fun bucketLabel(
-    bucketStart: LocalDate,
-    interval: PaceGroupingInterval,
-): String {
+internal fun bucketLabel(bucketStart: LocalDate): String {
     val locale = currentInsightsLocale()
-    val skeleton = if (interval == PaceGroupingInterval.MONTH) "yMMMM" else "EMMMd"
+    val skeleton = "EMMMd"
     val formatter =
         remember(locale, skeleton) {
             DateTimeFormatter.ofPattern(localizedDateTimePattern(locale, skeleton), locale)
         }
     val label = bucketStart.format(formatter)
-    // Versaalit sopivat viikonpäivälyhenteelle, eivät kuukauden nimelle: "HEINÄKUU 2026" huutaa.
-    return if (interval == PaceGroupingInterval.MONTH) label else label.uppercaseForDisplay(locale)
+    return label.uppercaseForDisplay(locale)
 }
 
 /**
- * Tick-leima on lyhin mahdollinen: viikolla viikonpäivä, kuukaudessa päivän numero,
- * All Timessa kuukauden lyhenne. Lyhenne on oikea muoto akselilla, vaikka se ei
- * kelpaa lauseeseen.
+ * Tick-leima on lyhin mahdollinen: viikolla viikonpäivä ja kuukaudessa päivän numero.
  */
 @Composable
 private fun axisLabel(
     bucketStart: LocalDate,
-    interval: PaceGroupingInterval,
     timeRange: TimeRange,
 ): String {
     val locale: Locale = currentInsightsLocale()
     val skeleton =
-        when {
-            interval == PaceGroupingInterval.MONTH -> "MMM"
-            timeRange == TimeRange.THIS_WEEK -> "E"
-            else -> "d"
-        }
+        if (timeRange == TimeRange.THIS_WEEK) "E" else "d"
     val formatter =
         remember(locale, skeleton) {
             DateTimeFormatter.ofPattern(localizedDateTimePattern(locale, skeleton), locale)
@@ -720,4 +708,3 @@ private fun axisLabel(
 internal const val STEP_NEXT = 1
 internal const val STEP_PREVIOUS = -1
 private const val DAY_AXIS_MAX_LABELS = 5
-private const val MONTH_AXIS_MAX_LABELS = 6

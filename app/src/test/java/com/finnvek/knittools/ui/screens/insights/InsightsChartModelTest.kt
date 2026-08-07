@@ -16,11 +16,9 @@ class InsightsChartModelTest {
             insightsChartAxis(
                 timeRange = TimeRange.THIS_WEEK,
                 today = LocalDate.of(2026, 7, 28),
-                firstSessionDate = LocalDate.of(2026, 1, 1),
                 firstDayOfWeek = monday,
             )
 
-        assertEquals(PaceGroupingInterval.DAY, axis.interval)
         assertEquals(
             listOf(LocalDate.of(2026, 7, 27), LocalDate.of(2026, 7, 28)),
             axis.bucketStarts,
@@ -33,7 +31,6 @@ class InsightsChartModelTest {
             insightsChartAxis(
                 timeRange = TimeRange.THIS_WEEK,
                 today = LocalDate.of(2026, 8, 2),
-                firstSessionDate = LocalDate.of(2026, 1, 1),
                 firstDayOfWeek = monday,
             )
 
@@ -48,77 +45,21 @@ class InsightsChartModelTest {
             insightsChartAxis(
                 timeRange = TimeRange.THIS_MONTH,
                 today = LocalDate.of(2026, 7, 28),
-                firstSessionDate = LocalDate.of(2026, 1, 1),
                 firstDayOfWeek = monday,
             )
 
-        assertEquals(PaceGroupingInterval.DAY, axis.interval)
         assertEquals(28, axis.bucketStarts.size)
         assertEquals(LocalDate.of(2026, 7, 1), axis.bucketStarts.first())
         assertEquals(LocalDate.of(2026, 7, 28), axis.bucketStarts.last())
     }
 
-    @Test
-    fun `all time caps at twelve monthly buckets`() {
-        val axis =
-            insightsChartAxis(
-                timeRange = TimeRange.ALL_TIME,
-                today = LocalDate.of(2026, 7, 28),
-                firstSessionDate = LocalDate.of(2021, 3, 4),
-                firstDayOfWeek = monday,
-            )
-
-        assertEquals(PaceGroupingInterval.MONTH, axis.interval)
-        assertEquals(ALL_TIME_MONTH_BUCKET_LIMIT, axis.bucketStarts.size)
-        assertEquals(LocalDate.of(2025, 8, 1), axis.bucketStarts.first())
-        assertEquals(LocalDate.of(2026, 7, 1), axis.bucketStarts.last())
-    }
-
-    @Test
-    fun `all time starts at the first session month when history is short`() {
-        val axis =
-            insightsChartAxis(
-                timeRange = TimeRange.ALL_TIME,
-                today = LocalDate.of(2026, 7, 28),
-                firstSessionDate = LocalDate.of(2026, 5, 20),
-                firstDayOfWeek = monday,
-            )
-
-        assertEquals(PaceGroupingInterval.MONTH, axis.interval)
-        assertEquals(
-            listOf(LocalDate.of(2026, 5, 1), LocalDate.of(2026, 6, 1), LocalDate.of(2026, 7, 1)),
-            axis.bucketStarts,
+    @Test(expected = IllegalArgumentException::class)
+    fun `all time has no bar chart axis`() {
+        insightsChartAxis(
+            timeRange = TimeRange.ALL_TIME,
+            today = LocalDate.of(2026, 7, 28),
+            firstDayOfWeek = monday,
         )
-    }
-
-    @Test
-    fun `all time day buckets start at the first session not at the month start`() {
-        val axis =
-            insightsChartAxis(
-                timeRange = TimeRange.ALL_TIME,
-                today = LocalDate.of(2026, 7, 28),
-                firstSessionDate = LocalDate.of(2026, 7, 2),
-                firstDayOfWeek = monday,
-            )
-
-        assertEquals(PaceGroupingInterval.DAY, axis.interval)
-        assertEquals(27, axis.bucketStarts.size)
-        assertEquals(LocalDate.of(2026, 7, 2), axis.bucketStarts.first())
-        assertEquals(LocalDate.of(2026, 7, 28), axis.bucketStarts.last())
-    }
-
-    @Test
-    fun `all time without sessions falls back to day buckets`() {
-        val axis =
-            insightsChartAxis(
-                timeRange = TimeRange.ALL_TIME,
-                today = LocalDate.of(2026, 7, 28),
-                firstSessionDate = null,
-                firstDayOfWeek = monday,
-            )
-
-        assertEquals(PaceGroupingInterval.DAY, axis.interval)
-        assertEquals(28, axis.bucketStarts.size)
     }
 
     @Test
@@ -127,7 +68,6 @@ class InsightsChartModelTest {
             insightsChartAxis(
                 timeRange = TimeRange.THIS_WEEK,
                 today = LocalDate.of(2026, 7, 28),
-                firstSessionDate = LocalDate.of(2026, 7, 27),
                 firstDayOfWeek = monday,
             )
         val measured =

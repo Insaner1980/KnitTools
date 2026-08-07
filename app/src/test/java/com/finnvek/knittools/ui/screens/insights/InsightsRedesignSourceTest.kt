@@ -75,7 +75,7 @@ class InsightsRedesignSourceTest {
             Regex("""semantics\(mergeDescendants = true\) \{ liveRegion""").findAll(chart).count(),
         )
         // Reunatapausten ja askelten käyttäytyminen todistetaan kutsumalla
-        // moveChartSelection-funktiota InsightsChartSelectionTest:ssä.
+        // moveSelection-funktiota InsightsChartSelectionTest:ssä.
     }
 
     @Test

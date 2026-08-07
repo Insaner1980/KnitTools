@@ -100,7 +100,6 @@ data class InsightsUiState(
     val selectedProjectName: String? = null,
     val craftMix: InsightsCraftMix = InsightsCraftMix.KNITTING,
     val timePerProject: List<ProjectTime> = emptyList(),
-    val chartInterval: PaceGroupingInterval = PaceGroupingInterval.DAY,
     val chartBuckets: List<InsightsChartBucket> = emptyList(),
     val fabric: InsightsFabricModel? = null,
     val rangeStart: LocalDate? = null,
@@ -250,11 +249,19 @@ class InsightsViewModel
             val allTimeMetrics = SessionMetrics.summarize(sessions, rangeStartMillis = null, zone = zone)
             val rangeMetrics = SessionMetrics.summarize(sessions, params.startMillis, zone)
             val firstSessionDate = firstSessionDate(sessions, zone)
-            val axis = insightsChartAxis(params.timeRange, today, firstSessionDate, firstDayOfWeek)
+            val axis =
+                if (params.timeRange == TimeRange.ALL_TIME) {
+                    null
+                } else {
+                    insightsChartAxis(params.timeRange, today, firstDayOfWeek)
+                }
             val timePerProject = buildTimePerProject(sessions, projectList, params.startMillis, zone)
             val streakMetrics = buildStreakMetrics(sessions, params.startMillis, featureGates.canUseStreak)
             val chartBuckets =
-                buildChartBuckets(sessions, params, axis, zone, timePerProject, featureGates.canUseCharts)
+                axis
+                    ?.let {
+                        buildChartBuckets(sessions, params, it, zone, timePerProject, featureGates.canUseCharts)
+                    }.orEmpty()
             val fabric =
                 if (params.timeRange == TimeRange.ALL_TIME && featureGates.canUseCharts) {
                     buildInsightsFabricModel(sessions, today, firstDayOfWeek, zone)
@@ -280,7 +287,6 @@ class InsightsViewModel
                 selectedProjectName = projectList.firstOrNull { it.id == params.projectId }?.name,
                 craftMix = craftMix(timePerProject, projectList),
                 timePerProject = timePerProject,
-                chartInterval = axis.interval,
                 chartBuckets = chartBuckets,
                 fabric = fabric,
                 rangeStart = rangeStartDate(params.timeRange, today, firstDayOfWeek) ?: firstSessionDate,
@@ -442,7 +448,7 @@ class InsightsViewModel
                             SessionMetrics.paceBuckets(
                                 sessions = projectSessions,
                                 rangeStartMillis = params.startMillis,
-                                interval = axis.interval,
+                                interval = PaceGroupingInterval.DAY,
                                 zone = zone,
                             )
                         }

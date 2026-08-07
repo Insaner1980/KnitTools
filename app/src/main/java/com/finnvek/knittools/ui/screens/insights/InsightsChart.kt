@@ -215,6 +215,12 @@ internal fun chartBarAlpha(
         lerp(1f, InsightsDimens.ChartUnselectedBarAlpha, transitionProgress)
     }
 
+/** Kasvu ankkuroidaan perusviivaan, joten koko pino saavuttaa lopuksi täyden korkeutensa. */
+internal fun chartBarGrowthHeight(
+    finalHeight: Float,
+    progress: Float,
+): Float = finalHeight * progress
+
 /**
  * Valitun ämpärin lukema. Rivillä on vain yksi kesto, jotta kahta eri merkityksistä
  * lukua ei lueta välinä; asteikon maksimi asuu plotin yläreunassa.
@@ -356,6 +362,7 @@ private fun ChartPlot(
     val gridColor = MaterialTheme.colorScheme.onSurface.copy(alpha = InsightsDimens.ChartGridlineAlpha)
     val selectionColor = MaterialTheme.colorScheme.onSurface
     val dimmingProgress = remember { Animatable(0f) }
+    val barGrowthProgress = remember { Animatable(0f) }
     LaunchedEffect(selectedIndex) {
         dimmingProgress.snapTo(0f)
         if (selectedIndex != null) {
@@ -364,6 +371,13 @@ private fun ChartPlot(
                 animationSpec = tween(durationMillis = 180, easing = FastOutSlowInEasing),
             )
         }
+    }
+    LaunchedEffect(buckets) {
+        barGrowthProgress.snapTo(0f)
+        barGrowthProgress.animateTo(
+            targetValue = 1f,
+            animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing),
+        )
     }
     // Pinon värit tulevat samasta apurista kuin projektilistan pisteet, jolloin
     // kaavio ja lista luetaan samoilla väreillä.
@@ -452,8 +466,13 @@ private fun ChartPlot(
             // Tyhjä päivä on tyhjä sarake: jatkuva perusviiva kertoo sen jo, ja
             // erillinen tikku lukeutui pieneksi arvoksi.
             if (bucket.totalMinutes <= 0 || maxMinutes <= 0) return@forEachIndexed
-            val barHeight =
+            val finalBarHeight =
                 maxOf(minBarHeightPx, plotHeightPx * bucket.totalMinutes / maxMinutes.toFloat())
+            val barHeight =
+                chartBarGrowthHeight(
+                    finalHeight = finalBarHeight,
+                    progress = barGrowthProgress.value,
+                )
             drawStackedBar(
                 segments = bucket.segments,
                 totalMinutes = bucket.totalMinutes,

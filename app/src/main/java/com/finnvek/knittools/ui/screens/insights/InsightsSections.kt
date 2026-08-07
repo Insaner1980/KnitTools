@@ -2,6 +2,7 @@ package com.finnvek.knittools.ui.screens.insights
 
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -103,6 +104,12 @@ internal fun InsightsRangeKicker(text: String) {
  */
 @Composable
 internal fun InsightsHero(state: InsightsUiState) {
+    val animatedMinutes by
+        animateIntAsState(
+            targetValue = state.totalMinutes,
+            animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing),
+            label = "insightsHeroDuration",
+        )
     Column(
         modifier =
             Modifier
@@ -111,7 +118,7 @@ internal fun InsightsHero(state: InsightsUiState) {
     ) {
         HeroSentenceText(text = heroLeadInText(state))
         DurationHero(
-            display = state.totalDuration,
+            display = DurationDisplayFormatter.fromMinutes(animatedMinutes),
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.fillMaxWidth(),
         )

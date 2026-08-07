@@ -489,12 +489,10 @@
         <item quantity="other">%1$d van %2$d dagen</item>
     </plurals>
     <string name="insights_chart_hint_day">Tik of sleep over de dagen.</string>
-    <string name="insights_chart_hint_month">Tik of sleep over de maanden.</string>
     <string name="insights_chart_axis_today">vandaag</string>
     <string name="insights_chart_max_format">max. %1$s</string>
     <string name="insights_no_sessions_yet">Nog geen sessies</string>
     <string name="insights_chart_a11y_daily">Dagelijkse tijd voor %1$s, %2$s, %3$s, langst %4$s</string>
-    <string name="insights_chart_a11y_monthly">Maandelijkse tijd voor %1$s, %2$s, %3$s, langst %4$s</string>
     <string name="insights_chart_a11y_next">Volgende balk</string>
     <string name="insights_chart_a11y_previous">Vorige balk</string>
     <string name="insights_fabric_a11y_summary">Stekenactiviteit: %1$d van %2$d weergegeven dagen actief, %3$s vastgelegd</string>

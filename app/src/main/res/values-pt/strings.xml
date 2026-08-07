@@ -498,12 +498,10 @@
         <item quantity="other">%1$d de %2$d dias</item>
     </plurals>
     <string name="insights_chart_hint_day">Toque ou arraste pelos dias.</string>
-    <string name="insights_chart_hint_month">Toque ou arraste pelos meses.</string>
     <string name="insights_chart_axis_today">hoje</string>
     <string name="insights_chart_max_format">máx. %1$s</string>
     <string name="insights_no_sessions_yet">Ainda sem sessões</string>
     <string name="insights_chart_a11y_daily">Tempo diário a %1$s, %2$s, %3$s, mais longo %4$s</string>
-    <string name="insights_chart_a11y_monthly">Tempo mensal a %1$s, %2$s, %3$s, mais longo %4$s</string>
     <string name="insights_chart_a11y_next">Barra seguinte</string>
     <string name="insights_chart_a11y_previous">Barra anterior</string>
     <string name="insights_fabric_a11y_summary">Atividade de pontos: %1$d de %2$d dias exibidos ativos, %3$s registrados</string>

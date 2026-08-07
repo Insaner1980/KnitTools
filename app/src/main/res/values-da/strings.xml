@@ -489,12 +489,10 @@
         <item quantity="other">%1$d af %2$d dage</item>
     </plurals>
     <string name="insights_chart_hint_day">Tryk eller træk hen over dagene.</string>
-    <string name="insights_chart_hint_month">Tryk eller træk hen over månederne.</string>
     <string name="insights_chart_axis_today">i dag</string>
     <string name="insights_chart_max_format">maks. %1$s</string>
     <string name="insights_no_sessions_yet">Ingen sessioner endnu</string>
     <string name="insights_chart_a11y_daily">Daglig tid til %1$s, %2$s, %3$s, længst %4$s</string>
-    <string name="insights_chart_a11y_monthly">Månedlig tid til %1$s, %2$s, %3$s, længst %4$s</string>
     <string name="insights_chart_a11y_next">Næste søjle</string>
     <string name="insights_chart_a11y_previous">Forrige søjle</string>
     <string name="insights_fabric_a11y_summary">Maskeaktivitet: %1$d af %2$d viste dage aktive, %3$s registreret</string>

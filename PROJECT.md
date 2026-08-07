@@ -1380,6 +1380,7 @@ Julkaisuvalmiuden muistilista:
 - ajankäyttö
 - tahtimittarit
 - charts/heatmap/streak-tyyppiset näkymät
+- `InsightsScreen` omistaa suodattimet, segmentoidun aikavälivalitsimen, valinnan ja listan koostamisen; `InsightsChart` omistaa WEEK/MONTH-pylväiden himmennetyn valinnan perusviivamerkillä, `InsightsFabric` ALL TIME -silmukkakankaan ja `InsightsSections` heron, tilastot, positiivisen putkikehyksen sekä projektien osuuspalkit
 - Pro-gating tyhjentää chart-listat non-Pro-tilassa, mutta perusmittarit lasketaan edelleen `InsightsUiState`en
 - debug-build näyttää footer-tekstin myös ilman sessiodataa; chartit eivät rakenna keksittyä placeholder-dataa
 

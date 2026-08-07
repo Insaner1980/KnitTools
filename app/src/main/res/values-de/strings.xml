@@ -469,6 +469,7 @@
     <string name="insights_stat_rows">Reihen</string>
     <string name="insights_stat_min_per_row">Min pro Reihe</string>
     <string name="insights_stat_day_streak">Tage-Serie</string>
+    <string name="insights_stat_best_streak">Beste Serie</string>
     <string name="insights_trend_more_week">%1$s mehr als letzte Woche</string>
     <string name="insights_trend_less_week">%1$s weniger als letzte Woche</string>
     <string name="insights_trend_same_week">Genauso viel wie letzte Woche</string>
@@ -496,6 +497,9 @@
     <string name="insights_chart_a11y_monthly">Monatliche Zeit für %1$s, %2$s, %3$s, am längsten %4$s</string>
     <string name="insights_chart_a11y_next">Nächster Balken</string>
     <string name="insights_chart_a11y_previous">Vorheriger Balken</string>
+    <string name="insights_fabric_a11y_summary">Maschenaktivität: %1$d von %2$d angezeigten Tagen aktiv, %3$s erfasst</string>
+    <string name="insights_fabric_a11y_next">Nächster Tag</string>
+    <string name="insights_fabric_a11y_previous">Vorheriger Tag</string>
     <string name="insights_project_sub_format">%1$s, %2$s</string>
     <string name="insights_empty_title">Noch keine Zeit an den Nadeln.</string>
     <string name="insights_empty_body">Öffne ein Projekt und beginne zu zählen. Deine Zeit erscheint hier.</string>

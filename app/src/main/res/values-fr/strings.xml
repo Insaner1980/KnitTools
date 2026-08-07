@@ -476,6 +476,7 @@
     <string name="insights_stat_rows">Rangs</string>
     <string name="insights_stat_min_per_row">Min par rang</string>
     <string name="insights_stat_day_streak">Série de jours</string>
+    <string name="insights_stat_best_streak">Meilleure série</string>
     <string name="insights_trend_more_week">%1$s de plus que la semaine dernière</string>
     <string name="insights_trend_less_week">%1$s de moins que la semaine dernière</string>
     <string name="insights_trend_same_week">Comme la semaine dernière</string>
@@ -505,6 +506,9 @@
     <string name="insights_chart_a11y_monthly">Temps mensuel pour %1$s, %2$s, %3$s, plus long %4$s</string>
     <string name="insights_chart_a11y_next">Barre suivante</string>
     <string name="insights_chart_a11y_previous">Barre précédente</string>
+    <string name="insights_fabric_a11y_summary">Activité des mailles : %1$d jours actifs sur %2$d affichés, %3$s enregistrés</string>
+    <string name="insights_fabric_a11y_next">Jour suivant</string>
+    <string name="insights_fabric_a11y_previous">Jour précédent</string>
     <string name="insights_project_sub_format">%1$s, %2$s</string>
     <string name="insights_empty_title">Pas encore de temps sur les aiguilles.</string>
     <string name="insights_empty_body">Ouvrez un projet et commencez à compter. Votre temps apparaîtra ici.</string>

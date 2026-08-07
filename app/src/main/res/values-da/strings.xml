@@ -469,6 +469,7 @@
     <string name="insights_stat_rows">Pinde</string>
     <string name="insights_stat_min_per_row">Min pr. pind</string>
     <string name="insights_stat_day_streak">Dagsstribe</string>
+    <string name="insights_stat_best_streak">Bedste stime</string>
     <string name="insights_trend_more_week">%1$s mere end sidste uge</string>
     <string name="insights_trend_less_week">%1$s mindre end sidste uge</string>
     <string name="insights_trend_same_week">Samme som sidste uge</string>
@@ -496,6 +497,9 @@
     <string name="insights_chart_a11y_monthly">Månedlig tid til %1$s, %2$s, %3$s, længst %4$s</string>
     <string name="insights_chart_a11y_next">Næste søjle</string>
     <string name="insights_chart_a11y_previous">Forrige søjle</string>
+    <string name="insights_fabric_a11y_summary">Maskeaktivitet: %1$d af %2$d viste dage aktive, %3$s registreret</string>
+    <string name="insights_fabric_a11y_next">Næste dag</string>
+    <string name="insights_fabric_a11y_previous">Forrige dag</string>
     <string name="insights_project_sub_format">%1$s, %2$s</string>
     <string name="insights_empty_title">Ingen tid på pindene endnu.</string>
     <string name="insights_empty_body">Åbn et projekt, og begynd at tælle. Din tid dukker op her.</string>

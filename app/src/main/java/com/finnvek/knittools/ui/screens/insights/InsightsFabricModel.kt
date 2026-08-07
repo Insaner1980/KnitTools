@@ -49,8 +49,7 @@ internal fun buildInsightsFabricModel(
             apportionDisplayMinutes(contributions.map { it.second.totalSeconds }).sum()
         }
     val firstSessionDate = contributionsByDate.keys.filterNot { it.isAfter(today) }.minOrNull()
-    val requestedFirstDate =
-        (firstSessionDate ?: today).with(TemporalAdjusters.previousOrSame(firstDayOfWeek))
+    val requestedFirstDate = (firstSessionDate ?: today).with(TemporalAdjusters.previousOrSame(firstDayOfWeek))
     val currentWeekStart = today.with(TemporalAdjusters.previousOrSame(firstDayOfWeek))
     val earliestAllowedDate = currentWeekStart.minusWeeks(FABRIC_MAX_WEEKS - 1L)
     val firstDate = maxOf(requestedFirstDate, earliestAllowedDate)

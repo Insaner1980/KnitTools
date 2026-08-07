@@ -305,7 +305,6 @@ class InsightsViewModelTest {
                                 startMillis = rangeStart,
                                 currentDate = today,
                             ),
-                        axis = axis,
                         zone = zone,
                     ),
             )
@@ -355,7 +354,6 @@ class InsightsViewModelTest {
                                 .toEpochMilli(),
                         currentDate = currentDeviceDate,
                     ),
-                axis = axis,
                 zone = currentDeviceZone,
             )
 
@@ -414,7 +412,6 @@ class InsightsViewModelTest {
                                 startMillis = today.atStartOfDay(zone).toInstant().toEpochMilli(),
                                 currentDate = today,
                             ),
-                        axis = axis,
                         zone = zone,
                     ),
             )
@@ -441,7 +438,6 @@ class InsightsViewModelTest {
                 .measuredChartBuckets(
                     sessions = sessions,
                     params = InsightsQueryParams(timeRange = TimeRange.ALL_TIME, currentDate = day),
-                    axis = axis,
                     zone = zone,
                     projectOrder = listOf(3L, 7L),
                 ).getValue(day)

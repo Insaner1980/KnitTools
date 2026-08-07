@@ -469,6 +469,7 @@
     <string name="insights_stat_rows">Toeren</string>
     <string name="insights_stat_min_per_row">Min per toer</string>
     <string name="insights_stat_day_streak">Dagenreeks</string>
+    <string name="insights_stat_best_streak">Beste reeks</string>
     <string name="insights_trend_more_week">%1$s meer dan vorige week</string>
     <string name="insights_trend_less_week">%1$s minder dan vorige week</string>
     <string name="insights_trend_same_week">Evenveel als vorige week</string>
@@ -496,6 +497,9 @@
     <string name="insights_chart_a11y_monthly">Maandelijkse tijd voor %1$s, %2$s, %3$s, langst %4$s</string>
     <string name="insights_chart_a11y_next">Volgende balk</string>
     <string name="insights_chart_a11y_previous">Vorige balk</string>
+    <string name="insights_fabric_a11y_summary">Stekenactiviteit: %1$d van %2$d weergegeven dagen actief, %3$s vastgelegd</string>
+    <string name="insights_fabric_a11y_next">Volgende dag</string>
+    <string name="insights_fabric_a11y_previous">Vorige dag</string>
     <string name="insights_project_sub_format">%1$s, %2$s</string>
     <string name="insights_empty_title">Nog geen tijd op de naalden.</string>
     <string name="insights_empty_body">Open een project en begin met tellen. Je tijd verschijnt hier.</string>

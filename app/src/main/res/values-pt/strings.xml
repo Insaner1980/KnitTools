@@ -476,6 +476,7 @@
     <string name="insights_stat_rows">Carreiras</string>
     <string name="insights_stat_min_per_row">Min por carreira</string>
     <string name="insights_stat_day_streak">Sequência de dias</string>
+    <string name="insights_stat_best_streak">Melhor sequência</string>
     <string name="insights_trend_more_week">%1$s mais do que na semana passada</string>
     <string name="insights_trend_less_week">%1$s menos do que na semana passada</string>
     <string name="insights_trend_same_week">Igual à semana passada</string>
@@ -505,6 +506,9 @@
     <string name="insights_chart_a11y_monthly">Tempo mensal a %1$s, %2$s, %3$s, mais longo %4$s</string>
     <string name="insights_chart_a11y_next">Barra seguinte</string>
     <string name="insights_chart_a11y_previous">Barra anterior</string>
+    <string name="insights_fabric_a11y_summary">Atividade de pontos: %1$d de %2$d dias exibidos ativos, %3$s registrados</string>
+    <string name="insights_fabric_a11y_next">Próximo dia</string>
+    <string name="insights_fabric_a11y_previous">Dia anterior</string>
     <string name="insights_project_sub_format">%1$s, %2$s</string>
     <string name="insights_empty_title">Ainda sem tempo nas agulhas.</string>
     <string name="insights_empty_body">Abra um projeto e comece a contar. O seu tempo aparecerá aqui.</string>

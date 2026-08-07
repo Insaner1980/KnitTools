@@ -476,6 +476,7 @@
     <string name="insights_stat_rows">Ferri</string>
     <string name="insights_stat_min_per_row">Min per ferro</string>
     <string name="insights_stat_day_streak">Serie di giorni</string>
+    <string name="insights_stat_best_streak">Serie migliore</string>
     <string name="insights_trend_more_week">%1$s in più della settimana scorsa</string>
     <string name="insights_trend_less_week">%1$s in meno della settimana scorsa</string>
     <string name="insights_trend_same_week">Come la settimana scorsa</string>
@@ -505,6 +506,9 @@
     <string name="insights_chart_a11y_monthly">Tempo mensile per %1$s, %2$s, %3$s, il più lungo %4$s</string>
     <string name="insights_chart_a11y_next">Barra successiva</string>
     <string name="insights_chart_a11y_previous">Barra precedente</string>
+    <string name="insights_fabric_a11y_summary">Attività dei punti: %1$d di %2$d giorni visualizzati attivi, %3$s registrati</string>
+    <string name="insights_fabric_a11y_next">Giorno successivo</string>
+    <string name="insights_fabric_a11y_previous">Giorno precedente</string>
     <string name="insights_project_sub_format">%1$s, %2$s</string>
     <string name="insights_empty_title">Ancora nessun tempo sui ferri.</string>
     <string name="insights_empty_body">Apri un progetto e inizia a contare. Il tuo tempo comparirà qui.</string>

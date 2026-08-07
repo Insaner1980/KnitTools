@@ -469,6 +469,7 @@
     <string name="insights_stat_rows">Varv</string>
     <string name="insights_stat_min_per_row">Min per varv</string>
     <string name="insights_stat_day_streak">Dagssvit</string>
+    <string name="insights_stat_best_streak">Bästa svit</string>
     <string name="insights_trend_more_week">%1$s mer än förra veckan</string>
     <string name="insights_trend_less_week">%1$s mindre än förra veckan</string>
     <string name="insights_trend_same_week">Samma som förra veckan</string>
@@ -496,6 +497,9 @@
     <string name="insights_chart_a11y_monthly">Månatlig tid för %1$s, %2$s, %3$s, längst %4$s</string>
     <string name="insights_chart_a11y_next">Nästa stapel</string>
     <string name="insights_chart_a11y_previous">Föregående stapel</string>
+    <string name="insights_fabric_a11y_summary">Maskaktivitet: %1$d av %2$d visade dagar aktiva, %3$s registrerat</string>
+    <string name="insights_fabric_a11y_next">Nästa dag</string>
+    <string name="insights_fabric_a11y_previous">Föregående dag</string>
     <string name="insights_project_sub_format">%1$s, %2$s</string>
     <string name="insights_empty_title">Ingen tid på stickorna än.</string>
     <string name="insights_empty_body">Öppna ett projekt och börja räkna. Din tid dyker upp här.</string>

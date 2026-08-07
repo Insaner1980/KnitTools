@@ -333,7 +333,6 @@ class InsightsViewModel
                 measuredChartBuckets(
                     sessions = sessions,
                     params = params,
-                    axis = axis,
                     zone = zone,
                     projectOrder = timePerProject.map { it.projectId },
                 )
@@ -437,7 +436,6 @@ class InsightsViewModel
             internal fun measuredChartBuckets(
                 sessions: List<KnitSession>,
                 params: InsightsQueryParams,
-                axis: InsightsChartAxis,
                 zone: ZoneId,
                 projectOrder: List<Long> = emptyList(),
             ): Map<LocalDate, InsightsChartBucket> {

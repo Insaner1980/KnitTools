@@ -203,8 +203,7 @@ internal fun streakStatDisplay(
 internal fun allTimeBestStreakTrend(
     currentStreak: Int,
     bestStreak: Int,
-): Int? =
-    bestStreak.takeIf { currentStreak > 0 && it > 0 }
+): Int? = bestStreak.takeIf { currentStreak > 0 && it > 0 }
 
 /** Kolme yhtä leveää saraketta ilman taustoja. Ilman Pro-tilausta putki jätetään pois. */
 @Composable

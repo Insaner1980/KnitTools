@@ -102,6 +102,7 @@ data class InsightsUiState(
     val timePerProject: List<ProjectTime> = emptyList(),
     val chartInterval: PaceGroupingInterval = PaceGroupingInterval.DAY,
     val chartBuckets: List<InsightsChartBucket> = emptyList(),
+    val fabric: InsightsFabricModel? = null,
     val rangeStart: LocalDate? = null,
     val rangeEnd: LocalDate = LocalDate.now(systemDefault()),
     val timeRange: TimeRange = TimeRange.ALL_TIME,
@@ -254,6 +255,12 @@ class InsightsViewModel
             val streakMetrics = buildStreakMetrics(sessions, params.startMillis, featureGates.canUseStreak)
             val chartBuckets =
                 buildChartBuckets(sessions, params, axis, zone, timePerProject, featureGates.canUseCharts)
+            val fabric =
+                if (params.timeRange == TimeRange.ALL_TIME && featureGates.canUseCharts) {
+                    buildInsightsFabricModel(sessions, today, firstDayOfWeek, zone)
+                } else {
+                    null
+                }
             val minutesPerRow =
                 MinutesPerRowFormatter.fromSeconds(rangeMetrics.totalSeconds, rangeMetrics.totalRows)
 
@@ -275,6 +282,7 @@ class InsightsViewModel
                 timePerProject = timePerProject,
                 chartInterval = axis.interval,
                 chartBuckets = chartBuckets,
+                fabric = fabric,
                 rangeStart = rangeStartDate(params.timeRange, today, firstDayOfWeek) ?: firstSessionDate,
                 rangeEnd = today,
                 timeRange = params.timeRange,

@@ -11,6 +11,9 @@ import kotlin.math.roundToInt
 /** Kuinka monta kuukausipylvästä All Time näyttää enintään. */
 internal const val ALL_TIME_MONTH_BUCKET_LIMIT = 12
 
+/** Kuinka monta viikkosaraketta All Time -silmukkakangas näyttää enintään. */
+internal const val FABRIC_MAX_WEEKS = 26
+
 /** Yhden projektin osuus yhdestä pylväästä. Väri haetaan projektin id:llä. */
 data class InsightsChartSegment(
     val projectId: Long,

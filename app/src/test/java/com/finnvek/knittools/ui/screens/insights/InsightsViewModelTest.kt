@@ -104,7 +104,34 @@ class InsightsViewModelTest {
             assertEquals(30, state.totalMinutes)
             assertEquals(12, state.totalRows)
             assertEquals(emptyList<InsightsChartBucket>(), state.chartBuckets)
+            assertNull(state.fabric)
             assertEquals(listOf(1L), state.timePerProject.map { it.projectId })
+        }
+
+    @Test
+    fun `all time fabric uses the sessions already filtered for the selected project`() =
+        runTest {
+            insightsFeature.value = true
+            val zone = ZoneId.systemDefault()
+            val today = LocalDate.now(zone)
+            val allSessions =
+                listOf(
+                    sessionAt(date = today, hour = 9, minute = 0, rows = 60, minutes = 60, zone = zone)
+                        .copy(projectId = 1L),
+                    sessionAt(date = today, hour = 12, minute = 0, rows = 20, minutes = 20, zone = zone)
+                        .copy(projectId = 2L),
+                )
+            every { repository.getSessionsForInsights(null, null) } returns flowOf(allSessions)
+            every { repository.getSessionsForInsights(2L, null) } returns flowOf(listOf(allSessions.last()))
+
+            val viewModel = createViewModel()
+            viewModel.selectProject(2L)
+            val state = viewModel.uiState.first { !it.isLoading && it.selectedProjectId == 2L }
+            val fabric = requireNotNull(state.fabric)
+            val activeDays = fabric.days.filter { it.totalMinutes > 0 }
+
+            assertEquals(20, activeDays.sumOf { it.totalMinutes })
+            assertEquals(setOf(2L), activeDays.mapNotNull { it.dominantProjectId }.toSet())
         }
 
     @Test
@@ -131,6 +158,7 @@ class InsightsViewModelTest {
             assertEquals(state.daysInRange, state.chartBuckets.size)
             assertEquals(today, state.chartBuckets.last().bucketStart)
             assertTrue(state.chartBuckets.all { it.totalMinutes == 0 })
+            assertNull(state.fabric)
         }
 
     @Test

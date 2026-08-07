@@ -1,10 +1,14 @@
 package com.finnvek.knittools.ui.screens.insights
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -24,7 +28,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
@@ -433,6 +441,13 @@ internal fun InsightsProjectRow(
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(top = InsightsDimens.ProjectSubTopMargin),
             )
+            if (rangeTotalMinutes > 0) {
+                ProjectShareBar(
+                    projectId = project.projectId,
+                    projectTotalMinutes = project.totalMinutes,
+                    rangeTotalMinutes = rangeTotalMinutes,
+                )
+            }
         }
         Spacer(modifier = Modifier.width(InsightsDimens.ProjectRowGap))
         Column(horizontalAlignment = Alignment.End) {
@@ -468,6 +483,60 @@ internal fun InsightsProjectRow(
             }
         }
     }
+}
+
+@Composable
+private fun ProjectShareBar(
+    projectId: Long,
+    projectTotalMinutes: Int,
+    rangeTotalMinutes: Int,
+) {
+    BoxWithConstraints(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(top = InsightsDimens.ProjectShareBarTopMargin)
+                .height(InsightsDimens.ProjectShareBarHeight),
+    ) {
+        val targetFraction =
+            projectShareBarFraction(
+                projectTotalMinutes = projectTotalMinutes,
+                rangeTotalMinutes = rangeTotalMinutes,
+                containerWidth = maxWidth,
+            )
+        var hasEnteredComposition by remember { mutableStateOf(false) }
+        val animatedFraction by
+            animateFloatAsState(
+                targetValue = if (hasEnteredComposition) targetFraction else 0f,
+                animationSpec = tween(durationMillis = 350, easing = FastOutSlowInEasing),
+                label = "projectShare",
+            )
+
+        LaunchedEffect(Unit) { hasEnteredComposition = true }
+
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth(animatedFraction)
+                    .height(InsightsDimens.ProjectShareBarHeight)
+                    .background(
+                        color = yarnColorForId(projectId),
+                        shape = RoundedCornerShape(InsightsDimens.ProjectShareBarCorner),
+                    ),
+        )
+    }
+}
+
+internal fun projectShareBarFraction(
+    projectTotalMinutes: Int,
+    rangeTotalMinutes: Int,
+    containerWidth: Dp,
+): Float {
+    if (projectTotalMinutes <= 0 || rangeTotalMinutes <= 0 || containerWidth <= 0.dp) return 0f
+
+    val share = projectTotalMinutes.toFloat() / rangeTotalMinutes
+    val minimumVisibleShare = InsightsDimens.ProjectShareBarHeight / containerWidth
+    return share.coerceAtLeast(minimumVisibleShare).coerceAtMost(1f)
 }
 
 /**

@@ -121,6 +121,9 @@ object InsightsDimens {
     val ProjectSubTopMargin = 2.dp
     val ProjectDurationFontSize = 19.sp
     val ProjectShareFontSize = 13.sp
+    val ProjectShareBarHeight = 3.dp
+    val ProjectShareBarTopMargin = 8.dp
+    val ProjectShareBarCorner = 1.5.dp
 
     // Tyhjät tilat
     val EmptyTitleFontSize = 32.sp

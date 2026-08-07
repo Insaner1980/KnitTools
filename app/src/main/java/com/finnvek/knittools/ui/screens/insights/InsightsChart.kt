@@ -1,5 +1,8 @@
 package com.finnvek.knittools.ui.screens.insights
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -14,6 +17,7 @@ import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,6 +51,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.util.lerp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.DurationDisplayFormatter
 import com.finnvek.knittools.ui.components.durationText
@@ -198,6 +203,18 @@ internal fun moveChartSelection(
     return true
 }
 
+/** Valittu pylväs säilyttää täyden värinsä, kun muut himmenevät valinnan ympäriltä. */
+internal fun chartBarAlpha(
+    barIndex: Int,
+    selectedIndex: Int?,
+    transitionProgress: Float,
+): Float =
+    if (selectedIndex == null || barIndex == selectedIndex) {
+        1f
+    } else {
+        lerp(1f, InsightsDimens.ChartUnselectedBarAlpha, transitionProgress)
+    }
+
 /**
  * Valitun ämpärin lukema. Rivillä on vain yksi kesto, jotta kahta eri merkityksistä
  * lukua ei lueta välinä; asteikon maksimi asuu plotin yläreunassa.
@@ -338,8 +355,16 @@ private fun ChartPlot(
     val fallbackBarColor = MaterialTheme.colorScheme.primary
     val gridColor = MaterialTheme.colorScheme.onSurface.copy(alpha = InsightsDimens.ChartGridlineAlpha)
     val selectionColor = MaterialTheme.colorScheme.onSurface
-    val selectionBandColor =
-        MaterialTheme.colorScheme.onSurface.copy(alpha = InsightsDimens.ChartSelectionBandAlpha)
+    val dimmingProgress = remember { Animatable(0f) }
+    LaunchedEffect(selectedIndex) {
+        dimmingProgress.snapTo(0f)
+        if (selectedIndex != null) {
+            dimmingProgress.animateTo(
+                targetValue = 1f,
+                animationSpec = tween(durationMillis = 180, easing = FastOutSlowInEasing),
+            )
+        }
+    }
     // Pinon värit tulevat samasta apurista kuin projektilistan pisteet, jolloin
     // kaavio ja lista luetaan samoilla väreillä.
     val segmentColors =
@@ -410,18 +435,9 @@ private fun ChartPlot(
             return@Canvas
         }
         val pitch = size.width / buckets.size.toFloat()
-        // Valinta ratkaistaan kerran: kaista piirretään pylväiden alle ja merkki
-        // apuviivojen jälkeen, mutta molemmat tarkoittavat samaa saraketta.
+        // Valinta ratkaistaan kerran: sama sarake säilyttää täyden värin ja saa
+        // apuviivojen jälkeen perusviivamerkin.
         val selectedBucketIndex = selectedIndex?.takeIf { it in buckets.indices }
-        // Valintakaista pylväiden alle, jotta pylväät jäävät sen päälle eikä kaista
-        // himmennä muita sarakkeita — se korostaa vain valitun taustan.
-        selectedBucketIndex?.let { index ->
-            drawRect(
-                color = selectionBandColor,
-                topLeft = Offset(pitch * index, 0f),
-                size = Size(pitch, baselineY),
-            )
-        }
         // Pylväiden väliin jää aina rako, jottei tiheä akseli lukeudu yhtenä möykkynä.
         val minGapPx = InsightsDimens.ChartBarMinGap.toPx()
         val barWidthPx = minOf(barWidth.toPx(), pitch - minGapPx).coerceAtLeast(1f)
@@ -446,6 +462,7 @@ private fun ChartPlot(
                 topLeft = Offset(left, barBottomY - barHeight),
                 barSize = Size(barWidthPx, barHeight),
                 cornerPx = cornerPx,
+                alpha = chartBarAlpha(index, selectedBucketIndex, dimmingProgress.value),
             )
         }
 
@@ -479,9 +496,15 @@ private fun DrawScope.drawStackedBar(
     topLeft: Offset,
     barSize: Size,
     cornerPx: Float,
+    alpha: Float,
 ) {
     if (segments.isEmpty() || totalMinutes <= 0) {
-        drawBarFromBaseline(fallbackColor, topLeft, barSize, cornerPx)
+        drawBarFromBaseline(
+            color = fallbackColor.copy(alpha = fallbackColor.alpha * alpha),
+            topLeft = topLeft,
+            barSize = barSize,
+            cornerPx = cornerPx,
+        )
         return
     }
     clipPath(barPath(topLeft, barSize, cornerPx)) {
@@ -494,8 +517,9 @@ private fun DrawScope.drawStackedBar(
                     barSize.height * segment.minutes / totalMinutes.toFloat()
                 }
             if (height <= 0f) return@forEachIndexed
+            val color = colors[segment.projectId] ?: fallbackColor
             drawRect(
-                color = colors[segment.projectId] ?: fallbackColor,
+                color = color.copy(alpha = color.alpha * alpha),
                 topLeft = Offset(topLeft.x, bottom - height),
                 size = Size(barSize.width, height),
             )

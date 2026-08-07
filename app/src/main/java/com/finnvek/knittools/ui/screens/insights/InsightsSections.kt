@@ -165,6 +165,32 @@ internal fun craftVerbText(craftMix: InsightsCraftMix): String =
         },
     )
 
+internal enum class StreakStatLabel {
+    DAY_STREAK,
+    BEST_STREAK,
+}
+
+internal data class StreakStatDisplay(
+    val value: Int,
+    val label: StreakStatLabel,
+)
+
+internal fun streakStatDisplay(
+    currentStreak: Int,
+    bestStreak: Int,
+): StreakStatDisplay =
+    when {
+        currentStreak > 0 -> StreakStatDisplay(currentStreak, StreakStatLabel.DAY_STREAK)
+        bestStreak > 0 -> StreakStatDisplay(bestStreak, StreakStatLabel.BEST_STREAK)
+        else -> StreakStatDisplay(0, StreakStatLabel.DAY_STREAK)
+    }
+
+internal fun allTimeBestStreakTrend(
+    currentStreak: Int,
+    bestStreak: Int,
+): Int? =
+    bestStreak.takeIf { currentStreak > 0 && it > 0 }
+
 /** Kolme yhtä leveää saraketta ilman taustoja. Ilman Pro-tilausta putki jätetään pois. */
 @Composable
 internal fun InsightsStatsRow(state: InsightsUiState) {
@@ -190,9 +216,16 @@ internal fun InsightsStatsRow(state: InsightsUiState) {
             horizontalAlignment = if (state.canUseStreak) Alignment.Start else Alignment.End,
         )
         if (state.canUseStreak) {
+            val streakDisplay = streakStatDisplay(state.currentStreak, state.bestStreak)
             InsightsStat(
-                value = formatIntegerForDisplay(state.currentStreak.toLong(), locale),
-                label = stringResource(R.string.insights_stat_day_streak),
+                value = formatIntegerForDisplay(streakDisplay.value.toLong(), locale),
+                label =
+                    stringResource(
+                        when (streakDisplay.label) {
+                            StreakStatLabel.DAY_STREAK -> R.string.insights_stat_day_streak
+                            StreakStatLabel.BEST_STREAK -> R.string.insights_stat_best_streak
+                        },
+                    ),
                 modifier = Modifier.weight(1f),
                 horizontalAlignment = Alignment.End,
             )
@@ -225,8 +258,10 @@ internal fun InsightsTrendLine(state: InsightsUiState) {
 private fun trendLineText(state: InsightsUiState): String? {
     val locale = rememberCurrentLocale()
     if (state.timeRange == TimeRange.ALL_TIME) {
-        if (!state.canUseStreak || state.bestStreak <= 0) return null
-        return pluralStringResource(R.plurals.insights_best_streak, state.bestStreak, state.bestStreak)
+        if (!state.canUseStreak) return null
+        return allTimeBestStreakTrend(state.currentStreak, state.bestStreak)?.let { bestStreak ->
+            pluralStringResource(R.plurals.insights_best_streak, bestStreak, bestStreak)
+        }
     }
     val trend = state.trend ?: return null
     val percent = formatPercentForDisplay(trend.percentChange / 100.0, locale)

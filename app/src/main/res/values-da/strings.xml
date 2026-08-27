@@ -137,7 +137,6 @@
     <string name="pattern_open_failed">Opskriften kunne ikke åbnes.</string>
     <string name="pattern_show_reading_line">Vis læselinje</string>
     <string name="pattern_hide_reading_line">Skjul læselinje</string>
-    <string name="pattern_save_line_as_row">Gem linje som pind %1$d</string>
     <string name="pattern_clear_row_mark">Fjern pindmarkering</string>
     <string name="pattern_clear_page_marks">Fjern sidens markeringer</string>
     <string name="pattern_calibrate_rows">Kalibrer pinde</string>
@@ -146,7 +145,6 @@
     <string name="pattern_calibration_save_first">Gem første</string>
     <string name="pattern_calibration_save_last">Gem sidste</string>
     <string name="pattern_calibration_invalid_row">Brug to forskellige pindnumre</string>
-    <string name="pattern_reading_line_description">Læselinje</string>
     <string name="pattern_page_jump">Gå til side</string>
     <string name="pattern_page_number">Sidenummer</string>
     <string name="pattern_page_indicator">Side %1$d af %2$d</string>
@@ -759,11 +757,9 @@
     <string name="work_session_start">Start arbejdssession</string>
     <string name="work_session_stop">Stop arbejdssession</string>
     <string name="work_session_active">Arbejdssession aktiv</string>
-    <string name="work_session_rows_format">%1$d rækker</string>
     <string name="work_session_recovery_needed">Sessionstiden skal gennemgås</string>
     <string name="work_session_resolve">Løs</string>
     <string name="work_session_recovery_title">Gennemgå sessionstid</string>
-    <string name="work_session_recovery_body">KnitTools kunne ikke bekræfte det seneste tidsrum. Tilføj den tid, der skal beholdes, eller kassér tidsrummet og stop sessionen.</string>
     <string name="work_session_pending_rows_format">Afventende rækkefremgang: %1$d</string>
     <string name="work_session_hours">Timer</string>
     <string name="work_session_minutes">Minutter</string>
@@ -782,10 +778,7 @@
     <string name="work_session_delete_project_title">Kassér aktiv session og slet projekt?</string>
     <string name="work_session_delete_project_body">Når projektet slettes, slettes dets gemte sessioner også. Den aktive session skal kasseres først.</string>
     <string name="work_session_discard_and_delete">Kassér session og slet</string>
-    <string name="work_session_saved_title">Session gemt</string>
     <string name="work_session_duration_format">Varighed: %1$s</string>
-    <string name="work_session_label">Arbejdssession</string>
-    <string name="work_session_recovered">Sessionen blev gendannet</string>
     <string name="work_session_confirmed_time_format">Bekræftet tid: %1$s</string>
     <string name="work_session_time_while_away_format">Tid under fravær: %1$s</string>
     <string name="work_session_time_unavailable">Tiden under fraværet kunne ikke estimeres.</string>
@@ -806,7 +799,6 @@
     <string name="work_session_could_not_discard">Sessionen kunne ikke kasseres</string>
     <string name="work_session_recovery_already_handled">Denne sessionsgennemgang er allerede behandlet.</string>
     <string name="work_session_retry">Prøv igen</string>
-    <string name="work_session_recovery_dismissed">Gennemgangen blev lukket. Brug Løs for at vende tilbage.</string>
     <string name="project_documents_title">Dokumenter</string>
     <string name="project_documents_add">Tilføj</string>
     <string name="project_documents_actions">Handlinger for %1$s</string>
@@ -827,8 +819,6 @@
     <string name="project_documents_error_unavailable">Denne PDF er ikke længere tilgængelig. Fjern den, eller tilføj filen igen.</string>
     <string name="project_documents_error_stale">Dokumentlisten blev ændret. Prøv igen.</string>
     <string name="project_documents_error_generic">Dokumentændringen kunne ikke gemmes.</string>
-    <string name="project_documents_project_title">Projektdokumenter</string>
-    <string name="project_documents_primary_document">Primært dokument</string>
     <string name="project_documents_secondary">Sekundært dokument</string>
     <string name="project_documents_available">PDF er tilgængelig</string>
     <string name="project_documents_position">Placering %1$d af %2$d</string>
@@ -837,19 +827,6 @@
     <string name="project_documents_empty">Ingen dokumenter</string>
     <string name="project_documents_metadata_only">Kun metadata</string>
     <string name="project_documents_pattern_information">Opskriftsoplysninger</string>
-    <string name="project_documents_source_local_pdf">Lokal PDF</string>
-    <string name="project_documents_source_saved_pattern_pdf">Gemt opskrifts-PDF</string>
-    <string name="project_documents_already_attached">Allerede tilknyttet</string>
-    <string name="project_documents_error_add">Dokumentet kunne ikke tilføjes.</string>
-    <string name="project_documents_error_open">Dokumentet kunne ikke åbnes.</string>
-    <string name="project_documents_error_rename">Dokumentet kunne ikke omdøbes.</string>
-    <string name="project_documents_error_reorder">Dokumenterne kunne ikke omarrangeres.</string>
-    <string name="project_documents_error_primary">Det primære dokument kunne ikke ændres.</string>
-    <string name="project_documents_error_remove">Dokumentet kunne ikke fjernes.</string>
     <string name="project_documents_remove_primary_message">Fjern %1$s? Et andet dokument bliver primært.</string>
     <string name="project_documents_remove_last_message">Fjern %1$s? Projektet vil ikke længere have en læsbar opskrift.</string>
-    <string name="project_documents_new_primary_selected">Et nyt primært dokument blev valgt automatisk.</string>
-    <string name="project_documents_name_required">Dokumentnavn er påkrævet.</string>
-    <string name="project_documents_name_max">Højst 50 tegn.</string>
-    <string name="project_documents_wrong_project">Dokumentet hører ikke længere til dette projekt.</string>
 </resources>

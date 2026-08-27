@@ -10,10 +10,8 @@
     <string name="pattern_bookmark_delete_message">Eliminare “%1$s”?</string>
     <string name="pattern_bookmark_empty">Non ci sono ancora segnalibri.</string>
     <string name="pattern_bookmark_loading">Caricamento dei segnalibri…</string>
-    <string name="pattern_bookmark_jump">Vai al segnalibro</string>
     <string name="pattern_bookmark_previous">Segnalibro precedente</string>
     <string name="pattern_bookmark_next">Segnalibro successivo</string>
-    <string name="pattern_bookmark_page">Pagina %1$d</string>
     <string name="pattern_bookmark_selected">Segnalibro selezionato</string>
     <string name="pattern_bookmark_accessibility_description">Vai al segnalibro %1$s, pagina %2$d</string>
     <string name="pattern_bookmark_action_accessibility_description">%1$s: %2$s</string>
@@ -34,7 +32,6 @@
     <string name="pattern_follow_current_row_on">Segui il ferro attuale</string>
     <string name="pattern_follow_current_row_off">Interrompi il seguito</string>
     <string name="pattern_return_to_current_row">Torna al ferro attuale</string>
-    <string name="pattern_row_not_calibrated">La posizione del ferro non è calibrata.</string>
     <string name="pattern_follow_resumed">Il seguito è ripreso dal ferro attuale.</string>
     <string name="pattern_follow_resumed_uncalibrated">La posizione del ferro non è calibrata. Il seguito è ripreso dalla posizione attuale.</string>
     <string name="pattern_set_row_marker_here">Imposta qui il marcatore per il ferro %1$d</string>

@@ -10,10 +10,8 @@
     <string name="pattern_bookmark_delete_message">‘%1$s’ verwijderen?</string>
     <string name="pattern_bookmark_empty">Nog geen bladwijzers.</string>
     <string name="pattern_bookmark_loading">Bladwijzers laden…</string>
-    <string name="pattern_bookmark_jump">Naar bladwijzer gaan</string>
     <string name="pattern_bookmark_previous">Vorige bladwijzer</string>
     <string name="pattern_bookmark_next">Volgende bladwijzer</string>
-    <string name="pattern_bookmark_page">Pagina %1$d</string>
     <string name="pattern_bookmark_selected">Geselecteerde bladwijzer</string>
     <string name="pattern_bookmark_accessibility_description">Naar bladwijzer %1$s op pagina %2$d gaan</string>
     <string name="pattern_bookmark_action_accessibility_description">%1$s: %2$s</string>
@@ -34,7 +32,6 @@
     <string name="pattern_follow_current_row_on">Huidige rij volgen</string>
     <string name="pattern_follow_current_row_off">Stoppen met volgen</string>
     <string name="pattern_return_to_current_row">Terug naar huidige rij</string>
-    <string name="pattern_row_not_calibrated">De rijlocatie is niet gekalibreerd.</string>
     <string name="pattern_follow_resumed">Volgen is hervat bij de huidige rij.</string>
     <string name="pattern_follow_resumed_uncalibrated">De rijlocatie is niet gekalibreerd. Volgen is hervat vanaf de huidige positie.</string>
     <string name="pattern_set_row_marker_here">Rijmarkering hier instellen voor rij %1$d</string>

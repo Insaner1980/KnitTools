@@ -137,7 +137,6 @@
     <string name="pattern_open_failed">Het patroon kon niet worden geopend.</string>
     <string name="pattern_show_reading_line">Leeslijn tonen</string>
     <string name="pattern_hide_reading_line">Leeslijn verbergen</string>
-    <string name="pattern_save_line_as_row">Lijn opslaan als toer %1$d</string>
     <string name="pattern_clear_row_mark">Toermarkering wissen</string>
     <string name="pattern_clear_page_marks">Paginamarkeringen wissen</string>
     <string name="pattern_calibrate_rows">Toeren kalibreren</string>
@@ -146,7 +145,6 @@
     <string name="pattern_calibration_save_first">Eerste opslaan</string>
     <string name="pattern_calibration_save_last">Laatste opslaan</string>
     <string name="pattern_calibration_invalid_row">Gebruik twee verschillende toernummers</string>
-    <string name="pattern_reading_line_description">Leeslijn</string>
     <string name="pattern_page_jump">Ga naar pagina</string>
     <string name="pattern_page_number">Paginanummer</string>
     <string name="pattern_page_indicator">Pagina %1$d van %2$d</string>
@@ -759,11 +757,9 @@
     <string name="work_session_start">Werksessie starten</string>
     <string name="work_session_stop">Werksessie stoppen</string>
     <string name="work_session_active">Werksessie actief</string>
-    <string name="work_session_rows_format">%1$d naalden</string>
     <string name="work_session_recovery_needed">De sessietijd moet worden gecontroleerd</string>
     <string name="work_session_resolve">Oplossen</string>
     <string name="work_session_recovery_title">Sessietijd controleren</string>
-    <string name="work_session_recovery_body">KnitTools kon het laatste tijdsinterval niet verifiëren. Voeg de tijd toe die je wilt bewaren of verwerp het openstaande interval en stop de sessie.</string>
     <string name="work_session_pending_rows_format">Openstaande voortgang: %1$d naalden</string>
     <string name="work_session_hours">Uren</string>
     <string name="work_session_minutes">Minuten</string>
@@ -782,10 +778,7 @@
     <string name="work_session_delete_project_title">Actieve sessie verwerpen en project verwijderen?</string>
     <string name="work_session_delete_project_body">Als je het project verwijdert, worden ook de opgeslagen sessies verwijderd. De actieve sessie moet eerst worden verworpen.</string>
     <string name="work_session_discard_and_delete">Sessie verwerpen en verwijderen</string>
-    <string name="work_session_saved_title">Sessie opgeslagen</string>
     <string name="work_session_duration_format">Duur: %1$s</string>
-    <string name="work_session_label">Werksessie</string>
-    <string name="work_session_recovered">Sessie hersteld</string>
     <string name="work_session_confirmed_time_format">Bevestigde tijd: %1$s</string>
     <string name="work_session_time_while_away_format">Tijd tijdens afwezigheid: %1$s</string>
     <string name="work_session_time_unavailable">De tijd tijdens de afwezigheid kon niet worden geschat.</string>
@@ -806,7 +799,6 @@
     <string name="work_session_could_not_discard">Sessie kon niet worden verwijderd</string>
     <string name="work_session_recovery_already_handled">Deze sessiecontrole is al afgehandeld.</string>
     <string name="work_session_retry">Opnieuw proberen</string>
-    <string name="work_session_recovery_dismissed">Controle gesloten. Gebruik Oplossen om terug te keren.</string>
     <string name="project_documents_title">Documenten</string>
     <string name="project_documents_add">Toevoegen</string>
     <string name="project_documents_actions">Acties voor %1$s</string>
@@ -827,8 +819,6 @@
     <string name="project_documents_error_unavailable">Deze PDF is niet meer beschikbaar. Verwijder deze of voeg het bestand opnieuw toe.</string>
     <string name="project_documents_error_stale">De documentenlijst is gewijzigd. Probeer het opnieuw.</string>
     <string name="project_documents_error_generic">De documentwijziging kon niet worden opgeslagen.</string>
-    <string name="project_documents_project_title">Projectdocumenten</string>
-    <string name="project_documents_primary_document">Primair document</string>
     <string name="project_documents_secondary">Secundair document</string>
     <string name="project_documents_available">PDF beschikbaar</string>
     <string name="project_documents_position">Positie %1$d van %2$d</string>
@@ -837,19 +827,6 @@
     <string name="project_documents_empty">Geen documenten</string>
     <string name="project_documents_metadata_only">Alleen metadata</string>
     <string name="project_documents_pattern_information">Patrooninformatie</string>
-    <string name="project_documents_source_local_pdf">Lokale PDF</string>
-    <string name="project_documents_source_saved_pattern_pdf">Opgeslagen patroon-PDF</string>
-    <string name="project_documents_already_attached">Al gekoppeld</string>
-    <string name="project_documents_error_add">Document kon niet worden toegevoegd.</string>
-    <string name="project_documents_error_open">Document kon niet worden geopend.</string>
-    <string name="project_documents_error_rename">Documentnaam kon niet worden gewijzigd.</string>
-    <string name="project_documents_error_reorder">Documenten konden niet opnieuw worden gerangschikt.</string>
-    <string name="project_documents_error_primary">Primair document kon niet worden gewijzigd.</string>
-    <string name="project_documents_error_remove">Document kon niet worden verwijderd.</string>
     <string name="project_documents_remove_primary_message">%1$s verwijderen? Een ander document wordt primair.</string>
     <string name="project_documents_remove_last_message">%1$s verwijderen? Het project heeft daarna geen leesbaar patroon meer.</string>
-    <string name="project_documents_new_primary_selected">Er is automatisch een nieuw primair document geselecteerd.</string>
-    <string name="project_documents_name_required">Een documentnaam is verplicht.</string>
-    <string name="project_documents_name_max">Maximaal 50 tekens.</string>
-    <string name="project_documents_wrong_project">Dit document hoort niet meer bij dit project.</string>
 </resources>

@@ -76,22 +76,22 @@ class RemotePatternImageTest {
                     RemotePatternImage(
                         imageUrl = null,
                         modifier = Modifier.size(IMAGE_SIZE).testTag(NULL_IMAGE_TAG),
-                        imageLoader = imageLoader,
+                        imageLoaderProvider = { imageLoader },
                     )
                     RemotePatternImage(
                         imageUrl = "   ",
                         modifier = Modifier.size(IMAGE_SIZE).testTag(BLANK_IMAGE_TAG),
-                        imageLoader = imageLoader,
+                        imageLoaderProvider = { imageLoader },
                     )
                     RemotePatternImage(
                         imageUrl = "not a valid URI",
                         modifier = Modifier.size(IMAGE_SIZE).testTag(MALFORMED_IMAGE_TAG),
-                        imageLoader = imageLoader,
+                        imageLoaderProvider = { imageLoader },
                     )
                     RemotePatternImage(
                         imageUrl = "http://images.example.test/pattern.png",
                         modifier = Modifier.size(IMAGE_SIZE).testTag(HTTP_IMAGE_TAG),
-                        imageLoader = imageLoader,
+                        imageLoaderProvider = { imageLoader },
                     )
                 }
             }
@@ -132,7 +132,7 @@ class RemotePatternImageTest {
                     RemotePatternImage(
                         imageUrl = "  $SUCCESS_URL  ",
                         modifier = Modifier.size(IMAGE_SIZE).testTag(IMAGE_TAG),
-                        imageLoader = imageLoader,
+                        imageLoaderProvider = { imageLoader },
                     )
                     Text(PATTERN_TITLE)
                 }
@@ -180,7 +180,7 @@ class RemotePatternImageTest {
                     RemotePatternImage(
                         imageUrl = FAILURE_URL,
                         modifier = Modifier.size(IMAGE_SIZE).testTag(IMAGE_TAG),
-                        imageLoader = imageLoader,
+                        imageLoaderProvider = { imageLoader },
                     )
                     Text(PATTERN_TITLE)
                     Text(PATTERN_DESIGNER)
@@ -238,7 +238,7 @@ class RemotePatternImageTest {
                     RemotePatternImage(
                         imageUrl = currentUrl.value,
                         modifier = Modifier.size(IMAGE_SIZE).testTag(IMAGE_TAG),
-                        imageLoader = imageLoader,
+                        imageLoaderProvider = { imageLoader },
                     )
                 }
             }

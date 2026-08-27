@@ -23,7 +23,7 @@ fun RemotePatternImage(
     imageUrl: String?,
     modifier: Modifier = Modifier,
     contentScale: ContentScale = ContentScale.Crop,
-    imageLoader: ImageLoader? = null,
+    imageLoaderProvider: (() -> ImageLoader)? = null,
 ) {
     val normalizedUrl = remember(imageUrl) { normalizeRemotePatternImageUrl(imageUrl) }
     var failed by remember(normalizedUrl) { mutableStateOf(false) }
@@ -31,7 +31,7 @@ fun RemotePatternImage(
     if (normalizedUrl == null || failed) return
 
     val context = LocalPlatformContext.current
-    val resolvedImageLoader = imageLoader ?: SingletonImageLoader.get(context)
+    val resolvedImageLoader = imageLoaderProvider?.invoke() ?: SingletonImageLoader.get(context)
 
     Box(
         modifier = modifier.background(MaterialTheme.colorScheme.surfaceVariant),

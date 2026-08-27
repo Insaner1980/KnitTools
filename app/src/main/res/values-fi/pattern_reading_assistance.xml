@@ -10,10 +10,8 @@
     <string name="pattern_bookmark_delete_message">Poistetaanko ”%1$s”?</string>
     <string name="pattern_bookmark_empty">Ei vielä kirjanmerkkejä.</string>
     <string name="pattern_bookmark_loading">Ladataan kirjanmerkkejä…</string>
-    <string name="pattern_bookmark_jump">Siirry kirjanmerkkiin</string>
     <string name="pattern_bookmark_previous">Edellinen kirjanmerkki</string>
     <string name="pattern_bookmark_next">Seuraava kirjanmerkki</string>
-    <string name="pattern_bookmark_page">Sivu %1$d</string>
     <string name="pattern_bookmark_selected">Valittu kirjanmerkki</string>
     <string name="pattern_bookmark_accessibility_description">Siirry kirjanmerkkiin %1$s, sivu %2$d</string>
     <string name="pattern_bookmark_action_accessibility_description">%1$s: %2$s</string>
@@ -34,7 +32,6 @@
     <string name="pattern_follow_current_row_on">Seuraa nykyistä kerrosta</string>
     <string name="pattern_follow_current_row_off">Lopeta seuraaminen</string>
     <string name="pattern_return_to_current_row">Palaa nykyiselle kerrokselle</string>
-    <string name="pattern_row_not_calibrated">Kerroksen sijaintia ei ole kalibroitu.</string>
     <string name="pattern_follow_resumed">Nykyisen kerroksen seuraaminen jatkuu.</string>
     <string name="pattern_follow_resumed_uncalibrated">Kerroksen sijaintia ei ole kalibroitu. Seuraaminen jatkuu nykyisestä kohdasta.</string>
     <string name="pattern_set_row_marker_here">Aseta kerrosmerkki tähän kerrokselle %1$d</string>

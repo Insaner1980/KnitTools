@@ -140,7 +140,6 @@
     <string name="pattern_open_failed">Não foi possível abrir a receita.</string>
     <string name="pattern_show_reading_line">Mostrar linha de leitura</string>
     <string name="pattern_hide_reading_line">Ocultar linha de leitura</string>
-    <string name="pattern_save_line_as_row">Guardar linha como carreira %1$d</string>
     <string name="pattern_clear_row_mark">Limpar marcador da carreira</string>
     <string name="pattern_clear_page_marks">Limpar marcadores da página</string>
     <string name="pattern_calibrate_rows">Calibrar carreiras</string>
@@ -149,7 +148,6 @@
     <string name="pattern_calibration_save_first">Guardar primeira</string>
     <string name="pattern_calibration_save_last">Guardar última</string>
     <string name="pattern_calibration_invalid_row">Use dois números de carreira diferentes</string>
-    <string name="pattern_reading_line_description">Linha de leitura</string>
     <string name="pattern_page_jump">Ir para a página</string>
     <string name="pattern_page_number">Número da página</string>
     <string name="pattern_page_indicator">Página %1$d de %2$d</string>
@@ -772,11 +770,9 @@
     <string name="work_session_start">Iniciar sessão de trabalho</string>
     <string name="work_session_stop">Parar sessão de trabalho</string>
     <string name="work_session_active">Sessão de trabalho ativa</string>
-    <string name="work_session_rows_format">%1$d carreiras</string>
     <string name="work_session_recovery_needed">É necessário rever o tempo da sessão</string>
     <string name="work_session_resolve">Resolver</string>
     <string name="work_session_recovery_title">Rever tempo da sessão</string>
-    <string name="work_session_recovery_body">O KnitTools não conseguiu verificar o último intervalo. Adicione o tempo que pretende manter ou descarte o intervalo pendente e pare a sessão.</string>
     <string name="work_session_pending_rows_format">Progresso pendente: %1$d carreiras</string>
     <string name="work_session_hours">Horas</string>
     <string name="work_session_minutes">Minutos</string>
@@ -795,10 +791,7 @@
     <string name="work_session_delete_project_title">Descartar sessão ativa e eliminar projeto?</string>
     <string name="work_session_delete_project_body">Eliminar o projeto também elimina as sessões guardadas. A sessão ativa tem de ser descartada primeiro.</string>
     <string name="work_session_discard_and_delete">Descartar sessão e eliminar</string>
-    <string name="work_session_saved_title">Sessão guardada</string>
     <string name="work_session_duration_format">Duração: %1$s</string>
-    <string name="work_session_label">Sessão de trabalho</string>
-    <string name="work_session_recovered">Sessão recuperada</string>
     <string name="work_session_confirmed_time_format">Tempo confirmado: %1$s</string>
     <string name="work_session_time_while_away_format">Tempo durante a ausência: %1$s</string>
     <string name="work_session_time_unavailable">Não foi possível estimar o tempo durante a ausência.</string>
@@ -819,7 +812,6 @@
     <string name="work_session_could_not_discard">Não foi possível descartar a sessão</string>
     <string name="work_session_recovery_already_handled">Esta revisão da sessão já foi tratada.</string>
     <string name="work_session_retry">Tentar novamente</string>
-    <string name="work_session_recovery_dismissed">Revisão fechada. Use Resolver para regressar.</string>
     <string name="project_documents_title">Documentos</string>
     <string name="project_documents_add">Adicionar</string>
     <string name="project_documents_actions">Ações para %1$s</string>
@@ -840,8 +832,6 @@
     <string name="project_documents_error_unavailable">Este PDF já não está disponível. Remova-o ou adicione novamente o ficheiro.</string>
     <string name="project_documents_error_stale">A lista de documentos foi alterada. Tente novamente.</string>
     <string name="project_documents_error_generic">Não foi possível guardar a alteração ao documento.</string>
-    <string name="project_documents_project_title">Documentos do projeto</string>
-    <string name="project_documents_primary_document">Documento principal</string>
     <string name="project_documents_secondary">Documento secundário</string>
     <string name="project_documents_available">PDF disponível</string>
     <string name="project_documents_position">Posição %1$d de %2$d</string>
@@ -850,19 +840,6 @@
     <string name="project_documents_empty">Sem documentos</string>
     <string name="project_documents_metadata_only">Apenas metadados</string>
     <string name="project_documents_pattern_information">Informações do modelo</string>
-    <string name="project_documents_source_local_pdf">PDF local</string>
-    <string name="project_documents_source_saved_pattern_pdf">PDF de modelo guardado</string>
-    <string name="project_documents_already_attached">Já associado</string>
-    <string name="project_documents_error_add">Não foi possível adicionar o documento.</string>
-    <string name="project_documents_error_open">Não foi possível abrir o documento.</string>
-    <string name="project_documents_error_rename">Não foi possível mudar o nome do documento.</string>
-    <string name="project_documents_error_reorder">Não foi possível reordenar os documentos.</string>
-    <string name="project_documents_error_primary">Não foi possível alterar o documento principal.</string>
-    <string name="project_documents_error_remove">Não foi possível remover o documento.</string>
     <string name="project_documents_remove_primary_message">Remover %1$s? Outro documento passará a ser o principal.</string>
     <string name="project_documents_remove_last_message">Remover %1$s? O projeto deixará de ter um modelo legível associado.</string>
-    <string name="project_documents_new_primary_selected">Foi selecionado automaticamente um novo documento principal.</string>
-    <string name="project_documents_name_required">O nome do documento é obrigatório.</string>
-    <string name="project_documents_name_max">Máximo de 50 caracteres.</string>
-    <string name="project_documents_wrong_project">Este documento já não pertence a este projeto.</string>
 </resources>

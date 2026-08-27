@@ -140,7 +140,6 @@
     <string name="pattern_open_failed">Impossibile aprire il modello.</string>
     <string name="pattern_show_reading_line">Mostra riga di lettura</string>
     <string name="pattern_hide_reading_line">Nascondi riga di lettura</string>
-    <string name="pattern_save_line_as_row">Salva linea come ferro %1$d</string>
     <string name="pattern_clear_row_mark">Cancella segno del ferro</string>
     <string name="pattern_clear_page_marks">Cancella segni della pagina</string>
     <string name="pattern_calibrate_rows">Calibra ferri</string>
@@ -149,7 +148,6 @@
     <string name="pattern_calibration_save_first">Salva primo</string>
     <string name="pattern_calibration_save_last">Salva ultimo</string>
     <string name="pattern_calibration_invalid_row">Usa due numeri di ferro diversi</string>
-    <string name="pattern_reading_line_description">Riga di lettura</string>
     <string name="pattern_page_jump">Vai alla pagina</string>
     <string name="pattern_page_number">Numero di pagina</string>
     <string name="pattern_page_indicator">Pagina %1$d di %2$d</string>
@@ -772,11 +770,9 @@
     <string name="work_session_start">Avvia sessione di lavoro</string>
     <string name="work_session_stop">Termina sessione di lavoro</string>
     <string name="work_session_active">Sessione di lavoro attiva</string>
-    <string name="work_session_rows_format">%1$d ferri</string>
     <string name="work_session_recovery_needed">Il tempo della sessione deve essere verificato</string>
     <string name="work_session_resolve">Risolvi</string>
     <string name="work_session_recovery_title">Verifica il tempo della sessione</string>
-    <string name="work_session_recovery_body">KnitTools non ha potuto verificare l’ultimo intervallo. Aggiungi il tempo da conservare oppure scarta l’intervallo in sospeso e termina la sessione.</string>
     <string name="work_session_pending_rows_format">Ferri in sospeso: %1$d</string>
     <string name="work_session_hours">Ore</string>
     <string name="work_session_minutes">Minuti</string>
@@ -795,10 +791,7 @@
     <string name="work_session_delete_project_title">Scartare la sessione attiva ed eliminare il progetto?</string>
     <string name="work_session_delete_project_body">Eliminando il progetto vengono eliminate anche le sessioni salvate. La sessione attiva deve essere prima scartata.</string>
     <string name="work_session_discard_and_delete">Scarta la sessione ed elimina</string>
-    <string name="work_session_saved_title">Sessione salvata</string>
     <string name="work_session_duration_format">Durata: %1$s</string>
-    <string name="work_session_label">Sessione di lavoro</string>
-    <string name="work_session_recovered">Sessione recuperata</string>
     <string name="work_session_confirmed_time_format">Tempo confermato: %1$s</string>
     <string name="work_session_time_while_away_format">Tempo durante l’assenza: %1$s</string>
     <string name="work_session_time_unavailable">Non è stato possibile stimare il tempo durante l’assenza.</string>
@@ -819,7 +812,6 @@
     <string name="work_session_could_not_discard">Impossibile scartare la sessione</string>
     <string name="work_session_recovery_already_handled">Questa verifica della sessione è già stata gestita.</string>
     <string name="work_session_retry">Riprova</string>
-    <string name="work_session_recovery_dismissed">Verifica chiusa. Usa Risolvi per tornare.</string>
     <string name="project_documents_title">Documenti</string>
     <string name="project_documents_add">Aggiungi</string>
     <string name="project_documents_actions">Azioni per %1$s</string>
@@ -840,8 +832,6 @@
     <string name="project_documents_error_unavailable">Questo PDF non è più disponibile. Rimuovilo o aggiungi di nuovo il file.</string>
     <string name="project_documents_error_stale">L’elenco dei documenti è cambiato. Riprova.</string>
     <string name="project_documents_error_generic">Non è stato possibile salvare la modifica al documento.</string>
-    <string name="project_documents_project_title">Documenti del progetto</string>
-    <string name="project_documents_primary_document">Documento principale</string>
     <string name="project_documents_secondary">Documento secondario</string>
     <string name="project_documents_available">PDF disponibile</string>
     <string name="project_documents_position">Posizione %1$d di %2$d</string>
@@ -850,19 +840,6 @@
     <string name="project_documents_empty">Nessun documento</string>
     <string name="project_documents_metadata_only">Solo metadati</string>
     <string name="project_documents_pattern_information">Informazioni sullo schema</string>
-    <string name="project_documents_source_local_pdf">PDF locale</string>
-    <string name="project_documents_source_saved_pattern_pdf">PDF di schema salvato</string>
-    <string name="project_documents_already_attached">Già allegato</string>
-    <string name="project_documents_error_add">Impossibile aggiungere il documento.</string>
-    <string name="project_documents_error_open">Impossibile aprire il documento.</string>
-    <string name="project_documents_error_rename">Impossibile rinominare il documento.</string>
-    <string name="project_documents_error_reorder">Impossibile riordinare i documenti.</string>
-    <string name="project_documents_error_primary">Impossibile cambiare il documento principale.</string>
-    <string name="project_documents_error_remove">Impossibile rimuovere il documento.</string>
     <string name="project_documents_remove_primary_message">Rimuovere %1$s? Un altro documento diventerà quello principale.</string>
     <string name="project_documents_remove_last_message">Rimuovere %1$s? Il progetto non avrà più uno schema leggibile allegato.</string>
-    <string name="project_documents_new_primary_selected">È stato selezionato automaticamente un nuovo documento principale.</string>
-    <string name="project_documents_name_required">Il nome del documento è obbligatorio.</string>
-    <string name="project_documents_name_max">Massimo 50 caratteri.</string>
-    <string name="project_documents_wrong_project">Questo documento non appartiene più al progetto.</string>
 </resources>

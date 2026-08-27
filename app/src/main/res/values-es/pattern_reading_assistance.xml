@@ -10,10 +10,8 @@
     <string name="pattern_bookmark_delete_message">¿Eliminar «%1$s»?</string>
     <string name="pattern_bookmark_empty">Todavía no hay marcadores.</string>
     <string name="pattern_bookmark_loading">Cargando marcadores…</string>
-    <string name="pattern_bookmark_jump">Ir al marcador</string>
     <string name="pattern_bookmark_previous">Marcador anterior</string>
     <string name="pattern_bookmark_next">Marcador siguiente</string>
-    <string name="pattern_bookmark_page">Página %1$d</string>
     <string name="pattern_bookmark_selected">Marcador seleccionado</string>
     <string name="pattern_bookmark_accessibility_description">Ir al marcador %1$s, página %2$d</string>
     <string name="pattern_bookmark_action_accessibility_description">%1$s: %2$s</string>
@@ -34,7 +32,6 @@
     <string name="pattern_follow_current_row_on">Seguir la fila actual</string>
     <string name="pattern_follow_current_row_off">Dejar de seguir</string>
     <string name="pattern_return_to_current_row">Volver a la fila actual</string>
-    <string name="pattern_row_not_calibrated">La ubicación de la fila no está calibrada.</string>
     <string name="pattern_follow_resumed">Se reanudó el seguimiento en la fila actual.</string>
     <string name="pattern_follow_resumed_uncalibrated">La ubicación de la fila no está calibrada. El seguimiento se reanudó desde la posición actual.</string>
     <string name="pattern_set_row_marker_here">Establecer aquí el marcador de la fila %1$d</string>

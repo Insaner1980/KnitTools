@@ -32,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -244,7 +245,7 @@ internal fun ActiveWorkSessionRow(
                 R.string.work_session_stop
             },
         )
-    val rowsText = stringResource(R.string.work_session_rows_format, rowsWorked)
+    val rowsText = pluralStringResource(R.plurals.rows_format, rowsWorked, rowsWorked)
     val fontScale = LocalDensity.current.fontScale
     BoxWithConstraints(
         modifier =

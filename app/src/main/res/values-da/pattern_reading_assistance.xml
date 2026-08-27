@@ -10,10 +10,8 @@
     <string name="pattern_bookmark_delete_message">Slet »%1$s«?</string>
     <string name="pattern_bookmark_empty">Ingen bogmærker endnu.</string>
     <string name="pattern_bookmark_loading">Indlæser bogmærker…</string>
-    <string name="pattern_bookmark_jump">Gå til bogmærke</string>
     <string name="pattern_bookmark_previous">Forrige bogmærke</string>
     <string name="pattern_bookmark_next">Næste bogmærke</string>
-    <string name="pattern_bookmark_page">Side %1$d</string>
     <string name="pattern_bookmark_selected">Valgt bogmærke</string>
     <string name="pattern_bookmark_accessibility_description">Gå til bogmærket %1$s, side %2$d</string>
     <string name="pattern_bookmark_action_accessibility_description">%1$s: %2$s</string>
@@ -34,7 +32,6 @@
     <string name="pattern_follow_current_row_on">Følg den aktuelle række</string>
     <string name="pattern_follow_current_row_off">Stop med at følge</string>
     <string name="pattern_return_to_current_row">Vend tilbage til den aktuelle række</string>
-    <string name="pattern_row_not_calibrated">Rækkens placering er ikke kalibreret.</string>
     <string name="pattern_follow_resumed">Følgning blev genoptaget ved den aktuelle række.</string>
     <string name="pattern_follow_resumed_uncalibrated">Rækkens placering er ikke kalibreret. Følgning blev genoptaget fra den aktuelle placering.</string>
     <string name="pattern_set_row_marker_here">Sæt rækkemarkør her for række %1$d</string>

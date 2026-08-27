@@ -10,10 +10,8 @@
     <string name="pattern_bookmark_delete_message">„%1$s“ löschen?</string>
     <string name="pattern_bookmark_empty">Noch keine Lesezeichen.</string>
     <string name="pattern_bookmark_loading">Lesezeichen werden geladen…</string>
-    <string name="pattern_bookmark_jump">Zum Lesezeichen springen</string>
     <string name="pattern_bookmark_previous">Vorheriges Lesezeichen</string>
     <string name="pattern_bookmark_next">Nächstes Lesezeichen</string>
-    <string name="pattern_bookmark_page">Seite %1$d</string>
     <string name="pattern_bookmark_selected">Ausgewähltes Lesezeichen</string>
     <string name="pattern_bookmark_accessibility_description">Zum Lesezeichen %1$s auf Seite %2$d springen</string>
     <string name="pattern_bookmark_action_accessibility_description">%1$s: %2$s</string>
@@ -34,7 +32,6 @@
     <string name="pattern_follow_current_row_on">Aktueller Reihe folgen</string>
     <string name="pattern_follow_current_row_off">Folgen beenden</string>
     <string name="pattern_return_to_current_row">Zur aktuellen Reihe zurückkehren</string>
-    <string name="pattern_row_not_calibrated">Die Reihenposition ist nicht kalibriert.</string>
     <string name="pattern_follow_resumed">Das Folgen wurde bei der aktuellen Reihe fortgesetzt.</string>
     <string name="pattern_follow_resumed_uncalibrated">Die Reihenposition ist nicht kalibriert. Das Folgen wurde an der aktuellen Position fortgesetzt.</string>
     <string name="pattern_set_row_marker_here">Reihenmarke hier für Reihe %1$d setzen</string>

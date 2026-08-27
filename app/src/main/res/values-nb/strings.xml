@@ -137,7 +137,6 @@
     <string name="pattern_open_failed">Kunne ikke åpne oppskriften.</string>
     <string name="pattern_show_reading_line">Vis leselinje</string>
     <string name="pattern_hide_reading_line">Skjul leselinje</string>
-    <string name="pattern_save_line_as_row">Lagre linje som rad %1$d</string>
     <string name="pattern_clear_row_mark">Fjern radmarkør</string>
     <string name="pattern_clear_page_marks">Fjern sidemarkører</string>
     <string name="pattern_calibrate_rows">Kalibrer rader</string>
@@ -146,7 +145,6 @@
     <string name="pattern_calibration_save_first">Lagre første</string>
     <string name="pattern_calibration_save_last">Lagre siste</string>
     <string name="pattern_calibration_invalid_row">Bruk to ulike radnumre</string>
-    <string name="pattern_reading_line_description">Leselinje</string>
     <string name="pattern_page_jump">Gå til side</string>
     <string name="pattern_page_number">Sidenummer</string>
     <string name="pattern_page_indicator">Side %1$d av %2$d</string>
@@ -759,11 +757,9 @@
     <string name="work_session_start">Start arbeidsøkt</string>
     <string name="work_session_stop">Stopp arbeidsøkt</string>
     <string name="work_session_active">Arbeidsøkt aktiv</string>
-    <string name="work_session_rows_format">%1$d rader</string>
     <string name="work_session_recovery_needed">Økttiden må gjennomgås</string>
     <string name="work_session_resolve">Løs</string>
     <string name="work_session_recovery_title">Gjennomgå økttid</string>
-    <string name="work_session_recovery_body">KnitTools kunne ikke bekrefte det siste tidsrommet. Legg til tiden du vil beholde, eller forkast tidsrommet og stopp økten.</string>
     <string name="work_session_pending_rows_format">Ventende radfremdrift: %1$d</string>
     <string name="work_session_hours">Timer</string>
     <string name="work_session_minutes">Minutter</string>
@@ -782,10 +778,7 @@
     <string name="work_session_delete_project_title">Forkaste aktiv økt og slette prosjekt?</string>
     <string name="work_session_delete_project_body">Når prosjektet slettes, slettes også de lagrede øktene. Den aktive økten må forkastes først.</string>
     <string name="work_session_discard_and_delete">Forkast økt og slett</string>
-    <string name="work_session_saved_title">Økt lagret</string>
     <string name="work_session_duration_format">Varighet: %1$s</string>
-    <string name="work_session_label">Arbeidsøkt</string>
-    <string name="work_session_recovered">Økten ble gjenopprettet</string>
     <string name="work_session_confirmed_time_format">Bekreftet tid: %1$s</string>
     <string name="work_session_time_while_away_format">Tid mens du var borte: %1$s</string>
     <string name="work_session_time_unavailable">Tiden mens du var borte kunne ikke anslås.</string>
@@ -806,7 +799,6 @@
     <string name="work_session_could_not_discard">Kunne ikke forkaste økten</string>
     <string name="work_session_recovery_already_handled">Denne øktgjennomgangen er allerede behandlet.</string>
     <string name="work_session_retry">Prøv igjen</string>
-    <string name="work_session_recovery_dismissed">Gjennomgangen ble lukket. Bruk Løs for å gå tilbake.</string>
     <string name="project_documents_title">Dokumenter</string>
     <string name="project_documents_add">Legg til</string>
     <string name="project_documents_actions">Handlinger for %1$s</string>
@@ -827,8 +819,6 @@
     <string name="project_documents_error_unavailable">Denne PDF-en er ikke lenger tilgjengelig. Fjern den, eller legg til filen på nytt.</string>
     <string name="project_documents_error_stale">Dokumentlisten ble endret. Prøv igjen.</string>
     <string name="project_documents_error_generic">Dokumentendringen kunne ikke lagres.</string>
-    <string name="project_documents_project_title">Prosjektdokumenter</string>
-    <string name="project_documents_primary_document">Hoveddokument</string>
     <string name="project_documents_secondary">Sekundært dokument</string>
     <string name="project_documents_available">PDF er tilgjengelig</string>
     <string name="project_documents_position">Plassering %1$d av %2$d</string>
@@ -837,19 +827,6 @@
     <string name="project_documents_empty">Ingen dokumenter</string>
     <string name="project_documents_metadata_only">Bare metadata</string>
     <string name="project_documents_pattern_information">Oppskriftsinformasjon</string>
-    <string name="project_documents_source_local_pdf">Lokal PDF</string>
-    <string name="project_documents_source_saved_pattern_pdf">Lagret oppskrifts-PDF</string>
-    <string name="project_documents_already_attached">Allerede tilknyttet</string>
-    <string name="project_documents_error_add">Dokumentet kunne ikke legges til.</string>
-    <string name="project_documents_error_open">Dokumentet kunne ikke åpnes.</string>
-    <string name="project_documents_error_rename">Dokumentet kunne ikke gis nytt navn.</string>
-    <string name="project_documents_error_reorder">Dokumentene kunne ikke sorteres på nytt.</string>
-    <string name="project_documents_error_primary">Hoveddokumentet kunne ikke endres.</string>
-    <string name="project_documents_error_remove">Dokumentet kunne ikke fjernes.</string>
     <string name="project_documents_remove_primary_message">Fjerne %1$s? Et annet dokument blir hoveddokument.</string>
     <string name="project_documents_remove_last_message">Fjerne %1$s? Prosjektet vil ikke lenger ha en lesbar oppskrift.</string>
-    <string name="project_documents_new_primary_selected">Et nytt hoveddokument ble valgt automatisk.</string>
-    <string name="project_documents_name_required">Dokumentnavn er påkrevd.</string>
-    <string name="project_documents_name_max">Maksimalt 50 tegn.</string>
-    <string name="project_documents_wrong_project">Dokumentet tilhører ikke lenger dette prosjektet.</string>
 </resources>

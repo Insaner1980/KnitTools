@@ -57,6 +57,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -1084,7 +1085,7 @@ internal fun SessionStopSummaryDialog(
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(projectName, style = MaterialTheme.typography.titleMedium)
                 Text(stringResource(R.string.work_session_duration_format, formatWorkSessionDuration(durationSeconds)))
-                Text(stringResource(R.string.work_session_rows_format, rowsWorked))
+                Text(pluralStringResource(R.plurals.rows_format, rowsWorked, rowsWorked))
             }
         },
         confirmButton = {

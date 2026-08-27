@@ -137,7 +137,6 @@
     <string name="pattern_open_failed">Ohjetta ei voitu avata.</string>
     <string name="pattern_show_reading_line">Näytä lukulinja</string>
     <string name="pattern_hide_reading_line">Piilota lukulinja</string>
-    <string name="pattern_save_line_as_row">Tallenna viiva riviksi %1$d</string>
     <string name="pattern_clear_row_mark">Poista rivimerkki</string>
     <string name="pattern_clear_page_marks">Poista sivun rivimerkit</string>
     <string name="pattern_calibrate_rows">Kalibroi rivit</string>
@@ -146,7 +145,6 @@
     <string name="pattern_calibration_save_first">Tallenna ensimmäinen</string>
     <string name="pattern_calibration_save_last">Tallenna viimeinen</string>
     <string name="pattern_calibration_invalid_row">Käytä kahta eri kerrosnumeroa</string>
-    <string name="pattern_reading_line_description">Lukulinja</string>
     <string name="pattern_page_jump">Siirry sivulle</string>
     <string name="pattern_page_number">Sivunumero</string>
     <string name="pattern_page_indicator">Sivu %1$d / %2$d</string>
@@ -1059,11 +1057,9 @@
     <string name="work_session_start">Aloita työskentelyistunto</string>
     <string name="work_session_stop">Lopeta työskentelyistunto</string>
     <string name="work_session_active">Työskentelyistunto käynnissä</string>
-    <string name="work_session_rows_format">%1$d kerrosta</string>
     <string name="work_session_recovery_needed">Istunnon aika on tarkistettava</string>
     <string name="work_session_resolve">Ratkaise</string>
     <string name="work_session_recovery_title">Tarkista istunnon aika</string>
-    <string name="work_session_recovery_body">KnitTools ei voinut varmistaa viimeisintä aikaväliä. Lisää säilytettävä aika tai hylkää odottava aikaväli ja lopeta istunto.</string>
     <string name="work_session_pending_rows_format">Odottava kerrosmäärä: %1$d</string>
     <string name="work_session_hours">Tunnit</string>
     <string name="work_session_minutes">Minuutit</string>
@@ -1082,10 +1078,7 @@
     <string name="work_session_delete_project_title">Hylätäänkö aktiivinen istunto ja poistetaanko projekti?</string>
     <string name="work_session_delete_project_body">Projektin poistaminen poistaa myös sen tallennetut istunnot. Aktiivinen istunto on hylättävä ensin.</string>
     <string name="work_session_discard_and_delete">Hylkää istunto ja poista</string>
-    <string name="work_session_saved_title">Istunto tallennettu</string>
     <string name="work_session_duration_format">Kesto: %1$s</string>
-    <string name="work_session_label">Työskentelyistunto</string>
-    <string name="work_session_recovered">Istunto palautettu</string>
     <string name="work_session_confirmed_time_format">Vahvistettu aika: %1$s</string>
     <string name="work_session_time_while_away_format">Poissaoloaika: %1$s</string>
     <string name="work_session_time_unavailable">Poissaoloaikaa ei voitu arvioida.</string>
@@ -1106,7 +1099,6 @@
     <string name="work_session_could_not_discard">Istuntoa ei voitu hylätä</string>
     <string name="work_session_recovery_already_handled">Tämä istunnon tarkistus on jo käsitelty.</string>
     <string name="work_session_retry">Yritä uudelleen</string>
-    <string name="work_session_recovery_dismissed">Tarkistus suljettiin. Voit palata siihen Ratkaise-toiminnolla.</string>
     <string name="project_documents_title">Asiakirjat</string>
     <string name="project_documents_add">Lisää</string>
     <string name="project_documents_actions">Asiakirjan %1$s toiminnot</string>
@@ -1127,8 +1119,6 @@
     <string name="project_documents_error_unavailable">Tämä PDF ei ole enää saatavilla. Poista se tai lisää tiedosto uudelleen.</string>
     <string name="project_documents_error_stale">Asiakirjaluettelo muuttui. Yritä uudelleen.</string>
     <string name="project_documents_error_generic">Asiakirjan muutosta ei voitu tallentaa.</string>
-    <string name="project_documents_project_title">Projektin asiakirjat</string>
-    <string name="project_documents_primary_document">Ensisijainen asiakirja</string>
     <string name="project_documents_secondary">Toissijainen asiakirja</string>
     <string name="project_documents_available">PDF on saatavilla</string>
     <string name="project_documents_position">Sijainti %1$d/%2$d</string>
@@ -1137,19 +1127,6 @@
     <string name="project_documents_empty">Ei asiakirjoja</string>
     <string name="project_documents_metadata_only">Vain metatiedot</string>
     <string name="project_documents_pattern_information">Ohjeen tiedot</string>
-    <string name="project_documents_source_local_pdf">Paikallinen PDF</string>
-    <string name="project_documents_source_saved_pattern_pdf">Tallennetun ohjeen PDF</string>
-    <string name="project_documents_already_attached">Jo liitetty</string>
-    <string name="project_documents_error_add">Asiakirjaa ei voitu lisätä.</string>
-    <string name="project_documents_error_open">Asiakirjaa ei voitu avata.</string>
-    <string name="project_documents_error_rename">Asiakirjaa ei voitu nimetä uudelleen.</string>
-    <string name="project_documents_error_reorder">Asiakirjojen järjestystä ei voitu muuttaa.</string>
-    <string name="project_documents_error_primary">Ensisijaista asiakirjaa ei voitu vaihtaa.</string>
-    <string name="project_documents_error_remove">Asiakirjaa ei voitu poistaa.</string>
     <string name="project_documents_remove_primary_message">Poistetaanko %1$s? Toinen asiakirja asetetaan ensisijaiseksi.</string>
     <string name="project_documents_remove_last_message">Poistetaanko %1$s? Projektiin ei jää luettavaa ohjetta.</string>
-    <string name="project_documents_new_primary_selected">Uusi ensisijainen asiakirja valittiin automaattisesti.</string>
-    <string name="project_documents_name_required">Asiakirjan nimi vaaditaan.</string>
-    <string name="project_documents_name_max">Enintään 50 merkkiä.</string>
-    <string name="project_documents_wrong_project">Asiakirja ei enää kuulu tähän projektiin.</string>
 </resources>

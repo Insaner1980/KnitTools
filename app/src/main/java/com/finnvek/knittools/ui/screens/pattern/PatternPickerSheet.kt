@@ -94,7 +94,7 @@ fun PatternPickerSheet(
         rememberPatternPickerActions(
             projectId = projectId,
             canUseCameraScan = canUseCameraScan,
-            imageImportViewModel = imageImportViewModel,
+            imageImportViewModelProvider = { imageImportViewModel },
             onDocumentSelected = onDocumentSelected,
             onImportFromRavelry = onImportFromRavelry,
             onLockedGalleryImport = { pendingProAction = PendingPatternProAction.GalleryImages },
@@ -213,13 +213,14 @@ fun PatternPickerSheet(
 private fun rememberPatternPickerActions(
     projectId: Long?,
     canUseCameraScan: Boolean,
-    imageImportViewModel: PatternImageImportViewModel,
+    imageImportViewModelProvider: @Composable () -> PatternImageImportViewModel,
     onDocumentSelected: (String, String) -> Unit,
     onImportFromRavelry: () -> Unit,
     onLockedGalleryImport: () -> Unit,
     onLockedCameraScan: () -> Unit,
     onDismiss: () -> Unit,
 ): PatternPickerActions {
+    val imageImportViewModel = imageImportViewModelProvider()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val currentProjectId by rememberUpdatedState(projectId)

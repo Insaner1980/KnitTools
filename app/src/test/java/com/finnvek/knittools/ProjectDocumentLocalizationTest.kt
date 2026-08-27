@@ -51,10 +51,8 @@ class ProjectDocumentLocalizationTest {
             )
         val requiredNames =
             setOf(
-                "project_documents_project_title",
                 "project_documents_title",
                 "project_documents_primary",
-                "project_documents_primary_document",
                 "project_documents_secondary",
                 "project_documents_make_primary",
                 "project_documents_add",
@@ -68,14 +66,8 @@ class ProjectDocumentLocalizationTest {
                 "project_documents_metadata_only",
                 "project_documents_pattern_information",
                 "project_documents_unavailable",
-                "project_documents_source_local_pdf",
-                "project_documents_source_saved_pattern_pdf",
-                "project_documents_already_attached",
                 "project_documents_remove_primary_message",
                 "project_documents_remove_last_message",
-                "project_documents_name_required",
-                "project_documents_name_max",
-                "project_documents_wrong_project",
             )
     }
 }

@@ -140,7 +140,6 @@
     <string name="pattern_open_failed">Impossible d’ouvrir le modèle.</string>
     <string name="pattern_show_reading_line">Afficher la ligne de lecture</string>
     <string name="pattern_hide_reading_line">Masquer la ligne de lecture</string>
-    <string name="pattern_save_line_as_row">Enregistrer la ligne au rang %1$d</string>
     <string name="pattern_clear_row_mark">Effacer le repère de rang</string>
     <string name="pattern_clear_page_marks">Effacer les repères de la page</string>
     <string name="pattern_calibrate_rows">Calibrer les rangs</string>
@@ -149,7 +148,6 @@
     <string name="pattern_calibration_save_first">Enregistrer le premier</string>
     <string name="pattern_calibration_save_last">Enregistrer le dernier</string>
     <string name="pattern_calibration_invalid_row">Utilisez deux numéros de rang différents</string>
-    <string name="pattern_reading_line_description">Ligne de lecture</string>
     <string name="pattern_page_jump">Aller à la page</string>
     <string name="pattern_page_number">Numéro de page</string>
     <string name="pattern_page_indicator">Page %1$d sur %2$d</string>
@@ -772,11 +770,9 @@
     <string name="work_session_start">Démarrer une session de travail</string>
     <string name="work_session_stop">Arrêter la session de travail</string>
     <string name="work_session_active">Session de travail active</string>
-    <string name="work_session_rows_format">%1$d rangs</string>
     <string name="work_session_recovery_needed">La durée de la session doit être vérifiée</string>
     <string name="work_session_resolve">Résoudre</string>
     <string name="work_session_recovery_title">Vérifier la durée de la session</string>
-    <string name="work_session_recovery_body">KnitTools n’a pas pu vérifier le dernier intervalle. Ajoutez le temps à conserver ou ignorez l’intervalle en attente et arrêtez la session.</string>
     <string name="work_session_pending_rows_format">Rangs en attente : %1$d</string>
     <string name="work_session_hours">Heures</string>
     <string name="work_session_minutes">Minutes</string>
@@ -795,10 +791,7 @@
     <string name="work_session_delete_project_title">Ignorer la session active et supprimer le projet ?</string>
     <string name="work_session_delete_project_body">La suppression du projet supprime aussi ses sessions enregistrées. La session active doit d’abord être ignorée.</string>
     <string name="work_session_discard_and_delete">Ignorer la session et supprimer</string>
-    <string name="work_session_saved_title">Session enregistrée</string>
     <string name="work_session_duration_format">Durée : %1$s</string>
-    <string name="work_session_label">Session de travail</string>
-    <string name="work_session_recovered">Session récupérée</string>
     <string name="work_session_confirmed_time_format">Temps confirmé : %1$s</string>
     <string name="work_session_time_while_away_format">Temps pendant l’absence : %1$s</string>
     <string name="work_session_time_unavailable">Le temps pendant l’absence n’a pas pu être estimé.</string>
@@ -819,7 +812,6 @@
     <string name="work_session_could_not_discard">Impossible d’ignorer la session</string>
     <string name="work_session_recovery_already_handled">Cette vérification de session a déjà été traitée.</string>
     <string name="work_session_retry">Réessayer</string>
-    <string name="work_session_recovery_dismissed">Vérification fermée. Utilisez Résoudre pour y revenir.</string>
     <string name="project_documents_title">Documents</string>
     <string name="project_documents_add">Ajouter</string>
     <string name="project_documents_actions">Actions pour %1$s</string>
@@ -840,8 +832,6 @@
     <string name="project_documents_error_unavailable">Ce PDF n’est plus disponible. Retirez-le ou ajoutez de nouveau le fichier.</string>
     <string name="project_documents_error_stale">La liste des documents a changé. Réessayez.</string>
     <string name="project_documents_error_generic">La modification du document n’a pas pu être enregistrée.</string>
-    <string name="project_documents_project_title">Documents du projet</string>
-    <string name="project_documents_primary_document">Document principal</string>
     <string name="project_documents_secondary">Document secondaire</string>
     <string name="project_documents_available">PDF disponible</string>
     <string name="project_documents_position">Position %1$d sur %2$d</string>
@@ -850,19 +840,6 @@
     <string name="project_documents_empty">Aucun document</string>
     <string name="project_documents_metadata_only">Métadonnées uniquement</string>
     <string name="project_documents_pattern_information">Informations du modèle</string>
-    <string name="project_documents_source_local_pdf">PDF local</string>
-    <string name="project_documents_source_saved_pattern_pdf">PDF de modèle enregistré</string>
-    <string name="project_documents_already_attached">Déjà associé</string>
-    <string name="project_documents_error_add">Impossible d’ajouter le document.</string>
-    <string name="project_documents_error_open">Impossible d’ouvrir le document.</string>
-    <string name="project_documents_error_rename">Impossible de renommer le document.</string>
-    <string name="project_documents_error_reorder">Impossible de réorganiser les documents.</string>
-    <string name="project_documents_error_primary">Impossible de changer le document principal.</string>
-    <string name="project_documents_error_remove">Impossible de retirer le document.</string>
     <string name="project_documents_remove_primary_message">Retirer %1$s ? Un autre document deviendra principal.</string>
     <string name="project_documents_remove_last_message">Retirer %1$s ? Le projet n’aura plus de modèle lisible associé.</string>
-    <string name="project_documents_new_primary_selected">Un nouveau document principal a été sélectionné automatiquement.</string>
-    <string name="project_documents_name_required">Le nom du document est obligatoire.</string>
-    <string name="project_documents_name_max">50 caractères maximum.</string>
-    <string name="project_documents_wrong_project">Ce document n’appartient plus à ce projet.</string>
 </resources>

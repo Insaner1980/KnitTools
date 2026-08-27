@@ -141,7 +141,6 @@
     <string name="pattern_open_failed">Pattern could not be opened.</string>
     <string name="pattern_show_reading_line">Show reading line</string>
     <string name="pattern_hide_reading_line">Hide reading line</string>
-    <string name="pattern_save_line_as_row" tools:ignore="PluralsCandidate">Save line as row %1$d</string>
     <string name="pattern_clear_row_mark">Clear row mark</string>
     <string name="pattern_clear_page_marks">Clear page marks</string>
     <string name="pattern_calibrate_rows">Calibrate rows</string>
@@ -150,7 +149,6 @@
     <string name="pattern_calibration_save_first">Save first</string>
     <string name="pattern_calibration_save_last">Save last</string>
     <string name="pattern_calibration_invalid_row">Use two different row numbers</string>
-    <string name="pattern_reading_line_description">Reading line</string>
     <string name="pattern_row_highlight_description" tools:ignore="PluralsCandidate">Row %1$d highlighted about %2$d percent down the page</string>
     <string name="pattern_page_jump">Page jump</string>
     <string name="pattern_page_number">Page number</string>
@@ -1142,11 +1140,9 @@
     <string name="work_session_start">Start work session</string>
     <string name="work_session_stop">Stop work session</string>
     <string name="work_session_active">Work session active</string>
-    <string name="work_session_rows_format">%1$d rows</string>
     <string name="work_session_recovery_needed">Session time needs review</string>
     <string name="work_session_resolve">Resolve</string>
     <string name="work_session_recovery_title">Review session time</string>
-    <string name="work_session_recovery_body">KnitTools could not verify the latest interval. Add the time you want to keep, or discard the pending interval and stop the session.</string>
     <string name="work_session_pending_rows_format">Pending row progress: %1$d</string>
     <string name="work_session_hours">Hours</string>
     <string name="work_session_minutes">Minutes</string>
@@ -1165,10 +1161,7 @@
     <string name="work_session_delete_project_title">Discard active session and delete project?</string>
     <string name="work_session_delete_project_body">Deleting the project also deletes its saved sessions. The active session must be discarded first.</string>
     <string name="work_session_discard_and_delete">Discard session and delete</string>
-    <string name="work_session_saved_title">Session saved</string>
     <string name="work_session_duration_format">Duration: %1$s</string>
-    <string name="work_session_label">Work session</string>
-    <string name="work_session_recovered">Session recovered</string>
     <string name="work_session_confirmed_time_format">Confirmed time: %1$s</string>
     <string name="work_session_time_while_away_format">Time while away: %1$s</string>
     <string name="work_session_time_unavailable">Time while away could not be estimated.</string>
@@ -1189,7 +1182,6 @@
     <string name="work_session_could_not_discard">Could not discard session</string>
     <string name="work_session_recovery_already_handled">This session review was already handled.</string>
     <string name="work_session_retry">Retry</string>
-    <string name="work_session_recovery_dismissed">Review dismissed. Use Resolve to return to it.</string>
     <string name="project_documents_title">Documents</string>
     <string name="project_documents_add">Add</string>
     <string name="project_documents_actions">Actions for %1$s</string>
@@ -1210,8 +1202,6 @@
     <string name="project_documents_error_unavailable">This PDF is no longer available. Remove it or add the file again.</string>
     <string name="project_documents_error_stale">The document list changed. Try again.</string>
     <string name="project_documents_error_generic">The document change could not be saved.</string>
-    <string name="project_documents_project_title">Project documents</string>
-    <string name="project_documents_primary_document">Primary document</string>
     <string name="project_documents_secondary">Secondary document</string>
     <string name="project_documents_available">PDF available</string>
     <string name="project_documents_position">Position %1$d of %2$d</string>
@@ -1220,19 +1210,6 @@
     <string name="project_documents_empty">No documents</string>
     <string name="project_documents_metadata_only">Metadata only</string>
     <string name="project_documents_pattern_information">Pattern information</string>
-    <string name="project_documents_source_local_pdf">Local PDF</string>
-    <string name="project_documents_source_saved_pattern_pdf">Saved Pattern PDF</string>
-    <string name="project_documents_already_attached">Already attached</string>
-    <string name="project_documents_error_add">Could not add document.</string>
-    <string name="project_documents_error_open">Could not open document.</string>
-    <string name="project_documents_error_rename">Could not rename document.</string>
-    <string name="project_documents_error_reorder">Could not reorder documents.</string>
-    <string name="project_documents_error_primary">Could not change primary document.</string>
-    <string name="project_documents_error_remove">Could not remove document.</string>
     <string name="project_documents_remove_primary_message">Remove %1$s? Another document will become primary.</string>
     <string name="project_documents_remove_last_message">Remove %1$s? This project will no longer have an attached readable pattern.</string>
-    <string name="project_documents_new_primary_selected">A new primary document was selected automatically.</string>
-    <string name="project_documents_name_required">Document name is required.</string>
-    <string name="project_documents_name_max">Maximum 50 characters.</string>
-    <string name="project_documents_wrong_project">This document no longer belongs to this project.</string>
 </resources>

@@ -137,7 +137,6 @@
     <string name="pattern_open_failed">Mönstret kunde inte öppnas.</string>
     <string name="pattern_show_reading_line">Visa läslinje</string>
     <string name="pattern_hide_reading_line">Dölj läslinje</string>
-    <string name="pattern_save_line_as_row">Spara linje som varv %1$d</string>
     <string name="pattern_clear_row_mark">Ta bort varvmarkering</string>
     <string name="pattern_clear_page_marks">Ta bort sidans markeringar</string>
     <string name="pattern_calibrate_rows">Kalibrera varv</string>
@@ -146,7 +145,6 @@
     <string name="pattern_calibration_save_first">Spara första</string>
     <string name="pattern_calibration_save_last">Spara sista</string>
     <string name="pattern_calibration_invalid_row">Använd två olika varvnummer</string>
-    <string name="pattern_reading_line_description">Läslinje</string>
     <string name="pattern_page_jump">Hoppa till sida</string>
     <string name="pattern_page_number">Sidnummer</string>
     <string name="pattern_page_indicator">Sida %1$d av %2$d</string>
@@ -776,11 +774,9 @@
     <string name="work_session_start">Starta arbetspass</string>
     <string name="work_session_stop">Stoppa arbetspass</string>
     <string name="work_session_active">Arbetspass aktivt</string>
-    <string name="work_session_rows_format">%1$d varv</string>
     <string name="work_session_recovery_needed">Passtiden måste granskas</string>
     <string name="work_session_resolve">Lös</string>
     <string name="work_session_recovery_title">Granska passtid</string>
-    <string name="work_session_recovery_body">KnitTools kunde inte verifiera det senaste tidsintervallet. Lägg till tiden du vill behålla eller kasta det väntande intervallet och stoppa passet.</string>
     <string name="work_session_pending_rows_format">Väntande varvframsteg: %1$d</string>
     <string name="work_session_hours">Timmar</string>
     <string name="work_session_minutes">Minuter</string>
@@ -799,10 +795,7 @@
     <string name="work_session_delete_project_title">Kasta aktivt pass och ta bort projekt?</string>
     <string name="work_session_delete_project_body">När projektet tas bort raderas även sparade pass. Det aktiva passet måste kastas först.</string>
     <string name="work_session_discard_and_delete">Kasta pass och ta bort</string>
-    <string name="work_session_saved_title">Pass sparat</string>
     <string name="work_session_duration_format">Längd: %1$s</string>
-    <string name="work_session_label">Arbetspass</string>
-    <string name="work_session_recovered">Passet återställdes</string>
     <string name="work_session_confirmed_time_format">Bekräftad tid: %1$s</string>
     <string name="work_session_time_while_away_format">Tid under frånvaro: %1$s</string>
     <string name="work_session_time_unavailable">Tiden under frånvaron kunde inte uppskattas.</string>
@@ -823,7 +816,6 @@
     <string name="work_session_could_not_discard">Passet kunde inte kasseras</string>
     <string name="work_session_recovery_already_handled">Den här passgranskningen har redan hanterats.</string>
     <string name="work_session_retry">Försök igen</string>
-    <string name="work_session_recovery_dismissed">Granskningen stängdes. Använd Lös för att återgå till den.</string>
     <string name="project_documents_title">Dokument</string>
     <string name="project_documents_add">Lägg till</string>
     <string name="project_documents_actions">Åtgärder för %1$s</string>
@@ -844,8 +836,6 @@
     <string name="project_documents_error_unavailable">Den här PDF-filen är inte längre tillgänglig. Ta bort den eller lägg till filen igen.</string>
     <string name="project_documents_error_stale">Dokumentlistan har ändrats. Försök igen.</string>
     <string name="project_documents_error_generic">Dokumentändringen kunde inte sparas.</string>
-    <string name="project_documents_project_title">Projektdokument</string>
-    <string name="project_documents_primary_document">Primärt dokument</string>
     <string name="project_documents_secondary">Sekundärt dokument</string>
     <string name="project_documents_available">PDF-filen är tillgänglig</string>
     <string name="project_documents_position">Position %1$d av %2$d</string>
@@ -854,19 +844,6 @@
     <string name="project_documents_empty">Inga dokument</string>
     <string name="project_documents_metadata_only">Endast metadata</string>
     <string name="project_documents_pattern_information">Mönsterinformation</string>
-    <string name="project_documents_source_local_pdf">Lokal PDF</string>
-    <string name="project_documents_source_saved_pattern_pdf">Sparad mönster-PDF</string>
-    <string name="project_documents_already_attached">Redan kopplad</string>
-    <string name="project_documents_error_add">Dokumentet kunde inte läggas till.</string>
-    <string name="project_documents_error_open">Dokumentet kunde inte öppnas.</string>
-    <string name="project_documents_error_rename">Dokumentet kunde inte byta namn.</string>
-    <string name="project_documents_error_reorder">Dokumenten kunde inte sorteras om.</string>
-    <string name="project_documents_error_primary">Huvuddokumentet kunde inte ändras.</string>
-    <string name="project_documents_error_remove">Dokumentet kunde inte tas bort.</string>
     <string name="project_documents_remove_primary_message">Ta bort %1$s? Ett annat dokument blir huvudmönster.</string>
     <string name="project_documents_remove_last_message">Ta bort %1$s? Projektet kommer inte längre att ha ett läsbart mönster.</string>
-    <string name="project_documents_new_primary_selected">Ett nytt huvuddokument valdes automatiskt.</string>
-    <string name="project_documents_name_required">Dokumentnamn krävs.</string>
-    <string name="project_documents_name_max">Högst 50 tecken.</string>
-    <string name="project_documents_wrong_project">Dokumentet tillhör inte längre det här projektet.</string>
 </resources>

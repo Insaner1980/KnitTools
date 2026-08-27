@@ -451,7 +451,6 @@ class PatternViewerSourceTest {
             val strings = ProjectSourceFiles.read(stringsFile)
 
             listOf(
-                "pattern_save_line_as_row",
                 "pattern_clear_row_mark",
                 "pattern_clear_page_marks",
                 "pattern_calibrate_rows",

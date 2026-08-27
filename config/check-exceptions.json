@@ -26,21 +26,31 @@
       "tracking": "local-review:knittools-mobsf-target-sdk",
       "sourcePath": "app/build.gradle.kts",
       "selector": "libs.versions.androidTargetSdk",
-      "findingPath": "app/src/main/AndroidManifest.xml"
+      "findingPath": "app/src/main/AndroidManifest.xml",
+      "findingSelectors": [
+        "activity exported, targetsdk<29 and launchmode != singleinstance or taskaffinity is not empty"
+      ]
     },
     {
       "id": "knittools-mobsf-hardcoded-counter-reminder-key",
       "tool": "mobsfscan",
       "rule": "android_kotlin_hardcoded",
-      "scope": "Compose list key in CounterWorkspaceSections.kt",
-      "reason": "The exact MobSF match is a stable Compose item identity, not a credential or secret.",
+      "scope": "Compose list keys in CounterWorkspaceSections.kt",
+      "reason": "The exact MobSF matches are stable Compose item identities, not credentials or secrets.",
       "owner": "project-maintainers",
       "added": "2026-07-29",
       "expires": "2026-10-31",
       "tracking": "local-review:knittools-mobsf-hardcoded-counter-reminder-key",
       "sourcePath": "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterWorkspaceSections.kt",
       "selector": "key = \"active-reminder-alert\"",
-      "findingPath": "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterWorkspaceSections.kt"
+      "findingPath": "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterWorkspaceSections.kt",
+      "findingSelectors": [
+        "key = \"active-reminder-alert\"",
+        "key = \"counter-hero-reveal-gap\"",
+        "key = \"counter-hero\"",
+        "key = \"extra-counters-title\"",
+        "key = \"project-content\""
+      ]
     },
     {
       "id": "knittools-mobsf-hardcoded-home-keys",
@@ -54,35 +64,51 @@
       "tracking": "local-review:knittools-mobsf-hardcoded-home-keys",
       "sourcePath": "app/src/main/java/com/finnvek/knittools/ui/screens/home/HomeScreen.kt",
       "selector": "key = \"home-tool-cast-on\"",
-      "findingPath": "app/src/main/java/com/finnvek/knittools/ui/screens/home/HomeScreen.kt"
+      "findingPath": "app/src/main/java/com/finnvek/knittools/ui/screens/home/HomeScreen.kt",
+      "findingSelectors": [
+        "key = \"home-tool-cast-on\"",
+        "key = \"home-tool-gauge\"",
+        "key = \"home-tool-increase-decrease\"",
+        "key = \"home-tool-ravelry\"",
+        "key = \"home-tool-yarn\""
+      ]
     },
     {
       "id": "knittools-mobsf-hardcoded-notes-draft-key",
       "tool": "mobsfscan",
       "rule": "android_kotlin_hardcoded",
-      "scope": "SavedStateHandle key in NotesEditorViewModel.kt",
-      "reason": "The exact MobSF match is a SavedStateHandle state key, not a credential or secret.",
+      "scope": "SavedStateHandle keys in NotesEditorViewModel.kt",
+      "reason": "The exact MobSF matches are SavedStateHandle state keys, not credentials or secrets.",
       "owner": "project-maintainers",
       "added": "2026-07-29",
       "expires": "2026-10-31",
       "tracking": "local-review:knittools-mobsf-hardcoded-notes-draft-key",
       "sourcePath": "app/src/main/java/com/finnvek/knittools/ui/screens/notes/NotesEditorViewModel.kt",
       "selector": "NOTES_DRAFT_KEY = \"notesDraft\"",
-      "findingPath": "app/src/main/java/com/finnvek/knittools/ui/screens/notes/NotesEditorViewModel.kt"
+      "findingPath": "app/src/main/java/com/finnvek/knittools/ui/screens/notes/NotesEditorViewModel.kt",
+      "findingSelectors": [
+        "key = \"notescreationauthorized\"",
+        "key = \"notesdraft\"",
+        "key = \"notesdraftbase\""
+      ]
     },
     {
       "id": "knittools-mobsf-hardcoded-project-id-key",
       "tool": "mobsfscan",
       "rule": "android_kotlin_hardcoded",
-      "scope": "SavedStateHandle key in PatternAnnotationViewModel.kt",
-      "reason": "The exact MobSF match is a SavedStateHandle state key, not a credential or secret.",
+      "scope": "SavedStateHandle keys in PatternAnnotationViewModel.kt",
+      "reason": "The exact MobSF matches are SavedStateHandle state keys, not credentials or secrets.",
       "owner": "project-maintainers",
       "added": "2026-07-29",
       "expires": "2026-10-31",
       "tracking": "local-review:knittools-mobsf-hardcoded-project-id-key",
       "sourcePath": "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternAnnotationViewModel.kt",
       "selector": "PROJECT_ID_KEY = \"projectId\"",
-      "findingPath": "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternAnnotationViewModel.kt"
+      "findingPath": "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternAnnotationViewModel.kt",
+      "findingSelectors": [
+        "key = \"projectid\"",
+        "key = \"savedpatternid\""
+      ]
     },
     {
       "id": "knittools-mobsf-hardcoded-counter-stitch-source-test",
@@ -96,7 +122,10 @@
       "tracking": "local-review:knittools-mobsf-hardcoded-counter-stitch-source-test",
       "sourcePath": "app/src/test/java/com/finnvek/knittools/ui/screens/counter/CounterStitchTrackingSourceTest.kt",
       "selector": "stitch-tracker",
-      "findingPath": "app/src/test/java/com/finnvek/knittools/ui/screens/counter/CounterStitchTrackingSourceTest.kt"
+      "findingPath": "app/src/test/java/com/finnvek/knittools/ui/screens/counter/CounterStitchTrackingSourceTest.kt",
+      "findingSelectors": [
+        "key = \"stitch-tracker\")\"\"\""
+      ]
     },
     {
       "id": "knittools-mobsf-hardcoded-counter-workspace-source-test",
@@ -110,7 +139,16 @@
       "tracking": "local-review:knittools-mobsf-hardcoded-counter-workspace-source-test",
       "sourcePath": "app/src/test/java/com/finnvek/knittools/ui/screens/counter/CounterWorkspaceSourceTest.kt",
       "selector": "counter-buttons",
-      "findingPath": "app/src/test/java/com/finnvek/knittools/ui/screens/counter/CounterWorkspaceSourceTest.kt"
+      "findingPath": "app/src/test/java/com/finnvek/knittools/ui/screens/counter/CounterWorkspaceSourceTest.kt",
+      "findingSelectors": [
+        "key = \"counter-buttons\"\"\"\"",
+        "key = \"counter-hero-reveal-gap\"\"\"\"",
+        "key = \"counter-hero\"\"\"\"",
+        "key = \"counter-hero\"\"\"\") < workspace.indexof(\"projectcontentcards(\"",
+        "key = \"extra-counters-title\"\"\"\"",
+        "key = \"project-header\"\"\"\"",
+        "key = \"stitch-tracker\"\"\"\""
+      ]
     },
     {
       "id": "knittools-mobsf-fixed-migration-sql-test",
@@ -124,7 +162,11 @@
       "tracking": "local-review:knittools-mobsf-fixed-migration-sql-test",
       "sourcePath": "app/src/androidTest/java/com/finnvek/knittools/data/local/PatternAnnotationMigration17Test.kt",
       "selector": "execSQL(",
-      "findingPath": "app/src/androidTest/java/com/finnvek/knittools/data/local/PatternAnnotationMigration17Test.kt"
+      "findingPath": "app/src/androidTest/java/com/finnvek/knittools/data/local/PatternAnnotationMigration17Test.kt",
+      "findingSelectors": [
+        "android.database.sqlite",
+        "execsql("
+      ]
     },
     {
       "id": "knittools-owasp-false-cpe-groups",

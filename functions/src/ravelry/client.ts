@@ -53,6 +53,21 @@ function stringOrUndefined(value: unknown): string | undefined {
   return typeof value === "string" && value.trim().length > 0 ? value : undefined;
 }
 
+function thumbnailUrlOrUndefined(value: unknown): string | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+  const trimmedValue = value.trim();
+  if (trimmedValue.length === 0) {
+    return undefined;
+  }
+  try {
+    return new URL(trimmedValue).protocol === "https:" ? trimmedValue : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 function currentUserFromResponse(value: unknown): RavelryCurrentUser {
   const root = value as { user?: unknown };
   const user = (root.user ?? value) as {
@@ -75,6 +90,10 @@ function objectOrNull(value: unknown): Record<string, unknown> | null {
 
 function numberOrUndefined(value: unknown): number | undefined {
   return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
+
+function positiveIntegerOrUndefined(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isInteger(value) && value > 0 ? value : undefined;
 }
 
 function arrayOrEmpty(value: unknown): readonly unknown[] {
@@ -102,12 +121,12 @@ function designerNameFrom(value: Record<string, unknown>): string {
 
 function searchThumbnailFrom(value: Record<string, unknown>): string | undefined {
   const photo = objectOrNull(value.first_photo);
-  return stringOrUndefined(photo?.medium_url) ?? stringOrUndefined(photo?.small2_url);
+  return thumbnailUrlOrUndefined(photo?.medium_url) ?? thumbnailUrlOrUndefined(photo?.small2_url);
 }
 
 function detailThumbnailFrom(value: Record<string, unknown>): string | undefined {
   const firstPhoto = objectOrNull(arrayOrEmpty(value.photos)[0]);
-  return stringOrUndefined(firstPhoto?.medium_url) ?? stringOrUndefined(firstPhoto?.small2_url);
+  return thumbnailUrlOrUndefined(firstPhoto?.medium_url) ?? thumbnailUrlOrUndefined(firstPhoto?.small2_url);
 }
 
 function sanitizePatternValue(value: unknown, thumbnailUrl?: string): SanitizedPattern | null {
@@ -116,7 +135,7 @@ function sanitizePatternValue(value: unknown, thumbnailUrl?: string): SanitizedP
     return null;
   }
 
-  const ravelryPatternId = numberOrUndefined(pattern.id);
+  const ravelryPatternId = positiveIntegerOrUndefined(pattern.id);
   const permalink = stringOrUndefined(pattern.permalink);
   if (ravelryPatternId == null || !permalink) {
     return null;

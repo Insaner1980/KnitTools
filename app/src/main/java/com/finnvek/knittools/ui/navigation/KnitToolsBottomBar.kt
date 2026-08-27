@@ -37,7 +37,8 @@ private val NavBarHorizontalPadding = 6.dp
 private val LabelHorizontalSafetyPadding = 8.dp
 
 @Composable
-fun KnitToolsBottomBar(navController: NavController) {
+fun KnitToolsBottomBar(navControllerProvider: @Composable () -> NavController) {
+    val navController = navControllerProvider()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute =
         navBackStackEntry?.destination?.parent?.route

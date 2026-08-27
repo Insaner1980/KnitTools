@@ -37,6 +37,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.ProjectYarnNote
+import com.finnvek.knittools.pro.ProStatus
+import com.finnvek.knittools.ui.components.ProBadge
 import com.finnvek.knittools.ui.components.ProjectYarnTextField
 import com.finnvek.knittools.ui.components.localizedUppercase
 import com.finnvek.knittools.ui.theme.YarnColors
@@ -46,7 +48,7 @@ import com.finnvek.knittools.ui.theme.YarnColors
 fun YarnManagementSheet(
     linkedYarns: List<Pair<Long, String>>,
     projectYarnNotes: List<ProjectYarnNote>,
-    canSaveToMyYarn: Boolean,
+    proStatus: ProStatus,
     actions: YarnManagementSheetActions,
 ) {
     var showProjectYarnForm by rememberSaveable { mutableStateOf(false) }
@@ -87,7 +89,7 @@ fun YarnManagementSheet(
 
             ProjectYarnNotesSection(
                 notes = projectYarnNotes,
-                canSaveToMyYarn = canSaveToMyYarn,
+                proStatus = proStatus,
                 onDeleteProjectYarnNote = actions.onDeleteProjectYarnNote,
                 onSaveProjectYarnNoteToMyYarn = actions.onSaveProjectYarnNoteToMyYarn,
             )
@@ -169,7 +171,7 @@ private fun LinkedYarnRow(
 @Composable
 private fun ProjectYarnNotesSection(
     notes: List<ProjectYarnNote>,
-    canSaveToMyYarn: Boolean,
+    proStatus: ProStatus,
     onDeleteProjectYarnNote: (Long) -> Unit,
     onSaveProjectYarnNoteToMyYarn: (Long) -> Unit,
 ) {
@@ -183,7 +185,7 @@ private fun ProjectYarnNotesSection(
     notes.forEach { note ->
         ProjectYarnNoteRow(
             note = note,
-            canSaveToMyYarn = canSaveToMyYarn,
+            proStatus = proStatus,
             onDeleteProjectYarnNote = onDeleteProjectYarnNote,
             onSaveProjectYarnNoteToMyYarn = onSaveProjectYarnNoteToMyYarn,
         )
@@ -193,7 +195,7 @@ private fun ProjectYarnNotesSection(
 @Composable
 private fun ProjectYarnNoteRow(
     note: ProjectYarnNote,
-    canSaveToMyYarn: Boolean,
+    proStatus: ProStatus,
     onDeleteProjectYarnNote: (Long) -> Unit,
     onSaveProjectYarnNoteToMyYarn: (Long) -> Unit,
 ) {
@@ -233,7 +235,7 @@ private fun ProjectYarnNoteRow(
         )
         TextButton(
             onClick = { onSaveProjectYarnNoteToMyYarn(note.id) },
-            enabled = note.savedYarnCardId == null && canSaveToMyYarn,
+            enabled = note.savedYarnCardId == null,
         ) {
             Text(
                 text =
@@ -245,6 +247,10 @@ private fun ProjectYarnNoteRow(
                         },
                     ),
             )
+            if (note.savedYarnCardId == null) {
+                Spacer(modifier = Modifier.width(6.dp))
+                ProBadge(status = proStatus)
+            }
         }
     }
 }

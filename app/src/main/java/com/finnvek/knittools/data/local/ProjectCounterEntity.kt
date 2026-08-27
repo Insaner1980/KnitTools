@@ -8,6 +8,7 @@ import androidx.room.PrimaryKey
 import com.finnvek.knittools.domain.model.ProjectCounterType
 
 @Entity(
+    // CPD-OFF: Eksplisiittinen kenttarakenne sailyttaa kerros- ja tietokantarajat.
     tableName = "project_counters",
     foreignKeys = [
         ForeignKey(
@@ -29,6 +30,7 @@ data class ProjectCounterEntity(
     val repeatAt: Int? = null,
     val sortOrder: Int = 0,
     val createdAt: Long = System.currentTimeMillis(),
+    // CPD-ON
     @ColumnInfo(defaultValue = "COUNT_UP")
     val counterType: String = ProjectCounterType.COUNT_UP.persistedValue,
     @ColumnInfo(defaultValue = "NULL")

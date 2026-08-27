@@ -12,6 +12,7 @@ import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.SavedPatternSource
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
+import com.finnvek.knittools.repository.ProjectCreationResult
 import com.finnvek.knittools.repository.RavelryRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -76,20 +77,23 @@ class RavelryViewModelTest {
         )
     }
 
+    // CPD-OFF: Testin skenaariokohtainen asetelma pidetaan paikallisena ja luettavana.
     @Test
     fun `free user with existing active project is routed to pro upgrade instead of creating project`() =
         runTest(testDispatcher) {
             val pattern = PatternDetail(id = 42, name = "Test Pattern", permalink = "test-pattern")
             coEvery { repository.getPatternDetail(42) } returns pattern
             coEvery { repository.isPatternSaved(42) } returns false
-            coEvery { repository.getActiveProjectCount() } returns 1
+            coEvery { repository.createProjectFromPattern(pattern, false) } returns
+                // CPD-ON
+                ProjectCreationResult.LimitReached
 
             val vm = createViewModel(isPro = false)
             vm.loadDetail(42)
             advanceUntilIdle()
             var upgradeEvents = 0
             backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-                vm.upgradeToPro.collect {
+                vm.projectCreationPrompts.collect {
                     upgradeEvents += 1
                 }
             }
@@ -98,17 +102,18 @@ class RavelryViewModelTest {
             advanceUntilIdle()
 
             assertEquals(1, upgradeEvents)
-            coVerify(exactly = 0) { repository.createProjectFromPattern(any()) }
+            coVerify(exactly = 1) { repository.createProjectFromPattern(pattern, false) }
         }
 
+    // CPD-OFF: Testin skenaariokohtainen asetelma pidetaan paikallisena ja luettavana.
     @Test
     fun `createProjectFromPattern ignores repeated taps while creation is in flight`() =
         runTest(testDispatcher) {
             val pattern = PatternDetail(id = 42, name = "Test Pattern", permalink = "test-pattern")
             coEvery { repository.getPatternDetail(42) } returns pattern
             coEvery { repository.isPatternSaved(42) } returns false
-            val creationResult = CompletableDeferred<Long?>()
-            coEvery { repository.createProjectFromPattern(pattern) } coAnswers {
+            val creationResult = CompletableDeferred<ProjectCreationResult>()
+            coEvery { repository.createProjectFromPattern(pattern, true) } coAnswers {
                 creationResult.await()
             }
             val vm = createViewModel(isPro = true)
@@ -119,12 +124,14 @@ class RavelryViewModelTest {
             runCurrent()
             vm.createProjectFromPattern()
             runCurrent()
-            creationResult.complete(7L)
+            creationResult.complete(ProjectCreationResult.Created(7L))
             advanceUntilIdle()
 
-            coVerify(exactly = 1) { repository.createProjectFromPattern(pattern) }
+            coVerify(exactly = 1) { repository.createProjectFromPattern(pattern, true) }
         }
+    // CPD-ON
 
+    // CPD-OFF: Testin skenaariokohtainen asetelma pidetaan paikallisena ja luettavana.
     @Test
     fun `savePattern ignores repeated taps while save is in flight`() =
         runTest(testDispatcher) {
@@ -147,7 +154,9 @@ class RavelryViewModelTest {
 
             coVerify(exactly = 1) { repository.savePattern(pattern) }
         }
+    // CPD-ON
 
+    // CPD-OFF: Testin skenaariokohtainen asetelma pidetaan paikallisena ja luettavana.
     @Test
     fun `savePattern emits success only after repository save succeeds`() =
         runTest(testDispatcher) {
@@ -177,6 +186,7 @@ class RavelryViewModelTest {
             assertEquals(listOf(PatternSaveResult.Saved), events)
             assertEquals(true, vm.isPatternSaved.value)
         }
+    // CPD-ON
 
     @Test
     fun `savePattern emits failure when repository save fails`() =
@@ -345,6 +355,7 @@ class RavelryViewModelTest {
             assertFalse(vm.isDetailLoading.value)
         }
 
+    // CPD-OFF: Testin skenaariokohtainen asetelma pidetaan paikallisena ja luettavana.
     @Test
     fun `import confirmation for search result exposes ready preview`() =
         runTest(testDispatcher) {
@@ -353,6 +364,7 @@ class RavelryViewModelTest {
             coEvery { repository.getPatternDetail(42) } returns pattern
             coEvery { repository.findDuplicateFor(pattern) } returns null
             val vm = createViewModel(isPro = true)
+            // CPD-ON
 
             vm.showImportConfirmationForPattern(42)
             advanceUntilIdle()
@@ -384,6 +396,7 @@ class RavelryViewModelTest {
             coVerify(exactly = 1) { repository.importPatternByUrl(url) }
         }
 
+    // CPD-OFF: Testin skenaariokohtainen asetelma pidetaan paikallisena ja luettavana.
     @Test
     fun `import confirmation exposes already saved duplicate`() =
         runTest(testDispatcher) {
@@ -406,6 +419,7 @@ class RavelryViewModelTest {
             assertEquals(RavelryImportStatus.AlreadySaved, vm.importConfirmationState.value?.status)
             assertEquals(7L, vm.importConfirmationState.value?.savedPatternId)
         }
+    // CPD-ON
 
     @Test
     fun `import confirmation asks for sign in without loading when disconnected`() =
@@ -432,6 +446,7 @@ class RavelryViewModelTest {
             assertEquals(RavelryImportStatus.NeedsSignIn, vm.importConfirmationState.value?.status)
         }
 
+    // CPD-OFF: Testin skenaariokohtainen asetelma pidetaan paikallisena ja luettavana.
     @Test
     fun `save import pattern stores ready preview and switches to already saved`() =
         runTest(testDispatcher) {
@@ -450,6 +465,7 @@ class RavelryViewModelTest {
             assertEquals(RavelryImportStatus.AlreadySaved, vm.importConfirmationState.value?.status)
             assertEquals(9L, vm.importConfirmationState.value?.savedPatternId)
         }
+    // CPD-ON
 
     @Test
     fun `save import pattern does not restore dismissed sheet when save completes`() =

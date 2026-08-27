@@ -1,8 +1,5 @@
 package com.finnvek.knittools.repository
 
-import com.finnvek.knittools.data.local.CounterProjectDao
-import com.finnvek.knittools.data.local.CounterProjectEntity
-import com.finnvek.knittools.data.local.DatabaseTransactionRunner
 import com.finnvek.knittools.data.remote.PatternDetail
 import com.finnvek.knittools.data.remote.PatternSearchParams
 import com.finnvek.knittools.data.remote.PatternSearchResponse
@@ -19,8 +16,7 @@ class RavelryRepository
     constructor(
         private val api: RavelryApiService,
         private val savedPatternRepository: SavedPatternRepository,
-        private val counterProjectDao: CounterProjectDao,
-        private val transactionRunner: DatabaseTransactionRunner,
+        private val counterRepository: CounterRepository,
     ) {
         suspend fun searchPatterns(params: PatternSearchParams): PatternSearchResponse = api.searchPatterns(params)
 
@@ -48,26 +44,17 @@ class RavelryRepository
 
         suspend fun deleteSavedPatterns(ids: List<Long>) = savedPatternRepository.deleteByIds(ids)
 
-        suspend fun getActiveProjectCount(): Int = counterProjectDao.getActiveProjectCount()
+        suspend fun getProjectCount(): Int = counterRepository.getProjectCount()
 
-        suspend fun createProjectFromPattern(detail: PatternDetail): Long? =
-            transactionRunner.run {
-                val projectName =
-                    ProjectNameRules.uniqueName(
-                        requestedName = detail.name,
-                        existingNames = counterProjectDao.getAllProjectsOnce().map { it.name },
-                    ) ?: return@run null
-                val now = System.currentTimeMillis()
-                val savedId = savePattern(detail)
-                counterProjectDao.insert(
-                    CounterProjectEntity(
-                        name = projectName,
-                        createdAt = now,
-                        updatedAt = now,
-                        linkedPatternId = savedId,
-                    ),
-                )
-            }
+        suspend fun createProjectFromPattern(
+            detail: PatternDetail,
+            canCreateAdditionalProjects: Boolean,
+        ): ProjectCreationResult =
+            counterRepository.createProject(
+                name = detail.name,
+                canCreateAdditionalProjects = canCreateAdditionalProjects,
+                linkedPattern = detail.toSavedPattern(),
+            )
     }
 
 private fun PatternDetail.toSavedPattern(): SavedPattern =
@@ -83,7 +70,7 @@ private fun PatternDetail.toSavedPattern(): SavedPattern =
         needleSize = needleSizeText,
         yarnWeight = yarnWeight?.name,
         yardage = yardage ?: yardageMax,
-        isFree = availability.isFree,
+        availability = availability,
         originalUrl = originalUrl.ifBlank { ravelryUrl },
         canonicalUrl = canonicalUrl.ifBlank { ravelryUrl },
     )

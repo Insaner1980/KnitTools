@@ -37,7 +37,7 @@ class RavelryBackendAuthFlowSourceTest {
 
         assertTrue(accountHeader.contains("RavelryAuthState.Connected"))
         assertTrue(accountHeader.contains("ravelry_connected_as"))
-        assertTrue(searchScreen.contains("CollectWithLifecycleEffect(viewModel.signInLaunchRequests)"))
+        assertTrue(searchScreen.contains("CollectWithLifecycleEffect({ viewModel.signInLaunchRequests })"))
         assertTrue(detailScreen.contains("authState.collectAsStateWithLifecycle"))
         assertTrue(navGraph.contains("onLaunchRavelryAuth"))
         assertTrue(mainActivity.contains("AuthTabIntent"))

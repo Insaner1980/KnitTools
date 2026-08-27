@@ -26,7 +26,7 @@ guava = "33.5.0-android"
 dependencyAnalysis = "3.17.0"
 ktlintGradle = "14.2.0"
 detekt = "2.0.0-alpha.5"
-owaspDependencyCheck = "12.2.2"
+owaspDependencyCheck = "13.0.0"
 detektComposeRules = "0.5.8"
 androidSecurityLint = "1.0.4"
 composeStabilityAnalyzer = "0.12.0"
@@ -129,6 +129,7 @@ glance-material3 = { group = "androidx.glance", name = "glance-material3", versi
 
 # Coil (image loading)
 coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil" }
+coil-network-ktor3 = { group = "io.coil-kt.coil3", name = "coil-network-ktor3", version.ref = "coil" }
 
 # Ktor (HTTP client)
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }

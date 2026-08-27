@@ -103,6 +103,7 @@ class PatternAnnotationViewModelTest {
         }
     }
 
+    // CPD-OFF: Testin skenaariokohtainen asetelma pidetaan paikallisena ja luettavana.
     @Test
     fun `library route edits only master layer and follows current page`() =
         runTest {
@@ -112,6 +113,7 @@ class PatternAnnotationViewModelTest {
             val masterLayer = layer(id = 31L, owner = PatternAnnotationOwner.SavedPattern(12L, documentKey))
             coEvery { layerRepository.getOrCreateMasterLayer(12L, documentKey) } returns masterLayer
             every { annotationRepository.observePage(31L, any()) } answers {
+                // CPD-ON
                 flowOf(listOf(annotation(layerId = 31L, page = secondArg())))
             }
 
@@ -256,6 +258,7 @@ class PatternAnnotationViewModelTest {
             )
         }
 
+    // CPD-OFF: Testin skenaariokohtainen asetelma pidetaan paikallisena ja luettavana.
     @Test
     fun `repository load failure is recoverable`() =
         runTest {
@@ -283,6 +286,7 @@ class PatternAnnotationViewModelTest {
             assertEquals(PatternAnnotationLoadError.NONE, viewModel.uiState.value.loadError)
             assertEquals(31L, viewModel.uiState.value.editableLayerId)
         }
+    // CPD-ON
 
     @Test
     fun `pointer moves stay in memory and gesture end persists one pressure stroke`() =
@@ -336,12 +340,14 @@ class PatternAnnotationViewModelTest {
     fun `failed stroke write keeps draft available for retry`() =
         runTest {
             val layerRepository = mockk<PatternAnnotationLayerRepository>()
+            // CPD-OFF: Testin skenaariokohtainen asetelma pidetaan paikallisena ja luettavana.
             val annotationRepository = mockk<PatternAnnotationRepository>()
             val documentKey = PatternAnnotationDocumentKey.savedPattern(12L)
             coEvery { layerRepository.getOrCreateMasterLayer(12L, documentKey) } returns
                 layer(id = 31L, owner = PatternAnnotationOwner.SavedPattern(12L, documentKey))
             every { annotationRepository.observePage(31L, 0) } returns flowOf(emptyList())
             coEvery { annotationRepository.insertAnnotation(any()) } throws IOException("write failed")
+            // CPD-ON
             val viewModel =
                 PatternAnnotationViewModel(
                     SavedStateHandle(mapOf("savedPatternId" to 12L)),
@@ -366,6 +372,7 @@ class PatternAnnotationViewModelTest {
             )
         }
 
+    // CPD-OFF: Testin skenaariokohtainen asetelma pidetaan paikallisena ja luettavana.
     @Test
     fun `tool change cannot cancel an active stroke write`() =
         runTest {
@@ -412,6 +419,7 @@ class PatternAnnotationViewModelTest {
             assertFalse(viewModel.uiState.value.isSaving)
             assertEquals(null, viewModel.uiState.value.draftStroke)
         }
+    // CPD-ON
 
     @Test
     fun `shape insertion supports forward undo and redo`() =
@@ -644,6 +652,7 @@ class PatternAnnotationViewModelTest {
     ) = PatternAnnotation(
         id = layerId,
         layerId = layerId,
+        // CPD-OFF: Testin skenaariokohtainen asetelma pidetaan paikallisena ja luettavana.
         page = page,
         kind = PatternAnnotationKind.FREEHAND,
         payload =
@@ -655,3 +664,4 @@ class PatternAnnotationViewModelTest {
         zIndex = zIndex,
     )
 }
+// CPD-ON

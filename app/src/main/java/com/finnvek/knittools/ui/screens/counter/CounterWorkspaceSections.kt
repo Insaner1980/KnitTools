@@ -31,27 +31,32 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.CounterState
 import com.finnvek.knittools.domain.calculator.CounterValueFormatter
-import com.finnvek.knittools.domain.calculator.MainCounterCountSlot
-import com.finnvek.knittools.domain.calculator.MainCounterTargetSlot
 import com.finnvek.knittools.domain.calculator.formatIntegerForDisplay
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.MainCounterLabelType
 import com.finnvek.knittools.domain.model.ProjectCounter
 import com.finnvek.knittools.domain.model.ProjectCounterType
+import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.ui.components.CounterImageButton
 import com.finnvek.knittools.ui.components.CounterStepButtonFace
 import com.finnvek.knittools.ui.components.CounterStepButtonFaceAppearance
 import com.finnvek.knittools.ui.components.CounterStepSymbol
+import com.finnvek.knittools.ui.components.MainCounterTargetStatus
+import com.finnvek.knittools.ui.components.ProBadge
 import com.finnvek.knittools.ui.components.RollingCounter
 import com.finnvek.knittools.ui.components.StitchCounter
 import com.finnvek.knittools.ui.components.localizedUppercase
@@ -59,9 +64,11 @@ import com.finnvek.knittools.ui.components.mainCounterCountText
 import com.finnvek.knittools.ui.components.mainCounterDecreaseContentDescription
 import com.finnvek.knittools.ui.components.mainCounterIncreaseContentDescription
 import com.finnvek.knittools.ui.components.mainCounterProjectCardCountText
+import com.finnvek.knittools.ui.components.mainCounterTargetStatus
 import com.finnvek.knittools.ui.components.mainCounterTargetText
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
 import com.finnvek.knittools.ui.theme.CounterDimens
+import java.util.Locale
 
 data class ProjectHeaderActions(
     val onNameSave: (String) -> Unit,
@@ -83,6 +90,7 @@ data class CounterWorkspaceActions(
     val onIncrement: () -> Unit,
     val onUndo: () -> Unit,
     val onOpenPattern: () -> Unit,
+    val onShowDocuments: () -> Unit,
     val onShowPatternPicker: () -> Unit,
     val onOpenSavedPatternDetail: () -> Unit,
     val onOpenNotes: () -> Unit,
@@ -96,6 +104,8 @@ data class CounterWorkspaceActions(
     val onIncrementStitch: () -> Unit,
     val onShowTargetDialog: () -> Unit,
     val onDismissReminder: (Long) -> Unit,
+    val onStopSession: () -> Unit,
+    val onResolveSessionRecovery: () -> Unit,
 )
 
 internal data class CounterHeroState(
@@ -152,21 +162,37 @@ fun CounterWorkspace(
                 modifier = Modifier.fillParentMaxHeight(),
             )
         }
+        state.activeSession?.takeIf { it.projectId == state.projectId }?.let { activeSession ->
+            item(key = "active-work-session") {
+                ActiveWorkSessionRow(
+                    projectName = state.projectName,
+                    durationSeconds = state.sessionSeconds,
+                    rowsWorked =
+                        (activeSession.trustedRowsWorked.toLong() + activeSession.pendingRowsWorked.toLong())
+                            .coerceAtMost(Int.MAX_VALUE.toLong())
+                            .toInt(),
+                    needsRecoveryReview = activeSession.needsRecoveryReview,
+                    onStop = actions.onStopSession,
+                    onResolve = actions.onResolveSessionRecovery,
+                )
+            }
+        }
         item(key = "counter-hero-reveal-gap") {
             Spacer(modifier = Modifier.height(CounterDimens.CounterProjectRevealGap))
         }
         item(key = "project-content") {
             ProjectContentCards(
                 onCardClick = { kind -> actions.onProjectContentClick(kind, state) },
-                hasPattern = state.patternUri != null || state.linkedPattern != null,
+                hasPattern = state.projectDocuments.isNotEmpty(),
             )
         }
-        if (state.canUseMultipleCounters && state.projectCounters.isNotEmpty()) {
+        if (state.projectCounters.isNotEmpty()) {
             item(key = "extra-counters-title") {
                 WorkspaceSectionTitle(
                     title = stringResource(R.string.extra_counters_title),
                     actionLabel = stringResource(R.string.add_counter),
                     onAction = actions.onShowAddCounter,
+                    proStatus = state.proStatus,
                 )
             }
             items(items = state.projectCounters, key = { counter -> counter.id }) { counter ->
@@ -177,7 +203,7 @@ fun CounterWorkspace(
                 )
             }
         }
-        if (state.canUseRowReminders && state.activeAlert != null) {
+        if (state.activeAlert != null) {
             state.activeAlert.let { reminder ->
                 item(key = "active-reminder-alert") {
                     ReminderAlertCard(
@@ -191,15 +217,126 @@ fun CounterWorkspace(
     }
 }
 
+@Composable
+internal fun ActiveWorkSessionRow(
+    projectName: String,
+    durationSeconds: Long,
+    rowsWorked: Int,
+    needsRecoveryReview: Boolean,
+    onStop: () -> Unit,
+    onResolve: () -> Unit,
+) {
+    val duration = formatWorkSessionDuration(durationSeconds)
+    val sessionDescription = stringResource(R.string.work_session_active_description, projectName, duration)
+    val label =
+        stringResource(
+            if (needsRecoveryReview) {
+                R.string.work_session_recovery_needed
+            } else {
+                R.string.work_session_active
+            },
+        )
+    val actionLabel =
+        stringResource(
+            if (needsRecoveryReview) {
+                R.string.work_session_resolve
+            } else {
+                R.string.work_session_stop
+            },
+        )
+    val rowsText = stringResource(R.string.work_session_rows_format, rowsWorked)
+    val fontScale = LocalDensity.current.fontScale
+    BoxWithConstraints(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clip(MaterialTheme.shapes.medium)
+                .background(MaterialTheme.colorScheme.surfaceContainer)
+                .semantics { contentDescription = sessionDescription }
+                .padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
+    ) {
+        val stackContent = maxWidth < 360.dp || fontScale >= 1.5f
+        val sessionContent: @Composable () -> Unit = {
+            WorkSessionStatusText(
+                label = label,
+                duration = duration,
+                rowsText = rowsText,
+            )
+        }
+        val action: @Composable () -> Unit = {
+            TextButton(
+                onClick = if (needsRecoveryReview) onResolve else onStop,
+                modifier = Modifier.heightIn(min = 48.dp),
+            ) {
+                Text(actionLabel)
+            }
+        }
+        if (stackContent) {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                sessionContent()
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
+                    action()
+                }
+            }
+        } else {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Box(modifier = Modifier.weight(1f)) {
+                    sessionContent()
+                }
+                action()
+            }
+        }
+    }
+}
+
+@Composable
+private fun WorkSessionStatusText(
+    label: String,
+    duration: String,
+    rowsText: String,
+) {
+    Column {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(
+                text = duration,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = rowsText,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+internal fun formatWorkSessionDuration(seconds: Long): String {
+    val safeSeconds = seconds.coerceAtLeast(0L)
+    val hours = safeSeconds / 3_600L
+    val minutes = (safeSeconds % 3_600L) / 60L
+    val remainingSeconds = safeSeconds % 60L
+    return String.format(Locale.ROOT, "%d:%02d:%02d", hours, minutes, remainingSeconds)
+}
+
 private fun CounterWorkspaceActions.onProjectContentClick(
     kind: ProjectContentCardKind,
     state: CounterUiState,
 ) {
     when (kind) {
         ProjectContentCardKind.PATTERN -> {
+            val primary = state.primaryDocument
             when {
-                state.patternUri != null -> onOpenPattern()
-                state.linkedPattern != null -> onOpenSavedPatternDetail()
+                primary != null && state.projectDocumentAvailability[primary.id] == true -> onOpenPattern()
+                primary != null -> onShowDocuments()
                 else -> onShowPatternPicker()
             }
         }
@@ -253,7 +390,7 @@ private fun CounterHero(
         CounterMainNumber(state = state)
         val display = CounterValueFormatter.forMainCounter(state.toMainCounterProject())
         CounterTargetHelperLabel(
-            helperText = counterTargetHelperText(display.targetLine),
+            status = mainCounterTargetStatus(display.targetLine),
             onShowTargetDialog = actions.onShowTargetDialog,
         )
         Spacer(modifier = Modifier.height(heroButtonSpacing))
@@ -351,35 +488,6 @@ private fun CounterMainNumber(state: CounterHeroState) {
     }
 }
 
-internal sealed interface CounterTargetHelperText {
-    data class ItemsLeft(
-        val countSlot: MainCounterCountSlot,
-    ) : CounterTargetHelperText
-
-    data object TargetReached : CounterTargetHelperText
-
-    data class PastTarget(
-        val countSlot: MainCounterCountSlot,
-    ) : CounterTargetHelperText
-}
-
-internal fun counterTargetHelperText(targetLine: MainCounterTargetSlot?): CounterTargetHelperText? {
-    val slot = targetLine ?: return null
-    val itemsUntilTarget = slot.target - slot.count
-
-    fun countSlot(count: Int): MainCounterCountSlot =
-        MainCounterCountSlot(
-            count = count,
-            labelType = slot.labelType,
-            customLabel = slot.customLabel,
-        )
-    return when {
-        itemsUntilTarget > 0 -> CounterTargetHelperText.ItemsLeft(countSlot(itemsUntilTarget))
-        itemsUntilTarget == 0 -> CounterTargetHelperText.TargetReached
-        else -> CounterTargetHelperText.PastTarget(countSlot(-itemsUntilTarget))
-    }
-}
-
 internal fun counterMainNumberFittedFontSize(
     maxFontSize: TextUnit,
     minFontSize: TextUnit,
@@ -414,21 +522,21 @@ internal fun counterMainNumberFittedFontSize(
 
 @Composable
 private fun CounterTargetHelperLabel(
-    helperText: CounterTargetHelperText?,
+    status: MainCounterTargetStatus?,
     onShowTargetDialog: () -> Unit,
 ) {
     val text =
-        when (helperText) {
-            is CounterTargetHelperText.ItemsLeft ->
+        when (status) {
+            is MainCounterTargetStatus.Remaining ->
                 stringResource(
                     R.string.counter_target_remaining_format,
-                    mainCounterProjectCardCountText(helperText.countSlot),
+                    mainCounterProjectCardCountText(status.countSlot),
                 )
-            CounterTargetHelperText.TargetReached -> stringResource(R.string.counter_target_reached)
-            is CounterTargetHelperText.PastTarget ->
+            MainCounterTargetStatus.Reached -> stringResource(R.string.counter_target_reached)
+            is MainCounterTargetStatus.Past ->
                 stringResource(
                     R.string.counter_target_past_format,
-                    mainCounterProjectCardCountText(helperText.countSlot),
+                    mainCounterProjectCardCountText(status.countSlot),
                 )
 
             null -> return
@@ -616,6 +724,7 @@ private fun WorkspaceSectionTitle(
     title: String,
     actionLabel: String,
     onAction: () -> Unit,
+    proStatus: ProStatus,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -630,6 +739,7 @@ private fun WorkspaceSectionTitle(
         WorkspaceSectionAction(
             label = actionLabel,
             onClick = onAction,
+            proStatus = proStatus,
         )
     }
 }
@@ -638,6 +748,7 @@ private fun WorkspaceSectionTitle(
 private fun WorkspaceSectionAction(
     label: String,
     onClick: () -> Unit,
+    proStatus: ProStatus,
 ) {
     TextButton(onClick = onClick) {
         Icon(
@@ -647,6 +758,8 @@ private fun WorkspaceSectionAction(
         )
         Spacer(modifier = Modifier.width(CounterDimens.WorkspaceSectionActionIconSpacing))
         Text(label)
+        Spacer(modifier = Modifier.width(CounterDimens.WorkspaceSectionActionIconSpacing))
+        ProBadge(status = proStatus)
     }
 }
 

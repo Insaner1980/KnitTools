@@ -32,8 +32,6 @@
     <string name="tool_cast_on_calculator">Opzetcalculator</string>
     <string name="tool_yarn_estimator">Garencalculator</string>
     <string name="tool_needle_sizes">Naaldmaten</string>
-    <string name="pro_trial_days_left">Pro-proefperiode — nog %d dagen</string>
-    <string name="unlock_all_tools">Ontgrendel alle tools</string>
     <string name="desc_yarn_estimator_card">Bereken garenverbruik en aantal strengen</string>
 
     <!-- Bottom navigation tabs -->
@@ -159,11 +157,38 @@
     <string name="pattern_picker_import_cloud_pdf">Importeren uit Drive of Dropbox</string>
     <string name="pattern_picker_import_from_ravelry">Importeren uit Ravelry</string>
     <string name="pattern_picker_camera_scan">Patroonfoto maken</string>
+    <string name="pattern_picker_choose_images">Afbeeldingen kiezen</string>
+    <string name="pattern_image_import_title">Patroonpagina’s controleren</string>
+    <plurals name="pattern_images_selected"><item quantity="one">%1$d afbeelding geselecteerd</item><item quantity="other">%1$d afbeeldingen geselecteerd</item></plurals>
+    <string name="pattern_image_page_position">Pagina %1$d van %2$d</string>
+    <string name="pattern_image_add_more">Meer toevoegen</string>
+    <string name="pattern_image_move_earlier">Pagina %1$d naar voren verplaatsen</string>
+    <string name="pattern_image_move_later">Pagina %1$d naar achteren verplaatsen</string>
+    <string name="pattern_image_remove_page">Pagina %1$d verwijderen</string>
+    <string name="pattern_image_create_pdf">Patroon-PDF maken</string>
+    <string name="pattern_image_replace_title">Huidig patroon vervangen?</string>
+    <string name="pattern_image_replace_message">De huidige bijlage wordt vervangen zodra de nieuwe PDF klaar is.</string>
+    <string name="pattern_image_replace_action">Patroon vervangen</string>
+    <string name="pattern_image_conversion_progress">Pagina %1$d van %2$d maken</string>
+    <string name="pattern_image_attaching">Patroon-PDF bijvoegen</string>
+    <string name="pattern_image_cancel_conversion">Conversie annuleren</string>
+    <string name="pattern_image_discard_title">Geselecteerde afbeeldingen verwijderen?</string>
+    <string name="pattern_image_discard_message">De geselecteerde patroonpagina’s worden verwijderd.</string>
+    <string name="pattern_image_discard_action">Afbeeldingen verwijderen</string>
+    <plurals name="pattern_image_duplicates_ignored"><item quantity="one">%1$d dubbele afbeelding genegeerd</item><item quantity="other">%1$d dubbele afbeeldingen genegeerd</item></plurals>
+    <string name="pattern_image_error_max_count">Je kunt maximaal 20 afbeeldingen selecteren.</string>
+    <string name="pattern_image_error_image_too_large">Een afbeelding is groter dan de limiet van 25 MiB.</string>
+    <string name="pattern_image_error_total_too_large">De geselecteerde afbeeldingen overschrijden samen de limiet van 200 MiB.</string>
+    <string name="pattern_image_error_unsupported">Verwijder de niet-ondersteunde afbeelding voordat je de PDF maakt.</string>
+    <string name="pattern_image_error_unreadable">Een afbeelding kon niet worden gelezen. Je vorige selectie is behouden.</string>
+    <string name="pattern_image_error_animated">Geanimeerde afbeeldingen worden niet ondersteund.</string>
+    <string name="pattern_image_error_low_storage">Onvoldoende vrije opslagruimte om deze PDF te maken.</string>
+    <string name="pattern_image_error_staging">De afbeeldingen konden niet worden voorbereid. Je vorige selectie is behouden.</string>
+    <string name="pattern_image_error_conversion">De patroon-PDF kon niet worden gemaakt. Controleer de pagina’s en probeer opnieuw.</string>
+    <string name="pattern_image_error_attachment">De PDF kon niet worden bijgevoegd. Het huidige patroon is behouden.</string>
     <string name="pattern_picker_continue_without_pattern">Doorgaan zonder patroon</string>
-    <string name="pattern_scan_failed">De patroonfoto kon niet naar PDF worden omgezet.</string>
     <string name="imported_pattern_designer">Geïmporteerde PDF</string>
     <string name="current_row_short">Toer %1$d</string>
-    <string name="time_spent_minutes_format">%dm</string>
     <string name="unlink_yarn">Garen ontkoppelen</string>
     <string name="select_yarn_card">Garenkaart selecteren</string>
     <string name="linked_yarn_title">Gekoppeld garen</string>
@@ -206,10 +231,9 @@
     <string name="session_history_title">Geschiedenis</string>
     <string name="no_sessions">Nog geen sessies geregistreerd. Begin met breien om hier je geschiedenis te zien.</string>
     <string name="session_row_range">Toeren %1$d \u2192 %2$d</string>
-    <string name="session_duration_format">%1$du %2$dm</string>
+    <string name="session_row_single">Naald %1$d</string>
     <string name="delete_session_title">Sessie verwijderen?</string>
     <string name="delete_session_message">Deze sessie uit de geschiedenis verwijderen? Dit kan niet ongedaan worden gemaakt.</string>
-    <string name="pro_full_history_hint">Upgrade naar Pro voor volledige sessiegeschiedenis</string>
 
     <!-- Settings -->
     <!-- Row Counter -->
@@ -335,25 +359,9 @@
     <string name="version_format">KnitTools %s</string>
 
     <!-- Pro Upgrade -->
-    <string name="you_have_pro">Je hebt KnitTools Pro!</string>
-    <string name="all_features_unlocked">Alle functies zijn ontgrendeld.</string>
-    <string name="pro_feature_unlimited_projects">Onbeperkt aantal telprojecten</string>
-    <string name="pro_feature_full_history">Volledige tellergeschiedenis</string>
-    <string name="pro_feature_notes">Notities per project</string>
-    <string name="pro_feature_secondary_counter">Secundaire teller</string>
-    <string name="pro_feature_multiple_counters">Extra tellers</string>
-    <string name="pro_feature_row_reminders">Rijherinneringen</string>
-    <string name="pro_feature_progress_photos">Voortgangsfoto’s</string>
-    <string name="pro_feature_unlimited_yarn">Onbeperkt aantal garenkaarten</string>
-    <string name="pro_feature_widget">Widget op het startscherm</string>
-    <string name="pro_feature_pattern_camera_scan">Patroonfoto</string>
-    <string name="pro_feature">Pro-functie</string>
-    <string name="upgrade_for_price">Upgrade voor %s</string>
     <string name="one_time_purchase">Eenmalige aankoop. Geen abonnement.</string>
     <string name="loading_price">Prijs laden…</string>
-    <string name="price_loading_hint">Verbinding maken met Google Play — controleer je internetverbinding als dit lang duurt</string>
     <string name="billing_purchase_cancelled">Aankoop geannuleerd</string>
-    <string name="billing_purchase_unavailable_button">Aankoop niet beschikbaar</string>
     <string name="billing_purchase_unavailable">Deze aankoop is nu niet beschikbaar in Google Play.</string>
     <string name="billing_purchase_network_error">Kan Google Play niet bereiken. Controleer je internetverbinding en probeer opnieuw.</string>
     <string name="billing_purchase_failed">Aankoop kon niet worden voltooid. Probeer opnieuw.</string>
@@ -454,21 +462,17 @@
     </plurals>
     <string name="insights_duration_hours_minutes">%1$d u %2$d min</string>
     <string name="insights_range_format">%1$s – %2$s</string>
-    <string name="insights_range_open_format">%1$s –</string>
-    <string name="insights_hero_lead_in_week">Deze week besteedde je</string>
-    <string name="insights_hero_lead_in_month">Deze maand besteedde je</string>
-    <string name="insights_hero_lead_in_all_time">In totaal besteedde je</string>
     <plurals name="insights_hero_trailing_projects">
-        <item quantity="one">aan één project.</item>
-        <item quantity="other">aan %1$d projecten.</item>
+        <item quantity="one">%1$d project</item>
+        <item quantity="other">%1$d projecten</item>
     </plurals>
-    <string name="insights_hero_trailing_project">aan %1$s.</string>
     <string name="insights_craft_verb_knitting">breien</string>
     <string name="insights_craft_verb_crocheting">haken</string>
     <string name="insights_craft_verb_making">handwerken</string>
     <string name="insights_stat_rows">Toeren</string>
     <string name="insights_stat_min_per_row">Min per toer</string>
     <string name="insights_stat_day_streak">Dagenreeks</string>
+    <string name="insights_stat_best_streak">Beste reeks</string>
     <string name="insights_trend_more_week">%1$s meer dan vorige week</string>
     <string name="insights_trend_less_week">%1$s minder dan vorige week</string>
     <string name="insights_trend_same_week">Evenveel als vorige week</string>
@@ -482,16 +486,23 @@
     <string name="insights_stat_no_value">—</string>
     <string name="insights_stat_under_one">&lt;1</string>
     <string name="insights_section_every_day">Elke dag</string>
+    <string name="insights_section_month_by_month">Maand voor maand</string>
+    <string name="insights_section_week_by_week">Week voor week</string>
     <string name="insights_section_where_time_went">Waar de tijd bleef</string>
+    <string name="insights_section_projects_by_day">Projecten per dag</string>
+    <plurals name="insights_project_fabric_a11y_summary">
+        <item quantity="one">Projecten per dag, %1$s, %2$d actieve dag</item>
+        <item quantity="other">Projecten per dag, %1$s, %2$d actieve dagen</item>
+    </plurals>
+    <string name="insights_no_tracked_activity">Geen bijgehouden activiteit</string>
+    <string name="insights_project_fabric_previous_active_day">Vorige actieve dag</string>
+    <string name="insights_project_fabric_next_active_day">Volgende actieve dag</string>
+    <string name="insights_last_worked_format">Laatst gewerkt %1$s</string>
     <plurals name="insights_days_meta_format">
         <item quantity="one">%1$d van %2$d dag</item>
         <item quantity="other">%1$d van %2$d dagen</item>
     </plurals>
-    <string name="insights_chart_hint_day">Tik of sleep over de dagen.</string>
-    <string name="insights_chart_hint_month">Tik of sleep over de maanden.</string>
     <string name="insights_chart_axis_today">vandaag</string>
-    <string name="insights_chart_max_format">max. %1$s</string>
-    <string name="insights_no_sessions_yet">Nog geen sessies</string>
     <string name="insights_chart_a11y_daily">Dagelijkse tijd voor %1$s, %2$s, %3$s, langst %4$s</string>
     <string name="insights_chart_a11y_monthly">Maandelijkse tijd voor %1$s, %2$s, %3$s, langst %4$s</string>
     <string name="insights_chart_a11y_next">Volgende balk</string>
@@ -502,8 +513,8 @@
     <string name="insights_nothing_yet_week">Deze week nog niets.</string>
     <string name="insights_nothing_yet_month">Deze maand nog niets.</string>
     <string name="insights_nothing_yet_all_time">Nog niets.</string>
-    <string name="insights_pro_chart_title">Zie je dagelijkse ritme</string>
-    <string name="insights_pro_chart_body">Pro toont elke sessie als grafiek, plus je reeks.</string>
+    <string name="insights_pro_chart_title">Bekijk je activiteit in de loop van de tijd</string>
+    <string name="insights_pro_chart_body">Pro groepeert je geregistreerde tijd in dagelijkse, wekelijkse of maandelijkse grafieken en voegt je activiteitenreeks toe.</string>
     <string name="all_projects">Alle projecten</string>
     <string name="insights_all_time">Altijd</string>
     <string name="insights_this_week">Deze week</string>
@@ -512,17 +523,11 @@
         <item quantity="one">%1$d toer</item>
         <item quantity="other">%1$d toeren</item>
     </plurals>
-    <string name="insights_footer_1">Elke toer telt — ga zo door!</string>
-    <string name="insights_footer_2">Je project wacht op je.</string>
-    <string name="insights_footer_3">Nog één toer?</string>
-    <string name="insights_footer_4">Steek voor steek, toer voor toer.</string>
-    <string name="insights_footer_5">Mooie dingen beginnen met één steek.</string>
     <string name="relative_time_today">vandaag</string>
     <string name="relative_time_yesterday">gisteren</string>
     <string name="relative_time_days_ago">%1$dd geleden</string>
     <string name="relative_time_weeks_ago">%1$dw geleden</string>
     <string name="relative_time_months_ago">%1$dmnd geleden</string>
-    <string name="insights_no_time_logged">Geen tijd geregistreerd</string>
 
     <!-- Settings -->
     <string name="help_and_guide">Hulp en gids</string>
@@ -653,7 +658,6 @@
     <string name="saved_pattern_detail_open_pattern">Patroon openen</string>
     <string name="saved_pattern_detail_attach_to_project">Aan project koppelen</string>
     <string name="saved_pattern_detail_remove_confirm">Dit opgeslagen patroon verwijderen?</string>
-    <string name="saved_pattern_detail_thumbnail">Miniatuur van patroon</string>
     <string name="filter_weight">Dikte</string>
     <string name="filter_difficulty">Moeilijkheidsgraad</string>
     <string name="free">Gratis</string>
@@ -730,4 +734,122 @@
     <string name="pattern_saved_to_library">Opgeslagen in bibliotheek</string>
     <string name="show_more">Laat meer zien</string>
     <string name="show_less">Laat minder zien</string>
+    <string name="pro_start_free_trial">Gratis proefperiode starten</string><string name="pro_start_14_day_trial">Gratis proefperiode van 14 dagen starten</string><string name="pro_trial_start_failed">De proefperiode kon niet worden gestart. Probeer het opnieuw.</string>
+    <string name="pro_prompt_not_now">Niet nu</string><string name="pro_prompt_see_pro">Pro bekijken</string><string name="pro_prompt_trial_body">Start je gratis Pro-proefperiode van 14 dagen. Er is geen betaalmethode nodig. Alles wat je maakt, blijft na de proefperiode beschikbaar.</string>
+    <string name="pro_prompt_projects_title">Maak nog een project met Pro</string>
+    <plurals name="pro_prompt_projects_trial_body"><item quantity="one">Je hebt al %1$d project. Start je gratis Pro-proefperiode van 14 dagen om er nog een te maken. Al je projecten blijven na de proefperiode beschikbaar.</item><item quantity="other">Je hebt al %1$d projecten. Start je gratis Pro-proefperiode van 14 dagen om er nog een te maken. Al je projecten blijven na de proefperiode beschikbaar.</item></plurals>
+    <plurals name="pro_prompt_projects_body"><item quantity="one">Een nieuw project vereist Pro omdat je al %1$d project hebt. Je bestaande project blijft beschikbaar.</item><item quantity="other">Een nieuw project vereist Pro omdat je al %1$d projecten hebt. Al je bestaande projecten blijven beschikbaar.</item></plurals>
+    <string name="pro_prompt_photos_title">Voortgangsfoto\'s toevoegen met Pro</string><string name="pro_prompt_photos_body">Een nieuwe voortgangsfoto vereist Pro. Je bestaande foto\'s blijven beschikbaar.</string>
+    <string name="pro_prompt_notes_title">Projectnotities toevoegen met Pro</string><string name="pro_prompt_notes_body">De eerste notitie van dit project vereist Pro. Notities die je al hebt gemaakt, blijven bewerkbaar.</string>
+    <string name="pro_prompt_yarn_title">Garen toevoegen met Pro</string><string name="pro_prompt_yarn_body">Een nieuwe garenkaart vereist Pro. Je bestaande garenkaarten blijven beschikbaar en bewerkbaar.</string>
+    <string name="pro_prompt_save_yarn_title">Dit garen opslaan met Pro</string><string name="pro_prompt_save_yarn_body">Door dit projectgaren op te slaan in Mijn garen wordt een nieuwe garenkaart gemaakt; daarvoor is Pro vereist. De garennotitie van je project blijft beschikbaar.</string>
+    <string name="pro_prompt_counters_title">Een teller toevoegen met Pro</string><string name="pro_prompt_counters_body">Een nieuwe extra teller vereist Pro. Je bestaande tellers blijven beschikbaar en bewerkbaar.</string>
+    <string name="pro_prompt_reminders_title">Een rijherinnering toevoegen met Pro</string><string name="pro_prompt_reminders_body">Een nieuwe rijherinnering vereist Pro. Je bestaande herinneringen blijven werken en bewerkbaar.</string>
+    <string name="pro_prompt_pattern_camera_title">Patroonfoto\'s omzetten in PDF met Pro</string><string name="pro_prompt_pattern_camera_body">Een nieuwe PDF maken van patroonfoto\'s vereist Pro. Je bestaande patronen en PDF\'s blijven beschikbaar.</string>
+    <string name="pro_prompt_widget_title">De startschermwidget gebruiken met Pro</string><string name="pro_prompt_widget_body">De startschermwidget is een geavanceerde Pro-weergave. Je project- en tellergegevens blijven beschikbaar in KnitTools.</string>
+    <string name="pro_badge">PRO</string><string name="pro_badge_locked_description">Pro-functie</string><string name="pro_badge_trial_description">Pro-functie, beschikbaar tijdens de proefperiode</string><string name="knittools_pro">KnitTools Pro</string><string name="pro_content_stays_available">Alles wat je maakt, blijft beschikbaar.</string><string name="pro_status_not_started">Niet gestart</string>
+    <plurals name="pro_status_trial_days"><item quantity="one">Proefperiode, nog %1$d dag</item><item quantity="other">Proefperiode, nog %1$d dagen</item></plurals>
+    <string name="pro_status_trial_ended">Proefperiode beëindigd</string><string name="pro_status_purchased">Gekocht</string><string name="pro_trial_ended_title">Je Pro-proefperiode is beëindigd</string><string name="pro_trial_ended_body">Alles wat je hebt gemaakt, blijft beschikbaar. Je kunt het blijven gebruiken en bewerken. Pro is alleen vereist voor nieuwe Pro-items en geavanceerde weergaven.</string><string name="pro_continue_free">Gratis doorgaan</string>
+    <string name="pro_page_intro">Maak meer ruimte voor elk project en houd je werkproces bij elkaar.</string><string name="pro_page_trust">Alles wat je maakt, blijft beschikbaar, ook als je proefperiode eindigt.</string><string name="pro_group_projects_title">Projecten en materialen</string><string name="pro_group_projects_body">Maak extra projecten, de eerste projectnotitie, voortgangsfoto\'s en garenkaarten.</string><string name="pro_group_workflow_title">Tellen en werkproces</string><string name="pro_group_workflow_body">Gebruik de compacte herhalingsteller, extra, herhalings-, vorm- en sectietellers, rijherinneringen, patroonfoto\'s als PDF en de startschermwidget.</string><string name="pro_group_insights_title">Inzichten</string><string name="pro_group_insights_body">Bekijk dagelijkse, wekelijkse en maandelijkse activiteitengrafieken en je activiteitenreeks.</string>
+    <string name="pro_page_purchased">Pro gekocht</string><string name="pro_buy_for_price">Pro kopen voor %1$s</string><string name="pro_price_unavailable">Prijs niet beschikbaar</string><string name="billing_purchase_pending">Je aankoop is in behandeling. Pro wordt beschikbaar zodra Google Play de betaling heeft voltooid.</string>
+    <string name="project_updated_format">Bijgewerkt %1$s</string>
+    <string name="project_completed_format">Voltooid %1$s</string>
+    <string name="project_section_count_format">%1$s %2$d</string>
+    <string name="project_continue_content_description">Doorgaan met %1$s</string>
+    <string name="work_session_start">Werksessie starten</string>
+    <string name="work_session_stop">Werksessie stoppen</string>
+    <string name="work_session_active">Werksessie actief</string>
+    <string name="work_session_rows_format">%1$d naalden</string>
+    <string name="work_session_recovery_needed">De sessietijd moet worden gecontroleerd</string>
+    <string name="work_session_resolve">Oplossen</string>
+    <string name="work_session_recovery_title">Sessietijd controleren</string>
+    <string name="work_session_recovery_body">KnitTools kon het laatste tijdsinterval niet verifiëren. Voeg de tijd toe die je wilt bewaren of verwerp het openstaande interval en stop de sessie.</string>
+    <string name="work_session_pending_rows_format">Openstaande voortgang: %1$d naalden</string>
+    <string name="work_session_hours">Uren</string>
+    <string name="work_session_minutes">Minuten</string>
+    <string name="work_session_add_and_continue">Toevoegen en doorgaan</string>
+    <string name="work_session_discard_pending">Openstaand verwerpen en stoppen</string>
+    <string name="work_session_another_project">een ander project</string>
+    <string name="work_session_conflict_title">Er is al een sessie actief</string>
+    <string name="work_session_conflict_body">De actieve sessie hoort bij %1$s. Kies wat je wilt doen voordat je hier begint.</string>
+    <string name="work_session_return_to_active">Terug naar actief project</string>
+    <string name="work_session_save_then_start">Stoppen, opslaan en hier starten</string>
+    <string name="work_session_discard_then_start">Stoppen, verwerpen en hier starten</string>
+    <string name="work_session_complete_project_title">Project voltooien met actieve sessie?</string>
+    <string name="work_session_complete_project_body">Sla de actieve sessie op of verwerp deze voordat je het project voltooit.</string>
+    <string name="work_session_save_and_complete">Sessie opslaan en voltooien</string>
+    <string name="work_session_discard_and_complete">Sessie verwerpen en voltooien</string>
+    <string name="work_session_delete_project_title">Actieve sessie verwerpen en project verwijderen?</string>
+    <string name="work_session_delete_project_body">Als je het project verwijdert, worden ook de opgeslagen sessies verwijderd. De actieve sessie moet eerst worden verworpen.</string>
+    <string name="work_session_discard_and_delete">Sessie verwerpen en verwijderen</string>
+    <string name="work_session_saved_title">Sessie opgeslagen</string>
+    <string name="work_session_duration_format">Duur: %1$s</string>
+    <string name="work_session_label">Werksessie</string>
+    <string name="work_session_recovered">Sessie hersteld</string>
+    <string name="work_session_confirmed_time_format">Bevestigde tijd: %1$s</string>
+    <string name="work_session_time_while_away_format">Tijd tijdens afwezigheid: %1$s</string>
+    <string name="work_session_time_unavailable">De tijd tijdens de afwezigheid kon niet worden geschat.</string>
+    <string name="work_session_edit_total_duration">Bewerk de totale sessieduur. Opslaan stopt de sessie.</string>
+    <string name="work_session_invalid_duration">Ongeldige duur. Voer minimaal nul uur en minuten van 0 tot 59 in.</string>
+    <string name="work_session_save_edited_and_stop">Bewerkte duur opslaan en stoppen</string>
+    <string name="work_session_edit_duration">Duur bewerken</string>
+    <string name="work_session_reason_restarted">Het apparaat is opnieuw opgestart. Controleer de tijd sinds de laatste bevestiging.</string>
+    <string name="work_session_reason_long_running">De sessie loopt al lang. Bevestig het laatste interval.</string>
+    <string name="work_session_reason_clock_unavailable">KnitTools kon niet bevestigen of het apparaat opnieuw is opgestart.</string>
+    <string name="work_session_reason_clock_changed">KnitTools kon het laatste tijdsinterval niet verifiëren.</string>
+    <string name="work_session_stop_summary_title">Werksessie stoppen?</string>
+    <string name="work_session_save">Sessie opslaan</string>
+    <string name="work_session_discard">Sessie verwijderen</string>
+    <string name="work_session_active_description">Werksessie voor %1$s, %2$s verstreken</string>
+    <string name="work_session_could_not_start">Sessie kon niet worden gestart</string>
+    <string name="work_session_could_not_save">Sessie kon niet worden opgeslagen</string>
+    <string name="work_session_could_not_discard">Sessie kon niet worden verwijderd</string>
+    <string name="work_session_recovery_already_handled">Deze sessiecontrole is al afgehandeld.</string>
+    <string name="work_session_retry">Opnieuw proberen</string>
+    <string name="work_session_recovery_dismissed">Controle gesloten. Gebruik Oplossen om terug te keren.</string>
+    <string name="project_documents_title">Documenten</string>
+    <string name="project_documents_add">Toevoegen</string>
+    <string name="project_documents_actions">Acties voor %1$s</string>
+    <string name="project_documents_primary">Primair patroon</string>
+    <string name="project_documents_open">Huidig document</string>
+    <string name="project_documents_unavailable">PDF niet beschikbaar</string>
+    <string name="project_documents_rename">Naam wijzigen</string>
+    <string name="project_documents_make_primary">Als primair instellen</string>
+    <string name="project_documents_remove_action">Verwijderen</string>
+    <string name="project_documents_move_earlier">Eerder plaatsen</string>
+    <string name="project_documents_move_later">Later plaatsen</string>
+    <string name="project_documents_rename_title">Documentnaam wijzigen</string>
+    <string name="project_documents_label">Documentnaam</string>
+    <string name="project_documents_remove_title">Document verwijderen?</string>
+    <string name="project_documents_remove_message">%1$s uit dit project verwijderen?</string>
+    <string name="project_documents_error_invalid_label">Voer een naam van 1–50 tekens in.</string>
+    <string name="project_documents_error_duplicate">Deze PDF is al aan het project gekoppeld.</string>
+    <string name="project_documents_error_unavailable">Deze PDF is niet meer beschikbaar. Verwijder deze of voeg het bestand opnieuw toe.</string>
+    <string name="project_documents_error_stale">De documentenlijst is gewijzigd. Probeer het opnieuw.</string>
+    <string name="project_documents_error_generic">De documentwijziging kon niet worden opgeslagen.</string>
+    <string name="project_documents_project_title">Projectdocumenten</string>
+    <string name="project_documents_primary_document">Primair document</string>
+    <string name="project_documents_secondary">Secundair document</string>
+    <string name="project_documents_available">PDF beschikbaar</string>
+    <string name="project_documents_position">Positie %1$d van %2$d</string>
+    <string name="project_documents_open_action">Document openen</string>
+    <string name="project_documents_remove_from_project">Uit project verwijderen</string>
+    <string name="project_documents_empty">Geen documenten</string>
+    <string name="project_documents_metadata_only">Alleen metadata</string>
+    <string name="project_documents_pattern_information">Patrooninformatie</string>
+    <string name="project_documents_source_local_pdf">Lokale PDF</string>
+    <string name="project_documents_source_saved_pattern_pdf">Opgeslagen patroon-PDF</string>
+    <string name="project_documents_already_attached">Al gekoppeld</string>
+    <string name="project_documents_error_add">Document kon niet worden toegevoegd.</string>
+    <string name="project_documents_error_open">Document kon niet worden geopend.</string>
+    <string name="project_documents_error_rename">Documentnaam kon niet worden gewijzigd.</string>
+    <string name="project_documents_error_reorder">Documenten konden niet opnieuw worden gerangschikt.</string>
+    <string name="project_documents_error_primary">Primair document kon niet worden gewijzigd.</string>
+    <string name="project_documents_error_remove">Document kon niet worden verwijderd.</string>
+    <string name="project_documents_remove_primary_message">%1$s verwijderen? Een ander document wordt primair.</string>
+    <string name="project_documents_remove_last_message">%1$s verwijderen? Het project heeft daarna geen leesbaar patroon meer.</string>
+    <string name="project_documents_new_primary_selected">Er is automatisch een nieuw primair document geselecteerd.</string>
+    <string name="project_documents_name_required">Een documentnaam is verplicht.</string>
+    <string name="project_documents_name_max">Maximaal 50 tekens.</string>
+    <string name="project_documents_wrong_project">Dit document hoort niet meer bij dit project.</string>
 </resources>

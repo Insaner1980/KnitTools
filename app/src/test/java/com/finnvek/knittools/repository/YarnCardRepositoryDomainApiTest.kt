@@ -156,6 +156,7 @@ class YarnCardRepositoryDomainApiTest {
             assertEquals(mapOf(10L to "1,2,88"), projectDao.updatedYarnCardIds)
         }
 
+    // CPD-OFF: Testin skenaariokohtainen asetelma pidetaan paikallisena ja luettavana.
     @Test
     fun `yarn card relink removes stale project link when explicitly unlinked`() =
         runTest {
@@ -171,6 +172,7 @@ class YarnCardRepositoryDomainApiTest {
                     projects =
                         listOf(
                             CounterProjectEntity(id = 10L, yarnCardIds = "1,5"),
+                            // CPD-ON
                         ),
                 )
             val repository =

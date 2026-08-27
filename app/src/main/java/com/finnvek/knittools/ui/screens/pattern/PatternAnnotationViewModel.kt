@@ -103,6 +103,7 @@ data class PatternAnnotationUiState(
     val projectAnnotations: List<PatternAnnotation> = emptyList(),
     val editableLayerId: Long? = null,
     val loadError: PatternAnnotationLoadError = PatternAnnotationLoadError.NONE,
+    // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
     val activeTool: PatternAnnotationTool = PatternAnnotationTool.BROWSE,
     val penArgb: Int = PatternAnnotationTokens.PEN_DEFAULT_ARGB,
     val penStrokeWidth: Float = PatternAnnotationTokens.PEN_DEFAULT_WIDTH,
@@ -112,6 +113,7 @@ data class PatternAnnotationUiState(
     val highlighterAxisLock: PatternHighlighterAxisLock = PatternHighlighterAxisLock.FREE,
     val draftStroke: PatternStrokeDraft? = null,
     val inProgressAnnotation: PatternAnnotation? = null,
+    // CPD-ON
     val isSaving: Boolean = false,
     val writeError: PatternAnnotationWriteError = PatternAnnotationWriteError.NONE,
     val selectedAnnotationId: Long? = null,

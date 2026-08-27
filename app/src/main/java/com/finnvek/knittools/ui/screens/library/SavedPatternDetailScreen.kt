@@ -43,12 +43,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.SavedPatternSource
 import com.finnvek.knittools.ui.components.ConfirmationDialog
+import com.finnvek.knittools.ui.components.RemotePatternImage
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
+import com.finnvek.knittools.ui.screens.ravelry.PatternAvailabilityBadge
 import com.finnvek.knittools.ui.screens.ravelry.openRavelryUrl
 import com.finnvek.knittools.ui.screens.ravelry.ravelryExternalUrlOrNull
 
@@ -129,20 +130,15 @@ fun SavedPatternDetailScreen(
 @Composable
 private fun SavedPatternDetailHeader(pattern: SavedPattern) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        pattern.thumbnailUrl
-            ?.takeIf { it.isNotBlank() }
-            ?.let { thumbnailUrl ->
-                AsyncImage(
-                    model = thumbnailUrl,
-                    contentDescription = stringResource(R.string.saved_pattern_detail_thumbnail),
-                    contentScale = ContentScale.Crop,
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(1.4f)
-                            .clip(RoundedCornerShape(12.dp)),
-                )
-            }
+        RemotePatternImage(
+            imageUrl = pattern.thumbnailUrl,
+            contentScale = ContentScale.Crop,
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1.4f)
+                    .clip(RoundedCornerShape(12.dp)),
+        )
 
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
@@ -172,6 +168,7 @@ private fun SavedPatternAvailability(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
+        PatternAvailabilityBadge(availability = pattern.availability)
         if (pattern.hasAttachedPdf) {
             SavedPatternAvailabilityChip(text = stringResource(R.string.saved_pattern_detail_pdf_attached))
         }

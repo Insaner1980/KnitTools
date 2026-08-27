@@ -19,56 +19,71 @@ import com.finnvek.knittools.di.ApplicationScope
 import com.finnvek.knittools.di.IoDispatcher
 import com.finnvek.knittools.domain.calculator.CounterLogic
 import com.finnvek.knittools.domain.calculator.CounterState
+import com.finnvek.knittools.domain.calculator.ReadingLineResolutionKind
 import com.finnvek.knittools.domain.calculator.RepeatSectionLogic
 import com.finnvek.knittools.domain.calculator.RowMarker
 import com.finnvek.knittools.domain.calculator.parseMapping
 import com.finnvek.knittools.domain.calculator.serializeMapping
+import com.finnvek.knittools.domain.model.ActiveWorkSession
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.CraftType
+import com.finnvek.knittools.domain.model.DEFAULT_READING_GUIDE_FRACTION
 import com.finnvek.knittools.domain.model.DEFAULT_READING_LINE_Y_FRACTION
-import com.finnvek.knittools.domain.model.KnitSession
 import com.finnvek.knittools.domain.model.MainCounterChange
 import com.finnvek.knittools.domain.model.MainCounterLabelType
 import com.finnvek.knittools.domain.model.ProgressPhoto
 import com.finnvek.knittools.domain.model.ProjectCounter
 import com.finnvek.knittools.domain.model.ProjectCounterDraft
 import com.finnvek.knittools.domain.model.ProjectCounterType
+import com.finnvek.knittools.domain.model.ProjectDocument
 import com.finnvek.knittools.domain.model.ProjectYarnNote
 import com.finnvek.knittools.domain.model.RowReminder
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.domain.model.displayName
 import com.finnvek.knittools.domain.model.parseYarnCardIds
+import com.finnvek.knittools.domain.model.sanitizeReadingGuideFraction
 import com.finnvek.knittools.domain.model.sanitizeReadingLineYFraction
 import com.finnvek.knittools.pro.InAppReviewManager
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
+import com.finnvek.knittools.pro.ProStatus
+import com.finnvek.knittools.repository.ActiveSessionCompletionChoice
 import com.finnvek.knittools.repository.CounterRepository
 import com.finnvek.knittools.repository.ProgressPhotoRepository
+import com.finnvek.knittools.repository.ProjectCompletionResult
 import com.finnvek.knittools.repository.ProjectCounterRepository
+import com.finnvek.knittools.repository.ProjectCreationResult
+import com.finnvek.knittools.repository.ProjectDeletionResult
+import com.finnvek.knittools.repository.ProjectDocumentMutationResult
+import com.finnvek.knittools.repository.ProjectDocumentRepository
 import com.finnvek.knittools.repository.ProjectYarnNoteRepository
+import com.finnvek.knittools.repository.RecoveryResolutionResult
 import com.finnvek.knittools.repository.ReminderRepository
 import com.finnvek.knittools.repository.SavedPatternRepository
+import com.finnvek.knittools.repository.StartSessionResult
+import com.finnvek.knittools.repository.StopSessionResult
 import com.finnvek.knittools.repository.YarnCardRepository
 import com.finnvek.knittools.widget.CounterWidgetState
 import com.finnvek.knittools.widget.WidgetData
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.time.ZoneId
-import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 data class CounterUiState(
@@ -78,13 +93,26 @@ data class CounterUiState(
     val mainCounterLabelType: MainCounterLabelType = MainCounterLabelType.ROWS,
     val mainCounterCustomLabel: String? = null,
     val secondaryCount: Int = 0,
+    val secondaryCounterUsed: Boolean = false,
     val notes: String = "",
+    val notesCreated: Boolean = false,
     val sessionSeconds: Long = 0,
+    val activeSession: ActiveWorkSession? = null,
+    val sessionStartConflict: SessionStartConflict? = null,
+    val pendingProjectCompletionSession: ActiveWorkSession? = null,
+    val pendingProjectDeletionSession: ActiveWorkSession? = null,
+    val showSessionRecoveryPrompt: Boolean = false,
+    val sessionStopSummary: SessionStopSummary? = null,
+    val workSessionErrorRes: Int? = null,
+    val workSessionErrorCanRetry: Boolean = false,
     val projectId: Long? = null,
     val hapticFeedback: Boolean = true,
     val keepScreenAwake: Boolean = false,
     val isPro: Boolean = false,
+    val proStatus: ProStatus = ProStatus.TRIAL_NOT_STARTED,
+    val canCreateNotes: Boolean = false,
     val canUseNotes: Boolean = false,
+    val canCreateSecondaryCounter: Boolean = false,
     val canUseSecondaryCounter: Boolean = false,
     val canUseMultipleCounters: Boolean = false,
     val canUseRowReminders: Boolean = false,
@@ -106,20 +134,70 @@ data class CounterUiState(
     val projectCounters: List<ProjectCounter> = emptyList(),
     val latestPhotos: List<ProgressPhoto> = emptyList(),
     val linkedPattern: SavedPattern? = null,
+    val projectDocuments: List<ProjectDocument> = emptyList(),
+    val projectDocumentAvailability: Map<Long, Boolean> = emptyMap(),
     val patternUri: String? = null,
     val patternName: String? = null,
     val currentPatternPage: Int = 0,
     val readingLineEnabled: Boolean = false,
     val readingLineYFraction: Float = DEFAULT_READING_LINE_Y_FRACTION,
+    val readingLineFollowCurrentRow: Boolean = true,
+    val verticalReadingGuideEnabled: Boolean = false,
+    val verticalReadingGuideXFraction: Float = DEFAULT_READING_GUIDE_FRACTION,
     val patternRowMapping: String? = null,
     val totalRows: Int? = null,
     val targetRows: Int? = null,
+) {
+    val primaryDocument: ProjectDocument?
+        get() =
+            projectDocuments.firstOrNull(ProjectDocument::isPrimary)
+                ?: projectDocuments.minWithOrNull(compareBy(ProjectDocument::sortOrder, ProjectDocument::id))
+}
+
+data class SessionStartConflict(
+    val activeSession: ActiveWorkSession,
+    val requestedProjectId: Long,
+)
+
+data class SessionStopSummary(
+    val sessionToken: String,
+    val projectName: String,
+    val durationSeconds: Long,
+    val rowsWorked: Int,
 )
 
 data class DismissedReminderTrigger(
     val reminderId: Long,
     val row: Int,
 )
+
+sealed interface CounterViewerEvent {
+    data class AutomaticReadingLinePageChanged(
+        val row: Int,
+        val page: Int,
+    ) : CounterViewerEvent
+
+    data class ReadingLineFollowingResumed(
+        val calibrated: Boolean,
+    ) : CounterViewerEvent
+}
+
+private data class PendingReminderDraft(
+    val targetRow: Int,
+    val repeatInterval: Int?,
+    val message: String,
+)
+
+private fun shouldAnnounceAutomaticPageChange(
+    previousProject: CounterProject?,
+    project: CounterProject,
+): Boolean {
+    if (previousProject == null) return false
+    if (previousProject.id != project.id) return false
+    if (previousProject.count == project.count) return false
+    if (previousProject.currentPatternPage == project.currentPatternPage) return false
+    return project.readingLineFollowCurrentRow
+}
 
 @HiltViewModel
 class CounterViewModel
@@ -134,6 +212,7 @@ class CounterViewModel
         private val proManager: ProManager,
         private val yarnCardRepository: YarnCardRepository,
         private val savedPatternRepository: SavedPatternRepository,
+        private val projectDocumentRepository: ProjectDocumentRepository,
         private val patternDocumentStorage: PatternDocumentStorage,
         private val inAppReviewManager: InAppReviewManager,
         private val savedStateHandle: SavedStateHandle,
@@ -145,10 +224,13 @@ class CounterViewModel
             MutableStateFlow(
                 CounterUiState(
                     projectName = context.getString(R.string.default_project_name),
-                    sessionSeconds = savedStateHandle[KEY_SESSION_SECONDS] ?: 0L,
                 ),
             )
         val uiState: StateFlow<CounterUiState> = _uiState.asStateFlow()
+        private val _viewerEvents = MutableSharedFlow<CounterViewerEvent>(extraBufferCapacity = 1)
+        val viewerEvents: SharedFlow<CounterViewerEvent> = _viewerEvents.asSharedFlow()
+        private val _projectClosedEvents = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+        val projectClosedEvents: SharedFlow<Unit> = _projectClosedEvents.asSharedFlow()
 
         val savedYarnCards: StateFlow<List<YarnCard>> =
             yarnCardRepository.getAllCards().stateIn(
@@ -167,47 +249,29 @@ class CounterViewModel
         private val _allPhotos = MutableStateFlow<List<ProgressPhoto>>(emptyList())
         val allPhotos: StateFlow<List<ProgressPhoto>> = _allPhotos.asStateFlow()
 
-        private var timerJob: Job? = null
         private var selectedProjectJob: Job? = null
+        private var workSessionActionJob: Job? = null
+        private var pendingWorkSessionRetry: (() -> Unit)? = null
         private var reminderCollectionJob: Job? = null
         private var counterCollectionJob: Job? = null
         private var photoCollectionJob: Job? = null
         private var projectYarnNoteCollectionJob: Job? = null
+        private var projectDocumentCollectionJob: Job? = null
         private var allPhotosJob: Job? = null
         private var linkedYarnIdsCache: String = ""
         private var pendingSavedPatternAttachment: SavedPattern? = null
-        private var isForeground = true
-        private var didRecoverPendingSession = false
-
-        // Session tracking
-        private var sessionStartedAt: Long = savedStateHandle[KEY_SESSION_STARTED_AT] ?: System.currentTimeMillis()
-        private var sessionZoneId: String = savedStateHandle[KEY_SESSION_ZONE_ID] ?: ZoneId.systemDefault().id
-        private var sessionStartRow: Int = savedStateHandle[KEY_SESSION_START_ROW] ?: 0
-        private var sessionRowsWorked: Int = savedStateHandle[KEY_SESSION_ROWS_WORKED] ?: 0
-
+        private var pendingProjectCounterDraft: ProjectCounterDraft? = null
+        private var pendingReminderDraft: PendingReminderDraft? = null
+        private var pendingProjectYarnNoteId: Long? = null
         private val lifecycleObserver =
             object : DefaultLifecycleObserver {
                 override fun onResume(owner: LifecycleOwner) {
-                    isForeground = true
-                    val state = _uiState.value
-                    val projectId = state.projectId ?: return
-                    restartSessionSegment(projectId, state.counter.count)
+                    refreshActiveSession()
                 }
 
                 override fun onPause(owner: LifecycleOwner) {
-                    isForeground = false
-                    viewModelScope.launch {
-                        val state = _uiState.value
-                        val projectId = state.projectId ?: return@launch
-                        val didPersist =
-                            persistSessionSnapshotIfNeeded(
-                                projectId = projectId,
-                                endRow = state.counter.count,
-                                sessionSeconds = state.sessionSeconds,
-                            )
-                        if (didPersist) {
-                            restartSessionSegment(projectId, state.counter.count)
-                        }
+                    applicationScope.launch {
+                        runCatching { repository.checkpointActiveSession() }
                     }
                 }
             }
@@ -215,7 +279,7 @@ class CounterViewModel
         init {
             ProcessLifecycleOwner.get().lifecycle.addObserver(lifecycleObserver)
             observeProjects()
-            startTimer()
+            observeActiveSession()
             observePreferences()
             observeProState()
         }
@@ -235,23 +299,24 @@ class CounterViewModel
 
         private fun observeProState() {
             viewModelScope.launch {
-                combine(proManager.proState, proManager.initialStateReady) { proState, initialStateReady ->
-                    proState to initialStateReady
-                }.collect { (proState, initialStateReady) ->
+                proManager.proState.collect { proState ->
                     _uiState.update {
+                        val canCreateNotes = proState.hasFeature(ProFeature.NOTES)
+                        val canCreateSecondaryCounter = proState.hasFeature(ProFeature.SECONDARY_COUNTER)
                         it.copy(
                             isPro = proState.isPro,
-                            canUseNotes = proState.hasFeature(ProFeature.NOTES),
-                            canUseSecondaryCounter = proState.hasFeature(ProFeature.SECONDARY_COUNTER),
+                            proStatus = proState.status,
+                            canCreateNotes = canCreateNotes,
+                            canUseNotes = it.notesCreated || canCreateNotes,
+                            canCreateSecondaryCounter = canCreateSecondaryCounter,
+                            canUseSecondaryCounter =
+                                it.secondaryCounterUsed || canCreateSecondaryCounter,
                             canUseMultipleCounters = proState.hasFeature(ProFeature.MULTIPLE_COUNTERS),
                             canUseRowReminders = proState.hasFeature(ProFeature.ROW_REMINDERS),
                             canUseProgressPhotos = proState.hasFeature(ProFeature.PROGRESS_PHOTOS),
                             canUsePatternCameraScan = proState.hasFeature(ProFeature.PATTERN_CAMERA_SCAN),
                             canUseYarnCards = proState.hasFeature(ProFeature.UNLIMITED_YARN),
                         )
-                    }
-                    if (initialStateReady && !proState.isPro) {
-                        pruneHistoryForFree()
                     }
                 }
             }
@@ -271,21 +336,15 @@ class CounterViewModel
                         )
                     }
                     if (list.isEmpty()) {
-                        clearPendingSessionState()
                         clearSelectedProject()
                     } else {
-                        if (!didRecoverPendingSession) {
-                            recoverPendingSessionIfNeeded(list)
-                            didRecoverPendingSession = true
-                        }
-
                         val currentId = _uiState.value.projectId ?: savedStateHandle.get<Long>(KEY_SELECTED_PROJECT_ID)
                         val targetProject =
                             currentId?.let { id -> list.find { it.id == id } }
                                 ?: list.first()
 
                         if (_uiState.value.projectId != targetProject.id || selectedProjectJob == null) {
-                            startProjectSession(targetProject)
+                            openProject(targetProject)
                         }
                     }
                 }
@@ -294,8 +353,7 @@ class CounterViewModel
 
         fun selectProject(project: CounterProject) {
             viewModelScope.launch {
-                persistCurrentSessionIfNeeded()
-                startProjectSession(project)
+                openProject(project)
             }
         }
 
@@ -303,6 +361,7 @@ class CounterViewModel
             selectedProjectJob?.cancel()
             selectedProjectJob =
                 viewModelScope.launch {
+                    var previousObservedProject: CounterProject? = null
                     repository.observeProject(projectId).collect { project ->
                         if (project == null) {
                             _uiState.update { it.copy(projectId = null) }
@@ -311,15 +370,17 @@ class CounterViewModel
 
                         val previousState = _uiState.value
                         val countChanged = previousState.counter.count != project.count
-                        if (countChanged && !isForeground && previousState.projectId == project.id) {
-                            persistSessionSnapshotIfNeeded(
-                                projectId = project.id,
-                                endRow = previousState.counter.count,
-                                sessionSeconds = previousState.sessionSeconds,
-                            )
-                            restartSessionSegment(project.id, project.count)
-                        }
                         _uiState.update { state -> state.withObservedProject(project) }
+                        val previousProject = previousObservedProject
+                        if (shouldAnnounceAutomaticPageChange(previousProject, project)) {
+                            _viewerEvents.emit(
+                                CounterViewerEvent.AutomaticReadingLinePageChanged(
+                                    row = project.count,
+                                    page = project.currentPatternPage,
+                                ),
+                            )
+                        }
+                        previousObservedProject = project
                         if (countChanged) {
                             syncRepeatSectionCounters(project.count, _uiState.value.projectCounters, persist = true)
                         }
@@ -409,14 +470,29 @@ class CounterViewModel
             }
         }
 
-        fun saveProjectYarnNoteToMyYarn(noteId: Long) {
-            runProjectYarnNoteSaveIfAllowed(
+        fun saveProjectYarnNoteToMyYarn(noteId: Long): Boolean {
+            pendingProjectYarnNoteId = noteId
+            return runProjectYarnNoteSaveIfAllowed(
                 noteId = noteId,
                 canUseYarnCards = proManager.hasFeature(ProFeature.UNLIMITED_YARN),
-            ) { allowedNoteId ->
-                viewModelScope.launch {
-                    projectYarnNoteRepository.saveToMyYarn(allowedNoteId)
-                }
+                save = { savePendingProjectYarnNoteToMyYarn() },
+            )
+        }
+
+        fun retrySaveProjectYarnNoteToMyYarn(): Boolean {
+            val noteId = pendingProjectYarnNoteId ?: return false
+            return runProjectYarnNoteSaveIfAllowed(
+                noteId = noteId,
+                canUseYarnCards = proManager.hasFeature(ProFeature.UNLIMITED_YARN),
+                save = { savePendingProjectYarnNoteToMyYarn() },
+            )
+        }
+
+        private fun savePendingProjectYarnNoteToMyYarn() {
+            val noteId = pendingProjectYarnNoteId ?: return
+            pendingProjectYarnNoteId = null
+            viewModelScope.launch {
+                projectYarnNoteRepository.saveToMyYarn(noteId)
             }
         }
 
@@ -425,82 +501,11 @@ class CounterViewModel
             _uiState.update { it.copy(totalSessionMinutes = minutes) }
         }
 
-        private suspend fun persistCurrentSessionIfNeeded() {
-            val state = _uiState.value
-            val projectId = state.projectId ?: return
-            persistSessionSnapshotIfNeeded(
-                projectId = projectId,
-                endRow = state.counter.count,
-                sessionSeconds = state.sessionSeconds,
-            )
-            clearPendingSessionState()
-        }
-
-        private suspend fun persistSessionSnapshotIfNeeded(
-            projectId: Long,
-            endRow: Int,
-            sessionSeconds: Long,
-        ): Boolean {
-            val now = System.currentTimeMillis()
-            val durationSeconds =
-                SessionProgress.resolveDurationSeconds(
-                    recordedSeconds = sessionSeconds,
-                    startedAt = sessionStartedAt,
-                    nowMillis = now,
-                )
-            if (durationSeconds < 1L) return false
-            val durationMinutes = ((durationSeconds + 59L) / 60L).toInt().coerceAtLeast(1)
-            val rowsWorked = sessionRowsWorked.takeIf { it > 0 } ?: (endRow - sessionStartRow).coerceAtLeast(0)
-
-            repository.insertSession(
-                KnitSession(
-                    projectId = projectId,
-                    startedAt = sessionStartedAt,
-                    endedAt = now,
-                    startRow = sessionStartRow,
-                    endRow = endRow,
-                    durationMinutes = durationMinutes,
-                    durationSeconds = durationSeconds,
-                    rowsWorked = rowsWorked,
-                    zoneId = sessionZoneId,
-                ),
-            )
-            return true
-        }
-
-        private suspend fun recoverPendingSessionIfNeeded(projects: List<CounterProject>) {
-            val projectId = savedStateHandle.get<Long>(KEY_SELECTED_PROJECT_ID) ?: return
-            val pendingProject =
-                projects.find { it.id == projectId } ?: run {
-                    clearPendingSessionState()
-                    clearSelectedProject()
-                    return
-                }
-            val savedSeconds = savedStateHandle.get<Long>(KEY_SESSION_SECONDS) ?: return
-            if (!savedStateHandle.contains(KEY_SESSION_STARTED_AT) ||
-                !savedStateHandle.contains(KEY_SESSION_START_ROW)
-            ) {
-                clearPendingSessionState()
-                return
-            }
-
-            persistSessionSnapshotIfNeeded(
-                projectId = projectId,
-                endRow = pendingProject.count,
-                sessionSeconds = savedSeconds,
-            )
-            clearPendingSessionState()
-        }
-
-        private suspend fun startProjectSession(project: CounterProject) {
-            sessionStartedAt = System.currentTimeMillis()
-            sessionZoneId = ZoneId.systemDefault().id
-            sessionStartRow = project.count
-            sessionRowsWorked = 0
+        private suspend fun openProject(project: CounterProject) {
+            pruneHistory(project.id)
             linkedYarnIdsCache = project.yarnCardIds
 
             saveSelectedProject(project.id)
-            savePendingSessionState(project.id, 0L)
 
             _uiState.update { it.withStartedProject(project) }
             observeSelectedProject(project.id)
@@ -508,6 +513,7 @@ class CounterViewModel
             observeProjectCounters(project.id)
             observeLatestPhotos(project.id)
             observeProjectYarnNotes(project.id)
+            observeProjectDocuments(project.id)
             syncWidget()
             loadLinkedYarnNames(project.yarnCardIds)
             loadLinkedPattern(project.linkedPatternId)
@@ -519,69 +525,393 @@ class CounterViewModel
             savedStateHandle[KEY_SELECTED_PROJECT_ID] = projectId
         }
 
+        private fun observeProjectDocuments(projectId: Long) {
+            projectDocumentCollectionJob?.cancel()
+            projectDocumentCollectionJob =
+                viewModelScope.launch {
+                    projectDocumentRepository.observeDocuments(projectId).collect { documents ->
+                        val availability =
+                            documents.associate { document ->
+                                document.id to
+                                    try {
+                                        projectDocumentRepository.isAvailable(document)
+                                    } catch (cancellation: CancellationException) {
+                                        throw cancellation
+                                    } catch (_: Exception) {
+                                        false
+                                    }
+                            }
+                        val primary =
+                            documents.firstOrNull(ProjectDocument::isPrimary)
+                                ?: documents.minWithOrNull(compareBy(ProjectDocument::sortOrder, ProjectDocument::id))
+                        _uiState.update { state ->
+                            state.copy(
+                                projectDocuments = documents,
+                                projectDocumentAvailability = availability,
+                                patternUri = primary?.localPdfUri,
+                                patternName = primary?.label,
+                                currentPatternPage = primary?.currentPage ?: 0,
+                                readingLineEnabled = primary?.readingLineEnabled ?: false,
+                                readingLineYFraction =
+                                    primary?.readingLineYFraction ?: DEFAULT_READING_LINE_Y_FRACTION,
+                                readingLineFollowCurrentRow = primary?.readingLineFollowCurrentRow ?: true,
+                                verticalReadingGuideEnabled = primary?.verticalReadingGuideEnabled ?: false,
+                                verticalReadingGuideXFraction =
+                                    primary?.verticalReadingGuideXFraction ?: DEFAULT_READING_GUIDE_FRACTION,
+                                patternRowMapping = primary?.rowMapping,
+                            )
+                        }
+                    }
+                }
+        }
+
+        fun selectProjectDocument(
+            documentId: Long,
+            onResult: (ProjectDocumentMutationResult) -> Unit,
+        ) = mutateProjectDocument(onResult) { projectId ->
+            projectDocumentRepository.select(projectId, documentId)
+        }
+
+        fun renameProjectDocument(
+            documentId: Long,
+            label: String,
+            onResult: (ProjectDocumentMutationResult) -> Unit,
+        ) = mutateProjectDocument(onResult) { projectId ->
+            projectDocumentRepository.rename(projectId, documentId, label)
+        }
+
+        fun moveProjectDocumentEarlier(
+            documentId: Long,
+            onResult: (ProjectDocumentMutationResult) -> Unit,
+        ) = mutateProjectDocument(onResult) { projectId ->
+            projectDocumentRepository.moveEarlier(projectId, documentId)
+        }
+
+        fun moveProjectDocumentLater(
+            documentId: Long,
+            onResult: (ProjectDocumentMutationResult) -> Unit,
+        ) = mutateProjectDocument(onResult) { projectId ->
+            projectDocumentRepository.moveLater(projectId, documentId)
+        }
+
+        fun setPrimaryProjectDocument(
+            documentId: Long,
+            onResult: (ProjectDocumentMutationResult) -> Unit,
+        ) = mutateProjectDocument(onResult) { projectId ->
+            projectDocumentRepository.setPrimary(projectId, documentId)
+        }
+
+        fun removeProjectDocument(
+            documentId: Long,
+            onResult: (ProjectDocumentMutationResult) -> Unit,
+        ) = mutateProjectDocument(onResult) { projectId ->
+            projectDocumentRepository.remove(projectId, documentId)
+        }
+
+        private fun mutateProjectDocument(
+            onResult: (ProjectDocumentMutationResult) -> Unit,
+            mutation: suspend (Long) -> ProjectDocumentMutationResult,
+        ) {
+            val projectId = _uiState.value.projectId ?: return
+            viewModelScope.launch { onResult(mutation(projectId)) }
+        }
+
         private fun clearSelectedProject() {
             savedStateHandle.remove<Long>(KEY_SELECTED_PROJECT_ID)
         }
 
-        private fun savePendingSessionState(
-            projectId: Long,
-            sessionSeconds: Long,
-        ) {
-            savedStateHandle[KEY_SELECTED_PROJECT_ID] = projectId
-            savedStateHandle[KEY_SESSION_STARTED_AT] = sessionStartedAt
-            savedStateHandle[KEY_SESSION_ZONE_ID] = sessionZoneId
-            savedStateHandle[KEY_SESSION_START_ROW] = sessionStartRow
-            savedStateHandle[KEY_SESSION_SECONDS] = sessionSeconds
-            savedStateHandle[KEY_SESSION_ROWS_WORKED] = sessionRowsWorked
-        }
-
-        private fun clearPendingSessionState() {
-            savedStateHandle.remove<Long>(KEY_SESSION_STARTED_AT)
-            savedStateHandle.remove<String>(KEY_SESSION_ZONE_ID)
-            savedStateHandle.remove<Int>(KEY_SESSION_START_ROW)
-            savedStateHandle.remove<Long>(KEY_SESSION_SECONDS)
-            savedStateHandle.remove<Int>(KEY_SESSION_ROWS_WORKED)
-        }
-
-        private fun restartSessionSegment(
-            projectId: Long,
-            startRow: Int,
-        ) {
-            sessionStartedAt = System.currentTimeMillis()
-            sessionZoneId = ZoneId.systemDefault().id
-            sessionStartRow = startRow
-            sessionRowsWorked = 0
-            _uiState.update { it.copy(sessionSeconds = 0L) }
-            savePendingSessionState(projectId, 0L)
-        }
-
         fun openSessionHistory(onReady: (Long) -> Unit) {
-            val state = _uiState.value
-            val projectId = state.projectId ?: return
+            _uiState.value.projectId?.let(onReady)
+        }
+
+        private fun observeActiveSession() {
             viewModelScope.launch {
-                val didPersist =
-                    persistSessionSnapshotIfNeeded(
-                        projectId = projectId,
-                        endRow = state.counter.count,
-                        sessionSeconds = state.sessionSeconds,
-                    )
-                if (didPersist) {
-                    restartSessionSegment(projectId, state.counter.count)
-                    loadTotalSessionMinutes(projectId)
+                repository.observeActiveSession().collect { session ->
+                    _uiState.update { state ->
+                        state.copy(
+                            activeSession = session,
+                            sessionSeconds = session?.let(repository::activeSessionDurationSeconds) ?: 0L,
+                            showSessionRecoveryPrompt =
+                                session?.let { it.needsRecoveryReview && !it.recoveryPromptShown } == true,
+                        )
+                    }
                 }
-                onReady(projectId)
+            }
+            refreshActiveSession()
+        }
+
+        private fun refreshActiveSession() {
+            viewModelScope.launch {
+                val session = repository.refreshActiveSession()
+                _uiState.update {
+                    it.copy(
+                        activeSession = session,
+                        sessionSeconds = session?.let(repository::activeSessionDurationSeconds) ?: 0L,
+                        showSessionRecoveryPrompt =
+                            session?.needsRecoveryReview == true && !session.recoveryPromptShown,
+                    )
+                }
+            }
+        }
+
+        fun refreshSessionPresentationTime() {
+            val session = _uiState.value.activeSession ?: return
+            if (!session.needsRecoveryReview && repository.activeSessionNeedsRecovery(session)) {
+                refreshActiveSession()
+                return
+            }
+            _uiState.update { state ->
+                if (state.activeSession?.sessionToken == session.sessionToken) {
+                    state.copy(sessionSeconds = repository.activeSessionDurationSeconds(session))
+                } else {
+                    state
+                }
+            }
+        }
+
+        fun startWorkSession() {
+            val projectId = _uiState.value.projectId ?: return
+            launchWorkSessionAction {
+                when (val result = repository.startSession(projectId)) {
+                    is StartSessionResult.ProjectConflict ->
+                        _uiState.update {
+                            it.copy(
+                                sessionStartConflict =
+                                    SessionStartConflict(result.activeSession, result.requestedProjectId),
+                            )
+                        }
+                    is StartSessionResult.AlreadyActive,
+                    is StartSessionResult.Started,
+                    StartSessionResult.ProjectCompleted,
+                    StartSessionResult.ProjectMissing,
+                    -> Unit
+                    StartSessionResult.PersistenceFailure ->
+                        showWorkSessionError(R.string.work_session_could_not_start, ::startWorkSession)
+                }
+            }
+        }
+
+        fun cancelSessionStartConflict() {
+            _uiState.update { it.copy(sessionStartConflict = null) }
+        }
+
+        fun resolveSessionStartConflict(saveCurrent: Boolean) {
+            val conflict = _uiState.value.sessionStartConflict ?: return
+            if (saveCurrent && conflict.activeSession.needsRecoveryReview) {
+                _uiState.update {
+                    it.copy(
+                        sessionStartConflict = null,
+                        showSessionRecoveryPrompt = true,
+                    )
+                }
+                selectProjectById(conflict.activeSession.projectId)
+                return
+            }
+            launchWorkSessionAction {
+                val result =
+                    repository.replaceActiveSession(
+                        requestedProjectId = conflict.requestedProjectId,
+                        expectedSessionToken = conflict.activeSession.sessionToken,
+                        saveCurrent = saveCurrent,
+                    )
+                if (result !is StartSessionResult.ProjectConflict) {
+                    _uiState.update { it.copy(sessionStartConflict = null) }
+                }
+            }
+        }
+
+        fun returnToActiveSessionProject() {
+            val activeProjectId =
+                _uiState.value.sessionStartConflict
+                    ?.activeSession
+                    ?.projectId
+                    ?: return
+            _uiState.update { it.copy(sessionStartConflict = null) }
+            selectProjectById(activeProjectId)
+        }
+
+        fun stopWorkSession() {
+            val active = _uiState.value.activeSession ?: return
+            if (active.needsRecoveryReview) {
+                _uiState.update { it.copy(showSessionRecoveryPrompt = true) }
+                return
+            }
+            _uiState.update { state ->
+                state.copy(
+                    sessionStopSummary =
+                        SessionStopSummary(
+                            sessionToken = active.sessionToken,
+                            projectName = state.projectName,
+                            durationSeconds = repository.activeSessionDurationSeconds(active),
+                            rowsWorked = active.trustedRowsWorked,
+                        ),
+                )
+            }
+        }
+
+        fun saveStoppedWorkSession() {
+            val summary = _uiState.value.sessionStopSummary ?: return
+            val projectId = _uiState.value.activeSession?.projectId ?: return
+            launchWorkSessionAction {
+                when (repository.stopSession(summary.sessionToken)) {
+                    is StopSessionResult.Saved -> {
+                        loadTotalSessionMinutes(projectId)
+                        _uiState.update { it.copy(sessionStopSummary = null) }
+                    }
+                    is StopSessionResult.NeedsRecoveryReview ->
+                        _uiState.update {
+                            it.copy(
+                                sessionStopSummary = null,
+                                showSessionRecoveryPrompt = true,
+                            )
+                        }
+                    StopSessionResult.NoActiveSession,
+                    StopSessionResult.StaleAction,
+                    -> _uiState.update { it.copy(sessionStopSummary = null) }
+                    StopSessionResult.Discarded -> Unit
+                    StopSessionResult.PersistenceFailure ->
+                        showWorkSessionError(R.string.work_session_could_not_save, ::saveStoppedWorkSession)
+                }
+            }
+        }
+
+        fun discardStoppedWorkSession() {
+            val summary = _uiState.value.sessionStopSummary ?: return
+            launchWorkSessionAction {
+                when (repository.discardActiveSession(summary.sessionToken)) {
+                    StopSessionResult.Discarded,
+                    StopSessionResult.NoActiveSession,
+                    StopSessionResult.StaleAction,
+                    -> _uiState.update { it.copy(sessionStopSummary = null) }
+                    is StopSessionResult.NeedsRecoveryReview,
+                    is StopSessionResult.Saved,
+                    -> Unit
+                    StopSessionResult.PersistenceFailure ->
+                        showWorkSessionError(R.string.work_session_could_not_discard, ::discardStoppedWorkSession)
+                }
+            }
+        }
+
+        fun cancelSessionStop() {
+            _uiState.update { it.copy(sessionStopSummary = null) }
+        }
+
+        fun dismissRecoveryPrompt() {
+            val active = _uiState.value.activeSession ?: return
+            val intervalToken = active.recoveryIntervalToken ?: return
+            _uiState.update { it.copy(showSessionRecoveryPrompt = false) }
+            viewModelScope.launch {
+                repository.markRecoveryPromptShown(active.sessionToken, intervalToken)
+            }
+        }
+
+        fun showRecoveryPrompt() {
+            if (_uiState.value.activeSession?.needsRecoveryReview == true) {
+                _uiState.update { it.copy(showSessionRecoveryPrompt = true) }
+            }
+        }
+
+        fun addRecoveryInterval(durationSeconds: Long) {
+            val active = _uiState.value.activeSession ?: return
+            val intervalToken = active.recoveryIntervalToken ?: return
+            launchWorkSessionAction {
+                when (
+                    repository.addRecoveryInterval(
+                        sessionToken = active.sessionToken,
+                        recoveryIntervalToken = intervalToken,
+                        durationSeconds = durationSeconds,
+                    )
+                ) {
+                    is RecoveryResolutionResult.Continued ->
+                        _uiState.update { it.copy(showSessionRecoveryPrompt = false) }
+                    RecoveryResolutionResult.InvalidDuration ->
+                        showWorkSessionError(R.string.work_session_invalid_duration)
+                    RecoveryResolutionResult.StaleAction ->
+                        showWorkSessionError(R.string.work_session_recovery_already_handled)
+                    RecoveryResolutionResult.PersistenceFailure ->
+                        showWorkSessionError(R.string.work_session_could_not_save) {
+                            addRecoveryInterval(durationSeconds)
+                        }
+                    is RecoveryResolutionResult.DiscardedAndStopped,
+                    is RecoveryResolutionResult.EditedAndStopped,
+                    -> Unit
+                }
+            }
+        }
+
+        fun discardRecoveryInterval() {
+            val active = _uiState.value.activeSession ?: return
+            val intervalToken = active.recoveryIntervalToken ?: return
+            launchWorkSessionAction {
+                when (
+                    repository.discardRecoveryInterval(
+                        active.sessionToken,
+                        intervalToken,
+                    )
+                ) {
+                    is RecoveryResolutionResult.DiscardedAndStopped -> {
+                        loadTotalSessionMinutes(active.projectId)
+                        _uiState.update { it.copy(showSessionRecoveryPrompt = false) }
+                    }
+                    RecoveryResolutionResult.StaleAction ->
+                        showWorkSessionError(R.string.work_session_recovery_already_handled)
+                    RecoveryResolutionResult.PersistenceFailure ->
+                        showWorkSessionError(R.string.work_session_could_not_discard, ::discardRecoveryInterval)
+                    is RecoveryResolutionResult.Continued,
+                    is RecoveryResolutionResult.EditedAndStopped,
+                    RecoveryResolutionResult.InvalidDuration,
+                    -> Unit
+                }
+            }
+        }
+
+        fun editRecoveryDurationAndStop(totalDurationSeconds: Long) {
+            val active = _uiState.value.activeSession ?: return
+            val intervalToken = active.recoveryIntervalToken ?: return
+            launchWorkSessionAction {
+                when (
+                    repository.editRecoveryDurationAndStop(
+                        sessionToken = active.sessionToken,
+                        recoveryIntervalToken = intervalToken,
+                        totalDurationSeconds = totalDurationSeconds,
+                    )
+                ) {
+                    is RecoveryResolutionResult.EditedAndStopped -> {
+                        loadTotalSessionMinutes(active.projectId)
+                        _uiState.update { it.copy(showSessionRecoveryPrompt = false) }
+                    }
+                    RecoveryResolutionResult.InvalidDuration ->
+                        showWorkSessionError(R.string.work_session_invalid_duration)
+                    RecoveryResolutionResult.StaleAction ->
+                        showWorkSessionError(R.string.work_session_recovery_already_handled)
+                    RecoveryResolutionResult.PersistenceFailure ->
+                        showWorkSessionError(R.string.work_session_could_not_save) {
+                            editRecoveryDurationAndStop(totalDurationSeconds)
+                        }
+                    is RecoveryResolutionResult.Continued,
+                    is RecoveryResolutionResult.DiscardedAndStopped,
+                    -> Unit
+                }
             }
         }
 
         fun createNewProject(name: String): Boolean {
             if (name.isBlank()) return false
-            if (!proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS)) {
-                val count = _uiState.value.projects.size
-                if (count >= 1) return false
-            }
             viewModelScope.launch {
-                val id = repository.createProject(name) ?: return@launch
-                repository.getProject(id)?.let { selectProject(it) }
+                when (
+                    val result =
+                        repository.createProject(
+                            name = name,
+                            canCreateAdditionalProjects =
+                                proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS),
+                        )
+                ) {
+                    is ProjectCreationResult.Created ->
+                        repository.getProject(result.projectId)?.let { selectProject(it) }
+                    ProjectCreationResult.InvalidProject,
+                    ProjectCreationResult.LimitReached,
+                    -> Unit
+                }
             }
             return true
         }
@@ -590,15 +920,63 @@ class CounterViewModel
             val state = _uiState.value
             val projectId = state.projectId ?: return
             viewModelScope.launch {
-                persistSessionSnapshotIfNeeded(projectId, state.counter.count, state.sessionSeconds)
-                repository.archiveProject(
-                    id = projectId,
-                    totalRows = state.counter.count,
-                    completedAt = System.currentTimeMillis(),
+                handleProjectCompletionResult(
+                    repository.completeProjectWithSessionChoice(
+                        projectId = projectId,
+                        totalRows = state.counter.count,
+                        choice = null,
+                    ),
                 )
-                _uiState.update { it.copy(projectId = null) }
-                clearPendingSessionState()
-                clearSelectedProject()
+            }
+        }
+
+        fun completeProjectWithActiveSession(saveSession: Boolean) {
+            val state = _uiState.value
+            val projectId = state.projectId ?: return
+            viewModelScope.launch {
+                handleProjectCompletionResult(
+                    repository.completeProjectWithSessionChoice(
+                        projectId = projectId,
+                        totalRows = state.counter.count,
+                        choice =
+                            if (saveSession) {
+                                ActiveSessionCompletionChoice.SAVE
+                            } else {
+                                ActiveSessionCompletionChoice.DISCARD
+                            },
+                    ),
+                )
+            }
+        }
+
+        fun cancelProjectCompletionSessionChoice() {
+            _uiState.update { it.copy(pendingProjectCompletionSession = null) }
+        }
+
+        private fun handleProjectCompletionResult(result: ProjectCompletionResult) {
+            when (result) {
+                ProjectCompletionResult.Completed -> {
+                    _uiState.update {
+                        it.copy(
+                            projectId = null,
+                            pendingProjectCompletionSession = null,
+                        )
+                    }
+                    clearSelectedProject()
+                    _projectClosedEvents.tryEmit(Unit)
+                }
+                is ProjectCompletionResult.NeedsActiveSessionChoice ->
+                    _uiState.update { it.copy(pendingProjectCompletionSession = result.session) }
+                is ProjectCompletionResult.NeedsRecoveryReview ->
+                    _uiState.update {
+                        it.copy(
+                            pendingProjectCompletionSession = null,
+                            showSessionRecoveryPrompt = true,
+                        )
+                    }
+                ProjectCompletionResult.ProjectUnavailable -> Unit
+                ProjectCompletionResult.PersistenceFailure ->
+                    showWorkSessionError(R.string.work_session_could_not_save, ::completeProject)
             }
         }
 
@@ -618,18 +996,89 @@ class CounterViewModel
 
         fun deleteProject(id: Long) {
             viewModelScope.launch {
-                repository.deleteProject(id)
-                if (_uiState.value.projectId == id) {
-                    _uiState.update { it.copy(projectId = null) }
-                    clearPendingSessionState()
-                    clearSelectedProject()
-                }
+                handleProjectDeletionResult(
+                    id = id,
+                    result = repository.deleteProjectResolvingActiveSession(id, discardActiveSession = false),
+                )
             }
+        }
+
+        fun deleteProjectDiscardingActiveSession() {
+            val active = _uiState.value.pendingProjectDeletionSession ?: return
+            viewModelScope.launch {
+                handleProjectDeletionResult(
+                    id = active.projectId,
+                    result =
+                        repository.deleteProjectResolvingActiveSession(
+                            id = active.projectId,
+                            discardActiveSession = true,
+                        ),
+                )
+            }
+        }
+
+        fun cancelProjectDeletionSessionChoice() {
+            _uiState.update { it.copy(pendingProjectDeletionSession = null) }
+        }
+
+        private fun handleProjectDeletionResult(
+            id: Long,
+            result: ProjectDeletionResult,
+        ) {
+            when (result) {
+                ProjectDeletionResult.Deleted -> {
+                    if (_uiState.value.projectId == id) {
+                        _uiState.update {
+                            it.copy(
+                                projectId = null,
+                                pendingProjectDeletionSession = null,
+                            )
+                        }
+                        clearSelectedProject()
+                        _projectClosedEvents.tryEmit(Unit)
+                    }
+                }
+                is ProjectDeletionResult.NeedsActiveSessionDiscard ->
+                    _uiState.update { it.copy(pendingProjectDeletionSession = result.session) }
+                ProjectDeletionResult.ProjectUnavailable -> Unit
+                ProjectDeletionResult.PersistenceFailure ->
+                    showWorkSessionError(R.string.work_session_could_not_discard) { deleteProject(id) }
+            }
+        }
+
+        private fun showWorkSessionError(
+            messageRes: Int,
+            retry: (() -> Unit)? = null,
+        ) {
+            pendingWorkSessionRetry = retry
+            _uiState.update {
+                it.copy(
+                    workSessionErrorRes = messageRes,
+                    workSessionErrorCanRetry = retry != null,
+                )
+            }
+        }
+
+        fun dismissWorkSessionError() {
+            pendingWorkSessionRetry = null
+            _uiState.update { it.copy(workSessionErrorRes = null, workSessionErrorCanRetry = false) }
+        }
+
+        fun retryWorkSessionAction() {
+            val retry = pendingWorkSessionRetry
+            dismissWorkSessionError()
+            retry?.invoke()
+        }
+
+        private fun launchWorkSessionAction(block: suspend () -> Unit) {
+            if (workSessionActionJob?.isActive == true) return
+            workSessionActionJob = viewModelScope.launch { block() }
         }
 
         fun increment() {
             val state = _uiState.value
             state.projectId ?: return
+            // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
             val updatedCounter = CounterLogic.increment(state.counter)
             if (updatedCounter.count == state.counter.count) return
             val resetStitch = state.stitchTrackingEnabled && updatedCounter.count != state.counter.count
@@ -637,11 +1086,13 @@ class CounterViewModel
             syncRepeatSectionCounters(updatedCounter.count, state.projectCounters, persist = true)
             persistCount(
                 action = "increment",
+                // CPD-ON
                 previousValue = state.counter.count,
                 newValue = updatedCounter.count,
             )
         }
 
+        // CPD-OFF: Laskuritoiminnon paikallinen tila- ja tallennusketju pidetaan yhtenaisena.
         fun decrement() {
             val state = _uiState.value
             state.projectId ?: return
@@ -656,6 +1107,7 @@ class CounterViewModel
                 newValue = updatedCounter.count,
             )
         }
+        // CPD-ON
 
         fun undo() {
             val state = _uiState.value
@@ -675,7 +1127,6 @@ class CounterViewModel
                 val resetStitch =
                     currentState.stitchTrackingEnabled &&
                         updatedCounter.count != currentState.counter.count
-                trackSessionRows("undo", previousValue = state.counter.count, newValue = updatedCounter.count)
                 _uiState.update { latestState ->
                     if (latestState.projectId == projectId) {
                         latestState.withCounterChange(updatedCounter, resetStitch)
@@ -685,7 +1136,6 @@ class CounterViewModel
                 }
                 syncRepeatSectionCounters(updatedCounter.count, _uiState.value.projectCounters, persist = true)
                 inAppReviewManager.recordAction()
-                savePendingSessionState(projectId, _uiState.value.sessionSeconds)
                 syncWidget(projectId, _uiState.value.projectName, updatedCounter.count)
             }
         }
@@ -706,13 +1156,13 @@ class CounterViewModel
         }
 
         fun incrementSecondary() {
-            if (!proManager.hasFeature(ProFeature.SECONDARY_COUNTER)) return
+            if (!_uiState.value.canUseSecondaryCounter) return
             _uiState.update { it.copy(secondaryCount = it.secondaryCount + 1) }
             persistSecondary()
         }
 
         fun decrementSecondary() {
-            if (!proManager.hasFeature(ProFeature.SECONDARY_COUNTER)) return
+            if (!_uiState.value.canUseSecondaryCounter) return
             _uiState.update { it.copy(secondaryCount = maxOf(0, it.secondaryCount - 1)) }
             persistSecondary()
         }
@@ -742,8 +1192,23 @@ class CounterViewModel
                 }
         }
 
-        fun addProjectCounter(draft: ProjectCounterDraft) {
-            if (!canAddProjectCounter(draft)) return
+        fun addProjectCounter(draft: ProjectCounterDraft): Boolean {
+            pendingProjectCounterDraft = draft
+            if (!canAddProjectCounter(draft)) return false
+            addPendingProjectCounter()
+            return true
+        }
+
+        fun retryAddProjectCounter(): Boolean {
+            val draft = pendingProjectCounterDraft ?: return false
+            if (!canAddProjectCounter(draft)) return false
+            addPendingProjectCounter()
+            return true
+        }
+
+        private fun addPendingProjectCounter() {
+            val draft = pendingProjectCounterDraft ?: return
+            pendingProjectCounterDraft = null
             viewModelScope.launch {
                 val projectId = _uiState.value.projectId ?: return@launch
                 val counter =
@@ -781,23 +1246,15 @@ class CounterViewModel
             }
         }
 
-        private fun canUseProjectCounter(counter: ProjectCounter): Boolean {
-            if (!proManager.hasFeature(ProFeature.MULTIPLE_COUNTERS)) return false
-            return when (counter.counterType) {
-                ProjectCounterType.SHAPING -> proManager.hasFeature(ProFeature.SHAPING_COUNTER)
-                ProjectCounterType.REPEAT_SECTION -> proManager.hasFeature(ProFeature.REPEAT_SECTION)
-                else -> true
+        private fun canUseProjectCounter(counter: ProjectCounter): Boolean =
+            _uiState.value.projectCounters.any {
+                it.id == counter.id
             }
-        }
 
         private fun canUseProjectCounter(counterId: Long): Boolean =
             _uiState.value.projectCounters
                 .firstOrNull { it.id == counterId }
                 ?.let(::canUseProjectCounter) == true
-
-        private fun canUseRepeatSectionCounters(): Boolean =
-            proManager.hasFeature(ProFeature.MULTIPLE_COUNTERS) &&
-                proManager.hasFeature(ProFeature.REPEAT_SECTION)
 
         fun incrementProjectCounter(counter: ProjectCounter) {
             if (!canUseProjectCounter(counter)) return
@@ -853,16 +1310,30 @@ class CounterViewModel
             targetRow: Int,
             repeatInterval: Int?,
             message: String,
-        ) {
-            if (!proManager.hasFeature(ProFeature.ROW_REMINDERS)) return
+        ): Boolean {
+            pendingReminderDraft = PendingReminderDraft(targetRow, repeatInterval, message)
+            if (!proManager.hasFeature(ProFeature.ROW_REMINDERS)) return false
+            addPendingReminder()
+            return true
+        }
+
+        fun retryAddReminder(): Boolean {
+            if (!proManager.hasFeature(ProFeature.ROW_REMINDERS)) return false
+            addPendingReminder()
+            return true
+        }
+
+        private fun addPendingReminder() {
+            val draft = pendingReminderDraft ?: return
+            pendingReminderDraft = null
             viewModelScope.launch {
                 val projectId = _uiState.value.projectId ?: return@launch
                 reminderRepository.insert(
                     RowReminder(
                         projectId = projectId,
-                        targetRow = targetRow,
-                        repeatInterval = repeatInterval,
-                        message = message.take(200),
+                        targetRow = draft.targetRow,
+                        repeatInterval = draft.repeatInterval,
+                        message = draft.message.take(200),
                     ),
                 )
             }
@@ -874,7 +1345,6 @@ class CounterViewModel
             repeatInterval: Int?,
             message: String,
         ) {
-            if (!proManager.hasFeature(ProFeature.ROW_REMINDERS)) return
             viewModelScope.launch {
                 val reminder = _uiState.value.reminders.find { it.id == reminderId } ?: return@launch
                 reminderRepository.update(
@@ -889,7 +1359,6 @@ class CounterViewModel
         }
 
         fun dismissReminder(reminderId: Long) {
-            if (!proManager.hasFeature(ProFeature.ROW_REMINDERS)) return
             viewModelScope.launch {
                 val reminder = _uiState.value.reminders.find { it.id == reminderId } ?: return@launch
                 if (reminder.repeatInterval == null) {
@@ -902,7 +1371,6 @@ class CounterViewModel
         }
 
         fun deleteReminder(reminderId: Long) {
-            if (!proManager.hasFeature(ProFeature.ROW_REMINDERS)) return
             viewModelScope.launch {
                 reminderRepository.delete(reminderId)
             }
@@ -928,18 +1396,35 @@ class CounterViewModel
         }
 
         fun savePhoto(sourceUri: Uri) {
-            if (!proManager.hasFeature(ProFeature.PROGRESS_PHOTOS)) return
+            if (!canFinishProgressPhotoCreation()) return
             viewModelScope.launch {
                 val state = _uiState.value
                 val projectId = state.projectId ?: return@launch
                 photoRepository.savePhoto(projectId, sourceUri, state.counter.count)
+                savedStateHandle.remove<Boolean>(KEY_PROGRESS_PHOTO_CREATION_AUTHORIZED)
             }
         }
+
+        fun authorizeProgressPhotoCreation() {
+            savedStateHandle[KEY_PROGRESS_PHOTO_CREATION_AUTHORIZED] = true
+        }
+
+        fun cancelProgressPhotoCreation() {
+            savedStateHandle.remove<Boolean>(KEY_PROGRESS_PHOTO_CREATION_AUTHORIZED)
+        }
+
+        private fun canFinishProgressPhotoCreation(): Boolean =
+            proManager.hasFeature(ProFeature.PROGRESS_PHOTOS) ||
+                savedStateHandle.get<Boolean>(KEY_PROGRESS_PHOTO_CREATION_AUTHORIZED) == true
 
         fun createPhotoCaptureTarget(
             projectId: Long,
             onCreated: (PhotoCaptureTarget?) -> Unit,
         ) {
+            if (!canFinishProgressPhotoCreation()) {
+                onCreated(null)
+                return
+            }
             viewModelScope.launch {
                 val target =
                     runCatching {
@@ -975,8 +1460,8 @@ class CounterViewModel
         }
 
         fun setNotes(notes: String) {
-            if (!proManager.hasFeature(ProFeature.NOTES)) return
             val state = _uiState.value
+            if (!state.canUseNotes) return
             val previousNotes = state.notes
             _uiState.update { it.copy(notes = notes) }
             viewModelScope.launch {
@@ -1056,8 +1541,12 @@ class CounterViewModel
         fun attachPattern(
             uri: String,
             name: String,
+            onResult: (ProjectDocumentMutationResult) -> Unit = {},
         ) {
-            if (uri.isBlank()) return
+            if (uri.isBlank()) {
+                onResult(ProjectDocumentMutationResult.PersistenceFailure)
+                return
+            }
             val sanitizedName = name.ifBlank { context.getString(R.string.pattern_pdf_fallback_name) }
             val state = _uiState.value
             val projectId = state.projectId ?: return
@@ -1068,16 +1557,18 @@ class CounterViewModel
                         sourceUriString = uri,
                         projectId = projectId,
                         sanitizedName = sanitizedName,
-                    ) ?: return@launch
+                    )
+                if (attachment == null) {
+                    onResult(ProjectDocumentMutationResult.PersistenceFailure)
+                    return@launch
+                }
 
-                updateAttachedPatternState(
-                    patternUri = attachment.internalUri,
-                    patternName = sanitizedName,
-                )
-                persistPatternAttachment(
-                    projectId = projectId,
-                    patternName = sanitizedName,
-                    attachment = attachment,
+                onResult(
+                    persistPatternAttachment(
+                        projectId = projectId,
+                        patternName = sanitizedName,
+                        attachment = attachment,
+                    ),
                 )
             }
         }
@@ -1090,7 +1581,6 @@ class CounterViewModel
                 return
             }
             pendingSavedPatternAttachment = null
-            updateSavedPatternAttachmentState(pattern)
             viewModelScope.launch {
                 repository.attachSavedPattern(
                     projectId = projectId,
@@ -1196,55 +1686,39 @@ class CounterViewModel
                 )
             }
 
-        private fun updateAttachedPatternState(
-            patternUri: String,
-            patternName: String,
-        ) {
-            _uiState.update {
-                it.copy(
-                    linkedPattern = null,
-                    patternUri = patternUri,
-                    patternName = patternName,
-                    currentPatternPage = 0,
-                    patternRowMapping = null,
-                )
-            }
-        }
-
-        private fun updateSavedPatternAttachmentState(pattern: SavedPattern) {
-            _uiState.update {
-                it.copy(
-                    linkedPattern = pattern,
-                    patternUri = pattern.localPdfUri,
-                    patternName = pattern.name,
-                    currentPatternPage = 0,
-                    patternRowMapping = null,
-                )
-            }
-        }
-
         private suspend fun persistPatternAttachment(
             projectId: Long,
             patternName: String,
             attachment: PatternAttachment,
-        ) {
-            runCatching {
-                repository.attachPattern(
-                    id = projectId,
-                    patternUri = attachment.internalUri,
-                    patternName = patternName,
-                    currentPatternPage = 0,
-                    patternRowMapping = null,
-                )
-            }.onFailure {
+        ): ProjectDocumentMutationResult {
+            val result =
+                runCatching {
+                    repository.attachPattern(
+                        id = projectId,
+                        patternUri = attachment.internalUri,
+                        patternName = patternName,
+                        currentPatternPage = 0,
+                        patternRowMapping = null,
+                    )
+                }
+            result.getOrNull()?.let { return it }
+            val committed =
+                withContext(NonCancellable) {
+                    runCatching { repository.isPatternDocumentAttached(projectId, attachment.internalUri) }
+                        .getOrDefault(false)
+                }
+            if (!committed) {
                 attachment.copiedUri
                     ?.takeIf { attachment.reusableUri == null }
                     ?.let { failedUri ->
-                        withContext(ioDispatcher) {
+                        withContext(NonCancellable + ioDispatcher) {
                             AppFileStorage.deleteIfAppOwned(context, failedUri)
                         }
                     }
-            }.getOrThrow()
+            }
+            val failure = result.exceptionOrNull()
+            if (failure is CancellationException) throw failure
+            return ProjectDocumentMutationResult.PersistenceFailure
         }
 
         private data class PatternAttachment(
@@ -1272,7 +1746,12 @@ class CounterViewModel
         fun updatePatternPage(page: Int) {
             val projectId = _uiState.value.projectId ?: return
             val sanitizedPage = page.coerceAtLeast(0)
-            _uiState.update { it.copy(currentPatternPage = sanitizedPage) }
+            _uiState.update {
+                it.copy(
+                    currentPatternPage = sanitizedPage,
+                    readingLineFollowCurrentRow = false,
+                )
+            }
             viewModelScope.launch {
                 repository.updateCurrentPatternPage(projectId, sanitizedPage)
             }
@@ -1291,18 +1770,71 @@ class CounterViewModel
             val projectId = state.projectId ?: return
             _uiState.update { it.copy(readingLineEnabled = enabled) }
             viewModelScope.launch {
-                repository.updateReadingLine(projectId, enabled, state.readingLineYFraction)
+                repository.updateReadingLineVisibility(projectId, enabled)
             }
         }
 
         fun updateReadingLineYFraction(yFraction: Float) {
+            commitManualReadingLinePosition(yFraction)
+        }
+
+        fun commitManualReadingLinePosition(yFraction: Float) {
             val state = _uiState.value
             val projectId = state.projectId ?: return
             val sanitizedYFraction = sanitizeReadingLineYFraction(yFraction)
-            _uiState.update { it.copy(readingLineYFraction = sanitizedYFraction) }
-            viewModelScope.launch {
-                repository.updateReadingLine(projectId, state.readingLineEnabled, sanitizedYFraction)
+            _uiState.update {
+                it.copy(
+                    readingLineYFraction = sanitizedYFraction,
+                    readingLineFollowCurrentRow = false,
+                )
             }
+            viewModelScope.launch {
+                repository.commitManualReadingLinePosition(projectId, sanitizedYFraction)
+            }
+        }
+
+        fun setReadingLineFollowCurrentRow(enabled: Boolean) {
+            val projectId = _uiState.value.projectId ?: return
+            _uiState.update { it.copy(readingLineFollowCurrentRow = enabled) }
+            viewModelScope.launch {
+                val resolution = repository.setReadingLineFollowCurrentRow(projectId, enabled)
+                if (enabled && resolution != null) {
+                    _viewerEvents.emit(
+                        CounterViewerEvent.ReadingLineFollowingResumed(
+                            calibrated =
+                                resolution.kind == ReadingLineResolutionKind.EXACT_MARKER ||
+                                    resolution.kind == ReadingLineResolutionKind.SAME_PAGE_INTERPOLATION,
+                        ),
+                    )
+                }
+            }
+        }
+
+        fun returnReadingLineToCurrentRow() {
+            setReadingLineFollowCurrentRow(true)
+        }
+
+        fun setVerticalReadingGuideEnabled(enabled: Boolean) {
+            val state = _uiState.value
+            val projectId = state.projectId ?: return
+            _uiState.update { it.copy(verticalReadingGuideEnabled = enabled) }
+            viewModelScope.launch {
+                repository.updateVerticalReadingGuide(projectId, enabled, state.verticalReadingGuideXFraction)
+            }
+        }
+
+        fun updateVerticalReadingGuideXFraction(xFraction: Float) {
+            val state = _uiState.value
+            val projectId = state.projectId ?: return
+            val sanitizedXFraction = sanitizeReadingGuideFraction(xFraction)
+            _uiState.update { it.copy(verticalReadingGuideXFraction = sanitizedXFraction) }
+            viewModelScope.launch {
+                repository.updateVerticalReadingGuide(projectId, state.verticalReadingGuideEnabled, sanitizedXFraction)
+            }
+        }
+
+        fun centerVerticalReadingGuide() {
+            updateVerticalReadingGuideXFraction(DEFAULT_READING_GUIDE_FRACTION)
         }
 
         fun upsertPatternRowMarker(
@@ -1371,11 +1903,9 @@ class CounterViewModel
             if (newValue == previousValue) return
             val state = _uiState.value
             val projectId = state.projectId ?: return
-            trackSessionRows(action, previousValue, newValue)
             viewModelScope.launch {
                 inAppReviewManager.recordAction()
                 repository.applyMainCounterChange(projectId, action.toMainCounterChange())
-                savePendingSessionState(projectId, state.sessionSeconds)
                 syncWidget(projectId, state.projectName, newValue)
             }
         }
@@ -1389,26 +1919,9 @@ class CounterViewModel
                 else -> MainCounterChange.Increment
             }
 
-        private fun trackSessionRows(
-            action: String,
-            previousValue: Int,
-            newValue: Int,
-        ) {
-            sessionRowsWorked =
-                SessionProgress.adjustRowsWorked(
-                    currentRowsWorked = sessionRowsWorked,
-                    action = action,
-                    previousValue = previousValue,
-                    newValue = newValue,
-                )
-        }
-
-        private fun pruneHistoryForFree() {
-            viewModelScope.launch {
-                val id = _uiState.value.projectId ?: return@launch
-                val cutoff = System.currentTimeMillis() - TimeUnit.HOURS.toMillis(HISTORY_LIMIT_HOURS)
-                repository.deleteHistoryBefore(id, cutoff)
-            }
+        private suspend fun pruneHistory(projectId: Long) {
+            val cutoff = System.currentTimeMillis() - 24L * 60L * 60L * 1_000L
+            repository.deleteHistoryBefore(projectId, cutoff)
         }
 
         private suspend fun syncWidget(
@@ -1432,30 +1945,6 @@ class CounterViewModel
             CounterWidgetState.syncAll(context, widgetData)
         }
 
-        private fun startTimer() {
-            timerJob =
-                viewModelScope.launch {
-                    while (true) {
-                        delay(1000)
-                        if (isForeground) {
-                            var pendingSessionProjectId: Long? = null
-                            var pendingSessionSeconds = 0L
-
-                            _uiState.update {
-                                val nextSeconds = it.sessionSeconds + 1
-                                pendingSessionProjectId = it.projectId
-                                pendingSessionSeconds = nextSeconds
-                                it.copy(sessionSeconds = nextSeconds)
-                            }
-
-                            pendingSessionProjectId?.let { projectId ->
-                                savePendingSessionState(projectId, pendingSessionSeconds)
-                            }
-                        }
-                    }
-                }
-        }
-
         fun selectProjectById(id: Long) {
             selectProjectByIdForLaunch(id)
         }
@@ -1471,8 +1960,7 @@ class CounterViewModel
 
         private suspend fun loadProjectForLaunch(id: Long): Boolean {
             val project = repository.getProject(id) ?: return false
-            persistCurrentSessionIfNeeded()
-            startProjectSession(project)
+            openProject(project)
             return true
         }
 
@@ -1554,10 +2042,6 @@ class CounterViewModel
             counters: List<ProjectCounter>,
             persist: Boolean,
         ) {
-            if (!canUseRepeatSectionCounters()) {
-                _uiState.update { it.copy(projectCounters = counters) }
-                return
-            }
             val syncedCounters =
                 counters.map { counter ->
                     if (counter.counterType == ProjectCounterType.REPEAT_SECTION) {
@@ -1588,34 +2072,13 @@ class CounterViewModel
         }
 
         override fun onCleared() {
-            val state = _uiState.value
-            clearPendingSessionState()
-            super.onCleared()
-            @Suppress("TooGenericExceptionCaught")
-            applicationScope.launch {
-                try {
-                    val projectId = state.projectId ?: return@launch
-                    persistSessionSnapshotIfNeeded(
-                        projectId = projectId,
-                        endRow = state.counter.count,
-                        sessionSeconds = state.sessionSeconds,
-                    )
-                } catch (_: Exception) {
-                    // Sessio-tallennus epäonnistui siivouksessa — ei kaadeta sovellusta
-                }
-            }
             selectedProjectJob?.cancel()
             ProcessLifecycleOwner.get().lifecycle.removeObserver(lifecycleObserver)
         }
 
         private companion object {
-            const val HISTORY_LIMIT_HOURS = 24L
             const val KEY_SELECTED_PROJECT_ID = "counter.selected_project_id"
-            const val KEY_SESSION_STARTED_AT = "counter.session_started_at"
-            const val KEY_SESSION_ZONE_ID = "counter.session_zone_id"
-            const val KEY_SESSION_START_ROW = "counter.session_start_row"
-            const val KEY_SESSION_SECONDS = "counter.session_seconds"
-            const val KEY_SESSION_ROWS_WORKED = "counter.session_rows_worked"
+            const val KEY_PROGRESS_PHOTO_CREATION_AUTHORIZED = "counter.progress_photo_creation_authorized"
         }
     }
 
@@ -1623,6 +2086,8 @@ internal inline fun runProjectYarnNoteSaveIfAllowed(
     noteId: Long,
     canUseYarnCards: Boolean,
     save: (Long) -> Unit,
-) {
-    if (canUseYarnCards) save(noteId)
+): Boolean {
+    if (!canUseYarnCards) return false
+    save(noteId)
+    return true
 }

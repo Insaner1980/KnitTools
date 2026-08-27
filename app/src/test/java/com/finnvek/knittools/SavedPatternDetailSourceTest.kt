@@ -40,10 +40,11 @@ class SavedPatternDetailSourceTest {
         val detail = ProjectSourceFiles.read(detailPath)
 
         assertTrue(detail.contains("fun SavedPatternDetailScreen("))
-        assertTrue(detail.contains("AsyncImage("))
+        assertTrue(detail.contains("RemotePatternImage("))
         assertTrue(detail.contains("pattern.name"))
         assertTrue(detail.contains("pattern.designerName"))
         assertTrue(detail.contains("SavedPatternAvailabilityChip("))
+        assertTrue(detail.contains("PatternAvailabilityBadge(availability = pattern.availability)"))
         assertTrue(detail.contains("pattern.hasAttachedPdf"))
         assertTrue(detail.contains("pattern.isAvailableOffline"))
         assertTrue(detail.contains("pattern.requiresRavelryAccess"))

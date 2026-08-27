@@ -71,6 +71,10 @@ class ProManager
                                     )
                                 }
 
+                                !trial.hasStarted -> {
+                                    ProState(status = ProStatus.TRIAL_NOT_STARTED)
+                                }
+
                                 else -> {
                                     ProState(
                                         status = ProStatus.TRIAL_EXPIRED,
@@ -94,6 +98,8 @@ class ProManager
         }
 
         fun hasFeature(feature: ProFeature): Boolean = _proState.value.hasFeature(feature)
+
+        suspend fun startTrial(): TrialStartResult = trialManager.startTrial()
 
         suspend fun hasFeatureAfterInitialLoad(feature: ProFeature): Boolean {
             waitForInitialProState()

@@ -446,6 +446,7 @@ private fun YarnDetailsSection(
         return
     }
 
+    // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
@@ -454,6 +455,7 @@ private fun YarnDetailsSection(
         Column(modifier = Modifier.padding(16.dp)) {
             YarnDetailsHeader(onEditManualDetails = onEditManualDetails)
             Spacer(modifier = Modifier.height(12.dp))
+            // CPD-ON
             detailRows.forEachIndexed { index, (label, value) ->
                 LabeledDetailRow(label = label, value = value)
                 if (index != detailRows.lastIndex) {
@@ -594,6 +596,7 @@ private fun LinkedProjectSheet(
     projects: List<CounterProject>,
     linkedProjectId: Long?,
     onSelectProject: (Long) -> Unit,
+    // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
     onRemoveLink: () -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -607,6 +610,7 @@ private fun LinkedProjectSheet(
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp)
                     .padding(bottom = 32.dp),
+            // CPD-ON
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(

@@ -1,11 +1,13 @@
 package com.finnvek.knittools
 
+import android.animation.ValueAnimator
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
+import android.view.animation.AccelerateInterpolator
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -15,10 +17,14 @@ import androidx.browser.auth.AuthTabIntent
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
@@ -41,6 +47,9 @@ import com.finnvek.knittools.data.storage.CounterLaunchTokenStore
 import com.finnvek.knittools.di.IoDispatcher
 import com.finnvek.knittools.pro.InAppReviewManager
 import com.finnvek.knittools.pro.InAppUpdateManager
+import com.finnvek.knittools.pro.ProManager
+import com.finnvek.knittools.pro.ProStatus
+import com.finnvek.knittools.pro.TrialManager
 import com.finnvek.knittools.ravelry.RavelryShareImportUrls
 import com.finnvek.knittools.ui.ProvidePreferenceAwareHapticFeedback
 import com.finnvek.knittools.ui.navigation.CounterLaunchIntentData
@@ -77,6 +86,12 @@ class MainActivity : AppCompatActivity() {
     lateinit var preferencesManager: PreferencesManager
 
     @Inject
+    lateinit var proManager: ProManager
+
+    @Inject
+    lateinit var trialManager: TrialManager
+
+    @Inject
     @IoDispatcher
     lateinit var ioDispatcher: CoroutineDispatcher
 
@@ -106,56 +121,128 @@ class MainActivity : AppCompatActivity() {
     private var counterLaunchRequest by mutableStateOf<CounterLaunchRequest?>(null)
     private var ravelryShareImportRequest by mutableStateOf<RavelryShareImportRequest?>(null)
     private var openProUpgradeRequest by mutableStateOf(false)
+    private var openWidgetProPromptRequest by mutableStateOf(false)
     private var consumedCounterLaunchRequestId: String? = null
     private var nextRavelryShareImportRequestId = 0L
     private var startupThemeLoaded = false
     private var edgeToEdgeDarkTheme: Boolean? = null
     private var launchRequestJob: Job? = null
+    private var launchRequestsReady by mutableStateOf(false)
+    private var suppressPassiveTrialNotice by mutableStateOf(true)
+    private var showTrialEndedNotice by mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
         splashScreen.setKeepOnScreenCondition { !startupThemeLoaded }
+        splashScreen.setOnExitAnimationListener { splashScreenView ->
+            if (!ValueAnimator.areAnimatorsEnabled()) {
+                splashScreenView.remove()
+                return@setOnExitAnimationListener
+            }
+
+            val exitInterpolator = AccelerateInterpolator()
+            splashScreenView.iconView
+                .animate()
+                .scaleX(SPLASH_ICON_EXIT_SCALE)
+                .scaleY(SPLASH_ICON_EXIT_SCALE)
+                .setDuration(SPLASH_EXIT_DURATION_MILLIS)
+                .setInterpolator(exitInterpolator)
+                .start()
+            splashScreenView.view
+                .animate()
+                .alpha(0f)
+                .setDuration(SPLASH_EXIT_DURATION_MILLIS)
+                .setInterpolator(exitInterpolator)
+                .withEndAction(splashScreenView::remove)
+                .start()
+        }
         startLaunchRequestInitialization(savedInstanceState)
         checkForInAppUpdate()
-        setContent {
-            val prefs by preferencesManager.preferences.collectAsStateWithLifecycle(initialValue = null)
-            val isDarkTheme = prefs.resolveStartupDarkTheme(isSystemInDarkTheme())
-            if (isDarkTheme == null) {
-                return@setContent
+        setContent { MainActivityContent() }
+    }
+
+    @Composable
+    private fun MainActivityContent() {
+        val prefs by preferencesManager.preferences.collectAsStateWithLifecycle(initialValue = null)
+        val proState by proManager.proState.collectAsStateWithLifecycle()
+        val proStateReady by proManager.initialStateReady.collectAsStateWithLifecycle()
+        val isDarkTheme = prefs.resolveStartupDarkTheme(isSystemInDarkTheme()) ?: return
+
+        SideEffect {
+            applyEdgeToEdgeIfNeeded(isDarkTheme)
+            startupThemeLoaded = true
+        }
+
+        val reviewEligible by
+            inAppReviewManager.reviewEligibility.collectAsStateWithLifecycle(initialValue = false)
+        LaunchedEffect(reviewEligible) {
+            if (reviewEligible) {
+                inAppReviewManager.maybeRequestReview(this@MainActivity)
             }
+        }
 
-            SideEffect {
-                applyEdgeToEdgeIfNeeded(isDarkTheme)
-                startupThemeLoaded = true
+        val snackbarHostState = remember { SnackbarHostState() }
+        // In-App Update: näytä snackbar aina kun ladattu päivitys havaitaan.
+        val downloadedUpdatePromptId by
+            inAppUpdateManager.downloadedUpdatePromptId.collectAsStateWithLifecycle()
+        var lastShownDownloadedUpdatePromptId by rememberSaveable { mutableLongStateOf(0L) }
+        val updateMessage = stringResource(R.string.update_downloaded)
+        val restartLabel = stringResource(R.string.restart)
+        LaunchedEffect(downloadedUpdatePromptId) {
+            if (downloadedUpdatePromptId > lastShownDownloadedUpdatePromptId) {
+                lastShownDownloadedUpdatePromptId = downloadedUpdatePromptId
+                val result =
+                    snackbarHostState.showSnackbar(
+                        message = updateMessage,
+                        actionLabel = restartLabel,
+                        duration = SnackbarDuration.Indefinite,
+                    )
+                if (result == SnackbarResult.ActionPerformed) {
+                    inAppUpdateManager.completeUpdate()
+                }
             }
+        }
 
-            InAppReviewPromptEffect(
-                inAppReviewManager = inAppReviewManager,
-                activity = this@MainActivity,
-            )
-
-            val snackbarHostState = remember { SnackbarHostState() }
-            DownloadedUpdatePromptEffect(
-                inAppUpdateManager = inAppUpdateManager,
-                snackbarHostState = snackbarHostState,
-            )
-
-            ProvidePreferenceAwareHapticFeedback(enabled = prefs?.hapticFeedback == true) {
-                KnitToolsTheme(isDarkTheme = isDarkTheme) {
-                    Surface(modifier = Modifier.fillMaxSize()) {
-                        KnitToolsNavHost(
-                            startDestination = TopLevelDestination.Projects.route,
-                            requests =
-                                KnitToolsNavRequests(
-                                    counterLaunch = counterLaunchRequest,
-                                    openProUpgrade = openProUpgradeRequest,
-                                    ravelryShareImport = ravelryShareImportRequest,
-                                ),
-                            snackbarHostState = snackbarHostState,
-                            actions = createNavActions(),
-                        )
+        ProvidePreferenceAwareHapticFeedback(enabled = prefs?.hapticFeedback == true) {
+            KnitToolsTheme(isDarkTheme = isDarkTheme) {
+                LaunchedEffect(
+                    launchRequestsReady,
+                    suppressPassiveTrialNotice,
+                    proStateReady,
+                    proState.status,
+                ) {
+                    val shouldClaimTrialEndNotice =
+                        launchRequestsReady &&
+                            !suppressPassiveTrialNotice &&
+                            proStateReady &&
+                            proState.status == ProStatus.TRIAL_EXPIRED
+                    if (shouldClaimTrialEndNotice && trialManager.claimTrialEndNotice()) {
+                        showTrialEndedNotice = true
                     }
+                }
+                Surface(modifier = Modifier.fillMaxSize()) {
+                    KnitToolsNavHost(
+                        startDestination = TopLevelDestination.Projects.route,
+                        requests =
+                            KnitToolsNavRequests(
+                                counterLaunch = counterLaunchRequest,
+                                openProUpgrade = openProUpgradeRequest,
+                                openWidgetProPrompt = openWidgetProPromptRequest,
+                                ravelryShareImport = ravelryShareImportRequest,
+                            ),
+                        snackbarHostState = snackbarHostState,
+                        actions = createNavActions(),
+                    )
+                }
+                if (showTrialEndedNotice) {
+                    TrialEndedDialog(
+                        onSeePro = {
+                            showTrialEndedNotice = false
+                            openProUpgradeRequest = true
+                        },
+                        onContinueFree = { showTrialEndedNotice = false },
+                    )
                 }
             }
         }
@@ -177,6 +264,10 @@ class MainActivity : AppCompatActivity() {
                 openProUpgradeRequest = false
                 clearProUpgradeLaunchIntent()
             },
+            onWidgetProPromptLaunchHandled = {
+                openWidgetProPromptRequest = false
+                clearWidgetProPromptLaunchIntent()
+            },
             onRavelryShareImportHandled = {
                 ravelryShareImportRequest = null
                 clearRavelryShareIntent()
@@ -192,13 +283,22 @@ class MainActivity : AppCompatActivity() {
     }
 
     private suspend fun initializeLaunchRequests(savedInstanceState: Bundle?) {
+        launchRequestsReady = false
         restoreCounterLaunchRequest(savedInstanceState)
         openProUpgradeRequest = intent?.action == ACTION_OPEN_PRO_UPGRADE
+        openWidgetProPromptRequest = intent?.action == ACTION_OPEN_WIDGET_PRO_PROMPT
         val isOAuthCallback = handleOAuthCallbackIfNeeded(intent)
         val isShareImport = !isOAuthCallback && handleRavelryShareIntentIfNeeded(intent)
         if (isOAuthCallback || isShareImport) {
             counterLaunchRequest = null
         }
+        suppressPassiveTrialNotice =
+            openProUpgradeRequest ||
+            openWidgetProPromptRequest ||
+            isOAuthCallback ||
+            isShareImport ||
+            counterLaunchRequest != null
+        launchRequestsReady = true
     }
 
     private fun checkForInAppUpdate() {
@@ -277,7 +377,9 @@ class MainActivity : AppCompatActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
+        launchRequestsReady = false
         openProUpgradeRequest = intent.action == ACTION_OPEN_PRO_UPGRADE
+        openWidgetProPromptRequest = intent.action == ACTION_OPEN_WIDGET_PRO_PROMPT
         val isOAuthCallback = handleOAuthCallbackIfNeeded(intent)
         val isShareImport = !isOAuthCallback && handleRavelryShareIntentIfNeeded(intent)
         launchRequestJob?.cancel()
@@ -289,6 +391,13 @@ class MainActivity : AppCompatActivity() {
                     } else {
                         intent.toCounterLaunchRequest(consumedRequestId = null)
                     }
+                suppressPassiveTrialNotice =
+                    openProUpgradeRequest ||
+                    openWidgetProPromptRequest ||
+                    isOAuthCallback ||
+                    isShareImport ||
+                    counterLaunchRequest != null
+                launchRequestsReady = true
             }
     }
 
@@ -344,6 +453,12 @@ class MainActivity : AppCompatActivity() {
             ?.setAction(Intent.ACTION_MAIN)
     }
 
+    private fun clearWidgetProPromptLaunchIntent() {
+        intent
+            ?.takeIf { it.action == ACTION_OPEN_WIDGET_PRO_PROMPT }
+            ?.setAction(Intent.ACTION_MAIN)
+    }
+
     private fun clearRavelryShareIntent() {
         intent
             ?.takeIf { it.action == Intent.ACTION_SEND }
@@ -382,8 +497,11 @@ class MainActivity : AppCompatActivity() {
         private const val EXTRA_PROJECT_ID = "com.finnvek.knittools.extra.PROJECT_ID"
         private const val EXTRA_COUNTER_LAUNCH_ID = "com.finnvek.knittools.extra.COUNTER_LAUNCH_ID"
         private const val ACTION_OPEN_PRO_UPGRADE = "com.finnvek.knittools.action.OPEN_PRO_UPGRADE"
+        private const val ACTION_OPEN_WIDGET_PRO_PROMPT = "com.finnvek.knittools.action.OPEN_WIDGET_PRO_PROMPT"
         private const val MIME_TYPE_TEXT_PLAIN = "text/plain"
         private const val RAVELRY_PATTERN_SEARCH_URL = "https://www.ravelry.com/patterns/search"
+        private const val SPLASH_EXIT_DURATION_MILLIS = 180L
+        private const val SPLASH_ICON_EXIT_SCALE = 0.94f
         private const val STATE_CONSUMED_COUNTER_LAUNCH_REQUEST_ID =
             "com.finnvek.knittools.state.CONSUMED_COUNTER_LAUNCH_REQUEST_ID"
 
@@ -403,46 +521,33 @@ class MainActivity : AppCompatActivity() {
                 action = ACTION_OPEN_PRO_UPGRADE
                 addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
             }
-    }
-}
 
-@Composable
-private fun InAppReviewPromptEffect(
-    inAppReviewManager: InAppReviewManager,
-    activity: MainActivity,
-) {
-    val reviewEligible by
-        inAppReviewManager.reviewEligibility.collectAsStateWithLifecycle(initialValue = false)
-    LaunchedEffect(reviewEligible) {
-        if (reviewEligible) {
-            inAppReviewManager.maybeRequestReview(activity)
-        }
-    }
-}
-
-@Composable
-private fun DownloadedUpdatePromptEffect(
-    inAppUpdateManager: InAppUpdateManager,
-    snackbarHostState: SnackbarHostState,
-) {
-    // In-App Update: näytä snackbar aina kun ladattu päivitys havaitaan.
-    val downloadedUpdatePromptId by
-        inAppUpdateManager.downloadedUpdatePromptId.collectAsStateWithLifecycle()
-    var lastShownDownloadedUpdatePromptId by rememberSaveable { mutableLongStateOf(0L) }
-    val updateMessage = stringResource(R.string.update_downloaded)
-    val restartLabel = stringResource(R.string.restart)
-    LaunchedEffect(downloadedUpdatePromptId) {
-        if (downloadedUpdatePromptId > lastShownDownloadedUpdatePromptId) {
-            lastShownDownloadedUpdatePromptId = downloadedUpdatePromptId
-            val result =
-                snackbarHostState.showSnackbar(
-                    message = updateMessage,
-                    actionLabel = restartLabel,
-                    duration = SnackbarDuration.Indefinite,
-                )
-            if (result == SnackbarResult.ActionPerformed) {
-                inAppUpdateManager.completeUpdate()
+        fun createWidgetProPromptLaunchIntent(context: Context): Intent =
+            Intent(context, MainActivity::class.java).apply {
+                action = ACTION_OPEN_WIDGET_PRO_PROMPT
+                addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
             }
-        }
     }
+}
+
+@Composable
+private fun TrialEndedDialog(
+    onSeePro: () -> Unit,
+    onContinueFree: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onContinueFree,
+        title = { Text(stringResource(R.string.pro_trial_ended_title)) },
+        text = { Text(stringResource(R.string.pro_trial_ended_body)) },
+        confirmButton = {
+            Button(onClick = onSeePro) {
+                Text(stringResource(R.string.pro_prompt_see_pro))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onContinueFree) {
+                Text(stringResource(R.string.pro_continue_free))
+            }
+        },
+    )
 }

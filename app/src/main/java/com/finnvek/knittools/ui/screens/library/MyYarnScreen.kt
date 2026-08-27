@@ -56,7 +56,12 @@ import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.domain.model.displayName
+import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.ui.components.ConfirmationDialog
+import com.finnvek.knittools.ui.components.ProBadge
+import com.finnvek.knittools.ui.components.ProPromptRequest
+import com.finnvek.knittools.ui.components.ProPromptSheet
+import com.finnvek.knittools.ui.components.ProPromptSource
 import com.finnvek.knittools.ui.components.ProjectYarnTextField
 import com.finnvek.knittools.ui.components.skeinCountText
 import com.finnvek.knittools.ui.screens.yarncard.ManualYarnCardInput
@@ -74,12 +79,14 @@ data class MyYarnState(
     val isSelectMode: Boolean,
     val selectedYarnIds: Set<Long>,
     val canCreateYarnCard: Boolean,
+    val proStatus: ProStatus,
     val deleteErrorId: Long = 0L,
 )
 
 data class MyYarnActions(
     val onCardClick: (Long) -> Unit,
-    val onCreateYarnCard: (ManualYarnCardInput) -> Unit,
+    val onCreateYarnCard: (ManualYarnCardInput) -> Boolean,
+    val onRetryCreateYarnCard: () -> Boolean,
     val onEnterSelectMode: (Long) -> Unit,
     val onToggleSelection: (Long) -> Unit,
     val onSelectAll: (List<Long>) -> Unit,
@@ -89,6 +96,11 @@ data class MyYarnActions(
     val onBack: () -> Unit,
 )
 
+private enum class PendingYarnProAction {
+    OpenCreation,
+    RetryCreation,
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MyYarnScreen(
@@ -97,13 +109,14 @@ fun MyYarnScreen(
 ) {
     var showDeleteConfirmDialog by rememberSaveable { mutableStateOf(false) }
     var showManualYarnSheet by rememberSaveable { mutableStateOf(false) }
+    var pendingProAction by rememberSaveable { mutableStateOf<PendingYarnProAction?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
     val deleteFailedMessage = stringResource(R.string.generic_error_unknown)
     val requestAddYarn = {
         if (state.canCreateYarnCard) {
             showManualYarnSheet = true
         } else {
-            actions.onUpgradeToPro()
+            pendingProAction = PendingYarnProAction.OpenCreation
         }
     }
 
@@ -131,10 +144,33 @@ fun MyYarnScreen(
     if (showManualYarnSheet) {
         ManualYarnCardSheet(
             onSave = { input ->
-                actions.onCreateYarnCard(input)
-                showManualYarnSheet = false
+                if (actions.onCreateYarnCard(input)) {
+                    showManualYarnSheet = false
+                } else {
+                    pendingProAction = PendingYarnProAction.RetryCreation
+                }
             },
             onDismiss = { showManualYarnSheet = false },
+        )
+    }
+
+    pendingProAction?.let { action ->
+        ProPromptSheet(
+            request =
+                ProPromptRequest(
+                    source = ProPromptSource.YarnCards,
+                ),
+            onDismiss = { pendingProAction = null },
+            onTrialStarted = {
+                pendingProAction = null
+                when (action) {
+                    PendingYarnProAction.OpenCreation -> showManualYarnSheet = true
+                    PendingYarnProAction.RetryCreation -> {
+                        if (actions.onRetryCreateYarnCard()) showManualYarnSheet = false
+                    }
+                }
+            },
+            onSeePro = actions.onUpgradeToPro,
         )
     }
 
@@ -162,10 +198,16 @@ fun MyYarnScreen(
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary,
                 ) {
-                    Icon(
-                        imageVector = Icons.Filled.Add,
-                        contentDescription = stringResource(R.string.add_yarn_to_my_yarn),
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Add,
+                            contentDescription = stringResource(R.string.add_yarn_to_my_yarn),
+                        )
+                        ProBadge(status = state.proStatus)
+                    }
                 }
             }
         },
@@ -173,6 +215,7 @@ fun MyYarnScreen(
         if (state.cards.isEmpty()) {
             MyYarnEmptyState(
                 padding = padding,
+                proStatus = state.proStatus,
                 onAddYarn = requestAddYarn,
             )
         } else {
@@ -236,6 +279,7 @@ internal fun ManualYarnCardSheet(
             ProjectYarnTextField(
                 value = brand,
                 onValueChange = { brand = it },
+                // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
                 label = stringResource(R.string.brand_label),
                 singleLine = true,
             )
@@ -248,6 +292,7 @@ internal fun ManualYarnCardSheet(
             )
             ProjectYarnTextField(
                 value = weightCategory,
+                // CPD-ON
                 onValueChange = { weightCategory = it },
                 label = stringResource(R.string.weight_category),
                 singleLine = true,
@@ -337,6 +382,7 @@ private fun MyYarnTopBar(
 @Composable
 private fun MyYarnEmptyState(
     padding: PaddingValues,
+    proStatus: ProStatus,
     onAddYarn: () -> Unit,
 ) {
     Column(
@@ -359,6 +405,8 @@ private fun MyYarnEmptyState(
             )
             Spacer(modifier = Modifier.size(8.dp))
             Text(stringResource(R.string.add_yarn_to_my_yarn))
+            Spacer(modifier = Modifier.size(8.dp))
+            ProBadge(status = proStatus)
         }
     }
 }
@@ -366,6 +414,7 @@ private fun MyYarnEmptyState(
 @Composable
 private fun MyYarnList(
     state: MyYarnState,
+    // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
     actions: MyYarnActions,
     padding: PaddingValues,
 ) {
@@ -375,6 +424,7 @@ private fun MyYarnList(
     ) {
         item { Spacer(modifier = Modifier.height(4.dp)) }
         items(state.cards, key = { it.id }) { card ->
+            // CPD-ON
             YarnStashCardItem(
                 card = card,
                 linkedProjectName = card.linkedProjectId?.let(state.activeProjectNames::get),
@@ -402,6 +452,7 @@ private fun MyYarnList(
 @Composable
 private fun YarnStashCardItem(
     card: YarnCard,
+    // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
     linkedProjectName: String?,
     isSelectMode: Boolean,
     isSelected: Boolean,
@@ -424,6 +475,7 @@ private fun YarnStashCardItem(
                     onLongClick = onLongClick,
                 ),
     ) {
+        // CPD-ON
         Surface(
             modifier = Modifier.fillMaxWidth(),
             shape = MaterialTheme.shapes.large,

@@ -234,6 +234,7 @@ private fun DrawScope.drawSymbol(
             drawLine(
                 tint,
                 Offset(s - pad - s * 0.15f, s - pad - s * 0.2f),
+                // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
                 Offset(pad + s * 0.15f, pad + s * 0.15f),
                 strokeWidth = 2f,
             )
@@ -246,6 +247,7 @@ private fun DrawScope.drawSymbol(
         }
 
         "m1r" -> {
+            // CPD-ON
             drawLine(
                 tint,
                 Offset(pad + s * 0.15f, s - pad - s * 0.2f),

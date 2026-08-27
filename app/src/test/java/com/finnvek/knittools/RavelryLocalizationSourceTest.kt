@@ -65,7 +65,6 @@ class RavelryLocalizationSourceTest {
                 "saved_pattern_detail_open_pattern",
                 "saved_pattern_detail_attach_to_project",
                 "saved_pattern_detail_remove_confirm",
-                "saved_pattern_detail_thumbnail",
                 "ravelry_browse",
                 "ravelry_disconnect",
                 "ravelry_disconnect_confirm",

@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
+import com.finnvek.knittools.domain.calculator.DurationDisplayFormatter
 import com.finnvek.knittools.ui.theme.knitToolsColors
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -70,7 +71,13 @@ fun SessionItem(
             }
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = stringResource(R.string.session_row_range, startRow, endRow),
+                // "Rows 18 → 18" luki virheenä. Ilman edistystä riittää yksi rivinumero.
+                text =
+                    if (endRow > startRow) {
+                        stringResource(R.string.session_row_range, startRow, endRow)
+                    } else {
+                        stringResource(R.string.session_row_single, startRow)
+                    },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.knitToolsColors.onSurfaceMuted,
             )
@@ -83,9 +90,10 @@ private fun formatSessionDate(
     dateFormat: SimpleDateFormat,
 ): String = dateFormat.format(Date(timestamp))
 
+/**
+ * Sama kestomuoto kuin muualla sovelluksessa. Oma apuri näytti alle tunnin istunnot
+ * muodossa "36m" ja yli tunnin muodossa "1t 5min" — kaksi eri minuuttilyhennettä
+ * peräkkäisillä riveillä samassa listassa.
+ */
 @Composable
-private fun formatDuration(minutes: Int): String =
-    when {
-        minutes < 60 -> stringResource(R.string.time_spent_minutes_format, minutes)
-        else -> stringResource(R.string.session_duration_format, minutes / 60, minutes % 60)
-    }
+private fun formatDuration(minutes: Int): String = durationText(DurationDisplayFormatter.fromMinutes(minutes))

@@ -108,6 +108,7 @@ class FirebaseAnonymousAuthGatewayTest {
 
     private fun authResultTask(user: FirebaseUser): Task<AuthResult> = successTask(authResult(user))
 
+    // CPD-OFF: Testin skenaariokohtainen asetelma pidetaan paikallisena ja luettavana.
     private fun <T> successTask(value: T): Task<T> {
         val task = mockk<Task<T>>()
         every { task.addOnSuccessListener(any()) } answers {
@@ -126,6 +127,7 @@ class FirebaseAnonymousAuthGatewayTest {
             firstArg<OnFailureListener>().onFailure(error)
             task
         }
+        // CPD-ON
         every { task.addOnCanceledListener(any()) } returns task
         return task
     }
@@ -138,6 +140,8 @@ class FirebaseAnonymousAuthGatewayTest {
         private val canceledListeners = mutableListOf<OnCanceledListener>()
         var isComplete = false
             private set
+
+        // CPD-OFF: Testin skenaariokohtainen asetelma pidetaan paikallisena ja luettavana.
         val task: Task<T> = mockk()
 
         init {
@@ -149,6 +153,7 @@ class FirebaseAnonymousAuthGatewayTest {
                 failureListeners += firstArg<OnFailureListener>()
                 task
             }
+            // CPD-ON
             every { task.addOnCanceledListener(any()) } answers {
                 canceledListeners += firstArg<OnCanceledListener>()
                 task

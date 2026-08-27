@@ -38,6 +38,8 @@ class LibraryViewModel
         private val proManager: ProManager,
         counterRepository: CounterRepository,
     ) : ViewModel() {
+        val proState = proManager.proState
+        private var pendingManualYarnCard: ManualYarnCardInput? = null
         private val _isPhotoSelectMode = MutableStateFlow(false)
         val isPhotoSelectMode: StateFlow<Boolean> = _isPhotoSelectMode.asStateFlow()
 
@@ -66,14 +68,6 @@ class LibraryViewModel
         val savedPatternCount: Flow<Int> = savedPatternRepository.getCount()
         val yarnCardCount: Flow<Int> = yarnCardRepository.getCardCount()
         val photoCount: Flow<Int> = progressPhotoRepository.getAllPhotoCount()
-        val canUseProgressPhotos: StateFlow<Boolean> =
-            proManager
-                .hasFeatureFlow(ProFeature.PROGRESS_PHOTOS)
-                .stateIn(
-                    viewModelScope,
-                    SharingStarted.WhileSubscribed(5000),
-                    proManager.hasFeature(ProFeature.PROGRESS_PHOTOS),
-                )
         val canUseYarnCards: StateFlow<Boolean> =
             proManager
                 .hasFeatureFlow(ProFeature.UNLIMITED_YARN)
@@ -254,10 +248,27 @@ class LibraryViewModel
             )
         }
 
-        fun createManualYarnCard(input: ManualYarnCardInput) {
-            if (!canUseYarnCards.value) return
+        fun createManualYarnCard(input: ManualYarnCardInput): Boolean {
+            pendingManualYarnCard = input
+            if (!canUseYarnCards.value) return false
+            savePendingManualYarnCard()
+            return true
+        }
+
+        fun retryCreateManualYarnCard(): Boolean {
+            if (!canUseYarnCards.value) return false
+            savePendingManualYarnCard()
+            return true
+        }
+
+        private fun savePendingManualYarnCard() {
+            val input = pendingManualYarnCard ?: return
             val yarnName = input.yarnName.trim()
-            if (yarnName.isBlank()) return
+            if (yarnName.isBlank()) {
+                pendingManualYarnCard = null
+                return
+            }
+            pendingManualYarnCard = null
 
             viewModelScope.launch {
                 try {

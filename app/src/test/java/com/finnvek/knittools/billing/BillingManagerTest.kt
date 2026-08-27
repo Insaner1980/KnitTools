@@ -3,6 +3,7 @@ package com.finnvek.knittools.billing
 import android.content.Context
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingResult
+import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.ProductDetailsResult
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesResult
@@ -10,6 +11,7 @@ import com.android.billingclient.api.queryPurchasesAsync
 import com.finnvek.knittools.ProjectSourceFiles
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
@@ -26,6 +28,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -57,6 +60,18 @@ class BillingManagerTest {
     }
 
     @Test
+    fun `purchase flow passes selected one time offer token`() {
+        val source =
+            ProjectSourceFiles.read(
+                "app/src/main/java/com/finnvek/knittools/billing/BillingManager.kt",
+            )
+
+        assertTrue(source.contains("val offer ="))
+        assertTrue(source.contains("if (offer.offerToken.isNotBlank())"))
+        assertTrue(source.contains("setOfferToken(offer.offerToken)"))
+    }
+
+    @Test
     fun `billing setup failure retries connection before marking product unavailable`() {
         val source =
             ProjectSourceFiles.read(
@@ -82,6 +97,64 @@ class BillingManagerTest {
         assertTrue(manager.isProPurchased.value)
         verify { billingClient.acknowledgePurchase(any(), any()) }
     }
+
+    @Test
+    fun `pending pro purchase does not grant entitlement and reports pending state`() =
+        runTest {
+            val manager = BillingManager(context)
+            val message = async(UnconfinedTestDispatcher(testScheduler)) { manager.purchaseMessages.first() }
+
+            manager.onPurchasesUpdated(
+                billingResult(BillingClient.BillingResponseCode.OK),
+                listOf(proPurchase(purchaseState = 4)),
+            )
+
+            assertFalse(manager.isProPurchased.value)
+            assertEquals(BillingUserMessage.PURCHASE_PENDING, message.await())
+        }
+
+    @Test
+    fun `one time offer selection prefers permanent base offer deterministically`() {
+        val product = mockk<ProductDetails>()
+        val discounted = oneTimeOffer("discount", "discount-token", "promo", 1_000_000L)
+        val permanent = oneTimeOffer("regular", "base-token", null, 2_000_000L)
+        every { product.oneTimePurchaseOfferDetailsList } returns listOf(discounted, permanent)
+        every { product.oneTimePurchaseOfferDetails } returns permanent
+
+        assertEquals(
+            SelectedOneTimeOffer(formattedPrice = "regular", offerToken = "base-token"),
+            selectOneTimePurchaseOffer(product),
+        )
+    }
+
+    @Test
+    fun `one time offer selection rejects rental only product`() {
+        val product = mockk<ProductDetails>()
+        val rental = oneTimeOffer("rental", "rental-token", null, 1_000_000L)
+        every { rental.rentalDetails } returns mockk()
+        every { product.oneTimePurchaseOfferDetailsList } returns listOf(rental)
+        every { product.oneTimePurchaseOfferDetails } returns rental
+
+        assertNull(selectOneTimePurchaseOffer(product))
+    }
+
+    private fun oneTimeOffer(
+        formattedPrice: String,
+        offerToken: String,
+        offerId: String?,
+        priceMicros: Long,
+    ): ProductDetails.OneTimePurchaseOfferDetails =
+        mockk<ProductDetails.OneTimePurchaseOfferDetails>().also { offer ->
+            every { offer.formattedPrice } returns formattedPrice
+            every { offer.offerToken } returns offerToken
+            every { offer.offerId } returns offerId
+            every { offer.purchaseOptionId } returns "permanent"
+            every { offer.priceAmountMicros } returns priceMicros
+            every { offer.rentalDetails } returns null
+            every { offer.preorderDetails } returns null
+            every { offer.validTimeWindow } returns null
+            every { offer.limitedQuantityInfo } returns null
+        }
 
     private fun createManager(billingClient: BillingClient): BillingManager =
         BillingManager(context).also { manager ->
@@ -258,7 +331,7 @@ class BillingManagerTest {
             .setDebugMessage("test")
             .build()
 
-    private fun proPurchase(): Purchase =
+    private fun proPurchase(purchaseState: Int = 0): Purchase =
         Purchase(
             """
             {
@@ -266,7 +339,7 @@ class BillingManagerTest {
               "packageName": "com.finnvek.knittools",
               "productId": "${BillingManager.PRODUCT_ID}",
               "purchaseTime": 1700000000000,
-              "purchaseState": 0,
+              "purchaseState": $purchaseState,
               "purchaseToken": "token",
               "quantity": 1,
               "acknowledged": false

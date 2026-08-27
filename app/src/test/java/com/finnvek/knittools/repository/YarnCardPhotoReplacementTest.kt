@@ -24,6 +24,7 @@ import java.nio.file.Files
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class YarnCardPhotoReplacementTest {
+    // CPD-OFF: Testin skenaariokohtainen asetelma pidetaan paikallisena ja luettavana.
     @Test
     fun `yarn card photo update deletes copied photo when database save throws`() =
         runTest {
@@ -32,6 +33,7 @@ class YarnCardPhotoReplacementTest {
             val context = mockk<Context>(relaxed = true)
             val storage = mockk<YarnPhotoStorage>(relaxed = true)
             val sourceUri = mockk<Uri>()
+            // CPD-ON
             val filesDir = Files.createTempDirectory("knittools-files").toFile()
             val databaseFailure = IllegalStateException("database failed")
             val copiedFile =

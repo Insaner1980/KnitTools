@@ -111,6 +111,13 @@ open class StubCounterProjectDao(
         updatedAt: Long,
     ) = Unit
 
+    override suspend fun updatePatternInformation(
+        id: Long,
+        linkedPatternId: Long?,
+        patternName: String?,
+        updatedAt: Long,
+    ) = Unit
+
     override suspend fun updateCurrentPatternPage(
         id: Long,
         page: Int,
@@ -127,6 +134,33 @@ open class StubCounterProjectDao(
         id: Long,
         enabled: Boolean,
         yFraction: Float,
+        updatedAt: Long,
+    ) = Unit
+
+    override suspend fun updateReadingLineVisibility(
+        id: Long,
+        enabled: Boolean,
+        updatedAt: Long,
+    ) = Unit
+
+    override suspend fun updatePatternViewerLocation(
+        id: Long,
+        page: Int,
+        yFraction: Float,
+        followCurrentRow: Boolean,
+        updatedAt: Long,
+    ) = Unit
+
+    override suspend fun updateReadingLineFollowState(
+        id: Long,
+        followCurrentRow: Boolean,
+        updatedAt: Long,
+    ) = Unit
+
+    override suspend fun updateVerticalReadingGuide(
+        id: Long,
+        enabled: Boolean,
+        xFraction: Float,
         updatedAt: Long,
     ) = Unit
 

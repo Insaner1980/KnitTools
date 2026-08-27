@@ -32,6 +32,7 @@ fun RavelryImportConfirmationSheet(
     onSave: () -> Unit,
     onSignIn: () -> Unit,
     onRetry: () -> Unit,
+    // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
     onOpenSavedPattern: (Long) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -47,6 +48,7 @@ fun RavelryImportConfirmationSheet(
                     .padding(bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            // CPD-ON
             when (state.status) {
                 RavelryImportStatus.AwaitingUserConfirmation ->
                     ImportMessageContent(

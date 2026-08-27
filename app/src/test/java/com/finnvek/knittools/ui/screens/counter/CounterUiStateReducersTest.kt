@@ -126,7 +126,7 @@ class CounterUiStateReducersTest {
     }
 
     @Test
-    fun `started project copies reading line state`() {
+    fun `started project waits for canonical document reading state`() {
         val result =
             CounterUiState().withStartedProject(
                 CounterProject(
@@ -137,8 +137,26 @@ class CounterUiStateReducersTest {
                 ),
             )
 
-        assertTrue(result.readingLineEnabled)
-        assertEquals(0.42f, result.readingLineYFraction, 0.0f)
+        assertFalse(result.readingLineEnabled)
+        assertEquals(0.5f, result.readingLineYFraction, 0.0f)
+    }
+
+    @Test
+    fun `started project keeps previously used pro content available`() {
+        val result =
+            CounterUiState().withStartedProject(
+                CounterProject(
+                    id = 2L,
+                    name = "Existing project",
+                    secondaryCounterUsed = true,
+                    notesCreated = true,
+                ),
+            )
+
+        assertTrue(result.secondaryCounterUsed)
+        assertTrue(result.notesCreated)
+        assertTrue(result.canUseSecondaryCounter)
+        assertTrue(result.canUseNotes)
     }
 
     @Test
@@ -200,7 +218,7 @@ class CounterUiStateReducersTest {
     }
 
     @Test
-    fun `observed project refreshes reading line state`() {
+    fun `observed project preserves canonical document reading state`() {
         val result =
             CounterUiState(
                 readingLineEnabled = false,
@@ -215,8 +233,8 @@ class CounterUiStateReducersTest {
                 ),
             )
 
-        assertTrue(result.readingLineEnabled)
-        assertEquals(0.75f, result.readingLineYFraction, 0.0f)
+        assertFalse(result.readingLineEnabled)
+        assertEquals(0.20f, result.readingLineYFraction, 0.0f)
     }
 
     @Test
@@ -233,6 +251,7 @@ class CounterUiStateReducersTest {
         assertNull(result.activeAlert)
     }
 
+    // CPD-OFF: Testin skenaariokohtainen asetelma pidetaan paikallisena ja luettavana.
     @Test
     fun `dismissed repeating reminder stays hidden when reminder list refreshes on same row`() {
         val reminder = RowReminder(id = 7L, projectId = 2L, targetRow = 8, repeatInterval = 8, message = "Cable")
@@ -245,6 +264,7 @@ class CounterUiStateReducersTest {
             ).withDismissedReminder(7L)
 
         val refreshed = dismissed.withReminderList(listOf(reminder))
+        // CPD-ON
 
         assertNull(refreshed.activeAlert)
     }

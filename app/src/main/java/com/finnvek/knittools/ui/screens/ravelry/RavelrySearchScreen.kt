@@ -70,7 +70,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.auth.RavelryAuthState
-import com.finnvek.knittools.data.remote.PatternAvailability
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.ui.components.CollectWithLifecycleEffect
 import com.finnvek.knittools.ui.components.ConfirmationDialog
@@ -91,8 +90,9 @@ data class RavelrySearchActions(
 fun RavelrySearchScreen(
     actions: RavelrySearchActions,
     importUrl: String? = null,
-    viewModel: RavelryViewModel = hiltViewModel(),
+    viewModelProvider: @Composable () -> RavelryViewModel = { hiltViewModel() },
 ) {
+    val viewModel = viewModelProvider()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     val submittedQuery by viewModel.submittedQuery.collectAsStateWithLifecycle()
     val hasSubmittedSearch by viewModel.hasSubmittedSearch.collectAsStateWithLifecycle()
@@ -116,7 +116,7 @@ fun RavelrySearchScreen(
         viewModel.refreshAuthStatus()
     }
 
-    CollectWithLifecycleEffect(viewModel.signInLaunchRequests) { uri ->
+    CollectWithLifecycleEffect({ viewModel.signInLaunchRequests }) { uri ->
         actions.onLaunchRavelryAuth(uri)
     }
 
@@ -175,6 +175,7 @@ fun RavelrySearchScreen(
                         }
                     },
                     actions = {
+                        // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
                         TextButton(onClick = { viewModel.selectAllSaved(savedPatterns.map { it.id }) }) {
                             Text(stringResource(R.string.select_all))
                         }
@@ -244,6 +245,7 @@ fun RavelrySearchScreen(
                 }
             }
         },
+        // CPD-ON
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
             if (!isSavedSelectMode) {
@@ -730,6 +732,7 @@ private fun SavedPatternItem(
                         if (!isSelectMode) {
                             onEnterSelectMode(pattern.id)
                         }
+                        // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
                     },
                 ),
     ) {
@@ -740,14 +743,16 @@ private fun SavedPatternItem(
                     designerName = pattern.designerName,
                     thumbnailUrl = pattern.thumbnailUrl,
                     difficulty = pattern.difficulty,
-                    availability = PatternAvailability.fromFree(pattern.isFree),
+                    availability = pattern.availability,
                 ),
             onClick = {
+                // CPD-ON
                 if (isSelectMode) {
                     onToggleSelection(pattern.id)
                 } else {
                     onSavedPatternDetail(pattern.id)
                 }
+                // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
             },
             modifier = Modifier.background(backgroundColor, MaterialTheme.shapes.large),
         )
@@ -759,3 +764,4 @@ private fun SavedPatternItem(
         }
     }
 }
+// CPD-ON

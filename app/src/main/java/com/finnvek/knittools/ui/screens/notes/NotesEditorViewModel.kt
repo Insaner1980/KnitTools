@@ -23,7 +23,7 @@ data class NotesEditorUiState(
     val projectName: String = "",
     val notes: String = "",
     val isLoaded: Boolean = false,
-    val isPro: Boolean = false,
+    val canEditNotes: Boolean = false,
     val isMissingProject: Boolean = false,
 )
 
@@ -36,6 +36,7 @@ class NotesEditorViewModel
         @param:ApplicationScope private val applicationScope: CoroutineScope,
         private val savedStateHandle: SavedStateHandle,
     ) : ViewModel() {
+        val proState = proManager.proState
         private val projectId: Long? = savedStateHandle.get<Long>("projectId")?.toPositiveRouteIdOrNull()
 
         private val _uiState = MutableStateFlow(NotesEditorUiState())
@@ -57,14 +58,17 @@ class NotesEditorViewModel
                         _uiState.update { it.copy(isMissingProject = true) }
                         return@collect
                     }
-                    val canEditNotes = proManager.hasFeature(ProFeature.NOTES)
+                    val canEditNotes =
+                        project.notesCreated ||
+                            proManager.hasFeature(ProFeature.NOTES) ||
+                            savedStateHandle.get<Boolean>(NOTES_CREATION_AUTHORIZED_KEY) == true
                     if (!canEditNotes) {
                         _uiState.update { state ->
                             state.copy(
                                 projectName = project.name,
                                 notes = "",
                                 isLoaded = true,
-                                isPro = false,
+                                canEditNotes = false,
                                 isMissingProject = false,
                             )
                         }
@@ -104,7 +108,7 @@ class NotesEditorViewModel
                                     else -> state.notes
                                 },
                             isLoaded = true,
-                            isPro = canEditNotes,
+                            canEditNotes = canEditNotes,
                             isMissingProject = false,
                         )
                     }
@@ -118,7 +122,7 @@ class NotesEditorViewModel
         fun onNotesChanged(text: String) {
             val loadedProjectId = projectId ?: return
             val state = _uiState.value
-            if (state.isMissingProject || !state.isLoaded || !state.isPro) return
+            if (state.isMissingProject || !state.isLoaded || !state.canEditNotes) return
             _uiState.update { it.copy(notes = text) }
             hasLocalEdits = text != persistedNotes
             saveJob?.cancel()
@@ -130,10 +134,22 @@ class NotesEditorViewModel
             scheduleSave(loadedProjectId, text)
         }
 
+        fun authorizeFirstNotesCreation() {
+            savedStateHandle[NOTES_CREATION_AUTHORIZED_KEY] = true
+            _uiState.update { it.copy(canEditNotes = true) }
+        }
+
+        fun cancelFirstNotesCreation() {
+            if (persistedNotes.isEmpty() && _uiState.value.notes.isEmpty()) {
+                savedStateHandle.remove<Boolean>(NOTES_CREATION_AUTHORIZED_KEY)
+                _uiState.update { it.copy(canEditNotes = false) }
+            }
+        }
+
         fun saveImmediately(onSaved: () -> Unit = {}) {
             val loadedProjectId = projectId
             val state = _uiState.value
-            if (loadedProjectId == null || state.isMissingProject || !state.isLoaded || !state.isPro) {
+            if (loadedProjectId == null || state.isMissingProject || !state.isLoaded || !state.canEditNotes) {
                 onSaved()
                 return
             }
@@ -165,6 +181,9 @@ class NotesEditorViewModel
                     return
                 }
             persistedNotes = savedProject.notes
+            if (savedProject.notesCreated) {
+                savedStateHandle.remove<Boolean>(NOTES_CREATION_AUTHORIZED_KEY)
+            }
             val shouldApplySavedNotes = _uiState.value.notes == requestedNotes
             hasLocalEdits = !shouldApplySavedNotes && _uiState.value.notes != persistedNotes
             if (hasLocalEdits) {
@@ -207,19 +226,14 @@ class NotesEditorViewModel
 
         override fun onCleared() {
             val state = _uiState.value
-            val loadedProjectId =
-                projectId ?: run {
-                    super.onCleared()
-                    return
-                }
+            val loadedProjectId = projectId ?: return
             val shouldFlush =
                 state.isLoaded &&
-                    state.isPro &&
+                    state.canEditNotes &&
                     !state.isMissingProject &&
                     hasLocalEdits
             val notesToSave = state.notes
             val baseNotes = persistedNotes
-            super.onCleared()
             if (!shouldFlush) return
             @Suppress("TooGenericExceptionCaught")
             applicationScope.launch {
@@ -239,5 +253,6 @@ class NotesEditorViewModel
             private const val DEBOUNCE_MS = 1000L
             private const val NOTES_DRAFT_KEY = "notesDraft"
             private const val NOTES_DRAFT_BASE_KEY = "notesDraftBase"
+            private const val NOTES_CREATION_AUTHORIZED_KEY = "notesCreationAuthorized"
         }
     }

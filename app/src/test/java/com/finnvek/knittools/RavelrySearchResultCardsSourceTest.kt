@@ -45,6 +45,8 @@ class RavelrySearchResultCardsSourceTest {
     fun `ravelry cards render backend availability instead of boolean only price`() {
         val patternCard = ProjectSourceFiles.read(PATTERN_CARD)
         val searchScreen = ProjectSourceFiles.read(RAVELRY_SEARCH_SCREEN)
+        val detailScreen = ProjectSourceFiles.read(RAVELRY_DETAIL_SCREEN)
+        val savedPatternsScreen = ProjectSourceFiles.read(SAVED_PATTERNS_SCREEN)
         val importSheet = ProjectSourceFiles.read(RAVELRY_IMPORT_SHEET)
         val strings = ProjectSourceFiles.read(BASE_STRINGS)
 
@@ -53,7 +55,15 @@ class RavelrySearchResultCardsSourceTest {
         assertTrue(patternCard.contains("R.string.availability_unknown"))
         assertTrue(strings.contains("<string name=\"availability_unknown\">Availability unknown</string>"))
         assertTrue(searchScreen.contains("availability = pattern.availability"))
+        assertTrue(
+            detailScreen.contains(
+                "PatternAvailabilityBadge(availability = pattern.availability)",
+            ),
+        )
+        assertTrue(savedPatternsScreen.contains("availability = pattern.availability"))
         assertTrue(importSheet.contains("availability = pattern.availability"))
+        assertFalse(searchScreen.contains("PatternAvailability.fromFree"))
+        assertFalse(savedPatternsScreen.contains("PatternAvailability.fromFree"))
         assertFalse(searchScreen.contains("isFree = pattern.free"))
         assertFalse(importSheet.contains("isFree = pattern.free"))
     }
@@ -63,8 +73,12 @@ class RavelrySearchResultCardsSourceTest {
             "app/src/main/java/com/finnvek/knittools/ui/screens/ravelry/PatternCard.kt"
         private const val RAVELRY_SEARCH_SCREEN =
             "app/src/main/java/com/finnvek/knittools/ui/screens/ravelry/RavelrySearchScreen.kt"
+        private const val RAVELRY_DETAIL_SCREEN =
+            "app/src/main/java/com/finnvek/knittools/ui/screens/ravelry/RavelryDetailScreen.kt"
         private const val RAVELRY_IMPORT_SHEET =
             "app/src/main/java/com/finnvek/knittools/ui/screens/ravelry/RavelryImportConfirmationSheet.kt"
+        private const val SAVED_PATTERNS_SCREEN =
+            "app/src/main/java/com/finnvek/knittools/ui/screens/library/SavedPatternsScreen.kt"
         private const val BASE_STRINGS =
             "app/src/main/res/values/strings.xml"
     }

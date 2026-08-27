@@ -8,6 +8,7 @@ import com.finnvek.knittools.data.local.toDomain
 import com.finnvek.knittools.domain.model.DEFAULT_READING_GUIDE_FRACTION
 import com.finnvek.knittools.domain.model.DEFAULT_READING_LINE_Y_FRACTION
 import com.finnvek.knittools.domain.model.PatternAnnotationDocumentKey
+import com.finnvek.knittools.domain.model.PatternAnnotationOwner
 import com.finnvek.knittools.domain.model.ProjectDocument
 import com.finnvek.knittools.domain.model.ProjectDocumentLabelValidation
 import com.finnvek.knittools.domain.model.inDocumentOrder
@@ -17,6 +18,7 @@ import com.finnvek.knittools.domain.model.sanitizeReadingLineYFraction
 import com.finnvek.knittools.domain.model.validateProjectDocumentLabel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -84,11 +86,17 @@ class ProjectDocumentRepository
                 .map { rows -> rows.map(ProjectDocumentEntity::toDomain).inDocumentOrder() }
                 .retryOnRepositoryReadFailure()
 
-        fun observePrimary(projectId: Long): Flow<ProjectDocument?> =
-            documentDao
-                .observePrimary(projectId)
-                .map { it?.toDomain() }
-                .retryOnRepositoryReadFailure()
+        fun observeActiveDocument(projectId: Long): Flow<ProjectDocument?> =
+            combine(
+                observeDocuments(projectId),
+                layerRepository.observeLayers(
+                    PatternAnnotationOwner.Project(projectId, PatternAnnotationDocumentKey.legacyProject(projectId)),
+                ),
+            ) { documents, layers ->
+                val activeKey = layers.singleOrNull { it.isActive }?.owner?.documentKey
+                documents.firstOrNull { it.documentKey == activeKey }
+                    ?: documents.firstOrNull(ProjectDocument::isPrimary)
+            }
 
         fun observeDocuments(projectIds: List<Long>): Flow<Map<Long, List<ProjectDocument>>> {
             if (projectIds.isEmpty()) return flowOf(emptyMap())

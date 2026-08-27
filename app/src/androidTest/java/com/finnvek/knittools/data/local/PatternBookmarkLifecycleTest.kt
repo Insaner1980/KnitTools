@@ -4,8 +4,12 @@ import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.finnvek.knittools.repository.PatternAnnotationLayerRepository
 import com.finnvek.knittools.repository.PatternBookmarkMutationResult
 import com.finnvek.knittools.repository.PatternBookmarkRepository
+import com.finnvek.knittools.repository.ProjectDocumentFileAvailability
+import com.finnvek.knittools.repository.ProjectDocumentRepository
+import com.finnvek.knittools.repository.SavedPatternRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -30,12 +34,34 @@ class PatternBookmarkLifecycleTest {
                 .addCallback(PatternAnnotationSchemaConstraints.callback)
                 .allowMainThreadQueries()
                 .build()
+        val transactionRunner = RoomDatabaseTransactionRunner(database)
+        val documentRepository =
+            ProjectDocumentRepository(
+                documentDao = database.projectDocumentDao(),
+                projectDao = database.counterProjectDao(),
+                savedPatternRepository =
+                    SavedPatternRepository(
+                        dao = database.savedPatternDao(),
+                        context = context,
+                        counterProjectDao = database.counterProjectDao(),
+                        transactionRunner = transactionRunner,
+                        ioDispatcher = Dispatchers.Unconfined,
+                        projectDocumentDao = database.projectDocumentDao(),
+                    ),
+                layerRepository =
+                    PatternAnnotationLayerRepository(
+                        database.patternAnnotationLayerDao(),
+                        transactionRunner,
+                    ),
+                transactionRunner = transactionRunner,
+                fileAvailability = ProjectDocumentFileAvailability(context, Dispatchers.Unconfined),
+            )
         repository =
             PatternBookmarkRepository(
                 bookmarkDao = database.patternBookmarkDao(),
                 annotationLayerDao = database.patternAnnotationLayerDao(),
-                projectDao = database.counterProjectDao(),
-                transactionRunner = RoomDatabaseTransactionRunner(database),
+                projectDocumentRepository = documentRepository,
+                transactionRunner = transactionRunner,
                 ioDispatcher = Dispatchers.Unconfined,
             )
     }

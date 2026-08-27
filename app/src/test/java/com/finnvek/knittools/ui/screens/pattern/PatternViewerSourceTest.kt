@@ -215,7 +215,7 @@ class PatternViewerSourceTest {
     }
 
     @Test
-    fun `bookmark jump updates the selected document page before viewport focus`() {
+    fun `bookmark jump focuses the persisted bookmark page`() {
         val source = ProjectSourceFiles.read(PATTERN_VIEWER_SCREEN)
         val jumpBlock =
             source.blockBetween(
@@ -223,7 +223,6 @@ class PatternViewerSourceTest {
                 "accessibilityAnnouncement =",
             )
 
-        assertTrue(jumpBlock.contains("counterViewModel.updatePatternPage(event.bookmark.pageIndex)"))
         assertTrue(jumpBlock.contains("pageIndex = event.bookmark.pageIndex"))
     }
 

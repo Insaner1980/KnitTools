@@ -1254,11 +1254,13 @@ class CounterRepository
                 is ActiveSessionTimeEvaluation.NeedsReview ->
                     synchronizeActiveSession(now) ?: active
                 is ActiveSessionTimeEvaluation.Trusted -> {
+                    val remainingMillis =
+                        (now.elapsedRealtimeMillis - active.segmentStartedElapsedRealtimeMillis) % 1_000L
                     val updated =
                         active.copy(
                             checkpointedDurationSeconds = evaluation.totalDurationSeconds,
-                            segmentStartedAtWallMillis = now.wallClockMillis,
-                            segmentStartedElapsedRealtimeMillis = now.elapsedRealtimeMillis,
+                            segmentStartedAtWallMillis = now.wallClockMillis - remainingMillis,
+                            segmentStartedElapsedRealtimeMillis = now.elapsedRealtimeMillis - remainingMillis,
                             bootCount = now.bootCount,
                             updatedAtWallMillis = now.wallClockMillis,
                         )

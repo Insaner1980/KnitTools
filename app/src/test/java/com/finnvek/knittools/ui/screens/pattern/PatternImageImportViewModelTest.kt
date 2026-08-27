@@ -78,6 +78,54 @@ class PatternImageImportViewModelTest {
         }
 
     @Test
+    fun `picker result survives recreation between launch and result and stays consumed after another recreation`() =
+        runTest {
+            val firstPage = page("first")
+            val firstUri = uri("content://first")
+            val requestId = viewModel().authorizeGalleryPicker(7L)
+            val restoredHandle =
+                SavedStateHandle(savedStateHandle.keys().associateWith { savedStateHandle.get<Any?>(it) })
+            val restoredViewModel = viewModel(restoredHandle)
+            coEvery {
+                storage.stageSelectedImages(any(), 7L, any(), any(), listOf(firstUri))
+            } returns PatternImageStageBatch(listOf(firstPage), duplicatesIgnored = 0)
+
+            restoredViewModel.onGalleryPickerResult(requestId, listOf(firstUri))
+            advanceUntilIdle()
+
+            assertEquals(listOf(firstPage), restoredViewModel.uiState.value.selection.pages)
+            assertEquals(PatternImageImportPhase.READY, restoredViewModel.uiState.value.phase)
+
+            val consumedHandle =
+                SavedStateHandle(restoredHandle.keys().associateWith { restoredHandle.get<Any?>(it) })
+            viewModel(consumedHandle).onGalleryPickerResult(requestId, listOf(firstUri))
+            advanceUntilIdle()
+
+            coVerify(exactly = 1) { storage.stageSelectedImages(any(), 7L, any(), any(), any()) }
+        }
+
+    @Test
+    fun `empty picker result consumes saved authorization before recreation`() =
+        runTest {
+            val originalViewModel = viewModel()
+            val requestId = originalViewModel.authorizeGalleryPicker(7L)
+
+            originalViewModel.onGalleryPickerResult(requestId, emptyList())
+
+            val restoredHandle =
+                SavedStateHandle(savedStateHandle.keys().associateWith { savedStateHandle.get<Any?>(it) })
+            val restoredViewModel = viewModel(restoredHandle)
+            restoredViewModel.onGalleryPickerResult(requestId, listOf(uri("content://late-result")))
+            advanceUntilIdle()
+
+            assertTrue(
+                restoredViewModel.uiState.value.selection.pages
+                    .isEmpty(),
+            )
+            coVerify(exactly = 0) { storage.stageSelectedImages(any(), any(), any(), any(), any()) }
+        }
+
+    @Test
     fun `failed add more batch preserves the previous ordered selection`() =
         runTest {
             val firstPage = page("first")
@@ -111,7 +159,7 @@ class PatternImageImportViewModelTest {
         }
 
     @Test
-    fun `create is single flight and success is exposed only after repository attachment`() =
+    fun `create is single flight and successful close is consumed before reopening`() =
         runTest {
             val page = page("first")
             val handle =
@@ -140,6 +188,10 @@ class PatternImageImportViewModelTest {
             assertTrue(viewModel.uiState.value.closeReady)
             coVerify(exactly = 1) { repository.attachPattern(7L, any(), "generated.pdf", 0, null) }
             verify(exactly = 1) { storage.deleteImportSession(context, 7L, "session-a") }
+
+            viewModel.consumeCloseRequest()
+
+            assertFalse(viewModel.uiState.value.closeReady)
         }
 
     @Test
@@ -220,7 +272,7 @@ class PatternImageImportViewModelTest {
         }
 
     @Test
-    fun `cancelled ready import deletes its staging session and closes`() =
+    fun `cancelled ready import deletes its staging session and consumes close before reopening`() =
         runTest {
             val page = page("first")
             val handle =
@@ -239,6 +291,10 @@ class PatternImageImportViewModelTest {
             assertEquals(PatternImageImportPhase.CANCELLED, viewModel.uiState.value.phase)
             assertTrue(viewModel.uiState.value.closeReady)
             verify { storage.deleteImportSession(context, 7L, "session-a") }
+
+            viewModel.consumeCloseRequest()
+
+            assertFalse(viewModel.uiState.value.closeReady)
         }
 
     @Test

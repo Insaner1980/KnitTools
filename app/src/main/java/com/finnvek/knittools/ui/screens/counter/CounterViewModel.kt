@@ -80,6 +80,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -529,7 +530,12 @@ class CounterViewModel
             projectDocumentCollectionJob?.cancel()
             projectDocumentCollectionJob =
                 viewModelScope.launch {
-                    projectDocumentRepository.observeDocuments(projectId).collect { documents ->
+                    combine(
+                        projectDocumentRepository.observeDocuments(projectId),
+                        projectDocumentRepository.observeActiveDocument(projectId),
+                    ) { documents, activeDocument ->
+                        documents to activeDocument
+                    }.collect { (documents, activeDocument) ->
                         val availability =
                             documents.associate { document ->
                                 document.id to
@@ -550,15 +556,15 @@ class CounterViewModel
                                 projectDocumentAvailability = availability,
                                 patternUri = primary?.localPdfUri,
                                 patternName = primary?.label,
-                                currentPatternPage = primary?.currentPage ?: 0,
-                                readingLineEnabled = primary?.readingLineEnabled ?: false,
+                                currentPatternPage = activeDocument?.currentPage ?: 0,
+                                readingLineEnabled = activeDocument?.readingLineEnabled ?: false,
                                 readingLineYFraction =
-                                    primary?.readingLineYFraction ?: DEFAULT_READING_LINE_Y_FRACTION,
-                                readingLineFollowCurrentRow = primary?.readingLineFollowCurrentRow ?: true,
-                                verticalReadingGuideEnabled = primary?.verticalReadingGuideEnabled ?: false,
+                                    activeDocument?.readingLineYFraction ?: DEFAULT_READING_LINE_Y_FRACTION,
+                                readingLineFollowCurrentRow = activeDocument?.readingLineFollowCurrentRow ?: true,
+                                verticalReadingGuideEnabled = activeDocument?.verticalReadingGuideEnabled ?: false,
                                 verticalReadingGuideXFraction =
-                                    primary?.verticalReadingGuideXFraction ?: DEFAULT_READING_GUIDE_FRACTION,
-                                patternRowMapping = primary?.rowMapping,
+                                    activeDocument?.verticalReadingGuideXFraction ?: DEFAULT_READING_GUIDE_FRACTION,
+                                patternRowMapping = activeDocument?.rowMapping,
                             )
                         }
                     }
@@ -714,8 +720,13 @@ class CounterViewModel
                         expectedSessionToken = conflict.activeSession.sessionToken,
                         saveCurrent = saveCurrent,
                     )
-                if (result !is StartSessionResult.ProjectConflict) {
-                    _uiState.update { it.copy(sessionStartConflict = null) }
+                when {
+                    result == StartSessionResult.PersistenceFailure ->
+                        showWorkSessionError(R.string.work_session_could_not_start) {
+                            resolveSessionStartConflict(saveCurrent)
+                        }
+                    result !is StartSessionResult.ProjectConflict ->
+                        _uiState.update { it.copy(sessionStartConflict = null) }
                 }
             }
         }

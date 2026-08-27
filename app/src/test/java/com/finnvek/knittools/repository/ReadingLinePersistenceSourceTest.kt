@@ -27,13 +27,13 @@ class ReadingLinePersistenceSourceTest {
     }
 
     @Test
-    fun `counter ui state carries reading line fields from observed primary document`() {
+    fun `counter ui state carries reading line fields from observed active document`() {
         val viewModel = ProjectSourceFiles.read(VIEW_MODEL)
 
         assertTrue(viewModel.contains("val readingLineEnabled: Boolean = false"))
         assertTrue(viewModel.contains("val readingLineYFraction: Float = DEFAULT_READING_LINE_Y_FRACTION"))
-        assertTrue(viewModel.contains("readingLineEnabled = primary?.readingLineEnabled ?: false"))
-        assertTrue(viewModel.contains("primary?.readingLineYFraction ?: DEFAULT_READING_LINE_Y_FRACTION"))
+        assertTrue(viewModel.contains("readingLineEnabled = activeDocument?.readingLineEnabled ?: false"))
+        assertTrue(viewModel.contains("activeDocument?.readingLineYFraction ?: DEFAULT_READING_LINE_Y_FRACTION"))
     }
 
     private companion object {

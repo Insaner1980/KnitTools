@@ -50,6 +50,7 @@ internal class PatternImageImportViewModel
             ensureSession(projectId, PatternImageImportOrigin.GALLERY)
             val requestId = UUID.randomUUID().toString()
             _uiState.update { it.copy(pickerRequestId = requestId, closeReady = false) }
+            persistState()
             return requestId
         }
 
@@ -82,6 +83,7 @@ internal class PatternImageImportViewModel
             val state = _uiState.value
             if (requestId == null || requestId != state.pickerRequestId || state.isBusy) return
             _uiState.update { it.copy(pickerRequestId = null) }
+            persistState()
             if (sourceUris.isEmpty()) return
             val projectId = state.projectId ?: return
             val sessionId = state.sessionId ?: return
@@ -219,6 +221,10 @@ internal class PatternImageImportViewModel
 
         fun dismissReplacement() {
             _uiState.update { it.copy(replacementConfirmationPending = false) }
+        }
+
+        fun consumeCloseRequest() {
+            _uiState.update { it.copy(closeReady = false) }
         }
 
         fun cancelImport() {
@@ -419,6 +425,7 @@ internal class PatternImageImportViewModel
             savedStateHandle[KEY_SESSION_ID] = state.sessionId
             savedStateHandle[KEY_PAGES] = encodeStagedPatternPages(state.selection.pages)
             savedStateHandle[KEY_ORIGIN] = state.origin.name
+            savedStateHandle[KEY_PICKER_REQUEST_ID] = state.pickerRequestId
         }
 
         private fun clearSavedState() {
@@ -426,6 +433,7 @@ internal class PatternImageImportViewModel
             savedStateHandle.remove<String>(KEY_SESSION_ID)
             savedStateHandle.remove<String>(KEY_PAGES)
             savedStateHandle.remove<String>(KEY_ORIGIN)
+            savedStateHandle.remove<String>(KEY_PICKER_REQUEST_ID)
         }
 
         private fun cameraPage(
@@ -445,6 +453,7 @@ internal class PatternImageImportViewModel
             const val KEY_SESSION_ID = "pattern_image_session_id"
             const val KEY_PAGES = "pattern_image_pages"
             const val KEY_ORIGIN = "pattern_image_origin"
+            const val KEY_PICKER_REQUEST_ID = "pattern_image_picker_request_id"
 
             fun restoredState(handle: SavedStateHandle): PatternImageImportUiState {
                 val projectId = handle.get<Long>(KEY_PROJECT_ID)
@@ -458,6 +467,7 @@ internal class PatternImageImportViewModel
                     projectId = projectId,
                     sessionId = sessionId,
                     origin = origin,
+                    pickerRequestId = handle.get<String>(KEY_PICKER_REQUEST_ID),
                     selection = PatternImageSelection(pages),
                     phase = if (pages.isEmpty()) PatternImageImportPhase.IDLE else PatternImageImportPhase.READY,
                 )

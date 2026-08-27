@@ -316,8 +316,8 @@ private fun NavGraphBuilder.projectsGraph(
                         onPhotoGallery = {
                             navController.navigateSingleTopTo(Screen.PhotoGallery.route)
                         },
-                        onPatternViewer = { projectId ->
-                            navController.navigateSingleTopTo(Screen.PatternViewer(projectId).route)
+                        onPatternViewer = { projectId, documentId ->
+                            navController.navigateSingleTopTo(Screen.PatternViewer(projectId, documentId).route)
                         },
                         onSavedPatternDetail = { savedPatternId ->
                             navController.navigateToTopLevel(TopLevelDestination.Library)
@@ -364,7 +364,14 @@ private fun NavGraphBuilder.projectsGraph(
         composable(
             // CPD-OFF: Reittikohtainen argumenttien kasittely pidetaan reitin yhteydessa.
             Screen.PatternViewer.ROUTE,
-            arguments = listOf(navArgument(ARG_PROJECT_ID) { type = NavType.LongType }),
+            arguments =
+                listOf(
+                    navArgument(ARG_PROJECT_ID) { type = NavType.LongType },
+                    navArgument("selectedProjectDocumentId") {
+                        type = NavType.LongType
+                        defaultValue = -1L
+                    },
+                ),
         ) { backStackEntry ->
             val projectId = backStackEntry.positiveLongArgument(ARG_PROJECT_ID)
             if (projectId == null) {

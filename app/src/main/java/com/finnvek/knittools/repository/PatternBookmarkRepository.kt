@@ -1,6 +1,5 @@
 package com.finnvek.knittools.repository
 
-import com.finnvek.knittools.data.local.CounterProjectDao
 import com.finnvek.knittools.data.local.DatabaseTransactionRunner
 import com.finnvek.knittools.data.local.PatternAnnotationLayerDao
 import com.finnvek.knittools.data.local.PatternBookmarkDao
@@ -48,7 +47,7 @@ class PatternBookmarkRepository
     constructor(
         private val bookmarkDao: PatternBookmarkDao,
         private val annotationLayerDao: PatternAnnotationLayerDao,
-        private val projectDao: CounterProjectDao,
+        private val projectDocumentRepository: ProjectDocumentRepository,
         private val transactionRunner: DatabaseTransactionRunner,
         @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
     ) {
@@ -140,13 +139,20 @@ class PatternBookmarkRepository
                     val bookmark =
                         validatedBookmark(projectId, expectedDocumentKey, bookmarkId)
                             ?: return@run bookmarkFailure(projectId, expectedDocumentKey, bookmarkId)
-                    projectDao.updatePatternViewerLocation(
-                        id = projectId,
-                        page = bookmark.pageIndex,
-                        yFraction = sanitizeReadingLineYFraction(bookmark.yFraction),
-                        followCurrentRow = false,
-                        updatedAt = System.currentTimeMillis(),
-                    )
+                    val document =
+                        projectDocumentRepository
+                            .getActiveDocument(projectId)
+                            ?.takeIf { it.documentKey == expectedDocumentKey }
+                            ?: return@run PatternBookmarkMutationResult.StaleDocument
+                    val updated =
+                        projectDocumentRepository.updateViewerStateInTransaction(
+                            document.copy(
+                                currentPage = bookmark.pageIndex,
+                                readingLineYFraction = sanitizeReadingLineYFraction(bookmark.yFraction),
+                                readingLineFollowCurrentRow = false,
+                            ),
+                        )
+                    if (!updated) return@run PatternBookmarkMutationResult.StaleDocument
                     PatternBookmarkMutationResult.Success(bookmark.toDomain())
                 }
             }

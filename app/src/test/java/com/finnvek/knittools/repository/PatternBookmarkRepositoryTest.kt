@@ -6,6 +6,8 @@ import com.finnvek.knittools.data.local.PatternAnnotationLayerDao
 import com.finnvek.knittools.data.local.PatternAnnotationLayerEntity
 import com.finnvek.knittools.data.local.PatternBookmarkDao
 import com.finnvek.knittools.data.local.PatternBookmarkEntity
+import com.finnvek.knittools.data.local.ProjectDocumentDao
+import com.finnvek.knittools.data.local.ProjectDocumentEntity
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -88,13 +90,39 @@ class PatternBookmarkRepositoryTest {
         }
 
     @Test
-    fun `rename delete and jump validate ownership`() =
+    fun `rename delete and jump update only the active secondary document reader state`() =
         runTest {
             val bookmarkDao = mockk<PatternBookmarkDao>(relaxed = true)
             val projectDao = mockk<CounterProjectDao>(relaxed = true)
+            val layerDao = activeLayerDao()
+            val documentDao = mockk<ProjectDocumentDao>(relaxed = true)
+            val secondary = document()
+            val primary =
+                secondary.copy(
+                    id = 10L,
+                    savedPatternId = 90L,
+                    documentKey = "saved:90:v1",
+                    localPdfUri = "file:///patterns/body.pdf",
+                    sortOrder = 0,
+                    isPrimary = true,
+                )
+            coEvery { documentDao.getByDocumentKey(7L, DOCUMENT_KEY) } returns secondary
+            coEvery { documentDao.getPrimary(7L) } returns primary
+            coEvery {
+                documentDao.updateViewerState(any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
+            } returns 1
+            val documentRepository =
+                ProjectDocumentRepository(
+                    documentDao = documentDao,
+                    projectDao = projectDao,
+                    savedPatternRepository = mockk(relaxed = true),
+                    layerRepository = PatternAnnotationLayerRepository(layerDao, ImmediateDatabaseTransactionRunner),
+                    transactionRunner = ImmediateDatabaseTransactionRunner,
+                    fileAvailability = mockk(relaxed = true),
+                )
             val entity = bookmark(id = 8, name = "Old", page = 3, y = 0.8f)
             coEvery { bookmarkDao.getById(8L) } returns entity
-            val repository = repository(bookmarkDao, activeLayerDao(), projectDao)
+            val repository = repository(bookmarkDao, layerDao, documentRepository)
 
             val renamed = repository.rename(7L, DOCUMENT_KEY, 8L, " New name ")
             val jumped = repository.jumpTo(7L, DOCUMENT_KEY, 8L)
@@ -104,7 +132,24 @@ class PatternBookmarkRepositoryTest {
             assertTrue(jumped is PatternBookmarkMutationResult.Success)
             assertTrue(deleted is PatternBookmarkMutationResult.Success)
             coVerify { bookmarkDao.updateName(8L, "New name") }
-            coVerify { projectDao.updatePatternViewerLocation(7L, 3, 0.8f, false, any()) }
+            coVerify(exactly = 1) {
+                documentDao.updateViewerState(
+                    documentId = secondary.id,
+                    projectId = 7L,
+                    currentPage = 3,
+                    rowMapping = secondary.rowMapping,
+                    readingLineEnabled = secondary.readingLineEnabled,
+                    readingLineYFraction = 0.8f,
+                    readingLineFollowCurrentRow = false,
+                    verticalReadingGuideEnabled = secondary.verticalReadingGuideEnabled,
+                    verticalReadingGuideXFraction = secondary.verticalReadingGuideXFraction,
+                    updatedAt = any(),
+                )
+            }
+            coVerify(exactly = 0) {
+                documentDao.updateViewerState(primary.id, any(), any(), any(), any(), any(), any(), any(), any(), any())
+            }
+            coVerify(exactly = 0) { projectDao.updatePatternViewerLocation(any(), any(), any(), any(), any()) }
             coVerify { bookmarkDao.deleteById(8L) }
         }
 
@@ -115,7 +160,7 @@ class PatternBookmarkRepositoryTest {
                 PatternBookmarkRepository(
                     bookmarkDao = mockk(relaxed = true),
                     annotationLayerDao = mockk(relaxed = true),
-                    projectDao = mockk(relaxed = true),
+                    projectDocumentRepository = mockk(relaxed = true),
                     transactionRunner =
                         object : com.finnvek.knittools.data.local.DatabaseTransactionRunner {
                             override suspend fun <T> run(block: suspend () -> T): T =
@@ -135,11 +180,11 @@ class PatternBookmarkRepositoryTest {
     private fun repository(
         bookmarkDao: PatternBookmarkDao,
         layerDao: PatternAnnotationLayerDao,
-        projectDao: CounterProjectDao = mockk(relaxed = true),
+        projectDocumentRepository: ProjectDocumentRepository = mockk(relaxed = true),
     ) = PatternBookmarkRepository(
         bookmarkDao = bookmarkDao,
         annotationLayerDao = layerDao,
-        projectDao = projectDao,
+        projectDocumentRepository = projectDocumentRepository,
         transactionRunner = ImmediateDatabaseTransactionRunner,
         ioDispatcher = Dispatchers.Unconfined,
     )
@@ -174,6 +219,27 @@ class PatternBookmarkRepositoryTest {
         yFraction = y,
         createdAt = id,
     )
+
+    private fun document() =
+        ProjectDocumentEntity(
+            id = 11L,
+            projectId = 7L,
+            savedPatternId = 91L,
+            documentKey = DOCUMENT_KEY,
+            label = "Sleeve",
+            localPdfUri = "file:///patterns/sleeve.pdf",
+            sortOrder = 1,
+            isPrimary = false,
+            currentPage = 1,
+            rowMapping = "[]",
+            readingLineEnabled = true,
+            readingLineYFraction = 0.2f,
+            readingLineFollowCurrentRow = true,
+            verticalReadingGuideEnabled = true,
+            verticalReadingGuideXFraction = 0.6f,
+            createdAt = 1L,
+            updatedAt = 1L,
+        )
 
     private companion object {
         private const val DOCUMENT_KEY = "saved:91:v1"

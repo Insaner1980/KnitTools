@@ -342,6 +342,52 @@ class CounterRepositoryActiveSessionTest {
         }
 
     @Test
+    fun `half second counter checkpoints preserve elapsed duration`() =
+        runTest {
+            var project = CounterProjectEntity(id = 7L, name = "Cardigan", count = 12, stepSize = 1)
+            coEvery { projectDao.getProject(7L) } answers { project }
+            coEvery {
+                projectDao.updateCounterStateWithHistory(
+                    projectId = 7L,
+                    count = any(),
+                    stepSize = any(),
+                    action = any(),
+                    previousValue = any(),
+                    newValue = any(),
+                    updatedAt = any(),
+                )
+            } answers {
+                project = project.copy(count = secondArg())
+            }
+            repository = buildRepository(repositoryProjectCounterDao())
+            val started = repository.startSession(7L) as StartSessionResult.Started
+
+            repeat(10) {
+                timeSource.advanceMillis(500L)
+                repository.applyMainCounterChange(7L, com.finnvek.knittools.domain.model.MainCounterChange.Increment)
+            }
+            repository.stopSession(started.session.sessionToken)
+
+            assertEquals(5L, completed.single().durationSeconds)
+            assertEquals(10, completed.single().rowsWorked)
+        }
+
+    @Test
+    fun `fractional checkpoint time remains in the wall clock recovery interval`() =
+        runTest {
+            repository.startSession(7L)
+            timeSource.advanceMillis(1_500L)
+            repository.checkpointActiveSession()
+            timeSource.advanceMillis(500L)
+            timeSource.reboot()
+
+            val recovery = requireNotNull(repository.refreshActiveSession())
+
+            assertEquals(1L, recovery.timingAnchors.checkpointedDurationSeconds)
+            assertEquals(1L, recovery.recoverySuggestedDurationSeconds)
+        }
+
+    @Test
     fun `undo reset restores net active row progress without counting restored counter value`() =
         runTest {
             var project = CounterProjectEntity(id = 7L, name = "Cardigan", count = 12, stepSize = 1)
@@ -471,9 +517,11 @@ class CounterRepositoryActiveSessionTest {
                 zoneId = "Europe/Helsinki",
             )
 
-        fun advance(seconds: Long) {
-            wallMillis += seconds * 1_000L
-            elapsedMillis += seconds * 1_000L
+        fun advance(seconds: Long) = advanceMillis(seconds * 1_000L)
+
+        fun advanceMillis(milliseconds: Long) {
+            wallMillis += milliseconds
+            elapsedMillis += milliseconds
         }
 
         fun reboot() {

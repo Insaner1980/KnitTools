@@ -8,6 +8,7 @@ import com.finnvek.knittools.repository.PatternBookmarkMutationResult
 import com.finnvek.knittools.repository.PatternBookmarkRepository
 import com.finnvek.knittools.repository.ProjectDocumentMutationResult
 import com.finnvek.knittools.repository.ProjectDocumentRepository
+import com.finnvek.knittools.ui.navigation.Screen
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -128,6 +129,36 @@ class PatternViewerViewModelTest {
         assertEquals(page, selected?.currentPage)
         assertEquals(y, selected?.readingLineYFraction)
     }
+
+    @Test
+    fun `opening a secondary document carries its selection through the viewer route`() =
+        runTest {
+            val route = Screen.PatternViewer(projectId = 7L, selectedProjectDocumentId = 42L).route
+            val selectedId = route.substringAfter("?selectedProjectDocumentId=", "").toLongOrNull()
+            val bookmarkRepository = mockk<PatternBookmarkRepository>()
+            every { bookmarkRepository.observeActiveBookmarks(7L) } returns
+                MutableStateFlow(active(DOCUMENT_B, emptyList()))
+            val documentRepository = mockk<ProjectDocumentRepository>()
+            every { documentRepository.observeDocuments(7L) } returns
+                MutableStateFlow(
+                    listOf(
+                        projectDocument(41L, DOCUMENT_A, true, page = 2, y = 0.25f),
+                        projectDocument(42L, DOCUMENT_B, false, page = 7, y = 0.8f),
+                    ),
+                )
+            coEvery { documentRepository.isAvailable(any()) } returns true
+            coEvery { documentRepository.select(7L, any()) } returns ProjectDocumentMutationResult.Selected
+            val viewModel =
+                PatternViewerViewModel(
+                    bookmarkRepository,
+                    documentRepository,
+                    SavedStateHandle(mapOf("projectId" to 7L, "selectedProjectDocumentId" to selectedId)),
+                )
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.documentUiState.collect() }
+            advanceUntilIdle()
+
+            assertSelectedDocument(viewModel, id = 42L, page = 7, y = 0.8f)
+        }
 
     @Test
     fun `unavailable primary remains visible but cannot activate`() =

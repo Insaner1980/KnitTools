@@ -138,7 +138,7 @@ data class CounterScreenActions(
     val onBack: () -> Unit = {},
     val onSessionHistory: (Long) -> Unit = {},
     val onPhotoGallery: () -> Unit = {},
-    val onPatternViewer: (Long) -> Unit = {},
+    val onPatternViewer: (Long, Long?) -> Unit = { _, _ -> },
     val onSavedPatternDetail: (Long) -> Unit = {},
     val onImportFromRavelry: () -> Unit = {},
     val onNotesEditor: (Long) -> Unit = {},
@@ -359,7 +359,7 @@ fun CounterScreen(
                     performHaptic()
                     viewModel.undo()
                 },
-                onOpenPattern = { state.projectId?.let(onPatternViewer) },
+                onOpenPattern = { state.projectId?.let { onPatternViewer(it, state.primaryDocument?.id) } },
                 onShowDocuments = { showDocumentsSheet = true },
                 onShowPatternPicker = {
                     patternPickerMode = PatternPickerMode.INITIAL_PROJECT_PATTERN
@@ -511,7 +511,7 @@ fun CounterScreen(
                     projectDocumentError = result.toProjectDocumentError()
                     if (result == ProjectDocumentMutationResult.Selected) {
                         showDocumentsSheet = false
-                        state.projectId?.let(onPatternViewer)
+                        state.projectId?.let { onPatternViewer(it, documentId) }
                     }
                 }
             },

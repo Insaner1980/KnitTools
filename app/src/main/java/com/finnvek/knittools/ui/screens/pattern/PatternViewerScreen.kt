@@ -222,7 +222,6 @@ fun PatternViewerScreen(
     CollectWithLifecycleEffect({ patternViewerViewModel.events }) { event ->
         when (event) {
             is PatternViewerEvent.BookmarkJumped -> {
-                counterViewModel.updatePatternPage(event.bookmark.pageIndex)
                 viewportFocusRequest =
                     PatternViewportFocusRequest(
                         requestId = event.requestId,

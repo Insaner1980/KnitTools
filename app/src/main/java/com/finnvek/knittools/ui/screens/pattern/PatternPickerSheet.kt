@@ -103,7 +103,10 @@ fun PatternPickerSheet(
         )
 
     LaunchedEffect(imageImportState.closeReady) {
-        if (imageImportState.closeReady) onDismiss()
+        if (imageImportState.closeReady) {
+            imageImportViewModel.consumeCloseRequest()
+            onDismiss()
+        }
     }
 
     pendingProAction?.let {

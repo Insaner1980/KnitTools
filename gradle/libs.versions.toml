@@ -25,7 +25,7 @@ guava = "33.5.0-android"
 
 dependencyAnalysis = "3.17.0"
 ktlintGradle = "14.2.0"
-detekt = "2.0.0-alpha.5"
+detekt = "2.0.0-alpha.6"
 owaspDependencyCheck = "13.0.0"
 detektComposeRules = "0.5.8"
 androidSecurityLint = "1.0.4"

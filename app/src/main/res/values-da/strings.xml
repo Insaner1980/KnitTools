@@ -32,8 +32,6 @@
     <string name="tool_cast_on_calculator">Opslagsberegner</string>
     <string name="tool_yarn_estimator">Garnberegner</string>
     <string name="tool_needle_sizes">Pindestørrelser</string>
-    <string name="pro_trial_days_left">Pro-prøveperiode — %d dage tilbage</string>
-    <string name="unlock_all_tools">Lås alle værktøjer op</string>
     <string name="desc_yarn_estimator_card">Beregn garnforbrug og antal nøgler</string>
 
     <!-- Bottom navigation tabs -->
@@ -139,7 +137,6 @@
     <string name="pattern_open_failed">Opskriften kunne ikke åbnes.</string>
     <string name="pattern_show_reading_line">Vis læselinje</string>
     <string name="pattern_hide_reading_line">Skjul læselinje</string>
-    <string name="pattern_save_line_as_row">Gem linje som pind %1$d</string>
     <string name="pattern_clear_row_mark">Fjern pindmarkering</string>
     <string name="pattern_clear_page_marks">Fjern sidens markeringer</string>
     <string name="pattern_calibrate_rows">Kalibrer pinde</string>
@@ -148,7 +145,6 @@
     <string name="pattern_calibration_save_first">Gem første</string>
     <string name="pattern_calibration_save_last">Gem sidste</string>
     <string name="pattern_calibration_invalid_row">Brug to forskellige pindnumre</string>
-    <string name="pattern_reading_line_description">Læselinje</string>
     <string name="pattern_page_jump">Gå til side</string>
     <string name="pattern_page_number">Sidenummer</string>
     <string name="pattern_page_indicator">Side %1$d af %2$d</string>
@@ -159,11 +155,38 @@
     <string name="pattern_picker_import_cloud_pdf">Importér fra Drive eller Dropbox</string>
     <string name="pattern_picker_import_from_ravelry">Importér fra Ravelry</string>
     <string name="pattern_picker_camera_scan">Tag mønsterfoto</string>
+    <string name="pattern_picker_choose_images">Vælg billeder</string>
+    <string name="pattern_image_import_title">Gennemse opskriftssider</string>
+    <plurals name="pattern_images_selected"><item quantity="one">%1$d billede valgt</item><item quantity="other">%1$d billeder valgt</item></plurals>
+    <string name="pattern_image_page_position">Side %1$d af %2$d</string>
+    <string name="pattern_image_add_more">Tilføj flere</string>
+    <string name="pattern_image_move_earlier">Flyt side %1$d tidligere</string>
+    <string name="pattern_image_move_later">Flyt side %1$d senere</string>
+    <string name="pattern_image_remove_page">Fjern side %1$d</string>
+    <string name="pattern_image_create_pdf">Opret opskrifts-PDF</string>
+    <string name="pattern_image_replace_title">Erstat den aktuelle opskrift?</string>
+    <string name="pattern_image_replace_message">Den aktuelle vedhæftning erstattes, når den nye PDF er klar.</string>
+    <string name="pattern_image_replace_action">Erstat opskrift</string>
+    <string name="pattern_image_conversion_progress">Opretter side %1$d af %2$d</string>
+    <string name="pattern_image_attaching">Vedhæfter opskrifts-PDF</string>
+    <string name="pattern_image_cancel_conversion">Annuller konvertering</string>
+    <string name="pattern_image_discard_title">Kassér valgte billeder?</string>
+    <string name="pattern_image_discard_message">De valgte opskriftssider fjernes.</string>
+    <string name="pattern_image_discard_action">Kassér billeder</string>
+    <plurals name="pattern_image_duplicates_ignored"><item quantity="one">%1$d dubletbillede blev ignoreret</item><item quantity="other">%1$d dubletbilleder blev ignoreret</item></plurals>
+    <string name="pattern_image_error_max_count">Du kan vælge op til 20 billeder.</string>
+    <string name="pattern_image_error_image_too_large">Et billede overstiger grænsen på 25 MiB.</string>
+    <string name="pattern_image_error_total_too_large">De valgte billeder overstiger den samlede grænse på 200 MiB.</string>
+    <string name="pattern_image_error_unsupported">Fjern billedet, der ikke understøttes, før du opretter PDF-filen.</string>
+    <string name="pattern_image_error_unreadable">Et billede kunne ikke læses. Dit tidligere valg blev bevaret.</string>
+    <string name="pattern_image_error_animated">Animerede billeder understøttes ikke.</string>
+    <string name="pattern_image_error_low_storage">Der er ikke nok ledig lagerplads til at oprette PDF-filen.</string>
+    <string name="pattern_image_error_staging">Billederne kunne ikke forberedes. Dit tidligere valg blev bevaret.</string>
+    <string name="pattern_image_error_conversion">Opskrifts-PDF-filen kunne ikke oprettes. Gennemse siderne, og prøv igen.</string>
+    <string name="pattern_image_error_attachment">PDF-filen kunne ikke vedhæftes. Den aktuelle opskrift blev bevaret.</string>
     <string name="pattern_picker_continue_without_pattern">Fortsæt uden opskrift</string>
-    <string name="pattern_scan_failed">Mønsterfotoet kunne ikke konverteres til PDF.</string>
     <string name="imported_pattern_designer">Importeret PDF</string>
     <string name="current_row_short">Pind %1$d</string>
-    <string name="time_spent_minutes_format">%dm</string>
     <string name="unlink_yarn">Fjern garnkobling</string>
     <string name="select_yarn_card">Vælg garnkort</string>
     <string name="linked_yarn_title">Tilknyttet garn</string>
@@ -206,10 +229,9 @@
     <string name="session_history_title">Historik</string>
     <string name="no_sessions">Ingen sessioner registreret endnu. Begynd at strikke for at se din historik her.</string>
     <string name="session_row_range">Pinde %1$d \u2192 %2$d</string>
-    <string name="session_duration_format">%1$dt %2$dm</string>
+    <string name="session_row_single">Række %1$d</string>
     <string name="delete_session_title">Slette session?</string>
     <string name="delete_session_message">Slette denne session fra historikken? Dette kan ikke fortrydes.</string>
-    <string name="pro_full_history_hint">Opgradér til Pro for fuld sessionshistorik</string>
 
     <!-- Settings -->
     <!-- Row Counter -->
@@ -335,25 +357,9 @@
     <string name="version_format">KnitTools %s</string>
 
     <!-- Pro Upgrade -->
-    <string name="you_have_pro">Du har KnitTools Pro!</string>
-    <string name="all_features_unlocked">Alle funktioner er låst op.</string>
-    <string name="pro_feature_unlimited_projects">Ubegrænsede tællerprojekter</string>
-    <string name="pro_feature_full_history">Fuld tællerhistorik</string>
-    <string name="pro_feature_notes">Noter pr. projekt</string>
-    <string name="pro_feature_secondary_counter">Sekundær tæller</string>
-    <string name="pro_feature_multiple_counters">Ekstra tællere</string>
-    <string name="pro_feature_row_reminders">Rækkepåmindelser</string>
-    <string name="pro_feature_progress_photos">Fremskridtsbilleder</string>
-    <string name="pro_feature_unlimited_yarn">Ubegrænsede garnkort</string>
-    <string name="pro_feature_widget">Widget til startskærmen</string>
-    <string name="pro_feature_pattern_camera_scan">Mønsterfoto</string>
-    <string name="pro_feature">Pro-funktion</string>
-    <string name="upgrade_for_price">Opgradér for %s</string>
     <string name="one_time_purchase">Engangskøb. Intet abonnement.</string>
     <string name="loading_price">Indlæser pris…</string>
-    <string name="price_loading_hint">Forbinder til Google Play — tjek din internetforbindelse, hvis dette tager lang tid</string>
     <string name="billing_purchase_cancelled">Køb annulleret</string>
-    <string name="billing_purchase_unavailable_button">Køb ikke tilgængeligt</string>
     <string name="billing_purchase_unavailable">Dette køb er ikke tilgængeligt i Google Play lige nu.</string>
     <string name="billing_purchase_network_error">Kunne ikke få forbindelse til Google Play. Tjek internetforbindelsen, og prøv igen.</string>
     <string name="billing_purchase_failed">Købet kunne ikke gennemføres. Prøv igen.</string>
@@ -454,21 +460,17 @@
     </plurals>
     <string name="insights_duration_hours_minutes">%1$d t %2$d min</string>
     <string name="insights_range_format">%1$s – %2$s</string>
-    <string name="insights_range_open_format">%1$s –</string>
-    <string name="insights_hero_lead_in_week">I denne uge brugte du</string>
-    <string name="insights_hero_lead_in_month">I denne måned brugte du</string>
-    <string name="insights_hero_lead_in_all_time">I alt har du brugt</string>
     <plurals name="insights_hero_trailing_projects">
-        <item quantity="one">på ét projekt.</item>
-        <item quantity="other">på %1$d projekter.</item>
+        <item quantity="one">%1$d projekt</item>
+        <item quantity="other">%1$d projekter</item>
     </plurals>
-    <string name="insights_hero_trailing_project">på %1$s.</string>
     <string name="insights_craft_verb_knitting">strikning</string>
     <string name="insights_craft_verb_crocheting">hækling</string>
     <string name="insights_craft_verb_making">håndarbejde</string>
     <string name="insights_stat_rows">Pinde</string>
     <string name="insights_stat_min_per_row">Min pr. pind</string>
     <string name="insights_stat_day_streak">Dagsstribe</string>
+    <string name="insights_stat_best_streak">Bedste stime</string>
     <string name="insights_trend_more_week">%1$s mere end sidste uge</string>
     <string name="insights_trend_less_week">%1$s mindre end sidste uge</string>
     <string name="insights_trend_same_week">Samme som sidste uge</string>
@@ -482,16 +484,23 @@
     <string name="insights_stat_no_value">—</string>
     <string name="insights_stat_under_one">&lt;1</string>
     <string name="insights_section_every_day">Hver dag</string>
+    <string name="insights_section_month_by_month">Måned for måned</string>
+    <string name="insights_section_week_by_week">Uge for uge</string>
     <string name="insights_section_where_time_went">Hvor tiden gik</string>
+    <string name="insights_section_projects_by_day">Projekter efter dag</string>
+    <plurals name="insights_project_fabric_a11y_summary">
+        <item quantity="one">Projekter efter dag, %1$s, %2$d aktiv dag</item>
+        <item quantity="other">Projekter efter dag, %1$s, %2$d aktive dage</item>
+    </plurals>
+    <string name="insights_no_tracked_activity">Ingen registreret aktivitet</string>
+    <string name="insights_project_fabric_previous_active_day">Forrige aktive dag</string>
+    <string name="insights_project_fabric_next_active_day">Næste aktive dag</string>
+    <string name="insights_last_worked_format">Sidst arbejdet %1$s</string>
     <plurals name="insights_days_meta_format">
         <item quantity="one">%1$d af %2$d dag</item>
         <item quantity="other">%1$d af %2$d dage</item>
     </plurals>
-    <string name="insights_chart_hint_day">Tryk eller træk hen over dagene.</string>
-    <string name="insights_chart_hint_month">Tryk eller træk hen over månederne.</string>
     <string name="insights_chart_axis_today">i dag</string>
-    <string name="insights_chart_max_format">maks. %1$s</string>
-    <string name="insights_no_sessions_yet">Ingen sessioner endnu</string>
     <string name="insights_chart_a11y_daily">Daglig tid til %1$s, %2$s, %3$s, længst %4$s</string>
     <string name="insights_chart_a11y_monthly">Månedlig tid til %1$s, %2$s, %3$s, længst %4$s</string>
     <string name="insights_chart_a11y_next">Næste søjle</string>
@@ -502,8 +511,8 @@
     <string name="insights_nothing_yet_week">Intet endnu i denne uge.</string>
     <string name="insights_nothing_yet_month">Intet endnu i denne måned.</string>
     <string name="insights_nothing_yet_all_time">Intet endnu.</string>
-    <string name="insights_pro_chart_title">Se din daglige rytme</string>
-    <string name="insights_pro_chart_body">Pro viser hver session som et diagram plus din stribe.</string>
+    <string name="insights_pro_chart_title">Se din aktivitet over tid</string>
+    <string name="insights_pro_chart_body">Pro grupperer din registrerede tid i daglige, ugentlige eller månedlige diagrammer og tilføjer din aktivitetsrække.</string>
     <string name="all_projects">Alle projekter</string>
     <string name="insights_all_time">Hele tiden</string>
     <string name="insights_this_week">Denne uge</string>
@@ -512,17 +521,11 @@
         <item quantity="one">%1$d pind</item>
         <item quantity="other">%1$d pinde</item>
     </plurals>
-    <string name="insights_footer_1">Hver pind tæller — bliv ved!</string>
-    <string name="insights_footer_2">Dit projekt venter.</string>
-    <string name="insights_footer_3">Én pind mere?</string>
-    <string name="insights_footer_4">Maske for maske, pind for pind.</string>
-    <string name="insights_footer_5">Store ting begynder med en enkelt maske.</string>
     <string name="relative_time_today">i dag</string>
     <string name="relative_time_yesterday">i går</string>
     <string name="relative_time_days_ago">%1$dd siden</string>
     <string name="relative_time_weeks_ago">%1$du siden</string>
     <string name="relative_time_months_ago">%1$dmdr siden</string>
-    <string name="insights_no_time_logged">Ingen tid registreret</string>
 
     <!-- Settings -->
     <string name="help_and_guide">Hjælp og guide</string>
@@ -653,7 +656,6 @@
     <string name="saved_pattern_detail_open_pattern">Åbn opskrift</string>
     <string name="saved_pattern_detail_attach_to_project">Knyt til projekt</string>
     <string name="saved_pattern_detail_remove_confirm">Fjerne denne gemte opskrift?</string>
-    <string name="saved_pattern_detail_thumbnail">Opskriftens miniaturebillede</string>
     <string name="filter_weight">Tykkelse</string>
     <string name="filter_difficulty">Sværhedsgrad</string>
     <string name="free">Gratis</string>
@@ -730,4 +732,101 @@
     <string name="pattern_saved_to_library">Gemt i biblioteket</string>
     <string name="show_more">Vis mere</string>
     <string name="show_less">Vis mindre</string>
+    <string name="pro_start_free_trial">Start gratis prøveperiode</string><string name="pro_start_14_day_trial">Start 14 dages gratis prøveperiode</string><string name="pro_trial_start_failed">Prøveperioden kunne ikke startes. Prøv igen.</string>
+    <string name="pro_prompt_not_now">Ikke nu</string><string name="pro_prompt_see_pro">Se Pro</string><string name="pro_prompt_trial_body">Start din gratis 14-dages Pro-prøveperiode. Der kræves ingen betalingsmetode. Alt, du opretter, er fortsat tilgængeligt efter prøveperioden.</string>
+    <string name="pro_prompt_projects_title">Opret et projekt mere med Pro</string>
+    <plurals name="pro_prompt_projects_trial_body"><item quantity="one">Du har allerede %1$d projekt. Start din gratis 14-dages Pro-prøveperiode for at oprette et mere. Alle dine projekter er fortsat tilgængelige efter prøveperioden.</item><item quantity="other">Du har allerede %1$d projekter. Start din gratis 14-dages Pro-prøveperiode for at oprette et mere. Alle dine projekter er fortsat tilgængelige efter prøveperioden.</item></plurals>
+    <plurals name="pro_prompt_projects_body"><item quantity="one">Et nyt projekt kræver Pro, fordi du allerede har %1$d projekt. Dit eksisterende projekt er fortsat tilgængeligt.</item><item quantity="other">Et nyt projekt kræver Pro, fordi du allerede har %1$d projekter. Alle dine eksisterende projekter er fortsat tilgængelige.</item></plurals>
+    <string name="pro_prompt_photos_title">Tilføj fremskridtsbilleder med Pro</string><string name="pro_prompt_photos_body">Et nyt fremskridtsbillede kræver Pro. Dine eksisterende billeder er fortsat tilgængelige.</string>
+    <string name="pro_prompt_notes_title">Tilføj projektnoter med Pro</string><string name="pro_prompt_notes_body">Projektets første note kræver Pro. Noter, du allerede har oprettet, kan fortsat redigeres.</string>
+    <string name="pro_prompt_yarn_title">Tilføj garn med Pro</string><string name="pro_prompt_yarn_body">Et nyt garnkort kræver Pro. Dine eksisterende garnkort er fortsat tilgængelige og kan redigeres.</string>
+    <string name="pro_prompt_save_yarn_title">Gem dette garn med Pro</string><string name="pro_prompt_save_yarn_body">Når projektgarnet gemmes i Mit garn, oprettes et nyt garnkort, hvilket kræver Pro. Projektets garnnote er fortsat tilgængelig.</string>
+    <string name="pro_prompt_counters_title">Tilføj en tæller med Pro</string><string name="pro_prompt_counters_body">En ny ekstra tæller kræver Pro. Dine eksisterende tællere er fortsat tilgængelige og kan redigeres.</string>
+    <string name="pro_prompt_reminders_title">Tilføj en rækkepåmindelse med Pro</string><string name="pro_prompt_reminders_body">En ny rækkepåmindelse kræver Pro. Dine eksisterende påmindelser fungerer fortsat og kan redigeres.</string>
+    <string name="pro_prompt_pattern_camera_title">Lav PDF af mønsterbilleder med Pro</string><string name="pro_prompt_pattern_camera_body">En ny PDF fra mønsterbilleder kræver Pro. Dine eksisterende mønstre og PDF-filer er fortsat tilgængelige.</string>
+    <string name="pro_prompt_widget_title">Brug startskærmswidgetten med Pro</string><string name="pro_prompt_widget_body">Startskærmswidgetten er en avanceret Pro-visning. Dine projekt- og tællerdata er fortsat tilgængelige i KnitTools.</string>
+    <string name="pro_badge">PRO</string><string name="pro_badge_locked_description">Pro-funktion</string><string name="pro_badge_trial_description">Pro-funktion, tilgængelig i prøveperioden</string><string name="knittools_pro">KnitTools Pro</string><string name="pro_content_stays_available">Alt, du opretter, er fortsat tilgængeligt.</string><string name="pro_status_not_started">Ikke startet</string>
+    <plurals name="pro_status_trial_days"><item quantity="one">Prøveperiode, %1$d dag tilbage</item><item quantity="other">Prøveperiode, %1$d dage tilbage</item></plurals>
+    <string name="pro_status_trial_ended">Prøveperioden er slut</string><string name="pro_status_purchased">Købt</string><string name="pro_trial_ended_title">Din Pro-prøveperiode er slut</string><string name="pro_trial_ended_body">Alt, du har oprettet, er stadig tilgængeligt. Du kan fortsætte med at bruge og redigere det. Pro kræves kun til nye Pro-elementer og avancerede visninger.</string><string name="pro_continue_free">Fortsæt gratis</string>
+    <string name="pro_page_intro">Giv hvert projekt mere plads, og hold din arbejdsgang samlet.</string><string name="pro_page_trust">Alt, du opretter, er fortsat tilgængeligt, selv når prøveperioden slutter.</string><string name="pro_group_projects_title">Projekter og materialer</string><string name="pro_group_projects_body">Opret flere projekter, den første projektnote, fremskridtsbilleder og garnkort.</string><string name="pro_group_workflow_title">Tælling og arbejdsgang</string><string name="pro_group_workflow_body">Brug den kompakte gentagelsestæller, ekstra-, gentagelses-, formnings- og sektionstællere, rækkepåmindelser, mønsterbilleder som PDF og startskærmswidgetten.</string><string name="pro_group_insights_title">Indsigt</string><string name="pro_group_insights_body">Se daglige, ugentlige og månedlige aktivitetsdiagrammer og din aktivitetsrække.</string>
+    <string name="pro_page_purchased">Pro købt</string><string name="pro_buy_for_price">Køb Pro for %1$s</string><string name="pro_price_unavailable">Prisen er ikke tilgængelig</string><string name="billing_purchase_pending">Dit køb afventer. Pro bliver tilgængelig, når Google Play har gennemført betalingen.</string>
+    <string name="project_updated_format">Opdateret %1$s</string>
+    <string name="project_completed_format">Afsluttet %1$s</string>
+    <string name="project_section_count_format">%1$s %2$d</string>
+    <string name="project_continue_content_description">Fortsæt med %1$s</string>
+    <string name="work_session_start">Start arbejdssession</string>
+    <string name="work_session_stop">Stop arbejdssession</string>
+    <string name="work_session_active">Arbejdssession aktiv</string>
+    <string name="work_session_recovery_needed">Sessionstiden skal gennemgås</string>
+    <string name="work_session_resolve">Løs</string>
+    <string name="work_session_recovery_title">Gennemgå sessionstid</string>
+    <string name="work_session_pending_rows_format">Afventende rækkefremgang: %1$d</string>
+    <string name="work_session_hours">Timer</string>
+    <string name="work_session_minutes">Minutter</string>
+    <string name="work_session_add_and_continue">Tilføj og fortsæt</string>
+    <string name="work_session_discard_pending">Kassér afventende og stop</string>
+    <string name="work_session_another_project">et andet projekt</string>
+    <string name="work_session_conflict_title">En session er allerede aktiv</string>
+    <string name="work_session_conflict_body">Den aktive session tilhører %1$s. Vælg, hvad der skal ske, før du starter her.</string>
+    <string name="work_session_return_to_active">Gå tilbage til aktivt projekt</string>
+    <string name="work_session_save_then_start">Stop, gem og start her</string>
+    <string name="work_session_discard_then_start">Stop, kassér og start her</string>
+    <string name="work_session_complete_project_title">Færdiggør projekt med aktiv session?</string>
+    <string name="work_session_complete_project_body">Gem eller kassér den aktive session, før projektet færdiggøres.</string>
+    <string name="work_session_save_and_complete">Gem session og færdiggør</string>
+    <string name="work_session_discard_and_complete">Kassér session og færdiggør</string>
+    <string name="work_session_delete_project_title">Kassér aktiv session og slet projekt?</string>
+    <string name="work_session_delete_project_body">Når projektet slettes, slettes dets gemte sessioner også. Den aktive session skal kasseres først.</string>
+    <string name="work_session_discard_and_delete">Kassér session og slet</string>
+    <string name="work_session_duration_format">Varighed: %1$s</string>
+    <string name="work_session_confirmed_time_format">Bekræftet tid: %1$s</string>
+    <string name="work_session_time_while_away_format">Tid under fravær: %1$s</string>
+    <string name="work_session_time_unavailable">Tiden under fraværet kunne ikke estimeres.</string>
+    <string name="work_session_edit_total_duration">Rediger sessionens samlede varighed. Når du gemmer, stoppes sessionen.</string>
+    <string name="work_session_invalid_duration">Ugyldig varighed. Angiv mindst nul timer og minutter fra 0 til 59.</string>
+    <string name="work_session_save_edited_and_stop">Gem redigeret varighed og stop</string>
+    <string name="work_session_edit_duration">Rediger varighed</string>
+    <string name="work_session_reason_restarted">Enheden blev genstartet. Gennemgå tiden siden sidste bekræftelse.</string>
+    <string name="work_session_reason_long_running">Sessionen har kørt længe. Bekræft det seneste interval.</string>
+    <string name="work_session_reason_clock_unavailable">KnitTools kunne ikke bekræfte, om enheden blev genstartet.</string>
+    <string name="work_session_reason_clock_changed">KnitTools kunne ikke bekræfte det seneste tidsinterval.</string>
+    <string name="work_session_stop_summary_title">Stop arbejdssessionen?</string>
+    <string name="work_session_save">Gem session</string>
+    <string name="work_session_discard">Kassér session</string>
+    <string name="work_session_active_description">Arbejdssession for %1$s, %2$s forløbet</string>
+    <string name="work_session_could_not_start">Sessionen kunne ikke startes</string>
+    <string name="work_session_could_not_save">Sessionen kunne ikke gemmes</string>
+    <string name="work_session_could_not_discard">Sessionen kunne ikke kasseres</string>
+    <string name="work_session_recovery_already_handled">Denne sessionsgennemgang er allerede behandlet.</string>
+    <string name="work_session_retry">Prøv igen</string>
+    <string name="project_documents_title">Dokumenter</string>
+    <string name="project_documents_add">Tilføj</string>
+    <string name="project_documents_actions">Handlinger for %1$s</string>
+    <string name="project_documents_primary">Primær opskrift</string>
+    <string name="project_documents_open">Aktuelt dokument</string>
+    <string name="project_documents_unavailable">PDF er ikke tilgængelig</string>
+    <string name="project_documents_rename">Omdøb</string>
+    <string name="project_documents_make_primary">Gør til primær</string>
+    <string name="project_documents_remove_action">Fjern</string>
+    <string name="project_documents_move_earlier">Flyt tidligere</string>
+    <string name="project_documents_move_later">Flyt senere</string>
+    <string name="project_documents_rename_title">Omdøb dokument</string>
+    <string name="project_documents_label">Dokumentnavn</string>
+    <string name="project_documents_remove_title">Fjern dokument?</string>
+    <string name="project_documents_remove_message">Fjern %1$s fra dette projekt?</string>
+    <string name="project_documents_error_invalid_label">Indtast et navn på 1–50 tegn.</string>
+    <string name="project_documents_error_duplicate">Denne PDF er allerede knyttet til projektet.</string>
+    <string name="project_documents_error_unavailable">Denne PDF er ikke længere tilgængelig. Fjern den, eller tilføj filen igen.</string>
+    <string name="project_documents_error_stale">Dokumentlisten blev ændret. Prøv igen.</string>
+    <string name="project_documents_error_generic">Dokumentændringen kunne ikke gemmes.</string>
+    <string name="project_documents_secondary">Sekundært dokument</string>
+    <string name="project_documents_available">PDF er tilgængelig</string>
+    <string name="project_documents_position">Placering %1$d af %2$d</string>
+    <string name="project_documents_open_action">Åbn dokument</string>
+    <string name="project_documents_remove_from_project">Fjern fra projekt</string>
+    <string name="project_documents_empty">Ingen dokumenter</string>
+    <string name="project_documents_metadata_only">Kun metadata</string>
+    <string name="project_documents_pattern_information">Opskriftsoplysninger</string>
+    <string name="project_documents_remove_primary_message">Fjern %1$s? Et andet dokument bliver primært.</string>
+    <string name="project_documents_remove_last_message">Fjern %1$s? Projektet vil ikke længere have en læsbar opskrift.</string>
 </resources>

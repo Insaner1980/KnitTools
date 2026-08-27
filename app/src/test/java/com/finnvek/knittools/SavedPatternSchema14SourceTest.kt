@@ -11,7 +11,7 @@ class SavedPatternSchema14SourceTest {
         val module = ProjectSourceFiles.read(DATABASE_MODULE)
         val entity = ProjectSourceFiles.read(SAVED_PATTERN_ENTITY)
 
-        assertTrue(database.contains("version = 17"))
+        assertTrue(database.contains("version = 22"))
         assertTrue(database.contains("MIGRATION_13_14"))
         assertTrue(module.contains("KnitToolsDatabase.ALL_MANUAL_MIGRATIONS"))
         assertTrue(entity.contains("val source: String"))
@@ -20,10 +20,12 @@ class SavedPatternSchema14SourceTest {
         assertTrue(entity.contains("val canonicalUrl: String = \"\""))
         assertTrue(entity.contains("val localPdfUri: String? = null"))
         assertTrue(entity.contains("val isAvailableOffline: Boolean = false"))
+        assertTrue(entity.contains("val availability: String = \"unknown\""))
         assertTrue(entity.contains("val updatedAt: Long"))
         assertTrue(entity.contains("val lastSyncedAt: Long? = null"))
         assertFalse(entity.contains("val ravelryId: Int,"))
         assertFalse(entity.contains("val patternUrl: String = \"\""))
+        assertFalse(entity.contains("val isFree: Boolean"))
     }
 
     @Test

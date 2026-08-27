@@ -8,6 +8,7 @@ import com.finnvek.knittools.domain.model.MainCounterLabelType
 import com.finnvek.knittools.domain.model.NormalizedPatternPoint
 import com.finnvek.knittools.domain.model.PatternAnnotation
 import com.finnvek.knittools.domain.model.PatternAnnotationKind
+import com.finnvek.knittools.domain.model.PatternAvailability
 import com.finnvek.knittools.domain.model.ProgressPhoto
 import com.finnvek.knittools.domain.model.ProjectCounter
 import com.finnvek.knittools.domain.model.ProjectCounterType
@@ -175,7 +176,7 @@ class EntityMappersTest {
                 needleSize = "4 mm",
                 yarnWeight = "DK",
                 yardage = 850,
-                isFree = false,
+                availability = "paid",
                 originalUrl = "https://example.com/pattern?utm=1",
                 canonicalUrl = "https://example.com/pattern",
                 localPdfUri = null,
@@ -198,6 +199,40 @@ class EntityMappersTest {
                 savedAt = 1_700_000_402L,
             ),
         )
+    }
+
+    @Test
+    fun `malformed saved pattern availability is restored and rewritten as unknown`() {
+        val entity =
+            SavedPatternEntity(
+                source = SavedPatternSource.Ravelry.persistedValue,
+                name = "Unknown",
+                designerName = "Designer",
+                availability = "subscription",
+            )
+
+        val domain = entity.toDomain()
+
+        assertEquals(PatternAvailability.Unknown, domain.availability)
+        assertEquals("unknown", domain.toEntity().availability)
+    }
+
+    @Test
+    fun `saved pattern mapper preserves every availability state`() {
+        PatternAvailability.entries.forEach { availability ->
+            val domain =
+                SavedPattern(
+                    source = SavedPatternSource.Ravelry,
+                    name = availability.persistedValue,
+                    designerName = "Designer",
+                    availability = availability,
+                )
+
+            val entity = domain.toEntity()
+
+            assertEquals(availability.persistedValue, entity.availability)
+            assertEquals(availability, entity.toDomain().availability)
+        }
     }
 
     @Test
@@ -281,8 +316,10 @@ class EntityMappersTest {
         assertEquals(entity.readingLineEnabled, domain.readingLineEnabled)
         assertEquals(entity.readingLineYFraction.coerceIn(0f, 1f), domain.readingLineYFraction, 0f)
         assertEquals(entity.secondaryCount, domain.secondaryCount)
+        assertEquals(entity.secondaryCounterUsed, domain.secondaryCounterUsed)
         assertEquals(entity.stepSize, domain.stepSize)
         assertEquals(entity.notes, domain.notes)
+        assertEquals(entity.notesCreated, domain.notesCreated)
         assertEquals(entity.createdAt, domain.createdAt)
         assertEquals(entity.updatedAt, domain.updatedAt)
         assertEquals(entity.sectionName, domain.sectionName)
@@ -386,7 +423,7 @@ class EntityMappersTest {
                 needleSize = entity.needleSize,
                 yarnWeight = entity.yarnWeight,
                 yardage = entity.yardage,
-                isFree = entity.isFree,
+                availability = PatternAvailability.fromPersistedValue(entity.availability),
                 originalUrl = entity.originalUrl,
                 canonicalUrl = entity.canonicalUrl,
                 localPdfUri = entity.localPdfUri,

@@ -17,6 +17,7 @@ import com.finnvek.knittools.domain.model.FreehandPayload
 import com.finnvek.knittools.domain.model.NormalizedPatternPoint
 import com.finnvek.knittools.domain.model.PatternAnnotation
 import com.finnvek.knittools.domain.model.PatternAnnotationKind
+import com.finnvek.knittools.domain.model.PatternAvailability
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.SavedPatternSource
 import com.finnvek.knittools.domain.model.YarnCard
@@ -106,6 +107,48 @@ class SavedPatternRepositoryDomainApiTest {
                 ),
                 dao.lastInserted,
             )
+        }
+
+    @Test
+    fun `saved pattern repository preserves all availability states`() =
+        runTest {
+            val dao =
+                FakeSavedPatternDao(
+                    savedPatterns =
+                        PatternAvailability.entries.mapIndexed { index, availability ->
+                            SavedPatternEntity(
+                                id = index.toLong() + 1L,
+                                source = SavedPatternSource.Ravelry.persistedValue,
+                                name = availability.persistedValue,
+                                designerName = "Designer",
+                                availability = availability.persistedValue,
+                            )
+                        },
+                )
+            val repository =
+                SavedPatternRepository(
+                    dao,
+                    context,
+                    RepositoryDomainFakeCounterProjectDao(),
+                    ImmediateDatabaseTransactionRunner,
+                    UnconfinedTestDispatcher(testScheduler),
+                )
+
+            assertEquals(
+                PatternAvailability.entries.toList(),
+                repository.getAll().first().map { it.availability },
+            )
+            PatternAvailability.entries.forEach { availability ->
+                repository.save(
+                    SavedPattern(
+                        source = SavedPatternSource.Ravelry,
+                        name = availability.persistedValue,
+                        designerName = "Designer",
+                        availability = availability,
+                    ),
+                )
+                assertEquals(availability.persistedValue, dao.lastInserted?.availability)
+            }
         }
 
     @Test

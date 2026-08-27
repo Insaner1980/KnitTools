@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
+import com.finnvek.knittools.pro.ProState
 import com.finnvek.knittools.repository.CounterRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -14,6 +15,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -43,6 +45,7 @@ class NotesEditorViewModelTest {
         Dispatchers.setMain(testDispatcher)
         repository = mockk(relaxed = true)
         proManager = mockk()
+        every { proManager.proState } returns MutableStateFlow(ProState())
         every { proManager.hasFeature(ProFeature.NOTES) } returns true
     }
 
@@ -52,12 +55,16 @@ class NotesEditorViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun vm(notes: String = ""): NotesEditorViewModel {
+    private fun vm(
+        notes: String = "",
+        notesCreated: Boolean = notes.isNotBlank(),
+    ): NotesEditorViewModel {
         val project =
             CounterProject(
                 id = 1L,
                 name = "Test",
                 notes = notes,
+                notesCreated = notesCreated,
             )
         every { repository.observeProject(1L) } returns flowOf(project)
         coEvery { repository.saveProjectNotes(1L, any(), any()) } answers {
@@ -81,7 +88,7 @@ class NotesEditorViewModelTest {
             assertEquals("Test", state.projectName)
             assertEquals("hello", state.notes)
             assertTrue(state.isLoaded)
-            assertTrue(state.isPro)
+            assertTrue(state.canEditNotes)
             assertFalse(state.isMissingProject)
         }
 
@@ -234,7 +241,7 @@ class NotesEditorViewModelTest {
         }
 
     @Test
-    fun `non-pro editor does not read or persist note changes`() =
+    fun `non-pro editor can edit previously created notes`() =
         runTest {
             every { proManager.hasFeature(ProFeature.NOTES) } returns false
             val viewModel = vm(notes = "Base")
@@ -244,8 +251,23 @@ class NotesEditorViewModelTest {
             viewModel.saveImmediately()
             advanceUntilIdle()
 
+            assertEquals("Local edit", viewModel.uiState.value.notes)
+            coVerify(exactly = 1) { repository.saveProjectNotes(1L, "Base", "Local edit") }
+        }
+
+    @Test
+    fun `non-pro editor cannot create first notes without authorization`() =
+        runTest {
+            every { proManager.hasFeature(ProFeature.NOTES) } returns false
+            val viewModel = vm(notesCreated = false)
+            advanceUntilIdle()
+
+            viewModel.onNotesChanged("First notes")
+            viewModel.saveImmediately()
+            advanceUntilIdle()
+
             assertEquals("", viewModel.uiState.value.notes)
-            coVerify(exactly = 0) { repository.updateProjectNotes(any(), any()) }
+            assertFalse(viewModel.uiState.value.canEditNotes)
             coVerify(exactly = 0) { repository.saveProjectNotes(any(), any(), any()) }
         }
 }

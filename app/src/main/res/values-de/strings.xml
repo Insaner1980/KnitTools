@@ -32,8 +32,6 @@
     <string name="tool_cast_on_calculator">Maschenanschlag-Rechner</string>
     <string name="tool_yarn_estimator">Garnrechner</string>
     <string name="tool_needle_sizes">Nadelstärken</string>
-    <string name="pro_trial_days_left">Pro-Testversion — %d Tage übrig</string>
-    <string name="unlock_all_tools">Alle Werkzeuge freischalten</string>
     <string name="desc_yarn_estimator_card">Garnverbrauch und benötigte Knäuel berechnen</string>
 
     <!-- Bottom navigation tabs -->
@@ -139,7 +137,6 @@
     <string name="pattern_open_failed">Die Anleitung konnte nicht geöffnet werden.</string>
     <string name="pattern_show_reading_line">Leselinie anzeigen</string>
     <string name="pattern_hide_reading_line">Leselinie ausblenden</string>
-    <string name="pattern_save_line_as_row">Linie als Reihe %1$d speichern</string>
     <string name="pattern_clear_row_mark">Reihenmarkierung entfernen</string>
     <string name="pattern_clear_page_marks">Seitenmarkierungen entfernen</string>
     <string name="pattern_calibrate_rows">Reihen kalibrieren</string>
@@ -148,7 +145,6 @@
     <string name="pattern_calibration_save_first">Erste speichern</string>
     <string name="pattern_calibration_save_last">Letzte speichern</string>
     <string name="pattern_calibration_invalid_row">Verwende zwei unterschiedliche Reihennummern</string>
-    <string name="pattern_reading_line_description">Leselinie</string>
     <string name="pattern_page_jump">Zu Seite springen</string>
     <string name="pattern_page_number">Seitennummer</string>
     <string name="pattern_page_indicator">Seite %1$d von %2$d</string>
@@ -159,11 +155,38 @@
     <string name="pattern_picker_import_cloud_pdf">Aus Drive oder Dropbox importieren</string>
     <string name="pattern_picker_import_from_ravelry">Aus Ravelry importieren</string>
     <string name="pattern_picker_camera_scan">Anleitungsfoto aufnehmen</string>
+    <string name="pattern_picker_choose_images">Bilder auswählen</string>
+    <string name="pattern_image_import_title">Anleitungsseiten prüfen</string>
+    <plurals name="pattern_images_selected"><item quantity="one">%1$d Bild ausgewählt</item><item quantity="other">%1$d Bilder ausgewählt</item></plurals>
+    <string name="pattern_image_page_position">Seite %1$d von %2$d</string>
+    <string name="pattern_image_add_more">Weitere hinzufügen</string>
+    <string name="pattern_image_move_earlier">Seite %1$d nach vorne verschieben</string>
+    <string name="pattern_image_move_later">Seite %1$d nach hinten verschieben</string>
+    <string name="pattern_image_remove_page">Seite %1$d entfernen</string>
+    <string name="pattern_image_create_pdf">Anleitungs-PDF erstellen</string>
+    <string name="pattern_image_replace_title">Aktuelle Anleitung ersetzen?</string>
+    <string name="pattern_image_replace_message">Der aktuelle Anhang wird ersetzt, sobald die neue PDF fertig ist.</string>
+    <string name="pattern_image_replace_action">Anleitung ersetzen</string>
+    <string name="pattern_image_conversion_progress">Seite %1$d von %2$d wird erstellt</string>
+    <string name="pattern_image_attaching">Anleitungs-PDF wird angehängt</string>
+    <string name="pattern_image_cancel_conversion">Konvertierung abbrechen</string>
+    <string name="pattern_image_discard_title">Ausgewählte Bilder verwerfen?</string>
+    <string name="pattern_image_discard_message">Die ausgewählten Anleitungsseiten werden entfernt.</string>
+    <string name="pattern_image_discard_action">Bilder verwerfen</string>
+    <plurals name="pattern_image_duplicates_ignored"><item quantity="one">%1$d doppeltes Bild ignoriert</item><item quantity="other">%1$d doppelte Bilder ignoriert</item></plurals>
+    <string name="pattern_image_error_max_count">Du kannst bis zu 20 Bilder auswählen.</string>
+    <string name="pattern_image_error_image_too_large">Ein Bild überschreitet die Grenze von 25 MiB.</string>
+    <string name="pattern_image_error_total_too_large">Die ausgewählten Bilder überschreiten insgesamt 200 MiB.</string>
+    <string name="pattern_image_error_unsupported">Entferne das nicht unterstützte Bild, bevor du die PDF erstellst.</string>
+    <string name="pattern_image_error_unreadable">Ein Bild konnte nicht gelesen werden. Die vorherige Auswahl wurde beibehalten.</string>
+    <string name="pattern_image_error_animated">Animierte Bilder werden nicht unterstützt.</string>
+    <string name="pattern_image_error_low_storage">Nicht genügend freier Speicher zum Erstellen dieser PDF.</string>
+    <string name="pattern_image_error_staging">Die Bilder konnten nicht vorbereitet werden. Die vorherige Auswahl wurde beibehalten.</string>
+    <string name="pattern_image_error_conversion">Die Anleitungs-PDF konnte nicht erstellt werden. Prüfe die Seiten und versuche es erneut.</string>
+    <string name="pattern_image_error_attachment">Die PDF konnte nicht angehängt werden. Die aktuelle Anleitung wurde beibehalten.</string>
     <string name="pattern_picker_continue_without_pattern">Ohne Anleitung fortfahren</string>
-    <string name="pattern_scan_failed">Das Anleitungsfoto konnte nicht in PDF umgewandelt werden.</string>
     <string name="imported_pattern_designer">Importiertes PDF</string>
     <string name="current_row_short">Reihe %1$d</string>
-    <string name="time_spent_minutes_format">%dm</string>
     <string name="unlink_yarn">Garnverknüpfung lösen</string>
     <string name="select_yarn_card">Garnkarte auswählen</string>
     <string name="linked_yarn_title">Verknüpftes Garn</string>
@@ -206,10 +229,9 @@
     <string name="session_history_title">Verlauf</string>
     <string name="no_sessions">Noch keine Sitzungen aufgezeichnet. Beginne zu stricken, um hier deinen Verlauf zu sehen.</string>
     <string name="session_row_range">Reihen %1$d \u2192 %2$d</string>
-    <string name="session_duration_format">%1$dh %2$dm</string>
+    <string name="session_row_single">Reihe %1$d</string>
     <string name="delete_session_title">Sitzung löschen?</string>
     <string name="delete_session_message">Diese Sitzung aus dem Verlauf löschen? Dies kann nicht rückgängig gemacht werden.</string>
-    <string name="pro_full_history_hint">Auf Pro upgraden für den vollständigen Sitzungsverlauf</string>
 
     <!-- Settings -->
     <!-- Row Counter -->
@@ -335,25 +357,9 @@
     <string name="version_format">KnitTools %s</string>
 
     <!-- Pro Upgrade -->
-    <string name="you_have_pro">Du hast KnitTools Pro!</string>
-    <string name="all_features_unlocked">Alle Funktionen sind freigeschaltet.</string>
-    <string name="pro_feature_unlimited_projects">Unbegrenzte Zählerprojekte</string>
-    <string name="pro_feature_full_history">Vollständiger Zählerverlauf</string>
-    <string name="pro_feature_notes">Notizen pro Projekt</string>
-    <string name="pro_feature_secondary_counter">Sekundärzähler</string>
-    <string name="pro_feature_multiple_counters">Zusätzliche Zähler</string>
-    <string name="pro_feature_row_reminders">Reihenerinnerungen</string>
-    <string name="pro_feature_progress_photos">Fortschrittsfotos</string>
-    <string name="pro_feature_unlimited_yarn">Unbegrenzte Garnkarten</string>
-    <string name="pro_feature_widget">Startbildschirm-Widget</string>
-    <string name="pro_feature_pattern_camera_scan">Anleitungsfoto aufnehmen</string>
-    <string name="pro_feature">Pro-Funktion</string>
-    <string name="upgrade_for_price">Upgrade für %s</string>
     <string name="one_time_purchase">Einmalkauf. Kein Abo.</string>
     <string name="loading_price">Preis wird geladen…</string>
-    <string name="price_loading_hint">Verbindung zu Google Play wird hergestellt — überprüfe deine Internetverbindung, wenn dies lange dauert</string>
     <string name="billing_purchase_cancelled">Kauf abgebrochen</string>
-    <string name="billing_purchase_unavailable_button">Kauf nicht verfügbar</string>
     <string name="billing_purchase_unavailable">Dieser Kauf ist derzeit nicht bei Google Play verfügbar.</string>
     <string name="billing_purchase_network_error">Google Play konnte nicht erreicht werden. Prüfe deine Internetverbindung und versuche es erneut.</string>
     <string name="billing_purchase_failed">Der Kauf konnte nicht abgeschlossen werden. Versuche es erneut.</string>
@@ -454,21 +460,17 @@
     </plurals>
     <string name="insights_duration_hours_minutes">%1$d h %2$d min</string>
     <string name="insights_range_format">%1$s – %2$s</string>
-    <string name="insights_range_open_format">%1$s –</string>
-    <string name="insights_hero_lead_in_week">Diese Woche hast du</string>
-    <string name="insights_hero_lead_in_month">Diesen Monat hast du</string>
-    <string name="insights_hero_lead_in_all_time">Insgesamt hast du</string>
     <plurals name="insights_hero_trailing_projects">
-        <item quantity="one">für ein Projekt verbracht.</item>
-        <item quantity="other">für %1$d Projekte verbracht.</item>
+        <item quantity="one">%1$d Projekt</item>
+        <item quantity="other">%1$d Projekte</item>
     </plurals>
-    <string name="insights_hero_trailing_project">für %1$s verbracht.</string>
     <string name="insights_craft_verb_knitting">mit dem Stricken</string>
     <string name="insights_craft_verb_crocheting">mit dem Häkeln</string>
     <string name="insights_craft_verb_making">mit Handarbeit</string>
     <string name="insights_stat_rows">Reihen</string>
     <string name="insights_stat_min_per_row">Min pro Reihe</string>
     <string name="insights_stat_day_streak">Tage-Serie</string>
+    <string name="insights_stat_best_streak">Beste Serie</string>
     <string name="insights_trend_more_week">%1$s mehr als letzte Woche</string>
     <string name="insights_trend_less_week">%1$s weniger als letzte Woche</string>
     <string name="insights_trend_same_week">Genauso viel wie letzte Woche</string>
@@ -482,16 +484,23 @@
     <string name="insights_stat_no_value">—</string>
     <string name="insights_stat_under_one">&lt;1</string>
     <string name="insights_section_every_day">Jeden Tag</string>
+    <string name="insights_section_month_by_month">Monat für Monat</string>
+    <string name="insights_section_week_by_week">Woche für Woche</string>
     <string name="insights_section_where_time_went">Wohin die Zeit ging</string>
+    <string name="insights_section_projects_by_day">Projekte nach Tag</string>
+    <plurals name="insights_project_fabric_a11y_summary">
+        <item quantity="one">Projekte nach Tag, %1$s, %2$d aktiver Tag</item>
+        <item quantity="other">Projekte nach Tag, %1$s, %2$d aktive Tage</item>
+    </plurals>
+    <string name="insights_no_tracked_activity">Keine erfasste Aktivität</string>
+    <string name="insights_project_fabric_previous_active_day">Vorheriger aktiver Tag</string>
+    <string name="insights_project_fabric_next_active_day">Nächster aktiver Tag</string>
+    <string name="insights_last_worked_format">Zuletzt bearbeitet %1$s</string>
     <plurals name="insights_days_meta_format">
         <item quantity="one">%1$d von %2$d Tag</item>
         <item quantity="other">%1$d von %2$d Tagen</item>
     </plurals>
-    <string name="insights_chart_hint_day">Tippe oder ziehe über die Tage.</string>
-    <string name="insights_chart_hint_month">Tippe oder ziehe über die Monate.</string>
     <string name="insights_chart_axis_today">heute</string>
-    <string name="insights_chart_max_format">max. %1$s</string>
-    <string name="insights_no_sessions_yet">Noch keine Sitzungen</string>
     <string name="insights_chart_a11y_daily">Tägliche Zeit für %1$s, %2$s, %3$s, am längsten %4$s</string>
     <string name="insights_chart_a11y_monthly">Monatliche Zeit für %1$s, %2$s, %3$s, am längsten %4$s</string>
     <string name="insights_chart_a11y_next">Nächster Balken</string>
@@ -502,8 +511,8 @@
     <string name="insights_nothing_yet_week">Diese Woche noch nichts.</string>
     <string name="insights_nothing_yet_month">Diesen Monat noch nichts.</string>
     <string name="insights_nothing_yet_all_time">Noch nichts.</string>
-    <string name="insights_pro_chart_title">Sieh deinen Tagesrhythmus</string>
-    <string name="insights_pro_chart_body">Pro zeigt jede Sitzung als Diagramm, plus deine Serie.</string>
+    <string name="insights_pro_chart_title">Sieh deine Aktivität im Zeitverlauf</string>
+    <string name="insights_pro_chart_body">Pro gruppiert deine erfasste Zeit in Tages-, Wochen- oder Monatsdiagrammen und ergänzt deine Aktivitätsserie.</string>
     <string name="all_projects">Alle Projekte</string>
     <string name="insights_all_time">Gesamte Zeit</string>
     <string name="insights_this_week">Diese Woche</string>
@@ -512,17 +521,11 @@
         <item quantity="one">%1$d Reihe</item>
         <item quantity="other">%1$d Reihen</item>
     </plurals>
-    <string name="insights_footer_1">Jede Reihe zählt — weitermachen!</string>
-    <string name="insights_footer_2">Dein Projekt wartet schon.</string>
-    <string name="insights_footer_3">Noch eine Reihe?</string>
-    <string name="insights_footer_4">Masche für Masche, Reihe für Reihe.</string>
-    <string name="insights_footer_5">Große Dinge beginnen mit einer einzigen Masche.</string>
     <string name="relative_time_today">heute</string>
     <string name="relative_time_yesterday">gestern</string>
     <string name="relative_time_days_ago">vor %1$d T</string>
     <string name="relative_time_weeks_ago">vor %1$d W</string>
     <string name="relative_time_months_ago">vor %1$d Mon</string>
-    <string name="insights_no_time_logged">Keine Zeit erfasst</string>
 
     <!-- Settings -->
     <string name="help_and_guide">Hilfe und Anleitung</string>
@@ -653,7 +656,6 @@
     <string name="saved_pattern_detail_open_pattern">Anleitung öffnen</string>
     <string name="saved_pattern_detail_attach_to_project">An Projekt anhängen</string>
     <string name="saved_pattern_detail_remove_confirm">Diese gespeicherte Anleitung entfernen?</string>
-    <string name="saved_pattern_detail_thumbnail">Vorschaubild der Anleitung</string>
     <string name="filter_weight">Stärke</string>
     <string name="filter_difficulty">Schwierigkeit</string>
     <string name="free">Kostenlos</string>
@@ -730,4 +732,101 @@
     <string name="pattern_saved_to_library">In der Bibliothek gespeichert</string>
     <string name="show_more">Mehr anzeigen</string>
     <string name="show_less">Weniger anzeigen</string>
+    <string name="pro_start_free_trial">Kostenlose Testphase starten</string><string name="pro_start_14_day_trial">14-tägige kostenlose Testphase starten</string><string name="pro_trial_start_failed">Die Testphase konnte nicht gestartet werden. Versuche es erneut.</string>
+    <string name="pro_prompt_not_now">Nicht jetzt</string><string name="pro_prompt_see_pro">Pro ansehen</string><string name="pro_prompt_trial_body">Starte deine kostenlose 14-tägige Pro-Testphase. Es ist keine Zahlungsmethode erforderlich. Alles, was du erstellst, bleibt nach der Testphase verfügbar.</string>
+    <string name="pro_prompt_projects_title">Ein weiteres Projekt mit Pro erstellen</string>
+    <plurals name="pro_prompt_projects_trial_body"><item quantity="one">Du hast bereits %1$d Projekt. Starte deine kostenlose 14-tägige Pro-Testphase, um ein weiteres zu erstellen. Alle deine Projekte bleiben nach der Testphase verfügbar.</item><item quantity="other">Du hast bereits %1$d Projekte. Starte deine kostenlose 14-tägige Pro-Testphase, um ein weiteres zu erstellen. Alle deine Projekte bleiben nach der Testphase verfügbar.</item></plurals>
+    <plurals name="pro_prompt_projects_body"><item quantity="one">Ein neues Projekt erfordert Pro, da du bereits %1$d Projekt hast. Dein bestehendes Projekt bleibt verfügbar.</item><item quantity="other">Ein neues Projekt erfordert Pro, da du bereits %1$d Projekte hast. Alle deine bestehenden Projekte bleiben verfügbar.</item></plurals>
+    <string name="pro_prompt_photos_title">Fortschrittsfotos mit Pro hinzufügen</string><string name="pro_prompt_photos_body">Ein neues Fortschrittsfoto erfordert Pro. Deine bestehenden Fotos bleiben verfügbar.</string>
+    <string name="pro_prompt_notes_title">Projektnotizen mit Pro hinzufügen</string><string name="pro_prompt_notes_body">Die erste Notiz dieses Projekts erfordert Pro. Bereits erstellte Notizen bleiben bearbeitbar.</string>
+    <string name="pro_prompt_yarn_title">Garn mit Pro hinzufügen</string><string name="pro_prompt_yarn_body">Eine neue Garnkarte erfordert Pro. Deine bestehenden Garnkarten bleiben verfügbar und bearbeitbar.</string>
+    <string name="pro_prompt_save_yarn_title">Dieses Garn mit Pro speichern</string><string name="pro_prompt_save_yarn_body">Beim Speichern dieses Projektgarns unter „Mein Garn“ wird eine neue Garnkarte erstellt. Dafür ist Pro erforderlich. Die Garnnotiz des Projekts bleibt verfügbar.</string>
+    <string name="pro_prompt_counters_title">Zähler mit Pro hinzufügen</string><string name="pro_prompt_counters_body">Ein neuer zusätzlicher Zähler erfordert Pro. Deine bestehenden Zähler bleiben verfügbar und bearbeitbar.</string>
+    <string name="pro_prompt_reminders_title">Reihenerinnerung mit Pro hinzufügen</string><string name="pro_prompt_reminders_body">Eine neue Reihenerinnerung erfordert Pro. Deine bestehenden Erinnerungen funktionieren weiter und bleiben bearbeitbar.</string>
+    <string name="pro_prompt_pattern_camera_title">Musterfotos mit Pro in PDF umwandeln</string><string name="pro_prompt_pattern_camera_body">Das Erstellen einer neuen PDF aus Musterfotos erfordert Pro. Deine bestehenden Muster und PDFs bleiben verfügbar.</string>
+    <string name="pro_prompt_widget_title">Startbildschirm-Widget mit Pro nutzen</string><string name="pro_prompt_widget_body">Das Startbildschirm-Widget ist eine erweiterte Pro-Ansicht. Deine Projekt- und Zählerdaten bleiben in KnitTools verfügbar.</string>
+    <string name="pro_badge">PRO</string><string name="pro_badge_locked_description">Pro-Funktion</string><string name="pro_badge_trial_description">Pro-Funktion, während der Testphase verfügbar</string><string name="knittools_pro">KnitTools Pro</string><string name="pro_content_stays_available">Alles, was du erstellst, bleibt verfügbar.</string><string name="pro_status_not_started">Nicht gestartet</string>
+    <plurals name="pro_status_trial_days"><item quantity="one">Testphase, noch %1$d Tag</item><item quantity="other">Testphase, noch %1$d Tage</item></plurals>
+    <string name="pro_status_trial_ended">Testphase beendet</string><string name="pro_status_purchased">Gekauft</string><string name="pro_trial_ended_title">Deine Pro-Testphase ist beendet</string><string name="pro_trial_ended_body">Alles, was du erstellt hast, ist weiterhin verfügbar. Du kannst es weiter nutzen und bearbeiten. Pro ist nur für neue Pro-Inhalte und erweiterte Ansichten erforderlich.</string><string name="pro_continue_free">Kostenlos fortfahren</string>
+    <string name="pro_page_intro">Schaffe mehr Platz für jedes Projekt und halte deinen Arbeitsablauf zusammen.</string><string name="pro_page_trust">Alles, was du erstellst, bleibt verfügbar, auch wenn deine Testphase endet.</string><string name="pro_group_projects_title">Projekte und Materialien</string><string name="pro_group_projects_body">Erstelle zusätzliche Projekte, die erste Projektnotiz, Fortschrittsfotos und Garnkarten.</string><string name="pro_group_workflow_title">Zählen und Arbeitsablauf</string><string name="pro_group_workflow_body">Nutze den kompakten Wiederholungszähler, zusätzliche, Wiederholungs-, Formungs- und Abschnittszähler, Reihenerinnerungen, Musterfotos als PDF und das Startbildschirm-Widget.</string><string name="pro_group_insights_title">Einblicke</string><string name="pro_group_insights_body">Sieh Tages-, Wochen- und Monatsdiagramme deiner Aktivität sowie deine Aktivitätsserie.</string>
+    <string name="pro_page_purchased">Pro gekauft</string><string name="pro_buy_for_price">Pro für %1$s kaufen</string><string name="pro_price_unavailable">Preis nicht verfügbar</string><string name="billing_purchase_pending">Dein Kauf steht noch aus. Pro wird verfügbar, sobald Google Play die Zahlung abgeschlossen hat.</string>
+    <string name="project_updated_format">Aktualisiert %1$s</string>
+    <string name="project_completed_format">Abgeschlossen %1$s</string>
+    <string name="project_section_count_format">%1$s %2$d</string>
+    <string name="project_continue_content_description">Weiter mit %1$s</string>
+    <string name="work_session_start">Arbeitssitzung starten</string>
+    <string name="work_session_stop">Arbeitssitzung beenden</string>
+    <string name="work_session_active">Arbeitssitzung aktiv</string>
+    <string name="work_session_recovery_needed">Sitzungszeit muss geprüft werden</string>
+    <string name="work_session_resolve">Klären</string>
+    <string name="work_session_recovery_title">Sitzungszeit prüfen</string>
+    <string name="work_session_pending_rows_format">Ausstehender Reihenfortschritt: %1$d</string>
+    <string name="work_session_hours">Stunden</string>
+    <string name="work_session_minutes">Minuten</string>
+    <string name="work_session_add_and_continue">Hinzufügen und fortfahren</string>
+    <string name="work_session_discard_pending">Ausstehendes verwerfen und beenden</string>
+    <string name="work_session_another_project">einem anderen Projekt</string>
+    <string name="work_session_conflict_title">Eine Sitzung ist bereits aktiv</string>
+    <string name="work_session_conflict_body">Die aktive Sitzung gehört zu %1$s. Wähle vor dem Start eine Aktion.</string>
+    <string name="work_session_return_to_active">Zum aktiven Projekt zurückkehren</string>
+    <string name="work_session_save_then_start">Beenden, speichern und hier starten</string>
+    <string name="work_session_discard_then_start">Beenden, verwerfen und hier starten</string>
+    <string name="work_session_complete_project_title">Projekt mit aktiver Sitzung abschließen?</string>
+    <string name="work_session_complete_project_body">Speichere oder verwirf die aktive Sitzung, bevor du das Projekt abschließt.</string>
+    <string name="work_session_save_and_complete">Sitzung speichern und abschließen</string>
+    <string name="work_session_discard_and_complete">Sitzung verwerfen und abschließen</string>
+    <string name="work_session_delete_project_title">Aktive Sitzung verwerfen und Projekt löschen?</string>
+    <string name="work_session_delete_project_body">Beim Löschen des Projekts werden auch seine gespeicherten Sitzungen gelöscht. Die aktive Sitzung muss zuerst verworfen werden.</string>
+    <string name="work_session_discard_and_delete">Sitzung verwerfen und löschen</string>
+    <string name="work_session_duration_format">Dauer: %1$s</string>
+    <string name="work_session_confirmed_time_format">Bestätigte Zeit: %1$s</string>
+    <string name="work_session_time_while_away_format">Zeit während der Abwesenheit: %1$s</string>
+    <string name="work_session_time_unavailable">Die Zeit während der Abwesenheit konnte nicht geschätzt werden.</string>
+    <string name="work_session_edit_total_duration">Gesamtdauer der Sitzung bearbeiten. Beim Speichern wird die Sitzung beendet.</string>
+    <string name="work_session_invalid_duration">Ungültige Dauer. Gib mindestens null Stunden und Minuten von 0 bis 59 ein.</string>
+    <string name="work_session_save_edited_and_stop">Bearbeitete Dauer speichern und beenden</string>
+    <string name="work_session_edit_duration">Dauer bearbeiten</string>
+    <string name="work_session_reason_restarted">Das Gerät wurde neu gestartet. Prüfe die Zeit seit der letzten Bestätigung.</string>
+    <string name="work_session_reason_long_running">Die Sitzung läuft schon lange. Bestätige das letzte Intervall.</string>
+    <string name="work_session_reason_clock_unavailable">KnitTools konnte nicht bestätigen, ob das Gerät neu gestartet wurde.</string>
+    <string name="work_session_reason_clock_changed">KnitTools konnte das letzte Zeitintervall nicht verifizieren.</string>
+    <string name="work_session_stop_summary_title">Arbeitssitzung beenden?</string>
+    <string name="work_session_save">Sitzung speichern</string>
+    <string name="work_session_discard">Sitzung verwerfen</string>
+    <string name="work_session_active_description">Arbeitssitzung für %1$s, %2$s vergangen</string>
+    <string name="work_session_could_not_start">Sitzung konnte nicht gestartet werden</string>
+    <string name="work_session_could_not_save">Sitzung konnte nicht gespeichert werden</string>
+    <string name="work_session_could_not_discard">Sitzung konnte nicht verworfen werden</string>
+    <string name="work_session_recovery_already_handled">Diese Sitzungsprüfung wurde bereits erledigt.</string>
+    <string name="work_session_retry">Erneut versuchen</string>
+    <string name="project_documents_title">Dokumente</string>
+    <string name="project_documents_add">Hinzufügen</string>
+    <string name="project_documents_actions">Aktionen für %1$s</string>
+    <string name="project_documents_primary">Primäre Anleitung</string>
+    <string name="project_documents_open">Aktuelles Dokument</string>
+    <string name="project_documents_unavailable">PDF nicht verfügbar</string>
+    <string name="project_documents_rename">Umbenennen</string>
+    <string name="project_documents_make_primary">Als primär festlegen</string>
+    <string name="project_documents_remove_action">Entfernen</string>
+    <string name="project_documents_move_earlier">Nach oben verschieben</string>
+    <string name="project_documents_move_later">Nach unten verschieben</string>
+    <string name="project_documents_rename_title">Dokument umbenennen</string>
+    <string name="project_documents_label">Dokumentname</string>
+    <string name="project_documents_remove_title">Dokument entfernen?</string>
+    <string name="project_documents_remove_message">%1$s aus diesem Projekt entfernen?</string>
+    <string name="project_documents_error_invalid_label">Gib einen Namen mit 1–50 Zeichen ein.</string>
+    <string name="project_documents_error_duplicate">Diese PDF ist bereits mit dem Projekt verknüpft.</string>
+    <string name="project_documents_error_unavailable">Diese PDF ist nicht mehr verfügbar. Entferne sie oder füge die Datei erneut hinzu.</string>
+    <string name="project_documents_error_stale">Die Dokumentliste wurde geändert. Versuche es erneut.</string>
+    <string name="project_documents_error_generic">Die Dokumentänderung konnte nicht gespeichert werden.</string>
+    <string name="project_documents_secondary">Sekundäres Dokument</string>
+    <string name="project_documents_available">PDF verfügbar</string>
+    <string name="project_documents_position">Position %1$d von %2$d</string>
+    <string name="project_documents_open_action">Dokument öffnen</string>
+    <string name="project_documents_remove_from_project">Aus Projekt entfernen</string>
+    <string name="project_documents_empty">Keine Dokumente</string>
+    <string name="project_documents_metadata_only">Nur Metadaten</string>
+    <string name="project_documents_pattern_information">Anleitungsinformationen</string>
+    <string name="project_documents_remove_primary_message">%1$s entfernen? Ein anderes Dokument wird primär.</string>
+    <string name="project_documents_remove_last_message">%1$s entfernen? Das Projekt hat danach keine lesbare Anleitung mehr.</string>
 </resources>

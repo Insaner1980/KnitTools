@@ -23,6 +23,7 @@ data class KnitToolsExtendedColors(
     val primaryTintContainer: Color,
     val activityCellEmpty: Color,
     val activityRamp: List<Color>,
+    val yarnPalette: List<Color>,
 )
 
 val LocalKnitToolsColors =
@@ -39,6 +40,7 @@ val LocalKnitToolsColors =
             primaryTintContainer = Color.Unspecified,
             activityCellEmpty = Color.Unspecified,
             activityRamp = emptyList(),
+            yarnPalette = YarnColors,
         )
     }
 
@@ -94,6 +96,7 @@ private val DarkExtendedColors =
         primaryTintContainer = PrimaryTintContainer,
         activityCellEmpty = ActivityCellEmpty,
         activityRamp = listOf(SecondaryMuted, Secondary, Tertiary, PrimaryContainer),
+        yarnPalette = YarnColors,
     )
 
 // === Light color scheme ===
@@ -144,6 +147,7 @@ private val LightExtendedColors =
         primaryTintContainer = LightPrimaryTintContainer,
         activityCellEmpty = LightActivityCellEmpty,
         activityRamp = listOf(LightActivityLow, Secondary, Tertiary, Primary),
+        yarnPalette = LightYarnColors,
     )
 
 @Composable

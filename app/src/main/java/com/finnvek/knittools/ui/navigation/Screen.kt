@@ -89,9 +89,13 @@ sealed class Screen(
 
     data class PatternViewer(
         val projectId: Long,
-    ) : Screen("pattern_viewer/$projectId") {
+        val selectedProjectDocumentId: Long? = null,
+    ) : Screen(
+            "pattern_viewer/$projectId" +
+                selectedProjectDocumentId?.let { "?selectedProjectDocumentId=$it" }.orEmpty(),
+        ) {
         companion object {
-            const val ROUTE = "pattern_viewer/{projectId}"
+            const val ROUTE = "pattern_viewer/{projectId}?selectedProjectDocumentId={selectedProjectDocumentId}"
         }
     }
 

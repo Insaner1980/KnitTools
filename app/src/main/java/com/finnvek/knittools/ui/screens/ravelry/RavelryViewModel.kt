@@ -13,6 +13,7 @@ import com.finnvek.knittools.data.remote.TransientRavelryException
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
+import com.finnvek.knittools.repository.ProjectCreationResult
 import com.finnvek.knittools.repository.RavelryRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
@@ -130,8 +131,8 @@ class RavelryViewModel
         private val _navigateToProject = MutableSharedFlow<Long>()
         val navigateToProject = _navigateToProject.asSharedFlow()
 
-        private val _upgradeToPro = MutableSharedFlow<Unit>()
-        val upgradeToPro = _upgradeToPro.asSharedFlow()
+        private val _projectCreationPrompts = MutableSharedFlow<Int>()
+        val projectCreationPrompts = _projectCreationPrompts.asSharedFlow()
 
         private val _patternSaveResults = MutableSharedFlow<PatternSaveResult>()
         val patternSaveResults = _patternSaveResults.asSharedFlow()
@@ -460,12 +461,14 @@ class RavelryViewModel
             isProjectCreationInFlight = true
             viewModelScope.launch {
                 try {
-                    if (!isPro && repository.getActiveProjectCount() >= 1) {
-                        _upgradeToPro.emit(Unit)
-                        return@launch
-                    }
-                    repository.createProjectFromPattern(detail)?.let { projectId ->
-                        _navigateToProject.emit(projectId)
+                    when (
+                        val result = repository.createProjectFromPattern(detail, isPro)
+                    ) {
+                        is ProjectCreationResult.Created -> _navigateToProject.emit(result.projectId)
+                        ProjectCreationResult.LimitReached -> {
+                            _projectCreationPrompts.emit(repository.getProjectCount())
+                        }
+                        ProjectCreationResult.InvalidProject -> Unit
                     }
                 } finally {
                     isProjectCreationInFlight = false

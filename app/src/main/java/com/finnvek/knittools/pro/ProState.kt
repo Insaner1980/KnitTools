@@ -4,6 +4,7 @@ import androidx.compose.runtime.Immutable
 import com.finnvek.knittools.BuildConfig
 
 enum class ProStatus {
+    TRIAL_NOT_STARTED,
     TRIAL_ACTIVE,
     TRIAL_EXPIRED,
     PRO_PURCHASED,
@@ -11,7 +12,6 @@ enum class ProStatus {
 
 enum class ProFeature {
     UNLIMITED_PROJECTS,
-    FULL_HISTORY,
     NOTES,
     SECONDARY_COUNTER,
     WIDGET,
@@ -28,7 +28,7 @@ enum class ProFeature {
 
 @Immutable
 data class ProState(
-    val status: ProStatus = ProStatus.TRIAL_EXPIRED,
+    val status: ProStatus = ProStatus.TRIAL_NOT_STARTED,
     val trialDaysRemaining: Int = 0,
     val trialStartTimestamp: Long = 0L,
     val purchaseTimestamp: Long = 0L,

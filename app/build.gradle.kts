@@ -21,6 +21,12 @@ plugins {
     jacoco
 }
 
+composeStabilityAnalyzer {
+    stabilityConfigurationFiles.add(
+        rootProject.layout.projectDirectory.file("stability_config.conf"),
+    )
+}
+
 val releaseSigningEnvPrefix = "KNITTOOLS" // Change to your app name, e.g. "KNITTOOLS"
 val debugCredentialsFile = rootProject.layout.projectDirectory.file("debug.credentials.properties")
 val debugCredentialsText = providers.fileContents(debugCredentialsFile).asText.orElse("")
@@ -706,6 +712,7 @@ dependencies {
 
     // Coil (image loading)
     implementation(libs.coil.compose)
+    implementation(libs.coil.network.ktor3)
 
     // Ktor (HTTP client)
     implementation(libs.ktor.client.core)
@@ -742,8 +749,10 @@ dependencies {
     testImplementation(libs.turbine)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.espresso.core)
     androidTestImplementation(composeBom)
     androidTestImplementation(libs.compose.ui.test.junit4)
+    androidTestImplementation(libs.ktor.client.mock)
     androidTestImplementation(libs.room.testing)
     debugImplementation(libs.compose.ui.test.manifest)
 }

@@ -16,13 +16,11 @@ class ProFeatureGateSourceTest {
         assertTrue(viewModel.contains("ProFeature.REPEAT_SECTION"))
         assertTrue(viewModel.contains("ProFeature.ROW_REMINDERS"))
         assertTrue(viewModel.contains("ProFeature.PROGRESS_PHOTOS"))
-        assertTrue(viewModel.contains("canUseNotes = proState.hasFeature(ProFeature.NOTES)"))
-        assertTrue(screen.contains("state.canUseNotes"))
+        assertTrue(viewModel.contains("canCreateNotes = proState.hasFeature(ProFeature.NOTES)"))
+        assertTrue(viewModel.contains("it.notesCreated || canCreateNotes"))
         assertFalse(screen.contains("if (state.isPro)"))
-        assertTrue(screen.contains("state.canUseProgressPhotos"))
-        assertFalse(screen.contains("state.canUseProgressPhotos || BuildConfig.DEBUG"))
         assertTrue(screen.contains("state.canUseMultipleCounters"))
-        assertTrue(screen.contains("state.canUseRowReminders"))
+        assertFalse(screen.contains("state.canUseProgressPhotos || BuildConfig.DEBUG"))
         assertFalse(viewModel.contains("ProFeature.VOICE_COMMANDS"))
         assertFalse(screen.contains("canUseVoice"))
         assertFalse(screen.contains("canUseVoiceCommands"))
@@ -38,21 +36,25 @@ class ProFeatureGateSourceTest {
     }
 
     @Test
-    fun `locked widget opens pro upgrade instead of counter`() {
+    fun `locked widget opens contextual pro prompt instead of counter`() {
         val widget = ProjectSourceFiles.read(COUNTER_WIDGET)
         val mainActivity = ProjectSourceFiles.read(MAIN_ACTIVITY)
         val navGraph = ProjectSourceFiles.read(NAV_GRAPH)
 
         assertTrue(widget.contains("openProUpgrade = true"))
-        assertTrue(widget.contains("MainActivity.createProUpgradeLaunchIntent(context)"))
-        assertTrue(mainActivity.contains("fun createProUpgradeLaunchIntent(context: Context)"))
-        assertTrue(mainActivity.contains("openProUpgradeRequest = intent?.action == ACTION_OPEN_PRO_UPGRADE"))
-        assertTrue(navGraph.contains("if (!requests.openProUpgrade) return@LaunchedEffect"))
-        assertTrue(navGraph.contains("navController.navigateSingleTopTo(Screen.ProUpgrade.route)"))
+        assertTrue(widget.contains("MainActivity.createWidgetProPromptLaunchIntent(context)"))
+        assertTrue(mainActivity.contains("fun createWidgetProPromptLaunchIntent(context: Context)"))
+        assertTrue(
+            mainActivity.contains(
+                "openWidgetProPromptRequest = intent?.action == ACTION_OPEN_WIDGET_PRO_PROMPT",
+            ),
+        )
+        assertTrue(navGraph.contains("if (!requests.openWidgetProPrompt) return@LaunchedEffect"))
+        assertTrue(navGraph.contains("source = ProPromptSource.Widget"))
     }
 
     @Test
-    fun `project and library deep links require feature-specific gates`() {
+    fun `existing notes and photos routes stay open without feature gates`() {
         val navGraph = ProjectSourceFiles.read(NAV_GRAPH)
         val projectListViewModel = ProjectSourceFiles.read(PROJECT_LIST_VIEW_MODEL)
         val libraryViewModel = ProjectSourceFiles.read(LIBRARY_VIEW_MODEL)
@@ -60,18 +62,20 @@ class ProFeatureGateSourceTest {
         val notesEditorViewModel = ProjectSourceFiles.read(NOTES_EDITOR_VIEW_MODEL)
 
         assertTrue(projectListViewModel.contains("fun openPhotoGallery(projectId: Long)"))
-        assertTrue(projectListViewModel.contains("ProFeature.PROGRESS_PHOTOS"))
         assertTrue(projectListViewModel.contains("fun openNotesEditor(projectId: Long)"))
-        assertTrue(projectListViewModel.contains("ProFeature.NOTES"))
-        assertTrue(navGraph.contains("if (!state.canUseProgressPhotos)"))
-        assertTrue(navGraph.contains("navController.navigateSingleTopTo(Screen.ProUpgrade.route)"))
-        assertTrue(libraryViewModel.contains("hasFeatureFlow(ProFeature.PROGRESS_PHOTOS)"))
-        assertTrue(libraryScreen.contains("canUseProgressPhotos"))
-        assertTrue(notesEditorViewModel.contains("if (!canEditNotes) {"))
+        assertFalse(projectListViewModel.contains("if (!proManager.hasFeature(ProFeature.PROGRESS_PHOTOS))"))
+        assertFalse(projectListViewModel.contains("if (!proManager.hasFeature(ProFeature.NOTES))"))
+        assertFalse(navGraph.contains("if (!state.canUseProgressPhotos)"))
+        assertFalse(navGraph.contains("if (!state.canUseNotes)"))
+        assertFalse(libraryViewModel.contains("hasFeatureFlow(ProFeature.PROGRESS_PHOTOS)"))
+        assertFalse(libraryScreen.contains("canUseProgressPhotos"))
+        assertTrue(notesEditorViewModel.contains("project.notesCreated ||"))
+        assertTrue(notesEditorViewModel.contains("proManager.hasFeature(ProFeature.NOTES) ||"))
+        assertTrue(notesEditorViewModel.contains("NOTES_CREATION_AUTHORIZED_KEY"))
     }
 
     @Test
-    fun `existing counter reminder and yarn actions recheck feature gates`() {
+    fun `existing counters and reminders stay usable while creation remains gated`() {
         val viewModel = ProjectSourceFiles.read(COUNTER_VIEW_MODEL)
         val workspaceSections = ProjectSourceFiles.read(COUNTER_WORKSPACE_SECTIONS)
         val screen = ProjectSourceFiles.read(COUNTER_SCREEN)
@@ -80,19 +84,26 @@ class ProFeatureGateSourceTest {
         assertTrue(viewModel.contains("private fun canUseProjectCounter(counter: ProjectCounter)"))
         assertTrue(viewModel.contains("if (!canUseProjectCounter(counter)) return"))
         assertTrue(viewModel.contains("if (!canUseProjectCounter(counterId)) return"))
-        assertTrue(viewModel.contains("if (!canUseRepeatSectionCounters()) {"))
-        assertTrue(workspaceSections.contains("state.canUseMultipleCounters && state.projectCounters.isNotEmpty()"))
-        assertTrue(workspaceSections.contains("state.canUseRowReminders && state.activeAlert != null"))
-        assertTrue(screen.contains("showSheet = showCountersListSheet && state.canUseMultipleCounters"))
+        assertFalse(viewModel.contains("if (!canUseRepeatSectionCounters())"))
+        assertTrue(workspaceSections.contains("if (state.projectCounters.isNotEmpty())"))
+        assertTrue(workspaceSections.contains("if (state.activeAlert != null)"))
+        assertTrue(screen.contains("showSheet = showCountersListSheet"))
 
         assertTrue(viewModel.contains("canUseYarnCards = proState.hasFeature(ProFeature.UNLIMITED_YARN)"))
         assertTrue(viewModel.contains("runProjectYarnNoteSaveIfAllowed("))
         assertTrue(viewModel.contains("canUseYarnCards = proManager.hasFeature(ProFeature.UNLIMITED_YARN)"))
-        assertTrue(screen.contains("canSaveToMyYarn = state.canUseYarnCards"))
-        assertTrue(yarnManagementSheet.contains("canSaveToMyYarn: Boolean"))
-        assertTrue(yarnManagementSheet.contains("note.savedYarnCardId == null && canSaveToMyYarn"))
+        assertFalse(yarnManagementSheet.contains("canSaveToMyYarn: Boolean"))
+        assertTrue(yarnManagementSheet.contains("enabled = note.savedYarnCardId == null"))
+        assertTrue(yarnManagementSheet.contains("ProBadge(status = proStatus)"))
 
+        assertTrue(viewModel.contains("fun addReminder("))
         assertTrue(viewModel.contains("if (!proManager.hasFeature(ProFeature.ROW_REMINDERS)) return"))
+        assertFalse(
+            viewModel
+                .substringAfter("fun updateReminder(")
+                .substringBefore("fun dismissReminder(")
+                .contains("ProFeature.ROW_REMINDERS"),
+        )
     }
 
     @Test
@@ -113,7 +124,7 @@ class ProFeatureGateSourceTest {
         assertTrue(insightsViewModel.contains("hasFeatureFlow(ProFeature.STREAK)"))
         assertTrue(insightsViewModel.contains("canUseStreak"))
         assertTrue(insightsViewModel.contains("val canUseStreak: Boolean"))
-        assertTrue(insightsSections.contains("if (state.canUseStreak)"))
+        assertTrue(insightsSections.contains("state.canUseStreak &&"))
     }
 
     @Test
@@ -138,15 +149,17 @@ class ProFeatureGateSourceTest {
     }
 
     @Test
-    fun `pro upgrade copy lists feature-specific limits`() {
+    fun `pro upgrade copy lists only implemented feature groups`() {
         val upgradeScreen = ProjectSourceFiles.read(PRO_UPGRADE_SCREEN)
         val strings = ProjectSourceFiles.read(STRINGS)
 
         listOf(
-            "pro_feature_multiple_counters",
-            "pro_feature_row_reminders",
-            "pro_feature_progress_photos",
-            "pro_feature_unlimited_yarn",
+            "pro_group_projects_title",
+            "pro_group_projects_body",
+            "pro_group_workflow_title",
+            "pro_group_workflow_body",
+            "pro_group_insights_title",
+            "pro_group_insights_body",
         ).forEach { key ->
             assertTrue(upgradeScreen.contains("R.string.$key"))
             assertTrue(strings.contains("""<string name="$key">"""))
@@ -154,6 +167,21 @@ class ProFeatureGateSourceTest {
 
         assertFalse(upgradeScreen.contains("R.string.pro_feature_voice_commands"))
         assertFalse(strings.contains("""<string name="pro_feature_voice_commands">"""))
+        assertFalse(upgradeScreen.contains("full_history"))
+    }
+
+    @Test
+    fun `trial end notice waits for loaded state and yields to explicit launch requests`() {
+        val mainActivity = ProjectSourceFiles.read(MAIN_ACTIVITY)
+
+        assertTrue(mainActivity.contains("proStateReady &&"))
+        assertTrue(mainActivity.contains("proState.status == ProStatus.TRIAL_EXPIRED"))
+        assertTrue(mainActivity.contains("trialManager.claimTrialEndNotice()"))
+        assertTrue(mainActivity.contains("openProUpgradeRequest ||"))
+        assertTrue(mainActivity.contains("openWidgetProPromptRequest ||"))
+        assertTrue(mainActivity.contains("isOAuthCallback ||"))
+        assertTrue(mainActivity.contains("isShareImport ||"))
+        assertTrue(mainActivity.contains("counterLaunchRequest != null"))
     }
 
     private companion object {

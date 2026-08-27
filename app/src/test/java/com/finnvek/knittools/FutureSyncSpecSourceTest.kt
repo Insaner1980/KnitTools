@@ -63,6 +63,7 @@ class FutureSyncSpecSourceTest {
         assertTrue("Live UI strings promise future sync: $offenders", offenders.isEmpty())
     }
 
+    // CPD-OFF: Testin skenaariokohtainen asetelma pidetaan paikallisena ja luettavana.
     @Test
     fun `future sync planning does not add provider dependencies yet`() {
         val buildText =
@@ -82,6 +83,7 @@ class FutureSyncSpecSourceTest {
     }
 
     private companion object {
+        // CPD-ON
         const val FUTURE_SYNC_SPEC = "config/future-sync-spec.md"
         const val AGENTS = "AGENTS.md"
         const val CODEX = "CODEX.md"

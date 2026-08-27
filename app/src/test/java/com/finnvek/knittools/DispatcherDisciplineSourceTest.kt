@@ -10,17 +10,14 @@ class DispatcherDisciplineSourceTest {
         val app = ProjectSourceFiles.read(APP)
         val activity = ProjectSourceFiles.read(MAIN_ACTIVITY)
         val picker = ProjectSourceFiles.read(PATTERN_PICKER)
+        val imageImportViewModel = ProjectSourceFiles.read(PATTERN_IMAGE_IMPORT_VIEW_MODEL)
         val repository = ProjectSourceFiles.read(SAVED_PATTERN_REPOSITORY)
 
         assertTrue(app.contains("applicationScope.launch(ioDispatcher)"))
         assertTrue(activity.contains("withContext(ioDispatcher)"))
-        assertTrue(
-            picker.contains(
-                "withContext(AppDispatchers.IO) {\n" +
-                    "                        patternStorage.createCaptureImageFile(context, pendingProjectId)\n" +
-                    "                    }",
-            ),
-        )
+        assertFalse(picker.contains("PatternDocumentStorage("))
+        assertTrue(imageImportViewModel.contains("return withContext(ioDispatcher)"))
+        assertTrue(imageImportViewModel.contains("storage.createCaptureImageFile(context, projectId, sessionId)"))
         assertTrue(repository.contains("private suspend fun String.isAppOwnedMissingFile(): Boolean"))
         assertTrue(repository.contains("return withContext(ioDispatcher)"))
     }
@@ -46,6 +43,8 @@ class DispatcherDisciplineSourceTest {
         const val MAIN_ACTIVITY = "app/src/main/java/com/finnvek/knittools/MainActivity.kt"
         const val PATTERN_PICKER =
             "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternPickerSheet.kt"
+        const val PATTERN_IMAGE_IMPORT_VIEW_MODEL =
+            "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternImageImportViewModel.kt"
         const val SAVED_PATTERN_REPOSITORY =
             "app/src/main/java/com/finnvek/knittools/repository/SavedPatternRepository.kt"
         const val DISPATCHERS_MODULE = "app/src/main/java/com/finnvek/knittools/di/DispatchersModule.kt"

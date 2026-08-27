@@ -92,6 +92,7 @@ fun IncreaseDecreaseScreen(
                         true
                     } ?: false
                 },
+                // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
             )
 
             Surface(
@@ -103,6 +104,7 @@ fun IncreaseDecreaseScreen(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
+                    // CPD-ON
                     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                         SegmentedToggle(
                             options = modeOptions,

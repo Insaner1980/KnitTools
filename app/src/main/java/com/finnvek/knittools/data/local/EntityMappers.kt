@@ -9,6 +9,7 @@ import com.finnvek.knittools.domain.model.PatternAnnotationKind
 import com.finnvek.knittools.domain.model.PatternAnnotationLayer
 import com.finnvek.knittools.domain.model.PatternAnnotationOwner
 import com.finnvek.knittools.domain.model.PatternAnnotationPayloadCodec
+import com.finnvek.knittools.domain.model.PatternAvailability
 import com.finnvek.knittools.domain.model.ProgressPhoto
 import com.finnvek.knittools.domain.model.ProjectCounter
 import com.finnvek.knittools.domain.model.ProjectCounterType
@@ -18,6 +19,7 @@ import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.SavedPatternSource
 import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.domain.model.sanitizeMainCounterCustomLabel
+import com.finnvek.knittools.domain.model.sanitizeReadingGuideFraction
 import com.finnvek.knittools.domain.model.sanitizeReadingLineYFraction
 
 fun CounterProjectEntity.toDomain(): CounterProject =
@@ -43,9 +45,14 @@ private fun CounterProject.withEntityProjectDetails(entity: CounterProjectEntity
         mainCounterCustomLabel = sanitizeMainCounterCustomLabel(entity.mainCounterCustomLabel),
         readingLineEnabled = entity.readingLineEnabled,
         readingLineYFraction = entity.readingLineYFraction.coerceIn(0f, 1f),
+        readingLineFollowCurrentRow = entity.readingLineFollowCurrentRow,
+        verticalReadingGuideEnabled = entity.verticalReadingGuideEnabled,
+        verticalReadingGuideXFraction = sanitizeReadingGuideFraction(entity.verticalReadingGuideXFraction),
         secondaryCount = entity.secondaryCount,
+        secondaryCounterUsed = entity.secondaryCounterUsed,
         stepSize = entity.stepSize,
         notes = entity.notes,
+        notesCreated = entity.notesCreated,
         createdAt = entity.createdAt,
         updatedAt = entity.updatedAt,
         sectionName = entity.sectionName,
@@ -69,9 +76,14 @@ private fun CounterProjectEntity.withDomainProjectDetails(project: CounterProjec
         mainCounterCustomLabel = sanitizeMainCounterCustomLabel(project.mainCounterCustomLabel),
         readingLineEnabled = project.readingLineEnabled,
         readingLineYFraction = sanitizeReadingLineYFraction(project.readingLineYFraction),
+        readingLineFollowCurrentRow = project.readingLineFollowCurrentRow,
+        verticalReadingGuideEnabled = project.verticalReadingGuideEnabled,
+        verticalReadingGuideXFraction = sanitizeReadingGuideFraction(project.verticalReadingGuideXFraction),
         secondaryCount = project.secondaryCount,
+        secondaryCounterUsed = project.secondaryCounterUsed,
         stepSize = project.stepSize,
         notes = project.notes,
+        notesCreated = project.notesCreated,
         createdAt = project.createdAt,
         updatedAt = project.updatedAt,
         sectionName = project.sectionName,
@@ -203,6 +215,7 @@ fun ProgressPhoto.toEntity(): ProgressPhotoEntity =
 fun SavedPatternEntity.toDomain(): SavedPattern =
     SavedPattern(
         id = id,
+        // CPD-OFF: Eksplisiittinen kenttarakenne sailyttaa kerros- ja tietokantarajat.
         source = SavedPatternSource.fromPersistedValue(source),
         ravelryPatternId = ravelryPatternId,
         name = name,
@@ -214,7 +227,7 @@ fun SavedPatternEntity.toDomain(): SavedPattern =
         needleSize = needleSize,
         yarnWeight = yarnWeight,
         yardage = yardage,
-        isFree = isFree,
+        availability = PatternAvailability.fromPersistedValue(availability),
         originalUrl = originalUrl,
         canonicalUrl = canonicalUrl,
         localPdfUri = localPdfUri,
@@ -225,6 +238,7 @@ fun SavedPatternEntity.toDomain(): SavedPattern =
     )
 
 fun SavedPattern.toEntity(): SavedPatternEntity =
+// CPD-ON
     SavedPatternEntity(
         id = id,
         source = source.persistedValue,
@@ -238,7 +252,7 @@ fun SavedPattern.toEntity(): SavedPatternEntity =
         needleSize = needleSize,
         yarnWeight = yarnWeight,
         yardage = yardage,
-        isFree = isFree,
+        availability = availability.persistedValue,
         originalUrl = originalUrl,
         canonicalUrl = canonicalUrl,
         localPdfUri = localPdfUri,
@@ -249,6 +263,7 @@ fun SavedPattern.toEntity(): SavedPatternEntity =
     )
 
 fun YarnCardEntity.toDomain(): YarnCard =
+    // CPD-OFF: Eksplisiittinen kenttarakenne sailyttaa kerros- ja tietokantarajat.
     YarnCard(
         id = id,
         brand = brand,
@@ -271,6 +286,7 @@ fun YarnCardEntity.toDomain(): YarnCard =
     )
 
 fun YarnCard.toEntity(): YarnCardEntity =
+// CPD-ON
     YarnCardEntity(
         id = id,
         brand = brand,

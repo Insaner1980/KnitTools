@@ -64,6 +64,7 @@ class PatternAnnotationCommandTest {
             coVerify(exactly = 1) { repository.restoreBatch(removed) }
         }
 
+    // CPD-OFF: Testidatan annotaatiorakenne pidetaan testin yhteydessa.
     private fun annotation(
         id: Long,
         zIndex: Long = 0L,
@@ -80,4 +81,5 @@ class PatternAnnotationCommandTest {
             ),
         zIndex = zIndex,
     )
+    // CPD-ON
 }

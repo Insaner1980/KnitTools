@@ -227,6 +227,81 @@ describe("Ravelry backend search and import", () => {
     assert.equal(JSON.stringify(response).includes("pdf_url"), false);
   });
 
+  it("rejects upstream patterns without a positive integer Ravelry pattern ID", async () => {
+    const invalidIds = [0, -1, 1.5];
+    const client = createRavelryClient(async (input) => {
+      const url = typeof input === "string" ? input : input.toString();
+      if (url.includes("/patterns/search.json")) {
+        return new Response(
+          JSON.stringify({
+            patterns: invalidIds.map((id) => ({
+              id,
+              name: "Invalid pattern",
+              permalink: `invalid-${id}`,
+            })),
+            paginator: { page: 1, page_count: 1, results: invalidIds.length },
+          }),
+          { status: 200 },
+        );
+      }
+      return new Response(
+        JSON.stringify({
+          pattern: {
+            id: 0,
+            name: "Invalid pattern",
+            permalink: "invalid-pattern",
+          },
+        }),
+        { status: 200 },
+      );
+    });
+
+    const searchResponse = await client.searchPatterns("access-token", { query: "invalid" });
+
+    assert.deepEqual(searchResponse.patterns, []);
+    assert.equal(await client.getPatternById("access-token", 42), null);
+  });
+
+  it("omits missing or malformed thumbnail data from sanitized patterns", async () => {
+    const client = createRavelryClient(async (input) => {
+      const url = typeof input === "string" ? input : input.toString();
+      if (url.includes("/patterns/search.json")) {
+        return new Response(
+          JSON.stringify({
+            patterns: [
+              {
+                id: 42,
+                name: "No thumbnail",
+                permalink: "no-thumbnail",
+                first_photo: { medium_url: "not a URL", small2_url: 123 },
+              },
+            ],
+            paginator: { page: 1, page_count: 1, results: 1 },
+          }),
+          { status: 200 },
+        );
+      }
+      return new Response(
+        JSON.stringify({
+          pattern: {
+            id: 42,
+            name: "No thumbnail",
+            permalink: "no-thumbnail",
+            photos: [{ medium_url: "http://images.example/cleartext.jpg", small2_url: ["invalid"] }],
+          },
+        }),
+        { status: 200 },
+      );
+    });
+
+    const searchPattern = (await client.searchPatterns("access-token", { query: "hat" })).patterns[0];
+    const detailPattern = await client.getPatternById("access-token", 42);
+
+    assert.equal(Object.hasOwn(searchPattern, "thumbnailUrl"), false);
+    assert.ok(detailPattern);
+    assert.equal(Object.hasOwn(detailPattern, "thumbnailUrl"), false);
+  });
+
   it("preserves Ravelry HTTP status codes for backend error mapping", async () => {
     const client = createRavelryClient(async () => new Response("rate limited", { status: 429 }));
 

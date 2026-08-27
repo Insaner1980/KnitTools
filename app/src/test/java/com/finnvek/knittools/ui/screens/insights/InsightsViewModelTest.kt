@@ -104,7 +104,26 @@ class InsightsViewModelTest {
             assertEquals(30, state.totalMinutes)
             assertEquals(12, state.totalRows)
             assertEquals(emptyList<InsightsChartBucket>(), state.chartBuckets)
+            assertFalse(state.hasMeaningfulChartData)
             assertEquals(listOf(1L), state.timePerProject.map { it.projectId })
+        }
+
+    @Test
+    fun `free insights reports meaningful comparison without exposing chart buckets`() =
+        runTest {
+            val zone = ZoneId.systemDefault()
+            val today = LocalDate.now(zone)
+            val sessions =
+                listOf(
+                    sessionAt(date = today.minusDays(1), hour = 10, minute = 0, rows = 8, minutes = 20, zone = zone),
+                    sessionAt(date = today, hour = 10, minute = 0, rows = 12, minutes = 30, zone = zone),
+                )
+            every { repository.getSessionsForInsights(null, null) } returns flowOf(sessions)
+
+            val state = createViewModel().uiState.first { it.hasSessionData }
+
+            assertTrue(state.hasMeaningfulChartData)
+            assertEquals(emptyList<InsightsChartBucket>(), state.chartBuckets)
         }
 
     @Test
@@ -281,6 +300,7 @@ class InsightsViewModelTest {
                             ),
                         axis = axis,
                         zone = zone,
+                        firstDayOfWeek = DayOfWeek.MONDAY,
                     ),
             )
 
@@ -294,6 +314,7 @@ class InsightsViewModelTest {
         val sessionZone = ZoneId.of("Pacific/Kiritimati")
         val currentDeviceZone = ZoneId.of("Pacific/Honolulu")
         val currentDeviceDate = LocalDate.now(currentDeviceZone)
+        // CPD-OFF: Testin skenaariokohtainen asetelma pidetaan paikallisena ja luettavana.
         val sessionDate = currentDeviceDate.plusDays(1)
         val startedAt = instantMillis(sessionDate, 0, 30, sessionZone)
         val session =
@@ -308,6 +329,7 @@ class InsightsViewModelTest {
                 rowsWorked = 10,
                 zoneId = sessionZone.id,
             )
+        // CPD-ON
         val axis =
             insightsChartAxis(
                 timeRange = TimeRange.THIS_MONTH,
@@ -332,6 +354,7 @@ class InsightsViewModelTest {
                     ),
                 axis = axis,
                 zone = currentDeviceZone,
+                firstDayOfWeek = DayOfWeek.MONDAY,
             )
 
         assertEquals(
@@ -373,8 +396,9 @@ class InsightsViewModelTest {
     @Test
     fun `all time chart groups out of order sessions by month`() {
         val zone = ZoneId.of("UTC")
+        // Yli puolen vuoden historia ryhmitellään kuukausiin; lyhyempi menisi viikkoihin.
         val january = LocalDate.of(2026, 1, 12)
-        val february = LocalDate.of(2026, 2, 2)
+        val february = LocalDate.of(2026, 9, 2)
         val sessions =
             listOf(
                 sessionAt(date = february, hour = 9, minute = 0, rows = 20, minutes = 30, zone = zone),
@@ -397,14 +421,15 @@ class InsightsViewModelTest {
                         params = InsightsQueryParams(timeRange = TimeRange.ALL_TIME, currentDate = february),
                         axis = axis,
                         zone = zone,
+                        firstDayOfWeek = DayOfWeek.MONDAY,
                     ),
             )
 
         assertEquals(PaceGroupingInterval.MONTH, axis.interval)
-        assertEquals(
-            listOf(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 2, 1)),
-            buckets.map { it.bucketStart },
-        )
+        assertEquals(LocalDate.of(2026, 1, 1), buckets.first().bucketStart)
+        assertEquals(LocalDate.of(2026, 9, 1), buckets.last().bucketStart)
+        // Molemmilla istunnoilla on 30 minuuttia; rivit erottavat ne toisistaan.
+        assertEquals(listOf(10, 20), buckets.filter { it.totalRows > 0 }.map { it.totalRows })
     }
 
     @Test
@@ -429,6 +454,7 @@ class InsightsViewModelTest {
                             ),
                         axis = axis,
                         zone = zone,
+                        firstDayOfWeek = DayOfWeek.MONDAY,
                     ),
             )
 
@@ -456,6 +482,7 @@ class InsightsViewModelTest {
                     params = InsightsQueryParams(timeRange = TimeRange.ALL_TIME, currentDate = day),
                     axis = axis,
                     zone = zone,
+                    firstDayOfWeek = DayOfWeek.MONDAY,
                     projectOrder = listOf(3L, 7L),
                 ).getValue(day)
 
@@ -532,6 +559,58 @@ class InsightsViewModelTest {
         assertEquals(0, InsightsViewModel.calculateStreak(listOf(session)))
         assertEquals(0, InsightsViewModel.calculateCurrentStreak(listOf(session)))
     }
+
+    @Test
+    fun `project fabric is exposed only for pro all time insights`() =
+        runTest {
+            val zone = ZoneId.systemDefault()
+            val today = LocalDate.now(zone)
+            every { repository.getSessionsForInsights(null, null) } returns
+                flowOf(listOf(sessionAt(date = today, hour = 10, minute = 0, rows = 10, minutes = 30, zone = zone)))
+
+            val viewModel = createViewModel()
+            val freeState = viewModel.uiState.first { it.hasSessionData }
+
+            assertNull(freeState.projectFabric)
+
+            insightsFeature.value = true
+            val proState = viewModel.uiState.first { it.projectFabric != null }
+
+            assertEquals(1, proState.projectFabric?.activeDayCount)
+
+            viewModel.selectTimeRange(TimeRange.THIS_WEEK)
+            val weeklyState = viewModel.uiState.first { !it.isLoading && it.timeRange == TimeRange.THIS_WEEK }
+
+            assertNull(weeklyState.projectFabric)
+        }
+
+    @Test
+    fun `project fabric uses the same project order as the chart and project list`() =
+        runTest {
+            insightsFeature.value = true
+            val zone = ZoneId.systemDefault()
+            val today = LocalDate.now(zone)
+            val sessions =
+                listOf(
+                    sessionAt(date = today, hour = 9, minute = 0, rows = 10, minutes = 30, zone = zone)
+                        .copy(projectId = 7L),
+                    sessionAt(date = today, hour = 11, minute = 0, rows = 20, minutes = 60, zone = zone)
+                        .copy(projectId = 3L),
+                )
+            every { repository.getSessionsForInsights(null, null) } returns flowOf(sessions)
+
+            val state = createViewModel().uiState.first { it.projectFabric != null }
+
+            val expectedOrder = state.timePerProject.map { it.projectId }
+            assertEquals(listOf(3L, 7L), expectedOrder)
+            assertEquals(
+                expectedOrder,
+                state.projectFabric
+                    ?.days
+                    ?.single { it.date == today }
+                    ?.projectIds,
+            )
+        }
 
     @Test
     fun `local date changes emits again after midnight`() =

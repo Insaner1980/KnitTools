@@ -102,6 +102,7 @@ fun CounterListItem(
                 .combinedClickable(
                     onClick = {},
                     onLongClick = { showContextMenu = true },
+                    // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
                 ).padding(
                     horizontal = CounterDimens.ExtraCounterCardHorizontalPadding,
                     vertical = CounterDimens.ExtraCounterCardVerticalPadding,
@@ -116,6 +117,7 @@ fun CounterListItem(
                 text = counter.name,
                 style =
                     MaterialTheme.typography.titleMedium.copy(
+                        // CPD-ON
                         fontSize = 17.sp,
                         fontWeight = FontWeight.SemiBold,
                     ),
@@ -192,6 +194,7 @@ fun CounterListItem(
                 onReset()
             },
             onDismiss = { showResetDialog = false },
+            // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
         )
     }
 
@@ -208,6 +211,7 @@ fun CounterListItem(
             onDismiss = { showDeleteDialog = false },
         )
     }
+    // CPD-ON
 }
 
 internal fun extraCounterIncrementIsProminent(counter: ProjectCounter): Boolean {

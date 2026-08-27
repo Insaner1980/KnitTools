@@ -5,6 +5,7 @@ import androidx.compose.ui.geometry.Size
 import com.finnvek.knittools.domain.calculator.PatternScreenPoint
 import com.finnvek.knittools.domain.model.NormalizedPatternPoint
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 class PatternDocumentViewportTest {
@@ -83,5 +84,45 @@ class PatternDocumentViewportTest {
 
         assertEquals(PatternScreenPoint(908f, 166f), wide.pageToScreen(NormalizedPatternPoint(0.75f, 0.25f)))
         assertEquals(PatternScreenPoint(458f, 316f), tall.pageToScreen(NormalizedPatternPoint(0.75f, 0.25f)))
+    }
+
+    @Test
+    fun `focus request waits for its rendered page`() {
+        val request = PatternViewportFocusRequest(requestId = 9L, pageIndex = 2, yFraction = 0.7f)
+
+        assertNull(eligiblePatternViewportFocusRequest(currentPage = 1, renderedPageReady = true, request = request))
+        assertNull(eligiblePatternViewportFocusRequest(currentPage = 2, renderedPageReady = false, request = request))
+        assertEquals(
+            request,
+            eligiblePatternViewportFocusRequest(
+                currentPage = 2,
+                renderedPageReady = true,
+                request = request,
+            ),
+        )
+    }
+
+    @Test
+    fun `focus offset centers bookmark and clamps malformed fractions`() {
+        assertEquals(
+            300,
+            patternViewportFocusScrollOffset(
+                pageHeightPx = 1_000,
+                viewportHeightPx = 400,
+                yFraction = 0.5f,
+                scale = 1f,
+                translationY = 0f,
+            ),
+        )
+        assertEquals(
+            0,
+            patternViewportFocusScrollOffset(
+                pageHeightPx = 1_000,
+                viewportHeightPx = 400,
+                yFraction = -5f,
+                scale = 1f,
+                translationY = 0f,
+            ),
+        )
     }
 }

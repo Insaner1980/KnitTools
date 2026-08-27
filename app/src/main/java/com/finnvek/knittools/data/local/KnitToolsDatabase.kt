@@ -12,6 +12,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         CounterHistoryEntity::class,
         YarnCardEntity::class,
         SessionEntity::class,
+        ActiveSessionEntity::class,
         RowReminderEntity::class,
         ProgressPhotoEntity::class,
         ProjectCounterEntity::class,
@@ -19,8 +20,10 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         SavedPatternEntity::class,
         PatternAnnotationLayerEntity::class,
         PatternAnnotationEntity::class,
+        PatternBookmarkEntity::class,
+        ProjectDocumentEntity::class,
     ],
-    version = 17,
+    version = 22,
     exportSchema = true,
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
@@ -47,6 +50,10 @@ abstract class KnitToolsDatabase : RoomDatabase() {
     abstract fun patternAnnotationLayerDao(): PatternAnnotationLayerDao
 
     abstract fun patternAnnotationDao(): PatternAnnotationDao
+
+    abstract fun patternBookmarkDao(): PatternBookmarkDao
+
+    abstract fun projectDocumentDao(): ProjectDocumentDao
 
     companion object {
         val MIGRATION_3_4 =
@@ -423,6 +430,284 @@ abstract class KnitToolsDatabase : RoomDatabase() {
 
         val MIGRATION_16_17: Migration = PatternAnnotationMigration17.migration
 
+        val MIGRATION_17_18 =
+            object : Migration(17, 18) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL(
+                        "ALTER TABLE counter_projects " +
+                            "ADD COLUMN secondaryCounterUsed INTEGER NOT NULL DEFAULT 0",
+                    )
+                    db.execSQL(
+                        "ALTER TABLE counter_projects " +
+                            "ADD COLUMN notesCreated INTEGER NOT NULL DEFAULT 0",
+                    )
+                    db.execSQL(
+                        "UPDATE counter_projects SET secondaryCounterUsed = 1, notesCreated = 1",
+                    )
+                }
+            }
+
+        val MIGRATION_18_19 =
+            object : Migration(18, 19) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL(
+                        """
+                        CREATE TEMP TABLE `saved_pattern_layer_backup` (
+                            `id` INTEGER PRIMARY KEY NOT NULL,
+                            `projectId` INTEGER,
+                            `savedPatternId` INTEGER,
+                            `documentKey` TEXT NOT NULL,
+                            `isActive` INTEGER NOT NULL,
+                            `createdAt` INTEGER NOT NULL,
+                            `updatedAt` INTEGER NOT NULL
+                        )
+                        """.trimIndent(),
+                    )
+                    db.execSQL(
+                        """
+                        INSERT INTO `saved_pattern_layer_backup` (
+                            id, projectId, savedPatternId, documentKey, isActive, createdAt, updatedAt
+                        )
+                        SELECT
+                            id, projectId, savedPatternId, documentKey, isActive, createdAt, updatedAt
+                        FROM `pattern_annotation_layers`
+                        WHERE savedPatternId IS NOT NULL
+                        """.trimIndent(),
+                    )
+                    db.execSQL(
+                        """
+                        CREATE TEMP TABLE `saved_pattern_annotation_backup` (
+                            `id` INTEGER PRIMARY KEY NOT NULL,
+                            `layerId` INTEGER NOT NULL,
+                            `page` INTEGER NOT NULL,
+                            `kind` TEXT NOT NULL,
+                            `payloadVersion` INTEGER NOT NULL,
+                            `payloadJson` TEXT NOT NULL,
+                            `zIndex` INTEGER NOT NULL,
+                            `createdAt` INTEGER NOT NULL,
+                            `updatedAt` INTEGER NOT NULL
+                        )
+                        """.trimIndent(),
+                    )
+                    db.execSQL(
+                        """
+                        INSERT INTO `saved_pattern_annotation_backup` (
+                            id, layerId, page, kind, payloadVersion, payloadJson,
+                            zIndex, createdAt, updatedAt
+                        )
+                        SELECT
+                            annotations.id,
+                            annotations.layerId,
+                            annotations.page,
+                            annotations.kind,
+                            annotations.payloadVersion,
+                            annotations.payloadJson,
+                            annotations.zIndex,
+                            annotations.createdAt,
+                            annotations.updatedAt
+                        FROM `pattern_annotations` AS annotations
+                        INNER JOIN `saved_pattern_layer_backup` AS layers
+                            ON layers.id = annotations.layerId
+                        """.trimIndent(),
+                    )
+                    db.execSQL(
+                        """
+                        DELETE FROM `pattern_annotations`
+                        WHERE layerId IN (SELECT id FROM `saved_pattern_layer_backup`)
+                        """.trimIndent(),
+                    )
+                    db.execSQL(
+                        """
+                        DELETE FROM `pattern_annotation_layers`
+                        WHERE id IN (SELECT id FROM `saved_pattern_layer_backup`)
+                        """.trimIndent(),
+                    )
+                    db.execSQL(
+                        """
+                        CREATE TABLE IF NOT EXISTS `saved_patterns_new` (
+                            `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                            `source` TEXT NOT NULL,
+                            `ravelryPatternId` INTEGER,
+                            `name` TEXT NOT NULL,
+                            `designerName` TEXT NOT NULL,
+                            `thumbnailUrl` TEXT,
+                            `difficulty` REAL,
+                            `gaugeStitches` REAL,
+                            `gaugeRows` REAL,
+                            `needleSize` TEXT,
+                            `yarnWeight` TEXT,
+                            `yardage` INTEGER,
+                            `availability` TEXT NOT NULL,
+                            `originalUrl` TEXT NOT NULL,
+                            `canonicalUrl` TEXT NOT NULL,
+                            `localPdfUri` TEXT,
+                            `isAvailableOffline` INTEGER NOT NULL,
+                            `savedAt` INTEGER NOT NULL,
+                            `updatedAt` INTEGER NOT NULL,
+                            `lastSyncedAt` INTEGER
+                        )
+                        """.trimIndent(),
+                    )
+                    db.execSQL(
+                        """
+                        INSERT INTO `saved_patterns_new` (
+                            id, source, ravelryPatternId, name, designerName, thumbnailUrl, difficulty,
+                            gaugeStitches, gaugeRows, needleSize, yarnWeight, yardage, availability,
+                            originalUrl, canonicalUrl, localPdfUri, isAvailableOffline,
+                            savedAt, updatedAt, lastSyncedAt
+                        )
+                        SELECT
+                            id,
+                            source,
+                            ravelryPatternId,
+                            name,
+                            designerName,
+                            thumbnailUrl,
+                            difficulty,
+                            gaugeStitches,
+                            gaugeRows,
+                            needleSize,
+                            yarnWeight,
+                            yardage,
+                            CASE WHEN isFree = 1 THEN 'free' ELSE 'unknown' END,
+                            originalUrl,
+                            canonicalUrl,
+                            localPdfUri,
+                            isAvailableOffline,
+                            savedAt,
+                            updatedAt,
+                            lastSyncedAt
+                        FROM `saved_patterns`
+                        """.trimIndent(),
+                    )
+                    db.execSQL("DROP TABLE `saved_patterns`")
+                    db.execSQL("ALTER TABLE `saved_patterns_new` RENAME TO `saved_patterns`")
+                    db.execSQL(
+                        "CREATE INDEX IF NOT EXISTS `index_saved_patterns_ravelryPatternId` " +
+                            "ON `saved_patterns` (`ravelryPatternId`)",
+                    )
+                    db.execSQL(
+                        "CREATE INDEX IF NOT EXISTS `index_saved_patterns_canonicalUrl` " +
+                            "ON `saved_patterns` (`canonicalUrl`)",
+                    )
+                    db.execSQL(
+                        "CREATE INDEX IF NOT EXISTS `index_saved_patterns_originalUrl` " +
+                            "ON `saved_patterns` (`originalUrl`)",
+                    )
+                    db.execSQL(
+                        "CREATE INDEX IF NOT EXISTS `index_saved_patterns_localPdfUri` " +
+                            "ON `saved_patterns` (`localPdfUri`)",
+                    )
+                    db.execSQL(
+                        """
+                        INSERT INTO `pattern_annotation_layers` (
+                            id, projectId, savedPatternId, documentKey, isActive, createdAt, updatedAt
+                        )
+                        SELECT
+                            id, projectId, savedPatternId, documentKey, isActive, createdAt, updatedAt
+                        FROM `saved_pattern_layer_backup`
+                        """.trimIndent(),
+                    )
+                    db.execSQL(
+                        """
+                        INSERT INTO `pattern_annotations` (
+                            id, layerId, page, kind, payloadVersion, payloadJson,
+                            zIndex, createdAt, updatedAt
+                        )
+                        SELECT
+                            id, layerId, page, kind, payloadVersion, payloadJson,
+                            zIndex, createdAt, updatedAt
+                        FROM `saved_pattern_annotation_backup`
+                        """.trimIndent(),
+                    )
+                    db.execSQL("DROP TABLE `saved_pattern_annotation_backup`")
+                    db.execSQL("DROP TABLE `saved_pattern_layer_backup`")
+                }
+            }
+
+        val MIGRATION_19_20 =
+            object : Migration(19, 20) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL(
+                        "ALTER TABLE counter_projects " +
+                            "ADD COLUMN verticalReadingGuideEnabled INTEGER NOT NULL DEFAULT 0",
+                    )
+                    db.execSQL(
+                        "ALTER TABLE counter_projects " +
+                            "ADD COLUMN verticalReadingGuideXFraction REAL NOT NULL DEFAULT 0.5",
+                    )
+                    db.execSQL(
+                        "ALTER TABLE counter_projects " +
+                            "ADD COLUMN readingLineFollowCurrentRow INTEGER NOT NULL DEFAULT 1",
+                    )
+                    db.execSQL(
+                        """
+                        CREATE TABLE IF NOT EXISTS `pattern_bookmarks` (
+                            `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                            `projectId` INTEGER NOT NULL,
+                            `documentKey` TEXT NOT NULL,
+                            `name` TEXT NOT NULL,
+                            `pageIndex` INTEGER NOT NULL,
+                            `yFraction` REAL NOT NULL,
+                            `createdAt` INTEGER NOT NULL,
+                            FOREIGN KEY(`projectId`) REFERENCES `counter_projects`(`id`)
+                                ON UPDATE NO ACTION ON DELETE CASCADE
+                        )
+                        """.trimIndent(),
+                    )
+                    db.execSQL(
+                        "CREATE INDEX IF NOT EXISTS `index_pattern_bookmarks_project_document_position` " +
+                            "ON `pattern_bookmarks` " +
+                            "(`projectId`, `documentKey`, `pageIndex`, `yFraction`, `createdAt`, `id`)",
+                    )
+                }
+            }
+
+        val MIGRATION_20_21 =
+            object : Migration(20, 21) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL(
+                        """
+                        CREATE TABLE IF NOT EXISTS `active_sessions` (
+                            `singletonId` INTEGER NOT NULL,
+                            `sessionToken` TEXT NOT NULL,
+                            `projectId` INTEGER NOT NULL,
+                            `startedAtWallMillis` INTEGER NOT NULL,
+                            `startZoneId` TEXT NOT NULL,
+                            `startRow` INTEGER NOT NULL,
+                            `lastObservedRow` INTEGER NOT NULL,
+                            `trustedLastObservedRow` INTEGER NOT NULL,
+                            `trustedRowsWorked` INTEGER NOT NULL,
+                            `pendingRowsWorked` INTEGER NOT NULL,
+                            `reviewedRowsWorked` INTEGER NOT NULL,
+                            `reviewedLastObservedRow` INTEGER NOT NULL,
+                            `unreviewedRowsWorked` INTEGER NOT NULL,
+                            `checkpointedDurationSeconds` INTEGER NOT NULL,
+                            `reviewedDurationBaselineSeconds` INTEGER NOT NULL,
+                            `segmentStartedAtWallMillis` INTEGER NOT NULL,
+                            `segmentStartedElapsedRealtimeMillis` INTEGER NOT NULL,
+                            `bootCount` INTEGER,
+                            `recoveryReason` TEXT,
+                            `recoveryIntervalToken` TEXT,
+                            `recoverySuggestedDurationSeconds` INTEGER,
+                            `recoveryPromptShown` INTEGER NOT NULL,
+                            `updatedAtWallMillis` INTEGER NOT NULL,
+                            PRIMARY KEY(`singletonId`),
+                            FOREIGN KEY(`projectId`) REFERENCES `counter_projects`(`id`)
+                                ON UPDATE NO ACTION ON DELETE CASCADE
+                        )
+                        """.trimIndent(),
+                    )
+                    db.execSQL(
+                        "CREATE INDEX IF NOT EXISTS `index_active_sessions_projectId` " +
+                            "ON `active_sessions` (`projectId`)",
+                    )
+                    ActiveSessionSchemaConstraints.create(db)
+                }
+            }
+
+        val MIGRATION_21_22: Migration = ProjectDocumentMigration22.migration
+
         val ALL_MANUAL_MIGRATIONS: Array<Migration>
             get() =
                 arrayOf(
@@ -440,6 +725,11 @@ abstract class KnitToolsDatabase : RoomDatabase() {
                     MIGRATION_14_15,
                     MIGRATION_15_16,
                     MIGRATION_16_17,
+                    MIGRATION_17_18,
+                    MIGRATION_18_19,
+                    MIGRATION_19_20,
+                    MIGRATION_20_21,
+                    MIGRATION_21_22,
                 )
     }
 }

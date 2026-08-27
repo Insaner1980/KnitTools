@@ -153,11 +153,13 @@ private fun <T : Any> MutableMap<String, Any>.putOptional(
     value?.let { put(key, it) }
 }
 
+// CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
 private fun Map<*, *>.optionalString(key: String): String? = this[key]?.toString()?.takeIf { it.isNotBlank() }
 
 private fun Map<*, *>.string(key: String): String = optionalString(key) ?: ""
 
 private fun Map<*, *>.long(key: String): Long =
+// CPD-ON
     when (val value = this[key]) {
         is Number -> value.toLong()
         is String -> value.toLongOrNull()

@@ -34,12 +34,17 @@ class CountPluralResourcesSourceTest {
     private companion object {
         val COUNT_PLURAL_KEYS =
             listOf(
+                "rows_format",
                 "insights_rows_count",
                 "delete_photos_confirm",
                 "delete_patterns_confirm",
             )
         val SOURCE_USAGES =
             mapOf(
+                "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterScreen.kt" to
+                    "rows_format",
+                "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterWorkspaceSections.kt" to
+                    "rows_format",
                 "app/src/main/java/com/finnvek/knittools/ui/screens/insights/InsightsSections.kt" to
                     "insights_rows_count",
                 "app/src/main/java/com/finnvek/knittools/ui/screens/library/AllPhotosScreen.kt" to

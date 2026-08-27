@@ -5,16 +5,23 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.finnvek.knittools.R
 import com.finnvek.knittools.data.datastore.PreferencesManager
+import com.finnvek.knittools.domain.model.ActiveWorkSession
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.MainCounterLabelType
+import com.finnvek.knittools.domain.model.ProjectDocument
 import com.finnvek.knittools.domain.model.ProjectSortOrder
 import com.finnvek.knittools.domain.model.displayName
 import com.finnvek.knittools.domain.model.parseYarnCardIds
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
+import com.finnvek.knittools.repository.ActiveSessionCompletionChoice
 import com.finnvek.knittools.repository.CounterRepository
 import com.finnvek.knittools.repository.ProgressPhotoRepository
+import com.finnvek.knittools.repository.ProjectCompletionResult
+import com.finnvek.knittools.repository.ProjectCreationResult
+import com.finnvek.knittools.repository.ProjectDeletionResult
+import com.finnvek.knittools.repository.ProjectDocumentRepository
 import com.finnvek.knittools.repository.SavedPatternRepository
 import com.finnvek.knittools.repository.YarnCardRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -39,7 +46,6 @@ data class ContinueKnittingProject(
     val projectId: Long,
     val name: String,
     val count: Int,
-    val totalMinutes: Int,
     val sectionName: String?,
     val targetRows: Int?,
     val craftType: CraftType,
@@ -47,8 +53,21 @@ data class ContinueKnittingProject(
     val mainCounterCustomLabel: String?,
 )
 
+private data class PendingProjectCreation(
+    val name: String,
+    val craftType: CraftType,
+    val mainCounterLabelType: MainCounterLabelType,
+    val mainCounterCustomLabel: String?,
+)
+
+data class PendingProjectListSessionAction(
+    val session: ActiveWorkSession,
+    val projectIds: Set<Long>,
+)
+
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
+@Suppress("TooManyFunctions") // Näkymämalli pitää listan käyttäjätoiminnot eksplisiittisinä.
 class ProjectListViewModel
     @Inject
     constructor(
@@ -57,6 +76,7 @@ class ProjectListViewModel
         private val yarnCardRepository: YarnCardRepository,
         private val photoRepository: ProgressPhotoRepository,
         private val savedPatternRepository: SavedPatternRepository,
+        private val projectDocumentRepository: ProjectDocumentRepository,
         private val preferencesManager: PreferencesManager,
         @param:ApplicationContext private val context: Context,
     ) : ViewModel() {
@@ -92,6 +112,11 @@ class ProjectListViewModel
                     }
                 }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+        val activeSession: StateFlow<ActiveWorkSession?> =
+            repository
+                .observeActiveSession()
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
         val isPro: Boolean get() = proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS)
 
         // === Multi-select ===
@@ -101,6 +126,14 @@ class ProjectListViewModel
 
         private val _selectedProjectIds = MutableStateFlow<Set<Long>>(emptySet())
         val selectedProjectIds: StateFlow<Set<Long>> = _selectedProjectIds.asStateFlow()
+
+        private val _pendingCompletionSessionAction = MutableStateFlow<PendingProjectListSessionAction?>(null)
+        val pendingCompletionSessionAction: StateFlow<PendingProjectListSessionAction?> =
+            _pendingCompletionSessionAction.asStateFlow()
+
+        private val _pendingDeletionSessionAction = MutableStateFlow<PendingProjectListSessionAction?>(null)
+        val pendingDeletionSessionAction: StateFlow<PendingProjectListSessionAction?> =
+            _pendingDeletionSessionAction.asStateFlow()
 
         // === Jatka neulomista ===
 
@@ -119,6 +152,12 @@ class ProjectListViewModel
         private val _projectPatternNames = MutableStateFlow<Map<Long, String>>(emptyMap())
         val projectPatternNames: StateFlow<Map<Long, String>> = _projectPatternNames.asStateFlow()
 
+        private val _projectIdsWithDocuments = MutableStateFlow<Set<Long>>(emptySet())
+        val projectIdsWithDocuments: StateFlow<Set<Long>> = _projectIdsWithDocuments.asStateFlow()
+
+        private val _projectIdsWithAvailablePrimary = MutableStateFlow<Set<Long>>(emptySet())
+        val projectIdsWithAvailablePrimary: StateFlow<Set<Long>> = _projectIdsWithAvailablePrimary.asStateFlow()
+
         private val _projectHasNotes = MutableStateFlow<Set<Long>>(emptySet())
         val projectHasNotes: StateFlow<Set<Long>> = _projectHasNotes.asStateFlow()
 
@@ -131,18 +170,29 @@ class ProjectListViewModel
         private val _navigateToPhotoGallery = MutableSharedFlow<Long>()
         val navigateToPhotoGallery: SharedFlow<Long> = _navigateToPhotoGallery.asSharedFlow()
 
-        private val _upgradeToPro = MutableSharedFlow<Unit>()
-        val upgradeToPro: SharedFlow<Unit> = _upgradeToPro.asSharedFlow()
+        private val _projectCreationPrompts = MutableSharedFlow<Int>()
+        val projectCreationPrompts: SharedFlow<Int> = _projectCreationPrompts.asSharedFlow()
+
+        private val _showCreateProjectDialog = MutableSharedFlow<Unit>()
+        val showCreateProjectDialog: SharedFlow<Unit> = _showCreateProjectDialog.asSharedFlow()
+
+        private var pendingProjectCreation: PendingProjectCreation? = null
 
         init {
+            viewModelScope.launch { repository.refreshActiveSession() }
             viewModelScope.launch {
-                activeProjects.collect { projects ->
-                    updateContinueKnitting(projects)
-                    updateYarnNames(projects)
-                    updatePhotoCounts(projects)
-                    updatePatternNames(projects)
-                    updateHasNotes(projects)
-                }
+                activeProjects
+                    .flatMapLatest { projects ->
+                        projectDocumentRepository
+                            .observeDocuments(projects.map(CounterProject::id))
+                            .map { documents -> projects to documents }
+                    }.collect { (projects, documentsByProject) ->
+                        updateContinueKnitting(projects)
+                        updateYarnNames(projects)
+                        updatePhotoCounts(projects)
+                        updatePatternNames(projects, documentsByProject)
+                        updateHasNotes(projects)
+                    }
             }
         }
 
@@ -185,14 +235,12 @@ class ProjectListViewModel
         fun completeSelectedProjects() {
             viewModelScope.launch {
                 val ids = _selectedProjectIds.value
-                ids.forEach { id ->
-                    val project = repository.getProject(id) ?: return@forEach
-                    repository.archiveProject(
-                        id = id,
-                        totalRows = project.count,
-                        completedAt = System.currentTimeMillis(),
-                    )
+                val active = repository.refreshActiveSession()
+                if (active != null && active.projectId in ids) {
+                    _pendingCompletionSessionAction.value = PendingProjectListSessionAction(active, ids)
+                    return@launch
                 }
+                completeProjects(ids, choice = null)
                 exitMultiSelectMode()
             }
         }
@@ -200,9 +248,12 @@ class ProjectListViewModel
         fun deleteSelectedProjects() {
             viewModelScope.launch {
                 val ids = _selectedProjectIds.value
-                ids.forEach { id ->
-                    repository.deleteProject(id)
+                val active = repository.refreshActiveSession()
+                if (active != null && active.projectId in ids) {
+                    _pendingDeletionSessionAction.value = PendingProjectListSessionAction(active, ids)
+                    return@launch
                 }
+                ids.forEach { id -> repository.deleteProjectResolvingActiveSession(id, false) }
                 exitMultiSelectMode()
             }
         }
@@ -213,12 +264,10 @@ class ProjectListViewModel
             val candidate = projects.firstOrNull { it.count > 0 }
             _continueKnittingProject.value =
                 if (candidate != null) {
-                    val totalMin = repository.getTotalMinutesForProject(candidate.id)
                     ContinueKnittingProject(
                         projectId = candidate.id,
                         name = candidate.name,
                         count = candidate.count,
-                        totalMinutes = totalMin,
                         sectionName = candidate.sectionName,
                         targetRows = candidate.targetRows,
                         craftType = candidate.craftType,
@@ -262,12 +311,24 @@ class ProjectListViewModel
                     .filterValues { it > 0 }
         }
 
-        private suspend fun updatePatternNames(projects: List<CounterProject>) {
+        private suspend fun updatePatternNames(
+            projects: List<CounterProject>,
+            documentsByProject: Map<Long, List<ProjectDocument>>,
+        ) {
             val nameMap = mutableMapOf<Long, String>()
+            _projectIdsWithDocuments.value = documentsByProject.filterValues { it.isNotEmpty() }.keys
+            _projectIdsWithAvailablePrimary.value =
+                documentsByProject
+                    .mapNotNull { (projectId, documents) ->
+                        val primary = documents.firstOrNull(ProjectDocument::isPrimary) ?: return@mapNotNull null
+                        projectId.takeIf { projectDocumentRepository.isAvailable(primary) }
+                    }.toSet()
             val linkedPatternIds =
                 projects
-                    .filter { it.patternName.isNullOrBlank() }
-                    .mapNotNull { it.linkedPatternId }
+                    .filter { project ->
+                        documentsByProject[project.id].isNullOrEmpty() &&
+                            project.patternName.isNullOrBlank()
+                    }.mapNotNull { it.linkedPatternId }
                     .distinct()
             val patternsById =
                 if (linkedPatternIds.isEmpty()) {
@@ -276,6 +337,12 @@ class ProjectListViewModel
                     savedPatternRepository.getByIds(linkedPatternIds).associateBy { it.id }
                 }
             projects.forEach { p ->
+                documentsByProject[p.id]
+                    ?.firstOrNull { it.isPrimary }
+                    ?.let { primary ->
+                        nameMap[p.id] = primary.label
+                        return@forEach
+                    }
                 p.patternName?.takeIf { it.isNotBlank() }?.let {
                     nameMap[p.id] = it
                     return@forEach
@@ -287,18 +354,32 @@ class ProjectListViewModel
         }
 
         private fun updateHasNotes(projects: List<CounterProject>) {
-            _projectHasNotes.value = projects.filter { it.notes.isNotBlank() }.map { it.id }.toSet()
+            _projectHasNotes.value = projects.filter { it.notesCreated }.map { it.id }.toSet()
+        }
+
+        fun requestProjectCreation() {
+            viewModelScope.launch {
+                val count = repository.getProjectCount()
+                if (!isPro && count >= 1) {
+                    _projectCreationPrompts.emit(count)
+                } else {
+                    _showCreateProjectDialog.emit(Unit)
+                }
+            }
         }
 
         fun createProject() {
             viewModelScope.launch {
                 val count = repository.getProjectCount()
-                createProjectInternal(
-                    name = context.getString(R.string.new_project_name_format, count + 1),
-                    craftType = CraftType.KNITTING,
-                    mainCounterLabelType = CraftType.KNITTING.defaultMainCounterLabelType(),
-                    mainCounterCustomLabel = null,
-                )
+                val request =
+                    PendingProjectCreation(
+                        name = context.getString(R.string.new_project_name_format, count + 1),
+                        craftType = CraftType.KNITTING,
+                        mainCounterLabelType = CraftType.KNITTING.defaultMainCounterLabelType(),
+                        mainCounterCustomLabel = null,
+                    )
+                pendingProjectCreation = request
+                createProjectInternal(request)
             }
         }
 
@@ -308,50 +389,143 @@ class ProjectListViewModel
             mainCounterLabelType: MainCounterLabelType,
             mainCounterCustomLabel: String?,
         ) {
-            viewModelScope.launch {
-                createProjectInternal(
+            val request =
+                PendingProjectCreation(
                     name = name,
                     craftType = craftType,
                     mainCounterLabelType = mainCounterLabelType,
                     mainCounterCustomLabel = mainCounterCustomLabel,
                 )
+            pendingProjectCreation = request
+            viewModelScope.launch {
+                createProjectInternal(request)
             }
         }
 
-        private suspend fun createProjectInternal(
-            name: String,
-            craftType: CraftType,
-            mainCounterLabelType: MainCounterLabelType,
-            mainCounterCustomLabel: String?,
-        ) {
-            if (!isPro && repository.getActiveProjectCount() >= 1) {
-                _upgradeToPro.emit(Unit)
-                return
+        fun retryPendingProjectCreation() {
+            val request = pendingProjectCreation ?: return
+            viewModelScope.launch { createProjectInternal(request) }
+        }
+
+        private suspend fun createProjectInternal(request: PendingProjectCreation) {
+            when (
+                val result =
+                    repository.createProject(
+                        name = request.name,
+                        craftType = request.craftType,
+                        mainCounterLabelType = request.mainCounterLabelType,
+                        mainCounterCustomLabel = request.mainCounterCustomLabel,
+                        canCreateAdditionalProjects = isPro,
+                    )
+            ) {
+                is ProjectCreationResult.Created -> {
+                    pendingProjectCreation = null
+                    _navigateToProject.emit(result.projectId)
+                }
+                ProjectCreationResult.LimitReached -> {
+                    _projectCreationPrompts.emit(repository.getProjectCount())
+                }
+                ProjectCreationResult.InvalidProject -> pendingProjectCreation = null
             }
-            val id =
-                repository.createProject(
-                    name = name,
-                    craftType = craftType,
-                    mainCounterLabelType = mainCounterLabelType,
-                    mainCounterCustomLabel = mainCounterCustomLabel,
-                ) ?: return
-            _navigateToProject.emit(id)
         }
 
         fun archiveProject(id: Long) {
             viewModelScope.launch {
                 val project = repository.getProject(id) ?: return@launch
-                repository.archiveProject(
-                    id = id,
-                    totalRows = project.count,
-                    completedAt = System.currentTimeMillis(),
-                )
+                when (
+                    val result =
+                        repository.completeProjectWithSessionChoice(
+                            projectId = id,
+                            totalRows = project.count,
+                            choice = null,
+                        )
+                ) {
+                    is ProjectCompletionResult.NeedsActiveSessionChoice -> {
+                        _pendingCompletionSessionAction.value =
+                            PendingProjectListSessionAction(result.session, setOf(id))
+                    }
+                    is ProjectCompletionResult.NeedsRecoveryReview -> {
+                        _pendingCompletionSessionAction.value =
+                            PendingProjectListSessionAction(result.session, setOf(id))
+                    }
+                    ProjectCompletionResult.Completed,
+                    ProjectCompletionResult.PersistenceFailure,
+                    ProjectCompletionResult.ProjectUnavailable,
+                    -> Unit
+                }
             }
         }
 
         fun deleteProject(id: Long) {
             viewModelScope.launch {
-                repository.deleteProject(id)
+                when (val result = repository.deleteProjectResolvingActiveSession(id, false)) {
+                    is ProjectDeletionResult.NeedsActiveSessionDiscard ->
+                        _pendingDeletionSessionAction.value =
+                            PendingProjectListSessionAction(result.session, setOf(id))
+                    ProjectDeletionResult.Deleted,
+                    ProjectDeletionResult.PersistenceFailure,
+                    ProjectDeletionResult.ProjectUnavailable,
+                    -> Unit
+                }
+            }
+        }
+
+        fun resolvePendingCompletion(saveSession: Boolean) {
+            val pending = _pendingCompletionSessionAction.value ?: return
+            viewModelScope.launch {
+                if (saveSession && pending.session.needsRecoveryReview) {
+                    _pendingCompletionSessionAction.value = null
+                    exitMultiSelectMode()
+                    _navigateToProject.emit(pending.session.projectId)
+                    return@launch
+                }
+                completeProjects(
+                    projectIds = pending.projectIds,
+                    choice =
+                        if (saveSession) {
+                            ActiveSessionCompletionChoice.SAVE
+                        } else {
+                            ActiveSessionCompletionChoice.DISCARD
+                        },
+                )
+                _pendingCompletionSessionAction.value = null
+                exitMultiSelectMode()
+            }
+        }
+
+        fun cancelPendingCompletion() {
+            _pendingCompletionSessionAction.value = null
+        }
+
+        fun resolvePendingDeletion() {
+            val pending = _pendingDeletionSessionAction.value ?: return
+            viewModelScope.launch {
+                pending.projectIds.forEach { id ->
+                    repository.deleteProjectResolvingActiveSession(
+                        id = id,
+                        discardActiveSession = id == pending.session.projectId,
+                    )
+                }
+                _pendingDeletionSessionAction.value = null
+                exitMultiSelectMode()
+            }
+        }
+
+        fun cancelPendingDeletion() {
+            _pendingDeletionSessionAction.value = null
+        }
+
+        private suspend fun completeProjects(
+            projectIds: Set<Long>,
+            choice: ActiveSessionCompletionChoice?,
+        ) {
+            projectIds.forEach { id ->
+                val project = repository.getProject(id) ?: return@forEach
+                repository.completeProjectWithSessionChoice(
+                    projectId = id,
+                    totalRows = project.count,
+                    choice = choice.takeIf { activeSession.value?.projectId == id },
+                )
             }
         }
 
@@ -372,20 +546,12 @@ class ProjectListViewModel
 
         fun openNotesEditor(projectId: Long) {
             viewModelScope.launch {
-                if (!proManager.hasFeature(ProFeature.NOTES)) {
-                    _upgradeToPro.emit(Unit)
-                    return@launch
-                }
                 _navigateToNotesEditor.emit(projectId)
             }
         }
 
         fun openPhotoGallery(projectId: Long) {
             viewModelScope.launch {
-                if (!proManager.hasFeature(ProFeature.PROGRESS_PHOTOS)) {
-                    _upgradeToPro.emit(Unit)
-                    return@launch
-                }
                 _navigateToPhotoGallery.emit(projectId)
             }
         }

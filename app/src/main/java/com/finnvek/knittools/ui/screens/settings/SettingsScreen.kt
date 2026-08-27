@@ -46,6 +46,7 @@ import com.finnvek.knittools.BuildConfig
 import com.finnvek.knittools.R
 import com.finnvek.knittools.data.datastore.AppLanguage
 import com.finnvek.knittools.data.datastore.ThemeMode
+import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.ui.components.CollectWithLifecycleEffect
 import com.finnvek.knittools.ui.components.InfoTip
 import com.finnvek.knittools.ui.components.localizedUppercase
@@ -55,15 +56,16 @@ import com.finnvek.knittools.ui.theme.knitToolsColors
 @Composable
 fun SettingsScreen(
     onUpgradeToPro: () -> Unit,
-    viewModel: SettingsViewModel = hiltViewModel(),
+    viewModelProvider: @Composable () -> SettingsViewModel = { hiltViewModel() },
 ) {
+    val viewModel = viewModelProvider()
     val prefs by viewModel.preferences.collectAsStateWithLifecycle()
     val proState by viewModel.proState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val resources = LocalResources.current
     val showLanguageSheet = remember { mutableStateOf(false) }
 
-    CollectWithLifecycleEffect(viewModel.messages) { messageRes ->
+    CollectWithLifecycleEffect({ viewModel.messages }) { messageRes ->
         Toast.makeText(context, resources.getString(messageRes), Toast.LENGTH_SHORT).show()
     }
 
@@ -137,14 +139,16 @@ fun SettingsScreen(
                 tipTitle = stringResource(R.string.tip_imperial_units_title),
                 tipDescription = stringResource(R.string.tip_imperial_units_desc),
             )
-            if (!proState.isPro) {
-                HorizontalDivider()
-                SectionHeader(stringResource(R.string.settings_section_pro))
+            HorizontalDivider()
+            SectionHeader(stringResource(R.string.settings_section_pro))
 
-                SettingsActionRow(
-                    label = stringResource(R.string.upgrade_to_pro),
-                    onClick = onUpgradeToPro,
-                )
+            SettingsSelectionRow(
+                label = stringResource(R.string.knittools_pro),
+                supportingText = stringResource(R.string.pro_content_stays_available),
+                valueText = proState.settingsStatusText(),
+                onClick = onUpgradeToPro,
+            )
+            if (proState.status != ProStatus.PRO_PURCHASED) {
                 HorizontalDivider()
                 SettingsActionRow(
                     label = stringResource(R.string.restore_purchases),
@@ -188,6 +192,20 @@ fun SettingsScreen(
         )
     }
 }
+
+@Composable
+private fun com.finnvek.knittools.pro.ProState.settingsStatusText(): String =
+    when (status) {
+        ProStatus.TRIAL_NOT_STARTED -> stringResource(R.string.pro_status_not_started)
+        ProStatus.TRIAL_ACTIVE ->
+            androidx.compose.ui.res.pluralStringResource(
+                R.plurals.pro_status_trial_days,
+                trialDaysRemaining,
+                trialDaysRemaining,
+            )
+        ProStatus.TRIAL_EXPIRED -> stringResource(R.string.pro_status_trial_ended)
+        ProStatus.PRO_PURCHASED -> stringResource(R.string.pro_status_purchased)
+    }
 
 @Composable
 private fun SectionHeader(title: String) {
@@ -262,6 +280,7 @@ private fun SettingsInfoText(text: String) {
 private fun SwitchRow(
     label: String,
     checked: Boolean,
+    // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
     onCheckedChange: (Boolean) -> Unit,
 ) {
     Row(
@@ -273,6 +292,7 @@ private fun SwitchRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(label, modifier = Modifier.weight(1f))
+        // CPD-ON
         Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
 }

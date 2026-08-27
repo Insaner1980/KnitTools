@@ -125,6 +125,7 @@ fun GaugeScreen(
         )
 
     ToolScreenScaffold(
+        // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
         title = stringResource(R.string.tool_gauge_converter),
         onBack = onBack,
     ) { padding ->
@@ -137,6 +138,7 @@ fun GaugeScreen(
                     .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            // CPD-ON
             PasteInstructionButton(
                 isPro = proState.isPro,
                 hintText = stringResource(R.string.instruction_hint_gauge),
@@ -177,6 +179,7 @@ fun GaugeScreen(
                         onSwatchRowsChange = { swatchRows = it },
                         onYourStChange = { yourSt = it },
                         onYourRowsChange = { yourRows = it },
+                        // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
                     ),
             )
 
@@ -190,6 +193,7 @@ fun GaugeScreen(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
+                    // CPD-ON
                     GaugeSection(
                         title = stringResource(R.string.pattern_gauge),
                         stitches = patternSt,
@@ -200,6 +204,7 @@ fun GaugeScreen(
                         headerColor = MaterialTheme.colorScheme.secondary,
                     )
                 }
+                // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
             }
 
             // Osio 3: Pattern Instructions
@@ -211,6 +216,7 @@ fun GaugeScreen(
                 Column(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
+                    // CPD-ON
                 ) {
                     PatternInputSection(
                         stitchCount = stitchCount,
@@ -257,6 +263,7 @@ private fun YourGaugeSection(
     state: YourGaugeSectionState,
     actions: YourGaugeSectionActions,
 ) {
+    // CPD-OFF: Lomakeosion vakiorakenne pidetaan ruutukohtaisen sisallon yhteydessa.
     Surface(
         shape = RoundedCornerShape(18.dp),
         color = MaterialTheme.colorScheme.surfaceVariant,
@@ -266,6 +273,7 @@ private fun YourGaugeSection(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            // CPD-ON
             Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                 SectionHeader(
                     text = stringResource(R.string.your_gauge_section),

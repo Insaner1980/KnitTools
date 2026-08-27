@@ -9,7 +9,7 @@ class RavelryDetailFlowSourceTest {
     fun `detail screen reports save result from view model events`() {
         val detailScreen = ProjectSourceFiles.read(RAVELRY_DETAIL_SCREEN)
 
-        assertTrue(detailScreen.contains("CollectWithLifecycleEffect(viewModel.patternSaveResults)"))
+        assertTrue(detailScreen.contains("CollectWithLifecycleEffect({ viewModel.patternSaveResults })"))
         assertTrue(detailScreen.contains("PatternSaveResult.Saved"))
         assertTrue(detailScreen.contains("PatternSaveResult.Failed"))
         assertTrue(detailScreen.contains("onSave = { viewModel.savePattern() }"))

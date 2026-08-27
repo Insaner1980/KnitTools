@@ -6,13 +6,17 @@ import org.junit.Test
 
 class FeatureGateRaceSourceTest {
     @Test
-    fun `pattern camera scan rechecks feature gate at launch and capture boundaries`() {
+    fun `pattern camera scan persists bounded authorization across the camera result`() {
         val picker = ProjectSourceFiles.read(PATTERN_PICKER_SHEET)
 
         assertTrue(picker.contains("internal fun canStartPatternCameraScan("))
-        assertTrue(picker.contains("enabled = canStartPatternCameraScan(projectId, canUseCameraScan)"))
-        assertTrue(picker.contains("if (!canStartPatternCameraScan(pendingProjectId, currentCanUseCameraScan))"))
-        assertTrue(picker.contains("canUseCameraScan = currentCanUseCameraScan"))
+        assertTrue(picker.contains("var pendingCaptureAuthorized by rememberSaveable"))
+        assertTrue(picker.contains("currentCanUseCameraScan || pendingCaptureAuthorized"))
+        assertTrue(picker.contains("imageImportViewModel.authorizeCameraCapture"))
+        assertTrue(picker.contains("imageImportViewModel.createCameraCaptureTarget"))
+        assertTrue(picker.contains("imageImportViewModel.discardCameraCapture(uri, file)"))
+        assertTrue(picker.contains("catch (_: ActivityNotFoundException)"))
+        assertTrue(picker.contains("pendingCaptureAuthorized = false"))
     }
 
     @Test
@@ -28,15 +32,13 @@ class FeatureGateRaceSourceTest {
     }
 
     @Test
-    fun `counter history pruning waits for initial purchase state`() {
+    fun `counter history pruning is independent of pro and billing state`() {
         val viewModel = ProjectSourceFiles.read(COUNTER_VIEW_MODEL)
-        val proManager = ProjectSourceFiles.read(PRO_MANAGER)
 
-        assertTrue(proManager.contains("billingManager.purchaseStateReady"))
-        assertTrue(proManager.contains("_initialStateReady.value = purchaseStateReady"))
-        assertTrue(viewModel.contains("combine(proManager.proState, proManager.initialStateReady)"))
-        assertTrue(viewModel.contains("if (initialStateReady && !proState.isPro)"))
-        assertFalse(viewModel.contains("if (!proState.isPro) {\n                        pruneHistoryForFree()"))
+        assertTrue(viewModel.contains("pruneHistory(project.id)"))
+        assertTrue(viewModel.contains("private suspend fun pruneHistory(projectId: Long)"))
+        assertFalse(viewModel.contains("pruneHistoryForFree"))
+        assertFalse(viewModel.contains("initialStateReady && !proState.isPro"))
     }
 
     private companion object {
@@ -44,8 +46,6 @@ class FeatureGateRaceSourceTest {
             "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternPickerSheet.kt"
         const val COUNTER_VIEW_MODEL =
             "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterViewModel.kt"
-        const val PRO_MANAGER =
-            "app/src/main/java/com/finnvek/knittools/pro/ProManager.kt"
         const val COUNTER_SCREEN =
             "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterScreen.kt"
     }

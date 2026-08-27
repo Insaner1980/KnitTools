@@ -21,7 +21,8 @@ class CounterProjectYarnSourceTest {
         assertTrue(screen.contains("projectYarnNotes = state.projectYarnNotes"))
         assertTrue(screen.contains("onSaveProjectYarnNote = viewModel::saveProjectYarnNote"))
         assertTrue(screen.contains("onDeleteProjectYarnNote = viewModel::deleteProjectYarnNote"))
-        assertTrue(screen.contains("onSaveProjectYarnNoteToMyYarn = viewModel::saveProjectYarnNoteToMyYarn"))
+        assertTrue(screen.contains("onSaveProjectYarnNoteToMyYarn = { noteId ->"))
+        assertTrue(screen.contains("viewModel.saveProjectYarnNoteToMyYarn(noteId)"))
         assertTrue(sheet.contains("R.string.choose_from_my_yarn"))
         assertTrue(sheet.contains("R.string.add_yarn_to_project"))
     }

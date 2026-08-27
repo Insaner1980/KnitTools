@@ -5,6 +5,7 @@ import androidx.core.net.toUri
 import com.finnvek.knittools.R
 import com.finnvek.knittools.data.local.CounterProjectDao
 import com.finnvek.knittools.data.local.DatabaseTransactionRunner
+import com.finnvek.knittools.data.local.ProjectDocumentDao
 import com.finnvek.knittools.data.local.SavedPatternDao
 import com.finnvek.knittools.data.local.SavedPatternEntity
 import com.finnvek.knittools.data.local.toDomain
@@ -36,6 +37,7 @@ class SavedPatternRepository
         private val counterProjectDao: CounterProjectDao,
         private val transactionRunner: DatabaseTransactionRunner,
         @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
+        private val projectDocumentDao: ProjectDocumentDao? = null,
     ) {
         private val saveMutex = Mutex()
 
@@ -193,7 +195,11 @@ class SavedPatternRepository
 
             val savedPatternStillReferencesFile = dao.getByLocalPdfUri(patternUrl) != null
             val projectStillReferencesFile = counterProjectDao.countProjectsUsingPatternUri(patternUrl) > 0
-            if (!savedPatternStillReferencesFile && !projectStillReferencesFile) {
+            val projectDocumentStillReferencesFile = projectDocumentDao?.isUriReferenced(patternUrl) == true
+            if (!savedPatternStillReferencesFile &&
+                !projectStillReferencesFile &&
+                !projectDocumentStillReferencesFile
+            ) {
                 withContext(ioDispatcher) {
                     AppFileStorage.deleteUri(context, uri)
                 }

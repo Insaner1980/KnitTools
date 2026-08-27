@@ -10,6 +10,7 @@ import com.finnvek.knittools.di.IoDispatcher
 import com.finnvek.knittools.domain.model.ProgressPhoto
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
@@ -81,13 +82,13 @@ class ProgressPhotoRepository
                     try {
                         storage.compressAndSave(context, sourceUri, file)
                     } catch (throwable: IOException) {
-                        runCatching { storage.deletePhoto(targetUri) }
+                        runCatching { storage.deletePhoto(context, projectId, targetUri) }
                         throw throwable
                     } finally {
                         storage.deleteTemporarySource(context, sourceUri)
                     }
                 if (!saved) {
-                    runCatching { storage.deletePhoto(targetUri) }
+                    runCatching { storage.deletePhoto(context, projectId, targetUri) }
                     return@withContext 0L
                 }
                 runCatching {
@@ -99,9 +100,13 @@ class ProgressPhotoRepository
                             note = note?.take(100),
                         ),
                     )
-                }.onFailure {
-                    storage.deletePhoto(targetUri)
-                }.getOrThrow()
+                }.fold(
+                    onSuccess = { it },
+                    onFailure = { failure ->
+                        runCatching { storage.deletePhoto(context, projectId, targetUri) }
+                        throw failure
+                    },
+                )
             }
 
         suspend fun updatePhotoNote(
@@ -112,20 +117,19 @@ class ProgressPhotoRepository
         }
 
         suspend fun deletePhoto(photo: ProgressPhoto) {
-            withContext(ioDispatcher) {
-                storage.deletePhoto(photo.photoUri)
-            }
-            dao.delete(photo.id)
+            val stored = dao.getByIds(listOf(photo.id)).singleOrNull() ?: return
+            if (stored.projectId != photo.projectId) return
+            dao.delete(stored.id)
+            cleanupDeletedPhotos(listOf(stored))
         }
 
         suspend fun deletePhotos(ids: List<Long>) {
-            val photos = dao.getByIds(ids)
-            photos.forEach { photo ->
-                withContext(ioDispatcher) {
-                    storage.deletePhoto(photo.photoUri)
-                }
-                dao.delete(photo.id)
-            }
+            val distinctIds = ids.distinct()
+            if (distinctIds.isEmpty()) return
+            val photos = dao.getByIds(distinctIds)
+            if (photos.isEmpty()) return
+            dao.deleteByIds(photos.map { it.id })
+            cleanupDeletedPhotos(photos)
         }
 
         suspend fun deleteAllPhotosForProject(projectId: Long) {
@@ -137,6 +141,16 @@ class ProgressPhotoRepository
         suspend fun deletePendingPhotoFile(filePath: String?) {
             withContext(ioDispatcher) {
                 storage.deletePendingPhotoFile(filePath)
+            }
+        }
+
+        private suspend fun cleanupDeletedPhotos(photos: List<ProgressPhotoEntity>) {
+            withContext(ioDispatcher + NonCancellable) {
+                photos.forEach { photo ->
+                    runCatching {
+                        storage.deletePhoto(context, photo.projectId, photo.photoUri)
+                    }
+                }
             }
         }
 

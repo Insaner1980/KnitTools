@@ -1,5 +1,6 @@
 package com.finnvek.knittools.data.remote
 
+import com.finnvek.knittools.domain.model.PatternAvailability
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertThrows
@@ -61,6 +62,28 @@ class RavelryBackendClientMapperTest {
                                 "designerName" to "",
                                 "canonicalUrl" to "https://www.ravelry.com/patterns/library/mystery-mitts",
                                 "availability" to "unknown",
+                            ),
+                        ),
+                ),
+            )
+
+        val pattern = response.patterns.single()
+
+        assertEquals(PatternAvailability.Unknown, pattern.availability)
+        assertEquals(false, pattern.free)
+    }
+
+    @Test
+    fun `maps malformed transport availability to unknown`() {
+        val response =
+            RavelryBackendMappers.searchResponseFrom(
+                mapOf(
+                    "patterns" to
+                        listOf(
+                            mapOf(
+                                "ravelryPatternId" to 44,
+                                "title" to "Malformed Mitts",
+                                "availability" to "subscription",
                             ),
                         ),
                 ),

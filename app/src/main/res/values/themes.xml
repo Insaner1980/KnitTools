@@ -3,7 +3,6 @@
     <style name="Theme.KnitTools.Splash" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/splash_background</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/icon_splash</item>
-        <item name="windowSplashScreenIconBackgroundColor">@color/splash_background</item>
         <item name="postSplashScreenTheme">@style/Theme.KnitTools.Main</item>
         <item name="android:windowLightStatusBar">false</item>
         <item name="android:windowLightNavigationBar">false</item>

@@ -8,6 +8,7 @@ import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.domain.model.YarnCardStatus
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
+import com.finnvek.knittools.pro.ProState
 import com.finnvek.knittools.repository.CounterRepository
 import com.finnvek.knittools.repository.ProgressPhotoRepository
 import com.finnvek.knittools.repository.SavedPatternRepository
@@ -77,6 +78,7 @@ class LibraryViewModelTest {
         every { yarnCardRepository.getAllCards() } returns yarnCards
         every { progressPhotoRepository.getAllPhotos() } returns photos
         every { counterRepository.getAllProjects() } returns projects
+        every { proManager.proState } returns MutableStateFlow(ProState())
         every { proManager.hasFeature(ProFeature.PROGRESS_PHOTOS) } answers { progressPhotosFeature.value }
         every { proManager.hasFeatureFlow(ProFeature.PROGRESS_PHOTOS) } returns progressPhotosFeature
         every { proManager.hasFeature(ProFeature.UNLIMITED_YARN) } answers { yarnCardsFeature.value }

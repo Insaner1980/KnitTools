@@ -37,10 +37,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil3.compose.AsyncImage
 import com.finnvek.knittools.R
 import com.finnvek.knittools.data.remote.PatternDetail
 import com.finnvek.knittools.ui.components.CollectWithLifecycleEffect
+import com.finnvek.knittools.ui.components.ProPromptRequest
+import com.finnvek.knittools.ui.components.ProPromptSheet
+import com.finnvek.knittools.ui.components.ProPromptSource
+import com.finnvek.knittools.ui.components.RemotePatternImage
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
 import com.finnvek.knittools.ui.theme.RavelryTeal
 
@@ -52,8 +55,9 @@ fun RavelryDetailScreen(
     onUpgradeToPro: () -> Unit = {},
     onLaunchRavelryAuth: (Uri) -> Unit = {},
     onBrowseRavelry: () -> Unit = {},
-    viewModel: RavelryViewModel = hiltViewModel(),
+    viewModelProvider: @Composable () -> RavelryViewModel = { hiltViewModel() },
 ) {
+    val viewModel = viewModelProvider()
     val detail by viewModel.patternDetail.collectAsStateWithLifecycle()
     val isLoading by viewModel.isDetailLoading.collectAsStateWithLifecycle()
     val isSaved by viewModel.isPatternSaved.collectAsStateWithLifecycle()
@@ -63,24 +67,41 @@ fun RavelryDetailScreen(
     val savedMessage = stringResource(R.string.pattern_saved_to_library)
     val saveFailedMessage = stringResource(R.string.generic_error_unknown)
     val openFailedMessage = stringResource(R.string.pattern_open_failed)
+    var projectPromptCount by rememberSaveable { mutableStateOf<Int?>(null) }
     LaunchedEffect(viewModel, patternId) {
         viewModel.refreshAuthStatus()
         viewModel.loadDetail(patternId)
     }
 
-    CollectWithLifecycleEffect(viewModel.signInLaunchRequests) { uri ->
+    CollectWithLifecycleEffect({ viewModel.signInLaunchRequests }) { uri ->
         onLaunchRavelryAuth(uri)
     }
 
-    CollectWithLifecycleEffect(viewModel.navigateToProject) { projectId ->
+    CollectWithLifecycleEffect({ viewModel.navigateToProject }) { projectId ->
         onStartProject(projectId)
     }
 
-    CollectWithLifecycleEffect(viewModel.upgradeToPro) {
-        onUpgradeToPro()
+    CollectWithLifecycleEffect({ viewModel.projectCreationPrompts }) { count ->
+        projectPromptCount = count
     }
 
-    CollectWithLifecycleEffect(viewModel.patternSaveResults) { result ->
+    projectPromptCount?.let { count ->
+        ProPromptSheet(
+            request =
+                ProPromptRequest(
+                    source = ProPromptSource.Projects,
+                    existingProjectCount = count,
+                ),
+            onDismiss = { projectPromptCount = null },
+            onTrialStarted = {
+                projectPromptCount = null
+                viewModel.createProjectFromPattern()
+            },
+            onSeePro = onUpgradeToPro,
+        )
+    }
+
+    CollectWithLifecycleEffect({ viewModel.patternSaveResults }) { result ->
         val message =
             when (result) {
                 PatternSaveResult.Saved -> savedMessage
@@ -239,8 +260,10 @@ private fun PatternDetailContent(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp),
     ) {
-        PatternHeroImage(photoUrl = pattern.mainPhotoUrl, name = pattern.name)
+        PatternHeroImage(photoUrl = pattern.mainPhotoUrl)
         PatternHeader(name = pattern.name, designerName = pattern.designer?.name)
+        Spacer(modifier = Modifier.height(8.dp))
+        PatternAvailabilityBadge(availability = pattern.availability)
         Spacer(modifier = Modifier.height(16.dp))
         PatternDetailRows(pattern = pattern)
         PatternNotes(notes = pattern.notes)
@@ -256,23 +279,17 @@ private fun PatternDetailContent(
 }
 
 @Composable
-private fun PatternHeroImage(
-    photoUrl: String?,
-    name: String,
-) {
-    photoUrl?.let { url ->
-        AsyncImage(
-            model = url,
-            contentDescription = name,
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(4f / 3f)
-                    .clip(RoundedCornerShape(12.dp)),
-            contentScale = ContentScale.Crop,
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-    }
+private fun PatternHeroImage(photoUrl: String?) {
+    RemotePatternImage(
+        imageUrl = photoUrl,
+        contentScale = ContentScale.Crop,
+        modifier =
+            Modifier
+                .padding(bottom = 16.dp)
+                .fillMaxWidth()
+                .aspectRatio(4f / 3f)
+                .clip(RoundedCornerShape(12.dp)),
+    )
 }
 
 @Composable

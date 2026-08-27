@@ -20,12 +20,12 @@ class RavelryPhase8DocumentationSourceTest {
             assertTrue(instructions.contains("project pattern cards open SavedPatternDetail for metadata-only links"))
         }
 
-        assertTrue(project.contains("Nykyinen Android-koodi Phase 8:n jälkeen"))
+        assertTrue(project.contains("## Ravelry integration"))
         assertTrue(project.contains("RavelryImportConfirmationSheet"))
         assertTrue(project.contains("ACTION_SEND text/plain"))
-        assertTrue(project.contains("PatternPickerSheet listaa kaikki saved patternit"))
+        assertTrue(project.contains("`PatternPickerSheet` lists all saved patterns for project attachment"))
         assertTrue(project.contains("SavedPatternDetailScreen"))
-        assertTrue(project.contains("metadata-only linkit avaavat `SavedPatternDetail`-reitin"))
+        assertTrue(project.contains("Metadata detail opens `SavedPatternDetailScreen`"))
 
         assertTrue(memory.contains("2026-06-12: Ravelry UI/Saved Patterns -vaihe 8"))
         assertTrue(memory.contains("metadata-only `SavedPatternDetail`"))

@@ -341,3 +341,33 @@ reason = "Gradle verification metadata records io.netty:netty-common@4.1.110.Fin
 id = "GHSA-xxqh-mfjm-7mv9"
 ignoreUntil = 2026-10-31
 reason = "Gradle verification metadata records io.netty:netty-codec-http@4.1.110.Final, io.netty:netty-codec-http@4.1.93.Final; the affected version is absent from the app debug/release runtime classpaths."
+
+[[IgnoredVulns]]
+id = "GHSA-8c42-7qj2-3j46"
+ignoreUntil = 2026-10-31
+reason = "Gradle verification metadata records io.netty:netty-codec-http@4.1.110.Final and 4.1.93.Final; neither version is present in the current buildscript or app debug/release runtime classpaths."
+
+[[IgnoredVulns]]
+id = "GHSA-hjcp-jmpx-g3qm"
+ignoreUntil = 2026-10-31
+reason = "Dependency-Check 13.0.0 resolves fixed httpclient5 5.6.3; verification metadata retains obsolete 5.5.1 and 5.6.1 entries that are absent from the current buildscript and app debug/release runtime classpaths."
+
+[[IgnoredVulns]]
+id = "GHSA-hf6x-8p5f-cgmf"
+ignoreUntil = 2026-10-31
+reason = "Dependency-Check 13.0.0 resolves fixed httpcore5 5.4.3; verification metadata retains obsolete 5.3.6 and 5.4.2 entries that are absent from the current buildscript and app debug/release runtime classpaths."
+
+[[IgnoredVulns]]
+id = "GHSA-v3jc-474w-2wm6"
+ignoreUntil = 2026-10-31
+reason = "Dependency-Check 13.0.0 resolves fixed httpcore5-h2 5.4.3; verification metadata retains obsolete 5.3.6 and 5.4 entries that are absent from the current buildscript and app debug/release runtime classpaths."
+
+[[IgnoredVulns]]
+id = "GHSA-r937-wjx7-w2jp"
+ignoreUntil = 2026-10-31
+reason = "Kotlin 2.4.10 is the latest stable project toolchain and the first listed fix is 2.4.20-Beta1; exploitation requires a privileged local attacker to supply malicious build-cache metadata, and this project configures no shared remote Gradle build cache."
+
+[[IgnoredVulns]]
+id = "GHSA-pmhh-3w7g-xqp8"
+ignoreUntil = 2026-10-31
+reason = "Dependency-Check 13.0.0 resolves fixed jsoup 1.23.1; verification metadata retains obsolete 1.22.1 and 1.22.2 entries that are absent from the current buildscript and app debug/release runtime classpaths."

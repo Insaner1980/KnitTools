@@ -1,16 +1,12 @@
 package com.finnvek.knittools.ui.screens.session
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,16 +25,17 @@ import com.finnvek.knittools.R
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.SessionItem
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
+import com.finnvek.knittools.ui.components.localizedUppercase
+import com.finnvek.knittools.ui.theme.knitToolsColors
 
 @Composable
 fun SessionHistoryScreen(
     onBack: () -> Unit,
-    onUpgradeToPro: () -> Unit = {},
     viewModel: SessionHistoryViewModel = hiltViewModel(),
 ) {
     val sessions by viewModel.sessions.collectAsStateWithLifecycle()
-    val isPro by viewModel.isPro.collectAsStateWithLifecycle()
     val projectMissing by viewModel.projectMissing.collectAsStateWithLifecycle()
+    val projectName by viewModel.projectName.collectAsStateWithLifecycle()
     var pendingDeleteSessionId by rememberSaveable { mutableStateOf<Long?>(null) }
 
     LaunchedEffect(projectMissing) {
@@ -71,28 +68,6 @@ fun SessionHistoryScreen(
                     .fillMaxSize()
                     .padding(padding),
         ) {
-            if (!isPro) {
-                Card(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
-                            .clickable(onClick = onUpgradeToPro),
-                    shape = MaterialTheme.shapes.medium,
-                    colors =
-                        CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        ),
-                ) {
-                    Text(
-                        text = stringResource(R.string.pro_full_history_hint),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.secondary,
-                        modifier = Modifier.padding(12.dp),
-                    )
-                }
-            }
-
             if (sessions.isEmpty()) {
                 Column(
                     modifier =
@@ -113,6 +88,18 @@ fun SessionHistoryScreen(
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
+                    // Insightsista tullessa otsikko on pelkkä "History", joten projekti
+                    // pitää lukea ruudulta. Sama osiomerkki kuin Libraryssa.
+                    projectName?.let { name ->
+                        item {
+                            Text(
+                                text = name.localizedUppercase(),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.knitToolsColors.brandWine,
+                                modifier = Modifier.padding(bottom = 4.dp),
+                            )
+                        }
+                    }
                     items(sessions, key = { it.id }) { session ->
                         SessionItem(
                             startedAt = session.startedAt,

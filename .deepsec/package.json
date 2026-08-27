@@ -13,10 +13,10 @@
     "test:matchers": "tsc --project tsconfig.json --noEmit false --outDir .tmp/test-build && node --test .tmp/test-build/matchers/knittools-kotlin-security-surface.test.js"
   },
   "dependencies": {
-    "deepsec": "2.2.9"
+    "deepsec": "2.3.6"
   },
   "devDependencies": {
-    "@types/node": "^26.1.2",
+    "@types/node": "^26.2.0",
     "typescript": "^7.0.2"
   }
 }

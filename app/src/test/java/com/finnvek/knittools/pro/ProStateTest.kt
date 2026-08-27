@@ -29,6 +29,14 @@ class ProStateTest {
     fun `default state is not pro`() {
         val state = ProState()
         assertFalse(state.isPro)
+        assertEquals(ProStatus.TRIAL_NOT_STARTED, state.status)
+    }
+
+    @Test
+    fun `trial not started is not pro`() {
+        val state = ProState(status = ProStatus.TRIAL_NOT_STARTED)
+
+        assertFalse(state.isPro)
     }
 
     @Test

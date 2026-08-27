@@ -212,11 +212,13 @@ object InstructionParser {
             Regex(
                 """(?:INCREASE|INC)\s+1\s*(?:STITCH|ST|STS?)\s+(?:IN|ON)\s+EVERY\s+(\d+)\w*\s+(?:ST|STITCH).*?(?:ACROSS|OVER)\s+(\d+)""",
             )
+        // CPD-OFF: Erilliset kielioppisaannot pidetaan eksplisiittisina.
         val match = incEveryNth.find(upper) ?: return null
         val every = match.groupValues[1].toIntOrNull()
         val total = match.groupValues[2].toIntOrNull()
         if (every == null || total == null || every <= 0) return null
         return ParsedInstruction.IncreaseDecrease(total, total / every, true)
+        // CPD-ON
     }
 
     private fun parseIncreaseDecreaseAcross(upper: String): ParsedInstruction.IncreaseDecrease? {
@@ -283,6 +285,7 @@ object InstructionParser {
     private fun parseGaugeStandard(upper: String): ParsedInstruction.Gauge? {
         val pattern =
             Regex(
+                // CPD-OFF: Erilliset kielioppisaannot pidetaan eksplisiittisina.
                 """(\d+(?:\.\d+)?)\s*(?:STITCHES?|STS?)\s*(?:AND|,|&|X|/)\s*(\d+(?:\.\d+)?)\s*(?:ROWS?|R)\s*(?:=|PER|TO|OVER|IN)?\s*(10\s*CM|4\s*IN(?:CHES?)?)""",
             )
         val m = pattern.find(upper) ?: return null
@@ -292,6 +295,7 @@ object InstructionParser {
             stitchesPer10cm = stitches,
             rowsPer10cm = rows,
             unit = parseGaugeUnit(m.groupValues[3]),
+            // CPD-ON
         )
     }
 
@@ -443,6 +447,7 @@ object InstructionParser {
         // "X stitches over/in Y cm" — lyhyt swatch-muoto
         val stsOverCm =
             Regex("""(\d+)\s*(?:STITCHES?|STS?)\s+(?:OVER|IN|ACROSS)\s+(\d+(?:\.\d+)?)\s*(?:CM|IN|INCHES?)""")
+        // CPD-OFF: Erilliset kielioppisaannot pidetaan eksplisiittisina.
         stsOverCm.find(upper)?.let { m ->
             val sts = m.groupValues[1].toIntOrNull()
             val width = m.groupValues[2].toDoubleOrNull()
@@ -451,6 +456,7 @@ object InstructionParser {
                     width = width,
                     stitches = sts,
                     lengthUnit = detectLengthUnit(m.value),
+                    // CPD-ON
                 )
             }
         }

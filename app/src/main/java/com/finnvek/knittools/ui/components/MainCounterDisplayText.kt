@@ -9,6 +9,40 @@ import com.finnvek.knittools.domain.calculator.MainCounterLabelSlot
 import com.finnvek.knittools.domain.calculator.MainCounterTargetSlot
 import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.MainCounterLabelType
+import kotlin.math.absoluteValue
+
+sealed interface MainCounterTargetStatus {
+    data class Remaining(
+        val countSlot: MainCounterCountSlot,
+    ) : MainCounterTargetStatus
+
+    data object Reached : MainCounterTargetStatus
+
+    data class Past(
+        val countSlot: MainCounterCountSlot,
+    ) : MainCounterTargetStatus
+}
+
+fun mainCounterTargetStatus(targetLine: MainCounterTargetSlot?): MainCounterTargetStatus? {
+    val slot = targetLine?.takeIf { it.target > 0 } ?: return null
+    val remaining = slot.target - slot.count
+    val countSlot =
+        MainCounterCountSlot(
+            count = remaining.absoluteValue,
+            labelType = slot.labelType,
+            customLabel = slot.customLabel,
+        )
+    return when {
+        remaining > 0 -> MainCounterTargetStatus.Remaining(countSlot)
+        remaining == 0 -> MainCounterTargetStatus.Reached
+        else -> MainCounterTargetStatus.Past(countSlot)
+    }
+}
+
+fun mainCounterTargetFraction(targetLine: MainCounterTargetSlot?): Float? =
+    targetLine
+        ?.takeIf { it.target > 0 }
+        ?.let { slot -> (slot.count.toFloat() / slot.target).coerceIn(0f, 1f) }
 
 @Composable
 fun craftTypeLabel(craftType: CraftType): String =

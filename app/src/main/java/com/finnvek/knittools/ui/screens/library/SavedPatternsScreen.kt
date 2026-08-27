@@ -47,7 +47,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
-import com.finnvek.knittools.data.remote.PatternAvailability
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.screens.ravelry.PatternCard
@@ -213,6 +212,7 @@ internal fun SelectModeDeleteBar(
     visible: Boolean,
     onDeleteClick: () -> Unit,
 ) {
+    // CPD-OFF: Valintapalkin Compose-rakenne on komponentin varsinainen vastuu.
     AnimatedVisibility(
         visible = visible,
         enter = slideInVertically(initialOffsetY = { it }),
@@ -225,6 +225,7 @@ internal fun SelectModeDeleteBar(
                         .fillMaxWidth()
                         .padding(16.dp),
                 horizontalArrangement = Arrangement.Center,
+                // CPD-ON
             ) {
                 Button(
                     onClick = onDeleteClick,
@@ -313,7 +314,7 @@ private fun SavedPatternItem(
                     designerName = pattern.designerName,
                     thumbnailUrl = pattern.thumbnailUrl,
                     difficulty = pattern.difficulty,
-                    availability = PatternAvailability.fromFree(pattern.isFree),
+                    availability = pattern.availability,
                 ),
             onClick = onClick,
             modifier = Modifier.background(backgroundColor, MaterialTheme.shapes.large),

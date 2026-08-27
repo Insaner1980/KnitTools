@@ -1,10 +1,13 @@
 package com.finnvek.knittools.repository
 
 import android.content.Context
+import com.finnvek.knittools.data.local.ActiveSessionEntity
 import com.finnvek.knittools.data.local.CounterHistoryEntity
+import com.finnvek.knittools.data.local.CounterProjectEntity
 import com.finnvek.knittools.data.local.ImmediateDatabaseTransactionRunner
 import com.finnvek.knittools.data.local.SessionDao
 import com.finnvek.knittools.data.local.SessionEntity
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -68,20 +71,23 @@ class CounterRepositoryTargetRowsTest {
 // Apurakenteet
 // ---------------------------------------------------------------------------
 
-private fun buildRepository(dao: FakeCounterProjectDao): CounterRepository =
-    CounterRepository(
+private fun buildRepository(dao: FakeCounterProjectDao): CounterRepository {
+    val projectCounterDao = mockk<com.finnvek.knittools.data.local.ProjectCounterDao>(relaxed = true)
+    every { projectCounterDao.getCountersForProject(any()) } returns flowOf(emptyList())
+    return CounterRepository(
         dao = dao,
-        projectCounterDao = mockk(relaxed = true),
+        projectCounterDao = projectCounterDao,
         sessionDao = StubSessionDao(),
         photoStorage = mockk(relaxed = true),
         patternDocumentStorage = mockk(relaxed = true),
         context = mockk<Context>(relaxed = true),
         yarnCardRepository = mockk(relaxed = true),
         savedPatternRepository = mockk(relaxed = true),
-        patternAnnotationLayerRepository = mockk(relaxed = true),
+        projectDocumentRepository = mockk(relaxed = true),
         transactionRunner = ImmediateDatabaseTransactionRunner,
         ioDispatcher = Dispatchers.Unconfined,
     )
+}
 
 private class FakeCounterProjectDao(
     private val latestHistory: CounterHistoryEntity?,
@@ -90,6 +96,13 @@ private class FakeCounterProjectDao(
     var lastDeletedHistoryId: Long? = null
     var lastTargetRows: Int? = null
     var targetRowsWasSetToNull: Boolean = false
+
+    override suspend fun getProject(id: Long): CounterProjectEntity =
+        CounterProjectEntity(
+            id = id,
+            name = "Test project",
+            count = latestHistory?.newValue ?: 0,
+        )
 
     override suspend fun getLatestHistory(projectId: Long): CounterHistoryEntity? = latestHistory
 
@@ -116,6 +129,16 @@ private class FakeCounterProjectDao(
 }
 
 private class StubSessionDao : SessionDao {
+    override fun observeActiveSession(): Flow<ActiveSessionEntity?> = flowOf(null)
+
+    override suspend fun getActiveSession(): ActiveSessionEntity? = null
+
+    override suspend fun insertActiveSession(session: ActiveSessionEntity) = Unit
+
+    override suspend fun updateActiveSession(session: ActiveSessionEntity): Int = 0
+
+    override suspend fun deleteActiveSession(sessionToken: String): Int = 0
+
     override fun getSessionsForProject(projectId: Long): Flow<List<SessionEntity>> = flowOf(emptyList())
 
     override suspend fun insert(session: SessionEntity): Long = 0L

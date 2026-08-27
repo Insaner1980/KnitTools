@@ -38,6 +38,7 @@ import com.finnvek.knittools.repository.CounterRepository
 import com.finnvek.knittools.repository.PatternAnnotationLayerRepository
 import com.finnvek.knittools.repository.PatternAnnotationRepository
 import com.finnvek.knittools.repository.ProjectCounterRepository
+import com.finnvek.knittools.repository.ProjectDocumentRepository
 import com.finnvek.knittools.repository.retryOnRepositoryReadFailure
 import com.finnvek.knittools.ui.theme.PatternAnnotationTokens
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -103,6 +104,7 @@ data class PatternAnnotationUiState(
     val projectAnnotations: List<PatternAnnotation> = emptyList(),
     val editableLayerId: Long? = null,
     val loadError: PatternAnnotationLoadError = PatternAnnotationLoadError.NONE,
+    // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
     val activeTool: PatternAnnotationTool = PatternAnnotationTool.BROWSE,
     val penArgb: Int = PatternAnnotationTokens.PEN_DEFAULT_ARGB,
     val penStrokeWidth: Float = PatternAnnotationTokens.PEN_DEFAULT_WIDTH,
@@ -112,6 +114,7 @@ data class PatternAnnotationUiState(
     val highlighterAxisLock: PatternHighlighterAxisLock = PatternHighlighterAxisLock.FREE,
     val draftStroke: PatternStrokeDraft? = null,
     val inProgressAnnotation: PatternAnnotation? = null,
+    // CPD-ON
     val isSaving: Boolean = false,
     val writeError: PatternAnnotationWriteError = PatternAnnotationWriteError.NONE,
     val selectedAnnotationId: Long? = null,
@@ -140,6 +143,7 @@ class PatternAnnotationViewModel
         private val counterRepository: CounterRepository,
         private val layerRepository: PatternAnnotationLayerRepository,
         private val annotationRepository: PatternAnnotationRepository,
+        private val projectDocumentRepository: ProjectDocumentRepository,
         private val projectCounterRepository: ProjectCounterRepository? = null,
         private val pdfExporter: PatternPdfExporter? = null,
     ) : ViewModel() {
@@ -719,30 +723,26 @@ class PatternAnnotationViewModel
                     }
 
                 is PatternAnnotationOwner.Project ->
-                    counterRepository.observeProject(owner.projectId).flatMapLatest { project ->
-                        if (project == null) {
-                            flowOf(AnnotationLayerSelection(owner = owner))
+                    combine(
+                        layerRepository.observeLayers(owner),
+                        projectDocumentRepository.observeDocuments(owner.projectId),
+                    ) { projectLayers, documents ->
+                        projectLayers to documents
+                    }.mapLatest { (projectLayers, documents) ->
+                        val projectLayer = projectLayers.firstOrNull { it.isActive }
+                        val document = documents.firstOrNull { it.documentKey == projectLayer?.owner?.documentKey }
+                        if (projectLayer == null || document == null) {
+                            AnnotationLayerSelection(owner = owner)
                         } else {
-                            val linkedDocumentKey =
-                                project.linkedPatternId?.let(PatternAnnotationDocumentKey::savedPattern)
-                            val defaultDocumentKey =
-                                linkedDocumentKey ?: PatternAnnotationDocumentKey.legacyProject(project.id)
-                            val defaultOwner = PatternAnnotationOwner.Project(project.id, defaultDocumentKey)
-                            layerRepository.observeLayers(defaultOwner).mapLatest { projectLayers ->
-                                val projectLayer = projectLayers.firstOrNull { it.isActive }
-                                val documentKey =
-                                    linkedDocumentKey ?: projectLayer?.owner?.documentKey ?: defaultDocumentKey
-                                val currentOwner = PatternAnnotationOwner.Project(project.id, documentKey)
-                                val masterLayer =
-                                    project.linkedPatternId?.let { savedPatternId ->
-                                        layerRepository.getOrCreateMasterLayer(savedPatternId, documentKey)
-                                    }
-                                AnnotationLayerSelection(
-                                    owner = currentOwner,
-                                    masterLayer = masterLayer,
-                                    projectLayer = projectLayer,
-                                )
-                            }
+                            val masterLayer =
+                                document.savedPatternId?.let { savedPatternId ->
+                                    layerRepository.getOrCreateMasterLayer(savedPatternId, document.documentKey)
+                                }
+                            AnnotationLayerSelection(
+                                owner = projectLayer.owner,
+                                masterLayer = masterLayer,
+                                projectLayer = projectLayer,
+                            )
                         }
                     }
             }

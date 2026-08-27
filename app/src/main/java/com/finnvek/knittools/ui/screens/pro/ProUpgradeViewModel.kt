@@ -2,13 +2,14 @@ package com.finnvek.knittools.ui.screens.pro
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.android.billingclient.api.ProductDetails
 import com.finnvek.knittools.billing.BillingManager
 import com.finnvek.knittools.billing.BillingProductStatus
 import com.finnvek.knittools.billing.BillingUserMessage
 import com.finnvek.knittools.billing.RestorePurchasesResult
+import com.finnvek.knittools.billing.SelectedOneTimeOffer
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.pro.ProState
+import com.finnvek.knittools.pro.TrialStartResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,7 +25,7 @@ class ProUpgradeViewModel
         private val billingManager: BillingManager,
     ) : ViewModel() {
         val proState: StateFlow<ProState> = proManager.proState
-        val productDetails: StateFlow<ProductDetails?> = billingManager.productDetails
+        val selectedOffer: StateFlow<SelectedOneTimeOffer?> = billingManager.selectedOffer
         val productStatus: StateFlow<BillingProductStatus> = billingManager.productStatus
 
         private val _statusMessageRes = MutableStateFlow<Int?>(null)
@@ -57,9 +58,22 @@ class ProUpgradeViewModel
             }
         }
 
+        fun startTrial() {
+            viewModelScope.launch {
+                if (proManager.startTrial() == TrialStartResult.Failed) {
+                    _statusMessageRes.value = com.finnvek.knittools.R.string.pro_trial_start_failed
+                }
+            }
+        }
+
+        fun retryProductDetails() {
+            billingManager.retryProductDetails()
+        }
+
         private fun BillingUserMessage.toMessageRes(): Int =
             when (this) {
                 BillingUserMessage.PURCHASE_CANCELLED -> com.finnvek.knittools.R.string.billing_purchase_cancelled
+                BillingUserMessage.PURCHASE_PENDING -> com.finnvek.knittools.R.string.billing_purchase_pending
                 BillingUserMessage.PURCHASE_UNAVAILABLE -> com.finnvek.knittools.R.string.billing_purchase_unavailable
                 BillingUserMessage.PURCHASE_NETWORK_ERROR -> {
                     com.finnvek.knittools.R.string.billing_purchase_network_error

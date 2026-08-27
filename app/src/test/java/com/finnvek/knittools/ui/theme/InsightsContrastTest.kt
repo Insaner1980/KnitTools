@@ -28,6 +28,15 @@ class InsightsContrastTest {
         assertTrue("Light muted text contrast was $light", light >= 4.5)
     }
 
+    @Test
+    fun `project fabric selection outline clears the graphical minimum`() {
+        val dark = contrastRatio(TextPrimary, Background, alpha = 1f)
+        val light = contrastRatio(LightTextPrimary, LightBackground, alpha = 1f)
+
+        assertTrue("Dark selection outline contrast was $dark", dark >= 3.0)
+        assertTrue("Light selection outline contrast was $light", light >= 3.0)
+    }
+
     private fun contrastRatio(
         foreground: Color,
         background: Color,

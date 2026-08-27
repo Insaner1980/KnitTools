@@ -3,6 +3,7 @@ package com.finnvek.knittools.repository
 import android.content.Context
 import com.finnvek.knittools.data.local.CounterProjectDao
 import com.finnvek.knittools.data.local.CounterProjectEntity
+import com.finnvek.knittools.data.local.DatabaseTransactionRunner
 import com.finnvek.knittools.data.local.ImmediateDatabaseTransactionRunner
 import com.finnvek.knittools.data.local.SessionDao
 import com.finnvek.knittools.data.local.SessionEntity
@@ -10,6 +11,7 @@ import com.finnvek.knittools.data.storage.PatternDocumentStorage
 import com.finnvek.knittools.data.storage.ProgressPhotoStorage
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.KnitSession
+import com.finnvek.knittools.domain.model.ProjectDocument
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.coVerifyOrder
@@ -30,6 +32,7 @@ class CounterRepositoryDomainApiTest {
     private lateinit var sessionDao: SessionDao
     private lateinit var yarnCardRepository: YarnCardRepository
     private lateinit var savedPatternRepository: SavedPatternRepository
+    private lateinit var projectDocumentRepository: ProjectDocumentRepository
     private lateinit var repository: CounterRepository
 
     @Before
@@ -38,22 +41,27 @@ class CounterRepositoryDomainApiTest {
         sessionDao = mockk(relaxed = true)
         yarnCardRepository = mockk(relaxed = true)
         savedPatternRepository = mockk(relaxed = true)
+        projectDocumentRepository = mockk(relaxed = true)
         coEvery { projectDao.getAllProjectsOnce() } returns emptyList()
-        repository =
-            CounterRepository(
-                dao = projectDao,
-                projectCounterDao = mockk(relaxed = true),
-                sessionDao = sessionDao,
-                photoStorage = mockk<ProgressPhotoStorage>(relaxed = true),
-                patternDocumentStorage = mockk<PatternDocumentStorage>(relaxed = true),
-                context = mockk<Context>(relaxed = true),
-                yarnCardRepository = yarnCardRepository,
-                savedPatternRepository = savedPatternRepository,
-                patternAnnotationLayerRepository = mockk(relaxed = true),
-                transactionRunner = ImmediateDatabaseTransactionRunner,
-                ioDispatcher = Dispatchers.Unconfined,
-            )
+        repository = createRepository()
     }
+
+    private fun createRepository(
+        transactionRunner: DatabaseTransactionRunner = ImmediateDatabaseTransactionRunner,
+    ): CounterRepository =
+        CounterRepository(
+            dao = projectDao,
+            projectCounterDao = mockk(relaxed = true),
+            sessionDao = sessionDao,
+            photoStorage = mockk<ProgressPhotoStorage>(relaxed = true),
+            patternDocumentStorage = mockk<PatternDocumentStorage>(relaxed = true),
+            context = mockk<Context>(relaxed = true),
+            yarnCardRepository = yarnCardRepository,
+            savedPatternRepository = savedPatternRepository,
+            projectDocumentRepository = projectDocumentRepository,
+            transactionRunner = transactionRunner,
+            ioDispatcher = Dispatchers.Unconfined,
+        )
 
     @Test
     fun `counter repository exposes project domain models`() =
@@ -137,9 +145,13 @@ class CounterRepositoryDomainApiTest {
             coEvery { projectDao.getAllProjectsOnce() } returns emptyList()
             coEvery { projectDao.insert(capture(insertedProject)) } returns 9L
 
-            val id = repository.createProject("  Sukat  ")
+            val result =
+                repository.createProject(
+                    name = "  Sukat  ",
+                    canCreateAdditionalProjects = true,
+                )
 
-            assertEquals(9L, id)
+            assertEquals(ProjectCreationResult.Created(9L), result)
             assertEquals("Sukat", insertedProject.captured.name)
             assertEquals(insertedProject.captured.createdAt, insertedProject.captured.updatedAt)
         }
@@ -155,7 +167,10 @@ class CounterRepositoryDomainApiTest {
                 )
             coEvery { projectDao.insert(capture(insertedProject)) } returns 9L
 
-            repository.createProject("Project 3")
+            repository.createProject(
+                name = "Project 3",
+                canCreateAdditionalProjects = true,
+            )
 
             assertEquals("Project 3 (3)", insertedProject.captured.name)
         }
@@ -163,9 +178,52 @@ class CounterRepositoryDomainApiTest {
     @Test
     fun `createProject hylkaa tyhjan nimen ennen tietokantakirjoitusta`() =
         runTest {
-            val result = repository.createProject("   ")
+            val result =
+                repository.createProject(
+                    name = "   ",
+                    canCreateAdditionalProjects = true,
+                )
 
-            assertEquals(null, result)
+            assertEquals(ProjectCreationResult.InvalidProject, result)
+            coVerify(exactly = 0) { projectDao.insert(any()) }
+        }
+
+    @Test
+    fun `createProject tarkistaa ilmaisen projektikiintiön ja kirjoittaa samassa transaktiossa`() =
+        runTest {
+            val runner = ProjectCreationTransactionRunner()
+            coEvery { projectDao.getProjectCount() } returns 0
+            coEvery { projectDao.insert(any()) } returns 11L
+            val transactionRepository = createRepository(transactionRunner = runner)
+
+            val result =
+                transactionRepository.createProject(
+                    name = "Sukat",
+                    canCreateAdditionalProjects = false,
+                )
+
+            assertEquals(ProjectCreationResult.Created(11L), result)
+            assertEquals(1, runner.runCount)
+            coVerifyOrder {
+                projectDao.getProjectCount()
+                projectDao.getAllProjectsOnce()
+                projectDao.insert(any())
+            }
+        }
+
+    @Test
+    fun `createProject laskee myös arkistoidut projektit kiintiöön`() =
+        runTest {
+            coEvery { projectDao.getProjectCount() } returns 1
+
+            val result =
+                repository.createProject(
+                    name = "Toinen projekti",
+                    canCreateAdditionalProjects = false,
+                )
+
+            assertEquals(ProjectCreationResult.LimitReached, result)
+            coVerify(exactly = 0) { projectDao.getAllProjectsOnce() }
             coVerify(exactly = 0) { projectDao.insert(any()) }
         }
 
@@ -272,48 +330,100 @@ class CounterRepositoryDomainApiTest {
         }
 
     @Test
-    fun `detachPattern asks saved pattern repository to clean detached local PDF`() =
+    fun `detachPattern delegates primary removal to project document repository`() =
         runTest {
             val patternUri = "file:///data/user/0/com.finnvek.knittools/files/pattern_pdfs/7/pattern.pdf"
-            coEvery { projectDao.getProject(7L) } returns CounterProjectEntity(id = 7L, patternUri = patternUri)
+            val document = projectDocument(patternUri, "Pattern")
+            coEvery { projectDocumentRepository.getPrimary(7L) } returns document
+            coEvery { projectDocumentRepository.remove(7L, document.id) } returns
+                ProjectDocumentMutationResult.Removed(document, null)
 
             repository.detachPattern(7L)
 
             coVerifyOrder {
-                projectDao.updatePatternAttachment(
-                    id = 7L,
-                    linkedPatternId = null,
-                    patternUri = null,
-                    patternName = null,
-                    currentPatternPage = 0,
-                    patternRowMapping = null,
-                    updatedAt = any(),
-                )
-                savedPatternRepository.deleteLocalPatternFileIfUnused(patternUri)
+                projectDocumentRepository.getPrimary(7L)
+                projectDocumentRepository.remove(7L, document.id)
             }
         }
 
     @Test
-    fun `attachPattern asks saved pattern repository to clean replaced local PDF`() =
+    fun `attachPattern adds a document and mirrors primary metadata`() =
         runTest {
-            val oldPatternUri = "file:///data/user/0/com.finnvek.knittools/files/pattern_pdfs/7/old.pdf"
             val newPatternUri = "file:///data/user/0/com.finnvek.knittools/files/pattern_pdfs/7/new.pdf"
-            coEvery { projectDao.getProject(7L) } returns CounterProjectEntity(id = 7L, patternUri = oldPatternUri)
-            coEvery { savedPatternRepository.saveImportedPatternIfMissing(newPatternUri, "New pattern") } returns 13L
+            val document = projectDocument(newPatternUri, "New pattern")
+            coEvery { projectDocumentRepository.addImportedPdf(7L, newPatternUri, "New pattern") } returns
+                ProjectDocumentMutationResult.Added(document)
 
-            repository.attachPattern(7L, newPatternUri, "New pattern", 0, null)
+            val result = repository.attachPattern(7L, newPatternUri, "New pattern", 0, null)
 
+            assertEquals(ProjectDocumentMutationResult.Added(document), result)
             coVerifyOrder {
-                projectDao.updatePatternAttachment(
+                projectDocumentRepository.addImportedPdf(7L, newPatternUri, "New pattern")
+                projectDao.updatePatternInformation(
                     id = 7L,
-                    linkedPatternId = 13L,
-                    patternUri = newPatternUri,
+                    linkedPatternId = null,
                     patternName = "New pattern",
-                    currentPatternPage = 0,
-                    patternRowMapping = null,
                     updatedAt = any(),
                 )
-                savedPatternRepository.deleteLocalPatternFileIfUnused(oldPatternUri)
             }
         }
+
+    @Test
+    fun `attachPattern returns already attached without rewriting primary metadata`() =
+        runTest {
+            val patternUri = "file:///data/user/0/com.finnvek.knittools/files/pattern_pdfs/7/pattern.pdf"
+            coEvery { projectDocumentRepository.addImportedPdf(7L, patternUri, "Pattern") } returns
+                ProjectDocumentMutationResult.AlreadyAttached
+
+            val result = repository.attachPattern(7L, patternUri, "Pattern", 0, null)
+
+            assertEquals(ProjectDocumentMutationResult.AlreadyAttached, result)
+            coVerify(exactly = 0) { projectDao.updatePatternInformation(any(), any(), any(), any()) }
+        }
+
+    @Test
+    fun `attachPattern returns duplicate uri without rewriting primary metadata`() =
+        runTest {
+            val patternUri = "file:///data/user/0/com.finnvek.knittools/files/pattern_pdfs/7/pattern.pdf"
+            coEvery { projectDocumentRepository.addImportedPdf(7L, patternUri, "Pattern") } returns
+                ProjectDocumentMutationResult.DuplicateUri
+
+            val result = repository.attachPattern(7L, patternUri, "Pattern", 0, null)
+
+            assertEquals(ProjectDocumentMutationResult.DuplicateUri, result)
+            coVerify(exactly = 0) { projectDao.updatePatternInformation(any(), any(), any(), any()) }
+        }
+
+    private fun projectDocument(
+        localPdfUri: String,
+        label: String,
+    ): ProjectDocument =
+        ProjectDocument(
+            id = 13L,
+            projectId = 7L,
+            savedPatternId = null,
+            documentKey = "project:7:document",
+            label = label,
+            localPdfUri = localPdfUri,
+            sortOrder = 0,
+            isPrimary = true,
+            currentPage = 0,
+            rowMapping = null,
+            readingLineEnabled = false,
+            readingLineYFraction = 0.5f,
+            readingLineFollowCurrentRow = true,
+            verticalReadingGuideEnabled = false,
+            verticalReadingGuideXFraction = 0.5f,
+            createdAt = 1L,
+            updatedAt = 1L,
+        )
+}
+
+private class ProjectCreationTransactionRunner : DatabaseTransactionRunner {
+    var runCount: Int = 0
+
+    override suspend fun <T> run(block: suspend () -> T): T {
+        runCount += 1
+        return block()
+    }
 }

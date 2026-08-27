@@ -28,6 +28,15 @@ class CounterWidgetSourceTest {
         )
     }
 
+    @Test
+    fun `widget rendering observes updated glance state instead of retaining initial snapshot`() {
+        val widget = ProjectSourceFiles.read(COUNTER_WIDGET)
+
+        assertTrue(widget.contains("val data = CounterWidgetState.fromPreferences(context, prefs)"))
+        assertTrue(widget.contains("if (isPro) resolveInitialWidgetData(context, id, entryPoint, widgetData)"))
+        assertTrue(!widget.contains("val initialWidgetData"))
+    }
+
     private companion object {
         const val COUNTER_WIDGET =
             "app/src/main/java/com/finnvek/knittools/widget/CounterWidget.kt"

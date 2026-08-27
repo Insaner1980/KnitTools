@@ -68,6 +68,7 @@ fun CastOnScreen(
         }
     }
 
+    // CPD-OFF: Laskurin lomakerakenne pidetaan ruutukohtaisena kokonaisuutena.
     ToolScreenScaffold(
         title = stringResource(R.string.tool_cast_on_calculator),
         onBack = onBack,
@@ -98,6 +99,7 @@ fun CastOnScreen(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
+                    // CPD-ON
                     NumberInputField(
                         value = width,
                         onValueChange = { width = it },

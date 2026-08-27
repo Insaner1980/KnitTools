@@ -1,6 +1,5 @@
 package com.finnvek.knittools.ui.screens.pattern
 
-import android.graphics.Bitmap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.rememberTransformableState
@@ -15,17 +14,20 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import com.finnvek.knittools.domain.calculator.PatternPageCoordinateTransform
 
@@ -72,21 +74,65 @@ internal data class PatternViewportLayout(
     val coordinateTransform: PatternPageCoordinateTransform,
 )
 
+internal data class PatternViewportFocusRequest(
+    val requestId: Long,
+    val pageIndex: Int,
+    val yFraction: Float,
+)
+
 @Composable
 internal fun PatternDocumentViewport(
-    renderedBitmap: Bitmap,
+    renderedBitmapProvider: @Composable () -> ImageBitmap,
     contentDescription: String?,
     modifier: Modifier = Modifier,
+    currentPage: Int = 0,
+    focusRequest: PatternViewportFocusRequest? = null,
+    onFocusRequestConsumed: (Long) -> Unit = {},
     overlay: @Composable BoxScope.(PatternViewportLayout) -> Unit = {},
     interactionOverlay: @Composable BoxScope.(PatternViewportLayout) -> Unit = {},
 ) {
+    val renderedBitmap = renderedBitmapProvider()
     var viewportState by remember { mutableStateOf(PatternViewportState()) }
+    val scrollState = rememberScrollState()
+    var viewportHeightPx by remember { mutableIntStateOf(0) }
+    var pageHeightPx by remember { mutableIntStateOf(0) }
     val transformableState =
         rememberTransformableState { _, zoomChange, panChange, _ ->
             viewportState = viewportState.applyTransform(zoomChange, panChange)
         }
 
-    Column(modifier = modifier.verticalScroll(rememberScrollState())) {
+    val eligibleFocusRequest =
+        eligiblePatternViewportFocusRequest(
+            currentPage = currentPage,
+            renderedPageReady = renderedBitmap.width > 0 && renderedBitmap.height > 0,
+            request = focusRequest,
+        )
+    LaunchedEffect(
+        eligibleFocusRequest?.requestId,
+        viewportHeightPx,
+        pageHeightPx,
+        scrollState.maxValue,
+    ) {
+        val request = eligibleFocusRequest ?: return@LaunchedEffect
+        if (viewportHeightPx <= 0 || pageHeightPx <= 0) return@LaunchedEffect
+        val target =
+            patternViewportFocusScrollOffset(
+                pageHeightPx = pageHeightPx,
+                viewportHeightPx = viewportHeightPx,
+                yFraction = request.yFraction,
+                scale = viewportState.scale,
+                translationY = viewportState.offset.y,
+            ).coerceIn(0, scrollState.maxValue)
+        scrollState.animateScrollTo(target)
+        onFocusRequestConsumed(request.requestId)
+    }
+
+    Column(
+        modifier =
+            modifier
+                .onSizeChanged { viewportHeightPx = it.height }
+                .verticalScroll(scrollState),
+    ) {
         BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
             val aspectRatio = renderedBitmap.width.toFloat() / renderedBitmap.height.toFloat()
             val density = LocalDensity.current
@@ -107,6 +153,7 @@ internal fun PatternDocumentViewport(
                     Modifier
                         .fillMaxWidth()
                         .height(maxWidth / aspectRatio)
+                        .onSizeChanged { pageHeightPx = it.height }
                         .pointerInput(Unit) {
                             detectTapGestures(onDoubleTap = { viewportState = viewportState.reset() })
                         }.transformable(state = transformableState),
@@ -123,7 +170,7 @@ internal fun PatternDocumentViewport(
                             ),
                 ) {
                     Image(
-                        bitmap = renderedBitmap.asImageBitmap(),
+                        bitmap = renderedBitmap,
                         contentDescription = contentDescription,
                         contentScale = ContentScale.FillWidth,
                         modifier = Modifier.fillMaxSize(),
@@ -134,6 +181,25 @@ internal fun PatternDocumentViewport(
             }
         }
     }
+}
+
+internal fun eligiblePatternViewportFocusRequest(
+    currentPage: Int,
+    renderedPageReady: Boolean,
+    request: PatternViewportFocusRequest?,
+): PatternViewportFocusRequest? = request?.takeIf { renderedPageReady && it.pageIndex == currentPage }
+
+internal fun patternViewportFocusScrollOffset(
+    pageHeightPx: Int,
+    viewportHeightPx: Int,
+    yFraction: Float,
+    scale: Float,
+    translationY: Float,
+): Int {
+    val pageCenter = pageHeightPx / 2f
+    val targetOnTransformedPage =
+        pageCenter + (((pageHeightPx * yFraction.coerceIn(0f, 1f)) - pageCenter) * scale) + translationY
+    return (targetOnTransformedPage - (viewportHeightPx / 2f)).toInt().coerceAtLeast(0)
 }
 
 internal fun clampPatternPage(

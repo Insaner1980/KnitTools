@@ -2,11 +2,29 @@ package com.finnvek.knittools.data.local
 
 import androidx.room.Dao
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
 @Dao
+@Suppress("TooManyFunctions") // Valmiit ja aktiivinen istunto kuuluvat samaan Room-istuntorajapintaan.
 interface SessionDao {
+    @Query("SELECT * FROM active_sessions WHERE singletonId = 1")
+    fun observeActiveSession(): Flow<ActiveSessionEntity?>
+
+    @Query("SELECT * FROM active_sessions WHERE singletonId = 1")
+    suspend fun getActiveSession(): ActiveSessionEntity?
+
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    suspend fun insertActiveSession(session: ActiveSessionEntity)
+
+    @Update
+    suspend fun updateActiveSession(session: ActiveSessionEntity): Int
+
+    @Query("DELETE FROM active_sessions WHERE singletonId = 1 AND sessionToken = :sessionToken")
+    suspend fun deleteActiveSession(sessionToken: String): Int
+
     @Query("SELECT * FROM sessions WHERE projectId = :projectId ORDER BY startedAt DESC, id DESC")
     fun getSessionsForProject(projectId: Long): Flow<List<SessionEntity>>
 

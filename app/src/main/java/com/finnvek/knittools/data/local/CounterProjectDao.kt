@@ -100,7 +100,15 @@ interface CounterProjectDao {
         updatedAt: Long,
     )
 
-    @Query("UPDATE counter_projects SET notes = :notes, updatedAt = :updatedAt WHERE id = :id")
+    @Query(
+        """
+        UPDATE counter_projects
+        SET notes = :notes,
+            notesCreated = CASE WHEN TRIM(:notes) != '' THEN 1 ELSE notesCreated END,
+            updatedAt = :updatedAt
+        WHERE id = :id
+        """,
+    )
     suspend fun updateNotes(
         id: Long,
         notes: String,
@@ -111,6 +119,10 @@ interface CounterProjectDao {
         """
         UPDATE counter_projects
         SET secondaryCount = :secondaryCount,
+            secondaryCounterUsed = CASE
+                WHEN secondaryCount != :secondaryCount THEN 1
+                ELSE secondaryCounterUsed
+            END,
             updatedAt = :updatedAt
         WHERE id = :id
         """,
@@ -186,6 +198,22 @@ interface CounterProjectDao {
     @Query(
         """
         UPDATE counter_projects
+        SET linkedPatternId = :linkedPatternId,
+            patternName = :patternName,
+            updatedAt = :updatedAt
+        WHERE id = :id
+        """,
+    )
+    suspend fun updatePatternInformation(
+        id: Long,
+        linkedPatternId: Long?,
+        patternName: String?,
+        updatedAt: Long,
+    )
+
+    @Query(
+        """
+        UPDATE counter_projects
         SET currentPatternPage = :page,
             updatedAt = :updatedAt
         WHERE id = :id
@@ -246,6 +274,68 @@ interface CounterProjectDao {
         id: Long,
         enabled: Boolean,
         yFraction: Float,
+        updatedAt: Long,
+    )
+
+    @Query(
+        """
+        UPDATE counter_projects
+        SET readingLineEnabled = :enabled,
+            updatedAt = :updatedAt
+        WHERE id = :id
+        """,
+    )
+    suspend fun updateReadingLineVisibility(
+        id: Long,
+        enabled: Boolean,
+        updatedAt: Long,
+    )
+
+    @Query(
+        """
+        UPDATE counter_projects
+        SET currentPatternPage = :page,
+            readingLineYFraction = :yFraction,
+            readingLineFollowCurrentRow = :followCurrentRow,
+            updatedAt = :updatedAt
+        WHERE id = :id
+        """,
+    )
+    suspend fun updatePatternViewerLocation(
+        id: Long,
+        page: Int,
+        yFraction: Float,
+        followCurrentRow: Boolean,
+        updatedAt: Long,
+    )
+
+    @Query(
+        """
+        UPDATE counter_projects
+        SET readingLineFollowCurrentRow = :followCurrentRow,
+            updatedAt = :updatedAt
+        WHERE id = :id
+        """,
+    )
+    suspend fun updateReadingLineFollowState(
+        id: Long,
+        followCurrentRow: Boolean,
+        updatedAt: Long,
+    )
+
+    @Query(
+        """
+        UPDATE counter_projects
+        SET verticalReadingGuideEnabled = :enabled,
+            verticalReadingGuideXFraction = :xFraction,
+            updatedAt = :updatedAt
+        WHERE id = :id
+        """,
+    )
+    suspend fun updateVerticalReadingGuide(
+        id: Long,
+        enabled: Boolean,
+        xFraction: Float,
         updatedAt: Long,
     )
 

@@ -44,7 +44,7 @@ class MyYarnCardSourceTest {
         val input = ProjectSourceFiles.read(MANUAL_YARN_CARD_INPUT)
 
         assertTrue(input.contains("data class ManualYarnCardInput("))
-        assertTrue(screen.contains("onCreateYarnCard: (ManualYarnCardInput) -> Unit"))
+        assertTrue(screen.contains("onCreateYarnCard: (ManualYarnCardInput) -> Boolean"))
         assertTrue(screen.contains("FloatingActionButton("))
         assertTrue(screen.contains("contentDescription = stringResource(R.string.add_yarn_to_my_yarn)"))
         assertTrue(screen.contains("ManualYarnCardSheet("))
@@ -86,7 +86,8 @@ class MyYarnCardSourceTest {
         assertTrue(screen.contains("val requestAddYarn = {"))
         assertTrue(screen.contains("if (state.canCreateYarnCard) {"))
         assertTrue(screen.contains("showManualYarnSheet = true"))
-        assertTrue(screen.contains("actions.onUpgradeToPro()"))
+        assertTrue(screen.contains("pendingProAction = PendingYarnProAction.OpenCreation"))
+        assertTrue(screen.contains("onSeePro = actions.onUpgradeToPro"))
         assertTrue(screen.contains("onAddYarn = requestAddYarn"))
         assertTrue(screen.contains("Button("))
         assertTrue(screen.contains("onClick = onAddYarn"))

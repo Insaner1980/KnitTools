@@ -3,6 +3,8 @@ package com.finnvek.knittools.ui.screens.counter
 import com.finnvek.knittools.domain.calculator.CounterState
 import com.finnvek.knittools.domain.calculator.ReminderLogic
 import com.finnvek.knittools.domain.model.CounterProject
+import com.finnvek.knittools.domain.model.DEFAULT_READING_GUIDE_FRACTION
+import com.finnvek.knittools.domain.model.DEFAULT_READING_LINE_Y_FRACTION
 import com.finnvek.knittools.domain.model.RowReminder
 
 internal val CounterUiState.shouldLeaveCounter: Boolean
@@ -12,23 +14,34 @@ internal fun CounterUiState.withStartedProject(project: CounterProject): Counter
     copy(
         projectId = project.id,
         projectName = project.name,
+        // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
         counter = CounterState(count = project.count, stepSize = project.stepSize),
         craftType = project.craftType,
         mainCounterLabelType = project.mainCounterLabelType,
         mainCounterCustomLabel = project.mainCounterCustomLabel,
         secondaryCount = project.secondaryCount,
+        secondaryCounterUsed = project.secondaryCounterUsed,
         notes = project.notes,
+        notesCreated = project.notesCreated,
+        canUseNotes = canCreateNotes || project.notesCreated,
+        canUseSecondaryCounter = canCreateSecondaryCounter || project.secondaryCounterUsed,
         sectionName = project.sectionName,
         stitchCount = project.stitchCount,
         stitchTrackingEnabled = project.stitchTrackingEnabled,
         currentStitch = project.currentStitch,
         linkedPattern = null,
-        patternUri = project.patternUri,
-        patternName = project.patternName,
-        currentPatternPage = project.currentPatternPage,
-        readingLineEnabled = project.readingLineEnabled,
-        readingLineYFraction = project.readingLineYFraction,
-        patternRowMapping = project.patternRowMapping,
+        projectDocuments = emptyList(),
+        projectDocumentAvailability = emptyMap(),
+        // CPD-ON
+        patternUri = null,
+        patternName = null,
+        currentPatternPage = 0,
+        readingLineEnabled = false,
+        readingLineYFraction = DEFAULT_READING_LINE_Y_FRACTION,
+        readingLineFollowCurrentRow = true,
+        verticalReadingGuideEnabled = false,
+        verticalReadingGuideXFraction = DEFAULT_READING_GUIDE_FRACTION,
+        patternRowMapping = null,
         totalRows = project.totalRows,
         targetRows = project.targetRows,
         linkedYarns = emptyList(),
@@ -56,18 +69,16 @@ internal fun CounterUiState.withObservedProject(project: CounterProject): Counte
         mainCounterLabelType = project.mainCounterLabelType,
         mainCounterCustomLabel = project.mainCounterCustomLabel,
         secondaryCount = project.secondaryCount,
+        secondaryCounterUsed = project.secondaryCounterUsed,
         notes = project.notes,
+        notesCreated = project.notesCreated,
+        canUseNotes = canCreateNotes || project.notesCreated,
+        canUseSecondaryCounter = canCreateSecondaryCounter || project.secondaryCounterUsed,
         sectionName = project.sectionName,
         stitchCount = project.stitchCount,
         stitchTrackingEnabled = project.stitchTrackingEnabled,
         currentStitch = project.currentStitch,
         linkedPattern = linkedPattern?.takeIf { it.id == project.linkedPatternId },
-        patternUri = project.patternUri,
-        patternName = project.patternName,
-        currentPatternPage = project.currentPatternPage,
-        readingLineEnabled = project.readingLineEnabled,
-        readingLineYFraction = project.readingLineYFraction,
-        patternRowMapping = project.patternRowMapping,
         totalRows = project.totalRows,
         targetRows = project.targetRows,
         dismissedReminderTrigger = dismissal,

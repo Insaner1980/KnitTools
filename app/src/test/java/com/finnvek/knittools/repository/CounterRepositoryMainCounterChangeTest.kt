@@ -11,16 +11,19 @@ import com.finnvek.knittools.data.local.SessionDao
 import com.finnvek.knittools.data.storage.PatternDocumentStorage
 import com.finnvek.knittools.data.storage.ProgressPhotoStorage
 import com.finnvek.knittools.domain.model.MainCounterChange
+import com.finnvek.knittools.domain.model.ProjectDocument
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Test
 
 class CounterRepositoryMainCounterChangeTest {
@@ -219,6 +222,145 @@ class CounterRepositoryMainCounterChangeTest {
             }
         }
 
+    @Test
+    fun `follow moves hidden reading line to exact marker in the counter transaction`() =
+        runTest {
+            val projectDao = mockk<CounterProjectDao>(relaxed = true)
+            coEvery { projectDao.getProject(7L) } returns
+                CounterProjectEntity(
+                    id = 7L,
+                    name = "Followed",
+                    count = 7,
+                    stepSize = 1,
+                )
+            val documentRepository = mockk<ProjectDocumentRepository>(relaxed = true)
+            val document =
+                projectDocument(
+                    rowMapping = "[{\"row\":8,\"page\":2,\"yPosition\":0.7}]",
+                    readingLineYFraction = 0.4f,
+                )
+            coEvery { documentRepository.getActiveDocument(7L) } returns document
+            coEvery { documentRepository.updateViewerStateInTransaction(any()) } returns true
+            val repository =
+                buildRepository(projectDao, linkedCounterDao(7L, 0, 0), projectDocumentRepository = documentRepository)
+
+            assertTrue(repository.applyMainCounterChange(7L, MainCounterChange.Increment))
+
+            coVerify {
+                documentRepository.updateViewerStateInTransaction(
+                    match { it.id == document.id && it.currentPage == 2 && it.readingLineYFraction == 0.7f },
+                )
+            }
+        }
+
+    @Test
+    fun `paused follow leaves persisted page and Y unchanged`() =
+        runTest {
+            val projectDao = mockk<CounterProjectDao>(relaxed = true)
+            coEvery { projectDao.getProject(7L) } returns
+                CounterProjectEntity(
+                    id = 7L,
+                    name = "Paused",
+                    count = 7,
+                )
+            val documentRepository = mockk<ProjectDocumentRepository>(relaxed = true)
+            coEvery { documentRepository.getActiveDocument(7L) } returns
+                projectDocument(
+                    currentPage = 3,
+                    readingLineYFraction = 0.6f,
+                    readingLineFollowCurrentRow = false,
+                )
+            val repository =
+                buildRepository(projectDao, linkedCounterDao(7L, 0, 0), projectDocumentRepository = documentRepository)
+
+            assertTrue(repository.applyMainCounterChange(7L, MainCounterChange.Increment))
+
+            coVerify(exactly = 0) { documentRepository.updateViewerStateInTransaction(any()) }
+        }
+
+    @Test
+    fun `calibration re-evaluates current row with zero delta`() =
+        runTest {
+            val projectDao = mockk<CounterProjectDao>(relaxed = true)
+            coEvery { projectDao.getProject(7L) } returns
+                CounterProjectEntity(
+                    id = 7L,
+                    name = "Calibrated",
+                    count = 12,
+                )
+            val mapping = "[{\"row\":12,\"page\":4,\"yPosition\":0.35}]"
+            val documentRepository = mockk<ProjectDocumentRepository>(relaxed = true)
+            val document = projectDocument()
+            coEvery { documentRepository.getActiveDocument(7L) } returns document
+            coEvery { documentRepository.updateViewerStateInTransaction(any()) } returns true
+            val repository =
+                buildRepository(projectDao, linkedCounterDao(7L, 0, 0), projectDocumentRepository = documentRepository)
+
+            repository.updatePatternRowMapping(7L, mapping)
+
+            coVerify {
+                documentRepository.updateViewerStateInTransaction(
+                    match {
+                        it.id == document.id &&
+                            it.rowMapping == mapping &&
+                            it.currentPage == 4 &&
+                            it.readingLineYFraction == 0.35f
+                    },
+                )
+            }
+        }
+
+    @Test
+    fun `manual page and line movement pause follow without creating markers`() =
+        runTest {
+            val projectDao = mockk<CounterProjectDao>(relaxed = true)
+            coEvery { projectDao.getProject(7L) } returns
+                CounterProjectEntity(
+                    id = 7L,
+                    name = "Manual",
+                )
+            val documentRepository = mockk<ProjectDocumentRepository>(relaxed = true)
+            val document = projectDocument(currentPage = 1, readingLineYFraction = 0.4f)
+            coEvery { documentRepository.getActiveDocument(7L) } returns document
+            coEvery { documentRepository.updateViewerStateInTransaction(any()) } returns true
+            val repository =
+                buildRepository(projectDao, linkedCounterDao(7L, 0, 0), projectDocumentRepository = documentRepository)
+
+            repository.updateCurrentPatternPage(7L, 2)
+            repository.commitManualReadingLinePosition(7L, 0.8f)
+
+            coVerify {
+                documentRepository.updateViewerStateInTransaction(
+                    match { it.currentPage == 2 && it.readingLineYFraction == 0.4f && !it.readingLineFollowCurrentRow },
+                )
+                documentRepository.updateViewerStateInTransaction(
+                    match { it.currentPage == 1 && it.readingLineYFraction == 0.8f && !it.readingLineFollowCurrentRow },
+                )
+            }
+        }
+
+    @Test
+    fun `transaction cancellation propagates`() =
+        runTest {
+            val repository =
+                buildRepository(
+                    mockk(relaxed = true),
+                    mockk(relaxed = true),
+                    transactionRunner =
+                        object : DatabaseTransactionRunner {
+                            override suspend fun <T> run(block: suspend () -> T): T =
+                                throw CancellationException("cancelled")
+                        },
+                )
+
+            try {
+                repository.applyMainCounterChange(7L, MainCounterChange.Increment)
+                fail("CancellationException expected")
+            } catch (_: CancellationException) {
+                // Peruutus kuuluu välittää kutsujalle muuttamatta sitä tavalliseksi virheeksi.
+            }
+        }
+
     private fun linkedCounterDao(
         projectId: Long,
         linkedCount: Int,
@@ -259,9 +401,11 @@ class CounterRepositoryMainCounterChangeTest {
         projectDao: CounterProjectDao,
         projectCounterDao: ProjectCounterDao,
         transactionRunner: DatabaseTransactionRunner = ImmediateRecordingTransactionRunner,
+        projectDocumentRepository: ProjectDocumentRepository = emptyProjectDocumentRepository(),
     ): CounterRepository =
         CounterRepository(
             dao = projectDao,
+            // CPD-OFF: Testin skenaariokohtainen asetelma pidetaan paikallisena ja luettavana.
             projectCounterDao = projectCounterDao,
             sessionDao = mockk<SessionDao>(relaxed = true),
             photoStorage = mockk<ProgressPhotoStorage>(relaxed = true),
@@ -269,12 +413,44 @@ class CounterRepositoryMainCounterChangeTest {
             context = mockk<Context>(relaxed = true),
             yarnCardRepository = mockk(relaxed = true),
             savedPatternRepository = mockk(relaxed = true),
-            patternAnnotationLayerRepository = mockk(relaxed = true),
+            projectDocumentRepository = projectDocumentRepository,
             transactionRunner = transactionRunner,
             ioDispatcher = Dispatchers.Unconfined,
         )
 
+    private fun emptyProjectDocumentRepository(): ProjectDocumentRepository =
+        mockk<ProjectDocumentRepository>(relaxed = true).also { repository ->
+            coEvery { repository.getActiveDocument(any()) } returns null
+        }
+
+    private fun projectDocument(
+        currentPage: Int = 0,
+        rowMapping: String? = null,
+        readingLineYFraction: Float = 0.5f,
+        readingLineFollowCurrentRow: Boolean = true,
+    ): ProjectDocument =
+        ProjectDocument(
+            id = 21L,
+            projectId = 7L,
+            savedPatternId = null,
+            documentKey = "import:21",
+            label = "Pattern",
+            localPdfUri = "content://pattern",
+            sortOrder = 0,
+            isPrimary = true,
+            currentPage = currentPage,
+            rowMapping = rowMapping,
+            readingLineEnabled = false,
+            readingLineYFraction = readingLineYFraction,
+            readingLineFollowCurrentRow = readingLineFollowCurrentRow,
+            verticalReadingGuideEnabled = false,
+            verticalReadingGuideXFraction = 0.5f,
+            createdAt = 1L,
+            updatedAt = 1L,
+        )
+
     private object ImmediateRecordingTransactionRunner : DatabaseTransactionRunner {
+        // CPD-ON
         override suspend fun <T> run(block: suspend () -> T): T = block()
     }
 

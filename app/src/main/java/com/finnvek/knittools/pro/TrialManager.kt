@@ -30,9 +30,15 @@ data class TrialState(
     val isActive: Boolean = false,
     val daysRemaining: Int = 0,
     val startTimestamp: Long = 0L,
-    val isFirstLaunch: Boolean = false,
+    val hasStarted: Boolean = false,
     val clockTampered: Boolean = false,
 )
+
+enum class TrialStartResult {
+    Started,
+    AlreadyStarted,
+    Failed,
+}
 
 @Singleton
 class TrialManager
@@ -49,6 +55,49 @@ class TrialManager
         suspend fun initialize() {
             refreshTrialState()
             startRefreshLoop()
+        }
+
+        suspend fun startTrial(): TrialStartResult {
+            var startedNow = false
+            val didWrite =
+                context.trialDataStore.editPreferencesSafely { preferences ->
+                    if ((preferences[KEY_TRIAL_START] ?: 0L) == 0L) {
+                        val now = System.currentTimeMillis()
+                        preferences[KEY_TRIAL_START] = now
+                        preferences[KEY_LAST_KNOWN_TIMESTAMP] =
+                            calculateNextLastKnownTimestamp(
+                                now = now,
+                                lastKnownTimestamp = preferences[KEY_LAST_KNOWN_TIMESTAMP] ?: 0L,
+                            )
+                        startedNow = true
+                    }
+                }
+            if (!didWrite) return TrialStartResult.Failed
+
+            refreshTrialState()
+            return if (startedNow) TrialStartResult.Started else TrialStartResult.AlreadyStarted
+        }
+
+        suspend fun claimTrialEndNotice(): Boolean {
+            var claimed = false
+            val didWrite =
+                context.trialDataStore.editPreferencesSafely { preferences ->
+                    val hasStarted = (preferences[KEY_TRIAL_START] ?: 0L) > 0L
+                    val wasShown = preferences[KEY_TRIAL_END_NOTICE_SHOWN] ?: false
+                    if (hasStarted && !wasShown) {
+                        preferences[KEY_TRIAL_END_NOTICE_SHOWN] = true
+                        claimed = true
+                    }
+                }
+            return didWrite && claimed
+        }
+
+        suspend fun markTrialEndNoticeShown() {
+            context.trialDataStore.editPreferencesSafely { preferences ->
+                if ((preferences[KEY_TRIAL_START] ?: 0L) > 0L) {
+                    preferences[KEY_TRIAL_END_NOTICE_SHOWN] = true
+                }
+            }
         }
 
         suspend fun updateTimestamp() {
@@ -69,27 +118,16 @@ class TrialManager
             val clockTamperedAlready = prefs[KEY_CLOCK_TAMPERED] ?: false
             val now = System.currentTimeMillis()
 
-            val isFirstLaunch = startTimestamp == 0L
-            val actualStartTimestamp =
-                if (isFirstLaunch) {
-                    now
-                } else {
-                    startTimestamp
-                }
             val state =
                 calculateTrialState(
                     now = now,
-                    startTimestamp = actualStartTimestamp,
+                    startTimestamp = startTimestamp,
                     lastKnownTimestamp = lastKnown,
-                    isFirstLaunch = isFirstLaunch,
                     clockTamperedAlready = clockTamperedAlready,
                 )
             val nextLastKnown = calculateNextLastKnownTimestamp(now, lastKnown)
 
             context.trialDataStore.editPreferencesSafely {
-                if (isFirstLaunch) {
-                    it[KEY_TRIAL_START] = actualStartTimestamp
-                }
                 it[KEY_LAST_KNOWN_TIMESTAMP] = nextLastKnown
                 if (state.clockTampered) {
                     it[KEY_CLOCK_TAMPERED] = true
@@ -126,6 +164,7 @@ class TrialManager
             private val KEY_TRIAL_START = longPreferencesKey("trial_start_timestamp")
             private val KEY_LAST_KNOWN_TIMESTAMP = longPreferencesKey("last_known_timestamp")
             private val KEY_CLOCK_TAMPERED = booleanPreferencesKey("clock_tampered")
+            private val KEY_TRIAL_END_NOTICE_SHOWN = booleanPreferencesKey("trial_end_notice_shown")
             private val TRIAL_REFRESH_POLL_INTERVAL_MS = TimeUnit.MINUTES.toMillis(15)
             private const val MIN_REFRESH_DELAY_MS = 1L
 
@@ -158,21 +197,31 @@ class TrialManager
                 now: Long,
                 startTimestamp: Long,
                 lastKnownTimestamp: Long,
-                isFirstLaunch: Boolean,
                 clockTamperedAlready: Boolean = false,
             ): TrialState {
+                if (startTimestamp <= 0L) {
+                    return TrialState()
+                }
                 val clockTampered =
                     clockTamperedAlready ||
                         lastKnownTimestamp > 0L &&
                         now < lastKnownTimestamp - TimeUnit.HOURS.toMillis(1)
-                val daysElapsed = TimeUnit.MILLISECONDS.toDays(now - startTimestamp).toInt()
-                val daysRemaining = (TRIAL_DURATION_DAYS - daysElapsed).coerceAtLeast(0)
+                val trialDurationMillis = TimeUnit.DAYS.toMillis(TRIAL_DURATION_DAYS.toLong())
+                val remainingMillis =
+                    (trialDurationMillis - (now - startTimestamp).coerceAtLeast(0L)).coerceAtLeast(0L)
+                val dayMillis = TimeUnit.DAYS.toMillis(1)
+                val daysRemaining =
+                    if (remainingMillis == 0L) {
+                        0
+                    } else {
+                        ((remainingMillis + dayMillis - 1L) / dayMillis).toInt()
+                    }
                 val isActive = daysRemaining > 0 && !clockTampered
                 return TrialState(
                     isActive = isActive,
                     daysRemaining = daysRemaining,
                     startTimestamp = startTimestamp,
-                    isFirstLaunch = isFirstLaunch,
+                    hasStarted = true,
                     clockTampered = clockTampered,
                 )
             }

@@ -11,9 +11,10 @@ import kotlinx.coroutines.flow.Flow
 
 @Composable
 fun <T> CollectWithLifecycleEffect(
-    flow: Flow<T>,
+    flowProvider: @Composable () -> Flow<T>,
     onEach: suspend (T) -> Unit,
 ) {
+    val flow = flowProvider()
     val lifecycleOwner = LocalLifecycleOwner.current
     val currentOnEach by rememberUpdatedState(onEach)
 

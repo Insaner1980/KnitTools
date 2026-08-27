@@ -164,7 +164,7 @@ class ProgressPhotoRepositoryDomainApiTest {
 
             assertEquals(0L, savedId)
             assertEquals(0, dao.insertCount)
-            verify { storage.deletePhoto(targetUriString) }
+            verify { storage.deletePhoto(context, 7L, targetUriString) }
             verify { storage.deleteTemporarySource(context, sourceUri) }
         }
 
@@ -190,8 +190,8 @@ class ProgressPhotoRepositoryDomainApiTest {
             repository.deletePhotos(listOf(3L, 4L))
 
             assertEquals(listOf(3L, 4L), dao.deletedIds)
-            verify { storage.deletePhoto("file:///first.jpg") }
-            verify { storage.deletePhoto("file:///second.jpg") }
+            verify { storage.deletePhoto(context, 7L, "file:///first.jpg") }
+            verify { storage.deletePhoto(context, 7L, "file:///second.jpg") }
         }
 
     @Test
@@ -293,7 +293,10 @@ class ProgressPhotoRepositoryDomainApiTest {
             progressPhotos.removeAll { it.id == id }
         }
 
-        override suspend fun deleteByIds(ids: List<Long>) = Unit
+        override suspend fun deleteByIds(ids: List<Long>) {
+            deletedIds += ids
+            progressPhotos.removeAll { it.id in ids }
+        }
 
         override suspend fun getByIds(ids: List<Long>): List<ProgressPhotoEntity> =
             progressPhotos.filter { it.id in ids }

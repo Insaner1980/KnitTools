@@ -70,7 +70,7 @@ class CounterWorkspaceSourceTest {
         val contentCards = ProjectSourceFiles.read(COUNTER_PROJECT_CONTENT_CARDS)
         val strings = ProjectSourceFiles.read(STRINGS)
 
-        assertTrue(workspace.contains("hasPattern = state.patternUri != null || state.linkedPattern != null"))
+        assertTrue(workspace.contains("hasPattern = state.projectDocuments.isNotEmpty()"))
         assertTrue(contentCards.contains("hasPattern: Boolean"))
         assertTrue(contentCards.contains("titleRes = patternContentTitleRes(hasPattern)"))
         assertTrue(
@@ -219,20 +219,20 @@ class CounterWorkspaceSourceTest {
     }
 
     @Test
-    fun `pattern card opens pdf viewer or saved pattern detail without preview UI`() {
+    fun `pattern card opens canonical primary or document recovery without preview UI`() {
         val counterScreen = ProjectSourceFiles.read(COUNTER_SCREEN)
         val workspace = ProjectSourceFiles.read(COUNTER_WORKSPACE_SECTIONS)
         val contentCards = ProjectSourceFiles.read(COUNTER_PROJECT_CONTENT_CARDS)
         val navGraph = ProjectSourceFiles.read(NAV_GRAPH)
 
-        assertTrue(workspace.contains("state.patternUri != null -> onOpenPattern()"))
-        assertTrue(workspace.contains("state.linkedPattern != null -> onOpenSavedPatternDetail()"))
+        assertTrue(workspace.contains("state.projectDocumentAvailability[primary.id] == true -> onOpenPattern()"))
+        assertTrue(workspace.contains("primary != null -> onShowDocuments()"))
+        assertTrue(workspace.contains("else -> onShowPatternPicker()"))
         assertFalse(workspace.contains("onShowPatternInfo"))
         assertTrue(counterScreen.contains("onSavedPatternDetail: (Long) -> Unit = {}"))
         assertTrue(
             counterScreen.contains(
-                "onOpenSavedPatternDetail = { " +
-                    "state.linkedPattern?.id?.let(onSavedPatternDetail) }",
+                "state.linkedPattern?.id?.let(onSavedPatternDetail)",
             ),
         )
         assertFalse(counterScreen.contains("PatternInfoSheet("))

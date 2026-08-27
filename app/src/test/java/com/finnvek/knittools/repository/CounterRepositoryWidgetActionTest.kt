@@ -89,7 +89,7 @@ class CounterRepositoryWidgetActionTest {
             context = mockk<Context>(relaxed = true),
             yarnCardRepository = mockk(relaxed = true),
             savedPatternRepository = mockk(relaxed = true),
-            patternAnnotationLayerRepository = mockk(relaxed = true),
+            projectDocumentRepository = mockk(relaxed = true),
             transactionRunner = transactionRunner,
             ioDispatcher = Dispatchers.Unconfined,
         )

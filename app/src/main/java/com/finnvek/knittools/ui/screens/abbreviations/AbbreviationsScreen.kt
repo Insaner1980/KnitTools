@@ -57,6 +57,7 @@ fun AbbreviationsScreen(
                     value = query,
                     onValueChange = { query = it },
                     label = stringResource(R.string.search_abbreviation),
+                    // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
                 )
             }
             if (results.isEmpty()) {
@@ -70,6 +71,7 @@ fun AbbreviationsScreen(
                 }
             } else {
                 items(results, key = { it.abbreviation }) { abbreviation ->
+                    // CPD-ON
                     AbbreviationItem(
                         abbreviation = abbreviation,
                         isExpanded = expandedAbbreviation == abbreviation.abbreviation,

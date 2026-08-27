@@ -12,6 +12,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
+import androidx.glance.LocalContext
 import androidx.glance.LocalSize
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
@@ -75,15 +76,13 @@ class CounterWidget : GlanceAppWidget() {
             )
         val isPro = entryPoint.proManager().hasFeatureAfterInitialLoad(ProFeature.WIDGET)
         val widgetData = CounterWidgetState.loadGlance(context, id)
-        val initialWidgetData =
-            if (isPro) resolveInitialWidgetData(context, id, entryPoint, widgetData) else widgetData
+        if (isPro) resolveInitialWidgetData(context, id, entryPoint, widgetData)
 
         provideContent {
             val prefs = currentState<Preferences>()
-            val storedData = CounterWidgetState.fromPreferences(context, prefs)
-            val data = if (initialWidgetData != storedData) initialWidgetData else storedData
+            val data = CounterWidgetState.fromPreferences(context, prefs)
             GlanceTheme(colors = ColorProviders(dark = WidgetDarkScheme, light = WidgetLightScheme)) {
-                WidgetSizedContent(context = context, data = data, isPro = isPro)
+                WidgetSizedContent(data = data, isPro = isPro)
             }
         }
     }
@@ -139,35 +138,34 @@ private val WidgetLightScheme =
 
 @androidx.compose.runtime.Composable
 private fun WidgetSizedContent(
-    context: Context,
     data: WidgetData,
     isPro: Boolean,
 ) {
     if (!isPro) {
-        ProRequiredWidget(context)
+        ProRequiredWidget()
         return
     }
     val size = LocalSize.current
     val projectId = data.projectId.takeIf { it > 0L }
     when {
         size.width >= CounterWidget.LARGE_SIZE.width && size.height >= CounterWidget.LARGE_SIZE.height -> {
-            LargeWidget(context = context, data = data, projectId = projectId)
+            LargeWidget(data = data, projectId = projectId)
         }
 
         size.width >= CounterWidget.MEDIUM_SIZE.width && size.height >= CounterWidget.MEDIUM_SIZE.height -> {
-            MediumWidget(context = context, data = data, projectId = projectId)
+            MediumWidget(data = data, projectId = projectId)
         }
 
         else -> {
-            SmallWidget(context = context, data = data, projectId = projectId)
+            SmallWidget(data = data, projectId = projectId)
         }
     }
 }
 
 @androidx.compose.runtime.Composable
-private fun ProRequiredWidget(context: Context) {
+private fun ProRequiredWidget() {
+    val context = LocalContext.current
     WidgetCard(
-        context = context,
         projectId = null,
         openProUpgrade = true,
         horizontalPadding = 12.dp,
@@ -191,12 +189,10 @@ private fun ProRequiredWidget(context: Context) {
 
 @androidx.compose.runtime.Composable
 private fun SmallWidget(
-    context: Context,
     data: WidgetData,
     projectId: Long?,
 ) {
     WidgetCard(
-        context = context,
         projectId = projectId,
         horizontalPadding = 14.dp,
         verticalPadding = 4.dp,
@@ -224,18 +220,16 @@ private fun SmallWidget(
 
 @androidx.compose.runtime.Composable
 private fun MediumWidget(
-    context: Context,
     data: WidgetData,
     projectId: Long?,
 ) {
     WidgetCard(
-        context = context,
         projectId = projectId,
         horizontalPadding = 16.dp,
         verticalPadding = 10.dp,
     ) {
         WidgetHeader(data = data, fontSize = 13.sp, centered = true, maxLines = 2)
-        WidgetTargetLabel(context = context, data = data, fontSize = 11.sp)
+        WidgetTargetLabel(data = data, fontSize = 11.sp)
         Spacer(modifier = GlanceModifier.defaultWeight())
         Box(
             modifier = GlanceModifier.fillMaxWidth(),
@@ -262,13 +256,13 @@ private fun MediumWidget(
             WidgetActionButton(
                 text = "−",
                 size = 42.dp,
-                onClick = actionSendBroadcast(CounterWidgetActions.decrementIntent(context)),
+                action = WidgetCountAction.DECREMENT,
             )
             Spacer(modifier = GlanceModifier.width(16.dp))
             WidgetActionButton(
                 text = "+",
                 size = 42.dp,
-                onClick = actionSendBroadcast(CounterWidgetActions.incrementIntent(context)),
+                action = WidgetCountAction.INCREMENT,
             )
         }
         Spacer(modifier = GlanceModifier.defaultWeight())
@@ -277,18 +271,16 @@ private fun MediumWidget(
 
 @androidx.compose.runtime.Composable
 private fun LargeWidget(
-    context: Context,
     data: WidgetData,
     projectId: Long?,
 ) {
     WidgetCard(
-        context = context,
         projectId = projectId,
         horizontalPadding = 18.dp,
         verticalPadding = 8.dp,
     ) {
         WidgetHeader(data = data, fontSize = 14.sp, centered = true, maxLines = 2)
-        WidgetTargetLabel(context = context, data = data, fontSize = 12.sp)
+        WidgetTargetLabel(data = data, fontSize = 12.sp)
         Spacer(modifier = GlanceModifier.defaultWeight())
         Box(
             modifier = GlanceModifier.fillMaxWidth(),
@@ -315,13 +307,13 @@ private fun LargeWidget(
             WidgetActionButton(
                 text = "−",
                 size = 44.dp,
-                onClick = actionSendBroadcast(CounterWidgetActions.decrementIntent(context)),
+                action = WidgetCountAction.DECREMENT,
             )
             Spacer(modifier = GlanceModifier.width(18.dp))
             WidgetActionButton(
                 text = "+",
                 size = 44.dp,
-                onClick = actionSendBroadcast(CounterWidgetActions.incrementIntent(context)),
+                action = WidgetCountAction.INCREMENT,
             )
         }
         Spacer(modifier = GlanceModifier.defaultWeight())
@@ -336,7 +328,6 @@ data class WidgetCardFrame(
 
 @androidx.compose.runtime.Composable
 private fun WidgetCard(
-    context: Context,
     projectId: Long?,
     openProUpgrade: Boolean = false,
     horizontalPadding: Dp,
@@ -344,9 +335,10 @@ private fun WidgetCard(
     frame: WidgetCardFrame = WidgetCardFrame(),
     content: @androidx.compose.runtime.Composable ColumnScope.() -> Unit,
 ) {
+    val context = LocalContext.current
     val launchIntent =
         if (openProUpgrade) {
-            MainActivity.createProUpgradeLaunchIntent(context)
+            MainActivity.createWidgetProPromptLaunchIntent(context)
         } else {
             MainActivity.createCounterLaunchIntent(context = context, projectId = projectId)
         }
@@ -419,10 +411,10 @@ private fun formatPrimaryCount(data: WidgetData): String = data.count.toString()
 
 @androidx.compose.runtime.Composable
 private fun WidgetTargetLabel(
-    context: Context,
     data: WidgetData,
     fontSize: TextUnit,
 ) {
+    val context = LocalContext.current
     val target = data.targetRows ?: return
     if (target <= 0) return
     Text(
@@ -477,8 +469,16 @@ private fun WidgetProgressBar(
 private fun WidgetActionButton(
     text: String,
     size: Dp,
-    onClick: androidx.glance.action.Action,
+    action: WidgetCountAction,
 ) {
+    val context = LocalContext.current
+    val onClick =
+        actionSendBroadcast(
+            when (action) {
+                WidgetCountAction.DECREMENT -> CounterWidgetActions.decrementIntent(context)
+                WidgetCountAction.INCREMENT -> CounterWidgetActions.incrementIntent(context)
+            },
+        )
     Box(
         modifier =
             GlanceModifier
@@ -507,4 +507,9 @@ private fun WidgetActionButton(
             )
         }
     }
+}
+
+private enum class WidgetCountAction {
+    DECREMENT,
+    INCREMENT,
 }

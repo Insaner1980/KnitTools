@@ -14,8 +14,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Testaa Room-migraatiot v1->v17.
- * v1->v3: AutoMigration. v3->v17: manuaaliset muutokset.
+ * Testaa Room-migraatiot v1->v22.
+ * v1->v3: AutoMigration. v3->v22: manuaaliset muutokset.
  */
 @RunWith(AndroidJUnit4::class)
 class MigrationTest {
@@ -28,7 +28,7 @@ class MigrationTest {
 
     private val allMigrations = KnitToolsDatabase.ALL_MANUAL_MIGRATIONS
 
-    private val latestVersion = 17
+    private val latestVersion = 22
 
     private fun migrateToLatest(testDb: String): SupportSQLiteDatabase =
         helper.runMigrationsAndValidate(
@@ -141,6 +141,55 @@ class MigrationTest {
     }
 
     @Test
+    fun migrate17to18PreservesProjectsAndUnlocksPreviouslyCreatedContent() {
+        val testDb = "migration-test-v17-to-v18-pro-content-flags"
+
+        helper.createDatabase(testDb, 17).apply {
+            execSQL(
+                """
+                INSERT INTO counter_projects (
+                    id, name, count, secondaryCount, stepSize, notes, createdAt, updatedAt
+                ) VALUES (1, 'Existing project', 0, 0, 1, '', 1000, 2000)
+                """.trimIndent(),
+            )
+            close()
+        }
+
+        val db =
+            helper.runMigrationsAndValidate(
+                testDb,
+                18,
+                true,
+                KnitToolsDatabase.MIGRATION_17_18,
+            )
+
+        assertSingleRow(
+            db,
+            "SELECT name, secondaryCounterUsed, notesCreated FROM counter_projects WHERE id = 1",
+        ) {
+            assertEquals("Existing project", getString(0))
+            assertEquals(1, getInt(1))
+            assertEquals(1, getInt(2))
+        }
+
+        db.execSQL(
+            """
+            INSERT INTO counter_projects (
+                id, name, count, secondaryCount, stepSize, notes, createdAt, updatedAt
+            ) VALUES (2, 'New project', 0, 0, 1, '', 3000, 3000)
+            """.trimIndent(),
+        )
+        assertSingleRow(
+            db,
+            "SELECT secondaryCounterUsed, notesCreated FROM counter_projects WHERE id = 2",
+        ) {
+            assertEquals(0, getInt(0))
+            assertEquals(0, getInt(1))
+        }
+        db.close()
+    }
+
+    @Test
     fun migrate1to2() {
         val testDb = "migration-test-v1-to-v2"
 
@@ -171,6 +220,7 @@ class MigrationTest {
         assertEquals(1000L, projectCursor.getLong(5))
         assertEquals(2000L, projectCursor.getLong(6))
         assertFalse(projectCursor.moveToNext())
+        // CPD-OFF: Testin skenaariokohtainen asetelma pidetaan paikallisena ja luettavana.
         projectCursor.close()
 
         val historyCursor =
@@ -190,6 +240,7 @@ class MigrationTest {
         assertTrue(yarnCardsCursor.moveToFirst())
         assertEquals(0, yarnCardsCursor.getInt(0))
         yarnCardsCursor.close()
+        // CPD-ON
 
         db.close()
     }
@@ -341,6 +392,7 @@ class MigrationTest {
                 4,
                 true,
                 KnitToolsDatabase.MIGRATION_3_4,
+                // CPD-OFF: Testin skenaariokohtainen asetelma pidetaan paikallisena ja luettavana.
             )
 
         // Varmista uudet taulut luotiin
@@ -353,6 +405,7 @@ class MigrationTest {
         assertTrue(photoCursor.moveToFirst())
         assertEquals(0, photoCursor.getInt(0))
         photoCursor.close()
+        // CPD-ON
 
         // Legacy secondaryCount säilyy vain counter_projects-taulussa.
         val counterCursor =
@@ -647,6 +700,7 @@ class MigrationTest {
         assertTrue(counterCursor.isNull(0))
         assertTrue(counterCursor.isNull(1))
         assertTrue(counterCursor.isNull(2))
+        // CPD-OFF: Testin skenaariokohtainen asetelma pidetaan paikallisena ja luettavana.
         assertTrue(counterCursor.isNull(3))
         counterCursor.close()
 
@@ -660,6 +714,7 @@ class MigrationTest {
 
     @Test
     fun migrate1to7() {
+        // CPD-ON
         val testDb = "migration-test-v1-to-v7"
 
         helper.createDatabase(testDb, 1).apply {
@@ -846,6 +901,7 @@ class MigrationTest {
             close()
         }
 
+        // CPD-OFF: Migraation versionkohtainen asetelma ja tarkistus pidetaan yhdessa.
         val db =
             helper.runMigrationsAndValidate(
                 testDb,
@@ -860,6 +916,7 @@ class MigrationTest {
         ) {
             assertEquals(720L, getLong(0))
             assertEquals(5, getInt(1))
+            // CPD-ON
         }
 
         db.close()
@@ -1199,7 +1256,7 @@ class MigrationTest {
             """
             SELECT source, ravelryPatternId, name, designerName, thumbnailUrl, difficulty,
                 gaugeStitches, gaugeRows, needleSize, yarnWeight, yardage,
-                isFree, originalUrl, canonicalUrl, localPdfUri, isAvailableOffline,
+                availability, originalUrl, canonicalUrl, localPdfUri, isAvailableOffline,
                 savedAt, updatedAt, lastSyncedAt
             FROM saved_patterns WHERE id = 1
             """.trimIndent(),
@@ -1215,7 +1272,7 @@ class MigrationTest {
             assertEquals("2.5 mm", getString(8))
             assertEquals("Fingering", getString(9))
             assertEquals(420, getInt(10))
-            assertEquals(0, getInt(11))
+            assertEquals("unknown", getString(11))
             assertEquals("https://example.test/pattern", getString(12))
             assertEquals("https://example.test/pattern", getString(13))
             assertTrue(isNull(14))

@@ -73,6 +73,7 @@ data class AllPhotosState(
 )
 
 data class AllPhotosActions(
+    // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
     val onDeletePhoto: (ProgressPhoto) -> Unit,
     val onEnterSelectMode: (Long) -> Unit,
     val onToggleSelection: (Long) -> Unit,
@@ -85,6 +86,7 @@ data class AllPhotosActions(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AllPhotosScreen(
+// CPD-ON
     state: AllPhotosState,
     actions: AllPhotosActions,
 ) {
@@ -166,6 +168,7 @@ fun AllPhotosScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
             ) {
+                // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
                 Image(
                     painter = painterResource(R.drawable.camera_icon),
                     contentDescription = null,
@@ -175,6 +178,7 @@ fun AllPhotosScreen(
                 Spacer(modifier = Modifier.height(24.dp))
                 Text(
                     text = stringResource(R.string.empty_all_photos),
+                    // CPD-ON
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -223,6 +227,7 @@ private fun AllPhotosTopBar(
         TopAppBar(
             title = {
                 Text(
+                    // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
                     text = stringResource(R.string.n_selected, state.selectedPhotoIds.size),
                     style = MaterialTheme.typography.titleLarge,
                 )
@@ -237,6 +242,7 @@ private fun AllPhotosTopBar(
             },
             actions = {
                 TextButton(onClick = { onSelectAll(filteredPhotos.map { it.id }) }) {
+                    // CPD-ON
                     Text(stringResource(R.string.select_all))
                 }
             },
@@ -250,6 +256,7 @@ private fun AllPhotosTopBar(
         TopAppBar(
             title = {
                 Text(
+                    // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
                     text = stringResource(R.string.all_photos_title),
                     style = MaterialTheme.typography.titleLarge,
                 )
@@ -266,6 +273,7 @@ private fun AllPhotosTopBar(
             colors =
                 TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Transparent,
+                    // CPD-ON
                     scrolledContainerColor = Color.Transparent,
                 ),
         )

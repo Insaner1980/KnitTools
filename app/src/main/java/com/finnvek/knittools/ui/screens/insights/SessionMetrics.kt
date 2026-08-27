@@ -1,6 +1,7 @@
 package com.finnvek.knittools.ui.screens.insights
 
 import com.finnvek.knittools.domain.model.KnitSession
+import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -70,11 +71,12 @@ internal object SessionMetrics {
         rangeStartMillis: Long?,
         interval: PaceGroupingInterval,
         zone: ZoneId,
+        firstDayOfWeek: DayOfWeek = DayOfWeek.MONDAY,
     ): Map<LocalDate, PaceBucketMetric> {
         val buckets = mutableMapOf<LocalDate, MutablePaceBucket>()
         sessions.forEach { session ->
             session
-                .paceBucketContributions(rangeStartMillis, interval, zone)
+                .paceBucketContributions(rangeStartMillis, interval, zone, firstDayOfWeek)
                 .forEach { (bucketStart, contribution) ->
                     val bucket = buckets.getOrPut(bucketStart) { MutablePaceBucket() }
                     bucket.seconds += contribution.seconds
@@ -191,6 +193,7 @@ internal object SessionMetrics {
         rangeStartMillis: Long?,
         interval: PaceGroupingInterval,
         zone: ZoneId,
+        firstDayOfWeek: DayOfWeek,
     ): Map<LocalDate, PaceBucketContribution> {
         val activeSeconds = activeDurationSeconds()
         val rows = workedRows()
@@ -212,7 +215,7 @@ internal object SessionMetrics {
                     .ofEpochMilli(cursor)
                     .atZone(sessionZone)
                     .toLocalDate()
-                    .bucketStart(interval)
+                    .bucketStart(interval, firstDayOfWeek)
             val nextBucketStartMillis =
                 bucketStart
                     .nextBucketStart(interval)

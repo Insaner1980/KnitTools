@@ -32,8 +32,6 @@
     <string name="tool_cast_on_calculator">Uppläggningsräknare</string>
     <string name="tool_yarn_estimator">Garnberäknare</string>
     <string name="tool_needle_sizes">Stickstorlekar</string>
-    <string name="pro_trial_days_left">Pro-testperiod — %d dagar kvar</string>
-    <string name="unlock_all_tools">Lås upp alla verktyg</string>
     <string name="desc_yarn_estimator_card">Beräkna garnåtgång och antal nystan</string>
 
     <!-- Bottom navigation tabs -->
@@ -139,7 +137,6 @@
     <string name="pattern_open_failed">Mönstret kunde inte öppnas.</string>
     <string name="pattern_show_reading_line">Visa läslinje</string>
     <string name="pattern_hide_reading_line">Dölj läslinje</string>
-    <string name="pattern_save_line_as_row">Spara linje som varv %1$d</string>
     <string name="pattern_clear_row_mark">Ta bort varvmarkering</string>
     <string name="pattern_clear_page_marks">Ta bort sidans markeringar</string>
     <string name="pattern_calibrate_rows">Kalibrera varv</string>
@@ -148,7 +145,6 @@
     <string name="pattern_calibration_save_first">Spara första</string>
     <string name="pattern_calibration_save_last">Spara sista</string>
     <string name="pattern_calibration_invalid_row">Använd två olika varvnummer</string>
-    <string name="pattern_reading_line_description">Läslinje</string>
     <string name="pattern_page_jump">Hoppa till sida</string>
     <string name="pattern_page_number">Sidnummer</string>
     <string name="pattern_page_indicator">Sida %1$d av %2$d</string>
@@ -159,11 +155,38 @@
     <string name="pattern_picker_import_cloud_pdf">Importera från Drive eller Dropbox</string>
     <string name="pattern_picker_import_from_ravelry">Importera från Ravelry</string>
     <string name="pattern_picker_camera_scan">Ta mönsterfoto</string>
+    <string name="pattern_picker_choose_images">Välj bilder</string>
+    <string name="pattern_image_import_title">Granska mönstersidor</string>
+    <plurals name="pattern_images_selected"><item quantity="one">%1$d bild vald</item><item quantity="other">%1$d bilder valda</item></plurals>
+    <string name="pattern_image_page_position">Sida %1$d av %2$d</string>
+    <string name="pattern_image_add_more">Lägg till fler</string>
+    <string name="pattern_image_move_earlier">Flytta sida %1$d bakåt</string>
+    <string name="pattern_image_move_later">Flytta sida %1$d framåt</string>
+    <string name="pattern_image_remove_page">Ta bort sida %1$d</string>
+    <string name="pattern_image_create_pdf">Skapa mönster-PDF</string>
+    <string name="pattern_image_replace_title">Ersätta aktuellt mönster?</string>
+    <string name="pattern_image_replace_message">Den aktuella mönsterbilagan ersätts när den nya PDF-filen är klar.</string>
+    <string name="pattern_image_replace_action">Ersätt mönster</string>
+    <string name="pattern_image_conversion_progress">Skapar sida %1$d av %2$d</string>
+    <string name="pattern_image_attaching">Bifogar mönster-PDF</string>
+    <string name="pattern_image_cancel_conversion">Avbryt konvertering</string>
+    <string name="pattern_image_discard_title">Kasta valda bilder?</string>
+    <string name="pattern_image_discard_message">De valda mönstersidorna tas bort.</string>
+    <string name="pattern_image_discard_action">Kasta bilder</string>
+    <plurals name="pattern_image_duplicates_ignored"><item quantity="one">%1$d dubblettbild ignorerades</item><item quantity="other">%1$d dubblettbilder ignorerades</item></plurals>
+    <string name="pattern_image_error_max_count">Du kan välja upp till 20 bilder.</string>
+    <string name="pattern_image_error_image_too_large">En bild är större än gränsen på 25 MiB.</string>
+    <string name="pattern_image_error_total_too_large">De valda bilderna överskrider totalgränsen på 200 MiB.</string>
+    <string name="pattern_image_error_unsupported">Ta bort bilden som inte stöds innan PDF-filen skapas.</string>
+    <string name="pattern_image_error_unreadable">En bild kunde inte läsas. Ditt tidigare val behölls.</string>
+    <string name="pattern_image_error_animated">Animerade bilder stöds inte.</string>
+    <string name="pattern_image_error_low_storage">Det finns inte tillräckligt med ledigt utrymme för att skapa PDF-filen.</string>
+    <string name="pattern_image_error_staging">Bilderna kunde inte förberedas. Ditt tidigare val behölls.</string>
+    <string name="pattern_image_error_conversion">Mönster-PDF:en kunde inte skapas. Granska sidorna och försök igen.</string>
+    <string name="pattern_image_error_attachment">PDF-filen kunde inte bifogas. Det aktuella mönstret behölls.</string>
     <string name="pattern_picker_continue_without_pattern">Fortsätt utan mönster</string>
-    <string name="pattern_scan_failed">Mönsterfotot kunde inte konverteras till PDF.</string>
     <string name="imported_pattern_designer">Importerad PDF</string>
     <string name="current_row_short">Varv %1$d</string>
-    <string name="time_spent_minutes_format">%dm</string>
     <string name="unlink_yarn">Ta bort garnlänk</string>
     <string name="select_yarn_card">Välj garnkort</string>
     <string name="linked_yarn_title">Länkat garn</string>
@@ -206,10 +229,9 @@
     <string name="session_history_title">Historik</string>
     <string name="no_sessions">Inga sessioner registrerade ännu. Börja sticka för att se din historik här.</string>
     <string name="session_row_range">Varv %1$d \u2192 %2$d</string>
-    <string name="session_duration_format">%1$dt %2$dm</string>
+    <string name="session_row_single">Varv %1$d</string>
     <string name="delete_session_title">Ta bort pass?</string>
     <string name="delete_session_message">Ta bort det här passet från historiken? Detta kan inte ångras.</string>
-    <string name="pro_full_history_hint">Uppgradera till Pro för full sessionshistorik</string>
 
     <!-- Settings -->
     <!-- Row Counter -->
@@ -335,25 +357,9 @@
     <string name="version_format">KnitTools %s</string>
 
     <!-- Pro Upgrade -->
-    <string name="you_have_pro">Du har KnitTools Pro!</string>
-    <string name="all_features_unlocked">Alla funktioner är upplåsta.</string>
-    <string name="pro_feature_unlimited_projects">Obegränsat antal räknarprojekt</string>
-    <string name="pro_feature_full_history">Fullständig räknarhistorik</string>
-    <string name="pro_feature_notes">Anteckningar per projekt</string>
-    <string name="pro_feature_secondary_counter">Sekundär räknare</string>
-    <string name="pro_feature_multiple_counters">Extra räknare</string>
-    <string name="pro_feature_row_reminders">Radpåminnelser</string>
-    <string name="pro_feature_progress_photos">Framstegsbilder</string>
-    <string name="pro_feature_unlimited_yarn">Obegränsat antal garnkort</string>
-    <string name="pro_feature_widget">Widget på hemskärmen</string>
-    <string name="pro_feature_pattern_camera_scan">Mönsterfoto</string>
-    <string name="pro_feature">Pro-funktion</string>
-    <string name="upgrade_for_price">Uppgradera för %s</string>
     <string name="one_time_purchase">Engångsköp. Ingen prenumeration.</string>
     <string name="loading_price">Laddar pris…</string>
-    <string name="price_loading_hint">Ansluter till Google Play — kontrollera internetanslutningen om detta tar lång tid</string>
     <string name="billing_purchase_cancelled">Köp avbrutet</string>
-    <string name="billing_purchase_unavailable_button">Köp inte tillgängligt</string>
     <string name="billing_purchase_unavailable">Det här köpet är inte tillgängligt i Google Play just nu.</string>
     <string name="billing_purchase_network_error">Det gick inte att nå Google Play. Kontrollera internetanslutningen och försök igen.</string>
     <string name="billing_purchase_failed">Köpet kunde inte slutföras. Försök igen.</string>
@@ -454,21 +460,17 @@
     </plurals>
     <string name="insights_duration_hours_minutes">%1$d t %2$d min</string>
     <string name="insights_range_format">%1$s – %2$s</string>
-    <string name="insights_range_open_format">%1$s –</string>
-    <string name="insights_hero_lead_in_week">Den här veckan ägnade du</string>
-    <string name="insights_hero_lead_in_month">Den här månaden ägnade du</string>
-    <string name="insights_hero_lead_in_all_time">Totalt har du ägnat</string>
     <plurals name="insights_hero_trailing_projects">
-        <item quantity="one">åt ett projekt.</item>
-        <item quantity="other">åt %1$d projekt.</item>
+        <item quantity="one">%1$d projekt</item>
+        <item quantity="other">%1$d projekt</item>
     </plurals>
-    <string name="insights_hero_trailing_project">åt %1$s.</string>
     <string name="insights_craft_verb_knitting">stickning</string>
     <string name="insights_craft_verb_crocheting">virkning</string>
     <string name="insights_craft_verb_making">handarbete</string>
     <string name="insights_stat_rows">Varv</string>
     <string name="insights_stat_min_per_row">Min per varv</string>
     <string name="insights_stat_day_streak">Dagssvit</string>
+    <string name="insights_stat_best_streak">Bästa svit</string>
     <string name="insights_trend_more_week">%1$s mer än förra veckan</string>
     <string name="insights_trend_less_week">%1$s mindre än förra veckan</string>
     <string name="insights_trend_same_week">Samma som förra veckan</string>
@@ -482,16 +484,23 @@
     <string name="insights_stat_no_value">—</string>
     <string name="insights_stat_under_one">&lt;1</string>
     <string name="insights_section_every_day">Varje dag</string>
+    <string name="insights_section_month_by_month">Månad för månad</string>
+    <string name="insights_section_week_by_week">Vecka för vecka</string>
     <string name="insights_section_where_time_went">Vart tiden tog vägen</string>
+    <string name="insights_section_projects_by_day">Projekt per dag</string>
+    <plurals name="insights_project_fabric_a11y_summary">
+        <item quantity="one">Projekt per dag, %1$s, %2$d aktiv dag</item>
+        <item quantity="other">Projekt per dag, %1$s, %2$d aktiva dagar</item>
+    </plurals>
+    <string name="insights_no_tracked_activity">Ingen registrerad aktivitet</string>
+    <string name="insights_project_fabric_previous_active_day">Föregående aktiva dag</string>
+    <string name="insights_project_fabric_next_active_day">Nästa aktiva dag</string>
+    <string name="insights_last_worked_format">Senast %1$s</string>
     <plurals name="insights_days_meta_format">
         <item quantity="one">%1$d av %2$d dag</item>
         <item quantity="other">%1$d av %2$d dagar</item>
     </plurals>
-    <string name="insights_chart_hint_day">Tryck eller dra över dagarna.</string>
-    <string name="insights_chart_hint_month">Tryck eller dra över månaderna.</string>
     <string name="insights_chart_axis_today">idag</string>
-    <string name="insights_chart_max_format">max %1$s</string>
-    <string name="insights_no_sessions_yet">Inga pass än</string>
     <string name="insights_chart_a11y_daily">Daglig tid för %1$s, %2$s, %3$s, längst %4$s</string>
     <string name="insights_chart_a11y_monthly">Månatlig tid för %1$s, %2$s, %3$s, längst %4$s</string>
     <string name="insights_chart_a11y_next">Nästa stapel</string>
@@ -502,8 +511,8 @@
     <string name="insights_nothing_yet_week">Inget än den här veckan.</string>
     <string name="insights_nothing_yet_month">Inget än den här månaden.</string>
     <string name="insights_nothing_yet_all_time">Inget än.</string>
-    <string name="insights_pro_chart_title">Se din dagliga rytm</string>
-    <string name="insights_pro_chart_body">Pro visar varje pass som ett diagram, plus din svit.</string>
+    <string name="insights_pro_chart_title">Se din aktivitet över tid</string>
+    <string name="insights_pro_chart_body">Pro grupperar din registrerade tid i dagliga, veckovisa eller månatliga diagram och lägger till din aktivitetssvit.</string>
     <string name="all_projects">Alla projekt</string>
     <string name="insights_all_time">All tid</string>
     <string name="insights_this_week">Den här veckan</string>
@@ -512,17 +521,11 @@
         <item quantity="one">%1$d varv</item>
         <item quantity="other">%1$d varv</item>
     </plurals>
-    <string name="insights_footer_1">Varje varv räknas — fortsätt!</string>
-    <string name="insights_footer_2">Ditt projekt väntar.</string>
-    <string name="insights_footer_3">Ett varv till?</string>
-    <string name="insights_footer_4">Maska för maska, varv för varv.</string>
-    <string name="insights_footer_5">Stora saker börjar med en enda maska.</string>
     <string name="relative_time_today">idag</string>
     <string name="relative_time_yesterday">igår</string>
     <string name="relative_time_days_ago">%1$dd sedan</string>
     <string name="relative_time_weeks_ago">%1$dv sedan</string>
     <string name="relative_time_months_ago">%1$dmån sedan</string>
-    <string name="insights_no_time_logged">Ingen tid registrerad</string>
 
     <!-- Settings -->
     <string name="help_and_guide">Hjälp och guide</string>
@@ -653,7 +656,6 @@
     <string name="saved_pattern_detail_open_pattern">Öppna mönster</string>
     <string name="saved_pattern_detail_attach_to_project">Koppla till projekt</string>
     <string name="saved_pattern_detail_remove_confirm">Ta bort det här sparade mönstret?</string>
-    <string name="saved_pattern_detail_thumbnail">Miniatyrbild för mönster</string>
     <string name="filter_weight">Grovlek</string>
     <string name="filter_difficulty">Svårighet</string>
     <string name="free">Gratis</string>
@@ -730,4 +732,118 @@
     <string name="pattern_saved_to_library">Sparad i biblioteket</string>
     <string name="show_more">Visa mer</string>
     <string name="show_less">Visa mindre</string>
+    <string name="pro_start_free_trial">Starta gratis provperiod</string>
+    <string name="pro_start_14_day_trial">Starta 14 dagars gratis provperiod</string>
+    <string name="pro_trial_start_failed">Provperioden kunde inte startas. Försök igen.</string>
+    <string name="pro_prompt_not_now">Inte nu</string>
+    <string name="pro_prompt_see_pro">Se Pro</string>
+    <string name="pro_prompt_trial_body">Starta din kostnadsfria 14-dagars provperiod med Pro. Ingen betalningsmetod krävs. Allt du skapar finns kvar efter provperioden.</string>
+    <string name="pro_prompt_projects_title">Skapa ett till projekt med Pro</string>
+    <plurals name="pro_prompt_projects_trial_body"><item quantity="one">Du har redan %1$d projekt. Starta din kostnadsfria 14-dagars provperiod med Pro för att skapa ett till. Alla dina projekt finns kvar efter provperioden.</item><item quantity="other">Du har redan %1$d projekt. Starta din kostnadsfria 14-dagars provperiod med Pro för att skapa ett till. Alla dina projekt finns kvar efter provperioden.</item></plurals>
+    <plurals name="pro_prompt_projects_body"><item quantity="one">Ett nytt projekt kräver Pro eftersom du redan har %1$d projekt. Ditt befintliga projekt finns kvar.</item><item quantity="other">Ett nytt projekt kräver Pro eftersom du redan har %1$d projekt. Alla dina befintliga projekt finns kvar.</item></plurals>
+    <string name="pro_prompt_photos_title">Lägg till framstegsbilder med Pro</string>
+    <string name="pro_prompt_photos_body">En ny framstegsbild kräver Pro. Dina befintliga bilder finns kvar.</string>
+    <string name="pro_prompt_notes_title">Lägg till projektanteckningar med Pro</string>
+    <string name="pro_prompt_notes_body">Projektets första anteckning kräver Pro. Anteckningar du redan har skapat kan fortfarande redigeras.</string>
+    <string name="pro_prompt_yarn_title">Lägg till garn med Pro</string>
+    <string name="pro_prompt_yarn_body">Ett nytt garnkort kräver Pro. Dina befintliga garnkort finns kvar och kan redigeras.</string>
+    <string name="pro_prompt_save_yarn_title">Spara det här garnet med Pro</string>
+    <string name="pro_prompt_save_yarn_body">När projektgarnet sparas i Mitt garn skapas ett nytt garnkort, vilket kräver Pro. Projektets garnanteckning finns kvar.</string>
+    <string name="pro_prompt_counters_title">Lägg till en räknare med Pro</string>
+    <string name="pro_prompt_counters_body">En ny extra räknare kräver Pro. Dina befintliga räknare finns kvar och kan redigeras.</string>
+    <string name="pro_prompt_reminders_title">Lägg till en radpåminnelse med Pro</string>
+    <string name="pro_prompt_reminders_body">En ny radpåminnelse kräver Pro. Dina befintliga påminnelser fortsätter fungera och kan redigeras.</string>
+    <string name="pro_prompt_pattern_camera_title">Gör PDF av mönsterbilder med Pro</string>
+    <string name="pro_prompt_pattern_camera_body">Att skapa en ny PDF av mönsterbilder kräver Pro. Dina befintliga mönster och PDF-filer finns kvar.</string>
+    <string name="pro_prompt_widget_title">Använd startskärmswidgeten med Pro</string>
+    <string name="pro_prompt_widget_body">Startskärmswidgeten är en avancerad Pro-vy. Dina projekt- och räknardata finns kvar i KnitTools.</string>
+    <string name="pro_badge">PRO</string><string name="pro_badge_locked_description">Pro-funktion</string><string name="pro_badge_trial_description">Pro-funktion, tillgänglig under provperioden</string>
+    <string name="knittools_pro">KnitTools Pro</string><string name="pro_content_stays_available">Allt du skapar finns kvar.</string><string name="pro_status_not_started">Inte startad</string>
+    <plurals name="pro_status_trial_days"><item quantity="one">Provperiod, %1$d dag kvar</item><item quantity="other">Provperiod, %1$d dagar kvar</item></plurals>
+    <string name="pro_status_trial_ended">Provperioden är slut</string><string name="pro_status_purchased">Köpt</string>
+    <string name="pro_trial_ended_title">Din Pro-provperiod är slut</string><string name="pro_trial_ended_body">Allt du har skapat finns fortfarande kvar. Du kan fortsätta använda och redigera det. Pro krävs bara för nya Pro-objekt och avancerade vyer.</string><string name="pro_continue_free">Fortsätt gratis</string>
+    <string name="pro_page_intro">Ge varje projekt mer utrymme och håll ihop ditt arbetsflöde.</string><string name="pro_page_trust">Allt du skapar finns kvar, även när provperioden tar slut.</string>
+    <string name="pro_group_projects_title">Projekt och material</string><string name="pro_group_projects_body">Skapa fler projekt, den första projektanteckningen, framstegsbilder och garnkort.</string>
+    <string name="pro_group_workflow_title">Räkning och arbetsflöde</string><string name="pro_group_workflow_body">Använd den kompakta repetitionsräknaren, extra-, repetitions-, formnings- och sektionsräknare, radpåminnelser, mönsterbilder som PDF och startskärmswidgeten.</string>
+    <string name="pro_group_insights_title">Insikter</string><string name="pro_group_insights_body">Se dagliga, veckovisa och månatliga aktivitetsdiagram och din aktivitetssvit.</string>
+    <string name="pro_page_purchased">Pro köpt</string><string name="pro_buy_for_price">Köp Pro för %1$s</string><string name="pro_price_unavailable">Priset är inte tillgängligt</string><string name="billing_purchase_pending">Ditt köp väntar. Pro blir tillgängligt när Google Play har slutfört betalningen.</string>
+    <string name="project_updated_format">Uppdaterat %1$s</string>
+    <string name="project_completed_format">Avslutat %1$s</string>
+    <string name="project_section_count_format">%1$s %2$d</string>
+    <string name="project_continue_content_description">Fortsätt med %1$s</string>
+    <string name="work_session_start">Starta arbetspass</string>
+    <string name="work_session_stop">Stoppa arbetspass</string>
+    <string name="work_session_active">Arbetspass aktivt</string>
+    <string name="work_session_recovery_needed">Passtiden måste granskas</string>
+    <string name="work_session_resolve">Lös</string>
+    <string name="work_session_recovery_title">Granska passtid</string>
+    <string name="work_session_pending_rows_format">Väntande varvframsteg: %1$d</string>
+    <string name="work_session_hours">Timmar</string>
+    <string name="work_session_minutes">Minuter</string>
+    <string name="work_session_add_and_continue">Lägg till och fortsätt</string>
+    <string name="work_session_discard_pending">Kasta väntande och stoppa</string>
+    <string name="work_session_another_project">ett annat projekt</string>
+    <string name="work_session_conflict_title">Ett pass är redan aktivt</string>
+    <string name="work_session_conflict_body">Det aktiva passet tillhör %1$s. Välj vad du vill göra innan du startar här.</string>
+    <string name="work_session_return_to_active">Gå tillbaka till aktivt projekt</string>
+    <string name="work_session_save_then_start">Stoppa, spara och starta här</string>
+    <string name="work_session_discard_then_start">Stoppa, kasta och starta här</string>
+    <string name="work_session_complete_project_title">Slutför projekt med aktivt pass?</string>
+    <string name="work_session_complete_project_body">Spara eller kasta det aktiva passet innan projektet slutförs.</string>
+    <string name="work_session_save_and_complete">Spara pass och slutför</string>
+    <string name="work_session_discard_and_complete">Kasta pass och slutför</string>
+    <string name="work_session_delete_project_title">Kasta aktivt pass och ta bort projekt?</string>
+    <string name="work_session_delete_project_body">När projektet tas bort raderas även sparade pass. Det aktiva passet måste kastas först.</string>
+    <string name="work_session_discard_and_delete">Kasta pass och ta bort</string>
+    <string name="work_session_duration_format">Längd: %1$s</string>
+    <string name="work_session_confirmed_time_format">Bekräftad tid: %1$s</string>
+    <string name="work_session_time_while_away_format">Tid under frånvaro: %1$s</string>
+    <string name="work_session_time_unavailable">Tiden under frånvaron kunde inte uppskattas.</string>
+    <string name="work_session_edit_total_duration">Redigera passets totala längd. När du sparar avslutas passet.</string>
+    <string name="work_session_invalid_duration">Ogiltig längd. Ange minst noll timmar och minuter mellan 0 och 59.</string>
+    <string name="work_session_save_edited_and_stop">Spara redigerad längd och avsluta</string>
+    <string name="work_session_edit_duration">Redigera längd</string>
+    <string name="work_session_reason_restarted">Enheten startades om. Granska tiden sedan den senaste bekräftelsen.</string>
+    <string name="work_session_reason_long_running">Passet har pågått länge. Bekräfta det senaste intervallet.</string>
+    <string name="work_session_reason_clock_unavailable">KnitTools kunde inte bekräfta om enheten startades om.</string>
+    <string name="work_session_reason_clock_changed">KnitTools kunde inte verifiera det senaste tidsintervallet.</string>
+    <string name="work_session_stop_summary_title">Avsluta arbetspasset?</string>
+    <string name="work_session_save">Spara pass</string>
+    <string name="work_session_discard">Kassera pass</string>
+    <string name="work_session_active_description">Arbetspass för %1$s, %2$s har gått</string>
+    <string name="work_session_could_not_start">Passet kunde inte startas</string>
+    <string name="work_session_could_not_save">Passet kunde inte sparas</string>
+    <string name="work_session_could_not_discard">Passet kunde inte kasseras</string>
+    <string name="work_session_recovery_already_handled">Den här passgranskningen har redan hanterats.</string>
+    <string name="work_session_retry">Försök igen</string>
+    <string name="project_documents_title">Dokument</string>
+    <string name="project_documents_add">Lägg till</string>
+    <string name="project_documents_actions">Åtgärder för %1$s</string>
+    <string name="project_documents_primary">Huvudmönster</string>
+    <string name="project_documents_open">Aktuellt dokument</string>
+    <string name="project_documents_unavailable">PDF-filen är inte tillgänglig</string>
+    <string name="project_documents_rename">Byt namn</string>
+    <string name="project_documents_make_primary">Ange som huvudmönster</string>
+    <string name="project_documents_remove_action">Ta bort</string>
+    <string name="project_documents_move_earlier">Flytta tidigare</string>
+    <string name="project_documents_move_later">Flytta senare</string>
+    <string name="project_documents_rename_title">Byt namn på dokumentet</string>
+    <string name="project_documents_label">Dokumentnamn</string>
+    <string name="project_documents_remove_title">Ta bort dokumentet?</string>
+    <string name="project_documents_remove_message">Ta bort %1$s från det här projektet?</string>
+    <string name="project_documents_error_invalid_label">Ange ett namn med 1–50 tecken.</string>
+    <string name="project_documents_error_duplicate">Den här PDF-filen är redan kopplad till projektet.</string>
+    <string name="project_documents_error_unavailable">Den här PDF-filen är inte längre tillgänglig. Ta bort den eller lägg till filen igen.</string>
+    <string name="project_documents_error_stale">Dokumentlistan har ändrats. Försök igen.</string>
+    <string name="project_documents_error_generic">Dokumentändringen kunde inte sparas.</string>
+    <string name="project_documents_secondary">Sekundärt dokument</string>
+    <string name="project_documents_available">PDF-filen är tillgänglig</string>
+    <string name="project_documents_position">Position %1$d av %2$d</string>
+    <string name="project_documents_open_action">Öppna dokument</string>
+    <string name="project_documents_remove_from_project">Ta bort från projektet</string>
+    <string name="project_documents_empty">Inga dokument</string>
+    <string name="project_documents_metadata_only">Endast metadata</string>
+    <string name="project_documents_pattern_information">Mönsterinformation</string>
+    <string name="project_documents_remove_primary_message">Ta bort %1$s? Ett annat dokument blir huvudmönster.</string>
+    <string name="project_documents_remove_last_message">Ta bort %1$s? Projektet kommer inte längre att ha ett läsbart mönster.</string>
 </resources>

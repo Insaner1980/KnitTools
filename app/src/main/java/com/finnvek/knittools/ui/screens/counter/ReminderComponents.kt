@@ -49,9 +49,11 @@ import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.CounterValueFormatter
 import com.finnvek.knittools.domain.model.RowReminder
+import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.NumberInputField
 import com.finnvek.knittools.ui.components.NumberInputOptions
+import com.finnvek.knittools.ui.components.ProBadge
 import com.finnvek.knittools.ui.components.SegmentedToggle
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -59,6 +61,7 @@ import com.finnvek.knittools.ui.components.SegmentedToggle
 fun RemindersSheet(
     reminders: List<RowReminder>,
     currentRow: Int,
+    proStatus: ProStatus,
     onAdd: () -> Unit,
     onEdit: (RowReminder) -> Unit,
     onDelete: (Long) -> Unit,
@@ -96,6 +99,8 @@ fun RemindersSheet(
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(stringResource(R.string.add_reminder))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    ProBadge(status = proStatus)
                 }
             }
             if (reminders.isEmpty()) {

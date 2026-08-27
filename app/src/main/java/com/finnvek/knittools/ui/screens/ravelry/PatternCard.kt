@@ -21,13 +21,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
 import com.finnvek.knittools.R
-import com.finnvek.knittools.data.remote.PatternAvailability
+import com.finnvek.knittools.domain.model.PatternAvailability
+import com.finnvek.knittools.ui.components.RemotePatternImage
 import com.finnvek.knittools.ui.theme.RavelryTeal
 
 data class PatternCardState(
@@ -54,7 +53,14 @@ fun PatternCard(
             modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            PatternThumbnail(thumbnailUrl = state.thumbnailUrl, contentDescription = state.name)
+            RemotePatternImage(
+                imageUrl = state.thumbnailUrl,
+                modifier =
+                    Modifier
+                        .padding(end = 12.dp)
+                        .size(72.dp)
+                        .clip(RoundedCornerShape(8.dp)),
+            )
             PatternDetails(
                 name = state.name,
                 designerName = state.designerName,
@@ -77,25 +83,6 @@ private fun PatternCardActionSlot(actionContent: (@Composable () -> Unit)?) {
         contentAlignment = Alignment.CenterEnd,
     ) {
         actionContent()
-    }
-}
-
-@Composable
-private fun PatternThumbnail(
-    thumbnailUrl: String?,
-    contentDescription: String,
-) {
-    if (thumbnailUrl != null) {
-        AsyncImage(
-            model = thumbnailUrl,
-            contentDescription = contentDescription,
-            modifier =
-                Modifier
-                    .size(72.dp)
-                    .clip(RoundedCornerShape(8.dp)),
-            contentScale = ContentScale.Crop,
-        )
-        Spacer(modifier = Modifier.width(12.dp))
     }
 }
 
@@ -143,24 +130,19 @@ private fun PatternBadgeRow(
                 color = RavelryTeal,
             )
         }
-        PriceBadge(availability = availability)
+        PatternAvailabilityBadge(availability = availability)
     }
 }
 
 @Composable
-private fun PriceBadge(availability: PatternAvailability) {
+internal fun PatternAvailabilityBadge(availability: PatternAvailability) {
     val badgeColor =
         when (availability) {
             PatternAvailability.Free -> MaterialTheme.colorScheme.secondary
             PatternAvailability.Paid -> MaterialTheme.colorScheme.tertiary
             PatternAvailability.Unknown -> MaterialTheme.colorScheme.onSurfaceVariant
         }
-    val text =
-        when (availability) {
-            PatternAvailability.Free -> stringResource(R.string.free)
-            PatternAvailability.Paid -> stringResource(R.string.paid)
-            PatternAvailability.Unknown -> stringResource(R.string.availability_unknown)
-        }
+    val text = stringResource(patternAvailabilityLabelRes(availability))
     Box(
         modifier =
             Modifier
@@ -176,3 +158,10 @@ private fun PriceBadge(availability: PatternAvailability) {
         )
     }
 }
+
+internal fun patternAvailabilityLabelRes(availability: PatternAvailability): Int =
+    when (availability) {
+        PatternAvailability.Free -> R.string.free
+        PatternAvailability.Paid -> R.string.paid
+        PatternAvailability.Unknown -> R.string.availability_unknown
+    }

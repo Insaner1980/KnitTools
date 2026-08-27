@@ -27,7 +27,7 @@ data class SavedPattern(
     val needleSize: String? = null,
     val yarnWeight: String? = null,
     val yardage: Int? = null,
-    val isFree: Boolean = true,
+    val availability: PatternAvailability = PatternAvailability.Unknown,
     val originalUrl: String = "",
     val canonicalUrl: String = "",
     val localPdfUri: String? = null,
@@ -36,6 +36,9 @@ data class SavedPattern(
     val updatedAt: Long = savedAt,
     val lastSyncedAt: Long? = null,
 ) {
+    val isFree: Boolean
+        get() = availability.isFree
+
     val ravelryId: Int
         get() = ravelryPatternId ?: 0
 

@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -58,10 +59,21 @@ import androidx.core.net.toUri
 import coil3.compose.AsyncImage
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.ProgressPhoto
+import com.finnvek.knittools.pro.ProStatus
+import com.finnvek.knittools.ui.components.ProBadge
+import com.finnvek.knittools.ui.components.ProPromptRequest
+import com.finnvek.knittools.ui.components.ProPromptSheet
+import com.finnvek.knittools.ui.components.ProPromptSource
 import com.finnvek.knittools.ui.components.rememberLocaleDateFormat
 import java.util.Date
 
+private enum class PendingPhotoProAction {
+    Capture,
+}
+
 data class PhotoGalleryActions(
+    val authorizePhotoCreation: () -> Unit,
+    val cancelPhotoCreation: () -> Unit,
     val createPhotoCaptureTarget: (Long, (PhotoCaptureTarget?) -> Unit) -> Unit,
     val deletePendingPhotoFile: (String?) -> Unit,
     val savePhoto: (Uri) -> Unit,
@@ -74,7 +86,10 @@ data class PhotoGalleryActions(
 fun PhotoGalleryScreen(
     photos: List<ProgressPhoto>,
     projectId: Long?,
+    canCreatePhoto: Boolean,
+    proStatus: ProStatus,
     onBack: () -> Unit,
+    onSeePro: () -> Unit,
     actions: PhotoGalleryActions,
 ) {
     val context = LocalContext.current
@@ -87,6 +102,7 @@ fun PhotoGalleryScreen(
     val viewingPhoto = remember(viewingPhotoId, photos) { photos.firstOrNull { it.id == viewingPhotoId } }
     val cameraPermissionDeniedMessage = stringResource(R.string.camera_permission_denied)
     val cameraPermissionDeniedPermanentMessage = stringResource(R.string.camera_permission_denied_permanent)
+    var pendingProAction by rememberSaveable { mutableStateOf<PendingPhotoProAction?>(null) }
 
     val cameraLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
@@ -98,6 +114,7 @@ fun PhotoGalleryScreen(
             )
             pendingPhotoUriString = null
             pendingPhotoFilePath = null
+            if (!success) actions.cancelPhotoCreation()
         }
 
     fun startCameraCapture() {
@@ -117,10 +134,32 @@ fun PhotoGalleryScreen(
                 permanentlyDeniedMessage = cameraPermissionDeniedPermanentMessage,
                 onGranted = ::startCameraCapture,
             )
+            if (!granted) actions.cancelPhotoCreation()
         }
 
     fun launchCamera() {
-        permissionLauncher.launch(Manifest.permission.CAMERA)
+        if (canCreatePhoto) {
+            actions.authorizePhotoCreation()
+            permissionLauncher.launch(Manifest.permission.CAMERA)
+        } else {
+            pendingProAction = PendingPhotoProAction.Capture
+        }
+    }
+
+    pendingProAction?.let {
+        ProPromptSheet(
+            request =
+                ProPromptRequest(
+                    source = ProPromptSource.ProgressPhotos,
+                ),
+            onDismiss = { pendingProAction = null },
+            onTrialStarted = {
+                pendingProAction = null
+                actions.authorizePhotoCreation()
+                permissionLauncher.launch(Manifest.permission.CAMERA)
+            },
+            onSeePro = onSeePro,
+        )
     }
 
     // Koko näytön kuvankatselija
@@ -150,6 +189,7 @@ fun PhotoGalleryScreen(
             TopAppBar(
                 title = {
                     Text(
+                        // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
                         text = stringResource(R.string.progress_photos),
                         style = MaterialTheme.typography.titleLarge,
                     )
@@ -163,6 +203,7 @@ fun PhotoGalleryScreen(
                         )
                     }
                 },
+                // CPD-ON
                 colors =
                     TopAppBarDefaults.topAppBarColors(
                         containerColor = Color.Transparent,
@@ -175,10 +216,16 @@ fun PhotoGalleryScreen(
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
             ) {
-                Icon(
-                    imageVector = Icons.Filled.CameraAlt,
-                    contentDescription = stringResource(R.string.take_photo),
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.CameraAlt,
+                        contentDescription = stringResource(R.string.take_photo),
+                    )
+                    ProBadge(status = proStatus)
+                }
             }
         },
     ) { padding ->

@@ -7,16 +7,20 @@ import android.os.VibratorManager
 import android.view.WindowManager
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
@@ -49,9 +53,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
@@ -63,7 +72,9 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import com.finnvek.knittools.R
+import com.finnvek.knittools.domain.model.ActiveSessionRecoveryReason
 import com.finnvek.knittools.domain.model.ProjectCounter
 import com.finnvek.knittools.domain.model.ProjectCounterDraft
 import com.finnvek.knittools.domain.model.ProjectYarnNote
@@ -71,19 +82,63 @@ import com.finnvek.knittools.domain.model.RowReminder
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.domain.model.displayName
+import com.finnvek.knittools.repository.ProjectDocumentMutationResult
 import com.finnvek.knittools.ui.components.ConfirmationDialog
+import com.finnvek.knittools.ui.components.ProPromptRequest
+import com.finnvek.knittools.ui.components.ProPromptSheet
+import com.finnvek.knittools.ui.components.ProPromptSource
 import com.finnvek.knittools.ui.components.ProjectDetailsDialog
 import com.finnvek.knittools.ui.components.ProjectDetailsValues
 import com.finnvek.knittools.ui.components.RenameProjectDialog
 import com.finnvek.knittools.ui.components.localizedUppercase
+import com.finnvek.knittools.ui.screens.pattern.PatternPickerMode
 import com.finnvek.knittools.ui.screens.pattern.PatternPickerSheet
+import com.finnvek.knittools.ui.screens.pattern.ProjectDocumentError
+import com.finnvek.knittools.ui.screens.pattern.ProjectDocumentUiState
+import com.finnvek.knittools.ui.screens.pattern.ProjectDocumentsSheet
 import com.finnvek.knittools.ui.theme.CounterDimens
+import kotlinx.coroutines.delay
+
+private enum class PendingCounterProAction {
+    OpenCounter,
+    RetryCounter,
+    OpenReminder,
+    RetryReminder,
+    SaveToMyYarn,
+    IncrementSecondary,
+    DecrementSecondary,
+}
+
+private fun ProjectDocumentMutationResult.toProjectDocumentError(): ProjectDocumentError? =
+    when (this) {
+        is ProjectDocumentMutationResult.Added,
+        ProjectDocumentMutationResult.PrimaryChanged,
+        ProjectDocumentMutationResult.Reordered,
+        ProjectDocumentMutationResult.Renamed,
+        ProjectDocumentMutationResult.Selected,
+        is ProjectDocumentMutationResult.Removed,
+        ProjectDocumentMutationResult.ViewerStateUpdated,
+        -> null
+        ProjectDocumentMutationResult.InvalidLabel -> ProjectDocumentError.INVALID_LABEL
+        ProjectDocumentMutationResult.AlreadyAttached,
+        ProjectDocumentMutationResult.DuplicateUri,
+        ProjectDocumentMutationResult.DuplicateDocumentKey,
+        -> ProjectDocumentError.DUPLICATE
+        ProjectDocumentMutationResult.PdfUnavailable -> ProjectDocumentError.UNAVAILABLE
+        ProjectDocumentMutationResult.MissingProject,
+        ProjectDocumentMutationResult.MissingDocument,
+        ProjectDocumentMutationResult.MissingSavedPattern,
+        ProjectDocumentMutationResult.MetadataOnlyPattern,
+        ProjectDocumentMutationResult.StaleAction,
+        -> ProjectDocumentError.STALE_ACTION
+        ProjectDocumentMutationResult.PersistenceFailure -> ProjectDocumentError.MUTATION_FAILURE
+    }
 
 data class CounterScreenActions(
     val onBack: () -> Unit = {},
     val onSessionHistory: (Long) -> Unit = {},
     val onPhotoGallery: () -> Unit = {},
-    val onPatternViewer: (Long) -> Unit = {},
+    val onPatternViewer: (Long, Long?) -> Unit = { _, _ -> },
     val onSavedPatternDetail: (Long) -> Unit = {},
     val onImportFromRavelry: () -> Unit = {},
     val onNotesEditor: (Long) -> Unit = {},
@@ -92,11 +147,11 @@ data class CounterScreenActions(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-@Suppress("ViewModelForwarding")
 fun CounterScreen(
     actions: CounterScreenActions = CounterScreenActions(),
-    viewModel: CounterViewModel = hiltViewModel(),
+    viewModelProvider: @Composable () -> CounterViewModel = { hiltViewModel() },
 ) {
+    val viewModel = viewModelProvider()
     val onBack = actions.onBack
     val onSessionHistory = actions.onSessionHistory
     val onPhotoGallery = actions.onPhotoGallery
@@ -106,6 +161,10 @@ fun CounterScreen(
     val onNotesEditor = actions.onNotesEditor
     val onUpgradeToPro = actions.onUpgradeToPro
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(viewModel) {
+        viewModel.projectClosedEvents.collect { onBack() }
+    }
 
     var showResetDialog by rememberSaveable { mutableStateOf(false) }
     var showProjectActionsSheet by rememberSaveable { mutableStateOf(false) }
@@ -125,7 +184,11 @@ fun CounterScreen(
     var showAddCounter by rememberSaveable { mutableStateOf(false) }
     var showStitchDialog by rememberSaveable { mutableStateOf(false) }
     var showPatternPicker by rememberSaveable { mutableStateOf(false) }
+    var patternPickerMode by rememberSaveable { mutableStateOf(PatternPickerMode.INITIAL_PROJECT_PATTERN) }
+    var showDocumentsSheet by rememberSaveable { mutableStateOf(false) }
+    var projectDocumentError by remember { mutableStateOf<ProjectDocumentError?>(null) }
     var showTargetDialog by rememberSaveable { mutableStateOf(false) }
+    var pendingProAction by rememberSaveable { mutableStateOf<PendingCounterProAction?>(null) }
     var previousOverlayProjectId by rememberSaveable { mutableStateOf<Long?>(null) }
     val savedYarnCards by viewModel.savedYarnCards.collectAsStateWithLifecycle()
     val savedPatterns by viewModel.savedPatterns.collectAsStateWithLifecycle()
@@ -149,6 +212,9 @@ fun CounterScreen(
         showAddCounter = false
         showStitchDialog = false
         showPatternPicker = false
+        patternPickerMode = PatternPickerMode.INITIAL_PROJECT_PATTERN
+        showDocumentsSheet = false
+        projectDocumentError = null
         showTargetDialog = false
     }
 
@@ -160,37 +226,24 @@ fun CounterScreen(
         previousOverlayProjectId = state.projectId
     }
 
-    val openProUpgrade = {
-        showProjectActionsSheet = false
-        showCountersListSheet = false
-        onUpgradeToPro()
-    }
     val requestPhotoGallery = {
-        requestCounterFeature(
-            hasAccess = state.canUseProgressPhotos,
-            onOpenFeature = onPhotoGallery,
-            onOpenUpgrade = openProUpgrade,
-        )
+        onPhotoGallery()
     }
     val requestAddCounter = {
         requestCounterFeature(
             hasAccess = state.canUseMultipleCounters,
             onOpenFeature = { showAddCounter = true },
-            onOpenUpgrade = openProUpgrade,
+            onOpenUpgrade = { pendingProAction = PendingCounterProAction.OpenCounter },
         )
     }
     val requestRowReminders = {
-        requestCounterFeature(
-            hasAccess = state.canUseRowReminders,
-            onOpenFeature = { showRemindersSheet = true },
-            onOpenUpgrade = openProUpgrade,
-        )
+        showRemindersSheet = true
     }
-    val requestNotes = {
+    val requestNotes: () -> Unit = {
         if (state.canUseNotes) {
             showNotesSheet = true
         } else {
-            openProUpgrade()
+            state.projectId?.let(onNotesEditor)
         }
     }
 
@@ -206,6 +259,10 @@ fun CounterScreen(
         }
 
     KeepScreenAwake(enabled = state.keepScreenAwake, projectId = state.projectId)
+    SessionPresentationTicker(
+        sessionToken = state.activeSession?.sessionToken,
+        onTick = viewModel::refreshSessionPresentationTime,
+    )
     TriggerAlertHaptic(
         alertId = state.activeAlert?.id,
         hasActiveAlert = state.activeAlert != null,
@@ -213,7 +270,7 @@ fun CounterScreen(
     )
     val sheetActions =
         rememberCounterSheetActions(
-            viewModel = viewModel,
+            viewModelProvider = viewModelProvider,
             onShowYarnPicker = { showYarnPicker = true },
             onHideYarnPicker = { showYarnPicker = false },
             onHideYarnManagementSheet = { showYarnManagementSheet = false },
@@ -221,16 +278,21 @@ fun CounterScreen(
             onExpandNotes = { state.projectId?.let(onNotesEditor) },
             onHidePatternPicker = { showPatternPicker = false },
             onImportFromRavelry = onImportFromRavelry,
+            onSeePro = onUpgradeToPro,
+            onSaveProjectYarnNoteToMyYarn = { noteId ->
+                if (!viewModel.saveProjectYarnNoteToMyYarn(noteId)) {
+                    pendingProAction = PendingCounterProAction.SaveToMyYarn
+                }
+            },
         )
     val projectCountersActions =
         rememberProjectCountersSectionActions(
-            viewModel = viewModel,
+            viewModelProvider = viewModelProvider,
             performHaptic = performHaptic,
             onShowAddCounter = requestAddCounter,
         )
     val dialogActionDependencies =
         CounterDialogActionDependencies(
-            viewModel = viewModel,
             projectId = state.projectId,
             editingReminderId = editingReminderId,
             renameText = renameText,
@@ -246,6 +308,8 @@ fun CounterScreen(
             onHideDeleteDialog = { showDeleteDialog = false },
             onHideRenameDialog = { showRenameDialog = false },
             onHideStitchDialog = { showStitchDialog = false },
+            onReminderProRequired = { pendingProAction = PendingCounterProAction.RetryReminder },
+            onCounterProRequired = { pendingProAction = PendingCounterProAction.RetryCounter },
         )
     val topBarActionDependencies =
         CounterTopBarActionDependencies(
@@ -258,12 +322,11 @@ fun CounterScreen(
     }
     val projectHeaderActionDependencies =
         ProjectHeaderActionDependencies(
-            viewModel = viewModel,
             onEditingNameChange = { isEditingName = it },
         )
-    val dialogActions = rememberCounterDialogActions(dialogActionDependencies)
+    val dialogActions = rememberCounterDialogActions(dialogActionDependencies, viewModelProvider)
     val topBarActions = rememberCounterTopBarActions(topBarActionDependencies)
-    val projectHeaderActions = rememberProjectHeaderActions(projectHeaderActionDependencies)
+    val projectHeaderActions = rememberProjectHeaderActions(projectHeaderActionDependencies, viewModelProvider)
     val mainContentActions =
         remember(
             viewModel,
@@ -272,6 +335,8 @@ fun CounterScreen(
             onSavedPatternDetail,
             state.projectId,
             state.linkedPattern?.id,
+            state.primaryDocument?.id,
+            state.projectDocumentAvailability,
             requestNotes,
             requestPhotoGallery,
             requestRowReminders,
@@ -294,8 +359,12 @@ fun CounterScreen(
                     performHaptic()
                     viewModel.undo()
                 },
-                onOpenPattern = { state.projectId?.let(onPatternViewer) },
-                onShowPatternPicker = { showPatternPicker = true },
+                onOpenPattern = { state.projectId?.let { onPatternViewer(it, state.primaryDocument?.id) } },
+                onShowDocuments = { showDocumentsSheet = true },
+                onShowPatternPicker = {
+                    patternPickerMode = PatternPickerMode.INITIAL_PROJECT_PATTERN
+                    showPatternPicker = true
+                },
                 onOpenSavedPatternDetail = { state.linkedPattern?.id?.let(onSavedPatternDetail) },
                 onOpenNotes = requestNotes,
                 onOpenYarn = { showYarnManagementSheet = true },
@@ -303,12 +372,20 @@ fun CounterScreen(
                 onOpenReminders = requestRowReminders,
                 onShowAddCounter = requestAddCounter,
                 onDecrementSecondary = {
-                    performHaptic()
-                    viewModel.decrementSecondary()
+                    if (state.canUseSecondaryCounter) {
+                        performHaptic()
+                        viewModel.decrementSecondary()
+                    } else {
+                        pendingProAction = PendingCounterProAction.DecrementSecondary
+                    }
                 },
                 onIncrementSecondary = {
-                    performHaptic()
-                    viewModel.incrementSecondary()
+                    if (state.canUseSecondaryCounter) {
+                        performHaptic()
+                        viewModel.incrementSecondary()
+                    } else {
+                        pendingProAction = PendingCounterProAction.IncrementSecondary
+                    }
                 },
                 onDecrementStitch = {
                     performHaptic()
@@ -320,6 +397,8 @@ fun CounterScreen(
                 },
                 onShowTargetDialog = { showTargetDialog = true },
                 onDismissReminder = viewModel::dismissReminder,
+                onStopSession = viewModel::stopWorkSession,
+                onResolveSessionRecovery = viewModel::showRecoveryPrompt,
             )
         }
     val reminderBeingEdited =
@@ -391,16 +470,84 @@ fun CounterScreen(
                 savedYarnCards = savedYarnCards,
                 linkedYarns = state.linkedYarns,
                 projectYarnNotes = state.projectYarnNotes,
-                canSaveToMyYarn = state.canUseYarnCards,
                 showNotesSheet = showNotesSheet,
                 notes = state.notes,
                 showPatternPicker = showPatternPicker,
                 projectId = state.projectId,
                 savedPatterns = savedPatterns,
                 canUseCameraScan = state.canUsePatternCameraScan,
+                proStatus = state.proStatus,
+                hasExistingPattern =
+                    patternPickerMode == PatternPickerMode.INITIAL_PROJECT_PATTERN &&
+                        state.projectDocuments.isNotEmpty(),
+                patternPickerMode = patternPickerMode,
+                attachedSavedPatternIds = state.projectDocuments.mapNotNullTo(mutableSetOf()) { it.savedPatternId },
             ),
         actions = sheetActions,
     )
+
+    if (showDocumentsSheet) {
+        ProjectDocumentsSheet(
+            state =
+                ProjectDocumentUiState(
+                    documents = state.projectDocuments,
+                    selectedDocumentId = state.primaryDocument?.id,
+                    availability = state.projectDocumentAvailability,
+                    isLoading = false,
+                    error = projectDocumentError,
+                ),
+            metadataPatternName =
+                state.linkedPattern
+                    ?.takeIf { pattern ->
+                        state.projectDocuments.none { it.savedPatternId == pattern.id }
+                    }?.name,
+            onOpenPatternInformation = {
+                showDocumentsSheet = false
+                state.linkedPattern?.id?.let(onSavedPatternDetail)
+            },
+            onDismiss = { showDocumentsSheet = false },
+            onSelect = { documentId ->
+                viewModel.selectProjectDocument(documentId) { result ->
+                    projectDocumentError = result.toProjectDocumentError()
+                    if (result == ProjectDocumentMutationResult.Selected) {
+                        showDocumentsSheet = false
+                        state.projectId?.let { onPatternViewer(it, documentId) }
+                    }
+                }
+            },
+            onRename = { documentId, label ->
+                viewModel.renameProjectDocument(documentId, label) { result ->
+                    projectDocumentError = result.toProjectDocumentError()
+                }
+            },
+            onMoveEarlier = { documentId ->
+                viewModel.moveProjectDocumentEarlier(documentId) { result ->
+                    projectDocumentError = result.toProjectDocumentError()
+                }
+            },
+            onMoveLater = { documentId ->
+                viewModel.moveProjectDocumentLater(documentId) { result ->
+                    projectDocumentError = result.toProjectDocumentError()
+                }
+            },
+            onSetPrimary = { documentId ->
+                viewModel.setPrimaryProjectDocument(documentId) { result ->
+                    projectDocumentError = result.toProjectDocumentError()
+                }
+            },
+            onRemove = { documentId ->
+                viewModel.removeProjectDocument(documentId) { result ->
+                    projectDocumentError = result.toProjectDocumentError()
+                }
+            },
+            onAdd = {
+                showDocumentsSheet = false
+                patternPickerMode = PatternPickerMode.ADD_READABLE_PROJECT_DOCUMENT
+                showPatternPicker = true
+            },
+            onClearError = { projectDocumentError = null },
+        )
+    }
 
     CounterProjectActionsSheetHost(
         showSheet = showProjectActionsSheet,
@@ -410,10 +557,16 @@ fun CounterScreen(
                 projectCounterCount = state.projectCounters.size,
                 stitchTrackingEnabled = state.stitchTrackingEnabled,
                 stitchCount = state.stitchCount,
+                proStatus = state.proStatus,
+                isWorkSessionActiveForProject = state.activeSession?.projectId == state.projectId,
             ),
         callbacks =
             ProjectActionsSheetCallbacks(
                 onDismiss = { showProjectActionsSheet = false },
+                onOpenDocuments = {
+                    showProjectActionsSheet = false
+                    showDocumentsSheet = true
+                },
                 onOpenReminders = {
                     showProjectActionsSheet = false
                     requestRowReminders()
@@ -445,6 +598,14 @@ fun CounterScreen(
                     showProjectActionsSheet = false
                     viewModel.openSessionHistory(onSessionHistory)
                 },
+                onStartWorkSession = {
+                    showProjectActionsSheet = false
+                    viewModel.startWorkSession()
+                },
+                onStopWorkSession = {
+                    showProjectActionsSheet = false
+                    viewModel.stopWorkSession()
+                },
                 onOpenProjectDetails = {
                     showProjectActionsSheet = false
                     showProjectDetailsDialog = true
@@ -469,7 +630,7 @@ fun CounterScreen(
     )
 
     CounterCountersListSheetHost(
-        showSheet = showCountersListSheet && state.canUseMultipleCounters,
+        showSheet = showCountersListSheet,
         projectCounters = state.projectCounters,
         mainRowCount = state.counter.count,
         actions = projectCountersActions,
@@ -480,10 +641,15 @@ fun CounterScreen(
         RemindersSheet(
             reminders = state.reminders,
             currentRow = state.counter.count,
+            proStatus = state.proStatus,
             onAdd = {
                 showRemindersSheet = false
                 editingReminderId = null
-                showAddReminder = true
+                if (state.canUseRowReminders) {
+                    showAddReminder = true
+                } else {
+                    pendingProAction = PendingCounterProAction.OpenReminder
+                }
             },
             onEdit = { reminder ->
                 showRemindersSheet = false
@@ -492,6 +658,119 @@ fun CounterScreen(
             },
             onDelete = { reminderId -> viewModel.deleteReminder(reminderId) },
             onDismiss = { showRemindersSheet = false },
+        )
+    }
+
+    pendingProAction?.let { action ->
+        val request =
+            when (action) {
+                PendingCounterProAction.OpenReminder,
+                PendingCounterProAction.RetryReminder,
+                ->
+                    ProPromptRequest(
+                        source = ProPromptSource.Reminders,
+                    )
+                PendingCounterProAction.SaveToMyYarn ->
+                    ProPromptRequest(
+                        source = ProPromptSource.SaveToMyYarn,
+                    )
+                else ->
+                    ProPromptRequest(
+                        source = ProPromptSource.Counters,
+                    )
+            }
+        ProPromptSheet(
+            request = request,
+            onDismiss = { pendingProAction = null },
+            onTrialStarted = {
+                pendingProAction = null
+                when (action) {
+                    PendingCounterProAction.OpenCounter -> showAddCounter = true
+                    PendingCounterProAction.RetryCounter -> {
+                        if (viewModel.retryAddProjectCounter()) showAddCounter = false
+                    }
+                    PendingCounterProAction.OpenReminder -> showAddReminder = true
+                    PendingCounterProAction.RetryReminder -> {
+                        if (viewModel.retryAddReminder()) showAddReminder = false
+                    }
+                    PendingCounterProAction.SaveToMyYarn -> viewModel.retrySaveProjectYarnNoteToMyYarn()
+                    PendingCounterProAction.IncrementSecondary -> {
+                        performHaptic()
+                        viewModel.incrementSecondary()
+                    }
+                    PendingCounterProAction.DecrementSecondary -> {
+                        performHaptic()
+                        viewModel.decrementSecondary()
+                    }
+                }
+            },
+            onSeePro = onUpgradeToPro,
+        )
+    }
+
+    state.activeSession?.takeIf { state.showSessionRecoveryPrompt }?.let { activeSession ->
+        val activeProjectName =
+            state.projects.firstOrNull { it.id == activeSession.projectId }?.name
+                ?: state.projectName
+        SessionRecoveryDialog(
+            projectName = activeProjectName,
+            recoveryReason = activeSession.recoveryReason,
+            recoveryIntervalToken = activeSession.recoveryIntervalToken,
+            trustedDurationSeconds = activeSession.timingAnchors.checkpointedDurationSeconds,
+            suggestedDurationSeconds = activeSession.recoverySuggestedDurationSeconds,
+            pendingRowsWorked = activeSession.pendingRowsWorked,
+            onAdd = viewModel::addRecoveryInterval,
+            onDiscard = viewModel::discardRecoveryInterval,
+            onEdit = viewModel::editRecoveryDurationAndStop,
+            onDismiss = viewModel::dismissRecoveryPrompt,
+        )
+    }
+
+    state.sessionStartConflict?.let { conflict ->
+        val activeProjectName =
+            state.projects.firstOrNull { it.id == conflict.activeSession.projectId }?.name
+                ?: stringResource(R.string.work_session_another_project)
+        SessionStartConflictDialog(
+            activeProjectName = activeProjectName,
+            onReturnToActive = viewModel::returnToActiveSessionProject,
+            onSaveAndStart = { viewModel.resolveSessionStartConflict(saveCurrent = true) },
+            onDiscardAndStart = { viewModel.resolveSessionStartConflict(saveCurrent = false) },
+            onCancel = viewModel::cancelSessionStartConflict,
+        )
+    }
+
+    if (state.pendingProjectCompletionSession != null) {
+        ActiveSessionCompletionDialog(
+            onSave = { viewModel.completeProjectWithActiveSession(saveSession = true) },
+            onDiscard = { viewModel.completeProjectWithActiveSession(saveSession = false) },
+            onCancel = viewModel::cancelProjectCompletionSessionChoice,
+        )
+    }
+
+    if (state.pendingProjectDeletionSession != null) {
+        ActiveSessionDeletionDialog(
+            onDiscardAndDelete = viewModel::deleteProjectDiscardingActiveSession,
+            onCancel = viewModel::cancelProjectDeletionSessionChoice,
+        )
+    }
+
+    state.sessionStopSummary?.let { summary ->
+        SessionStopSummaryDialog(
+            projectName = summary.projectName,
+            durationSeconds = summary.durationSeconds,
+            rowsWorked = summary.rowsWorked,
+            onSave = viewModel::saveStoppedWorkSession,
+            onDiscard = viewModel::discardStoppedWorkSession,
+            onCancel = viewModel::cancelSessionStop,
+        )
+    }
+
+    state.workSessionErrorRes?.let { messageRes ->
+        WorkSessionErrorDialog(
+            message = stringResource(messageRes),
+            canRetry = state.workSessionErrorCanRetry,
+            onRetry = viewModel::retryWorkSessionAction,
+            onDismiss = viewModel::dismissWorkSessionError,
         )
     }
 
@@ -545,6 +824,360 @@ private fun CounterProjectActionsSheetHost(
             callbacks = callbacks,
         )
     }
+}
+
+@Composable
+private fun SessionPresentationTicker(
+    sessionToken: String?,
+    onTick: () -> Unit,
+) {
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(lifecycleOwner, sessionToken) {
+        if (sessionToken == null) return@LaunchedEffect
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            while (true) {
+                onTick()
+                delay(1_000L)
+            }
+        }
+    }
+}
+
+@Composable
+internal fun SessionRecoveryDialog(
+    projectName: String,
+    recoveryReason: ActiveSessionRecoveryReason?,
+    recoveryIntervalToken: String?,
+    trustedDurationSeconds: Long,
+    suggestedDurationSeconds: Long?,
+    pendingRowsWorked: Int,
+    onAdd: (Long) -> Unit,
+    onDiscard: () -> Unit,
+    onEdit: (Long) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val suggestedTotal = safeDurationSum(trustedDurationSeconds, suggestedDurationSeconds ?: 0L)
+    var editing by rememberSaveable(recoveryIntervalToken) { mutableStateOf(false) }
+    var hoursText by
+        rememberSaveable(recoveryIntervalToken) {
+            mutableStateOf((suggestedTotal / 3_600L).toString())
+        }
+    var minutesText by
+        rememberSaveable(recoveryIntervalToken) {
+            mutableStateOf(((suggestedTotal % 3_600L) / 60L).toString())
+        }
+    val durationSeconds = parseRecoveryDurationSeconds(hoursText, minutesText)
+    val headingFocusRequester = remember { FocusRequester() }
+    LaunchedEffect(recoveryIntervalToken) {
+        headingFocusRequester.requestFocus()
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = stringResource(R.string.work_session_recovery_title),
+                modifier =
+                    Modifier
+                        .semantics { heading() }
+                        .focusRequester(headingFocusRequester)
+                        .focusable(),
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Text(projectName, style = MaterialTheme.typography.titleMedium)
+                Text(recoveryReasonText(recoveryReason))
+                Text(
+                    stringResource(
+                        R.string.work_session_confirmed_time_format,
+                        formatWorkSessionDuration(trustedDurationSeconds),
+                    ),
+                )
+                Text(
+                    if (suggestedDurationSeconds != null) {
+                        stringResource(
+                            R.string.work_session_time_while_away_format,
+                            formatWorkSessionDuration(suggestedDurationSeconds),
+                        )
+                    } else {
+                        stringResource(R.string.work_session_time_unavailable)
+                    },
+                )
+                if (pendingRowsWorked > 0) {
+                    Text(stringResource(R.string.work_session_pending_rows_format, pendingRowsWorked))
+                }
+                if (editing) {
+                    Text(stringResource(R.string.work_session_edit_total_duration))
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        TextField(
+                            value = hoursText,
+                            onValueChange = { hoursText = it.filter(Char::isDigit) },
+                            label = { Text(stringResource(R.string.work_session_hours)) },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            isError = durationSeconds == null,
+                            singleLine = true,
+                            modifier = Modifier.weight(1f),
+                        )
+                        TextField(
+                            value = minutesText,
+                            onValueChange = { minutesText = it.filter(Char::isDigit) },
+                            label = { Text(stringResource(R.string.work_session_minutes)) },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            isError = durationSeconds == null,
+                            singleLine = true,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                    if (durationSeconds == null) {
+                        Text(
+                            text = stringResource(R.string.work_session_invalid_duration),
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Column(horizontalAlignment = Alignment.End) {
+                if (editing) {
+                    TextButton(
+                        enabled = durationSeconds != null,
+                        onClick = { durationSeconds?.let(onEdit) },
+                        modifier = Modifier.defaultMinSize(minHeight = 48.dp),
+                    ) {
+                        Text(stringResource(R.string.work_session_save_edited_and_stop))
+                    }
+                } else {
+                    TextButton(
+                        enabled = suggestedDurationSeconds != null,
+                        onClick = { suggestedDurationSeconds?.let(onAdd) },
+                        modifier = Modifier.defaultMinSize(minHeight = 48.dp),
+                    ) {
+                        Text(stringResource(R.string.work_session_add_and_continue))
+                    }
+                    TextButton(
+                        onClick = { editing = true },
+                        modifier = Modifier.defaultMinSize(minHeight = 48.dp),
+                    ) {
+                        Text(stringResource(R.string.work_session_edit_duration))
+                    }
+                }
+                TextButton(
+                    onClick = onDiscard,
+                    modifier = Modifier.defaultMinSize(minHeight = 48.dp),
+                ) {
+                    Text(stringResource(R.string.work_session_discard_pending))
+                }
+                TextButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.defaultMinSize(minHeight = 48.dp),
+                ) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        },
+        dismissButton = {},
+    )
+}
+
+@Composable
+internal fun SessionStartConflictDialog(
+    activeProjectName: String,
+    onReturnToActive: () -> Unit,
+    onSaveAndStart: () -> Unit,
+    onDiscardAndStart: () -> Unit,
+    onCancel: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onCancel,
+        title = { Text(stringResource(R.string.work_session_conflict_title)) },
+        text = { Text(stringResource(R.string.work_session_conflict_body, activeProjectName)) },
+        confirmButton = {
+            Column(horizontalAlignment = Alignment.End) {
+                TextButton(onClick = onReturnToActive, modifier = Modifier.defaultMinSize(minHeight = 48.dp)) {
+                    Text(stringResource(R.string.work_session_return_to_active))
+                }
+                TextButton(onClick = onSaveAndStart, modifier = Modifier.defaultMinSize(minHeight = 48.dp)) {
+                    Text(stringResource(R.string.work_session_save_then_start))
+                }
+                TextButton(onClick = onDiscardAndStart, modifier = Modifier.defaultMinSize(minHeight = 48.dp)) {
+                    Text(stringResource(R.string.work_session_discard_then_start))
+                }
+                TextButton(onClick = onCancel, modifier = Modifier.defaultMinSize(minHeight = 48.dp)) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        },
+        dismissButton = {},
+    )
+}
+
+@Composable
+internal fun ActiveSessionCompletionDialog(
+    onSave: () -> Unit,
+    onDiscard: () -> Unit,
+    onCancel: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onCancel,
+        title = { Text(stringResource(R.string.work_session_complete_project_title)) },
+        text = { Text(stringResource(R.string.work_session_complete_project_body)) },
+        confirmButton = {
+            Column(horizontalAlignment = Alignment.End) {
+                TextButton(onClick = onSave, modifier = Modifier.defaultMinSize(minHeight = 48.dp)) {
+                    Text(stringResource(R.string.work_session_save_and_complete))
+                }
+                TextButton(onClick = onDiscard, modifier = Modifier.defaultMinSize(minHeight = 48.dp)) {
+                    Text(stringResource(R.string.work_session_discard_and_complete))
+                }
+                TextButton(onClick = onCancel, modifier = Modifier.defaultMinSize(minHeight = 48.dp)) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        },
+        dismissButton = {},
+    )
+}
+
+@Composable
+internal fun ActiveSessionDeletionDialog(
+    onDiscardAndDelete: () -> Unit,
+    onCancel: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onCancel,
+        title = { Text(stringResource(R.string.work_session_delete_project_title)) },
+        text = { Text(stringResource(R.string.work_session_delete_project_body)) },
+        confirmButton = {
+            Column(horizontalAlignment = Alignment.End) {
+                TextButton(
+                    onClick = onDiscardAndDelete,
+                    modifier = Modifier.defaultMinSize(minHeight = 48.dp),
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                ) {
+                    Text(stringResource(R.string.work_session_discard_and_delete))
+                }
+                TextButton(onClick = onCancel, modifier = Modifier.defaultMinSize(minHeight = 48.dp)) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        },
+        dismissButton = {},
+    )
+}
+
+@Composable
+internal fun SessionStopSummaryDialog(
+    projectName: String,
+    durationSeconds: Long,
+    rowsWorked: Int,
+    onSave: () -> Unit,
+    onDiscard: () -> Unit,
+    onCancel: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onCancel,
+        title = { Text(stringResource(R.string.work_session_stop_summary_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(projectName, style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.work_session_duration_format, formatWorkSessionDuration(durationSeconds)))
+                Text(pluralStringResource(R.plurals.rows_format, rowsWorked, rowsWorked))
+            }
+        },
+        confirmButton = {
+            Column(horizontalAlignment = Alignment.End) {
+                TextButton(onClick = onSave, modifier = Modifier.defaultMinSize(minHeight = 48.dp)) {
+                    Text(stringResource(R.string.work_session_save))
+                }
+                TextButton(onClick = onDiscard, modifier = Modifier.defaultMinSize(minHeight = 48.dp)) {
+                    Text(stringResource(R.string.work_session_discard))
+                }
+                TextButton(onClick = onCancel, modifier = Modifier.defaultMinSize(minHeight = 48.dp)) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        },
+        dismissButton = {},
+    )
+}
+
+@Composable
+internal fun WorkSessionErrorDialog(
+    message: String,
+    canRetry: Boolean,
+    onRetry: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(message) },
+        confirmButton = {
+            TextButton(
+                onClick = if (canRetry) onRetry else onDismiss,
+                modifier = Modifier.defaultMinSize(minHeight = 48.dp),
+            ) {
+                Text(
+                    stringResource(
+                        if (canRetry) {
+                            R.string.work_session_retry
+                        } else {
+                            R.string.ok
+                        },
+                    ),
+                )
+            }
+        },
+        dismissButton =
+            if (canRetry) {
+                {
+                    TextButton(onClick = onDismiss, modifier = Modifier.defaultMinSize(minHeight = 48.dp)) {
+                        Text(stringResource(R.string.cancel))
+                    }
+                }
+            } else {
+                null
+            },
+    )
+}
+
+@Composable
+private fun recoveryReasonText(reason: ActiveSessionRecoveryReason?): String =
+    stringResource(
+        when (reason) {
+            ActiveSessionRecoveryReason.REBOOTED -> R.string.work_session_reason_restarted
+            ActiveSessionRecoveryReason.LONG_RUNNING -> R.string.work_session_reason_long_running
+            ActiveSessionRecoveryReason.BOOT_IDENTITY_UNAVAILABLE -> R.string.work_session_reason_clock_unavailable
+            ActiveSessionRecoveryReason.INVALID_ANCHORS,
+            null,
+            -> R.string.work_session_reason_clock_changed
+        },
+    )
+
+internal fun safeDurationSum(
+    first: Long,
+    second: Long,
+): Long =
+    when {
+        first < 0L || second < 0L -> 0L
+        Long.MAX_VALUE - first < second -> Long.MAX_VALUE
+        else -> first + second
+    }
+
+internal fun parseRecoveryDurationSeconds(
+    hoursText: String,
+    minutesText: String,
+): Long? {
+    val hours = hoursText.toLongOrNull() ?: return null
+    val minutes = minutesText.toLongOrNull() ?: return null
+    if (hours < 0L || minutes !in 0L..59L || hours > Long.MAX_VALUE / 3_600L) return null
+    val hourSeconds = hours * 3_600L
+    val minuteSeconds = minutes * 60L
+    if (Long.MAX_VALUE - hourSeconds < minuteSeconds) return null
+    return hourSeconds + minuteSeconds
 }
 
 @Composable
@@ -737,13 +1370,16 @@ data class CounterSheetState(
     val savedYarnCards: List<YarnCard>,
     val linkedYarns: List<Pair<Long, String>>,
     val projectYarnNotes: List<ProjectYarnNote>,
-    val canSaveToMyYarn: Boolean,
     val showNotesSheet: Boolean,
     val notes: String,
     val showPatternPicker: Boolean,
     val projectId: Long?,
     val savedPatterns: List<SavedPattern>,
     val canUseCameraScan: Boolean,
+    val proStatus: com.finnvek.knittools.pro.ProStatus,
+    val hasExistingPattern: Boolean,
+    val patternPickerMode: PatternPickerMode,
+    val attachedSavedPatternIds: Set<Long>,
 )
 
 data class CounterSheetActions(
@@ -762,6 +1398,7 @@ data class CounterSheetActions(
     val onPatternFileSelected: (String, String) -> Unit,
     val onSavedPatternSelected: (SavedPattern) -> Unit,
     val onImportFromRavelry: () -> Unit,
+    val onSeePro: () -> Unit,
 )
 
 @Composable
@@ -780,7 +1417,7 @@ private fun CounterScreenSheets(
         YarnManagementSheet(
             linkedYarns = state.linkedYarns,
             projectYarnNotes = state.projectYarnNotes,
-            canSaveToMyYarn = state.canSaveToMyYarn,
+            proStatus = state.proStatus,
             actions =
                 YarnManagementSheetActions(
                     onUnlinkYarn = actions.onUnlinkYarn,
@@ -805,9 +1442,14 @@ private fun CounterScreenSheets(
             projectId = state.projectId,
             savedPatterns = state.savedPatterns,
             canUseCameraScan = state.canUseCameraScan,
+            proStatus = state.proStatus,
+            hasExistingPattern = state.hasExistingPattern,
+            mode = state.patternPickerMode,
+            excludedSavedPatternIds = state.attachedSavedPatternIds,
             onSavedPatternSelected = actions.onSavedPatternSelected,
             onDocumentSelected = actions.onPatternFileSelected,
             onImportFromRavelry = actions.onImportFromRavelry,
+            onSeePro = actions.onSeePro,
             onDismiss = actions.onPatternPickerDismiss,
         )
     }
@@ -944,7 +1586,6 @@ private fun rememberVibrator(): Vibrator? {
 }
 
 private data class CounterDialogActionDependencies(
-    val viewModel: CounterViewModel,
     val projectId: Long?,
     val editingReminderId: Long?,
     val renameText: String,
@@ -957,6 +1598,8 @@ private data class CounterDialogActionDependencies(
     val onHideDeleteDialog: () -> Unit,
     val onHideRenameDialog: () -> Unit,
     val onHideStitchDialog: () -> Unit,
+    val onReminderProRequired: () -> Unit,
+    val onCounterProRequired: () -> Unit,
 )
 
 private data class CounterTopBarActionDependencies(
@@ -965,7 +1608,6 @@ private data class CounterTopBarActionDependencies(
 )
 
 private data class ProjectHeaderActionDependencies(
-    val viewModel: CounterViewModel,
     val onEditingNameChange: (Boolean) -> Unit,
 )
 
@@ -1019,6 +1661,7 @@ private fun CountersListSheet(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+// CPD-OFF: Ruudun paikallinen valintaikkuna pidetaan kayttokohteen yhteydessa.
 private fun YarnPickerSheet(
     savedYarnCards: List<YarnCard>,
     onSelect: (Long) -> Unit,
@@ -1035,6 +1678,7 @@ private fun YarnPickerSheet(
                     .padding(horizontal = 20.dp)
                     .padding(bottom = 32.dp),
         ) {
+            // CPD-ON
             Text(
                 text = stringResource(R.string.select_yarn_card).localizedUppercase(),
                 style = MaterialTheme.typography.labelSmall,
@@ -1193,58 +1837,67 @@ private fun KeepScreenAwake(
 }
 
 @Composable
-private fun rememberCounterDialogActions(dependencies: CounterDialogActionDependencies): CounterDialogActions =
-    remember(
-        dependencies,
-    ) {
+private fun rememberCounterDialogActions(
+    dependencies: CounterDialogActionDependencies,
+    viewModelProvider: @Composable () -> CounterViewModel,
+): CounterDialogActions {
+    val viewModel = viewModelProvider()
+    return remember(dependencies, viewModel) {
         CounterDialogActions(
             onAddReminderSave = { targetRow, repeatInterval, message ->
                 val editingReminderId = dependencies.editingReminderId
                 if (editingReminderId != null) {
-                    dependencies.viewModel.updateReminder(editingReminderId, targetRow, repeatInterval, message)
+                    viewModel.updateReminder(editingReminderId, targetRow, repeatInterval, message)
+                    dependencies.onHideAddReminder()
                 } else {
-                    dependencies.viewModel.addReminder(targetRow, repeatInterval, message)
+                    val saved = viewModel.addReminder(targetRow, repeatInterval, message)
+                    if (saved) {
+                        dependencies.onHideAddReminder()
+                    } else {
+                        dependencies.onReminderProRequired()
+                    }
                 }
-                dependencies.onHideAddReminder()
             },
             onAddReminderDismiss = dependencies.onHideAddReminder,
             onAddCounterSave = { draft ->
-                dependencies.viewModel.addProjectCounter(draft)
-                dependencies.onHideAddCounter()
+                if (viewModel.addProjectCounter(draft)) {
+                    dependencies.onHideAddCounter()
+                } else {
+                    dependencies.onCounterProRequired()
+                }
             },
             onAddCounterDismiss = dependencies.onHideAddCounter,
             onResetConfirm = {
-                dependencies.viewModel.reset()
+                viewModel.reset()
                 dependencies.onHideResetDialog()
             },
             onResetDismiss = dependencies.onHideResetDialog,
             onCompleteConfirm = {
-                dependencies.viewModel.completeProject()
+                viewModel.completeProject()
                 dependencies.onHideCompleteDialog()
-                dependencies.onBack()
             },
             onCompleteDismiss = dependencies.onHideCompleteDialog,
             onDeleteConfirm = {
-                dependencies.projectId?.let { dependencies.viewModel.deleteProject(it) }
+                dependencies.projectId?.let { viewModel.deleteProject(it) }
                 dependencies.onHideDeleteDialog()
-                dependencies.onBack()
             },
             onDeleteDismiss = dependencies.onHideDeleteDialog,
             onRenameTextChange = dependencies.onRenameTextChange,
             onRenameConfirm = {
-                dependencies.viewModel.setProjectName(dependencies.renameText.trim())
+                viewModel.setProjectName(dependencies.renameText.trim())
                 dependencies.onHideRenameDialog()
             },
             onRenameDismiss = dependencies.onHideRenameDialog,
-            onStitchConfirm = dependencies.viewModel::setStitchCount,
+            onStitchConfirm = viewModel::setStitchCount,
             onStitchDismiss = dependencies.onHideStitchDialog,
         )
     }
+}
 
 @Composable
 @Suppress("kotlin:S107") // Sheet-toiminnot pidetään eksplisiittisinä, jotta kutsupuolen tila pysyy näkyvänä
 private fun rememberCounterSheetActions(
-    viewModel: CounterViewModel,
+    viewModelProvider: @Composable () -> CounterViewModel,
     onShowYarnPicker: () -> Unit,
     onHideYarnPicker: () -> Unit,
     onHideYarnManagementSheet: () -> Unit,
@@ -1252,8 +1905,11 @@ private fun rememberCounterSheetActions(
     onExpandNotes: () -> Unit,
     onHidePatternPicker: () -> Unit,
     onImportFromRavelry: () -> Unit,
-): CounterSheetActions =
-    remember(
+    onSeePro: () -> Unit,
+    onSaveProjectYarnNoteToMyYarn: (Long) -> Unit,
+): CounterSheetActions {
+    val viewModel = viewModelProvider()
+    return remember(
         viewModel,
         onShowYarnPicker,
         onHideYarnPicker,
@@ -1262,6 +1918,8 @@ private fun rememberCounterSheetActions(
         onExpandNotes,
         onHidePatternPicker,
         onImportFromRavelry,
+        onSeePro,
+        onSaveProjectYarnNoteToMyYarn,
     ) {
         CounterSheetActions(
             onYarnSelect = {
@@ -1275,18 +1933,20 @@ private fun rememberCounterSheetActions(
             onUnlinkYarn = viewModel::unlinkYarnCard,
             onSaveProjectYarnNote = viewModel::saveProjectYarnNote,
             onDeleteProjectYarnNote = viewModel::deleteProjectYarnNote,
-            onSaveProjectYarnNoteToMyYarn = viewModel::saveProjectYarnNoteToMyYarn,
+            onSaveProjectYarnNoteToMyYarn = onSaveProjectYarnNoteToMyYarn,
             onYarnPickerDismiss = onHideYarnPicker,
             onYarnManagementDismiss = onHideYarnManagementSheet,
             onNotesChange = viewModel::setNotes,
             onNotesDismiss = onHideNotesSheet,
             onNotesExpand = onExpandNotes,
             onPatternPickerDismiss = onHidePatternPicker,
-            onPatternFileSelected = viewModel::attachPattern,
+            onPatternFileSelected = { uri, name -> viewModel.attachPattern(uri, name) },
             onSavedPatternSelected = viewModel::attachSavedPattern,
             onImportFromRavelry = onImportFromRavelry,
+            onSeePro = onSeePro,
         )
     }
+}
 
 @Composable
 private fun rememberCounterTopBarActions(dependencies: CounterTopBarActionDependencies): CounterTopBarActions =
@@ -1298,21 +1958,27 @@ private fun rememberCounterTopBarActions(dependencies: CounterTopBarActionDepend
     }
 
 @Composable
-private fun rememberProjectHeaderActions(dependencies: ProjectHeaderActionDependencies): ProjectHeaderActions =
-    remember(dependencies) {
+private fun rememberProjectHeaderActions(
+    dependencies: ProjectHeaderActionDependencies,
+    viewModelProvider: @Composable () -> CounterViewModel,
+): ProjectHeaderActions {
+    val viewModel = viewModelProvider()
+    return remember(dependencies, viewModel) {
         ProjectHeaderActions(
-            onNameSave = dependencies.viewModel::setProjectName,
+            onNameSave = viewModel::setProjectName,
             onEditingNameChange = dependencies.onEditingNameChange,
         )
     }
+}
 
 @Composable
 private fun rememberProjectCountersSectionActions(
-    viewModel: CounterViewModel,
+    viewModelProvider: @Composable () -> CounterViewModel,
     performHaptic: () -> Unit,
     onShowAddCounter: () -> Unit,
-): ProjectCountersSectionActions =
-    remember(viewModel, performHaptic, onShowAddCounter) {
+): ProjectCountersSectionActions {
+    val viewModel = viewModelProvider()
+    return remember(viewModel, performHaptic, onShowAddCounter) {
         ProjectCountersSectionActions(
             onAddCounter = onShowAddCounter,
             onIncrementCounter = { counter ->
@@ -1328,3 +1994,4 @@ private fun rememberProjectCountersSectionActions(
             onDeleteCounter = viewModel::deleteProjectCounter,
         )
     }
+}

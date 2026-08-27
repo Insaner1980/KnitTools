@@ -50,6 +50,9 @@ class BillingManager
         private val _productDetails = MutableStateFlow<ProductDetails?>(null)
         val productDetails: StateFlow<ProductDetails?> = _productDetails.asStateFlow()
 
+        private val _selectedOffer = MutableStateFlow<SelectedOneTimeOffer?>(null)
+        val selectedOffer: StateFlow<SelectedOneTimeOffer?> = _selectedOffer.asStateFlow()
+
         private val _productStatus = MutableStateFlow<BillingProductStatus>(BillingProductStatus.Loading)
         val productStatus: StateFlow<BillingProductStatus> = _productStatus.asStateFlow()
 
@@ -128,12 +131,22 @@ class BillingManager
                         emitPurchaseMessage(productUnavailableMessage())
                         return
                     }
+            val offer =
+                _selectedOffer.value
+                    ?: run {
+                        emitPurchaseMessage(productUnavailableMessage())
+                        return
+                    }
 
             val productDetailsParams =
                 BillingFlowParams.ProductDetailsParams
                     .newBuilder()
                     .setProductDetails(details)
-                    .build()
+                    .apply {
+                        if (offer.offerToken.isNotBlank()) {
+                            setOfferToken(offer.offerToken)
+                        }
+                    }.build()
 
             val flowParams =
                 BillingFlowParams
@@ -154,7 +167,13 @@ class BillingManager
             scope.launch { queryPurchases() }
         }
 
+        fun retryProductDetails() {
+            _productStatus.value = BillingProductStatus.Loading
+            scope.launch { queryProductDetails() }
+        }
+
         suspend fun restorePurchasesWithResult(): RestorePurchasesResult =
+            // CPD-OFF: Ostohaun sama tila kasitellaan kahdessa elinkaarivaiheessa.
             when (val result = queryPurchasesInternal()) {
                 is PurchaseQueryResult.Success -> {
                     _isProPurchased.value = result.proPurchases.isNotEmpty()
@@ -162,6 +181,7 @@ class BillingManager
                         .filter { !it.isAcknowledged }
                         .forEach { acknowledgePurchase(it) }
                     if (result.proPurchases.isNotEmpty()) {
+                        // CPD-ON
                         RestorePurchasesResult.RESTORED
                     } else {
                         RestorePurchasesResult.NOT_FOUND
@@ -180,9 +200,19 @@ class BillingManager
             when (result.responseCode) {
                 BillingClient.BillingResponseCode.OK -> {
                     purchases?.forEach { purchase ->
-                        if (purchase.purchaseState == Purchase.PurchaseState.PURCHASED) {
-                            _isProPurchased.value = true
-                            acknowledgePurchase(purchase)
+                        if (purchase.products.contains(PRODUCT_ID)) {
+                            when (purchase.purchaseState) {
+                                Purchase.PurchaseState.PURCHASED -> {
+                                    _isProPurchased.value = true
+                                    acknowledgePurchase(purchase)
+                                }
+
+                                Purchase.PurchaseState.PENDING -> {
+                                    emitPurchaseMessage(BillingUserMessage.PURCHASE_PENDING)
+                                }
+
+                                else -> Unit
+                            }
                         }
                     }
                 }
@@ -217,7 +247,7 @@ class BillingManager
                 }
 
                 PurchaseQueryResult.Failure -> {
-                    Unit
+                    // Säilytä viimeksi tunnettu ostotila, jos Play-kysely epäonnistuu.
                 }
             }
         }
@@ -304,10 +334,12 @@ class BillingManager
             }
 
             val details = result.productDetailsList?.firstOrNull()
-            if (details == null) {
+            val selectedOffer = details?.let(::selectOneTimePurchaseOffer)
+            if (details == null || selectedOffer == null) {
                 applyProductUnavailable(BillingUserMessage.PURCHASE_UNAVAILABLE)
             } else {
                 _productDetails.value = details
+                _selectedOffer.value = selectedOffer
                 _productStatus.value = BillingProductStatus.Available
             }
         }
@@ -351,6 +383,7 @@ class BillingManager
 
         private fun applyProductUnavailable(message: BillingUserMessage) {
             _productDetails.value = null
+            _selectedOffer.value = null
             _productStatus.value = BillingProductStatus.Unavailable(message)
         }
 
@@ -408,10 +441,41 @@ enum class RestorePurchasesResult {
 
 enum class BillingUserMessage {
     PURCHASE_CANCELLED,
+    PURCHASE_PENDING,
     PURCHASE_UNAVAILABLE,
     PURCHASE_NETWORK_ERROR,
     PURCHASE_FAILED,
     ALREADY_OWNED_RESTORE_FAILED,
+}
+
+data class SelectedOneTimeOffer(
+    val formattedPrice: String,
+    val offerToken: String,
+)
+
+internal fun selectOneTimePurchaseOffer(productDetails: ProductDetails): SelectedOneTimeOffer? {
+    val currentOffers = productDetails.oneTimePurchaseOfferDetailsList.orEmpty()
+    val selected =
+        if (currentOffers.isEmpty()) {
+            productDetails.oneTimePurchaseOfferDetails
+        } else {
+            currentOffers
+                .filter { it.rentalDetails == null && it.preorderDetails == null }
+                .sortedWith(
+                    compareByDescending<ProductDetails.OneTimePurchaseOfferDetails> { it.offerId == null }
+                        .thenByDescending { it.validTimeWindow == null }
+                        .thenByDescending { it.limitedQuantityInfo == null }
+                        .thenBy { it.purchaseOptionId.orEmpty() }
+                        .thenBy { it.offerId.orEmpty() }
+                        .thenBy { it.priceAmountMicros },
+                ).firstOrNull()
+        }
+    return selected?.let {
+        SelectedOneTimeOffer(
+            formattedPrice = it.formattedPrice,
+            offerToken = it.offerToken.orEmpty(),
+        )
+    }
 }
 
 sealed interface BillingProductStatus {

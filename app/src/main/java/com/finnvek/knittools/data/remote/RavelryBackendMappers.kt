@@ -1,5 +1,6 @@
 package com.finnvek.knittools.data.remote
 
+import com.finnvek.knittools.domain.model.PatternAvailability
 import java.net.URI
 
 internal object RavelryBackendMappers {
@@ -41,7 +42,6 @@ internal object RavelryBackendMappers {
             permalink = permalink,
             designer = PatternDesigner(name = designerName),
             photos = thumbnailUrl?.let { listOf(PatternPhoto(mediumUrl = it, small2Url = it)) } ?: emptyList(),
-            free = availability.isFree,
             availability = availability,
             canonicalUrl = canonicalUrl.orEmpty(),
             originalUrl = pattern.optionalString("originalUrl").orEmpty(),
@@ -59,7 +59,6 @@ internal object RavelryBackendMappers {
             name = string("title"),
             designer = PatternDesigner(name = string("designerName")),
             firstPhoto = thumbnailUrl?.let { PatternPhoto(small2Url = it, mediumUrl = it) },
-            free = availability.isFree,
             availability = availability,
             permalink = permalinkFrom(canonicalUrl, ravelryPatternId),
         )

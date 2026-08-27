@@ -34,7 +34,7 @@ class UiStateRetentionSourceTest {
     }
 
     @Test
-    fun `foreground resume starts a fresh active session segment`() {
+    fun `process lifecycle refreshes and checkpoints without starting or finalizing a session`() {
         val viewModel = ProjectSourceFiles.read(COUNTER_VIEW_MODEL)
         val onResume =
             viewModel.substring(
@@ -42,8 +42,16 @@ class UiStateRetentionSourceTest {
                 viewModel.indexOf("override fun onPause"),
             )
 
-        assertTrue(onResume.contains("val state = _uiState.value"))
-        assertTrue(onResume.contains("restartSessionSegment(projectId, state.counter.count)"))
+        val onPause =
+            viewModel.substring(
+                viewModel.indexOf("override fun onPause"),
+                viewModel.indexOf("init {"),
+            )
+
+        assertTrue(onResume.contains("refreshActiveSession()"))
+        assertTrue(onPause.contains("repository.checkpointActiveSession()"))
+        assertFalse(onResume.contains("startSession("))
+        assertFalse(onPause.contains("stopSession("))
     }
 
     @Test

@@ -213,6 +213,7 @@ class InstructionParserTest {
 
     @Test
     fun `regex - 22 sts and 30 rows = 10cm`() {
+        // CPD-OFF: Testin skenaariokohtainen asetelma pidetaan paikallisena ja luettavana.
         val result = InstructionParser.parseWithRegex("22 STS AND 30 ROWS = 10CM")
         assertTrue(result is ParsedInstruction.Gauge)
         val g = result as ParsedInstruction.Gauge
@@ -223,6 +224,7 @@ class InstructionParserTest {
 
     @Test
     fun `regex - tension 28 sts x 36 rows to 10cm`() {
+        // CPD-ON
         val result = InstructionParser.parseWithRegex("TENSION: 28 STS X 36 ROWS TO 10CM ON 4MM NEEDLES")
         assertTrue(result is ParsedInstruction.Gauge)
         val g = result as ParsedInstruction.Gauge
@@ -231,6 +233,7 @@ class InstructionParserTest {
         assertEquals(ParsedInstruction.GaugeUnit.PER_10_CM, g.unit)
     }
 
+    // CPD-OFF: Parseriesimerkin odotukset pidetaan testitapauksen yhteydessa.
     @Test
     fun `regex - gauge 22 per 30`() {
         val result = InstructionParser.parseWithRegex("GAUGE 22/30")
@@ -240,6 +243,7 @@ class InstructionParserTest {
         assertEquals(30.0, g.rowsPer10cm, 0.01)
         assertEquals(ParsedInstruction.GaugeUnit.PER_10_CM, g.unit)
     }
+    // CPD-ON
 
     @Test
     fun `regex - sts per inch normalizes to 4 inch gauge unit`() {
@@ -261,6 +265,7 @@ class InstructionParserTest {
         assertEquals(ParsedInstruction.GaugeUnit.PER_4_INCHES, g.unit)
     }
 
+    // CPD-OFF: Parseriesimerkin odotukset pidetaan testitapauksen yhteydessa.
     @Test
     fun `regex - 22 stitches 30 rows no context`() {
         val result = InstructionParser.parseWithRegex("22 STITCHES 30 ROWS")
@@ -270,6 +275,7 @@ class InstructionParserTest {
         assertEquals(30.0, g.rowsPer10cm, 0.01)
         assertEquals(ParsedInstruction.GaugeUnit.PER_10_CM, g.unit)
     }
+    // CPD-ON
 
     @Test
     fun `regex - row repeat does not become gauge`() {

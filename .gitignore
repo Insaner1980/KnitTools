@@ -85,3 +85,4 @@ app/src/*/google-services.json
 # Compose-vakauden paikallinen tarkistus käyttää debug-baselinea.
 /app/stability/*
 !/app/stability/app-debug.stability
+.worktrees/

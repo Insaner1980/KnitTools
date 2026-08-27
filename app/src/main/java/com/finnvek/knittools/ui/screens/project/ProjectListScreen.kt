@@ -4,7 +4,6 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -14,6 +13,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -21,24 +21,20 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -51,14 +47,13 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -66,20 +61,34 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.CounterValueFormatter
+import com.finnvek.knittools.domain.calculator.formatIntegerForDisplay
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.MainCounterLabelType
 import com.finnvek.knittools.domain.model.ProjectSortOrder
 import com.finnvek.knittools.ui.components.CollectWithLifecycleEffect
 import com.finnvek.knittools.ui.components.ConfirmationDialog
-import com.finnvek.knittools.ui.components.ProjectCard
+import com.finnvek.knittools.ui.components.CounterImageButton
+import com.finnvek.knittools.ui.components.MainCounterTargetStatus
+import com.finnvek.knittools.ui.components.ProPromptRequest
+import com.finnvek.knittools.ui.components.ProPromptSheet
+import com.finnvek.knittools.ui.components.ProPromptSource
 import com.finnvek.knittools.ui.components.ProjectDetailsDialog
 import com.finnvek.knittools.ui.components.ProjectDetailsValues
+import com.finnvek.knittools.ui.components.ProjectListItem
 import com.finnvek.knittools.ui.components.RenameProjectDialog
 import com.finnvek.knittools.ui.components.localizedUppercase
-import com.finnvek.knittools.ui.components.mainCounterProjectCardCountText
+import com.finnvek.knittools.ui.components.mainCounterCountText
+import com.finnvek.knittools.ui.components.mainCounterTargetFraction
+import com.finnvek.knittools.ui.components.mainCounterTargetStatus
 import com.finnvek.knittools.ui.components.mainCounterTargetText
-import com.finnvek.knittools.ui.components.projectMetadataText
+import com.finnvek.knittools.ui.components.rememberCurrentLocale
+import com.finnvek.knittools.ui.theme.ProjectListDimens
+
+private enum class PendingProjectProAction {
+    OpenCreation,
+    RetryCreation,
+}
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -90,35 +99,75 @@ fun ProjectListScreen(
     onPatternViewer: (Long) -> Unit = {},
     onYarnCard: (Long) -> Unit = {},
     onUpgradeToPro: () -> Unit = {},
-    viewModel: ProjectListViewModel = hiltViewModel(),
+    viewModelProvider: @Composable () -> ProjectListViewModel = { hiltViewModel() },
 ) {
+    val viewModel = viewModelProvider()
     val active by viewModel.activeProjects.collectAsStateWithLifecycle()
     val completed by viewModel.completedProjects.collectAsStateWithLifecycle()
+    val activeSession by viewModel.activeSession.collectAsStateWithLifecycle()
+    val pendingCompletionSessionAction by viewModel.pendingCompletionSessionAction.collectAsStateWithLifecycle()
+    val pendingDeletionSessionAction by viewModel.pendingDeletionSessionAction.collectAsStateWithLifecycle()
     val continueKnitting by viewModel.continueKnittingProject.collectAsStateWithLifecycle()
     val yarnNames by viewModel.projectYarnNames.collectAsStateWithLifecycle()
     val yarnCardIds by viewModel.projectYarnCardIds.collectAsStateWithLifecycle()
     val photoCounts by viewModel.projectPhotoCounts.collectAsStateWithLifecycle()
     val patternNames by viewModel.projectPatternNames.collectAsStateWithLifecycle()
+    val projectIdsWithDocuments by viewModel.projectIdsWithDocuments.collectAsStateWithLifecycle()
+    val projectIdsWithAvailablePrimary by viewModel.projectIdsWithAvailablePrimary.collectAsStateWithLifecycle()
     val hasNotes by viewModel.projectHasNotes.collectAsStateWithLifecycle()
     val showCompleted by viewModel.showCompleted.collectAsStateWithLifecycle()
     val isMultiSelectMode by viewModel.isMultiSelectMode.collectAsStateWithLifecycle()
     val selectedProjectIds by viewModel.selectedProjectIds.collectAsStateWithLifecycle()
     val sortOrder by viewModel.sortOrder.collectAsStateWithLifecycle()
-    // FAB-luonnin jälkeen navigoi uuteen projektiin
-    CollectWithLifecycleEffect(viewModel.navigateToProject) { projectId ->
+    var showCreateProjectDialog by rememberSaveable { mutableStateOf(false) }
+    var pendingProAction by rememberSaveable { mutableStateOf<PendingProjectProAction?>(null) }
+    var projectPromptCount by rememberSaveable { mutableIntStateOf(0) }
+    // Luonnin jälkeen navigoi uuteen projektiin
+    CollectWithLifecycleEffect({ viewModel.navigateToProject }) { projectId ->
+        showCreateProjectDialog = false
+        pendingProAction = null
         onProjectClick(projectId)
     }
 
-    CollectWithLifecycleEffect(viewModel.upgradeToPro) {
-        onUpgradeToPro()
+    CollectWithLifecycleEffect({ viewModel.projectCreationPrompts }) { projectCount ->
+        projectPromptCount = projectCount
+        pendingProAction =
+            if (showCreateProjectDialog) {
+                PendingProjectProAction.RetryCreation
+            } else {
+                PendingProjectProAction.OpenCreation
+            }
     }
 
-    CollectWithLifecycleEffect(viewModel.navigateToNotesEditor) { projectId ->
+    CollectWithLifecycleEffect({ viewModel.navigateToNotesEditor }) { projectId ->
         onNotesEditor(projectId)
     }
 
-    CollectWithLifecycleEffect(viewModel.navigateToPhotoGallery) { projectId ->
+    CollectWithLifecycleEffect({ viewModel.navigateToPhotoGallery }) { projectId ->
         onPhotoGallery(projectId)
+    }
+
+    CollectWithLifecycleEffect({ viewModel.showCreateProjectDialog }) {
+        showCreateProjectDialog = true
+    }
+
+    pendingProAction?.let { action ->
+        ProPromptSheet(
+            request =
+                ProPromptRequest(
+                    source = ProPromptSource.Projects,
+                    existingProjectCount = projectPromptCount,
+                ),
+            onDismiss = { pendingProAction = null },
+            onTrialStarted = {
+                pendingProAction = null
+                when (action) {
+                    PendingProjectProAction.OpenCreation -> showCreateProjectDialog = true
+                    PendingProjectProAction.RetryCreation -> viewModel.retryPendingProjectCreation()
+                }
+            },
+            onSeePro = onUpgradeToPro,
+        )
     }
 
     // Multi-select back handler
@@ -136,8 +185,6 @@ fun ProjectListScreen(
     var showSortMenu by rememberSaveable { mutableStateOf(false) }
     var showMultiCompleteDialog by rememberSaveable { mutableStateOf(false) }
     var showMultiDeleteDialog by rememberSaveable { mutableStateOf(false) }
-    var showCreateProjectDialog by rememberSaveable { mutableStateOf(false) }
-
     ProjectListDialogs(
         state =
             ProjectListDialogState(
@@ -175,6 +222,21 @@ fun ProjectListScreen(
             ),
     )
 
+    if (pendingCompletionSessionAction != null) {
+        ProjectListActiveSessionCompletionDialog(
+            onSave = { viewModel.resolvePendingCompletion(saveSession = true) },
+            onDiscard = { viewModel.resolvePendingCompletion(saveSession = false) },
+            onCancel = viewModel::cancelPendingCompletion,
+        )
+    }
+
+    if (pendingDeletionSessionAction != null) {
+        ProjectListActiveSessionDeletionDialog(
+            onDiscardAndDelete = viewModel::resolvePendingDeletion,
+            onCancel = viewModel::cancelPendingDeletion,
+        )
+    }
+
     if (showCreateProjectDialog) {
         ProjectDetailsDialog(
             title = stringResource(R.string.new_project_details_title),
@@ -193,7 +255,6 @@ fun ProjectListScreen(
                     values.mainCounterLabelType,
                     values.mainCounterCustomLabel,
                 )
-                showCreateProjectDialog = false
             },
             onDismiss = { showCreateProjectDialog = false },
         )
@@ -260,10 +321,14 @@ fun ProjectListScreen(
                         yarnCardIds = yarnCardIds,
                         photoCounts = photoCounts,
                         patternNames = patternNames,
+                        projectIdsWithDocuments = projectIdsWithDocuments,
+                        projectIdsWithAvailablePrimary = projectIdsWithAvailablePrimary,
                         hasNotes = hasNotes,
                         showCompleted = showCompleted,
                         isMultiSelectMode = isMultiSelectMode,
                         selectedProjectIds = selectedProjectIds,
+                        activeSessionProjectId = activeSession?.projectId,
+                        activeSessionNeedsReview = activeSession?.needsRecoveryReview == true,
                     ),
                 actions =
                     ProjectListContentActions(
@@ -283,19 +348,19 @@ fun ProjectListScreen(
                     ),
             )
 
-            // FAB (ei multi-select-tilassa)
+            // Luontipainike ei näy multi-select-tilassa.
             if (!isMultiSelectMode) {
-                FloatingActionButton(
-                    onClick = { showCreateProjectDialog = true },
+                CounterImageButton(
+                    imageRes = R.drawable.counter_plus_button,
+                    contentDescription = stringResource(R.string.new_project),
+                    visualSize = ProjectListDimens.CreateButtonVisualSize,
+                    onClick = viewModel::requestProjectCreation,
                     modifier =
                         Modifier
                             .align(Alignment.BottomEnd)
-                            .padding(16.dp),
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                ) {
-                    Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.new_project))
-                }
+                            .padding(16.dp)
+                            .size(ProjectListDimens.CreateButtonTouchSize),
+                )
             }
         }
     }
@@ -364,6 +429,60 @@ private fun ProjectListDialogs(
 }
 
 @Composable
+private fun ProjectListActiveSessionCompletionDialog(
+    onSave: () -> Unit,
+    onDiscard: () -> Unit,
+    onCancel: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onCancel,
+        title = { Text(stringResource(R.string.work_session_complete_project_title)) },
+        text = { Text(stringResource(R.string.work_session_complete_project_body)) },
+        confirmButton = {
+            Column(horizontalAlignment = Alignment.End) {
+                TextButton(onClick = onSave, modifier = Modifier.defaultMinSize(minHeight = 48.dp)) {
+                    Text(stringResource(R.string.work_session_save_and_complete))
+                }
+                TextButton(onClick = onDiscard, modifier = Modifier.defaultMinSize(minHeight = 48.dp)) {
+                    Text(stringResource(R.string.work_session_discard_and_complete))
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onCancel, modifier = Modifier.defaultMinSize(minHeight = 48.dp)) {
+                Text(stringResource(R.string.cancel))
+            }
+        },
+    )
+}
+
+@Composable
+private fun ProjectListActiveSessionDeletionDialog(
+    onDiscardAndDelete: () -> Unit,
+    onCancel: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onCancel,
+        title = { Text(stringResource(R.string.work_session_delete_project_title)) },
+        text = { Text(stringResource(R.string.work_session_delete_project_body)) },
+        confirmButton = {
+            TextButton(
+                onClick = onDiscardAndDelete,
+                modifier = Modifier.defaultMinSize(minHeight = 48.dp),
+                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+            ) {
+                Text(stringResource(R.string.work_session_discard_and_delete))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onCancel, modifier = Modifier.defaultMinSize(minHeight = 48.dp)) {
+                Text(stringResource(R.string.cancel))
+            }
+        },
+    )
+}
+
+@Composable
 private fun MultiCompleteDialog(
     selectedCount: Int,
     onConfirm: () -> Unit,
@@ -415,6 +534,7 @@ data class ProjectListTopBarState(
 data class ProjectListTopBarActions(
     val onExitMultiSelect: () -> Unit,
     val onSelectAll: () -> Unit,
+    // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
     val onShowOverflowMenu: () -> Unit,
     val onDismissOverflowMenu: () -> Unit,
     val onEnterMultiSelect: () -> Unit,
@@ -425,6 +545,7 @@ data class ProjectListTopBarActions(
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
+// CPD-ON
 @Composable
 private fun ProjectListTopBar(
     state: ProjectListTopBarState,
@@ -661,12 +782,17 @@ data class ProjectListContentState(
     val yarnCardIds: Map<Long, Long>,
     val photoCounts: Map<Long, Int>,
     val patternNames: Map<Long, String>,
+    val projectIdsWithDocuments: Set<Long>,
+    val projectIdsWithAvailablePrimary: Set<Long>,
     val hasNotes: Set<Long>,
     val showCompleted: Boolean,
     val isMultiSelectMode: Boolean,
     val selectedProjectIds: Set<Long>,
+    val activeSessionProjectId: Long?,
+    val activeSessionNeedsReview: Boolean,
 )
 
+// CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
 data class ProjectListContentActions(
     val onProjectClick: (Long) -> Unit,
     val onNotesClick: (Long) -> Unit,
@@ -676,6 +802,7 @@ data class ProjectListContentActions(
     val onToggleSelection: (Long) -> Unit,
     val onEnterMultiSelect: (Long) -> Unit,
     val onArchive: (Long) -> Unit,
+    // CPD-ON
     val onDeleteSwipe: (Long, String) -> Unit,
 )
 
@@ -696,8 +823,13 @@ private fun ProjectListContent(
         }
 
     LazyColumn(
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding =
+            PaddingValues(
+                start = ProjectListDimens.ScreenHorizontalPadding,
+                top = ProjectListDimens.ListTopPadding,
+                end = ProjectListDimens.ScreenHorizontalPadding,
+                bottom = ProjectListDimens.ListBottomPadding,
+            ),
     ) {
         // Continue Knitting -herokortti (ei multi-select-tilassa)
         if (!state.isMultiSelectMode) {
@@ -708,12 +840,14 @@ private fun ProjectListContent(
                             ContinueKnittingCardState(
                                 projectName = ck.name,
                                 rowCount = ck.count,
-                                totalMinutes = ck.totalMinutes,
                                 sectionName = ck.sectionName,
                                 targetRows = ck.targetRows,
                                 craftType = ck.craftType,
                                 mainCounterLabelType = ck.mainCounterLabelType,
                                 mainCounterCustomLabel = ck.mainCounterCustomLabel,
+                                hasActiveSession = ck.projectId == state.activeSessionProjectId,
+                                sessionNeedsReview =
+                                    ck.projectId == state.activeSessionProjectId && state.activeSessionNeedsReview,
                             ),
                         onClick = { actions.onProjectClick(ck.projectId) },
                     )
@@ -724,7 +858,10 @@ private fun ProjectListContent(
 
         if (visibleActiveProjects.isNotEmpty() || !isHeroVisible) {
             item {
-                SectionLabel(stringResource(R.string.section_active))
+                SectionLabel(
+                    text = stringResource(R.string.section_active),
+                    count = visibleActiveProjects.size,
+                )
             }
 
             if (visibleActiveProjects.isEmpty()) {
@@ -737,7 +874,10 @@ private fun ProjectListContent(
                     )
                 }
             } else {
-                items(visibleActiveProjects, key = { it.id }) { project ->
+                itemsIndexed(
+                    items = visibleActiveProjects,
+                    key = { _, project -> project.id },
+                ) { index, project ->
                     ActiveProjectItem(
                         project = project,
                         state =
@@ -748,7 +888,11 @@ private fun ProjectListContent(
                                 firstYarnCardId = state.yarnCardIds[project.id],
                                 photoCount = state.photoCounts[project.id] ?: 0,
                                 patternName = state.patternNames[project.id],
+                                hasPatternAttachment = project.id in state.projectIdsWithAvailablePrimary,
                                 hasNotes = project.id in state.hasNotes,
+                                hasActiveSession = project.id == state.activeSessionProjectId,
+                                sessionNeedsReview =
+                                    project.id == state.activeSessionProjectId && state.activeSessionNeedsReview,
                             ),
                         actions =
                             ActiveProjectItemActions(
@@ -762,6 +906,9 @@ private fun ProjectListContent(
                                 onArchive = actions.onArchive,
                             ),
                     )
+                    if (index < visibleActiveProjects.lastIndex) {
+                        ProjectListDivider()
+                    }
                 }
             }
         }
@@ -769,8 +916,10 @@ private fun ProjectListContent(
         // Completed-osio (näytetään vain kun toggle päällä)
         if (state.showCompleted) {
             item {
-                Spacer(modifier = Modifier.height(16.dp))
-                SectionLabel(stringResource(R.string.section_completed))
+                SectionLabel(
+                    text = stringResource(R.string.section_completed),
+                    count = state.completed.size,
+                )
             }
 
             if (state.completed.isEmpty()) {
@@ -783,18 +932,20 @@ private fun ProjectListContent(
                     )
                 }
             } else {
-                items(state.completed, key = { it.id }) { project ->
-                    ProjectCard(
-                        name = project.name,
-                        rowCount = project.count,
-                        sectionName = project.sectionName,
+                itemsIndexed(
+                    items = state.completed,
+                    key = { _, project -> project.id },
+                ) { index, project ->
+                    ProjectListItem(
+                        project = project.copy(count = project.totalRows ?: project.count),
                         lastUpdated = project.completedAt ?: project.updatedAt,
                         onClick = { actions.onProjectClick(project.id) },
                         onLongClick = { actions.onDeleteSwipe(project.id, project.name) },
-                        totalRows = project.totalRows,
-                        metadataLine = projectCardMetadataLine(project),
-                        countText = projectCardCountText(project.copy(count = project.totalRows ?: project.count)),
+                        patternName = project.patternName,
                     )
+                    if (index < state.completed.lastIndex) {
+                        ProjectListDivider()
+                    }
                 }
             }
         }
@@ -809,7 +960,10 @@ data class ActiveProjectItemState(
     val firstYarnCardId: Long?,
     val photoCount: Int,
     val patternName: String?,
+    val hasPatternAttachment: Boolean,
     val hasNotes: Boolean = false,
+    val hasActiveSession: Boolean = false,
+    val sessionNeedsReview: Boolean = false,
 )
 
 data class ActiveProjectItemActions(
@@ -830,78 +984,61 @@ private fun ActiveProjectItem(
     state: ActiveProjectItemState,
     actions: ActiveProjectItemActions,
 ) {
-    if (state.isMultiSelectMode) {
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .then(
-                        if (state.isSelected) {
-                            Modifier.background(
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.07f),
-                                MaterialTheme.shapes.large,
-                            )
-                        } else {
-                            Modifier
-                        },
-                    ).clickable { actions.onToggleSelection(project.id) },
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Checkbox(
-                checked = state.isSelected,
-                onCheckedChange = { actions.onToggleSelection(project.id) },
-            )
-            ProjectCard(
-                name = project.name,
-                rowCount = project.count,
-                sectionName = project.sectionName,
-                lastUpdated = project.updatedAt,
-                onClick = { actions.onToggleSelection(project.id) },
-                modifier = Modifier.weight(1f),
-                metadataLine = projectCardMetadataLine(project),
-                countText = projectCardCountText(project),
-                yarnName = state.yarnName,
-                yarnColorSeed = state.firstYarnCardId,
-                photoCount = state.photoCount,
-                patternName = state.patternName,
-            )
-        }
-    } else {
-        ProjectCard(
-            name = project.name,
-            rowCount = project.count,
-            sectionName = project.sectionName,
-            lastUpdated = project.updatedAt,
-            onClick = { actions.onProjectClick(project.id) },
-            onLongClick = { actions.onEnterMultiSelect(project.id) },
-            metadataLine = projectCardMetadataLine(project),
-            countText = projectCardCountText(project),
-            yarnName = state.yarnName,
-            yarnColorSeed = state.firstYarnCardId,
-            photoCount = state.photoCount,
-            patternName = state.patternName,
-            hasPatternAttachment = !project.patternUri.isNullOrBlank(),
-            hasNotes = state.hasNotes,
-            onPatternClick = { actions.onPatternViewer(project.id) },
-            onNotesClick = { actions.onNotesClick(project.id) },
-            onPhotosClick = { actions.onPhotoGallery(project.id) },
-            onYarnClick =
-                state.firstYarnCardId?.let { yarnCardId ->
-                    { actions.onYarnCard(yarnCardId) }
-                },
-        )
-    }
+    ProjectListItem(
+        project = project,
+        lastUpdated = project.updatedAt,
+        onClick = {
+            if (state.isMultiSelectMode) {
+                actions.onToggleSelection(project.id)
+            } else {
+                actions.onProjectClick(project.id)
+            }
+        },
+        onLongClick =
+            if (state.isMultiSelectMode) {
+                null
+            } else {
+                { actions.onEnterMultiSelect(project.id) }
+            },
+        yarnName = state.yarnName,
+        photoCount = state.photoCount,
+        patternName = state.patternName,
+        hasPatternAttachment = state.hasPatternAttachment,
+        hasNotes = state.hasNotes,
+        onPatternClick = { actions.onPatternViewer(project.id) },
+        onNotesClick = { actions.onNotesClick(project.id) },
+        onPhotosClick = { actions.onPhotoGallery(project.id) },
+        onYarnClick =
+            state.firstYarnCardId?.let { yarnCardId ->
+                { actions.onYarnCard(yarnCardId) }
+            },
+        selected = state.isSelected.takeIf { state.isMultiSelectMode },
+        onToggleSelection = { actions.onToggleSelection(project.id) },
+        statusText =
+            if (state.hasActiveSession) {
+                stringResource(
+                    if (state.sessionNeedsReview) {
+                        R.string.work_session_recovery_needed
+                    } else {
+                        R.string.work_session_active
+                    },
+                )
+            } else {
+                null
+            },
+    )
 }
 
 private data class ContinueKnittingCardState(
     val projectName: String,
     val rowCount: Int,
-    val totalMinutes: Int,
     val sectionName: String?,
     val targetRows: Int?,
     val craftType: CraftType,
     val mainCounterLabelType: MainCounterLabelType,
     val mainCounterCustomLabel: String?,
+    val hasActiveSession: Boolean,
+    val sessionNeedsReview: Boolean,
 )
 
 @Composable
@@ -920,18 +1057,12 @@ private fun ContinueKnittingCard(
                 mainCounterCustomLabel = state.mainCounterCustomLabel,
             ),
         )
-    val rowContext =
-        if (state.targetRows != null && state.targetRows > 0) {
-            mainCounterDisplay.targetLine?.let { mainCounterTargetText(it) }
-                ?: mainCounterProjectCardCountText(mainCounterDisplay.projectCardCount)
-        } else {
-            mainCounterProjectCardCountText(mainCounterDisplay.projectCardCount)
-        }
-    val rowAndTime = stringResource(R.string.project_metadata_format, rowContext, formatMinutes(state.totalMinutes))
-    val contextLine =
-        normalizedContinueKnittingSectionName(state.sectionName)?.let { sectionName ->
-            stringResource(R.string.project_metadata_format, sectionName, rowAndTime)
-        } ?: rowAndTime
+    val targetStatus = mainCounterTargetStatus(mainCounterDisplay.targetLine)
+    val progressFraction = mainCounterTargetFraction(mainCounterDisplay.targetLine)
+    val countText =
+        mainCounterDisplay.targetLine?.let { mainCounterTargetText(it) }
+            ?: mainCounterCountText(mainCounterDisplay.projectCardCount)
+    val sectionName = normalizedContinueKnittingSectionName(state.sectionName)
 
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
@@ -940,10 +1071,9 @@ private fun ContinueKnittingCard(
             CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f),
             ),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)),
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(ProjectListDimens.HeroPadding),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
@@ -957,69 +1087,132 @@ private fun ContinueKnittingCard(
                     text = state.projectName,
                     style = MaterialTheme.typography.titleLarge,
                 )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = contextLine,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                if (state.hasActiveSession) {
+                    Text(
+                        text =
+                            stringResource(
+                                if (state.sessionNeedsReview) {
+                                    R.string.work_session_recovery_needed
+                                } else {
+                                    R.string.work_session_active
+                                },
+                            ),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                sectionName?.let {
+                    Spacer(modifier = Modifier.height(ProjectListDimens.ItemLineGap))
+                    Text(
+                        text = it,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Spacer(modifier = Modifier.height(ProjectListDimens.ProgressGroupTopGap))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Text(
+                        text = countText,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.weight(1f),
+                    )
+                    targetStatus?.let {
+                        Text(
+                            text = continueKnittingTargetStatusText { it },
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                if (progressFraction != null) {
+                    Spacer(modifier = Modifier.height(ProjectListDimens.ItemLineGap))
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = ProjectListDimens.ProgressTrackInset)
+                                .height(ProjectListDimens.ProgressTrackHeight)
+                                .background(
+                                    MaterialTheme.colorScheme.onSurface.copy(
+                                        alpha = ProjectListDimens.ProgressTrackAlpha,
+                                    ),
+                                ),
+                    ) {
+                        Box(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth(progressFraction)
+                                    .height(ProjectListDimens.ProgressTrackHeight)
+                                    .background(MaterialTheme.colorScheme.primary),
+                        )
+                    }
+                }
             }
             Spacer(modifier = Modifier.width(12.dp))
-            Box(
-                modifier =
-                    Modifier
-                        .size(48.dp)
-                        .clip(CircleShape)
-                        .background(
-                            Brush.linearGradient(
-                                listOf(
-                                    MaterialTheme.colorScheme.primary,
-                                    MaterialTheme.colorScheme.primaryContainer,
-                                ),
-                            ),
-                        ),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.PlayArrow,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.size(24.dp),
-                )
-            }
+            CounterImageButton(
+                imageRes = R.drawable.counter_continue_button,
+                contentDescription =
+                    stringResource(R.string.project_continue_content_description, state.projectName),
+                visualSize = ProjectListDimens.HeroActionVisualSize,
+                onClick = onClick,
+                modifier = Modifier.size(ProjectListDimens.HeroActionTouchSize),
+            )
         }
     }
 }
-
-@Composable
-private fun projectCardMetadataLine(project: CounterProject): String =
-    projectMetadataText(
-        craftType = project.craftType,
-        labelType = project.mainCounterLabelType,
-        customLabel = project.mainCounterCustomLabel,
-    )
-
-@Composable
-private fun projectCardCountText(project: CounterProject): String =
-    mainCounterProjectCardCountText(CounterValueFormatter.forMainCounter(project).projectCardCount)
 
 internal fun normalizedContinueKnittingSectionName(sectionName: String?): String? =
     sectionName?.trim()?.takeIf(String::isNotEmpty)
 
 @Composable
-private fun formatMinutes(minutes: Int): String =
-    when {
-        minutes < 60 -> stringResource(R.string.time_spent_minutes_format, minutes)
-        else -> stringResource(R.string.session_duration_format, minutes / 60, minutes % 60)
+private fun continueKnittingTargetStatusText(statusProvider: @Composable () -> MainCounterTargetStatus): String {
+    val status = statusProvider()
+    return when (status) {
+        is MainCounterTargetStatus.Remaining ->
+            stringResource(
+                R.string.counter_target_remaining_format,
+                formatIntegerForDisplay(status.countSlot.count.toLong(), rememberCurrentLocale()),
+            )
+        MainCounterTargetStatus.Reached -> stringResource(R.string.counter_target_reached)
+        is MainCounterTargetStatus.Past ->
+            stringResource(
+                R.string.counter_target_past_format,
+                formatIntegerForDisplay(status.countSlot.count.toLong(), rememberCurrentLocale()),
+            )
     }
+}
 
 @Composable
-private fun SectionLabel(text: String) {
+private fun SectionLabel(
+    text: String,
+    count: Int,
+) {
     Text(
-        text = text.localizedUppercase(),
+        text =
+            stringResource(
+                R.string.project_section_count_format,
+                text.localizedUppercase(),
+                count,
+            ),
         style = MaterialTheme.typography.labelSmall,
         color = MaterialTheme.colorScheme.secondary,
-        modifier = Modifier.padding(vertical = 8.dp),
+        modifier =
+            Modifier.padding(
+                top = ProjectListDimens.SectionTopSpacing,
+                bottom = ProjectListDimens.SectionBottomSpacing,
+            ),
+    )
+}
+
+@Composable
+private fun ProjectListDivider() {
+    HorizontalDivider(
+        thickness = ProjectListDimens.DividerThickness,
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = ProjectListDimens.DividerAlpha),
     )
 }
 

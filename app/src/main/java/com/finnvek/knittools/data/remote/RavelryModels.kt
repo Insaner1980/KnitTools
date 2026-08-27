@@ -1,36 +1,10 @@
 package com.finnvek.knittools.data.remote
 
+import com.finnvek.knittools.domain.model.PatternAvailability
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 // === Haku ===
-
-@Serializable
-enum class PatternAvailability {
-    @SerialName("free")
-    Free,
-
-    @SerialName("paid")
-    Paid,
-
-    @SerialName("unknown")
-    Unknown,
-    ;
-
-    val isFree: Boolean
-        get() = this == Free
-
-    companion object {
-        fun fromBackendValue(value: String?): PatternAvailability =
-            when (value) {
-                "free" -> Free
-                "paid" -> Paid
-                else -> Unknown
-            }
-
-        fun fromFree(free: Boolean): PatternAvailability = if (free) Free else Paid
-    }
-}
 
 @Serializable
 data class PatternSearchResponse(
@@ -55,10 +29,12 @@ data class PatternSearchResult(
     val firstPhoto: PatternPhoto? = null,
     @SerialName("difficulty_average")
     val difficultyAverage: Float? = null,
-    val free: Boolean = true,
-    val availability: PatternAvailability = PatternAvailability.fromFree(free),
+    val availability: PatternAvailability = PatternAvailability.Unknown,
     val permalink: String = "",
-)
+) {
+    val free: Boolean
+        get() = availability.isFree
+}
 
 @Serializable
 data class PatternDesigner(
@@ -89,8 +65,7 @@ data class PatternDetail(
     val photos: List<PatternPhoto> = emptyList(),
     @SerialName("difficulty_average")
     val difficultyAverage: Float? = null,
-    val free: Boolean = true,
-    val availability: PatternAvailability = PatternAvailability.fromFree(free),
+    val availability: PatternAvailability = PatternAvailability.Unknown,
     val canonicalUrl: String = "",
     val originalUrl: String = "",
     val gauge: String? = null,
@@ -116,6 +91,9 @@ data class PatternDetail(
     @SerialName("pattern_categories")
     val patternCategories: List<PatternCategory> = emptyList(),
 ) {
+    val free: Boolean
+        get() = availability.isFree
+
     val mainPhotoUrl: String?
         get() = photos.firstOrNull()?.mediumUrl ?: photos.firstOrNull()?.small2Url
 

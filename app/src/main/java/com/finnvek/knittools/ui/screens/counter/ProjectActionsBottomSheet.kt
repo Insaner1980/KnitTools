@@ -17,12 +17,15 @@ import androidx.compose.material.icons.outlined.AddCircle
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.DeleteOutline
+import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.FormatListNumbered
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Numbers
+import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material.icons.outlined.Restore
+import androidx.compose.material.icons.outlined.StopCircle
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -42,17 +45,22 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.formatIntegerForDisplay
+import com.finnvek.knittools.pro.ProStatus
+import com.finnvek.knittools.ui.components.ProBadge
 import com.finnvek.knittools.ui.components.localizedUppercase
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
 
 data class ProjectActionsSheetCallbacks(
     val onDismiss: () -> Unit,
     val onOpenReminders: () -> Unit,
+    val onOpenDocuments: () -> Unit,
     val onOpenCountersList: () -> Unit,
     val onOpenAddCounter: () -> Unit,
     val onToggleStitchTracking: (Boolean) -> Unit,
     val onOpenStitchCount: () -> Unit,
     val onOpenSessionHistory: () -> Unit,
+    val onStartWorkSession: () -> Unit,
+    val onStopWorkSession: () -> Unit,
     val onOpenProjectDetails: () -> Unit,
     val onStartRename: () -> Unit,
     val onShowResetDialog: () -> Unit,
@@ -65,6 +73,8 @@ data class ProjectActionsSheetState(
     val projectCounterCount: Int,
     val stitchTrackingEnabled: Boolean,
     val stitchCount: Int?,
+    val proStatus: ProStatus,
+    val isWorkSessionActiveForProject: Boolean,
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -82,6 +92,11 @@ fun ProjectActionsBottomSheet(
     ) {
         Column(modifier = Modifier.padding(bottom = 18.dp)) {
             ProjectActionsSection(title = stringResource(R.string.project_actions_section_this_project)) {
+                ActionRow(
+                    icon = Icons.Outlined.Description,
+                    label = stringResource(R.string.project_documents_title),
+                    onClick = callbacks.onOpenDocuments,
+                )
                 ActionRow(
                     icon = Icons.Outlined.Notifications,
                     label = stringResource(R.string.reminders),
@@ -104,6 +119,7 @@ fun ProjectActionsBottomSheet(
                     label = stringResource(R.string.add_counter),
                     onClick = callbacks.onOpenAddCounter,
                     showChevron = false,
+                    proStatus = state.proStatus,
                 )
                 ActionRow(
                     icon = Icons.Outlined.Numbers,
@@ -122,6 +138,29 @@ fun ProjectActionsBottomSheet(
             SectionDivider()
 
             ProjectActionsSection(title = stringResource(R.string.project_actions_section_project_actions)) {
+                ActionRow(
+                    icon =
+                        if (state.isWorkSessionActiveForProject) {
+                            Icons.Outlined.StopCircle
+                        } else {
+                            Icons.Outlined.PlayArrow
+                        },
+                    label =
+                        stringResource(
+                            if (state.isWorkSessionActiveForProject) {
+                                R.string.work_session_stop
+                            } else {
+                                R.string.work_session_start
+                            },
+                        ),
+                    onClick =
+                        if (state.isWorkSessionActiveForProject) {
+                            callbacks.onStopWorkSession
+                        } else {
+                            callbacks.onStartWorkSession
+                        },
+                    showChevron = false,
+                )
                 ActionRow(
                     icon = Icons.Outlined.History,
                     label = stringResource(R.string.session_history_title),
@@ -191,6 +230,7 @@ private fun ActionRow(
     enabled: Boolean = true,
     showChevron: Boolean = true,
     isDanger: Boolean = false,
+    proStatus: ProStatus? = null,
 ) {
     val locale = rememberCurrentLocale()
     val contentColor =
@@ -227,6 +267,7 @@ private fun ActionRow(
                 modifier = Modifier.padding(end = 8.dp),
             )
         }
+        proStatus?.let { ProBadge(status = it, modifier = Modifier.padding(end = 8.dp)) }
         if (showChevron) {
             Icon(
                 imageVector = Icons.Outlined.ChevronRight,

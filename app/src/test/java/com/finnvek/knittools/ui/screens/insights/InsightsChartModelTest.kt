@@ -1,6 +1,7 @@
 package com.finnvek.knittools.ui.screens.insights
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -75,7 +76,7 @@ class InsightsChartModelTest {
     }
 
     @Test
-    fun `all time starts at the first session month when history is short`() {
+    fun `all time groups a few months into weeks instead of a couple of bars`() {
         val axis =
             insightsChartAxis(
                 timeRange = TimeRange.ALL_TIME,
@@ -84,11 +85,27 @@ class InsightsChartModelTest {
                 firstDayOfWeek = monday,
             )
 
+        // Kuukausiryhmittely olisi antanut kolme pylvästä koko historialle.
+        assertEquals(PaceGroupingInterval.WEEK, axis.interval)
+        assertEquals(LocalDate.of(2026, 5, 18), axis.bucketStarts.first())
+        assertEquals(LocalDate.of(2026, 7, 27), axis.bucketStarts.last())
+        assertTrue(axis.bucketStarts.size > 3)
+        assertTrue(axis.bucketStarts.zipWithNext().all { (a, b) -> a.plusWeeks(1) == b })
+    }
+
+    @Test
+    fun `all time starts at the first session month when history is long`() {
+        val axis =
+            insightsChartAxis(
+                timeRange = TimeRange.ALL_TIME,
+                today = LocalDate.of(2026, 7, 28),
+                firstSessionDate = LocalDate.of(2025, 11, 20),
+                firstDayOfWeek = monday,
+            )
+
         assertEquals(PaceGroupingInterval.MONTH, axis.interval)
-        assertEquals(
-            listOf(LocalDate.of(2026, 5, 1), LocalDate.of(2026, 6, 1), LocalDate.of(2026, 7, 1)),
-            axis.bucketStarts,
-        )
+        assertEquals(LocalDate.of(2025, 11, 1), axis.bucketStarts.first())
+        assertEquals(LocalDate.of(2026, 7, 1), axis.bucketStarts.last())
     }
 
     @Test
@@ -210,6 +227,7 @@ class InsightsChartModelTest {
             mapOf(
                 LocalDate.of(2026, 7, 20) to minutesAsSeconds(30), // sisältyy: jakson ensimmäinen päivä
                 LocalDate.of(2026, 7, 23) to minutesAsSeconds(10), // sisältyy: viimeinen kulunut päivä
+                // CPD-OFF: Testin skenaariokohtainen asetelma pidetaan paikallisena ja luettavana.
                 LocalDate.of(2026, 7, 24) to minutesAsSeconds(600), // ei sisälly: tasan katkaisurajalla
                 LocalDate.of(2026, 7, 26) to minutesAsSeconds(999), // ei sisälly: viime viikon loppupää
             )
@@ -220,6 +238,7 @@ class InsightsChartModelTest {
                 previousStart = LocalDate.of(2026, 7, 20),
                 currentStart = LocalDate.of(2026, 7, 27),
                 today = LocalDate.of(2026, 7, 30),
+                // CPD-ON
             )
 
         assertEquals(40, minutes)
@@ -232,6 +251,7 @@ class InsightsChartModelTest {
         val dailySeconds =
             mapOf(
                 LocalDate.of(2026, 7, 20) to minutesAsSeconds(30),
+                // CPD-OFF: Testin skenaariokohtainen asetelma pidetaan paikallisena ja luettavana.
                 LocalDate.of(2026, 7, 26) to minutesAsSeconds(999),
             )
 
@@ -244,6 +264,7 @@ class InsightsChartModelTest {
             )
 
         assertEquals(1029, minutes)
+        // CPD-ON
     }
 
     @Test
@@ -269,6 +290,7 @@ class InsightsChartModelTest {
                 LocalDate.of(2026, 2, 1) to minutesAsSeconds(20), // sisältyy: edellisen jakson alku
                 LocalDate.of(2026, 2, 28) to minutesAsSeconds(25), // sisältyy: helmikuun viimeinen päivä
                 LocalDate.of(2026, 3, 1) to minutesAsSeconds(600), // ei sisälly: kuuluu nykyiseen jaksoon
+                // CPD-OFF: Testin skenaariokohtainen asetelma pidetaan paikallisena ja luettavana.
                 LocalDate.of(2026, 3, 3) to minutesAsSeconds(900), // ei sisälly: kuuluu nykyiseen jaksoon
             )
 
@@ -278,6 +300,7 @@ class InsightsChartModelTest {
                 previousStart = LocalDate.of(2026, 2, 1),
                 currentStart = LocalDate.of(2026, 3, 1),
                 today = LocalDate.of(2026, 3, 31),
+                // CPD-ON
             )
 
         assertEquals(45, minutes)
@@ -356,5 +379,13 @@ class InsightsChartModelTest {
     @Test
     fun `empty axis has no labels`() {
         assertEquals(emptyList<Int>(), axisLabelIndices(bucketCount = 0, maxLabels = 5))
+    }
+
+    @Test
+    fun `a tiny previous period never produces a percentage`() {
+        // 3 min → 18 min oli "500 % more than last week": kohinaa, ei tietoa.
+        assertNull(insightsTrend(currentMinutes = 18, previousMinutes = 3))
+        assertNull(insightsTrend(currentMinutes = 18, previousMinutes = 0))
+        assertNotNull(insightsTrend(currentMinutes = 90, previousMinutes = 60))
     }
 }

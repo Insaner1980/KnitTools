@@ -1,17 +1,17 @@
 [versions]
 agp = "9.3.1"
-kotlin = "2.3.21"
+kotlin = "2.4.10"
 ksp = "2.3.10"
 hilt = "2.60.1"
-hiltAndroidx = "1.3.0"
+hiltAndroidx = "1.4.0"
 room = "2.8.4"
-composeBom = "2026.05.01"
+composeBom = "2026.06.01"
 composeNavigation = "2.9.8"
-lifecycle = "2.10.0"
+lifecycle = "2.11.0"
 coroutines = "1.11.0"
 datastore = "1.2.1"
-coreKtx = "1.18.0"
-activityCompose = "1.12.4"
+coreKtx = "1.19.0"
+activityCompose = "1.13.0"
 appcompat = "1.7.1"
 junit = "4.13.2"
 orgJson = "20251224"
@@ -19,16 +19,17 @@ mockk = "1.14.11"
 turbine = "1.2.1"
 androidxTestExtJunit = "1.3.0"
 androidxTestRunner = "1.7.0"
+androidxTestEspresso = "3.7.0"
 kotlinxSerialization = "1.11.0"
 guava = "33.6.0-android"
 
 dependencyAnalysis = "3.17.0"
 ktlintGradle = "14.2.0"
 detekt = "2.0.0-alpha.5"
-owaspDependencyCheck = "12.2.2"
+owaspDependencyCheck = "13.0.0"
 detektComposeRules = "0.5.8"
 androidSecurityLint = "1.0.4"
-composeStabilityAnalyzer = "0.8.0"
+composeStabilityAnalyzer = "0.12.0"
 sonarqube = "7.3.1.8318"
 sentry = "8.43.1"
 
@@ -40,15 +41,15 @@ playReview = "2.0.2"
 playUpdate = "2.1.0"
 billing = "9.1.0"
 glance = "1.1.1"
-coil = "3.4.0"
+coil = "3.5.0"
 ktor = "3.5.1"
 browser = "1.10.0"
 work = "2.11.2"
-firebaseBom = "34.16.0"
+firebaseBom = "34.17.0"
 googleServices = "4.5.0"
-androidCompileSdk = "36"
+androidCompileSdk = "37"
 androidMinSdk = "29"
-androidTargetSdk = "36"
+androidTargetSdk = "37"
 
 [libraries]
 # Compose BOM
@@ -110,6 +111,7 @@ mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 turbine = { group = "app.cash.turbine", name = "turbine", version.ref = "turbine" }
 androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxTestExtJunit" }
 androidx-test-runner = { group = "androidx.test", name = "runner", version.ref = "androidxTestRunner" }
+androidx-test-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "androidxTestEspresso" }
 
 # Detekt plugins
 detekt-compose-rules = { group = "io.nlopez.compose.rules", name = "detekt", version.ref = "detektComposeRules" }
@@ -127,6 +129,7 @@ glance-material3 = { group = "androidx.glance", name = "glance-material3", versi
 
 # Coil (image loading)
 coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil" }
+coil-network-ktor3 = { group = "io.coil-kt.coil3", name = "coil-network-ktor3", version.ref = "coil" }
 
 # Ktor (HTTP client)
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }

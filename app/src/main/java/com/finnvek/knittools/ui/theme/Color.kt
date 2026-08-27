@@ -96,6 +96,8 @@ val LightNavActiveBg = Color(0xFFEAD0B5) // Aktiivisen tabin indikaattoritausta
 val LightDivider = Color(0xFFC5C0A8)
 
 // === Lanka-ikonien väripaletti (deterministinen ID:n perusteella) ===
+
+/** Lankavärit tummalle taustalle. Kaikki kahdeksan ylttävät 3,35–7,08:1 kontrastiin. */
 val YarnColors =
     listOf(
         Color(0xFFC45100), // Poltettu oranssi
@@ -106,6 +108,24 @@ val YarnColors =
         Color(0xFF5A8A7A), // Teal
         Color(0xFF9A82AA), // Laventeli
         Color(0xFFA85A3A), // Ruosteenpunainen
+    )
+
+/**
+ * Samat kahdeksan sävyä kermataustalle. Vaaleat värit jäivät [LightBackground]illa
+ * alle graafisten elementtien 3:1 kontrastin — sinappi 1,86:1, avokado 2,19:1,
+ * roosa 2,21:1, laventeli 2,67:1. Sävy ja kylläisyys on säilytetty, vain vaaleutta
+ * on laskettu kunnes jokainen ylittää 3,2:1. Neljä tumminta ovat ennallaan.
+ */
+val LightYarnColors =
+    listOf(
+        Color(0xFFC45100), // Poltettu oranssi — 3,63:1, ennallaan
+        Color(0xFF70843C), // Avokado — 2,19 → 3,25:1
+        Color(0xFF957927), // Sinappi — 1,86 → 3,26:1
+        Color(0xFFA3706E), // Dusty rose — 2,21 → 3,22:1
+        Color(0xFF9A6B4A), // Terrakotta — 3,59:1, ennallaan
+        Color(0xFF578576), // Teal — 3,07 → 3,27:1
+        Color(0xFF8E73A0), // Laventeli — 2,67 → 3,22:1
+        Color(0xFFA85A3A), // Ruosteenpunainen — 3,92:1, ennallaan
     )
 
 val InsightChartColors =

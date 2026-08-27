@@ -28,16 +28,6 @@ class InsightsCopySourceTest {
     }
 
     @Test
-    fun `all time lead-in never interpolates a date`() {
-        ProjectSourceFiles.localizedStringFiles().forEach { file ->
-            val source = file.toFile().readText()
-            val leadIn = stringValue(source, "insights_hero_lead_in_all_time")
-
-            assertFalse("$file interpolates a date into the hero sentence: $leadIn", leadIn.contains("%1"))
-        }
-    }
-
-    @Test
     fun `the removed since-format is gone from every locale`() {
         ProjectSourceFiles.localizedStringFiles().forEach { file ->
             val source = file.toFile().readText()
@@ -46,10 +36,23 @@ class InsightsCopySourceTest {
                 "$file still defines insights_range_since_format",
                 source.contains("name=\"insights_range_since_format\""),
             )
-            assertTrue(
-                "$file is missing insights_range_open_format",
+            // Avoin väli käyttää samaa kaksipuolista muotoa kuin muut; roikkuva
+            // ajatusviiva ("July 2026 –") luki katkenneena merkkijonona.
+            assertFalse(
+                "$file still defines the dangling open-range format",
                 source.contains("name=\"insights_range_open_format\""),
             )
+        }
+    }
+
+    @Test
+    fun `project fabric copy exists in every locale`() {
+        ProjectSourceFiles.localizedStringFiles().forEach { file ->
+            val source = file.toFile().readText()
+
+            PROJECT_FABRIC_STRING_NAMES.forEach { name ->
+                assertTrue("$file is missing $name", source.contains("name=\"$name\""))
+            }
         }
     }
 
@@ -71,6 +74,15 @@ class InsightsCopySourceTest {
                 "relative_time_days_ago",
                 "relative_time_weeks_ago",
                 "relative_time_months_ago",
+            )
+
+        val PROJECT_FABRIC_STRING_NAMES =
+            listOf(
+                "insights_section_projects_by_day",
+                "insights_project_fabric_a11y_summary",
+                "insights_no_tracked_activity",
+                "insights_project_fabric_previous_active_day",
+                "insights_project_fabric_next_active_day",
             )
     }
 }

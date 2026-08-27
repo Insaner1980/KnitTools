@@ -63,8 +63,19 @@ class ProgressPhotoStorage
 
         private fun createUniquePhotoFile(dir: File): File = StorageFileNames.uniqueTimestampedFile(dir, "", ".jpg")
 
-        fun deletePhoto(photoUri: String) {
-            deleteFileUri(photoUri.toUri())
+        fun deletePhoto(
+            context: Context,
+            projectId: Long,
+            photoUri: String,
+        ) {
+            val uri = photoUri.toUri()
+            val file = AppFileStorage.resolveAppOwnedFile(context, uri) ?: return
+            val projectRoot = File(context.filesDir, "progress_photos/$projectId")
+            if (!file.isInside(projectRoot)) return
+            AppFileStorage.deleteFileOrDirectory(
+                file = file,
+                failureMessagePrefix = "Progress photo file delete failed",
+            )
         }
 
         fun deletePendingPhotoFile(filePath: String?) {
@@ -99,14 +110,6 @@ class ProgressPhotoStorage
             AppFileStorage.deleteIfAppOwned(context, sourceUri)
         }
 
-        private fun deleteFileUri(uri: Uri) {
-            val file = File(uri.path ?: return)
-            AppFileStorage.deleteFileOrDirectory(
-                file = file,
-                failureMessagePrefix = "Progress photo file delete failed",
-            )
-        }
-
         private fun scaleDown(
             bitmap: Bitmap,
             maxDimension: Int,
@@ -116,13 +119,20 @@ class ProgressPhotoStorage
             if (width <= maxDimension && height <= maxDimension) return bitmap
 
             val ratio = maxDimension.toFloat() / maxOf(width, height)
-            val newWidth = (width * ratio).toInt()
-            val newHeight = (height * ratio).toInt()
+            val newWidth = (width * ratio).toInt().coerceAtLeast(1)
+            val newHeight = (height * ratio).toInt().coerceAtLeast(1)
             return bitmap.scale(newWidth, newHeight)
         }
 
         private companion object {
             const val MAX_DIMENSION = 1920
             const val JPEG_QUALITY = 80
+        }
+
+        private fun File.isInside(root: File): Boolean {
+            val canonicalFile = canonicalFile
+            val canonicalRoot = root.canonicalFile
+            return canonicalFile == canonicalRoot ||
+                canonicalFile.path.startsWith(canonicalRoot.path + File.separator)
         }
     }

@@ -10,6 +10,7 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 
@@ -43,4 +44,17 @@ class ProManagerTest {
 
         coVerify(exactly = 2) { trialManager.initialize() }
     }
+
+    @Test
+    fun `startTrial delegates the explicit user action`() =
+        kotlinx.coroutines.test.runTest {
+            val trialManager = mockk<TrialManager>()
+            coEvery { trialManager.startTrial() } returns TrialStartResult.Started
+            val manager = ProManager(trialManager, mockk(relaxed = true))
+
+            val result = manager.startTrial()
+
+            assertEquals(TrialStartResult.Started, result)
+            coVerify(exactly = 1) { trialManager.startTrial() }
+        }
 }

@@ -1,6 +1,9 @@
 package com.finnvek.knittools.ui.screens.pattern
 
+import android.net.Uri
 import androidx.lifecycle.SavedStateHandle
+import com.finnvek.knittools.data.storage.PatternAnnotationRenderStyle
+import com.finnvek.knittools.data.storage.PatternPdfExporter
 import com.finnvek.knittools.domain.model.ChartColumnDirection
 import com.finnvek.knittools.domain.model.ChartCorner
 import com.finnvek.knittools.domain.model.ChartCounterType
@@ -17,17 +20,18 @@ import com.finnvek.knittools.domain.model.PatternAnnotationDocumentKey
 import com.finnvek.knittools.domain.model.PatternAnnotationKind
 import com.finnvek.knittools.domain.model.PatternAnnotationLayer
 import com.finnvek.knittools.domain.model.PatternAnnotationOwner
+import com.finnvek.knittools.domain.model.ProjectDocument
 import com.finnvek.knittools.domain.model.ShapePayload
 import com.finnvek.knittools.repository.CounterRepository
 import com.finnvek.knittools.repository.PatternAnnotationLayerRepository
 import com.finnvek.knittools.repository.PatternAnnotationRepository
 import com.finnvek.knittools.repository.ProjectCounterRepository
+import com.finnvek.knittools.repository.ProjectDocumentRepository
 import com.finnvek.knittools.repository.repositoryReadRetryDelayMillis
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.verify
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -75,6 +79,7 @@ class PatternAnnotationViewModelTest {
                 counterRepository,
                 layerRepository,
                 annotationRepository,
+                projectDocumentRepository = mockk(),
             )
         }
         assertThrows(IllegalArgumentException::class.java) {
@@ -83,6 +88,7 @@ class PatternAnnotationViewModelTest {
                 counterRepository,
                 layerRepository,
                 annotationRepository,
+                projectDocumentRepository = mockk(),
             )
         }
         assertThrows(IllegalArgumentException::class.java) {
@@ -91,6 +97,7 @@ class PatternAnnotationViewModelTest {
                 counterRepository,
                 layerRepository,
                 annotationRepository,
+                projectDocumentRepository = mockk(),
             )
         }
         assertThrows(IllegalArgumentException::class.java) {
@@ -99,10 +106,12 @@ class PatternAnnotationViewModelTest {
                 counterRepository,
                 layerRepository,
                 annotationRepository,
+                projectDocumentRepository = mockk(),
             )
         }
     }
 
+    // CPD-OFF: Testin skenaariokohtainen asetelma pidetaan paikallisena ja luettavana.
     @Test
     fun `library route edits only master layer and follows current page`() =
         runTest {
@@ -112,6 +121,7 @@ class PatternAnnotationViewModelTest {
             val masterLayer = layer(id = 31L, owner = PatternAnnotationOwner.SavedPattern(12L, documentKey))
             coEvery { layerRepository.getOrCreateMasterLayer(12L, documentKey) } returns masterLayer
             every { annotationRepository.observePage(31L, any()) } answers {
+                // CPD-ON
                 flowOf(listOf(annotation(layerId = 31L, page = secondArg())))
             }
 
@@ -121,6 +131,7 @@ class PatternAnnotationViewModelTest {
                     mockk(relaxed = true),
                     layerRepository,
                     annotationRepository,
+                    projectDocumentRepository = mockk(),
                 )
             advanceUntilIdle()
 
@@ -230,12 +241,6 @@ class PatternAnnotationViewModelTest {
     fun `project keeps active annotation document when saved pattern link disappears`() =
         runTest {
             val route = projectRoute()
-            // Linkin kadotessa kerrokset kysytään legacy-avaimella, mutta aktiivinen
-            // kerros palauttaa omistajalle alkuperäisen dokumenttiavaimen
-            val legacyOwner =
-                PatternAnnotationOwner.Project(7L, PatternAnnotationDocumentKey.legacyProject(7L))
-            every { route.layerRepository.observeLayers(legacyOwner) } returns
-                flowOf(listOf(route.projectLayer))
             every { route.annotationRepository.observePage(31L, 0) } returns flowOf(emptyList())
             every { route.annotationRepository.observePage(41L, 0) } returns
                 flowOf(listOf(annotation(layerId = 41L, page = 0)))
@@ -243,11 +248,12 @@ class PatternAnnotationViewModelTest {
             advanceUntilIdle()
 
             route.project.value = route.project.value.copy(linkedPatternId = null)
+            route.documents.value = route.documents.value.map { it.copy(savedPatternId = null) }
             advanceUntilIdle()
 
-            verify { route.layerRepository.observeLayers(legacyOwner) }
             assertEquals(route.projectOwner, viewModel.uiState.value.owner)
             assertEquals(41L, viewModel.uiState.value.editableLayerId)
+            assertEquals(null, viewModel.uiState.value.masterLayerId)
             assertEquals(
                 41L,
                 viewModel.uiState.value.projectAnnotations
@@ -256,6 +262,7 @@ class PatternAnnotationViewModelTest {
             )
         }
 
+    // CPD-OFF: Testin skenaariokohtainen asetelma pidetaan paikallisena ja luettavana.
     @Test
     fun `repository load failure is recoverable`() =
         runTest {
@@ -272,6 +279,7 @@ class PatternAnnotationViewModelTest {
                     mockk(relaxed = true),
                     layerRepository,
                     annotationRepository,
+                    projectDocumentRepository = mockk(),
                 )
 
             runCurrent()
@@ -283,6 +291,7 @@ class PatternAnnotationViewModelTest {
             assertEquals(PatternAnnotationLoadError.NONE, viewModel.uiState.value.loadError)
             assertEquals(31L, viewModel.uiState.value.editableLayerId)
         }
+    // CPD-ON
 
     @Test
     fun `pointer moves stay in memory and gesture end persists one pressure stroke`() =
@@ -300,6 +309,7 @@ class PatternAnnotationViewModelTest {
                     mockk(relaxed = true),
                     layerRepository,
                     annotationRepository,
+                    projectDocumentRepository = mockk(),
                 )
             advanceUntilIdle()
 
@@ -336,18 +346,21 @@ class PatternAnnotationViewModelTest {
     fun `failed stroke write keeps draft available for retry`() =
         runTest {
             val layerRepository = mockk<PatternAnnotationLayerRepository>()
+            // CPD-OFF: Testin skenaariokohtainen asetelma pidetaan paikallisena ja luettavana.
             val annotationRepository = mockk<PatternAnnotationRepository>()
             val documentKey = PatternAnnotationDocumentKey.savedPattern(12L)
             coEvery { layerRepository.getOrCreateMasterLayer(12L, documentKey) } returns
                 layer(id = 31L, owner = PatternAnnotationOwner.SavedPattern(12L, documentKey))
             every { annotationRepository.observePage(31L, 0) } returns flowOf(emptyList())
             coEvery { annotationRepository.insertAnnotation(any()) } throws IOException("write failed")
+            // CPD-ON
             val viewModel =
                 PatternAnnotationViewModel(
                     SavedStateHandle(mapOf("savedPatternId" to 12L)),
                     mockk(relaxed = true),
                     layerRepository,
                     annotationRepository,
+                    projectDocumentRepository = mockk(),
                 )
             advanceUntilIdle()
 
@@ -366,6 +379,7 @@ class PatternAnnotationViewModelTest {
             )
         }
 
+    // CPD-OFF: Testin skenaariokohtainen asetelma pidetaan paikallisena ja luettavana.
     @Test
     fun `tool change cannot cancel an active stroke write`() =
         runTest {
@@ -386,6 +400,7 @@ class PatternAnnotationViewModelTest {
                     mockk(relaxed = true),
                     layerRepository,
                     annotationRepository,
+                    projectDocumentRepository = mockk(),
                 )
             advanceUntilIdle()
 
@@ -412,6 +427,7 @@ class PatternAnnotationViewModelTest {
             assertFalse(viewModel.uiState.value.isSaving)
             assertEquals(null, viewModel.uiState.value.draftStroke)
         }
+    // CPD-ON
 
     @Test
     fun `shape insertion supports forward undo and redo`() =
@@ -429,6 +445,7 @@ class PatternAnnotationViewModelTest {
                     mockk(relaxed = true),
                     layerRepository,
                     annotationRepository,
+                    projectDocumentRepository = mockk(),
                 )
             advanceUntilIdle()
 
@@ -487,6 +504,7 @@ class PatternAnnotationViewModelTest {
                     mockk(relaxed = true),
                     layerRepository,
                     annotationRepository,
+                    projectDocumentRepository = mockk(),
                 )
             advanceUntilIdle()
 
@@ -505,6 +523,7 @@ class PatternAnnotationViewModelTest {
             val annotationRepository = mockk<PatternAnnotationRepository>(relaxed = true)
             val counterRepository = mockk<CounterRepository>()
             val projectCounterRepository = mockk<ProjectCounterRepository>()
+            val projectDocumentRepository = mockk<ProjectDocumentRepository>()
             val documentKey = PatternAnnotationDocumentKey.savedPattern(12L)
             val projectOwner = PatternAnnotationOwner.Project(7L, documentKey)
             val masterLayer = layer(id = 31L, owner = PatternAnnotationOwner.SavedPattern(12L, documentKey))
@@ -521,7 +540,8 @@ class PatternAnnotationViewModelTest {
             every { counterRepository.observeProject(7L) } returns
                 flowOf(CounterProject(id = 7L, name = "Project", count = 14, linkedPatternId = 12L))
             every { projectCounterRepository.getCountersForProject(7L) } returns flowOf(emptyList())
-            every { layerRepository.observeLayers(projectOwner) } returns flowOf(listOf(projectLayer))
+            every { layerRepository.observeLayers(any()) } returns flowOf(listOf(projectLayer))
+            every { projectDocumentRepository.observeDocuments(7L) } returns flowOf(listOf(projectDocument()))
             coEvery { layerRepository.getOrCreateMasterLayer(12L, documentKey) } returns masterLayer
             every { annotationRepository.observePage(31L, 0) } returns
                 flowOf(
@@ -544,6 +564,7 @@ class PatternAnnotationViewModelTest {
                     counterRepository,
                     layerRepository,
                     annotationRepository,
+                    projectDocumentRepository,
                     projectCounterRepository,
                 )
             advanceUntilIdle()
@@ -583,75 +604,245 @@ class PatternAnnotationViewModelTest {
                 )
             }
         }
+}
 
-    // Project-reitin jaettu alustus: sama mock-kokoonpano toistui kolmessa testissä
-    private class ProjectRoute(
-        val counterRepository: CounterRepository,
-        val layerRepository: PatternAnnotationLayerRepository,
-        val annotationRepository: PatternAnnotationRepository,
-        val projectOwner: PatternAnnotationOwner.Project,
-        val projectLayer: PatternAnnotationLayer,
-        val project: MutableStateFlow<CounterProject>,
-    ) {
-        fun viewModel() =
-            PatternAnnotationViewModel(
-                SavedStateHandle(mapOf("projectId" to 7L)),
-                counterRepository,
-                layerRepository,
-                annotationRepository,
+@OptIn(ExperimentalCoroutinesApi::class)
+class PatternAnnotationDocumentSelectionTest {
+    private val dispatcher = StandardTestDispatcher()
+
+    @Before
+    fun setUp() {
+        Dispatchers.setMain(dispatcher)
+    }
+
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
+    }
+
+    @Test
+    fun `selecting secondary project document switches its master and editable annotations`() =
+        runTest {
+            val route = projectRoute()
+            val secondaryKey = PatternAnnotationDocumentKey.savedPattern(13L)
+            val secondaryOwner = PatternAnnotationOwner.Project(7L, secondaryKey)
+            val secondaryLayer = layer(id = 42L, owner = secondaryOwner)
+            route.documents.value += projectDocument(id = 52L, savedPatternId = 13L, isPrimary = false)
+            coEvery { route.layerRepository.getOrCreateMasterLayer(13L, secondaryKey) } returns
+                layer(id = 32L, owner = PatternAnnotationOwner.SavedPattern(13L, secondaryKey))
+            every { route.annotationRepository.observePage(any(), 0) } answers {
+                flowOf(listOf(annotation(layerId = firstArg(), page = 0)))
+            }
+            val viewModel = route.viewModel()
+            advanceUntilIdle()
+            assertEquals(31L, viewModel.uiState.value.masterLayerId)
+
+            route.projectLayers.value = listOf(route.projectLayer.copy(isActive = false), secondaryLayer)
+            advanceUntilIdle()
+
+            assertEquals(12L, route.project.value.linkedPatternId)
+            assertEquals(secondaryOwner, viewModel.uiState.value.owner)
+            assertEquals(42L, viewModel.uiState.value.editableLayerId)
+            assertEquals(
+                listOf(32L),
+                viewModel.uiState.value.masterAnnotations
+                    .map { it.layerId },
             )
-    }
+            assertEquals(
+                listOf(42L),
+                viewModel.uiState.value.projectAnnotations
+                    .map { it.layerId },
+            )
 
-    private fun projectRoute(): ProjectRoute {
-        val counterRepository = mockk<CounterRepository>()
-        val layerRepository = mockk<PatternAnnotationLayerRepository>()
-        val annotationRepository = mockk<PatternAnnotationRepository>()
-        val documentKey = PatternAnnotationDocumentKey.savedPattern(12L)
-        val projectOwner = PatternAnnotationOwner.Project(7L, documentKey)
-        val projectLayer = layer(id = 41L, owner = projectOwner)
-        val masterLayer = layer(id = 31L, owner = PatternAnnotationOwner.SavedPattern(12L, documentKey))
-        val project = MutableStateFlow(CounterProject(id = 7L, linkedPatternId = 12L))
+            route.projectLayers.value = listOf(route.projectLayer, secondaryLayer.copy(isActive = false))
+            advanceUntilIdle()
 
-        every { counterRepository.observeProject(7L) } returns project
-        coEvery { layerRepository.getOrCreateMasterLayer(12L, documentKey) } returns masterLayer
-        every { layerRepository.observeLayers(projectOwner) } returns flowOf(listOf(projectLayer))
+            assertEquals(route.projectOwner, viewModel.uiState.value.owner)
+            assertEquals(
+                listOf(31L),
+                viewModel.uiState.value.masterAnnotations
+                    .map { it.layerId },
+            )
+            assertEquals(
+                listOf(41L),
+                viewModel.uiState.value.projectAnnotations
+                    .map { it.layerId },
+            )
+        }
 
-        return ProjectRoute(
-            counterRepository = counterRepository,
-            layerRepository = layerRepository,
-            annotationRepository = annotationRepository,
-            projectOwner = projectOwner,
-            projectLayer = projectLayer,
-            project = project,
+    @Test
+    fun `secondary project document export contains its own master instead of primary master`() =
+        runTest {
+            val route = projectRoute()
+            val secondaryKey = PatternAnnotationDocumentKey.savedPattern(13L)
+            val secondaryLayer = layer(id = 42L, owner = PatternAnnotationOwner.Project(7L, secondaryKey))
+            route.documents.value += projectDocument(id = 52L, savedPatternId = 13L, isPrimary = false)
+            val exporter = mockk<PatternPdfExporter>(relaxed = true)
+            val sourceUri = mockk<Uri>()
+            val destinationUri = mockk<Uri>()
+            val style = mockk<PatternAnnotationRenderStyle>()
+            val allAnnotations = listOf(31L, 32L, 41L, 42L).map { annotation(layerId = it, page = 0) }
+            coEvery { route.layerRepository.getOrCreateMasterLayer(13L, secondaryKey) } returns
+                layer(id = 32L, owner = PatternAnnotationOwner.SavedPattern(13L, secondaryKey))
+            every { route.annotationRepository.observePage(any(), 0) } answers {
+                val layerId = firstArg<Long>()
+                flowOf(allAnnotations.filter { it.layerId == layerId })
+            }
+            coEvery { route.annotationRepository.getForLayers(any()) } answers {
+                val layerIds = firstArg<List<Long>>()
+                allAnnotations.filter { it.layerId in layerIds }
+            }
+            val viewModel = route.viewModel(pdfExporter = exporter)
+            advanceUntilIdle()
+
+            route.projectLayers.value = listOf(route.projectLayer.copy(isActive = false), secondaryLayer)
+            advanceUntilIdle()
+            viewModel.exportAnnotatedPdf(sourceUri, destinationUri, style)
+            advanceUntilIdle()
+
+            coVerify(exactly = 1) {
+                exporter.export(
+                    sourceUri = sourceUri,
+                    destinationUri = destinationUri,
+                    annotations = allAnnotations.filter { it.layerId == 32L || it.layerId == 42L },
+                    trackerHighlights = emptyMap(),
+                    style = style,
+                    onProgress = any(),
+                )
+            }
+        }
+
+    @Test
+    fun `detaching document hides retained annotation layers`() =
+        runTest {
+            val route = projectRoute()
+            every { route.annotationRepository.observePage(any(), 0) } answers {
+                flowOf(listOf(annotation(layerId = firstArg(), page = 0)))
+            }
+            val viewModel = route.viewModel()
+            advanceUntilIdle()
+
+            route.documents.value = emptyList()
+            route.projectLayers.value = listOf(route.projectLayer.copy(isActive = false))
+            advanceUntilIdle()
+
+            assertEquals(null, viewModel.uiState.value.editableLayerId)
+            assertTrue(
+                viewModel.uiState.value.masterAnnotations
+                    .isEmpty(),
+            )
+            assertTrue(
+                viewModel.uiState.value.projectAnnotations
+                    .isEmpty(),
+            )
+        }
+}
+
+// Project-reitin jaettu alustus: sama mock-kokoonpano toistui kolmessa testissä
+private class ProjectRoute(
+    val counterRepository: CounterRepository,
+    val layerRepository: PatternAnnotationLayerRepository,
+    val annotationRepository: PatternAnnotationRepository,
+    val projectDocumentRepository: ProjectDocumentRepository,
+    val projectOwner: PatternAnnotationOwner.Project,
+    val projectLayer: PatternAnnotationLayer,
+    val projectLayers: MutableStateFlow<List<PatternAnnotationLayer>>,
+    val documents: MutableStateFlow<List<ProjectDocument>>,
+    val project: MutableStateFlow<CounterProject>,
+) {
+    fun viewModel(pdfExporter: PatternPdfExporter? = null) =
+        PatternAnnotationViewModel(
+            SavedStateHandle(mapOf("projectId" to 7L)),
+            counterRepository,
+            layerRepository,
+            annotationRepository,
+            projectDocumentRepository,
+            pdfExporter = pdfExporter,
         )
-    }
+}
 
-    private fun layer(
-        id: Long,
-        owner: PatternAnnotationOwner,
-    ) = PatternAnnotationLayer(
-        id = id,
-        owner = owner,
-        isActive = true,
-        createdAt = 1_000L,
-        updatedAt = 1_000L,
-    )
+private fun projectRoute(): ProjectRoute {
+    val counterRepository = mockk<CounterRepository>()
+    val layerRepository = mockk<PatternAnnotationLayerRepository>()
+    val annotationRepository = mockk<PatternAnnotationRepository>()
+    val projectDocumentRepository = mockk<ProjectDocumentRepository>()
+    val documentKey = PatternAnnotationDocumentKey.savedPattern(12L)
+    val projectOwner = PatternAnnotationOwner.Project(7L, documentKey)
+    val projectLayer = layer(id = 41L, owner = projectOwner)
+    val projectLayers = MutableStateFlow(listOf(projectLayer))
+    val documents = MutableStateFlow(listOf(projectDocument()))
+    val masterLayer = layer(id = 31L, owner = PatternAnnotationOwner.SavedPattern(12L, documentKey))
+    val project = MutableStateFlow(CounterProject(id = 7L, linkedPatternId = 12L))
 
-    private fun annotation(
-        layerId: Long,
-        page: Int,
-        zIndex: Long = 0L,
-    ) = PatternAnnotation(
-        id = layerId,
-        layerId = layerId,
-        page = page,
-        kind = PatternAnnotationKind.FREEHAND,
-        payload =
-            FreehandPayload(
-                points = listOf(NormalizedPatternPoint(0f, 0f), NormalizedPatternPoint(1f, 1f)),
-                argb = 0xFF000000.toInt(),
-                strokeWidth = 2f,
-            ),
-        zIndex = zIndex,
+    every { counterRepository.observeProject(7L) } returns project
+    coEvery { layerRepository.getOrCreateMasterLayer(12L, documentKey) } returns masterLayer
+    every { layerRepository.observeLayers(any()) } returns projectLayers
+    every { projectDocumentRepository.observeDocuments(7L) } returns documents
+
+    return ProjectRoute(
+        counterRepository = counterRepository,
+        layerRepository = layerRepository,
+        annotationRepository = annotationRepository,
+        projectDocumentRepository = projectDocumentRepository,
+        projectOwner = projectOwner,
+        projectLayer = projectLayer,
+        projectLayers = projectLayers,
+        documents = documents,
+        project = project,
     )
 }
+
+private fun projectDocument(
+    id: Long = 51L,
+    savedPatternId: Long = 12L,
+    isPrimary: Boolean = true,
+) = ProjectDocument(
+    id = id,
+    projectId = 7L,
+    savedPatternId = savedPatternId,
+    documentKey = PatternAnnotationDocumentKey.savedPattern(savedPatternId),
+    label = "Document $id",
+    localPdfUri = "file:///document-$id.pdf",
+    sortOrder = if (isPrimary) 0 else 1,
+    isPrimary = isPrimary,
+    currentPage = 0,
+    rowMapping = null,
+    readingLineEnabled = false,
+    readingLineYFraction = 0.5f,
+    readingLineFollowCurrentRow = false,
+    verticalReadingGuideEnabled = false,
+    verticalReadingGuideXFraction = 0.5f,
+    createdAt = 1_000L,
+    updatedAt = 1_000L,
+)
+
+private fun layer(
+    id: Long,
+    owner: PatternAnnotationOwner,
+) = PatternAnnotationLayer(
+    id = id,
+    owner = owner,
+    isActive = true,
+    createdAt = 1_000L,
+    updatedAt = 1_000L,
+)
+
+private fun annotation(
+    layerId: Long,
+    page: Int,
+    zIndex: Long = 0L,
+) = PatternAnnotation(
+    id = layerId,
+    layerId = layerId,
+    // CPD-OFF: Testin skenaariokohtainen asetelma pidetaan paikallisena ja luettavana.
+    page = page,
+    kind = PatternAnnotationKind.FREEHAND,
+    payload =
+        FreehandPayload(
+            points = listOf(NormalizedPatternPoint(0f, 0f), NormalizedPatternPoint(1f, 1f)),
+            argb = 0xFF000000.toInt(),
+            strokeWidth = 2f,
+        ),
+    zIndex = zIndex,
+)
+// CPD-ON

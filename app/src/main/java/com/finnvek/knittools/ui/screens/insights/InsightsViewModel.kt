@@ -1,5 +1,6 @@
 package com.finnvek.knittools.ui.screens.insights
 
+import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.finnvek.knittools.di.IoDispatcher
@@ -41,6 +42,7 @@ import java.time.temporal.WeekFields
 import javax.inject.Inject
 
 private const val DATE_CHANGE_CHECK_INTERVAL_MILLIS = 60_000L
+private const val MINIMUM_MEANINGFUL_CHART_BUCKETS = 2
 
 private sealed interface RepositoryLoad<out T> {
     val value: T?
@@ -68,6 +70,7 @@ data class ProjectTime(
 
 enum class PaceGroupingInterval {
     DAY,
+    WEEK,
     MONTH,
 }
 
@@ -84,7 +87,8 @@ enum class InsightsCraftMix {
     MIXED,
 }
 
-data class InsightsUiState(
+@Immutable
+internal data class InsightsUiState(
     val isLoading: Boolean = true,
     val totalDuration: DurationDisplay = DurationDisplayFormatter.fromMinutes(0),
     val totalMinutes: Int = 0,
@@ -100,8 +104,10 @@ data class InsightsUiState(
     val selectedProjectName: String? = null,
     val craftMix: InsightsCraftMix = InsightsCraftMix.KNITTING,
     val timePerProject: List<ProjectTime> = emptyList(),
+    val projectFabric: InsightsProjectFabricModel? = null,
     val chartInterval: PaceGroupingInterval = PaceGroupingInterval.DAY,
     val chartBuckets: List<InsightsChartBucket> = emptyList(),
+    val hasMeaningfulChartData: Boolean = false,
     val rangeStart: LocalDate? = null,
     val rangeEnd: LocalDate = LocalDate.now(systemDefault()),
     val timeRange: TimeRange = TimeRange.ALL_TIME,
@@ -200,7 +206,7 @@ class InsightsViewModel
                 .flowOn(ioDispatcher)
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), RepositoryLoad.Loading)
 
-        val uiState: StateFlow<InsightsUiState> =
+        internal val uiState: StateFlow<InsightsUiState> =
             combine(
                 sessionLoad,
                 projectLoad,
@@ -251,9 +257,22 @@ class InsightsViewModel
             val firstSessionDate = firstSessionDate(sessions, zone)
             val axis = insightsChartAxis(params.timeRange, today, firstSessionDate, firstDayOfWeek)
             val timePerProject = buildTimePerProject(sessions, projectList, params.startMillis, zone)
+            val projectFabric =
+                buildProjectFabric(sessions, params, featureGates, zone, firstDayOfWeek, timePerProject)
             val streakMetrics = buildStreakMetrics(sessions, params.startMillis, featureGates.canUseStreak)
+            val measuredBuckets =
+                measuredChartBuckets(
+                    sessions = sessions,
+                    params = params,
+                    axis = axis,
+                    zone = zone,
+                    firstDayOfWeek = firstDayOfWeek,
+                    projectOrder = timePerProject.map { it.projectId },
+                )
+            val hasMeaningfulChartData =
+                measuredBuckets.values.count { it.totalMinutes > 0 } >= MINIMUM_MEANINGFUL_CHART_BUCKETS
             val chartBuckets =
-                buildChartBuckets(sessions, params, axis, zone, timePerProject, featureGates.canUseCharts)
+                if (featureGates.canUseCharts) fillChartBuckets(axis, measuredBuckets) else emptyList()
             val minutesPerRow =
                 MinutesPerRowFormatter.fromSeconds(rangeMetrics.totalSeconds, rangeMetrics.totalRows)
 
@@ -273,8 +292,10 @@ class InsightsViewModel
                 selectedProjectName = projectList.firstOrNull { it.id == params.projectId }?.name,
                 craftMix = craftMix(timePerProject, projectList),
                 timePerProject = timePerProject,
+                projectFabric = projectFabric,
                 chartInterval = axis.interval,
                 chartBuckets = chartBuckets,
+                hasMeaningfulChartData = hasMeaningfulChartData,
                 rangeStart = rangeStartDate(params.timeRange, today, firstDayOfWeek) ?: firstSessionDate,
                 rangeEnd = today,
                 timeRange = params.timeRange,
@@ -284,6 +305,26 @@ class InsightsViewModel
                 canUseStreak = featureGates.canUseStreak,
             )
         }
+
+        private fun buildProjectFabric(
+            sessions: List<KnitSession>,
+            params: InsightsQueryParams,
+            featureGates: InsightsProFeatureGates,
+            zone: ZoneId,
+            firstDayOfWeek: DayOfWeek,
+            timePerProject: List<ProjectTime>,
+        ): InsightsProjectFabricModel? =
+            if (params.timeRange == TimeRange.ALL_TIME && featureGates.canUseCharts) {
+                buildInsightsProjectFabric(
+                    sessions = sessions,
+                    today = params.currentDate,
+                    zone = zone,
+                    firstDayOfWeek = firstDayOfWeek,
+                    projectOrder = timePerProject.map { it.projectId },
+                )
+            } else {
+                null
+            }
 
         private fun buildStreakMetrics(
             sessions: List<KnitSession>,
@@ -298,33 +339,6 @@ class InsightsViewModel
             } else {
                 StreakMetrics(current = 0, best = 0)
             }
-
-        /**
-         * Kaavion ämpärit nolla-täydennettynä akselin mittaan. Ilman Pro-oikeutta
-         * kaaviota ei piirretä lainkaan, jolloin ämpäreitä ei myöskään lasketa.
-         *
-         * [timePerProject] antaa pinon järjestyksen: kaavio ja projektilista
-         * luetaan samassa järjestyksessä.
-         */
-        private fun buildChartBuckets(
-            sessions: List<KnitSession>,
-            params: InsightsQueryParams,
-            axis: InsightsChartAxis,
-            zone: ZoneId,
-            timePerProject: List<ProjectTime>,
-            canUseCharts: Boolean,
-        ): List<InsightsChartBucket> {
-            if (!canUseCharts) return emptyList()
-            val measured =
-                measuredChartBuckets(
-                    sessions = sessions,
-                    params = params,
-                    axis = axis,
-                    zone = zone,
-                    projectOrder = timePerProject.map { it.projectId },
-                )
-            return fillChartBuckets(axis, measured)
-        }
 
         /** Niiden päivien määrä, joilla välillä on istuntoja. */
         private fun activeDaysInRange(
@@ -425,6 +439,7 @@ class InsightsViewModel
                 params: InsightsQueryParams,
                 axis: InsightsChartAxis,
                 zone: ZoneId,
+                firstDayOfWeek: DayOfWeek,
                 projectOrder: List<Long> = emptyList(),
             ): Map<LocalDate, InsightsChartBucket> {
                 val bucketsByProject =
@@ -436,6 +451,7 @@ class InsightsViewModel
                                 rangeStartMillis = params.startMillis,
                                 interval = axis.interval,
                                 zone = zone,
+                                firstDayOfWeek = firstDayOfWeek,
                             )
                         }
                 val rank = projectOrder.withIndex().associate { (index, id) -> id to index }
@@ -677,14 +693,19 @@ private data class MeasuredProject(
     val lastSessionAt: Long,
 )
 
-internal fun LocalDate.bucketStart(interval: PaceGroupingInterval): LocalDate =
+internal fun LocalDate.bucketStart(
+    interval: PaceGroupingInterval,
+    firstDayOfWeek: DayOfWeek,
+): LocalDate =
     when (interval) {
         PaceGroupingInterval.DAY -> this
+        PaceGroupingInterval.WEEK -> with(TemporalAdjusters.previousOrSame(firstDayOfWeek))
         PaceGroupingInterval.MONTH -> withDayOfMonth(1)
     }
 
 internal fun LocalDate.nextBucketStart(interval: PaceGroupingInterval): LocalDate =
     when (interval) {
         PaceGroupingInterval.DAY -> plusDays(1)
+        PaceGroupingInterval.WEEK -> plusWeeks(1)
         PaceGroupingInterval.MONTH -> plusMonths(1)
     }

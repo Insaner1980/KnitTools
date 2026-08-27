@@ -32,8 +32,6 @@
     <string name="tool_cast_on_calculator">Calculadora de montagem</string>
     <string name="tool_yarn_estimator">Estimador de fio</string>
     <string name="tool_needle_sizes">Tamanhos de agulhas</string>
-    <string name="pro_trial_days_left">Teste Pro — faltam %d dias</string>
-    <string name="unlock_all_tools">Desbloquear todas as ferramentas</string>
     <string name="desc_yarn_estimator_card">Calcule a metragem e o número de novelos necessários</string>
 
     <!-- Bottom navigation tabs -->
@@ -142,7 +140,6 @@
     <string name="pattern_open_failed">Não foi possível abrir a receita.</string>
     <string name="pattern_show_reading_line">Mostrar linha de leitura</string>
     <string name="pattern_hide_reading_line">Ocultar linha de leitura</string>
-    <string name="pattern_save_line_as_row">Guardar linha como carreira %1$d</string>
     <string name="pattern_clear_row_mark">Limpar marcador da carreira</string>
     <string name="pattern_clear_page_marks">Limpar marcadores da página</string>
     <string name="pattern_calibrate_rows">Calibrar carreiras</string>
@@ -151,7 +148,6 @@
     <string name="pattern_calibration_save_first">Guardar primeira</string>
     <string name="pattern_calibration_save_last">Guardar última</string>
     <string name="pattern_calibration_invalid_row">Use dois números de carreira diferentes</string>
-    <string name="pattern_reading_line_description">Linha de leitura</string>
     <string name="pattern_page_jump">Ir para a página</string>
     <string name="pattern_page_number">Número da página</string>
     <string name="pattern_page_indicator">Página %1$d de %2$d</string>
@@ -162,11 +158,38 @@
     <string name="pattern_picker_import_cloud_pdf">Importar do Drive ou Dropbox</string>
     <string name="pattern_picker_import_from_ravelry">Importar do Ravelry</string>
     <string name="pattern_picker_camera_scan">Tirar foto da receita</string>
+    <string name="pattern_picker_choose_images">Escolher imagens</string>
+    <string name="pattern_image_import_title">Rever páginas da receita</string>
+    <plurals name="pattern_images_selected"><item quantity="one">%1$d imagem selecionada</item><item quantity="many">%1$d imagens selecionadas</item><item quantity="other">%1$d imagens selecionadas</item></plurals>
+    <string name="pattern_image_page_position">Página %1$d de %2$d</string>
+    <string name="pattern_image_add_more">Adicionar mais</string>
+    <string name="pattern_image_move_earlier">Mover a página %1$d para antes</string>
+    <string name="pattern_image_move_later">Mover a página %1$d para depois</string>
+    <string name="pattern_image_remove_page">Remover página %1$d</string>
+    <string name="pattern_image_create_pdf">Criar PDF da receita</string>
+    <string name="pattern_image_replace_title">Substituir a receita atual?</string>
+    <string name="pattern_image_replace_message">O anexo atual será substituído quando o novo PDF estiver pronto.</string>
+    <string name="pattern_image_replace_action">Substituir receita</string>
+    <string name="pattern_image_conversion_progress">A criar página %1$d de %2$d</string>
+    <string name="pattern_image_attaching">A anexar PDF da receita</string>
+    <string name="pattern_image_cancel_conversion">Cancelar conversão</string>
+    <string name="pattern_image_discard_title">Descartar as imagens selecionadas?</string>
+    <string name="pattern_image_discard_message">As páginas selecionadas serão removidas.</string>
+    <string name="pattern_image_discard_action">Descartar imagens</string>
+    <plurals name="pattern_image_duplicates_ignored"><item quantity="one">%1$d imagem duplicada ignorada</item><item quantity="many">%1$d imagens duplicadas ignoradas</item><item quantity="other">%1$d imagens duplicadas ignoradas</item></plurals>
+    <string name="pattern_image_error_max_count">Pode selecionar até 20 imagens.</string>
+    <string name="pattern_image_error_image_too_large">Uma imagem excede o limite de 25 MiB.</string>
+    <string name="pattern_image_error_total_too_large">As imagens selecionadas excedem o limite total de 200 MiB.</string>
+    <string name="pattern_image_error_unsupported">Remova a imagem não suportada antes de criar o PDF.</string>
+    <string name="pattern_image_error_unreadable">Não foi possível ler uma imagem. A seleção anterior foi mantida.</string>
+    <string name="pattern_image_error_animated">Imagens animadas não são suportadas.</string>
+    <string name="pattern_image_error_low_storage">Não há espaço livre suficiente para criar este PDF.</string>
+    <string name="pattern_image_error_staging">Não foi possível preparar as imagens. A seleção anterior foi mantida.</string>
+    <string name="pattern_image_error_conversion">Não foi possível criar o PDF da receita. Reveja as páginas e tente novamente.</string>
+    <string name="pattern_image_error_attachment">Não foi possível anexar o PDF. A receita atual foi mantida.</string>
     <string name="pattern_picker_continue_without_pattern">Continuar sem receita</string>
-    <string name="pattern_scan_failed">Não foi possível converter a foto da receita em PDF.</string>
     <string name="imported_pattern_designer">PDF importado</string>
     <string name="current_row_short">Carreira %1$d</string>
-    <string name="time_spent_minutes_format">%dm</string>
     <string name="unlink_yarn">Desligar fio</string>
     <string name="select_yarn_card">Selecionar ficha de fio</string>
     <string name="linked_yarn_title">Fio ligado</string>
@@ -209,10 +232,9 @@
     <string name="session_history_title">Histórico</string>
     <string name="no_sessions">Ainda não há sessões registadas. Comece a tricotar para ver o seu histórico aqui.</string>
     <string name="session_row_range">Carreiras %1$d \u2192 %2$d</string>
-    <string name="session_duration_format">%1$dh %2$dm</string>
+    <string name="session_row_single">Carreira %1$d</string>
     <string name="delete_session_title">Eliminar sessão?</string>
     <string name="delete_session_message">Eliminar esta sessão do histórico? Esta ação não pode ser anulada.</string>
-    <string name="pro_full_history_hint">Atualize para Pro para ver o histórico completo de sessões</string>
 
     <!-- Settings -->
     <!-- Row Counter -->
@@ -339,25 +361,9 @@
     <string name="version_format">KnitTools %s</string>
 
     <!-- Pro Upgrade -->
-    <string name="you_have_pro">Tem o KnitTools Pro!</string>
-    <string name="all_features_unlocked">Todas as funcionalidades estão desbloqueadas.</string>
-    <string name="pro_feature_unlimited_projects">Projetos de contador ilimitados</string>
-    <string name="pro_feature_full_history">Histórico completo do contador</string>
-    <string name="pro_feature_notes">Notas por projeto</string>
-    <string name="pro_feature_secondary_counter">Contador secundário</string>
-    <string name="pro_feature_multiple_counters">Contadores adicionais</string>
-    <string name="pro_feature_row_reminders">Lembretes de carreiras</string>
-    <string name="pro_feature_progress_photos">Fotos de progresso</string>
-    <string name="pro_feature_unlimited_yarn">Fichas de fio ilimitadas</string>
-    <string name="pro_feature_widget">Widget do ecrã inicial</string>
-    <string name="pro_feature_pattern_camera_scan">Foto da receita</string>
-    <string name="pro_feature">Funcionalidade Pro</string>
-    <string name="upgrade_for_price">Atualize por %s</string>
     <string name="one_time_purchase">Compra única. Sem subscrição.</string>
     <string name="loading_price">A carregar preço…</string>
-    <string name="price_loading_hint">A ligar ao Google Play — verifique a sua ligação se isto demorar</string>
     <string name="billing_purchase_cancelled">Compra cancelada</string>
-    <string name="billing_purchase_unavailable_button">Compra indisponível</string>
     <string name="billing_purchase_unavailable">Esta compra não está disponível no Google Play neste momento.</string>
     <string name="billing_purchase_network_error">Não foi possível ligar ao Google Play. Verifique a ligação à internet e tente novamente.</string>
     <string name="billing_purchase_failed">Não foi possível concluir a compra. Tente novamente.</string>
@@ -460,22 +466,18 @@
     </plurals>
     <string name="insights_duration_hours_minutes">%1$d h %2$d min</string>
     <string name="insights_range_format">%1$s – %2$s</string>
-    <string name="insights_range_open_format">%1$s –</string>
-    <string name="insights_hero_lead_in_week">Esta semana dedicou</string>
-    <string name="insights_hero_lead_in_month">Este mês dedicou</string>
-    <string name="insights_hero_lead_in_all_time">No total dedicou</string>
     <plurals name="insights_hero_trailing_projects">
-        <item quantity="one">em %1$d projeto.</item>
-        <item quantity="many">em %1$d projetos.</item>
-        <item quantity="other">em %1$d projetos.</item>
+        <item quantity="one">%1$d projeto</item>
+        <item quantity="many">%1$d projetos</item>
+        <item quantity="other">%1$d projetos</item>
     </plurals>
-    <string name="insights_hero_trailing_project">em %1$s.</string>
     <string name="insights_craft_verb_knitting">tricotar</string>
     <string name="insights_craft_verb_crocheting">fazer croché</string>
     <string name="insights_craft_verb_making">criar</string>
     <string name="insights_stat_rows">Carreiras</string>
     <string name="insights_stat_min_per_row">Min por carreira</string>
     <string name="insights_stat_day_streak">Sequência de dias</string>
+    <string name="insights_stat_best_streak">Melhor sequência</string>
     <string name="insights_trend_more_week">%1$s mais do que na semana passada</string>
     <string name="insights_trend_less_week">%1$s menos do que na semana passada</string>
     <string name="insights_trend_same_week">Igual à semana passada</string>
@@ -490,17 +492,25 @@
     <string name="insights_stat_no_value">—</string>
     <string name="insights_stat_under_one">&lt;1</string>
     <string name="insights_section_every_day">Todos os dias</string>
+    <string name="insights_section_month_by_month">Mês a mês</string>
+    <string name="insights_section_week_by_week">Semana a semana</string>
     <string name="insights_section_where_time_went">Para onde foi o tempo</string>
+    <string name="insights_section_projects_by_day">Projetos por dia</string>
+    <plurals name="insights_project_fabric_a11y_summary">
+        <item quantity="one">Projetos por dia, %1$s, %2$d dia ativo</item>
+        <item quantity="many">Projetos por dia, %1$s, %2$d dias ativos</item>
+        <item quantity="other">Projetos por dia, %1$s, %2$d dias ativos</item>
+    </plurals>
+    <string name="insights_no_tracked_activity">Nenhuma atividade registada</string>
+    <string name="insights_project_fabric_previous_active_day">Dia ativo anterior</string>
+    <string name="insights_project_fabric_next_active_day">Próximo dia ativo</string>
+    <string name="insights_last_worked_format">Última vez %1$s</string>
     <plurals name="insights_days_meta_format">
         <item quantity="one">%1$d de %2$d dia</item>
         <item quantity="many">%1$d de %2$d dias</item>
         <item quantity="other">%1$d de %2$d dias</item>
     </plurals>
-    <string name="insights_chart_hint_day">Toque ou arraste pelos dias.</string>
-    <string name="insights_chart_hint_month">Toque ou arraste pelos meses.</string>
     <string name="insights_chart_axis_today">hoje</string>
-    <string name="insights_chart_max_format">máx. %1$s</string>
-    <string name="insights_no_sessions_yet">Ainda sem sessões</string>
     <string name="insights_chart_a11y_daily">Tempo diário a %1$s, %2$s, %3$s, mais longo %4$s</string>
     <string name="insights_chart_a11y_monthly">Tempo mensal a %1$s, %2$s, %3$s, mais longo %4$s</string>
     <string name="insights_chart_a11y_next">Barra seguinte</string>
@@ -511,8 +521,8 @@
     <string name="insights_nothing_yet_week">Ainda nada esta semana.</string>
     <string name="insights_nothing_yet_month">Ainda nada este mês.</string>
     <string name="insights_nothing_yet_all_time">Ainda nada.</string>
-    <string name="insights_pro_chart_title">Veja o seu ritmo diário</string>
-    <string name="insights_pro_chart_body">O Pro mostra cada sessão como um gráfico, além da sua sequência.</string>
+    <string name="insights_pro_chart_title">Veja a sua atividade ao longo do tempo</string>
+    <string name="insights_pro_chart_body">O Pro agrupa o tempo registado em gráficos diários, semanais ou mensais e adiciona a sua sequência de atividade.</string>
     <string name="all_projects">Todos os projetos</string>
     <string name="insights_all_time">Sempre</string>
     <string name="insights_this_week">Esta semana</string>
@@ -522,17 +532,11 @@
         <item quantity="many">%1$d carreiras</item>
         <item quantity="other">%1$d carreiras</item>
     </plurals>
-    <string name="insights_footer_1">Cada carreira conta — continue!</string>
-    <string name="insights_footer_2">O seu projeto está à espera.</string>
-    <string name="insights_footer_3">Mais uma carreira?</string>
-    <string name="insights_footer_4">Ponto a ponto, carreira a carreira.</string>
-    <string name="insights_footer_5">Grandes coisas começam com um único ponto.</string>
     <string name="relative_time_today">hoje</string>
     <string name="relative_time_yesterday">ontem</string>
     <string name="relative_time_days_ago">há %1$d d</string>
     <string name="relative_time_weeks_ago">há %1$d sem</string>
     <string name="relative_time_months_ago">há %1$d m</string>
-    <string name="insights_no_time_logged">Sem tempo registado</string>
 
     <!-- Settings -->
     <string name="help_and_guide">Ajuda e guia</string>
@@ -665,7 +669,6 @@
     <string name="saved_pattern_detail_open_pattern">Abrir receita</string>
     <string name="saved_pattern_detail_attach_to_project">Anexar ao projeto</string>
     <string name="saved_pattern_detail_remove_confirm">Remover esta receita guardada?</string>
-    <string name="saved_pattern_detail_thumbnail">Miniatura da receita</string>
     <string name="filter_weight">Espessura</string>
     <string name="filter_difficulty">Dificuldade</string>
     <string name="free">Grátis</string>
@@ -742,4 +745,101 @@
     <string name="pattern_saved_to_library">Salvo na biblioteca</string>
     <string name="show_more">Mostrar mais</string>
     <string name="show_less">Mostrar menos</string>
+    <string name="pro_start_free_trial">Iniciar avaliação gratuita</string><string name="pro_start_14_day_trial">Iniciar avaliação gratuita de 14 dias</string><string name="pro_trial_start_failed">Não foi possível iniciar a avaliação. Tente novamente.</string>
+    <string name="pro_prompt_not_now">Agora não</string><string name="pro_prompt_see_pro">Ver Pro</string><string name="pro_prompt_trial_body">Inicie a sua avaliação gratuita de 14 dias do Pro. Não é necessário um método de pagamento. Tudo o que criar continuará disponível após a avaliação.</string>
+    <string name="pro_prompt_projects_title">Crie outro projeto com o Pro</string>
+    <plurals name="pro_prompt_projects_trial_body"><item quantity="one">Já tem %1$d projeto. Inicie a sua avaliação gratuita de 14 dias do Pro para criar outro. Todos os seus projetos continuarão disponíveis após a avaliação.</item><item quantity="many">Já tem %1$d projetos. Inicie a sua avaliação gratuita de 14 dias do Pro para criar outro. Todos os seus projetos continuarão disponíveis após a avaliação.</item><item quantity="other">Já tem %1$d projetos. Inicie a sua avaliação gratuita de 14 dias do Pro para criar outro. Todos os seus projetos continuarão disponíveis após a avaliação.</item></plurals>
+    <plurals name="pro_prompt_projects_body"><item quantity="one">Criar um novo projeto requer o Pro porque já tem %1$d projeto. O seu projeto atual continuará disponível.</item><item quantity="many">Criar um novo projeto requer o Pro porque já tem %1$d projetos. Todos os seus projetos atuais continuarão disponíveis.</item><item quantity="other">Criar um novo projeto requer o Pro porque já tem %1$d projetos. Todos os seus projetos atuais continuarão disponíveis.</item></plurals>
+    <string name="pro_prompt_photos_title">Adicione fotos de progresso com o Pro</string><string name="pro_prompt_photos_body">Criar uma nova foto de progresso requer o Pro. As suas fotos atuais continuarão disponíveis.</string>
+    <string name="pro_prompt_notes_title">Adicione notas de projeto com o Pro</string><string name="pro_prompt_notes_body">Criar a primeira nota deste projeto requer o Pro. As notas que já criou continuarão editáveis.</string>
+    <string name="pro_prompt_yarn_title">Adicione fio com o Pro</string><string name="pro_prompt_yarn_body">Criar um novo cartão de fio requer o Pro. Os seus cartões atuais continuarão disponíveis e editáveis.</string>
+    <string name="pro_prompt_save_yarn_title">Guarde este fio com o Pro</string><string name="pro_prompt_save_yarn_body">Guardar este fio do projeto em Os meus fios cria um novo cartão e requer o Pro. A nota de fio do projeto continuará disponível.</string>
+    <string name="pro_prompt_counters_title">Adicione um contador com o Pro</string><string name="pro_prompt_counters_body">Criar um novo contador adicional requer o Pro. Os seus contadores atuais continuarão disponíveis e editáveis.</string>
+    <string name="pro_prompt_reminders_title">Adicione um lembrete de carreira com o Pro</string><string name="pro_prompt_reminders_body">Criar um novo lembrete de carreira requer o Pro. Os seus lembretes atuais continuarão a funcionar e poderão ser editados.</string>
+    <string name="pro_prompt_pattern_camera_title">Transforme fotos do padrão em PDF com o Pro</string><string name="pro_prompt_pattern_camera_body">Criar um novo PDF a partir de fotos do padrão requer o Pro. Os seus padrões e PDF atuais continuarão disponíveis.</string>
+    <string name="pro_prompt_widget_title">Use o widget do ecrã inicial com o Pro</string><string name="pro_prompt_widget_body">O widget do ecrã inicial é uma vista avançada do Pro. Os dados dos seus projetos e contadores continuarão disponíveis no KnitTools.</string>
+    <string name="pro_badge">PRO</string><string name="pro_badge_locked_description">Funcionalidade Pro</string><string name="pro_badge_trial_description">Funcionalidade Pro, disponível durante a avaliação</string><string name="knittools_pro">KnitTools Pro</string><string name="pro_content_stays_available">Tudo o que criar continuará disponível.</string><string name="pro_status_not_started">Não iniciada</string>
+    <plurals name="pro_status_trial_days"><item quantity="one">Avaliação, falta %1$d dia</item><item quantity="many">Avaliação, faltam %1$d dias</item><item quantity="other">Avaliação, faltam %1$d dias</item></plurals>
+    <string name="pro_status_trial_ended">Avaliação terminada</string><string name="pro_status_purchased">Comprado</string><string name="pro_trial_ended_title">A sua avaliação do Pro terminou</string><string name="pro_trial_ended_body">Tudo o que criou continua disponível. Pode continuar a usar e editar. O Pro só é necessário para novos itens Pro e vistas avançadas.</string><string name="pro_continue_free">Continuar gratuitamente</string>
+    <string name="pro_page_intro">Dê mais espaço a cada projeto e mantenha o seu fluxo de trabalho unido.</string><string name="pro_page_trust">Tudo o que criar continuará disponível, mesmo que a avaliação termine.</string><string name="pro_group_projects_title">Projetos e materiais</string><string name="pro_group_projects_body">Crie projetos adicionais, a primeira nota do projeto, fotos de progresso e cartões de fio.</string><string name="pro_group_workflow_title">Contagem e fluxo de trabalho</string><string name="pro_group_workflow_body">Use o contador compacto de repetições, contadores adicionais, de repetição, modelagem e secção, lembretes de carreira, fotos do padrão como PDF e o widget do ecrã inicial.</string><string name="pro_group_insights_title">Estatísticas</string><string name="pro_group_insights_body">Veja gráficos de atividade diários, semanais e mensais e a sua sequência de atividade.</string>
+    <string name="pro_page_purchased">Pro comprado</string><string name="pro_buy_for_price">Comprar Pro por %1$s</string><string name="pro_price_unavailable">Preço indisponível</string><string name="billing_purchase_pending">A sua compra está pendente. O Pro ficará disponível quando o Google Play concluir o pagamento.</string>
+    <string name="project_updated_format">Atualizado %1$s</string>
+    <string name="project_completed_format">Concluído %1$s</string>
+    <string name="project_section_count_format">%1$s %2$d</string>
+    <string name="project_continue_content_description">Continuar %1$s</string>
+    <string name="work_session_start">Iniciar sessão de trabalho</string>
+    <string name="work_session_stop">Parar sessão de trabalho</string>
+    <string name="work_session_active">Sessão de trabalho ativa</string>
+    <string name="work_session_recovery_needed">É necessário rever o tempo da sessão</string>
+    <string name="work_session_resolve">Resolver</string>
+    <string name="work_session_recovery_title">Rever tempo da sessão</string>
+    <string name="work_session_pending_rows_format">Progresso pendente: %1$d carreiras</string>
+    <string name="work_session_hours">Horas</string>
+    <string name="work_session_minutes">Minutos</string>
+    <string name="work_session_add_and_continue">Adicionar e continuar</string>
+    <string name="work_session_discard_pending">Descartar pendente e parar</string>
+    <string name="work_session_another_project">outro projeto</string>
+    <string name="work_session_conflict_title">Já existe uma sessão ativa</string>
+    <string name="work_session_conflict_body">A sessão ativa pertence a %1$s. Escolha o que fazer antes de iniciar aqui.</string>
+    <string name="work_session_return_to_active">Voltar ao projeto ativo</string>
+    <string name="work_session_save_then_start">Parar, guardar e iniciar aqui</string>
+    <string name="work_session_discard_then_start">Parar, descartar e iniciar aqui</string>
+    <string name="work_session_complete_project_title">Concluir projeto com sessão ativa?</string>
+    <string name="work_session_complete_project_body">Guarde ou descarte a sessão ativa antes de concluir o projeto.</string>
+    <string name="work_session_save_and_complete">Guardar sessão e concluir</string>
+    <string name="work_session_discard_and_complete">Descartar sessão e concluir</string>
+    <string name="work_session_delete_project_title">Descartar sessão ativa e eliminar projeto?</string>
+    <string name="work_session_delete_project_body">Eliminar o projeto também elimina as sessões guardadas. A sessão ativa tem de ser descartada primeiro.</string>
+    <string name="work_session_discard_and_delete">Descartar sessão e eliminar</string>
+    <string name="work_session_duration_format">Duração: %1$s</string>
+    <string name="work_session_confirmed_time_format">Tempo confirmado: %1$s</string>
+    <string name="work_session_time_while_away_format">Tempo durante a ausência: %1$s</string>
+    <string name="work_session_time_unavailable">Não foi possível estimar o tempo durante a ausência.</string>
+    <string name="work_session_edit_total_duration">Edite a duração total. Guardar termina a sessão.</string>
+    <string name="work_session_invalid_duration">Duração inválida. Introduza horas não negativas e minutos de 0 a 59.</string>
+    <string name="work_session_save_edited_and_stop">Guardar duração editada e terminar</string>
+    <string name="work_session_edit_duration">Editar duração</string>
+    <string name="work_session_reason_restarted">O dispositivo reiniciou. Reveja o tempo desde a última confirmação.</string>
+    <string name="work_session_reason_long_running">A sessão está ativa há muito tempo. Confirme o último intervalo.</string>
+    <string name="work_session_reason_clock_unavailable">O KnitTools não conseguiu confirmar se o dispositivo reiniciou.</string>
+    <string name="work_session_reason_clock_changed">O KnitTools não conseguiu verificar o último intervalo de tempo.</string>
+    <string name="work_session_stop_summary_title">Terminar a sessão de trabalho?</string>
+    <string name="work_session_save">Guardar sessão</string>
+    <string name="work_session_discard">Descartar sessão</string>
+    <string name="work_session_active_description">Sessão de trabalho de %1$s, %2$s decorridos</string>
+    <string name="work_session_could_not_start">Não foi possível iniciar a sessão</string>
+    <string name="work_session_could_not_save">Não foi possível guardar a sessão</string>
+    <string name="work_session_could_not_discard">Não foi possível descartar a sessão</string>
+    <string name="work_session_recovery_already_handled">Esta revisão da sessão já foi tratada.</string>
+    <string name="work_session_retry">Tentar novamente</string>
+    <string name="project_documents_title">Documentos</string>
+    <string name="project_documents_add">Adicionar</string>
+    <string name="project_documents_actions">Ações para %1$s</string>
+    <string name="project_documents_primary">Modelo principal</string>
+    <string name="project_documents_open">Documento atual</string>
+    <string name="project_documents_unavailable">PDF indisponível</string>
+    <string name="project_documents_rename">Mudar nome</string>
+    <string name="project_documents_make_primary">Definir como principal</string>
+    <string name="project_documents_remove_action">Remover</string>
+    <string name="project_documents_move_earlier">Mover para cima</string>
+    <string name="project_documents_move_later">Mover para baixo</string>
+    <string name="project_documents_rename_title">Mudar o nome do documento</string>
+    <string name="project_documents_label">Nome do documento</string>
+    <string name="project_documents_remove_title">Remover documento?</string>
+    <string name="project_documents_remove_message">Remover %1$s deste projeto?</string>
+    <string name="project_documents_error_invalid_label">Introduza um nome com 1–50 caracteres.</string>
+    <string name="project_documents_error_duplicate">Este PDF já está associado ao projeto.</string>
+    <string name="project_documents_error_unavailable">Este PDF já não está disponível. Remova-o ou adicione novamente o ficheiro.</string>
+    <string name="project_documents_error_stale">A lista de documentos foi alterada. Tente novamente.</string>
+    <string name="project_documents_error_generic">Não foi possível guardar a alteração ao documento.</string>
+    <string name="project_documents_secondary">Documento secundário</string>
+    <string name="project_documents_available">PDF disponível</string>
+    <string name="project_documents_position">Posição %1$d de %2$d</string>
+    <string name="project_documents_open_action">Abrir documento</string>
+    <string name="project_documents_remove_from_project">Remover do projeto</string>
+    <string name="project_documents_empty">Sem documentos</string>
+    <string name="project_documents_metadata_only">Apenas metadados</string>
+    <string name="project_documents_pattern_information">Informações do modelo</string>
+    <string name="project_documents_remove_primary_message">Remover %1$s? Outro documento passará a ser o principal.</string>
+    <string name="project_documents_remove_last_message">Remover %1$s? O projeto deixará de ter um modelo legível associado.</string>
 </resources>

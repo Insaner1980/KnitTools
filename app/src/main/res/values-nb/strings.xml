@@ -17,18 +17,15 @@
     <string name="measurement_with_unit_format">%1$s %2$s</string>
     <string name="unit_inches">tommer</string>
     <string name="unit_st">m</string>
-    <string name="unit_rows">rader</string>
     <string name="unit_g">g</string>
     <string name="unit_meters">meter</string>
     <string name="unit_yards">yard</string>
     <string name="unit_st_per_10cm">m/10 cm</string>
     <string name="unit_st_per_4in">m/4 in</string>
-    <string name="unit_per_10cm">per 10 cm</string>
-    <string name="unit_per_4in">per 4 in</string>
 
     <!-- Home screen -->
     <string name="tool_increase_decrease">Øk / fell</string>
-    <string name="tool_gauge_converter">Fasthetskalkulator</string>
+    <string name="tool_gauge_converter">Mål og strikkefasthet</string>
     <string name="tool_cast_on_calculator">Oppleggskalkulator</string>
     <string name="tool_yarn_estimator">Garnkalkulator</string>
     <string name="tool_needle_sizes">Pinnestørrelser</string>
@@ -288,15 +285,8 @@
     <!-- Gauge Converter -->
     <string name="pattern_gauge">Oppskriftens fasthet</string>
     <string name="pattern_instructions">Instruksjoner i oppskriften</string>
-    <string name="stitches_gauge">Masker %s</string>
-    <string name="rows_gauge">Rader %s</string>
     <string name="stitches_in_pattern">Masker i oppskriften</string>
     <string name="rows_in_pattern">Rader i oppskriften</string>
-    <string name="adjusted_for_your_gauge">Justert for din fasthet</string>
-    <string name="adjusted_result">%1$d masker, %2$d rader</string>
-    <string name="exact_result">Nøyaktig: %1$s m, %2$s rader</string>
-    <string name="stitch_gauge_diff">Maskefasthet: %s%%</string>
-    <string name="row_gauge_diff">Radfasthet: %s%%</string>
 
     <!-- Cast On Calculator -->
     <string name="desired_width">Ønsket bredde</string>
@@ -430,7 +420,7 @@
 
     <!-- Hubs -->
     <string name="desc_increase_decrease">Fordel økninger eller fellinger jevnt over en rad</string>
-    <string name="desc_gauge_calculator">Beregn fastheten og konverter instruksjoner i oppskrifter</string>
+    <string name="desc_gauge_calculator">Konverter lengder og beregn strikkefasthet, antall og mål</string>
     <string name="desc_cast_on">Beregn hvor mange masker du må legge opp for ønsket bredde</string>
     <string name="desc_needle_sizes">Pinnestørrelser i metrisk, US-, UK- og japansk system</string>
     <string name="desc_size_charts">Standard kroppsmål for størrelser</string>
@@ -534,7 +524,6 @@
     <string name="your_gauge_section">Din fasthet</string>
     <string name="measure_swatch">Mål prøvelapp</string>
     <string name="enter_directly">Skriv inn direkte</string>
-    <string name="calculated_gauge_format">= %1$.1f m / %2$.1f rader %3$s</string>
     <string name="measured_width">Målt bredde</string>
     <string name="stitch_count_in_swatch">Masker i prøvelappen</string>
     <string name="measured_height">Målt høyde</string>
@@ -683,8 +672,6 @@
     <string name="yardage_format">%d yard</string>
 
     <!-- Info tips -->
-    <string name="tip_your_gauge_title">Hva er fasthet?</string>
-    <string name="tip_your_gauge_desc">Fasthet forteller hvor mange masker og rader som får plass innenfor et målt område. Strikk en liten prøvelapp og mål den for å finne din personlige fasthet. Da blir sluttresultatet i riktig størrelse i forhold til oppskriften.</string>
     <string name="tip_pattern_repeat_title">Mønsterrapport</string>
     <string name="tip_pattern_repeat_desc">Hvis mønsteret ditt gjentas hver X masker (f.eks. en flette hver 8. maske), skriver du inn tallet her. Kalkulatoren avrunder maskene i selve mønsteret, før kantmasker, til nærmeste multiplum slik at mønsteret passer.</string>
     <string name="tip_edge_stitches_title">Kantmasker</string>
@@ -889,5 +876,70 @@
     <plurals name="folder_move_projects_error">
     <item quantity="one">Kunne ikke flytte %d prosjekt.</item>
     <item quantity="other">Kunne ikke flytte %d prosjekter.</item>
+    </plurals>
+
+    <string name="measurement_title">Mål og strikkefasthet</string>
+    <string name="measurement_task">Oppgave</string>
+    <string name="measurement_convert">Konverter mål</string>
+    <string name="measurement_measure_gauge">Mål strikkefasthet</string>
+    <string name="measurement_calculate">Beregn fra strikkefasthet</string>
+    <string name="measurement_adjust">Tilpass antall i oppskriften</string>
+    <string name="measurement_operation">Beregning</string>
+    <string name="measurement_count_for_size">Antall fra et mål</string>
+    <string name="measurement_size_from_count">Mål fra et antall</string>
+    <string name="measurement_axis">Retning</string>
+    <string name="measurement_stitches_width">Masker og bredde</string>
+    <string name="measurement_rows_height">Rader og høyde</string>
+    <string name="measurement_units">Måleenheter</string>
+    <string name="measurement_from_unit">Fra enhet</string>
+    <string name="measurement_to_unit">Til enhet</string>
+    <string name="measurement_value">Verdi</string>
+    <string name="measurement_unit_cm">Centimeter</string>
+    <string name="measurement_unit_inch">Tommer</string>
+    <string name="measurement_unit_inch_short">in</string>
+    <string name="measurement_unit_meter">Meter</string>
+    <string name="measurement_unit_meter_short">m</string>
+    <string name="measurement_unit_yard">Yard</string>
+    <string name="measurement_unit_yard_short">yd</string>
+    <string name="measurement_per_10cm">per 10 centimeter</string>
+    <string name="measurement_per_4in">per 4 tommer</string>
+    <string name="measurement_actual_stitches">Din maskefasthet</string>
+    <string name="measurement_actual_rows">Din radfasthet</string>
+    <string name="measurement_pattern_stitches">Oppskriftens maskefasthet</string>
+    <string name="measurement_pattern_rows">Oppskriftens radfasthet</string>
+    <string name="measurement_target_width">Ønsket bredde</string>
+    <string name="measurement_target_height">Ønsket høyde</string>
+    <string name="measurement_stitch_count">Maskeantall</string>
+    <string name="measurement_row_count">Radantall</string>
+    <string name="measurement_calculated_count">Beregnet antall</string>
+    <string name="measurement_nearest_count">Nærmeste hele antall</string>
+    <string name="measurement_original_size">Opprinnelig mål</string>
+    <string name="measurement_unchanged_size">Mål uten tilpasning</string>
+    <string name="measurement_rounded_size">Mål etter avrunding</string>
+    <string name="measurement_result_size">Beregnet mål</string>
+    <string name="measurement_gauge_difference">Forskjell i strikkefasthet</string>
+    <string name="measurement_copy">Kopier resultat</string>
+    <string name="measurement_copied">Resultatet er kopiert</string>
+    <string name="measurement_invalid_number">Skriv inn et gyldig tall.</string>
+    <string name="measurement_positive_required">Skriv inn en verdi større enn null.</string>
+    <string name="measurement_too_large">Verdien er utenfor det støttede området. Kontroller målet og antallet.</string>
+    <string name="measurement_complete_number">Fullfør eller rett tallet før du bytter enhet.</string>
+    <string name="measurement_project_unavailable">Dette prosjektet er ikke lenger tilgjengelig. Du kan fortsette å beregne her.</string>
+    <string name="measurement_project_context">Prosjekt: %1$s</string>
+    <string name="measurement_estimate">Anslag basert på den oppgitte strikkefastheten.</string>
+    <string name="measurement_adjust_warning">Matematisk anslag basert på den oppgitte strikkefastheten. Forming og konstruksjon skrives ikke om. Bevegelsesvidde, mønsterrapporter, kanter, ermehull, halsåpninger og ermer kan trenge egne tilpasninger. Mål en vasket eller blokket prøvelapp for et mer nyttig anslag.</string>
+    <string name="measurement_swatch_hint">Mål prøvelappen etter vask eller blokking for et mer nyttig anslag.</string>
+    <string name="measurement_result">Resultat</string>
+    <string name="measurement_value_unit_format">%1$s %2$s</string>
+    <string name="measurement_gauge_format">%1$s %2$s</string>
+    <string name="measurement_result_line">%1$s: %2$s</string>
+    <string name="measurement_field_with_unit">%1$s (%2$s)</string>
+    <plurals name="measurement_stitches">
+        <item quantity="one">%1$d maske</item>
+        <item quantity="other">%1$d masker</item>
+    </plurals>
+    <plurals name="measurement_rows">
+        <item quantity="one">%1$d rad</item>
+        <item quantity="other">%1$d rader</item>
     </plurals>
 </resources>

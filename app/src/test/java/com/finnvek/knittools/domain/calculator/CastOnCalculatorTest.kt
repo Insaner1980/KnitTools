@@ -9,9 +9,11 @@ class CastOnCalculatorTest {
     @Test
     fun `basic cast on for 20cm at 22 stitches per 10cm`() {
         val result =
-            CastOnCalculator.calculate(
-                desiredWidth = 20.0,
-                stitchGauge = 22.0,
+            requireNotNull(
+                CastOnCalculator.calculate(
+                    desiredWidth = 20.0,
+                    stitchGauge = 22.0,
+                ),
             )
         assertEquals(44, result.stitches)
         assertNull(result.adjustedDown)
@@ -21,10 +23,12 @@ class CastOnCalculatorTest {
     @Test
     fun `cast on with edge stitches`() {
         val result =
-            CastOnCalculator.calculate(
-                desiredWidth = 20.0,
-                stitchGauge = 22.0,
-                edgeStitches = 2,
+            requireNotNull(
+                CastOnCalculator.calculate(
+                    desiredWidth = 20.0,
+                    stitchGauge = 22.0,
+                    edgeStitches = 2,
+                ),
             )
         assertEquals(46, result.stitches)
     }
@@ -32,10 +36,12 @@ class CastOnCalculatorTest {
     @Test
     fun `cast on with pattern repeat adjusts to nearest multiple`() {
         val result =
-            CastOnCalculator.calculate(
-                desiredWidth = 20.0,
-                stitchGauge = 22.0,
-                patternRepeat = 6,
+            requireNotNull(
+                CastOnCalculator.calculate(
+                    desiredWidth = 20.0,
+                    stitchGauge = 22.0,
+                    patternRepeat = 6,
+                ),
             )
         assertNotNull(result.adjustedDown)
         assertNotNull(result.adjustedUp)
@@ -46,11 +52,13 @@ class CastOnCalculatorTest {
     @Test
     fun `cast on with pattern repeat and edge stitches`() {
         val result =
-            CastOnCalculator.calculate(
-                desiredWidth = 20.0,
-                stitchGauge = 22.0,
-                patternRepeat = 8,
-                edgeStitches = 2,
+            requireNotNull(
+                CastOnCalculator.calculate(
+                    desiredWidth = 20.0,
+                    stitchGauge = 22.0,
+                    patternRepeat = 8,
+                    edgeStitches = 2,
+                ),
             )
         assertNotNull(result.adjustedDown)
         assertNotNull(result.adjustedUp)
@@ -60,10 +68,12 @@ class CastOnCalculatorTest {
     @Test
     fun `pattern repeat larger than body stitches chooses first usable repeat`() {
         val result =
-            CastOnCalculator.calculate(
-                desiredWidth = 2.0,
-                stitchGauge = 22.0,
-                patternRepeat = 10,
+            requireNotNull(
+                CastOnCalculator.calculate(
+                    desiredWidth = 2.0,
+                    stitchGauge = 22.0,
+                    patternRepeat = 10,
+                ),
             )
         assertEquals(10, result.stitches)
         assertNull(result.adjustedDown)
@@ -73,10 +83,12 @@ class CastOnCalculatorTest {
     @Test
     fun `imperial gauge calculation`() {
         val result =
-            CastOnCalculator.calculate(
-                desiredWidth = 8.0,
-                stitchGauge = 22.0,
-                useInches = true,
+            requireNotNull(
+                CastOnCalculator.calculate(
+                    desiredWidth = 8.0,
+                    stitchGauge = 22.0,
+                    useInches = true,
+                ),
             )
         assertEquals(44, result.stitches)
     }
@@ -87,11 +99,13 @@ class CastOnCalculatorTest {
         // nearestDown=20, nearestUp=30
         // Body 27 is closer to 30 (diff 3) than 20 (diff 7) → should pick up
         val result =
-            CastOnCalculator.calculate(
-                desiredWidth = 12.3,
-                stitchGauge = 22.0,
-                patternRepeat = 10,
-                edgeStitches = 3,
+            requireNotNull(
+                CastOnCalculator.calculate(
+                    desiredWidth = 12.3,
+                    stitchGauge = 22.0,
+                    patternRepeat = 10,
+                    edgeStitches = 3,
+                ),
             )
         // totalDown = 20 + 3 = 23, totalUp = 30 + 3 = 33
         assertEquals(33, result.stitches)
@@ -102,11 +116,13 @@ class CastOnCalculatorTest {
     @Test
     fun `pattern repeat with edge stitches snaps body before adding edges`() {
         val result =
-            CastOnCalculator.calculate(
-                desiredWidth = 25.0,
-                stitchGauge = 22.0,
-                patternRepeat = 6,
-                edgeStitches = 4,
+            requireNotNull(
+                CastOnCalculator.calculate(
+                    desiredWidth = 25.0,
+                    stitchGauge = 22.0,
+                    patternRepeat = 6,
+                    edgeStitches = 4,
+                ),
             )
         assertEquals(58, result.stitches)
         assertEquals(58, result.adjustedDown)
@@ -116,10 +132,12 @@ class CastOnCalculatorTest {
     @Test
     fun `pattern repeat of 1 works`() {
         val result =
-            CastOnCalculator.calculate(
-                desiredWidth = 20.0,
-                stitchGauge = 22.0,
-                patternRepeat = 1,
+            requireNotNull(
+                CastOnCalculator.calculate(
+                    desiredWidth = 20.0,
+                    stitchGauge = 22.0,
+                    patternRepeat = 1,
+                ),
             )
         // Every integer is a multiple of 1, so nearestDown = bodyStitches
         assertEquals(44, result.stitches)
@@ -130,11 +148,13 @@ class CastOnCalculatorTest {
     @Test
     fun `edge stitches larger than raw does not crash`() {
         val result =
-            CastOnCalculator.calculate(
-                desiredWidth = 5.0,
-                stitchGauge = 22.0,
-                patternRepeat = 10,
-                edgeStitches = 20,
+            requireNotNull(
+                CastOnCalculator.calculate(
+                    desiredWidth = 5.0,
+                    stitchGauge = 22.0,
+                    patternRepeat = 10,
+                    edgeStitches = 20,
+                ),
             )
         // rawStitches=11, bodyStitches=11, nearestDown=10, totalDown=30
         assertEquals(30, result.adjustedDown)
@@ -145,9 +165,11 @@ class CastOnCalculatorTest {
     fun `half stitch rounds up`() {
         // 10.25 × (20/10) = 20.5 → roundToInt() = 21
         val result =
-            CastOnCalculator.calculate(
-                desiredWidth = 10.25,
-                stitchGauge = 20.0,
+            requireNotNull(
+                CastOnCalculator.calculate(
+                    desiredWidth = 10.25,
+                    stitchGauge = 20.0,
+                ),
             )
         assertEquals(21, result.stitches)
     }
@@ -157,10 +179,12 @@ class CastOnCalculatorTest {
         // bodyStitches=25, patternRepeat=10 → nearestDown=20, nearestUp=30, diff=5 both
         // Tie-breaks to down via <=
         val result =
-            CastOnCalculator.calculate(
-                desiredWidth = 12.5,
-                stitchGauge = 20.0,
-                patternRepeat = 10,
+            requireNotNull(
+                CastOnCalculator.calculate(
+                    desiredWidth = 12.5,
+                    stitchGauge = 20.0,
+                    patternRepeat = 10,
+                ),
             )
         assertEquals(20, result.stitches)
         assertEquals(20, result.adjustedDown)
@@ -170,10 +194,55 @@ class CastOnCalculatorTest {
     @Test
     fun `actual width is calculated`() {
         val result =
-            CastOnCalculator.calculate(
-                desiredWidth = 20.0,
-                stitchGauge = 22.0,
+            requireNotNull(
+                CastOnCalculator.calculate(
+                    desiredWidth = 20.0,
+                    stitchGauge = 22.0,
+                ),
             )
         assertEquals(20.0, result.actualWidth, 0.5)
+    }
+
+    @Test
+    fun `cast on rejects invalid dimensions and nonfinite counts`() {
+        listOf(0.0, -1.0, Double.NaN, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY).forEach {
+            assertNull(CastOnCalculator.calculate(desiredWidth = it, stitchGauge = 22.0))
+            assertNull(CastOnCalculator.calculate(desiredWidth = 20.0, stitchGauge = it))
+        }
+        assertNull(CastOnCalculator.calculate(20.0, 22.0, edgeStitches = -1))
+        assertNull(CastOnCalculator.calculate(Double.MAX_VALUE, 22.0))
+    }
+
+    @Test
+    fun `edge stitches cannot wrap the whole count to a plausible result`() {
+        assertNull(CastOnCalculator.calculate(20.0, 22.0, edgeStitches = Int.MAX_VALUE))
+        assertNull(CastOnCalculator.calculate(20.0, 22.0, patternRepeat = 6, edgeStitches = Int.MAX_VALUE))
+    }
+
+    @Test
+    fun `repeat upper option outside integer range is omitted while valid lower remains`() {
+        val result =
+            requireNotNull(
+                CastOnCalculator.calculate(
+                    desiredWidth = Int.MAX_VALUE.toDouble() / 10.0,
+                    stitchGauge = 100.0,
+                    patternRepeat = 1,
+                ),
+            )
+        assertEquals(Int.MAX_VALUE, result.stitches)
+        assertEquals(Int.MAX_VALUE, result.adjustedDown)
+        assertNull(result.adjustedUp)
+        assertNull(result.adjustedUpWidth)
+    }
+
+    @Test
+    fun `small body may still reach a usable repeat or include edge stitches`() {
+        assertEquals(6, requireNotNull(CastOnCalculator.calculate(0.1, 20.0, patternRepeat = 6)).stitches)
+        assertEquals(2, requireNotNull(CastOnCalculator.calculate(0.1, 20.0, edgeStitches = 2)).stitches)
+        val withoutEdges = requireNotNull(CastOnCalculator.calculate(0.1, 20.0))
+        assertEquals(0, withoutEdges.stitches)
+        assertEquals(0.0, withoutEdges.actualWidth, 0.0)
+        assertNull(withoutEdges.adjustedDown)
+        assertNull(withoutEdges.adjustedUp)
     }
 }

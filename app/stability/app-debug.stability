@@ -184,7 +184,7 @@ private fun com.finnvek.knittools.ui.components.MainCounterLabelChips(selected: 
     - onSelect: STABLE (function type)
 
 @Composable
-public fun com.finnvek.knittools.ui.components.NumberInputField(value: kotlin.String, onValueChange: kotlin.Function1<kotlin.String, kotlin.Unit>, label: kotlin.String, modifier: androidx.compose.ui.Modifier, options: com.finnvek.knittools.ui.components.NumberInputOptions): kotlin.Unit
+public fun com.finnvek.knittools.ui.components.NumberInputField(value: kotlin.String, onValueChange: kotlin.Function1<kotlin.String, kotlin.Unit>, label: kotlin.String, modifier: androidx.compose.ui.Modifier, options: com.finnvek.knittools.ui.components.NumberInputOptions, errorMessage: kotlin.String?, semanticLabel: kotlin.String?, onFocusLost: kotlin.Function0<kotlin.Unit>, inputModifier: androidx.compose.ui.Modifier): kotlin.Unit
   skippable: true
   restartable: true
   params:
@@ -193,6 +193,10 @@ public fun com.finnvek.knittools.ui.components.NumberInputField(value: kotlin.St
     - label: STABLE (String is immutable)
     - modifier: STABLE (marked @Stable or @Immutable)
     - options: STABLE (class with no mutable properties)
+    - errorMessage: STABLE (class with no mutable properties)
+    - semanticLabel: STABLE (class with no mutable properties)
+    - onFocusLost: STABLE (function type)
+    - inputModifier: STABLE (marked @Stable or @Immutable)
 
 @Composable
 public fun com.finnvek.knittools.ui.components.OnceTooltip(tooltipId: kotlin.String, text: kotlin.String, dismissed: kotlin.collections.Set<kotlin.String>, onDismiss: kotlin.Function1<kotlin.String, kotlin.Unit>, content: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<kotlin.Unit>): kotlin.Unit
@@ -536,7 +540,7 @@ public fun com.finnvek.knittools.ui.components.StitchCounter(label: kotlin.Strin
     - modifier: STABLE (marked @Stable or @Immutable)
 
 @Composable
-public fun com.finnvek.knittools.ui.components.ToolScreenScaffold(title: kotlin.String, onBack: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier, onSettings: kotlin.Function0<kotlin.Unit>?, snackbarHost: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<kotlin.Unit>, content: @[Composable] androidx.compose.runtime.internal.ComposableFunction1<androidx.compose.foundation.layout.PaddingValues, kotlin.Unit>): kotlin.Unit
+public fun com.finnvek.knittools.ui.components.ToolScreenScaffold(title: kotlin.String, onBack: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier, onSettings: kotlin.Function0<kotlin.Unit>?, snackbarHost: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<kotlin.Unit>, wrapTitle: kotlin.Boolean, content: @[Composable] androidx.compose.runtime.internal.ComposableFunction1<androidx.compose.foundation.layout.PaddingValues, kotlin.Unit>): kotlin.Unit
   skippable: true
   restartable: true
   params:
@@ -545,6 +549,7 @@ public fun com.finnvek.knittools.ui.components.ToolScreenScaffold(title: kotlin.
     - modifier: STABLE (marked @Stable or @Immutable)
     - onSettings: STABLE (function type)
     - snackbarHost: STABLE (composable function type)
+    - wrapTitle: STABLE (primitive type)
     - content: STABLE (composable function type)
 
 @Composable
@@ -1651,59 +1656,127 @@ private fun com.finnvek.knittools.ui.screens.counter.summaryText(): kotlin.Strin
   params:
 
 @Composable
-private fun com.finnvek.knittools.ui.screens.gauge.GaugeResultCard(result: com.finnvek.knittools.domain.model.GaugeConversionResult): kotlin.Unit
-  skippable: true
-  restartable: true
-  params:
-    - result: STABLE (class with no mutable properties)
-
-@Composable
-public fun com.finnvek.knittools.ui.screens.gauge.GaugeScreen(onBack: kotlin.Function0<kotlin.Unit>, homeViewModel: com.finnvek.knittools.ui.screens.home.HomeViewModel): kotlin.Unit
-  skippable: false
-  restartable: true
-  params:
-    - onBack: STABLE (function type)
-    - homeViewModel: RUNTIME (requires runtime check)
-
-@Composable
-private fun com.finnvek.knittools.ui.screens.gauge.GaugeSection(title: kotlin.String, stitches: kotlin.String, rows: kotlin.String, gaugeUnit: kotlin.String, onStitchesChange: kotlin.Function1<kotlin.String, kotlin.Unit>, onRowsChange: kotlin.Function1<kotlin.String, kotlin.Unit>, headerColor: androidx.compose.ui.graphics.Color): kotlin.Unit
-  skippable: true
-  restartable: true
-  params:
-    - title: STABLE (String is immutable)
-    - stitches: STABLE (String is immutable)
-    - rows: STABLE (String is immutable)
-    - gaugeUnit: STABLE (String is immutable)
-    - onStitchesChange: STABLE (function type)
-    - onRowsChange: STABLE (function type)
-    - headerColor: STABLE (marked @Stable or @Immutable)
-
-@Composable
-private fun com.finnvek.knittools.ui.screens.gauge.PatternInputSection(stitchCount: kotlin.String, rowCount: kotlin.String, onStitchCountChange: kotlin.Function1<kotlin.String, kotlin.Unit>, onRowCountChange: kotlin.Function1<kotlin.String, kotlin.Unit>, headerColor: androidx.compose.ui.graphics.Color): kotlin.Unit
-  skippable: true
-  restartable: true
-  params:
-    - stitchCount: STABLE (String is immutable)
-    - rowCount: STABLE (String is immutable)
-    - onStitchCountChange: STABLE (function type)
-    - onRowCountChange: STABLE (function type)
-    - headerColor: STABLE (marked @Stable or @Immutable)
-
-@Composable
-private fun com.finnvek.knittools.ui.screens.gauge.SwatchMeasurementFields(state: com.finnvek.knittools.ui.screens.gauge.SwatchFieldsState, actions: com.finnvek.knittools.ui.screens.gauge.SwatchFieldsActions): kotlin.Unit
-  skippable: true
-  restartable: true
-  params:
-    - state: STABLE (class with no mutable properties)
-    - actions: STABLE (class with no mutable properties)
-
-@Composable
-private fun com.finnvek.knittools.ui.screens.gauge.YourGaugeSection(state: com.finnvek.knittools.ui.screens.gauge.YourGaugeSectionState, actions: com.finnvek.knittools.ui.screens.gauge.YourGaugeSectionActions): kotlin.Unit
+private fun com.finnvek.knittools.ui.screens.gauge.ActualGaugeFields(state: com.finnvek.knittools.ui.screens.gauge.GaugeUiState, onAction: kotlin.Function1<com.finnvek.knittools.ui.screens.gauge.GaugeAction, kotlin.Unit>, axis: com.finnvek.knittools.ui.screens.gauge.GaugeAxis?): kotlin.Unit
   skippable: false
   restartable: true
   params:
     - state: RUNTIME (requires runtime check)
-    - actions: STABLE (class with no mutable properties)
+    - onAction: STABLE (function type)
+    - axis: STABLE (class with no mutable properties)
+
+@Composable
+private fun com.finnvek.knittools.ui.screens.gauge.AdjustmentFields(state: com.finnvek.knittools.ui.screens.gauge.GaugeUiState, onAction: kotlin.Function1<com.finnvek.knittools.ui.screens.gauge.GaugeAction, kotlin.Unit>): kotlin.Unit
+  skippable: false
+  restartable: true
+  params:
+    - state: RUNTIME (requires runtime check)
+    - onAction: STABLE (function type)
+
+@Composable
+private fun com.finnvek.knittools.ui.screens.gauge.CalculateFields(state: com.finnvek.knittools.ui.screens.gauge.GaugeUiState, onAction: kotlin.Function1<com.finnvek.knittools.ui.screens.gauge.GaugeAction, kotlin.Unit>): kotlin.Unit
+  skippable: false
+  restartable: true
+  params:
+    - state: RUNTIME (requires runtime check)
+    - onAction: STABLE (function type)
+
+@Composable
+private fun com.finnvek.knittools.ui.screens.gauge.ConversionFields(state: com.finnvek.knittools.ui.screens.gauge.GaugeUiState, onAction: kotlin.Function1<com.finnvek.knittools.ui.screens.gauge.GaugeAction, kotlin.Unit>): kotlin.Unit
+  skippable: false
+  restartable: true
+  params:
+    - state: RUNTIME (requires runtime check)
+    - onAction: STABLE (function type)
+
+@Composable
+private fun com.finnvek.knittools.ui.screens.gauge.GaugeBasisSelector(state: com.finnvek.knittools.ui.screens.gauge.GaugeUiState, onAction: kotlin.Function1<com.finnvek.knittools.ui.screens.gauge.GaugeAction, kotlin.Unit>): kotlin.Unit
+  skippable: false
+  restartable: true
+  params:
+    - state: RUNTIME (requires runtime check)
+    - onAction: STABLE (function type)
+
+@Composable
+public fun com.finnvek.knittools.ui.screens.gauge.GaugeContent(state: com.finnvek.knittools.ui.screens.gauge.GaugeUiState, onAction: kotlin.Function1<com.finnvek.knittools.ui.screens.gauge.GaugeAction, kotlin.Unit>, onBack: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier, snackbarHost: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<kotlin.Unit>): kotlin.Unit
+  skippable: false
+  restartable: true
+  params:
+    - state: RUNTIME (requires runtime check)
+    - onAction: STABLE (function type)
+    - onBack: STABLE (function type)
+    - modifier: STABLE (marked @Stable or @Immutable)
+    - snackbarHost: STABLE (composable function type)
+
+@Composable
+internal fun com.finnvek.knittools.ui.screens.gauge.GaugeHeading(text: kotlin.String, modifier: androidx.compose.ui.Modifier): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - text: STABLE (String is immutable)
+    - modifier: STABLE (marked @Stable or @Immutable)
+
+@Composable
+internal fun com.finnvek.knittools.ui.screens.gauge.GaugeNumericField(state: com.finnvek.knittools.ui.screens.gauge.GaugeUiState, field: com.finnvek.knittools.ui.screens.gauge.GaugeField, onAction: kotlin.Function1<com.finnvek.knittools.ui.screens.gauge.GaugeAction, kotlin.Unit>, modifier: androidx.compose.ui.Modifier): kotlin.Unit
+  skippable: false
+  restartable: true
+  params:
+    - state: RUNTIME (requires runtime check)
+    - field: STABLE (class with no mutable properties)
+    - onAction: STABLE (function type)
+    - modifier: STABLE (marked @Stable or @Immutable)
+
+@Composable
+private fun com.finnvek.knittools.ui.screens.gauge.GaugeResultValue(sectionId: kotlin.String, line: com.finnvek.knittools.ui.screens.gauge.GaugeResultLine): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - sectionId: STABLE (String is immutable)
+    - line: STABLE (class with no mutable properties)
+
+@Composable
+internal fun com.finnvek.knittools.ui.screens.gauge.GaugeResults(presentation: com.finnvek.knittools.ui.screens.gauge.GaugePresentation, onCopy: kotlin.Function1<kotlin.String, kotlin.Unit>, modifier: androidx.compose.ui.Modifier): kotlin.Unit
+  skippable: false
+  restartable: true
+  params:
+    - presentation: RUNTIME (requires runtime check)
+    - onCopy: STABLE (function type)
+    - modifier: STABLE (marked @Stable or @Immutable)
+
+@Composable
+public fun com.finnvek.knittools.ui.screens.gauge.GaugeScreen(onBack: kotlin.Function0<kotlin.Unit>, viewModelProvider: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<com.finnvek.knittools.ui.screens.gauge.GaugeViewModel>): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - onBack: STABLE (function type)
+    - viewModelProvider: STABLE (composable function type)
+
+@Composable
+internal fun com.finnvek.knittools.ui.screens.gauge.GaugeSelector(label: kotlin.String, selectedValue: T of com.finnvek.knittools.ui.screens.gauge.GaugeSelector, choices: kotlin.collections.List<kotlin.Pair<T of com.finnvek.knittools.ui.screens.gauge.GaugeSelector, kotlin.String>>, onSelect: kotlin.Function1<T of com.finnvek.knittools.ui.screens.gauge.GaugeSelector, kotlin.Unit>, tag: kotlin.String, modifier: androidx.compose.ui.Modifier): kotlin.Unit
+  skippable: false
+  restartable: true
+  params:
+    - label: STABLE (String is immutable)
+    - selectedValue: RUNTIME (requires runtime check)
+    - choices: RUNTIME (requires runtime check)
+    - onSelect: STABLE (function type)
+    - tag: STABLE (String is immutable)
+    - modifier: STABLE (marked @Stable or @Immutable)
+
+@Composable
+private fun com.finnvek.knittools.ui.screens.gauge.ProjectContext(state: com.finnvek.knittools.ui.screens.gauge.GaugeUiState): kotlin.Unit
+  skippable: false
+  restartable: true
+  params:
+    - state: RUNTIME (requires runtime check)
+
+@Composable
+private fun com.finnvek.knittools.ui.screens.gauge.SwatchFields(state: com.finnvek.knittools.ui.screens.gauge.GaugeUiState, onAction: kotlin.Function1<com.finnvek.knittools.ui.screens.gauge.GaugeAction, kotlin.Unit>, axis: com.finnvek.knittools.ui.screens.gauge.GaugeAxis?): kotlin.Unit
+  skippable: false
+  restartable: true
+  params:
+    - state: RUNTIME (requires runtime check)
+    - onAction: STABLE (function type)
+    - axis: STABLE (class with no mutable properties)
 
 @Composable
 public fun com.finnvek.knittools.ui.screens.home.HomeScreen(onNavigate: kotlin.Function1<com.finnvek.knittools.ui.navigation.Screen, kotlin.Unit>): kotlin.Unit

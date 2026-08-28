@@ -30,6 +30,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.CastOnCalculator
+import com.finnvek.knittools.domain.calculator.MeasurementNumberParser
 import com.finnvek.knittools.domain.calculator.formatDecimalForDisplay
 import com.finnvek.knittools.domain.model.CastOnResult
 import com.finnvek.knittools.ui.components.AnimatedResultNumber
@@ -52,18 +53,32 @@ fun CastOnScreen(
     var gauge by rememberSaveable { mutableStateOf("") }
     var patternRepeat by rememberSaveable { mutableStateOf("") }
     var edgeStitches by rememberSaveable { mutableStateOf("") }
+    val locale = rememberCurrentLocale()
 
-    val result by remember(width, gauge, patternRepeat, edgeStitches, useImperial) {
+    val result by remember(width, gauge, patternRepeat, edgeStitches, useImperial, locale) {
         derivedStateOf {
-            val w = width.toDoubleOrNull() ?: return@derivedStateOf null
-            val g = gauge.toDoubleOrNull() ?: return@derivedStateOf null
-            if (w <= 0 || g <= 0) return@derivedStateOf null
+            val w = MeasurementNumberParser.parse(width, locale).value ?: return@derivedStateOf null
+            val g = MeasurementNumberParser.parse(gauge, locale).value ?: return@derivedStateOf null
+            val repeat =
+                if (patternRepeat.isBlank()) {
+                    null
+                } else {
+                    MeasurementNumberParser.parse(patternRepeat, locale, integer = true).value?.toInt()
+                        ?: return@derivedStateOf null
+                }
+            val edges =
+                if (edgeStitches.isBlank()) {
+                    0
+                } else {
+                    MeasurementNumberParser.parse(edgeStitches, locale, integer = true, allowZero = true).value?.toInt()
+                        ?: return@derivedStateOf null
+                }
             CastOnCalculator.calculate(
                 desiredWidth = w,
                 stitchGauge = g,
                 useInches = useImperial,
-                patternRepeat = patternRepeat.toIntOrNull(),
-                edgeStitches = edgeStitches.toIntOrNull() ?: 0,
+                patternRepeat = repeat,
+                edgeStitches = edges,
             )
         }
     }
@@ -105,14 +120,14 @@ fun CastOnScreen(
                         onValueChange = { width = it },
                         label = stringResource(R.string.desired_width),
                         modifier = Modifier.fillMaxWidth(),
-                        options = NumberInputOptions(isDecimal = true, suffix = unit),
+                        options = NumberInputOptions(isDecimal = true, suffix = unit, allowZero = false),
                     )
                     NumberInputField(
                         value = gauge,
                         onValueChange = { gauge = it },
                         label = stringResource(R.string.stitch_gauge),
                         modifier = Modifier.fillMaxWidth(),
-                        options = NumberInputOptions(isDecimal = true, suffix = gaugeUnit),
+                        options = NumberInputOptions(isDecimal = true, suffix = gaugeUnit, allowZero = false),
                     )
                     Row(verticalAlignment = Alignment.Bottom) {
                         NumberInputField(
@@ -120,7 +135,7 @@ fun CastOnScreen(
                             onValueChange = { patternRepeat = it },
                             label = stringResource(R.string.pattern_repeat_optional),
                             modifier = Modifier.weight(1f),
-                            options = NumberInputOptions(suffix = stringResource(R.string.unit_st)),
+                            options = NumberInputOptions(suffix = stringResource(R.string.unit_st), allowZero = false),
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         InfoTip(
@@ -153,6 +168,18 @@ fun CastOnScreen(
 
             result?.let { r ->
                 CastOnResultSection(r, unit, edgeStitches.toIntOrNull() ?: 0)
+            }
+            val dimensionsValid =
+                MeasurementNumberParser.parse(width, locale).value != null &&
+                    MeasurementNumberParser.parse(gauge, locale).value != null
+            val repeatValid =
+                patternRepeat.isBlank() ||
+                    MeasurementNumberParser.parse(patternRepeat, locale, integer = true).value != null
+            val edgesValid =
+                edgeStitches.isBlank() ||
+                    MeasurementNumberParser.parse(edgeStitches, locale, integer = true, allowZero = true).value != null
+            if (result == null && dimensionsValid && repeatValid && edgesValid) {
+                Text(stringResource(R.string.measurement_too_large), color = MaterialTheme.colorScheme.error)
             }
         }
     }

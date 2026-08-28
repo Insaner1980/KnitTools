@@ -17,18 +17,15 @@
     <string name="measurement_with_unit_format">%1$s %2$s</string>
     <string name="unit_inches">Zoll</string>
     <string name="unit_st">M</string>
-    <string name="unit_rows">Reihen</string>
     <string name="unit_g">g</string>
     <string name="unit_meters">Meter</string>
     <string name="unit_yards">Yard</string>
     <string name="unit_st_per_10cm">M/10 cm</string>
     <string name="unit_st_per_4in">M/4 in</string>
-    <string name="unit_per_10cm">pro 10 cm</string>
-    <string name="unit_per_4in">pro 4 in</string>
 
     <!-- Home screen -->
     <string name="tool_increase_decrease">Zu- / Abnahmen</string>
-    <string name="tool_gauge_converter">Maschenprobenrechner</string>
+    <string name="tool_gauge_converter">Maße und Maschenprobe</string>
     <string name="tool_cast_on_calculator">Maschenanschlag-Rechner</string>
     <string name="tool_yarn_estimator">Garnrechner</string>
     <string name="tool_needle_sizes">Nadelstärken</string>
@@ -288,15 +285,8 @@
     <!-- Gauge Converter -->
     <string name="pattern_gauge">Maschenprobe der Anleitung</string>
     <string name="pattern_instructions">Angaben der Anleitung</string>
-    <string name="stitches_gauge">Maschen %s</string>
-    <string name="rows_gauge">Reihen %s</string>
     <string name="stitches_in_pattern">Maschen in der Anleitung</string>
     <string name="rows_in_pattern">Reihen in der Anleitung</string>
-    <string name="adjusted_for_your_gauge">An deine Maschenprobe angepasst</string>
-    <string name="adjusted_result">%1$d Maschen, %2$d Reihen</string>
-    <string name="exact_result">Exakt: %1$s M, %2$s Reihen</string>
-    <string name="stitch_gauge_diff">Maschendichte: %s%%</string>
-    <string name="row_gauge_diff">Reihendichte: %s%%</string>
 
     <!-- Cast On Calculator -->
     <string name="desired_width">Gewünschte Breite</string>
@@ -430,7 +420,7 @@
 
     <!-- Hubs -->
     <string name="desc_increase_decrease">Zu- oder Abnahmen gleichmäßig über eine Reihe verteilen</string>
-    <string name="desc_gauge_calculator">Maschenprobe berechnen und Angaben aus Anleitungen umrechnen</string>
+    <string name="desc_gauge_calculator">Längen umrechnen sowie Maschenprobe, Anzahlen und Maße berechnen</string>
     <string name="desc_cast_on">Maschen für die gewünschte Breite berechnen</string>
     <string name="desc_needle_sizes">Nadelstärken in metrischen, US-, UK- und japanischen Systemen</string>
     <string name="desc_size_charts">Standard-Körpermaße für Kleidergrößen</string>
@@ -534,7 +524,6 @@
     <string name="your_gauge_section">Deine Maschenprobe</string>
     <string name="measure_swatch">Maschenprobe messen</string>
     <string name="enter_directly">Direkt eingeben</string>
-    <string name="calculated_gauge_format">= %1$.1f M / %2$.1f Reihen %3$s</string>
     <string name="measured_width">Gemessene Breite</string>
     <string name="stitch_count_in_swatch">Maschen in der Maschenprobe</string>
     <string name="measured_height">Gemessene Höhe</string>
@@ -683,8 +672,6 @@
     <string name="yardage_format">%d Yard</string>
 
     <!-- Info tips -->
-    <string name="tip_your_gauge_title">Was ist eine Maschenprobe?</string>
-    <string name="tip_your_gauge_desc">Die Maschenprobe zeigt, wie viele Maschen und Reihen in einen gemessenen Bereich passen. Stricke ein kleines Probestück und miss es, um deine persönliche Maschenprobe zu ermitteln. So entspricht dein fertiges Stück der vorgesehenen Größe der Anleitung.</string>
     <string name="tip_pattern_repeat_title">Rapport</string>
     <string name="tip_pattern_repeat_desc">Wenn sich dein Muster alle X Maschen wiederholt (z. B. ein Zopf alle 8 Maschen), gib diese Zahl hier ein. Der Rechner rundet die Muster-Maschen vor den Randmaschen auf das nächstpassende Vielfache, damit dein Muster aufgeht.</string>
     <string name="tip_edge_stitches_title">Randmaschen</string>
@@ -889,5 +876,70 @@
     <plurals name="folder_move_projects_error">
     <item quantity="one">%d Projekt konnte nicht verschoben werden.</item>
     <item quantity="other">%d Projekte konnten nicht verschoben werden.</item>
+    </plurals>
+
+    <string name="measurement_title">Maße und Maschenprobe</string>
+    <string name="measurement_task">Aufgabe</string>
+    <string name="measurement_convert">Maße umrechnen</string>
+    <string name="measurement_measure_gauge">Maschenprobe messen</string>
+    <string name="measurement_calculate">Mit Maschenprobe berechnen</string>
+    <string name="measurement_adjust">Maschen und Reihen der Anleitung anpassen</string>
+    <string name="measurement_operation">Berechnung</string>
+    <string name="measurement_count_for_size">Anzahl aus einem Maß</string>
+    <string name="measurement_size_from_count">Maß aus einer Anzahl</string>
+    <string name="measurement_axis">Richtung</string>
+    <string name="measurement_stitches_width">Maschen und Breite</string>
+    <string name="measurement_rows_height">Reihen und Höhe</string>
+    <string name="measurement_units">Maßeinheiten</string>
+    <string name="measurement_from_unit">Ausgangseinheit</string>
+    <string name="measurement_to_unit">Zieleinheit</string>
+    <string name="measurement_value">Wert</string>
+    <string name="measurement_unit_cm">Zentimeter</string>
+    <string name="measurement_unit_inch">Zoll</string>
+    <string name="measurement_unit_inch_short">in</string>
+    <string name="measurement_unit_meter">Meter</string>
+    <string name="measurement_unit_meter_short">m</string>
+    <string name="measurement_unit_yard">Yard</string>
+    <string name="measurement_unit_yard_short">yd</string>
+    <string name="measurement_per_10cm">pro 10 Zentimeter</string>
+    <string name="measurement_per_4in">pro 4 Zoll</string>
+    <string name="measurement_actual_stitches">Deine Maschendichte</string>
+    <string name="measurement_actual_rows">Deine Reihendichte</string>
+    <string name="measurement_pattern_stitches">Maschendichte der Anleitung</string>
+    <string name="measurement_pattern_rows">Reihendichte der Anleitung</string>
+    <string name="measurement_target_width">Gewünschte Breite</string>
+    <string name="measurement_target_height">Gewünschte Höhe</string>
+    <string name="measurement_stitch_count">Maschenzahl</string>
+    <string name="measurement_row_count">Reihenzahl</string>
+    <string name="measurement_calculated_count">Berechnete Anzahl</string>
+    <string name="measurement_nearest_count">Nächste ganze Zahl</string>
+    <string name="measurement_original_size">Ursprüngliches Maß</string>
+    <string name="measurement_unchanged_size">Maß ohne Anpassung</string>
+    <string name="measurement_rounded_size">Maß nach Rundung</string>
+    <string name="measurement_result_size">Erreichtes Maß</string>
+    <string name="measurement_gauge_difference">Abweichung der Maschenprobe</string>
+    <string name="measurement_copy">Ergebnis kopieren</string>
+    <string name="measurement_copied">Ergebnis kopiert</string>
+    <string name="measurement_invalid_number">Gib eine gültige Zahl ein.</string>
+    <string name="measurement_positive_required">Gib einen Wert größer als null ein.</string>
+    <string name="measurement_too_large">Der Wert liegt außerhalb des unterstützten Bereichs. Prüfe Maß und Anzahl.</string>
+    <string name="measurement_complete_number">Vervollständige oder korrigiere die Zahl, bevor du die Einheit wechselst.</string>
+    <string name="measurement_project_unavailable">Dieses Projekt ist nicht mehr verfügbar. Du kannst hier weiterrechnen.</string>
+    <string name="measurement_project_context">Projekt: %1$s</string>
+    <string name="measurement_estimate">Schätzung auf Grundlage der eingegebenen Maschenprobe.</string>
+    <string name="measurement_adjust_warning">Mathematische Schätzung auf Grundlage der eingegebenen Maschenprobe. Formgebung und Konstruktion werden nicht umgeschrieben. Bewegungszugabe, Musterrapporte, Ränder, Armausschnitte, Halsausschnitte und Ärmel müssen eventuell separat angepasst werden. Miss eine gewaschene oder gespannte Maschenprobe für eine aussagekräftigere Schätzung.</string>
+    <string name="measurement_swatch_hint">Miss die Maschenprobe nach dem Waschen oder Spannen für eine aussagekräftigere Schätzung.</string>
+    <string name="measurement_result">Ergebnis</string>
+    <string name="measurement_value_unit_format">%1$s %2$s</string>
+    <string name="measurement_gauge_format">%1$s %2$s</string>
+    <string name="measurement_result_line">%1$s: %2$s</string>
+    <string name="measurement_field_with_unit">%1$s (%2$s)</string>
+    <plurals name="measurement_stitches">
+        <item quantity="one">%1$d Masche</item>
+        <item quantity="other">%1$d Maschen</item>
+    </plurals>
+    <plurals name="measurement_rows">
+        <item quantity="one">%1$d Reihe</item>
+        <item quantity="other">%1$d Reihen</item>
     </plurals>
 </resources>

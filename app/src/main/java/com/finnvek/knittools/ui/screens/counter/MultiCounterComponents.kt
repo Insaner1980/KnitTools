@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.sp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.CounterValueDisplay
 import com.finnvek.knittools.domain.calculator.CounterValueFormatter
+import com.finnvek.knittools.domain.calculator.MeasurementNumberParser
 import com.finnvek.knittools.domain.calculator.RepeatSectionLogic
 import com.finnvek.knittools.domain.calculator.formatIntegerForDisplay
 import com.finnvek.knittools.domain.model.ProjectCounter
@@ -61,6 +62,7 @@ import com.finnvek.knittools.ui.components.NumberInputOptions
 import com.finnvek.knittools.ui.components.SegmentedToggle
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
 import com.finnvek.knittools.ui.theme.CounterDimens
+import java.util.Locale
 
 private const val DISABLED_CONTENT_ALPHA = 0.38f
 
@@ -370,14 +372,14 @@ fun AddCounterDialog(
     val isShaping = selectedType == 2
     val isRepeatSection = selectedType == 3 && canUseRepeatSection
     val canLinkToMainCounter = !isRepeatSection
-    val repeatAt = repeatAtText.toIntOrNull()
-    val stepSize = stepSizeText.toIntOrNull() ?: 1
-    val startingStitches = startingStitchesText.toIntOrNull()
-    val stitchChange = stitchChangeText.toIntOrNull()
-    val shapeEveryN = shapeEveryNText.toIntOrNull()
-    val repeatStartRow = repeatStartRowText.toIntOrNull()
-    val repeatEndRow = repeatEndRowText.toIntOrNull()
-    val totalRepeats = totalRepeatsText.toIntOrNull()
+    val repeatAt = parseCounterInput(repeatAtText)
+    val stepSize = parseCounterInput(stepSizeText) ?: 0
+    val startingStitches = parseCounterInput(startingStitchesText)
+    val stitchChange = parseCounterInput(stitchChangeText, allowNegative = true)
+    val shapeEveryN = parseCounterInput(shapeEveryNText)
+    val repeatStartRow = parseCounterInput(repeatStartRowText)
+    val repeatEndRow = parseCounterInput(repeatEndRowText)
+    val totalRepeats = parseCounterInput(totalRepeatsText)
     val formParams =
         AddCounterFormParams(
             name = name,
@@ -463,6 +465,20 @@ fun AddCounterDialog(
         },
     )
 }
+
+internal fun parseCounterInput(
+    text: String,
+    allowNegative: Boolean = false,
+): Int? =
+    MeasurementNumberParser
+        .parse(
+            text = text,
+            locale = Locale.ROOT,
+            integer = true,
+            allowZero = true,
+            allowNegative = allowNegative,
+        ).value
+        ?.toInt()
 
 private fun createProjectCounterDraft(
     params: AddCounterFormParams,

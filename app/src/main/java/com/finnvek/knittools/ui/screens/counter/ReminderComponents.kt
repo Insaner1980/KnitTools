@@ -48,6 +48,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.CounterValueFormatter
+import com.finnvek.knittools.domain.calculator.MeasurementNumberParser
 import com.finnvek.knittools.domain.model.RowReminder
 import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.ui.components.ConfirmationDialog
@@ -55,6 +56,7 @@ import com.finnvek.knittools.ui.components.NumberInputField
 import com.finnvek.knittools.ui.components.NumberInputOptions
 import com.finnvek.knittools.ui.components.ProBadge
 import com.finnvek.knittools.ui.components.SegmentedToggle
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -349,8 +351,8 @@ private data class ReminderDialogForm(
 
     val validation: ReminderDialogValidation
         get() {
-            val rowNumber = rowText.toIntOrNull()
-            val interval = intervalText.toIntOrNull()
+            val rowNumber = MeasurementNumberParser.parse(rowText, Locale.ROOT, integer = true).value?.toInt()
+            val interval = MeasurementNumberParser.parse(intervalText, Locale.ROOT, integer = true).value?.toInt()
             return ReminderDialogValidation(
                 rowNumber = rowNumber,
                 interval = interval,

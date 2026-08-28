@@ -63,4 +63,24 @@ class GaugeSwatchCalculatorTest {
         assertEquals(22.0, result.stitchesPerGaugeUnit, delta)
         assertEquals(28.0, result.rowsPerGaugeUnit, delta)
     }
+
+    @Test
+    fun `nonfinite width height and gauge basis are rejected`() {
+        listOf(Double.NaN, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY).forEach {
+            assertNull(GaugeSwatchCalculator.calculate(it, 22, 10.0, 30))
+            assertNull(GaugeSwatchCalculator.calculate(10.0, 22, it, 30))
+            assertNull(GaugeSwatchCalculator.calculate(10.0, 22, 10.0, 30, gaugeBase = it))
+        }
+        assertNull(GaugeSwatchCalculator.calculate(10.0, 22, 10.0, 30, gaugeBase = 0.0))
+        assertNull(GaugeSwatchCalculator.calculate(10.0, 22, 10.0, 30, gaugeBase = -1.0))
+        assertNull(GaugeSwatchCalculator.calculate(Double.MIN_VALUE, 22, 10.0, 30))
+    }
+
+    @Test
+    fun `legacy swatch result retains measured precision for downstream adjustment`() {
+        val swatch = requireNotNull(GaugeSwatchCalculator.calculate(14.0, 33, 10.0, 30))
+        val result = requireNotNull(GaugeConverter.convert(20.0, 30.0, swatch.stitchesPerGaugeUnit, 30.0, 1000, 80))
+        assertEquals(1179, result.adjustedStitches)
+        assertEquals(23.57142857142857, swatch.stitchesPerGaugeUnit, 1e-12)
+    }
 }

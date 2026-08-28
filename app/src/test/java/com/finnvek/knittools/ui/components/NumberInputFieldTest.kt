@@ -10,8 +10,10 @@ class NumberInputFieldTest {
     }
 
     @Test
-    fun `unsigned integer input strips minus sign`() {
-        assertEquals("2", filterNumericInput("-2", allowNegative = false))
+    fun `unsigned malformed input is preserved rather than changed into a different number`() {
+        assertEquals("-2", filterNumericInput("-2", allowNegative = false))
+        assertEquals("1e3", filterNumericInput("1e3", allowNegative = false))
+        assertEquals("12.5", filterNumericInput("12.5", allowNegative = false))
     }
 
     private fun filterNumericInput(

@@ -17,18 +17,15 @@
     <string name="measurement_with_unit_format">%1$s %2$s</string>
     <string name="unit_inches">pouces</string>
     <string name="unit_st">m</string>
-    <string name="unit_rows">rangs</string>
     <string name="unit_g">g</string>
     <string name="unit_meters">mètres</string>
     <string name="unit_yards">yards</string>
     <string name="unit_st_per_10cm">m/10 cm</string>
     <string name="unit_st_per_4in">m/4 in</string>
-    <string name="unit_per_10cm">pour 10 cm</string>
-    <string name="unit_per_4in">pour 4 in</string>
 
     <!-- Home screen -->
     <string name="tool_increase_decrease">Augmentations / diminutions</string>
-    <string name="tool_gauge_converter">Calculateur d’échantillon</string>
+    <string name="tool_gauge_converter">Mesures et échantillon</string>
     <string name="tool_cast_on_calculator">Calculateur de montage</string>
     <string name="tool_yarn_estimator">Estimateur de fil</string>
     <string name="tool_needle_sizes">Tailles d’aiguilles</string>
@@ -292,15 +289,8 @@
     <!-- Gauge Converter -->
     <string name="pattern_gauge">Échantillon du modèle</string>
     <string name="pattern_instructions">Instructions du modèle</string>
-    <string name="stitches_gauge">Mailles %s</string>
-    <string name="rows_gauge">Rangs %s</string>
     <string name="stitches_in_pattern">Mailles du modèle</string>
     <string name="rows_in_pattern">Rangs du modèle</string>
-    <string name="adjusted_for_your_gauge">Ajusté à votre échantillon</string>
-    <string name="adjusted_result">%1$d mailles, %2$d rangs</string>
-    <string name="exact_result">Exact : %1$s m, %2$s rangs</string>
-    <string name="stitch_gauge_diff">Densité en mailles : %s%%</string>
-    <string name="row_gauge_diff">Densité en rangs : %s%%</string>
 
     <!-- Cast On Calculator -->
     <string name="desired_width">Largeur souhaitée</string>
@@ -434,7 +424,7 @@
 
     <!-- Hubs -->
     <string name="desc_increase_decrease">Répartissez les augmentations ou diminutions uniformément sur un rang</string>
-    <string name="desc_gauge_calculator">Calculez votre échantillon et convertissez les indications du modèle</string>
+    <string name="desc_gauge_calculator">Convertissez des longueurs et calculez échantillons, nombres de mailles et mesures</string>
     <string name="desc_cast_on">Calculez le nombre de mailles à monter pour une largeur donnée</string>
     <string name="desc_needle_sizes">Tailles d’aiguilles en systèmes métrique, US, UK et japonais</string>
     <string name="desc_size_charts">Mensurations standard pour les tailles de vêtements</string>
@@ -545,7 +535,6 @@
     <string name="your_gauge_section">Votre échantillon</string>
     <string name="measure_swatch">Mesurer l’échantillon</string>
     <string name="enter_directly">Saisir directement</string>
-    <string name="calculated_gauge_format">= %1$.1f m / %2$.1f rangs %3$s</string>
     <string name="measured_width">Largeur mesurée</string>
     <string name="stitch_count_in_swatch">Mailles dans l’échantillon</string>
     <string name="measured_height">Hauteur mesurée</string>
@@ -696,8 +685,6 @@
     <string name="yardage_format">%d yards</string>
 
     <!-- Info tips -->
-    <string name="tip_your_gauge_title">Qu’est-ce que l’échantillon ?</string>
-    <string name="tip_your_gauge_desc">L’échantillon indique combien de mailles et de rangs tiennent dans une zone mesurée. Tricotez un petit échantillon et mesurez-le pour connaître votre tension personnelle. Cela garantit que votre ouvrage fini correspondra à la taille prévue du modèle.</string>
     <string name="tip_pattern_repeat_title">Répétition du motif</string>
     <string name="tip_pattern_repeat_desc">Si votre motif se répète toutes les X mailles (par exemple une torsade toutes les 8 mailles), indiquez ce nombre ici. Le calculateur arrondit les mailles du corps, avant les mailles lisière, au multiple le plus proche afin que le motif tombe juste.</string>
     <string name="tip_edge_stitches_title">Mailles lisière</string>
@@ -906,5 +893,72 @@
     <item quantity="one">Impossible de déplacer %d projet.</item>
     <item quantity="other">Impossible de déplacer %d projets.</item>
     <item quantity="many">Impossible de déplacer %d projets.</item>
+    </plurals>
+
+    <string name="measurement_title">Mesures et échantillon</string>
+    <string name="measurement_task">Tâche</string>
+    <string name="measurement_convert">Convertir des mesures</string>
+    <string name="measurement_measure_gauge">Mesurer l’échantillon</string>
+    <string name="measurement_calculate">Calculer à partir de l’échantillon</string>
+    <string name="measurement_adjust">Adapter les mailles et les rangs du modèle</string>
+    <string name="measurement_operation">Calcul</string>
+    <string name="measurement_count_for_size">Nombre à partir d’une mesure</string>
+    <string name="measurement_size_from_count">Mesure à partir d’un nombre</string>
+    <string name="measurement_axis">Direction</string>
+    <string name="measurement_stitches_width">Mailles et largeur</string>
+    <string name="measurement_rows_height">Rangs et hauteur</string>
+    <string name="measurement_units">Unités de mesure</string>
+    <string name="measurement_from_unit">Unité de départ</string>
+    <string name="measurement_to_unit">Unité d’arrivée</string>
+    <string name="measurement_value">Valeur</string>
+    <string name="measurement_unit_cm">Centimètres</string>
+    <string name="measurement_unit_inch">Pouces</string>
+    <string name="measurement_unit_inch_short">in</string>
+    <string name="measurement_unit_meter">Mètres</string>
+    <string name="measurement_unit_meter_short">m</string>
+    <string name="measurement_unit_yard">Yards</string>
+    <string name="measurement_unit_yard_short">yd</string>
+    <string name="measurement_per_10cm">pour 10 centimètres</string>
+    <string name="measurement_per_4in">pour 4 pouces</string>
+    <string name="measurement_actual_stitches">Votre échantillon en mailles</string>
+    <string name="measurement_actual_rows">Votre échantillon en rangs</string>
+    <string name="measurement_pattern_stitches">Échantillon du modèle en mailles</string>
+    <string name="measurement_pattern_rows">Échantillon du modèle en rangs</string>
+    <string name="measurement_target_width">Largeur souhaitée</string>
+    <string name="measurement_target_height">Hauteur souhaitée</string>
+    <string name="measurement_stitch_count">Nombre de mailles</string>
+    <string name="measurement_row_count">Nombre de rangs</string>
+    <string name="measurement_calculated_count">Nombre calculé</string>
+    <string name="measurement_nearest_count">Nombre entier le plus proche</string>
+    <string name="measurement_original_size">Mesure d’origine</string>
+    <string name="measurement_unchanged_size">Mesure sans adaptation</string>
+    <string name="measurement_rounded_size">Mesure après arrondi</string>
+    <string name="measurement_result_size">Mesure obtenue</string>
+    <string name="measurement_gauge_difference">Écart d’échantillon</string>
+    <string name="measurement_copy">Copier le résultat</string>
+    <string name="measurement_copied">Résultat copié</string>
+    <string name="measurement_invalid_number">Saisissez un nombre valide.</string>
+    <string name="measurement_positive_required">Saisissez une valeur supérieure à zéro.</string>
+    <string name="measurement_too_large">La valeur est hors de la plage prise en charge. Vérifiez la mesure et le nombre.</string>
+    <string name="measurement_complete_number">Terminez ou corrigez le nombre avant de changer d’unité.</string>
+    <string name="measurement_project_unavailable">Ce projet n’est plus disponible. Vous pouvez continuer vos calculs ici.</string>
+    <string name="measurement_project_context">Projet : %1$s</string>
+    <string name="measurement_estimate">Estimation basée sur l’échantillon saisi.</string>
+    <string name="measurement_adjust_warning">Estimation mathématique basée sur l’échantillon saisi. Le façonnage et la construction ne sont pas réécrits. Aisance, répétitions de motifs, bordures, emmanchures, encolures et manches peuvent nécessiter une adaptation séparée. Mesurez un échantillon lavé ou bloqué pour une estimation plus utile.</string>
+    <string name="measurement_swatch_hint">Pour une estimation plus utile, mesurez l’échantillon après lavage ou blocage.</string>
+    <string name="measurement_result">Résultat</string>
+    <string name="measurement_value_unit_format">%1$s %2$s</string>
+    <string name="measurement_gauge_format">%1$s %2$s</string>
+    <string name="measurement_result_line">%1$s : %2$s</string>
+    <string name="measurement_field_with_unit">%1$s (%2$s)</string>
+    <plurals name="measurement_stitches">
+        <item quantity="one">%1$d maille</item>
+        <item quantity="many">%1$d mailles</item>
+        <item quantity="other">%1$d mailles</item>
+    </plurals>
+    <plurals name="measurement_rows">
+        <item quantity="one">%1$d rang</item>
+        <item quantity="many">%1$d rangs</item>
+        <item quantity="other">%1$d rangs</item>
     </plurals>
 </resources>

@@ -70,6 +70,7 @@ data class ProjectActionsSheetCallbacks(
     val onShowCompleteDialog: () -> Unit,
     val onShowDeleteDialog: () -> Unit,
     val onMoveToFolder: () -> Unit,
+    val onMeasurements: () -> Unit = {},
 )
 
 data class ProjectActionsSheetState(
@@ -118,6 +119,11 @@ fun ProjectActionsBottomSheet(
             SectionDivider()
 
             ProjectActionsSection(title = stringResource(R.string.project_actions_section_counter_tools)) {
+                ActionRow(
+                    icon = Icons.Outlined.FormatListNumbered,
+                    label = stringResource(R.string.measurement_title),
+                    onClick = callbacks.onMeasurements,
+                )
                 ActionRow(
                     icon = Icons.Outlined.AddCircle,
                     label = stringResource(R.string.add_counter),

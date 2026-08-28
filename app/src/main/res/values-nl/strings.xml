@@ -17,18 +17,15 @@
     <string name="measurement_with_unit_format">%1$s %2$s</string>
     <string name="unit_inches">inch</string>
     <string name="unit_st">st</string>
-    <string name="unit_rows">toeren</string>
     <string name="unit_g">g</string>
     <string name="unit_meters">meter</string>
     <string name="unit_yards">yard</string>
     <string name="unit_st_per_10cm">st/10 cm</string>
     <string name="unit_st_per_4in">st/4 in</string>
-    <string name="unit_per_10cm">per 10 cm</string>
-    <string name="unit_per_4in">per 4 in</string>
 
     <!-- Home screen -->
     <string name="tool_increase_decrease">Meerderen / minderen</string>
-    <string name="tool_gauge_converter">Stekenproefcalculator</string>
+    <string name="tool_gauge_converter">Maten en stekenproef</string>
     <string name="tool_cast_on_calculator">Opzetcalculator</string>
     <string name="tool_yarn_estimator">Garencalculator</string>
     <string name="tool_needle_sizes">Naaldmaten</string>
@@ -288,15 +285,8 @@
     <!-- Gauge Converter -->
     <string name="pattern_gauge">Stekenproef van patroon</string>
     <string name="pattern_instructions">Patrooninstructies</string>
-    <string name="stitches_gauge">Steken %s</string>
-    <string name="rows_gauge">Toeren %s</string>
     <string name="stitches_in_pattern">Steken in patroon</string>
     <string name="rows_in_pattern">Toeren in patroon</string>
-    <string name="adjusted_for_your_gauge">Aangepast aan jouw stekenproef</string>
-    <string name="adjusted_result">%1$d steken, %2$d toeren</string>
-    <string name="exact_result">Exact: %1$s st, %2$s toeren</string>
-    <string name="stitch_gauge_diff">Stekenproef steken: %s%%</string>
-    <string name="row_gauge_diff">Stekenproef toeren: %s%%</string>
 
     <!-- Cast On Calculator -->
     <string name="desired_width">Gewenste breedte</string>
@@ -430,7 +420,7 @@
 
     <!-- Hubs -->
     <string name="desc_increase_decrease">Verdeel meerderingen of minderingen gelijkmatig over een toer</string>
-    <string name="desc_gauge_calculator">Bereken je stekenproef en zet patrooninstructies om</string>
+    <string name="desc_gauge_calculator">Reken lengtes om en bereken stekenproeven, aantallen en afmetingen</string>
     <string name="desc_cast_on">Bereken hoeveel steken je moet opzetten voor de gewenste breedte</string>
     <string name="desc_needle_sizes">Naaldmaten in metrisch, US-, UK- en Japans systeem</string>
     <string name="desc_size_charts">Standaard lichaamsmaten voor kledingmaten</string>
@@ -534,7 +524,6 @@
     <string name="your_gauge_section">Jouw stekenproef</string>
     <string name="measure_swatch">Stekenproef meten</string>
     <string name="enter_directly">Direct invoeren</string>
-    <string name="calculated_gauge_format">= %1$.1f st / %2$.1f toeren %3$s</string>
     <string name="measured_width">Gemeten breedte</string>
     <string name="stitch_count_in_swatch">Steken in proeflap</string>
     <string name="measured_height">Gemeten hoogte</string>
@@ -683,8 +672,6 @@
     <string name="yardage_format">%d yard</string>
 
     <!-- Info tips -->
-    <string name="tip_your_gauge_title">Wat is stekenproef?</string>
-    <string name="tip_your_gauge_desc">Je stekenproef geeft aan hoeveel steken en toeren in een gemeten vlak passen. Brei een proeflapje en meet het om jouw persoonlijke stekenproef te bepalen. Zo komt het uiteindelijke werk overeen met de bedoelde maat van het patroon.</string>
     <string name="tip_pattern_repeat_title">Patroonherhaling</string>
     <string name="tip_pattern_repeat_desc">Als je stekenpatroon zich elke X steken herhaalt (bijv. een kabel elke 8 steken), vul dat getal hier in. De calculator rondt de steken van het middendeel, vóór de kantsteken, af naar het dichtstbijzijnde veelvoud zodat je patroon uitkomt.</string>
     <string name="tip_edge_stitches_title">Kantsteken</string>
@@ -889,5 +876,70 @@
     <plurals name="folder_move_projects_error">
     <item quantity="one">Kan %d project niet verplaatsen.</item>
     <item quantity="other">Kan %d projecten niet verplaatsen.</item>
+    </plurals>
+
+    <string name="measurement_title">Maten en stekenproef</string>
+    <string name="measurement_task">Taak</string>
+    <string name="measurement_convert">Maten omrekenen</string>
+    <string name="measurement_measure_gauge">Stekenproef meten</string>
+    <string name="measurement_calculate">Berekenen met de stekenproef</string>
+    <string name="measurement_adjust">Aantallen uit het patroon aanpassen</string>
+    <string name="measurement_operation">Berekening</string>
+    <string name="measurement_count_for_size">Aantal bij een afmeting</string>
+    <string name="measurement_size_from_count">Afmeting bij een aantal</string>
+    <string name="measurement_axis">Richting</string>
+    <string name="measurement_stitches_width">Steken en breedte</string>
+    <string name="measurement_rows_height">Toeren en hoogte</string>
+    <string name="measurement_units">Maateenheden</string>
+    <string name="measurement_from_unit">Van eenheid</string>
+    <string name="measurement_to_unit">Naar eenheid</string>
+    <string name="measurement_value">Waarde</string>
+    <string name="measurement_unit_cm">Centimeters</string>
+    <string name="measurement_unit_inch">Inches</string>
+    <string name="measurement_unit_inch_short">in</string>
+    <string name="measurement_unit_meter">Meters</string>
+    <string name="measurement_unit_meter_short">m</string>
+    <string name="measurement_unit_yard">Yards</string>
+    <string name="measurement_unit_yard_short">yd</string>
+    <string name="measurement_per_10cm">per 10 centimeter</string>
+    <string name="measurement_per_4in">per 4 inch</string>
+    <string name="measurement_actual_stitches">Jouw stekenverhouding</string>
+    <string name="measurement_actual_rows">Jouw toerenverhouding</string>
+    <string name="measurement_pattern_stitches">Stekenverhouding van het patroon</string>
+    <string name="measurement_pattern_rows">Toerenverhouding van het patroon</string>
+    <string name="measurement_target_width">Gewenste breedte</string>
+    <string name="measurement_target_height">Gewenste hoogte</string>
+    <string name="measurement_stitch_count">Aantal steken</string>
+    <string name="measurement_row_count">Aantal toeren</string>
+    <string name="measurement_calculated_count">Berekend aantal</string>
+    <string name="measurement_nearest_count">Dichtstbijzijnde gehele aantal</string>
+    <string name="measurement_original_size">Oorspronkelijke afmeting</string>
+    <string name="measurement_unchanged_size">Afmeting zonder aanpassing</string>
+    <string name="measurement_rounded_size">Afmeting na afronding</string>
+    <string name="measurement_result_size">Resulterende afmeting</string>
+    <string name="measurement_gauge_difference">Verschil in stekenproef</string>
+    <string name="measurement_copy">Resultaat kopiëren</string>
+    <string name="measurement_copied">Resultaat gekopieerd</string>
+    <string name="measurement_invalid_number">Voer een geldig getal in.</string>
+    <string name="measurement_positive_required">Voer een waarde groter dan nul in.</string>
+    <string name="measurement_too_large">De waarde valt buiten het ondersteunde bereik. Controleer de afmeting en het aantal.</string>
+    <string name="measurement_complete_number">Maak het getal af of corrigeer het voordat je de eenheid wijzigt.</string>
+    <string name="measurement_project_unavailable">Dit project is niet meer beschikbaar. Je kunt hier verder rekenen.</string>
+    <string name="measurement_project_context">Project: %1$s</string>
+    <string name="measurement_estimate">Schatting op basis van de ingevoerde stekenproef.</string>
+    <string name="measurement_adjust_warning">Wiskundige schatting op basis van de ingevoerde stekenproef. De vormgeving en constructie worden niet herschreven. Bewegingsruimte, patroonherhalingen, randen, armsgaten, halslijnen en mouwen moeten mogelijk apart worden aangepast. Meet een gewassen of geblokt proeflapje voor een bruikbaardere schatting.</string>
+    <string name="measurement_swatch_hint">Meet het proeflapje na het wassen of blokken voor een bruikbaardere schatting.</string>
+    <string name="measurement_result">Resultaat</string>
+    <string name="measurement_value_unit_format">%1$s %2$s</string>
+    <string name="measurement_gauge_format">%1$s %2$s</string>
+    <string name="measurement_result_line">%1$s: %2$s</string>
+    <string name="measurement_field_with_unit">%1$s (%2$s)</string>
+    <plurals name="measurement_stitches">
+        <item quantity="one">%1$d steek</item>
+        <item quantity="other">%1$d steken</item>
+    </plurals>
+    <plurals name="measurement_rows">
+        <item quantity="one">%1$d toer</item>
+        <item quantity="other">%1$d toeren</item>
     </plurals>
 </resources>

@@ -1,6 +1,7 @@
 package com.finnvek.knittools.util.extensions
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Test
 import java.util.Locale
 
@@ -41,22 +42,22 @@ class UnitConversionTest {
 
     @Test
     fun `convertFieldValue cm to inches (length)`() {
-        assertEquals("3.9", convertFieldValue("10", toImperial = true, isLength = true))
+        assertEquals(10.0 / 2.54, convertFieldValue("10", toImperial = true, isLength = true).toDouble(), 1e-12)
     }
 
     @Test
     fun `convertFieldValue inches to cm (length)`() {
-        assertEquals("10.2", convertFieldValue("4", toImperial = false, isLength = true))
+        assertEquals(10.16, convertFieldValue("4", toImperial = false, isLength = true).toDouble(), 1e-12)
     }
 
     @Test
     fun `convertFieldValue meters to yards (non-length)`() {
-        assertEquals("109.4", convertFieldValue("100", toImperial = true, isLength = false))
+        assertEquals(100.0 / 0.9144, convertFieldValue("100", toImperial = true, isLength = false).toDouble(), 1e-12)
     }
 
     @Test
     fun `convertFieldValue yards to meters (non-length)`() {
-        assertEquals("91.4", convertFieldValue("100", toImperial = false, isLength = false))
+        assertEquals(91.44, convertFieldValue("100", toImperial = false, isLength = false).toDouble(), 1e-12)
     }
 
     @Test
@@ -76,8 +77,8 @@ class UnitConversionTest {
         withDefaultLocale(Locale.forLanguageTag("fi-FI")) {
             val converted = convertFieldValue("10", toImperial = true, isLength = true)
 
-            assertEquals("3.9", converted)
-            assertEquals(3.9, converted.toDouble(), delta)
+            assertFalse(converted.contains(','))
+            assertEquals(10.0 / 2.54, converted.toDouble(), 1e-12)
         }
     }
 
@@ -85,14 +86,12 @@ class UnitConversionTest {
 
     @Test
     fun `convertGaugeValue 10cm to 4in`() {
-        // 22 st/10cm → ~22.4 st/4in
-        assertEquals("22.4", convertGaugeValue("22", toImperial = true))
+        assertEquals(22.352, convertGaugeValue("22", toImperial = true).toDouble(), 1e-12)
     }
 
     @Test
     fun `convertGaugeValue 4in to 10cm`() {
-        // 22 st/4in → ~21.7 st/10cm
-        assertEquals("21.7", convertGaugeValue("22", toImperial = false))
+        assertEquals(22.0 / 1.016, convertGaugeValue("22", toImperial = false).toDouble(), 1e-12)
     }
 
     @Test
@@ -100,8 +99,7 @@ class UnitConversionTest {
         val original = "22"
         val imperial = convertGaugeValue(original, toImperial = true)
         val backToMetric = convertGaugeValue(imperial, toImperial = false)
-        // Pyöristyksen takia ei täysin sama, mutta lähellä
-        assertEquals(22.0, backToMetric.toDouble(), 0.2)
+        assertEquals(22.0, backToMetric.toDouble(), 1e-12)
     }
 
     @Test
@@ -119,9 +117,27 @@ class UnitConversionTest {
         withDefaultLocale(Locale.forLanguageTag("fi-FI")) {
             val converted = convertGaugeValue("22", toImperial = true)
 
-            assertEquals("22.4", converted)
-            assertEquals(22.4, converted.toDouble(), delta)
+            assertFalse(converted.contains(','))
+            assertEquals(22.352, converted.toDouble(), 1e-12)
         }
+    }
+
+    @Test
+    fun `conversion helpers do not reinterpret malformed or nonfinite text`() {
+        listOf("-2", "1e3", "NaN", "Infinity", "1.2.3", "9".repeat(400)).forEach {
+            assertEquals(it, convertFieldValue(it, toImperial = true))
+            assertEquals(it, convertGaugeValue(it, toImperial = true))
+        }
+    }
+
+    @Test
+    fun `repeated field conversion does not accumulate display rounding`() {
+        val original = "33.123456789"
+        var value = original
+        repeat(20) {
+            value = convertFieldValue(convertFieldValue(value, toImperial = true), toImperial = false)
+        }
+        assertEquals(original.toDouble(), value.toDouble(), 1e-12)
     }
 
     private fun withDefaultLocale(

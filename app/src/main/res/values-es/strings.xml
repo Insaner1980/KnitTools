@@ -17,18 +17,15 @@
     <string name="measurement_with_unit_format">%1$s %2$s</string>
     <string name="unit_inches">pulgadas</string>
     <string name="unit_st">p</string>
-    <string name="unit_rows">vueltas</string>
     <string name="unit_g">g</string>
     <string name="unit_meters">metros</string>
     <string name="unit_yards">yardas</string>
     <string name="unit_st_per_10cm">p/10 cm</string>
     <string name="unit_st_per_4in">p/4 in</string>
-    <string name="unit_per_10cm">por 10 cm</string>
-    <string name="unit_per_4in">por 4 in</string>
 
     <!-- Home screen -->
     <string name="tool_increase_decrease">Aumentos / disminuciones</string>
-    <string name="tool_gauge_converter">Calculadora de muestra</string>
+    <string name="tool_gauge_converter">Medidas y muestra</string>
     <string name="tool_cast_on_calculator">Calculadora de montaje</string>
     <string name="tool_yarn_estimator">Calculadora de hilo</string>
     <string name="tool_needle_sizes">Tamaños de agujas</string>
@@ -292,15 +289,8 @@
     <!-- Gauge Converter -->
     <string name="pattern_gauge">Muestra del patrón</string>
     <string name="pattern_instructions">Instrucciones del patrón</string>
-    <string name="stitches_gauge">Puntos %s</string>
-    <string name="rows_gauge">Vueltas %s</string>
     <string name="stitches_in_pattern">Puntos del patrón</string>
     <string name="rows_in_pattern">Vueltas del patrón</string>
-    <string name="adjusted_for_your_gauge">Ajustado a tu muestra</string>
-    <string name="adjusted_result">%1$d puntos, %2$d vueltas</string>
-    <string name="exact_result">Exacto: %1$s p, %2$s vueltas</string>
-    <string name="stitch_gauge_diff">Densidad de puntos: %s%%</string>
-    <string name="row_gauge_diff">Densidad de vueltas: %s%%</string>
 
     <!-- Cast On Calculator -->
     <string name="desired_width">Ancho deseado</string>
@@ -434,7 +424,7 @@
 
     <!-- Hubs -->
     <string name="desc_increase_decrease">Reparte aumentos o disminuciones uniformemente a lo largo de una vuelta</string>
-    <string name="desc_gauge_calculator">Calcula tu muestra y convierte instrucciones de patrones</string>
+    <string name="desc_gauge_calculator">Convierte longitudes y calcula tensión, cantidades y medidas</string>
     <string name="desc_cast_on">Calcula los puntos que debes montar para un ancho deseado</string>
     <string name="desc_needle_sizes">Tamaños de agujas en sistemas métrico, US, UK y japonés</string>
     <string name="desc_size_charts">Medidas corporales estándar para tallaje de prendas</string>
@@ -545,7 +535,6 @@
     <string name="your_gauge_section">Tu muestra</string>
     <string name="measure_swatch">Medir muestra</string>
     <string name="enter_directly">Introducir directamente</string>
-    <string name="calculated_gauge_format">= %1$.1f p / %2$.1f vueltas %3$s</string>
     <string name="measured_width">Ancho medido</string>
     <string name="stitch_count_in_swatch">Puntos en la muestra</string>
     <string name="measured_height">Alto medido</string>
@@ -696,8 +685,6 @@
     <string name="yardage_format">%d yardas</string>
 
     <!-- Info tips -->
-    <string name="tip_your_gauge_title">¿Qué es la muestra?</string>
-    <string name="tip_your_gauge_desc">La muestra te indica cuántos puntos y vueltas caben en un área medida. Teje una pequeña muestra y mídela para conocer tu tensión personal. Así te aseguras de que la prenda terminada tenga el tamaño previsto en el patrón.</string>
     <string name="tip_pattern_repeat_title">Repetición del patrón</string>
     <string name="tip_pattern_repeat_desc">Si tu motivo se repite cada X puntos (por ejemplo, una trenza cada 8 puntos), introduce ese número aquí. La calculadora redondea los puntos del cuerpo, antes de los puntos de borde, al múltiplo más cercano para que el patrón encaje.</string>
     <string name="tip_edge_stitches_title">Puntos de borde</string>
@@ -906,5 +893,72 @@
     <item quantity="one">No se pudo mover %d proyecto.</item>
     <item quantity="other">No se pudieron mover %d proyectos.</item>
     <item quantity="many">No se pudieron mover %d proyectos.</item>
+    </plurals>
+
+    <string name="measurement_title">Medidas y muestra</string>
+    <string name="measurement_task">Tarea</string>
+    <string name="measurement_convert">Convertir medidas</string>
+    <string name="measurement_measure_gauge">Medir la muestra</string>
+    <string name="measurement_calculate">Calcular a partir de la muestra</string>
+    <string name="measurement_adjust">Ajustar puntos y vueltas del patrón</string>
+    <string name="measurement_operation">Cálculo</string>
+    <string name="measurement_count_for_size">Cantidad a partir de una medida</string>
+    <string name="measurement_size_from_count">Medida a partir de una cantidad</string>
+    <string name="measurement_axis">Dirección</string>
+    <string name="measurement_stitches_width">Puntos y ancho</string>
+    <string name="measurement_rows_height">Vueltas y alto</string>
+    <string name="measurement_units">Unidades de medida</string>
+    <string name="measurement_from_unit">Unidad de origen</string>
+    <string name="measurement_to_unit">Unidad de destino</string>
+    <string name="measurement_value">Valor</string>
+    <string name="measurement_unit_cm">Centímetros</string>
+    <string name="measurement_unit_inch">Pulgadas</string>
+    <string name="measurement_unit_inch_short">in</string>
+    <string name="measurement_unit_meter">Metros</string>
+    <string name="measurement_unit_meter_short">m</string>
+    <string name="measurement_unit_yard">Yardas</string>
+    <string name="measurement_unit_yard_short">yd</string>
+    <string name="measurement_per_10cm">por 10 centímetros</string>
+    <string name="measurement_per_4in">por 4 pulgadas</string>
+    <string name="measurement_actual_stitches">Puntos de tu muestra</string>
+    <string name="measurement_actual_rows">Vueltas de tu muestra</string>
+    <string name="measurement_pattern_stitches">Puntos de la muestra del patrón</string>
+    <string name="measurement_pattern_rows">Vueltas de la muestra del patrón</string>
+    <string name="measurement_target_width">Ancho deseado</string>
+    <string name="measurement_target_height">Alto deseado</string>
+    <string name="measurement_stitch_count">Número de puntos</string>
+    <string name="measurement_row_count">Número de vueltas</string>
+    <string name="measurement_calculated_count">Cantidad calculada</string>
+    <string name="measurement_nearest_count">Número entero más cercano</string>
+    <string name="measurement_original_size">Medida original</string>
+    <string name="measurement_unchanged_size">Medida sin ajuste</string>
+    <string name="measurement_rounded_size">Medida tras el redondeo</string>
+    <string name="measurement_result_size">Medida resultante</string>
+    <string name="measurement_gauge_difference">Diferencia de tensión</string>
+    <string name="measurement_copy">Copiar resultado</string>
+    <string name="measurement_copied">Resultado copiado</string>
+    <string name="measurement_invalid_number">Introduce un número válido.</string>
+    <string name="measurement_positive_required">Introduce un valor mayor que cero.</string>
+    <string name="measurement_too_large">El valor está fuera del intervalo admitido. Comprueba la medida y la cantidad.</string>
+    <string name="measurement_complete_number">Completa o corrige el número antes de cambiar de unidad.</string>
+    <string name="measurement_project_unavailable">Este proyecto ya no está disponible. Puedes seguir calculando aquí.</string>
+    <string name="measurement_project_context">Proyecto: %1$s</string>
+    <string name="measurement_estimate">Estimación basada en la tensión introducida.</string>
+    <string name="measurement_adjust_warning">Estimación matemática basada en la tensión introducida. Las instrucciones de aumentos, disminuciones y construcción no se reescriben. La holgura, las repeticiones del motivo, los bordes, las sisas, los escotes y las mangas pueden necesitar ajustes por separado. Mide una muestra lavada o bloqueada para obtener una estimación más útil.</string>
+    <string name="measurement_swatch_hint">Para una estimación más útil, mide la muestra después de lavarla o bloquearla.</string>
+    <string name="measurement_result">Resultado</string>
+    <string name="measurement_value_unit_format">%1$s %2$s</string>
+    <string name="measurement_gauge_format">%1$s %2$s</string>
+    <string name="measurement_result_line">%1$s: %2$s</string>
+    <string name="measurement_field_with_unit">%1$s (%2$s)</string>
+    <plurals name="measurement_stitches">
+        <item quantity="one">%1$d punto</item>
+        <item quantity="many">%1$d puntos</item>
+        <item quantity="other">%1$d puntos</item>
+    </plurals>
+    <plurals name="measurement_rows">
+        <item quantity="one">%1$d vuelta</item>
+        <item quantity="many">%1$d vueltas</item>
+        <item quantity="other">%1$d vueltas</item>
     </plurals>
 </resources>

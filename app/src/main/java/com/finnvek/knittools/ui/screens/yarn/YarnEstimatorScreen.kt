@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
+import com.finnvek.knittools.domain.calculator.MeasurementNumberParser
 import com.finnvek.knittools.domain.calculator.YarnEstimator
 import com.finnvek.knittools.domain.calculator.formatDecimalForDisplay
 import com.finnvek.knittools.domain.model.YarnEstimate
@@ -85,9 +86,10 @@ private fun YarnEstimatorContent(
     var totalYarn by rememberSaveable { mutableStateOf("") }
     var yarnPerSkein by rememberSaveable { mutableStateOf("") }
     var weightPerSkein by rememberSaveable { mutableStateOf("") }
+    val locale = rememberCurrentLocale()
 
-    val result by remember(totalYarn, yarnPerSkein, weightPerSkein) {
-        derivedStateOf { calculateYarnEstimate(totalYarn, yarnPerSkein, weightPerSkein) }
+    val result by remember(totalYarn, yarnPerSkein, weightPerSkein, locale) {
+        derivedStateOf { calculateYarnEstimate(totalYarn, yarnPerSkein, weightPerSkein, locale) }
     }
 
     val lengthUnit =
@@ -226,11 +228,17 @@ private fun calculateYarnEstimate(
     totalYarn: String,
     yarnPerSkein: String,
     weightPerSkein: String,
+    locale: Locale,
 ): YarnEstimate? {
-    val total = totalYarn.toDoubleOrNull() ?: return null
-    val perSkein = yarnPerSkein.toDoubleOrNull() ?: return null
-    val weight = weightPerSkein.toDoubleOrNull() ?: return null
-    if (total <= 0 || perSkein <= 0 || weight <= 0) return null
+    val total = MeasurementNumberParser.parse(totalYarn, locale).value ?: return null
+    val perSkein = MeasurementNumberParser.parse(yarnPerSkein, locale).value ?: return null
+    val weight = MeasurementNumberParser.parse(weightPerSkein, locale).value ?: return null
+    if (!((total / perSkein).isFinite()) ||
+        ceil(total / perSkein) > Int.MAX_VALUE ||
+        !(ceil(total / perSkein) * weight).isFinite()
+    ) {
+        return null
+    }
     return YarnEstimator.estimate(total, perSkein, weight)
 }
 

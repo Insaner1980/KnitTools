@@ -2,9 +2,13 @@ package com.finnvek.knittools.ui.components
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material.icons.Icons
@@ -15,6 +19,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -37,6 +42,7 @@ fun ToolScreenScaffold(
     modifier: Modifier = Modifier,
     onSettings: (() -> Unit)? = null,
     snackbarHost: @Composable () -> Unit = {},
+    wrapTitle: Boolean = false,
     content: @Composable (PaddingValues) -> Unit,
 ) {
     Scaffold(
@@ -44,50 +50,77 @@ fun ToolScreenScaffold(
         containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = snackbarHost,
         topBar = {
-            TopAppBar(
-                title = {
-                    val titleStyle =
-                        MaterialTheme.typography.titleLarge.copy(
-                            color = MaterialTheme.colorScheme.onBackground,
-                        )
-                    BasicText(
-                        text = title,
-                        style = titleStyle,
-                        autoSize =
-                            TextAutoSize.StepBased(
-                                minFontSize = 16.sp,
-                                maxFontSize = titleStyle.fontSize,
-                            ),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                },
-                navigationIcon = {
+            if (wrapTitle) {
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .windowInsetsPadding(
+                                TopAppBarDefaults.windowInsets,
+                            ).heightIn(min = 64.dp)
+                            .padding(vertical = 8.dp, horizontal = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
                     IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.back),
-                            tint = MaterialTheme.colorScheme.outline,
-                        )
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
-                },
-                actions = {
+                    Text(
+                        title,
+                        modifier = Modifier.weight(1f).padding(end = 12.dp),
+                        style = MaterialTheme.typography.titleLarge,
+                    )
                     if (onSettings != null) {
                         IconButton(onClick = onSettings) {
-                            Icon(
-                                imageVector = Icons.Default.Settings,
-                                contentDescription = stringResource(R.string.settings),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                            Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.settings))
                         }
                     }
-                },
-                colors =
-                    TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color.Transparent,
-                        scrolledContainerColor = Color.Transparent,
-                    ),
-            )
+                }
+            } else {
+                TopAppBar(
+                    title = {
+                        val titleStyle =
+                            MaterialTheme.typography.titleLarge.copy(
+                                color = MaterialTheme.colorScheme.onBackground,
+                            )
+                        BasicText(
+                            text = title,
+                            style = titleStyle,
+                            autoSize =
+                                TextAutoSize.StepBased(
+                                    minFontSize = 16.sp,
+                                    maxFontSize = titleStyle.fontSize,
+                                ),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(R.string.back),
+                                tint = MaterialTheme.colorScheme.outline,
+                            )
+                        }
+                    },
+                    actions = {
+                        if (onSettings != null) {
+                            IconButton(onClick = onSettings) {
+                                Icon(
+                                    imageVector = Icons.Default.Settings,
+                                    contentDescription = stringResource(R.string.settings),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    },
+                    colors =
+                        TopAppBarDefaults.topAppBarColors(
+                            containerColor = Color.Transparent,
+                            scrolledContainerColor = Color.Transparent,
+                        ),
+                )
+            }
         },
     ) { scaffoldPadding ->
         Box(

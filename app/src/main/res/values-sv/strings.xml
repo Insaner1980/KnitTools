@@ -17,18 +17,15 @@
     <string name="measurement_with_unit_format">%1$s %2$s</string>
     <string name="unit_inches">tum</string>
     <string name="unit_st">m</string>
-    <string name="unit_rows">varv</string>
     <string name="unit_g">g</string>
     <string name="unit_meters">meter</string>
     <string name="unit_yards">yard</string>
     <string name="unit_st_per_10cm">m/10 cm</string>
     <string name="unit_st_per_4in">m/4 tum</string>
-    <string name="unit_per_10cm">per 10 cm</string>
-    <string name="unit_per_4in">per 4 tum</string>
 
     <!-- Home screen -->
     <string name="tool_increase_decrease">Ökningar / minskningar</string>
-    <string name="tool_gauge_converter">Stickfasthetsräknare</string>
+    <string name="tool_gauge_converter">Mått och stickfasthet</string>
     <string name="tool_cast_on_calculator">Uppläggningsräknare</string>
     <string name="tool_yarn_estimator">Garnberäknare</string>
     <string name="tool_needle_sizes">Stickstorlekar</string>
@@ -288,15 +285,8 @@
     <!-- Gauge Converter -->
     <string name="pattern_gauge">Mönstrets stickfasthet</string>
     <string name="pattern_instructions">Mönsterinstruktioner</string>
-    <string name="stitches_gauge">Maskor %s</string>
-    <string name="rows_gauge">Varv %s</string>
     <string name="stitches_in_pattern">Maskor i mönstret</string>
     <string name="rows_in_pattern">Varv i mönstret</string>
-    <string name="adjusted_for_your_gauge">Anpassat efter din stickfasthet</string>
-    <string name="adjusted_result">%1$d maskor, %2$d varv</string>
-    <string name="exact_result">Exakt: %1$s m, %2$s varv</string>
-    <string name="stitch_gauge_diff">Masktäthet: %s%%</string>
-    <string name="row_gauge_diff">Varvtäthet: %s%%</string>
 
     <!-- Cast On Calculator -->
     <string name="desired_width">Önskad bredd</string>
@@ -430,7 +420,7 @@
 
     <!-- Hubs -->
     <string name="desc_increase_decrease">Fördela ökningar eller minskningar jämnt över ett varv</string>
-    <string name="desc_gauge_calculator">Beräkna din stickfasthet och omvandla mönsterinstruktioner</string>
+    <string name="desc_gauge_calculator">Omvandla längder och beräkna stickfasthet, antal och mått</string>
     <string name="desc_cast_on">Beräkna hur många maskor du ska lägga upp för önskad bredd</string>
     <string name="desc_needle_sizes">Stickstorlekar i metriska, US-, UK- och japanska system</string>
     <string name="desc_size_charts">Standardmått för plaggstorlekar</string>
@@ -534,7 +524,6 @@
     <string name="your_gauge_section">Din stickfasthet</string>
     <string name="measure_swatch">Mät provlapp</string>
     <string name="enter_directly">Ange direkt</string>
-    <string name="calculated_gauge_format">= %1$.1f m / %2$.1f varv %3$s</string>
     <string name="measured_width">Uppmätt bredd</string>
     <string name="stitch_count_in_swatch">Maskor i provlappen</string>
     <string name="measured_height">Uppmätt höjd</string>
@@ -683,8 +672,6 @@
     <string name="yardage_format">%d yard</string>
 
     <!-- Info tips -->
-    <string name="tip_your_gauge_title">Vad är stickfasthet?</string>
-    <string name="tip_your_gauge_desc">Stickfastheten visar hur många maskor och varv som ryms inom ett uppmätt område. Sticka en liten provlapp och mät den för att ta reda på din personliga stickfasthet. Då får det färdiga arbetet den storlek som mönstret är tänkt att ha.</string>
     <string name="tip_pattern_repeat_title">Mönsterrapport</string>
     <string name="tip_pattern_repeat_desc">Om ditt mönster upprepas var X:e maska (t.ex. en fläta var 8:e maska), ange det talet här. Räknaren avrundar maskorna i själva mönstret, före kantmaskor, till närmaste passande multipel så att mönstret stämmer.</string>
     <string name="tip_edge_stitches_title">Kantmaskor</string>
@@ -906,5 +893,70 @@
     <plurals name="folder_move_projects_error">
     <item quantity="one">Det gick inte att flytta %d projekt.</item>
     <item quantity="other">Det gick inte att flytta %d projekt.</item>
+    </plurals>
+
+    <string name="measurement_title">Mått och stickfasthet</string>
+    <string name="measurement_task">Uppgift</string>
+    <string name="measurement_convert">Omvandla mått</string>
+    <string name="measurement_measure_gauge">Mät stickfasthet</string>
+    <string name="measurement_calculate">Beräkna från stickfasthet</string>
+    <string name="measurement_adjust">Anpassa mönstrets antal</string>
+    <string name="measurement_operation">Beräkning</string>
+    <string name="measurement_count_for_size">Antal från ett mått</string>
+    <string name="measurement_size_from_count">Mått från ett antal</string>
+    <string name="measurement_axis">Riktning</string>
+    <string name="measurement_stitches_width">Maskor och bredd</string>
+    <string name="measurement_rows_height">Varv och höjd</string>
+    <string name="measurement_units">Måttenheter</string>
+    <string name="measurement_from_unit">Från enhet</string>
+    <string name="measurement_to_unit">Till enhet</string>
+    <string name="measurement_value">Värde</string>
+    <string name="measurement_unit_cm">Centimeter</string>
+    <string name="measurement_unit_inch">Tum</string>
+    <string name="measurement_unit_inch_short">in</string>
+    <string name="measurement_unit_meter">Meter</string>
+    <string name="measurement_unit_meter_short">m</string>
+    <string name="measurement_unit_yard">Yard</string>
+    <string name="measurement_unit_yard_short">yd</string>
+    <string name="measurement_per_10cm">per 10 centimeter</string>
+    <string name="measurement_per_4in">per 4 tum</string>
+    <string name="measurement_actual_stitches">Din masktäthet</string>
+    <string name="measurement_actual_rows">Din varvtäthet</string>
+    <string name="measurement_pattern_stitches">Mönstrets masktäthet</string>
+    <string name="measurement_pattern_rows">Mönstrets varvtäthet</string>
+    <string name="measurement_target_width">Önskad bredd</string>
+    <string name="measurement_target_height">Önskad höjd</string>
+    <string name="measurement_stitch_count">Maskantal</string>
+    <string name="measurement_row_count">Varvantal</string>
+    <string name="measurement_calculated_count">Beräknat antal</string>
+    <string name="measurement_nearest_count">Närmaste heltal</string>
+    <string name="measurement_original_size">Ursprungligt mått</string>
+    <string name="measurement_unchanged_size">Mått utan anpassning</string>
+    <string name="measurement_rounded_size">Mått efter avrundning</string>
+    <string name="measurement_result_size">Resulterande mått</string>
+    <string name="measurement_gauge_difference">Skillnad i stickfasthet</string>
+    <string name="measurement_copy">Kopiera resultat</string>
+    <string name="measurement_copied">Resultatet har kopierats</string>
+    <string name="measurement_invalid_number">Ange ett giltigt tal.</string>
+    <string name="measurement_positive_required">Ange ett värde större än noll.</string>
+    <string name="measurement_too_large">Värdet ligger utanför det tillåtna intervallet. Kontrollera måttet och antalet.</string>
+    <string name="measurement_complete_number">Skriv färdigt eller rätta talet innan du byter enhet.</string>
+    <string name="measurement_project_unavailable">Projektet är inte längre tillgängligt. Du kan fortsätta beräkna här.</string>
+    <string name="measurement_project_context">Projekt: %1$s</string>
+    <string name="measurement_estimate">Uppskattning utifrån angiven stickfasthet.</string>
+    <string name="measurement_adjust_warning">Matematisk uppskattning utifrån angiven stickfasthet. Formning och konstruktion skrivs inte om. Rörelsevidd, mönsterrapporter, kanter, ärmhål, halsringning och ärmar kan behöva anpassas separat. Mät en tvättad eller blockad provlapp för en mer användbar uppskattning.</string>
+    <string name="measurement_swatch_hint">Mät provlappen efter tvätt eller blockning för en mer användbar uppskattning.</string>
+    <string name="measurement_result">Resultat</string>
+    <string name="measurement_value_unit_format">%1$s %2$s</string>
+    <string name="measurement_gauge_format">%1$s %2$s</string>
+    <string name="measurement_result_line">%1$s: %2$s</string>
+    <string name="measurement_field_with_unit">%1$s (%2$s)</string>
+    <plurals name="measurement_stitches">
+        <item quantity="one">%1$d maska</item>
+        <item quantity="other">%1$d maskor</item>
+    </plurals>
+    <plurals name="measurement_rows">
+        <item quantity="one">%1$d varv</item>
+        <item quantity="other">%1$d varv</item>
     </plurals>
 </resources>

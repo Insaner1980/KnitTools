@@ -29,6 +29,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.IncreaseDecreaseCalculator
+import com.finnvek.knittools.domain.calculator.MeasurementNumberParser
 import com.finnvek.knittools.domain.calculator.ParsedInstruction
 import com.finnvek.knittools.domain.model.IncreaseDecreaseMessage
 import com.finnvek.knittools.domain.model.IncreaseDecreaseMode
@@ -44,6 +45,7 @@ import com.finnvek.knittools.ui.components.ResultCard
 import com.finnvek.knittools.ui.components.ResultNumberInset
 import com.finnvek.knittools.ui.components.SegmentedToggle
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
+import com.finnvek.knittools.ui.components.rememberCurrentLocale
 import com.finnvek.knittools.ui.screens.home.HomeViewModel
 
 @Composable
@@ -56,14 +58,19 @@ fun IncreaseDecreaseScreen(
     var changeBy by rememberSaveable { mutableStateOf("") }
     var mode by rememberSaveable { mutableStateOf(IncreaseDecreaseMode.INCREASE) }
     var style by rememberSaveable { mutableStateOf(KnittingStyle.FLAT) }
+    val locale = rememberCurrentLocale()
 
     val modeOptions = listOf(stringResource(R.string.mode_increase), stringResource(R.string.mode_decrease))
     val styleOptions = listOf(stringResource(R.string.style_flat), stringResource(R.string.style_circular))
 
-    val result by remember(currentStitches, changeBy, mode, style) {
+    val result by remember(currentStitches, changeBy, mode, style, locale) {
         derivedStateOf {
-            val current = currentStitches.toIntOrNull() ?: return@derivedStateOf null
-            val change = changeBy.toIntOrNull() ?: return@derivedStateOf null
+            val current =
+                MeasurementNumberParser.parse(currentStitches, locale, integer = true).value?.toInt()
+                    ?: return@derivedStateOf null
+            val change =
+                MeasurementNumberParser.parse(changeBy, locale, integer = true).value?.toInt()
+                    ?: return@derivedStateOf null
             IncreaseDecreaseCalculator.calculate(current, change, mode, style)
         }
     }

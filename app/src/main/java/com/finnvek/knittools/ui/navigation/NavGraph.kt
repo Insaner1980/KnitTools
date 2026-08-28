@@ -327,6 +327,9 @@ private fun NavGraphBuilder.projectsGraph(
                         onNotesEditor = { projectId ->
                             navController.navigateSingleTopTo(Screen.NotesEditor(projectId).route)
                         },
+                        onMeasurements = { projectId ->
+                            navController.navigateSingleTopTo(Screen.Gauge.createRoute(projectId))
+                        },
                         onUpgradeToPro = {
                             navController.navigateSingleTopTo(Screen.ProUpgrade.route)
                         },
@@ -431,6 +434,7 @@ private fun NavGraphBuilder.projectsGraph(
                 onBack = { navController.popBackStack() },
             )
         }
+        gaugeDestination(navController)
         composable(
             Screen.NotesEditor.ROUTE,
             arguments = listOf(navArgument(ARG_PROJECT_ID) { type = NavType.LongType }),
@@ -464,9 +468,7 @@ private fun NavGraphBuilder.toolsGraph(
                 onNavigate = { screen -> navController.navigateSingleTopTo(screen.route) },
             )
         }
-        composable(Screen.Gauge.route) {
-            GaugeScreen(onBack = { navController.popBackStack() })
-        }
+        gaugeDestination(navController)
         composable(Screen.IncreaseDecrease.route) {
             IncreaseDecreaseScreen(onBack = { navController.popBackStack() })
         }
@@ -536,6 +538,22 @@ private fun NavGraphBuilder.toolsGraph(
         }
     }
     // CPD-ON
+}
+
+private fun NavGraphBuilder.gaugeDestination(navController: NavHostController) {
+    composable(
+        Screen.Gauge.ROUTE,
+        arguments =
+            listOf(
+                navArgument(Screen.Gauge.ARG_PROJECT_ID) {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                },
+            ),
+    ) {
+        GaugeScreen(onBack = { navController.popBackStack() })
+    }
 }
 
 @Composable

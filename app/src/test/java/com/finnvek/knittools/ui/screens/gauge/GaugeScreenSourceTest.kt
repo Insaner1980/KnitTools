@@ -6,15 +6,18 @@ import org.junit.Test
 
 class GaugeScreenSourceTest {
     @Test
-    fun `result card displays row gauge percentage as well as stitch gauge`() {
-        val source = ProjectSourceFiles.read(GAUGE_SCREEN)
+    fun `shared presentation includes both independent axis percentages and rounded sizes`() {
+        val source = ProjectSourceFiles.read(GAUGE_PRESENTATION)
 
-        assertTrue(source.contains("R.string.stitch_gauge_diff"))
-        assertTrue(source.contains("R.string.row_gauge_diff"))
-        assertTrue(source.contains("result.rowPercentDifference"))
+        assertTrue(source.contains("GaugeAxis.entries.mapNotNull(::adjusted)"))
+        assertTrue(source.contains("state.stitchAdjustment else state.rowAdjustment"))
+        assertTrue(source.contains("result.differencePercent"))
+        assertTrue(source.contains("result.roundedLengthMm"))
+        assertTrue(source.contains("R.string.measurement_gauge_difference"))
     }
 
     private companion object {
-        private const val GAUGE_SCREEN = "app/src/main/java/com/finnvek/knittools/ui/screens/gauge/GaugeScreen.kt"
+        private const val GAUGE_PRESENTATION =
+            "app/src/main/java/com/finnvek/knittools/ui/screens/gauge/GaugePresentation.kt"
     }
 }

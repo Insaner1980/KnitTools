@@ -14,10 +14,13 @@ object GaugeSwatchCalculator {
         rowCount: Int,
         gaugeBase: Double = 10.0,
     ): GaugeSwatchResult? {
-        if (measuredWidth <= 0 || measuredHeight <= 0 || stitchCount <= 0 || rowCount <= 0) return null
+        val stitchDensity = MeasurementCalculator.density(stitchCount.toDouble(), measuredWidth) ?: return null
+        val rowDensity = MeasurementCalculator.density(rowCount.toDouble(), measuredHeight) ?: return null
+        val stitches = MeasurementCalculator.exactCountForSize(stitchDensity, gaugeBase) ?: return null
+        val rows = MeasurementCalculator.exactCountForSize(rowDensity, gaugeBase) ?: return null
         return GaugeSwatchResult(
-            stitchesPerGaugeUnit = (stitchCount.toDouble() / measuredWidth) * gaugeBase,
-            rowsPerGaugeUnit = (rowCount.toDouble() / measuredHeight) * gaugeBase,
+            stitchesPerGaugeUnit = stitches,
+            rowsPerGaugeUnit = rows,
         )
     }
 }

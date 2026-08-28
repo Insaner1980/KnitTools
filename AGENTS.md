@@ -80,6 +80,7 @@ Use [`CLAUDE.md`](CLAUDE.md) when product wording, visual direction, or UX struc
 - Debug-only Sentry diagnostics live under `app/src/debug` and use `io.sentry:sentry-android-core` only through `debugImplementation`; the release source set is a no-op and release builds must stay free of `io.sentry` dependencies
 - Voice/microphone commands are intentionally absent from the counter; do not reintroduce SpeechRecognizer, TextToSpeech, or conversational voice without a new explicit product/security decision
 - Paste-to-parse uses the regex-only `domain/calculator/InstructionParser`; keep model-backed parser code out of calculator UI
+- Measurements and Gauge V1 keeps raw numeric text and canonical `Double` millimeters/counts per millimeter in `GaugeViewModel` and `SavedStateHandle`; `MeasurementCalculator` owns arithmetic and `GaugePresentation` owns localized output. Unit changes preserve canonical values, stitch and row densities retain independent manual/swatch provenance, and display rounding must never feed calculation. Calculator actions do not write Room, preferences, or notes or call network services; Copy writes plain text to the clipboard and regex paste retains its existing Pro gate.
 - Notes editing is local-only; do not reintroduce cloud journal processing or cloud cleanup without a new explicit product/security decision
 - PDF rendering lives in `data/storage/PdfPageRenderer`; pattern UI should not define renderer copies
 
@@ -93,6 +94,7 @@ Use [`CLAUDE.md`](CLAUDE.md) when product wording, visual direction, or UX struc
 - Widget counter launch ids must be issued by `data/storage/CounterLaunchTokenStore` and atomically consumed by `MainActivity`; unused ids expire after 24 hours, legacy untimestamped ids are rejected, untrusted counter extras are ignored, and OAuth callback intents must not trigger counter navigation or consume counter tokens
 - Pattern viewer entry points require an attached PDF URI; Ravelry pattern links are metadata until a local PDF is attached
 - Do not turn `Tools` back into a generic dashboard grid
+- `Screen.Gauge` is the shared Measurements and Gauge screen for Tools and Projects; its optional `projectId` supplies display context only. The project entry belongs in `ProjectActionsBottomSheet`; preserve the five project content cards and existing Pattern viewer entries.
 - Project list sort order is `domain/model/ProjectSortOrder`; DataStore persists its `persistedValue`, but UI/repository code should use the enum
 
 ## UI Rules

@@ -17,18 +17,15 @@
     <string name="measurement_with_unit_format">%1$s %2$s</string>
     <string name="unit_inches">tommer</string>
     <string name="unit_st">m</string>
-    <string name="unit_rows">pinde</string>
     <string name="unit_g">g</string>
     <string name="unit_meters">meter</string>
     <string name="unit_yards">yard</string>
     <string name="unit_st_per_10cm">m/10 cm</string>
     <string name="unit_st_per_4in">m/4 in</string>
-    <string name="unit_per_10cm">pr. 10 cm</string>
-    <string name="unit_per_4in">pr. 4 in</string>
 
     <!-- Home screen -->
     <string name="tool_increase_decrease">Tag ud / tag ind</string>
-    <string name="tool_gauge_converter">Fasthedsberegner</string>
+    <string name="tool_gauge_converter">Mål og strikkefasthed</string>
     <string name="tool_cast_on_calculator">Opslagsberegner</string>
     <string name="tool_yarn_estimator">Garnberegner</string>
     <string name="tool_needle_sizes">Pindestørrelser</string>
@@ -288,15 +285,8 @@
     <!-- Gauge Converter -->
     <string name="pattern_gauge">Opskriftens strikkefasthed</string>
     <string name="pattern_instructions">Instruktioner i opskriften</string>
-    <string name="stitches_gauge">Masker %s</string>
-    <string name="rows_gauge">Pinde %s</string>
     <string name="stitches_in_pattern">Masker i opskriften</string>
     <string name="rows_in_pattern">Pinde i opskriften</string>
-    <string name="adjusted_for_your_gauge">Tilpasset din strikkefasthed</string>
-    <string name="adjusted_result">%1$d masker, %2$d pinde</string>
-    <string name="exact_result">Præcist: %1$s m, %2$s pinde</string>
-    <string name="stitch_gauge_diff">Maskefasthed: %s%%</string>
-    <string name="row_gauge_diff">Pindefasthed: %s%%</string>
 
     <!-- Cast On Calculator -->
     <string name="desired_width">Ønsket bredde</string>
@@ -430,7 +420,7 @@
 
     <!-- Hubs -->
     <string name="desc_increase_decrease">Fordel udtagninger eller indtagninger jævnt over en pind</string>
-    <string name="desc_gauge_calculator">Beregn din strikkefasthed og konvertér instruktioner fra opskrifter</string>
+    <string name="desc_gauge_calculator">Omregn længder, og beregn strikkefasthed, antal og mål</string>
     <string name="desc_cast_on">Beregn hvor mange masker du skal slå op til en ønsket bredde</string>
     <string name="desc_needle_sizes">Pindestørrelser i metrisk, US-, UK- og japansk system</string>
     <string name="desc_size_charts">Standard kropsmål til størrelsesbestemmelse</string>
@@ -534,7 +524,6 @@
     <string name="your_gauge_section">Din strikkefasthed</string>
     <string name="measure_swatch">Mål strikkeprøve</string>
     <string name="enter_directly">Indtast direkte</string>
-    <string name="calculated_gauge_format">= %1$.1f m / %2$.1f pinde %3$s</string>
     <string name="measured_width">Målt bredde</string>
     <string name="stitch_count_in_swatch">Masker i strikkeprøven</string>
     <string name="measured_height">Målt højde</string>
@@ -683,8 +672,6 @@
     <string name="yardage_format">%d yard</string>
 
     <!-- Info tips -->
-    <string name="tip_your_gauge_title">Hvad er strikkefasthed?</string>
-    <string name="tip_your_gauge_desc">Strikkefasthed fortæller, hvor mange masker og pinde der passer inden for et målt område. Strik en lille prøve og mål den for at finde din personlige strikkefasthed. Det sikrer, at dit færdige arbejde passer til opskriftens tilsigtede størrelse.</string>
     <string name="tip_pattern_repeat_title">Mønsterrapport</string>
     <string name="tip_pattern_repeat_desc">Hvis dit mønster gentager sig for hver X masker (f.eks. en snoning for hver 8 masker), skal du indtaste tallet her. Beregneren runder maskerne i selve mønsteret, før kantmasker, til nærmeste multiplum, så mønsteret passer.</string>
     <string name="tip_edge_stitches_title">Kantmasker</string>
@@ -889,5 +876,70 @@
     <plurals name="folder_move_projects_error">
     <item quantity="one">Kunne ikke flytte %d projekt.</item>
     <item quantity="other">Kunne ikke flytte %d projekter.</item>
+    </plurals>
+
+    <string name="measurement_title">Mål og strikkefasthed</string>
+    <string name="measurement_task">Opgave</string>
+    <string name="measurement_convert">Omregn mål</string>
+    <string name="measurement_measure_gauge">Mål strikkefasthed</string>
+    <string name="measurement_calculate">Beregn ud fra strikkefasthed</string>
+    <string name="measurement_adjust">Tilpas antal i opskriften</string>
+    <string name="measurement_operation">Beregning</string>
+    <string name="measurement_count_for_size">Antal ud fra et mål</string>
+    <string name="measurement_size_from_count">Mål ud fra et antal</string>
+    <string name="measurement_axis">Retning</string>
+    <string name="measurement_stitches_width">Masker og bredde</string>
+    <string name="measurement_rows_height">Pinde og højde</string>
+    <string name="measurement_units">Måleenheder</string>
+    <string name="measurement_from_unit">Fra enhed</string>
+    <string name="measurement_to_unit">Til enhed</string>
+    <string name="measurement_value">Værdi</string>
+    <string name="measurement_unit_cm">Centimeter</string>
+    <string name="measurement_unit_inch">Tommer</string>
+    <string name="measurement_unit_inch_short">in</string>
+    <string name="measurement_unit_meter">Meter</string>
+    <string name="measurement_unit_meter_short">m</string>
+    <string name="measurement_unit_yard">Yard</string>
+    <string name="measurement_unit_yard_short">yd</string>
+    <string name="measurement_per_10cm">pr. 10 centimeter</string>
+    <string name="measurement_per_4in">pr. 4 tommer</string>
+    <string name="measurement_actual_stitches">Din maskefasthed</string>
+    <string name="measurement_actual_rows">Din pindefasthed</string>
+    <string name="measurement_pattern_stitches">Opskriftens maskefasthed</string>
+    <string name="measurement_pattern_rows">Opskriftens pindefasthed</string>
+    <string name="measurement_target_width">Ønsket bredde</string>
+    <string name="measurement_target_height">Ønsket højde</string>
+    <string name="measurement_stitch_count">Maskeantal</string>
+    <string name="measurement_row_count">Pindeantal</string>
+    <string name="measurement_calculated_count">Beregnet antal</string>
+    <string name="measurement_nearest_count">Nærmeste hele antal</string>
+    <string name="measurement_original_size">Oprindeligt mål</string>
+    <string name="measurement_unchanged_size">Mål uden tilpasning</string>
+    <string name="measurement_rounded_size">Mål efter afrunding</string>
+    <string name="measurement_result_size">Beregnet mål</string>
+    <string name="measurement_gauge_difference">Forskel i strikkefasthed</string>
+    <string name="measurement_copy">Kopiér resultat</string>
+    <string name="measurement_copied">Resultatet er kopieret</string>
+    <string name="measurement_invalid_number">Indtast et gyldigt tal.</string>
+    <string name="measurement_positive_required">Indtast en værdi større end nul.</string>
+    <string name="measurement_too_large">Værdien er uden for det understøttede interval. Kontrollér målet og antallet.</string>
+    <string name="measurement_complete_number">Skriv tallet færdigt, eller ret det, før du skifter enhed.</string>
+    <string name="measurement_project_unavailable">Dette projekt er ikke længere tilgængeligt. Du kan fortsætte med at beregne her.</string>
+    <string name="measurement_project_context">Projekt: %1$s</string>
+    <string name="measurement_estimate">Estimat baseret på den indtastede strikkefasthed.</string>
+    <string name="measurement_adjust_warning">Matematisk estimat baseret på den indtastede strikkefasthed. Formgivning og konstruktion omskrives ikke. Bevægelsesvidde, mønsterrapporter, kanter, ærmegab, halsudskæringer og ærmer kan kræve særskilt tilpasning. Mål en vasket eller blokket strikkeprøve for et mere brugbart estimat.</string>
+    <string name="measurement_swatch_hint">Mål strikkeprøven efter vask eller blokning for et mere brugbart estimat.</string>
+    <string name="measurement_result">Resultat</string>
+    <string name="measurement_value_unit_format">%1$s %2$s</string>
+    <string name="measurement_gauge_format">%1$s %2$s</string>
+    <string name="measurement_result_line">%1$s: %2$s</string>
+    <string name="measurement_field_with_unit">%1$s (%2$s)</string>
+    <plurals name="measurement_stitches">
+        <item quantity="one">%1$d maske</item>
+        <item quantity="other">%1$d masker</item>
+    </plurals>
+    <plurals name="measurement_rows">
+        <item quantity="one">%1$d pind</item>
+        <item quantity="other">%1$d pinde</item>
     </plurals>
 </resources>

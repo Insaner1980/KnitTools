@@ -11,7 +11,7 @@ This file is the detailed implementation reference for the current KnitTools che
 - build, dependency, CI, and release-surface checks;
 - locating the source of truth for a behavior before changing it.
 
-The base snapshot was re-verified against the source tree on 2026-08-24. Project-folder organization, Room 23, and the source inventory were updated on 2026-08-28 after full local JVM and Android verification. This file describes the current working tree, including uncommitted changes, rather than assuming that Git `HEAD` contains the newest implementation. Counts, dependency versions, workflow pins, and generated schema versions are volatile and must be rechecked when precision matters.
+The base snapshot was re-verified against the source tree on 2026-08-24. Project-folder organization, Room 23, Measurements and Gauge V1, and the source inventory were updated on 2026-08-28 after full local JVM and Android verification. This file describes the current working tree, including uncommitted changes, rather than assuming that Git `HEAD` contains the newest implementation. Counts, dependency versions, workflow pins, and generated schema versions are volatile and must be rechecked when precision matters.
 
 This is a reference, not a replacement for the code. If this file conflicts with executable source, Gradle configuration, the Android manifest, Room schema exports, Firebase configuration, or tests, the executable source wins.
 
@@ -69,13 +69,17 @@ The app does not currently implement cloud synchronization, continuous Drive or 
 
 These are orientation counts, not coverage or pass results:
 
-- 296 production Kotlin files under `app/src/main`;
-- 236 Kotlin files in the JVM test source set under `app/src/test`;
-- 29 Kotlin files in the Android instrumented-test source set under `app/src/androidTest`;
+- 305 production Kotlin files under `app/src/main`;
+- 241 Kotlin files in the JVM test source set under `app/src/test`;
+- 31 Kotlin files in the Android instrumented-test source set under `app/src/androidTest`;
 - 7 TypeScript test files matching `*.test.ts` under `functions/src`;
 - 65 tracked or working-tree resource files under `app/src/main/res`.
 
 ### Current local validation
+
+Measurements and Gauge V1 finalization on 2026-08-28 passed 1,435 debug JVM tests across 239 suites with `--rerun-tasks` and no failures, errors, or skipped tests. The focused JVM run passed 146 tests across 18 classes. After the Compose stability correction and the direct UI-test synchronization correction, the final combined KSP, Android-test compilation, debug app and test APK assembly, baseline-profile assembly, `lintDebug`, `ktlintCheck`, and `detekt` run completed successfully (175 tasks, 7 minutes 51 seconds); Lint and Detekt reported zero issues. `GaugeScreen` uses a stable composable ViewModel provider and the shared lifecycle-aware event collector; the debug stability baseline was updated without adding a stability exemption.
+
+The final focused API 37 run passed all 13 `GaugeScreenTest` tests. The complete installed package, including all three `GaugeNavigationRuntimeTest` tests, passed 142 tests on API 36 (272.854 seconds) and 142 tests on API 37 (288.956 seconds), with no failures or skipped tests. Both final runs used identical app and test APKs, had no active default network, and reported no crash or ANR. An earlier post-stability API 37 run passed 141 of 142 tests because an immediate Finnish copy-confirmation visibility assertion failed; that test now waits up to five seconds for visibility while retaining the display and clipboard assertions. The earlier separate system-level 320 dp viewport and 200 percent font-scale three-test rerun predates these corrections and was not repeated. API 29 runtime testing remains unavailable because its AVD and system image are not installed. These results do not replace a human TalkBack listening pass or prove any release artifact or external-service behavior.
 
 Project-folder verification on 2026-08-28 passed 1,361 debug JVM tests across 234 suites, the complete 126-test installed instrumentation package on API 36 and API 37, KSP, Android-test compilation, debug app and test APK assembly, debug Lint, ktlint, Detekt, and `git diff --check`. No JVM or instrumented test failed or was skipped in the final runs; Lint reported no issues. The instrumented suite includes 31 new tests and covers schema 22 to 23, older migration entrypoints and the full 1 to 23 chain, Room constraints, metadata-only transactions, project creation, folder UI, state restoration, trusted widget navigation, and active-session preservation. Schema 23 adds only the two organization tables; all 14 schema 22 entities remain structurally unchanged.
 
@@ -271,7 +275,7 @@ Top-level navigation saves and restores state and avoids duplicate destinations.
 | `all_photos` | Cross-project progress-photo library |
 | `library_ravelry_detail/{patternId}` | Ravelry metadata from Library |
 | `tools` | Tools landing screen |
-| `gauge` | Gauge calculator |
+| `gauge?projectId={projectId}` | Measurements and Gauge; optional project context, with bare `gauge` still valid |
 | `increase_decrease` | Increase/decrease calculator |
 | `cast_on` | Cast-on calculator |
 | `yarn` | Yarn estimator |
@@ -294,7 +298,8 @@ Top-level navigation saves and restores state and avoids duplicate destinations.
 - `LibraryViewModel` is shared at the Library graph level.
 - Yarn-card detail resolves its ViewModel from the Library parent entry.
 - `session_history/{projectId}` is registered from Projects and Insights so it returns to the correct context.
-- Invalid arguments use `RouteArgumentFallback` and return to the owning top-level destination.
+- `gauge?projectId={projectId}` is registered from Tools and Projects, with a `GaugeViewModel` owned by each route entry. The optional project ID supplies display context only; invalid, unavailable, or absent context does not disable the calculator.
+- Invalid required arguments use `RouteArgumentFallback` and return to the owning top-level destination.
 - Global `pro_upgrade` is outside the individual top-level graphs.
 - `KnitToolsNavActions`, `CounterScreenActions`, and `RavelrySearchActions` group route actions.
 
@@ -318,7 +323,7 @@ Library contains Saved Patterns, My Yarn, All Photos, needle sizes, size charts,
 
 ### Tools
 
-Tools is a focused list, not a generic dashboard grid. It links to gauge conversion, increase/decrease distribution, cast-on calculation, yarn estimation, and Ravelry discovery. Reference tables remain under Library navigation.
+Tools is a focused list, not a generic dashboard grid. It links to Measurements and Gauge, increase/decrease distribution, cast-on calculation, yarn estimation, and Ravelry discovery. Reference tables remain under Library navigation.
 
 ### Insights
 
@@ -1128,12 +1133,18 @@ Project yarn notes are distinct from inventory cards. They support local name, d
 
 The calculator/reference implementation is local and deterministic:
 
-- `GaugeConverter` and swatch/gauge models convert stitch and row measurements;
+- `MeasurementCalculator` powers Measurements and Gauge V1: unit conversion, swatch measurement, count/size calculation, and pattern-gauge adjustment;
 - increase/decrease logic distributes changes across a row;
-- cast-on logic calculates tail/yarn needs from user inputs;
+- `CastOnCalculator` calculates cast-on stitches and resulting width from target width, stitch gauge, optional pattern repeat, and edge stitches;
 - `YarnEstimator` estimates quantity using local formulas;
 - `NeedleSizeData`, `SizeChartData`, `AbbreviationData`, and `ChartSymbolData` provide local reference content;
 - `InstructionParser` is regex-only paste-to-parse logic.
+
+Measurements and Gauge converts centimeters, inches, meters, and yards. Swatch width/stitch count and height/row count produce independent densities. The gauge bases are distinct: 10 cm is 100 mm, while 4 inches is 101.6 mm. Count calculations return the exact count, nearest whole count, and physical size represented by that rounded count; positive half values round up. Pattern adjustment also reports the original size, the size from leaving the pattern count unchanged, and the gauge difference. These are mathematical estimates, not automatic shaping or fit changes.
+
+`GaugeViewModel` and `SavedStateHandle` retain raw input, local task/unit selections, canonical `Double` millimeters and counts per millimeter, and independent manual/swatch provenance. Local unit changes preserve physical values without changing the stored unit preference. `MeasurementNumberParser` admits only complete valid numeric input; finite/range checks precede integer conversion, and display rounding never feeds subsequent calculations. `GaugePresentation` builds both visible result sections and copied text from the same values.
+
+The project action opens the same calculator with project-name context read through `CounterRepository.observeProject`; it does not change the project, notes, or Room data. The five project content cards and Pattern viewer entries remain unchanged. Copy writes localized plain text to the Android clipboard. Paste uses the existing local regex parser and retains its existing Pro gate; the four calculator tasks and Copy do not add a Pro gate or a network call.
 
 There is no model client, prompt, cloud parser, or language-model fallback in calculator UI. Current abbreviation route input distinguishes craft type, although the current data list is the same for knitting and crochet.
 
@@ -1490,11 +1501,11 @@ Accepted risk is limited to documented historical Ravelry credential findings in
 
 The current working tree contains:
 
-- 236 Kotlin files in `app/src/test`;
-- 29 Kotlin files in `app/src/androidTest`;
+- 241 Kotlin files in `app/src/test`;
+- 31 Kotlin files in `app/src/androidTest`;
 - 7 TypeScript test files in `functions/src`.
 
-These counts are not pass results and should be refreshed after test additions/removals.
+These source-file counts include test helpers; they are not test-class counts or executed-test totals and should be refreshed after test additions/removals.
 
 ### What the test suite covers
 

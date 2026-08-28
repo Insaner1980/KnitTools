@@ -1,55 +1,46 @@
 package com.finnvek.knittools.util.extensions
 
-private const val CM_PER_INCH = 2.54
-private const val METERS_PER_YARD = 0.9144
+import com.finnvek.knittools.domain.calculator.MeasurementCalculator
+import com.finnvek.knittools.domain.calculator.MeasurementNumberFormatter
+import com.finnvek.knittools.domain.calculator.MeasurementNumberParser
+import com.finnvek.knittools.domain.model.GaugeBasis
+import com.finnvek.knittools.domain.model.MeasurementUnit
+import java.util.Locale
 
-fun cmToInches(cm: Double): Double = cm / CM_PER_INCH
+fun cmToInches(cm: Double): Double = MeasurementUnit.INCH.fromMillimeters(MeasurementUnit.CM.toMillimeters(cm))
 
-fun inchesToCm(inches: Double): Double = inches * CM_PER_INCH
+fun inchesToCm(inches: Double): Double = MeasurementUnit.CM.fromMillimeters(MeasurementUnit.INCH.toMillimeters(inches))
 
-fun metersToYards(meters: Double): Double = meters / METERS_PER_YARD
+fun metersToYards(meters: Double): Double =
+    MeasurementUnit.YARD.fromMillimeters(MeasurementUnit.METER.toMillimeters(meters))
 
-fun yardsToMeters(yards: Double): Double = yards * METERS_PER_YARD
+fun yardsToMeters(yards: Double): Double =
+    MeasurementUnit.METER.fromMillimeters(MeasurementUnit.YARD.toMillimeters(yards))
 
 fun convertFieldValue(
     value: String,
     toImperial: Boolean,
     isLength: Boolean = true,
 ): String {
-    val num = value.toDoubleOrNull() ?: return value
-    if (num == 0.0) return value
-    val converted =
-        if (isLength) {
-            if (toImperial) cmToInches(num) else inchesToCm(num)
-        } else {
-            if (toImperial) metersToYards(num) else yardsToMeters(num)
-        }
-    return formatCanonicalDecimal(converted, fractionDigits = 1)
+    val number = MeasurementNumberParser.parse(value, Locale.ROOT, allowZero = true).value ?: return value
+    if (number == 0.0) return value
+    val metric = if (isLength) MeasurementUnit.CM else MeasurementUnit.METER
+    val imperial = if (isLength) MeasurementUnit.INCH else MeasurementUnit.YARD
+    val from = if (toImperial) metric else imperial
+    val to = if (toImperial) imperial else metric
+    val converted = MeasurementCalculator.convert(number, from, to) ?: return value
+    return MeasurementNumberFormatter.formatEditing(converted)
 }
 
 fun convertGaugeValue(
     value: String,
     toImperial: Boolean,
 ): String {
-    val num = value.toDoubleOrNull() ?: return value
-    if (num == 0.0) return value
-    // Gauge: stitches per 10cm ↔ stitches per 4 inches
-    // st/inch = st_per_10cm / (10 / 2.54) = st_per_10cm / 3.937
-    // st_per_4in = st/inch * 4 = st_per_10cm * 4 / (10 / 2.54) = st_per_10cm * 4 * 2.54 / 10
-    // = st_per_10cm * 1.016
-    // Esim: 22 st/10cm → 22 * 1.016 = 22.4 st/4in (oikein, koska 4in ≈ 10.16cm)
-    // Esim: 68 st/10cm → 68 * 1.016 = 69.1 st/4in — tämä on matemaattisesti oikein!
-    //
-    // MUTTA neulojat ajattelevat toisin:
-    // 68 st / 10 cm = 6.8 st/cm = 17.3 st/inch → 4 in = 69.1 st — OK tämä on oikein
-    //
-    // Alkuperäinen koodi on oikein. Ongelma oli siinä ettei se näyttänyt isolta muutokselta
-    // koska 10 cm ≈ 4 in. Arvot OVAT oikein.
-    val converted =
-        if (toImperial) {
-            num * (4.0 * CM_PER_INCH) / 10.0
-        } else {
-            num * 10.0 / (4.0 * CM_PER_INCH)
-        }
-    return formatCanonicalDecimal(converted, fractionDigits = 1)
+    val number = MeasurementNumberParser.parse(value, Locale.ROOT, allowZero = true).value ?: return value
+    if (number == 0.0) return value
+    val from = if (toImperial) GaugeBasis.PER_10_CM else GaugeBasis.PER_4_INCHES
+    val to = if (toImperial) GaugeBasis.PER_4_INCHES else GaugeBasis.PER_10_CM
+    val density = MeasurementCalculator.density(number, from.lengthMm) ?: return value
+    val converted = MeasurementCalculator.gaugeForBasis(density, to) ?: return value
+    return MeasurementNumberFormatter.formatEditing(converted)
 }

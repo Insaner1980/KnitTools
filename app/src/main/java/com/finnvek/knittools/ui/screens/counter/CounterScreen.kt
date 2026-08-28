@@ -148,6 +148,7 @@ data class CounterScreenActions(
     val onSavedPatternDetail: (Long) -> Unit = {},
     val onImportFromRavelry: () -> Unit = {},
     val onNotesEditor: (Long) -> Unit = {},
+    val onMeasurements: (Long) -> Unit = {},
     val onUpgradeToPro: () -> Unit = {},
 )
 
@@ -574,6 +575,10 @@ fun CounterScreen(
         callbacks =
             ProjectActionsSheetCallbacks(
                 onDismiss = { showProjectActionsSheet = false },
+                onMeasurements = {
+                    showProjectActionsSheet = false
+                    state.projectId?.let(actions.onMeasurements)
+                },
                 onOpenDocuments = {
                     showProjectActionsSheet = false
                     showDocumentsSheet = true

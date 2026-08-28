@@ -17,18 +17,15 @@
     <string name="measurement_with_unit_format">%1$s %2$s</string>
     <string name="unit_inches">pollici</string>
     <string name="unit_st">m</string>
-    <string name="unit_rows">ferri</string>
     <string name="unit_g">g</string>
     <string name="unit_meters">metri</string>
     <string name="unit_yards">yard</string>
     <string name="unit_st_per_10cm">m/10 cm</string>
     <string name="unit_st_per_4in">m/4 in</string>
-    <string name="unit_per_10cm">per 10 cm</string>
-    <string name="unit_per_4in">per 4 in</string>
 
     <!-- Home screen -->
     <string name="tool_increase_decrease">Aumenti / diminuzioni</string>
-    <string name="tool_gauge_converter">Calcolatore campione</string>
+    <string name="tool_gauge_converter">Misure e campione</string>
     <string name="tool_cast_on_calculator">Calcolatore avvio maglie</string>
     <string name="tool_yarn_estimator">Calcolatore filato</string>
     <string name="tool_needle_sizes">Misure ferri</string>
@@ -292,15 +289,8 @@
     <!-- Gauge Converter -->
     <string name="pattern_gauge">Campione del modello</string>
     <string name="pattern_instructions">Istruzioni del modello</string>
-    <string name="stitches_gauge">Maglie %s</string>
-    <string name="rows_gauge">Ferri %s</string>
     <string name="stitches_in_pattern">Maglie del modello</string>
     <string name="rows_in_pattern">Ferri del modello</string>
-    <string name="adjusted_for_your_gauge">Adattato al tuo campione</string>
-    <string name="adjusted_result">%1$d maglie, %2$d ferri</string>
-    <string name="exact_result">Esatto: %1$s m, %2$s ferri</string>
-    <string name="stitch_gauge_diff">Campione maglie: %s%%</string>
-    <string name="row_gauge_diff">Campione ferri: %s%%</string>
 
     <!-- Cast On Calculator -->
     <string name="desired_width">Larghezza desiderata</string>
@@ -434,7 +424,7 @@
 
     <!-- Hubs -->
     <string name="desc_increase_decrease">Distribuisci aumenti o diminuzioni in modo uniforme su un ferro</string>
-    <string name="desc_gauge_calculator">Calcola il tuo campione e converti le istruzioni del modello</string>
+    <string name="desc_gauge_calculator">Converti lunghezze e calcola tensione, quantità e misure</string>
     <string name="desc_cast_on">Calcola quante maglie avviare per ottenere la larghezza desiderata</string>
     <string name="desc_needle_sizes">Misure ferri nei sistemi metrico, US, UK e giapponese</string>
     <string name="desc_size_charts">Misure corporee standard per le taglie dei capi</string>
@@ -545,7 +535,6 @@
     <string name="your_gauge_section">Il tuo campione</string>
     <string name="measure_swatch">Misura campione</string>
     <string name="enter_directly">Inserisci direttamente</string>
-    <string name="calculated_gauge_format">= %1$.1f m / %2$.1f ferri %3$s</string>
     <string name="measured_width">Larghezza misurata</string>
     <string name="stitch_count_in_swatch">Maglie del campione</string>
     <string name="measured_height">Altezza misurata</string>
@@ -696,8 +685,6 @@
     <string name="yardage_format">%d yard</string>
 
     <!-- Info tips -->
-    <string name="tip_your_gauge_title">Che cos\'è il campione?</string>
-    <string name="tip_your_gauge_desc">Il campione indica quante maglie e quanti ferri entrano in un\'area misurata. Lavora un piccolo campione e misuralo per trovare il tuo campione personale. In questo modo il lavoro finito corrisponderà alla misura prevista dal modello.</string>
     <string name="tip_pattern_repeat_title">Ripetizione del motivo</string>
     <string name="tip_pattern_repeat_desc">Se il motivo si ripete ogni X maglie (ad es. una treccia ogni 8 maglie), inserisci qui quel numero. Il calcolatore arrotonda le maglie del corpo, prima delle maglie di vivagno, al multiplo più vicino, così il motivo risulta allineato.</string>
     <string name="tip_edge_stitches_title">Maglie di vivagno</string>
@@ -906,5 +893,72 @@
     <item quantity="one">Impossibile spostare %d progetto.</item>
     <item quantity="other">Impossibile spostare %d progetti.</item>
     <item quantity="many">Impossibile spostare %d progetti.</item>
+    </plurals>
+
+    <string name="measurement_title">Misure e campione</string>
+    <string name="measurement_task">Attività</string>
+    <string name="measurement_convert">Converti misure</string>
+    <string name="measurement_measure_gauge">Misura il campione</string>
+    <string name="measurement_calculate">Calcola dal campione</string>
+    <string name="measurement_adjust">Adatta maglie e ferri del modello</string>
+    <string name="measurement_operation">Calcolo</string>
+    <string name="measurement_count_for_size">Quantità da una misura</string>
+    <string name="measurement_size_from_count">Misura da una quantità</string>
+    <string name="measurement_axis">Direzione</string>
+    <string name="measurement_stitches_width">Maglie e larghezza</string>
+    <string name="measurement_rows_height">Ferri e altezza</string>
+    <string name="measurement_units">Unità di misura</string>
+    <string name="measurement_from_unit">Unità di partenza</string>
+    <string name="measurement_to_unit">Unità di arrivo</string>
+    <string name="measurement_value">Valore</string>
+    <string name="measurement_unit_cm">Centimetri</string>
+    <string name="measurement_unit_inch">Pollici</string>
+    <string name="measurement_unit_inch_short">in</string>
+    <string name="measurement_unit_meter">Metri</string>
+    <string name="measurement_unit_meter_short">m</string>
+    <string name="measurement_unit_yard">Yard</string>
+    <string name="measurement_unit_yard_short">yd</string>
+    <string name="measurement_per_10cm">per 10 centimetri</string>
+    <string name="measurement_per_4in">per 4 pollici</string>
+    <string name="measurement_actual_stitches">Maglie del tuo campione</string>
+    <string name="measurement_actual_rows">Ferri del tuo campione</string>
+    <string name="measurement_pattern_stitches">Maglie del campione del modello</string>
+    <string name="measurement_pattern_rows">Ferri del campione del modello</string>
+    <string name="measurement_target_width">Larghezza desiderata</string>
+    <string name="measurement_target_height">Altezza desiderata</string>
+    <string name="measurement_stitch_count">Numero di maglie</string>
+    <string name="measurement_row_count">Numero di ferri</string>
+    <string name="measurement_calculated_count">Quantità calcolata</string>
+    <string name="measurement_nearest_count">Numero intero più vicino</string>
+    <string name="measurement_original_size">Misura originale</string>
+    <string name="measurement_unchanged_size">Misura senza adattamento</string>
+    <string name="measurement_rounded_size">Misura dopo l’arrotondamento</string>
+    <string name="measurement_result_size">Misura risultante</string>
+    <string name="measurement_gauge_difference">Differenza di tensione</string>
+    <string name="measurement_copy">Copia risultato</string>
+    <string name="measurement_copied">Risultato copiato</string>
+    <string name="measurement_invalid_number">Inserisci un numero valido.</string>
+    <string name="measurement_positive_required">Inserisci un valore maggiore di zero.</string>
+    <string name="measurement_too_large">Il valore è fuori dall’intervallo supportato. Controlla la misura e la quantità.</string>
+    <string name="measurement_complete_number">Completa o correggi il numero prima di cambiare unità.</string>
+    <string name="measurement_project_unavailable">Questo progetto non è più disponibile. Puoi continuare a calcolare qui.</string>
+    <string name="measurement_project_context">Progetto: %1$s</string>
+    <string name="measurement_estimate">Stima basata sulla tensione inserita.</string>
+    <string name="measurement_adjust_warning">Stima matematica basata sulla tensione inserita. La sagomatura e la costruzione non vengono riscritte. Agio, ripetizioni del motivo, bordi, giromanica, scolli e maniche possono richiedere adattamenti separati. Misura un campione lavato o bloccato per una stima più utile.</string>
+    <string name="measurement_swatch_hint">Per una stima più utile, misura il campione dopo averlo lavato o bloccato.</string>
+    <string name="measurement_result">Risultato</string>
+    <string name="measurement_value_unit_format">%1$s %2$s</string>
+    <string name="measurement_gauge_format">%1$s %2$s</string>
+    <string name="measurement_result_line">%1$s: %2$s</string>
+    <string name="measurement_field_with_unit">%1$s (%2$s)</string>
+    <plurals name="measurement_stitches">
+        <item quantity="one">%1$d maglia</item>
+        <item quantity="many">%1$d maglie</item>
+        <item quantity="other">%1$d maglie</item>
+    </plurals>
+    <plurals name="measurement_rows">
+        <item quantity="one">%1$d ferro</item>
+        <item quantity="many">%1$d ferri</item>
+        <item quantity="other">%1$d ferri</item>
     </plurals>
 </resources>

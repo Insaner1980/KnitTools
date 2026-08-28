@@ -17,18 +17,15 @@
     <string name="measurement_with_unit_format">%1$s %2$s</string>
     <string name="unit_inches">tuumaa</string>
     <string name="unit_st">s</string>
-    <string name="unit_rows">krs</string>
     <string name="unit_g">g</string>
     <string name="unit_meters">metriä</string>
     <string name="unit_yards">jaardia</string>
     <string name="unit_st_per_10cm">s/10 cm</string>
     <string name="unit_st_per_4in">s/4 in</string>
-    <string name="unit_per_10cm">10 cm:ssä</string>
-    <string name="unit_per_4in">4 tuumaa kohti</string>
 
     <!-- Aloitusnäkymä -->
     <string name="tool_increase_decrease">Lisäykset / kavennukset</string>
-    <string name="tool_gauge_converter">Tiheyslaskuri</string>
+    <string name="tool_gauge_converter">Mitat ja tiheys</string>
     <string name="tool_cast_on_calculator">Luomislaskuri</string>
     <string name="tool_yarn_estimator">Lankalaskuri</string>
     <string name="tool_needle_sizes">Puikkokoot</string>
@@ -288,15 +285,8 @@
     <!-- Tiheyslaskuri -->
     <string name="pattern_gauge">Ohjeen tiheys</string>
     <string name="pattern_instructions">Ohjeen tiedot</string>
-    <string name="stitches_gauge">Silmukoita %s</string>
-    <string name="rows_gauge">Kerroksia %s</string>
     <string name="stitches_in_pattern">Ohjeen silmukkamäärä</string>
     <string name="rows_in_pattern">Ohjeen kerrosmäärä</string>
-    <string name="adjusted_for_your_gauge">Sovitettu sinun tiheydellesi</string>
-    <string name="adjusted_result">%1$d silmukkaa, %2$d kerrosta</string>
-    <string name="exact_result">Tarkka: %1$s s, %2$s krs</string>
-    <string name="stitch_gauge_diff">Silmukkatiheys: %s%%</string>
-    <string name="row_gauge_diff">Kerrostiheys: %s%%</string>
 
     <!-- Luomislaskuri -->
     <string name="desired_width">Haluttu leveys</string>
@@ -439,7 +429,7 @@
 
     <!-- Hubit -->
     <string name="desc_increase_decrease">Jaa lisäykset tai kavennukset tasaisesti kerrokselle</string>
-    <string name="desc_gauge_calculator">Laske tiheys ja muunna ohjeen tiedot</string>
+    <string name="desc_gauge_calculator">Muunna pituuksia ja laske tiheyksiä, määriä ja mittoja</string>
     <string name="desc_cast_on">Laske haluttuun leveyteen luotavat silmukat</string>
     <string name="desc_needle_sizes">Puikkokoot metrisessä, US-, UK- ja japanilaisessa järjestelmässä</string>
     <string name="desc_size_charts">Vaatteiden standardimitoitukset kokojen tueksi</string>
@@ -543,7 +533,6 @@
     <string name="your_gauge_section">Sinun tiheytesi</string>
     <string name="measure_swatch">Mittaa mallitilkku</string>
     <string name="enter_directly">Syötä suoraan</string>
-    <string name="calculated_gauge_format">= %1$.1f s / %2$.1f krs %3$s</string>
     <string name="measured_width">Mitattu leveys</string>
     <string name="stitch_count_in_swatch">Silmukoita mallitilkussa</string>
     <string name="measured_height">Mitattu korkeus</string>
@@ -958,8 +947,6 @@
     <string name="show_less">Näytä vähemmän</string>
 
     <!-- Infovinkit -->
-    <string name="tip_your_gauge_title">Mitä tiheys tarkoittaa?</string>
-    <string name="tip_your_gauge_desc">Tiheys kertoo, kuinka monta silmukkaa ja kerrosta mahtuu mitattuun alueeseen. Neulo pieni mallitilkku ja mittaa se, niin saat oman tiheytesi selville. Näin valmis työ vastaa ohjeen tarkoitettua kokoa.</string>
     <string name="tip_pattern_repeat_title">Mallikerta</string>
     <string name="tip_pattern_repeat_desc">Jos mallikuviosi toistuu joka X silmukan välein (esim. palmikko joka 8. silmukka), syötä luku tähän. Laskuri pyöristää rungon silmukat ennen reunasilmukoita lähimpään sopivaan monikertaan, jotta kuvio asettuu oikein.</string>
     <string name="tip_edge_stitches_title">Reunasilmukat</string>
@@ -1189,5 +1176,70 @@
     <plurals name="folder_move_projects_error">
     <item quantity="one">%d projektia ei voitu siirtää.</item>
     <item quantity="other">%d projektia ei voitu siirtää.</item>
+    </plurals>
+
+    <string name="measurement_title">Mitat ja tiheys</string>
+    <string name="measurement_task">Tehtävä</string>
+    <string name="measurement_convert">Muunna mittoja</string>
+    <string name="measurement_measure_gauge">Mittaa tiheys</string>
+    <string name="measurement_calculate">Laske tiheyden avulla</string>
+    <string name="measurement_adjust">Sovita ohjeen määrät</string>
+    <string name="measurement_operation">Laskutoimitus</string>
+    <string name="measurement_count_for_size">Määrä mitan perusteella</string>
+    <string name="measurement_size_from_count">Mitta määrän perusteella</string>
+    <string name="measurement_axis">Suunta</string>
+    <string name="measurement_stitches_width">Silmukat ja leveys</string>
+    <string name="measurement_rows_height">Kerrokset ja korkeus</string>
+    <string name="measurement_units">Mittayksiköt</string>
+    <string name="measurement_from_unit">Lähtöyksikkö</string>
+    <string name="measurement_to_unit">Kohdeyksikkö</string>
+    <string name="measurement_value">Arvo</string>
+    <string name="measurement_unit_cm">Senttimetrit</string>
+    <string name="measurement_unit_inch">Tuumat</string>
+    <string name="measurement_unit_inch_short">in</string>
+    <string name="measurement_unit_meter">Metrit</string>
+    <string name="measurement_unit_meter_short">m</string>
+    <string name="measurement_unit_yard">Jaardit</string>
+    <string name="measurement_unit_yard_short">yd</string>
+    <string name="measurement_per_10cm">10 senttimetriä kohti</string>
+    <string name="measurement_per_4in">4 tuumaa kohti</string>
+    <string name="measurement_actual_stitches">Oma silmukkatiheys</string>
+    <string name="measurement_actual_rows">Oma kerrostiheys</string>
+    <string name="measurement_pattern_stitches">Ohjeen silmukkatiheys</string>
+    <string name="measurement_pattern_rows">Ohjeen kerrostiheys</string>
+    <string name="measurement_target_width">Tavoiteleveys</string>
+    <string name="measurement_target_height">Tavoitekorkeus</string>
+    <string name="measurement_stitch_count">Silmukkamäärä</string>
+    <string name="measurement_row_count">Kerrosmäärä</string>
+    <string name="measurement_calculated_count">Laskennallinen määrä</string>
+    <string name="measurement_nearest_count">Lähin kokonaismäärä</string>
+    <string name="measurement_original_size">Alkuperäinen mitta</string>
+    <string name="measurement_unchanged_size">Mitta ilman sovitusta</string>
+    <string name="measurement_rounded_size">Mitta pyöristyksen jälkeen</string>
+    <string name="measurement_result_size">Tuloksena saatava mitta</string>
+    <string name="measurement_gauge_difference">Tiheysero</string>
+    <string name="measurement_copy">Kopioi tulos</string>
+    <string name="measurement_copied">Tulos kopioitu</string>
+    <string name="measurement_invalid_number">Syötä kelvollinen luku.</string>
+    <string name="measurement_positive_required">Syötä nollaa suurempi arvo.</string>
+    <string name="measurement_too_large">Arvo on sallitun alueen ulkopuolella. Tarkista mitta ja määrä.</string>
+    <string name="measurement_complete_number">Kirjoita luku loppuun tai korjaa se ennen yksikön vaihtoa.</string>
+    <string name="measurement_project_unavailable">Projekti ei ole enää saatavilla. Voit jatkaa laskemista tässä.</string>
+    <string name="measurement_project_context">Projekti: %1$s</string>
+    <string name="measurement_estimate">Syötettyyn tiheyteen perustuva arvio.</string>
+    <string name="measurement_adjust_warning">Syötetystä tiheydestä laskettu matemaattinen arvio. Muotoilua tai ohjeen rakennetta ei muuteta. Väljyys, mallikerrat, reunat, kädentiet, pääntie ja hihat voivat vaatia erillistä sovitusta. Mittaa pesty tai pingotettu mallitilkku, jotta arviosta on enemmän hyötyä.</string>
+    <string name="measurement_swatch_hint">Arviosta on enemmän hyötyä, kun mittaat pestyn tai pingotetun mallitilkun.</string>
+    <string name="measurement_result">Tulos</string>
+    <string name="measurement_value_unit_format">%1$s %2$s</string>
+    <string name="measurement_gauge_format">%1$s %2$s</string>
+    <string name="measurement_result_line">%1$s: %2$s</string>
+    <string name="measurement_field_with_unit">%1$s (%2$s)</string>
+    <plurals name="measurement_stitches">
+        <item quantity="one">%1$d silmukka</item>
+        <item quantity="other">%1$d silmukkaa</item>
+    </plurals>
+    <plurals name="measurement_rows">
+        <item quantity="one">%1$d kerros</item>
+        <item quantity="other">%1$d kerrosta</item>
     </plurals>
 </resources>

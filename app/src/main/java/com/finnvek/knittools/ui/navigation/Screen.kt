@@ -23,7 +23,13 @@ sealed class Screen(
 
     data object IncreaseDecrease : Screen("increase_decrease")
 
-    data object Gauge : Screen("gauge")
+    data object Gauge : Screen("gauge") {
+        const val ARG_PROJECT_ID = "projectId"
+        const val ROUTE = "gauge?projectId={$ARG_PROJECT_ID}"
+
+        fun createRoute(projectId: Long?): String =
+            projectId?.takeIf { it > 0 }?.let { "$route?$ARG_PROJECT_ID=$it" } ?: route
+    }
 
     data object CastOn : Screen("cast_on")
 

@@ -17,18 +17,15 @@
     <string name="measurement_with_unit_format">%1$s %2$s</string>
     <string name="unit_inches">inches</string>
     <string name="unit_st">st</string>
-    <string name="unit_rows">rows</string>
     <string name="unit_g">g</string>
     <string name="unit_meters">meters</string>
     <string name="unit_yards">yards</string>
     <string name="unit_st_per_10cm">st/10 cm</string>
     <string name="unit_st_per_4in">st/4 in</string>
-    <string name="unit_per_10cm">per 10 cm</string>
-    <string name="unit_per_4in">per 4 in</string>
 
     <!-- Home screen -->
     <string name="tool_increase_decrease">Increase / Decrease</string>
-    <string name="tool_gauge_converter">Gauge Calculator</string>
+    <string name="tool_gauge_converter">Measurements and gauge</string>
     <string name="tool_cast_on_calculator">Cast On Calculator</string>
     <string name="tool_yarn_estimator">Yarn Estimator</string>
     <string name="tool_needle_sizes">Needle Sizes</string>
@@ -300,15 +297,8 @@
     <!-- Gauge Converter -->
     <string name="pattern_gauge">Pattern gauge</string>
     <string name="pattern_instructions">Pattern instructions</string>
-    <string name="stitches_gauge">Stitches %s</string>
-    <string name="rows_gauge">Rows %s</string>
     <string name="stitches_in_pattern">Stitches in pattern</string>
     <string name="rows_in_pattern">Rows in pattern</string>
-    <string name="adjusted_for_your_gauge">Adjusted for your gauge</string>
-    <string name="adjusted_result" tools:ignore="PluralsCandidate">%1$d stitches, %2$d rows</string>
-    <string name="exact_result">Exact: %1$s st, %2$s rows</string>
-    <string name="stitch_gauge_diff">Stitch gauge: %s%%</string>
-    <string name="row_gauge_diff">Row gauge: %s%%</string>
 
     <!-- Cast On Calculator -->
     <string name="desired_width">Desired width</string>
@@ -459,7 +449,7 @@
 
     <!-- Hubs -->
     <string name="desc_increase_decrease">Evenly space increases or decreases across a row</string>
-    <string name="desc_gauge_calculator">Calculate your gauge and convert pattern instructions</string>
+    <string name="desc_gauge_calculator">Convert lengths and calculate gauge, counts and sizes</string>
     <string name="desc_cast_on">Calculate stitches to cast on for a desired width</string>
     <string name="desc_needle_sizes">Needle sizes across metric, US, UK, and Japanese systems</string>
     <string name="desc_size_charts">Standard body measurements for garment sizing</string>
@@ -564,7 +554,6 @@
     <string name="your_gauge_section">Your Gauge</string>
     <string name="measure_swatch">Measure swatch</string>
     <string name="enter_directly">Enter directly</string>
-    <string name="calculated_gauge_format">= %1$.1f sts / %2$.1f rows %3$s</string>
     <string name="measured_width">Measured width</string>
     <string name="stitch_count_in_swatch">Stitches in swatch</string>
     <string name="measured_height">Measured height</string>
@@ -981,8 +970,6 @@
     <string name="show_less">Show less</string>
 
     <!-- Info tips -->
-    <string name="tip_your_gauge_title">What is gauge?</string>
-    <string name="tip_your_gauge_desc">Gauge tells you how many stitches and rows fit in a measured area. Knit a small sample (swatch) and measure it to find your personal gauge. This ensures your finished piece matches the pattern\'s intended size.</string>
     <string name="tip_pattern_repeat_title">Pattern repeat</string>
     <string name="tip_pattern_repeat_desc">If your stitch pattern repeats every X stitches (e.g. a cable every 8 stitches), enter that number here. The calculator rounds the body stitches, before edge stitches, to the nearest multiple so your pattern aligns.</string>
     <string name="tip_edge_stitches_title">Edge stitches</string>
@@ -1272,5 +1259,70 @@
     <plurals name="folder_move_projects_error">
         <item quantity="one">Could not move %d project.</item>
         <item quantity="other">Could not move %d projects.</item>
+    </plurals>
+
+    <string name="measurement_title">Measurements and gauge</string>
+    <string name="measurement_task">Task</string>
+    <string name="measurement_convert">Convert measurements</string>
+    <string name="measurement_measure_gauge">Measure gauge</string>
+    <string name="measurement_calculate">Calculate from gauge</string>
+    <string name="measurement_adjust">Adjust pattern counts</string>
+    <string name="measurement_operation">Calculation</string>
+    <string name="measurement_count_for_size">Count for a size</string>
+    <string name="measurement_size_from_count">Size from a count</string>
+    <string name="measurement_axis">Direction</string>
+    <string name="measurement_stitches_width">Stitches and width</string>
+    <string name="measurement_rows_height">Rows and height</string>
+    <string name="measurement_units">Measurement units</string>
+    <string name="measurement_from_unit">From unit</string>
+    <string name="measurement_to_unit">To unit</string>
+    <string name="measurement_value">Value</string>
+    <string name="measurement_unit_cm">Centimeters</string>
+    <string name="measurement_unit_inch">Inches</string>
+    <string name="measurement_unit_inch_short">in</string>
+    <string name="measurement_unit_meter">Meters</string>
+    <string name="measurement_unit_meter_short">m</string>
+    <string name="measurement_unit_yard">Yards</string>
+    <string name="measurement_unit_yard_short">yd</string>
+    <string name="measurement_per_10cm">per 10 centimeters</string>
+    <string name="measurement_per_4in">per 4 inches</string>
+    <string name="measurement_actual_stitches">Your stitch gauge</string>
+    <string name="measurement_actual_rows">Your row gauge</string>
+    <string name="measurement_pattern_stitches">Pattern stitch gauge</string>
+    <string name="measurement_pattern_rows">Pattern row gauge</string>
+    <string name="measurement_target_width">Target width</string>
+    <string name="measurement_target_height">Target height</string>
+    <string name="measurement_stitch_count">Stitch count</string>
+    <string name="measurement_row_count">Row count</string>
+    <string name="measurement_calculated_count">Calculated count</string>
+    <string name="measurement_nearest_count">Nearest whole count</string>
+    <string name="measurement_original_size">Original size</string>
+    <string name="measurement_unchanged_size">Size without adjustment</string>
+    <string name="measurement_rounded_size">Size after rounding</string>
+    <string name="measurement_result_size">Resulting size</string>
+    <string name="measurement_gauge_difference">Gauge difference</string>
+    <string name="measurement_copy">Copy result</string>
+    <string name="measurement_copied">Result copied</string>
+    <string name="measurement_invalid_number">Enter a valid number.</string>
+    <string name="measurement_positive_required">Enter a value greater than zero.</string>
+    <string name="measurement_too_large">The value is outside the supported range. Check the measurement and count.</string>
+    <string name="measurement_complete_number">Finish or correct the number before changing units.</string>
+    <string name="measurement_project_unavailable">This project is no longer available. You can continue calculating here.</string>
+    <string name="measurement_project_context">Project: %1$s</string>
+    <string name="measurement_estimate">Estimate based on the entered gauge.</string>
+    <string name="measurement_adjust_warning">Mathematical estimate from the entered gauge. Shaping and construction are not rewritten. Ease, stitch repeats, borders, armholes, necklines and sleeves may need separate adjustment. Measure a washed or blocked swatch for a more useful estimate.</string>
+    <string name="measurement_swatch_hint">For a more useful estimate, measure the swatch after washing or blocking.</string>
+    <string name="measurement_result">Result</string>
+    <string name="measurement_value_unit_format">%1$s %2$s</string>
+    <string name="measurement_gauge_format">%1$s %2$s</string>
+    <string name="measurement_result_line">%1$s: %2$s</string>
+    <string name="measurement_field_with_unit">%1$s (%2$s)</string>
+    <plurals name="measurement_stitches">
+        <item quantity="one">%1$d stitch</item>
+        <item quantity="other">%1$d stitches</item>
+    </plurals>
+    <plurals name="measurement_rows">
+        <item quantity="one">%1$d row</item>
+        <item quantity="other">%1$d rows</item>
     </plurals>
 </resources>

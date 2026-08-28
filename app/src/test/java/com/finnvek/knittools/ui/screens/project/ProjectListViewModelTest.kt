@@ -1,10 +1,12 @@
 package com.finnvek.knittools.ui.screens.project
 
 import android.content.Context
+import androidx.lifecycle.SavedStateHandle
 import com.finnvek.knittools.data.datastore.AppPreferences
 import com.finnvek.knittools.data.datastore.PreferencesManager
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.ProjectDocument
+import com.finnvek.knittools.domain.model.ProjectFolderSnapshot
 import com.finnvek.knittools.domain.model.ProjectSortOrder
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.SavedPatternSource
@@ -17,6 +19,7 @@ import com.finnvek.knittools.repository.ProjectCompletionResult
 import com.finnvek.knittools.repository.ProjectCreationResult
 import com.finnvek.knittools.repository.ProjectDeletionResult
 import com.finnvek.knittools.repository.ProjectDocumentRepository
+import com.finnvek.knittools.repository.ProjectFolderRepository
 import com.finnvek.knittools.repository.SavedPatternRepository
 import com.finnvek.knittools.repository.YarnCardRepository
 import io.mockk.coEvery
@@ -52,6 +55,7 @@ class ProjectListViewModelTest {
     private lateinit var photoRepository: ProgressPhotoRepository
     private lateinit var savedPatternRepository: SavedPatternRepository
     private lateinit var projectDocumentRepository: ProjectDocumentRepository
+    private lateinit var folderRepository: ProjectFolderRepository
     private lateinit var preferencesManager: PreferencesManager
     private lateinit var context: Context
 
@@ -64,6 +68,9 @@ class ProjectListViewModelTest {
         photoRepository = mockk(relaxed = true)
         savedPatternRepository = mockk(relaxed = true)
         projectDocumentRepository = mockk(relaxed = true)
+        folderRepository = mockk()
+        every { folderRepository.observeOrganization(any()) } returns
+            flowOf(ProjectFolderSnapshot(emptyList(), emptyList()))
         every { projectDocumentRepository.observeDocuments(any<List<Long>>()) } returns
             flowOf(emptyMap<Long, List<ProjectDocument>>())
         preferencesManager = mockk(relaxed = true)
@@ -86,6 +93,8 @@ class ProjectListViewModelTest {
             projectDocumentRepository = projectDocumentRepository,
             preferencesManager = preferencesManager,
             context = context,
+            folderRepository = folderRepository,
+            savedStateHandle = SavedStateHandle(),
         )
 
     @Test
@@ -386,6 +395,48 @@ class ProjectListViewModelTest {
 
             assertEquals(listOf(completedProject), vm.completedProjects.value)
             verify(exactly = 1) { repository.getCompletedProjects(ProjectSortOrder.UPDATED) }
+        }
+
+    @Test
+    fun `select all includes visible completed projects`() =
+        runTest {
+            val active = CounterProject(id = 1L, name = "Active", count = 5)
+            val completed = CounterProject(id = 2L, name = "Completed", isCompleted = true)
+            every { preferencesManager.preferences } returns flowOf(AppPreferences(showCompletedProjects = true))
+            every { repository.getActiveProjects(ProjectSortOrder.UPDATED) } returns flowOf(listOf(active))
+            every { repository.getCompletedProjects(ProjectSortOrder.UPDATED) } returns flowOf(listOf(completed))
+            val vm = createViewModel()
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.completedProjects.collect() }
+
+            vm.enterMultiSelectMode()
+            vm.selectAllProjects()
+
+            assertEquals(setOf(1L, 2L), vm.selectedProjectIds.value)
+        }
+
+    @Test
+    fun `bulk completion leaves already completed projects unchanged`() =
+        runTest {
+            val active = CounterProject(id = 1L, name = "Active", count = 5)
+            val completed = CounterProject(id = 2L, name = "Completed", count = 12, isCompleted = true)
+            every { preferencesManager.preferences } returns flowOf(AppPreferences(showCompletedProjects = true))
+            every { repository.getActiveProjects(ProjectSortOrder.UPDATED) } returns flowOf(listOf(active))
+            every { repository.getCompletedProjects(ProjectSortOrder.UPDATED) } returns flowOf(listOf(completed))
+            coEvery { repository.getProject(1L) } returns active
+            coEvery { repository.getProject(2L) } returns completed
+            coEvery { repository.refreshActiveSession() } returns null
+            coEvery { repository.completeProjectWithSessionChoice(any(), any(), any()) } returns
+                ProjectCompletionResult.Completed
+            val vm = createViewModel()
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.completedProjects.collect() }
+
+            vm.enterMultiSelectMode(1L)
+            vm.toggleProjectSelection(2L)
+            vm.completeSelectedProjects()
+
+            coVerify(exactly = 1) { repository.completeProjectWithSessionChoice(1L, 5, null) }
+            coVerify(exactly = 0) { repository.completeProjectWithSessionChoice(2L, any(), any()) }
+            assertFalse(vm.isMultiSelectMode.value)
         }
 
     @Test

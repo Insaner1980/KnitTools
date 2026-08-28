@@ -829,4 +829,65 @@
     <string name="project_documents_pattern_information">Patrooninformatie</string>
     <string name="project_documents_remove_primary_message">%1$s verwijderen? Een ander document wordt primair.</string>
     <string name="project_documents_remove_last_message">%1$s verwijderen? Het project heeft daarna geen leesbaar patroon meer.</string>
+    <string name="folder_sheet_title">Mappen</string>
+    <string name="folder_loading">Mappen laden</string>
+    <string name="folder_unfiled">Zonder map</string>
+    <string name="folder_create">Map maken</string>
+    <string name="folder_name">Mapnaam</string>
+    <string name="folder_rename">Map hernoemen</string>
+    <string name="folder_delete">Map verwijderen</string>
+    <string name="folder_move_earlier">Eerder verplaatsen</string>
+    <string name="folder_move_later">Later verplaatsen</string>
+    <string name="folder_move_to">Naar map verplaatsen</string>
+    <string name="folder_remove_from">Uit map verwijderen</string>
+    <string name="folder_move_selected_projects">Geselecteerde projecten verplaatsen</string>
+    <string name="folder_no_folders">Geen mappen</string>
+    <string name="folder_empty">%1$s heeft geen projecten.</string>
+    <string name="folder_no_unfiled">Geen projecten zonder map</string>
+    <string name="folder_hidden_completed">Deze map bevat verborgen voltooide projecten.</string>
+    <string name="folder_deleted">Map verwijderd. Projecten zijn behouden.</string>
+    <string name="folder_project_moved">Project verplaatst.</string>
+    <string name="folder_project_missing">Een geselecteerd project bestaat niet meer.</string>
+    <string name="folder_project_creation_destination">Bestemming nieuw project: %1$s</string>
+    <string name="folder_missing">Deze map bestaat niet meer.</string>
+    <string name="folder_load_error">Mappen konden niet worden geladen.</string>
+    <string name="folder_reorder_error">Mappen konden niet worden herschikt.</string>
+    <string name="folder_stale_action">De map is gewijzigd voordat de actie was voltooid.</string>
+    <string name="folder_create_error">Map kon niet worden gemaakt.</string>
+    <string name="folder_rename_error">Map kon niet worden hernoemd.</string>
+    <string name="folder_delete_error">Map kon niet worden verwijderd.</string>
+    <string name="folder_move_error">Project kon niet worden verplaatst.</string>
+    <string name="folder_name_required">Voer een mapnaam in.</string>
+    <string name="folder_name_max_length">Maximaal 50 tekens</string>
+    <string name="folder_name_duplicate">De mapnaam is al in gebruik.</string>
+    <string name="folder_name_invalid">Mapnamen mogen geen besturingstekens bevatten.</string>
+    <string name="folder_delete_title">Map verwijderen?</string>
+    <string name="folder_delete_message">%1$s verwijderen?</string>
+    <string name="folder_selected_description">%1$s Geselecteerd.</string>
+    <string name="folder_all_projects_description">Alle projecten. Virtuele weergave van elk project.</string>
+    <string name="folder_unfiled_description">Projecten zonder map.</string>
+    <string name="folder_user_description">%1$s. Map voor projectorganisatie.</string>
+    <string name="folder_actions_description">Acties voor %1$s</string>
+    <string name="folder_current_destination">%1$s. Huidige bestemming.</string>
+    <plurals name="folder_affected_projects">
+    <item quantity="one">%d project blijft behouden en komt zonder map te staan.</item>
+    <item quantity="other">%d projecten blijven behouden en komen zonder map te staan.</item>
+    </plurals>
+    <plurals name="folder_moved_projects">
+    <item quantity="one">%d project verplaatst.</item>
+    <item quantity="other">%d projecten verplaatst.</item>
+    </plurals>
+    <string name="folder_move_project_to">Verplaats %1$s naar map</string>
+    <string name="folder_rename_description">Map %1$s hernoemen</string>
+    <string name="folder_move_earlier_description">Map %1$s eerder verplaatsen</string>
+    <string name="folder_move_later_description">Map %1$s later verplaatsen</string>
+    <string name="folder_delete_description">Map %1$s verwijderen</string>
+    <plurals name="folder_move_selected_projects_count">
+    <item quantity="one">Verplaats %d geselecteerd project</item>
+    <item quantity="other">Verplaats %d geselecteerde projecten</item>
+    </plurals>
+    <plurals name="folder_move_projects_error">
+    <item quantity="one">Kan %d project niet verplaatsen.</item>
+    <item quantity="other">Kan %d projecten niet verplaatsen.</item>
+    </plurals>
 </resources>

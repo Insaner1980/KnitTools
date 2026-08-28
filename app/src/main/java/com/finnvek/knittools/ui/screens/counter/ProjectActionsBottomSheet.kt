@@ -11,7 +11,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AddCircle
 import androidx.compose.material.icons.outlined.CheckCircle
@@ -19,6 +21,7 @@ import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.FormatListNumbered
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Notifications
@@ -66,6 +69,7 @@ data class ProjectActionsSheetCallbacks(
     val onShowResetDialog: () -> Unit,
     val onShowCompleteDialog: () -> Unit,
     val onShowDeleteDialog: () -> Unit,
+    val onMoveToFolder: () -> Unit,
 )
 
 data class ProjectActionsSheetState(
@@ -90,7 +94,7 @@ fun ProjectActionsBottomSheet(
         containerColor = MaterialTheme.colorScheme.background,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
     ) {
-        Column(modifier = Modifier.padding(bottom = 18.dp)) {
+        Column(modifier = Modifier.verticalScroll(rememberScrollState()).padding(bottom = 18.dp)) {
             ProjectActionsSection(title = stringResource(R.string.project_actions_section_this_project)) {
                 ActionRow(
                     icon = Icons.Outlined.Description,
@@ -138,6 +142,11 @@ fun ProjectActionsBottomSheet(
             SectionDivider()
 
             ProjectActionsSection(title = stringResource(R.string.project_actions_section_project_actions)) {
+                ActionRow(
+                    icon = Icons.Outlined.FolderOpen,
+                    label = stringResource(R.string.folder_move_to),
+                    onClick = callbacks.onMoveToFolder,
+                )
                 ActionRow(
                     icon =
                         if (state.isWorkSessionActiveForProject) {

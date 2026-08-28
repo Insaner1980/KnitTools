@@ -1,6 +1,7 @@
 package com.finnvek.knittools.ui.screens.project
 
 import android.content.Context
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.finnvek.knittools.R
@@ -10,6 +11,8 @@ import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.MainCounterLabelType
 import com.finnvek.knittools.domain.model.ProjectDocument
+import com.finnvek.knittools.domain.model.ProjectFolderFilter
+import com.finnvek.knittools.domain.model.ProjectFolderMoveDirection
 import com.finnvek.knittools.domain.model.ProjectSortOrder
 import com.finnvek.knittools.domain.model.displayName
 import com.finnvek.knittools.domain.model.parseYarnCardIds
@@ -22,11 +25,16 @@ import com.finnvek.knittools.repository.ProjectCompletionResult
 import com.finnvek.knittools.repository.ProjectCreationResult
 import com.finnvek.knittools.repository.ProjectDeletionResult
 import com.finnvek.knittools.repository.ProjectDocumentRepository
+import com.finnvek.knittools.repository.ProjectFolderMutationResult
+import com.finnvek.knittools.repository.ProjectFolderRepository
 import com.finnvek.knittools.repository.SavedPatternRepository
 import com.finnvek.knittools.repository.YarnCardRepository
+import com.finnvek.knittools.repository.isSuccess
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -34,9 +42,11 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -58,6 +68,7 @@ private data class PendingProjectCreation(
     val craftType: CraftType,
     val mainCounterLabelType: MainCounterLabelType,
     val mainCounterCustomLabel: String?,
+    val targetFolderId: Long?,
 )
 
 data class PendingProjectListSessionAction(
@@ -79,7 +90,23 @@ class ProjectListViewModel
         private val projectDocumentRepository: ProjectDocumentRepository,
         private val preferencesManager: PreferencesManager,
         @param:ApplicationContext private val context: Context,
+        private val folderRepository: ProjectFolderRepository,
+        private val savedStateHandle: SavedStateHandle,
     ) : ViewModel() {
+        private val _selectedFolderFilter =
+            MutableStateFlow(restoreFolderFilter(savedStateHandle["project_folder_filter"]))
+        val selectedFolderFilter: StateFlow<ProjectFolderFilter> = _selectedFolderFilter.asStateFlow()
+
+        private val _folderState = MutableStateFlow(ProjectFoldersState())
+        val folderState: StateFlow<ProjectFoldersState> = _folderState.asStateFlow()
+        private var folderObservation: Job? = null
+
+        private val folderEventChannel = Channel<ProjectFolderMutationResult>(Channel.BUFFERED)
+        val folderEvents = folderEventChannel.receiveAsFlow()
+
+        private val _projectCreationError = MutableStateFlow<ProjectCreationResult?>(null)
+        val projectCreationError: StateFlow<ProjectCreationResult?> = _projectCreationError.asStateFlow()
+
         // === Preferences ===
 
         val showCompleted: StateFlow<Boolean> =
@@ -95,22 +122,33 @@ class ProjectListViewModel
         // === Lajittelutietoiset projektilistaukset ===
 
         val activeProjects: StateFlow<List<CounterProject>> =
-            sortOrder
-                .flatMapLatest { order ->
-                    repository.getActiveProjects(order)
-                }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+            combine(
+                sortOrder.flatMapLatest(repository::getActiveProjects),
+                folderState,
+                selectedFolderFilter,
+            ) { projects, folders, filter ->
+                filterProjects(projects, folders, filter)
+            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
         val completedProjects: StateFlow<List<CounterProject>> =
-            showCompleted
-                .flatMapLatest { shouldShow ->
-                    if (shouldShow) {
-                        sortOrder.flatMapLatest { order ->
-                            repository.getCompletedProjects(order)
-                        }
-                    } else {
-                        flowOf(emptyList())
-                    }
-                }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+            combine(
+                showCompleted.flatMapLatest { shouldShow ->
+                    if (shouldShow) sortOrder.flatMapLatest(repository::getCompletedProjects) else flowOf(emptyList())
+                },
+                folderState,
+                selectedFolderFilter,
+            ) { projects, folders, filter ->
+                filterProjects(projects, folders, filter)
+            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+        val hasHiddenCompletedProjects: StateFlow<Boolean> =
+            combine(folderState, selectedFolderFilter, showCompleted) { folders, filter, show ->
+                !show &&
+                    folders.snapshot
+                        ?.memberships
+                        .orEmpty()
+                        .any { it.isCompleted && filter.includes(it.folderId) }
+            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
         val activeSession: StateFlow<ActiveWorkSession?> =
             repository
@@ -179,6 +217,7 @@ class ProjectListViewModel
         private var pendingProjectCreation: PendingProjectCreation? = null
 
         init {
+            retryFolderLoading()
             viewModelScope.launch { repository.refreshActiveSession() }
             viewModelScope.launch {
                 activeProjects
@@ -199,6 +238,17 @@ class ProjectListViewModel
         // === Preferences-toiminnot ===
 
         fun toggleShowCompleted() {
+            if (showCompleted.value) {
+                val completedIds =
+                    folderState.value.snapshot
+                        ?.memberships
+                        .orEmpty()
+                        .filter {
+                            it.isCompleted
+                        }.map { it.projectId }
+                        .toSet()
+                _selectedProjectIds.update { it - completedIds }
+            }
             viewModelScope.launch {
                 preferencesManager.toggleShowCompletedProjects()
             }
@@ -229,12 +279,13 @@ class ProjectListViewModel
         }
 
         fun selectAllProjects() {
-            _selectedProjectIds.value = activeProjects.value.map { it.id }.toSet()
+            _selectedProjectIds.value = (activeProjects.value + completedProjects.value).map { it.id }.toSet()
         }
 
         fun completeSelectedProjects() {
             viewModelScope.launch {
-                val ids = _selectedProjectIds.value
+                val activeIds = activeProjects.value.map { it.id }.toSet()
+                val ids = _selectedProjectIds.value.intersect(activeIds)
                 val active = repository.refreshActiveSession()
                 if (active != null && active.projectId in ids) {
                     _pendingCompletionSessionAction.value = PendingProjectListSessionAction(active, ids)
@@ -358,6 +409,7 @@ class ProjectListViewModel
         }
 
         fun requestProjectCreation() {
+            _projectCreationError.value = null
             viewModelScope.launch {
                 val count = repository.getProjectCount()
                 if (!isPro && count >= 1) {
@@ -377,6 +429,7 @@ class ProjectListViewModel
                         craftType = CraftType.KNITTING,
                         mainCounterLabelType = CraftType.KNITTING.defaultMainCounterLabelType(),
                         mainCounterCustomLabel = null,
+                        targetFolderId = (selectedFolderFilter.value as? ProjectFolderFilter.Folder)?.folderId,
                     )
                 pendingProjectCreation = request
                 createProjectInternal(request)
@@ -388,6 +441,7 @@ class ProjectListViewModel
             craftType: CraftType,
             mainCounterLabelType: MainCounterLabelType,
             mainCounterCustomLabel: String?,
+            targetFolderId: Long? = (selectedFolderFilter.value as? ProjectFolderFilter.Folder)?.folderId,
         ) {
             val request =
                 PendingProjectCreation(
@@ -395,6 +449,7 @@ class ProjectListViewModel
                     craftType = craftType,
                     mainCounterLabelType = mainCounterLabelType,
                     mainCounterCustomLabel = mainCounterCustomLabel,
+                    targetFolderId = targetFolderId,
                 )
             pendingProjectCreation = request
             viewModelScope.launch {
@@ -408,6 +463,7 @@ class ProjectListViewModel
         }
 
         private suspend fun createProjectInternal(request: PendingProjectCreation) {
+            _projectCreationError.value = null
             when (
                 val result =
                     repository.createProject(
@@ -416,6 +472,7 @@ class ProjectListViewModel
                         mainCounterLabelType = request.mainCounterLabelType,
                         mainCounterCustomLabel = request.mainCounterCustomLabel,
                         canCreateAdditionalProjects = isPro,
+                        targetFolderId = request.targetFolderId,
                     )
             ) {
                 is ProjectCreationResult.Created -> {
@@ -426,6 +483,10 @@ class ProjectListViewModel
                     _projectCreationPrompts.emit(repository.getProjectCount())
                 }
                 ProjectCreationResult.InvalidProject -> pendingProjectCreation = null
+                ProjectCreationResult.FolderMissing -> {
+                    pendingProjectCreation = null
+                    _projectCreationError.value = result
+                }
             }
         }
 
@@ -521,6 +582,7 @@ class ProjectListViewModel
         ) {
             projectIds.forEach { id ->
                 val project = repository.getProject(id) ?: return@forEach
+                if (project.isCompleted) return@forEach
                 repository.completeProjectWithSessionChoice(
                     projectId = id,
                     totalRows = project.count,
@@ -555,4 +617,105 @@ class ProjectListViewModel
                 _navigateToPhotoGallery.emit(projectId)
             }
         }
+
+        fun selectFolder(filter: ProjectFolderFilter) {
+            if (filter == selectedFolderFilter.value) return
+            _selectedFolderFilter.value = filter
+            savedStateHandle["project_folder_filter"] =
+                when (filter) {
+                    ProjectFolderFilter.AllProjects -> "all"
+                    ProjectFolderFilter.Unfiled -> "unfiled"
+                    is ProjectFolderFilter.Folder -> "folder:${filter.folderId}"
+                }
+            exitMultiSelectMode()
+        }
+
+        fun retryFolderLoading() {
+            folderObservation?.cancel()
+            folderObservation =
+                viewModelScope.launch {
+                    folderRepository
+                        .observeOrganization {
+                            _folderState.update { it.copy(readFailed = true) }
+                        }.collect { snapshot ->
+                            _folderState.update { it.copy(snapshot = snapshot, isLoading = false, readFailed = false) }
+                            val filter = selectedFolderFilter.value
+                            if (filter is ProjectFolderFilter.Folder &&
+                                snapshot.folders.none { it.id == filter.folderId }
+                            ) {
+                                selectFolder(ProjectFolderFilter.AllProjects)
+                            }
+                        }
+                }
+        }
+
+        fun clearFolderError() {
+            _folderState.update { it.copy(mutationError = null) }
+        }
+
+        fun createFolder(name: String) = mutateFolder { folderRepository.createFolder(name) }
+
+        fun renameFolder(
+            id: Long,
+            name: String,
+        ) = mutateFolder { folderRepository.renameFolder(id, name) }
+
+        fun moveFolder(
+            id: Long,
+            direction: ProjectFolderMoveDirection,
+        ) = mutateFolder {
+            folderRepository.moveFolder(id, direction)
+        }
+
+        fun deleteFolder(id: Long) = mutateFolder { folderRepository.deleteFolder(id) }
+
+        fun moveSelectedProjects(folderId: Long?) {
+            val ids = selectedProjectIds.value.toSet()
+            mutateFolder {
+                folderRepository.moveProjects(ids, folderId).also { result ->
+                    if (result.isSuccess) exitMultiSelectMode()
+                }
+            }
+        }
+
+        private fun mutateFolder(operation: suspend () -> ProjectFolderMutationResult) {
+            if (folderState.value.isMutating) return
+            _folderState.update { it.copy(isMutating = true, mutationError = null) }
+            viewModelScope.launch {
+                try {
+                    val result = operation()
+                    if (result.isSuccess) {
+                        folderEventChannel.send(result)
+                    } else {
+                        _folderState.update { it.copy(mutationError = result) }
+                    }
+                } finally {
+                    _folderState.update { it.copy(isMutating = false) }
+                }
+            }
+        }
     }
+
+private fun restoreFolderFilter(value: String?): ProjectFolderFilter =
+    when {
+        value == "unfiled" -> ProjectFolderFilter.Unfiled
+        value?.startsWith("folder:") == true ->
+            value
+                .removePrefix("folder:")
+                .toLongOrNull()
+                ?.takeIf { it > 0 }
+                ?.let(ProjectFolderFilter::Folder)
+                ?: ProjectFolderFilter.AllProjects
+        else -> ProjectFolderFilter.AllProjects
+    }
+
+private fun filterProjects(
+    projects: List<CounterProject>,
+    folders: ProjectFoldersState,
+    filter: ProjectFolderFilter,
+): List<CounterProject> {
+    if (filter == ProjectFolderFilter.AllProjects) return projects
+    val snapshot = folders.snapshot ?: return emptyList()
+    val assignments = snapshot.memberships.associate { it.projectId to it.folderId }
+    return projects.filter { assignments.containsKey(it.id) && filter.includes(assignments[it.id]) }
+}

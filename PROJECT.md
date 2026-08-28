@@ -11,7 +11,7 @@ This file is the detailed implementation reference for the current KnitTools che
 - build, dependency, CI, and release-surface checks;
 - locating the source of truth for a behavior before changing it.
 
-The snapshot was re-verified against the source tree on 2026-08-24. It describes the current working tree, including uncommitted changes, rather than assuming that Git `HEAD` contains the newest implementation. Counts, dependency versions, workflow pins, and generated schema versions are volatile and must be rechecked when precision matters.
+The base snapshot was re-verified against the source tree on 2026-08-24. Project-folder organization, Room 23, and the source inventory were updated on 2026-08-28 after full local JVM and Android verification. This file describes the current working tree, including uncommitted changes, rather than assuming that Git `HEAD` contains the newest implementation. Counts, dependency versions, workflow pins, and generated schema versions are volatile and must be rechecked when precision matters.
 
 This is a reference, not a replacement for the code. If this file conflicts with executable source, Gradle configuration, the Android manifest, Room schema exports, Firebase configuration, or tests, the executable source wins.
 
@@ -33,7 +33,7 @@ Tests are evidence only for what they actually assert and only when their execut
 
 KnitTools is a local-first Android knitting and crochet companion. Its main product areas are:
 
-- project creation and project lifecycle;
+- project creation, project lifecycle, and local folder organization;
 - a primary row or round counter with history, targets, sections, stitch tracking, reminders, and additional counter types;
 - timed work sessions and historical insights;
 - local pattern PDF import, project attachment, reading-line calibration, layered annotations, and annotated export;
@@ -57,9 +57,9 @@ The app does not currently implement cloud synchronization, continuous Drive or 
 | Android target SDK | 37 |
 | Android minimum SDK | 29 |
 | App version | `versionCode 1`, `versionName "1.0.0"` |
-| Room schema | 22 |
+| Room schema | 23 |
 | Java toolchain | Eclipse Temurin JDK 17 |
-| Gradle wrapper | 9.5.0 |
+| Gradle wrapper | 9.6.1 |
 | Android Gradle Plugin | 9.3.1 |
 | Kotlin and Compose compiler plugin | 2.4.10 |
 | Firebase Functions runtime | Node.js 22 |
@@ -69,17 +69,21 @@ The app does not currently implement cloud synchronization, continuous Drive or 
 
 These are orientation counts, not coverage or pass results:
 
-- 286 production Kotlin files under `app/src/main`;
-- 230 Kotlin files in the JVM test source set under `app/src/test`;
-- 23 Kotlin files in the Android instrumented-test source set under `app/src/androidTest`;
+- 296 production Kotlin files under `app/src/main`;
+- 236 Kotlin files in the JVM test source set under `app/src/test`;
+- 29 Kotlin files in the Android instrumented-test source set under `app/src/androidTest`;
 - 7 TypeScript test files matching `*.test.ts` under `functions/src`;
 - 65 tracked or working-tree resource files under `app/src/main/res`.
 
 ### Current local validation
 
-The final local stabilization run on 2026-08-26 executed 1,298 debug JVM tests, 95 installed instrumented tests on API 36, 95 installed instrumented tests on API 37, and 46 Functions tests across seven suites, all without failures or skipped tests. The Android run also passed KSP, Android-test compilation, debug app and test APK assembly, focused Room migrations 18 to 19, 19 to 20, 20 to 21, 21 to 22, and 1 to 22, debug Lint, ktlint, Detekt, and `git diff --check`; Lint reported zero errors, 25 existing unused-resource warnings, and three plural suggestions. Both emulator smoke launches opened Projects, Library, Tools, Insights, and Settings without a fatal crash or ANR.
+Project-folder verification on 2026-08-28 passed 1,361 debug JVM tests across 234 suites, the complete 126-test installed instrumentation package on API 36 and API 37, KSP, Android-test compilation, debug app and test APK assembly, debug Lint, ktlint, Detekt, and `git diff --check`. No JVM or instrumented test failed or was skipped in the final runs; Lint reported no issues. The instrumented suite includes 31 new tests and covers schema 22 to 23, older migration entrypoints and the full 1 to 23 chain, Room constraints, metadata-only transactions, project creation, folder UI, state restoration, trusted widget navigation, and active-session preservation. Schema 23 adds only the two organization tables; all 14 schema 22 entities remain structurally unchanged.
 
-The source-file counts above are inventory; they are not executed-test counts. API 29 runtime testing and a human TalkBack listening pass were not performed. Firebase and Ravelry were not configured, contacted, or deployed, and local Functions tests do not prove production OAuth or live upstream behavior. The Functions package targets Node.js 22; this run used local Node.js 24.19.0 and npm 11.17.0, which is a nonblocking environment mismatch rather than deployment evidence.
+The same final app APK was checked with normal and disabled system animations, light and dark themes, normal and 200 percent font scale, and a 320 dp viewport. The narrow-width reruns passed 19 component/screen tests and six dark screen tests. Real MainActivity checks confirmed that a selected folder survives background process death and task restoration, while a new task starts at All Projects. Folder strings and plural resources cover all 11 locale sets; automated semantics, focus, touch-target, keyboard, and screenshot checks do not replace a human TalkBack listening pass. All Gradle work was offline, and both emulators ran with restricted networking and no active default network. No Functions tests, external-service setup, release artifact, or deployment was part of the folder work. API 29 runtime testing remains unavailable locally because its system image is not installed.
+
+The earlier local stabilization run on 2026-08-26 executed 1,298 debug JVM tests, 95 installed instrumented tests on API 36, 95 installed instrumented tests on API 37, and 46 Functions tests across seven suites, all without failures or skipped tests. That Android run also passed KSP, Android-test compilation, debug app and test APK assembly, focused Room migrations 18 to 19, 19 to 20, 20 to 21, 21 to 22, and 1 to 22, debug Lint, ktlint, Detekt, and `git diff --check`; Lint reported zero errors, 25 existing unused-resource warnings, and three plural suggestions. Both emulator smoke launches opened Projects, Library, Tools, Insights, and Settings without a fatal crash or ANR.
+
+The source-file counts above are inventory; they are not executed-test counts. API 29 runtime testing and a human TalkBack listening pass were not performed. Firebase and Ravelry were not configured, contacted, or deployed, and local Functions tests do not prove production OAuth or live upstream behavior. The Functions package targets Node.js 22; the earlier stabilization run used local Node.js 24.19.0 and npm 11.17.0, which is a nonblocking environment mismatch rather than deployment evidence.
 
 ## Repository layout
 
@@ -300,7 +304,13 @@ The bottom bar is hidden only for `pro_upgrade`, both pattern viewer routes, and
 
 ### Projects
 
-The Projects graph contains project creation and lifecycle, sorting, completed-project visibility, selection and bulk actions, the counter workspace, extra counters and repeat sections, reminders, notes, yarn, progress photos, attached pattern PDFs, project annotation layers, and session history.
+The Projects graph contains project creation and lifecycle, local folder organization, sorting, completed-project visibility, selection and bulk actions, the counter workspace, extra counters and repeat sections, reminders, notes, yarn, progress photos, attached pattern PDFs, project annotation layers, and session history.
+
+The compact folder selector opens a scrollable sheet with the virtual All Projects and Unfiled views plus user-created folders. Folder names are trimmed, limited to 50 Kotlin `String.length` units, and reject controls and line separators; Java NFC followed by `Locale.ROOT` lowercasing supplies the unique canonical name while the display form is preserved. Folder actions create, rename, move earlier/later, and delete with an active-plus-completed project count. Empty folders persist; deleting a folder preserves its projects as Unfiled.
+
+`ProjectListViewModel` owns the typed filter in `SavedStateHandle`, not DataStore. New tasks begin at All Projects; navigation and recreation restore the selection, and a missing folder falls back only after a real Room result. Active and visible completed projects are filtered after the existing SQL sort. The Continue hero comes from the first filtered active project with a positive count, and its row returns during selection. Completed visibility remains global. Distinct empty states explain an empty folder, empty Unfiled, or hidden completed projects.
+
+Single-project moves use the existing Counter actions sheet; bulk moves use visible active and completed project IDs. Destinations are Unfiled and real folders, never All Projects. The operation preserves project contents, timestamps, files, and active-session state. Folder organization is free and does not filter Library, Insights, history, widgets, or project-ID navigation. Creation from a selected folder passes its ID to the canonical repository transaction; All Projects and Unfiled create an unfiled project, and the existing Pro project limit still applies.
 
 ### Library
 
@@ -323,6 +333,7 @@ Settings owns app language, light/dark/system theme, haptic feedback, keep-scree
 | Product surface | Primary source files |
 |---|---|
 | Project list | `ui/screens/project/ProjectListScreen.kt`, `ProjectListViewModel.kt`, `ui/components/ProjectListItem.kt` |
+| Project folders | `ui/screens/project/ProjectFolderComponents.kt`, `ProjectFoldersState.kt`, `MoveProjectToFolderSheet.kt`, `ProjectFolderMoveViewModel.kt`, `repository/ProjectFolderRepository.kt` |
 | Counter workspace | `ui/screens/counter/CounterScreen.kt`, `CounterViewModel.kt`, `CounterWorkspaceSections.kt`, `CounterProjectContentCards.kt` |
 | Additional counters | `ui/screens/counter/MultiCounterComponents.kt`, `CounterUiStateReducers.kt` |
 | Reminders | `ui/screens/counter/ReminderComponents.kt` |
@@ -352,9 +363,9 @@ Settings owns app language, light/dark/system theme, haptic feedback, keep-scree
 
 ### Room database
 
-`KnitToolsDatabase` uses schema version 22. Entities are `CounterProjectEntity`, `CounterHistoryEntity`, `YarnCardEntity`, `SessionEntity`, `ActiveSessionEntity`, `RowReminderEntity`, `ProgressPhotoEntity`, `ProjectCounterEntity`, `ProjectYarnNoteEntity`, `SavedPatternEntity`, `PatternAnnotationLayerEntity`, `PatternAnnotationEntity`, `PatternBookmarkEntity`, and `ProjectDocumentEntity`.
+`KnitToolsDatabase` uses schema version 23. Entities are `CounterProjectEntity`, `CounterHistoryEntity`, `YarnCardEntity`, `SessionEntity`, `ActiveSessionEntity`, `RowReminderEntity`, `ProgressPhotoEntity`, `ProjectCounterEntity`, `ProjectYarnNoteEntity`, `SavedPatternEntity`, `PatternAnnotationLayerEntity`, `PatternAnnotationEntity`, `PatternBookmarkEntity`, `ProjectDocumentEntity`, `ProjectFolderEntity`, and `ProjectFolderAssignmentEntity`.
 
-Automatic migrations cover 1 to 2 and 2 to 3. Manual migrations cover every step from 3 to 4 through 21 to 22. `DatabaseModule` registers `ALL_MANUAL_MIGRATIONS`. Exported schemas 1 through 22 are retained.
+Automatic migrations cover 1 to 2 and 2 to 3. Manual migrations cover every step from 3 to 4 through 22 to 23. `DatabaseModule` registers `ALL_MANUAL_MIGRATIONS`. Exported schemas 1 through 23 are retained.
 
 #### Schema 18
 
@@ -377,6 +388,14 @@ Migration 20 to 21 creates `active_sessions`, the canonical source for the one g
 Migration 21 to 22 creates `project_documents` without rebuilding `counter_projects`. Every project with a nonblank legacy `patternUri` receives exactly one primary relation in deterministic order. The migration preserves its readable URI, strongest available label, nullable valid Saved Pattern link, stable existing project or Saved Pattern `documentKey`, current page, row mapping, horizontal line and follow state, and vertical guide state. Projects without a readable legacy URI receive no row. The retained legacy project-pattern and reader columns remain compatibility data and are no longer the production source of truth.
 
 The table uses a cascading project foreign key and a nullable `ON DELETE SET NULL` Saved Pattern foreign key. Database triggers reject a second primary row for the same project on insert or update. Repository transactions preserve exactly one primary document for every nonempty list during add, reorder, primary change, and removal.
+
+#### Schema 23 and project folders
+
+Migration 22 to 23 adds only `project_folders` and `project_folder_assignments`. All 14 previous tables, their rows, indexes, foreign keys, and triggers remain unchanged; `counter_projects` is not rebuilt. Both new tables start empty, so every migrated project is Unfiled.
+
+`project_folders` stores `id`, display `name`, unique `normalizedName`, and manual `sortOrder`; ordering is always `sortOrder` then ID. `project_folder_assignments` has `projectId` as its primary key, one indexed `folderId`, and cascading foreign keys to the project and folder. A missing assignment means Unfiled. Virtual views have neither database rows nor sentinel IDs. Completing or reopening a project retains its assignment; project deletion removes only that assignment, not the folder.
+
+`ProjectFolderRepository` owns metadata-only transactional writes and typed results, preserves cancellation, and observes one coherent joined organization snapshot through the repository retry boundary. Bulk moves deduplicate IDs and validate every project and destination before any write. Deleting a folder never calls file cleanup. `CounterRepository.createProject` validates an optional folder and inserts the new project plus assignment in the same limit-checked transaction; a stale folder cannot leave an unintended unfiled project. The folder DAO is supplied by `ProjectFolderDatabaseModule` beside the existing database module.
 
 #### Counter projects
 
@@ -436,7 +455,7 @@ Work-session UI copy is localized in all 11 supported resource directories: defa
 
 Hard child relationships cascade for history, sessions, reminders, photos, project counters, project yarn notes, pattern bookmarks, annotation layers, and annotations. Intentional soft links are `yarn_cards.linkedProjectId`, `counter_projects.yarnCardIds`, `counter_projects.linkedPatternId`, and `project_yarn_notes.savedYarnCardId`; repositories maintain their invariants.
 
-Schema 15 adds foreign-key lookup indexes, schema 16 adds session zones, schema 17 adds annotations, schema 18 adds monotonic feature-use flags, schema 19 preserves three-state saved-pattern availability, schema 20 adds project bookmarks plus followed horizontal and durable vertical reading-guide state, schema 21 adds the Room-owned active work-session singleton, and schema 22 adds canonical multiple project documents and per-document reader state.
+Schema 15 adds foreign-key lookup indexes, schema 16 adds session zones, schema 17 adds annotations, schema 18 adds monotonic feature-use flags, schema 19 preserves three-state saved-pattern availability, schema 20 adds project bookmarks plus followed horizontal and durable vertical reading-guide state, schema 21 adds the Room-owned active work-session singleton, schema 22 adds canonical multiple project documents and per-document reader state, and schema 23 adds project-folder metadata and assignments.
 
 ### DataStore and preferences
 
@@ -980,7 +999,7 @@ Metadata-only Ravelry/saved-pattern links do not masquerade as an attached PDF. 
 
 ### Project-list actions
 
-The top app bar owns sort order, completed visibility, and selection entry. Selection mode owns back-to-exit, select all, complete, and delete actions with confirmation where required.
+The top app bar owns sort order, completed visibility, and selection entry. The folder selector stays below it without replacing cardless rows or the Continue hero. Long press on active or completed rows enters selection; Select All selects only currently visible filtered rows. The vertical action area offers Move selected projects, Complete for active selections only, and confirmed Delete. A failed move keeps selection; success exits selection and restores selector focus. Folder deletion restores focus to a remaining folder or Create folder.
 
 The create action is not a Material FAB. It uses the image-backed `counter_plus_button.webp` at bottom end with a 72 dp touch target and 64 dp visual. It is absent during selection. Free-limit handling uses `ProPromptSheet`, then retries the original create action if access is granted; the repository still enforces the limit transactionally.
 
@@ -1471,8 +1490,8 @@ Accepted risk is limited to documented historical Ravelry credential findings in
 
 The current working tree contains:
 
-- 230 Kotlin files in `app/src/test`;
-- 23 Kotlin files in `app/src/androidTest`;
+- 236 Kotlin files in `app/src/test`;
+- 29 Kotlin files in `app/src/androidTest`;
 - 7 TypeScript test files in `functions/src`.
 
 These counts are not pass results and should be refreshed after test additions/removals.
@@ -1530,7 +1549,7 @@ Inspect:
 - `data/local/KnitToolsDatabase.kt`;
 - every relevant entity and DAO;
 - `di/DatabaseModule.kt`;
-- schema JSON 22 and the preceding schema;
+- schema JSON 23 and the preceding schema;
 - migration tests.
 
 Questions:
@@ -1543,6 +1562,7 @@ Questions:
 - Does migration 17 to 18 preserve existing notes/secondary-counter access?
 - Does migration 18 to 19 map false to unknown and preserve saved-pattern annotation layers and annotations across the referenced-table rebuild?
 - Does migration 21 to 22 backfill exactly one primary relation per readable legacy project while preserving stable document keys and per-document reader state?
+- Does migration 22 to 23 add only empty folder/assignment tables and preserve every existing project-owned row and constraint?
 
 Proof: migration execution against old schemas plus schema identity, not compilation alone.
 
@@ -1810,7 +1830,7 @@ Recheck these directly:
 Common stale assumptions:
 
 - `allowBackup` is false, not true.
-- Room is schema 22, not an earlier schema.
+- Room is schema 23, not an earlier schema.
 - `ProjectCard.kt` is deleted; the current row is `ProjectListItem.kt`.
 - Projects are cardless list rows plus a separate Continue hero.
 - The current main buttons use `CounterImageButton` and WebP assets.

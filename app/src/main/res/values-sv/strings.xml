@@ -846,4 +846,65 @@
     <string name="project_documents_pattern_information">Mönsterinformation</string>
     <string name="project_documents_remove_primary_message">Ta bort %1$s? Ett annat dokument blir huvudmönster.</string>
     <string name="project_documents_remove_last_message">Ta bort %1$s? Projektet kommer inte längre att ha ett läsbart mönster.</string>
+    <string name="folder_sheet_title">Mappar</string>
+    <string name="folder_loading">Läser in mappar</string>
+    <string name="folder_unfiled">Utan mapp</string>
+    <string name="folder_create">Skapa mapp</string>
+    <string name="folder_name">Mappnamn</string>
+    <string name="folder_rename">Byt namn på mapp</string>
+    <string name="folder_delete">Ta bort mapp</string>
+    <string name="folder_move_earlier">Flytta tidigare</string>
+    <string name="folder_move_later">Flytta senare</string>
+    <string name="folder_move_to">Flytta till mapp</string>
+    <string name="folder_remove_from">Ta bort från mapp</string>
+    <string name="folder_move_selected_projects">Flytta valda projekt</string>
+    <string name="folder_no_folders">Inga mappar</string>
+    <string name="folder_empty">%1$s har inga projekt.</string>
+    <string name="folder_no_unfiled">Inga projekt utan mapp</string>
+    <string name="folder_hidden_completed">Den här mappen innehåller dolda slutförda projekt.</string>
+    <string name="folder_deleted">Mappen togs bort. Projekten behölls.</string>
+    <string name="folder_project_moved">Projektet flyttades.</string>
+    <string name="folder_project_missing">Ett valt projekt finns inte längre.</string>
+    <string name="folder_project_creation_destination">Nytt projekts mål: %1$s</string>
+    <string name="folder_missing">Den här mappen finns inte längre.</string>
+    <string name="folder_load_error">Det gick inte att läsa in mappar.</string>
+    <string name="folder_reorder_error">Det gick inte att ordna om mappar.</string>
+    <string name="folder_stale_action">Mappen ändrades innan åtgärden slutfördes.</string>
+    <string name="folder_create_error">Det gick inte att skapa mappen.</string>
+    <string name="folder_rename_error">Det gick inte att byta namn på mappen.</string>
+    <string name="folder_delete_error">Det gick inte att ta bort mappen.</string>
+    <string name="folder_move_error">Det gick inte att flytta projektet.</string>
+    <string name="folder_name_required">Ange ett mappnamn.</string>
+    <string name="folder_name_max_length">Högst 50 tecken</string>
+    <string name="folder_name_duplicate">Mappnamnet används redan.</string>
+    <string name="folder_name_invalid">Mappnamn får inte innehålla styrtecken.</string>
+    <string name="folder_delete_title">Ta bort mapp?</string>
+    <string name="folder_delete_message">Ta bort %1$s?</string>
+    <string name="folder_selected_description">%1$s Vald.</string>
+    <string name="folder_all_projects_description">Alla projekt. Virtuell vy över varje projekt.</string>
+    <string name="folder_unfiled_description">Projekt utan mapp.</string>
+    <string name="folder_user_description">%1$s. Mapp för projektorganisation.</string>
+    <string name="folder_actions_description">Åtgärder för %1$s</string>
+    <string name="folder_current_destination">%1$s. Nuvarande mål.</string>
+    <plurals name="folder_affected_projects">
+    <item quantity="one">%d projekt behålls och hamnar utan mapp.</item>
+    <item quantity="other">%d projekt behålls och hamnar utan mapp.</item>
+    </plurals>
+    <plurals name="folder_moved_projects">
+    <item quantity="one">%d projekt flyttades.</item>
+    <item quantity="other">%d projekt flyttades.</item>
+    </plurals>
+    <string name="folder_move_project_to">Flytta %1$s till mapp</string>
+    <string name="folder_rename_description">Byt namn på mappen %1$s</string>
+    <string name="folder_move_earlier_description">Flytta mappen %1$s tidigare</string>
+    <string name="folder_move_later_description">Flytta mappen %1$s senare</string>
+    <string name="folder_delete_description">Ta bort mappen %1$s</string>
+    <plurals name="folder_move_selected_projects_count">
+    <item quantity="one">Flytta %d valt projekt</item>
+    <item quantity="other">Flytta %d valda projekt</item>
+    </plurals>
+    <plurals name="folder_move_projects_error">
+    <item quantity="one">Det gick inte att flytta %d projekt.</item>
+    <item quantity="other">Det gick inte att flytta %d projekt.</item>
+    </plurals>
 </resources>

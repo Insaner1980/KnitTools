@@ -15,7 +15,7 @@ class RoomIndexSourceTest {
 
         assertTrue(counterProjectEntity.contains("Index(\"linkedPatternId\")"))
         assertTrue(yarnCardEntity.contains("Index(\"linkedProjectId\")"))
-        assertTrue(database.contains("version = 22"))
+        assertTrue(database.contains("version = 23"))
         assertTrue(database.contains("MIGRATION_14_15"))
         assertTrue(database.contains("index_counter_projects_linkedPatternId"))
         assertTrue(database.contains("index_yarn_cards_linkedProjectId"))

@@ -116,7 +116,6 @@ class RepositoryTransactionBoundaryTest {
             // CPD-OFF: Testin skenaariokohtainen asetelma pidetaan paikallisena ja luettavana.
             val events = mutableListOf<String>()
             val projectDao = mockk<CounterProjectDao>(relaxed = true)
-            val sessionDao = mockk<SessionDao>(relaxed = true)
             val yarnRepository = mockk<YarnCardRepository>(relaxed = true)
             val savedPatternRepository = mockk<SavedPatternRepository>(relaxed = true)
             val projectDocumentRepository = mockk<ProjectDocumentRepository>(relaxed = true)
@@ -148,13 +147,14 @@ class RepositoryTransactionBoundaryTest {
                 CounterRepository(
                     dao = projectDao,
                     projectCounterDao = mockk(relaxed = true),
-                    sessionDao = sessionDao,
+                    sessionDao = mockk(relaxed = true),
                     photoStorage = photoStorage,
                     patternDocumentStorage = patternDocumentStorage,
                     context = context,
                     yarnCardRepository = yarnRepository,
                     savedPatternRepository = savedPatternRepository,
                     projectDocumentRepository = projectDocumentRepository,
+                    projectFolderDao = mockk(relaxed = true),
                     transactionRunner = runner,
                     ioDispatcher = UnconfinedTestDispatcher(testScheduler),
                 )
@@ -197,6 +197,7 @@ class RepositoryTransactionBoundaryTest {
                     yarnCardRepository = yarnRepository,
                     savedPatternRepository = mockk(relaxed = true),
                     projectDocumentRepository = mockk(relaxed = true),
+                    projectFolderDao = mockk(relaxed = true),
                     transactionRunner = RecordingTransactionRunner(),
                     ioDispatcher = ioDispatcher,
                     // CPD-ON
@@ -227,6 +228,7 @@ class RepositoryTransactionBoundaryTest {
                     yarnCardRepository = yarnRepository,
                     savedPatternRepository = mockk(relaxed = true),
                     projectDocumentRepository = mockk(relaxed = true),
+                    projectFolderDao = mockk(relaxed = true),
                     transactionRunner = RecordingTransactionRunner(),
                     ioDispatcher = UnconfinedTestDispatcher(testScheduler),
                 )
@@ -258,6 +260,7 @@ class RepositoryTransactionBoundaryTest {
                     yarnCardRepository = yarnRepository,
                     savedPatternRepository = savedPatternRepository,
                     projectDocumentRepository = documentRepository,
+                    projectFolderDao = mockk(relaxed = true),
                     transactionRunner = runner,
                     ioDispatcher = UnconfinedTestDispatcher(testScheduler),
                 )
@@ -305,6 +308,7 @@ class RepositoryTransactionBoundaryTest {
                     yarnCardRepository = mockk(relaxed = true),
                     savedPatternRepository = savedPatternRepository,
                     projectDocumentRepository = mockk(relaxed = true),
+                    projectFolderDao = mockk(relaxed = true),
                     transactionRunner = runner,
                     ioDispatcher = UnconfinedTestDispatcher(testScheduler),
                 )
@@ -343,6 +347,7 @@ class RepositoryTransactionBoundaryTest {
                     yarnCardRepository = mockk(relaxed = true),
                     savedPatternRepository = mockk(relaxed = true),
                     projectDocumentRepository = documentRepository,
+                    projectFolderDao = mockk(relaxed = true),
                     transactionRunner = runner,
                     ioDispatcher = UnconfinedTestDispatcher(testScheduler),
                 )

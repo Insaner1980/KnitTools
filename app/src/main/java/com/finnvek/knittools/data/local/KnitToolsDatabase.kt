@@ -22,8 +22,10 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         PatternAnnotationEntity::class,
         PatternBookmarkEntity::class,
         ProjectDocumentEntity::class,
+        ProjectFolderEntity::class,
+        ProjectFolderAssignmentEntity::class,
     ],
-    version = 22,
+    version = 23,
     exportSchema = true,
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
@@ -54,6 +56,8 @@ abstract class KnitToolsDatabase : RoomDatabase() {
     abstract fun patternBookmarkDao(): PatternBookmarkDao
 
     abstract fun projectDocumentDao(): ProjectDocumentDao
+
+    abstract fun projectFolderDao(): ProjectFolderDao
 
     companion object {
         val MIGRATION_3_4 =
@@ -708,6 +712,8 @@ abstract class KnitToolsDatabase : RoomDatabase() {
 
         val MIGRATION_21_22: Migration = ProjectDocumentMigration22.migration
 
+        val MIGRATION_22_23: Migration = ProjectFolderMigration23.migration
+
         val ALL_MANUAL_MIGRATIONS: Array<Migration>
             get() =
                 arrayOf(
@@ -730,6 +736,7 @@ abstract class KnitToolsDatabase : RoomDatabase() {
                     MIGRATION_19_20,
                     MIGRATION_20_21,
                     MIGRATION_21_22,
+                    MIGRATION_22_23,
                 )
     }
 }

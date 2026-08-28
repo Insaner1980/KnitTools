@@ -414,6 +414,7 @@ class CounterRepositoryMainCounterChangeTest {
             yarnCardRepository = mockk(relaxed = true),
             savedPatternRepository = mockk(relaxed = true),
             projectDocumentRepository = projectDocumentRepository,
+            projectFolderDao = mockk(relaxed = true),
             transactionRunner = transactionRunner,
             ioDispatcher = Dispatchers.Unconfined,
         )

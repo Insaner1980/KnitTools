@@ -84,6 +84,7 @@ private fun buildRepository(dao: FakeCounterProjectDao): CounterRepository {
         yarnCardRepository = mockk(relaxed = true),
         savedPatternRepository = mockk(relaxed = true),
         projectDocumentRepository = mockk(relaxed = true),
+        projectFolderDao = mockk(relaxed = true),
         transactionRunner = ImmediateDatabaseTransactionRunner,
         ioDispatcher = Dispatchers.Unconfined,
     )

@@ -829,4 +829,65 @@
     <string name="project_documents_pattern_information">Oppskriftsinformasjon</string>
     <string name="project_documents_remove_primary_message">Fjerne %1$s? Et annet dokument blir hoveddokument.</string>
     <string name="project_documents_remove_last_message">Fjerne %1$s? Prosjektet vil ikke lenger ha en lesbar oppskrift.</string>
+    <string name="folder_sheet_title">Mapper</string>
+    <string name="folder_loading">Laster mapper</string>
+    <string name="folder_unfiled">Uten mappe</string>
+    <string name="folder_create">Opprett mappe</string>
+    <string name="folder_name">Mappenavn</string>
+    <string name="folder_rename">Gi mappen nytt navn</string>
+    <string name="folder_delete">Slett mappe</string>
+    <string name="folder_move_earlier">Flytt tidligere</string>
+    <string name="folder_move_later">Flytt senere</string>
+    <string name="folder_move_to">Flytt til mappe</string>
+    <string name="folder_remove_from">Fjern fra mappe</string>
+    <string name="folder_move_selected_projects">Flytt valgte prosjekter</string>
+    <string name="folder_no_folders">Ingen mapper</string>
+    <string name="folder_empty">%1$s har ingen prosjekter.</string>
+    <string name="folder_no_unfiled">Ingen prosjekter uten mappe</string>
+    <string name="folder_hidden_completed">Denne mappen inneholder skjulte fullførte prosjekter.</string>
+    <string name="folder_deleted">Mappe slettet. Prosjektene ble beholdt.</string>
+    <string name="folder_project_moved">Prosjekt flyttet.</string>
+    <string name="folder_project_missing">Et valgt prosjekt finnes ikke lenger.</string>
+    <string name="folder_project_creation_destination">Mål for nytt prosjekt: %1$s</string>
+    <string name="folder_missing">Denne mappen finnes ikke lenger.</string>
+    <string name="folder_load_error">Kunne ikke laste mapper.</string>
+    <string name="folder_reorder_error">Kunne ikke endre rekkefølgen på mappene.</string>
+    <string name="folder_stale_action">Mappen ble endret før handlingen ble fullført.</string>
+    <string name="folder_create_error">Kunne ikke opprette mappe.</string>
+    <string name="folder_rename_error">Kunne ikke gi mappen nytt navn.</string>
+    <string name="folder_delete_error">Kunne ikke slette mappen.</string>
+    <string name="folder_move_error">Kunne ikke flytte prosjektet.</string>
+    <string name="folder_name_required">Skriv inn et mappenavn.</string>
+    <string name="folder_name_max_length">Maksimalt 50 tegn</string>
+    <string name="folder_name_duplicate">Mappenavnet er allerede i bruk.</string>
+    <string name="folder_name_invalid">Mappenavn kan ikke inneholde kontrolltegn.</string>
+    <string name="folder_delete_title">Slette mappe?</string>
+    <string name="folder_delete_message">Slette %1$s?</string>
+    <string name="folder_selected_description">%1$s Valgt.</string>
+    <string name="folder_all_projects_description">Alle prosjekter. Virtuell visning av alle prosjekter.</string>
+    <string name="folder_unfiled_description">Prosjekter uten mappe.</string>
+    <string name="folder_user_description">%1$s. Mappe for prosjektorganisering.</string>
+    <string name="folder_actions_description">Handlinger for %1$s</string>
+    <string name="folder_current_destination">%1$s. Nåværende mål.</string>
+    <plurals name="folder_affected_projects">
+    <item quantity="one">%d prosjekt beholdes og blir uten mappe.</item>
+    <item quantity="other">%d prosjekter beholdes og blir uten mappe.</item>
+    </plurals>
+    <plurals name="folder_moved_projects">
+    <item quantity="one">%d prosjekt flyttet.</item>
+    <item quantity="other">%d prosjekter flyttet.</item>
+    </plurals>
+    <string name="folder_move_project_to">Flytt %1$s til mappe</string>
+    <string name="folder_rename_description">Gi mappen %1$s nytt navn</string>
+    <string name="folder_move_earlier_description">Flytt mappen %1$s tidligere</string>
+    <string name="folder_move_later_description">Flytt mappen %1$s senere</string>
+    <string name="folder_delete_description">Slett mappen %1$s</string>
+    <plurals name="folder_move_selected_projects_count">
+    <item quantity="one">Flytt %d valgt prosjekt</item>
+    <item quantity="other">Flytt %d valgte prosjekter</item>
+    </plurals>
+    <plurals name="folder_move_projects_error">
+    <item quantity="one">Kunne ikke flytte %d prosjekt.</item>
+    <item quantity="other">Kunne ikke flytte %d prosjekter.</item>
+    </plurals>
 </resources>

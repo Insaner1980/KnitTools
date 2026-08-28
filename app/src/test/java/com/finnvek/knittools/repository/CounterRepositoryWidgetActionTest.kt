@@ -90,6 +90,7 @@ class CounterRepositoryWidgetActionTest {
             yarnCardRepository = mockk(relaxed = true),
             savedPatternRepository = mockk(relaxed = true),
             projectDocumentRepository = mockk(relaxed = true),
+            projectFolderDao = mockk(relaxed = true),
             transactionRunner = transactionRunner,
             ioDispatcher = Dispatchers.Unconfined,
         )

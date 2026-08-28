@@ -1212,4 +1212,65 @@
     <string name="project_documents_pattern_information">Pattern information</string>
     <string name="project_documents_remove_primary_message">Remove %1$s? Another document will become primary.</string>
     <string name="project_documents_remove_last_message">Remove %1$s? This project will no longer have an attached readable pattern.</string>
+    <string name="folder_sheet_title">Folders</string>
+    <string name="folder_loading">Loading folders</string>
+    <string name="folder_unfiled">Unfiled</string>
+    <string name="folder_create">Create folder</string>
+    <string name="folder_name">Folder name</string>
+    <string name="folder_rename">Rename folder</string>
+    <string name="folder_delete">Delete folder</string>
+    <string name="folder_move_earlier">Move earlier</string>
+    <string name="folder_move_later">Move later</string>
+    <string name="folder_move_to">Move to folder</string>
+    <string name="folder_remove_from">Remove from folder</string>
+    <string name="folder_move_selected_projects">Move selected projects</string>
+    <string name="folder_no_folders">No folders</string>
+    <string name="folder_empty">%1$s has no projects.</string>
+    <string name="folder_no_unfiled">No Unfiled projects</string>
+    <string name="folder_hidden_completed">This folder contains hidden completed projects.</string>
+    <string name="folder_deleted">Folder deleted. Projects were kept.</string>
+    <string name="folder_project_moved">Project moved.</string>
+    <string name="folder_project_missing">A selected project no longer exists.</string>
+    <string name="folder_project_creation_destination">New project destination: %1$s</string>
+    <string name="folder_missing">This folder no longer exists.</string>
+    <string name="folder_load_error">Could not load folders.</string>
+    <string name="folder_reorder_error">Could not reorder folders.</string>
+    <string name="folder_stale_action">This folder changed before the action completed.</string>
+    <string name="folder_create_error">Could not create folder.</string>
+    <string name="folder_rename_error">Could not rename folder.</string>
+    <string name="folder_delete_error">Could not delete folder.</string>
+    <string name="folder_move_error">Could not move project.</string>
+    <string name="folder_name_required">Enter a folder name.</string>
+    <string name="folder_name_max_length">Maximum 50 characters</string>
+    <string name="folder_name_duplicate">Folder name already in use.</string>
+    <string name="folder_name_invalid">Folder names cannot contain control characters.</string>
+    <string name="folder_delete_title">Delete folder?</string>
+    <string name="folder_delete_message">Delete %1$s?</string>
+    <string name="folder_selected_description">%1$s Selected.</string>
+    <string name="folder_all_projects_description">All Projects. Virtual view of every project.</string>
+    <string name="folder_unfiled_description">Projects without a folder.</string>
+    <string name="folder_user_description">%1$s. Project organization folder.</string>
+    <string name="folder_actions_description">Actions for %1$s</string>
+    <string name="folder_current_destination">%1$s. Current destination.</string>
+    <string name="folder_move_project_to">Move %1$s to folder</string>
+    <string name="folder_rename_description">Rename folder %1$s</string>
+    <string name="folder_move_earlier_description">Move folder %1$s earlier</string>
+    <string name="folder_move_later_description">Move folder %1$s later</string>
+    <string name="folder_delete_description">Delete folder %1$s</string>
+    <plurals name="folder_affected_projects">
+        <item quantity="one">%d project will be kept and become Unfiled.</item>
+        <item quantity="other">%d projects will be kept and become Unfiled.</item>
+    </plurals>
+    <plurals name="folder_moved_projects">
+        <item quantity="one">%d project moved.</item>
+        <item quantity="other">%d projects moved.</item>
+    </plurals>
+    <plurals name="folder_move_selected_projects_count">
+        <item quantity="one">Move %d selected project</item>
+        <item quantity="other">Move %d selected projects</item>
+    </plurals>
+    <plurals name="folder_move_projects_error">
+        <item quantity="one">Could not move %d project.</item>
+        <item quantity="other">Could not move %d projects.</item>
+    </plurals>
 </resources>

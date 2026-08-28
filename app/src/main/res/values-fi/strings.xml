@@ -1129,4 +1129,65 @@
     <string name="project_documents_pattern_information">Ohjeen tiedot</string>
     <string name="project_documents_remove_primary_message">Poistetaanko %1$s? Toinen asiakirja asetetaan ensisijaiseksi.</string>
     <string name="project_documents_remove_last_message">Poistetaanko %1$s? Projektiin ei jää luettavaa ohjetta.</string>
+    <string name="folder_sheet_title">Kansiot</string>
+    <string name="folder_loading">Ladataan kansioita</string>
+    <string name="folder_unfiled">Kansiottomat</string>
+    <string name="folder_create">Luo kansio</string>
+    <string name="folder_name">Kansion nimi</string>
+    <string name="folder_rename">Nimeä kansio uudelleen</string>
+    <string name="folder_delete">Poista kansio</string>
+    <string name="folder_move_earlier">Siirrä aiemmaksi</string>
+    <string name="folder_move_later">Siirrä myöhemmäksi</string>
+    <string name="folder_move_to">Siirrä kansioon</string>
+    <string name="folder_remove_from">Poista kansiosta</string>
+    <string name="folder_move_selected_projects">Siirrä valitut projektit</string>
+    <string name="folder_no_folders">Ei kansioita</string>
+    <string name="folder_empty">Kansiossa %1$s ei ole projekteja.</string>
+    <string name="folder_no_unfiled">Ei kansiottomia projekteja</string>
+    <string name="folder_hidden_completed">Tässä kansiossa on piilotettuja valmistuneita projekteja.</string>
+    <string name="folder_deleted">Kansio poistettiin. Projektit säilytettiin.</string>
+    <string name="folder_project_moved">Projekti siirrettiin.</string>
+    <string name="folder_project_missing">Valittua projektia ei enää ole.</string>
+    <string name="folder_project_creation_destination">Uuden projektin kohde: %1$s</string>
+    <string name="folder_missing">Kansiota ei enää ole.</string>
+    <string name="folder_load_error">Kansioita ei voitu ladata.</string>
+    <string name="folder_reorder_error">Kansioiden järjestystä ei voitu muuttaa.</string>
+    <string name="folder_stale_action">Kansio muuttui ennen toiminnon valmistumista.</string>
+    <string name="folder_create_error">Kansiota ei voitu luoda.</string>
+    <string name="folder_rename_error">Kansiota ei voitu nimetä uudelleen.</string>
+    <string name="folder_delete_error">Kansiota ei voitu poistaa.</string>
+    <string name="folder_move_error">Projektia ei voitu siirtää.</string>
+    <string name="folder_name_required">Anna kansion nimi.</string>
+    <string name="folder_name_max_length">Enintään 50 merkkiä</string>
+    <string name="folder_name_duplicate">Kansion nimi on jo käytössä.</string>
+    <string name="folder_name_invalid">Kansion nimessä ei voi olla ohjausmerkkejä.</string>
+    <string name="folder_delete_title">Poistetaanko kansio?</string>
+    <string name="folder_delete_message">Poistetaanko %1$s?</string>
+    <string name="folder_selected_description">%1$s Valittu.</string>
+    <string name="folder_all_projects_description">Kaikki projektit. Kaikkien projektien virtuaalinäkymä.</string>
+    <string name="folder_unfiled_description">Projektit ilman kansiota.</string>
+    <string name="folder_user_description">%1$s. Projektien järjestelykansio.</string>
+    <string name="folder_actions_description">Kansion %1$s toiminnot</string>
+    <string name="folder_current_destination">%1$s. Nykyinen kohde.</string>
+    <plurals name="folder_affected_projects">
+    <item quantity="one">%d projekti säilytetään ja se muuttuu kansiottomaksi.</item>
+    <item quantity="other">%d projektia säilytetään ja ne muuttuvat kansiottomiksi.</item>
+    </plurals>
+    <plurals name="folder_moved_projects">
+    <item quantity="one">%d projekti siirrettiin.</item>
+    <item quantity="other">%d projektia siirrettiin.</item>
+    </plurals>
+    <string name="folder_move_project_to">Siirrä projekti %1$s kansioon</string>
+    <string name="folder_rename_description">Nimeä kansio %1$s uudelleen</string>
+    <string name="folder_move_earlier_description">Siirrä kansiota %1$s aiemmaksi</string>
+    <string name="folder_move_later_description">Siirrä kansiota %1$s myöhemmäksi</string>
+    <string name="folder_delete_description">Poista kansio %1$s</string>
+    <plurals name="folder_move_selected_projects_count">
+    <item quantity="one">Siirrä %d valittu projekti</item>
+    <item quantity="other">Siirrä %d valittua projektia</item>
+    </plurals>
+    <plurals name="folder_move_projects_error">
+    <item quantity="one">%d projektia ei voitu siirtää.</item>
+    <item quantity="other">%d projektia ei voitu siirtää.</item>
+    </plurals>
 </resources>

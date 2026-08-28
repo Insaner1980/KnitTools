@@ -34,6 +34,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
@@ -48,6 +50,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -56,6 +59,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -96,8 +100,10 @@ import com.finnvek.knittools.ui.screens.pattern.PatternPickerSheet
 import com.finnvek.knittools.ui.screens.pattern.ProjectDocumentError
 import com.finnvek.knittools.ui.screens.pattern.ProjectDocumentUiState
 import com.finnvek.knittools.ui.screens.pattern.ProjectDocumentsSheet
+import com.finnvek.knittools.ui.screens.project.MoveProjectToFolderSheet
 import com.finnvek.knittools.ui.theme.CounterDimens
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 private enum class PendingCounterProAction {
     OpenCounter,
@@ -161,6 +167,9 @@ fun CounterScreen(
     val onNotesEditor = actions.onNotesEditor
     val onUpgradeToPro = actions.onUpgradeToPro
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+    val resources = LocalResources.current
 
     LaunchedEffect(viewModel) {
         viewModel.projectClosedEvents.collect { onBack() }
@@ -168,6 +177,7 @@ fun CounterScreen(
 
     var showResetDialog by rememberSaveable { mutableStateOf(false) }
     var showProjectActionsSheet by rememberSaveable { mutableStateOf(false) }
+    var showMoveFolderSheet by rememberSaveable { mutableStateOf(false) }
     var showCountersListSheet by rememberSaveable { mutableStateOf(false) }
     var showCompleteDialog by rememberSaveable { mutableStateOf(false) }
     var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
@@ -196,6 +206,7 @@ fun CounterScreen(
     fun hideProjectScopedOverlays() {
         showResetDialog = false
         showProjectActionsSheet = false
+        showMoveFolderSheet = false
         showCountersListSheet = false
         showCompleteDialog = false
         showDeleteDialog = false
@@ -626,8 +637,28 @@ fun CounterScreen(
                     showProjectActionsSheet = false
                     showDeleteDialog = true
                 },
+                onMoveToFolder = {
+                    showProjectActionsSheet = false
+                    showMoveFolderSheet = true
+                },
             ),
     )
+
+    state.projectId?.takeIf { showMoveFolderSheet }?.let { projectId ->
+        MoveProjectToFolderSheet(
+            projectId = projectId,
+            projectName = state.projectName,
+            onMoved = {
+                showMoveFolderSheet = false
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar(
+                        resources.getString(R.string.folder_project_moved),
+                    )
+                }
+            },
+            onDismiss = { showMoveFolderSheet = false },
+        )
+    }
 
     CounterCountersListSheetHost(
         showSheet = showCountersListSheet,
@@ -776,6 +807,7 @@ fun CounterScreen(
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             CounterTopBar(
                 state = state,

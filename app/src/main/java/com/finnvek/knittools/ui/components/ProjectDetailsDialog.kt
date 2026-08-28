@@ -2,10 +2,12 @@ package com.finnvek.knittools.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -22,6 +24,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.CraftType
@@ -43,6 +48,8 @@ fun ProjectDetailsDialog(
     initialValues: ProjectDetailsValues,
     onConfirm: (ProjectDetailsValues) -> Unit,
     onDismiss: () -> Unit,
+    destinationText: String? = null,
+    errorMessage: String? = null,
 ) {
     var name by rememberSaveable { mutableStateOf(initialValues.name) }
     var craftType by rememberSaveable { mutableStateOf(initialValues.craftType) }
@@ -57,7 +64,19 @@ fun ProjectDetailsDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
         text = {
-            Column {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                destinationText?.let {
+                    Text(it, style = MaterialTheme.typography.bodyMedium)
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+                errorMessage?.let {
+                    Text(
+                        it,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Assertive },
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
                 TextField(
                     value = name,
                     onValueChange = { name = it },
@@ -178,7 +197,7 @@ private fun CraftTypeChips(
     selected: CraftType,
     onSelect: (CraftType) -> Unit,
 ) {
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         CraftType.entries.forEach { craftType ->
             FilterChip(
                 selected = selected == craftType,
@@ -195,25 +214,21 @@ private fun MainCounterLabelChips(
     selected: MainCounterLabelType,
     onSelect: (MainCounterLabelType) -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        MainCounterLabelType.entries.chunked(2).forEach { rowItems ->
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                rowItems.forEach { labelType ->
-                    FilterChip(
-                        selected = selected == labelType,
-                        onClick = { onSelect(labelType) },
-                        label = {
-                            Text(
-                                if (labelType == MainCounterLabelType.CUSTOM) {
-                                    stringResource(R.string.main_counter_custom)
-                                } else {
-                                    mainCounterLabelText(labelType, customLabel = null)
-                                },
-                            )
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        MainCounterLabelType.entries.forEach { labelType ->
+            FilterChip(
+                selected = selected == labelType,
+                onClick = { onSelect(labelType) },
+                label = {
+                    Text(
+                        if (labelType == MainCounterLabelType.CUSTOM) {
+                            stringResource(R.string.main_counter_custom)
+                        } else {
+                            mainCounterLabelText(labelType, customLabel = null)
                         },
                     )
-                }
-            }
+                },
+            )
         }
     }
 }

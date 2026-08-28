@@ -1,11 +1,14 @@
 package com.finnvek.knittools.repository
 
 import android.content.Context
+import android.database.sqlite.SQLiteConstraintException
 import com.finnvek.knittools.data.local.ActiveSessionEntity
 import com.finnvek.knittools.data.local.CounterHistoryEntity
 import com.finnvek.knittools.data.local.CounterProjectDao
 import com.finnvek.knittools.data.local.DatabaseTransactionRunner
 import com.finnvek.knittools.data.local.ProjectCounterDao
+import com.finnvek.knittools.data.local.ProjectFolderAssignmentEntity
+import com.finnvek.knittools.data.local.ProjectFolderDao
 import com.finnvek.knittools.data.local.SessionDao
 import com.finnvek.knittools.data.local.SessionEntity
 import com.finnvek.knittools.data.local.toDomain
@@ -62,6 +65,8 @@ sealed interface ProjectCreationResult {
     data object LimitReached : ProjectCreationResult
 
     data object InvalidProject : ProjectCreationResult
+
+    data object FolderMissing : ProjectCreationResult
 }
 
 @Singleton
@@ -78,6 +83,7 @@ class CounterRepository
         private val yarnCardRepository: YarnCardRepository,
         private val savedPatternRepository: SavedPatternRepository,
         private val projectDocumentRepository: ProjectDocumentRepository,
+        private val projectFolderDao: ProjectFolderDao,
         private val transactionRunner: DatabaseTransactionRunner,
         @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
         private val sessionTimeSource: SessionTimeSource = UnavailableBootSessionTimeSource,
@@ -138,36 +144,55 @@ class CounterRepository
             mainCounterCustomLabel: String? = null,
             canCreateAdditionalProjects: Boolean,
             linkedPattern: SavedPattern? = null,
+            targetFolderId: Long? = null,
         ): ProjectCreationResult =
-            transactionRunner.run {
-                if (!canCreateAdditionalProjects && dao.getProjectCount() >= 1) {
-                    return@run ProjectCreationResult.LimitReached
-                }
-                val projectName = uniqueProjectName(name) ?: return@run ProjectCreationResult.InvalidProject
-                val labelType =
-                    validatedMainCounterLabelType(
-                        craftType = craftType,
-                        labelType = mainCounterLabelType,
-                        customLabel = mainCounterCustomLabel,
-                    ) ?: return@run ProjectCreationResult.InvalidProject
-                val linkedPatternId =
-                    linkedPattern?.let { pattern ->
-                        savedPatternRepository.saveRavelryPatternIfMissing(pattern)
+            try {
+                transactionRunner.run {
+                    if (!canCreateAdditionalProjects && dao.getProjectCount() >= 1) {
+                        return@run ProjectCreationResult.LimitReached
                     }
-                val now = System.currentTimeMillis()
-                ProjectCreationResult.Created(
-                    dao.insert(
-                        CounterProject(
-                            name = projectName,
+                    val projectName = uniqueProjectName(name) ?: return@run ProjectCreationResult.InvalidProject
+                    val labelType =
+                        validatedMainCounterLabelType(
                             craftType = craftType,
-                            mainCounterLabelType = labelType,
-                            mainCounterCustomLabel = sanitizeMainCounterCustomLabel(mainCounterCustomLabel),
-                            createdAt = now,
-                            updatedAt = now,
-                            linkedPatternId = linkedPatternId,
-                        ).toEntity(),
-                    ),
-                )
+                            labelType = mainCounterLabelType,
+                            customLabel = mainCounterCustomLabel,
+                        ) ?: return@run ProjectCreationResult.InvalidProject
+                    if (targetFolderId != null && projectFolderDao.getById(targetFolderId) == null) {
+                        return@run ProjectCreationResult.FolderMissing
+                    }
+                    val linkedPatternId =
+                        linkedPattern?.let { pattern ->
+                            savedPatternRepository.saveRavelryPatternIfMissing(pattern)
+                        }
+                    val now = System.currentTimeMillis()
+                    val projectId =
+                        dao.insert(
+                            CounterProject(
+                                name = projectName,
+                                craftType = craftType,
+                                mainCounterLabelType = labelType,
+                                mainCounterCustomLabel = sanitizeMainCounterCustomLabel(mainCounterCustomLabel),
+                                createdAt = now,
+                                updatedAt = now,
+                                linkedPatternId = linkedPatternId,
+                            ).toEntity(),
+                        )
+                    if (targetFolderId != null) {
+                        projectFolderDao.insertOrReplaceAssignment(
+                            ProjectFolderAssignmentEntity(projectId = projectId, folderId = targetFolderId),
+                        )
+                    }
+                    ProjectCreationResult.Created(projectId)
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (constraint: SQLiteConstraintException) {
+                if (targetFolderId != null && projectFolderDao.getById(targetFolderId) == null) {
+                    ProjectCreationResult.FolderMissing
+                } else {
+                    throw constraint
+                }
             }
 
         suspend fun updateProject(project: CounterProject) {

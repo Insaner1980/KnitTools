@@ -14,6 +14,7 @@ import com.finnvek.knittools.data.local.ProgressPhotoDao
 import com.finnvek.knittools.data.local.ProjectCounterDao
 import com.finnvek.knittools.data.local.ProjectDocumentDao
 import com.finnvek.knittools.data.local.ProjectDocumentSchemaConstraints
+import com.finnvek.knittools.data.local.ProjectFolderDao
 import com.finnvek.knittools.data.local.ProjectYarnNoteDao
 import com.finnvek.knittools.data.local.RoomDatabaseTransactionRunner
 import com.finnvek.knittools.data.local.RowReminderDao
@@ -94,4 +95,11 @@ object DatabaseModule {
 
     @Provides
     fun provideProjectDocumentDao(db: KnitToolsDatabase): ProjectDocumentDao = db.projectDocumentDao()
+}
+
+@Module
+@InstallIn(SingletonComponent::class)
+object ProjectFolderDatabaseModule {
+    @Provides
+    fun provideProjectFolderDao(db: KnitToolsDatabase): ProjectFolderDao = db.projectFolderDao()
 }

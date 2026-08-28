@@ -829,4 +829,65 @@
     <string name="project_documents_pattern_information">Anleitungsinformationen</string>
     <string name="project_documents_remove_primary_message">%1$s entfernen? Ein anderes Dokument wird primär.</string>
     <string name="project_documents_remove_last_message">%1$s entfernen? Das Projekt hat danach keine lesbare Anleitung mehr.</string>
+    <string name="folder_sheet_title">Ordner</string>
+    <string name="folder_loading">Ordner werden geladen</string>
+    <string name="folder_unfiled">Ohne Ordner</string>
+    <string name="folder_create">Ordner erstellen</string>
+    <string name="folder_name">Ordnername</string>
+    <string name="folder_rename">Ordner umbenennen</string>
+    <string name="folder_delete">Ordner löschen</string>
+    <string name="folder_move_earlier">Früher verschieben</string>
+    <string name="folder_move_later">Später verschieben</string>
+    <string name="folder_move_to">In Ordner verschieben</string>
+    <string name="folder_remove_from">Aus Ordner entfernen</string>
+    <string name="folder_move_selected_projects">Ausgewählte Projekte verschieben</string>
+    <string name="folder_no_folders">Keine Ordner</string>
+    <string name="folder_empty">%1$s enthält keine Projekte.</string>
+    <string name="folder_no_unfiled">Keine Projekte ohne Ordner</string>
+    <string name="folder_hidden_completed">Dieser Ordner enthält ausgeblendete abgeschlossene Projekte.</string>
+    <string name="folder_deleted">Ordner gelöscht. Projekte wurden behalten.</string>
+    <string name="folder_project_moved">Projekt verschoben.</string>
+    <string name="folder_project_missing">Ein ausgewähltes Projekt existiert nicht mehr.</string>
+    <string name="folder_project_creation_destination">Ziel des neuen Projekts: %1$s</string>
+    <string name="folder_missing">Dieser Ordner existiert nicht mehr.</string>
+    <string name="folder_load_error">Ordner konnten nicht geladen werden.</string>
+    <string name="folder_reorder_error">Ordner konnten nicht neu angeordnet werden.</string>
+    <string name="folder_stale_action">Der Ordner wurde vor Abschluss der Aktion geändert.</string>
+    <string name="folder_create_error">Ordner konnte nicht erstellt werden.</string>
+    <string name="folder_rename_error">Ordner konnte nicht umbenannt werden.</string>
+    <string name="folder_delete_error">Ordner konnte nicht gelöscht werden.</string>
+    <string name="folder_move_error">Projekt konnte nicht verschoben werden.</string>
+    <string name="folder_name_required">Geben Sie einen Ordnernamen ein.</string>
+    <string name="folder_name_max_length">Maximal 50 Zeichen</string>
+    <string name="folder_name_duplicate">Ordnername wird bereits verwendet.</string>
+    <string name="folder_name_invalid">Ordnernamen dürfen keine Steuerzeichen enthalten.</string>
+    <string name="folder_delete_title">Ordner löschen?</string>
+    <string name="folder_delete_message">%1$s löschen?</string>
+    <string name="folder_selected_description">%1$s Ausgewählt.</string>
+    <string name="folder_all_projects_description">Alle Projekte. Virtuelle Ansicht aller Projekte.</string>
+    <string name="folder_unfiled_description">Projekte ohne Ordner.</string>
+    <string name="folder_user_description">%1$s. Ordner zur Projektorganisation.</string>
+    <string name="folder_actions_description">Aktionen für %1$s</string>
+    <string name="folder_current_destination">%1$s. Aktuelles Ziel.</string>
+    <plurals name="folder_affected_projects">
+    <item quantity="one">%d Projekt wird behalten und hat danach keinen Ordner.</item>
+    <item quantity="other">%d Projekte werden behalten und haben danach keinen Ordner.</item>
+    </plurals>
+    <plurals name="folder_moved_projects">
+    <item quantity="one">%d Projekt verschoben.</item>
+    <item quantity="other">%d Projekte verschoben.</item>
+    </plurals>
+    <string name="folder_move_project_to">%1$s in Ordner verschieben</string>
+    <string name="folder_rename_description">Ordner %1$s umbenennen</string>
+    <string name="folder_move_earlier_description">Ordner %1$s früher verschieben</string>
+    <string name="folder_move_later_description">Ordner %1$s später verschieben</string>
+    <string name="folder_delete_description">Ordner %1$s löschen</string>
+    <plurals name="folder_move_selected_projects_count">
+    <item quantity="one">%d ausgewähltes Projekt verschieben</item>
+    <item quantity="other">%d ausgewählte Projekte verschieben</item>
+    </plurals>
+    <plurals name="folder_move_projects_error">
+    <item quantity="one">%d Projekt konnte nicht verschoben werden.</item>
+    <item quantity="other">%d Projekte konnten nicht verschoben werden.</item>
+    </plurals>
 </resources>

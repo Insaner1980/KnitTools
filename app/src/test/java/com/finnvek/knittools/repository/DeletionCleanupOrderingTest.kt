@@ -327,6 +327,7 @@ class DeletionCleanupOrderingTest {
                 yarnCardRepository = yarnRepository,
                 savedPatternRepository = savedPatternRepository,
                 projectDocumentRepository = documentRepository,
+                projectFolderDao = mockk(relaxed = true),
                 transactionRunner = runner,
                 ioDispatcher = UnconfinedTestDispatcher(),
             )

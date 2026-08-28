@@ -235,7 +235,7 @@ public fun com.finnvek.knittools.ui.components.ProPromptSheet(request: com.finnv
     - viewModelProvider: STABLE (composable function type)
 
 @Composable
-public fun com.finnvek.knittools.ui.components.ProjectDetailsDialog(title: kotlin.String, confirmText: kotlin.String, initialValues: com.finnvek.knittools.ui.components.ProjectDetailsValues, onConfirm: kotlin.Function1<com.finnvek.knittools.ui.components.ProjectDetailsValues, kotlin.Unit>, onDismiss: kotlin.Function0<kotlin.Unit>): kotlin.Unit
+public fun com.finnvek.knittools.ui.components.ProjectDetailsDialog(title: kotlin.String, confirmText: kotlin.String, initialValues: com.finnvek.knittools.ui.components.ProjectDetailsValues, onConfirm: kotlin.Function1<com.finnvek.knittools.ui.components.ProjectDetailsValues, kotlin.Unit>, onDismiss: kotlin.Function0<kotlin.Unit>, destinationText: kotlin.String?, errorMessage: kotlin.String?): kotlin.Unit
   skippable: true
   restartable: true
   params:
@@ -244,6 +244,8 @@ public fun com.finnvek.knittools.ui.components.ProjectDetailsDialog(title: kotli
     - initialValues: STABLE (class with no mutable properties)
     - onConfirm: STABLE (function type)
     - onDismiss: STABLE (function type)
+    - destinationText: STABLE (class with no mutable properties)
+    - errorMessage: STABLE (class with no mutable properties)
 
 @Composable
 public fun com.finnvek.knittools.ui.components.ProjectListItem(project: com.finnvek.knittools.domain.model.CounterProject, lastUpdated: kotlin.Long, onClick: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier, onLongClick: kotlin.Function0<kotlin.Unit>?, yarnName: kotlin.String?, onYarnClick: kotlin.Function0<kotlin.Unit>?, photoCount: kotlin.Int, patternName: kotlin.String?, hasPatternAttachment: kotlin.Boolean, hasNotes: kotlin.Boolean, onPatternClick: kotlin.Function0<kotlin.Unit>?, onNotesClick: kotlin.Function0<kotlin.Unit>?, onPhotosClick: kotlin.Function0<kotlin.Unit>?, selected: kotlin.Boolean?, onToggleSelection: kotlin.Function0<kotlin.Unit>?, statusText: kotlin.String?): kotlin.Unit
@@ -2982,6 +2984,89 @@ private fun com.finnvek.knittools.ui.screens.project.DeleteProjectDialog(project
     - onDismiss: STABLE (function type)
 
 @Composable
+public fun com.finnvek.knittools.ui.screens.project.DeleteProjectFolderDialog(folder: com.finnvek.knittools.domain.model.ProjectFolder, assignedProjectCount: kotlin.Int, isDeleting: kotlin.Boolean, errorMessage: kotlin.String?, onConfirm: kotlin.Function0<kotlin.Unit>, onDismiss: kotlin.Function0<kotlin.Unit>): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - folder: STABLE (class with no mutable properties)
+    - assignedProjectCount: STABLE (primitive type)
+    - isDeleting: STABLE (primitive type)
+    - errorMessage: STABLE (class with no mutable properties)
+    - onConfirm: STABLE (function type)
+    - onDismiss: STABLE (function type)
+
+@Composable
+private fun com.finnvek.knittools.ui.screens.project.DestinationRow(label: kotlin.String, description: kotlin.String, onClickLabel: kotlin.String?, selected: kotlin.Boolean, enabled: kotlin.Boolean, onClick: kotlin.Function0<kotlin.Unit>): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - label: STABLE (String is immutable)
+    - description: STABLE (String is immutable)
+    - onClickLabel: STABLE (class with no mutable properties)
+    - selected: STABLE (primitive type)
+    - enabled: STABLE (primitive type)
+    - onClick: STABLE (function type)
+
+@Composable
+private fun com.finnvek.knittools.ui.screens.project.FolderError(message: kotlin.String, onRetry: kotlin.Function0<kotlin.Unit>, enabled: kotlin.Boolean): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - message: STABLE (String is immutable)
+    - onRetry: STABLE (function type)
+    - enabled: STABLE (primitive type)
+
+@Composable
+private fun com.finnvek.knittools.ui.screens.project.FolderFilterRow(filter: com.finnvek.knittools.domain.model.ProjectFolderFilter, folders: kotlin.collections.List<com.finnvek.knittools.domain.model.ProjectFolder>, selected: kotlin.Boolean, enabled: kotlin.Boolean, onClick: kotlin.Function0<kotlin.Unit>): kotlin.Unit
+  skippable: false
+  restartable: true
+  params:
+    - filter: STABLE (class with no mutable properties)
+    - folders: RUNTIME (requires runtime check)
+    - selected: STABLE (primitive type)
+    - enabled: STABLE (primitive type)
+    - onClick: STABLE (function type)
+
+@Composable
+private fun com.finnvek.knittools.ui.screens.project.FolderMenuItem(label: kotlin.Int, folderName: kotlin.String, enabled: kotlin.Boolean, onClick: kotlin.Function0<kotlin.Unit>): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - label: STABLE (primitive type)
+    - folderName: STABLE (String is immutable)
+    - enabled: STABLE (primitive type)
+    - onClick: STABLE (function type)
+
+@Composable
+public fun com.finnvek.knittools.ui.screens.project.MoveProjectToFolderSheet(projectId: kotlin.Long, projectName: kotlin.String, onMoved: kotlin.Function0<kotlin.Unit>, onDismiss: kotlin.Function0<kotlin.Unit>, viewModelProvider: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<com.finnvek.knittools.ui.screens.project.ProjectFolderMoveViewModel>): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - projectId: STABLE (primitive type)
+    - projectName: STABLE (String is immutable)
+    - onMoved: STABLE (function type)
+    - onDismiss: STABLE (function type)
+    - viewModelProvider: STABLE (composable function type)
+
+@Composable
+public fun com.finnvek.knittools.ui.screens.project.MoveToFolderSheet(projectCount: kotlin.Int, currentFolderId: kotlin.Long?, hasCommonDestination: kotlin.Boolean, folders: kotlin.collections.List<com.finnvek.knittools.domain.model.ProjectFolder>, isLoading: kotlin.Boolean, errorMessage: kotlin.String?, isMoving: kotlin.Boolean, onMoveToFolder: kotlin.Function1<kotlin.Long?, kotlin.Unit>, onRetry: kotlin.Function0<kotlin.Unit>, onDismiss: kotlin.Function0<kotlin.Unit>, fallbackFocusRequester: androidx.compose.ui.focus.FocusRequester?, projectName: kotlin.String?): kotlin.Unit
+  skippable: false
+  restartable: true
+  params:
+    - projectCount: STABLE (primitive type)
+    - currentFolderId: STABLE (class with no mutable properties)
+    - hasCommonDestination: STABLE (primitive type)
+    - folders: RUNTIME (requires runtime check)
+    - isLoading: STABLE (primitive type)
+    - errorMessage: STABLE (class with no mutable properties)
+    - isMoving: STABLE (primitive type)
+    - onMoveToFolder: STABLE (function type)
+    - onRetry: STABLE (function type)
+    - onDismiss: STABLE (function type)
+    - fallbackFocusRequester: STABLE (marked @Stable or @Immutable)
+    - projectName: STABLE (class with no mutable properties)
+
+@Composable
 private fun com.finnvek.knittools.ui.screens.project.MultiCompleteDialog(selectedCount: kotlin.Int, onConfirm: kotlin.Function0<kotlin.Unit>, onDismiss: kotlin.Function0<kotlin.Unit>): kotlin.Unit
   skippable: true
   restartable: true
@@ -3000,12 +3085,14 @@ private fun com.finnvek.knittools.ui.screens.project.MultiDeleteDialog(selectedC
     - onDismiss: STABLE (function type)
 
 @Composable
-private fun com.finnvek.knittools.ui.screens.project.MultiSelectBottomBar(isMultiSelectMode: kotlin.Boolean, hasSelection: kotlin.Boolean, onComplete: kotlin.Function0<kotlin.Unit>, onDelete: kotlin.Function0<kotlin.Unit>): kotlin.Unit
+private fun com.finnvek.knittools.ui.screens.project.MultiSelectBottomBar(isMultiSelectMode: kotlin.Boolean, hasSelection: kotlin.Boolean, hasActiveSelection: kotlin.Boolean, onMove: kotlin.Function0<kotlin.Unit>, onComplete: kotlin.Function0<kotlin.Unit>, onDelete: kotlin.Function0<kotlin.Unit>): kotlin.Unit
   skippable: true
   restartable: true
   params:
     - isMultiSelectMode: STABLE (primitive type)
     - hasSelection: STABLE (primitive type)
+    - hasActiveSelection: STABLE (primitive type)
+    - onMove: STABLE (function type)
     - onComplete: STABLE (function type)
     - onDelete: STABLE (function type)
 
@@ -3016,6 +3103,63 @@ private fun com.finnvek.knittools.ui.screens.project.OverflowMenuWithSort(state:
   params:
     - state: STABLE (class with no mutable properties)
     - actions: STABLE (class with no mutable properties)
+
+@Composable
+public fun com.finnvek.knittools.ui.screens.project.ProjectFolderEmptyState(filter: com.finnvek.knittools.domain.model.ProjectFolderFilter, folders: kotlin.collections.List<com.finnvek.knittools.domain.model.ProjectFolder>, hasHiddenCompletedProjects: kotlin.Boolean, onShowCompleted: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier): kotlin.Unit
+  skippable: false
+  restartable: true
+  params:
+    - filter: STABLE (class with no mutable properties)
+    - folders: RUNTIME (requires runtime check)
+    - hasHiddenCompletedProjects: STABLE (primitive type)
+    - onShowCompleted: STABLE (function type)
+    - modifier: STABLE (marked @Stable or @Immutable)
+
+@Composable
+public fun com.finnvek.knittools.ui.screens.project.ProjectFolderNameDialog(folderId: kotlin.Long?, initialName: kotlin.String, errorMessage: kotlin.String?, isSaving: kotlin.Boolean, onConfirm: kotlin.Function1<kotlin.String, kotlin.Unit>, onDismiss: kotlin.Function0<kotlin.Unit>, onClearError: kotlin.Function0<kotlin.Unit>): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - folderId: STABLE (class with no mutable properties)
+    - initialName: STABLE (String is immutable)
+    - errorMessage: STABLE (class with no mutable properties)
+    - isSaving: STABLE (primitive type)
+    - onConfirm: STABLE (function type)
+    - onDismiss: STABLE (function type)
+    - onClearError: STABLE (function type)
+
+@Composable
+public fun com.finnvek.knittools.ui.screens.project.ProjectFolderSelector(selectedFilter: com.finnvek.knittools.domain.model.ProjectFolderFilter, folders: kotlin.collections.List<com.finnvek.knittools.domain.model.ProjectFolder>, onClick: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier, enabled: kotlin.Boolean, focusRequester: androidx.compose.ui.focus.FocusRequester?): kotlin.Unit
+  skippable: false
+  restartable: true
+  params:
+    - selectedFilter: STABLE (class with no mutable properties)
+    - folders: RUNTIME (requires runtime check)
+    - onClick: STABLE (function type)
+    - modifier: STABLE (marked @Stable or @Immutable)
+    - enabled: STABLE (primitive type)
+    - focusRequester: STABLE (marked @Stable or @Immutable)
+
+@Composable
+public fun com.finnvek.knittools.ui.screens.project.ProjectFoldersSheet(folders: kotlin.collections.List<com.finnvek.knittools.domain.model.ProjectFolder>, selectedFilter: com.finnvek.knittools.domain.model.ProjectFolderFilter, isLoading: kotlin.Boolean, errorMessage: kotlin.String?, isMutating: kotlin.Boolean, onSelectFilter: kotlin.Function1<com.finnvek.knittools.domain.model.ProjectFolderFilter, kotlin.Unit>, onCreateFolder: kotlin.Function0<kotlin.Unit>, onRenameFolder: kotlin.Function1<kotlin.Long, kotlin.Unit>, onMoveEarlier: kotlin.Function1<kotlin.Long, kotlin.Unit>, onMoveLater: kotlin.Function1<kotlin.Long, kotlin.Unit>, onDeleteFolder: kotlin.Function1<kotlin.Long, kotlin.Unit>, onRetry: kotlin.Function0<kotlin.Unit>, onDismiss: kotlin.Function0<kotlin.Unit>, focusFolderId: kotlin.Long?, focusCreateFolder: kotlin.Boolean): kotlin.Unit
+  skippable: false
+  restartable: true
+  params:
+    - folders: RUNTIME (requires runtime check)
+    - selectedFilter: STABLE (class with no mutable properties)
+    - isLoading: STABLE (primitive type)
+    - errorMessage: STABLE (class with no mutable properties)
+    - isMutating: STABLE (primitive type)
+    - onSelectFilter: STABLE (function type)
+    - onCreateFolder: STABLE (function type)
+    - onRenameFolder: STABLE (function type)
+    - onMoveEarlier: STABLE (function type)
+    - onMoveLater: STABLE (function type)
+    - onDeleteFolder: STABLE (function type)
+    - onRetry: STABLE (function type)
+    - onDismiss: STABLE (function type)
+    - focusFolderId: STABLE (class with no mutable properties)
+    - focusCreateFolder: STABLE (primitive type)
 
 @Composable
 private fun com.finnvek.knittools.ui.screens.project.ProjectListActiveSessionCompletionDialog(onSave: kotlin.Function0<kotlin.Unit>, onDiscard: kotlin.Function0<kotlin.Unit>, onCancel: kotlin.Function0<kotlin.Unit>): kotlin.Unit
@@ -3105,11 +3249,58 @@ private fun com.finnvek.knittools.ui.screens.project.SortSubMenu(expanded: kotli
     - onSortOrderChange: STABLE (function type)
 
 @Composable
+private fun com.finnvek.knittools.ui.screens.project.UserFolderRow(folder: com.finnvek.knittools.domain.model.ProjectFolder, isSelected: kotlin.Boolean, canMoveEarlier: kotlin.Boolean, canMoveLater: kotlin.Boolean, enabled: kotlin.Boolean, focusRequester: androidx.compose.ui.focus.FocusRequester, onSelect: kotlin.Function0<kotlin.Unit>, onRename: kotlin.Function0<kotlin.Unit>, onMoveEarlier: kotlin.Function0<kotlin.Unit>, onMoveLater: kotlin.Function0<kotlin.Unit>, onDelete: kotlin.Function0<kotlin.Unit>): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - folder: STABLE (class with no mutable properties)
+    - isSelected: STABLE (primitive type)
+    - canMoveEarlier: STABLE (primitive type)
+    - canMoveLater: STABLE (primitive type)
+    - enabled: STABLE (primitive type)
+    - focusRequester: STABLE (marked @Stable or @Immutable)
+    - onSelect: STABLE (function type)
+    - onRename: STABLE (function type)
+    - onMoveEarlier: STABLE (function type)
+    - onMoveLater: STABLE (function type)
+    - onDelete: STABLE (function type)
+
+@Composable
 private fun com.finnvek.knittools.ui.screens.project.continueKnittingTargetStatusText(statusProvider: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<com.finnvek.knittools.ui.components.MainCounterTargetStatus>): kotlin.String
   skippable: false
   restartable: false
   params:
     - statusProvider: STABLE (composable function type)
+
+@Composable
+private fun com.finnvek.knittools.ui.screens.project.folderTextFieldColors(): androidx.compose.material3.TextFieldColors
+  skippable: false
+  restartable: false
+  params:
+
+@Composable
+private fun com.finnvek.knittools.ui.screens.project.selectedFilterDescription(filter: com.finnvek.knittools.domain.model.ProjectFolderFilter, folders: kotlin.collections.List<com.finnvek.knittools.domain.model.ProjectFolder>, selected: kotlin.Boolean): kotlin.String
+  skippable: false
+  restartable: false
+  params:
+    - filter: STABLE (class with no mutable properties)
+    - folders: RUNTIME (requires runtime check)
+    - selected: STABLE (primitive type)
+
+@Composable
+private fun com.finnvek.knittools.ui.screens.project.selectedFolderLabel(filter: com.finnvek.knittools.domain.model.ProjectFolderFilter, folders: kotlin.collections.List<com.finnvek.knittools.domain.model.ProjectFolder>): kotlin.String
+  skippable: false
+  restartable: false
+  params:
+    - filter: STABLE (class with no mutable properties)
+    - folders: RUNTIME (requires runtime check)
+
+@Composable
+private fun com.finnvek.knittools.ui.screens.project.validationErrorMessage(validation: com.finnvek.knittools.domain.model.ProjectFolderNameValidationResult): kotlin.String?
+  skippable: false
+  restartable: false
+  params:
+    - validation: STABLE (class with no mutable properties)
 
 @Composable
 private fun com.finnvek.knittools.ui.screens.ravelry.AlreadySavedImportContent(state: com.finnvek.knittools.ui.screens.ravelry.RavelryImportConfirmationState, onOpenSavedPattern: kotlin.Function0<kotlin.Unit>): kotlin.Unit

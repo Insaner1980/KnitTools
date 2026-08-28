@@ -921,6 +921,7 @@ class CounterViewModel
                         repository.getProject(result.projectId)?.let { selectProject(it) }
                     ProjectCreationResult.InvalidProject,
                     ProjectCreationResult.LimitReached,
+                    ProjectCreationResult.FolderMissing,
                     -> Unit
                 }
             }

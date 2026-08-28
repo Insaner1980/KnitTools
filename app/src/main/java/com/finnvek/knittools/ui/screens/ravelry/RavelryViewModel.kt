@@ -468,7 +468,9 @@ class RavelryViewModel
                         ProjectCreationResult.LimitReached -> {
                             _projectCreationPrompts.emit(repository.getProjectCount())
                         }
-                        ProjectCreationResult.InvalidProject -> Unit
+                        ProjectCreationResult.InvalidProject,
+                        ProjectCreationResult.FolderMissing,
+                        -> Unit
                     }
                 } finally {
                     isProjectCreationInFlight = false

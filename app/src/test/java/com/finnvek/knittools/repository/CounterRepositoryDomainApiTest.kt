@@ -1,10 +1,14 @@
 package com.finnvek.knittools.repository
 
 import android.content.Context
+import android.database.sqlite.SQLiteConstraintException
 import com.finnvek.knittools.data.local.CounterProjectDao
 import com.finnvek.knittools.data.local.CounterProjectEntity
 import com.finnvek.knittools.data.local.DatabaseTransactionRunner
 import com.finnvek.knittools.data.local.ImmediateDatabaseTransactionRunner
+import com.finnvek.knittools.data.local.ProjectFolderAssignmentEntity
+import com.finnvek.knittools.data.local.ProjectFolderDao
+import com.finnvek.knittools.data.local.ProjectFolderEntity
 import com.finnvek.knittools.data.local.SessionDao
 import com.finnvek.knittools.data.local.SessionEntity
 import com.finnvek.knittools.data.storage.PatternDocumentStorage
@@ -33,6 +37,7 @@ class CounterRepositoryDomainApiTest {
     private lateinit var yarnCardRepository: YarnCardRepository
     private lateinit var savedPatternRepository: SavedPatternRepository
     private lateinit var projectDocumentRepository: ProjectDocumentRepository
+    private lateinit var projectFolderDao: ProjectFolderDao
     private lateinit var repository: CounterRepository
 
     @Before
@@ -42,6 +47,7 @@ class CounterRepositoryDomainApiTest {
         yarnCardRepository = mockk(relaxed = true)
         savedPatternRepository = mockk(relaxed = true)
         projectDocumentRepository = mockk(relaxed = true)
+        projectFolderDao = mockk(relaxed = true)
         coEvery { projectDao.getAllProjectsOnce() } returns emptyList()
         repository = createRepository()
     }
@@ -59,6 +65,7 @@ class CounterRepositoryDomainApiTest {
             yarnCardRepository = yarnCardRepository,
             savedPatternRepository = savedPatternRepository,
             projectDocumentRepository = projectDocumentRepository,
+            projectFolderDao = projectFolderDao,
             transactionRunner = transactionRunner,
             ioDispatcher = Dispatchers.Unconfined,
         )
@@ -186,6 +193,95 @@ class CounterRepositoryDomainApiTest {
 
             assertEquals(ProjectCreationResult.InvalidProject, result)
             coVerify(exactly = 0) { projectDao.insert(any()) }
+        }
+
+    @Test
+    fun `createProject validates target folder and assigns the new project inside its transaction`() =
+        runTest {
+            val runner = ProjectCreationTransactionRunner()
+            coEvery { projectFolderDao.getById(99L) } returns null
+
+            assertEquals(
+                ProjectCreationResult.FolderMissing,
+                createRepository(transactionRunner = runner).createProject(
+                    name = "Missing folder",
+                    canCreateAdditionalProjects = true,
+                    targetFolderId = 99L,
+                ),
+            )
+            coVerify(exactly = 0) { projectDao.insert(any()) }
+
+            coEvery { projectFolderDao.getById(5L) } returns
+                ProjectFolderEntity(id = 5L, name = "Gifts", normalizedName = "gifts", sortOrder = 0)
+            coEvery { projectDao.insert(any()) } returns 12L
+            val assignment = slot<ProjectFolderAssignmentEntity>()
+            coEvery { projectFolderDao.insertOrReplaceAssignment(capture(assignment)) } returns Unit
+
+            assertEquals(
+                ProjectCreationResult.Created(12L),
+                createRepository(transactionRunner = runner).createProject(
+                    name = "In folder",
+                    canCreateAdditionalProjects = true,
+                    targetFolderId = 5L,
+                ),
+            )
+            assertEquals(ProjectFolderAssignmentEntity(projectId = 12L, folderId = 5L), assignment.captured)
+            assertEquals(2, runner.runCount)
+        }
+
+    @Test
+    fun `createProject maps an assignment constraint after folder validation to FolderMissing`() =
+        runTest {
+            coEvery { projectFolderDao.getById(5L) } returnsMany
+                listOf(
+                    ProjectFolderEntity(id = 5L, name = "Gifts", normalizedName = "gifts", sortOrder = 0),
+                    null,
+                )
+            coEvery { projectDao.insert(any()) } returns 12L
+
+            val result =
+                createRepository(
+                    transactionRunner =
+                        object : DatabaseTransactionRunner {
+                            override suspend fun <T> run(block: suspend () -> T): T {
+                                block()
+                                throw SQLiteConstraintException("Folder deleted")
+                            }
+                        },
+                ).createProject(
+                    name = "Race",
+                    canCreateAdditionalProjects = true,
+                    targetFolderId = 5L,
+                )
+
+            assertEquals(ProjectCreationResult.FolderMissing, result)
+        }
+
+    @Test
+    fun `createProject preserves an unrelated assignment constraint when target still exists`() =
+        runTest {
+            coEvery { projectFolderDao.getById(5L) } returns
+                ProjectFolderEntity(id = 5L, name = "Gifts", normalizedName = "gifts", sortOrder = 0)
+            coEvery { projectDao.insert(any()) } returns 12L
+
+            val error =
+                runCatching {
+                    createRepository(
+                        transactionRunner =
+                            object : DatabaseTransactionRunner {
+                                override suspend fun <T> run(block: suspend () -> T): T {
+                                    block()
+                                    throw SQLiteConstraintException("Assignment trigger rejected")
+                                }
+                            },
+                    ).createProject(
+                        name = "Trigger",
+                        canCreateAdditionalProjects = true,
+                        targetFolderId = 5L,
+                    )
+                }.exceptionOrNull()
+
+            assertTrue(error is SQLiteConstraintException)
         }
 
     @Test

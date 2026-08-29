@@ -129,6 +129,7 @@ class ProjectYarnNoteRepositoryTest {
             dao = dao,
             yarnCardRepository = yarnCardRepository,
             transactionRunner = transactionRunner,
+            usageDao = mockk(relaxed = true),
         )
 
     private fun buildYarnCardRepository(

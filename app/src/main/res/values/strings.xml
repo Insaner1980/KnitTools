@@ -1325,4 +1325,46 @@
         <item quantity="one">%1$d row</item>
         <item quantity="other">%1$d rows</item>
     </plurals>
+    <string name="yarn_usage_title">Yarn usage</string>
+    <string name="yarn_usage_scope">Tracks yarn allocated to this project only. My Yarn quantities stay unchanged.</string>
+    <string name="yarn_usage_unit">Amount unit</string>
+    <string name="yarn_usage_grams">Grams</string>
+    <string name="yarn_usage_skeins">Skeins</string>
+    <string name="yarn_usage_planned">Planned</string>
+    <string name="yarn_usage_allocated">Allocated to this project</string>
+    <string name="yarn_usage_used">Used</string>
+    <string name="yarn_usage_length">Length per skein</string>
+    <string name="yarn_usage_weight">Weight per skein</string>
+    <string name="yarn_usage_add_conversion">Add skein conversion</string>
+    <string name="yarn_usage_remove_conversion">Remove skein conversion</string>
+    <string name="yarn_usage_conversion_required">Enter both length and weight per skein as positive values to use grams or skeins.</string>
+    <string name="yarn_usage_fix_before_switch">Correct the amount fields before changing units.</string>
+    <string name="yarn_usage_remaining_unknown">Remaining unknown</string>
+    <string name="yarn_usage_remaining_format">Remaining: %1$s</string>
+    <string name="yarn_usage_over_format">Over by: %1$s</string>
+    <string name="yarn_usage_used_format">Used: %1$s</string>
+    <string name="yarn_usage_meters_format">%1$s m</string>
+    <string name="yarn_usage_yards_format">%1$s yd</string>
+    <string name="yarn_usage_grams_format">%1$s g</string>
+    <string name="yarn_usage_delete">Delete usage</string>
+    <string name="yarn_usage_delete_named">Delete usage for %1$s</string>
+    <string name="yarn_usage_delete_title">Delete usage?</string>
+    <string name="yarn_usage_delete_body">Only the usage tracking for %1$s will be removed. The yarn card, project yarn note and other project data will be kept.</string>
+    <string name="yarn_usage_invalid_amount">Enter a valid amount.</string>
+    <string name="yarn_usage_nonnegative">The amount cannot be negative.</string>
+    <string name="yarn_usage_positive">Enter a value greater than zero.</string>
+    <string name="yarn_usage_save_failed">Could not save usage. Your entries are still here. Try again.</string>
+    <string name="yarn_usage_delete_failed">Could not delete usage. Try again.</string>
+    <string name="yarn_usage_exists">Usage already exists for this yarn. Close this editor and open the saved usage.</string>
+    <string name="yarn_usage_stale">The project, yarn source or usage has changed. Close this editor and open it again.</string>
+    <string name="yarn_usage_track">Track usage</string>
+    <string name="yarn_usage_edit">Edit usage</string>
+    <string name="yarn_usage_track_named">Track usage for %1$s</string>
+    <string name="yarn_usage_edit_named">Edit usage for %1$s</string>
+    <string name="yarn_usage_unlinked">Source no longer linked to this project</string>
+    <string name="yarn_usage_unavailable">Yarn source unavailable</string>
+    <plurals name="yarn_usage_skeins_format">
+        <item quantity="one">%1$s skein</item>
+        <item quantity="other">%1$s skeins</item>
+    </plurals>
 </resources>

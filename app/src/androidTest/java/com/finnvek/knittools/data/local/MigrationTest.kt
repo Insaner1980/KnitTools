@@ -14,8 +14,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Testaa Room-migraatiot v1->v23.
- * v1->v3: AutoMigration. v3->v23: manuaaliset muutokset.
+ * Testaa Room-migraatiot v1->v24.
+ * v1->v3: AutoMigration. v3->v24: manuaaliset muutokset.
  */
 @RunWith(AndroidJUnit4::class)
 class MigrationTest {
@@ -28,7 +28,7 @@ class MigrationTest {
 
     private val allMigrations = KnitToolsDatabase.ALL_MANUAL_MIGRATIONS
 
-    private val latestVersion = 23
+    private val latestVersion = 24
 
     private fun migrateToLatest(testDb: String): SupportSQLiteDatabase =
         helper.runMigrationsAndValidate(

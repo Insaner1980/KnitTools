@@ -1450,8 +1450,9 @@ private fun CounterScreenSheets(
             onDismiss = actions.onYarnPickerDismiss,
         )
     }
-    if (state.showYarnManagementSheet) {
-        YarnManagementSheet(
+    if (state.showYarnManagementSheet && state.projectId != null) {
+        ProjectYarnUsageFlow(
+            projectId = state.projectId,
             linkedYarns = state.linkedYarns,
             projectYarnNotes = state.projectYarnNotes,
             proStatus = state.proStatus,

@@ -494,7 +494,7 @@ class GaugeNavigationRuntimeTest {
                         cursor.getLong(0)
                     }
                 }
-            assertEquals("Calculator must keep Room schema 23", 23, sqlite.version)
+            assertEquals("Calculator must keep Room schema 24", 24, sqlite.version)
             DatabaseSnapshot(database.counterProjectDao().getProject(fixtureProjectId), counts)
         }
 

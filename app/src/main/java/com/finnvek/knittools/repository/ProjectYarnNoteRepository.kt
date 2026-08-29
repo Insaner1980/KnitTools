@@ -2,6 +2,7 @@ package com.finnvek.knittools.repository
 
 import com.finnvek.knittools.data.local.DatabaseTransactionRunner
 import com.finnvek.knittools.data.local.ProjectYarnNoteDao
+import com.finnvek.knittools.data.local.ProjectYarnUsageDao
 import com.finnvek.knittools.data.local.toDomain
 import com.finnvek.knittools.data.local.toEntity
 import com.finnvek.knittools.domain.model.ProjectYarnNote
@@ -19,6 +20,7 @@ class ProjectYarnNoteRepository
         private val dao: ProjectYarnNoteDao,
         private val yarnCardRepository: YarnCardRepository,
         private val transactionRunner: DatabaseTransactionRunner,
+        private val usageDao: ProjectYarnUsageDao,
     ) {
         fun observeForProject(projectId: Long): Flow<List<ProjectYarnNote>> =
             dao
@@ -40,6 +42,11 @@ class ProjectYarnNoteRepository
         suspend fun saveToMyYarn(noteId: Long): Long? {
             return transactionRunner.run {
                 val note = dao.getById(noteId)?.toDomain()?.normalized() ?: return@run null
+                val existingCard = note.savedYarnCardId?.let { yarnCardRepository.getCard(it) }
+                if (existingCard != null) {
+                    usageDao.linkSavedCard(note.projectId, note.id, existingCard.id)
+                    return@run existingCard.id
+                }
                 val yarnCardId =
                     yarnCardRepository.saveCardInCurrentTransaction(
                         YarnCard(
@@ -56,6 +63,7 @@ class ProjectYarnNoteRepository
                     savedYarnCardId = yarnCardId,
                     updatedAt = System.currentTimeMillis(),
                 )
+                usageDao.linkSavedCard(note.projectId, note.id, yarnCardId)
                 yarnCardId
             }
         }

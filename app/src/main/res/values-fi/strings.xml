@@ -1242,4 +1242,46 @@
         <item quantity="one">%1$d kerros</item>
         <item quantity="other">%1$d kerrosta</item>
     </plurals>
+    <string name="yarn_usage_title">Langan käyttö</string>
+    <string name="yarn_usage_scope">Seuranta koskee vain tähän projektiin varattua lankaa. Omat langat -määrät eivät muutu.</string>
+    <string name="yarn_usage_unit">Määrän yksikkö</string>
+    <string name="yarn_usage_grams">Grammat</string>
+    <string name="yarn_usage_skeins">Vyyhdit</string>
+    <string name="yarn_usage_planned">Suunniteltu</string>
+    <string name="yarn_usage_allocated">Varattu tähän projektiin</string>
+    <string name="yarn_usage_used">Käytetty</string>
+    <string name="yarn_usage_length">Pituus vyyhtiä kohti</string>
+    <string name="yarn_usage_weight">Paino vyyhtiä kohti</string>
+    <string name="yarn_usage_add_conversion">Lisää vyyhtimuunnos</string>
+    <string name="yarn_usage_remove_conversion">Poista vyyhtimuunnos</string>
+    <string name="yarn_usage_conversion_required">Syötä vyyhdin pituus ja paino positiivisina lukuina, jotta voit käyttää grammoja tai vyyhtejä.</string>
+    <string name="yarn_usage_fix_before_switch">Korjaa määräkentät ennen yksikön vaihtamista.</string>
+    <string name="yarn_usage_remaining_unknown">Jäljellä oleva määrä ei ole tiedossa</string>
+    <string name="yarn_usage_remaining_format">Jäljellä: %1$s</string>
+    <string name="yarn_usage_over_format">Ylitys: %1$s</string>
+    <string name="yarn_usage_used_format">Käytetty: %1$s</string>
+    <string name="yarn_usage_meters_format">%1$s m</string>
+    <string name="yarn_usage_yards_format">%1$s yd</string>
+    <string name="yarn_usage_grams_format">%1$s g</string>
+    <string name="yarn_usage_delete">Poista seuranta</string>
+    <string name="yarn_usage_delete_named">Poista langan %1$s seuranta</string>
+    <string name="yarn_usage_delete_title">Poistetaanko seuranta?</string>
+    <string name="yarn_usage_delete_body">Vain langan %1$s käyttöseuranta poistetaan. Lankakortti, projektin lankamuistiinpano ja muut projektitiedot säilyvät.</string>
+    <string name="yarn_usage_invalid_amount">Syötä kelvollinen määrä.</string>
+    <string name="yarn_usage_nonnegative">Määrä ei voi olla negatiivinen.</string>
+    <string name="yarn_usage_positive">Syötä nollaa suurempi arvo.</string>
+    <string name="yarn_usage_save_failed">Seurannan tallennus epäonnistui. Syöttämäsi tiedot ovat tallella. Yritä uudelleen.</string>
+    <string name="yarn_usage_delete_failed">Seurannan poisto epäonnistui. Yritä uudelleen.</string>
+    <string name="yarn_usage_exists">Tälle langalle on jo seuranta. Sulje editori ja avaa tallennettu seuranta.</string>
+    <string name="yarn_usage_stale">Projekti, lanka tai seuranta on muuttunut. Sulje editori ja avaa se uudelleen.</string>
+    <string name="yarn_usage_track">Seuraa käyttöä</string>
+    <string name="yarn_usage_edit">Muokkaa seurantaa</string>
+    <string name="yarn_usage_track_named">Seuraa langan %1$s käyttöä</string>
+    <string name="yarn_usage_edit_named">Muokkaa langan %1$s seurantaa</string>
+    <string name="yarn_usage_unlinked">Lankaa ei enää ole liitetty tähän projektiin</string>
+    <string name="yarn_usage_unavailable">Langan lähdetiedot eivät ole saatavilla</string>
+    <plurals name="yarn_usage_skeins_format">
+        <item quantity="one">%1$s vyyhti</item>
+        <item quantity="other">%1$s vyyhtiä</item>
+    </plurals>
 </resources>

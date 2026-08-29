@@ -11,7 +11,7 @@ This file is the detailed implementation reference for the current KnitTools che
 - build, dependency, CI, and release-surface checks;
 - locating the source of truth for a behavior before changing it.
 
-The base snapshot was re-verified against the source tree on 2026-08-24. Project-folder organization, Room 23, Measurements and Gauge V1, and the source inventory were updated on 2026-08-28 after full local JVM and Android verification. This file describes the current working tree, including uncommitted changes, rather than assuming that Git `HEAD` contains the newest implementation. Counts, dependency versions, workflow pins, and generated schema versions are volatile and must be rechecked when precision matters.
+The base snapshot was re-verified against the source tree on 2026-08-24. Project Yarn Usage and Remaining Allocated Yarn V1, Room 24, and the source inventory were updated on 2026-08-29 after full local JVM and Android verification, following the project-folder and Measurements and Gauge work. This file describes the current working tree, including uncommitted changes, rather than assuming that Git `HEAD` contains the newest implementation. Counts, dependency versions, workflow pins, and generated schema versions are volatile and must be rechecked when precision matters.
 
 This is a reference, not a replacement for the code. If this file conflicts with executable source, Gradle configuration, the Android manifest, Room schema exports, Firebase configuration, or tests, the executable source wins.
 
@@ -38,7 +38,7 @@ KnitTools is a local-first Android knitting and crochet companion. Its main prod
 - timed work sessions and historical insights;
 - local pattern PDF import, project attachment, reading-line calibration, layered annotations, and annotated export;
 - saved-pattern metadata and Ravelry discovery through a Firebase backend;
-- yarn inventory cards and project-only yarn notes;
+- yarn inventory cards, project-only yarn notes, and project-specific planned, allocated, and used yarn amounts;
 - progress photos;
 - home-screen counter widgets;
 - knitting and crochet calculators and reference tables;
@@ -57,7 +57,7 @@ The app does not currently implement cloud synchronization, continuous Drive or 
 | Android target SDK | 37 |
 | Android minimum SDK | 29 |
 | App version | `versionCode 1`, `versionName "1.0.0"` |
-| Room schema | 23 |
+| Room schema | 24 |
 | Java toolchain | Eclipse Temurin JDK 17 |
 | Gradle wrapper | 9.6.1 |
 | Android Gradle Plugin | 9.3.1 |
@@ -69,13 +69,21 @@ The app does not currently implement cloud synchronization, continuous Drive or 
 
 These are orientation counts, not coverage or pass results:
 
-- 305 production Kotlin files under `app/src/main`;
-- 241 Kotlin files in the JVM test source set under `app/src/test`;
-- 31 Kotlin files in the Android instrumented-test source set under `app/src/androidTest`;
+- 319 production Kotlin files under `app/src/main`;
+- 244 Kotlin files in the JVM test source set under `app/src/test`;
+- 34 Kotlin files in the Android instrumented-test source set under `app/src/androidTest`;
 - 7 TypeScript test files matching `*.test.ts` under `functions/src`;
 - 65 tracked or working-tree resource files under `app/src/main/res`.
 
 ### Current local validation
+
+Project Yarn Usage V1 final verification on 2026-08-28 and 2026-08-29 passed 1,452 debug JVM tests across 242 suites with `--rerun-tasks`, with no failures, errors, or skipped tests. Separate direct offline commands passed KSP, Android-test compilation, debug app and test APK assembly, `lintDebug`, `ktlintCheck`, and `detekt`. Debug Lint reported no issues. The debug Compose stability dump was inspected: the editor, field, derived summary, and usage row are stable and skippable/restartable; the flow retains runtime-checked list inputs, and no stability exemption was added.
+
+The final identical APK pair passed the entire 170-test installed package on API 36 (`emulator-5554`) and API 37 (`emulator-5556`), with no failed or skipped tests and no app crash or ANR. This includes real schema 23 to 24 migration with all 16 existing tables preserved, the full 1 to 24 chain, 14 usage repository tests, 11 usage Compose tests, and two real `MainActivity` usage flows. The 11-test API 36 rerun at a system-level 320 dp width also passed; its production and Compose-test source stayed unchanged by the later native-test project-reopening correction. Visual checks covered all requested usage states, long names, IME, light/dark themes, and system-level 200 percent font. A real save/recreation race was fixed by making successful completion durable UI state and clearing the committed draft even when sheet hiding is cancelled. Earlier full runs exposed a native-test lifecycle assumption: completing the project while its counter stayed open could switch the existing active-project selection. The test now closes that activity, proves persisted usage across completion/reopening, and explicitly opens the same project again before verifying unlink and source deletion; application navigation behavior was not changed. The unchanged Gauge clipboard-confirmation and project-folder popup tests also failed intermittently in earlier full runs. The final API 36 package was rerun alone with the same APK pair after closing the API 37 emulator; those unrelated tests were not modified.
+
+These checks do not replace a human TalkBack listening pass. Some Compose-clock screenshots transiently omitted the Save label; native MainActivity checks at 320 dp and 200 percent German font showed the label in both themes. API 29 was not run or downloaded. The optional all-variant `stabilityDump` was blocked by missing release Firebase configuration; the direct `debugStabilityDump` passed without configuration changes. No release artifact or external-service behavior is claimed. Functions and the user's custom check wrappers were not run.
+
+Earlier feature verification:
 
 Measurements and Gauge V1 finalization on 2026-08-28 passed 1,435 debug JVM tests across 239 suites with `--rerun-tasks` and no failures, errors, or skipped tests. The focused JVM run passed 146 tests across 18 classes. After the Compose stability correction and the direct UI-test synchronization correction, the final combined KSP, Android-test compilation, debug app and test APK assembly, baseline-profile assembly, `lintDebug`, `ktlintCheck`, and `detekt` run completed successfully (175 tasks, 7 minutes 51 seconds); Lint and Detekt reported zero issues. `GaugeScreen` uses a stable composable ViewModel provider and the shared lifecycle-aware event collector; the debug stability baseline was updated without adding a stability exemption.
 
@@ -343,7 +351,7 @@ Settings owns app language, light/dark/system theme, haptic feedback, keep-scree
 | Additional counters | `ui/screens/counter/MultiCounterComponents.kt`, `CounterUiStateReducers.kt` |
 | Reminders | `ui/screens/counter/ReminderComponents.kt` |
 | Project actions | `ui/screens/counter/ProjectActionsBottomSheet.kt` |
-| Project yarn | `ui/screens/counter/YarnManagementSheet.kt` |
+| Project yarn | `ui/screens/counter/ProjectYarnUsageFlow.kt`, `YarnManagementSheet.kt`, and `ProjectYarnUsageSheet.kt` |
 | Progress photos | `ui/screens/counter/PhotoGalleryScreen.kt`, `PhotoComponents.kt` |
 | Notes | `ui/screens/notes/NotesEditorScreen.kt`, `NotesEditorViewModel.kt` |
 | Pattern viewer | `ui/screens/pattern/PatternViewerScreen.kt`, `PatternDocumentViewport.kt` |
@@ -368,9 +376,9 @@ Settings owns app language, light/dark/system theme, haptic feedback, keep-scree
 
 ### Room database
 
-`KnitToolsDatabase` uses schema version 23. Entities are `CounterProjectEntity`, `CounterHistoryEntity`, `YarnCardEntity`, `SessionEntity`, `ActiveSessionEntity`, `RowReminderEntity`, `ProgressPhotoEntity`, `ProjectCounterEntity`, `ProjectYarnNoteEntity`, `SavedPatternEntity`, `PatternAnnotationLayerEntity`, `PatternAnnotationEntity`, `PatternBookmarkEntity`, `ProjectDocumentEntity`, `ProjectFolderEntity`, and `ProjectFolderAssignmentEntity`.
+`KnitToolsDatabase` uses schema version 24. Its 17 entities are `CounterProjectEntity`, `CounterHistoryEntity`, `YarnCardEntity`, `SessionEntity`, `ActiveSessionEntity`, `RowReminderEntity`, `ProgressPhotoEntity`, `ProjectCounterEntity`, `ProjectYarnNoteEntity`, `ProjectYarnUsageEntity`, `SavedPatternEntity`, `PatternAnnotationLayerEntity`, `PatternAnnotationEntity`, `PatternBookmarkEntity`, `ProjectDocumentEntity`, `ProjectFolderEntity`, and `ProjectFolderAssignmentEntity`.
 
-Automatic migrations cover 1 to 2 and 2 to 3. Manual migrations cover every step from 3 to 4 through 22 to 23. `DatabaseModule` registers `ALL_MANUAL_MIGRATIONS`. Exported schemas 1 through 23 are retained.
+Automatic migrations cover 1 to 2 and 2 to 3. Manual migrations cover every step from 3 to 4 through 23 to 24. `DatabaseModule` registers `ALL_MANUAL_MIGRATIONS`. Exported schemas 1 through 24 are retained.
 
 #### Schema 18
 
@@ -401,6 +409,14 @@ Migration 22 to 23 adds only `project_folders` and `project_folder_assignments`.
 `project_folders` stores `id`, display `name`, unique `normalizedName`, and manual `sortOrder`; ordering is always `sortOrder` then ID. `project_folder_assignments` has `projectId` as its primary key, one indexed `folderId`, and cascading foreign keys to the project and folder. A missing assignment means Unfiled. Virtual views have neither database rows nor sentinel IDs. Completing or reopening a project retains its assignment; project deletion removes only that assignment, not the folder.
 
 `ProjectFolderRepository` owns metadata-only transactional writes and typed results, preserves cancellation, and observes one coherent joined organization snapshot through the repository retry boundary. Bulk moves deduplicate IDs and validate every project and destination before any write. Deleting a folder never calls file cleanup. `CounterRepository.createProject` validates an optional folder and inserts the new project plus assignment in the same limit-checked transaction; a stale folder cannot leave an unintended unfiled project. The folder DAO is supplied by `ProjectFolderDatabaseModule` beside the existing database module.
+
+#### Schema 24 and project yarn usage
+
+Migration 23 to 24 adds only `project_yarn_usage` and its four indexes. All 16 schema 23 entities remain unchanged; the migration does not rebuild existing tables or infer usage from notes, cards, quantities, or free text. The new table starts empty. Instrumented migration coverage compares every existing table's rows, schema, indexes, foreign keys, and triggers before/after migration and after usage create/update/delete, with both normal and recovery-required active sessions.
+
+`project_yarn_usage` stores generated `id`, `projectId`, nullable `yarnCardId` and `projectYarnNoteId`, required `sourceNameSnapshot`, nullable `plannedMeters`, `allocatedMeters`, `usedMeters`, `metersPerSkein`, and `gramsPerSkein`, plus `createdAt` and `updatedAt`. The project foreign key cascades on deletion; both source foreign keys use `SET NULL`. Unique indexes on `(projectId, yarnCardId)` and `(projectId, projectYarnNoteId)` prevent duplicate non-null sources, while individual source indexes support foreign-key lookups. Creation requires an existing project-owned source; both IDs may become null after source deletion.
+
+`ProjectYarnUsageRepository.observeForProject` maps one transactional Room relation snapshot through `retryOnRepositoryReadFailure` on the injected `@IoDispatcher`. Its `create`, `update`, and `delete` APIs validate ownership, finite nonnegative amounts, optional positive conversion pairs, and expected update revisions inside `DatabaseTransactionRunner`. Results distinguish success, existing usage, missing/foreign sources, invalid input, stale actions, and persistence failure; cancellation propagates and failed transactions roll back. UI never calls the usage DAO. Usage writes do not change project counts/timestamps, sessions, pattern documents, files, or global stash quantity.
 
 #### Counter projects
 
@@ -458,9 +474,9 @@ Work-session UI copy is localized in all 11 supported resource directories: defa
 
 `pattern_bookmarks` belongs to a project and the project layer's active `documentKey`; it stores a trimmed name of at most 50 characters, page, normalized Y, and creation time. Duplicate names and locations are allowed. Queries order rows by page, Y, creation time, and ID. Detach preserves rows, same-document reattach restores them, document replacement isolates them, and deleting the project cascades them. Saved-pattern deletion does not delete project bookmarks while the project document remains.
 
-Hard child relationships cascade for history, sessions, reminders, photos, project counters, project yarn notes, pattern bookmarks, annotation layers, and annotations. Intentional soft links are `yarn_cards.linkedProjectId`, `counter_projects.yarnCardIds`, `counter_projects.linkedPatternId`, and `project_yarn_notes.savedYarnCardId`; repositories maintain their invariants.
+Hard child relationships cascade for history, sessions, reminders, photos, project counters, project yarn notes, project yarn usage, pattern bookmarks, annotation layers, and annotations. Intentional soft links are `yarn_cards.linkedProjectId`, `counter_projects.yarnCardIds`, `counter_projects.linkedPatternId`, and `project_yarn_notes.savedYarnCardId`; repositories maintain their invariants.
 
-Schema 15 adds foreign-key lookup indexes, schema 16 adds session zones, schema 17 adds annotations, schema 18 adds monotonic feature-use flags, schema 19 preserves three-state saved-pattern availability, schema 20 adds project bookmarks plus followed horizontal and durable vertical reading-guide state, schema 21 adds the Room-owned active work-session singleton, schema 22 adds canonical multiple project documents and per-document reader state, and schema 23 adds project-folder metadata and assignments.
+Schema 15 adds foreign-key lookup indexes, schema 16 adds session zones, schema 17 adds annotations, schema 18 adds monotonic feature-use flags, schema 19 preserves three-state saved-pattern availability, schema 20 adds project bookmarks plus followed horizontal and durable vertical reading-guide state, schema 21 adds the Room-owned active work-session singleton, schema 22 adds canonical multiple project documents and per-document reader state, schema 23 adds project-folder metadata and assignments, and schema 24 adds project yarn usage.
 
 ### DataStore and preferences
 
@@ -534,7 +550,7 @@ Project note replacement uses `CounterRepository.saveProjectNotes`. It merges th
 - `saveCard` normalizes any persisted `linkedProjectId`;
 - `updateLinkedProjectId` updates both the card's `linkedProjectId` and the project's `yarnCardIds`;
 - unlink, relink, and project deletion preserve both directions;
-- `ProjectYarnNoteRepository.saveToMyYarn` creates a linked inventory card while retaining the project note and setting `savedYarnCardId` in one repository transaction.
+- `ProjectYarnNoteRepository.saveToMyYarn` creates or reuses a linked inventory card while retaining the project note, setting `savedYarnCardId`, and binding any existing usage row in one repository transaction. It never creates usage automatically or duplicates the note/card pair's existing usage, amounts, or snapshot.
 
 ### Pattern attachment
 
@@ -1129,6 +1145,16 @@ Detail supports status, quantity, project link, metadata, care symbols, and phot
 
 Project yarn notes are distinct from inventory cards. They support local name, description, quantity, and notes. `Save to My Yarn` creates or links an inventory card without deleting the project-specific note.
 
+### Project yarn usage and remaining allocated yarn
+
+The existing project Yarn sheet exposes Track usage for notes and linked My Yarn cards, followed by one compact used/remaining summary and Edit usage. A note with a saved card resolves to one logical usage item, retaining the existing source actions. Unlinking keeps usage; deleting either source clears only that foreign key. If both sources disappear, the snapshot-named row remains visible, editable, and deletable. Live source names take precedence without rewriting the creation-time snapshot. Completion and reopening preserve usage, and tracking stays free on existing yarn items without changing source-creation Pro limits or adding a project card or top-level destination.
+
+Planned, allocated, and used are independent nullable `Double` meters. Blank is unknown, zero is a known amount, at least one amount is required, and negative/non-finite input is rejected rather than clamped. `YarnUsageCalculator` derives remaining as allocated minus used only when both are known; negative remaining is displayed as positive Over by. Planned never overwrites or constrains allocated. The meter/yard path reuses `MeasurementCalculator`; grams and fractional skeins require an explicit, user-confirmed pair of positive meters and grams per skein. No metadata parsing, automatic ratio inference, integer-skein rounding, or display-rounded calculation occurs. With 200 m / 100 g, allocated 300 g and used 175 g mean 600 m allocated, 350 m used, and 250 m / 125 g / 1.25 skeins remaining.
+
+`ProjectYarnUsageViewModel`, `YarnUsageDraft`, and `YarnUsageSavedState` preserve raw numeric text separately from canonical amounts, pending unit changes, ratio inputs, source identity, and the expected revision across recreation. Locale comma/point input uses existing measurement parsing/formatting; unit switching converts valid values without persisting display rounding. Failed writes keep the draft, repeated actions are guarded, and successful persistence clears restorable input before closing the editor. `ProjectYarnUsageFlow` uses separate sheet states and waits for transitions, restores focus to the relevant action or heading, and closes a committed editor even when Activity recreation cancels its hiding animation.
+
+The scrollable editor and delete confirmation use shared numeric fields and selectors, theme typography/colors, source-specific semantics, and at least 48 dp actions. All 11 locales contain the usage labels, errors, status text, and skein plural forms. IME, long names, narrow width, large font, and both themes are covered by rendered tests and screenshots. This feature stores only project usage: it never automatically changes global My Yarn inventory and has no file, network, Firebase, or Ravelry path.
+
 ## Tools and local calculators
 
 The calculator/reference implementation is local and deterministic:
@@ -1501,8 +1527,8 @@ Accepted risk is limited to documented historical Ravelry credential findings in
 
 The current working tree contains:
 
-- 241 Kotlin files in `app/src/test`;
-- 31 Kotlin files in `app/src/androidTest`;
+- 244 Kotlin files in `app/src/test`;
+- 34 Kotlin files in `app/src/androidTest`;
 - 7 TypeScript test files in `functions/src`.
 
 These source-file counts include test helpers; they are not test-class counts or executed-test totals and should be refreshed after test additions/removals.
@@ -1515,6 +1541,7 @@ The test surface includes:
 - regex instruction parsing;
 - locale-sensitive formatting;
 - repository transactions and soft-link invariants;
+- project yarn usage calculations, source identity, rollback, migration preservation, editor restoration, and native Yarn workflows;
 - main-counter/history/linked-counter atomic behavior;
 - Room migration source contracts and instrumented migrations;
 - file storage and photo replacement ordering;
@@ -1560,7 +1587,7 @@ Inspect:
 - `data/local/KnitToolsDatabase.kt`;
 - every relevant entity and DAO;
 - `di/DatabaseModule.kt`;
-- schema JSON 23 and the preceding schema;
+- schema JSON 24 and the preceding schema;
 - migration tests.
 
 Questions:
@@ -1574,6 +1601,7 @@ Questions:
 - Does migration 18 to 19 map false to unknown and preserve saved-pattern annotation layers and annotations across the referenced-table rebuild?
 - Does migration 21 to 22 backfill exactly one primary relation per readable legacy project while preserving stable document keys and per-document reader state?
 - Does migration 22 to 23 add only empty folder/assignment tables and preserve every existing project-owned row and constraint?
+- Does migration 23 to 24 add only empty usage storage, preserve all 16 earlier tables, and keep source deletion distinct from project deletion?
 
 Proof: migration execution against old schemas plus schema identity, not compilation alone.
 
@@ -1675,7 +1703,7 @@ Questions:
 
 - Are both sides of a yarn link changed together?
 - Is malformed CSV normalized centrally?
-- Does Save to My Yarn retain the project note?
+- Does Save to My Yarn retain the project note and a single logical usage row without changing usage amounts or global inventory automatically?
 - Are Ravelry ID 0 and raw URL sentinels rejected?
 - Is metadata-only content kept distinct from local PDF availability?
 
@@ -1841,7 +1869,7 @@ Recheck these directly:
 Common stale assumptions:
 
 - `allowBackup` is false, not true.
-- Room is schema 23, not an earlier schema.
+- Room is schema 24, not an earlier schema.
 - `ProjectCard.kt` is deleted; the current row is `ProjectListItem.kt`.
 - Projects are cardless list rows plus a separate Continue hero.
 - The current main buttons use `CounterImageButton` and WebP assets.

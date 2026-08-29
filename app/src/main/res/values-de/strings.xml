@@ -942,4 +942,46 @@
         <item quantity="one">%1$d Reihe</item>
         <item quantity="other">%1$d Reihen</item>
     </plurals>
+    <string name="yarn_usage_title">Garnverbrauch</string>
+    <string name="yarn_usage_scope">Erfasst nur das für dieses Projekt reservierte Garn. Die Mengen in Mein Garn bleiben unverändert.</string>
+    <string name="yarn_usage_unit">Mengeneinheit</string>
+    <string name="yarn_usage_grams">Gramm</string>
+    <string name="yarn_usage_skeins">Stränge</string>
+    <string name="yarn_usage_planned">Geplant</string>
+    <string name="yarn_usage_allocated">Für dieses Projekt reserviert</string>
+    <string name="yarn_usage_used">Verbraucht</string>
+    <string name="yarn_usage_length">Länge pro Strang</string>
+    <string name="yarn_usage_weight">Gewicht pro Strang</string>
+    <string name="yarn_usage_add_conversion">Strangumrechnung hinzufügen</string>
+    <string name="yarn_usage_remove_conversion">Strangumrechnung entfernen</string>
+    <string name="yarn_usage_conversion_required">Gib Länge und Gewicht pro Strang als positive Werte ein, um Gramm oder Stränge zu verwenden.</string>
+    <string name="yarn_usage_fix_before_switch">Korrigiere die Mengenfelder, bevor du die Einheit wechselst.</string>
+    <string name="yarn_usage_remaining_unknown">Restmenge unbekannt</string>
+    <string name="yarn_usage_remaining_format">Verbleibend: %1$s</string>
+    <string name="yarn_usage_over_format">Überschritten um: %1$s</string>
+    <string name="yarn_usage_used_format">Verbraucht: %1$s</string>
+    <string name="yarn_usage_meters_format">%1$s m</string>
+    <string name="yarn_usage_yards_format">%1$s yd</string>
+    <string name="yarn_usage_grams_format">%1$s g</string>
+    <string name="yarn_usage_delete">Verbrauchserfassung löschen</string>
+    <string name="yarn_usage_delete_named">Verbrauchserfassung für %1$s löschen</string>
+    <string name="yarn_usage_delete_title">Verbrauchserfassung löschen?</string>
+    <string name="yarn_usage_delete_body">Nur die Verbrauchserfassung für %1$s wird entfernt. Die Garnkarte, die Garnnotiz des Projekts und andere Projektdaten bleiben erhalten.</string>
+    <string name="yarn_usage_invalid_amount">Gib eine gültige Menge ein.</string>
+    <string name="yarn_usage_nonnegative">Die Menge darf nicht negativ sein.</string>
+    <string name="yarn_usage_positive">Gib einen Wert größer als null ein.</string>
+    <string name="yarn_usage_save_failed">Der Verbrauch konnte nicht gespeichert werden. Deine Eingaben bleiben erhalten. Versuche es erneut.</string>
+    <string name="yarn_usage_delete_failed">Die Verbrauchserfassung konnte nicht gelöscht werden. Versuche es erneut.</string>
+    <string name="yarn_usage_exists">Für dieses Garn gibt es bereits eine Verbrauchserfassung. Schließe den Editor und öffne die gespeicherte Erfassung.</string>
+    <string name="yarn_usage_stale">Das Projekt, die Garnquelle oder die Erfassung hat sich geändert. Schließe den Editor und öffne ihn erneut.</string>
+    <string name="yarn_usage_track">Verbrauch erfassen</string>
+    <string name="yarn_usage_edit">Verbrauch bearbeiten</string>
+    <string name="yarn_usage_track_named">Verbrauch für %1$s erfassen</string>
+    <string name="yarn_usage_edit_named">Verbrauch für %1$s bearbeiten</string>
+    <string name="yarn_usage_unlinked">Quelle nicht mehr mit diesem Projekt verknüpft</string>
+    <string name="yarn_usage_unavailable">Garnquelle nicht verfügbar</string>
+    <plurals name="yarn_usage_skeins_format">
+        <item quantity="one">%1$s Strang</item>
+        <item quantity="other">%1$s Stränge</item>
+    </plurals>
 </resources>

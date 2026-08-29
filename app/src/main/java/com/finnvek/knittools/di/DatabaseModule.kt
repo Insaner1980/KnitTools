@@ -16,6 +16,7 @@ import com.finnvek.knittools.data.local.ProjectDocumentDao
 import com.finnvek.knittools.data.local.ProjectDocumentSchemaConstraints
 import com.finnvek.knittools.data.local.ProjectFolderDao
 import com.finnvek.knittools.data.local.ProjectYarnNoteDao
+import com.finnvek.knittools.data.local.ProjectYarnUsageDao
 import com.finnvek.knittools.data.local.RoomDatabaseTransactionRunner
 import com.finnvek.knittools.data.local.RowReminderDao
 import com.finnvek.knittools.data.local.SavedPatternDao
@@ -100,6 +101,9 @@ object DatabaseModule {
 @Module
 @InstallIn(SingletonComponent::class)
 object ProjectFolderDatabaseModule {
+    @Provides
+    fun provideProjectYarnUsageDao(db: KnitToolsDatabase): ProjectYarnUsageDao = db.projectYarnUsageDao()
+
     @Provides
     fun provideProjectFolderDao(db: KnitToolsDatabase): ProjectFolderDao = db.projectFolderDao()
 }

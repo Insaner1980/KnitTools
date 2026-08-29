@@ -11,7 +11,7 @@ class ProjectDocumentArchitectureSourceTest {
         val entity = ProjectSourceFiles.read(ENTITY)
 
         assertTrue(database.contains("ProjectDocumentEntity::class"))
-        assertTrue(database.contains("version = 23"))
+        assertTrue(database.contains("version = 24"))
         assertTrue(database.contains("MIGRATION_21_22"))
         assertTrue(entity.contains("tableName = \"project_documents\""))
         assertTrue(entity.contains("onDelete = ForeignKey.CASCADE"))

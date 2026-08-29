@@ -959,4 +959,46 @@
         <item quantity="one">%1$d varv</item>
         <item quantity="other">%1$d varv</item>
     </plurals>
+    <string name="yarn_usage_title">Garnåtgång</string>
+    <string name="yarn_usage_scope">Spårar bara garn som avsatts för det här projektet. Mängderna i Mitt garn ändras inte.</string>
+    <string name="yarn_usage_unit">Mängdenhet</string>
+    <string name="yarn_usage_grams">Gram</string>
+    <string name="yarn_usage_skeins">Härvor</string>
+    <string name="yarn_usage_planned">Planerat</string>
+    <string name="yarn_usage_allocated">Avsatt för det här projektet</string>
+    <string name="yarn_usage_used">Använt</string>
+    <string name="yarn_usage_length">Längd per härva</string>
+    <string name="yarn_usage_weight">Vikt per härva</string>
+    <string name="yarn_usage_add_conversion">Lägg till omräkning för härvor</string>
+    <string name="yarn_usage_remove_conversion">Ta bort omräkning för härvor</string>
+    <string name="yarn_usage_conversion_required">Ange både längd och vikt per härva som positiva värden för att använda gram eller härvor.</string>
+    <string name="yarn_usage_fix_before_switch">Rätta mängdfälten innan du byter enhet.</string>
+    <string name="yarn_usage_remaining_unknown">Återstående mängd okänd</string>
+    <string name="yarn_usage_remaining_format">Kvar: %1$s</string>
+    <string name="yarn_usage_over_format">Överskridet med: %1$s</string>
+    <string name="yarn_usage_used_format">Använt: %1$s</string>
+    <string name="yarn_usage_meters_format">%1$s m</string>
+    <string name="yarn_usage_yards_format">%1$s yd</string>
+    <string name="yarn_usage_grams_format">%1$s g</string>
+    <string name="yarn_usage_delete">Ta bort spårning</string>
+    <string name="yarn_usage_delete_named">Ta bort spårning för %1$s</string>
+    <string name="yarn_usage_delete_title">Ta bort spårning?</string>
+    <string name="yarn_usage_delete_body">Bara åtgångsspårningen för %1$s tas bort. Garnkortet, projektets garnanteckning och övriga projektdata behålls.</string>
+    <string name="yarn_usage_invalid_amount">Ange en giltig mängd.</string>
+    <string name="yarn_usage_nonnegative">Mängden kan inte vara negativ.</string>
+    <string name="yarn_usage_positive">Ange ett värde större än noll.</string>
+    <string name="yarn_usage_save_failed">Kunde inte spara åtgången. Dina uppgifter finns kvar. Försök igen.</string>
+    <string name="yarn_usage_delete_failed">Kunde inte ta bort spårningen. Försök igen.</string>
+    <string name="yarn_usage_exists">Det finns redan en spårning för det här garnet. Stäng redigeraren och öppna den sparade spårningen.</string>
+    <string name="yarn_usage_stale">Projektet, garnkällan eller spårningen har ändrats. Stäng redigeraren och öppna den igen.</string>
+    <string name="yarn_usage_track">Spåra åtgång</string>
+    <string name="yarn_usage_edit">Redigera åtgång</string>
+    <string name="yarn_usage_track_named">Spåra åtgång för %1$s</string>
+    <string name="yarn_usage_edit_named">Redigera åtgång för %1$s</string>
+    <string name="yarn_usage_unlinked">Källan är inte längre kopplad till det här projektet</string>
+    <string name="yarn_usage_unavailable">Garnkällan är inte tillgänglig</string>
+    <plurals name="yarn_usage_skeins_format">
+        <item quantity="one">%1$s härva</item>
+        <item quantity="other">%1$s härvor</item>
+    </plurals>
 </resources>

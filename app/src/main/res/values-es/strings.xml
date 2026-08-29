@@ -961,4 +961,47 @@
         <item quantity="many">%1$d vueltas</item>
         <item quantity="other">%1$d vueltas</item>
     </plurals>
+    <string name="yarn_usage_title">Uso de hilo</string>
+    <string name="yarn_usage_scope">Registra solo el hilo reservado para este proyecto. Las cantidades en Mis hilos no cambian.</string>
+    <string name="yarn_usage_unit">Unidad de cantidad</string>
+    <string name="yarn_usage_grams">Gramos</string>
+    <string name="yarn_usage_skeins">Madejas</string>
+    <string name="yarn_usage_planned">Previsto</string>
+    <string name="yarn_usage_allocated">Reservado para este proyecto</string>
+    <string name="yarn_usage_used">Usado</string>
+    <string name="yarn_usage_length">Longitud por madeja</string>
+    <string name="yarn_usage_weight">Peso por madeja</string>
+    <string name="yarn_usage_add_conversion">Añadir conversión por madeja</string>
+    <string name="yarn_usage_remove_conversion">Quitar conversión por madeja</string>
+    <string name="yarn_usage_conversion_required">Introduce una longitud y un peso positivos por madeja para usar gramos o madejas.</string>
+    <string name="yarn_usage_fix_before_switch">Corrige las cantidades antes de cambiar de unidad.</string>
+    <string name="yarn_usage_remaining_unknown">Cantidad restante desconocida</string>
+    <string name="yarn_usage_remaining_format">Restante: %1$s</string>
+    <string name="yarn_usage_over_format">Exceso: %1$s</string>
+    <string name="yarn_usage_used_format">Usado: %1$s</string>
+    <string name="yarn_usage_meters_format">%1$s m</string>
+    <string name="yarn_usage_yards_format">%1$s yd</string>
+    <string name="yarn_usage_grams_format">%1$s g</string>
+    <string name="yarn_usage_delete">Eliminar seguimiento</string>
+    <string name="yarn_usage_delete_named">Eliminar seguimiento de %1$s</string>
+    <string name="yarn_usage_delete_title">¿Eliminar seguimiento?</string>
+    <string name="yarn_usage_delete_body">Solo se eliminará el seguimiento de uso de %1$s. La ficha de hilo, la nota de hilo del proyecto y los demás datos del proyecto se conservarán.</string>
+    <string name="yarn_usage_invalid_amount">Introduce una cantidad válida.</string>
+    <string name="yarn_usage_nonnegative">La cantidad no puede ser negativa.</string>
+    <string name="yarn_usage_positive">Introduce un valor mayor que cero.</string>
+    <string name="yarn_usage_save_failed">No se pudo guardar el uso. Tus datos siguen aquí. Inténtalo de nuevo.</string>
+    <string name="yarn_usage_delete_failed">No se pudo eliminar el seguimiento. Inténtalo de nuevo.</string>
+    <string name="yarn_usage_exists">Ya existe un seguimiento para este hilo. Cierra el editor y abre el seguimiento guardado.</string>
+    <string name="yarn_usage_stale">El proyecto, la fuente del hilo o el seguimiento ha cambiado. Cierra el editor y vuelve a abrirlo.</string>
+    <string name="yarn_usage_track">Registrar uso</string>
+    <string name="yarn_usage_edit">Editar uso</string>
+    <string name="yarn_usage_track_named">Registrar uso de %1$s</string>
+    <string name="yarn_usage_edit_named">Editar uso de %1$s</string>
+    <string name="yarn_usage_unlinked">La fuente ya no está vinculada a este proyecto</string>
+    <string name="yarn_usage_unavailable">Fuente del hilo no disponible</string>
+    <plurals name="yarn_usage_skeins_format">
+        <item quantity="one">%1$s madeja</item>
+        <item quantity="many">%1$s madejas</item>
+        <item quantity="other">%1$s madejas</item>
+    </plurals>
 </resources>

@@ -961,4 +961,47 @@
         <item quantity="many">%1$d ferri</item>
         <item quantity="other">%1$d ferri</item>
     </plurals>
+    <string name="yarn_usage_title">Utilizzo del filato</string>
+    <string name="yarn_usage_scope">Registra solo il filato riservato a questo progetto. Le quantità in I miei filati restano invariate.</string>
+    <string name="yarn_usage_unit">Unità di quantità</string>
+    <string name="yarn_usage_grams">Grammi</string>
+    <string name="yarn_usage_skeins">Matasse</string>
+    <string name="yarn_usage_planned">Previsto</string>
+    <string name="yarn_usage_allocated">Riservato a questo progetto</string>
+    <string name="yarn_usage_used">Utilizzato</string>
+    <string name="yarn_usage_length">Lunghezza per matassa</string>
+    <string name="yarn_usage_weight">Peso per matassa</string>
+    <string name="yarn_usage_add_conversion">Aggiungi conversione per matassa</string>
+    <string name="yarn_usage_remove_conversion">Rimuovi conversione per matassa</string>
+    <string name="yarn_usage_conversion_required">Inserisci lunghezza e peso positivi per matassa per usare grammi o matasse.</string>
+    <string name="yarn_usage_fix_before_switch">Correggi le quantità prima di cambiare unità.</string>
+    <string name="yarn_usage_remaining_unknown">Quantità rimanente sconosciuta</string>
+    <string name="yarn_usage_remaining_format">Rimanente: %1$s</string>
+    <string name="yarn_usage_over_format">Eccedenza: %1$s</string>
+    <string name="yarn_usage_used_format">Utilizzato: %1$s</string>
+    <string name="yarn_usage_meters_format">%1$s m</string>
+    <string name="yarn_usage_yards_format">%1$s yd</string>
+    <string name="yarn_usage_grams_format">%1$s g</string>
+    <string name="yarn_usage_delete">Elimina monitoraggio</string>
+    <string name="yarn_usage_delete_named">Elimina monitoraggio di %1$s</string>
+    <string name="yarn_usage_delete_title">Eliminare il monitoraggio?</string>
+    <string name="yarn_usage_delete_body">Verrà eliminato solo il monitoraggio dell’utilizzo di %1$s. La scheda del filato, la nota del filato del progetto e gli altri dati del progetto verranno conservati.</string>
+    <string name="yarn_usage_invalid_amount">Inserisci una quantità valida.</string>
+    <string name="yarn_usage_nonnegative">La quantità non può essere negativa.</string>
+    <string name="yarn_usage_positive">Inserisci un valore maggiore di zero.</string>
+    <string name="yarn_usage_save_failed">Impossibile salvare l’utilizzo. I dati inseriti sono ancora disponibili. Riprova.</string>
+    <string name="yarn_usage_delete_failed">Impossibile eliminare il monitoraggio. Riprova.</string>
+    <string name="yarn_usage_exists">Esiste già un monitoraggio per questo filato. Chiudi l’editor e apri il monitoraggio salvato.</string>
+    <string name="yarn_usage_stale">Il progetto, l’origine del filato o il monitoraggio è cambiato. Chiudi l’editor e riaprilo.</string>
+    <string name="yarn_usage_track">Registra utilizzo</string>
+    <string name="yarn_usage_edit">Modifica utilizzo</string>
+    <string name="yarn_usage_track_named">Registra utilizzo di %1$s</string>
+    <string name="yarn_usage_edit_named">Modifica utilizzo di %1$s</string>
+    <string name="yarn_usage_unlinked">Origine non più collegata a questo progetto</string>
+    <string name="yarn_usage_unavailable">Origine del filato non disponibile</string>
+    <plurals name="yarn_usage_skeins_format">
+        <item quantity="one">%1$s matassa</item>
+        <item quantity="many">%1$s matasse</item>
+        <item quantity="other">%1$s matasse</item>
+    </plurals>
 </resources>

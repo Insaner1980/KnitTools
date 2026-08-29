@@ -1,11 +1,18 @@
 package com.finnvek.knittools.data.local
 
 import android.database.Cursor
+import androidx.room.Room
 import androidx.room.testing.MigrationTestHelper
 import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.finnvek.knittools.domain.model.YarnUsageAmounts
+import com.finnvek.knittools.domain.model.YarnUsageSource
+import com.finnvek.knittools.repository.ProjectYarnUsageRepository
+import com.finnvek.knittools.repository.YarnUsageResult
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -22,6 +29,88 @@ class ProjectFolderMigration23Test {
             emptyList(),
             FrameworkSQLiteOpenHelperFactory(),
         )
+
+    @Test
+    fun migrate23to24PreservesEveryTableAndBothActiveSessionStatesWithoutBackfill() {
+        listOf(false, true).forEach { recovery ->
+            val testDb = "migration-test-yarn-usage-v24-$recovery"
+            lateinit var before: DatabaseSnapshot
+            helper.createDatabase(testDb, 23).apply {
+                ActiveSessionSchemaConstraints.create(this)
+                PatternAnnotationSchemaConstraints.create(this)
+                ProjectDocumentSchemaConstraints.create(this)
+                insertProject(1, "Active", updatedAt = 101)
+                insertProject(2, "Completed", isCompleted = true, updatedAt = 202)
+                insertSavedPattern(30)
+                insertCompletedSession(2)
+                insertActiveSession(1, recovery)
+                insertProjectDocument(1)
+                insertAnnotationAndBookmark(1)
+                insertProjectOwnedRows(1)
+                execSQL("UPDATE counter_projects SET yarnCardIds = '61' WHERE id = 1")
+                execSQL(
+                    "INSERT INTO project_folders (id, name, normalizedName, sortOrder) VALUES (90, 'Gifts', 'gifts', 0)",
+                )
+                execSQL("INSERT INTO project_folder_assignments (projectId, folderId) VALUES (1, 90)")
+                execSQL(
+                    "INSERT INTO counter_history (id, projectId, action, previousValue, newValue, timestamp) VALUES (80, 1, 'INCREMENT', 3, 4, 100)",
+                )
+                before = snapshotExistingState(this)
+                close()
+            }
+            helper.runMigrationsAndValidate(testDb, 24, true, KnitToolsDatabase.MIGRATION_23_24).use { db ->
+                assertEquals(before, snapshotExistingState(db, before.tables.keys))
+                assertEquals(0L, scalarLong(db, "SELECT COUNT(*) FROM project_yarn_usage"))
+                assertTrue(db.query("PRAGMA foreign_key_check").use { !it.moveToFirst() })
+            }
+            val database =
+                Room
+                    .databaseBuilder(
+                        InstrumentationRegistry.getInstrumentation().targetContext,
+                        KnitToolsDatabase::class.java,
+                        testDb,
+                    ).addMigrations(*KnitToolsDatabase.ALL_MANUAL_MIGRATIONS)
+                    .build()
+            try {
+                val repository =
+                    ProjectYarnUsageRepository(
+                        database.projectYarnUsageDao(),
+                        database.projectYarnNoteDao(),
+                        database.yarnCardDao(),
+                        RoomDatabaseTransactionRunner(database),
+                        Dispatchers.IO,
+                    )
+                runBlocking {
+                    val created =
+                        repository.create(
+                            1,
+                            YarnUsageSource(projectYarnNoteId = 62),
+                            YarnUsageAmounts(1200.0, 600.0, 350.0, 200.0, 100.0),
+                            "Fallback",
+                        ) as YarnUsageResult.Created
+                    assertEquals(YarnUsageSource(61, 62), created.usage.source)
+                    val updated =
+                        repository.update(
+                            1,
+                            created.usage.id,
+                            created.usage.updatedAt,
+                            created.usage.amounts.copy(usedMeters = 700.0),
+                        ) as YarnUsageResult.Updated
+                    assertEquals(
+                        before,
+                        snapshotExistingState(database.openHelper.writableDatabase, before.tables.keys),
+                    )
+                    assertEquals(
+                        YarnUsageResult.Deleted,
+                        repository.delete(1, updated.usage.id, updated.usage.updatedAt),
+                    )
+                }
+                assertEquals(before, snapshotExistingState(database.openHelper.writableDatabase, before.tables.keys))
+            } finally {
+                database.close()
+            }
+        }
+    }
 
     @Test
     fun migrate22to23CreatesEmptyFolderStateAndPreservesProjectOwnedData() {

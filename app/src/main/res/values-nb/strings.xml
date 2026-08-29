@@ -942,4 +942,46 @@
         <item quantity="one">%1$d rad</item>
         <item quantity="other">%1$d rader</item>
     </plurals>
+    <string name="yarn_usage_title">Garnforbruk</string>
+    <string name="yarn_usage_scope">Sporer bare garn som er satt av til dette prosjektet. Mengdene i Mitt garn endres ikke.</string>
+    <string name="yarn_usage_unit">Mengdeenhet</string>
+    <string name="yarn_usage_grams">Gram</string>
+    <string name="yarn_usage_skeins">Hesper</string>
+    <string name="yarn_usage_planned">Planlagt</string>
+    <string name="yarn_usage_allocated">Satt av til dette prosjektet</string>
+    <string name="yarn_usage_used">Brukt</string>
+    <string name="yarn_usage_length">Lengde per hespe</string>
+    <string name="yarn_usage_weight">Vekt per hespe</string>
+    <string name="yarn_usage_add_conversion">Legg til omregning for hesper</string>
+    <string name="yarn_usage_remove_conversion">Fjern omregning for hesper</string>
+    <string name="yarn_usage_conversion_required">Oppgi både lengde og vekt per hespe som positive verdier for å bruke gram eller hesper.</string>
+    <string name="yarn_usage_fix_before_switch">Rett mengdefeltene før du bytter enhet.</string>
+    <string name="yarn_usage_remaining_unknown">Ukjent restmengde</string>
+    <string name="yarn_usage_remaining_format">Gjenstår: %1$s</string>
+    <string name="yarn_usage_over_format">Overskredet med: %1$s</string>
+    <string name="yarn_usage_used_format">Brukt: %1$s</string>
+    <string name="yarn_usage_meters_format">%1$s m</string>
+    <string name="yarn_usage_yards_format">%1$s yd</string>
+    <string name="yarn_usage_grams_format">%1$s g</string>
+    <string name="yarn_usage_delete">Slett forbrukssporing</string>
+    <string name="yarn_usage_delete_named">Slett forbrukssporing for %1$s</string>
+    <string name="yarn_usage_delete_title">Slette forbrukssporing?</string>
+    <string name="yarn_usage_delete_body">Bare forbrukssporingen for %1$s slettes. Garnkortet, prosjektets garnnotat og andre prosjektdata beholdes.</string>
+    <string name="yarn_usage_invalid_amount">Oppgi en gyldig mengde.</string>
+    <string name="yarn_usage_nonnegative">Mengden kan ikke være negativ.</string>
+    <string name="yarn_usage_positive">Oppgi en verdi større enn null.</string>
+    <string name="yarn_usage_save_failed">Kunne ikke lagre forbruket. Opplysningene dine er beholdt. Prøv igjen.</string>
+    <string name="yarn_usage_delete_failed">Kunne ikke slette forbrukssporingen. Prøv igjen.</string>
+    <string name="yarn_usage_exists">Det finnes allerede forbrukssporing for dette garnet. Lukk redigereren og åpne den lagrede sporingen.</string>
+    <string name="yarn_usage_stale">Prosjektet, garnkilden eller sporingen er endret. Lukk redigereren og åpne den på nytt.</string>
+    <string name="yarn_usage_track">Spor forbruk</string>
+    <string name="yarn_usage_edit">Rediger forbruk</string>
+    <string name="yarn_usage_track_named">Spor forbruk av %1$s</string>
+    <string name="yarn_usage_edit_named">Rediger forbruk av %1$s</string>
+    <string name="yarn_usage_unlinked">Kilden er ikke lenger knyttet til dette prosjektet</string>
+    <string name="yarn_usage_unavailable">Garnkilden er ikke tilgjengelig</string>
+    <plurals name="yarn_usage_skeins_format">
+        <item quantity="one">%1$s hespe</item>
+        <item quantity="other">%1$s hesper</item>
+    </plurals>
 </resources>

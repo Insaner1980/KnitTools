@@ -942,4 +942,46 @@
         <item quantity="one">%1$d toer</item>
         <item quantity="other">%1$d toeren</item>
     </plurals>
+    <string name="yarn_usage_title">Garenverbruik</string>
+    <string name="yarn_usage_scope">Houdt alleen het garen bij dat voor dit project is gereserveerd. De hoeveelheden in Mijn garen blijven ongewijzigd.</string>
+    <string name="yarn_usage_unit">Hoeveelheidseenheid</string>
+    <string name="yarn_usage_grams">Gram</string>
+    <string name="yarn_usage_skeins">Strengen</string>
+    <string name="yarn_usage_planned">Gepland</string>
+    <string name="yarn_usage_allocated">Gereserveerd voor dit project</string>
+    <string name="yarn_usage_used">Gebruikt</string>
+    <string name="yarn_usage_length">Lengte per streng</string>
+    <string name="yarn_usage_weight">Gewicht per streng</string>
+    <string name="yarn_usage_add_conversion">Omrekening per streng toevoegen</string>
+    <string name="yarn_usage_remove_conversion">Omrekening per streng verwijderen</string>
+    <string name="yarn_usage_conversion_required">Voer zowel lengte als gewicht per streng in als positieve waarden om gram of strengen te gebruiken.</string>
+    <string name="yarn_usage_fix_before_switch">Corrigeer de hoeveelheden voordat je de eenheid wijzigt.</string>
+    <string name="yarn_usage_remaining_unknown">Resterende hoeveelheid onbekend</string>
+    <string name="yarn_usage_remaining_format">Resterend: %1$s</string>
+    <string name="yarn_usage_over_format">Overschreden met: %1$s</string>
+    <string name="yarn_usage_used_format">Gebruikt: %1$s</string>
+    <string name="yarn_usage_meters_format">%1$s m</string>
+    <string name="yarn_usage_yards_format">%1$s yd</string>
+    <string name="yarn_usage_grams_format">%1$s g</string>
+    <string name="yarn_usage_delete">Verbruiksregistratie verwijderen</string>
+    <string name="yarn_usage_delete_named">Verbruiksregistratie voor %1$s verwijderen</string>
+    <string name="yarn_usage_delete_title">Verbruiksregistratie verwijderen?</string>
+    <string name="yarn_usage_delete_body">Alleen de verbruiksregistratie voor %1$s wordt verwijderd. De garenkaart, de garennotitie van het project en andere projectgegevens blijven behouden.</string>
+    <string name="yarn_usage_invalid_amount">Voer een geldige hoeveelheid in.</string>
+    <string name="yarn_usage_nonnegative">De hoeveelheid mag niet negatief zijn.</string>
+    <string name="yarn_usage_positive">Voer een waarde groter dan nul in.</string>
+    <string name="yarn_usage_save_failed">Het verbruik kon niet worden opgeslagen. Je invoer blijft behouden. Probeer het opnieuw.</string>
+    <string name="yarn_usage_delete_failed">De verbruiksregistratie kon niet worden verwijderd. Probeer het opnieuw.</string>
+    <string name="yarn_usage_exists">Er bestaat al een verbruiksregistratie voor dit garen. Sluit de editor en open de opgeslagen registratie.</string>
+    <string name="yarn_usage_stale">Het project, de garenbron of de registratie is gewijzigd. Sluit de editor en open deze opnieuw.</string>
+    <string name="yarn_usage_track">Verbruik bijhouden</string>
+    <string name="yarn_usage_edit">Verbruik bewerken</string>
+    <string name="yarn_usage_track_named">Verbruik van %1$s bijhouden</string>
+    <string name="yarn_usage_edit_named">Verbruik van %1$s bewerken</string>
+    <string name="yarn_usage_unlinked">Bron niet meer gekoppeld aan dit project</string>
+    <string name="yarn_usage_unavailable">Garenbron niet beschikbaar</string>
+    <plurals name="yarn_usage_skeins_format">
+        <item quantity="one">%1$s streng</item>
+        <item quantity="other">%1$s strengen</item>
+    </plurals>
 </resources>

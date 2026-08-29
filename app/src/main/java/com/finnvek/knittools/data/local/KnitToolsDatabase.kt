@@ -24,8 +24,9 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         ProjectDocumentEntity::class,
         ProjectFolderEntity::class,
         ProjectFolderAssignmentEntity::class,
+        ProjectYarnUsageEntity::class,
     ],
-    version = 23,
+    version = 24,
     exportSchema = true,
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
@@ -58,6 +59,8 @@ abstract class KnitToolsDatabase : RoomDatabase() {
     abstract fun projectDocumentDao(): ProjectDocumentDao
 
     abstract fun projectFolderDao(): ProjectFolderDao
+
+    abstract fun projectYarnUsageDao(): ProjectYarnUsageDao
 
     companion object {
         val MIGRATION_3_4 =
@@ -714,6 +717,8 @@ abstract class KnitToolsDatabase : RoomDatabase() {
 
         val MIGRATION_22_23: Migration = ProjectFolderMigration23.migration
 
+        val MIGRATION_23_24: Migration = ProjectYarnUsageMigration24.migration
+
         val ALL_MANUAL_MIGRATIONS: Array<Migration>
             get() =
                 arrayOf(
@@ -737,6 +742,7 @@ abstract class KnitToolsDatabase : RoomDatabase() {
                     MIGRATION_20_21,
                     MIGRATION_21_22,
                     MIGRATION_22_23,
+                    MIGRATION_23_24,
                 )
     }
 }

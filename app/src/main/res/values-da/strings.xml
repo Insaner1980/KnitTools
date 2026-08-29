@@ -942,4 +942,46 @@
         <item quantity="one">%1$d pind</item>
         <item quantity="other">%1$d pinde</item>
     </plurals>
+    <string name="yarn_usage_title">Garnforbrug</string>
+    <string name="yarn_usage_scope">Registrerer kun garn, der er afsat til dette projekt. Mængderne i Mit garn ændres ikke.</string>
+    <string name="yarn_usage_unit">Mængdeenhed</string>
+    <string name="yarn_usage_grams">Gram</string>
+    <string name="yarn_usage_skeins">Fed</string>
+    <string name="yarn_usage_planned">Planlagt</string>
+    <string name="yarn_usage_allocated">Afsat til dette projekt</string>
+    <string name="yarn_usage_used">Brugt</string>
+    <string name="yarn_usage_length">Længde pr. fed</string>
+    <string name="yarn_usage_weight">Vægt pr. fed</string>
+    <string name="yarn_usage_add_conversion">Tilføj omregning for fed</string>
+    <string name="yarn_usage_remove_conversion">Fjern omregning for fed</string>
+    <string name="yarn_usage_conversion_required">Angiv både længde og vægt pr. fed som positive værdier for at bruge gram eller fed.</string>
+    <string name="yarn_usage_fix_before_switch">Ret mængdefelterne, før du skifter enhed.</string>
+    <string name="yarn_usage_remaining_unknown">Resterende mængde ukendt</string>
+    <string name="yarn_usage_remaining_format">Tilbage: %1$s</string>
+    <string name="yarn_usage_over_format">Overskredet med: %1$s</string>
+    <string name="yarn_usage_used_format">Brugt: %1$s</string>
+    <string name="yarn_usage_meters_format">%1$s m</string>
+    <string name="yarn_usage_yards_format">%1$s yd</string>
+    <string name="yarn_usage_grams_format">%1$s g</string>
+    <string name="yarn_usage_delete">Slet forbrugsregistrering</string>
+    <string name="yarn_usage_delete_named">Slet forbrugsregistrering for %1$s</string>
+    <string name="yarn_usage_delete_title">Slet forbrugsregistrering?</string>
+    <string name="yarn_usage_delete_body">Kun forbrugsregistreringen for %1$s fjernes. Garnkortet, projektets garnnote og øvrige projektdata bevares.</string>
+    <string name="yarn_usage_invalid_amount">Angiv en gyldig mængde.</string>
+    <string name="yarn_usage_nonnegative">Mængden kan ikke være negativ.</string>
+    <string name="yarn_usage_positive">Angiv en værdi større end nul.</string>
+    <string name="yarn_usage_save_failed">Forbruget kunne ikke gemmes. Dine indtastninger er bevaret. Prøv igen.</string>
+    <string name="yarn_usage_delete_failed">Forbrugsregistreringen kunne ikke slettes. Prøv igen.</string>
+    <string name="yarn_usage_exists">Der findes allerede en forbrugsregistrering for dette garn. Luk editoren, og åbn den gemte registrering.</string>
+    <string name="yarn_usage_stale">Projektet, garnkilden eller registreringen er ændret. Luk editoren, og åbn den igen.</string>
+    <string name="yarn_usage_track">Registrer forbrug</string>
+    <string name="yarn_usage_edit">Rediger forbrug</string>
+    <string name="yarn_usage_track_named">Registrer forbrug af %1$s</string>
+    <string name="yarn_usage_edit_named">Rediger forbrug af %1$s</string>
+    <string name="yarn_usage_unlinked">Kilden er ikke længere knyttet til dette projekt</string>
+    <string name="yarn_usage_unavailable">Garnkilden er ikke tilgængelig</string>
+    <plurals name="yarn_usage_skeins_format">
+        <item quantity="one">%1$s fed</item>
+        <item quantity="other">%1$s fed</item>
+    </plurals>
 </resources>

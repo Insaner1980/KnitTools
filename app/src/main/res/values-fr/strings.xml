@@ -961,4 +961,47 @@
         <item quantity="many">%1$d rangs</item>
         <item quantity="other">%1$d rangs</item>
     </plurals>
+    <string name="yarn_usage_title">Utilisation du fil</string>
+    <string name="yarn_usage_scope">Suit uniquement le fil réservé à ce projet. Les quantités dans Mes fils restent inchangées.</string>
+    <string name="yarn_usage_unit">Unité de quantité</string>
+    <string name="yarn_usage_grams">Grammes</string>
+    <string name="yarn_usage_skeins">Écheveaux</string>
+    <string name="yarn_usage_planned">Prévu</string>
+    <string name="yarn_usage_allocated">Réservé à ce projet</string>
+    <string name="yarn_usage_used">Utilisé</string>
+    <string name="yarn_usage_length">Longueur par écheveau</string>
+    <string name="yarn_usage_weight">Poids par écheveau</string>
+    <string name="yarn_usage_add_conversion">Ajouter une conversion par écheveau</string>
+    <string name="yarn_usage_remove_conversion">Supprimer la conversion par écheveau</string>
+    <string name="yarn_usage_conversion_required">Saisissez une longueur et un poids positifs par écheveau pour utiliser les grammes ou les écheveaux.</string>
+    <string name="yarn_usage_fix_before_switch">Corrigez les quantités avant de changer d’unité.</string>
+    <string name="yarn_usage_remaining_unknown">Quantité restante inconnue</string>
+    <string name="yarn_usage_remaining_format">Restant : %1$s</string>
+    <string name="yarn_usage_over_format">Dépassement : %1$s</string>
+    <string name="yarn_usage_used_format">Utilisé : %1$s</string>
+    <string name="yarn_usage_meters_format">%1$s m</string>
+    <string name="yarn_usage_yards_format">%1$s yd</string>
+    <string name="yarn_usage_grams_format">%1$s g</string>
+    <string name="yarn_usage_delete">Supprimer le suivi</string>
+    <string name="yarn_usage_delete_named">Supprimer le suivi de %1$s</string>
+    <string name="yarn_usage_delete_title">Supprimer le suivi ?</string>
+    <string name="yarn_usage_delete_body">Seul le suivi d’utilisation de %1$s sera supprimé. La fiche de fil, la note de fil du projet et les autres données du projet seront conservées.</string>
+    <string name="yarn_usage_invalid_amount">Saisissez une quantité valide.</string>
+    <string name="yarn_usage_nonnegative">La quantité ne peut pas être négative.</string>
+    <string name="yarn_usage_positive">Saisissez une valeur supérieure à zéro.</string>
+    <string name="yarn_usage_save_failed">Impossible d’enregistrer l’utilisation. Vos saisies sont conservées. Réessayez.</string>
+    <string name="yarn_usage_delete_failed">Impossible de supprimer le suivi. Réessayez.</string>
+    <string name="yarn_usage_exists">Un suivi existe déjà pour ce fil. Fermez l’éditeur et ouvrez le suivi enregistré.</string>
+    <string name="yarn_usage_stale">Le projet, la source du fil ou le suivi a changé. Fermez l’éditeur, puis ouvrez-le à nouveau.</string>
+    <string name="yarn_usage_track">Suivre l’utilisation</string>
+    <string name="yarn_usage_edit">Modifier l’utilisation</string>
+    <string name="yarn_usage_track_named">Suivre l’utilisation de %1$s</string>
+    <string name="yarn_usage_edit_named">Modifier l’utilisation de %1$s</string>
+    <string name="yarn_usage_unlinked">Source non liée à ce projet</string>
+    <string name="yarn_usage_unavailable">Source du fil indisponible</string>
+    <plurals name="yarn_usage_skeins_format">
+        <item quantity="one">%1$s écheveau</item>
+        <item quantity="many">%1$s écheveaux</item>
+        <item quantity="other">%1$s écheveaux</item>
+    </plurals>
 </resources>

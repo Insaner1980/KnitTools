@@ -961,4 +961,47 @@
         <item quantity="many">%1$d carreiras</item>
         <item quantity="other">%1$d carreiras</item>
     </plurals>
+    <string name="yarn_usage_title">Utilização do fio</string>
+    <string name="yarn_usage_scope">Regista apenas o fio reservado para este projeto. As quantidades em Os meus fios não mudam.</string>
+    <string name="yarn_usage_unit">Unidade de quantidade</string>
+    <string name="yarn_usage_grams">Gramas</string>
+    <string name="yarn_usage_skeins">Meadas</string>
+    <string name="yarn_usage_planned">Planeado</string>
+    <string name="yarn_usage_allocated">Reservado para este projeto</string>
+    <string name="yarn_usage_used">Utilizado</string>
+    <string name="yarn_usage_length">Comprimento por meada</string>
+    <string name="yarn_usage_weight">Peso por meada</string>
+    <string name="yarn_usage_add_conversion">Adicionar conversão por meada</string>
+    <string name="yarn_usage_remove_conversion">Remover conversão por meada</string>
+    <string name="yarn_usage_conversion_required">Introduza um comprimento e um peso positivos por meada para usar gramas ou meadas.</string>
+    <string name="yarn_usage_fix_before_switch">Corrija as quantidades antes de mudar de unidade.</string>
+    <string name="yarn_usage_remaining_unknown">Quantidade restante desconhecida</string>
+    <string name="yarn_usage_remaining_format">Restante: %1$s</string>
+    <string name="yarn_usage_over_format">Excesso: %1$s</string>
+    <string name="yarn_usage_used_format">Utilizado: %1$s</string>
+    <string name="yarn_usage_meters_format">%1$s m</string>
+    <string name="yarn_usage_yards_format">%1$s yd</string>
+    <string name="yarn_usage_grams_format">%1$s g</string>
+    <string name="yarn_usage_delete">Eliminar acompanhamento</string>
+    <string name="yarn_usage_delete_named">Eliminar acompanhamento de %1$s</string>
+    <string name="yarn_usage_delete_title">Eliminar acompanhamento?</string>
+    <string name="yarn_usage_delete_body">Apenas o acompanhamento da utilização de %1$s será eliminado. A ficha do fio, a nota de fio do projeto e os restantes dados do projeto serão mantidos.</string>
+    <string name="yarn_usage_invalid_amount">Introduza uma quantidade válida.</string>
+    <string name="yarn_usage_nonnegative">A quantidade não pode ser negativa.</string>
+    <string name="yarn_usage_positive">Introduza um valor superior a zero.</string>
+    <string name="yarn_usage_save_failed">Não foi possível guardar a utilização. Os seus dados foram mantidos. Tente novamente.</string>
+    <string name="yarn_usage_delete_failed">Não foi possível eliminar o acompanhamento. Tente novamente.</string>
+    <string name="yarn_usage_exists">Já existe um acompanhamento para este fio. Feche o editor e abra o acompanhamento guardado.</string>
+    <string name="yarn_usage_stale">O projeto, a origem do fio ou o acompanhamento mudou. Feche o editor e abra-o novamente.</string>
+    <string name="yarn_usage_track">Registar utilização</string>
+    <string name="yarn_usage_edit">Editar utilização</string>
+    <string name="yarn_usage_track_named">Registar utilização de %1$s</string>
+    <string name="yarn_usage_edit_named">Editar utilização de %1$s</string>
+    <string name="yarn_usage_unlinked">A origem já não está ligada a este projeto</string>
+    <string name="yarn_usage_unavailable">Origem do fio indisponível</string>
+    <plurals name="yarn_usage_skeins_format">
+        <item quantity="one">%1$s meada</item>
+        <item quantity="many">%1$s meadas</item>
+        <item quantity="other">%1$s meadas</item>
+    </plurals>
 </resources>

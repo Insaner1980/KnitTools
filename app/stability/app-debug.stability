@@ -1269,7 +1269,7 @@ private fun com.finnvek.knittools.ui.screens.counter.ProjectYarnNoteRow(note: co
     - onSaveProjectYarnNoteToMyYarn: STABLE (function type)
 
 @Composable
-private fun com.finnvek.knittools.ui.screens.counter.ProjectYarnNotesSection(notes: kotlin.collections.List<com.finnvek.knittools.domain.model.ProjectYarnNote>, proStatus: com.finnvek.knittools.pro.ProStatus, onDeleteProjectYarnNote: kotlin.Function1<kotlin.Long, kotlin.Unit>, onSaveProjectYarnNoteToMyYarn: kotlin.Function1<kotlin.Long, kotlin.Unit>): kotlin.Unit
+private fun com.finnvek.knittools.ui.screens.counter.ProjectYarnNotesSection(notes: kotlin.collections.List<com.finnvek.knittools.domain.model.ProjectYarnNote>, proStatus: com.finnvek.knittools.pro.ProStatus, onDeleteProjectYarnNote: kotlin.Function1<kotlin.Long, kotlin.Unit>, onSaveProjectYarnNoteToMyYarn: kotlin.Function1<kotlin.Long, kotlin.Unit>, usageItems: kotlin.collections.List<com.finnvek.knittools.domain.model.ProjectYarnUsageItem>, onUsage: kotlin.Function1<com.finnvek.knittools.ui.screens.counter.YarnUsageOpenRequest, kotlin.Unit>, focusKey: kotlin.String?): kotlin.Unit
   skippable: false
   restartable: true
   params:
@@ -1277,6 +1277,31 @@ private fun com.finnvek.knittools.ui.screens.counter.ProjectYarnNotesSection(not
     - proStatus: STABLE (class with no mutable properties)
     - onDeleteProjectYarnNote: STABLE (function type)
     - onSaveProjectYarnNoteToMyYarn: STABLE (function type)
+    - usageItems: RUNTIME (requires runtime check)
+    - onUsage: STABLE (function type)
+    - focusKey: STABLE (class with no mutable properties)
+
+@Composable
+public fun com.finnvek.knittools.ui.screens.counter.ProjectYarnUsageFlow(projectId: kotlin.Long, linkedYarns: kotlin.collections.List<kotlin.Pair<kotlin.Long, kotlin.String>>, projectYarnNotes: kotlin.collections.List<com.finnvek.knittools.domain.model.ProjectYarnNote>, proStatus: com.finnvek.knittools.pro.ProStatus, actions: com.finnvek.knittools.ui.screens.counter.YarnManagementSheetActions, viewModelProvider: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<com.finnvek.knittools.ui.screens.counter.ProjectYarnUsageViewModel>): kotlin.Unit
+  skippable: false
+  restartable: true
+  params:
+    - projectId: STABLE (primitive type)
+    - linkedYarns: RUNTIME (requires runtime check)
+    - projectYarnNotes: RUNTIME (requires runtime check)
+    - proStatus: STABLE (class with no mutable properties)
+    - actions: STABLE (class with no mutable properties)
+    - viewModelProvider: STABLE (composable function type)
+
+@Composable
+public fun com.finnvek.knittools.ui.screens.counter.ProjectYarnUsageSheet(state: com.finnvek.knittools.ui.screens.counter.YarnUsageEditorState, sheetState: androidx.compose.material3.SheetState, actions: com.finnvek.knittools.ui.screens.counter.YarnUsageEditorActions, initiallyConfirmDelete: kotlin.Boolean): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - state: STABLE (class with no mutable properties)
+    - sheetState: STABLE (marked @Stable or @Immutable)
+    - actions: STABLE (class with no mutable properties)
+    - initiallyConfirmDelete: STABLE (primitive type)
 
 @Composable
 public fun com.finnvek.knittools.ui.screens.counter.ReminderAlertCard(reminder: com.finnvek.knittools.domain.model.RowReminder, currentRow: kotlin.Int, onDismiss: kotlin.Function1<kotlin.Long, kotlin.Unit>, modifier: androidx.compose.ui.Modifier): kotlin.Unit
@@ -1503,6 +1528,22 @@ private fun com.finnvek.knittools.ui.screens.counter.TriggerAlertHaptic(alertId:
     - performHaptic: STABLE (function type)
 
 @Composable
+private fun com.finnvek.knittools.ui.screens.counter.UsageDerivedSummary(draft: com.finnvek.knittools.ui.screens.counter.YarnUsageDraft): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - draft: STABLE (class with no mutable properties)
+
+@Composable
+private fun com.finnvek.knittools.ui.screens.counter.UsageField(draft: com.finnvek.knittools.ui.screens.counter.YarnUsageDraft, field: com.finnvek.knittools.ui.screens.counter.YarnUsageField, onEdit: kotlin.Function3<com.finnvek.knittools.ui.screens.counter.YarnUsageField, kotlin.String, java.util.Locale, kotlin.Unit>): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - draft: STABLE (class with no mutable properties)
+    - field: STABLE (class with no mutable properties)
+    - onEdit: STABLE (function type)
+
+@Composable
 internal fun com.finnvek.knittools.ui.screens.counter.WorkSessionErrorDialog(message: kotlin.String, canRetry: kotlin.Boolean, onRetry: kotlin.Function0<kotlin.Unit>, onDismiss: kotlin.Function0<kotlin.Unit>): kotlin.Unit
   skippable: true
   restartable: true
@@ -1541,7 +1582,7 @@ private fun com.finnvek.knittools.ui.screens.counter.WorkspaceSectionTitle(title
     - proStatus: STABLE (class with no mutable properties)
 
 @Composable
-public fun com.finnvek.knittools.ui.screens.counter.YarnManagementSheet(linkedYarns: kotlin.collections.List<kotlin.Pair<kotlin.Long, kotlin.String>>, projectYarnNotes: kotlin.collections.List<com.finnvek.knittools.domain.model.ProjectYarnNote>, proStatus: com.finnvek.knittools.pro.ProStatus, actions: com.finnvek.knittools.ui.screens.counter.YarnManagementSheetActions): kotlin.Unit
+public fun com.finnvek.knittools.ui.screens.counter.YarnManagementSheet(linkedYarns: kotlin.collections.List<kotlin.Pair<kotlin.Long, kotlin.String>>, projectYarnNotes: kotlin.collections.List<com.finnvek.knittools.domain.model.ProjectYarnNote>, proStatus: com.finnvek.knittools.pro.ProStatus, actions: com.finnvek.knittools.ui.screens.counter.YarnManagementSheetActions, usageItems: kotlin.collections.List<com.finnvek.knittools.domain.model.ProjectYarnUsageItem>, onUsage: kotlin.Function1<com.finnvek.knittools.ui.screens.counter.YarnUsageOpenRequest, kotlin.Unit>, focusKey: kotlin.String?, sheetState: androidx.compose.material3.SheetState): kotlin.Unit
   skippable: false
   restartable: true
   params:
@@ -1549,6 +1590,10 @@ public fun com.finnvek.knittools.ui.screens.counter.YarnManagementSheet(linkedYa
     - projectYarnNotes: RUNTIME (requires runtime check)
     - proStatus: STABLE (class with no mutable properties)
     - actions: STABLE (class with no mutable properties)
+    - usageItems: RUNTIME (requires runtime check)
+    - onUsage: STABLE (function type)
+    - focusKey: STABLE (class with no mutable properties)
+    - sheetState: STABLE (marked @Stable or @Immutable)
 
 @Composable
 private fun com.finnvek.knittools.ui.screens.counter.YarnOptionCard(titleRes: kotlin.Int, bodyRes: kotlin.Int, onClick: kotlin.Function0<kotlin.Unit>): kotlin.Unit
@@ -1575,6 +1620,15 @@ private fun com.finnvek.knittools.ui.screens.counter.YarnPickerSheet(savedYarnCa
     - savedYarnCards: RUNTIME (requires runtime check)
     - onSelect: STABLE (function type)
     - onDismiss: STABLE (function type)
+
+@Composable
+internal fun com.finnvek.knittools.ui.screens.counter.YarnUsageRow(item: com.finnvek.knittools.domain.model.ProjectYarnUsageItem, onUsage: kotlin.Function1<com.finnvek.knittools.ui.screens.counter.YarnUsageOpenRequest, kotlin.Unit>, requestFocus: kotlin.Boolean): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - item: STABLE (class with no mutable properties)
+    - onUsage: STABLE (function type)
+    - requestFocus: STABLE (primitive type)
 
 @Composable
 private fun com.finnvek.knittools.ui.screens.counter.accentColor(): androidx.compose.ui.graphics.Color
@@ -1654,6 +1708,23 @@ private fun com.finnvek.knittools.ui.screens.counter.summaryText(): kotlin.Strin
   skippable: false
   restartable: false
   params:
+
+@Composable
+internal fun com.finnvek.knittools.ui.screens.counter.yarnUsageAmount(meters: kotlin.Double, unit: com.finnvek.knittools.domain.model.YarnUsageUnit, amounts: com.finnvek.knittools.domain.model.YarnUsageAmounts): kotlin.String?
+  skippable: false
+  restartable: false
+  params:
+    - meters: STABLE (primitive type)
+    - unit: STABLE (class with no mutable properties)
+    - amounts: STABLE (class with no mutable properties)
+
+@Composable
+internal fun com.finnvek.knittools.ui.screens.counter.yarnUsageRemaining(amounts: com.finnvek.knittools.domain.model.YarnUsageAmounts, unit: com.finnvek.knittools.domain.model.YarnUsageUnit): kotlin.String
+  skippable: false
+  restartable: false
+  params:
+    - amounts: STABLE (class with no mutable properties)
+    - unit: STABLE (class with no mutable properties)
 
 @Composable
 private fun com.finnvek.knittools.ui.screens.gauge.ActualGaugeFields(state: com.finnvek.knittools.ui.screens.gauge.GaugeUiState, onAction: kotlin.Function1<com.finnvek.knittools.ui.screens.gauge.GaugeAction, kotlin.Unit>, axis: com.finnvek.knittools.ui.screens.gauge.GaugeAxis?): kotlin.Unit

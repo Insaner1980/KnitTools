@@ -77,7 +77,7 @@ class PatternPickerSourceTest {
 
         assertTrue(picker.contains("ActivityResultContracts.PickMultipleVisualMedia"))
         assertTrue(picker.contains("ActivityResultContracts.PickVisualMedia.ImageOnly"))
-        assertTrue(database.contains("version = 23"))
+        assertTrue(database.contains("version = 24"))
         assertFalse(manifest.contains("READ_EXTERNAL_STORAGE"))
         assertFalse(manifest.contains("WRITE_EXTERNAL_STORAGE"))
         assertFalse(manifest.contains("MANAGE_EXTERNAL_STORAGE"))

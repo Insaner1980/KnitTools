@@ -44,6 +44,7 @@ import com.finnvek.knittools.ui.components.rememberCurrentLocale
 import com.finnvek.knittools.ui.screens.home.HomeViewModel
 
 @Composable
+@Suppress("kotlin:S3776") // Laskurin syötteet ja tulos pidetään yhdessä pienessä työkalunäkymässä.
 fun CastOnScreen(
     onBack: () -> Unit,
     homeViewModel: HomeViewModel = hiltViewModel(),

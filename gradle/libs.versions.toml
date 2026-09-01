@@ -23,7 +23,7 @@ androidxTestEspresso = "3.7.0"
 kotlinxSerialization = "1.11.0"
 guava = "33.7.1-android"
 
-dependencyAnalysis = "3.17.0"
+dependencyAnalysis = "3.19.1"
 ktlintGradle = "14.2.0"
 detekt = "2.0.0-alpha.5"
 owaspDependencyCheck = "13.0.0"

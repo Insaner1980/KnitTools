@@ -516,6 +516,11 @@ internal class FakeSavedPatternDao(
     override suspend fun getByCanonicalUrl(canonicalUrl: String): SavedPatternEntity? =
         savedPatterns.firstOrNull { it.canonicalUrl == canonicalUrl }
 
+    override suspend fun getByCanonicalUrlExcludingId(
+        canonicalUrl: String,
+        excludedId: Long,
+    ): SavedPatternEntity? = savedPatterns.firstOrNull { it.canonicalUrl == canonicalUrl && it.id != excludedId }
+
     override suspend fun getByOriginalUrl(originalUrl: String): SavedPatternEntity? =
         savedPatterns.firstOrNull { it.originalUrl == originalUrl }
 
@@ -544,6 +549,8 @@ internal class FakeSavedPatternDao(
         lastInserted = pattern
         return 99L
     }
+
+    override suspend fun update(pattern: SavedPatternEntity) = Unit
 
     override suspend fun deleteById(id: Long) {
         deletedIds = listOf(id)

@@ -134,6 +134,33 @@ sealed class Screen(
         }
     }
 
+    data object WebPatternEditor : Screen("web_pattern_editor") {
+        const val ARG_ORIGIN = "origin"
+        const val ARG_PROJECT_ID = "projectId"
+        const val ARG_PATTERN_ID = "patternId"
+        const val ROUTE =
+            "web_pattern_editor?origin={$ARG_ORIGIN}&projectId={$ARG_PROJECT_ID}&patternId={$ARG_PATTERN_ID}"
+
+        fun createRoute(
+            origin: WebPatternEditorOrigin,
+            projectId: Long? = null,
+            patternId: Long? = null,
+        ): String =
+            buildString {
+                append(route)
+                append("?origin=")
+                append(origin.persistedValue)
+                projectId?.takeIf { it > 0L }?.let {
+                    append("&projectId=")
+                    append(it)
+                }
+                patternId?.takeIf { it > 0L }?.let {
+                    append("&patternId=")
+                    append(it)
+                }
+            }
+    }
+
     data class LibraryPatternViewer(
         val savedPatternId: Long,
     ) : Screen("library_pattern_viewer/$savedPatternId") {
@@ -148,6 +175,54 @@ sealed class Screen(
 
     // Insights-tab
     data object Insights : Screen("insights")
+}
+
+enum class WebPatternEditorOrigin(
+    val persistedValue: String,
+) {
+    Manual("manual"),
+    Project("project"),
+    Share("share"),
+    Edit("edit"),
+    ;
+
+    companion object {
+        fun fromPersistedValue(value: String?): WebPatternEditorOrigin? =
+            entries.firstOrNull { it.persistedValue == value }
+    }
+}
+
+data class WebPatternEditorRoute(
+    val origin: WebPatternEditorOrigin,
+    val projectId: Long? = null,
+    val patternId: Long? = null,
+) {
+    companion object {
+        fun from(
+            originValue: String?,
+            projectId: Long?,
+            patternId: Long?,
+        ): WebPatternEditorRoute? {
+            val origin = WebPatternEditorOrigin.fromPersistedValue(originValue) ?: return null
+            val positiveProjectId = projectId?.takeIf { it > 0L }
+            val positivePatternId = patternId?.takeIf { it > 0L }
+            return when (origin) {
+                WebPatternEditorOrigin.Manual,
+                WebPatternEditorOrigin.Share,
+                -> if (positiveProjectId == null && positivePatternId == null) WebPatternEditorRoute(origin) else null
+
+                WebPatternEditorOrigin.Project ->
+                    positiveProjectId
+                        ?.takeIf { positivePatternId == null }
+                        ?.let { WebPatternEditorRoute(origin, projectId = it) }
+
+                WebPatternEditorOrigin.Edit ->
+                    positivePatternId
+                        ?.takeIf { positiveProjectId == null }
+                        ?.let { WebPatternEditorRoute(origin, patternId = it) }
+            }
+        }
+    }
 }
 
 enum class TopLevelDestination(

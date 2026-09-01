@@ -343,6 +343,7 @@ private fun ProjectListItemTargetStatus(text: String) {
 }
 
 @Composable
+@Suppress("kotlin:S107") // Footer välittää toisistaan riippumattomat projektin tilailmaisimet eksplisiittisesti.
 private fun ProjectListItemFooter(
     yarnName: String?,
     onYarnClick: (() -> Unit)?,

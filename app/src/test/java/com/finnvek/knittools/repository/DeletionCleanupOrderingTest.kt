@@ -111,6 +111,7 @@ class DeletionCleanupOrderingTest {
             assertCleanupFailureIsBestEffort(ProjectCleanupFailure.PATTERN_PDF)
         }
 
+    // CPD-OFF: Yksittaisen kuvan poistofixture pidetaan skenaarion yhteydessa.
     @Test
     fun `individual photo deletion uses stored ownership and database first ordering`() =
         runTest {
@@ -127,6 +128,8 @@ class DeletionCleanupOrderingTest {
 
             assertEquals(listOf("delete-row", "delete-file"), events)
         }
+
+    // CPD-ON
 
     @Test
     fun `individual photo database failure retains physical file`() =

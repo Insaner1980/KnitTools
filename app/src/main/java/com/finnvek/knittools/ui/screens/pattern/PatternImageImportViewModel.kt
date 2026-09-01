@@ -59,6 +59,7 @@ internal class PatternImageImportViewModel
             return _uiState.value.sessionId.orEmpty()
         }
 
+        @Suppress("kotlin:S6313") // Activity tarvitsee FileProvider-kohteen ennen kamerasopimusta.
         suspend fun createCameraCaptureTarget(projectId: Long): Pair<File, Uri>? {
             val state = _uiState.value
             if (state.projectId != projectId || state.origin != PatternImageImportOrigin.CAMERA) return null
@@ -91,6 +92,7 @@ internal class PatternImageImportViewModel
                 viewModelScope.launch {
                     _uiState.update { it.copy(phase = PatternImageImportPhase.STAGING, error = null) }
                     try {
+                        @Suppress("kotlin:S6311") // Tiedostoputki kuuluu projektin injektoidulle IO-dispatcherille.
                         val batch =
                             withContext(ioDispatcher) {
                                 storage.stageSelectedImages(
@@ -335,18 +337,7 @@ internal class PatternImageImportViewModel
         private suspend fun completeSuccessfulImport(
             projectId: Long,
             sessionId: String,
-        ) = withContext(NonCancellable) {
-            withContext(ioDispatcher) { storage.deleteImportSession(context, projectId, sessionId) }
-            clearSavedState()
-            _uiState.update {
-                it.copy(
-                    selection = PatternImageSelection(),
-                    phase = PatternImageImportPhase.SUCCESS,
-                    progress = null,
-                    closeReady = true,
-                )
-            }
-        }
+        ) = finishImport(projectId, sessionId, PatternImageImportPhase.SUCCESS)
 
         private suspend fun deleteGeneratedPdf(uri: String?) {
             uri ?: return
@@ -356,13 +347,19 @@ internal class PatternImageImportViewModel
         private suspend fun finishCancelled(
             projectId: Long,
             sessionId: String,
+        ) = finishImport(projectId, sessionId, PatternImageImportPhase.CANCELLED)
+
+        private suspend fun finishImport(
+            projectId: Long,
+            sessionId: String,
+            phase: PatternImageImportPhase,
         ) = withContext(NonCancellable) {
             withContext(ioDispatcher) { storage.deleteImportSession(context, projectId, sessionId) }
             clearSavedState()
             _uiState.update {
                 it.copy(
                     selection = PatternImageSelection(),
-                    phase = PatternImageImportPhase.CANCELLED,
+                    phase = phase,
                     progress = null,
                     closeReady = true,
                 )

@@ -155,6 +155,7 @@ private fun ProBenefitGroup(
 }
 
 @Composable
+@Suppress("kotlin:S107", "kotlin:S3776") // Osto-osio näyttää kaikki laskutuksen tilat ja niiden sallitut toiminnot.
 private fun ProPurchaseSection(
     proState: ProState,
     price: String?,

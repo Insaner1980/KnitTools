@@ -27,6 +27,7 @@ import com.finnvek.knittools.domain.model.YarnUsageSourceStatus
 import com.finnvek.knittools.domain.model.YarnUsageUnit
 
 @Composable
+@Suppress("kotlin:S3776") // Käyttörivi näyttää null- ja yksikkökohtaiset arvot ilman erillistä välitilamallia.
 internal fun YarnUsageRow(
     item: ProjectYarnUsageItem,
     onUsage: (YarnUsageOpenRequest) -> Unit,

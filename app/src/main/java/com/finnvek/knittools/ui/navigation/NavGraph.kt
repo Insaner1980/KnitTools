@@ -35,6 +35,7 @@ import androidx.navigation.navArgument
 import androidx.navigation.navigation
 import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.SavedPattern
+import com.finnvek.knittools.domain.model.isWebPatternCompatible
 import com.finnvek.knittools.ui.components.CollectWithLifecycleEffect
 import com.finnvek.knittools.ui.components.ProPromptRequest
 import com.finnvek.knittools.ui.components.ProPromptSheet
@@ -64,6 +65,7 @@ import com.finnvek.knittools.ui.screens.library.SavedPatternDetailScreen
 import com.finnvek.knittools.ui.screens.library.SavedPatternsActions
 import com.finnvek.knittools.ui.screens.library.SavedPatternsScreen
 import com.finnvek.knittools.ui.screens.library.SavedPatternsState
+import com.finnvek.knittools.ui.screens.library.WebPatternEditorScreen
 import com.finnvek.knittools.ui.screens.needles.NeedleSizeScreen
 import com.finnvek.knittools.ui.screens.notes.NotesEditorScreen
 import com.finnvek.knittools.ui.screens.pattern.LibraryPatternViewerScreen
@@ -91,6 +93,7 @@ private val HIDE_BOTTOM_BAR_ROUTES =
         Screen.PatternViewer.ROUTE,
         Screen.LibraryPatternViewer.ROUTE,
         Screen.NotesEditor.ROUTE,
+        Screen.WebPatternEditor.ROUTE,
     )
 
 private const val ARG_PROJECT_ID = "projectId"
@@ -105,14 +108,14 @@ data class KnitToolsNavActions(
     val onCounterLaunchHandled: () -> Unit = {},
     val onProUpgradeLaunchHandled: () -> Unit = {},
     val onWidgetProPromptLaunchHandled: () -> Unit = {},
-    val onRavelryShareImportHandled: () -> Unit = {},
+    val onPatternShareImportHandled: (Long) -> Unit = {},
 )
 
 data class KnitToolsNavRequests(
     val counterLaunch: CounterLaunchRequest? = null,
     val openProUpgrade: Boolean = false,
     val openWidgetProPrompt: Boolean = false,
-    val ravelryShareImport: RavelryShareImportRequest? = null,
+    val patternShareImport: PatternShareImportRequest? = null,
 )
 
 @Composable
@@ -151,11 +154,25 @@ fun KnitToolsNavHost(
         actions.onWidgetProPromptLaunchHandled()
     }
 
-    LaunchedEffect(requests.ravelryShareImport?.requestId) {
-        val request = requests.ravelryShareImport ?: return@LaunchedEffect
-        navController.navigateToTopLevel(TopLevelDestination.Tools)
-        navController.navigateSingleTopTo(Screen.RavelryImport(request.url).route)
-        actions.onRavelryShareImportHandled()
+    LaunchedEffect(requests.patternShareImport?.requestId) {
+        val request = requests.patternShareImport ?: return@LaunchedEffect
+        when (val payload = request.payload) {
+            is PatternSharePayload.Ravelry -> {
+                navController.navigateToTopLevel(TopLevelDestination.Tools)
+                navController.navigateSingleTopTo(Screen.RavelryImport(payload.url).route)
+                actions.onPatternShareImportHandled(request.requestId)
+            }
+
+            is PatternSharePayload.WebLink,
+            is PatternSharePayload.Error,
+            -> {
+                if (currentRoute != Screen.WebPatternEditor.ROUTE) {
+                    navController.navigateSingleTopTo(
+                        Screen.WebPatternEditor.createRoute(WebPatternEditorOrigin.Share),
+                    )
+                }
+            }
+        }
     }
 
     Scaffold(
@@ -220,6 +237,43 @@ fun KnitToolsNavHost(
                 ProUpgradeScreen(
                     onBack = { navController.popBackStack() },
                     onPurchase = actions.onPurchasePro,
+                )
+            }
+            composable(
+                route = Screen.WebPatternEditor.ROUTE,
+                arguments =
+                    listOf(
+                        navArgument(Screen.WebPatternEditor.ARG_ORIGIN) {
+                            type = NavType.StringType
+                            defaultValue = WebPatternEditorOrigin.Manual.persistedValue
+                        },
+                        navArgument(Screen.WebPatternEditor.ARG_PROJECT_ID) {
+                            type = NavType.LongType
+                            defaultValue = -1L
+                        },
+                        navArgument(Screen.WebPatternEditor.ARG_PATTERN_ID) {
+                            type = NavType.LongType
+                            defaultValue = -1L
+                        },
+                    ),
+            ) {
+                WebPatternEditorScreen(
+                    request = requests.patternShareImport,
+                    onRequestStored = actions.onPatternShareImportHandled,
+                    onBack = { navController.popBackStack() },
+                    onOpenDetail = { savedPatternId ->
+                        navController.navigateToTopLevel(TopLevelDestination.Library)
+                        navController.navigateSingleTopTo(Screen.SavedPatternDetail(savedPatternId).route)
+                    },
+                    onOpenProject = { projectId ->
+                        internalCounterLaunch = CounterLaunchRequest(projectId = projectId)
+                        navController.navigateToTopLevel(TopLevelDestination.Projects)
+                        navController.navigateSingleTopTo(Screen.Counter.route)
+                    },
+                    onOpenRavelry = { url ->
+                        navController.navigateToTopLevel(TopLevelDestination.Tools)
+                        navController.navigateSingleTopTo(Screen.RavelryImport(url).route)
+                    },
                 )
             }
         }
@@ -320,10 +374,20 @@ private fun NavGraphBuilder.projectsGraph(
                             navController.navigateSingleTopTo(Screen.PatternViewer(projectId, documentId).route)
                         },
                         onSavedPatternDetail = { savedPatternId ->
-                            navController.navigateToTopLevel(TopLevelDestination.Library)
-                            navController.navigateSingleTopTo(Screen.SavedPatternDetail(savedPatternId).route)
+                            navController.openSavedPatternDetail(savedPatternId)
+                        },
+                        onEditWebPattern = { savedPatternId ->
+                            navController.editWebPattern(savedPatternId)
                         },
                         onImportFromRavelry = onImportFromRavelry,
+                        onAddWebPattern = { projectId ->
+                            navController.navigateSingleTopTo(
+                                Screen.WebPatternEditor.createRoute(
+                                    origin = WebPatternEditorOrigin.Project,
+                                    projectId = projectId,
+                                ),
+                            )
+                        },
                         onNotesEditor = { projectId ->
                             navController.navigateSingleTopTo(Screen.NotesEditor(projectId).route)
                         },
@@ -411,8 +475,10 @@ private fun NavGraphBuilder.projectsGraph(
                 onImportFromRavelry = onImportFromRavelry,
                 onSeePro = { navController.navigateSingleTopTo(Screen.ProUpgrade.route) },
                 onSavedPatternDetail = { savedPatternId ->
-                    navController.navigateToTopLevel(TopLevelDestination.Library)
-                    navController.navigateSingleTopTo(Screen.SavedPatternDetail(savedPatternId).route)
+                    navController.openSavedPatternDetail(savedPatternId)
+                },
+                onEditWebPattern = { savedPatternId ->
+                    navController.editWebPattern(savedPatternId)
                 },
                 counterViewModelProvider = { counterViewModel },
                 patternViewerViewModelProvider = { patternViewerViewModel },
@@ -675,6 +741,11 @@ private fun NavGraphBuilder.librarySavedPatternsRoute(navController: NavHostCont
                     onPatternClick = { savedPatternId ->
                         navController.navigateSingleTopTo(Screen.SavedPatternDetail(savedPatternId).route)
                     },
+                    onAddWebPattern = {
+                        navController.navigateSingleTopTo(
+                            Screen.WebPatternEditor.createRoute(WebPatternEditorOrigin.Manual),
+                        )
+                    },
                     onEnterSelectMode = libraryViewModel::enterPatternSelectMode,
                     onToggleSelection = libraryViewModel::togglePatternSelection,
                     onSelectAll = libraryViewModel::selectAllPatterns,
@@ -686,6 +757,7 @@ private fun NavGraphBuilder.librarySavedPatternsRoute(navController: NavHostCont
     }
 }
 
+@Suppress("LongMethod") // Reitti kokoaa yhden Saved Pattern -näkymän lähdekohtaiset toiminnot.
 private fun NavGraphBuilder.savedPatternDetailRoute(navController: NavHostController) {
     composable(
         // CPD-OFF: Reittikohtainen argumenttien kasittely pidetaan reitin yhteydessa.
@@ -718,6 +790,11 @@ private fun NavGraphBuilder.savedPatternDetailRoute(navController: NavHostContro
                 patternRouteLoaded = true
             }
         }
+        CollectWithLifecycleEffect({ libraryViewModel.savedPatterns }) { patterns ->
+            if (patternRouteLoaded) {
+                patternRouteState = patterns.firstOrNull { it.id == savedPatternId }
+            }
+        }
         val pattern = patternRouteState
         if (pattern == null) {
             if (patternRouteLoaded) {
@@ -732,9 +809,26 @@ private fun NavGraphBuilder.savedPatternDetailRoute(navController: NavHostContro
                 navController.navigateSingleTopTo(Screen.LibraryPatternViewer(savedPatternId).route)
             },
             onAttachToProject = {
-                counterViewModel.attachSavedPattern(pattern)
+                if (!pattern.isWebPatternCompatible) {
+                    counterViewModel.attachSavedPattern(pattern)
+                }
                 navController.navigateToTopLevel(TopLevelDestination.Projects)
                 navController.navigateSingleTopTo(Screen.Counter.route)
+            },
+            onAttachWebPattern = { expectedExistingId, onResult ->
+                counterViewModel.attachSavedPatternMetadata(
+                    savedPatternId = pattern.id,
+                    expectedExistingSavedPatternId = expectedExistingId,
+                    onResult = onResult,
+                )
+            },
+            onEditWebPattern = {
+                navController.navigateSingleTopTo(
+                    Screen.WebPatternEditor.createRoute(
+                        origin = WebPatternEditorOrigin.Edit,
+                        patternId = savedPatternId,
+                    ),
+                )
             },
             onRemove = {
                 libraryViewModel.deleteSavedPattern(savedPatternId) {
@@ -1047,6 +1141,20 @@ private fun NavHostController.navigateSingleTopTo(route: String) {
     navigate(route) {
         launchSingleTop = true
     }
+}
+
+private fun NavHostController.openSavedPatternDetail(savedPatternId: Long) {
+    navigateToTopLevel(TopLevelDestination.Library)
+    navigateSingleTopTo(Screen.SavedPatternDetail(savedPatternId).route)
+}
+
+private fun NavHostController.editWebPattern(savedPatternId: Long) {
+    navigateSingleTopTo(
+        Screen.WebPatternEditor.createRoute(
+            origin = WebPatternEditorOrigin.Edit,
+            patternId = savedPatternId,
+        ),
+    )
 }
 
 @Composable

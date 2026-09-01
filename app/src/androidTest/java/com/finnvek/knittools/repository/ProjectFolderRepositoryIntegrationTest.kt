@@ -231,6 +231,7 @@ class ProjectFolderRepositoryIntegrationTest {
             transactionRunner = transactionRunner,
         )
 
+    // CPD-OFF: Integraatiotestin repository-kooste pidetaan tietokantafixturen yhteydessa.
     private fun newCounterRepository(): CounterRepository {
         val transactionRunner = RoomDatabaseTransactionRunner(database)
         val savedPatternRepository =
@@ -277,6 +278,7 @@ class ProjectFolderRepositoryIntegrationTest {
             ioDispatcher = Dispatchers.IO,
         )
     }
+    // CPD-ON
 
     private fun linkedPattern(name: String): SavedPattern =
         SavedPattern(

@@ -9,6 +9,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -20,12 +21,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.outlined.Circle
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -48,6 +51,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.SavedPattern
+import com.finnvek.knittools.domain.model.isWebPatternCompatible
+import com.finnvek.knittools.domain.model.webPatternUrlOrNull
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.screens.ravelry.PatternCard
 import com.finnvek.knittools.ui.screens.ravelry.PatternCardState
@@ -62,6 +67,7 @@ data class SavedPatternsState(
 
 data class SavedPatternsActions(
     val onPatternClick: (Long) -> Unit,
+    val onAddWebPattern: () -> Unit,
     val onEnterSelectMode: (Long) -> Unit,
     val onToggleSelection: (Long) -> Unit,
     val onSelectAll: (List<Long>) -> Unit,
@@ -112,6 +118,15 @@ fun SavedPatternsScreen(
             )
         },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        floatingActionButton = {
+            if (!state.isSelectMode && state.patterns.isNotEmpty()) {
+                ExtendedFloatingActionButton(
+                    onClick = actions.onAddWebPattern,
+                    icon = { Icon(Icons.Filled.Add, contentDescription = null) },
+                    text = { Text(stringResource(R.string.web_pattern_add)) },
+                )
+            }
+        },
         bottomBar = {
             SelectModeDeleteBar(
                 visible = state.isSelectMode && state.selectedPatternIds.isNotEmpty(),
@@ -120,9 +135,10 @@ fun SavedPatternsScreen(
         },
     ) { padding ->
         if (state.patterns.isEmpty()) {
-            Box(
+            Column(
                 modifier = Modifier.fillMaxSize().padding(padding),
-                contentAlignment = Alignment.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
             ) {
                 Text(
                     text = stringResource(R.string.empty_saved_patterns),
@@ -130,6 +146,12 @@ fun SavedPatternsScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
                 )
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(onClick = actions.onAddWebPattern) {
+                    Icon(Icons.Filled.Add, contentDescription = null)
+                    Spacer(modifier = Modifier.size(8.dp))
+                    Text(stringResource(R.string.web_pattern_add))
+                }
             }
         } else {
             SavedPatternsList(state = state, actions = actions, padding = padding)
@@ -298,32 +320,82 @@ private fun SavedPatternItem(
             MaterialTheme.colorScheme.surfaceVariant
         }
 
-    Box(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .combinedClickable(
-                    onClick = onClick,
-                    onLongClick = onLongClick,
-                ),
-    ) {
-        PatternCard(
-            state =
-                PatternCardState(
-                    name = pattern.name,
-                    designerName = pattern.designerName,
-                    thumbnailUrl = pattern.thumbnailUrl,
-                    difficulty = pattern.difficulty,
-                    availability = pattern.availability,
-                ),
-            onClick = onClick,
-            modifier = Modifier.background(backgroundColor, MaterialTheme.shapes.large),
-        )
+    Box(modifier = Modifier.fillMaxWidth()) {
+        if (pattern.isWebPatternCompatible) {
+            WebPatternCard(
+                pattern = pattern,
+                backgroundColor = backgroundColor,
+                onClick = onClick,
+                onLongClick = onLongClick,
+            )
+        } else {
+            PatternCard(
+                state =
+                    PatternCardState(
+                        name = pattern.name,
+                        designerName = pattern.designerName,
+                        thumbnailUrl = pattern.thumbnailUrl,
+                        difficulty = pattern.difficulty,
+                        availability = pattern.availability,
+                    ),
+                onClick = onClick,
+                onLongClick = onLongClick,
+                modifier = Modifier.background(backgroundColor, MaterialTheme.shapes.large),
+            )
+        }
         if (isSelectMode) {
             SelectionIndicator(
                 isSelected = isSelected,
                 modifier = Modifier.align(Alignment.CenterStart).padding(start = 8.dp),
             )
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun WebPatternCard(
+    pattern: SavedPattern,
+    backgroundColor: androidx.compose.ui.graphics.Color,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit,
+) {
+    val host = pattern.webPatternUrlOrNull?.host.orEmpty()
+    Surface(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .combinedClickable(onClick = onClick, onLongClick = onLongClick),
+        shape = MaterialTheme.shapes.large,
+        color = backgroundColor,
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(
+                text = pattern.name,
+                style = MaterialTheme.typography.titleMedium,
+            )
+            pattern.designerName.takeIf { it.isNotBlank() }?.let { designer ->
+                Text(
+                    text = designer,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Text(
+                text = stringResource(R.string.web_pattern_label),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (host.isNotBlank()) {
+                Text(
+                    text = host,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
 }

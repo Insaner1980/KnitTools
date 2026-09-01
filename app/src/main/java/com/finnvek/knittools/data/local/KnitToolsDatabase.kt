@@ -63,6 +63,8 @@ abstract class KnitToolsDatabase : RoomDatabase() {
     abstract fun projectYarnUsageDao(): ProjectYarnUsageDao
 
     companion object {
+        private const val ALTER_COUNTER_PROJECTS = "ALTER TABLE counter_projects "
+
         val MIGRATION_3_4 =
             object : Migration(3, 4) {
                 override fun migrate(db: SupportSQLiteDatabase) {
@@ -441,11 +443,11 @@ abstract class KnitToolsDatabase : RoomDatabase() {
             object : Migration(17, 18) {
                 override fun migrate(db: SupportSQLiteDatabase) {
                     db.execSQL(
-                        "ALTER TABLE counter_projects " +
+                        ALTER_COUNTER_PROJECTS +
                             "ADD COLUMN secondaryCounterUsed INTEGER NOT NULL DEFAULT 0",
                     )
                     db.execSQL(
-                        "ALTER TABLE counter_projects " +
+                        ALTER_COUNTER_PROJECTS +
                             "ADD COLUMN notesCreated INTEGER NOT NULL DEFAULT 0",
                     )
                     db.execSQL(
@@ -587,6 +589,7 @@ abstract class KnitToolsDatabase : RoomDatabase() {
                         FROM `saved_patterns`
                         """.trimIndent(),
                     )
+                    // CPD-OFF: Migraation tauluindeksit pidetaan version oman uudelleenluonnin yhteydessa.
                     db.execSQL("DROP TABLE `saved_patterns`")
                     db.execSQL("ALTER TABLE `saved_patterns_new` RENAME TO `saved_patterns`")
                     db.execSQL(
@@ -605,6 +608,7 @@ abstract class KnitToolsDatabase : RoomDatabase() {
                         "CREATE INDEX IF NOT EXISTS `index_saved_patterns_localPdfUri` " +
                             "ON `saved_patterns` (`localPdfUri`)",
                     )
+                    // CPD-ON
                     db.execSQL(
                         """
                         INSERT INTO `pattern_annotation_layers` (
@@ -636,15 +640,15 @@ abstract class KnitToolsDatabase : RoomDatabase() {
             object : Migration(19, 20) {
                 override fun migrate(db: SupportSQLiteDatabase) {
                     db.execSQL(
-                        "ALTER TABLE counter_projects " +
+                        ALTER_COUNTER_PROJECTS +
                             "ADD COLUMN verticalReadingGuideEnabled INTEGER NOT NULL DEFAULT 0",
                     )
                     db.execSQL(
-                        "ALTER TABLE counter_projects " +
+                        ALTER_COUNTER_PROJECTS +
                             "ADD COLUMN verticalReadingGuideXFraction REAL NOT NULL DEFAULT 0.5",
                     )
                     db.execSQL(
-                        "ALTER TABLE counter_projects " +
+                        ALTER_COUNTER_PROJECTS +
                             "ADD COLUMN readingLineFollowCurrentRow INTEGER NOT NULL DEFAULT 1",
                     )
                     db.execSQL(

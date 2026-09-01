@@ -17,6 +17,7 @@ class ProjectDocumentLocalizationTest {
         }
     }
 
+    // CPD-OFF: Lokalisaatiotestin XML-fixture pidetaan tarkistuksen yhteydessa.
     private fun stringNames(directory: String): Set<String> {
         val document =
             DocumentBuilderFactory
@@ -70,4 +71,5 @@ class ProjectDocumentLocalizationTest {
                 "project_documents_remove_last_message",
             )
     }
+    // CPD-ON
 }

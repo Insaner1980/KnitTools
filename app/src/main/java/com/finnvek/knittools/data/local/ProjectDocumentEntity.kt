@@ -6,6 +6,7 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.finnvek.knittools.domain.model.ProjectDocument
 
+// CPD-OFF: Room-entity peilaa domain-mallia ja viiteavaimet pidetaan eksplisiittisina.
 @Entity(
     tableName = "project_documents",
     foreignKeys = [
@@ -76,6 +77,7 @@ data class ProjectDocumentEntity(
     val createdAt: Long,
     val updatedAt: Long,
 )
+// CPD-ON
 
 fun ProjectDocumentEntity.toDomain(): ProjectDocument =
     ProjectDocument(

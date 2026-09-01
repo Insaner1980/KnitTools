@@ -240,6 +240,7 @@ class RepositoryTransactionBoundaryTest {
             coVerify(exactly = 1) { projectDao.delete(7L) }
         }
 
+    // CPD-OFF: Liitostestien repository-kooste pidetaan skenaarioiden yhteydessa.
     @Test
     fun `pattern attachment saves related database state inside one transaction`() =
         runTest {
@@ -266,6 +267,7 @@ class RepositoryTransactionBoundaryTest {
                 )
 
             val document = projectDocument(isPrimary = true)
+            coEvery { projectDao.getProject(7L) } returns CounterProjectEntity(id = 7L)
             coEvery { documentRepository.addImportedPdf(7L, "content://pattern", "Pattern") } returns
                 ProjectDocumentMutationResult.Added(document)
             repository.attachPattern(7L, "content://pattern", "Pattern", 0, null)
@@ -289,6 +291,7 @@ class RepositoryTransactionBoundaryTest {
             val projectDao = mockk<CounterProjectDao>(relaxed = true)
             val sessionDao = mockk<SessionDao>(relaxed = true)
             val savedPatternRepository = mockk<SavedPatternRepository>(relaxed = true)
+            coEvery { projectDao.getProject(7L) } returns CounterProjectEntity(id = 7L)
             coEvery { savedPatternRepository.getById(12L) } returns
                 SavedPattern(
                     id = 12L,
@@ -318,6 +321,7 @@ class RepositoryTransactionBoundaryTest {
             assertEquals(12L, attachedPattern?.id)
             assertEquals(1, runner.runCount)
             coVerifyOrder {
+                projectDao.getProject(7L)
                 savedPatternRepository.getById(12L)
                 projectDao.updatePatternInformation(
                     id = 7L,
@@ -327,6 +331,8 @@ class RepositoryTransactionBoundaryTest {
                 )
             }
         }
+
+    // CPD-ON
 
     @Test
     fun `pattern detachment delegates primary removal to document repository`() =
@@ -584,6 +590,7 @@ class RepositoryTransactionBoundaryTest {
             assertFalse(file.exists())
         }
 
+    // CPD-OFF: Kuvapoistotestien skenaariokohtainen asetelma pidetaan testien yhteydessa.
     @Test
     fun `progress photo delete removes database row before file`() =
         runTest {
@@ -649,6 +656,8 @@ class RepositoryTransactionBoundaryTest {
             assertEquals(null, thrown)
             coVerify(exactly = 1) { dao.delete(3L) }
         }
+
+    // CPD-ON
 
     @Test
     fun `progress photo save deletes target file when compression throws`() =
@@ -723,6 +732,7 @@ class RavelryRepositoryTransactionBoundaryTest {
             }
         }
 
+    // CPD-OFF: Ravelry-tallennustestien skenaariokohtainen asetelma pidetaan testien yhteydessa.
     @Test
     fun `ravelry save preserves backend canonical and original urls`() =
         runTest {
@@ -788,6 +798,8 @@ class RavelryRepositoryTransactionBoundaryTest {
                 }
             }
         }
+
+    // CPD-ON
 
     @Test
     fun `ravelry saved pattern multi delete delegates batch ids`() =

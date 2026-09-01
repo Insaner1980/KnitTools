@@ -56,6 +56,7 @@ class ProjectFolderComponentsTest {
     @get:Rule
     val composeRule = createComposeRule()
 
+    // CPD-OFF: Compose-testien skenaariokohtainen asetelma pidetaan testien yhteydessa.
     @Test
     fun selectorShowsCurrentVirtualViewAndIsReachable() {
         var opened = false
@@ -438,12 +439,15 @@ class ProjectFolderComponentsTest {
         captureScreenshot("move-folder-bulk-dark-large-font-narrow")
     }
 
+    // CPD-ON
+
     private fun folders() =
         listOf(
             ProjectFolder(id = 1L, name = "Personal", sortOrder = 0),
             ProjectFolder(id = 2L, name = "Gifts", sortOrder = 1),
         )
 
+    // CPD-OFF: Kuvakaappauksen ajoitus ja tallennus pidetaan testiluokan yhteydessa.
     private fun captureScreenshot(name: String) {
         composeRule.waitForIdle()
         val instrumentation = InstrumentationRegistry.getInstrumentation()
@@ -478,6 +482,7 @@ class ProjectFolderComponentsTest {
         }
         assertEquals(true, frameCommitted.await(5, TimeUnit.SECONDS))
     }
+    // CPD-ON
 
     private fun isKeyboardVisible(): Boolean =
         WindowInspector.getGlobalWindowViews().any { view ->

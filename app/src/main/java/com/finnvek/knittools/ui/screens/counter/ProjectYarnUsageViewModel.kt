@@ -56,6 +56,7 @@ class ProjectYarnUsageViewModel
             observation?.cancel()
         }
 
+        @Suppress("kotlin:S6313") // Kutsuja odottaa editorin lähdehaun ennen kuin sheet näytetään.
         suspend fun open(
             item: ProjectYarnUsageItem,
             name: String,

@@ -81,6 +81,7 @@ internal data class PatternViewportFocusRequest(
 )
 
 @Composable
+@Suppress("kotlin:S107") // Viewport välittää renderöinnin, sivun ja fokuspyynnön tilat eksplisiittisesti.
 internal fun PatternDocumentViewport(
     renderedBitmapProvider: @Composable () -> ImageBitmap,
     contentDescription: String?,

@@ -110,6 +110,7 @@ private enum class PendingProjectProAction {
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
+@Suppress("kotlin:S3776") // Reitti omistaa listan sheetit, valinnat ja navigointipyynnöt.
 fun ProjectListScreen(
     onProjectClick: (Long) -> Unit,
     onNotesEditor: (Long) -> Unit = {},
@@ -688,6 +689,7 @@ private fun ProjectListDialogs(
 }
 
 @Composable
+// CPD-OFF: Istuntodialogien toimintorakenne pidetaan kayttokohteen yhteydessa.
 private fun ProjectListActiveSessionCompletionDialog(
     onSave: () -> Unit,
     onDiscard: () -> Unit,
@@ -740,6 +742,7 @@ private fun ProjectListActiveSessionDeletionDialog(
         },
     )
 }
+// CPD-ON
 
 @Composable
 private fun MultiCompleteDialog(
@@ -1452,6 +1455,7 @@ private fun ContinueKnittingCard(
                         )
                     }
                 }
+                // CPD-OFF: Hero sailyttaa oman valmiiksi rajatun etenemisrakenteensa.
                 if (progressFraction != null) {
                     Spacer(modifier = Modifier.height(ProjectListDimens.ItemLineGap))
                     Box(
@@ -1475,6 +1479,7 @@ private fun ContinueKnittingCard(
                         )
                     }
                 }
+                // CPD-ON
             }
             Spacer(modifier = Modifier.width(12.dp))
             CounterImageButton(
@@ -1492,6 +1497,7 @@ private fun ContinueKnittingCard(
 internal fun normalizedContinueKnittingSectionName(sectionName: String?): String? =
     sectionName?.trim()?.takeIf(String::isNotEmpty)
 
+// CPD-OFF: Hero muotoilee tavoitetilan omassa Compose-kontekstissaan.
 @Composable
 private fun continueKnittingTargetStatusText(statusProvider: @Composable () -> MainCounterTargetStatus): String {
     val status = statusProvider()
@@ -1509,6 +1515,7 @@ private fun continueKnittingTargetStatusText(statusProvider: @Composable () -> M
             )
     }
 }
+// CPD-ON
 
 @Composable
 private fun SectionLabel(

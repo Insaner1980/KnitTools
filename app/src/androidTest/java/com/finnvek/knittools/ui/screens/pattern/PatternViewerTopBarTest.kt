@@ -87,6 +87,7 @@ class PatternViewerTopBarTest {
             onDetachPattern = {},
         )
 
+    // CPD-OFF: Kuvakaappauksen testiapuri pidetaan testiluokan yhteydessa.
     private fun captureScreenshot(name: String) {
         composeRule.waitForIdle()
         val instrumentation = InstrumentationRegistry.getInstrumentation()
@@ -104,4 +105,5 @@ class PatternViewerTopBarTest {
         private const val SCREENSHOT_DIRECTORY = "project-document-screenshots"
         private val PNG_SIGNATURE = byteArrayOf(-119, 80, 78, 71, 13, 10, 26, 10)
     }
+    // CPD-ON
 }

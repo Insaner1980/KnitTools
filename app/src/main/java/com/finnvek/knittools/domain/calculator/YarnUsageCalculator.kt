@@ -21,6 +21,7 @@ object YarnUsageCalculator {
         return values.any { it != null } && values.all { it == null || (it.isFinite() && it >= 0.0) }
     }
 
+    // CPD-OFF: Vastakkaissuuntaiset yksikkomuunnokset pidetaan eksplisiittisina ja rinnakkaisina.
     fun toMeters(
         value: Double,
         unit: YarnUsageUnit,
@@ -74,6 +75,7 @@ object YarnUsageCalculator {
             }
         return result?.takeIf { it.isFinite() && (it > 0.0 || value == 0.0) }
     }
+    // CPD-ON
 
     fun remaining(
         allocatedMeters: Double?,

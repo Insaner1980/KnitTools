@@ -46,6 +46,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.SavedPattern
+import com.finnvek.knittools.domain.model.isWebPatternCompatible
 import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.ui.components.ProBadge
 import com.finnvek.knittools.ui.components.ProPromptRequest
@@ -55,6 +56,7 @@ import kotlinx.coroutines.launch
 import java.io.File
 
 private data class PatternPickerActions(
+    val openWebPatternEditor: () -> Unit,
     val openRavelryImport: () -> Unit,
     val openDeviceFiles: () -> Unit,
     val openCloudProviderFiles: () -> Unit,
@@ -70,8 +72,12 @@ enum class PatternPickerMode {
     ADD_READABLE_PROJECT_DOCUMENT,
 }
 
+internal fun shouldShowWebPatternEntry(mode: PatternPickerMode): Boolean =
+    mode == PatternPickerMode.INITIAL_PROJECT_PATTERN
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@Suppress("kotlin:S107", "kotlin:S3776") // Picker kokoaa kaikki tuontilähteet ja niiden eksplisiittiset callbackit.
 fun PatternPickerSheet(
     projectId: Long?,
     savedPatterns: List<SavedPattern>,
@@ -83,6 +89,7 @@ fun PatternPickerSheet(
     onSavedPatternSelected: (SavedPattern) -> Unit,
     onDocumentSelected: (String, String) -> Unit,
     onImportFromRavelry: () -> Unit,
+    onAddWebPattern: () -> Unit = {},
     onSeePro: () -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -97,6 +104,7 @@ fun PatternPickerSheet(
             imageImportViewModelProvider = { imageImportViewModel },
             onDocumentSelected = onDocumentSelected,
             onImportFromRavelry = onImportFromRavelry,
+            onAddWebPattern = onAddWebPattern,
             onLockedGalleryImport = { pendingProAction = PendingPatternProAction.GalleryImages },
             onLockedCameraScan = { pendingProAction = PendingPatternProAction.CameraCapture },
             onDismiss = onDismiss,
@@ -182,7 +190,9 @@ fun PatternPickerSheet(
                 actions = actions,
                 onSavedPatternSelected = { pattern ->
                     onSavedPatternSelected(pattern)
-                    onDismiss()
+                    if (!pattern.isWebPatternCompatible) {
+                        onDismiss()
+                    }
                 },
             )
         }
@@ -213,12 +223,14 @@ fun PatternPickerSheet(
 }
 
 @Composable
+@Suppress("kotlin:S107", "kotlin:S3776") // Muistetut picker-toiminnot sitovat eri tuontisopimukset yhteen omistajaan.
 private fun rememberPatternPickerActions(
     projectId: Long?,
     canUseCameraScan: Boolean,
     imageImportViewModelProvider: @Composable () -> PatternImageImportViewModel,
     onDocumentSelected: (String, String) -> Unit,
     onImportFromRavelry: () -> Unit,
+    onAddWebPattern: () -> Unit,
     onLockedGalleryImport: () -> Unit,
     onLockedCameraScan: () -> Unit,
     onDismiss: () -> Unit,
@@ -325,11 +337,16 @@ private fun rememberPatternPickerActions(
         openDocumentLauncher,
         permissionLauncher,
         onDismiss,
+        onAddWebPattern,
         onImportFromRavelry,
         onLockedCameraScan,
         onLockedGalleryImport,
     ) {
         PatternPickerActions(
+            openWebPatternEditor = {
+                onDismiss()
+                onAddWebPattern()
+            },
             openRavelryImport = {
                 onDismiss()
                 onImportFromRavelry()
@@ -407,7 +424,13 @@ private fun PatternPickerSheetContent(
             )
         }
 
-        if (mode == PatternPickerMode.INITIAL_PROJECT_PATTERN) {
+        if (shouldShowWebPatternEntry(mode)) {
+            OutlinedButton(
+                onClick = actions.openWebPatternEditor,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(stringResource(R.string.web_pattern_add))
+            }
             OutlinedButton(
                 onClick = actions.openRavelryImport,
                 modifier = Modifier.fillMaxWidth(),

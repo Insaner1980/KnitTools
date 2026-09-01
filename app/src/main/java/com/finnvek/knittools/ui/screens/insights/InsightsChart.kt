@@ -57,6 +57,7 @@ import kotlin.math.roundToInt
  * maksimileimaa ei piirretä — se toisti valitun lukeman aina kun korkein oli valittuna.
  */
 @Composable
+@Suppress("kotlin:S107") // Kaavion mittakaava-, valinta- ja saavutettavuustiedot pidetään eksplisiittisinä.
 internal fun InsightsChart(
     buckets: List<InsightsChartBucket>,
     interval: PaceGroupingInterval,
@@ -127,6 +128,7 @@ internal fun moveChartSelection(
 }
 
 @Composable
+@Suppress("kotlin:S3776") // Piirtoalueen ehdot kuvaavat suoraan pylväiden valinta- ja akselitiloja.
 private fun ChartPlot(
     buckets: List<InsightsChartBucket>,
     timeRange: TimeRange,

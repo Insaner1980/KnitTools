@@ -71,6 +71,7 @@ class CounterRepositoryTargetRowsTest {
 // Apurakenteet
 // ---------------------------------------------------------------------------
 
+// CPD-OFF: Testin repository-kooste pidetaan laskurifixturen yhteydessa.
 private fun buildRepository(dao: FakeCounterProjectDao): CounterRepository {
     val projectCounterDao = mockk<com.finnvek.knittools.data.local.ProjectCounterDao>(relaxed = true)
     every { projectCounterDao.getCountersForProject(any()) } returns flowOf(emptyList())
@@ -89,6 +90,7 @@ private fun buildRepository(dao: FakeCounterProjectDao): CounterRepository {
         ioDispatcher = Dispatchers.Unconfined,
     )
 }
+// CPD-ON
 
 private class FakeCounterProjectDao(
     private val latestHistory: CounterHistoryEntity?,

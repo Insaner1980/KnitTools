@@ -15,17 +15,17 @@ class RavelryShareTargetSourceTest {
     }
 
     @Test
-    fun `main activity consumes ravelry share intents before counter navigation`() {
+    fun `main activity consumes typed pattern shares before counter navigation`() {
         val mainActivity = ProjectSourceFiles.read(MAIN_ACTIVITY)
 
-        assertTrue(mainActivity.contains("ravelryShareImportRequest"))
-        assertTrue(mainActivity.contains("handleRavelryShareIntentIfNeeded"))
-        assertTrue(mainActivity.contains("clearRavelryShareIntent"))
+        assertTrue(mainActivity.contains("patternShareCoordinator"))
+        assertTrue(mainActivity.contains("handlePatternShareIntentIfNeeded"))
+        assertTrue(mainActivity.contains("clearPatternShareIntent"))
         assertTrue(mainActivity.contains("Intent.ACTION_SEND"))
         assertTrue(mainActivity.contains("Intent.EXTRA_TEXT"))
-        assertTrue(mainActivity.contains("RavelryShareImportUrls.extractPatternUrl"))
+        assertTrue(mainActivity.contains("parseWebPatternSharedText("))
         assertTrue(mainActivity.contains("if (isOAuthCallback || isShareImport)"))
-        assertTrue(mainActivity.contains("onRavelryShareImportHandled"))
+        assertTrue(mainActivity.contains("onPatternShareImportHandled"))
     }
 
     @Test
@@ -37,11 +37,12 @@ class RavelryShareTargetSourceTest {
         assertTrue(screen.contains("const val ARG_IMPORT_URL"))
         assertTrue(screen.contains("const val ROUTE = \"ravelry_import/{\$ARG_IMPORT_URL}\""))
 
-        assertTrue(navGraph.contains("ravelryShareImport: RavelryShareImportRequest? = null"))
-        assertTrue(navGraph.contains("LaunchedEffect(requests.ravelryShareImport?.requestId)"))
+        assertTrue(navGraph.contains("patternShareImport: PatternShareImportRequest? = null"))
+        assertTrue(navGraph.contains("LaunchedEffect(requests.patternShareImport?.requestId)"))
+        assertTrue(navGraph.contains("is PatternSharePayload.Ravelry"))
         assertTrue(navGraph.contains("navController.navigateToTopLevel(TopLevelDestination.Tools)"))
-        assertTrue(navGraph.contains("navController.navigateSingleTopTo(Screen.RavelryImport(request.url).route)"))
-        assertTrue(navGraph.contains("onRavelryShareImportHandled()"))
+        assertTrue(navGraph.contains("navController.navigateSingleTopTo(Screen.RavelryImport(payload.url).route)"))
+        assertTrue(navGraph.contains("onPatternShareImportHandled(request.requestId)"))
         assertTrue(navGraph.contains("importUrl = importUrl"))
     }
 

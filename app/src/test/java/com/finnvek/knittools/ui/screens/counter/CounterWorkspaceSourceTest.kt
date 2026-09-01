@@ -70,7 +70,9 @@ class CounterWorkspaceSourceTest {
         val contentCards = ProjectSourceFiles.read(COUNTER_PROJECT_CONTENT_CARDS)
         val strings = ProjectSourceFiles.read(STRINGS)
 
-        assertTrue(workspace.contains("hasPattern = state.projectDocuments.isNotEmpty()"))
+        assertTrue(workspace.contains("hasProjectPatternContent("))
+        assertTrue(workspace.contains("hasMetadataLink = state.linkedPattern != null"))
+        assertTrue(workspace.contains("hasDocuments = state.projectDocuments.isNotEmpty()"))
         assertTrue(contentCards.contains("hasPattern: Boolean"))
         assertTrue(contentCards.contains("titleRes = patternContentTitleRes(hasPattern)"))
         assertTrue(
@@ -225,9 +227,11 @@ class CounterWorkspaceSourceTest {
         val contentCards = ProjectSourceFiles.read(COUNTER_PROJECT_CONTENT_CARDS)
         val navGraph = ProjectSourceFiles.read(NAV_GRAPH)
 
-        assertTrue(workspace.contains("state.projectDocumentAvailability[primary.id] == true -> onOpenPattern()"))
-        assertTrue(workspace.contains("primary != null -> onShowDocuments()"))
-        assertTrue(workspace.contains("else -> onShowPatternPicker()"))
+        assertTrue(workspace.contains("projectPatternCardAction("))
+        assertTrue(workspace.contains("ProjectPatternCardAction.OpenPrimaryDocument -> onOpenPattern()"))
+        assertTrue(workspace.contains("ProjectPatternCardAction.OpenDocumentRecovery -> onShowDocuments()"))
+        assertTrue(workspace.contains("ProjectPatternCardAction.OpenMetadataDetail -> onOpenSavedPatternDetail()"))
+        assertTrue(workspace.contains("ProjectPatternCardAction.OpenPicker -> onShowPatternPicker()"))
         assertFalse(workspace.contains("onShowPatternInfo"))
         assertTrue(counterScreen.contains("onSavedPatternDetail: (Long) -> Unit = {}"))
         assertTrue(

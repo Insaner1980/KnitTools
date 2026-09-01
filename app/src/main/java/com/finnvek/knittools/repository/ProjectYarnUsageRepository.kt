@@ -166,6 +166,7 @@ class ProjectYarnUsageRepository
                 else -> null
             }
 
+        @Suppress("kotlin:S6311") // Repository-rajan transaktiot käyttävät projektin injektoitua IO-dispatcheria.
         private suspend fun mutate(block: suspend () -> YarnUsageResult): YarnUsageResult =
             withContext(ioDispatcher) {
                 try {

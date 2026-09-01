@@ -157,6 +157,7 @@ class PatternBookmarkRepository
                 }
             }
 
+        @Suppress("kotlin:S6311") // Repository-rajan kirjoitukset käyttävät projektin injektoitua IO-dispatcheria.
         private suspend fun mutateWithValidatedName(
             name: String,
             mutation: suspend (String) -> PatternBookmarkMutationResult,

@@ -38,6 +38,7 @@ class PatternImagePdfPipelineTest {
         File(context.filesDir, "pattern_pdfs/$projectId").deleteRecursively()
     }
 
+    // CPD-OFF: PDF-renderointifixture pidetaan sivujarjestystestin yhteydessa.
     @Test
     fun multiPagePdfPreservesVisiblePageOrder() {
         val red = imageFile("red.png", 40, 20, Color.RED)
@@ -56,6 +57,8 @@ class PatternImagePdfPipelineTest {
             }
         }
     }
+
+    // CPD-ON
 
     @Test
     fun transparentInputIsPaintedOnWhitePdfPage() {

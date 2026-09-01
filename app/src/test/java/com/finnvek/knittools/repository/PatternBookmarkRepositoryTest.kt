@@ -89,6 +89,7 @@ class PatternBookmarkRepositoryTest {
             coVerify(exactly = 0) { bookmarkDao.insert(any()) }
         }
 
+    // CPD-OFF: Kirjanmerkkimuutosten repository-fixture pidetaan skenaarion yhteydessa.
     @Test
     fun `rename delete and jump update only the active secondary document reader state`() =
         runTest {
@@ -152,6 +153,8 @@ class PatternBookmarkRepositoryTest {
             coVerify(exactly = 0) { projectDao.updatePatternViewerLocation(any(), any(), any(), any(), any()) }
             coVerify { bookmarkDao.deleteById(8L) }
         }
+
+    // CPD-ON
 
     @Test
     fun `cancellation from transaction runner propagates`() =

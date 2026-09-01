@@ -5,6 +5,7 @@ enum class SavedPatternSource(
 ) {
     Ravelry("RAVELRY"),
     LocalFile("LOCAL_FILE"),
+    WebLink("WEB_LINK"),
     Other("OTHER"),
     ;
 

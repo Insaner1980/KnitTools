@@ -54,6 +54,7 @@ class PatternImageImportViewModelTest {
         Dispatchers.resetMain()
     }
 
+    // CPD-OFF: Tuontitestien skenaariokohtainen asetelma pidetaan testien yhteydessa.
     @Test
     fun `authorized picker result is staged once and stale result cannot append later`() =
         runTest {
@@ -307,6 +308,8 @@ class PatternImageImportViewModelTest {
         assertNotEquals(first, second)
         assertFalse(viewModel.uiState.value.closeReady)
     }
+
+    // CPD-ON
 
     private fun viewModel(handle: SavedStateHandle = savedStateHandle) =
         PatternImageImportViewModel(

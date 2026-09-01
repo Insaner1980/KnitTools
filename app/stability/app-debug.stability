@@ -1658,7 +1658,7 @@ private fun com.finnvek.knittools.ui.screens.counter.rememberCounterDialogAction
     - viewModelProvider: STABLE (composable function type)
 
 @Composable
-private fun com.finnvek.knittools.ui.screens.counter.rememberCounterSheetActions(viewModelProvider: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<com.finnvek.knittools.ui.screens.counter.CounterViewModel>, onShowYarnPicker: kotlin.Function0<kotlin.Unit>, onHideYarnPicker: kotlin.Function0<kotlin.Unit>, onHideYarnManagementSheet: kotlin.Function0<kotlin.Unit>, onHideNotesSheet: kotlin.Function0<kotlin.Unit>, onExpandNotes: kotlin.Function0<kotlin.Unit>, onHidePatternPicker: kotlin.Function0<kotlin.Unit>, onImportFromRavelry: kotlin.Function0<kotlin.Unit>, onSeePro: kotlin.Function0<kotlin.Unit>, onSaveProjectYarnNoteToMyYarn: kotlin.Function1<kotlin.Long, kotlin.Unit>): com.finnvek.knittools.ui.screens.counter.CounterSheetActions
+private fun com.finnvek.knittools.ui.screens.counter.rememberCounterSheetActions(viewModelProvider: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<com.finnvek.knittools.ui.screens.counter.CounterViewModel>, onShowYarnPicker: kotlin.Function0<kotlin.Unit>, onHideYarnPicker: kotlin.Function0<kotlin.Unit>, onHideYarnManagementSheet: kotlin.Function0<kotlin.Unit>, onHideNotesSheet: kotlin.Function0<kotlin.Unit>, onExpandNotes: kotlin.Function0<kotlin.Unit>, onHidePatternPicker: kotlin.Function0<kotlin.Unit>, onWebPatternReplacementRequired: kotlin.Function2<com.finnvek.knittools.domain.model.SavedPattern, kotlin.Long, kotlin.Unit>, onPatternMetadataAttachFailed: kotlin.Function0<kotlin.Unit>, onImportFromRavelry: kotlin.Function0<kotlin.Unit>, onAddWebPattern: kotlin.Function0<kotlin.Unit>, onSeePro: kotlin.Function0<kotlin.Unit>, onSaveProjectYarnNoteToMyYarn: kotlin.Function1<kotlin.Long, kotlin.Unit>): com.finnvek.knittools.ui.screens.counter.CounterSheetActions
   skippable: false
   restartable: false
   params:
@@ -1669,7 +1669,10 @@ private fun com.finnvek.knittools.ui.screens.counter.rememberCounterSheetActions
     - onHideNotesSheet: STABLE (function type)
     - onExpandNotes: STABLE (function type)
     - onHidePatternPicker: STABLE (function type)
+    - onWebPatternReplacementRequired: STABLE (function type)
+    - onPatternMetadataAttachFailed: STABLE (function type)
     - onImportFromRavelry: STABLE (function type)
+    - onAddWebPattern: STABLE (function type)
     - onSeePro: STABLE (function type)
     - onSaveProjectYarnNoteToMyYarn: STABLE (function type)
 
@@ -2404,14 +2407,17 @@ private fun com.finnvek.knittools.ui.screens.library.SavedPatternDetailHeader(pa
     - pattern: STABLE (class with no mutable properties)
 
 @Composable
-public fun com.finnvek.knittools.ui.screens.library.SavedPatternDetailScreen(pattern: com.finnvek.knittools.domain.model.SavedPattern, onBack: kotlin.Function0<kotlin.Unit>, onOpenPattern: kotlin.Function0<kotlin.Unit>, onAttachToProject: kotlin.Function0<kotlin.Unit>, onRemove: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier, deleteErrorId: kotlin.Long): kotlin.Unit
+public fun com.finnvek.knittools.ui.screens.library.SavedPatternDetailScreen(pattern: com.finnvek.knittools.domain.model.SavedPattern, onBack: kotlin.Function0<kotlin.Unit>, onOpenPattern: kotlin.Function0<kotlin.Unit>, onOpenWebsite: kotlin.Function1<kotlin.String, com.finnvek.knittools.ui.platform.ExternalWebLinkOpenResult>?, onEditWebPattern: kotlin.Function0<kotlin.Unit>, onAttachToProject: kotlin.Function0<kotlin.Unit>, onAttachWebPattern: kotlin.Function2<kotlin.Long?, kotlin.Function1<com.finnvek.knittools.repository.SavedPatternMetadataMutationResult, kotlin.Unit>, kotlin.Unit>, onRemove: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier, deleteErrorId: kotlin.Long): kotlin.Unit
   skippable: true
   restartable: true
   params:
     - pattern: STABLE (class with no mutable properties)
     - onBack: STABLE (function type)
     - onOpenPattern: STABLE (function type)
+    - onOpenWebsite: STABLE (function type)
+    - onEditWebPattern: STABLE (function type)
     - onAttachToProject: STABLE (function type)
+    - onAttachWebPattern: STABLE (function type)
     - onRemove: STABLE (function type)
     - modifier: STABLE (marked @Stable or @Immutable)
     - deleteErrorId: STABLE (primitive type)
@@ -2480,6 +2486,57 @@ internal fun com.finnvek.knittools.ui.screens.library.SelectionIndicator(isSelec
     - modifier: STABLE (marked @Stable or @Immutable)
 
 @Composable
+private fun com.finnvek.knittools.ui.screens.library.WebPatternCard(pattern: com.finnvek.knittools.domain.model.SavedPattern, backgroundColor: androidx.compose.ui.graphics.Color, onClick: kotlin.Function0<kotlin.Unit>, onLongClick: kotlin.Function0<kotlin.Unit>): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - pattern: STABLE (class with no mutable properties)
+    - backgroundColor: STABLE (marked @Stable or @Immutable)
+    - onClick: STABLE (function type)
+    - onLongClick: STABLE (function type)
+
+@Composable
+private fun com.finnvek.knittools.ui.screens.library.WebPatternDetailContent(pattern: com.finnvek.knittools.domain.model.SavedPattern, url: com.finnvek.knittools.domain.model.WebPatternUrl, onOpenWebsite: kotlin.Function0<kotlin.Unit>, onEdit: kotlin.Function0<kotlin.Unit>, onAttach: kotlin.Function0<kotlin.Unit>, onDelete: kotlin.Function0<kotlin.Unit>): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - pattern: STABLE (class with no mutable properties)
+    - url: STABLE (class with no mutable properties)
+    - onOpenWebsite: STABLE (function type)
+    - onEdit: STABLE (function type)
+    - onAttach: STABLE (function type)
+    - onDelete: STABLE (function type)
+
+@Composable
+internal fun com.finnvek.knittools.ui.screens.library.WebPatternEditorContent(state: com.finnvek.knittools.ui.screens.library.WebPatternEditorUiState, onBack: kotlin.Function0<kotlin.Unit>, onTitleChange: kotlin.Function1<kotlin.String, kotlin.Unit>, onDesignerChange: kotlin.Function1<kotlin.String, kotlin.Unit>, onUrlChange: kotlin.Function1<kotlin.String, kotlin.Unit>, onSave: kotlin.Function0<kotlin.Unit>, onKeepDraft: kotlin.Function0<kotlin.Unit>, onUseSharedLink: kotlin.Function0<kotlin.Unit>, onDismissReplacement: kotlin.Function0<kotlin.Unit>, onConfirmReplacement: kotlin.Function0<kotlin.Unit>): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - state: STABLE (class with no mutable properties)
+    - onBack: STABLE (function type)
+    - onTitleChange: STABLE (function type)
+    - onDesignerChange: STABLE (function type)
+    - onUrlChange: STABLE (function type)
+    - onSave: STABLE (function type)
+    - onKeepDraft: STABLE (function type)
+    - onUseSharedLink: STABLE (function type)
+    - onDismissReplacement: STABLE (function type)
+    - onConfirmReplacement: STABLE (function type)
+
+@Composable
+public fun com.finnvek.knittools.ui.screens.library.WebPatternEditorScreen(request: com.finnvek.knittools.ui.navigation.PatternShareImportRequest?, onRequestStored: kotlin.Function1<kotlin.Long, kotlin.Unit>, onBack: kotlin.Function0<kotlin.Unit>, onOpenDetail: kotlin.Function1<kotlin.Long, kotlin.Unit>, onOpenProject: kotlin.Function1<kotlin.Long, kotlin.Unit>, onOpenRavelry: kotlin.Function1<kotlin.String, kotlin.Unit>, viewModelProvider: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<com.finnvek.knittools.ui.screens.library.WebPatternEditorViewModel>): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - request: STABLE (class with no mutable properties)
+    - onRequestStored: STABLE (function type)
+    - onBack: STABLE (function type)
+    - onOpenDetail: STABLE (function type)
+    - onOpenProject: STABLE (function type)
+    - onOpenRavelry: STABLE (function type)
+    - viewModelProvider: STABLE (composable function type)
+
+@Composable
 private fun com.finnvek.knittools.ui.screens.library.YarnCardContent(card: com.finnvek.knittools.domain.model.YarnCard, linkedProjectName: kotlin.String?, showOpenAffordance: kotlin.Boolean): kotlin.Unit
   skippable: true
   restartable: true
@@ -2523,6 +2580,20 @@ public fun com.finnvek.knittools.ui.screens.library.YarnStatusSheet(selectedStat
     - selectedStatus: STABLE (String is immutable)
     - onSelect: STABLE (function type)
     - onDismiss: STABLE (function type)
+
+@Composable
+private fun com.finnvek.knittools.ui.screens.library.editorError(error: com.finnvek.knittools.ui.screens.library.WebPatternEditorError): kotlin.String
+  skippable: false
+  restartable: false
+  params:
+    - error: STABLE (class with no mutable properties)
+
+@Composable
+private fun com.finnvek.knittools.ui.screens.library.editorTitle(origin: com.finnvek.knittools.ui.navigation.WebPatternEditorOrigin?): kotlin.String
+  skippable: false
+  restartable: false
+  params:
+    - origin: STABLE (class with no mutable properties)
 
 @Composable
 private fun com.finnvek.knittools.ui.screens.library.transparentTopAppBarColors(): androidx.compose.material3.TopAppBarColors
@@ -2808,7 +2879,7 @@ private fun com.finnvek.knittools.ui.screens.pattern.PatternPickerSavedPatterns(
     - onSavedPatternSelected: STABLE (function type)
 
 @Composable
-public fun com.finnvek.knittools.ui.screens.pattern.PatternPickerSheet(projectId: kotlin.Long?, savedPatterns: kotlin.collections.List<com.finnvek.knittools.domain.model.SavedPattern>, canUseCameraScan: kotlin.Boolean, proStatus: com.finnvek.knittools.pro.ProStatus, hasExistingPattern: kotlin.Boolean, mode: com.finnvek.knittools.ui.screens.pattern.PatternPickerMode, excludedSavedPatternIds: kotlin.collections.Set<kotlin.Long>, onSavedPatternSelected: kotlin.Function1<com.finnvek.knittools.domain.model.SavedPattern, kotlin.Unit>, onDocumentSelected: kotlin.Function2<kotlin.String, kotlin.String, kotlin.Unit>, onImportFromRavelry: kotlin.Function0<kotlin.Unit>, onSeePro: kotlin.Function0<kotlin.Unit>, onDismiss: kotlin.Function0<kotlin.Unit>): kotlin.Unit
+public fun com.finnvek.knittools.ui.screens.pattern.PatternPickerSheet(projectId: kotlin.Long?, savedPatterns: kotlin.collections.List<com.finnvek.knittools.domain.model.SavedPattern>, canUseCameraScan: kotlin.Boolean, proStatus: com.finnvek.knittools.pro.ProStatus, hasExistingPattern: kotlin.Boolean, mode: com.finnvek.knittools.ui.screens.pattern.PatternPickerMode, excludedSavedPatternIds: kotlin.collections.Set<kotlin.Long>, onSavedPatternSelected: kotlin.Function1<com.finnvek.knittools.domain.model.SavedPattern, kotlin.Unit>, onDocumentSelected: kotlin.Function2<kotlin.String, kotlin.String, kotlin.Unit>, onImportFromRavelry: kotlin.Function0<kotlin.Unit>, onAddWebPattern: kotlin.Function0<kotlin.Unit>, onSeePro: kotlin.Function0<kotlin.Unit>, onDismiss: kotlin.Function0<kotlin.Unit>): kotlin.Unit
   skippable: false
   restartable: true
   params:
@@ -2822,6 +2893,7 @@ public fun com.finnvek.knittools.ui.screens.pattern.PatternPickerSheet(projectId
     - onSavedPatternSelected: STABLE (function type)
     - onDocumentSelected: STABLE (function type)
     - onImportFromRavelry: STABLE (function type)
+    - onAddWebPattern: STABLE (function type)
     - onSeePro: STABLE (function type)
     - onDismiss: STABLE (function type)
 
@@ -2912,7 +2984,7 @@ private fun com.finnvek.knittools.ui.screens.pattern.PatternViewerOverflowMenu(e
     - closeOverflowMenu: STABLE (function type)
 
 @Composable
-public fun com.finnvek.knittools.ui.screens.pattern.PatternViewerScreen(onBack: kotlin.Function0<kotlin.Unit>, onImportFromRavelry: kotlin.Function0<kotlin.Unit>, onSeePro: kotlin.Function0<kotlin.Unit>, onSavedPatternDetail: kotlin.Function1<kotlin.Long, kotlin.Unit>, counterViewModelProvider: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<com.finnvek.knittools.ui.screens.counter.CounterViewModel>, patternViewerViewModelProvider: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<com.finnvek.knittools.ui.screens.pattern.PatternViewerViewModel>, annotationViewModel: com.finnvek.knittools.ui.screens.pattern.PatternAnnotationViewModel): kotlin.Unit
+public fun com.finnvek.knittools.ui.screens.pattern.PatternViewerScreen(onBack: kotlin.Function0<kotlin.Unit>, onImportFromRavelry: kotlin.Function0<kotlin.Unit>, onSeePro: kotlin.Function0<kotlin.Unit>, onSavedPatternDetail: kotlin.Function1<kotlin.Long, kotlin.Unit>, onEditWebPattern: kotlin.Function1<kotlin.Long, kotlin.Unit>, counterViewModelProvider: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<com.finnvek.knittools.ui.screens.counter.CounterViewModel>, patternViewerViewModelProvider: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<com.finnvek.knittools.ui.screens.pattern.PatternViewerViewModel>, annotationViewModel: com.finnvek.knittools.ui.screens.pattern.PatternAnnotationViewModel): kotlin.Unit
   skippable: false
   restartable: true
   params:
@@ -2920,6 +2992,7 @@ public fun com.finnvek.knittools.ui.screens.pattern.PatternViewerScreen(onBack: 
     - onImportFromRavelry: STABLE (function type)
     - onSeePro: STABLE (function type)
     - onSavedPatternDetail: STABLE (function type)
+    - onEditWebPattern: STABLE (function type)
     - counterViewModelProvider: STABLE (composable function type)
     - patternViewerViewModelProvider: STABLE (composable function type)
     - annotationViewModel: RUNTIME (requires runtime check)
@@ -2951,13 +3024,17 @@ private fun com.finnvek.knittools.ui.screens.pattern.ProjectDocumentRow(document
     - onRemove: STABLE (function type)
 
 @Composable
-internal fun com.finnvek.knittools.ui.screens.pattern.ProjectDocumentsSheet(state: com.finnvek.knittools.ui.screens.pattern.ProjectDocumentUiState, metadataPatternName: kotlin.String?, onOpenPatternInformation: kotlin.Function0<kotlin.Unit>, onDismiss: kotlin.Function0<kotlin.Unit>, onSelect: kotlin.Function1<kotlin.Long, kotlin.Unit>, onRename: kotlin.Function2<kotlin.Long, kotlin.String, kotlin.Unit>, onMoveEarlier: kotlin.Function1<kotlin.Long, kotlin.Unit>, onMoveLater: kotlin.Function1<kotlin.Long, kotlin.Unit>, onSetPrimary: kotlin.Function1<kotlin.Long, kotlin.Unit>, onRemove: kotlin.Function1<kotlin.Long, kotlin.Unit>, onAdd: kotlin.Function0<kotlin.Unit>, onClearError: kotlin.Function0<kotlin.Unit>): kotlin.Unit
+internal fun com.finnvek.knittools.ui.screens.pattern.ProjectDocumentsSheet(state: com.finnvek.knittools.ui.screens.pattern.ProjectDocumentUiState, metadataPattern: com.finnvek.knittools.domain.model.SavedPattern?, metadataPatternName: kotlin.String?, onOpenPatternInformation: kotlin.Function0<kotlin.Unit>, onOpenPatternWebsite: kotlin.Function0<kotlin.Unit>, onEditPatternInformation: kotlin.Function0<kotlin.Unit>, onUnlinkPatternInformation: kotlin.Function0<kotlin.Unit>, onDismiss: kotlin.Function0<kotlin.Unit>, onSelect: kotlin.Function1<kotlin.Long, kotlin.Unit>, onRename: kotlin.Function2<kotlin.Long, kotlin.String, kotlin.Unit>, onMoveEarlier: kotlin.Function1<kotlin.Long, kotlin.Unit>, onMoveLater: kotlin.Function1<kotlin.Long, kotlin.Unit>, onSetPrimary: kotlin.Function1<kotlin.Long, kotlin.Unit>, onRemove: kotlin.Function1<kotlin.Long, kotlin.Unit>, onAdd: kotlin.Function0<kotlin.Unit>, onClearError: kotlin.Function0<kotlin.Unit>): kotlin.Unit
   skippable: false
   restartable: true
   params:
     - state: RUNTIME (requires runtime check)
+    - metadataPattern: STABLE (class with no mutable properties)
     - metadataPatternName: STABLE (class with no mutable properties)
     - onOpenPatternInformation: STABLE (function type)
+    - onOpenPatternWebsite: STABLE (function type)
+    - onEditPatternInformation: STABLE (function type)
+    - onUnlinkPatternInformation: STABLE (function type)
     - onDismiss: STABLE (function type)
     - onSelect: STABLE (function type)
     - onRename: STABLE (function type)
@@ -3022,7 +3099,7 @@ internal fun com.finnvek.knittools.ui.screens.pattern.VerticalReadingGuideOverla
     - modifier: STABLE (marked @Stable or @Immutable)
 
 @Composable
-private fun com.finnvek.knittools.ui.screens.pattern.rememberPatternPickerActions(projectId: kotlin.Long?, canUseCameraScan: kotlin.Boolean, imageImportViewModelProvider: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<com.finnvek.knittools.ui.screens.pattern.PatternImageImportViewModel>, onDocumentSelected: kotlin.Function2<kotlin.String, kotlin.String, kotlin.Unit>, onImportFromRavelry: kotlin.Function0<kotlin.Unit>, onLockedGalleryImport: kotlin.Function0<kotlin.Unit>, onLockedCameraScan: kotlin.Function0<kotlin.Unit>, onDismiss: kotlin.Function0<kotlin.Unit>): com.finnvek.knittools.ui.screens.pattern.PatternPickerActions
+private fun com.finnvek.knittools.ui.screens.pattern.rememberPatternPickerActions(projectId: kotlin.Long?, canUseCameraScan: kotlin.Boolean, imageImportViewModelProvider: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<com.finnvek.knittools.ui.screens.pattern.PatternImageImportViewModel>, onDocumentSelected: kotlin.Function2<kotlin.String, kotlin.String, kotlin.Unit>, onImportFromRavelry: kotlin.Function0<kotlin.Unit>, onAddWebPattern: kotlin.Function0<kotlin.Unit>, onLockedGalleryImport: kotlin.Function0<kotlin.Unit>, onLockedCameraScan: kotlin.Function0<kotlin.Unit>, onDismiss: kotlin.Function0<kotlin.Unit>): com.finnvek.knittools.ui.screens.pattern.PatternPickerActions
   skippable: false
   restartable: false
   params:
@@ -3031,6 +3108,7 @@ private fun com.finnvek.knittools.ui.screens.pattern.rememberPatternPickerAction
     - imageImportViewModelProvider: STABLE (composable function type)
     - onDocumentSelected: STABLE (function type)
     - onImportFromRavelry: STABLE (function type)
+    - onAddWebPattern: STABLE (function type)
     - onLockedGalleryImport: STABLE (function type)
     - onLockedCameraScan: STABLE (function type)
     - onDismiss: STABLE (function type)
@@ -3512,13 +3590,14 @@ private fun com.finnvek.knittools.ui.screens.ravelry.PatternBadgeRow(difficulty:
     - availability: STABLE (class with no mutable properties)
 
 @Composable
-public fun com.finnvek.knittools.ui.screens.ravelry.PatternCard(state: com.finnvek.knittools.ui.screens.ravelry.PatternCardState, onClick: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier, actionContent: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<kotlin.Unit>?): kotlin.Unit
+public fun com.finnvek.knittools.ui.screens.ravelry.PatternCard(state: com.finnvek.knittools.ui.screens.ravelry.PatternCardState, onClick: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier, onLongClick: kotlin.Function0<kotlin.Unit>?, actionContent: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<kotlin.Unit>?): kotlin.Unit
   skippable: true
   restartable: true
   params:
     - state: STABLE (class with no mutable properties)
     - onClick: STABLE (function type)
     - modifier: STABLE (marked @Stable or @Immutable)
+    - onLongClick: STABLE (function type)
     - actionContent: STABLE (composable function type)
 
 @Composable

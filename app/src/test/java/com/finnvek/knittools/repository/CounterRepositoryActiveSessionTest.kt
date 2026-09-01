@@ -68,24 +68,10 @@ class CounterRepositoryActiveSessionTest {
             completed += firstArg<SessionEntity>()
             completed.size.toLong()
         }
-        repository =
-            CounterRepository(
-                dao = projectDao,
-                projectCounterDao = mockk<ProjectCounterDao>(relaxed = true),
-                sessionDao = sessionDao,
-                photoStorage = mockk<ProgressPhotoStorage>(relaxed = true),
-                patternDocumentStorage = mockk<PatternDocumentStorage>(relaxed = true),
-                context = mockk<Context>(relaxed = true),
-                yarnCardRepository = mockk(relaxed = true),
-                savedPatternRepository = mockk(relaxed = true),
-                projectDocumentRepository = mockk(relaxed = true),
-                projectFolderDao = mockk(relaxed = true),
-                transactionRunner = ImmediateDatabaseTransactionRunner,
-                ioDispatcher = Dispatchers.Unconfined,
-                sessionTimeSource = timeSource,
-            )
+        repository = buildRepository(mockk<ProjectCounterDao>(relaxed = true))
     }
 
+    // CPD-OFF: Istuntotestien skenaariokohtainen asetelma pidetaan testien yhteydessa.
     @Test
     fun `explicit start and stop persist one coherent completed session`() =
         runTest {
@@ -466,11 +452,14 @@ class CounterRepositoryActiveSessionTest {
             assertEquals(1, active?.pendingRowsWorked)
         }
 
+    // CPD-ON
+
     private fun repositoryProjectCounterDao(): ProjectCounterDao =
         mockk<ProjectCounterDao>(relaxed = true) {
             coEvery { getCountersForProject(any()) } returns flowOf(emptyList())
         }
 
+    // CPD-OFF: Testin repository-kooste pidetaan istuntofixturen yhteydessa.
     private fun buildRepository(
         counterDao: ProjectCounterDao,
         transactionRunner: DatabaseTransactionRunner = ImmediateDatabaseTransactionRunner,
@@ -490,6 +479,7 @@ class CounterRepositoryActiveSessionTest {
             ioDispatcher = Dispatchers.Unconfined,
             sessionTimeSource = timeSource,
         )
+    // CPD-ON
 
     private inner class SnapshotTransactionRunner : DatabaseTransactionRunner {
         override suspend fun <T> run(block: suspend () -> T): T {

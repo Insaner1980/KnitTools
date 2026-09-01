@@ -16,6 +16,8 @@ import com.finnvek.knittools.domain.model.ActiveWorkSession
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.PatternAnnotationLayer
 import com.finnvek.knittools.domain.model.PatternAnnotationOwner
+import com.finnvek.knittools.domain.model.SavedPattern
+import com.finnvek.knittools.domain.model.SavedPatternSource
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.pro.ProState
 import com.finnvek.knittools.repository.CounterRepository
@@ -26,6 +28,7 @@ import com.finnvek.knittools.repository.ProjectDocumentFileAvailability
 import com.finnvek.knittools.repository.ProjectDocumentRepository
 import com.finnvek.knittools.repository.ProjectYarnNoteRepository
 import com.finnvek.knittools.repository.ReminderRepository
+import com.finnvek.knittools.repository.SavedPatternMetadataMutationResult
 import com.finnvek.knittools.repository.SavedPatternRepository
 import com.finnvek.knittools.repository.StartSessionResult
 import com.finnvek.knittools.repository.YarnCardRepository
@@ -39,6 +42,7 @@ import io.mockk.slot
 import io.mockk.unmockkObject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
@@ -61,6 +65,7 @@ class CounterViewModelTest {
     private val dispatcher = StandardTestDispatcher()
     private val repository = mockk<CounterRepository>(relaxed = true)
     private val layers = MutableStateFlow(listOf(layer(41L, active = true), layer(42L, active = false)))
+    private val observedProject = MutableStateFlow(CounterProject(id = 7L, name = "Project"))
 
     @Before
     fun setUp() {
@@ -69,8 +74,9 @@ class CounterViewModelTest {
         every { ProcessLifecycleOwner.get() } returns mockk<LifecycleOwner>(relaxed = true)
         coEvery { CounterWidgetState.syncAll(any(), any()) } returns Unit
         val project = CounterProject(id = 7L, name = "Project")
+        observedProject.value = project
         every { repository.getActiveProjects() } returns flowOf(listOf(project))
-        every { repository.observeProject(7L) } returns flowOf(project)
+        every { repository.observeProject(7L) } returns observedProject
         every { repository.observeActiveSession() } returns flowOf(null)
         coEvery { repository.refreshActiveSession() } returns null
     }
@@ -142,7 +148,83 @@ class CounterViewModelTest {
             assertNull(viewModel.uiState.value.workSessionErrorRes)
         }
 
-    private fun TestScope.viewModel(): CounterViewModel {
+    @Test
+    fun `linked pattern attach edit and removal refresh the open project without reopening`() =
+        runTest {
+            val patterns = MutableStateFlow<List<SavedPattern>>(emptyList())
+            val original = savedPattern(9L, "Original")
+            val viewModel = viewModel(patterns)
+            advanceUntilIdle()
+
+            patterns.value = listOf(original)
+            observedProject.value = observedProject.value.copy(linkedPatternId = 9L, patternName = "Original")
+            advanceUntilIdle()
+
+            assertEquals(original, viewModel.uiState.value.linkedPattern)
+
+            val edited = original.copy(name = "Edited")
+            patterns.value = listOf(edited)
+            advanceUntilIdle()
+
+            assertEquals(
+                "Edited",
+                viewModel.uiState.value.linkedPattern
+                    ?.name,
+            )
+
+            patterns.value = emptyList()
+            advanceUntilIdle()
+
+            assertNull(viewModel.uiState.value.linkedPattern)
+        }
+
+    @Test
+    fun `web metadata attach surfaces replacement and never uses legacy document attach`() =
+        runTest {
+            val pattern = savedPattern(9L, "Replacement")
+            coEvery { repository.attachSavedPatternMetadata(7L, 9L, null) } returns
+                SavedPatternMetadataMutationResult.ReplacementRequired(8L)
+            val results = mutableListOf<SavedPatternMetadataMutationResult>()
+            val viewModel = viewModel()
+            advanceUntilIdle()
+
+            viewModel.attachSavedPatternMetadata(pattern.id, onResult = results::add)
+            advanceUntilIdle()
+
+            assertEquals(listOf(SavedPatternMetadataMutationResult.ReplacementRequired(8L)), results)
+            coVerify(exactly = 1) { repository.attachSavedPatternMetadata(7L, 9L, null) }
+            coVerify(exactly = 0) { repository.attachSavedPattern(any(), any()) }
+        }
+
+    @Test
+    fun `confirmed metadata replacement and unlink preserve expected ids`() =
+        runTest {
+            coEvery { repository.attachSavedPatternMetadata(7L, 9L, 8L) } returns
+                SavedPatternMetadataMutationResult.Attached(9L)
+            coEvery { repository.unlinkSavedPatternMetadata(7L, 9L) } returns
+                SavedPatternMetadataMutationResult.Unlinked
+            val results = mutableListOf<SavedPatternMetadataMutationResult>()
+            val viewModel = viewModel()
+            advanceUntilIdle()
+
+            viewModel.attachSavedPatternMetadata(9L, expectedExistingSavedPatternId = 8L, onResult = results::add)
+            viewModel.unlinkSavedPatternMetadata(9L, onResult = results::add)
+            advanceUntilIdle()
+
+            assertEquals(
+                listOf(
+                    SavedPatternMetadataMutationResult.Attached(9L),
+                    SavedPatternMetadataMutationResult.Unlinked,
+                ),
+                results,
+            )
+            coVerify(exactly = 1) { repository.attachSavedPatternMetadata(7L, 9L, 8L) }
+            coVerify(exactly = 1) { repository.unlinkSavedPatternMetadata(7L, 9L) }
+        }
+
+    private fun TestScope.viewModel(
+        savedPatternRows: Flow<List<SavedPattern>> = flowOf(emptyList()),
+    ): CounterViewModel {
         val preferences = mockk<PreferencesManager>()
         every { preferences.preferences } returns emptyFlow()
         val proManager = mockk<ProManager>()
@@ -150,7 +232,7 @@ class CounterViewModelTest {
         val yarnRepository = mockk<YarnCardRepository>()
         every { yarnRepository.getAllCards() } returns emptyFlow()
         val savedPatterns = mockk<SavedPatternRepository>()
-        every { savedPatterns.getAll() } returns emptyFlow()
+        every { savedPatterns.getAll() } returns savedPatternRows
         val reminders = mockk<ReminderRepository>()
         every { reminders.getRemindersForProject(7L) } returns flowOf(emptyList())
         val counters = mockk<ProjectCounterRepository>()
@@ -216,6 +298,18 @@ class CounterViewModelTest {
         id: Long,
         active: Boolean,
     ) = PatternAnnotationLayer(id, PatternAnnotationOwner.Project(7L, "local:$id"), active, 1L, 1L)
+
+    private fun savedPattern(
+        id: Long,
+        name: String,
+    ) = SavedPattern(
+        id = id,
+        source = SavedPatternSource.Other,
+        name = name,
+        designerName = "",
+        originalUrl = "https://example.com/$id",
+        canonicalUrl = "https://example.com/$id",
+    )
 
     private fun activeSession() =
         ActiveWorkSession(

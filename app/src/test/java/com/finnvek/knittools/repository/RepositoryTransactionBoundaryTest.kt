@@ -266,6 +266,7 @@ class RepositoryTransactionBoundaryTest {
                 )
 
             val document = projectDocument(isPrimary = true)
+            coEvery { projectDao.getProject(7L) } returns CounterProjectEntity(id = 7L)
             coEvery { documentRepository.addImportedPdf(7L, "content://pattern", "Pattern") } returns
                 ProjectDocumentMutationResult.Added(document)
             repository.attachPattern(7L, "content://pattern", "Pattern", 0, null)
@@ -289,6 +290,7 @@ class RepositoryTransactionBoundaryTest {
             val projectDao = mockk<CounterProjectDao>(relaxed = true)
             val sessionDao = mockk<SessionDao>(relaxed = true)
             val savedPatternRepository = mockk<SavedPatternRepository>(relaxed = true)
+            coEvery { projectDao.getProject(7L) } returns CounterProjectEntity(id = 7L)
             coEvery { savedPatternRepository.getById(12L) } returns
                 SavedPattern(
                     id = 12L,
@@ -318,6 +320,7 @@ class RepositoryTransactionBoundaryTest {
             assertEquals(12L, attachedPattern?.id)
             assertEquals(1, runner.runCount)
             coVerifyOrder {
+                projectDao.getProject(7L)
                 savedPatternRepository.getById(12L)
                 projectDao.updatePatternInformation(
                     id = 7L,

@@ -38,6 +38,7 @@ import com.finnvek.knittools.domain.model.ProjectCounterType
 import com.finnvek.knittools.domain.model.ProjectDocument
 import com.finnvek.knittools.domain.model.ProjectSortOrder
 import com.finnvek.knittools.domain.model.SavedPattern
+import com.finnvek.knittools.domain.model.isWebPatternCompatible
 import com.finnvek.knittools.domain.model.resolvedMainCounterLabelType
 import com.finnvek.knittools.domain.model.sanitizeMainCounterCustomLabel
 import com.finnvek.knittools.domain.model.sanitizeReadingGuideFraction
@@ -387,9 +388,10 @@ class CounterRepository
         ): ProjectDocumentMutationResult {
             val result =
                 transactionRunner.run {
+                    val project = dao.getProject(id)
                     val added = projectDocumentRepository.addImportedPdf(id, patternUri, patternName)
                     if (added is ProjectDocumentMutationResult.Added) {
-                        if (added.document.isPrimary) {
+                        if (added.document.isPrimary && project?.linkedPatternId == null) {
                             dao.updatePatternInformation(
                                 id = id,
                                 linkedPatternId = added.document.savedPatternId,
@@ -424,22 +426,30 @@ class CounterRepository
             projectId: Long,
             savedPatternId: Long,
         ): SavedPattern? {
-            val pattern = savedPatternRepository.getById(savedPatternId) ?: return null
-            val result =
-                if (pattern.localPdfUri.isNullOrBlank()) {
-                    transactionRunner.run {
+            return transactionRunner.run {
+                val project = dao.getProject(projectId) ?: return@run null
+                val pattern = savedPatternRepository.getById(savedPatternId) ?: return@run null
+                val result =
+                    if (pattern.localPdfUri.isNullOrBlank()) {
+                        if (pattern.isWebPatternCompatible &&
+                            project.linkedPatternId != null &&
+                            project.linkedPatternId != pattern.id
+                        ) {
+                            return@run null
+                        }
                         dao.updatePatternInformation(
                             id = projectId,
                             linkedPatternId = pattern.id,
                             patternName = pattern.name,
                             updatedAt = System.currentTimeMillis(),
                         )
-                    }
-                    ProjectDocumentMutationResult.MetadataOnlyPattern
-                } else {
-                    transactionRunner.run {
+                        ProjectDocumentMutationResult.MetadataOnlyPattern
+                    } else {
                         val added = projectDocumentRepository.addSavedPattern(projectId, savedPatternId)
-                        if (added is ProjectDocumentMutationResult.Added && added.document.isPrimary) {
+                        if (added is ProjectDocumentMutationResult.Added &&
+                            added.document.isPrimary &&
+                            project.linkedPatternId == null
+                        ) {
                             dao.updatePatternInformation(
                                 id = projectId,
                                 linkedPatternId = pattern.id,
@@ -449,21 +459,104 @@ class CounterRepository
                         }
                         added
                     }
+                if (
+                    result != ProjectDocumentMutationResult.MetadataOnlyPattern &&
+                    result !is ProjectDocumentMutationResult.Added &&
+                    result != ProjectDocumentMutationResult.AlreadyAttached
+                ) {
+                    return@run null
                 }
-            if (
-                result != ProjectDocumentMutationResult.MetadataOnlyPattern &&
-                result !is ProjectDocumentMutationResult.Added &&
-                result != ProjectDocumentMutationResult.AlreadyAttached
-            ) {
-                return null
+                pattern
             }
-            return pattern
         }
+
+        @Suppress("kotlin:S3776") // Atominen korvauspolku pitää stale-action-tarkistukset samassa transaktiossa.
+        suspend fun attachSavedPatternMetadata(
+            projectId: Long,
+            savedPatternId: Long,
+            expectedExistingSavedPatternId: Long? = null,
+        ): SavedPatternMetadataMutationResult =
+            persistSavedPatternMetadataMutation {
+                transactionRunner.run {
+                    val project =
+                        dao.getProject(projectId)
+                            ?: return@run SavedPatternMetadataMutationResult.ProjectMissing
+                    val pattern =
+                        savedPatternRepository.getById(savedPatternId)
+                            ?: return@run SavedPatternMetadataMutationResult.PatternMissing
+                    if (!pattern.isWebPatternCompatible) {
+                        return@run SavedPatternMetadataMutationResult.NotWebPattern
+                    }
+                    if (project.linkedPatternId == savedPatternId && project.patternName == pattern.name) {
+                        return@run SavedPatternMetadataMutationResult.AlreadyAttached(savedPatternId)
+                    }
+                    if (project.linkedPatternId == null && expectedExistingSavedPatternId != null) {
+                        return@run SavedPatternMetadataMutationResult.StaleAction
+                    }
+                    if (project.linkedPatternId != null && project.linkedPatternId != savedPatternId) {
+                        if (expectedExistingSavedPatternId == null) {
+                            return@run SavedPatternMetadataMutationResult.ReplacementRequired(project.linkedPatternId)
+                        }
+                        if (expectedExistingSavedPatternId != project.linkedPatternId) {
+                            return@run SavedPatternMetadataMutationResult.StaleAction
+                        }
+                    }
+
+                    dao.updatePatternInformation(
+                        id = projectId,
+                        linkedPatternId = savedPatternId,
+                        patternName = pattern.name,
+                        updatedAt = System.currentTimeMillis(),
+                    )
+                    SavedPatternMetadataMutationResult.Attached(savedPatternId)
+                }
+            }
+
+        suspend fun unlinkSavedPatternMetadata(
+            projectId: Long,
+            expectedSavedPatternId: Long,
+        ): SavedPatternMetadataMutationResult =
+            persistSavedPatternMetadataMutation {
+                transactionRunner.run {
+                    val project =
+                        dao.getProject(projectId)
+                            ?: return@run SavedPatternMetadataMutationResult.ProjectMissing
+                    if (project.linkedPatternId == null) {
+                        return@run SavedPatternMetadataMutationResult.AlreadyUnlinked
+                    }
+                    if (project.linkedPatternId != expectedSavedPatternId) {
+                        return@run SavedPatternMetadataMutationResult.StaleAction
+                    }
+
+                    val updated =
+                        dao.clearPatternInformationIfLinked(
+                            projectId = projectId,
+                            expectedSavedPatternId = expectedSavedPatternId,
+                            updatedAt = System.currentTimeMillis(),
+                        )
+                    if (updated == 1) {
+                        SavedPatternMetadataMutationResult.Unlinked
+                    } else {
+                        SavedPatternMetadataMutationResult.StaleAction
+                    }
+                }
+            }
 
         suspend fun detachPattern(id: Long) {
             val primary = projectDocumentRepository.getPrimary(id) ?: return
             projectDocumentRepository.remove(id, primary.id)
         }
+
+        private suspend fun persistSavedPatternMetadataMutation(
+            mutation: suspend () -> SavedPatternMetadataMutationResult,
+        ): SavedPatternMetadataMutationResult =
+            try {
+                mutation()
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (_: Exception) {
+                SavedPatternMetadataMutationResult.PersistenceFailure
+            }
 
         suspend fun updateCurrentPatternPage(
             id: Long,

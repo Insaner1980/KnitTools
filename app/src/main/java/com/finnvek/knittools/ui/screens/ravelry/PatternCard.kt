@@ -1,7 +1,9 @@
 package com.finnvek.knittools.ui.screens.ravelry
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -37,15 +39,23 @@ data class PatternCardState(
     val availability: PatternAvailability,
 )
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun PatternCard(
     state: PatternCardState,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    onLongClick: (() -> Unit)? = null,
     actionContent: (@Composable () -> Unit)? = null,
 ) {
+    val interactionModifier =
+        if (onLongClick == null) {
+            Modifier.clickable(onClick = onClick)
+        } else {
+            Modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick)
+        }
     Surface(
-        modifier = modifier.fillMaxWidth().clickable(onClick = onClick),
+        modifier = modifier.fillMaxWidth().then(interactionModifier),
         shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.surfaceVariant,
     ) {

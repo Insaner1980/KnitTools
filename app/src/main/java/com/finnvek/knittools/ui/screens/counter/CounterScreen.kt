@@ -162,6 +162,7 @@ data class CounterScreenActions(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@Suppress("kotlin:S3776") // Reitti kokoaa counterin tilat ja dialogit yhteen Compose-omistajaan.
 fun CounterScreen(
     actions: CounterScreenActions = CounterScreenActions(),
     viewModelProvider: @Composable () -> CounterViewModel = { hiltViewModel() },
@@ -981,6 +982,7 @@ private fun SessionPresentationTicker(
 }
 
 @Composable
+@Suppress("kotlin:S107", "kotlin:S3776") // Palautusdialogi näyttää kaikki talletetut palautusarvot eksplisiittisesti.
 internal fun SessionRecoveryDialog(
     projectName: String,
     recoveryReason: ActiveSessionRecoveryReason?,

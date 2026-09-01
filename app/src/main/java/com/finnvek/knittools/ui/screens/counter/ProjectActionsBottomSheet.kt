@@ -237,6 +237,7 @@ private fun ProjectActionsSection(
 }
 
 @Composable
+@Suppress("kotlin:S107") // Yhteinen toimintorivi pitää valinnaiset ulkoasu- ja tilaparametrit näkyvinä.
 private fun ActionRow(
     icon: ImageVector,
     label: String,

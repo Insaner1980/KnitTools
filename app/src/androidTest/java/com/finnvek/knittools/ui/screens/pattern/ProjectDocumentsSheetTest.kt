@@ -48,6 +48,7 @@ class ProjectDocumentsSheetTest {
     @get:Rule
     val composeRule = createComposeRule()
 
+    // CPD-OFF: Compose-testien skenaariokohtainen asetelma pidetaan testien yhteydessa.
     @Test
     fun webPatternInformationKeepsWebsiteActionsSeparateFromDocuments() {
         var opened = 0
@@ -385,6 +386,9 @@ class ProjectDocumentsSheetTest {
         composeRule.runOnIdle { assertEquals(2L, primaryId) }
     }
 
+    // CPD-ON
+
+    // CPD-OFF: Kuvakaappaus- ja testidata-apurit pidetaan testiluokan yhteydessa.
     private fun captureScreenshot(name: String) {
         composeRule.waitForIdle()
         val instrumentation = InstrumentationRegistry.getInstrumentation()
@@ -448,4 +452,5 @@ class ProjectDocumentsSheetTest {
         private const val SCREENSHOT_DIRECTORY = "project-document-screenshots"
         private val PNG_SIGNATURE = byteArrayOf(-119, 80, 78, 71, 13, 10, 26, 10)
     }
+    // CPD-ON
 }

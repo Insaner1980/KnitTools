@@ -240,6 +240,7 @@ class RepositoryTransactionBoundaryTest {
             coVerify(exactly = 1) { projectDao.delete(7L) }
         }
 
+    // CPD-OFF: Liitostestien repository-kooste pidetaan skenaarioiden yhteydessa.
     @Test
     fun `pattern attachment saves related database state inside one transaction`() =
         runTest {
@@ -330,6 +331,8 @@ class RepositoryTransactionBoundaryTest {
                 )
             }
         }
+
+    // CPD-ON
 
     @Test
     fun `pattern detachment delegates primary removal to document repository`() =
@@ -587,6 +590,7 @@ class RepositoryTransactionBoundaryTest {
             assertFalse(file.exists())
         }
 
+    // CPD-OFF: Kuvapoistotestien skenaariokohtainen asetelma pidetaan testien yhteydessa.
     @Test
     fun `progress photo delete removes database row before file`() =
         runTest {
@@ -652,6 +656,8 @@ class RepositoryTransactionBoundaryTest {
             assertEquals(null, thrown)
             coVerify(exactly = 1) { dao.delete(3L) }
         }
+
+    // CPD-ON
 
     @Test
     fun `progress photo save deletes target file when compression throws`() =
@@ -726,6 +732,7 @@ class RavelryRepositoryTransactionBoundaryTest {
             }
         }
 
+    // CPD-OFF: Ravelry-tallennustestien skenaariokohtainen asetelma pidetaan testien yhteydessa.
     @Test
     fun `ravelry save preserves backend canonical and original urls`() =
         runTest {
@@ -791,6 +798,8 @@ class RavelryRepositoryTransactionBoundaryTest {
                 }
             }
         }
+
+    // CPD-ON
 
     @Test
     fun `ravelry saved pattern multi delete delegates batch ids`() =

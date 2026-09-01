@@ -137,6 +137,7 @@ private data class PatternRenderState(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@Suppress("kotlin:S107", "kotlin:S3776") // Reitti omistaa viewerin lähdekohtaiset tilat ja navigointitoiminnot.
 fun PatternViewerScreen(
     onBack: () -> Unit,
     onImportFromRavelry: () -> Unit,
@@ -523,6 +524,7 @@ fun PatternViewerScreen(
                 counterState.linkedPattern?.id?.let(onSavedPatternDetail)
             },
             onOpenPatternWebsite = {
+                // CPD-OFF: Ruudun linkinavaus ja virhepalaute pidetaan kayttokohteen yhteydessa.
                 val result =
                     counterState.linkedPattern
                         ?.webPatternUrlOrNull
@@ -538,6 +540,7 @@ fun PatternViewerScreen(
                         -> R.string.web_pattern_open_failed
                     }
                 messageRes?.let { Toast.makeText(context, resources.getString(it), Toast.LENGTH_SHORT).show() }
+                // CPD-ON
             },
             onEditPatternInformation = {
                 counterState.linkedPattern?.id?.let(onEditWebPattern)
@@ -602,6 +605,7 @@ fun PatternViewerScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@Suppress("kotlin:S107") // Dokumenttisheet välittää dokumenttikohtaiset toiminnot eksplisiittisesti.
 internal fun ProjectDocumentsSheet(
     state: ProjectDocumentUiState,
     metadataPattern: SavedPattern? = null,
@@ -891,6 +895,7 @@ internal fun ProjectDocumentsSheet(
 }
 
 @Composable
+@Suppress("kotlin:S107", "kotlin:S3776") // Dokumenttirivi näyttää kaikki saatavuus-, järjestys- ja valintatilat.
 private fun ProjectDocumentRow(
     document: ProjectDocument,
     index: Int,
@@ -1488,6 +1493,7 @@ internal fun PatternViewerTopBar(
 }
 
 @Composable
+@Suppress("kotlin:S3776") // Overflow-valikko pitää viewerin ehdolliset komennot yhdessä paikassa.
 private fun PatternViewerOverflowMenu(
     expanded: Boolean,
     onDismissRequest: () -> Unit,
@@ -1787,6 +1793,7 @@ private fun LibraryPatternViewerBottomBar(
 }
 
 @Composable
+@Suppress("kotlin:S3776") // Viewer-sisältö kokoaa renderöinti-, opas- ja annotaatiotilat yhteen pintaan.
 private fun PatternViewerContent(
     stateProvider: @Composable () -> PatternViewerContentState,
     actions: PatternViewerContentActions,

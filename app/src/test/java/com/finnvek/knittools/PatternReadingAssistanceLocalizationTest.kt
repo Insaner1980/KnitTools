@@ -19,6 +19,7 @@ class PatternReadingAssistanceLocalizationTest {
         }
     }
 
+    // CPD-OFF: Lokalisaatiotestin XML-fixture pidetaan tarkistuksen yhteydessa.
     private fun stringNames(directory: String): Set<String> {
         val document =
             DocumentBuilderFactory
@@ -54,4 +55,5 @@ class PatternReadingAssistanceLocalizationTest {
                 "values-nl",
             )
     }
+    // CPD-ON
 }

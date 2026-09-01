@@ -948,34 +948,7 @@ class CounterRepository
                     }
                 }
 
-                val now = sessionTimeSource.snapshot()
-                val session =
-                    ActiveSessionEntity(
-                        sessionToken = UUID.randomUUID().toString(),
-                        projectId = projectId,
-                        startedAtWallMillis = now.wallClockMillis,
-                        startZoneId = now.zoneId,
-                        startRow = project.count,
-                        lastObservedRow = project.count,
-                        trustedLastObservedRow = project.count,
-                        trustedRowsWorked = 0,
-                        pendingRowsWorked = 0,
-                        reviewedRowsWorked = 0,
-                        reviewedLastObservedRow = project.count,
-                        unreviewedRowsWorked = 0,
-                        checkpointedDurationSeconds = 0L,
-                        reviewedDurationBaselineSeconds = 0L,
-                        segmentStartedAtWallMillis = now.wallClockMillis,
-                        segmentStartedElapsedRealtimeMillis = now.elapsedRealtimeMillis,
-                        bootCount = now.bootCount,
-                        recoveryReason = null,
-                        recoveryIntervalToken = null,
-                        recoverySuggestedDurationSeconds = null,
-                        recoveryPromptShown = false,
-                        updatedAtWallMillis = now.wallClockMillis,
-                    )
-                sessionDao.insertActiveSession(session)
-                StartSessionResult.Started((synchronizeActiveSession(now) ?: session).toDomain())
+                createStartedSession(projectId, project.count, sessionTimeSource.snapshot())
             }
 
         suspend fun checkpointActiveSession(): ActiveWorkSession? =
@@ -1035,15 +1008,8 @@ class CounterRepository
             runSessionMutation(RecoveryResolutionResult.PersistenceFailure) {
                 if (durationSeconds < 0L) return@runSessionMutation RecoveryResolutionResult.InvalidDuration
                 val active =
-                    sessionDao.getActiveSession()
+                    activeRecoverySession(sessionToken, recoveryIntervalToken)
                         ?: return@runSessionMutation RecoveryResolutionResult.StaleAction
-                if (
-                    active.sessionToken != sessionToken ||
-                    active.recoveryIntervalToken != recoveryIntervalToken ||
-                    active.recoveryReason == null
-                ) {
-                    return@runSessionMutation RecoveryResolutionResult.StaleAction
-                }
                 val now = sessionTimeSource.snapshot()
                 val checkpointed = saturatingAdd(active.checkpointedDurationSeconds, durationSeconds)
                 val updated =
@@ -1076,15 +1042,8 @@ class CounterRepository
         ): RecoveryResolutionResult =
             runSessionMutation(RecoveryResolutionResult.PersistenceFailure) {
                 val active =
-                    sessionDao.getActiveSession()
+                    activeRecoverySession(sessionToken, recoveryIntervalToken)
                         ?: return@runSessionMutation RecoveryResolutionResult.StaleAction
-                if (
-                    active.sessionToken != sessionToken ||
-                    active.recoveryIntervalToken != recoveryIntervalToken ||
-                    active.recoveryReason == null
-                ) {
-                    return@runSessionMutation RecoveryResolutionResult.StaleAction
-                }
                 if (!canRepresentCompletedDuration(active.startedAtWallMillis, totalDurationSeconds)) {
                     return@runSessionMutation RecoveryResolutionResult.InvalidDuration
                 }
@@ -1125,6 +1084,16 @@ class CounterRepository
                 RecoveryResolutionResult.DiscardedAndStopped(completedSessionId)
             }
 
+        private suspend fun activeRecoverySession(
+            sessionToken: String,
+            recoveryIntervalToken: String,
+        ): ActiveSessionEntity? =
+            sessionDao.getActiveSession()?.takeIf { active ->
+                active.sessionToken == sessionToken &&
+                    active.recoveryIntervalToken == recoveryIntervalToken &&
+                    active.recoveryReason != null
+            }
+
         suspend fun replaceActiveSession(
             requestedProjectId: Long,
             expectedSessionToken: String,
@@ -1161,9 +1130,9 @@ class CounterRepository
             completedAtMillis: Long? = null,
         ): ProjectCompletionResult =
             runSessionMutation(ProjectCompletionResult.PersistenceFailure) {
-                val project =
-                    dao.getProject(projectId)
-                        ?: return@runSessionMutation ProjectCompletionResult.ProjectUnavailable
+                if (dao.getProject(projectId) == null) {
+                    return@runSessionMutation ProjectCompletionResult.ProjectUnavailable
+                }
                 val now = sessionTimeSource.snapshot()
                 val active = synchronizeActiveSession(now)
                 if (active?.projectId == projectId) {

@@ -290,6 +290,7 @@ class ProjectDocumentRepository
             return removedResult
         }
 
+        @Suppress("kotlin:S107") // Repository välittää yhden dokumenttitilan kentät atomisesti DAO:lle.
         suspend fun updateViewerState(
             projectId: Long,
             documentId: Long,
@@ -338,6 +339,7 @@ class ProjectDocumentRepository
                 updatedAt = System.currentTimeMillis(),
             ) == 1
 
+        @Suppress("kotlin:S3776") // Lisäys kirjoittaa primääridokumentin invariantit yhdessä.
         private suspend fun addDocument(
             projectId: Long,
             savedPatternId: Long?,

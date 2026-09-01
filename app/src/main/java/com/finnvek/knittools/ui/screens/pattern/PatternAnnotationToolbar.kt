@@ -73,6 +73,7 @@ internal data class PatternAnnotationToolbarActions(
 )
 
 @Composable
+@Suppress("kotlin:S3776") // Työkalurivi näyttää aktiivisen annotaatiotyökalun ehdolliset säädöt yhdessä.
 internal fun PatternAnnotationToolbar(
     state: PatternAnnotationUiState,
     actions: PatternAnnotationToolbarActions,

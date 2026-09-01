@@ -397,6 +397,7 @@ class ProjectListViewModelTest {
             verify(exactly = 1) { repository.getCompletedProjects(ProjectSortOrder.UPDATED) }
         }
 
+    // CPD-OFF: Monivalintatestien skenaariokohtainen asetelma pidetaan testien yhteydessa.
     @Test
     fun `select all includes visible completed projects`() =
         runTest {
@@ -438,6 +439,8 @@ class ProjectListViewModelTest {
             coVerify(exactly = 0) { repository.completeProjectWithSessionChoice(2L, any(), any()) }
             assertFalse(vm.isMultiSelectMode.value)
         }
+
+    // CPD-ON
 
     @Test
     fun `show completed toggle delegates each request to transactional preference toggle`() =

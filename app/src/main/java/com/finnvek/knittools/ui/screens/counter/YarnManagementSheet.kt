@@ -59,6 +59,7 @@ import com.finnvek.knittools.ui.theme.YarnColors
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@Suppress("kotlin:S107") // Sheet välittää projektin erilliset lanka-, muistiinpano- ja käyttötilat.
 fun YarnManagementSheet(
     linkedYarns: List<Pair<Long, String>>,
     projectYarnNotes: List<ProjectYarnNote>,

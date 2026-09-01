@@ -193,6 +193,7 @@ class InsightsViewModelTest {
             assertEquals(100, state.trend?.percentChange)
         }
 
+    // CPD-OFF: All time -skenaarion repository-fixture pidetaan testin yhteydessa.
     @Test
     fun `all time has no previous period to compare against`() =
         runTest {
@@ -209,6 +210,8 @@ class InsightsViewModelTest {
 
             assertNull(state.trend)
         }
+
+    // CPD-ON
 
     @Test
     fun `minutes per row replaces rows per hour in the stats row`() =

@@ -15,7 +15,13 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertWidthIsAtLeast
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasAnyDescendant
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasScrollToIndexAction
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
@@ -28,6 +34,8 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.platform.app.InstrumentationRegistry
 import com.finnvek.knittools.domain.model.ProjectDocument
+import com.finnvek.knittools.domain.model.SavedPattern
+import com.finnvek.knittools.domain.model.SavedPatternSource
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -39,6 +47,82 @@ import java.io.FileOutputStream
 class ProjectDocumentsSheetTest {
     @get:Rule
     val composeRule = createComposeRule()
+
+    // CPD-OFF: Compose-testien skenaariokohtainen asetelma pidetaan testien yhteydessa.
+    @Test
+    fun webPatternInformationKeepsWebsiteActionsSeparateFromDocuments() {
+        var opened = 0
+        var edited = 0
+        composeRule.setContent {
+            MaterialTheme {
+                ProjectDocumentsSheet(
+                    state = state(),
+                    metadataPattern = webPattern(),
+                    onOpenPatternWebsite = { opened += 1 },
+                    onEditPatternInformation = { edited += 1 },
+                    onUnlinkPatternInformation = {},
+                    onDismiss = {},
+                    onSelect = {},
+                    onRename = { _, _ -> },
+                    onMoveEarlier = {},
+                    onMoveLater = {},
+                    onSetPrimary = {},
+                    onRemove = {},
+                    onAdd = {},
+                    onClearError = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Web cardigan").assertIsDisplayed()
+        composeRule.onNodeWithText("Pattern designer").assertIsDisplayed()
+        composeRule.onNodeWithText("example.com").assertIsDisplayed()
+        composeRule.onNodeWithText("Open website").performClick()
+        composeRule.onNodeWithText("Edit web pattern").performClick()
+        composeRule.waitUntil(timeoutMillis = 5_000) { edited == 1 }
+        composeRule.runOnIdle {
+            assertEquals(1, opened)
+            assertEquals(1, edited)
+        }
+    }
+
+    @Test
+    fun metadataOnlyWebPatternRequiresConfirmationBeforeUnlinkAndShowsNoDocumentActions() {
+        var unlinked = 0
+        composeRule.setContent {
+            MaterialTheme {
+                ProjectDocumentsSheet(
+                    state = ProjectDocumentUiState(isLoading = false),
+                    metadataPattern = webPattern(),
+                    onUnlinkPatternInformation = { unlinked += 1 },
+                    onDismiss = {},
+                    onSelect = {},
+                    onRename = { _, _ -> },
+                    onMoveEarlier = {},
+                    onMoveLater = {},
+                    onSetPrimary = {},
+                    onRemove = {},
+                    onAdd = {},
+                    onClearError = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Set as primary").assertDoesNotExist()
+        composeRule.onNodeWithText("Open PDF").assertDoesNotExist()
+        composeRule.onNodeWithText("Unlink pattern information").performClick()
+        val confirmationText = "Unlink pattern information for Web cardigan"
+        composeRule.onNodeWithText(confirmationText).assertIsDisplayed()
+        composeRule
+            .onNode(
+                hasText("Unlink pattern information") and
+                    hasClickAction() and
+                    hasAnyAncestor(isDialog() and hasAnyDescendant(hasText(confirmationText))) and
+                    hasContentDescription(confirmationText).not(),
+            ).performClick()
+        composeRule.waitUntil(timeoutMillis = 5_000) { unlinked == 1 }
+        composeRule.runOnIdle { assertEquals(1, unlinked) }
+    }
 
     @Test
     fun addWaitsForDocumentSheetToHideBeforeOpeningNextSurface() {
@@ -302,6 +386,9 @@ class ProjectDocumentsSheetTest {
         composeRule.runOnIdle { assertEquals(2L, primaryId) }
     }
 
+    // CPD-ON
+
+    // CPD-OFF: Kuvakaappaus- ja testidata-apurit pidetaan testiluokan yhteydessa.
     private fun captureScreenshot(name: String) {
         composeRule.waitForIdle()
         val instrumentation = InstrumentationRegistry.getInstrumentation()
@@ -325,6 +412,16 @@ class ProjectDocumentsSheetTest {
             selectedDocumentId = 1L,
             availability = mapOf(1L to true, 2L to false),
             isLoading = false,
+        )
+
+    private fun webPattern() =
+        SavedPattern(
+            id = 9L,
+            source = SavedPatternSource.WebLink,
+            name = "Web cardigan",
+            designerName = "Pattern designer",
+            originalUrl = "https://example.com/pattern",
+            canonicalUrl = "https://example.com/pattern",
         )
 
     private fun document(
@@ -355,4 +452,5 @@ class ProjectDocumentsSheetTest {
         private const val SCREENSHOT_DIRECTORY = "project-document-screenshots"
         private val PNG_SIGNATURE = byteArrayOf(-119, 80, 78, 71, 13, 10, 26, 10)
     }
+    // CPD-ON
 }

@@ -184,7 +184,11 @@ fun CounterWorkspace(
         item(key = "project-content") {
             ProjectContentCards(
                 onCardClick = { kind -> actions.onProjectContentClick(kind, state) },
-                hasPattern = state.projectDocuments.isNotEmpty(),
+                hasPattern =
+                    hasProjectPatternContent(
+                        hasMetadataLink = state.linkedPattern != null,
+                        hasDocuments = state.projectDocuments.isNotEmpty(),
+                    ),
             )
         }
         if (state.projectCounters.isNotEmpty()) {
@@ -335,10 +339,17 @@ private fun CounterWorkspaceActions.onProjectContentClick(
     when (kind) {
         ProjectContentCardKind.PATTERN -> {
             val primary = state.primaryDocument
-            when {
-                primary != null && state.projectDocumentAvailability[primary.id] == true -> onOpenPattern()
-                primary != null -> onShowDocuments()
-                else -> onShowPatternPicker()
+            when (
+                projectPatternCardAction(
+                    hasMetadataLink = state.linkedPattern != null,
+                    hasPrimaryDocument = primary != null,
+                    primaryAvailable = primary != null && state.projectDocumentAvailability[primary.id] == true,
+                )
+            ) {
+                ProjectPatternCardAction.OpenPrimaryDocument -> onOpenPattern()
+                ProjectPatternCardAction.OpenDocumentRecovery -> onShowDocuments()
+                ProjectPatternCardAction.OpenMetadataDetail -> onOpenSavedPatternDetail()
+                ProjectPatternCardAction.OpenPicker -> onShowPatternPicker()
             }
         }
 

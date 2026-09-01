@@ -24,6 +24,7 @@ class PatternImageImportSurfaceTest {
     @get:Rule
     val composeRule = createComposeRule()
 
+    // CPD-OFF: Compose-testin pintafixture pidetaan skenaarion yhteydessa.
     @Test
     fun onePageShowsAccessibleOrderControlsAndCreateAction() {
         composeRule.setContent {
@@ -48,6 +49,8 @@ class PatternImageImportSurfaceTest {
         composeRule.onNodeWithContentDescription("Remove page 1").assertIsEnabled().assertHeightIsAtLeast(48.dp)
         composeRule.onNodeWithText("Create pattern PDF").assertIsEnabled().assertHeightIsAtLeast(48.dp)
     }
+
+    // CPD-ON
 
     @Test
     fun conversionProgressIsVisibleAndControlsAreDisabled() {

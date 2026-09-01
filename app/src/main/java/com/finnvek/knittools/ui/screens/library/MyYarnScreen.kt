@@ -103,6 +103,7 @@ private enum class PendingYarnProAction {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@Suppress("kotlin:S3776") // Näkymä kokoaa lankakortin dialogit ja sheetit yhden tilan alle.
 fun MyYarnScreen(
     state: MyYarnState,
     actions: MyYarnActions,

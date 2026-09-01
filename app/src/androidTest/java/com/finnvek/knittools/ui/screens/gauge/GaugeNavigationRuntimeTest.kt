@@ -105,6 +105,7 @@ class GaugeNavigationRuntimeTest {
         assertEquals(before, databaseSnapshot())
     }
 
+    // CPD-OFF: Navigaatiotestin perakkaiset tilatarkistukset pidetaan skenaarion yhteydessa.
     @Test
     fun projectEntryCopiesAndRestoresRealActivityStateWithoutMutatingProject() {
         createProjectFixture()
@@ -151,6 +152,8 @@ class GaugeNavigationRuntimeTest {
         assertTextAbsent(text(R.string.measurement_task))
         assertEquals(before, databaseSnapshot())
     }
+
+    // CPD-ON
 
     @Test
     fun deletedProjectBecomesGenericAndKeepsTemporaryInputsAfterRecreation() {
@@ -418,6 +421,7 @@ class GaugeNavigationRuntimeTest {
         if (node.refresh() && node.performAction(action)) waitForUiIdle()
     }
 
+    // CPD-OFF: UIAutomator-odotusapujen toistuva rakenne pidetaan runtime-testin yhteydessa.
     private fun waitForUiIdle() {
         InstrumentationRegistry.getInstrumentation().uiAutomation.waitForIdle(UI_IDLE_MILLIS, UI_TIMEOUT_MILLIS)
     }
@@ -445,6 +449,7 @@ class GaugeNavigationRuntimeTest {
         }
         throw AssertionError("Timed out waiting for " + description)
     }
+    // CPD-ON
 
     private fun hasText(
         node: AccessibilityNodeInfo,

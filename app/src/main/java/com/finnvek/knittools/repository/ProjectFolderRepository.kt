@@ -194,6 +194,7 @@ class ProjectFolderRepository
                 ProjectFolderMutationResult.Deleted(folder.toDomain(), affectedProjectCount)
             }
 
+        @Suppress("kotlin:S3776") // Monisiirron validointi ja jäsenyyskirjoitus kuuluvat samaan atomiseen operaatioon.
         suspend fun moveProjects(
             projectIds: Collection<Long>,
             folderId: Long?,

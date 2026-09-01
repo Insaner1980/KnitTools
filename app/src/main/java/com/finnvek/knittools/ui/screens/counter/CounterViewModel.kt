@@ -41,6 +41,7 @@ import com.finnvek.knittools.domain.model.RowReminder
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.domain.model.displayName
+import com.finnvek.knittools.domain.model.isWebPatternCompatible
 import com.finnvek.knittools.domain.model.parseYarnCardIds
 import com.finnvek.knittools.domain.model.sanitizeReadingGuideFraction
 import com.finnvek.knittools.domain.model.sanitizeReadingLineYFraction
@@ -60,6 +61,7 @@ import com.finnvek.knittools.repository.ProjectDocumentRepository
 import com.finnvek.knittools.repository.ProjectYarnNoteRepository
 import com.finnvek.knittools.repository.RecoveryResolutionResult
 import com.finnvek.knittools.repository.ReminderRepository
+import com.finnvek.knittools.repository.SavedPatternMetadataMutationResult
 import com.finnvek.knittools.repository.SavedPatternRepository
 import com.finnvek.knittools.repository.StartSessionResult
 import com.finnvek.knittools.repository.StopSessionResult
@@ -363,7 +365,12 @@ class CounterViewModel
             selectedProjectJob =
                 viewModelScope.launch {
                     var previousObservedProject: CounterProject? = null
-                    repository.observeProject(projectId).collect { project ->
+                    combine(
+                        repository.observeProject(projectId),
+                        savedPatternRepository.getAll(),
+                    ) { project, patterns ->
+                        project to project?.linkedPatternId?.let { id -> patterns.firstOrNull { it.id == id } }
+                    }.collect { (project, linkedPattern) ->
                         if (project == null) {
                             _uiState.update { it.copy(projectId = null) }
                             return@collect
@@ -371,7 +378,9 @@ class CounterViewModel
 
                         val previousState = _uiState.value
                         val countChanged = previousState.counter.count != project.count
-                        _uiState.update { state -> state.withObservedProject(project) }
+                        _uiState.update { state ->
+                            state.withObservedProject(project).copy(linkedPattern = linkedPattern)
+                        }
                         val previousProject = previousObservedProject
                         if (shouldAnnounceAutomaticPageChange(previousProject, project)) {
                             _viewerEvents.emit(
@@ -405,15 +414,6 @@ class CounterViewModel
             viewModelScope.launch {
                 yarnCardRepository.updateLinkedProjectId(cardId, null)
             }
-        }
-
-        private suspend fun loadLinkedPattern(linkedPatternId: Long?) {
-            if (linkedPatternId == null) {
-                _uiState.update { it.copy(linkedPattern = null) }
-                return
-            }
-            val pattern = savedPatternRepository.getById(linkedPatternId)
-            _uiState.update { it.copy(linkedPattern = pattern) }
         }
 
         private suspend fun loadLinkedYarnNames(yarnCardIds: String) {
@@ -517,7 +517,6 @@ class CounterViewModel
             observeProjectDocuments(project.id)
             syncWidget()
             loadLinkedYarnNames(project.yarnCardIds)
-            loadLinkedPattern(project.linkedPatternId)
             attachPendingSavedPatternIfReady()
             loadTotalSessionMinutes(project.id)
         }
@@ -1593,11 +1592,64 @@ class CounterViewModel
                 return
             }
             pendingSavedPatternAttachment = null
+            if (pattern.isWebPatternCompatible) {
+                attachSavedPatternMetadata(pattern.id)
+                return
+            }
             viewModelScope.launch {
                 repository.attachSavedPattern(
                     projectId = projectId,
                     savedPatternId = pattern.id,
                 )
+            }
+        }
+
+        fun attachSavedPatternMetadata(
+            savedPatternId: Long,
+            expectedExistingSavedPatternId: Long? = null,
+            onResult: (SavedPatternMetadataMutationResult) -> Unit = {},
+        ) {
+            val projectId = _uiState.value.projectId
+            if (projectId == null || savedPatternId <= 0L) {
+                onResult(SavedPatternMetadataMutationResult.ProjectMissing)
+                return
+            }
+            viewModelScope.launch {
+                val result =
+                    try {
+                        repository.attachSavedPatternMetadata(
+                            projectId = projectId,
+                            savedPatternId = savedPatternId,
+                            expectedExistingSavedPatternId = expectedExistingSavedPatternId,
+                        )
+                    } catch (cancellation: CancellationException) {
+                        throw cancellation
+                    } catch (_: Exception) {
+                        SavedPatternMetadataMutationResult.PersistenceFailure
+                    }
+                onResult(result)
+            }
+        }
+
+        fun unlinkSavedPatternMetadata(
+            expectedSavedPatternId: Long,
+            onResult: (SavedPatternMetadataMutationResult) -> Unit = {},
+        ) {
+            val projectId = _uiState.value.projectId
+            if (projectId == null || expectedSavedPatternId <= 0L) {
+                onResult(SavedPatternMetadataMutationResult.ProjectMissing)
+                return
+            }
+            viewModelScope.launch {
+                val result =
+                    try {
+                        repository.unlinkSavedPatternMetadata(projectId, expectedSavedPatternId)
+                    } catch (cancellation: CancellationException) {
+                        throw cancellation
+                    } catch (_: Exception) {
+                        SavedPatternMetadataMutationResult.PersistenceFailure
+                    }
+                onResult(result)
             }
         }
 

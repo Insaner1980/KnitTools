@@ -20,6 +20,7 @@ class ProjectDocumentDatabaseTest {
     private lateinit var database: KnitToolsDatabase
     private lateinit var dao: ProjectDocumentDao
 
+    // CPD-OFF: Room-testin tietokanta-alustus pidetaan skeematestin yhteydessa.
     @Before
     fun setUp() {
         database =
@@ -33,6 +34,8 @@ class ProjectDocumentDatabaseTest {
                 .build()
         dao = database.projectDocumentDao()
     }
+
+    // CPD-ON
 
     @After
     fun tearDown() {
@@ -169,6 +172,7 @@ class ProjectDocumentDatabaseTest {
             assertEquals(false, dao.isUriReferenced("file:///missing.pdf"))
         }
 
+    // CPD-OFF: Dokumenttientiteetin testidata pidetaan skeematestin yhteydessa.
     private fun document(
         projectId: Long,
         id: Long = 0,
@@ -196,6 +200,8 @@ class ProjectDocumentDatabaseTest {
         createdAt = 1,
         updatedAt = 1,
     )
+
+    // CPD-ON
 
     private suspend fun assertConstraintFailure(block: suspend () -> Unit) {
         try {

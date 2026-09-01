@@ -46,6 +46,7 @@
       "findingPath": "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterWorkspaceSections.kt",
       "findingSelectors": [
         "key = \"active-reminder-alert\"",
+        "key = \"active-work-session\"",
         "key = \"counter-hero-reveal-gap\"",
         "key = \"counter-hero\"",
         "key = \"extra-counters-title\"",
@@ -151,6 +152,328 @@
       ]
     },
     {
+      "id": "knittools-mobsf-hardcoded-pattern-bookmark-lifecycle-test",
+      "tool": "mobsfscan",
+      "rule": "android_kotlin_hardcoded",
+      "scope": "Pattern bookmark document-key fixtures in PatternBookmarkLifecycleTest.kt",
+      "reason": "The exact MobSF matches are test document identifiers, not credentials or secrets.",
+      "owner": "project-maintainers",
+      "added": "2026-08-31",
+      "expires": "2026-10-31",
+      "tracking": "local-review:knittools-mobsf-hardcoded-pattern-bookmark-lifecycle-test",
+      "sourcePath": "app/src/androidTest/java/com/finnvek/knittools/data/local/PatternBookmarkLifecycleTest.kt",
+      "selector": "ORIGINAL_KEY = \"saved:91:v1\"",
+      "findingPath": "app/src/androidTest/java/com/finnvek/knittools/data/local/PatternBookmarkLifecycleTest.kt",
+      "findingSelectors": [
+        "key = \"saved:91:v1\"",
+        "key = \"saved:92:v1\""
+      ]
+    },
+    {
+      "id": "knittools-mobsf-hardcoded-project-document-database-test",
+      "tool": "mobsfscan",
+      "rule": "android_kotlin_hardcoded",
+      "scope": "Project document key fixtures in ProjectDocumentDatabaseTest.kt",
+      "reason": "The exact MobSF matches are test document identifiers, not credentials or secrets.",
+      "owner": "project-maintainers",
+      "added": "2026-08-31",
+      "expires": "2026-10-31",
+      "tracking": "local-review:knittools-mobsf-hardcoded-project-document-database-test",
+      "sourcePath": "app/src/androidTest/java/com/finnvek/knittools/data/local/ProjectDocumentDatabaseTest.kt",
+      "selector": "key = \"a\"",
+      "findingPath": "app/src/androidTest/java/com/finnvek/knittools/data/local/ProjectDocumentDatabaseTest.kt",
+      "findingSelectors": [
+        "key = \"a\"",
+        "key = \"a\", uri = \"file:///other.pdf\"",
+        "key = \"b\", uri = \"file:///b.pdf\"",
+        "key = \"first\", uri = \"file:///first.pdf\"",
+        "key = \"other\", uri = \"file:///a.pdf\"",
+        "key = \"primary-2\"",
+        "key = \"saved-duplicate\"",
+        "key = \"second\"",
+        "key = \"sock\"",
+        "key = \"tied\", uri = \"file:///tied.pdf\""
+      ]
+    },
+    {
+      "id": "knittools-mobsf-hardcoded-project-document-migration-test",
+      "tool": "mobsfscan",
+      "rule": "android_kotlin_hardcoded",
+      "scope": "Project document key fixtures in ProjectDocumentMigration22Test.kt",
+      "reason": "The exact MobSF matches are test document identifiers, not credentials or secrets.",
+      "owner": "project-maintainers",
+      "added": "2026-08-31",
+      "expires": "2026-10-31",
+      "tracking": "local-review:knittools-mobsf-hardcoded-project-document-migration-test",
+      "sourcePath": "app/src/androidTest/java/com/finnvek/knittools/data/local/ProjectDocumentMigration22Test.kt",
+      "selector": "legacy-project:3",
+      "findingPath": "app/src/androidTest/java/com/finnvek/knittools/data/local/ProjectDocumentMigration22Test.kt",
+      "findingSelectors": [
+        "key = \"legacy-project:3\"",
+        "key = \"legacy-project:5\"",
+        "key = \"stable-project-key\""
+      ]
+    },
+    {
+      "id": "knittools-mobsf-hardcoded-project-folder-migration-test",
+      "tool": "mobsfscan",
+      "rule": "android_kotlin_hardcoded",
+      "scope": "Project document-key SQL fixture in ProjectFolderMigration23Test.kt",
+      "reason": "The exact MobSF match is a test document identifier, not a credential or secret.",
+      "owner": "project-maintainers",
+      "added": "2026-08-31",
+      "expires": "2026-10-31",
+      "tracking": "local-review:knittools-mobsf-hardcoded-project-folder-migration-test",
+      "sourcePath": "app/src/androidTest/java/com/finnvek/knittools/data/local/ProjectFolderMigration23Test.kt",
+      "selector": "documentKey = 'document-key'",
+      "findingPath": "app/src/androidTest/java/com/finnvek/knittools/data/local/ProjectFolderMigration23Test.kt",
+      "findingSelectors": [
+        "key = 'document-key'\""
+      ]
+    },
+    {
+      "id": "knittools-mobsf-hardcoded-web-pattern-room-test",
+      "tool": "mobsfscan",
+      "rule": "android_kotlin_hardcoded",
+      "scope": "Generated project document key in WebPatternRepositoryRoomTest.kt",
+      "reason": "The exact MobSF match is a test document identifier, not a credential or secret.",
+      "owner": "project-maintainers",
+      "added": "2026-08-31",
+      "expires": "2026-10-31",
+      "tracking": "local-review:knittools-mobsf-hardcoded-web-pattern-room-test",
+      "sourcePath": "app/src/androidTest/java/com/finnvek/knittools/repository/WebPatternRepositoryRoomTest.kt",
+      "selector": "documentKey = \"project:$projectId:$suffix\"",
+      "findingPath": "app/src/androidTest/java/com/finnvek/knittools/repository/WebPatternRepositoryRoomTest.kt",
+      "findingSelectors": [
+        "key = \"project:$projectid:$suffix\""
+      ]
+    },
+    {
+      "id": "knittools-mobsf-hardcoded-pattern-reading-assistance-test",
+      "tool": "mobsfscan",
+      "rule": "android_kotlin_hardcoded",
+      "scope": "Pattern document key fixture in PatternReadingAssistanceComposeTest.kt",
+      "reason": "The exact MobSF match is a test document identifier, not a credential or secret.",
+      "owner": "project-maintainers",
+      "added": "2026-08-31",
+      "expires": "2026-10-31",
+      "tracking": "local-review:knittools-mobsf-hardcoded-pattern-reading-assistance-test",
+      "sourcePath": "app/src/androidTest/java/com/finnvek/knittools/ui/screens/pattern/PatternReadingAssistanceComposeTest.kt",
+      "selector": "DOCUMENT_KEY = \"saved:91:v1\"",
+      "findingPath": "app/src/androidTest/java/com/finnvek/knittools/ui/screens/pattern/PatternReadingAssistanceComposeTest.kt",
+      "findingSelectors": [
+        "key = \"saved:91:v1\""
+      ]
+    },
+    {
+      "id": "knittools-mobsf-hardcoded-project-documents-sheet-test",
+      "tool": "mobsfscan",
+      "rule": "android_kotlin_hardcoded",
+      "scope": "Generated project document key in ProjectDocumentsSheetTest.kt",
+      "reason": "The exact MobSF match is a test document identifier, not a credential or secret.",
+      "owner": "project-maintainers",
+      "added": "2026-08-31",
+      "expires": "2026-10-31",
+      "tracking": "local-review:knittools-mobsf-hardcoded-project-documents-sheet-test",
+      "sourcePath": "app/src/androidTest/java/com/finnvek/knittools/ui/screens/pattern/ProjectDocumentsSheetTest.kt",
+      "selector": "documentKey = \"document:$id\"",
+      "findingPath": "app/src/androidTest/java/com/finnvek/knittools/ui/screens/pattern/ProjectDocumentsSheetTest.kt",
+      "findingSelectors": [
+        "key = \"document:$id\""
+      ]
+    },
+    {
+      "id": "knittools-mobsf-hardcoded-gauge-state-key",
+      "tool": "mobsfscan",
+      "rule": "android_kotlin_hardcoded",
+      "scope": "SavedStateHandle measurement namespace in GaugeViewModel.kt",
+      "reason": "The exact MobSF matches are generated SavedStateHandle state keys, not credentials or secrets.",
+      "owner": "project-maintainers",
+      "added": "2026-08-31",
+      "expires": "2026-10-31",
+      "tracking": "local-review:knittools-mobsf-hardcoded-gauge-state-key",
+      "sourcePath": "app/src/main/java/com/finnvek/knittools/ui/screens/gauge/GaugeViewModel.kt",
+      "selector": "val key = \"measurement.${field.name}\"",
+      "findingPath": "app/src/main/java/com/finnvek/knittools/ui/screens/gauge/GaugeViewModel.kt",
+      "findingSelectors": [
+        "key = \"measurement.${field.name}\""
+      ]
+    },
+    {
+      "id": "knittools-mobsf-hardcoded-pattern-viewer-state-keys",
+      "tool": "mobsfscan",
+      "rule": "android_kotlin_hardcoded",
+      "scope": "SavedStateHandle route keys in PatternViewerViewModel.kt",
+      "reason": "The exact MobSF matches are SavedStateHandle state keys, not credentials or secrets.",
+      "owner": "project-maintainers",
+      "added": "2026-08-31",
+      "expires": "2026-10-31",
+      "tracking": "local-review:knittools-mobsf-hardcoded-pattern-viewer-state-keys",
+      "sourcePath": "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternViewerViewModel.kt",
+      "selector": "PROJECT_ID_KEY = \"projectId\"",
+      "findingPath": "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternViewerViewModel.kt",
+      "findingSelectors": [
+        "key = \"projectid\"",
+        "key = \"selectedprojectdocumentid\""
+      ]
+    },
+    {
+      "id": "knittools-mobsf-hardcoded-project-document-model-test",
+      "tool": "mobsfscan",
+      "rule": "android_kotlin_hardcoded",
+      "scope": "Generated project document key in ProjectDocumentTest.kt",
+      "reason": "The exact MobSF match is a test document identifier, not a credential or secret.",
+      "owner": "project-maintainers",
+      "added": "2026-08-31",
+      "expires": "2026-10-31",
+      "tracking": "local-review:knittools-mobsf-hardcoded-project-document-model-test",
+      "sourcePath": "app/src/test/java/com/finnvek/knittools/domain/model/ProjectDocumentTest.kt",
+      "selector": "documentKey = \"document-$id\"",
+      "findingPath": "app/src/test/java/com/finnvek/knittools/domain/model/ProjectDocumentTest.kt",
+      "findingSelectors": [
+        "key = \"document-$id\""
+      ]
+    },
+    {
+      "id": "knittools-mobsf-hardcoded-counter-repository-domain-test",
+      "tool": "mobsfscan",
+      "rule": "android_kotlin_hardcoded",
+      "scope": "Project document key fixture in CounterRepositoryDomainApiTest.kt",
+      "reason": "The exact MobSF match is a test document identifier, not a credential or secret.",
+      "owner": "project-maintainers",
+      "added": "2026-08-31",
+      "expires": "2026-10-31",
+      "tracking": "local-review:knittools-mobsf-hardcoded-counter-repository-domain-test",
+      "sourcePath": "app/src/test/java/com/finnvek/knittools/repository/CounterRepositoryDomainApiTest.kt",
+      "selector": "documentKey = \"project:7:document\"",
+      "findingPath": "app/src/test/java/com/finnvek/knittools/repository/CounterRepositoryDomainApiTest.kt",
+      "findingSelectors": [
+        "key = \"project:7:document\""
+      ]
+    },
+    {
+      "id": "knittools-mobsf-hardcoded-main-counter-change-test",
+      "tool": "mobsfscan",
+      "rule": "android_kotlin_hardcoded",
+      "scope": "Imported project document key fixture in CounterRepositoryMainCounterChangeTest.kt",
+      "reason": "The exact MobSF match is a test document identifier, not a credential or secret.",
+      "owner": "project-maintainers",
+      "added": "2026-08-31",
+      "expires": "2026-10-31",
+      "tracking": "local-review:knittools-mobsf-hardcoded-main-counter-change-test",
+      "sourcePath": "app/src/test/java/com/finnvek/knittools/repository/CounterRepositoryMainCounterChangeTest.kt",
+      "selector": "documentKey = \"import:21\"",
+      "findingPath": "app/src/test/java/com/finnvek/knittools/repository/CounterRepositoryMainCounterChangeTest.kt",
+      "findingSelectors": [
+        "key = \"import:21\""
+      ]
+    },
+    {
+      "id": "knittools-mobsf-hardcoded-pattern-bookmark-repository-test",
+      "tool": "mobsfscan",
+      "rule": "android_kotlin_hardcoded",
+      "scope": "Pattern bookmark document-key fixtures in PatternBookmarkRepositoryTest.kt",
+      "reason": "The exact MobSF matches are test document identifiers, not credentials or secrets.",
+      "owner": "project-maintainers",
+      "added": "2026-08-31",
+      "expires": "2026-10-31",
+      "tracking": "local-review:knittools-mobsf-hardcoded-pattern-bookmark-repository-test",
+      "sourcePath": "app/src/test/java/com/finnvek/knittools/repository/PatternBookmarkRepositoryTest.kt",
+      "selector": "documentKey = \"saved:90:v1\"",
+      "findingPath": "app/src/test/java/com/finnvek/knittools/repository/PatternBookmarkRepositoryTest.kt",
+      "findingSelectors": [
+        "key = \"saved:90:v1\"",
+        "key = \"saved:91:v1\"",
+        "key = \"saved:other:v1\""
+      ]
+    },
+    {
+      "id": "knittools-mobsf-hardcoded-project-document-repository-test",
+      "tool": "mobsfscan",
+      "rule": "android_kotlin_hardcoded",
+      "scope": "Project document key fixtures in ProjectDocumentRepositoryTest.kt",
+      "reason": "The exact MobSF matches are test document identifiers, not credentials or secrets.",
+      "owner": "project-maintainers",
+      "added": "2026-08-31",
+      "expires": "2026-10-31",
+      "tracking": "local-review:knittools-mobsf-hardcoded-project-document-repository-test",
+      "sourcePath": "app/src/test/java/com/finnvek/knittools/repository/ProjectDocumentRepositoryTest.kt",
+      "selector": "key = \"local:a\"",
+      "findingPath": "app/src/test/java/com/finnvek/knittools/repository/ProjectDocumentRepositoryTest.kt",
+      "findingSelectors": [
+        "key = \"local:a\"",
+        "key = \"local:b\""
+      ]
+    },
+    {
+      "id": "knittools-mobsf-hardcoded-repository-transaction-test",
+      "tool": "mobsfscan",
+      "rule": "android_kotlin_hardcoded",
+      "scope": "Saved-pattern document key fixture in RepositoryTransactionBoundaryTest.kt",
+      "reason": "The exact MobSF match is a test document identifier, not a credential or secret.",
+      "owner": "project-maintainers",
+      "added": "2026-08-31",
+      "expires": "2026-10-31",
+      "tracking": "local-review:knittools-mobsf-hardcoded-repository-transaction-test",
+      "sourcePath": "app/src/test/java/com/finnvek/knittools/repository/RepositoryTransactionBoundaryTest.kt",
+      "selector": "documentKey = \"saved-pattern:11\"",
+      "findingPath": "app/src/test/java/com/finnvek/knittools/repository/RepositoryTransactionBoundaryTest.kt",
+      "findingSelectors": [
+        "key = \"saved-pattern:11\""
+      ]
+    },
+    {
+      "id": "knittools-mobsf-hardcoded-counter-view-model-test",
+      "tool": "mobsfscan",
+      "rule": "android_kotlin_hardcoded",
+      "scope": "Generated project document key in CounterViewModelTest.kt",
+      "reason": "The exact MobSF match is a test document identifier, not a credential or secret.",
+      "owner": "project-maintainers",
+      "added": "2026-08-31",
+      "expires": "2026-10-31",
+      "tracking": "local-review:knittools-mobsf-hardcoded-counter-view-model-test",
+      "sourcePath": "app/src/test/java/com/finnvek/knittools/ui/screens/counter/CounterViewModelTest.kt",
+      "selector": "documentKey = \"local:$id\"",
+      "findingPath": "app/src/test/java/com/finnvek/knittools/ui/screens/counter/CounterViewModelTest.kt",
+      "findingSelectors": [
+        "key = \"local:$id\""
+      ]
+    },
+    {
+      "id": "knittools-mobsf-hardcoded-pattern-viewer-behavior-test",
+      "tool": "mobsfscan",
+      "rule": "android_kotlin_hardcoded",
+      "scope": "Pattern document key fixture in PatternViewerBehaviorTest.kt",
+      "reason": "The exact MobSF match is a test document identifier, not a credential or secret.",
+      "owner": "project-maintainers",
+      "added": "2026-08-31",
+      "expires": "2026-10-31",
+      "tracking": "local-review:knittools-mobsf-hardcoded-pattern-viewer-behavior-test",
+      "sourcePath": "app/src/test/java/com/finnvek/knittools/ui/screens/pattern/PatternViewerBehaviorTest.kt",
+      "selector": "documentKey = \"saved:91:v1\"",
+      "findingPath": "app/src/test/java/com/finnvek/knittools/ui/screens/pattern/PatternViewerBehaviorTest.kt",
+      "findingSelectors": [
+        "key = \"saved:91:v1\""
+      ]
+    },
+    {
+      "id": "knittools-mobsf-hardcoded-project-list-view-model-test",
+      "tool": "mobsfscan",
+      "rule": "android_kotlin_hardcoded",
+      "scope": "Project document key fixture in ProjectListViewModelTest.kt",
+      "reason": "The exact MobSF match is a test document identifier, not a credential or secret.",
+      "owner": "project-maintainers",
+      "added": "2026-08-31",
+      "expires": "2026-10-31",
+      "tracking": "local-review:knittools-mobsf-hardcoded-project-list-view-model-test",
+      "sourcePath": "app/src/test/java/com/finnvek/knittools/ui/screens/project/ProjectListViewModelTest.kt",
+      "selector": "documentKey = \"document:11\"",
+      "findingPath": "app/src/test/java/com/finnvek/knittools/ui/screens/project/ProjectListViewModelTest.kt",
+      "findingSelectors": [
+        "key = \"document:11\""
+      ]
+    },
+    {
       "id": "knittools-mobsf-fixed-migration-sql-test",
       "tool": "mobsfscan",
       "rule": "android_kotlin_sql_raw_query",
@@ -163,6 +486,78 @@
       "sourcePath": "app/src/androidTest/java/com/finnvek/knittools/data/local/PatternAnnotationMigration17Test.kt",
       "selector": "execSQL(",
       "findingPath": "app/src/androidTest/java/com/finnvek/knittools/data/local/PatternAnnotationMigration17Test.kt",
+      "findingSelectors": [
+        "android.database.sqlite",
+        "execsql("
+      ]
+    },
+    {
+      "id": "knittools-mobsf-fixed-project-folder-database-sql-test",
+      "tool": "mobsfscan",
+      "rule": "android_kotlin_sql_raw_query",
+      "scope": "Fixed Room constraint SQL in ProjectFolderDatabaseTest.kt",
+      "reason": "The exact MobSF matches are test-only fixed Room queries with no untrusted input.",
+      "owner": "project-maintainers",
+      "added": "2026-08-31",
+      "expires": "2026-10-31",
+      "tracking": "local-review:knittools-mobsf-fixed-project-folder-database-sql-test",
+      "sourcePath": "app/src/androidTest/java/com/finnvek/knittools/data/local/ProjectFolderDatabaseTest.kt",
+      "selector": "execSQL(\"DELETE FROM project_folders WHERE id = 1\")",
+      "findingPath": "app/src/androidTest/java/com/finnvek/knittools/data/local/ProjectFolderDatabaseTest.kt",
+      "findingSelectors": [
+        "android.database.sqlite",
+        "execsql("
+      ]
+    },
+    {
+      "id": "knittools-mobsf-fixed-saved-pattern-availability-sql-test",
+      "tool": "mobsfscan",
+      "rule": "android_kotlin_sql_raw_query",
+      "scope": "Fixed Room migration SQL in SavedPatternAvailabilityMigration19Test.kt",
+      "reason": "The exact MobSF matches are test-only fixed migration queries with no untrusted input.",
+      "owner": "project-maintainers",
+      "added": "2026-08-31",
+      "expires": "2026-10-31",
+      "tracking": "local-review:knittools-mobsf-fixed-saved-pattern-availability-sql-test",
+      "sourcePath": "app/src/androidTest/java/com/finnvek/knittools/data/local/SavedPatternAvailabilityMigration19Test.kt",
+      "selector": "execSQL(",
+      "findingPath": "app/src/androidTest/java/com/finnvek/knittools/data/local/SavedPatternAvailabilityMigration19Test.kt",
+      "findingSelectors": [
+        "android.database.sqlite",
+        "execsql("
+      ]
+    },
+    {
+      "id": "knittools-mobsf-parameterized-project-folder-sql-test",
+      "tool": "mobsfscan",
+      "rule": "android_kotlin_sql_raw_query",
+      "scope": "Fixed and parameterized Room SQL in ProjectFolderRepositoryIntegrationTest.kt",
+      "reason": "The exact MobSF matches are test-only fixed or bound-parameter Room queries with no untrusted input.",
+      "owner": "project-maintainers",
+      "added": "2026-08-31",
+      "expires": "2026-10-31",
+      "tracking": "local-review:knittools-mobsf-parameterized-project-folder-sql-test",
+      "sourcePath": "app/src/androidTest/java/com/finnvek/knittools/repository/ProjectFolderRepositoryIntegrationTest.kt",
+      "selector": "sql.execSQL(",
+      "findingPath": "app/src/androidTest/java/com/finnvek/knittools/repository/ProjectFolderRepositoryIntegrationTest.kt",
+      "findingSelectors": [
+        "android.database.sqlite",
+        "execsql("
+      ]
+    },
+    {
+      "id": "knittools-mobsf-fixed-project-yarn-usage-sql-test",
+      "tool": "mobsfscan",
+      "rule": "android_kotlin_sql_raw_query",
+      "scope": "Fixed Room fixture SQL in ProjectYarnUsageRepositoryTest.kt",
+      "reason": "The exact MobSF matches are test-only fixed Room queries with no untrusted input.",
+      "owner": "project-maintainers",
+      "added": "2026-08-31",
+      "expires": "2026-10-31",
+      "tracking": "local-review:knittools-mobsf-fixed-project-yarn-usage-sql-test",
+      "sourcePath": "app/src/androidTest/java/com/finnvek/knittools/repository/ProjectYarnUsageRepositoryTest.kt",
+      "selector": "execSQL(\"UPDATE yarn_cards SET yarnName = 'Renamed' WHERE id = 3\")",
+      "findingPath": "app/src/androidTest/java/com/finnvek/knittools/repository/ProjectYarnUsageRepositoryTest.kt",
       "findingSelectors": [
         "android.database.sqlite",
         "execsql("

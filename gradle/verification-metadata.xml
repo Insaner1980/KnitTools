@@ -8442,6 +8442,9 @@
          <artifact name="coil-network-core-android-3.5.0.module">
             <sha256 value="1b3ad4896968fdc2694689af74a3b959b2688d0b02e6aa5fc5534dcb102aeab1" origin="MavenRepo .sha256"/>
          </artifact>
+         <artifact name="coil-network-core-android-3.5.0.pom">
+            <sha256 value="9e04364b44c280f261cd7d5dd326c6c24b45f4dd9e0666ce927443928ec1d960" origin="MavenRepo .sha256"/>
+         </artifact>
          <artifact name="coil-network-core.aar">
             <sha256 value="3340ec156dc8f5f45adc04cf7783c19d7ead212ebb02fa242fa2b84f539f83ab" origin="MavenRepo .sha256"/>
          </artifact>
@@ -8454,6 +8457,9 @@
       <component group="io.coil-kt.coil3" name="coil-network-ktor3-android" version="3.5.0">
          <artifact name="coil-network-ktor3-android-3.5.0.module">
             <sha256 value="6206899a1472c0fb924385fad66df5b6a4c996f65e3e01033746c7d648cf1635" origin="MavenRepo .sha256"/>
+         </artifact>
+         <artifact name="coil-network-ktor3-android-3.5.0.pom">
+            <sha256 value="f1ef6eb1b4e5cf17eeb0024b85ecb1e8e3a7f4916d58b5c91d58a65be153bf3d" origin="MavenRepo .sha256"/>
          </artifact>
          <artifact name="coil-network-ktor3.aar">
             <sha256 value="2f8a7b152110f406fbb708172ca0893d8a6b1ae082a7e0982aaf54e076afd522" origin="MavenRepo .sha256"/>

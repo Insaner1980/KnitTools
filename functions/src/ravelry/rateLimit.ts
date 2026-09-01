@@ -2,7 +2,7 @@ import type { DocumentReference, Firestore } from "firebase-admin/firestore";
 
 import { RAVELRY_RATE_LIMITS_COLLECTION } from "../config";
 
-export type RavelryRateLimitBucket = "auth" | "search" | "import";
+export type RavelryRateLimitBucket = "auth" | "callback" | "search" | "import";
 export type RavelryRateLimitScope = "uid" | "global";
 
 export interface RavelryRateLimitRule {
@@ -36,12 +36,14 @@ export interface RavelryRateLimitRuntimeState {
 
 export const RAVELRY_RATE_LIMIT_RULES: Record<RavelryRateLimitBucket, RavelryRateLimitRule> = {
   auth: { limit: 10, windowMillis: 60_000 },
+  callback: { limit: 10, windowMillis: 60_000 },
   search: { limit: 30, windowMillis: 60_000 },
   import: { limit: 20, windowMillis: 60_000 },
 };
 
 export const RAVELRY_GLOBAL_RATE_LIMIT_RULES: Record<RavelryRateLimitBucket, RavelryRateLimitRule> = {
   auth: { limit: 60, windowMillis: 60_000 },
+  callback: { limit: 60, windowMillis: 60_000 },
   search: { limit: 120, windowMillis: 60_000 },
   import: { limit: 80, windowMillis: 60_000 },
 };

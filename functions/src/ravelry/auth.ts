@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import { onCall, onRequest } from "firebase-functions/v2/https";
 
 import {
@@ -19,10 +21,15 @@ import { httpsErrorFor, requireUid } from "./callable";
 import { createRavelryClient } from "./client";
 import { refreshRavelryAccessToken } from "./oauthSecretRefresh";
 import { exchangeOAuth2CodeForToken } from "./oauth2";
+import { RavelryRateLimitError } from "./rateLimit";
 import { createRavelryBackendStores } from "./stores";
 
 function stores() {
   return createRavelryBackendStores();
+}
+
+function callbackRateLimitKey(ipAddress: string | undefined): string {
+  return `callback_${createHash("sha256").update(ipAddress?.trim() || "unknown").digest("base64url")}`;
 }
 
 export const ravelryStartAuth = onCall(ravelrySecretOptions, async (request) => {
@@ -87,11 +94,13 @@ export const ravelryCurrentUser = onCall(ravelrySecretOptions, async (request) =
 
 export const ravelryCallback = onRequest(ravelrySecretOptions, async (request, response) => {
   try {
-    const { stateStore, tokenStore } = stores();
+    const { rateLimiter, stateStore, tokenStore } = stores();
     const result = await completeRavelryOAuthCallback({
       query: request.query,
       stateStore,
       tokenStore,
+      rateLimiter,
+      rateLimitKey: callbackRateLimitKey(request.ip),
       exchange: (exchangeRequest) =>
         exchangeOAuth2CodeForToken({
           ...exchangeRequest,
@@ -101,8 +110,9 @@ export const ravelryCallback = onRequest(ravelrySecretOptions, async (request, r
     });
     response.redirect(302, result.redirectUrl);
   } catch (error) {
-    const status = error instanceof RavelryAuthFlowError ? error.httpStatus : 500;
-    const code = error instanceof RavelryAuthFlowError ? error.code : "ravelry_callback_failed";
+    const handledError = error instanceof RavelryAuthFlowError || error instanceof RavelryRateLimitError;
+    const status = handledError ? error.httpStatus : 500;
+    const code = handledError ? error.code : "ravelry_callback_failed";
     response.status(status).json({ code });
   }
 });

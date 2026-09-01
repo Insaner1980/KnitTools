@@ -209,9 +209,9 @@ export async function importPatternByUrl(options: ImportPatternByUrlOptions): Pr
       pageSize: 10,
     },
   });
-  const matchedPattern =
-    response.patterns.find((pattern) => pattern.canonicalUrl === parsedUrl.canonicalUrl) ??
-    response.patterns[0];
+  const matchedPattern = response.patterns.find(
+    (pattern) => pattern.canonicalUrl === parsedUrl.canonicalUrl,
+  );
   if (!matchedPattern) {
     throw new RavelryPatternImportError("pattern_not_found", 404);
   }

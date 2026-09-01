@@ -17,6 +17,12 @@ export interface StoredRavelryToken {
   readonly connectionGeneration?: number;
 }
 
+export interface RavelryTokenUserMetadataUpdate {
+  readonly ravelryUserId?: string;
+  readonly ravelryUsername?: string;
+  readonly verifiedAtMillis: number;
+}
+
 export interface RavelryTokenStore {
   readonly collectionPath: string;
   getToken(uid: string): Promise<StoredRavelryToken | null>;
@@ -24,6 +30,15 @@ export interface RavelryTokenStore {
   saveToken(token: StoredRavelryToken): Promise<void>;
   saveTokenIfGenerationCurrent(
     token: StoredRavelryToken,
+    expectedGeneration: number,
+  ): Promise<boolean>;
+  saveRefreshedTokenIfCurrent(
+    token: StoredRavelryToken,
+    expectedToken: StoredRavelryToken,
+  ): Promise<StoredRavelryToken | null>;
+  updateUserMetadataIfGenerationCurrent(
+    uid: string,
+    update: RavelryTokenUserMetadataUpdate,
     expectedGeneration: number,
   ): Promise<boolean>;
   deleteToken(uid: string, nowMillis?: number): Promise<void>;
@@ -56,6 +71,18 @@ function withoutUndefinedValues(token: StoredRavelryToken): Record<string, unkno
       connectionGeneration: token.connectionGeneration ?? 0,
     }).filter(([, value]) => value !== undefined),
   );
+}
+
+function hasSameCredentials(
+  current: StoredRavelryToken | null,
+  expected: StoredRavelryToken,
+): current is StoredRavelryToken {
+  return current != null &&
+    current.uid === expected.uid &&
+    current.accessToken === expected.accessToken &&
+    current.refreshToken === expected.refreshToken &&
+    current.expiresAtMillis === expected.expiresAtMillis &&
+    (current.connectionGeneration ?? 0) === (expected.connectionGeneration ?? 0);
 }
 
 function disconnectedTokenMarker(
@@ -108,6 +135,53 @@ export function createTokenStore(firestore: Firestore): RavelryTokenStore {
           ref,
           withoutUndefinedValues({ ...token, connectionGeneration: expectedGeneration }),
         );
+        return true;
+      });
+    },
+    async saveRefreshedTokenIfCurrent(token, expectedToken) {
+      const ref = collection.doc(token.uid);
+      return firestore.runTransaction(async (transaction) => {
+        const snapshot = await transaction.get(ref);
+        const current = toStoredToken(snapshot.data());
+        if (!hasSameCredentials(current, expectedToken)) {
+          return null;
+        }
+
+        const persisted: StoredRavelryToken = {
+          uid: current.uid,
+          authType: current.authType,
+          accessToken: token.accessToken,
+          ...(token.refreshToken ? { refreshToken: token.refreshToken } : {}),
+          ...(token.expiresAtMillis != null ? { expiresAtMillis: token.expiresAtMillis } : {}),
+          ...(current.ravelryUserId ? { ravelryUserId: current.ravelryUserId } : {}),
+          ...(current.ravelryUsername ? { ravelryUsername: current.ravelryUsername } : {}),
+          createdAtMillis: current.createdAtMillis,
+          updatedAtMillis: token.updatedAtMillis,
+          ...(current.lastVerifiedAtMillis != null
+            ? { lastVerifiedAtMillis: current.lastVerifiedAtMillis }
+            : {}),
+          connectionGeneration: current.connectionGeneration ?? 0,
+        };
+        transaction.set(ref, withoutUndefinedValues(persisted));
+        return persisted;
+      });
+    },
+    async updateUserMetadataIfGenerationCurrent(uid, update, expectedGeneration) {
+      const ref = collection.doc(uid);
+      return firestore.runTransaction(async (transaction) => {
+        const snapshot = await transaction.get(ref);
+        const current = toStoredToken(snapshot.data());
+        if (!current || (current.connectionGeneration ?? 0) !== expectedGeneration) {
+          return false;
+        }
+
+        transaction.set(ref, withoutUndefinedValues({
+          ...current,
+          ravelryUserId: update.ravelryUserId,
+          ravelryUsername: update.ravelryUsername,
+          updatedAtMillis: update.verifiedAtMillis,
+          lastVerifiedAtMillis: update.verifiedAtMillis,
+        }));
         return true;
       });
     },

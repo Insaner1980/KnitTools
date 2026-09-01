@@ -9,6 +9,7 @@ import type { RavelryCurrentUserClient } from "./client";
 import type { OAuthStateStore } from "./oauthStateStore";
 import type { OAuthTokenExchange, OAuthTokenRefresh } from "./oauth2";
 import { RAVELRY_AUTHORIZATION_URL } from "./oauth2";
+import type { RavelryRateLimiter } from "./rateLimit";
 import { getUsableRavelryToken } from "./tokenAccess";
 import type { RavelryTokenStore } from "./tokenStore";
 
@@ -29,6 +30,8 @@ interface CompleteCallbackOptions {
   readonly stateStore: OAuthStateStore;
   readonly tokenStore: RavelryTokenStore;
   readonly exchange: OAuthTokenExchange;
+  readonly rateLimiter: RavelryRateLimiter;
+  readonly rateLimitKey: string;
   readonly nowMillis?: () => number;
 }
 
@@ -107,6 +110,9 @@ function queryString(query: Record<string, unknown>, key: string): string | unde
 function requireState(value: string | undefined): string {
   if (!value) {
     throw new RavelryAuthFlowError("missing_state", 400);
+  }
+  if (!/^[A-Za-z0-9_-]{43}$/.test(value)) {
+    throw new RavelryAuthFlowError("invalid_state", 400);
   }
   return value;
 }
@@ -251,10 +257,13 @@ export async function completeRavelryOAuthCallback({
   stateStore,
   tokenStore,
   exchange,
+  rateLimiter,
+  rateLimitKey,
   nowMillis = Date.now,
 }: CompleteCallbackOptions): Promise<CallbackResponse> {
   const now = nowMillis();
   const state = requireState(queryString(query, "state"));
+  await rateLimiter.consume(rateLimitKey, "callback");
   const storedState = await loadUsableState(stateStore, state, now).catch((error: unknown) =>
     redirectExpiredStateOrThrow(error, state),
   );
@@ -343,13 +352,10 @@ export async function getRavelryCurrentUser({
   const currentUser = await client.getCurrentUser(token.accessToken);
   const now = nowMillis();
   const connectionGeneration = token.connectionGeneration ?? 0;
-  const saved = await tokenStore.saveTokenIfGenerationCurrent({
-    ...token,
+  const saved = await tokenStore.updateUserMetadataIfGenerationCurrent(uid, {
     ravelryUserId: currentUser.ravelryUserId,
     ravelryUsername: currentUser.ravelryUsername,
-    updatedAtMillis: now,
-    lastVerifiedAtMillis: now,
-    connectionGeneration,
+    verifiedAtMillis: now,
   }, connectionGeneration);
   if (!saved) {
     return { connected: false };

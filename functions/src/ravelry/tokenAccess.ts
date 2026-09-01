@@ -58,10 +58,11 @@ export async function getUsableRavelryToken({
 
   await beforeRefresh?.();
   const nextToken = refreshedToken(token, await refresh({ refreshToken: token.refreshToken }), now);
-  const connectionGeneration = token.connectionGeneration ?? 0;
-  const saved = await tokenStore.saveTokenIfGenerationCurrent(nextToken, connectionGeneration);
-  if (!saved) {
-    return null;
+  const saved = await tokenStore.saveRefreshedTokenIfCurrent(nextToken, token);
+  if (saved) {
+    return saved;
   }
-  return nextToken;
+
+  const current = await tokenStore.getToken(uid);
+  return current && !requiresRefresh(current, now) ? current : null;
 }

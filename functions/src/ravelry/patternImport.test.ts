@@ -9,11 +9,12 @@ import {
   ravelryDisconnect,
   ravelryStartAuth,
 } from "./auth";
-import { createRavelryClient } from "./client";
+import { createRavelryClient, type RavelryClient } from "./client";
 import type { OAuthTokenRefresh } from "./oauth2";
 import {
   importPatternById,
   importPatternByUrl,
+  RavelryPatternImportError,
   RAVELRY_SEARCH_MAX_PAGE_SIZE,
   ravelrySearchPatterns,
   ravelryImportPatternById,
@@ -58,6 +59,46 @@ class MemoryTokenStore implements RavelryTokenStore {
     }
     this.generations.set(token.uid, expectedGeneration);
     this.tokens.set(token.uid, { ...token, connectionGeneration: expectedGeneration });
+    return true;
+  }
+
+  async saveRefreshedTokenIfCurrent(
+    token: StoredRavelryToken,
+    expectedToken: StoredRavelryToken,
+  ): Promise<StoredRavelryToken | null> {
+    const current = this.tokens.get(token.uid);
+    if (!current ||
+      current.accessToken !== expectedToken.accessToken ||
+      current.refreshToken !== expectedToken.refreshToken ||
+      current.expiresAtMillis !== expectedToken.expiresAtMillis ||
+      (current.connectionGeneration ?? 0) !== (expectedToken.connectionGeneration ?? 0)) {
+      return null;
+    }
+    const persisted = { ...token, connectionGeneration: current.connectionGeneration ?? 0 };
+    this.tokens.set(token.uid, persisted);
+    return persisted;
+  }
+
+  async updateUserMetadataIfGenerationCurrent(
+    uid: string,
+    update: {
+      readonly ravelryUserId?: string;
+      readonly ravelryUsername?: string;
+      readonly verifiedAtMillis: number;
+    },
+    expectedGeneration: number,
+  ): Promise<boolean> {
+    const current = this.tokens.get(uid);
+    if (!current || (current.connectionGeneration ?? 0) !== expectedGeneration) {
+      return false;
+    }
+    this.tokens.set(uid, {
+      ...current,
+      ravelryUserId: update.ravelryUserId,
+      ravelryUsername: update.ravelryUsername,
+      updatedAtMillis: update.verifiedAtMillis,
+      lastVerifiedAtMillis: update.verifiedAtMillis,
+    });
     return true;
   }
 
@@ -438,6 +479,60 @@ describe("Ravelry backend search and import", () => {
       { uid: "uid", bucket: "search" },
       { uid: "uid", bucket: "import" },
     ]);
+  });
+
+  it("rejects a slug URL when search returns no exact canonical match", async () => {
+    const tokenStore = new MemoryTokenStore();
+    const rateLimiter = new RecordingRateLimiter();
+    await tokenStore.saveToken({
+      uid: "uid",
+      authType: "oauth2",
+      accessToken: "access-token",
+      createdAtMillis: 1_000,
+      updatedAtMillis: 1_000,
+    });
+    let detailCalls = 0;
+    const client: RavelryClient = {
+      async getCurrentUser() {
+        throw new Error("not used");
+      },
+      async searchPatterns() {
+        return {
+          patterns: [{
+            ravelryPatternId: 99,
+            title: "Different Pattern",
+            designerName: "Different Designer",
+            canonicalUrl: "https://www.ravelry.com/patterns/library/different-pattern",
+            availability: "unknown",
+          }],
+          pagination: { page: 1, pageCount: 1, resultCount: 1 },
+        };
+      },
+      async getPatternById() {
+        detailCalls += 1;
+        return {
+          ravelryPatternId: 99,
+          title: "Different Pattern",
+          designerName: "Different Designer",
+          canonicalUrl: "https://www.ravelry.com/patterns/library/different-pattern",
+          availability: "unknown",
+        };
+      },
+    };
+
+    await assert.rejects(
+      importPatternByUrl({
+        uid: "uid",
+        tokenStore,
+        client,
+        rateLimiter,
+        url: "https://www.ravelry.com/patterns/library/requested-pattern",
+      }),
+      (error: unknown) =>
+        error instanceof RavelryPatternImportError && error.code === "pattern_not_found",
+    );
+    assert.equal(detailCalls, 0);
+    assert.deepEqual(rateLimiter.calls, [{ uid: "uid", bucket: "search" }]);
   });
 
   it("does not call Ravelry when the authenticated search bucket is exhausted", async () => {

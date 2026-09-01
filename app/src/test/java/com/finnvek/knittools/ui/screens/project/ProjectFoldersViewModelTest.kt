@@ -256,6 +256,7 @@ class ProjectFoldersViewModelTest {
             assertTrue(vm.selectedProjectIds.value.isEmpty())
         }
 
+    // CPD-OFF: Kansiomuutosten skenaariokohtainen asetelma pidetaan testien yhteydessa.
     @Test
     fun `bulk move commits before exiting selection and emits focusable success`() =
         runTest {
@@ -342,6 +343,8 @@ class ProjectFoldersViewModelTest {
             assertTrue(replayedEvents.isEmpty())
             replayCollector.cancel()
         }
+
+    // CPD-ON
 
     @Test
     fun `stale bulk project keeps selection and reports a recoverable error`() =

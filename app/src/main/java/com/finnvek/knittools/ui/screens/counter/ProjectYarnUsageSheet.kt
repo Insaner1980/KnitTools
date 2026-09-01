@@ -54,6 +54,7 @@ data class YarnUsageEditorActions(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@Suppress("kotlin:S3776") // Editorin validointi-, vahvistus- ja syöttötilat kuuluvat samaan sheetiin.
 fun ProjectYarnUsageSheet(
     state: YarnUsageEditorState,
     sheetState: SheetState,

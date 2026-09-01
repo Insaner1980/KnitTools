@@ -5,6 +5,7 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
+// CPD-OFF: Room-viiteavainmaaritys pidetaan tietokantataulun yhteydessa.
 @Entity(
     tableName = "pattern_bookmarks",
     foreignKeys = [
@@ -32,3 +33,4 @@ data class PatternBookmarkEntity(
     val yFraction: Float,
     val createdAt: Long,
 )
+// CPD-ON

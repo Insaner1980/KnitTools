@@ -214,6 +214,35 @@ interface CounterProjectDao {
     @Query(
         """
         UPDATE counter_projects
+        SET patternName = :patternName,
+            updatedAt = :updatedAt
+        WHERE linkedPatternId = :savedPatternId
+        """,
+    )
+    suspend fun updateLinkedPatternName(
+        savedPatternId: Long,
+        patternName: String,
+        updatedAt: Long,
+    )
+
+    @Query(
+        """
+        UPDATE counter_projects
+        SET linkedPatternId = NULL,
+            patternName = NULL,
+            updatedAt = :updatedAt
+        WHERE id = :projectId AND linkedPatternId = :expectedSavedPatternId
+        """,
+    )
+    suspend fun clearPatternInformationIfLinked(
+        projectId: Long,
+        expectedSavedPatternId: Long,
+        updatedAt: Long,
+    ): Int
+
+    @Query(
+        """
+        UPDATE counter_projects
         SET currentPatternPage = :page,
             updatedAt = :updatedAt
         WHERE id = :id
@@ -371,6 +400,7 @@ interface CounterProjectDao {
         """
         UPDATE counter_projects
         SET linkedPatternId = NULL,
+            patternName = NULL,
             updatedAt = :updatedAt
         WHERE linkedPatternId IN (:patternIds)
         """,

@@ -10,7 +10,7 @@
     "test": "npm run build && node --test \"lib/**/*.test.js\""
   },
   "dependencies": {
-    "firebase-admin": "14.2.0",
+    "firebase-admin": "14.3.0",
     "firebase-functions": "7.3.2"
   },
   "overrides": {
@@ -23,7 +23,7 @@
     "uuid": "11.1.1"
   },
   "devDependencies": {
-    "@types/node": "26.2.0",
+    "@types/node": "26.3.0",
     "typescript": "7.0.2"
   }
 }

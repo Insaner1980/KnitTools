@@ -12,6 +12,7 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.browser.auth.AuthTabIntent
 import androidx.browser.customtabs.CustomTabsIntent
@@ -45,20 +46,22 @@ import com.finnvek.knittools.billing.BillingManager
 import com.finnvek.knittools.data.datastore.PreferencesManager
 import com.finnvek.knittools.data.storage.CounterLaunchTokenStore
 import com.finnvek.knittools.di.IoDispatcher
+import com.finnvek.knittools.domain.model.parseWebPatternSharedText
 import com.finnvek.knittools.pro.InAppReviewManager
 import com.finnvek.knittools.pro.InAppUpdateManager
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.pro.TrialManager
-import com.finnvek.knittools.ravelry.RavelryShareImportUrls
 import com.finnvek.knittools.ui.ProvidePreferenceAwareHapticFeedback
 import com.finnvek.knittools.ui.navigation.CounterLaunchIntentData
 import com.finnvek.knittools.ui.navigation.CounterLaunchRequest
 import com.finnvek.knittools.ui.navigation.KnitToolsNavActions
 import com.finnvek.knittools.ui.navigation.KnitToolsNavHost
 import com.finnvek.knittools.ui.navigation.KnitToolsNavRequests
-import com.finnvek.knittools.ui.navigation.RavelryShareImportRequest
+import com.finnvek.knittools.ui.navigation.PatternShareCoordinatorViewModel
+import com.finnvek.knittools.ui.navigation.PatternShareOfferResult
 import com.finnvek.knittools.ui.navigation.TopLevelDestination
+import com.finnvek.knittools.ui.navigation.toPatternSharePayload
 import com.finnvek.knittools.ui.navigation.withValidatedCounterLaunchTrust
 import com.finnvek.knittools.ui.theme.KnitToolsTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -95,6 +98,8 @@ class MainActivity : AppCompatActivity() {
     @IoDispatcher
     lateinit var ioDispatcher: CoroutineDispatcher
 
+    private val patternShareCoordinator: PatternShareCoordinatorViewModel by viewModels()
+
     private val updateResultLauncher =
         registerForActivityResult(
             ActivityResultContracts.StartIntentSenderForResult(),
@@ -119,11 +124,9 @@ class MainActivity : AppCompatActivity() {
         }
 
     private var counterLaunchRequest by mutableStateOf<CounterLaunchRequest?>(null)
-    private var ravelryShareImportRequest by mutableStateOf<RavelryShareImportRequest?>(null)
     private var openProUpgradeRequest by mutableStateOf(false)
     private var openWidgetProPromptRequest by mutableStateOf(false)
     private var consumedCounterLaunchRequestId: String? = null
-    private var nextRavelryShareImportRequestId = 0L
     private var startupThemeLoaded = false
     private var edgeToEdgeDarkTheme: Boolean? = null
     private var launchRequestJob: Job? = null
@@ -163,10 +166,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     @Composable
+    @Suppress("kotlin:S3776") // Aktivointipyynnöt käsitellään yhdessä activityn juurisisällössä.
     private fun MainActivityContent() {
         val prefs by preferencesManager.preferences.collectAsStateWithLifecycle(initialValue = null)
         val proState by proManager.proState.collectAsStateWithLifecycle()
         val proStateReady by proManager.initialStateReady.collectAsStateWithLifecycle()
+        val patternShareImportRequest by patternShareCoordinator.pending.collectAsStateWithLifecycle()
         val isDarkTheme = prefs.resolveStartupDarkTheme(isSystemInDarkTheme()) ?: return
 
         SideEffect {
@@ -229,7 +234,7 @@ class MainActivity : AppCompatActivity() {
                                 counterLaunch = counterLaunchRequest,
                                 openProUpgrade = openProUpgradeRequest,
                                 openWidgetProPrompt = openWidgetProPromptRequest,
-                                ravelryShareImport = ravelryShareImportRequest,
+                                patternShareImport = patternShareImportRequest,
                             ),
                         snackbarHostState = snackbarHostState,
                         actions = createNavActions(),
@@ -268,10 +273,7 @@ class MainActivity : AppCompatActivity() {
                 openWidgetProPromptRequest = false
                 clearWidgetProPromptLaunchIntent()
             },
-            onRavelryShareImportHandled = {
-                ravelryShareImportRequest = null
-                clearRavelryShareIntent()
-            },
+            onPatternShareImportHandled = patternShareCoordinator::acknowledge,
         )
 
     private fun startLaunchRequestInitialization(savedInstanceState: Bundle?) {
@@ -288,7 +290,7 @@ class MainActivity : AppCompatActivity() {
         openProUpgradeRequest = intent?.action == ACTION_OPEN_PRO_UPGRADE
         openWidgetProPromptRequest = intent?.action == ACTION_OPEN_WIDGET_PRO_PROMPT
         val isOAuthCallback = handleOAuthCallbackIfNeeded(intent)
-        val isShareImport = !isOAuthCallback && handleRavelryShareIntentIfNeeded(intent)
+        val isShareImport = !isOAuthCallback && handlePatternShareIntentIfNeeded(intent)
         if (isOAuthCallback || isShareImport) {
             counterLaunchRequest = null
         }
@@ -381,7 +383,7 @@ class MainActivity : AppCompatActivity() {
         openProUpgradeRequest = intent.action == ACTION_OPEN_PRO_UPGRADE
         openWidgetProPromptRequest = intent.action == ACTION_OPEN_WIDGET_PRO_PROMPT
         val isOAuthCallback = handleOAuthCallbackIfNeeded(intent)
-        val isShareImport = !isOAuthCallback && handleRavelryShareIntentIfNeeded(intent)
+        val isShareImport = !isOAuthCallback && handlePatternShareIntentIfNeeded(intent)
         launchRequestJob?.cancel()
         launchRequestJob =
             lifecycleScope.launch {
@@ -424,20 +426,22 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun handleRavelryShareIntentIfNeeded(intent: Intent?): Boolean {
+    private fun handlePatternShareIntentIfNeeded(intent: Intent?): Boolean {
         if (intent?.action != Intent.ACTION_SEND) return false
         if (intent.type != MIME_TYPE_TEXT_PLAIN) return false
 
-        val patternUrl = RavelryShareImportUrls.extractPatternUrl(intent.getStringExtra(Intent.EXTRA_TEXT))
-        clearRavelryShareIntent()
-        if (patternUrl == null) return true
+        val payload =
+            parseWebPatternSharedText(
+                text = intent.getStringExtra(Intent.EXTRA_TEXT),
+                subject = intent.getStringExtra(Intent.EXTRA_SUBJECT),
+            ).toPatternSharePayload()
+        when (patternShareCoordinator.offer(payload)) {
+            is PatternShareOfferResult.Accepted,
+            is PatternShareOfferResult.Queued,
+            -> clearPatternShareIntent(intent)
 
-        nextRavelryShareImportRequestId += 1
-        ravelryShareImportRequest =
-            RavelryShareImportRequest(
-                requestId = nextRavelryShareImportRequestId,
-                url = patternUrl,
-            )
+            PatternShareOfferResult.Busy -> Unit
+        }
         return true
     }
 
@@ -459,8 +463,8 @@ class MainActivity : AppCompatActivity() {
             ?.setAction(Intent.ACTION_MAIN)
     }
 
-    private fun clearRavelryShareIntent() {
-        intent
+    private fun clearPatternShareIntent(sourceIntent: Intent? = intent) {
+        sourceIntent
             ?.takeIf { it.action == Intent.ACTION_SEND }
             ?.apply {
                 setAction(Intent.ACTION_MAIN)

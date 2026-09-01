@@ -7,10 +7,12 @@ import com.finnvek.knittools.domain.model.ProgressPhoto
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.domain.model.YarnCardStatus
+import com.finnvek.knittools.domain.model.isWebPatternCompatible
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.CounterRepository
 import com.finnvek.knittools.repository.ProgressPhotoRepository
+import com.finnvek.knittools.repository.SavedPatternDeleteResult
 import com.finnvek.knittools.repository.SavedPatternRepository
 import com.finnvek.knittools.repository.YarnCardRepository
 import com.finnvek.knittools.ui.screens.yarncard.ManualYarnCardInput
@@ -197,18 +199,49 @@ class LibraryViewModel
             )
         }
 
+        @Suppress("ThrowsCount", "kotlin:S3776") // Poisto säilyttää lähdekohtaiset invariantit ja peruutuksen.
         fun deleteSavedPattern(
             id: Long,
             onDeleted: () -> Unit,
         ) {
             viewModelScope.launch {
-                try {
-                    savedPatternRepository.deleteById(id)
+                val pattern =
+                    try {
+                        savedPatternRepository.getById(id)
+                    } catch (cancellation: CancellationException) {
+                        throw cancellation
+                    } catch (_: Exception) {
+                        _patternDeleteErrorId.value += 1
+                        return@launch
+                    } ?: return@launch
+
+                if (pattern.isWebPatternCompatible) {
+                    val result =
+                        try {
+                            savedPatternRepository.deleteWebPattern(id)
+                        } catch (cancellation: CancellationException) {
+                            throw cancellation
+                        } catch (_: Exception) {
+                            _patternDeleteErrorId.value += 1
+                            return@launch
+                        }
+                    when (result) {
+                        SavedPatternDeleteResult.Deleted -> onDeleted()
+                        SavedPatternDeleteResult.PersistenceFailure -> _patternDeleteErrorId.value += 1
+                        SavedPatternDeleteResult.PatternMissing,
+                        SavedPatternDeleteResult.NotWebPattern,
+                        -> Unit
+                    }
+                } else {
+                    try {
+                        savedPatternRepository.deleteById(id)
+                    } catch (cancellation: CancellationException) {
+                        throw cancellation
+                    } catch (_: Exception) {
+                        _patternDeleteErrorId.value += 1
+                        return@launch
+                    }
                     onDeleted()
-                } catch (cancellation: CancellationException) {
-                    throw cancellation
-                } catch (_: Exception) {
-                    _patternDeleteErrorId.value += 1
                 }
             }
         }

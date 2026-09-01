@@ -12,9 +12,19 @@ import com.finnvek.knittools.data.local.toDomain
 import com.finnvek.knittools.data.local.toEntity
 import com.finnvek.knittools.data.storage.AppFileStorage
 import com.finnvek.knittools.di.IoDispatcher
+import com.finnvek.knittools.domain.model.PatternAvailability
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.SavedPatternSource
+import com.finnvek.knittools.domain.model.WebPatternDesignerValidation
+import com.finnvek.knittools.domain.model.WebPatternTitleValidation
+import com.finnvek.knittools.domain.model.WebPatternUrl
+import com.finnvek.knittools.domain.model.WebPatternUrlValidation
+import com.finnvek.knittools.domain.model.isWebPatternCompatible
+import com.finnvek.knittools.domain.model.validateWebPatternDesigner
+import com.finnvek.knittools.domain.model.validateWebPatternTitle
+import com.finnvek.knittools.domain.model.validateWebPatternUrl
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -29,6 +39,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
+@Suppress("TooManyFunctions") // Yksi repository säilyttää Saved Pattern -lähteiden yhteiset invariantit.
 class SavedPatternRepository
     @Inject
     constructor(
@@ -76,6 +87,87 @@ class SavedPatternRepository
         }
 
         suspend fun save(pattern: SavedPattern): Long = dao.insert(pattern.toEntity())
+
+        suspend fun createWebPattern(input: WebPatternInput): WebPatternMutationResult {
+            val validated = validateWebPatternInput(input) ?: return invalidWebPatternInputResult(input)
+            if (validated.url.isRavelryPattern) return WebPatternMutationResult.RavelryOwnedUrl
+
+            return persistWebPatternMutation {
+                saveMutex.withLock {
+                    transactionRunner.run {
+                        findWebPatternDuplicate(validated.url)?.let { duplicate ->
+                            return@run WebPatternMutationResult.Duplicate(duplicate.id)
+                        }
+                        val now = System.currentTimeMillis()
+                        val patternId =
+                            dao.insert(
+                                SavedPatternEntity(
+                                    source = SavedPatternSource.WebLink.persistedValue,
+                                    ravelryPatternId = null,
+                                    name = validated.title,
+                                    designerName = validated.designer,
+                                    thumbnailUrl = null,
+                                    difficulty = null,
+                                    gaugeStitches = null,
+                                    gaugeRows = null,
+                                    needleSize = null,
+                                    yarnWeight = null,
+                                    yardage = null,
+                                    availability = PatternAvailability.Unknown.persistedValue,
+                                    originalUrl = validated.url.originalUrl,
+                                    canonicalUrl = validated.url.canonicalUrl,
+                                    localPdfUri = null,
+                                    isAvailableOffline = false,
+                                    savedAt = now,
+                                    updatedAt = now,
+                                    lastSyncedAt = null,
+                                ),
+                            )
+                        WebPatternMutationResult.Created(patternId)
+                    }
+                }
+            }
+        }
+
+        suspend fun updateWebPattern(
+            patternId: Long,
+            expectedUpdatedAt: Long,
+            input: WebPatternInput,
+        ): WebPatternMutationResult {
+            val validated = validateWebPatternInput(input) ?: return invalidWebPatternInputResult(input)
+            if (validated.url.isRavelryPattern) return WebPatternMutationResult.RavelryOwnedUrl
+            if (patternId <= 0L) return WebPatternMutationResult.PatternMissing
+
+            return persistWebPatternMutation {
+                saveMutex.withLock {
+                    transactionRunner.run {
+                        val current = dao.getById(patternId) ?: return@run WebPatternMutationResult.PatternMissing
+                        if (current.updatedAt != expectedUpdatedAt) return@run WebPatternMutationResult.StaleAction
+                        if (!current.toDomain().isWebPatternCompatible) {
+                            return@run WebPatternMutationResult.NotEditableAsWebPattern
+                        }
+                        findWebPatternDuplicate(validated.url, excludingPatternId = patternId)?.let { duplicate ->
+                            return@run WebPatternMutationResult.Duplicate(duplicate.id)
+                        }
+
+                        val now = System.currentTimeMillis()
+                        val updatedAt = if (now > current.updatedAt) now else current.updatedAt + 1L
+                        dao.update(
+                            current.copy(
+                                source = SavedPatternSource.WebLink.persistedValue,
+                                name = validated.title,
+                                designerName = validated.designer,
+                                originalUrl = validated.url.originalUrl,
+                                canonicalUrl = validated.url.canonicalUrl,
+                                updatedAt = updatedAt,
+                            ),
+                        )
+                        counterProjectDao.updateLinkedPatternName(patternId, validated.title, updatedAt)
+                        WebPatternMutationResult.Updated(patternId)
+                    }
+                }
+            }
+        }
 
         suspend fun saveRavelryPatternIfMissing(pattern: SavedPattern): Long {
             if (pattern.ravelryPatternId == null && pattern.canonicalUrl.isBlank() && pattern.originalUrl.isBlank()) {
@@ -177,6 +269,8 @@ class SavedPatternRepository
 
         suspend fun deleteById(id: Long) = deleteByIds(listOf(id))
 
+        suspend fun deleteWebPattern(id: Long): SavedPatternDeleteResult = deleteSingleWebPattern(id)
+
         suspend fun deleteByIds(ids: List<Long>) {
             if (ids.isEmpty()) return
             val patterns = dao.getByIds(ids)
@@ -213,6 +307,99 @@ class SavedPatternRepository
                 .distinct()
                 .forEach { patternUrl -> deleteLocalPatternFileIfUnused(patternUrl) }
         }
+
+        private suspend fun deleteSingleWebPattern(id: Long): SavedPatternDeleteResult {
+            if (id <= 0L) return SavedPatternDeleteResult.PatternMissing
+            val transactionResult =
+                try {
+                    saveMutex.withLock {
+                        transactionRunner.run {
+                            val pattern =
+                                dao.getById(id)
+                                    ?: return@run SavedPatternDeleteTransactionResult.PatternMissing
+                            if (!pattern.toDomain().isWebPatternCompatible) {
+                                return@run SavedPatternDeleteTransactionResult.NotWebPattern
+                            }
+                            counterProjectDao.clearLinkedPatternIds(listOf(id), System.currentTimeMillis())
+                            dao.deleteById(id)
+                            SavedPatternDeleteTransactionResult.Deleted(pattern)
+                        }
+                    }
+                } catch (cancellation: CancellationException) {
+                    throw cancellation
+                } catch (_: Exception) {
+                    return SavedPatternDeleteResult.PersistenceFailure
+                }
+
+            return when (transactionResult) {
+                is SavedPatternDeleteTransactionResult.Deleted -> {
+                    try {
+                        deleteUnusedLocalPatternFiles(listOf(transactionResult.pattern))
+                    } catch (cancellation: CancellationException) {
+                        throw cancellation
+                    } catch (_: Exception) {
+                        // Tietokantapoisto on jo valmis; fyysinen jälkisiivous on best effort.
+                    }
+                    SavedPatternDeleteResult.Deleted
+                }
+
+                SavedPatternDeleteTransactionResult.PatternMissing -> SavedPatternDeleteResult.PatternMissing
+                SavedPatternDeleteTransactionResult.NotWebPattern -> SavedPatternDeleteResult.NotWebPattern
+            }
+        }
+
+        private suspend fun findWebPatternDuplicate(
+            url: WebPatternUrl,
+            excludingPatternId: Long? = null,
+        ): SavedPatternEntity? {
+            val exactMatch =
+                if (excludingPatternId == null) {
+                    dao.getByCanonicalUrl(url.canonicalUrl)
+                } else {
+                    dao.getByCanonicalUrlExcludingId(url.canonicalUrl, excludingPatternId)
+                }
+            if (exactMatch != null) return exactMatch
+
+            return dao.getAllOnce().firstOrNull { candidate ->
+                candidate.id != excludingPatternId && candidate.matchesCanonicalWebPatternUrl(url.canonicalUrl)
+            }
+        }
+
+        private fun SavedPatternEntity.matchesCanonicalWebPatternUrl(canonicalUrl: String): Boolean =
+            sequenceOf(originalUrl, this.canonicalUrl)
+                .filter(String::isNotBlank)
+                .mapNotNull { storedUrl ->
+                    (validateWebPatternUrl(storedUrl) as? WebPatternUrlValidation.Valid)?.value?.canonicalUrl
+                }.any { candidateCanonicalUrl -> candidateCanonicalUrl == canonicalUrl }
+
+        private suspend fun persistWebPatternMutation(
+            mutation: suspend () -> WebPatternMutationResult,
+        ): WebPatternMutationResult =
+            try {
+                mutation()
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (_: Exception) {
+                WebPatternMutationResult.PersistenceFailure
+            }
+
+        private fun validateWebPatternInput(input: WebPatternInput): ValidatedWebPatternInput? {
+            val title = (validateWebPatternTitle(input.title) as? WebPatternTitleValidation.Valid)?.value ?: return null
+            val designer =
+                (validateWebPatternDesigner(input.designer) as? WebPatternDesignerValidation.Valid)?.value
+                    ?: return null
+            val url = (validateWebPatternUrl(input.url) as? WebPatternUrlValidation.Valid)?.value ?: return null
+            return ValidatedWebPatternInput(title, designer, url)
+        }
+
+        private fun invalidWebPatternInputResult(input: WebPatternInput): WebPatternMutationResult =
+            when {
+                validateWebPatternTitle(input.title) !is WebPatternTitleValidation.Valid ->
+                    WebPatternMutationResult.InvalidTitle
+                validateWebPatternDesigner(input.designer) !is WebPatternDesignerValidation.Valid ->
+                    WebPatternMutationResult.InvalidDesigner
+                else -> WebPatternMutationResult.InvalidUrl
+            }
 
         private suspend fun String.isAppOwnedMissingFile(): Boolean {
             if (isBlank()) return false
@@ -293,3 +480,19 @@ class SavedPatternRepository
                 )
         }
     }
+
+private data class ValidatedWebPatternInput(
+    val title: String,
+    val designer: String,
+    val url: WebPatternUrl,
+)
+
+private sealed interface SavedPatternDeleteTransactionResult {
+    data class Deleted(
+        val pattern: SavedPatternEntity,
+    ) : SavedPatternDeleteTransactionResult
+
+    data object PatternMissing : SavedPatternDeleteTransactionResult
+
+    data object NotWebPattern : SavedPatternDeleteTransactionResult
+}

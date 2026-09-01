@@ -48,6 +48,7 @@ data class ProPromptRequest(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@Suppress("kotlin:S3776") // Sheet kokoaa yhden Pro-pyynnön kaikki tila- ja toimintovaihtoehdot.
 fun ProPromptSheet(
     request: ProPromptRequest,
     onDismiss: () -> Unit,

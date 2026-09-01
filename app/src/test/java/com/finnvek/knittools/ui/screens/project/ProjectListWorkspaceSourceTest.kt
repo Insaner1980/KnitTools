@@ -250,6 +250,7 @@ class ProjectListWorkspaceSourceTest {
         assertTrue(strings.contains("<string name=\"project_section_count_format\">%1\$s %2\$d</string>"))
     }
 
+    // CPD-OFF: Lahdekooditestin rajausapu pidetaan tarkistuksen yhteydessa.
     private fun sourceBetween(
         source: String,
         start: String,
@@ -272,6 +273,7 @@ class ProjectListWorkspaceSourceTest {
     }
 
     private fun normalizeWhitespace(source: String): String = source.replace(WHITESPACE, " ").trim()
+    // CPD-ON
 
     private fun assertTokensInOrder(
         source: String,

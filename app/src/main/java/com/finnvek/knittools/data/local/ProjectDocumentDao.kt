@@ -121,6 +121,7 @@ interface ProjectDocumentMutations {
         WHERE id = :documentId AND projectId = :projectId
         """,
     )
+    @Suppress("kotlin:S107") // Room-päivitys välittää yhden dokumenttitilan sarakkeet eksplisiittisesti.
     suspend fun updateViewerState(
         documentId: Long,
         projectId: Long,

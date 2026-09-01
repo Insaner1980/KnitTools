@@ -11,6 +11,7 @@ import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.pro.ProState
 import com.finnvek.knittools.repository.CounterRepository
 import com.finnvek.knittools.repository.ProgressPhotoRepository
+import com.finnvek.knittools.repository.SavedPatternDeleteResult
 import com.finnvek.knittools.repository.SavedPatternRepository
 import com.finnvek.knittools.repository.YarnCardRepository
 import com.finnvek.knittools.ui.screens.yarncard.ManualYarnCardInput
@@ -112,6 +113,87 @@ class LibraryViewModelTest {
             assertFalse(viewModel.isPatternSelectMode.value)
             assertTrue(viewModel.selectedPatternIds.value.isEmpty())
             assertEquals(1L, viewModel.patternDeleteErrorId.value)
+        }
+
+    @Test
+    fun `single web pattern delete navigates only after typed deletion success`() =
+        runTest {
+            coEvery { savedPatternRepository.getById(7L) } returns webPattern(7L)
+            coEvery { savedPatternRepository.deleteWebPattern(7L) } returns SavedPatternDeleteResult.Deleted
+            val viewModel = createViewModel()
+            var deleted = false
+
+            viewModel.deleteSavedPattern(7L) { deleted = true }
+            advanceUntilIdle()
+
+            assertTrue(deleted)
+            assertEquals(0L, viewModel.patternDeleteErrorId.value)
+            coVerify(exactly = 1) { savedPatternRepository.deleteWebPattern(7L) }
+            coVerify(exactly = 0) { savedPatternRepository.deleteById(7L) }
+        }
+
+    @Test
+    fun `single pattern delete does not report a missing row as success or failure`() =
+        runTest {
+            coEvery { savedPatternRepository.getById(7L) } returns webPattern(7L)
+            coEvery { savedPatternRepository.deleteWebPattern(7L) } returns SavedPatternDeleteResult.PatternMissing
+            val viewModel = createViewModel()
+            var deleted = false
+
+            viewModel.deleteSavedPattern(7L) { deleted = true }
+            advanceUntilIdle()
+
+            assertFalse(deleted)
+            assertEquals(0L, viewModel.patternDeleteErrorId.value)
+            coVerify(exactly = 1) { savedPatternRepository.deleteWebPattern(7L) }
+            coVerify(exactly = 0) { savedPatternRepository.deleteById(any()) }
+        }
+
+    @Test
+    fun `single web pattern delete emits an error only for persistence failure`() =
+        runTest {
+            coEvery { savedPatternRepository.getById(7L) } returns webPattern(7L)
+            coEvery { savedPatternRepository.deleteWebPattern(7L) } returns
+                SavedPatternDeleteResult.PersistenceFailure
+            val viewModel = createViewModel()
+            var deleted = false
+
+            viewModel.deleteSavedPattern(7L) { deleted = true }
+            advanceUntilIdle()
+
+            assertFalse(deleted)
+            assertEquals(1L, viewModel.patternDeleteErrorId.value)
+        }
+
+    @Test
+    fun `single web pattern delete does not treat a changed record type as success or failure`() =
+        runTest {
+            coEvery { savedPatternRepository.getById(7L) } returns webPattern(7L)
+            coEvery { savedPatternRepository.deleteWebPattern(7L) } returns SavedPatternDeleteResult.NotWebPattern
+            val viewModel = createViewModel()
+            var deleted = false
+
+            viewModel.deleteSavedPattern(7L) { deleted = true }
+            advanceUntilIdle()
+
+            assertFalse(deleted)
+            assertEquals(0L, viewModel.patternDeleteErrorId.value)
+        }
+
+    @Test
+    fun `single non-web pattern delete preserves the existing generic path`() =
+        runTest {
+            coEvery { savedPatternRepository.getById(8L) } returns savedPattern(8L)
+            val viewModel = createViewModel()
+            var deleted = false
+
+            viewModel.deleteSavedPattern(8L) { deleted = true }
+            advanceUntilIdle()
+
+            assertTrue(deleted)
+            assertEquals(0L, viewModel.patternDeleteErrorId.value)
+            coVerify(exactly = 1) { savedPatternRepository.deleteById(8L) }
+            coVerify(exactly = 0) { savedPatternRepository.deleteWebPattern(8L) }
         }
 
     @Test
@@ -287,6 +369,16 @@ class LibraryViewModelTest {
             ravelryPatternId = id.toInt(),
             name = "Pattern $id",
             designerName = "Designer",
+        )
+
+    private fun webPattern(id: Long) =
+        SavedPattern(
+            id = id,
+            source = SavedPatternSource.WebLink,
+            name = "Web pattern $id",
+            designerName = "",
+            originalUrl = "https://example.com/pattern-$id",
+            canonicalUrl = "https://example.com/pattern-$id",
         )
 
     private fun progressPhoto(id: Long) =

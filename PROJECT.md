@@ -11,7 +11,7 @@ This file is the detailed implementation reference for the current KnitTools che
 - build, dependency, CI, and release-surface checks;
 - locating the source of truth for a behavior before changing it.
 
-The base snapshot was re-verified against the source tree on 2026-08-24. Project Yarn Usage and Remaining Allocated Yarn V1, Room 24, and the source inventory were updated on 2026-08-29 after full local JVM and Android verification, following the project-folder and Measurements and Gauge work. Web Pattern Link Support V1 was updated on 2026-08-30 after full local JVM and installed Android verification. This file describes the current working tree, including uncommitted changes, rather than assuming that Git `HEAD` contains the newest implementation. Counts, dependency versions, workflow pins, and generated schema versions are volatile and must be rechecked when precision matters.
+This file describes the committed Android application and Functions package in this repository. Counts, dependency versions, workflow pins, and generated schema versions are volatile and must be rechecked when precision matters.
 
 This is a reference, not a replacement for the code. If this file conflicts with executable source, Gradle configuration, the Android manifest, Room schema exports, Firebase configuration, or tests, the executable source wins.
 
@@ -59,7 +59,7 @@ The app does not currently implement cloud synchronization, continuous Drive or 
 | App version | `versionCode 1`, `versionName "1.0.0"` |
 | Room schema | 24 |
 | Java toolchain | Eclipse Temurin JDK 17 |
-| Gradle wrapper | 9.6.1 |
+| Gradle wrapper | 9.7.1 |
 | Android Gradle Plugin | 9.3.1 |
 | Kotlin and Compose compiler plugin | 2.4.10 |
 | Firebase Functions runtime | Node.js 22 |
@@ -69,15 +69,17 @@ The app does not currently implement cloud synchronization, continuous Drive or 
 
 These are orientation counts, not coverage or pass results:
 
-- 319 production Kotlin files under `app/src/main`;
-- 244 Kotlin files in the JVM test source set under `app/src/test`;
-- 34 Kotlin files in the Android instrumented-test source set under `app/src/androidTest`;
-- 7 TypeScript test files matching `*.test.ts` under `functions/src`;
-- 65 tracked or working-tree resource files under `app/src/main/res`.
+- 330 production Kotlin files under `app/src/main`;
+- 257 Kotlin files in the JVM test source set under `app/src/test`;
+- 39 Kotlin files in the Android instrumented-test source set under `app/src/androidTest`;
+- 8 TypeScript test files matching `*.test.ts` under `functions/src`;
+- 65 tracked resource files under `app/src/main/res`.
 
 ### Current local validation
 
-Web Pattern Link Support V1 final verification on 2026-08-30 passed 1,535 debug JVM tests across 251 suites with `--rerun-tasks`, with no failures, errors, or skipped tests. Separate direct offline commands passed KSP, Android-test compilation, debug app and test APK assembly, `lintDebug`, `ktlintCheck`, `detekt`, `debugStabilityCheck`, and `git diff --check`; the only diff-check output was Git's existing CRLF normalization warning for two counter decision files. Functions and the user's custom check wrappers were not run. These broad Android results predate the 2026-08-31 Functions/security/analyzer delta and therefore must not be presented as a complete validation of every current working-tree line.
+Validation evidence in this section is commit-scoped rather than a perpetual statement about the newest checkout. After the additional regression coverage, the published Android source baseline passed 1,548 debug JVM tests. The Ravelry Functions hardening checkpoint built and passed 51 tests across eight suites under local Node.js 24, while the declared Functions runtime remains Node.js 22. The DeepSec `2.3.8` update resolved that CLI version and passed its six declared matcher tests, but it did not run a repository scan. Build & Test and CodeQL passed for the published Coil verification-metadata commit. These results do not establish Android instrumentation for later dependency commits, Functions behavior on Node.js 22, a DeepSec or MobSF scan of future source, a release artifact, deployment, or live Firebase/Ravelry behavior.
+
+Web Pattern Link Support V1 final verification on 2026-08-30 passed 1,535 debug JVM tests across 251 suites with `--rerun-tasks`, with no failures, errors, or skipped tests. Separate direct offline commands passed KSP, Android-test compilation, debug app and test APK assembly, `lintDebug`, `ktlintCheck`, `detekt`, `debugStabilityCheck`, and `git diff --check`; the only diff-check output was Git's existing CRLF normalization warning for two counter decision files. Functions and the user's custom check wrappers were not run. These broad Android results predate the later published Functions, security, analyzer, scanner, and dependency-verification commits and therefore are not complete validation of those later changes.
 
 The complete installed 197-test package passed on API 36 (`emulator-5556`) and API 37 (`emulator-5558`), with no failed or skipped tests and no app fatal crash or ANR match. The API 36 visual pass covered populated and empty Saved Patterns, the editor with an IME, wrapped long title and URL, light and app dark detail, system-level 200 percent font, a 320 dp viewport, delete confirmation, and unlink confirmation. A manual HTTPS save produced Saved Pattern metadata without adding an app-owned file, PDF, or project document, and the save emitted no Ravelry, Firebase Functions, OkHttp, Ktor, callable, or target-host log entry. The external website was not opened. API 29, a physical device, human TalkBack listening, release artifacts, Functions, live websites, Firebase, Ravelry, deployment, and staging were not tested or used.
 
@@ -134,7 +136,7 @@ The baseline-profile module targets `:app`, uses the Android test and Baseline P
 
 The backend package is not a Gradle module. It uses TypeScript and Firebase Functions v2, targets Node.js 22, compiles to `functions/lib`, exposes authenticated callables and an OAuth callback, and stores OAuth state, tokens, and rate-limit windows in Firestore. It never downloads or stores pattern PDFs.
 
-Current core versions are `firebase-functions 7.3.2`, `firebase-admin 14.2.0`, `typescript 7.0.2`, and `@types/node 26.1.2`. Package overrides pin security-sensitive transitive packages including `brace-expansion`, `body-parser`, `form-data`, `js-yaml`, `protobufjs`, `rimraf`, and `uuid`.
+Current core versions are `firebase-functions 7.3.2`, `firebase-admin 14.3.0`, `typescript 7.0.2`, and `@types/node 26.3.0`. Package overrides pin security-sensitive transitive packages including `brace-expansion`, `body-parser`, `form-data`, `js-yaml`, `protobufjs`, `rimraf`, and `uuid`.
 
 ## Android dependency map
 
@@ -275,7 +277,7 @@ Top-level navigation saves and restores state and avoids duplicate destinations.
 | `project_list` | Project list |
 | `counter` | Selected project counter workspace |
 | `photo_gallery` | Current project's progress photos |
-| `pattern_viewer/{projectId}` | Attached project PDF viewer |
+| `pattern_viewer/{projectId}?selectedProjectDocumentId={selectedProjectDocumentId}` | Attached project PDF viewer with an optional selected document |
 | `session_history/{projectId}` | Project session history |
 | `notes_editor/{projectId}` | Project notes editor |
 | `library` | Library hub |
@@ -752,30 +754,33 @@ The implemented backend surface includes:
 - import by pattern ID;
 - import by pattern URL.
 
-OAuth start stores a PKCE state document in `ravelryOAuthStates/{state}` with a short lifetime and the current `connectionGeneration`. The callback consumes one-time state, validates ownership and generation, and writes tokens only when the connection is still current.
+OAuth start stores a PKCE state document in `ravelryOAuthStates/{state}` with a short lifetime and the current `connectionGeneration`. The callback accepts only the generated 43-character base64url state shape before any state-store lookup, consumes the public callback limiter before reading Firestore, then consumes one-time state, validates ownership and generation, and writes tokens only when the connection is still current. The public callback request key is a SHA-256 digest of the trimmed request IP or the `unknown` fallback; raw IP addresses are not used as Firestore document IDs.
 
 Tokens live in `ravelryTokens/{uid}`. `functions/src/ravelry/tokenAccess.ts` is the access-token gate:
 
 - rate limiting occurs before token refresh;
 - expired access tokens refresh server-side with Secret Manager credentials;
-- a rotated refresh token replaces the stored token only if the connection generation is unchanged;
+- a refresh result is persisted only when the stored access token, refresh token, expiry, and connection generation still match the token that initiated the refresh;
+- a refresh that loses that compare-and-set race reloads and may use the newer already-persisted token instead of overwriting it;
+- current-user verification updates only Ravelry user metadata and verification timestamps, so an in-flight response cannot restore stale credentials;
 - disconnect advances a tombstone generation so late callback, current-user, or refresh writes cannot recreate a disconnected connection.
 
-Search and import callables sanitize upstream fields and return metadata only. They do not download pattern PDFs. URL import validates Ravelry hosts and pattern-library paths before resolving an ID.
+Search and import callables sanitize upstream fields and return metadata only. They do not download pattern PDFs. URL import validates Ravelry hosts and pattern-library paths before resolving an ID. Numeric paths require a positive ID; slug paths accept only a search result whose canonical URL exactly matches the requested canonical URL. A fuzzy or merely first search result is rejected as `pattern_not_found` rather than imported as unrelated metadata.
 
-The local Functions foundation was rechecked on 2026-08-26 with the existing lockfile and installed dependencies: 46 tests passed across seven suites and the TypeScript build succeeded. `package-lock.json` remained unchanged. Import sanitization requires a positive integer pattern ID and accepts only valid HTTPS thumbnail URLs. The package targets Node.js 22; local Node.js 24.19.0 and npm 11.17.0 are an environment mismatch, not deployment proof. No Firebase deployment, real OAuth callback, Secret Manager access, or live Ravelry/CDN request is established by these local checks.
+At the published `6f55bf3` Ravelry hardening checkpoint, the TypeScript build and 51 tests across eight suites passed under local Node.js 24. Import sanitization requires a positive integer pattern ID and accepts only valid HTTPS thumbnail URLs. The package targets Node.js 22, and no Functions-specific GitHub workflow currently proves that runtime. No Firebase deployment, real OAuth callback, Secret Manager access, or live Ravelry/CDN request is established by these local checks.
 
 ### Rate limiting
 
-The backend enforces per-UID and backend-global fixed windows. Current per-minute limits are:
+The backend enforces request-key and backend-global fixed windows. Authenticated callables use the Firebase UID as the request key; the public OAuth callback uses the hashed IP key described above. Current per-minute limits are:
 
-| Surface | Per UID | Backend global |
+| Surface | Per request key | Backend global |
 |---|---:|---:|
 | Authentication | 10 | 60 |
+| OAuth callback | 10 | 60 |
 | Search | 30 | 120 |
 | Import | 20 | 80 |
 
-Global limits use ten Firestore shards, giving per-shard capacities of 6, 12, and 8 respectively. Every request also checks an active legacy `<bucket>_global` window before using shards. That compatibility check is temporary and must be removed only after deployment is complete and all legacy single-document writers are confirmed drained. A warm process caches a confirmed saturated shard window so repeated overload rejections do not rescan every shard.
+Global limits use ten Firestore shards, giving per-shard capacities of 6, 6, 12, and 8 for authentication, callback, search, and import respectively. Every request also checks an active legacy `<bucket>_global` window before using shards. That compatibility check is temporary and must be removed only after deployment is complete and all legacy single-document writers are confirmed drained. A warm process caches a confirmed saturated shard window so repeated overload rejections do not rescan every shard.
 
 ### Firestore boundary
 
@@ -1423,7 +1428,7 @@ Non-distribution variants `debug`, `benchmarkRelease`, and `nonMinifiedRelease` 
 `.github/workflows/build.yml` runs on pushes and pull requests to `main`. It uses:
 
 - `actions/checkout` v7.0.1, pinned by SHA, with credential persistence disabled;
-- `actions/setup-java` v5.7.0, pinned by SHA, Temurin 17;
+- `actions/setup-java` v6.0.0, pinned by SHA, Temurin 17;
 - `gradle/actions/setup-gradle` v6.3.0, pinned by SHA.
 
 It runs, sequentially:
@@ -1441,7 +1446,7 @@ It runs, sequentially:
 - analyzes Java/Kotlin;
 - uses manual build mode;
 - builds `assembleDebug --no-daemon`;
-- uses checkout v7.0.1, setup-java v5.7.0, and CodeQL action v4.37.6 pinned by SHA;
+- uses checkout v7.0.1, setup-java v6.0.0, and CodeQL action v4.37.9 pinned by SHA;
 - has no separate Android setup action;
 - has a six-hour job timeout.
 
@@ -1464,6 +1469,10 @@ A green Android workflow does not validate Functions.
 - npm dependencies in `functions`.
 
 CodeQL action updates are grouped.
+
+### Gradle dependency verification
+
+`gradle/verification-metadata.xml` enables metadata verification and leaves signature verification disabled. It contains verification entries for the `io.coil-kt.coil3:coil-network-core-android:3.5.0` and `io.coil-kt.coil3:coil-network-ktor3-android:3.5.0` POMs. The published `8a1b245` checkpoint added those entries after strict local dependency resolution and direct artifact-byte hashing without changing a dependency version or weakening the trust policy. Build & Test resolves dependencies under the checked-in verification metadata, but neither ordinary GitHub workflow has a separate step that directly re-hashes those POM bytes.
 
 ## Local validation and scanner surfaces
 
@@ -1524,7 +1533,7 @@ Each tool proves a different claim. A zero-match raw scan is not automatically t
 
 `gradle/osv-scanner.toml` uses package/advisory-specific exceptions for build-tool dependencies that appear in Gradle verification metadata. It must not return to a project-wide ignore model. Runtime dependency exposure still needs its own resolved-graph or artifact evidence.
 
-DeepSec custom matchers cover:
+The `.deepsec` workspace currently pins DeepSec `2.3.8`, TypeScript `^7.0.2`, and `@types/node ^26.3.0`. Its custom matchers cover:
 
 - exported Android components;
 - Kotlin entry points;
@@ -1538,15 +1547,19 @@ DeepSec custom matchers cover:
 
 Accepted risk is limited to documented historical Ravelry credential findings in `config/security-decisions.md`. It is not a blanket suppression for API abuse, prompt injection, or unrelated findings.
 
+`config/check-exceptions.json` contains 35 bounded records, including 30 MobSF records. Each MobSF record has one rule, an exact `findingPath`, selectors, an owner, an expiry date, and a tracking reference; `.mobsf` does not globally suppress a rule. At the published `09f217a` registry-validation checkpoint, the local matcher processed 115 raw findings: all 115 matched exactly once, with zero unsuppressed blocking findings, zero multiply covered findings, and zero suppressed confirmed defects. This is evidence for that validated commit, not a guarantee for future source, and GitHub does not run MobSF.
+
+The published `366755d` DeepSec update changed the package and lockfile, resolved CLI version `2.3.8`, and passed the six declared matcher tests; it did not run a repository scan. GitHub does not run DeepSec. Invocation artifacts under `.deepsec/data` are generated local runtime data, not a primary implementation source or part of an ordinary source commit.
+
 ## Test architecture
 
 ### Current inventory
 
-The current working tree contains:
+The committed checkout contains:
 
-- 244 Kotlin files in `app/src/test`;
-- 34 Kotlin files in `app/src/androidTest`;
-- 7 TypeScript test files in `functions/src`.
+- 257 Kotlin files in `app/src/test`;
+- 39 Kotlin files in `app/src/androidTest`;
+- 8 TypeScript test files in `functions/src`.
 
 These source-file counts include test helpers; they are not test-class counts or executed-test totals and should be refreshed after test additions/removals.
 
@@ -1775,9 +1788,13 @@ Questions:
 - Is availability preserved as unknown when unknown?
 - Is a positive pattern ID required?
 - Does URL import validate the host/path?
+- Does a slug import require an exact canonical match rather than accepting the first search result?
 - Is PKCE state one-use and generation-bound?
+- Are malformed callback states rejected and the callback bucket consumed before any OAuth-state Firestore lookup?
 - Can disconnect prevent late writes?
 - Does refresh happen only after a limiter passes?
+- Can two refreshes that finish out of order overwrite the newer access/refresh token, expiry, or generation?
+- Can current-user verification write stale credentials over a concurrent refresh?
 - Can Android read token documents or secrets?
 - Is any PDF download implied where only metadata exists?
 
@@ -1884,6 +1901,7 @@ Future documents do not change this list until production code, configuration, a
 Recheck these directly:
 
 - dependency and SDK versions in `gradle/libs.versions.toml`;
+- npm versions in `functions/package.json` and `.deepsec/package.json`;
 - Room version, migration registration, and latest schema JSON;
 - CI action comments and their pinned SHAs;
 - test-file counts;
@@ -1893,6 +1911,7 @@ Recheck these directly:
 
 Common stale assumptions:
 
+- The root `package.json` is a DeepSec command facade, not evidence of an app website or JavaScript product runtime.
 - `allowBackup` is false, not true.
 - Room is schema 24, not an earlier schema.
 - `ProjectCard.kt` is deleted; the current row is `ProjectListItem.kt`.

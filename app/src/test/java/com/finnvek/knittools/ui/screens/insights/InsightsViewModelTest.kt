@@ -115,7 +115,8 @@ class InsightsViewModelTest {
             val today = LocalDate.now(zone)
             val sessions =
                 listOf(
-                    sessionAt(date = today.minusDays(1), hour = 10, minute = 0, rows = 8, minutes = 20, zone = zone),
+                    // Kahden viikon väli pitää istunnot eri päivä- tai viikkoämpäreissä myös kuukauden vaihtuessa.
+                    sessionAt(date = today.minusWeeks(2), hour = 10, minute = 0, rows = 8, minutes = 20, zone = zone),
                     sessionAt(date = today, hour = 10, minute = 0, rows = 12, minutes = 30, zone = zone),
                 )
             every { repository.getSessionsForInsights(null, null) } returns flowOf(sessions)

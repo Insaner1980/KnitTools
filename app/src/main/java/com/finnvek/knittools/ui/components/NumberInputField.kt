@@ -52,6 +52,7 @@ data class NumberInputOptions(
 )
 
 @Composable
+@Suppress("kotlin:S107", "kotlin:S3776") // Syöte- ja saavutettavuusasetukset pidetään näkyvinä.
 fun NumberInputField(
     value: String,
     onValueChange: (String) -> Unit,

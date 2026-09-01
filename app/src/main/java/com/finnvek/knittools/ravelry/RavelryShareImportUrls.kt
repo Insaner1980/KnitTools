@@ -1,11 +1,10 @@
 package com.finnvek.knittools.ravelry
 
-import java.net.URI
-import java.util.Locale
+import com.finnvek.knittools.domain.model.WebPatternUrlValidation
+import com.finnvek.knittools.domain.model.validateWebPatternUrl
 
 object RavelryShareImportUrls {
     private const val MAX_SHARED_PATTERN_URL_LENGTH = 2_048
-    private const val PATTERN_LIBRARY_PATH = "/patterns/library/"
     private const val TRAILING_SHARED_URL_PUNCTUATION = ".,!?;:)]}"
     private val urlPattern = Regex("""https://[^\s<>"']+""")
 
@@ -18,15 +17,8 @@ object RavelryShareImportUrls {
             }
 
     private fun isRavelryPatternUrl(candidate: String): Boolean {
-        val uri = runCatching { URI(candidate) }.getOrNull() ?: return false
-        if (!uri.scheme.equals("https", ignoreCase = true)) return false
-
-        val host = uri.host?.lowercase(Locale.US) ?: return false
-        if (host != "ravelry.com" && host != "www.ravelry.com") return false
-
-        val path = uri.path ?: return false
-        if (!path.startsWith(PATTERN_LIBRARY_PATH)) return false
-        return path.removePrefix(PATTERN_LIBRARY_PATH).isNotBlank()
+        val validation = validateWebPatternUrl(candidate) as? WebPatternUrlValidation.Valid ?: return false
+        return validation.value.isRavelryPattern
     }
 
     private fun String.trimSharedUrlPunctuation(): String =

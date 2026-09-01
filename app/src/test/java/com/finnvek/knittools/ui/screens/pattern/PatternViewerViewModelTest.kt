@@ -247,6 +247,7 @@ class PatternViewerViewModelTest {
             assertEquals(PatternBookmarkError.NOT_FOUND, viewModel.uiState.value.error)
         }
 
+    // CPD-OFF: Kirjanmerkkitestien skenaariokohtainen asetelma pidetaan testien yhteydessa.
     @Test
     fun `stale action fails closed without repository mutation`() =
         runTest {
@@ -332,6 +333,8 @@ class PatternViewerViewModelTest {
             assertNull(viewModel.uiState.value.error)
             assertFalse(viewModel.uiState.value.isMutating)
         }
+
+    // CPD-ON
 
     private fun viewModel(observed: MutableStateFlow<ActivePatternBookmarks>): PatternViewerViewModel {
         val repository = mockk<PatternBookmarkRepository>()

@@ -5,6 +5,7 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
+// CPD-OFF: Room-entity peilaa aktiivisen istunnon domain-kenttia ja viiteavaimet pidetaan eksplisiittisina.
 @Entity(
     tableName = "active_sessions",
     foreignKeys = [
@@ -47,3 +48,4 @@ data class ActiveSessionEntity(
         const val SINGLETON_ID = 1
     }
 }
+// CPD-ON

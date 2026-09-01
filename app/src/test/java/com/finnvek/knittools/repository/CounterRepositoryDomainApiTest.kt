@@ -16,6 +16,8 @@ import com.finnvek.knittools.data.storage.ProgressPhotoStorage
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.KnitSession
 import com.finnvek.knittools.domain.model.ProjectDocument
+import com.finnvek.knittools.domain.model.SavedPattern
+import com.finnvek.knittools.domain.model.SavedPatternSource
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.coVerifyOrder
@@ -449,6 +451,7 @@ class CounterRepositoryDomainApiTest {
             val document = projectDocument(newPatternUri, "New pattern")
             coEvery { projectDocumentRepository.addImportedPdf(7L, newPatternUri, "New pattern") } returns
                 ProjectDocumentMutationResult.Added(document)
+            coEvery { projectDao.getProject(7L) } returns CounterProjectEntity(id = 7L)
 
             val result = repository.attachPattern(7L, newPatternUri, "New pattern", 0, null)
 
@@ -462,6 +465,150 @@ class CounterRepositoryDomainApiTest {
                     updatedAt = any(),
                 )
             }
+        }
+
+    @Test
+    fun `attachPattern preserves an existing web metadata relationship`() =
+        runTest {
+            val newPatternUri = "file:///data/user/0/com.finnvek.knittools/files/pattern_pdfs/7/new.pdf"
+            val document = projectDocument(newPatternUri, "New pattern")
+            coEvery { projectDao.getProject(7L) } returns
+                CounterProjectEntity(id = 7L, linkedPatternId = 99L, patternName = "Web pattern")
+            coEvery { projectDocumentRepository.addImportedPdf(7L, newPatternUri, "New pattern") } returns
+                ProjectDocumentMutationResult.Added(document)
+
+            val result = repository.attachPattern(7L, newPatternUri, "New pattern", 0, null)
+
+            assertEquals(ProjectDocumentMutationResult.Added(document), result)
+            coVerify(exactly = 0) { projectDao.updatePatternInformation(any(), any(), any(), any()) }
+        }
+
+    @Test
+    fun `attach web metadata verifies both rows and leaves documents untouched`() =
+        runTest {
+            val pattern = webPattern(id = 99L, name = "Web pattern")
+            coEvery { projectDao.getProject(7L) } returns CounterProjectEntity(id = 7L)
+            coEvery { savedPatternRepository.getById(99L) } returns pattern
+
+            val result = repository.attachSavedPatternMetadata(7L, 99L)
+
+            assertEquals(SavedPatternMetadataMutationResult.Attached(99L), result)
+            coVerify(exactly = 1) {
+                projectDao.updatePatternInformation(
+                    id = 7L,
+                    linkedPatternId = 99L,
+                    patternName = "Web pattern",
+                    updatedAt = any(),
+                )
+            }
+            coVerify(exactly = 0) { projectDocumentRepository.addSavedPattern(any(), any()) }
+            coVerify(exactly = 0) { projectDocumentRepository.remove(any(), any()) }
+        }
+
+    @Test
+    fun `attach web metadata is idempotent and rejects missing or non-web rows`() =
+        runTest {
+            val pattern = webPattern(id = 99L, name = "Web pattern")
+            coEvery { projectDao.getProject(7L) } returns
+                CounterProjectEntity(id = 7L, linkedPatternId = 99L, patternName = "Web pattern")
+            coEvery { savedPatternRepository.getById(99L) } returns pattern
+            assertEquals(
+                SavedPatternMetadataMutationResult.AlreadyAttached(99L),
+                repository.attachSavedPatternMetadata(7L, 99L),
+            )
+            coVerify(exactly = 0) { projectDao.updatePatternInformation(any(), any(), any(), any()) }
+
+            coEvery { projectDao.getProject(8L) } returns null
+            assertEquals(
+                SavedPatternMetadataMutationResult.ProjectMissing,
+                repository.attachSavedPatternMetadata(8L, 99L),
+            )
+
+            coEvery { projectDao.getProject(7L) } returns CounterProjectEntity(id = 7L)
+            coEvery { savedPatternRepository.getById(100L) } returns null
+            assertEquals(
+                SavedPatternMetadataMutationResult.PatternMissing,
+                repository.attachSavedPatternMetadata(7L, 100L),
+            )
+
+            coEvery { savedPatternRepository.getById(101L) } returns
+                pattern.copy(
+                    id = 101L,
+                    source = SavedPatternSource.LocalFile,
+                    originalUrl = "content://pattern.pdf",
+                    canonicalUrl = "",
+                    localPdfUri = "content://pattern.pdf",
+                )
+            assertEquals(
+                SavedPatternMetadataMutationResult.NotWebPattern,
+                repository.attachSavedPatternMetadata(7L, 101L),
+            )
+        }
+
+    @Test
+    fun `attach web metadata requires explicit replacement authorization`() =
+        runTest {
+            val pattern = webPattern(id = 99L, name = "Replacement")
+            coEvery { projectDao.getProject(7L) } returns
+                CounterProjectEntity(id = 7L, linkedPatternId = 88L, patternName = "Current")
+            coEvery { savedPatternRepository.getById(99L) } returns pattern
+
+            assertEquals(
+                SavedPatternMetadataMutationResult.ReplacementRequired(88L),
+                repository.attachSavedPatternMetadata(7L, 99L),
+            )
+            coVerify(exactly = 0) { projectDao.updatePatternInformation(any(), any(), any(), any()) }
+
+            assertEquals(
+                SavedPatternMetadataMutationResult.Attached(99L),
+                repository.attachSavedPatternMetadata(7L, 99L, expectedExistingSavedPatternId = 88L),
+            )
+            coVerify(exactly = 1) {
+                projectDao.updatePatternInformation(7L, 99L, "Replacement", any())
+            }
+
+            coEvery { projectDao.getProject(7L) } returns
+                CounterProjectEntity(id = 7L, linkedPatternId = 77L, patternName = "Concurrent replacement")
+            assertEquals(
+                SavedPatternMetadataMutationResult.StaleAction,
+                repository.attachSavedPatternMetadata(7L, 99L, expectedExistingSavedPatternId = 88L),
+            )
+            coVerify(exactly = 1) {
+                projectDao.updatePatternInformation(7L, 99L, "Replacement", any())
+            }
+        }
+
+    @Test
+    fun `legacy general attach cannot bypass web metadata replacement confirmation`() =
+        runTest {
+            coEvery { projectDao.getProject(7L) } returns
+                CounterProjectEntity(id = 7L, linkedPatternId = 88L, patternName = "Current")
+            coEvery { savedPatternRepository.getById(99L) } returns webPattern(99L, "Replacement")
+
+            assertEquals(null, repository.attachSavedPattern(7L, 99L))
+            coVerify(exactly = 0) { projectDao.updatePatternInformation(any(), any(), any(), any()) }
+        }
+
+    @Test
+    fun `dedicated metadata unlink clears only the expected relationship`() =
+        runTest {
+            coEvery { projectDao.getProject(7L) } returns
+                CounterProjectEntity(id = 7L, linkedPatternId = 99L, patternName = "Web pattern")
+            coEvery { projectDao.clearPatternInformationIfLinked(7L, 99L, any()) } returns 1
+
+            assertEquals(
+                SavedPatternMetadataMutationResult.Unlinked,
+                repository.unlinkSavedPatternMetadata(7L, 99L),
+            )
+            coVerify(exactly = 0) { projectDocumentRepository.remove(any(), any()) }
+
+            coEvery { projectDao.getProject(7L) } returns
+                CounterProjectEntity(id = 7L, linkedPatternId = 100L, patternName = "New relationship")
+            assertEquals(
+                SavedPatternMetadataMutationResult.StaleAction,
+                repository.unlinkSavedPatternMetadata(7L, 99L),
+            )
+            coVerify(exactly = 1) { projectDao.clearPatternInformationIfLinked(7L, 99L, any()) }
         }
 
     @Test
@@ -512,6 +659,19 @@ class CounterRepositoryDomainApiTest {
             verticalReadingGuideXFraction = 0.5f,
             createdAt = 1L,
             updatedAt = 1L,
+        )
+
+    private fun webPattern(
+        id: Long,
+        name: String,
+    ): SavedPattern =
+        SavedPattern(
+            id = id,
+            source = SavedPatternSource.WebLink,
+            name = name,
+            designerName = "",
+            originalUrl = "https://example.com/pattern",
+            canonicalUrl = "https://example.com/pattern",
         )
 }
 

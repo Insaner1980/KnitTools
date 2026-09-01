@@ -11,7 +11,7 @@ This file is the detailed implementation reference for the current KnitTools che
 - build, dependency, CI, and release-surface checks;
 - locating the source of truth for a behavior before changing it.
 
-The base snapshot was re-verified against the source tree on 2026-08-24. Project Yarn Usage and Remaining Allocated Yarn V1, Room 24, and the source inventory were updated on 2026-08-29 after full local JVM and Android verification, following the project-folder and Measurements and Gauge work. This file describes the current working tree, including uncommitted changes, rather than assuming that Git `HEAD` contains the newest implementation. Counts, dependency versions, workflow pins, and generated schema versions are volatile and must be rechecked when precision matters.
+The base snapshot was re-verified against the source tree on 2026-08-24. Project Yarn Usage and Remaining Allocated Yarn V1, Room 24, and the source inventory were updated on 2026-08-29 after full local JVM and Android verification, following the project-folder and Measurements and Gauge work. Web Pattern Link Support V1 was updated on 2026-08-30 after full local JVM and installed Android verification. This file describes the current working tree, including uncommitted changes, rather than assuming that Git `HEAD` contains the newest implementation. Counts, dependency versions, workflow pins, and generated schema versions are volatile and must be rechecked when precision matters.
 
 This is a reference, not a replacement for the code. If this file conflicts with executable source, Gradle configuration, the Android manifest, Room schema exports, Firebase configuration, or tests, the executable source wins.
 
@@ -37,7 +37,7 @@ KnitTools is a local-first Android knitting and crochet companion. Its main prod
 - a primary row or round counter with history, targets, sections, stitch tracking, reminders, and additional counter types;
 - timed work sessions and historical insights;
 - local pattern PDF import, project attachment, reading-line calibration, layered annotations, and annotated export;
-- saved-pattern metadata and Ravelry discovery through a Firebase backend;
+- saved-pattern metadata, user-added website links, and Ravelry discovery through a Firebase backend;
 - yarn inventory cards, project-only yarn notes, and project-specific planned, allocated, and used yarn amounts;
 - progress photos;
 - home-screen counter widgets;
@@ -76,6 +76,10 @@ These are orientation counts, not coverage or pass results:
 - 65 tracked or working-tree resource files under `app/src/main/res`.
 
 ### Current local validation
+
+Web Pattern Link Support V1 final verification on 2026-08-30 passed 1,535 debug JVM tests across 251 suites with `--rerun-tasks`, with no failures, errors, or skipped tests. Separate direct offline commands passed KSP, Android-test compilation, debug app and test APK assembly, `lintDebug`, `ktlintCheck`, `detekt`, `debugStabilityCheck`, and `git diff --check`; the only diff-check output was Git's existing CRLF normalization warning for two counter decision files. Functions and the user's custom check wrappers were not run. These broad Android results predate the 2026-08-31 Functions/security/analyzer delta and therefore must not be presented as a complete validation of every current working-tree line.
+
+The complete installed 197-test package passed on API 36 (`emulator-5556`) and API 37 (`emulator-5558`), with no failed or skipped tests and no app fatal crash or ANR match. The API 36 visual pass covered populated and empty Saved Patterns, the editor with an IME, wrapped long title and URL, light and app dark detail, system-level 200 percent font, a 320 dp viewport, delete confirmation, and unlink confirmation. A manual HTTPS save produced Saved Pattern metadata without adding an app-owned file, PDF, or project document, and the save emitted no Ravelry, Firebase Functions, OkHttp, Ktor, callable, or target-host log entry. The external website was not opened. API 29, a physical device, human TalkBack listening, release artifacts, Functions, live websites, Firebase, Ravelry, deployment, and staging were not tested or used.
 
 Project Yarn Usage V1 final verification on 2026-08-28 and 2026-08-29 passed 1,452 debug JVM tests across 242 suites with `--rerun-tasks`, with no failures, errors, or skipped tests. Separate direct offline commands passed KSP, Android-test compilation, debug app and test APK assembly, `lintDebug`, `ktlintCheck`, and `detekt`. Debug Lint reported no issues. The debug Compose stability dump was inspected: the editor, field, derived summary, and usage row are stable and skippable/restartable; the flow retains runtime-checked list inputs, and no stability exemption was added.
 
@@ -277,6 +281,7 @@ Top-level navigation saves and restores state and avoids duplicate destinations.
 | `library` | Library hub |
 | `saved_patterns` | Saved-pattern list |
 | `saved_pattern_detail/{savedPatternId}` | Saved-pattern metadata and actions |
+| `web_pattern_editor?origin={origin}&projectId={projectId}&patternId={patternId}` | Add or edit a user-owned web pattern from Library, a project, or shared text |
 | `library_pattern_viewer/{savedPatternId}` | Library PDF viewer |
 | `my_yarn` | Yarn inventory |
 | `yarn_card_detail/{cardId}` | Yarn-card detail |
@@ -311,7 +316,7 @@ Top-level navigation saves and restores state and avoids duplicate destinations.
 - Global `pro_upgrade` is outside the individual top-level graphs.
 - `KnitToolsNavActions`, `CounterScreenActions`, and `RavelrySearchActions` group route actions.
 
-The bottom bar is hidden only for `pro_upgrade`, both pattern viewer routes, and `notes_editor/{projectId}`. It remains visible on the counter and most detail screens. `NavHost` consumes outer scaffold padding; nested scaffolds must not add duplicate insets.
+The bottom bar is hidden only for `pro_upgrade`, both pattern viewer routes, `notes_editor/{projectId}`, and the web-pattern editor. It remains visible on the counter and most detail screens. `NavHost` consumes outer scaffold padding; nested scaffolds must not add duplicate insets.
 
 ## Screen and feature inventory
 
@@ -327,7 +332,7 @@ Single-project moves use the existing Counter actions sheet; bulk moves use visi
 
 ### Library
 
-Library contains Saved Patterns, My Yarn, All Photos, needle sizes, size charts, knitting or crochet abbreviation entry, chart symbols, saved-pattern detail, library PDF reading and master annotations, and yarn-card detail.
+Library contains Saved Patterns including user-added web patterns, My Yarn, All Photos, needle sizes, size charts, knitting or crochet abbreviation entry, chart symbols, saved-pattern detail, library PDF reading and master annotations, and yarn-card detail.
 
 ### Tools
 
@@ -357,7 +362,7 @@ Settings owns app language, light/dark/system theme, haptic feedback, keep-scree
 | Pattern viewer | `ui/screens/pattern/PatternViewerScreen.kt`, `PatternDocumentViewport.kt` |
 | Pattern annotations | `PatternAnnotationViewModel.kt`, `PatternAnnotationToolbar.kt`, `PatternAnnotationOverlay.kt`, `PatternAnnotationLayerPanel.kt` |
 | Library hub | `ui/screens/library/LibraryScreen.kt`, `LibraryViewModel.kt`, `LibraryTopBar.kt` |
-| Saved patterns | `SavedPatternsScreen.kt`, `SavedPatternDetailScreen.kt`, `ui/screens/pattern/PatternPickerSheet.kt`, `PatternImageImportViewModel.kt`, `PatternImageImportSurface.kt` |
+| Saved patterns | `SavedPatternsScreen.kt`, `SavedPatternDetailScreen.kt`, `WebPatternEditorScreen.kt`, `WebPatternEditorViewModel.kt`, `ui/screens/pattern/PatternPickerSheet.kt`, `PatternImageImportViewModel.kt`, `PatternImageImportSurface.kt`, `ui/navigation/PatternShareCoordinatorViewModel.kt`, `ui/platform/ExternalWebLinkOpener.kt` |
 | Yarn inventory | `ui/screens/library/MyYarnScreen.kt`, `YarnStatusSheet.kt` |
 | Yarn detail | `ui/screens/yarncard/YarnCardDetailScreen.kt` and its ViewModel |
 | All photos | `ui/screens/library/AllPhotosScreen.kt` |
@@ -457,6 +462,14 @@ Work-session UI copy is localized in all 11 supported resource directories: defa
 #### Saved patterns
 
 `saved_patterns` stores source, nullable positive Ravelry ID, metadata, the canonical `free`/`paid`/`unknown` availability string, original and canonical URLs, optional local PDF URI, offline state, and save/update/sync timestamps. Persisted `ravelryId = 0` and `patternUrl` sentinels are not part of the current schema. Duplicate detection checks Ravelry ID, canonical URL, normalized original URL, then title plus designer only when explicitly requested.
+
+#### Web pattern links
+
+Web patterns reuse the existing schema 24 `saved_patterns` row shape. New rows use `SavedPatternSource.WebLink` (`WEB_LINK`); a legacy `Other` row is compatible only when it has no local PDF and contains a valid non-Ravelry website URL. New rows store a required title, optional designer, original and canonical URLs, `unknown` availability, and no Ravelry ID, thumbnail, offline copy, or PDF. No Room migration, Pro feature, backend function, permission, FileProvider path, or dependency was added.
+
+`WebPatternText` trims title and designer, applies a 120-unit Kotlin string limit, and rejects control, line-separator, and bidi-control characters. `WebPatternUrl` accepts only explicit HTTP(S) hierarchical URLs with authority and no user info, rejects malformed escapes, localhost/`.local`, and non-public numeric literals, preserves the original URL for display and opening, and canonicalizes duplicate identity. Recognized Ravelry library URLs remain owned by the Ravelry flow. `SavedPatternRepository` serializes and transactionally owns create, update, and delete, canonical duplicate detection, expected-`updatedAt` edit checks, linked-project title propagation, cancellation, and rollback.
+
+`CounterRepository.attachSavedPatternMetadata` and `unlinkSavedPatternMetadata` own the project's single copied `linkedPatternId` / `patternName` slot with expected-ID replacement and stale-action checks. This metadata lifecycle is independent of `project_documents`: attach, replace, unlink, and Saved Pattern deletion do not add, reorder, detach, or delete readable PDFs. Shared text is parsed locally into one bounded, unambiguous validated URL; Ravelry shares retain their import path, while other shares open the saved-state editor without overwriting a draft or persisting automatically. Website opening revalidates the stored URL and launches the original address with a package-agnostic browsable `ACTION_VIEW`; the app does not fetch, scrape, preview, cache, or send page content to the backend.
 
 #### Reminders, photos, and additional counters
 
@@ -1121,7 +1134,11 @@ The Library landing screen provides direct entry to Saved Patterns, My Yarn, All
 
 Saved Patterns contains local PDFs and metadata-only saved records. The list supports selection and deletion. `SavedPatternDetailScreen` owns metadata availability and actions. `PatternPickerSheet` lists all saved patterns for project attachment.
 
-A saved pattern with `localPdfUri` can open the library viewer. A metadata-only record opens detail and can be attached as metadata, but it is not readable as a PDF until a local document is attached/imported.
+A saved pattern with `localPdfUri` can open the library viewer. The current Saved Pattern detail UI enables that navigation only for `hasAttachedPdf`, and the web-pattern detail branch has no PDF-open action. A metadata-only record therefore opens detail and can be attached as metadata through the normal UI, but it is not readable as a PDF until a local document is attached/imported.
+
+There is one intentional review warning in the current source: `libraryPatternViewerRoute` still resolves `(pattern.localPdfUri ?: pattern.patternUrl)` after an internal route has already been reached. The route is not exported and the current caller is gated as described above, so this is not a normal metadata-to-viewer path. It is nevertheless a non-defensive route boundary: any new internal caller or direct navigation path must be reviewed until the route itself rejects a missing `localPdfUri`.
+
+Saved Patterns exposes Add web pattern in empty and populated states. Web rows and detail show the user-owned title, optional designer, and source host with separate Open website, Edit, Attach, and Delete actions; HTTP is allowed only with a visible warning and no offline claim. A project may keep one web-pattern information link alongside any number of PDF documents. Readable primary documents retain Pattern-card priority, and replacing or unlinking only the information link requires explicit confirmation.
 
 ### My Yarn
 
@@ -1321,7 +1338,7 @@ Application security and platform settings:
 - browsable `knittools://ravelry-auth-complete`;
 - `ACTION_SEND` with `text/plain`.
 
-Every exported input is untrusted. Ravelry URLs, deep-link shape, extras, project IDs, and widget launch IDs are validated against app-owned rules/state before use.
+Every exported input is untrusted. Shared text is classified locally as a Ravelry import or one unambiguous validated web URL; it never persists automatically. Ravelry URLs, generic web URLs, deep-link shape, extras, project IDs, and widget launch IDs are validated against app-owned rules/state before use.
 
 ## Security and privacy boundaries
 
@@ -1554,6 +1571,7 @@ The test surface includes:
 - project workspace and project-list source contracts;
 - accessibility semantics and touch-target contracts;
 - Ravelry auth, callable mapping, import confirmation, saved-pattern detail, and localization;
+- web-pattern validation, canonical duplicate identity, legacy compatibility, repository rollback, project metadata/document independence, shared-text state restoration, external opening, editor semantics, IME order, and all 11 locales;
 - Firebase/release-surface boundaries;
 - Insights metrics, axis layout, selection, stitch lattice, project fabric, palette contrast, and ViewModel aggregation;
 - workflow and scanner configuration anchors;
@@ -1652,6 +1670,7 @@ Questions:
 - Are page order, size limits, animated-image rejection, bounded decode, and transparent backgrounds preserved in the generated PDF?
 - Does cancellation remove staged images and any uncommitted PDF while leaving an already attached PDF intact?
 - Is a local PDF required for viewer entry?
+- Does `libraryPatternViewerRoute` reject a missing `localPdfUri` itself instead of relying only on the current detail-screen gate or falling back to `patternUrl`?
 - Are page resources bounded and closed?
 - Are project reading-line fields durable while library-only fields remain session state?
 - Do manual page/line movement pause follow without creating markers, while explicit calibration still writes markers?
@@ -1697,7 +1716,7 @@ Proof: failure-path tests and exact filesystem/DB state.
 
 ### 7. Yarn, saved-pattern, and project soft links
 
-Inspect `YarnCardLinks`, `YarnCardRepository`, `ProjectYarnNoteRepository`, saved-pattern duplicate detection, and project deletion.
+Inspect `YarnCardLinks`, `YarnCardRepository`, `ProjectYarnNoteRepository`, `WebPatternUrl`, `SavedPatternRepository`, saved-pattern duplicate detection, metadata attachment, and project deletion.
 
 Questions:
 
@@ -1706,12 +1725,15 @@ Questions:
 - Does Save to My Yarn retain the project note and a single logical usage row without changing usage amounts or global inventory automatically?
 - Are Ravelry ID 0 and raw URL sentinels rejected?
 - Is metadata-only content kept distinct from local PDF availability?
+- Do editor input, shared text, legacy compatibility, duplicate detection, and external opening use the same web-URL validation and canonicalization rules?
+- Do web-pattern update/delete and project attach/unlink operations use stale-action checks and preserve every `project_documents` row?
+- Does deleting a linked web pattern clear only the matching copied metadata and propagate a changed title without touching unrelated projects or files?
 
 Proof: repository transaction tests and resulting rows.
 
 ### 8. Exported components and intents
 
-Inspect the manifest, `MainActivity` intent handling, `CounterLaunchTokenStore`, widget receiver/actions, Ravelry URL validation, and FileProvider paths.
+Inspect the manifest, `MainActivity` intent handling, `PatternShareCoordinatorViewModel`, `CounterLaunchTokenStore`, widget receiver/actions, Ravelry/web URL validation, and FileProvider paths.
 
 Questions:
 
@@ -1719,6 +1741,7 @@ Questions:
 - Is a permission attached where available?
 - Can an external intent select a project?
 - Can OAuth/share input consume a counter token?
+- Does shared text produce exactly one validated URL, preserve an existing editor draft, avoid automatic persistence, and avoid any Ravelry/backend lookup before explicit confirmation?
 - Is replay prevented across activity recreation?
 - Are grants tied to a narrow content URI?
 
@@ -1784,6 +1807,7 @@ Questions:
 - Does the information hierarchy match the current product rules?
 - Does the first counter viewport remain uncluttered?
 - Is an attached PDF distinguished from metadata?
+- Does web-pattern UI use website/link wording, show the HTTP warning, open externally, and keep metadata replacement/unlink confirmation separate from PDF documents?
 - Are touch targets at least 48 dp?
 - Is selection unambiguous for row and child actions?
 - Does large font scale trigger a non-overlapping layout?
@@ -1831,7 +1855,7 @@ Proof: fresh analyzer-owned artifacts and exact run state.
 - Local projects with knitting/crochet semantics, targets, completion, sorting, and bulk actions.
 - Primary and additional counters, reminders, sections, shaping, repeats, stitch tracking, history, and undo.
 - Sessions and detailed Insights.
-- Saved patterns, local PDF import, gallery/camera images converted into one ordered local PDF, project bookmarks, horizontal/vertical reading guides, row following and calibration, annotations, and export.
+- Saved patterns, free user-added website links, local PDF import, gallery/camera images converted into one ordered local PDF, project bookmarks, horizontal/vertical reading guides, row following and calibration, annotations, and export.
 - Ravelry metadata search/import through backend-owned OAuth.
 - Yarn inventory, project yarn notes, photos, care symbols, links, and quantities.
 - Progress photos and widgets.
@@ -1844,6 +1868,7 @@ Proof: fresh analyzer-owned artifacts and exact run state.
 - Drive/Dropbox SDK integration or continuous sync.
 - Cross-device sync, backup/restore workflow, conflict resolution, background sync, or OAuth token storage for storage providers.
 - Ravelry PDF download.
+- Web-page download, scraping, in-app web preview, or offline website capture.
 - Voice or microphone commands.
 - Speech recognition or text-to-speech.
 - AI/model-backed instruction parsing.
@@ -1877,6 +1902,8 @@ Common stale assumptions:
 - The route is `abbreviations?craftType={craftType}`, not a fixed abbreviation route.
 - Saved-pattern detail does not automatically mean PDF viewer.
 - A Ravelry link is metadata until a local PDF is attached.
+- A user-added web pattern is local metadata pointing to an external website; it is not an authored website page, downloaded pattern, offline copy, backend import, or project PDF.
+- The normal Saved Pattern UI gates library viewing on `localPdfUri`, but the internal viewer route still contains a `patternUrl` fallback and must not be treated as a defensive boundary.
 - `app/google-services.json` is ignored and required for release artifacts; debug can use a placeholder.
 - Signing and Firebase config are separate gates.
 - Sentry is debug-only.

@@ -118,6 +118,18 @@ open class StubCounterProjectDao(
         updatedAt: Long,
     ) = Unit
 
+    override suspend fun updateLinkedPatternName(
+        savedPatternId: Long,
+        patternName: String,
+        updatedAt: Long,
+    ) = Unit
+
+    override suspend fun clearPatternInformationIfLinked(
+        projectId: Long,
+        expectedSavedPatternId: Long,
+        updatedAt: Long,
+    ): Int = 0
+
     override suspend fun updateCurrentPatternPage(
         id: Long,
         page: Int,

@@ -209,6 +209,7 @@ private fun InsightsRangeTitle(
     }
 }
 
+@Suppress("kotlin:S107") // LazyList-sisältö tarvitsee yhden näkymän erilliset valinta- ja aikavälitilat.
 private fun LazyListScope.insightsContent(
     uiState: InsightsUiState,
     rangeLabel: String,
@@ -801,6 +802,7 @@ private fun insightsRangeLabel(uiState: InsightsUiState): String {
     }
 }
 
+@Suppress("kotlin:S3776") // Lokalisoitu päivämääräkuvio jäsennetään merkkitasolla lainaukset huomioiden.
 internal fun datePatternPlacesDayBeforeMonth(pattern: String): Boolean {
     var quoted = false
     var dayIndex = -1

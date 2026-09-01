@@ -7,6 +7,7 @@ import com.finnvek.knittools.domain.model.SessionTimeSnapshot
 import java.time.ZoneId
 import javax.inject.Inject
 
+@Suppress("kotlin:S6517") // Hilt-injektointi ja käynnistysfallback käyttävät samaa nimettyä aikarajaa.
 interface SessionTimeSource {
     fun snapshot(): SessionTimeSnapshot
 }

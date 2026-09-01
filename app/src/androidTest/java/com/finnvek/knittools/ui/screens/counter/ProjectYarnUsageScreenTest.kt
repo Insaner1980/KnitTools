@@ -500,6 +500,7 @@ class ProjectYarnUsageScreenTest {
         return model
     }
 
+    // CPD-OFF: Aktiviteetin SavedStateHandle-fixture pidetaan Compose-testin yhteydessa.
     private fun activityHandle(): SavedStateHandle {
         lateinit var handle: SavedStateHandle
         composeRule.runOnUiThread {
@@ -513,6 +514,7 @@ class ProjectYarnUsageScreenTest {
         }
         return handle
     }
+    // CPD-ON
 
     private fun field(field: YarnUsageField) = composeRule.onNodeWithTag("yarn_usage_input_${field.name}")
 

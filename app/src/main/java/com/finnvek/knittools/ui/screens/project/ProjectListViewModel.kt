@@ -490,6 +490,7 @@ class ProjectListViewModel
             }
         }
 
+        @Suppress("kotlin:S1871") // Molemmat aktiivisen session tarkistuspolut avaavat saman jatkotoiminnon.
         fun archiveProject(id: Long) {
             viewModelScope.launch {
                 val project = repository.getProject(id) ?: return@launch

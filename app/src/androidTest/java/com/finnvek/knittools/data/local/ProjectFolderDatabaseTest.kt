@@ -103,6 +103,7 @@ class ProjectFolderDatabaseTest {
     private fun tableExists(table: String): Boolean =
         scalarLong("SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = '$table'") == 1L
 
+    // CPD-OFF: Skeematestin indeksitarkistus pidetaan taulufixturen yhteydessa.
     private fun assertIndexExists(
         table: String,
         indexName: String,
@@ -117,6 +118,7 @@ class ProjectFolderDatabaseTest {
             assertTrue("Missing index $indexName", found)
         }
     }
+    // CPD-ON
 
     private fun scalarLong(query: String): Long =
         sql.query(query).use { cursor ->

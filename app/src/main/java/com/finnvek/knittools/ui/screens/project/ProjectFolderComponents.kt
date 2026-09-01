@@ -106,6 +106,7 @@ fun ProjectFolderSelector(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@Suppress("kotlin:S107") // Kansionhallintasheet välittää CRUD- ja järjestystoiminnot eksplisiittisesti.
 fun ProjectFoldersSheet(
     folders: List<ProjectFolder>,
     selectedFilter: ProjectFolderFilter,
@@ -343,6 +344,7 @@ fun DeleteProjectFolderDialog(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@Suppress("kotlin:S107") // Siirtosheet pitää kohdevalinnan ja vahvistustilat erillisinä.
 fun MoveToFolderSheet(
     projectCount: Int,
     currentFolderId: Long?,
@@ -377,6 +379,7 @@ fun MoveToFolderSheet(
                     projectCount,
                 )
         }
+    // CPD-OFF: Siirtolomakkeen Compose-rakenne pidetaan toiminnon yhteydessa.
     ModalBottomSheet(onDismissRequest = { if (!isMoving) onDismiss() }, sheetState = sheetState) {
         Column(
             verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -421,6 +424,7 @@ fun MoveToFolderSheet(
             }
         }
     }
+    // CPD-ON
 }
 
 @Composable
@@ -493,6 +497,7 @@ private fun FolderFilterRow(
 }
 
 @Composable
+@Suppress("kotlin:S107") // Kansiorivi näyttää valinta-, järjestys- ja hallintatoiminnot erillisinä.
 private fun UserFolderRow(
     folder: ProjectFolder,
     isSelected: Boolean,
@@ -623,6 +628,7 @@ private fun DestinationRow(
     enabled: Boolean,
     onClick: () -> Unit,
 ) {
+    // CPD-OFF: Kohderivin valintarakenne pidetaan rivin oman semantiikan yhteydessa.
     val selectedDescription =
         if (selected) stringResource(R.string.folder_current_destination, label) else description
     TextButton(
@@ -652,6 +658,7 @@ private fun DestinationRow(
             }
         }
     }
+    // CPD-ON
 }
 
 @Composable

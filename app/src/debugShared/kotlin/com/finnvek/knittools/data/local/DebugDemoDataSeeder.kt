@@ -14,6 +14,7 @@ object DebugDemoDataSeeder {
     private const val MARKER_PROJECT_NAME = "Forest Cardigan"
     private const val DAY_MILLIS = 24L * 60L * 60L * 1_000L
     private const val MINUTE_MILLIS = 60_000L
+    private const val DEFAULT_NEEDLE_SIZE = "4.0 mm"
 
     fun seedIfNeeded(
         applicationScope: CoroutineScope,
@@ -54,7 +55,7 @@ object DebugDemoDataSeeder {
                     difficulty = 3.5f,
                     gaugeStitches = 20f,
                     gaugeRows = 28f,
-                    needleSize = "4.0 mm",
+                    needleSize = DEFAULT_NEEDLE_SIZE,
                     yarnWeight = "DK",
                     yardage = 1_150,
                     originalUrl = "https://example.invalid/patterns/woodland-cardigan",
@@ -287,7 +288,7 @@ object DebugDemoDataSeeder {
                 fiberContent = "100% merino wool",
                 weightGrams = "100 g",
                 lengthMeters = "220 m",
-                needleSize = "4.0 mm",
+                needleSize = DEFAULT_NEEDLE_SIZE,
                 gaugeInfo = "20 sts / 28 rows",
                 colorName = "Forest Moss",
                 colorNumber = "318",
@@ -307,7 +308,7 @@ object DebugDemoDataSeeder {
                     fiberContent = "100% merino wool",
                     weightGrams = "100 g",
                     lengthMeters = "220 m",
-                    needleSize = "4.0 mm",
+                    needleSize = DEFAULT_NEEDLE_SIZE,
                     gaugeInfo = "20 sts / 28 rows",
                     colorName = "Natural Cream",
                     colorNumber = "101",

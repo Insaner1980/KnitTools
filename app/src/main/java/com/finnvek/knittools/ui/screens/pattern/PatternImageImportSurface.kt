@@ -43,6 +43,7 @@ import com.finnvek.knittools.R
 import java.io.File
 
 @Composable
+@Suppress("kotlin:S107") // Tuontipinta pitää jokaisen sivutoiminnon erillisenä callbackina.
 internal fun PatternImageImportSurface(
     state: PatternImageImportUiState,
     onAddMore: () -> Unit,
@@ -184,6 +185,7 @@ internal fun PatternImageImportSurface(
 }
 
 @Composable
+@Suppress("kotlin:S107") // Sivurivi välittää järjestys- ja poistotoiminnot eksplisiittisesti.
 private fun PatternImagePageRow(
     page: StagedPatternPage,
     index: Int,

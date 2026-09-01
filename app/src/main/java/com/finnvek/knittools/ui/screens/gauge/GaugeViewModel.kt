@@ -93,8 +93,8 @@ class GaugeViewModel
                     mutableState.update {
                         it.copy(
                             useSwatch = action.enabled,
-                            manualStitchGauge = if (action.enabled) false else it.manualStitchGauge,
-                            manualRowGauge = if (action.enabled) false else it.manualRowGauge,
+                            manualStitchGauge = !action.enabled && it.manualStitchGauge,
+                            manualRowGauge = !action.enabled && it.manualRowGauge,
                         )
                     }
                 is GaugeAction.Paste -> paste(action.instruction)

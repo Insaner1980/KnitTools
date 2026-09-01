@@ -154,6 +154,7 @@ class PatternReadingAssistanceComposeTest {
             .assertHeightIsAtLeast(48.dp)
     }
 
+    // CPD-OFF: Kahden lukuohjaimen Compose-fixture pidetaan skenaarion yhteydessa.
     @Test
     fun simultaneousGuidesExposeFortyEightDpHandlesAndCustomActions() {
         var horizontal = 0.5f
@@ -221,6 +222,8 @@ class PatternReadingAssistanceComposeTest {
             assertEquals(0.48f, vertical, 0.0001f)
         }
     }
+
+    // CPD-ON
 
     @Test
     fun guideDragsCommitAfterPreviewRecomposition() {

@@ -68,6 +68,7 @@ private fun ChartTrackerPayload.traversal(): List<ChartCell> =
         }
     }
 
+@Suppress("kotlin:S3776") // C2C-läpikäynti pitää diagonaalin rajat näkyvinä yhdessä laskennassa.
 private fun ChartTrackerPayload.c2cTraversal(): List<ChartCell> =
     buildList {
         for (diagonal in 0 until region.rows + region.columns - 1) {

@@ -51,7 +51,9 @@ class PatternPickerSourceTest {
         val viewModel = ProjectSourceFiles.read(COUNTER_VIEW_MODEL)
         val repository = ProjectSourceFiles.read(COUNTER_REPOSITORY)
 
-        assertTrue(counterScreen.contains("onSavedPatternSelected = viewModel::attachSavedPattern"))
+        assertTrue(counterScreen.contains("if (pattern.isWebPatternCompatible)"))
+        assertTrue(counterScreen.contains("viewModel.attachSavedPatternMetadata(pattern.id)"))
+        assertTrue(counterScreen.contains("viewModel.attachSavedPattern(pattern)"))
         assertFalse(counterScreen.contains("pattern.localPdfUri?.let"))
         assertTrue(viewModel.contains("fun attachSavedPattern(pattern: SavedPattern)"))
         assertTrue(viewModel.contains("repository.attachSavedPattern("))

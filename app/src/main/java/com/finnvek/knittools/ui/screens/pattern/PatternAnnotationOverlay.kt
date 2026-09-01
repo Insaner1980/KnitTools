@@ -27,6 +27,7 @@ import com.finnvek.knittools.ui.theme.PatternAnnotationTokens
 import com.finnvek.knittools.ui.theme.rememberPatternAnnotationRenderStyle
 
 @Composable
+@Suppress("kotlin:S107") // Overlay välittää piirto-, näkyvyys- ja osoitintilat erillisinä arvoina.
 internal fun PatternAnnotationOverlay(
     masterAnnotations: List<PatternAnnotation>,
     projectAnnotations: List<PatternAnnotation>,
@@ -167,6 +168,7 @@ private fun processAnnotationPointerEvent(
     }
 }
 
+@Suppress("kotlin:S107") // Osoitinele tarvitsee aktiivisen työkalun ja sen paine- sekä koordinaattitilan.
 private fun beginAnnotationPointerGesture(
     event: PointerEvent,
     state: PatternAnnotationPointerGestureState,

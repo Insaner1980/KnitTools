@@ -2,6 +2,7 @@ package com.finnvek.knittools.ui.screens.pattern
 
 import android.graphics.Bitmap
 import android.net.Uri
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
@@ -107,10 +108,16 @@ import com.finnvek.knittools.domain.model.ProjectDocument
 import com.finnvek.knittools.domain.model.READING_LINE_MAX_Y_FRACTION
 import com.finnvek.knittools.domain.model.READING_LINE_MIN_Y_FRACTION
 import com.finnvek.knittools.domain.model.READING_LINE_ROW_STEP_FRACTION
+import com.finnvek.knittools.domain.model.SavedPattern
+import com.finnvek.knittools.domain.model.isWebPatternCompatible
 import com.finnvek.knittools.domain.model.sanitizeReadingGuideFraction
 import com.finnvek.knittools.domain.model.sanitizeReadingLineYFraction
+import com.finnvek.knittools.domain.model.webPatternUrlOrNull
 import com.finnvek.knittools.repository.ProjectDocumentMutationResult
+import com.finnvek.knittools.repository.SavedPatternMetadataMutationResult
 import com.finnvek.knittools.ui.components.CollectWithLifecycleEffect
+import com.finnvek.knittools.ui.platform.ExternalWebLinkOpenResult
+import com.finnvek.knittools.ui.platform.openExternalWebLink
 import com.finnvek.knittools.ui.screens.counter.CounterViewModel
 import com.finnvek.knittools.ui.screens.counter.CounterViewerEvent
 import com.finnvek.knittools.ui.theme.rememberPatternAnnotationRenderStyle
@@ -130,11 +137,13 @@ private data class PatternRenderState(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@Suppress("kotlin:S107", "kotlin:S3776") // Reitti omistaa viewerin lähdekohtaiset tilat ja navigointitoiminnot.
 fun PatternViewerScreen(
     onBack: () -> Unit,
     onImportFromRavelry: () -> Unit,
     onSeePro: () -> Unit,
     onSavedPatternDetail: (Long) -> Unit,
+    onEditWebPattern: (Long) -> Unit,
     counterViewModelProvider: @Composable () -> CounterViewModel,
     patternViewerViewModelProvider: @Composable () -> PatternViewerViewModel,
     annotationViewModel: PatternAnnotationViewModel,
@@ -147,6 +156,7 @@ fun PatternViewerScreen(
     val documentState by patternViewerViewModel.documentUiState.collectAsStateWithLifecycle()
     val annotationState by annotationViewModel.uiState.collectAsStateWithLifecycle()
     val resources = LocalResources.current
+    val context = LocalContext.current
     val selectedDocument = documentState.selectedDocument
     val selectedDocumentAvailable = selectedDocument?.let { documentState.isAvailable(it.id) } == true
     val patternUri = selectedDocument?.localPdfUri?.takeIf { selectedDocumentAvailable }
@@ -505,13 +515,52 @@ fun PatternViewerScreen(
     if (showDocumentSheet) {
         ProjectDocumentsSheet(
             state = documentState,
-            metadataPatternName =
+            metadataPattern =
                 counterState.linkedPattern
                     ?.takeIf { pattern ->
                         documentState.documents.none { it.savedPatternId == pattern.id }
-                    }?.name,
+                    },
             onOpenPatternInformation = {
                 counterState.linkedPattern?.id?.let(onSavedPatternDetail)
+            },
+            onOpenPatternWebsite = {
+                // CPD-OFF: Ruudun linkinavaus ja virhepalaute pidetaan kayttokohteen yhteydessa.
+                val result =
+                    counterState.linkedPattern
+                        ?.webPatternUrlOrNull
+                        ?.originalUrl
+                        ?.let { openExternalWebLink(context, it) }
+                        ?: ExternalWebLinkOpenResult.InvalidUrl
+                val messageRes =
+                    when (result) {
+                        ExternalWebLinkOpenResult.Opened -> null
+                        ExternalWebLinkOpenResult.NoBrowser -> R.string.web_pattern_no_browser
+                        ExternalWebLinkOpenResult.InvalidUrl,
+                        ExternalWebLinkOpenResult.Failed,
+                        -> R.string.web_pattern_open_failed
+                    }
+                messageRes?.let { Toast.makeText(context, resources.getString(it), Toast.LENGTH_SHORT).show() }
+                // CPD-ON
+            },
+            onEditPatternInformation = {
+                counterState.linkedPattern?.id?.let(onEditWebPattern)
+            },
+            onUnlinkPatternInformation = {
+                counterState.linkedPattern?.id?.let { expectedPatternId ->
+                    counterViewModel.unlinkSavedPatternMetadata(expectedPatternId) { result ->
+                        if (
+                            result != SavedPatternMetadataMutationResult.Unlinked &&
+                            result != SavedPatternMetadataMutationResult.AlreadyUnlinked
+                        ) {
+                            Toast
+                                .makeText(
+                                    context,
+                                    resources.getString(R.string.web_pattern_save_failed),
+                                    Toast.LENGTH_SHORT,
+                                ).show()
+                        }
+                    }
+                }
             },
             onDismiss = { showDocumentSheet = false },
             onSelect = patternViewerViewModel::selectDocument,
@@ -556,10 +605,15 @@ fun PatternViewerScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@Suppress("kotlin:S107") // Dokumenttisheet välittää dokumenttikohtaiset toiminnot eksplisiittisesti.
 internal fun ProjectDocumentsSheet(
     state: ProjectDocumentUiState,
+    metadataPattern: SavedPattern? = null,
     metadataPatternName: String? = null,
     onOpenPatternInformation: () -> Unit = {},
+    onOpenPatternWebsite: () -> Unit = {},
+    onEditPatternInformation: () -> Unit = {},
+    onUnlinkPatternInformation: () -> Unit = {},
     onDismiss: () -> Unit,
     onSelect: (Long) -> Unit,
     onRename: (Long, String) -> Unit,
@@ -573,6 +627,7 @@ internal fun ProjectDocumentsSheet(
     var renameDocument by remember { mutableStateOf<ProjectDocument?>(null) }
     var renameText by remember { mutableStateOf("") }
     var removeDocument by remember { mutableStateOf<ProjectDocument?>(null) }
+    var showUnlinkConfirmation by rememberSaveable { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val coroutineScope = rememberCoroutineScope()
 
@@ -620,20 +675,88 @@ internal fun ProjectDocumentsSheet(
                             .clickable(onClick = onClearError),
                 )
             }
-            metadataPatternName?.let { patternName ->
+            val patternName = metadataPattern?.name ?: metadataPatternName
+            patternName?.let {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
                         text = stringResource(R.string.project_documents_pattern_information),
                         style = MaterialTheme.typography.titleMedium,
                     )
-                    Text(patternName, style = MaterialTheme.typography.bodyLarge)
-                    Text(
-                        text = stringResource(R.string.project_documents_metadata_only),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    TextButton(onClick = onOpenPatternInformation) {
-                        Text(stringResource(R.string.project_documents_pattern_information))
+                    Text(it, style = MaterialTheme.typography.bodyLarge)
+                    val webPattern = metadataPattern?.takeIf(SavedPattern::isWebPatternCompatible)
+                    if (webPattern != null) {
+                        val webUrl = webPattern.webPatternUrlOrNull
+                        webPattern.designerName.takeIf(String::isNotBlank)?.let { designer ->
+                            Text(
+                                text = designer,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Text(
+                            text = stringResource(R.string.web_pattern_label),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        webUrl?.host?.let { host ->
+                            Text(
+                                text = host,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        val openDescription =
+                            stringResource(
+                                R.string.web_pattern_open_website_description,
+                                webPattern.name,
+                                webUrl?.host.orEmpty(),
+                            )
+                        val editDescription = stringResource(R.string.web_pattern_edit_description, webPattern.name)
+                        val unlinkDescription = stringResource(R.string.web_pattern_unlink_description, webPattern.name)
+                        TextButton(
+                            onClick = {
+                                coroutineScope.launch {
+                                    sheetState.hide()
+                                    onOpenPatternWebsite()
+                                }
+                            },
+                            modifier = Modifier.semantics { contentDescription = openDescription },
+                        ) {
+                            Text(stringResource(R.string.web_pattern_open_website))
+                        }
+                        TextButton(
+                            onClick = {
+                                coroutineScope.launch {
+                                    sheetState.hide()
+                                    onEditPatternInformation()
+                                }
+                            },
+                            modifier = Modifier.semantics { contentDescription = editDescription },
+                        ) {
+                            Text(stringResource(R.string.web_pattern_edit))
+                        }
+                        TextButton(
+                            onClick = { showUnlinkConfirmation = true },
+                            modifier = Modifier.semantics { contentDescription = unlinkDescription },
+                        ) {
+                            Text(stringResource(R.string.web_pattern_unlink))
+                        }
+                    } else {
+                        Text(
+                            text = stringResource(R.string.project_documents_metadata_only),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        TextButton(
+                            onClick = {
+                                coroutineScope.launch {
+                                    sheetState.hide()
+                                    onOpenPatternInformation()
+                                }
+                            },
+                        ) {
+                            Text(stringResource(R.string.project_documents_pattern_information))
+                        }
                     }
                 }
             }
@@ -676,6 +799,33 @@ internal fun ProjectDocumentsSheet(
             }
             Spacer(Modifier.height(16.dp))
         }
+    }
+
+    if (showUnlinkConfirmation) {
+        val patternName = metadataPattern?.name.orEmpty()
+        AlertDialog(
+            onDismissRequest = { showUnlinkConfirmation = false },
+            title = { Text(stringResource(R.string.web_pattern_unlink)) },
+            text = { Text(stringResource(R.string.web_pattern_unlink_description, patternName)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showUnlinkConfirmation = false
+                        coroutineScope.launch {
+                            sheetState.hide()
+                            onUnlinkPatternInformation()
+                        }
+                    },
+                ) {
+                    Text(stringResource(R.string.web_pattern_unlink))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showUnlinkConfirmation = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            },
+        )
     }
 
     renameDocument?.let { document ->
@@ -745,6 +895,7 @@ internal fun ProjectDocumentsSheet(
 }
 
 @Composable
+@Suppress("kotlin:S107", "kotlin:S3776") // Dokumenttirivi näyttää kaikki saatavuus-, järjestys- ja valintatilat.
 private fun ProjectDocumentRow(
     document: ProjectDocument,
     index: Int,
@@ -1342,6 +1493,7 @@ internal fun PatternViewerTopBar(
 }
 
 @Composable
+@Suppress("kotlin:S3776") // Overflow-valikko pitää viewerin ehdolliset komennot yhdessä paikassa.
 private fun PatternViewerOverflowMenu(
     expanded: Boolean,
     onDismissRequest: () -> Unit,
@@ -1641,6 +1793,7 @@ private fun LibraryPatternViewerBottomBar(
 }
 
 @Composable
+@Suppress("kotlin:S3776") // Viewer-sisältö kokoaa renderöinti-, opas- ja annotaatiotilat yhteen pintaan.
 private fun PatternViewerContent(
     stateProvider: @Composable () -> PatternViewerContentState,
     actions: PatternViewerContentActions,

@@ -59,6 +59,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.pluralStringResource
@@ -86,7 +87,10 @@ import com.finnvek.knittools.domain.model.RowReminder
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.domain.model.displayName
+import com.finnvek.knittools.domain.model.isWebPatternCompatible
+import com.finnvek.knittools.domain.model.webPatternUrlOrNull
 import com.finnvek.knittools.repository.ProjectDocumentMutationResult
+import com.finnvek.knittools.repository.SavedPatternMetadataMutationResult
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.ProPromptRequest
 import com.finnvek.knittools.ui.components.ProPromptSheet
@@ -95,6 +99,8 @@ import com.finnvek.knittools.ui.components.ProjectDetailsDialog
 import com.finnvek.knittools.ui.components.ProjectDetailsValues
 import com.finnvek.knittools.ui.components.RenameProjectDialog
 import com.finnvek.knittools.ui.components.localizedUppercase
+import com.finnvek.knittools.ui.platform.ExternalWebLinkOpenResult
+import com.finnvek.knittools.ui.platform.openExternalWebLink
 import com.finnvek.knittools.ui.screens.pattern.PatternPickerMode
 import com.finnvek.knittools.ui.screens.pattern.PatternPickerSheet
 import com.finnvek.knittools.ui.screens.pattern.ProjectDocumentError
@@ -146,7 +152,9 @@ data class CounterScreenActions(
     val onPhotoGallery: () -> Unit = {},
     val onPatternViewer: (Long, Long?) -> Unit = { _, _ -> },
     val onSavedPatternDetail: (Long) -> Unit = {},
+    val onEditWebPattern: (Long) -> Unit = {},
     val onImportFromRavelry: () -> Unit = {},
+    val onAddWebPattern: (Long) -> Unit = {},
     val onNotesEditor: (Long) -> Unit = {},
     val onMeasurements: (Long) -> Unit = {},
     val onUpgradeToPro: () -> Unit = {},
@@ -154,6 +162,7 @@ data class CounterScreenActions(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@Suppress("kotlin:S3776") // Reitti kokoaa counterin tilat ja dialogit yhteen Compose-omistajaan.
 fun CounterScreen(
     actions: CounterScreenActions = CounterScreenActions(),
     viewModelProvider: @Composable () -> CounterViewModel = { hiltViewModel() },
@@ -164,13 +173,16 @@ fun CounterScreen(
     val onPhotoGallery = actions.onPhotoGallery
     val onPatternViewer = actions.onPatternViewer
     val onSavedPatternDetail = actions.onSavedPatternDetail
+    val onEditWebPattern = actions.onEditWebPattern
     val onImportFromRavelry = actions.onImportFromRavelry
+    val onAddWebPattern = actions.onAddWebPattern
     val onNotesEditor = actions.onNotesEditor
     val onUpgradeToPro = actions.onUpgradeToPro
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     val resources = LocalResources.current
+    val context = LocalContext.current
 
     LaunchedEffect(viewModel) {
         viewModel.projectClosedEvents.collect { onBack() }
@@ -196,6 +208,9 @@ fun CounterScreen(
     var showStitchDialog by rememberSaveable { mutableStateOf(false) }
     var showPatternPicker by rememberSaveable { mutableStateOf(false) }
     var patternPickerMode by rememberSaveable { mutableStateOf(PatternPickerMode.INITIAL_PROJECT_PATTERN) }
+    var pendingWebPatternId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var pendingWebPatternName by rememberSaveable { mutableStateOf<String?>(null) }
+    var pendingExistingWebPatternId by rememberSaveable { mutableStateOf<Long?>(null) }
     var showDocumentsSheet by rememberSaveable { mutableStateOf(false) }
     var projectDocumentError by remember { mutableStateOf<ProjectDocumentError?>(null) }
     var showTargetDialog by rememberSaveable { mutableStateOf(false) }
@@ -225,6 +240,9 @@ fun CounterScreen(
         showStitchDialog = false
         showPatternPicker = false
         patternPickerMode = PatternPickerMode.INITIAL_PROJECT_PATTERN
+        pendingWebPatternId = null
+        pendingWebPatternName = null
+        pendingExistingWebPatternId = null
         showDocumentsSheet = false
         projectDocumentError = null
         showTargetDialog = false
@@ -289,7 +307,19 @@ fun CounterScreen(
             onHideNotesSheet = { showNotesSheet = false },
             onExpandNotes = { state.projectId?.let(onNotesEditor) },
             onHidePatternPicker = { showPatternPicker = false },
+            onWebPatternReplacementRequired = { pattern, existingPatternId ->
+                showPatternPicker = false
+                pendingWebPatternId = pattern.id
+                pendingWebPatternName = pattern.name
+                pendingExistingWebPatternId = existingPatternId
+            },
+            onPatternMetadataAttachFailed = {
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar(resources.getString(R.string.web_pattern_save_failed))
+                }
+            },
             onImportFromRavelry = onImportFromRavelry,
+            onAddWebPattern = { state.projectId?.let(onAddWebPattern) },
             onSeePro = onUpgradeToPro,
             onSaveProjectYarnNoteToMyYarn = { noteId ->
                 if (!viewModel.saveProjectYarnNoteToMyYarn(noteId)) {
@@ -297,6 +327,43 @@ fun CounterScreen(
                 }
             },
         )
+
+    val replacementPatternId = pendingWebPatternId
+    val expectedExistingPatternId = pendingExistingWebPatternId
+    if (replacementPatternId != null && expectedExistingPatternId != null) {
+        ConfirmationDialog(
+            title = stringResource(R.string.web_pattern_replace_confirm_title),
+            message =
+                stringResource(
+                    R.string.web_pattern_replace_confirm_message,
+                    pendingWebPatternName.orEmpty(),
+                ),
+            confirmText = stringResource(R.string.web_pattern_attach),
+            onConfirm = {
+                viewModel.attachSavedPatternMetadata(
+                    savedPatternId = replacementPatternId,
+                    expectedExistingSavedPatternId = expectedExistingPatternId,
+                ) { result ->
+                    pendingWebPatternId = null
+                    pendingWebPatternName = null
+                    pendingExistingWebPatternId = null
+                    if (
+                        result != SavedPatternMetadataMutationResult.Attached(replacementPatternId) &&
+                        result != SavedPatternMetadataMutationResult.AlreadyAttached(replacementPatternId)
+                    ) {
+                        coroutineScope.launch {
+                            snackbarHostState.showSnackbar(resources.getString(R.string.web_pattern_save_failed))
+                        }
+                    }
+                }
+            },
+            onDismiss = {
+                pendingWebPatternId = null
+                pendingWebPatternName = null
+                pendingExistingWebPatternId = null
+            },
+        )
+    }
     val projectCountersActions =
         rememberProjectCountersSectionActions(
             viewModelProvider = viewModelProvider,
@@ -508,14 +575,48 @@ fun CounterScreen(
                     isLoading = false,
                     error = projectDocumentError,
                 ),
-            metadataPatternName =
+            metadataPattern =
                 state.linkedPattern
                     ?.takeIf { pattern ->
                         state.projectDocuments.none { it.savedPatternId == pattern.id }
-                    }?.name,
+                    },
             onOpenPatternInformation = {
                 showDocumentsSheet = false
                 state.linkedPattern?.id?.let(onSavedPatternDetail)
+            },
+            onOpenPatternWebsite = {
+                val result =
+                    state.linkedPattern
+                        ?.webPatternUrlOrNull
+                        ?.originalUrl
+                        ?.let { openExternalWebLink(context, it) }
+                        ?: ExternalWebLinkOpenResult.InvalidUrl
+                val messageRes =
+                    when (result) {
+                        ExternalWebLinkOpenResult.Opened -> null
+                        ExternalWebLinkOpenResult.NoBrowser -> R.string.web_pattern_no_browser
+                        ExternalWebLinkOpenResult.InvalidUrl,
+                        ExternalWebLinkOpenResult.Failed,
+                        -> R.string.web_pattern_open_failed
+                    }
+                messageRes?.let { coroutineScope.launch { snackbarHostState.showSnackbar(resources.getString(it)) } }
+            },
+            onEditPatternInformation = {
+                state.linkedPattern?.id?.let(onEditWebPattern)
+            },
+            onUnlinkPatternInformation = {
+                state.linkedPattern?.id?.let { expectedPatternId ->
+                    viewModel.unlinkSavedPatternMetadata(expectedPatternId) { result ->
+                        if (
+                            result != SavedPatternMetadataMutationResult.Unlinked &&
+                            result != SavedPatternMetadataMutationResult.AlreadyUnlinked
+                        ) {
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar(resources.getString(R.string.web_pattern_save_failed))
+                            }
+                        }
+                    }
+                }
             },
             onDismiss = { showDocumentsSheet = false },
             onSelect = { documentId ->
@@ -881,6 +982,7 @@ private fun SessionPresentationTicker(
 }
 
 @Composable
+@Suppress("kotlin:S107", "kotlin:S3776") // Palautusdialogi näyttää kaikki talletetut palautusarvot eksplisiittisesti.
 internal fun SessionRecoveryDialog(
     projectName: String,
     recoveryReason: ActiveSessionRecoveryReason?,
@@ -1435,6 +1537,7 @@ data class CounterSheetActions(
     val onPatternFileSelected: (String, String) -> Unit,
     val onSavedPatternSelected: (SavedPattern) -> Unit,
     val onImportFromRavelry: () -> Unit,
+    val onAddWebPattern: () -> Unit,
     val onSeePro: () -> Unit,
 )
 
@@ -1487,6 +1590,7 @@ private fun CounterScreenSheets(
             onSavedPatternSelected = actions.onSavedPatternSelected,
             onDocumentSelected = actions.onPatternFileSelected,
             onImportFromRavelry = actions.onImportFromRavelry,
+            onAddWebPattern = actions.onAddWebPattern,
             onSeePro = actions.onSeePro,
             onDismiss = actions.onPatternPickerDismiss,
         )
@@ -1942,7 +2046,10 @@ private fun rememberCounterSheetActions(
     onHideNotesSheet: () -> Unit,
     onExpandNotes: () -> Unit,
     onHidePatternPicker: () -> Unit,
+    onWebPatternReplacementRequired: (SavedPattern, Long) -> Unit,
+    onPatternMetadataAttachFailed: () -> Unit,
     onImportFromRavelry: () -> Unit,
+    onAddWebPattern: () -> Unit,
     onSeePro: () -> Unit,
     onSaveProjectYarnNoteToMyYarn: (Long) -> Unit,
 ): CounterSheetActions {
@@ -1955,7 +2062,10 @@ private fun rememberCounterSheetActions(
         onHideNotesSheet,
         onExpandNotes,
         onHidePatternPicker,
+        onWebPatternReplacementRequired,
+        onPatternMetadataAttachFailed,
         onImportFromRavelry,
+        onAddWebPattern,
         onSeePro,
         onSaveProjectYarnNoteToMyYarn,
     ) {
@@ -1979,8 +2089,33 @@ private fun rememberCounterSheetActions(
             onNotesExpand = onExpandNotes,
             onPatternPickerDismiss = onHidePatternPicker,
             onPatternFileSelected = { uri, name -> viewModel.attachPattern(uri, name) },
-            onSavedPatternSelected = viewModel::attachSavedPattern,
+            onSavedPatternSelected = { pattern ->
+                if (pattern.isWebPatternCompatible) {
+                    viewModel.attachSavedPatternMetadata(pattern.id) { result ->
+                        when (result) {
+                            is SavedPatternMetadataMutationResult.Attached,
+                            is SavedPatternMetadataMutationResult.AlreadyAttached,
+                            -> onHidePatternPicker()
+
+                            is SavedPatternMetadataMutationResult.ReplacementRequired ->
+                                onWebPatternReplacementRequired(pattern, result.existingSavedPatternId)
+
+                            SavedPatternMetadataMutationResult.ProjectMissing,
+                            SavedPatternMetadataMutationResult.PatternMissing,
+                            SavedPatternMetadataMutationResult.NotWebPattern,
+                            SavedPatternMetadataMutationResult.StaleAction,
+                            SavedPatternMetadataMutationResult.PersistenceFailure,
+                            SavedPatternMetadataMutationResult.Unlinked,
+                            SavedPatternMetadataMutationResult.AlreadyUnlinked,
+                            -> onPatternMetadataAttachFailed()
+                        }
+                    }
+                } else {
+                    viewModel.attachSavedPattern(pattern)
+                }
+            },
             onImportFromRavelry = onImportFromRavelry,
+            onAddWebPattern = onAddWebPattern,
             onSeePro = onSeePro,
         )
     }

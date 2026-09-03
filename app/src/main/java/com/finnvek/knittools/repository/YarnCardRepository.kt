@@ -22,6 +22,8 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -37,6 +39,8 @@ class YarnCardRepository
         @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
         private val yarnPhotoStorage: YarnPhotoStorage = YarnPhotoStorage(),
     ) {
+        private val photoStorageMutex = Mutex()
+
         fun getAllCards(): Flow<List<YarnCard>> =
             dao
                 .getAllCards()
@@ -117,36 +121,39 @@ class YarnCardRepository
         suspend fun updatePhotoUri(
             id: Long,
             sourceUri: Uri,
-        ): Boolean {
-            val currentCard = dao.getCard(id) ?: return false
-            val copiedPhotoUri =
-                withContext(ioDispatcher) {
-                    yarnPhotoStorage.copyPhoto(context, id, sourceUri)
+        ): Boolean =
+            photoStorageMutex.withLock {
+                val currentCard = dao.getCard(id) ?: return@withLock false
+                val copiedPhotoUri =
+                    withContext(ioDispatcher) {
+                        yarnPhotoStorage.copyPhoto(context, id, sourceUri)
+                    }
+                val updateResult = runCatching { dao.updatePhotoUri(id, copiedPhotoUri) }
+                updateResult.exceptionOrNull()?.let { failure ->
+                    deleteAppOwnedPhoto(copiedPhotoUri)
+                    throw failure
                 }
-            val updateResult = runCatching { dao.updatePhotoUri(id, copiedPhotoUri) }
-            updateResult.exceptionOrNull()?.let { failure ->
-                deleteAppOwnedPhoto(copiedPhotoUri)
-                throw failure
+                val updated = updateResult.getOrThrow() > 0
+                if (updated) {
+                    deleteAppOwnedPhoto(currentCard.photoUri)
+                } else {
+                    deleteAppOwnedPhoto(copiedPhotoUri)
+                }
+                updated
             }
-            val updated = updateResult.getOrThrow() > 0
-            if (updated) {
-                deleteAppOwnedPhoto(currentCard.photoUri)
-            } else {
-                deleteAppOwnedPhoto(copiedPhotoUri)
-            }
-            return updated
-        }
 
         suspend fun pruneUnreferencedPhotoFiles() {
-            val referencedPhotoUris =
-                dao
-                    .getAllCards()
-                    .first()
-                    .map { card -> card.photoUri }
-                    .filter { photoUri -> photoUri.isNotBlank() }
-                    .toSet()
-            withContext(ioDispatcher) {
-                yarnPhotoStorage.pruneUnreferencedPhotos(context, referencedPhotoUris)
+            photoStorageMutex.withLock {
+                val referencedPhotoUris =
+                    dao
+                        .getAllCards()
+                        .first()
+                        .map { card -> card.photoUri }
+                        .filter { photoUri -> photoUri.isNotBlank() }
+                        .toSet()
+                withContext(ioDispatcher) {
+                    yarnPhotoStorage.pruneUnreferencedPhotos(context, referencedPhotoUris)
+                }
             }
         }
 

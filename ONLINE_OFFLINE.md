@@ -1,6 +1,6 @@
 # KnitTools Online / Offline Capabilities
 
-**Last verified against codebase:** 2026-05-22
+**Last verified against codebase:** 2026-09-03
 
 This document maps user-facing features to their real network requirement, based on the current code.
 
@@ -13,9 +13,9 @@ This document maps user-facing features to their real network requirement, based
 | Reference data | Yes | No | Hardcoded data sources |
 | Yarn cards | Yes | No | Manual yarn card creation only |
 | Pattern viewer | Yes | No | Saved PDF rendering and annotations are local |
-| Saved patterns | Yes | No | Imported/downloaded files remain local |
-| Ravelry | No | Yes | Search, detail fetch, OAuth, and PDF download |
-| Voice commands | Mostly | No app call | Android speech recognition may depend on device language packs |
+| Saved patterns | Local metadata and PDFs | External websites and remote thumbnails | Imported PDFs remain local; website links open outside the app |
+| Ravelry | Saved metadata only | Yes | Authentication, search, and metadata import use Firebase; there is no Ravelry PDF download |
+| Voice commands | Not implemented | No | Voice and microphone commands are intentionally absent |
 | Notes | Yes | No | Typed editor and autosave are local |
 | Photos, sessions, insights, widget | Yes | No | Local storage and Room-derived state |
 | Google Play platform features | No | Yes | Purchases, restore, review, updates |
@@ -31,7 +31,7 @@ These features operate on Room, DataStore, app-owned files, hardcoded reference 
 - Paste-to-parse in calculator screens through `domain/calculator/InstructionParser`.
 - Reference screens: needle sizes, abbreviations, chart symbols, and size charts.
 - Yarn cards created and edited manually.
-- Saved pattern library, local PDF rendering, annotations, page navigation, zoom, and current-row marking.
+- Saved pattern library metadata, imported local PDFs, PDF rendering, annotations, page navigation, zoom, and current-row marking.
 - Progress photos and All Photos.
 - Settings screen state, except platform billing/update/review actions.
 
@@ -39,22 +39,16 @@ These features operate on Room, DataStore, app-owned files, hardcoded reference 
 
 These features require internet because they call external services:
 
-- Ravelry pattern search through `RavelryApiService.searchPatterns`.
-- Ravelry pattern detail through `RavelryApiService.getPatternDetail`.
-- Ravelry OAuth login and token refresh.
-- Importing a pattern PDF from Ravelry or another remote URL. Once saved, the file is available offline.
+- Firebase anonymous authentication and callable Functions for Ravelry connection state, search, and metadata import.
+- Server-side Ravelry OAuth and token refresh. Android does not receive or store Ravelry access or refresh tokens.
+- HTTPS Ravelry thumbnails shown from metadata. The app does not copy them into project or pattern storage.
+- Opening a user-added web pattern in an external browser. The app does not download or cache the page.
 - Google Play Billing purchase and restore flows.
 - Google Play in-app review and in-app update flows.
 
 ## Voice Commands
 
-Counter voice commands are local keyword commands under `ui/screens/counter`:
-
-- `VoiceCommandHandler` wraps Android `SpeechRecognizer`.
-- `VoiceCommandParser` maps recognized phrases to counter actions.
-- `VoiceResponseManager` speaks local TextToSpeech confirmations.
-
-KnitTools does not send recognized phrases to an app-owned network service. The Android speech recognizer itself can still require network on devices without offline recognition support; this is platform behavior outside KnitTools' direct control.
+Voice and microphone commands are intentionally absent. The app does not use `SpeechRecognizer`, `TextToSpeech`, or a conversational voice service.
 
 ## Removed Product Surface
 
@@ -66,9 +60,9 @@ The current app surface does not include model-backed summary, journal cleanup, 
 - Calculator paste parsing is local and deterministic. Keep it in `domain/calculator/InstructionParser`.
 - Saved PDFs are app-owned files under the pattern document storage flow.
 - Pattern camera capture temp images live under `pattern_captures/<projectId>` and are exposed only through FileProvider.
-- Ravelry remains the only app-owned remote API integration.
+- Ravelry metadata access is the only app-owned remote integration and goes through Firebase Auth and callable Functions. Ravelry PDFs are not downloaded.
 
 ## What Changed Recently
 
-- **2026-05-22** - Removed the model-backed feature surface and its external model dependencies. Local voice commands and local regex paste parsing remain.
-- **2026-04-18** - Voice commands were made offline-friendly for basic counter actions through the local parser and Android TextToSpeech.
+- **2026-09-03** - Reverified the Firebase-backed, metadata-only Ravelry path and the intentionally absent voice/microphone surface.
+- **2026-05-22** - Removed the model-backed feature surface and its external model dependencies. Local regex paste parsing remains.

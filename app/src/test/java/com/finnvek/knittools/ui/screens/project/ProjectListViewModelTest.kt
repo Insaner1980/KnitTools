@@ -31,6 +31,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -38,6 +39,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.withTimeoutOrNull
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -210,6 +212,24 @@ class ProjectListViewModelTest {
                     canCreateAdditionalProjects = false,
                 )
             }
+        }
+
+    @Test
+    fun `created project navigation waits for a collector after recreation`() =
+        runTest {
+            every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } returns true
+            coEvery { repository.createProject(any(), any(), any(), any(), true, null) } returns
+                ProjectCreationResult.Created(projectId = 42L)
+            val vm = createViewModel()
+
+            vm.createProject(
+                name = "Sukat",
+                craftType = com.finnvek.knittools.domain.model.CraftType.KNITTING,
+                mainCounterLabelType = com.finnvek.knittools.domain.model.MainCounterLabelType.ROWS,
+                mainCounterCustomLabel = null,
+            )
+
+            assertEquals(42L, withTimeoutOrNull(1) { vm.navigateToProject.first() })
         }
 
     @Test

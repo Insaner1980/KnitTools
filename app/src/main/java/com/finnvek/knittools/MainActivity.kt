@@ -168,10 +168,13 @@ class MainActivity : AppCompatActivity() {
     @Composable
     @Suppress("kotlin:S3776") // Aktivointipyynnöt käsitellään yhdessä activityn juurisisällössä.
     private fun MainActivityContent() {
+        val storedAppLanguageApplied by
+            preferencesManager.storedAppLanguageApplied.collectAsStateWithLifecycle()
         val prefs by preferencesManager.preferences.collectAsStateWithLifecycle(initialValue = null)
         val proState by proManager.proState.collectAsStateWithLifecycle()
         val proStateReady by proManager.initialStateReady.collectAsStateWithLifecycle()
         val patternShareImportRequest by patternShareCoordinator.pending.collectAsStateWithLifecycle()
+        if (!storedAppLanguageApplied) return
         val isDarkTheme = prefs.resolveStartupDarkTheme(isSystemInDarkTheme()) ?: return
 
         SideEffect {

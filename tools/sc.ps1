@@ -1,3 +1,4 @@
 $ProjectCheckCommand = "security-check"
-& "C:\Dev\Android-check\tools\InvokeProjectCheck.ps1" -ProjectCheckCommand $ProjectCheckCommand @args
+$ProjectRoot = Split-Path -Parent $PSScriptRoot
+& "C:\Dev\Android-check\tools\InvokeProjectCheck.ps1" -ProjectCheckCommand $ProjectCheckCommand -Root $ProjectRoot @args
 exit $LASTEXITCODE

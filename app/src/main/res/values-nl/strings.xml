@@ -341,7 +341,7 @@
     <string name="use_imperial_units">Imperiale eenheden gebruiken</string>
     <string name="upgrade_to_pro">Upgrade naar Pro</string>
     <string name="restore_purchases">Aankopen herstellen</string>
-    <string name="privacy_summary">Alle gegevens blijven op je apparaat. Geen analytics, geen cloudsynchronisatie, geen accounts.</string>
+    <string name="privacy_summary">Je projectgegevens blijven op je apparaat. Ravelry- en Google Play-functies gebruiken netwerkdiensten. Geen analytics of cloudsynchronisatie.</string>
     <string name="pro_restored">Pro hersteld</string>
     <string name="no_purchases_found">Geen aankopen gevonden</string>
     <string name="version_format">KnitTools %s</string>

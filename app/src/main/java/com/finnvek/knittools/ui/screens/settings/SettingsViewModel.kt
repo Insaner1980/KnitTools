@@ -11,11 +11,10 @@ import com.finnvek.knittools.data.datastore.ThemeMode
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.pro.ProState
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -36,8 +35,8 @@ class SettingsViewModel
             )
         val proState: StateFlow<ProState> = proManager.proState
 
-        private val _messages = MutableSharedFlow<Int>()
-        val messages: SharedFlow<Int> = _messages.asSharedFlow()
+        private val messageChannel = Channel<Int>(Channel.BUFFERED)
+        val messages = messageChannel.receiveAsFlow()
 
         fun setThemeMode(mode: ThemeMode) {
             viewModelScope.launch { preferencesManager.setThemeMode(mode) }
@@ -65,17 +64,17 @@ class SettingsViewModel
             viewModelScope.launch {
                 when (billingManager.restorePurchasesWithResult()) {
                     RestorePurchasesResult.RESTORED -> {
-                        _messages.emit(com.finnvek.knittools.R.string.pro_restored)
+                        messageChannel.send(com.finnvek.knittools.R.string.pro_restored)
                     }
 
                     RestorePurchasesResult.NOT_FOUND -> {
-                        _messages.emit(
+                        messageChannel.send(
                             com.finnvek.knittools.R.string.no_purchases_found,
                         )
                     }
 
                     RestorePurchasesResult.FAILED -> {
-                        _messages.emit(com.finnvek.knittools.R.string.generic_error_unknown)
+                        messageChannel.send(com.finnvek.knittools.R.string.generic_error_unknown)
                     }
                 }
             }

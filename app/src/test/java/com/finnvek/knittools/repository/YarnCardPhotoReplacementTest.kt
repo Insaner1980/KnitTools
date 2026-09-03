@@ -11,9 +11,14 @@ import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -105,6 +110,66 @@ class YarnCardPhotoReplacementTest {
 
             verify { storage.pruneUnreferencedPhotos(context, setOf(referencedPhotoUri)) }
         }
+
+    // CPD-OFF: Testin skenaariokohtainen asetelma pidetaan paikallisena ja luettavana.
+    @Test
+    fun `startup photo cleanup waits for an in-flight photo replacement`() =
+        runTest {
+            val yarnDao = mockk<YarnCardDao>(relaxed = true)
+            val projectDao = mockk<CounterProjectDao>(relaxed = true)
+            val context = mockk<Context>(relaxed = true)
+            val storage = mockk<YarnPhotoStorage>(relaxed = true)
+            val sourceUri = mockk<Uri>()
+            val copiedPhotoUri = "file:///new-yarn-photo.jpg"
+            val oldPhotoUri = "file:///old-yarn-photo.jpg"
+            val filesDir = Files.createTempDirectory("knittools-files").toFile()
+            val oldPhoto =
+                File(filesDir, "yarn_photos/5/old-yarn-photo.jpg").apply {
+                    parentFile?.mkdirs()
+                    writeText("old")
+                }
+            val updateStarted = CompletableDeferred<Unit>()
+            val allowUpdate = CompletableDeferred<Unit>()
+            var pruneCalled = false
+            val dispatcher = StandardTestDispatcher(testScheduler)
+            every { context.filesDir } returns filesDir
+            coEvery { yarnDao.getCard(5L) } returns YarnCardEntity(id = 5L, photoUri = oldPhotoUri)
+            every { storage.copyPhoto(context, 5L, sourceUri) } returns copiedPhotoUri
+            coEvery { yarnDao.updatePhotoUri(5L, copiedPhotoUri) } coAnswers {
+                updateStarted.complete(Unit)
+                allowUpdate.await()
+                1
+            }
+            every { yarnDao.getAllCards() } returns flowOf(emptyList())
+            every { storage.pruneUnreferencedPhotos(context, emptySet()) } answers {
+                pruneCalled = true
+            }
+            val repository =
+                YarnCardRepository(
+                    dao = yarnDao,
+                    counterProjectDao = projectDao,
+                    context = context,
+                    transactionRunner = ImmediateDatabaseTransactionRunner,
+                    ioDispatcher = dispatcher,
+                    yarnPhotoStorage = storage,
+                )
+
+            withParsedFileUri(oldPhotoUri, oldPhoto.absolutePath) {
+                val updateJob = launch(dispatcher) { repository.updatePhotoUri(5L, sourceUri) }
+                runCurrent()
+                updateStarted.await()
+                val pruneJob = launch(dispatcher) { repository.pruneUnreferencedPhotoFiles() }
+                runCurrent()
+
+                assertFalse(pruneCalled)
+                allowUpdate.complete(Unit)
+                advanceUntilIdle()
+                updateJob.join()
+                pruneJob.join()
+                assertTrue(pruneCalled)
+            }
+        }
+    // CPD-ON
 
     @Test
     fun `yarn photo storage prunes orphaned files while keeping referenced photos`() =

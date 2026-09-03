@@ -61,6 +61,18 @@ app/src/*/google-services.json
 /screenshots/
 *.bak
 
+# Paikalliset kuvankäsittelyn välitulokset
+/dbg_carved.png
+/debug_green_palette_preview.png
+/debug_inpainted_orange_minus.png
+/debug_vertical_stroke_mask.png
+/final_green_minus_button.png
+/zoom_junction.png
+/zoom_top.png
+
+# Paikallinen riippuvuusartefakti
+/android/FakeDependency.jar
+
 # Paikalliset analyysi- ja jatkomuistiinpanot
 /jatka.md
 

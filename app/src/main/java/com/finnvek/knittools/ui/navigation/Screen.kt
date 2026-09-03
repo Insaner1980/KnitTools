@@ -60,14 +60,6 @@ sealed class Screen(
         }
     }
 
-    data class LibraryRavelryDetail(
-        val patternId: Int,
-    ) : Screen("library_ravelry_detail/$patternId") {
-        companion object {
-            const val ROUTE = "library_ravelry_detail/{patternId}"
-        }
-    }
-
     data object Ravelry : Screen("ravelry")
 
     data class RavelryImport(

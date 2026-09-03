@@ -1,19 +1,24 @@
 package com.finnvek.knittools.ui.screens.settings
 
 import com.finnvek.knittools.billing.BillingManager
+import com.finnvek.knittools.billing.RestorePurchasesResult
 import com.finnvek.knittools.data.datastore.PreferencesManager
 import com.finnvek.knittools.data.datastore.ThemeMode
 import com.finnvek.knittools.pro.ProManager
+import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.withTimeoutOrNull
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 
@@ -88,5 +93,19 @@ class SettingsViewModelTest {
             vm.restorePurchases()
 
             coVerify { billingManager.restorePurchasesWithResult() }
+        }
+
+    @Test
+    fun `restore result waits for a collector after recreation`() =
+        runTest {
+            coEvery { billingManager.restorePurchasesWithResult() } returns RestorePurchasesResult.RESTORED
+            val vm = createViewModel()
+
+            vm.restorePurchases()
+
+            assertEquals(
+                com.finnvek.knittools.R.string.pro_restored,
+                withTimeoutOrNull(1) { vm.messages.first() },
+            )
         }
 }

@@ -1,7 +1,9 @@
 package com.finnvek.knittools.data.datastore
 
+import android.app.LocaleManager
 import android.content.Context
 import android.os.Build
+import android.os.LocaleList
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
@@ -15,6 +17,9 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.finnvek.knittools.domain.model.ProjectSortOrder
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -48,6 +53,9 @@ class PreferencesManager
     constructor(
         @param:ApplicationContext private val context: Context,
     ) {
+        private val _storedAppLanguageApplied = MutableStateFlow(false)
+        val storedAppLanguageApplied: StateFlow<Boolean> = _storedAppLanguageApplied.asStateFlow()
+
         val preferences: Flow<AppPreferences> =
             context.dataStore.safePreferencesData.map { prefs ->
                 AppPreferences(
@@ -126,11 +134,15 @@ class PreferencesManager
         }
 
         suspend fun applyStoredAppLanguage() {
-            val prefs = context.dataStore.readPreferencesOrNull() ?: return
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                migrateStoredLanguageToSystemIfNeeded(prefs)
-            } else {
-                applyAppLanguage(AppLanguage.fromValue(prefs[KEY_APP_LANGUAGE]))
+            try {
+                val prefs = context.dataStore.readPreferencesOrNull() ?: return
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    migrateStoredLanguageToSystemIfNeeded(prefs)
+                } else {
+                    applyAppLanguage(AppLanguage.fromValue(prefs[KEY_APP_LANGUAGE]))
+                }
+            } finally {
+                _storedAppLanguageApplied.value = true
             }
         }
 
@@ -150,10 +162,13 @@ class PreferencesManager
         }
 
         private fun applyAppLanguage(language: AppLanguage) {
-            val locales =
-                language.languageTag?.let(LocaleListCompat::forLanguageTags)
-                    ?: LocaleListCompat.getEmptyLocaleList()
-            AppCompatDelegate.setApplicationLocales(locales)
+            val languageTags = language.languageTag.orEmpty()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                context.getSystemService(LocaleManager::class.java)?.applicationLocales =
+                    LocaleList.forLanguageTags(languageTags)
+            } else {
+                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(languageTags))
+            }
         }
 
         private suspend fun migrateStoredLanguageToSystemIfNeeded(prefs: Preferences) {
@@ -186,8 +201,19 @@ class PreferencesManager
             }
         }
 
-        private fun currentAppLanguage(): AppLanguage =
-            AppLanguage.fromLanguageTag(AppCompatDelegate.getApplicationLocales().toLanguageTags())
+        private fun currentAppLanguage(): AppLanguage {
+            val languageTags =
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    context
+                        .getSystemService(LocaleManager::class.java)
+                        ?.applicationLocales
+                        ?.toLanguageTags()
+                        .orEmpty()
+                } else {
+                    AppCompatDelegate.getApplicationLocales().toLanguageTags()
+                }
+            return AppLanguage.fromLanguageTag(languageTags)
+        }
 
         private companion object {
             val KEY_THEME_MODE = intPreferencesKey("theme_mode")

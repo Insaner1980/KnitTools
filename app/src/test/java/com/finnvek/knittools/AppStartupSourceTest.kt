@@ -27,6 +27,26 @@ class AppStartupSourceTest {
     }
 
     @Test
+    fun `first composition waits until stored language application completes`() {
+        val preferencesManager = ProjectSourceFiles.read(PREFERENCES_MANAGER)
+        val mainActivity = ProjectSourceFiles.read(MAIN_ACTIVITY)
+
+        assertTrue(
+            preferencesManager.contains(
+                "val storedAppLanguageApplied: StateFlow<Boolean> = " +
+                    "_storedAppLanguageApplied.asStateFlow()",
+            ),
+        )
+        assertTrue(preferencesManager.contains("_storedAppLanguageApplied.value = true"))
+        assertTrue(
+            mainActivity.contains(
+                "preferencesManager.storedAppLanguageApplied.collectAsStateWithLifecycle()",
+            ),
+        )
+        assertTrue(mainActivity.contains("if (!storedAppLanguageApplied) return"))
+    }
+
+    @Test
     fun `app startup schedules yarn photo orphan cleanup without blocking main thread`() {
         val app = ProjectSourceFiles.read(APP)
 
@@ -105,8 +125,11 @@ class AppStartupSourceTest {
 
     private companion object {
         const val APP = "app/src/main/java/com/finnvek/knittools/App.kt"
+        const val MAIN_ACTIVITY = "app/src/main/java/com/finnvek/knittools/MainActivity.kt"
         const val BILLING_MANAGER = "app/src/main/java/com/finnvek/knittools/billing/BillingManager.kt"
         const val PRO_MANAGER = "app/src/main/java/com/finnvek/knittools/pro/ProManager.kt"
+        const val PREFERENCES_MANAGER =
+            "app/src/main/java/com/finnvek/knittools/data/datastore/PreferencesManager.kt"
         const val IN_APP_UPDATE_MANAGER = "app/src/main/java/com/finnvek/knittools/pro/InAppUpdateManager.kt"
         const val PREFERENCES_DATA_STORE_SAFETY =
             "app/src/main/java/com/finnvek/knittools/data/datastore/PreferencesDataStoreSafety.kt"

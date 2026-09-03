@@ -32,6 +32,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -378,6 +379,74 @@ class PatternAnnotationViewModelTest {
                     ?.size,
             )
         }
+
+    // CPD-OFF: Testin skenaariokohtainen asetelma pidetaan paikallisena ja luettavana.
+    @Test
+    fun `cancellation is not converted into an annotation write error`() =
+        runTest {
+            val layerRepository = mockk<PatternAnnotationLayerRepository>()
+            val annotationRepository = mockk<PatternAnnotationRepository>()
+            val documentKey = PatternAnnotationDocumentKey.savedPattern(12L)
+            coEvery { layerRepository.getOrCreateMasterLayer(12L, documentKey) } returns
+                layer(id = 31L, owner = PatternAnnotationOwner.SavedPattern(12L, documentKey))
+            every { annotationRepository.observePage(31L, 0) } returns flowOf(emptyList())
+            coEvery { annotationRepository.insertAnnotation(any()) } throws CancellationException("cancelled")
+            val viewModel =
+                PatternAnnotationViewModel(
+                    SavedStateHandle(mapOf("savedPatternId" to 12L)),
+                    mockk(relaxed = true),
+                    layerRepository,
+                    annotationRepository,
+                    projectDocumentRepository = mockk(),
+                )
+            advanceUntilIdle()
+
+            viewModel.setActiveTool(PatternAnnotationTool.PEN)
+            viewModel.beginStroke(NormalizedPatternPoint(0.1f, 0.2f))
+            viewModel.appendStrokePoint(NormalizedPatternPoint(0.4f, 0.5f))
+            viewModel.commitStroke(simplificationTolerance = 0f)
+            advanceUntilIdle()
+
+            assertEquals(PatternAnnotationWriteError.NONE, viewModel.uiState.value.writeError)
+            assertFalse(viewModel.uiState.value.isSaving)
+        }
+
+    @Test
+    fun `undo cancellation preserves history without reporting a write error`() =
+        runTest {
+            val layerRepository = mockk<PatternAnnotationLayerRepository>()
+            val annotationRepository = mockk<PatternAnnotationRepository>()
+            val documentKey = PatternAnnotationDocumentKey.savedPattern(12L)
+            coEvery { layerRepository.getOrCreateMasterLayer(12L, documentKey) } returns
+                layer(id = 31L, owner = PatternAnnotationOwner.SavedPattern(12L, documentKey))
+            every { annotationRepository.observePage(31L, 0) } returns flowOf(emptyList())
+            coEvery { annotationRepository.insertAnnotation(any()) } returns 55L
+            coEvery { annotationRepository.deleteAnnotation(55L) } throws CancellationException("cancelled")
+            val viewModel =
+                PatternAnnotationViewModel(
+                    SavedStateHandle(mapOf("savedPatternId" to 12L)),
+                    mockk(relaxed = true),
+                    layerRepository,
+                    annotationRepository,
+                    projectDocumentRepository = mockk(),
+                )
+            advanceUntilIdle()
+
+            viewModel.setActiveTool(PatternAnnotationTool.PEN)
+            viewModel.beginStroke(NormalizedPatternPoint(0.1f, 0.2f))
+            viewModel.appendStrokePoint(NormalizedPatternPoint(0.4f, 0.5f))
+            viewModel.commitStroke(simplificationTolerance = 0f)
+            advanceUntilIdle()
+            assertTrue(viewModel.uiState.value.canUndo)
+
+            viewModel.undo()
+            advanceUntilIdle()
+
+            assertEquals(PatternAnnotationWriteError.NONE, viewModel.uiState.value.writeError)
+            assertFalse(viewModel.uiState.value.isSaving)
+            assertTrue(viewModel.uiState.value.canUndo)
+        }
+    // CPD-ON
 
     // CPD-OFF: Testin skenaariokohtainen asetelma pidetaan paikallisena ja luettavana.
     @Test

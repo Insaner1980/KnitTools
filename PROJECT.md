@@ -114,7 +114,7 @@ The source-file counts above are inventory; they are not executed-test counts. A
 | `gradle/` | Version catalog, verification metadata, OSV configuration, and wrapper configuration |
 | `tools/` | Project-local PowerShell entry points, release-surface checks, test helpers, and specialized validation |
 | `scripts/` | Compatibility delegates; security scanning logic must remain in `tools/sc.ps1` |
-| `.deepsec/` | DeepSec configuration, custom matchers, report processing, and matcher tests |
+| `.deepsec/` | DeepSec configuration, custom matchers, report processing, matcher tests, and the ignore boundary for generated local runtime data |
 | `.github/workflows/` | Android build and CodeQL workflows |
 | `.github/dependabot.yml` | Dependency update configuration for Gradle, Actions, DeepSec npm, and Functions npm |
 
@@ -136,7 +136,7 @@ The baseline-profile module targets `:app`, uses the Android test and Baseline P
 
 The backend package is not a Gradle module. It uses TypeScript and Firebase Functions v2, targets Node.js 22, compiles to `functions/lib`, exposes authenticated callables and an OAuth callback, and stores OAuth state, tokens, and rate-limit windows in Firestore. It never downloads or stores pattern PDFs.
 
-Current core versions are `firebase-functions 7.3.2`, `firebase-admin 14.3.0`, `typescript 7.0.2`, and `@types/node 26.3.0`. Package overrides pin security-sensitive transitive packages including `brace-expansion`, `body-parser`, `form-data`, `js-yaml`, `protobufjs`, `rimraf`, and `uuid`.
+Current core versions are `firebase-functions 7.3.2`, `firebase-admin 14.3.0`, `typescript 7.0.2`, and `@types/node 26.3.0`. Package overrides pin security-sensitive transitive packages including `brace-expansion`, `form-data`, `js-yaml`, `protobufjs`, `rimraf`, and `uuid`.
 
 ## Android dependency map
 
@@ -1551,6 +1551,8 @@ Accepted risk is limited to documented historical Ravelry credential findings in
 
 The published `366755d` DeepSec update changed the package and lockfile, resolved CLI version `2.3.8`, and passed the six declared matcher tests; it did not run a repository scan. GitHub does not run DeepSec. Invocation artifacts under `.deepsec/data` are generated local runtime data, not a primary implementation source or part of an ordinary source commit.
 
+`.deepsec/.gitignore` keeps scanner source, matcher tests, configuration, and the tracked `.deepsec/data/knittools/INFO.md` visible while excluding dependencies and generated outputs. Its project-scoped rules ignore `data/*/project.json`, `data/*/tech.json`, `data/*/files/`, `data/*/runs/`, `data/*/reports/`, and `data/*/revalidation/`; exported `findings/` and generated `comment.md` files are also ignored. The published `b3343de` change added only the exact revalidation-output rule. It did not change matchers, scanner configuration, application source, or scan evidence, and it does not hide arbitrary Markdown planning documents.
+
 ## Test architecture
 
 ### Current inventory
@@ -1859,6 +1861,7 @@ Questions:
 - Did the analyzer run against the intended inputs?
 - Did inputs change during the run?
 - Was a finding suppressed, accepted, filtered, or truly absent?
+- Does the DeepSec ignore boundary exclude only generated per-project data, including revalidation output, while leaving matcher/configuration source and tracked scanner documentation reviewable?
 - Does a wrapper return the delegated exit code?
 - Does Android CI omit Functions coverage?
 - Is a hosted-runner failure distinct from a code failure?

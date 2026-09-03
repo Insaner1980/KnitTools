@@ -341,7 +341,7 @@
     <string name="use_imperial_units">Använd brittiska/amerikanska mått</string>
     <string name="upgrade_to_pro">Uppgradera till Pro</string>
     <string name="restore_purchases">Återställ köp</string>
-    <string name="privacy_summary">All data stannar på din enhet. Ingen analys, ingen molnsynk, inga konton.</string>
+    <string name="privacy_summary">Dina projektdata stannar på enheten. Ravelry- och Google Play-funktioner använder nätverkstjänster. Ingen analys eller molnsynkronisering.</string>
     <string name="pro_restored">Pro återställd</string>
     <string name="no_purchases_found">Inga köp hittades</string>
     <string name="version_format">KnitTools %s</string>

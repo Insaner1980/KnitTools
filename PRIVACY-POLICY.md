@@ -1,21 +1,30 @@
 # Privacy Policy
 
-**[App Name]** does not collect, store, or transmit any personal data.
+This technical privacy summary describes the current KnitTools implementation.
 
 ## Data Collection
 
-This app does not collect any data. No analytics, no crash reporting, no tracking.
+KnitTools has no analytics, tracking, advertising, or release crash-reporting integration.
 
 ## Data Storage
 
-All data is stored locally on your device. No data is sent to any server.
+Projects, counters, notes, imported pattern PDFs, annotations, yarn data, sessions, and photos are stored locally on the device. Android backup and device transfer are disabled for app data.
+
+Optional network features use only the data needed for their operation:
+
+- Ravelry connection, search, and metadata import use Firebase anonymous authentication and callable Firebase Functions. The backend stores the Ravelry OAuth state and tokens associated with the anonymous Firebase user and sends requested operations to Ravelry. KnitTools does not upload or download Ravelry pattern PDFs.
+- Ravelry thumbnail images may be loaded from HTTPS URLs returned in pattern metadata.
+- Purchases, restore, in-app review, and app updates use Google Play services.
+- User-added pattern websites open in an external browser; KnitTools does not fetch, cache, or inspect those pages.
+
+Debug builds can send diagnostics to Sentry only when a developer has configured a debug DSN. Release builds contain no Sentry dependency.
 
 ## Permissions
 
-This app only requests permissions that are strictly necessary for its core functionality.
+The Android manifest requests Internet access for the optional network features, vibration for feedback, and camera access for user-started pattern and progress-photo capture. Camera hardware is optional. The app does not request microphone permission.
 
 ## Contact
 
-If you have questions about this privacy policy, contact [your email].
+Contact information must be supplied before this policy is published.
 
-*Last updated: [date]*
+*Last updated: 2026-09-03*

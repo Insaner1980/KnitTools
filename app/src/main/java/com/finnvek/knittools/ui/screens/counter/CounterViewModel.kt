@@ -1444,6 +1444,8 @@ class CounterViewModel
                             uri = uri,
                             filePath = file.absolutePath,
                         )
+                    }.onFailure { failure ->
+                        if (failure is CancellationException) throw failure
                     }.getOrNull()
                 onCreated(target)
             }

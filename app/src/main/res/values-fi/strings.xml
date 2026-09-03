@@ -341,7 +341,7 @@
     <string name="use_imperial_units">Käytä imperiaalisia mittayksiköitä</string>
     <string name="upgrade_to_pro">Päivitä Prohon</string>
     <string name="restore_purchases">Palauta ostot</string>
-    <string name="privacy_summary">Kaikki tiedot pysyvät laitteellasi. Ei analytiikkaa, ei pilvisynkronointia, ei tilejä.</string>
+    <string name="privacy_summary">Projektitietosi pysyvät laitteellasi. Ravelry- ja Google Play -ominaisuudet käyttävät verkkopalveluita. Ei analytiikkaa eikä pilvisynkronointia.</string>
     <string name="pro_restored">Pro palautettu</string>
     <string name="no_purchases_found">Ostoja ei löytynyt</string>
     <string name="version_format">KnitTools %s</string>

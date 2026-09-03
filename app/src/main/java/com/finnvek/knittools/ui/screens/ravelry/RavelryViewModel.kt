@@ -18,12 +18,12 @@ import com.finnvek.knittools.repository.RavelryRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -128,17 +128,17 @@ class RavelryViewModel
         private val _isPatternSaved = MutableStateFlow(false)
         val isPatternSaved: StateFlow<Boolean> = _isPatternSaved.asStateFlow()
 
-        private val _navigateToProject = MutableSharedFlow<Long>()
-        val navigateToProject = _navigateToProject.asSharedFlow()
+        private val navigateToProjectChannel = Channel<Long>(Channel.BUFFERED)
+        val navigateToProject = navigateToProjectChannel.receiveAsFlow()
 
-        private val _projectCreationPrompts = MutableSharedFlow<Int>()
-        val projectCreationPrompts = _projectCreationPrompts.asSharedFlow()
+        private val projectCreationPromptChannel = Channel<Int>(Channel.BUFFERED)
+        val projectCreationPrompts = projectCreationPromptChannel.receiveAsFlow()
 
-        private val _patternSaveResults = MutableSharedFlow<PatternSaveResult>()
-        val patternSaveResults = _patternSaveResults.asSharedFlow()
+        private val patternSaveResultChannel = Channel<PatternSaveResult>(Channel.BUFFERED)
+        val patternSaveResults = patternSaveResultChannel.receiveAsFlow()
 
-        private val _signInLaunchRequests = MutableSharedFlow<Uri>()
-        val signInLaunchRequests = _signInLaunchRequests.asSharedFlow()
+        private val signInLaunchRequestChannel = Channel<Uri>(Channel.BUFFERED)
+        val signInLaunchRequests = signInLaunchRequestChannel.receiveAsFlow()
 
         private val _importConfirmationState = MutableStateFlow<RavelryImportConfirmationState?>(null)
         val importConfirmationState: StateFlow<RavelryImportConfirmationState?> =
@@ -172,7 +172,7 @@ class RavelryViewModel
         fun startSignIn() {
             viewModelScope.launch {
                 authManager.startAuth()?.let { uri ->
-                    _signInLaunchRequests.emit(uri)
+                    signInLaunchRequestChannel.send(uri)
                 }
             }
         }
@@ -361,11 +361,11 @@ class RavelryViewModel
                 try {
                     repository.savePattern(detail)
                     _isPatternSaved.value = true
-                    _patternSaveResults.emit(PatternSaveResult.Saved)
+                    patternSaveResultChannel.send(PatternSaveResult.Saved)
                 } catch (e: CancellationException) {
                     throw e
                 } catch (_: Exception) {
-                    _patternSaveResults.emit(PatternSaveResult.Failed)
+                    patternSaveResultChannel.send(PatternSaveResult.Failed)
                 } finally {
                     isSaveInFlight = false
                 }
@@ -464,9 +464,9 @@ class RavelryViewModel
                     when (
                         val result = repository.createProjectFromPattern(detail, isPro)
                     ) {
-                        is ProjectCreationResult.Created -> _navigateToProject.emit(result.projectId)
+                        is ProjectCreationResult.Created -> navigateToProjectChannel.send(result.projectId)
                         ProjectCreationResult.LimitReached -> {
-                            _projectCreationPrompts.emit(repository.getProjectCount())
+                            projectCreationPromptChannel.send(repository.getProjectCount())
                         }
                         ProjectCreationResult.InvalidProject,
                         ProjectCreationResult.FolderMissing,

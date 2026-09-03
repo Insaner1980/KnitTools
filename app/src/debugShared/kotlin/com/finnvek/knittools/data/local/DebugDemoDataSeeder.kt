@@ -49,7 +49,7 @@ object DebugDemoDataSeeder {
         val woodlandPatternId =
             database.savedPatternDao().insert(
                 SavedPatternEntity(
-                    source = SavedPatternSource.Other.persistedValue,
+                    source = SavedPatternSource.WebLink.persistedValue,
                     name = "Woodland Cardigan",
                     designerName = "Maya Rowan",
                     difficulty = 3.5f,
@@ -66,7 +66,7 @@ object DebugDemoDataSeeder {
             )
         database.savedPatternDao().insert(
             SavedPatternEntity(
-                source = SavedPatternSource.Other.persistedValue,
+                source = SavedPatternSource.WebLink.persistedValue,
                 name = "Harbor Socks",
                 designerName = "Elli North",
                 difficulty = 2.5f,

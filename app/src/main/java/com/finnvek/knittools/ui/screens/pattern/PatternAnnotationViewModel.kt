@@ -42,6 +42,7 @@ import com.finnvek.knittools.repository.ProjectDocumentRepository
 import com.finnvek.knittools.repository.retryOnRepositoryReadFailure
 import com.finnvek.knittools.ui.theme.PatternAnnotationTokens
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -655,7 +656,11 @@ class PatternAnnotationViewModel
                                 isSaving = false,
                             )
                         }
-                    }.onFailure {
+                    }.onFailure { failure ->
+                        if (failure is CancellationException) {
+                            interaction.update { state -> state.copy(isSaving = false) }
+                            throw failure
+                        }
                         interaction.update { state ->
                             state.copy(isSaving = false, writeError = PatternAnnotationWriteError.WRITE_FAILED)
                         }
@@ -687,7 +692,11 @@ class PatternAnnotationViewModel
                                 )
                             }
                         }
-                    }.onFailure {
+                    }.onFailure { failure ->
+                        if (failure is CancellationException) {
+                            interaction.update { current -> current.copy(isSaving = false) }
+                            throw failure
+                        }
                         interaction.update { current ->
                             current.copy(isSaving = false, writeError = PatternAnnotationWriteError.WRITE_FAILED)
                         }

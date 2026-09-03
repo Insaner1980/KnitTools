@@ -210,8 +210,6 @@ fun KnitToolsNavHost(
             )
             libraryGraph(
                 navController = navController,
-                onLaunchRavelryAuth = actions.onLaunchRavelryAuth,
-                onBrowseRavelry = actions.onBrowseRavelry,
                 onLaunchCounter = { projectId ->
                     internalCounterLaunch = CounterLaunchRequest(projectId = projectId)
                 },
@@ -649,8 +647,6 @@ private fun RavelrySearchRoute(
 
 private fun NavGraphBuilder.libraryGraph(
     navController: NavHostController,
-    onLaunchRavelryAuth: (Uri) -> Unit,
-    onBrowseRavelry: () -> Unit,
     onLaunchCounter: (Long) -> Unit,
 ) {
     navigation(
@@ -672,12 +668,6 @@ private fun NavGraphBuilder.libraryGraph(
         librarySavedPatternsRoute(navController)
         savedPatternDetailRoute(navController)
         libraryPatternViewerRoute(navController)
-        libraryRavelryDetailRoute(
-            navController = navController,
-            onLaunchCounter = onLaunchCounter,
-            onLaunchRavelryAuth = onLaunchRavelryAuth,
-            onBrowseRavelry = onBrowseRavelry,
-        )
         libraryMyYarnRoute(navController)
         libraryYarnCardDetailRoute(navController, onLaunchCounter)
         libraryAllPhotosRoute(navController)
@@ -873,36 +863,6 @@ private fun NavGraphBuilder.libraryPatternViewerRoute(navController: NavHostCont
             patternName = pattern.second,
             onBack = { navController.popBackStack() },
             annotationViewModel = annotationViewModel,
-        )
-    }
-}
-
-private fun NavGraphBuilder.libraryRavelryDetailRoute(
-    navController: NavHostController,
-    onLaunchCounter: (Long) -> Unit,
-    onLaunchRavelryAuth: (Uri) -> Unit,
-    onBrowseRavelry: () -> Unit,
-) {
-    composable(
-        Screen.LibraryRavelryDetail.ROUTE,
-        arguments = listOf(navArgument(ARG_PATTERN_ID) { type = NavType.IntType }),
-    ) { backStackEntry ->
-        val patternId = backStackEntry.positiveIntArgument(ARG_PATTERN_ID)
-        if (patternId == null) {
-            RouteArgumentFallback({ navController }, TopLevelDestination.Library)
-            return@composable
-        }
-        RavelryDetailScreen(
-            patternId = patternId,
-            onBack = { navController.popBackStack() },
-            onStartProject = { projectId ->
-                onLaunchCounter(projectId)
-            },
-            onUpgradeToPro = {
-                navController.navigateSingleTopTo(Screen.ProUpgrade.route)
-            },
-            onLaunchRavelryAuth = onLaunchRavelryAuth,
-            onBrowseRavelry = onBrowseRavelry,
         )
     }
 }

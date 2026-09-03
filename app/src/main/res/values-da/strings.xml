@@ -341,7 +341,7 @@
     <string name="use_imperial_units">Brug imperiale enheder</string>
     <string name="upgrade_to_pro">Opgradér til Pro</string>
     <string name="restore_purchases">Gendan køb</string>
-    <string name="privacy_summary">Alle data bliver på din enhed. Ingen analyse, ingen cloudsynkronisering, ingen konti.</string>
+    <string name="privacy_summary">Dine projektdata bliver på din enhed. Ravelry- og Google Play-funktioner bruger netværkstjenester. Ingen analyse eller cloudsynkronisering.</string>
     <string name="pro_restored">Pro gendannet</string>
     <string name="no_purchases_found">Ingen køb fundet</string>
     <string name="version_format">KnitTools %s</string>

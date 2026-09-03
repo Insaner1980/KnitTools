@@ -35,12 +35,9 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
@@ -199,20 +196,20 @@ class ProjectListViewModel
         private val _projectHasNotes = MutableStateFlow<Set<Long>>(emptySet())
         val projectHasNotes: StateFlow<Set<Long>> = _projectHasNotes.asStateFlow()
 
-        private val _navigateToProject = MutableSharedFlow<Long>()
-        val navigateToProject: SharedFlow<Long> = _navigateToProject.asSharedFlow()
+        private val navigateToProjectChannel = Channel<Long>(Channel.BUFFERED)
+        val navigateToProject = navigateToProjectChannel.receiveAsFlow()
 
-        private val _navigateToNotesEditor = MutableSharedFlow<Long>()
-        val navigateToNotesEditor: SharedFlow<Long> = _navigateToNotesEditor.asSharedFlow()
+        private val navigateToNotesEditorChannel = Channel<Long>(Channel.BUFFERED)
+        val navigateToNotesEditor = navigateToNotesEditorChannel.receiveAsFlow()
 
-        private val _navigateToPhotoGallery = MutableSharedFlow<Long>()
-        val navigateToPhotoGallery: SharedFlow<Long> = _navigateToPhotoGallery.asSharedFlow()
+        private val navigateToPhotoGalleryChannel = Channel<Long>(Channel.BUFFERED)
+        val navigateToPhotoGallery = navigateToPhotoGalleryChannel.receiveAsFlow()
 
-        private val _projectCreationPrompts = MutableSharedFlow<Int>()
-        val projectCreationPrompts: SharedFlow<Int> = _projectCreationPrompts.asSharedFlow()
+        private val projectCreationPromptChannel = Channel<Int>(Channel.BUFFERED)
+        val projectCreationPrompts = projectCreationPromptChannel.receiveAsFlow()
 
-        private val _showCreateProjectDialog = MutableSharedFlow<Unit>()
-        val showCreateProjectDialog: SharedFlow<Unit> = _showCreateProjectDialog.asSharedFlow()
+        private val showCreateProjectDialogChannel = Channel<Unit>(Channel.BUFFERED)
+        val showCreateProjectDialog = showCreateProjectDialogChannel.receiveAsFlow()
 
         private var pendingProjectCreation: PendingProjectCreation? = null
 
@@ -413,9 +410,9 @@ class ProjectListViewModel
             viewModelScope.launch {
                 val count = repository.getProjectCount()
                 if (!isPro && count >= 1) {
-                    _projectCreationPrompts.emit(count)
+                    projectCreationPromptChannel.send(count)
                 } else {
-                    _showCreateProjectDialog.emit(Unit)
+                    showCreateProjectDialogChannel.send(Unit)
                 }
             }
         }
@@ -477,10 +474,10 @@ class ProjectListViewModel
             ) {
                 is ProjectCreationResult.Created -> {
                     pendingProjectCreation = null
-                    _navigateToProject.emit(result.projectId)
+                    navigateToProjectChannel.send(result.projectId)
                 }
                 ProjectCreationResult.LimitReached -> {
-                    _projectCreationPrompts.emit(repository.getProjectCount())
+                    projectCreationPromptChannel.send(repository.getProjectCount())
                 }
                 ProjectCreationResult.InvalidProject -> pendingProjectCreation = null
                 ProjectCreationResult.FolderMissing -> {
@@ -538,7 +535,7 @@ class ProjectListViewModel
                 if (saveSession && pending.session.needsRecoveryReview) {
                     _pendingCompletionSessionAction.value = null
                     exitMultiSelectMode()
-                    _navigateToProject.emit(pending.session.projectId)
+                    navigateToProjectChannel.send(pending.session.projectId)
                     return@launch
                 }
                 completeProjects(
@@ -609,13 +606,13 @@ class ProjectListViewModel
 
         fun openNotesEditor(projectId: Long) {
             viewModelScope.launch {
-                _navigateToNotesEditor.emit(projectId)
+                navigateToNotesEditorChannel.send(projectId)
             }
         }
 
         fun openPhotoGallery(projectId: Long) {
             viewModelScope.launch {
-                _navigateToPhotoGallery.emit(projectId)
+                navigateToPhotoGalleryChannel.send(projectId)
             }
         }
 

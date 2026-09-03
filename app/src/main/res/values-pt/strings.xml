@@ -345,7 +345,7 @@
     <string name="use_imperial_units">Usar unidades imperiais</string>
     <string name="upgrade_to_pro">Atualizar para Pro</string>
     <string name="restore_purchases">Restaurar compras</string>
-    <string name="privacy_summary">Todos os dados ficam no seu dispositivo. Sem analítica, sem sincronização na nuvem, sem contas.</string>
+    <string name="privacy_summary">Os dados dos seus projetos ficam no dispositivo. As funcionalidades do Ravelry e Google Play usam serviços de rede. Sem analítica nem sincronização na nuvem.</string>
     <string name="pro_restored">Pro restaurado</string>
     <string name="no_purchases_found">Nenhuma compra encontrada</string>
     <string name="version_format">KnitTools %s</string>

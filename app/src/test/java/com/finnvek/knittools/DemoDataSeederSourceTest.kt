@@ -22,6 +22,8 @@ class DemoDataSeederSourceTest {
             "YarnCard(",
             "SavedPatternEntity(",
         ).forEach { expected -> assertTrue(source.contains(expected)) }
+        assertTrue(source.contains("source = SavedPatternSource.WebLink.persistedValue"))
+        assertFalse(source.contains("source = SavedPatternSource.Other.persistedValue"))
     }
 
     @Test

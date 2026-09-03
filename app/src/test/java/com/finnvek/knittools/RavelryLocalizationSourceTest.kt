@@ -31,6 +31,9 @@ class RavelryLocalizationSourceTest {
             (listOf(DEFAULT_STRINGS) + LOCALE_STRINGS)
                 .joinToString(separator = "\n") { ProjectSourceFiles.read(it) }
         assertFalse(allStrings.contains("Saved from Ravelry"))
+        assertTrue(defaultStrings.contains("Ravelry and Google Play features use network services"))
+        assertFalse(defaultStrings.contains("All data stays on your device"))
+        assertFalse(defaultStrings.contains("no accounts"))
     }
 
     private companion object {
@@ -77,6 +80,7 @@ class RavelryLocalizationSourceTest {
                 "ravelry_auth_expired",
                 "ravelry_backend_unavailable",
                 "ravelry_disconnecting",
+                "privacy_summary",
             )
     }
 }

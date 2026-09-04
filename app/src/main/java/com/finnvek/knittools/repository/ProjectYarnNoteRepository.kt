@@ -57,7 +57,7 @@ class ProjectYarnNoteRepository
                             linkedProjectId = note.projectId,
                             createdAt = note.createdAt,
                         ),
-                    )
+                    ) ?: return@run null
                 dao.updateSavedYarnCardId(
                     id = note.id,
                     savedYarnCardId = yarnCardId,

@@ -2,6 +2,8 @@ package com.finnvek.knittools.domain.model
 
 import java.net.IDN
 import java.net.URI
+import java.net.URLDecoder
+import java.nio.charset.StandardCharsets
 import java.util.Locale
 
 const val WEB_PATTERN_URL_MAX_LENGTH = 2_048
@@ -78,7 +80,7 @@ fun validateWebPatternUrl(input: String): WebPatternUrlValidation {
             canonicalUrl = canonicalUrl,
             host = host,
             isSecure = scheme == "https",
-            isRavelryPattern = isRavelryPatternUrl(scheme, host, uri.path),
+            isRavelryPattern = isRavelryPatternUrl(scheme, host, port, uri.rawPath),
         ),
     )
 }
@@ -322,9 +324,28 @@ private fun isForbiddenWebPatternUrlCharacter(character: Char): Boolean = charac
 private fun isRavelryPatternUrl(
     scheme: String,
     host: String,
-    path: String?,
+    port: Int?,
+    rawPath: String?,
+): Boolean {
+    if (!isSupportedRavelryOrigin(scheme, host, port)) return false
+
+    val segments = rawPath?.split('/')?.filter(String::isNotEmpty) ?: return false
+    if (segments.size != 3 || segments[0] != "patterns" || segments[1] != "library") return false
+
+    val slug =
+        runCatching {
+            URLDecoder.decode(segments[2].replace("+", "%2B"), StandardCharsets.UTF_8.name())
+        }.getOrNull() ?: return false
+    return slug.isNotBlank() &&
+        slug.length <= 512 &&
+        slug.none { it == '/' || it == '\\' || it == '?' || it == '#' || isForbiddenWebPatternUrlCharacter(it) }
+}
+
+private fun isSupportedRavelryOrigin(
+    scheme: String,
+    host: String,
+    port: Int?,
 ): Boolean =
     scheme == "https" &&
-        (host == "ravelry.com" || host == "www.ravelry.com") &&
-        path?.startsWith("/patterns/library/") == true &&
-        path.removePrefix("/patterns/library/").isNotBlank()
+        host in setOf("ravelry.com", "www.ravelry.com") &&
+        (port == null || port == 443)

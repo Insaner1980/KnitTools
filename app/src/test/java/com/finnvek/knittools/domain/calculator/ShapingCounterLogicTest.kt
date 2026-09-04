@@ -41,6 +41,15 @@ class ShapingCounterLogicTest {
         assertEquals(80, ShapingCounterLogic.calculateCurrentStitches(80, -2, 0, 10))
     }
 
+    @Test
+    fun `calculateCurrentStitches rajaa yli- ja alivuodon`() {
+        assertEquals(
+            Int.MAX_VALUE,
+            ShapingCounterLogic.calculateCurrentStitches(Int.MAX_VALUE, Int.MAX_VALUE, 1, Int.MAX_VALUE),
+        )
+        assertEquals(0, ShapingCounterLogic.calculateCurrentStitches(1, Int.MIN_VALUE, 1, Int.MAX_VALUE))
+    }
+
     // nextShapingRow
 
     @Test
@@ -56,6 +65,11 @@ class ShapingCounterLogicTest {
     @Test
     fun `nextShapingRow rivillä 0 palauttaa ensimmäisen muotoilurivin`() {
         assertEquals(4, ShapingCounterLogic.nextShapingRow(4, 0))
+    }
+
+    @Test
+    fun `nextShapingRow rajautuu suurimmalle kokonaisluvulle`() {
+        assertEquals(Int.MAX_VALUE, ShapingCounterLogic.nextShapingRow(Int.MAX_VALUE, Int.MAX_VALUE))
     }
 
     // isShapingRow

@@ -190,6 +190,30 @@ class PatternViewerViewModelTest {
         }
 
     @Test
+    fun `unavailable restored selection falls back to an available primary`() =
+        runTest {
+            val bookmarkRepository = mockk<PatternBookmarkRepository>()
+            every { bookmarkRepository.observeActiveBookmarks(7L) } returns
+                MutableStateFlow(active(DOCUMENT_A, emptyList()))
+            val primary = projectDocument(id = 41L, key = DOCUMENT_A, isPrimary = true)
+            val restored = projectDocument(id = 42L, key = DOCUMENT_B, isPrimary = false)
+            val documentRepository = mockk<ProjectDocumentRepository>()
+            every { documentRepository.observeDocuments(7L) } returns MutableStateFlow(listOf(primary, restored))
+            coEvery { documentRepository.isAvailable(primary) } returns true
+            coEvery { documentRepository.isAvailable(restored) } returns false
+            coEvery { documentRepository.select(7L, primary.id) } returns ProjectDocumentMutationResult.Selected
+            val savedState = SavedStateHandle(mapOf("projectId" to 7L, "selectedProjectDocumentId" to restored.id))
+            val viewModel = PatternViewerViewModel(bookmarkRepository, documentRepository, savedState)
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.documentUiState.collect() }
+            advanceUntilIdle()
+
+            assertEquals(primary.id, viewModel.documentUiState.value.selectedDocumentId)
+            assertEquals(primary.id, savedState.get<Long>("selectedProjectDocumentId"))
+            coVerify(exactly = 1) { documentRepository.select(7L, primary.id) }
+            coVerify(exactly = 0) { documentRepository.select(7L, restored.id) }
+        }
+
+    @Test
     fun `duplicate external document add is exposed as a document error`() =
         runTest {
             val viewModel =

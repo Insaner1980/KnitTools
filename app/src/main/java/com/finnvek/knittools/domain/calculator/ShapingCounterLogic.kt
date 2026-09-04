@@ -18,9 +18,12 @@ object ShapingCounterLogic {
         shapeEveryN: Int,
         currentRow: Int,
     ): Int {
-        if (shapeEveryN <= 0 || currentRow <= 0) return startingStitches
+        val normalizedStartingStitches = startingStitches.coerceAtLeast(0)
+        if (shapeEveryN <= 0 || currentRow <= 0) return normalizedStartingStitches
         val shapingsDone = currentRow / shapeEveryN
-        return (startingStitches + shapingsDone * stitchChange).coerceAtLeast(0)
+        return (normalizedStartingStitches.toLong() + shapingsDone.toLong() * stitchChange)
+            .coerceIn(0L, Int.MAX_VALUE.toLong())
+            .toInt()
     }
 
     /**
@@ -31,7 +34,9 @@ object ShapingCounterLogic {
         currentRow: Int,
     ): Int {
         if (shapeEveryN <= 0) return 0
-        return ((currentRow / shapeEveryN) + 1) * shapeEveryN
+        return (((currentRow.coerceAtLeast(0).toLong() / shapeEveryN) + 1L) * shapeEveryN)
+            .coerceAtMost(Int.MAX_VALUE.toLong())
+            .toInt()
     }
 
     /**

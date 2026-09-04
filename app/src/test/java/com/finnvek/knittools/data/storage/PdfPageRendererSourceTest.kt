@@ -66,6 +66,20 @@ class PdfPageRendererSourceTest {
         )
     }
 
+    @Test
+    fun `pdf bitmap is recycled when page rendering fails`() {
+        val source = ProjectSourceFiles.read(PDF_PAGE_RENDERER)
+        val allocationIndex = source.indexOf("val bitmap = createBitmap(width, height)")
+        val renderIndex = source.indexOf("page.render(bitmap")
+        val recycleIndex = source.indexOf("bitmap.recycle()", renderIndex)
+        val rethrowIndex = source.indexOf("throw failure", recycleIndex)
+
+        assertTrue("The rendered bitmap must be held for failure cleanup.", allocationIndex >= 0)
+        assertTrue("Page rendering must happen after bitmap allocation.", renderIndex > allocationIndex)
+        assertTrue("A failed page render must recycle its bitmap.", recycleIndex > renderIndex)
+        assertTrue("Cleanup must preserve the original rendering failure.", rethrowIndex > recycleIndex)
+    }
+
     private companion object {
         const val PDF_PAGE_RENDERER =
             "app/src/main/java/com/finnvek/knittools/data/storage/PdfPageRenderer.kt"

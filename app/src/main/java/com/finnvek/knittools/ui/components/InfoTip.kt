@@ -1,12 +1,11 @@
 package com.finnvek.knittools.ui.components
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -28,16 +27,17 @@ fun InfoTip(
 ) {
     var showDialog by remember { mutableStateOf(false) }
 
-    Icon(
-        imageVector = Icons.Outlined.Info,
-        contentDescription = title,
-        modifier =
-            modifier
-                .size(18.dp)
-                .clickable { showDialog = true }
-                .padding(1.dp),
-        tint = MaterialTheme.colorScheme.outline,
-    )
+    IconButton(
+        onClick = { showDialog = true },
+        modifier = modifier,
+    ) {
+        Icon(
+            imageVector = Icons.Outlined.Info,
+            contentDescription = title,
+            modifier = Modifier.size(18.dp),
+            tint = MaterialTheme.colorScheme.outline,
+        )
+    }
 
     if (showDialog) {
         AlertDialog(

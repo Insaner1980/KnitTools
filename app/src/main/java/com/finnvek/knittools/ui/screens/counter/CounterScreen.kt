@@ -91,6 +91,7 @@ import com.finnvek.knittools.domain.model.isWebPatternCompatible
 import com.finnvek.knittools.domain.model.webPatternUrlOrNull
 import com.finnvek.knittools.repository.ProjectDocumentMutationResult
 import com.finnvek.knittools.repository.SavedPatternMetadataMutationResult
+import com.finnvek.knittools.ui.components.CollectWithLifecycleEffect
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.ProPromptRequest
 import com.finnvek.knittools.ui.components.ProPromptSheet
@@ -184,9 +185,7 @@ fun CounterScreen(
     val resources = LocalResources.current
     val context = LocalContext.current
 
-    LaunchedEffect(viewModel) {
-        viewModel.projectClosedEvents.collect { onBack() }
-    }
+    CollectWithLifecycleEffect({ viewModel.projectClosedEvents }) { onBack() }
 
     var showResetDialog by rememberSaveable { mutableStateOf(false) }
     var showProjectActionsSheet by rememberSaveable { mutableStateOf(false) }
@@ -216,6 +215,7 @@ fun CounterScreen(
     var showTargetDialog by rememberSaveable { mutableStateOf(false) }
     var pendingProAction by rememberSaveable { mutableStateOf<PendingCounterProAction?>(null) }
     var previousOverlayProjectId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var projectActionTargetId by rememberSaveable { mutableStateOf<Long?>(null) }
     val savedYarnCards by viewModel.savedYarnCards.collectAsStateWithLifecycle()
     val savedPatterns by viewModel.savedPatterns.collectAsStateWithLifecycle()
 
@@ -246,6 +246,7 @@ fun CounterScreen(
         showDocumentsSheet = false
         projectDocumentError = null
         showTargetDialog = false
+        projectActionTargetId = null
     }
 
     LaunchedEffect(state.projectId) {
@@ -372,7 +373,7 @@ fun CounterScreen(
         )
     val dialogActionDependencies =
         CounterDialogActionDependencies(
-            projectId = state.projectId,
+            projectId = projectActionTargetId,
             editingReminderId = editingReminderId,
             renameText = renameText,
             onRenameTextChange = { renameText = it },
@@ -393,7 +394,12 @@ fun CounterScreen(
     val topBarActionDependencies =
         CounterTopBarActionDependencies(
             onBack = onBack,
-            onShowProjectActions = { showProjectActionsSheet = true },
+            onShowProjectActions = {
+                state.projectId?.let { projectId ->
+                    projectActionTargetId = projectId
+                    showProjectActionsSheet = true
+                }
+            },
         )
     val startRename = {
         renameText = state.projectName
@@ -491,11 +497,11 @@ fun CounterScreen(
                 showAddReminder = showAddReminder,
                 editingReminder = reminderBeingEdited,
                 showAddCounter = showAddCounter,
-                showResetDialog = showResetDialog,
-                showCompleteDialog = showCompleteDialog,
-                showDeleteDialog = showDeleteDialog,
-                showRenameDialog = showRenameDialog,
-                showStitchDialog = showStitchDialog,
+                showResetDialog = showResetDialog && projectActionTargetId == state.projectId,
+                showCompleteDialog = showCompleteDialog && projectActionTargetId == state.projectId,
+                showDeleteDialog = showDeleteDialog && projectActionTargetId == state.projectId,
+                showRenameDialog = showRenameDialog && projectActionTargetId == state.projectId,
+                showStitchDialog = showStitchDialog && projectActionTargetId == state.projectId,
                 projectName = state.projectName,
                 renameText = renameText,
                 currentStitchCount = state.stitchCount,
@@ -517,7 +523,7 @@ fun CounterScreen(
         },
     )
 
-    if (showProjectDetailsDialog) {
+    if (showProjectDetailsDialog && projectActionTargetId == state.projectId) {
         ProjectDetailsDialog(
             title = stringResource(R.string.project_details_title),
             confirmText = stringResource(R.string.save),
@@ -529,12 +535,14 @@ fun CounterScreen(
                     mainCounterCustomLabel = state.mainCounterCustomLabel,
                 ),
             onConfirm = { values ->
-                viewModel.setProjectDetails(
-                    values.name,
-                    values.craftType,
-                    values.mainCounterLabelType,
-                    values.mainCounterCustomLabel,
-                )
+                if (projectActionTargetId == viewModel.uiState.value.projectId) {
+                    viewModel.setProjectDetails(
+                        values.name,
+                        values.craftType,
+                        values.mainCounterLabelType,
+                        values.mainCounterCustomLabel,
+                    )
+                }
                 showProjectDetailsDialog = false
             },
             onDismiss = { showProjectDetailsDialog = false },
@@ -663,7 +671,7 @@ fun CounterScreen(
     }
 
     CounterProjectActionsSheetHost(
-        showSheet = showProjectActionsSheet,
+        showSheet = showProjectActionsSheet && projectActionTargetId == state.projectId,
         state =
             ProjectActionsSheetState(
                 reminderCount = state.reminders.count { !it.isCompleted },
@@ -672,10 +680,14 @@ fun CounterScreen(
                 stitchCount = state.stitchCount,
                 proStatus = state.proStatus,
                 isWorkSessionActiveForProject = state.activeSession?.projectId == state.projectId,
+                isCompleted = state.isCompleted,
             ),
         callbacks =
             ProjectActionsSheetCallbacks(
-                onDismiss = { showProjectActionsSheet = false },
+                onDismiss = {
+                    showProjectActionsSheet = false
+                    projectActionTargetId = null
+                },
                 onMeasurements = {
                     showProjectActionsSheet = false
                     state.projectId?.let(actions.onMeasurements)
@@ -739,6 +751,10 @@ fun CounterScreen(
                     showProjectActionsSheet = false
                     showCompleteDialog = true
                 },
+                onReactivateProject = {
+                    showProjectActionsSheet = false
+                    viewModel.reactivateProject()
+                },
                 onShowDeleteDialog = {
                     showProjectActionsSheet = false
                     showDeleteDialog = true
@@ -750,21 +766,23 @@ fun CounterScreen(
             ),
     )
 
-    state.projectId?.takeIf { showMoveFolderSheet }?.let { projectId ->
-        MoveProjectToFolderSheet(
-            projectId = projectId,
-            projectName = state.projectName,
-            onMoved = {
-                showMoveFolderSheet = false
-                coroutineScope.launch {
-                    snackbarHostState.showSnackbar(
-                        resources.getString(R.string.folder_project_moved),
-                    )
-                }
-            },
-            onDismiss = { showMoveFolderSheet = false },
-        )
-    }
+    state.projectId
+        ?.takeIf { showMoveFolderSheet && projectActionTargetId == it }
+        ?.let { projectId ->
+            MoveProjectToFolderSheet(
+                projectId = projectId,
+                projectName = state.projectName,
+                onMoved = {
+                    showMoveFolderSheet = false
+                    coroutineScope.launch {
+                        snackbarHostState.showSnackbar(
+                            resources.getString(R.string.folder_project_moved),
+                        )
+                    }
+                },
+                onDismiss = { showMoveFolderSheet = false },
+            )
+        }
 
     CounterCountersListSheetHost(
         showSheet = showCountersListSheet,
@@ -1457,6 +1475,7 @@ private fun StitchCountDialog(
     var stitchInput by rememberSaveable {
         mutableStateOf(currentStitchCount?.toString() ?: "")
     }
+    val parsedStitchCount = stitchInput.toIntOrNull()?.takeIf { it > 0 }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.stitches_per_row)) },
@@ -1477,7 +1496,10 @@ private fun StitchCountDialog(
             )
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(stitchInput.toIntOrNull()) }) {
+            TextButton(
+                onClick = { parsedStitchCount?.let(onConfirm) },
+                enabled = parsedStitchCount != null,
+            ) {
                 Text(stringResource(R.string.save))
             }
         },
@@ -1987,52 +2009,84 @@ private fun rememberCounterDialogActions(
     return remember(dependencies, viewModel) {
         CounterDialogActions(
             onAddReminderSave = { targetRow, repeatInterval, message ->
-                val editingReminderId = dependencies.editingReminderId
-                if (editingReminderId != null) {
-                    viewModel.updateReminder(editingReminderId, targetRow, repeatInterval, message)
-                    dependencies.onHideAddReminder()
-                } else {
-                    val saved = viewModel.addReminder(targetRow, repeatInterval, message)
-                    if (saved) {
-                        dependencies.onHideAddReminder()
-                    } else {
-                        dependencies.onReminderProRequired()
-                    }
-                }
+                saveReminder(viewModel, dependencies, targetRow, repeatInterval, message)
             },
             onAddReminderDismiss = dependencies.onHideAddReminder,
-            onAddCounterSave = { draft ->
-                if (viewModel.addProjectCounter(draft)) {
-                    dependencies.onHideAddCounter()
-                } else {
-                    dependencies.onCounterProRequired()
-                }
-            },
+            onAddCounterSave = { draft -> saveProjectCounter(viewModel, dependencies, draft) },
             onAddCounterDismiss = dependencies.onHideAddCounter,
             onResetConfirm = {
-                viewModel.reset()
+                runForCurrentProject(dependencies, viewModel) { viewModel.reset() }
                 dependencies.onHideResetDialog()
             },
             onResetDismiss = dependencies.onHideResetDialog,
             onCompleteConfirm = {
-                viewModel.completeProject()
+                runForCurrentProject(dependencies, viewModel) { completeProject() }
                 dependencies.onHideCompleteDialog()
             },
             onCompleteDismiss = dependencies.onHideCompleteDialog,
             onDeleteConfirm = {
-                dependencies.projectId?.let { viewModel.deleteProject(it) }
+                dependencies.projectId
+                    ?.takeIf { it == viewModel.uiState.value.projectId }
+                    ?.let { viewModel.deleteProject(it) }
                 dependencies.onHideDeleteDialog()
             },
             onDeleteDismiss = dependencies.onHideDeleteDialog,
             onRenameTextChange = dependencies.onRenameTextChange,
             onRenameConfirm = {
-                viewModel.setProjectName(dependencies.renameText.trim())
+                runForCurrentProject(dependencies, viewModel) {
+                    setProjectName(dependencies.renameText.trim())
+                }
                 dependencies.onHideRenameDialog()
             },
             onRenameDismiss = dependencies.onHideRenameDialog,
-            onStitchConfirm = viewModel::setStitchCount,
+            onStitchConfirm = { stitchCount ->
+                runForCurrentProject(dependencies, viewModel) { setStitchCount(stitchCount) }
+            },
             onStitchDismiss = dependencies.onHideStitchDialog,
         )
+    }
+}
+
+private fun saveReminder(
+    viewModel: CounterViewModel,
+    dependencies: CounterDialogActionDependencies,
+    targetRow: Int,
+    repeatInterval: Int?,
+    message: String,
+) {
+    val editingReminderId = dependencies.editingReminderId
+    if (editingReminderId != null) {
+        viewModel.updateReminder(editingReminderId, targetRow, repeatInterval, message)
+        dependencies.onHideAddReminder()
+        return
+    }
+
+    if (viewModel.addReminder(targetRow, repeatInterval, message)) {
+        dependencies.onHideAddReminder()
+    } else {
+        dependencies.onReminderProRequired()
+    }
+}
+
+private fun saveProjectCounter(
+    viewModel: CounterViewModel,
+    dependencies: CounterDialogActionDependencies,
+    draft: ProjectCounterDraft,
+) {
+    if (viewModel.addProjectCounter(draft)) {
+        dependencies.onHideAddCounter()
+    } else {
+        dependencies.onCounterProRequired()
+    }
+}
+
+private inline fun runForCurrentProject(
+    dependencies: CounterDialogActionDependencies,
+    viewModel: CounterViewModel,
+    action: CounterViewModel.() -> Unit,
+) {
+    if (dependencies.projectId == viewModel.uiState.value.projectId) {
+        viewModel.action()
     }
 }
 

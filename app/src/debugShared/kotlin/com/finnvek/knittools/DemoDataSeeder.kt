@@ -3,6 +3,7 @@ package com.finnvek.knittools
 import com.finnvek.knittools.data.local.DatabaseTransactionRunner
 import com.finnvek.knittools.data.local.DebugDemoDataSeeder
 import com.finnvek.knittools.data.local.KnitToolsDatabase
+import com.finnvek.knittools.repository.ProjectCounterMutationResult
 import com.finnvek.knittools.repository.ProjectCounterRepository
 import com.finnvek.knittools.repository.YarnCardRepository
 import dagger.Lazy
@@ -22,7 +23,15 @@ object DemoDataSeeder {
         ioDispatcher = ioDispatcher,
         database = database,
         transactionRunner = transactionRunner,
-        addCounter = { counter -> projectCounterRepository.get().addCounter(counter) },
-        saveYarnCard = { card -> yarnCardRepository.get().saveCardInCurrentTransaction(card) },
+        addCounter = { counter ->
+            when (val result = projectCounterRepository.get().addCounter(counter)) {
+                is ProjectCounterMutationResult.Success -> result.counterId
+                else -> error("Demolaskurin tallennus epäonnistui: ${result::class.simpleName}")
+            }
+        },
+        saveYarnCard = { card ->
+            yarnCardRepository.get().saveCardInCurrentTransaction(card)
+                ?: error("Demolankakortin tallennus epäonnistui")
+        },
     )
 }

@@ -13,8 +13,13 @@ class RemotePatternImageUrlTest {
             "   ",
             "http://images.example.test/pattern.png",
             "file:///tmp/pattern.png",
+            "content://images/pattern.png",
+            "data:image/png;base64,AAAA",
             "//images.example.test/pattern.png",
             "pattern.png",
+            "https://user:password" + "@images.example.test/pattern.png",
+            "https://images.example.test/a b.png",
+            "https://images.example.test/" + "a".repeat(2_100),
         ).forEach { url ->
             assertNull(normalizeRemotePatternImageUrl(url))
         }

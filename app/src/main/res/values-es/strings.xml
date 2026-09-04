@@ -99,6 +99,7 @@
     <string name="delete_project_message">¿Eliminar %s? Esto no se puede deshacer.</string>
     <string name="rename_project">Renombrar</string>
     <string name="complete_project">Terminar</string>
+    <string name="reactivate_project">Reactivar</string>
     <string name="complete_project_message">¿Terminar %s? El proyecto se moverá a tus proyectos terminados.</string>
     <string name="more_options">Más opciones</string>
 

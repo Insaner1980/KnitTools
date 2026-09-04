@@ -39,6 +39,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -47,6 +48,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
@@ -83,6 +86,7 @@ fun SavedPatternsScreen(
     actions: SavedPatternsActions,
 ) {
     var showDeleteConfirmDialog by rememberSaveable { mutableStateOf(false) }
+    var lastHandledDeleteErrorId by rememberSaveable { mutableLongStateOf(state.deleteErrorId) }
     val snackbarHostState = remember { SnackbarHostState() }
     val deleteFailedMessage = stringResource(R.string.generic_error_unknown)
 
@@ -91,7 +95,8 @@ fun SavedPatternsScreen(
     }
 
     LaunchedEffect(state.deleteErrorId) {
-        if (state.deleteErrorId > 0) {
+        if (state.deleteErrorId > lastHandledDeleteErrorId) {
+            lastHandledDeleteErrorId = state.deleteErrorId
             snackbarHostState.showSnackbar(deleteFailedMessage)
         }
     }
@@ -327,6 +332,7 @@ private fun SavedPatternItem(
                 backgroundColor = backgroundColor,
                 onClick = onClick,
                 onLongClick = onLongClick,
+                selection = isSelected.takeIf { isSelectMode },
             )
         } else {
             PatternCard(
@@ -340,7 +346,16 @@ private fun SavedPatternItem(
                     ),
                 onClick = onClick,
                 onLongClick = onLongClick,
-                modifier = Modifier.background(backgroundColor, MaterialTheme.shapes.large),
+                modifier =
+                    Modifier
+                        .background(backgroundColor, MaterialTheme.shapes.large)
+                        .then(
+                            if (isSelectMode) {
+                                Modifier.semantics { selected = isSelected }
+                            } else {
+                                Modifier
+                            },
+                        ),
             )
         }
         if (isSelectMode) {
@@ -359,13 +374,21 @@ private fun WebPatternCard(
     backgroundColor: androidx.compose.ui.graphics.Color,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
+    selection: Boolean?,
 ) {
     val host = pattern.webPatternUrlOrNull?.host.orEmpty()
     Surface(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .combinedClickable(onClick = onClick, onLongClick = onLongClick),
+                .combinedClickable(onClick = onClick, onLongClick = onLongClick)
+                .then(
+                    if (selection != null) {
+                        Modifier.semantics { selected = selection }
+                    } else {
+                        Modifier
+                    },
+                ),
         shape = MaterialTheme.shapes.large,
         color = backgroundColor,
     ) {

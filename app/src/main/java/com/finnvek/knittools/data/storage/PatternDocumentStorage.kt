@@ -102,7 +102,10 @@ class PatternDocumentStorage
                 .filterNot { file -> file == root }
                 .forEach { file ->
                     when {
-                        file.isFile && file.lastModified() <= staleBeforeMillis -> deleteCaptureFileIfPossible(file)
+                        file.isFile &&
+                            file.lastModified().let { modifiedAt ->
+                                modifiedAt > 0L && modifiedAt <= nowMillis && modifiedAt <= staleBeforeMillis
+                            } -> deleteCaptureFileIfPossible(file)
                         file.isDirectory && file.listFiles()?.isEmpty() == true -> deleteCaptureFileIfPossible(file)
                     }
                 }
@@ -291,6 +294,13 @@ class PatternDocumentStorage
             }
         }
 
+        internal fun inspectCameraCapture(file: File): PatternImageInfo {
+            if (file.length() > PatternImageImportLimits.MAX_BYTES_PER_IMAGE) {
+                stageFailure(PatternImageStageFailure.IMAGE_TOO_LARGE)
+            }
+            return validateStagedImage(file)
+        }
+
         internal suspend fun convertImagesToPdf(
             context: Context,
             projectId: Long,
@@ -377,13 +387,15 @@ class PatternDocumentStorage
          * Kopioi ulkoisen content URI:n PDF sovelluksen sisäiseen tallennustilaan.
          * Palauttaa sisäisen content URI:n tai null jos kopiointi epäonnistuu.
          */
-        fun copyPdfToInternal(
+        suspend fun copyPdfToInternal(
             context: Context,
             projectId: Long,
             sourceUri: Uri,
             fileName: String,
         ): String? {
             if (AppFileStorage.isAppOwnedUri(context, sourceUri)) return null
+            val maxCopyBytes = availablePdfCopyBytes(context) ?: return null
+            val copyContext = coroutineContext
 
             return try {
                 context.contentResolver.openInputStream(sourceUri)?.use { input ->
@@ -392,16 +404,47 @@ class PatternDocumentStorage
                             directory = File(context.filesDir, "pattern_pdfs/$projectId"),
                             fileName = fileName,
                         ) { targetFile ->
-                            targetFile.outputStream().use { output ->
-                                input.copyTo(output)
+                            PatternDocumentFiles.copyBounded(
+                                input = input,
+                                target = targetFile,
+                                maxBytes = maxCopyBytes,
+                            ) {
+                                copyContext.ensureActive()
                             }
+                            copyContext.ensureActive()
+                            if (!isReadablePdf(context, targetFile)) {
+                                throw IOException("Pattern PDF is not readable")
+                            }
+                            copyContext.ensureActive()
                         }
                     copiedFile?.toUri()?.toString()
                 }
+            } catch (failure: CancellationException) {
+                throw failure
             } catch (_: Exception) {
                 null
             }
         }
+
+        private fun availablePdfCopyBytes(context: Context): Long? =
+            try {
+                val storageManager = context.getSystemService(StorageManager::class.java)
+                val storageUuid = storageManager.getUuidForPath(context.filesDir)
+                (
+                    storageManager.getAllocatableBytes(storageUuid) -
+                        PatternImageImportLimits.MIN_FREE_SPACE_RESERVE_BYTES
+                ).takeIf { it > 0L }
+            } catch (_: IOException) {
+                null
+            }
+
+        private fun isReadablePdf(
+            context: Context,
+            file: File,
+        ): Boolean =
+            runCatching {
+                PdfPageRenderer(context, file.toUri()).use { renderer -> renderer.pageCount > 0 }
+            }.getOrDefault(false)
 
         private companion object {
             const val STALE_CAPTURE_MAX_AGE_MILLIS = 7L * 24L * 60L * 60L * 1000L
@@ -439,6 +482,29 @@ private fun deleteEmptySessionDirectory(directory: File) {
 }
 
 internal object PatternDocumentFiles {
+    fun copyBounded(
+        input: java.io.InputStream,
+        target: File,
+        maxBytes: Long,
+        onChunk: () -> Unit = {},
+    ): Long {
+        var copiedBytes = 0L
+        target.outputStream().use { output ->
+            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+            while (true) {
+                onChunk()
+                val read = input.read(buffer)
+                if (read < 0) break
+                if (read.toLong() > maxBytes - copiedBytes) {
+                    throw IOException("Pattern PDF copy limit exceeded")
+                }
+                output.write(buffer, 0, read)
+                copiedBytes += read
+            }
+        }
+        return copiedBytes
+    }
+
     fun safePdfFileName(
         fileName: String?,
         fallbackName: String = FALLBACK_NAME,

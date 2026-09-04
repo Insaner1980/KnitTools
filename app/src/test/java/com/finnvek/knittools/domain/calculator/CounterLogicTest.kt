@@ -21,6 +21,16 @@ class CounterLogicTest {
     }
 
     @Test
+    fun `increment saturates instead of overflowing`() {
+        val state = CounterState(count = Int.MAX_VALUE - 1, stepSize = Int.MAX_VALUE)
+
+        val result = CounterLogic.increment(state)
+
+        assertEquals(Int.MAX_VALUE, result.count)
+        assertEquals(Int.MAX_VALUE - 1, result.previousCount)
+    }
+
+    @Test
     fun `decrement decreases count by step size`() {
         val state = CounterState(count = 5, stepSize = 1)
         val result = CounterLogic.decrement(state)
@@ -32,6 +42,21 @@ class CounterLogicTest {
         val state = CounterState(count = 2, stepSize = 5)
         val result = CounterLogic.decrement(state)
         assertEquals(0, result.count)
+    }
+
+    @Test
+    fun `extreme decrement reaches zero without overflowing`() {
+        val state = CounterState(count = 2, stepSize = Int.MAX_VALUE)
+
+        val result = CounterLogic.decrement(state)
+
+        assertEquals(0, result.count)
+    }
+
+    @Test
+    fun `counter changes normalize a malformed nonpositive step`() {
+        assertEquals(6, CounterLogic.increment(CounterState(count = 5, stepSize = 0)).count)
+        assertEquals(4, CounterLogic.decrement(CounterState(count = 5, stepSize = -1)).count)
     }
 
     @Test

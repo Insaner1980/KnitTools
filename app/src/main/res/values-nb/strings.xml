@@ -97,6 +97,7 @@
     <string name="delete_project_message">Slette %s? Dette kan ikke angres.</string>
     <string name="rename_project">Gi nytt navn</string>
     <string name="complete_project">Fullfør</string>
+    <string name="reactivate_project">Aktiver på nytt</string>
     <string name="complete_project_message">Fullføre %s? Prosjektet flyttes til fullførte prosjekter.</string>
     <string name="more_options">Flere valg</string>
 

@@ -4,6 +4,7 @@ import android.app.Activity
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -33,6 +34,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -53,8 +57,10 @@ fun ProUpgradeScreen(
 ) {
     val viewModel = viewModelProvider()
     val proState by viewModel.proState.collectAsStateWithLifecycle()
+    val proStateReady by viewModel.proStateReady.collectAsStateWithLifecycle()
     val selectedOffer by viewModel.selectedOffer.collectAsStateWithLifecycle()
     val productStatus by viewModel.productStatus.collectAsStateWithLifecycle()
+    val purchaseFlowInFlight by viewModel.purchaseFlowInFlight.collectAsStateWithLifecycle()
     val statusMessageRes by viewModel.statusMessageRes.collectAsStateWithLifecycle()
     val isRestoring by viewModel.isRestoring.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -89,8 +95,10 @@ fun ProUpgradeScreen(
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             ProPurchaseSection(
                 proState = proState,
+                proStateReady = proStateReady,
                 price = selectedOffer?.formattedPrice,
                 productStatusProvider = { productStatus },
+                purchaseFlowInFlight = purchaseFlowInFlight,
                 isRestoring = isRestoring,
                 onPurchase = { (context as? Activity)?.let(onPurchase) },
                 onRestore = viewModel::restorePurchases,
@@ -158,8 +166,10 @@ private fun ProBenefitGroup(
 @Suppress("kotlin:S107", "kotlin:S3776") // Osto-osio näyttää kaikki laskutuksen tilat ja niiden sallitut toiminnot.
 private fun ProPurchaseSection(
     proState: ProState,
+    proStateReady: Boolean,
     price: String?,
     productStatusProvider: @Composable () -> BillingProductStatus,
+    purchaseFlowInFlight: Boolean,
     isRestoring: Boolean,
     onPurchase: () -> Unit,
     onRestore: () -> Unit,
@@ -167,6 +177,10 @@ private fun ProPurchaseSection(
     onStartTrial: () -> Unit,
 ) {
     val productStatus = productStatusProvider()
+    if (!proStateReady) {
+        CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+        return
+    }
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         when (proState.status) {
             ProStatus.TRIAL_NOT_STARTED -> {
@@ -208,14 +222,31 @@ private fun ProPurchaseSection(
         if (proState.status != ProStatus.PRO_PURCHASED) {
             when {
                 productStatus == BillingProductStatus.Available && price != null -> {
+                    val purchaseButtonModifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .semantics { liveRegion = LiveRegionMode.Polite }
+                    val purchaseButtonContent: @Composable RowScope.() -> Unit = {
+                        if (purchaseFlowInFlight) {
+                            CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                            Spacer(modifier = Modifier.width(8.dp))
+                        }
+                        Text(stringResource(R.string.pro_buy_for_price, price))
+                    }
                     if (proState.status == ProStatus.TRIAL_NOT_STARTED) {
-                        OutlinedButton(onClick = onPurchase, modifier = Modifier.fillMaxWidth()) {
-                            Text(stringResource(R.string.pro_buy_for_price, price))
-                        }
+                        OutlinedButton(
+                            onClick = onPurchase,
+                            modifier = purchaseButtonModifier,
+                            enabled = !purchaseFlowInFlight,
+                            content = purchaseButtonContent,
+                        )
                     } else {
-                        Button(onClick = onPurchase, modifier = Modifier.fillMaxWidth()) {
-                            Text(stringResource(R.string.pro_buy_for_price, price))
-                        }
+                        Button(
+                            onClick = onPurchase,
+                            modifier = purchaseButtonModifier,
+                            enabled = !purchaseFlowInFlight,
+                            content = purchaseButtonContent,
+                        )
                     }
                 }
 
@@ -245,7 +276,11 @@ private fun ProPurchaseSection(
             )
         }
 
-        TextButton(onClick = onRestore, enabled = !isRestoring) {
+        TextButton(
+            onClick = onRestore,
+            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+            enabled = !isRestoring,
+        ) {
             if (isRestoring) {
                 CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
                 Spacer(modifier = Modifier.width(8.dp))

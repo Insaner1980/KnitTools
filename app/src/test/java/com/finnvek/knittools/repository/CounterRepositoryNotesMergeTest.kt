@@ -75,4 +75,16 @@ class CounterRepositoryNotesMergeTest {
 
         assertEquals("Beta  \n\n---\n\n  Alpha", result)
     }
+
+    @Test
+    fun `retrying a merged replacement does not duplicate its note block`() {
+        val result =
+            mergeProjectNotes(
+                baseNotes = "Base",
+                requestedNotes = "Local edit",
+                currentNotes = "Local edit\n\n---\n\nExternal edit",
+            )
+
+        assertEquals("Local edit\n\n---\n\nExternal edit", result)
+    }
 }

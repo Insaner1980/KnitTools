@@ -99,6 +99,7 @@
     <string name="delete_project_message">Eliminare %s? Questa azione non può essere annullata.</string>
     <string name="rename_project">Rinomina</string>
     <string name="complete_project">Completa</string>
+    <string name="reactivate_project">Riattiva</string>
     <string name="complete_project_message">Completare %s? Il progetto verrà spostato tra quelli completati.</string>
     <string name="more_options">Altre opzioni</string>
 

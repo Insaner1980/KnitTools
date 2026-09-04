@@ -6,15 +6,35 @@ import org.junit.Test
 
 class CounterWidgetSourceTest {
     @Test
-    fun `small widget suppresses the optional section name`() {
+    fun `small widget uses a horizontal project and count layout`() {
+        val widget = ProjectSourceFiles.read(COUNTER_WIDGET)
+        val smallWidget =
+            widget
+                .substringAfter("private fun SmallWidget(")
+                .substringBefore("private fun MediumWidget(")
+
+        assertTrue(smallWidget.contains("Row("))
+        assertTrue(smallWidget.contains("fontSize = 11.sp"))
+        assertTrue(smallWidget.contains("fontSize = 22.sp"))
+        assertTrue(!smallWidget.contains("WidgetHeader("))
+    }
+
+    @Test
+    fun `widget count actions keep accessible touch size and localized names`() {
         val widget = ProjectSourceFiles.read(COUNTER_WIDGET)
 
-        assertTrue(
-            widget.contains(
-                "WidgetHeader(data = data, fontSize = 12.sp, showSection = false)",
-            ),
-        )
-        assertTrue(widget.contains("if (showSection) {"))
+        assertTrue(widget.countOccurrences("size = 48.dp") == 4)
+        assertTrue(widget.contains("WidgetCountAction.DECREMENT -> R.string.counter_decrease"))
+        assertTrue(widget.contains("WidgetCountAction.INCREMENT -> R.string.counter_increase"))
+        assertTrue(widget.contains(".semantics { contentDescription = actionDescription }"))
+    }
+
+    @Test
+    fun `project labels use the high contrast surface text color`() {
+        val widget = ProjectSourceFiles.read(COUNTER_WIDGET)
+
+        assertTrue(widget.countOccurrences("color = GlanceTheme.colors.onSurface,") == 5)
+        assertTrue(!widget.contains("color = GlanceTheme.colors.tertiary,"))
     }
 
     @Test
@@ -42,3 +62,5 @@ class CounterWidgetSourceTest {
             "app/src/main/java/com/finnvek/knittools/widget/CounterWidget.kt"
     }
 }
+
+private fun String.countOccurrences(value: String): Int = windowed(value.length).count { it == value }

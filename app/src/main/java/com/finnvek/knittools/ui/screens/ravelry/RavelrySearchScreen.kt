@@ -7,7 +7,6 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -63,6 +62,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -699,7 +700,6 @@ private fun SavedTabEmptyState() {
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun SavedPatternItem(
     pattern: SavedPattern,
@@ -717,24 +717,7 @@ private fun SavedPatternItem(
         }
 
     Box(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .combinedClickable(
-                    onClick = {
-                        if (isSelectMode) {
-                            onToggleSelection(pattern.id)
-                        } else {
-                            onSavedPatternDetail(pattern.id)
-                        }
-                    },
-                    onLongClick = {
-                        if (!isSelectMode) {
-                            onEnterSelectMode(pattern.id)
-                        }
-                        // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
-                    },
-                ),
+        modifier = Modifier.fillMaxWidth(),
     ) {
         PatternCard(
             state =
@@ -746,7 +729,6 @@ private fun SavedPatternItem(
                     availability = pattern.availability,
                 ),
             onClick = {
-                // CPD-ON
                 if (isSelectMode) {
                     onToggleSelection(pattern.id)
                 } else {
@@ -754,7 +736,22 @@ private fun SavedPatternItem(
                 }
                 // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
             },
-            modifier = Modifier.background(backgroundColor, MaterialTheme.shapes.large),
+            onLongClick =
+                if (isSelectMode) {
+                    null
+                } else {
+                    { onEnterSelectMode(pattern.id) }
+                },
+            modifier =
+                Modifier
+                    .background(backgroundColor, MaterialTheme.shapes.large)
+                    .then(
+                        if (isSelectMode) {
+                            Modifier.semantics { selected = isSelected }
+                        } else {
+                            Modifier
+                        },
+                    ),
         )
         if (isSelectMode) {
             SelectionIndicator(

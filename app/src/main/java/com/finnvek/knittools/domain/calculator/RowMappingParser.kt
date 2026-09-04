@@ -3,9 +3,13 @@ package com.finnvek.knittools.domain.calculator
 import com.finnvek.knittools.domain.model.advanceReadingLineForRowDelta
 import com.finnvek.knittools.domain.model.sanitizeReadingLineYFraction
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.decodeFromJsonElement
+
+internal const val ROW_MAPPING_MAX_MARKERS = 4_096
+internal const val ROW_MAPPING_MAX_JSON_LENGTH = 256 * 1_024
 
 @Serializable
 data class RowMarker(
@@ -36,18 +40,27 @@ private val rowMappingJson =
     }
 
 fun parseMapping(json: String?): List<RowMarker> {
-    if (json.isNullOrBlank()) return emptyList()
+    if (json == null || json.length > ROW_MAPPING_MAX_JSON_LENGTH || json.isBlank()) return emptyList()
     return runCatching {
-        rowMappingJson.decodeFromString<List<RowMarker>>(json)
+        (rowMappingJson.parseToJsonElement(json) as? JsonArray)
+            ?.asSequence()
+            ?.mapNotNull { element ->
+                runCatching { rowMappingJson.decodeFromJsonElement<RowMarker>(element) }.getOrNull()
+            }?.filter(RowMarker::isValid)
+            ?.distinctBy { marker -> marker.row to marker.page }
+            ?.take(ROW_MAPPING_MAX_MARKERS)
+            ?.sortedWith(compareBy<RowMarker> { it.page }.thenBy { it.row })
+            ?.toList()
+            .orEmpty()
     }.getOrDefault(emptyList())
-        .filter(RowMarker::isValid)
-        .sortedWith(compareBy<RowMarker> { it.page }.thenBy { it.row })
 }
 
 fun serializeMapping(markers: List<RowMarker>): String =
     rowMappingJson.encodeToString(
         markers
+            .filter(RowMarker::isValid)
             .distinctBy { it.row to it.page }
+            .take(ROW_MAPPING_MAX_MARKERS)
             .sortedWith(compareBy<RowMarker> { it.page }.thenBy { it.row }),
     )
 

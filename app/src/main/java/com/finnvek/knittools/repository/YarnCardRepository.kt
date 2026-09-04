@@ -7,6 +7,7 @@ import com.finnvek.knittools.data.local.CounterProjectEntity
 import com.finnvek.knittools.data.local.DatabaseTransactionRunner
 import com.finnvek.knittools.data.local.YarnCardDao
 import com.finnvek.knittools.data.local.YarnCardEntity
+import com.finnvek.knittools.data.local.distinctSqliteQueryChunks
 import com.finnvek.knittools.data.local.toDomain
 import com.finnvek.knittools.data.local.toEntity
 import com.finnvek.knittools.data.storage.AppFileStorage
@@ -16,6 +17,8 @@ import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.domain.model.YarnCardStatus
 import com.finnvek.knittools.domain.model.formatYarnCardIds
 import com.finnvek.knittools.domain.model.parseYarnCardIds
+import com.finnvek.knittools.pro.ProFeature
+import com.finnvek.knittools.pro.ProManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.NonCancellable
@@ -38,6 +41,7 @@ class YarnCardRepository
         private val transactionRunner: DatabaseTransactionRunner,
         @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
         private val yarnPhotoStorage: YarnPhotoStorage = YarnPhotoStorage(),
+        private val proManager: ProManager? = null,
     ) {
         private val photoStorageMutex = Mutex()
 
@@ -55,15 +59,22 @@ class YarnCardRepository
 
         suspend fun getCard(id: Long): YarnCard? = dao.getCard(id)?.toDomain()
 
-        suspend fun getCards(ids: List<Long>): List<YarnCard> = dao.getCards(ids).map { it.toDomain() }
+        suspend fun getCards(ids: List<Long>): List<YarnCard> =
+            ids
+                .distinctSqliteQueryChunks()
+                .flatMap { chunk -> dao.getCards(chunk) }
+                .map { it.toDomain() }
 
-        suspend fun saveCard(card: YarnCard): Long =
+        suspend fun saveCard(card: YarnCard): Long? =
             transactionRunner.run {
                 saveCardInCurrentTransaction(card)
             }
 
-        internal suspend fun saveCardInCurrentTransaction(card: YarnCard): Long {
+        internal suspend fun saveCardInCurrentTransaction(card: YarnCard): Long? {
             val existingCard = card.id.takeIf { it != 0L }?.let { dao.getCard(it) }
+            if (card.id != 0L && existingCard == null) return null
+            if (existingCard == null && proManager?.hasFeature(ProFeature.UNLIMITED_YARN) == false) return null
+            if (card.quantityInStash < 0) return null
             val projects = counterProjectDao.getAllProjectsOnce()
             val cardWithPreservedDetails = card.preserveSameCardDetails(existingCard)
             val linkedProjectId =
@@ -112,6 +123,17 @@ class YarnCardRepository
             id: Long,
             quantity: Int,
         ): Boolean = dao.updateQuantity(id, quantity) > 0
+
+        suspend fun changeQuantity(
+            id: Long,
+            delta: Int,
+        ): Boolean =
+            transactionRunner.run {
+                val current = dao.getCard(id) ?: return@run false
+                val quantity = current.quantityInStash.toLong() + delta.toLong()
+                if (quantity !in 0L..Int.MAX_VALUE.toLong()) return@run false
+                dao.updateQuantity(id, quantity.toInt()) > 0
+            }
 
         suspend fun updateStatus(
             id: Long,
@@ -180,12 +202,14 @@ class YarnCardRepository
         suspend fun deleteCard(id: Long) = deleteCards(listOf(id))
 
         suspend fun deleteCards(ids: List<Long>) {
-            if (ids.isEmpty()) return
+            val idChunks = ids.distinctSqliteQueryChunks()
+            if (idChunks.isEmpty()) return
+            val distinctIds = idChunks.flatten()
             val cards =
                 transactionRunner.run {
-                    val cards = dao.getCards(ids)
-                    removeCardIdsFromProjects(ids.toSet())
-                    dao.deleteByIds(ids)
+                    val cards = idChunks.flatMap { chunk -> dao.getCards(chunk) }
+                    removeCardIdsFromProjects(distinctIds.toSet())
+                    idChunks.forEach { chunk -> dao.deleteByIds(chunk) }
                     cards
                 }
             withContext(ioDispatcher + NonCancellable) {

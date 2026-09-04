@@ -97,6 +97,7 @@
     <string name="delete_project_message">Slette %s? Dette kan ikke fortrydes.</string>
     <string name="rename_project">Omdøb</string>
     <string name="complete_project">Afslut</string>
+    <string name="reactivate_project">Genaktivér</string>
     <string name="complete_project_message">Afslutte %s? Projektet flyttes til dine afsluttede projekter.</string>
     <string name="more_options">Flere muligheder</string>
 

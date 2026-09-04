@@ -20,9 +20,19 @@ import com.finnvek.knittools.domain.model.SavedPatternSource
 import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.domain.model.sanitizeMainCounterCustomLabel
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class EntityMappersTest {
+    @Test
+    fun `counter project mapper normalizes malformed count and step size`() {
+        val domain = CounterProjectEntity(count = -1, stepSize = 0).toDomain()
+
+        assertEquals(0, domain.count)
+        assertEquals(1, domain.stepSize)
+    }
+
     @Test
     fun `counter project mapper preserves all fields`() {
         assertCounterProjectMapping(
@@ -64,6 +74,33 @@ class EntityMappersTest {
                 updatedAt = 1_700_000_012L,
             ),
         )
+    }
+
+    @Test
+    fun `counter project mapping normalizes invalid stitch tracking state`() {
+        val missingTotal =
+            CounterProjectEntity(
+                id = 1L,
+                name = "Missing total",
+                stitchCount = 0,
+                stitchTrackingEnabled = true,
+                currentStitch = -1,
+            ).toDomain()
+        val outOfRange =
+            CounterProjectEntity(
+                id = 2L,
+                name = "Out of range",
+                stitchCount = 80,
+                stitchTrackingEnabled = true,
+                currentStitch = Int.MAX_VALUE,
+            ).toDomain()
+
+        assertEquals(null, missingTotal.stitchCount)
+        assertFalse(missingTotal.stitchTrackingEnabled)
+        assertEquals(0, missingTotal.currentStitch)
+        assertTrue(outOfRange.stitchTrackingEnabled)
+        assertEquals(80, outOfRange.currentStitch)
+        assertEquals(80, outOfRange.toEntity().currentStitch)
     }
 
     @Test
@@ -111,6 +148,23 @@ class EntityMappersTest {
                 createdAt = 1_700_000_102L,
             ),
         )
+    }
+
+    @Test
+    fun `project counter mapper safely degrades malformed persisted values`() {
+        val domain =
+            ProjectCounterEntity(
+                projectId = 1L,
+                name = "Malformed",
+                counterType = "FUTURE_TYPE",
+                count = -1,
+                stepSize = 0,
+                repeatAt = 4,
+            ).toDomain()
+
+        assertEquals(ProjectCounterType.COUNT_UP, domain.counterType)
+        assertEquals(0, domain.count)
+        assertEquals(1, domain.stepSize)
     }
 
     @Test

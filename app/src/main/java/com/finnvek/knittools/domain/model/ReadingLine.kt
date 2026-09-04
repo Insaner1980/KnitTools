@@ -7,10 +7,18 @@ const val READING_LINE_MAX_Y_FRACTION = 0.95f
 const val READING_LINE_ROW_STEP_FRACTION = 0.02f
 
 fun sanitizeReadingLineYFraction(yFraction: Float): Float =
-    yFraction.coerceIn(READING_LINE_MIN_Y_FRACTION, READING_LINE_MAX_Y_FRACTION)
+    if (yFraction.isFinite()) {
+        yFraction.coerceIn(READING_LINE_MIN_Y_FRACTION, READING_LINE_MAX_Y_FRACTION)
+    } else {
+        DEFAULT_READING_LINE_Y_FRACTION
+    }
 
 fun sanitizeReadingGuideFraction(fraction: Float): Float =
-    fraction.coerceIn(READING_LINE_MIN_Y_FRACTION, READING_LINE_MAX_Y_FRACTION)
+    if (fraction.isFinite()) {
+        fraction.coerceIn(READING_LINE_MIN_Y_FRACTION, READING_LINE_MAX_Y_FRACTION)
+    } else {
+        DEFAULT_READING_GUIDE_FRACTION
+    }
 
 fun advanceReadingLineForRowDelta(
     yFraction: Float,

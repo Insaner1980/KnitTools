@@ -55,10 +55,11 @@ class AppStartupSourceTest {
         assertTrue(
             app.contains(
                 "applicationScope.launch {\n" +
-                    "            yarnCardRepository.get().pruneUnreferencedPhotoFiles()\n" +
-                    "        }",
+                    "            try {\n" +
+                    "                yarnCardRepository.get().pruneUnreferencedPhotoFiles()",
             ),
         )
+        assertTrue(app.contains("Lankakuvien best-effort-siivous ei saa kaataa sovellusta."))
     }
 
     @Test
@@ -70,10 +71,11 @@ class AppStartupSourceTest {
         assertTrue(
             app.contains(
                 "applicationScope.launch(ioDispatcher) {\n" +
-                    "            patternDocumentStorage.get().pruneStaleCaptureImages(this@App)\n" +
-                    "        }",
+                    "            try {\n" +
+                    "                patternDocumentStorage.get().pruneStaleCaptureImages(this@App)",
             ),
         )
+        assertTrue(app.contains("Kaavakuvien best-effort-siivous ei saa kaataa sovellusta."))
     }
 
     @Test
@@ -118,7 +120,8 @@ class AppStartupSourceTest {
         assertTrue(app.contains("import com.finnvek.knittools.widget.CounterWidgetState"))
         assertTrue(app.contains("manager.initialStateReady.first { it }"))
         assertTrue(app.contains(".hasFeatureFlow(ProFeature.WIDGET)"))
-        assertTrue(app.contains(".collect { CounterWidgetState.refreshAll(this@App) }"))
+        assertTrue(app.contains("CounterWidgetState.refreshAll(this@App)"))
+        assertTrue(app.contains("catch (e: CancellationException)"))
         assertTrue(widgetState.contains("suspend fun refreshAll(context: Context)"))
         assertTrue(widgetState.contains("widget.update(context, glanceId)"))
     }

@@ -7,6 +7,7 @@ import com.finnvek.knittools.di.ApplicationScope
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.CounterRepository
+import com.finnvek.knittools.repository.ProjectNotesSaveResult
 import com.finnvek.knittools.ui.navigation.toPositiveRouteIdOrNull
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineScope
@@ -158,27 +159,38 @@ class NotesEditorViewModel
                 onSaved()
                 return
             }
-            viewModelScope.launch {
-                try {
-                    persistNotes(loadedProjectId, _uiState.value.notes)
-                } finally {
-                    onSaved()
+            saveJob =
+                viewModelScope.launch {
+                    if (persistNotes(loadedProjectId, _uiState.value.notes)) {
+                        onSaved()
+                    }
                 }
-            }
         }
 
         private suspend fun persistNotes(
             loadedProjectId: Long,
             requestedNotes: String,
-        ) {
-            val savedProject =
+        ): Boolean {
+            val result =
                 repository.saveProjectNotes(
                     id = loadedProjectId,
                     baseNotes = persistedNotes,
                     requestedNotes = requestedNotes,
-                ) ?: run {
-                    _uiState.update { it.copy(isMissingProject = true) }
-                    return
+                    creationAuthorized =
+                        savedStateHandle.get<Boolean>(NOTES_CREATION_AUTHORIZED_KEY) == true,
+                )
+            val savedProject =
+                when (result) {
+                    is ProjectNotesSaveResult.Saved -> result.project
+                    ProjectNotesSaveResult.ProjectUnavailable -> {
+                        _uiState.update { it.copy(isMissingProject = true) }
+                        return false
+                    }
+                    ProjectNotesSaveResult.FeatureUnavailable -> {
+                        _uiState.update { it.copy(canEditNotes = false) }
+                        return false
+                    }
+                    ProjectNotesSaveResult.PersistenceFailure -> return false
                 }
             persistedNotes = savedProject.notes
             if (savedProject.notesCreated) {
@@ -198,6 +210,7 @@ class NotesEditorViewModel
                     isMissingProject = false,
                 )
             }
+            return true
         }
 
         private fun scheduleSave(
@@ -242,6 +255,8 @@ class NotesEditorViewModel
                         id = loadedProjectId,
                         baseNotes = baseNotes,
                         requestedNotes = notesToSave,
+                        creationAuthorized =
+                            savedStateHandle.get<Boolean>(NOTES_CREATION_AUTHORIZED_KEY) == true,
                     )
                 } catch (_: Exception) {
                     // Viimeinen poistumistallennus ei saa kaataa sovellusta.

@@ -12,8 +12,12 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.yield
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -71,7 +75,7 @@ class RavelryAuthManagerTest {
 
             val noStateHandled = noPendingManager.handleCallback(callbackUri())
 
-            assertTrue(noStateHandled)
+            assertFalse(noStateHandled)
             assertEquals(RavelryAuthState.NotConnected, noPendingManager.authState.value)
             assertEquals(0, noPendingBackend.authStatusCalls)
 
@@ -93,6 +97,41 @@ class RavelryAuthManagerTest {
             assertEquals(RavelryAuthState.AwaitingBrowser, pendingManager.authState.value)
             assertEquals(0, pendingBackend.authStatusCalls)
         }
+
+    @Test
+    fun `callback accepts only the exact token free redirect shape`() {
+        val manager = RavelryAuthManager(FakeRavelryBackendClient())
+
+        assertTrue(manager.isOAuthCallback(callbackUri(state = "state-1")))
+        assertTrue(manager.isOAuthCallback(callbackUri(state = "state-1", error = "access_denied")))
+
+        val invalidCallbacks =
+            listOf(
+                callbackUri(state = "state-1", uriScheme = "https"),
+                callbackUri(state = "state-1", uriHost = "other"),
+                callbackUri(state = "state-1", uriAuthority = "user@ravelry-auth-complete"),
+                callbackUri(state = "state-1", uriPath = "/unexpected"),
+                callbackUri(state = "state-1", uriFragment = "fragment"),
+                callbackUri(),
+                callbackUri(queryValues = mapOf("state" to listOf("one", "two"))),
+                callbackUri(
+                    queryValues =
+                        mapOf(
+                            "state" to listOf("state-1"),
+                            "unexpected" to listOf("value"),
+                        ),
+                ),
+                callbackUri(
+                    queryValues =
+                        mapOf(
+                            "state" to listOf("state-1"),
+                            "error" to listOf(""),
+                        ),
+                ),
+            )
+
+        invalidCallbacks.forEach { uri -> assertFalse(manager.isOAuthCallback(uri)) }
+    }
 
     @Test
     fun `callback refreshes backend status when pending state was lost after process recreation`() =
@@ -137,6 +176,45 @@ class RavelryAuthManagerTest {
             assertEquals(RavelryAuthState.Cancelled, manager.authState.value)
         }
 
+    @Test
+    fun `late auth start response cannot overwrite completed disconnect`() =
+        runTest {
+            val startResponse = CompletableDeferred<RavelryStartAuthResponse>()
+            val manager = RavelryAuthManager(FakeRavelryBackendClient(startAuthResponse = startResponse))
+
+            val startResult = async { manager.startAuth() }
+            yield()
+            assertEquals(RavelryAuthState.Starting, manager.authState.value)
+
+            manager.disconnect()
+            startResponse.complete(
+                RavelryStartAuthResponse(
+                    authorizeUrl = AUTHORIZE_URL,
+                    state = "late-state",
+                    expiresAtMillis = 123L,
+                ),
+            )
+
+            assertEquals(null, startResult.await())
+            assertEquals(RavelryAuthState.NotConnected, manager.authState.value)
+        }
+
+    @Test
+    fun `late status response cannot overwrite completed disconnect`() =
+        runTest {
+            val statusResponse = CompletableDeferred<RavelryBackendAuthStatus>()
+            val manager = RavelryAuthManager(FakeRavelryBackendClient(authStatusResponse = statusResponse))
+
+            val refreshResult = async { manager.refreshAuthStatus() }
+            yield()
+
+            manager.disconnect()
+            statusResponse.complete(RavelryBackendAuthStatus(true, "stale-user"))
+
+            assertEquals(RavelryAuthState.NotConnected, refreshResult.await())
+            assertEquals(RavelryAuthState.NotConnected, manager.authState.value)
+        }
+
     private suspend fun <T> withParsedUri(
         rawUri: String,
         block: suspend (Uri) -> T,
@@ -154,32 +232,52 @@ class RavelryAuthManagerTest {
     private fun callbackUri(
         state: String? = null,
         error: String? = null,
-        status: String? = null,
-    ): Uri =
-        mockk {
-            every { scheme } returns RavelryAuthManager.REDIRECT_SCHEME
-            every { host } returns RavelryAuthManager.REDIRECT_HOST
-            every { getQueryParameter("state") } returns state
-            every { getQueryParameter("error") } returns error
-            every { getQueryParameter("status") } returns status
+        uriScheme: String = RavelryAuthManager.REDIRECT_SCHEME,
+        uriHost: String = RavelryAuthManager.REDIRECT_HOST,
+        uriAuthority: String = uriHost,
+        uriPath: String = "",
+        uriFragment: String? = null,
+        queryValues: Map<String, List<String>> =
+            buildMap {
+                state?.let { put("state", listOf(it)) }
+                error?.let { put("error", listOf(it)) }
+            },
+    ): Uri {
+        val uri = mockk<Uri>()
+        every { uri.scheme } returns uriScheme
+        every { uri.host } returns uriHost
+        every { uri.encodedAuthority } returns uriAuthority
+        every { uri.path } returns uriPath
+        every { uri.fragment } returns uriFragment
+        every { uri.queryParameterNames } returns queryValues.keys
+        every { uri.getQueryParameters(any()) } answers {
+            queryValues[firstArg()].orEmpty()
         }
+        every { uri.getQueryParameter(any()) } answers {
+            queryValues[firstArg()]?.firstOrNull()
+        }
+        return uri
+    }
 
     private class FakeRavelryBackendClient(
         private var authStatus: RavelryBackendAuthStatus = RavelryBackendAuthStatus(false),
+        private val startAuthResponse: CompletableDeferred<RavelryStartAuthResponse>? = null,
+        private val authStatusResponse: CompletableDeferred<RavelryBackendAuthStatus>? = null,
     ) : RavelryBackendClient {
         var disconnectCalls = 0
         var authStatusCalls = 0
 
         override suspend fun startAuth(): RavelryStartAuthResponse =
-            RavelryStartAuthResponse(
-                authorizeUrl = "https://www.ravelry.com/oauth2/auth",
-                state = "state-1",
-                expiresAtMillis = 123L,
-            )
+            startAuthResponse?.await()
+                ?: RavelryStartAuthResponse(
+                    authorizeUrl = AUTHORIZE_URL,
+                    state = "state-1",
+                    expiresAtMillis = 123L,
+                )
 
         override suspend fun authStatus(): RavelryBackendAuthStatus {
             authStatusCalls += 1
-            return authStatus
+            return authStatusResponse?.await() ?: authStatus
         }
 
         override suspend fun disconnect() {

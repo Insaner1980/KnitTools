@@ -151,13 +151,17 @@ interface CounterProjectDao {
         """
         UPDATE counter_projects
         SET stitchCount = :stitchCount,
+            stitchTrackingEnabled = :trackingEnabled,
+            currentStitch = :currentStitch,
             updatedAt = :updatedAt
         WHERE id = :id
         """,
     )
-    suspend fun updateStitchCount(
+    suspend fun updateStitchState(
         id: Long,
         stitchCount: Int?,
+        trackingEnabled: Boolean,
+        currentStitch: Int,
         updatedAt: Long,
     )
 
@@ -165,13 +169,6 @@ interface CounterProjectDao {
     suspend fun updateCurrentStitch(
         id: Long,
         stitch: Int,
-        updatedAt: Long,
-    )
-
-    @Query("UPDATE counter_projects SET stitchTrackingEnabled = :enabled, updatedAt = :updatedAt WHERE id = :id")
-    suspend fun updateStitchTrackingEnabled(
-        id: Long,
-        enabled: Boolean,
         updatedAt: Long,
     )
 
@@ -557,7 +554,7 @@ interface CounterProjectDao {
     @Query("SELECT * FROM counter_projects WHERE isCompleted = 1 ORDER BY completedAt DESC, id DESC")
     fun getCompletedProjects(): Flow<List<CounterProjectEntity>>
 
-    @Query("SELECT * FROM counter_projects WHERE isCompleted = 1 ORDER BY name COLLATE NOCASE ASC")
+    @Query("SELECT * FROM counter_projects WHERE isCompleted = 1 ORDER BY name COLLATE NOCASE ASC, id DESC")
     fun getCompletedProjectsByName(): Flow<List<CounterProjectEntity>>
 
     @Query("SELECT * FROM counter_projects WHERE isCompleted = 1 ORDER BY createdAt DESC, id DESC")

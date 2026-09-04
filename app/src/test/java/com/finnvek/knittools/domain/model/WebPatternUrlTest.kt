@@ -70,15 +70,15 @@ class WebPatternUrlTest {
     fun `recognizes only existing Ravelry pattern URL ownership`() {
         assertTrue(validUrl("https://www.ravelry.com/patterns/library/cozy-hat").isRavelryPattern)
         assertTrue(validUrl("https://ravelry.com/patterns/library/cozy-hat?buy=1").isRavelryPattern)
-        assertTrue(validUrl("https://www.ravelry.com/patterns/%6cibrary/cozy-hat").isRavelryPattern)
-        val encodedPath = validUrl("https://www.ravelry.com/patterns%2Flibrary/cozy-hat")
-        assertTrue(encodedPath.isRavelryPattern)
-        assertEquals(
-            "https://www.ravelry.com/patterns%2Flibrary/cozy-hat",
-            encodedPath.canonicalUrl,
-        )
+        assertTrue(validUrl("https://ravelry.com:443/patterns/library/cozy-hat#notes").isRavelryPattern)
         assertFalse(validUrl("https://www.ravelry.com/patterns/search").isRavelryPattern)
         assertFalse(validUrl("http://www.ravelry.com/patterns/library/cozy-hat").isRavelryPattern)
+        assertFalse(validUrl("https://www.ravelry.com:8443/patterns/library/cozy-hat").isRavelryPattern)
+        assertFalse(validUrl("https://www.ravelry.com/patterns/library/cozy-hat/extra").isRavelryPattern)
+        assertFalse(validUrl("https://www.ravelry.com/patterns/%6cibrary/cozy-hat").isRavelryPattern)
+        assertFalse(validUrl("https://www.ravelry.com/patterns%2Flibrary/cozy-hat").isRavelryPattern)
+        assertFalse(validUrl("https://www.ravelry.com/patterns/library/cozy%2Fhat").isRavelryPattern)
+        assertFalse(validUrl("https://www.ravelry.com/patterns/library/cozy%5Chat").isRavelryPattern)
     }
 
     @Test

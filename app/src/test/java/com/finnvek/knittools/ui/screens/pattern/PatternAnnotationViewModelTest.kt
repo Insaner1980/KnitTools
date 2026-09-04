@@ -343,6 +343,38 @@ class PatternAnnotationViewModelTest {
             assertEquals(null, viewModel.uiState.value.draftStroke)
         }
 
+    // CPD-OFF: Sivunvaihtotestin skenaariokohtainen asetelma pidetaan testin yhteydessa.
+    @Test
+    fun `page change discards an unfinished stroke without persisting it`() =
+        runTest {
+            val layerRepository = mockk<PatternAnnotationLayerRepository>()
+            val annotationRepository = mockk<PatternAnnotationRepository>(relaxed = true)
+            val documentKey = PatternAnnotationDocumentKey.savedPattern(12L)
+            coEvery { layerRepository.getOrCreateMasterLayer(12L, documentKey) } returns
+                layer(id = 31L, owner = PatternAnnotationOwner.SavedPattern(12L, documentKey))
+            every { annotationRepository.observePage(31L, any()) } returns flowOf(emptyList())
+            val viewModel =
+                PatternAnnotationViewModel(
+                    SavedStateHandle(mapOf("savedPatternId" to 12L)),
+                    mockk(relaxed = true),
+                    layerRepository,
+                    annotationRepository,
+                    projectDocumentRepository = mockk(),
+                )
+            advanceUntilIdle()
+
+            viewModel.setActiveTool(PatternAnnotationTool.PEN)
+            viewModel.beginStroke(NormalizedPatternPoint(0.1f, 0.2f))
+            viewModel.appendStrokePoint(NormalizedPatternPoint(0.4f, 0.5f))
+            viewModel.setCurrentPage(1)
+            advanceUntilIdle()
+
+            coVerify(exactly = 0) { annotationRepository.insertAnnotation(any()) }
+            assertEquals(null, viewModel.uiState.value.draftStroke)
+            assertEquals(1, viewModel.uiState.value.currentPage)
+        }
+    // CPD-ON
+
     @Test
     fun `failed stroke write keeps draft available for retry`() =
         runTest {
@@ -737,6 +769,47 @@ class PatternAnnotationDocumentSelectionTest {
                 viewModel.uiState.value.projectAnnotations
                     .map { it.layerId },
             )
+        }
+
+    @Test
+    fun `late write from previous document cannot enter the new documents undo history`() =
+        runTest {
+            // CPD-OFF: Dokumentinvaihtotestin skenaariokohtainen asetelma pidetaan testin yhteydessa.
+            val route = projectRoute()
+            val secondaryKey = PatternAnnotationDocumentKey.savedPattern(13L)
+            val secondaryLayer = layer(id = 42L, owner = PatternAnnotationOwner.Project(7L, secondaryKey))
+            val writeGate = CompletableDeferred<Unit>()
+            route.documents.value += projectDocument(id = 52L, savedPatternId = 13L, isPrimary = false)
+            coEvery { route.layerRepository.getOrCreateMasterLayer(13L, secondaryKey) } returns
+                layer(id = 32L, owner = PatternAnnotationOwner.SavedPattern(13L, secondaryKey))
+            every { route.annotationRepository.observePage(any(), 0) } returns flowOf(emptyList())
+            coEvery { route.annotationRepository.insertAnnotation(any()) } coAnswers {
+                writeGate.await()
+                77L
+            }
+            val viewModel = route.viewModel()
+            // CPD-ON
+            advanceUntilIdle()
+
+            viewModel.setActiveTool(PatternAnnotationTool.PEN)
+            viewModel.beginStroke(NormalizedPatternPoint(0.1f, 0.2f))
+            viewModel.appendStrokePoint(NormalizedPatternPoint(0.4f, 0.5f))
+            viewModel.commitStroke(simplificationTolerance = 0f)
+            runCurrent()
+
+            route.projectLayers.value = listOf(route.projectLayer.copy(isActive = false), secondaryLayer)
+            runCurrent()
+            assertEquals(42L, viewModel.uiState.value.editableLayerId)
+
+            writeGate.complete(Unit)
+            advanceUntilIdle()
+
+            coVerify(exactly = 1) {
+                route.annotationRepository.insertAnnotation(match { it.layerId == 41L })
+            }
+            assertFalse(viewModel.uiState.value.canUndo)
+            assertFalse(viewModel.uiState.value.canRedo)
+            assertEquals(null, viewModel.uiState.value.draftStroke)
         }
 
     @Test

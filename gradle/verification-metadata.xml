@@ -8449,6 +8449,11 @@
             <sha256 value="3340ec156dc8f5f45adc04cf7783c19d7ead212ebb02fa242fa2b84f539f83ab" origin="MavenRepo .sha256"/>
          </artifact>
       </component>
+      <component group="io.coil-kt.coil3" name="coil-network-core-jvm" version="3.5.0">
+         <artifact name="coil-network-core-jvm-3.5.0.module">
+            <sha256 value="95acb5407522a70c08e7a0e58c90c8d0e1169a877bb1d74dda0bf3da9ce5b916" origin="Direct local artifact byte hash"/>
+         </artifact>
+      </component>
       <component group="io.coil-kt.coil3" name="coil-network-ktor3" version="3.5.0">
          <artifact name="coil-network-ktor3-3.5.0.module">
             <sha256 value="fc282aa25dde5d38d63de1a2120b533434c8b76a4192d42ab5bcda24eaf47f8e" origin="MavenRepo .sha256"/>
@@ -8463,6 +8468,11 @@
          </artifact>
          <artifact name="coil-network-ktor3.aar">
             <sha256 value="2f8a7b152110f406fbb708172ca0893d8a6b1ae082a7e0982aaf54e076afd522" origin="MavenRepo .sha256"/>
+         </artifact>
+      </component>
+      <component group="io.coil-kt.coil3" name="coil-network-ktor3-jvm" version="3.5.0">
+         <artifact name="coil-network-ktor3-jvm-3.5.0.module">
+            <sha256 value="5750d4d22ada180cfda47632bd2c7b52a010c8c9ac84a5caecfc973fce22d1b1" origin="Direct local artifact byte hash"/>
          </artifact>
       </component>
       <component group="io.github.detekt.sarif4k" name="sarif4k" version="0.5.0">

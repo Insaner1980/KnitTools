@@ -97,6 +97,7 @@
     <string name="delete_project_message">%s verwijderen? Dit kan niet ongedaan worden gemaakt.</string>
     <string name="rename_project">Naam wijzigen</string>
     <string name="complete_project">Voltooien</string>
+    <string name="reactivate_project">Opnieuw activeren</string>
     <string name="complete_project_message">%s voltooien? Het project wordt naar je voltooide projecten verplaatst.</string>
     <string name="more_options">Meer opties</string>
 

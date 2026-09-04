@@ -18,6 +18,7 @@ import com.finnvek.knittools.data.local.KnitToolsDatabase
 import com.finnvek.knittools.domain.model.MainCounterChange
 import com.finnvek.knittools.repository.CounterRepository
 import com.finnvek.knittools.repository.ProjectCreationResult
+import com.finnvek.knittools.repository.ProjectNotesSaveResult
 import com.finnvek.knittools.widget.WidgetEntryPoint
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.Dispatchers
@@ -191,7 +192,7 @@ class GaugeNavigationRuntimeTest {
             val created = repository.createProject(fixtureProjectName, canCreateAdditionalProjects = true)
             check(created is ProjectCreationResult.Created) { "Could not create the measurement navigation fixture" }
             fixtureProjectId = created.projectId
-            checkNotNull(repository.saveProjectNotes(fixtureProjectId, "", FIXTURE_NOTES))
+            check(repository.saveProjectNotes(fixtureProjectId, "", FIXTURE_NOTES) is ProjectNotesSaveResult.Saved)
             check(repository.applyMainCounterChange(fixtureProjectId, MainCounterChange.Increment))
         }
     }

@@ -11,6 +11,7 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.runs
 import io.mockk.unmockkStatic
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -19,6 +20,14 @@ import java.nio.file.Files
 import kotlin.io.path.createTempFile
 
 class ProgressPhotoStorageTest {
+    @Test
+    fun `bitmap sampling bounds the decoded longest edge before allocation`() {
+        assertEquals(1, calculateBitmapInSampleSize(1_920, 1_080, 1_920))
+        assertEquals(2, calculateBitmapInSampleSize(3_840, 2_160, 1_920))
+        assertEquals(4, calculateBitmapInSampleSize(1, 4_000, 1_920))
+        assertEquals(2_097_152, calculateBitmapInSampleSize(Int.MAX_VALUE, 1, 1_920))
+    }
+
     @Test
     fun `deletePhoto removes only a file owned by the requested project`() {
         val filesDir = Files.createTempDirectory("knittools-progress-root").toFile()
@@ -58,7 +67,7 @@ class ProgressPhotoStorageTest {
         val targetFile = createTempFile(suffix = ".jpg").toFile()
 
         every { context.contentResolver } returns contentResolver
-        every { contentResolver.openInputStream(sourceUri) } returns ByteArrayInputStream(byteArrayOf(1))
+        every { contentResolver.openInputStream(sourceUri) } answers { ByteArrayInputStream(byteArrayOf(1)) }
         every { original.width } returns 1
         every { original.height } returns 4_000
         every { original.recycle() } just runs
@@ -68,7 +77,17 @@ class ProgressPhotoStorageTest {
         mockkStatic(BitmapFactory::class)
         mockkStatic(Bitmap::class)
         try {
-            every { BitmapFactory.decodeStream(any()) } returns original
+            every { BitmapFactory.decodeStream(any(), null, any()) } answers {
+                thirdArg<BitmapFactory.Options>().let { options ->
+                    if (options.inJustDecodeBounds) {
+                        options.outWidth = 1
+                        options.outHeight = 4_000
+                        null
+                    } else {
+                        original
+                    }
+                }
+            }
             every { Bitmap.createScaledBitmap(original, any(), any(), true) } answers {
                 require(secondArg<Int>() > 0) { "Scaled width must be positive" }
                 require(thirdArg<Int>() > 0) { "Scaled height must be positive" }
@@ -88,21 +107,33 @@ class ProgressPhotoStorageTest {
         val context = mockk<Context>()
         val contentResolver = mockk<ContentResolver>()
         val sourceUri = mockk<Uri>()
+        // CPD-OFF: Pakkausvirhetestin skenaariokohtainen bitmap-asetelma pidetaan testin yhteydessa.
         val bitmap = mockk<Bitmap>()
         val targetFile =
             createTempFile(suffix = ".jpg")
                 .toFile()
 
         every { context.contentResolver } returns contentResolver
-        every { contentResolver.openInputStream(sourceUri) } returns ByteArrayInputStream(byteArrayOf(1))
+        every { contentResolver.openInputStream(sourceUri) } answers { ByteArrayInputStream(byteArrayOf(1)) }
         every { bitmap.width } returns 64
         every { bitmap.height } returns 64
         every { bitmap.compress(Bitmap.CompressFormat.JPEG, any(), any()) } returns false
         every { bitmap.recycle() } just runs
+        // CPD-ON
 
         mockkStatic(BitmapFactory::class)
         try {
-            every { BitmapFactory.decodeStream(any()) } returns bitmap
+            every { BitmapFactory.decodeStream(any(), null, any()) } answers {
+                thirdArg<BitmapFactory.Options>().let { options ->
+                    if (options.inJustDecodeBounds) {
+                        options.outWidth = 64
+                        options.outHeight = 64
+                        null
+                    } else {
+                        bitmap
+                    }
+                }
+            }
 
             val saved = ProgressPhotoStorage().compressAndSave(context, sourceUri, targetFile)
 

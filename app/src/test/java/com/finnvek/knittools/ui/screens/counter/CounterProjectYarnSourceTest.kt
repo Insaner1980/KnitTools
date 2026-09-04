@@ -51,6 +51,14 @@ class CounterProjectYarnSourceTest {
         assertTrue(strings.contains("""<string name="add_yarn_to_project_body">"""))
     }
 
+    @Test
+    fun `linked yarn indicator uses the active theme palette with stable id mapping`() {
+        val sheet = ProjectSourceFiles.read(YARN_MANAGEMENT_SHEET)
+
+        assertTrue(sheet.contains("yarnColorForId(id, MaterialTheme.knitToolsColors.yarnPalette)"))
+        assertFalse(sheet.contains(".background(YarnColors["))
+    }
+
     private companion object {
         private const val COUNTER_VIEW_MODEL =
             "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterViewModel.kt"

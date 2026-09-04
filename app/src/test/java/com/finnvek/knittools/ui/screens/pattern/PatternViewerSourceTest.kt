@@ -20,8 +20,13 @@ class PatternViewerSourceTest {
 
         assertTrue(source.contains("readingLineEnabled = selectedDocument?.readingLineEnabled == true"))
         assertTrue(source.contains("readingLineYFraction = readingLinePreviewYFraction"))
-        assertTrue(source.contains("onReadingLineToggle = counterViewModel::setReadingLineEnabled"))
-        assertTrue(source.contains("counterViewModel.commitManualReadingLinePosition(sanitizedYFraction)"))
+        assertTrue(source.contains("counterViewModel.setReadingLineEnabled(enabled, selectedDocument?.id)"))
+        assertTrue(
+            source.contains(
+                "counterViewModel.commitManualReadingLinePosition(" +
+                    "sanitizedYFraction, selectedDocument?.id)",
+            ),
+        )
     }
 
     @Test
@@ -132,7 +137,11 @@ class PatternViewerSourceTest {
         assertTrue(projectViewer.contains("onReadingLineYFractionCommit = { yFraction ->"))
         // CPD-ON
         assertTrue(projectViewer.contains("val sanitizedYFraction = sanitizeReadingLineYFraction(yFraction)"))
-        assertTrue(projectViewer.contains("counterViewModel.commitManualReadingLinePosition(sanitizedYFraction)"))
+        assertTrue(
+            projectViewer.contains(
+                "counterViewModel.commitManualReadingLinePosition(sanitizedYFraction, selectedDocument?.id)",
+            ),
+        )
         assertFalse(
             projectViewer
                 .blockBetween(
@@ -296,7 +305,7 @@ class PatternViewerSourceTest {
         assertTrue(projectViewer.contains("row = counterState.counter.count"))
         assertTrue(projectViewer.contains("page = currentPage"))
         assertTrue(projectViewer.contains("onClearReadingLinePageMarkers = {"))
-        assertTrue(projectViewer.contains("counterViewModel.removePatternRowMarkersForPage(currentPage)"))
+        assertTrue(projectViewer.contains("counterViewModel.removePatternRowMarkersForPage("))
         assertFalse(libraryViewer.contains("removePatternRowMarker"))
         assertFalse(libraryViewer.contains("removePatternRowMarkersForPage"))
         assertFalse(libraryViewer.contains("pattern_save_line_as_row"))
@@ -319,10 +328,11 @@ class PatternViewerSourceTest {
 
         assertTrue(projectViewer.contains("var rowCalibrationState by remember"))
         assertTrue(projectViewer.contains("onStartRowCalibration = {"))
-        assertTrue(projectViewer.contains("counterViewModel.setReadingLineEnabled(true)"))
+        assertTrue(projectViewer.contains("counterViewModel.setReadingLineEnabled(true, selectedDocument?.id)"))
         assertTrue(projectViewer.contains("RowCalibrationPanel("))
         assertTrue(projectViewer.contains("createCalibrationRowMarkers("))
-        assertTrue(projectViewer.contains("counterViewModel.mergePatternRowMarkers(markers)"))
+        assertTrue(projectViewer.contains("counterViewModel.mergePatternRowMarkers("))
+        assertTrue(projectViewer.contains("documentRowMapping = selectedDocument?.rowMapping"))
         assertTrue(projectViewer.contains("rowCalibrationState = null"))
         assertFalse(libraryViewer.contains("RowCalibrationPanel("))
         assertFalse(libraryViewer.contains("mergePatternRowMarkers"))
@@ -389,6 +399,11 @@ class PatternViewerSourceTest {
     @Test
     fun `counter view model can remove row markers by row page and by page`() {
         val source = ProjectSourceFiles.read(COUNTER_VIEW_MODEL)
+        val currentMarkersBlock =
+            source.blockBetween(
+                "private fun currentPatternRowMarkers(",
+                "private fun persistCount(",
+            )
         val removeRowBlock =
             source.blockBetween(
                 "fun removePatternRowMarker(",
@@ -400,14 +415,15 @@ class PatternViewerSourceTest {
                 "fun mergePatternRowMarkers(",
             )
 
-        assertTrue(removeRowBlock.contains("val currentMarkers = parseMapping(state.patternRowMapping)"))
+        assertTrue(removeRowBlock.contains("currentPatternRowMarkers(documentId, documentRowMapping)"))
         assertTrue(removeRowBlock.contains("filterNot { it.row == row && it.page == page }"))
         assertTrue(removeRowBlock.contains("if (markers.size == currentMarkers.size) return"))
-        assertTrue(removeRowBlock.contains("updatePatternRowMapping(serializeMapping(markers))"))
-        assertTrue(removePageBlock.contains("val currentMarkers = parseMapping(state.patternRowMapping)"))
+        assertTrue(removeRowBlock.contains("updatePatternRowMapping(serializeMapping(markers), documentId)"))
+        assertTrue(removePageBlock.contains("currentPatternRowMarkers(documentId, documentRowMapping)"))
         assertTrue(removePageBlock.contains("filterNot { it.page == page }"))
         assertTrue(removePageBlock.contains("if (markers.size == currentMarkers.size) return"))
-        assertTrue(removePageBlock.contains("updatePatternRowMapping(serializeMapping(markers))"))
+        assertTrue(removePageBlock.contains("updatePatternRowMapping(serializeMapping(markers), documentId)"))
+        assertTrue(currentMarkersBlock.contains("return parseMapping(mapping)"))
     }
 
     @Test
@@ -433,14 +449,25 @@ class PatternViewerSourceTest {
                 "fun mergePatternRowMarkers(",
                 "private fun persistCount(",
             )
+        val currentMarkersBlock =
+            source.blockBetween(
+                "private fun currentPatternRowMarkers(",
+                "private fun persistCount(",
+            )
 
         listOf(upsertBlock, removeRowBlock, removePageBlock, mergeBlock).forEach { block ->
-            assertTrue(block.contains("val state = _uiState.value"))
-            assertTrue(block.contains("if (state.patternUri == null) return"))
+            assertTrue(block.contains("currentPatternRowMarkers(documentId, documentRowMapping)"))
         }
-        assertTrue(removeRowBlock.contains("val currentMarkers = parseMapping(state.patternRowMapping)"))
+        assertTrue(currentMarkersBlock.contains("val state = _uiState.value"))
+        assertTrue(currentMarkersBlock.contains("if (documentId == null && state.patternUri == null) return null"))
+        assertTrue(
+            currentMarkersBlock.contains(
+                "val mapping = if (documentId == null) state.patternRowMapping else documentRowMapping",
+            ),
+        )
+        assertTrue(removeRowBlock.contains("currentPatternRowMarkers(documentId, documentRowMapping)"))
         assertTrue(removeRowBlock.contains("if (markers.size == currentMarkers.size) return"))
-        assertTrue(removePageBlock.contains("val currentMarkers = parseMapping(state.patternRowMapping)"))
+        assertTrue(removePageBlock.contains("currentPatternRowMarkers(documentId, documentRowMapping)"))
         assertTrue(removePageBlock.contains("if (markers.size == currentMarkers.size) return"))
     }
 

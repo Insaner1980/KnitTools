@@ -18,6 +18,8 @@ import com.finnvek.knittools.domain.model.KnitSession
 import com.finnvek.knittools.domain.model.ProjectDocument
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.SavedPatternSource
+import com.finnvek.knittools.pro.ProFeature
+import com.finnvek.knittools.pro.ProManager
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.coVerifyOrder
@@ -29,10 +31,13 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
+// Yksi testiluokka pitää CounterRepositoryn ja sen yhteisen fixture-tilan samassa sopimusrajassa.
+@Suppress("LargeClass")
 class CounterRepositoryDomainApiTest {
     private lateinit var projectDao: CounterProjectDao
     private lateinit var sessionDao: SessionDao
@@ -40,6 +45,7 @@ class CounterRepositoryDomainApiTest {
     private lateinit var savedPatternRepository: SavedPatternRepository
     private lateinit var projectDocumentRepository: ProjectDocumentRepository
     private lateinit var projectFolderDao: ProjectFolderDao
+    private lateinit var proManager: ProManager
     private lateinit var repository: CounterRepository
 
     @Before
@@ -50,6 +56,8 @@ class CounterRepositoryDomainApiTest {
         savedPatternRepository = mockk(relaxed = true)
         projectDocumentRepository = mockk(relaxed = true)
         projectFolderDao = mockk(relaxed = true)
+        proManager = mockk()
+        every { proManager.hasFeature(any()) } returns true
         coEvery { projectDao.getAllProjectsOnce() } returns emptyList()
         repository = createRepository()
     }
@@ -70,6 +78,7 @@ class CounterRepositoryDomainApiTest {
             projectFolderDao = projectFolderDao,
             transactionRunner = transactionRunner,
             ioDispatcher = Dispatchers.Unconfined,
+            proManager = proManager,
         )
 
     @Test
@@ -132,6 +141,7 @@ class CounterRepositoryDomainApiTest {
                     linkedPatternId = 9L,
                     patternUri = "content://pattern",
                     patternName = "Rib cardigan",
+                    stitchCount = 96,
                     stitchTrackingEnabled = true,
                     currentStitch = 44,
                 ),
@@ -326,6 +336,22 @@ class CounterRepositoryDomainApiTest {
         }
 
     @Test
+    fun `createProject rechecks additional project entitlement inside transaction`() =
+        runTest {
+            every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } returns false
+            coEvery { projectDao.getProjectCount() } returns 1
+
+            val result =
+                repository.createProject(
+                    name = "Second project",
+                    canCreateAdditionalProjects = true,
+                )
+
+            assertEquals(ProjectCreationResult.LimitReached, result)
+            coVerify(exactly = 0) { projectDao.insert(any()) }
+        }
+
+    @Test
     fun `updateProjectName hylkaa tyhjan nimen ennen tietokantakirjoitusta`() =
         runTest {
             val result = repository.updateProjectName(7L, "   ")
@@ -337,16 +363,95 @@ class CounterRepositoryDomainApiTest {
     @Test
     fun `updateProjectName tekee nimestä uniikin muita projekteja vasten`() =
         runTest {
+            val runner = ProjectCreationTransactionRunner()
             coEvery { projectDao.getAllProjectsOnce() } returns
                 listOf(
                     CounterProjectEntity(id = 1L, name = "Sukat"),
                     CounterProjectEntity(id = 7L, name = "Pipo"),
                 )
 
-            val savedName = repository.updateProjectName(7L, "Sukat")
+            val savedName = createRepository(transactionRunner = runner).updateProjectName(7L, "Sukat")
 
             assertEquals("Sukat (2)", savedName)
+            assertEquals(1, runner.runCount)
             coVerify { projectDao.updateName(7L, "Sukat (2)", any()) }
+        }
+
+    @Test
+    fun `saveProjectNotes enforces first-use entitlement at repository boundary`() =
+        runTest {
+            every { proManager.hasFeature(ProFeature.NOTES) } returns false
+            coEvery { projectDao.getProject(7L) } returns
+                CounterProjectEntity(id = 7L, name = "Project", notesCreated = false)
+
+            val result = repository.saveProjectNotes(7L, "", "First note")
+
+            assertEquals(ProjectNotesSaveResult.FeatureUnavailable, result)
+            coVerify(exactly = 0) { projectDao.updateNotes(any(), any(), any()) }
+        }
+
+    @Test
+    fun `saveProjectNotes allows existing notes and preserves monotonic use flag when blanked`() =
+        runTest {
+            every { proManager.hasFeature(ProFeature.NOTES) } returns false
+            coEvery { projectDao.getProject(7L) } returns
+                CounterProjectEntity(
+                    id = 7L,
+                    name = "Project",
+                    notes = "Existing note",
+                    notesCreated = true,
+                )
+
+            val result = repository.saveProjectNotes(7L, "Existing note", "")
+
+            val saved = result as ProjectNotesSaveResult.Saved
+            assertEquals("", saved.project.notes)
+            assertTrue(saved.project.notesCreated)
+            coVerify(exactly = 1) { projectDao.updateNotes(7L, "", any()) }
+        }
+
+    @Test
+    fun `saveProjectNotes maps database failure without reporting success`() =
+        runTest {
+            coEvery { projectDao.getProject(7L) } returns
+                CounterProjectEntity(id = 7L, name = "Project", notesCreated = true)
+            val failureRepository =
+                createRepository(
+                    transactionRunner =
+                        object : DatabaseTransactionRunner {
+                            override suspend fun <T> run(block: suspend () -> T): T {
+                                block()
+                                error("Database failure")
+                            }
+                        },
+                )
+
+            assertEquals(
+                ProjectNotesSaveResult.PersistenceFailure,
+                failureRepository.saveProjectNotes(7L, "", "Note"),
+            )
+        }
+
+    @Test
+    fun `updateProjectSecondaryCount gates first use inside transaction`() =
+        runTest {
+            every { proManager.hasFeature(ProFeature.SECONDARY_COUNTER) } returns false
+            coEvery { projectDao.getProject(7L) } returns
+                CounterProjectEntity(id = 7L, name = "Project", secondaryCounterUsed = false)
+
+            assertFalse(repository.updateProjectSecondaryCount(7L, 1))
+            coVerify(exactly = 0) { projectDao.updateSecondaryCount(any(), any(), any()) }
+        }
+
+    @Test
+    fun `updateProjectSecondaryCount keeps an existing secondary counter usable`() =
+        runTest {
+            every { proManager.hasFeature(ProFeature.SECONDARY_COUNTER) } returns false
+            coEvery { projectDao.getProject(7L) } returns
+                CounterProjectEntity(id = 7L, name = "Project", secondaryCounterUsed = true)
+
+            assertTrue(repository.updateProjectSecondaryCount(7L, 2))
+            coVerify(exactly = 1) { projectDao.updateSecondaryCount(7L, 2, any()) }
         }
 
     @Test
@@ -449,7 +554,10 @@ class CounterRepositoryDomainApiTest {
         runTest {
             val newPatternUri = "file:///data/user/0/com.finnvek.knittools/files/pattern_pdfs/7/new.pdf"
             val document = projectDocument(newPatternUri, "New pattern")
-            coEvery { projectDocumentRepository.addImportedPdf(7L, newPatternUri, "New pattern") } returns
+            coEvery { projectDocumentRepository.preflightImportedPdf(newPatternUri, "New pattern") } returns null
+            coEvery {
+                projectDocumentRepository.addImportedPdfInCurrentTransaction(7L, newPatternUri, "New pattern")
+            } returns
                 ProjectDocumentMutationResult.Added(document)
             coEvery { projectDao.getProject(7L) } returns CounterProjectEntity(id = 7L)
 
@@ -457,7 +565,8 @@ class CounterRepositoryDomainApiTest {
 
             assertEquals(ProjectDocumentMutationResult.Added(document), result)
             coVerifyOrder {
-                projectDocumentRepository.addImportedPdf(7L, newPatternUri, "New pattern")
+                projectDocumentRepository.preflightImportedPdf(newPatternUri, "New pattern")
+                projectDocumentRepository.addImportedPdfInCurrentTransaction(7L, newPatternUri, "New pattern")
                 projectDao.updatePatternInformation(
                     id = 7L,
                     linkedPatternId = null,
@@ -474,7 +583,10 @@ class CounterRepositoryDomainApiTest {
             val document = projectDocument(newPatternUri, "New pattern")
             coEvery { projectDao.getProject(7L) } returns
                 CounterProjectEntity(id = 7L, linkedPatternId = 99L, patternName = "Web pattern")
-            coEvery { projectDocumentRepository.addImportedPdf(7L, newPatternUri, "New pattern") } returns
+            coEvery { projectDocumentRepository.preflightImportedPdf(newPatternUri, "New pattern") } returns null
+            coEvery {
+                projectDocumentRepository.addImportedPdfInCurrentTransaction(7L, newPatternUri, "New pattern")
+            } returns
                 ProjectDocumentMutationResult.Added(document)
 
             val result = repository.attachPattern(7L, newPatternUri, "New pattern", 0, null)
@@ -584,9 +696,62 @@ class CounterRepositoryDomainApiTest {
             coEvery { projectDao.getProject(7L) } returns
                 CounterProjectEntity(id = 7L, linkedPatternId = 88L, patternName = "Current")
             coEvery { savedPatternRepository.getById(99L) } returns webPattern(99L, "Replacement")
+            coEvery { projectDocumentRepository.prepareSavedPatternDocument(7L, 99L) } returns
+                SavedPatternDocumentPreparation.MetadataOnlyPattern
 
             assertEquals(null, repository.attachSavedPattern(7L, 99L))
             coVerify(exactly = 0) { projectDao.updatePatternInformation(any(), any(), any(), any()) }
+        }
+
+    @Test
+    fun `ready saved pattern attachment adds the document and preserves existing metadata`() =
+        runTest {
+            val patternUri = "file:///data/user/0/com.finnvek.knittools/files/pattern_pdfs/7/pattern.pdf"
+            val pattern =
+                webPattern(12L, "Cardigan").copy(
+                    source = SavedPatternSource.LocalFile,
+                    originalUrl = patternUri,
+                    canonicalUrl = "",
+                    localPdfUri = patternUri,
+                )
+            val document = projectDocument(patternUri, pattern.name).copy(savedPatternId = pattern.id)
+            coEvery { projectDao.getProject(7L) } returnsMany
+                listOf(
+                    CounterProjectEntity(id = 7L),
+                    CounterProjectEntity(id = 7L, linkedPatternId = 99L, patternName = "Web pattern"),
+                )
+            coEvery { savedPatternRepository.getById(pattern.id) } returns pattern
+            coEvery { projectDocumentRepository.prepareSavedPatternDocument(7L, pattern.id) } returns
+                SavedPatternDocumentPreparation.Ready(patternUri)
+            coEvery {
+                projectDocumentRepository.addSavedPatternInCurrentTransaction(7L, pattern.id, patternUri)
+            } returns ProjectDocumentMutationResult.Added(document)
+
+            assertEquals(pattern, repository.attachSavedPattern(7L, pattern.id))
+            assertEquals(pattern, repository.attachSavedPattern(7L, pattern.id))
+
+            coVerify(exactly = 2) {
+                projectDocumentRepository.addSavedPatternInCurrentTransaction(7L, pattern.id, patternUri)
+            }
+            coVerify(exactly = 1) {
+                projectDao.updatePatternInformation(7L, pattern.id, pattern.name, any())
+            }
+        }
+
+    @Test
+    fun `already attached saved pattern is revalidated inside the transaction`() =
+        runTest {
+            val pattern = webPattern(12L, "Cardigan")
+            coEvery { projectDao.getProject(7L) } returns CounterProjectEntity(id = 7L)
+            coEvery { savedPatternRepository.getById(pattern.id) } returns pattern
+            coEvery { projectDocumentRepository.prepareSavedPatternDocument(7L, pattern.id) } returns
+                SavedPatternDocumentPreparation.AlreadyAttached
+            coEvery {
+                projectDocumentRepository.hasSavedPatternDocumentInCurrentTransaction(7L, pattern.id)
+            } returnsMany listOf(true, false)
+
+            assertEquals(pattern, repository.attachSavedPattern(7L, pattern.id))
+            assertEquals(null, repository.attachSavedPattern(7L, pattern.id))
         }
 
     @Test
@@ -615,7 +780,10 @@ class CounterRepositoryDomainApiTest {
     fun `attachPattern returns already attached without rewriting primary metadata`() =
         runTest {
             val patternUri = "file:///data/user/0/com.finnvek.knittools/files/pattern_pdfs/7/pattern.pdf"
-            coEvery { projectDocumentRepository.addImportedPdf(7L, patternUri, "Pattern") } returns
+            coEvery { projectDocumentRepository.preflightImportedPdf(patternUri, "Pattern") } returns null
+            coEvery {
+                projectDocumentRepository.addImportedPdfInCurrentTransaction(7L, patternUri, "Pattern")
+            } returns
                 ProjectDocumentMutationResult.AlreadyAttached
 
             val result = repository.attachPattern(7L, patternUri, "Pattern", 0, null)
@@ -628,7 +796,10 @@ class CounterRepositoryDomainApiTest {
     fun `attachPattern returns duplicate uri without rewriting primary metadata`() =
         runTest {
             val patternUri = "file:///data/user/0/com.finnvek.knittools/files/pattern_pdfs/7/pattern.pdf"
-            coEvery { projectDocumentRepository.addImportedPdf(7L, patternUri, "Pattern") } returns
+            coEvery { projectDocumentRepository.preflightImportedPdf(patternUri, "Pattern") } returns null
+            coEvery {
+                projectDocumentRepository.addImportedPdfInCurrentTransaction(7L, patternUri, "Pattern")
+            } returns
                 ProjectDocumentMutationResult.DuplicateUri
 
             val result = repository.attachPattern(7L, patternUri, "Pattern", 0, null)

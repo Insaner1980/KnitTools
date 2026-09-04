@@ -64,5 +64,5 @@ export async function getUsableRavelryToken({
   }
 
   const current = await tokenStore.getToken(uid);
-  return current && !requiresRefresh(current, now) ? current : null;
+  return current && !requiresRefresh(current, nowMillis()) ? current : null;
 }

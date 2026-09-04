@@ -58,8 +58,44 @@ class ProjectActionsBottomSheetSourceTest {
         assertFalse(trackStitchesSwitch.contains("enabled = (state.stitchCount ?: 0) > 0"))
     }
 
+    @Test
+    fun `completed project replaces active mutations with reactivation`() {
+        val source = ProjectSourceFiles.read(PROJECT_ACTIONS_BOTTOM_SHEET)
+
+        assertTrue(source.contains("val isCompleted: Boolean"))
+        assertTrue(source.contains("if (!state.isCompleted)"))
+        assertTrue(source.contains("if (state.isCompleted)"))
+        assertTrue(source.contains("R.string.reactivate_project"))
+        assertTrue(source.contains("onClick = callbacks.onReactivateProject"))
+    }
+
+    @Test
+    fun `reactivation action is localized`() {
+        ProjectSourceFiles.localizedStringFiles().forEach { file ->
+            val text = ProjectSourceFiles.read(file)
+
+            assertTrue(
+                "$file is missing reactivate_project",
+                text.contains("""name="reactivate_project"""),
+            )
+        }
+    }
+
+    @Test
+    fun `project action overlays retain and validate their invoking project`() {
+        val source = ProjectSourceFiles.read(COUNTER_SCREEN)
+
+        assertTrue(source.contains("var projectActionTargetId by rememberSaveable"))
+        assertTrue(source.contains("projectActionTargetId = projectId"))
+        assertTrue(source.contains("projectId = projectActionTargetId"))
+        assertTrue(source.contains("projectActionTargetId == state.projectId"))
+        assertTrue(source.contains("dependencies.projectId == viewModel.uiState.value.projectId"))
+    }
+
     private companion object {
         private const val PROJECT_ACTIONS_BOTTOM_SHEET =
             "app/src/main/java/com/finnvek/knittools/ui/screens/counter/ProjectActionsBottomSheet.kt"
+        private const val COUNTER_SCREEN =
+            "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterScreen.kt"
     }
 }

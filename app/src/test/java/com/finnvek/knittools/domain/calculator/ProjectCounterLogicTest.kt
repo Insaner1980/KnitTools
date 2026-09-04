@@ -59,19 +59,28 @@ class ProjectCounterLogicTest {
 
     @Test
     fun `repeat cycling resets at repeatAt`() {
-        val result = ProjectCounterLogic.increment(counter(count = 7, stepSize = 1, repeatAt = 8))
+        val result =
+            ProjectCounterLogic.increment(
+                counter(count = 7, stepSize = 1, repeatAt = 8, counterType = ProjectCounterType.REPEATING),
+            )
         assertEquals(0, result.count)
     }
 
     @Test
     fun `repeat cycling at exact boundary`() {
-        val result = ProjectCounterLogic.increment(counter(count = 6, stepSize = 2, repeatAt = 8))
+        val result =
+            ProjectCounterLogic.increment(
+                counter(count = 6, stepSize = 2, repeatAt = 8, counterType = ProjectCounterType.REPEATING),
+            )
         assertEquals(0, result.count)
     }
 
     @Test
     fun `repeat cycling preserves overflow when step skips boundary`() {
-        val result = ProjectCounterLogic.increment(counter(count = 7, stepSize = 2, repeatAt = 8))
+        val result =
+            ProjectCounterLogic.increment(
+                counter(count = 7, stepSize = 2, repeatAt = 8, counterType = ProjectCounterType.REPEATING),
+            )
         assertEquals(1, result.count)
     }
 
@@ -123,5 +132,53 @@ class ProjectCounterLogicTest {
             )
 
         assertTrue(result.linkedToMainCounter)
+    }
+
+    @Test
+    fun `count-up arithmetic is bounded and normalizes invalid step`() {
+        assertEquals(Int.MAX_VALUE, ProjectCounterLogic.increment(counter(count = Int.MAX_VALUE, stepSize = 2)).count)
+        assertEquals(6, ProjectCounterLogic.increment(counter(count = 5, stepSize = 0)).count)
+        assertEquals(0, ProjectCounterLogic.decrement(counter(count = 0, stepSize = Int.MAX_VALUE)).count)
+    }
+
+    @Test
+    fun `repeating arithmetic preserves overflow without integer wrap`() {
+        val result =
+            ProjectCounterLogic.increment(
+                counter(
+                    count = Int.MAX_VALUE - 1,
+                    stepSize = Int.MAX_VALUE,
+                    repeatAt = 10,
+                    counterType = ProjectCounterType.REPEATING,
+                ),
+            )
+
+        assertEquals(3, result.count)
+    }
+
+    @Test
+    fun `count-up ignores stale repeating metadata`() {
+        val result = ProjectCounterLogic.increment(counter(count = 7, stepSize = 1, repeatAt = 8))
+
+        assertEquals(8, result.count)
+    }
+
+    @Test
+    fun `persistence validation clears fields unrelated to counter type`() {
+        val result =
+            ProjectCounterLogic.validatedForPersistence(
+                counter(repeatAt = 4).copy(
+                    name = "  Sleeve  ",
+                    startingStitches = 20,
+                    stitchChange = -2,
+                    shapeEveryN = 4,
+                ),
+            )
+
+        assertEquals("Sleeve", result!!.name)
+        assertEquals(null, result.repeatAt)
+        assertEquals(null, result.startingStitches)
+        assertEquals(null, result.stitchChange)
+        assertEquals(null, result.shapeEveryN)
     }
 }

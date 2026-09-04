@@ -14,6 +14,7 @@ import com.finnvek.knittools.repository.ProjectCounterRepository
 import com.finnvek.knittools.repository.YarnCardRepository
 import com.finnvek.knittools.widget.CounterWidgetState
 import dagger.hilt.android.HiltAndroidApp
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
@@ -62,10 +63,22 @@ class App : Application() {
             preferencesManager.get().applyStoredAppLanguage()
         }
         applicationScope.launch {
-            yarnCardRepository.get().pruneUnreferencedPhotoFiles()
+            try {
+                yarnCardRepository.get().pruneUnreferencedPhotoFiles()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                // Lankakuvien best-effort-siivous ei saa kaataa sovellusta.
+            }
         }
         applicationScope.launch(ioDispatcher) {
-            patternDocumentStorage.get().pruneStaleCaptureImages(this@App)
+            try {
+                patternDocumentStorage.get().pruneStaleCaptureImages(this@App)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                // Kaavakuvien best-effort-siivous ei saa kaataa sovellusta.
+            }
         }
         DemoDataSeeder.seedIfNeeded(
             applicationScope,
@@ -86,7 +99,15 @@ class App : Application() {
             manager.initialStateReady.first { it }
             manager
                 .hasFeatureFlow(ProFeature.WIDGET)
-                .collect { CounterWidgetState.refreshAll(this@App) }
+                .collect {
+                    try {
+                        CounterWidgetState.refreshAll(this@App)
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (_: Exception) {
+                        // Widgetin päivitys ei saa kaataa muuta sovellusta.
+                    }
+                }
         }
     }
 

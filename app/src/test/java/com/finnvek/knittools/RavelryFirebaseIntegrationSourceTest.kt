@@ -38,12 +38,14 @@ class RavelryFirebaseIntegrationSourceTest {
         assertFalse(appBuild.contains("if (canMaterializeGoogleServicesJson)"))
         assertReleaseLintWiring(appBuild)
         assertTrue(appBuild.contains("firebaseConfiguredArtifactTaskNames"))
-        assertTrue(appBuild.contains("\"assembleRelease\""))
-        assertTrue(appBuild.contains("\"bundleRelease\""))
+        assertReleaseArtifactTasks(appBuild)
         assertFalse(appBuild.contains("\"assembleDebug\",\n        \"assembleRelease\""))
         assertTrue(appBuild.contains("outputs.upToDateWhen { targetFile.isFile }"))
         assertTrue(appBuild.contains("KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64"))
         assertTrue(appBuild.contains("Base64.getMimeDecoder().decode(encodedConfig)"))
+        assertFalse(appBuild.contains("inputs.property(\"encodedConfig\", encodedConfig.orEmpty())"))
+        assertTrue(appBuild.contains("inputs.property(\"encodedConfigPresent\", !encodedConfig.isNullOrBlank())"))
+        assertTrue(appBuild.contains("Release Firebase -konfiguraatio ei saa olla paikallinen debug-placeholder."))
         assertTrue(appBuild.contains("inputs.files(rootFile).withPropertyName(\"rootGoogleServicesJsonFile\")"))
         assertTrue(appBuild.contains("inputs.files(targetFile).withPropertyName(\"googleServicesJsonFile\")"))
         assertTrue(appBuild.contains("object GoogleServicesJsonTaskActions"))
@@ -64,6 +66,20 @@ class RavelryFirebaseIntegrationSourceTest {
         assertFalse(codeQlWorkflow.contains("Missing KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64 secret"))
         assertFalse(buildWorkflow.contains("secrets.KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64"))
         assertFalse(codeQlWorkflow.contains("secrets.KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64"))
+    }
+
+    private fun assertReleaseArtifactTasks(appBuild: String) {
+        listOf(
+            "assembleRelease",
+            "bundleRelease",
+            "packageRelease",
+            "packageReleaseBundle",
+            "packageReleaseUniversalApk",
+            "signReleaseBundle",
+            "publishRelease",
+        ).forEach { taskName ->
+            assertTrue(appBuild.contains("\"$taskName\""))
+        }
     }
 
     // Placeholder-config kuuluu vain varianteille, jotka eivät päädy jakeluun.

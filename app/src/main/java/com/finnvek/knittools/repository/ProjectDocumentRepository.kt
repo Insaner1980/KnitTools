@@ -4,6 +4,7 @@ import com.finnvek.knittools.data.local.CounterProjectDao
 import com.finnvek.knittools.data.local.DatabaseTransactionRunner
 import com.finnvek.knittools.data.local.ProjectDocumentDao
 import com.finnvek.knittools.data.local.ProjectDocumentEntity
+import com.finnvek.knittools.data.local.distinctSqliteQueryChunks
 import com.finnvek.knittools.data.local.toDomain
 import com.finnvek.knittools.domain.model.DEFAULT_READING_GUIDE_FRACTION
 import com.finnvek.knittools.domain.model.DEFAULT_READING_LINE_Y_FRACTION
@@ -67,7 +68,23 @@ sealed interface ProjectDocumentMutationResult {
     data object PersistenceFailure : ProjectDocumentMutationResult
 }
 
+internal sealed interface SavedPatternDocumentPreparation {
+    data object AlreadyAttached : SavedPatternDocumentPreparation
+
+    data object MissingSavedPattern : SavedPatternDocumentPreparation
+
+    data object MetadataOnlyPattern : SavedPatternDocumentPreparation
+
+    data object PdfUnavailable : SavedPatternDocumentPreparation
+
+    data class Ready(
+        val localPdfUri: String,
+    ) : SavedPatternDocumentPreparation
+}
+
 @Singleton
+// Dokumenttien järjestys-, primääri- ja tiedostoinvariantit kuuluvat samaan repository-rajaan.
+@Suppress("TooManyFunctions")
 class ProjectDocumentRepository
     @Inject
     constructor(
@@ -99,9 +116,17 @@ class ProjectDocumentRepository
             }
 
         fun observeDocuments(projectIds: List<Long>): Flow<Map<Long, List<ProjectDocument>>> {
-            if (projectIds.isEmpty()) return flowOf(emptyMap())
-            return documentDao
-                .observeForProjects(projectIds.distinct())
+            val idChunks = projectIds.distinctSqliteQueryChunks()
+            if (idChunks.isEmpty()) return flowOf(emptyMap())
+            val documentRows =
+                if (idChunks.size == 1) {
+                    documentDao.observeForProjects(idChunks.single())
+                } else {
+                    combine(idChunks.map(documentDao::observeForProjects)) { rowsByChunk ->
+                        rowsByChunk.flatMap { rows -> rows }
+                    }
+                }
+            return documentRows
                 .map { rows ->
                     rows
                         .map(ProjectDocumentEntity::toDomain)
@@ -113,14 +138,13 @@ class ProjectDocumentRepository
         suspend fun getDocuments(projectId: Long): List<ProjectDocument> =
             documentDao.getForProject(projectId).map(ProjectDocumentEntity::toDomain).inDocumentOrder()
 
-        suspend fun getDocuments(projectIds: List<Long>): Map<Long, List<ProjectDocument>> {
-            if (projectIds.isEmpty()) return emptyMap()
-            return documentDao
-                .getForProjects(projectIds.distinct())
+        suspend fun getDocuments(projectIds: List<Long>): Map<Long, List<ProjectDocument>> =
+            projectIds
+                .distinctSqliteQueryChunks()
+                .flatMap { chunk -> documentDao.getForProjects(chunk) }
                 .map(ProjectDocumentEntity::toDomain)
                 .groupBy(ProjectDocument::projectId)
                 .mapValues { (_, documents) -> documents.inDocumentOrder() }
-        }
 
         suspend fun getDocument(documentId: Long): ProjectDocument? = documentDao.getById(documentId)?.toDomain()
 
@@ -138,6 +162,78 @@ class ProjectDocumentRepository
         suspend fun addSavedPattern(
             projectId: Long,
             savedPatternId: Long,
+        ): ProjectDocumentMutationResult =
+            when (val preparation = prepareSavedPatternDocument(projectId, savedPatternId)) {
+                SavedPatternDocumentPreparation.AlreadyAttached -> ProjectDocumentMutationResult.AlreadyAttached
+                SavedPatternDocumentPreparation.MissingSavedPattern -> ProjectDocumentMutationResult.MissingSavedPattern
+                SavedPatternDocumentPreparation.MetadataOnlyPattern -> ProjectDocumentMutationResult.MetadataOnlyPattern
+                SavedPatternDocumentPreparation.PdfUnavailable -> ProjectDocumentMutationResult.PdfUnavailable
+                is SavedPatternDocumentPreparation.Ready ->
+                    mutation {
+                        transactionRunner.run {
+                            addSavedPatternInCurrentTransaction(
+                                projectId = projectId,
+                                savedPatternId = savedPatternId,
+                                verifiedLocalPdfUri = preparation.localPdfUri,
+                            )
+                        }
+                    }
+            }
+
+        suspend fun addImportedPdf(
+            projectId: Long,
+            localPdfUri: String,
+            label: String,
+            documentKey: String? = null,
+        ): ProjectDocumentMutationResult {
+            preflightImportedPdf(localPdfUri, label, documentKey)?.let { return it }
+            return mutation {
+                transactionRunner.run {
+                    addImportedPdfInCurrentTransaction(projectId, localPdfUri, label, documentKey)
+                }
+            }
+        }
+
+        internal suspend fun prepareSavedPatternDocument(
+            projectId: Long,
+            savedPatternId: Long,
+        ): SavedPatternDocumentPreparation {
+            if (documentDao.getBySavedPatternId(projectId, savedPatternId) != null) {
+                return SavedPatternDocumentPreparation.AlreadyAttached
+            }
+            val pattern =
+                savedPatternRepository.getById(savedPatternId)
+                    ?: return SavedPatternDocumentPreparation.MissingSavedPattern
+            val localPdfUri = pattern.localPdfUri?.trim().orEmpty()
+            if (localPdfUri.isEmpty()) return SavedPatternDocumentPreparation.MetadataOnlyPattern
+            if (!fileAvailability.isAvailable(localPdfUri)) return SavedPatternDocumentPreparation.PdfUnavailable
+            return SavedPatternDocumentPreparation.Ready(localPdfUri)
+        }
+
+        internal suspend fun preflightImportedPdf(
+            localPdfUri: String,
+            label: String,
+            documentKey: String? = null,
+        ): ProjectDocumentMutationResult? {
+            if (
+                validateProjectDocumentLabel(label) !is ProjectDocumentLabelValidation.Valid ||
+                (
+                    documentKey != null &&
+                        documentKey.trim().isEmpty()
+                )
+            ) {
+                return ProjectDocumentMutationResult.InvalidLabel
+            }
+            val normalizedUri = localPdfUri.trim()
+            return ProjectDocumentMutationResult.PdfUnavailable.takeIf {
+                normalizedUri.isEmpty() || !fileAvailability.isAvailable(normalizedUri)
+            }
+        }
+
+        internal suspend fun addSavedPatternInCurrentTransaction(
+            projectId: Long,
+            savedPatternId: Long,
+            verifiedLocalPdfUri: String,
         ): ProjectDocumentMutationResult {
             if (documentDao.getBySavedPatternId(projectId, savedPatternId) != null) {
                 return ProjectDocumentMutationResult.AlreadyAttached
@@ -145,19 +241,25 @@ class ProjectDocumentRepository
             val pattern =
                 savedPatternRepository.getById(savedPatternId)
                     ?: return ProjectDocumentMutationResult.MissingSavedPattern
-            val localPdfUri = pattern.localPdfUri?.trim().orEmpty()
-            if (localPdfUri.isEmpty()) return ProjectDocumentMutationResult.MetadataOnlyPattern
-            if (!fileAvailability.isAvailable(localPdfUri)) return ProjectDocumentMutationResult.PdfUnavailable
-            return addDocument(
+            val currentLocalPdfUri = pattern.localPdfUri?.trim().orEmpty()
+            if (currentLocalPdfUri.isEmpty()) return ProjectDocumentMutationResult.MetadataOnlyPattern
+            if (currentLocalPdfUri != verifiedLocalPdfUri) return ProjectDocumentMutationResult.PdfUnavailable
+            return addDocumentInCurrentTransaction(
                 projectId = projectId,
                 savedPatternId = savedPatternId,
-                localPdfUri = localPdfUri,
+                localPdfUri = currentLocalPdfUri,
                 label = pattern.name,
                 documentKey = PatternAnnotationDocumentKey.savedPattern(savedPatternId),
             )
         }
 
-        suspend fun addImportedPdf(
+        internal suspend fun hasSavedPatternDocumentInCurrentTransaction(
+            projectId: Long,
+            savedPatternId: Long,
+        ): Boolean = documentDao.getBySavedPatternId(projectId, savedPatternId) != null
+
+        @Suppress("ReturnCount") // Fail-fast-palautukset estävät osittaiset kirjoitukset transaktion sisällä.
+        internal suspend fun addImportedPdfInCurrentTransaction(
             projectId: Long,
             localPdfUri: String,
             label: String,
@@ -169,27 +271,27 @@ class ProjectDocumentRepository
                     ?: return ProjectDocumentMutationResult.InvalidLabel
             val normalizedUri = localPdfUri.trim()
             val normalizedRequestedKey = documentKey?.trim()
-            val rejection =
-                when {
-                    normalizedUri.isEmpty() || !fileAvailability.isAvailable(normalizedUri) ->
-                        ProjectDocumentMutationResult.PdfUnavailable
-                    projectDao.getProject(projectId) == null -> ProjectDocumentMutationResult.MissingProject
-                    documentDao.getByUri(projectId, normalizedUri) != null -> ProjectDocumentMutationResult.DuplicateUri
-                    !normalizedRequestedKey.isNullOrEmpty() &&
-                        documentDao.getByDocumentKey(projectId, normalizedRequestedKey) != null ->
-                        ProjectDocumentMutationResult.DuplicateDocumentKey
-                    else -> null
-                }
-            if (rejection != null) return rejection
+            if (normalizedUri.isEmpty() || documentKey != null && normalizedRequestedKey.isNullOrEmpty()) {
+                return ProjectDocumentMutationResult.InvalidLabel
+            }
+            if (projectDao.getProject(projectId) == null) return ProjectDocumentMutationResult.MissingProject
+            if (documentDao.getByUri(projectId, normalizedUri) != null) {
+                return ProjectDocumentMutationResult.DuplicateUri
+            }
+            if (!normalizedRequestedKey.isNullOrEmpty() &&
+                documentDao.getByDocumentKey(projectId, normalizedRequestedKey) != null
+            ) {
+                return ProjectDocumentMutationResult.DuplicateDocumentKey
+            }
             val savedPatternId =
-                savedPatternRepository.saveImportedPatternIfMissing(normalizedUri, normalizedLabel)
+                savedPatternRepository.saveImportedPatternIfMissingInCurrentTransaction(normalizedUri, normalizedLabel)
                     ?: return ProjectDocumentMutationResult.PersistenceFailure
-            return addDocument(
+            return addDocumentInCurrentTransaction(
                 projectId = projectId,
                 savedPatternId = savedPatternId,
                 localPdfUri = normalizedUri,
                 label = normalizedLabel,
-                documentKey = documentKey ?: PatternAnnotationDocumentKey.savedPattern(savedPatternId),
+                documentKey = normalizedRequestedKey ?: PatternAnnotationDocumentKey.savedPattern(savedPatternId),
             )
         }
 
@@ -339,8 +441,8 @@ class ProjectDocumentRepository
                 updatedAt = System.currentTimeMillis(),
             ) == 1
 
-        @Suppress("kotlin:S3776") // Lisäys kirjoittaa primääridokumentin invariantit yhdessä.
-        private suspend fun addDocument(
+        @Suppress("ReturnCount", "kotlin:S3776") // Lisäys kirjoittaa primääridokumentin invariantit yhdessä.
+        private suspend fun addDocumentInCurrentTransaction(
             projectId: Long,
             savedPatternId: Long?,
             localPdfUri: String,
@@ -356,54 +458,50 @@ class ProjectDocumentRepository
             ) {
                 return ProjectDocumentMutationResult.InvalidLabel
             }
-            return mutation {
-                transactionRunner.run {
-                    if (projectDao.getProject(projectId) == null) {
-                        return@run ProjectDocumentMutationResult.MissingProject
-                    }
-                    if (savedPatternId != null && documentDao.getBySavedPatternId(projectId, savedPatternId) != null) {
-                        return@run ProjectDocumentMutationResult.AlreadyAttached
-                    }
-                    if (documentDao.getByUri(projectId, normalizedUri) != null) {
-                        return@run ProjectDocumentMutationResult.DuplicateUri
-                    }
-                    if (documentDao.getByDocumentKey(projectId, normalizedKey) != null) {
-                        return@run ProjectDocumentMutationResult.DuplicateDocumentKey
-                    }
-                    val existing =
-                        documentDao
-                            .getForProject(
-                                projectId,
-                            ).map(ProjectDocumentEntity::toDomain)
-                            .inDocumentOrder()
-                    val nextSortOrder = documentDao.getHighestSortOrder(projectId) + 1
-                    val now = System.currentTimeMillis()
-                    val entity =
-                        ProjectDocumentEntity(
-                            projectId = projectId,
-                            savedPatternId = savedPatternId,
-                            documentKey = normalizedKey,
-                            label = validated.label,
-                            localPdfUri = normalizedUri,
-                            sortOrder = nextSortOrder.coerceAtLeast(0),
-                            isPrimary = existing.isEmpty(),
-                            currentPage = 0,
-                            rowMapping = null,
-                            readingLineEnabled = false,
-                            readingLineYFraction = DEFAULT_READING_LINE_Y_FRACTION,
-                            readingLineFollowCurrentRow = true,
-                            verticalReadingGuideEnabled = false,
-                            verticalReadingGuideXFraction = DEFAULT_READING_GUIDE_FRACTION,
-                            createdAt = now,
-                            updatedAt = now,
-                        )
-                    val id = documentDao.insert(entity)
-                    if (existing.isEmpty()) {
-                        layerRepository.activateProjectLayerInTransaction(projectId, normalizedKey)
-                    }
-                    ProjectDocumentMutationResult.Added(entity.copy(id = id).toDomain())
-                }
+            if (projectDao.getProject(projectId) == null) {
+                return ProjectDocumentMutationResult.MissingProject
             }
+            if (savedPatternId != null && documentDao.getBySavedPatternId(projectId, savedPatternId) != null) {
+                return ProjectDocumentMutationResult.AlreadyAttached
+            }
+            if (documentDao.getByUri(projectId, normalizedUri) != null) {
+                return ProjectDocumentMutationResult.DuplicateUri
+            }
+            if (documentDao.getByDocumentKey(projectId, normalizedKey) != null) {
+                return ProjectDocumentMutationResult.DuplicateDocumentKey
+            }
+            val existing =
+                documentDao
+                    .getForProject(
+                        projectId,
+                    ).map(ProjectDocumentEntity::toDomain)
+                    .inDocumentOrder()
+            val nextSortOrder = documentDao.getHighestSortOrder(projectId) + 1
+            val now = System.currentTimeMillis()
+            val entity =
+                ProjectDocumentEntity(
+                    projectId = projectId,
+                    savedPatternId = savedPatternId,
+                    documentKey = normalizedKey,
+                    label = validated.label,
+                    localPdfUri = normalizedUri,
+                    sortOrder = nextSortOrder.coerceAtLeast(0),
+                    isPrimary = existing.isEmpty(),
+                    currentPage = 0,
+                    rowMapping = null,
+                    readingLineEnabled = false,
+                    readingLineYFraction = DEFAULT_READING_LINE_Y_FRACTION,
+                    readingLineFollowCurrentRow = true,
+                    verticalReadingGuideEnabled = false,
+                    verticalReadingGuideXFraction = DEFAULT_READING_GUIDE_FRACTION,
+                    createdAt = now,
+                    updatedAt = now,
+                )
+            val id = documentDao.insert(entity)
+            if (existing.isEmpty()) {
+                layerRepository.activateProjectLayerInTransaction(projectId, normalizedKey)
+            }
+            return ProjectDocumentMutationResult.Added(entity.copy(id = id).toDomain())
         }
 
         private suspend fun reorder(

@@ -17,7 +17,7 @@ class PatternAnnotationRouteSourceTest {
 
         listOf(projectRoute, libraryRoute).forEach { route ->
             assertTrue(route.contains("PatternAnnotationViewModel = hiltViewModel(backStackEntry)"))
-            assertTrue(route.contains("annotationViewModel = annotationViewModel"))
+            assertTrue(route.contains("annotationViewModelProvider = { annotationViewModel }"))
         }
     }
 

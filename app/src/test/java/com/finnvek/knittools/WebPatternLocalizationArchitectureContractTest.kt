@@ -108,11 +108,15 @@ class WebPatternLocalizationArchitectureContractTest {
             xmlAttributePairs(fileProviderPaths, "files-path", "name", "path"),
         )
 
-        val attachSavedPattern = balancedContentAfter(counterRepository, "suspend fun attachSavedPattern", '{', '}')
-        val metadataOnlyBranch =
-            balancedContentAfter(attachSavedPattern, "if (pattern.localPdfUri.isNullOrBlank())", '{', '}')
-        assertTrue(metadataOnlyBranch.contains("dao.updatePatternInformation("))
-        assertFalse(metadataOnlyBranch.contains("projectDocumentRepository"))
+        val metadataOnlyAttachment =
+            balancedContentAfter(
+                counterRepository,
+                "private suspend fun attachMetadataOnlySavedPattern",
+                '{',
+                '}',
+            )
+        assertTrue(metadataOnlyAttachment.contains("dao.updatePatternInformation("))
+        assertFalse(metadataOnlyAttachment.contains("projectDocumentRepository"))
         val proFeatures = balancedContentAfter(proState, "enum class ProFeature", '{', '}')
         assertFalse(proFeatures.contains("WEB_"))
 

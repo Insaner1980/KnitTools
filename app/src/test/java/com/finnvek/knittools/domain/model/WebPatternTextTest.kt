@@ -102,6 +102,18 @@ class WebPatternTextTest {
     }
 
     @Test
+    fun `unknown persisted source is not reclassified as editable web metadata`() {
+        val unknown =
+            pattern(
+                source = SavedPatternSource.fromPersistedValue("FUTURE_SOURCE"),
+                originalUrl = "https://example.com/pattern",
+            )
+
+        assertEquals(SavedPatternSource.Unknown, unknown.source)
+        assertFalse(unknown.isWebPatternCompatible)
+    }
+
+    @Test
     fun `share parser accepts a plain URL and ordinary surrounding punctuation`() {
         val plain = parseWebPatternSharedText("https://example.com/Pattern?Size=XL#Notes", null)
         val surrounded =

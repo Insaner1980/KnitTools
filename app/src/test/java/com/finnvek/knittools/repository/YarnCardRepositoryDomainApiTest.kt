@@ -5,12 +5,17 @@ import com.finnvek.knittools.data.local.CounterProjectEntity
 import com.finnvek.knittools.data.local.ImmediateDatabaseTransactionRunner
 import com.finnvek.knittools.data.local.YarnCardEntity
 import com.finnvek.knittools.domain.model.YarnCard
+import com.finnvek.knittools.pro.ProFeature
+import com.finnvek.knittools.pro.ProManager
+import io.mockk.coEvery
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -119,6 +124,73 @@ class YarnCardRepositoryDomainApiTest {
             assertEquals(false, repository.updateQuantity(99L, 4))
             assertEquals(false, repository.updateStatus(99L, "USED_UP"))
             assertEquals(false, repository.updateLinkedProjectId(99L, null))
+        }
+
+    @Test
+    fun `new cards require entitlement while existing cards remain editable`() =
+        runTest {
+            val existing = YarnCardEntity(id = 5L, yarnName = "Old")
+            val yarnDao = FakeYarnCardDao(yarnCards = listOf(existing))
+            val proManager = mockk<ProManager>()
+            every { proManager.hasFeature(ProFeature.UNLIMITED_YARN) } returns false
+            val repository =
+                YarnCardRepository(
+                    yarnDao,
+                    RepositoryDomainFakeCounterProjectDao(),
+                    context,
+                    ImmediateDatabaseTransactionRunner,
+                    UnconfinedTestDispatcher(testScheduler),
+                    proManager = proManager,
+                )
+
+            assertNull(repository.saveCard(YarnCard(yarnName = "New")))
+            assertEquals(5L, repository.saveCard(YarnCard(id = 5L, yarnName = "Edited")))
+            assertEquals("Edited", yarnDao.lastUpserted?.yarnName)
+        }
+
+    @Test
+    fun `stale and invalid quantity writes cannot recreate or corrupt cards`() =
+        runTest {
+            val yarnDao = FakeYarnCardDao()
+            val repository =
+                YarnCardRepository(
+                    yarnDao,
+                    RepositoryDomainFakeCounterProjectDao(),
+                    context,
+                    ImmediateDatabaseTransactionRunner,
+                    UnconfinedTestDispatcher(testScheduler),
+                )
+
+            assertNull(repository.saveCard(YarnCard(id = 5L, yarnName = "Deleted")))
+            assertNull(repository.saveCard(YarnCard(yarnName = "Invalid", quantityInStash = -1)))
+            assertNull(yarnDao.lastUpserted)
+        }
+
+    @Test
+    fun `quantity deltas are read and written atomically with bounds`() =
+        runTest {
+            val yarnDao = mockk<com.finnvek.knittools.data.local.YarnCardDao>(relaxed = true)
+            var stored = YarnCardEntity(id = 5L, yarnName = "Sock", quantityInStash = 3)
+            coEvery { yarnDao.getCard(5L) } answers { stored }
+            coEvery { yarnDao.updateQuantity(5L, any()) } answers {
+                stored = stored.copy(quantityInStash = secondArg())
+                1
+            }
+            val repository =
+                YarnCardRepository(
+                    yarnDao,
+                    RepositoryDomainFakeCounterProjectDao(),
+                    context,
+                    ImmediateDatabaseTransactionRunner,
+                    UnconfinedTestDispatcher(testScheduler),
+                )
+
+            assertEquals(true, repository.changeQuantity(5L, 1))
+            assertEquals(true, repository.changeQuantity(5L, 1))
+            assertEquals(5, stored.quantityInStash)
+            stored = stored.copy(quantityInStash = Int.MAX_VALUE)
+            assertEquals(false, repository.changeQuantity(5L, 1))
+            assertEquals(Int.MAX_VALUE, stored.quantityInStash)
         }
 
     @Test

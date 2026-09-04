@@ -8,6 +8,13 @@ import org.junit.Test
 class PatternAnnotationPayloadCodecTest {
     @Test
     fun `drawing annotation payloads round trip with their matching kind`() {
+        val shape =
+            ShapePayload(
+                start = NormalizedPatternPoint(0.1f, 0.2f),
+                end = NormalizedPatternPoint(0.9f, 0.8f),
+                strokeArgb = 0xFF000000.toInt(),
+                strokeWidth = 2f,
+            )
         assertRoundTrips(
             samples =
                 listOf(
@@ -32,13 +39,10 @@ class PatternAnnotationPayloadCodecTest {
                             argb = 0x66FFE000,
                             strokeWidth = 18f,
                         ),
-                    PatternAnnotationKind.LINE to
-                        ShapePayload(
-                            start = NormalizedPatternPoint(0.1f, 0.2f),
-                            end = NormalizedPatternPoint(0.9f, 0.8f),
-                            strokeArgb = 0xFF000000.toInt(),
-                            strokeWidth = 2f,
-                        ),
+                    PatternAnnotationKind.LINE to shape,
+                    PatternAnnotationKind.ARROW to shape,
+                    PatternAnnotationKind.RECTANGLE to shape,
+                    PatternAnnotationKind.ELLIPSE to shape,
                 ),
         )
     }
@@ -195,6 +199,72 @@ class PatternAnnotationPayloadCodecTest {
         )
     }
 
+    @Test
+    fun `degenerate shape and bounds payloads are rejected`() {
+        val point = NormalizedPatternPoint(0.5f, 0.5f)
+        val flatBounds = NormalizedPatternBounds(0.2f, 0.2f, 0.2f, 0.8f)
+
+        assertNull(
+            PatternAnnotationPayloadCodec.encode(
+                PatternAnnotationKind.LINE,
+                ShapePayload(point, point, strokeArgb = 1, strokeWidth = 2f),
+            ),
+        )
+        assertNull(
+            PatternAnnotationPayloadCodec.encode(
+                PatternAnnotationKind.RECTANGLE,
+                ShapePayload(
+                    start = NormalizedPatternPoint(0.2f, 0.2f),
+                    end = NormalizedPatternPoint(0.2f, 0.8f),
+                    strokeArgb = 1,
+                    strokeWidth = 2f,
+                ),
+            ),
+        )
+        assertNull(
+            PatternAnnotationPayloadCodec.encode(
+                PatternAnnotationKind.TEXT_BOX,
+                TextBoxPayload(flatBounds, "Text", textSizeSp = 16f, textArgb = 1),
+            ),
+        )
+    }
+
+    @Test
+    fun `content payloads reject missing text and invalid chart dimensions`() {
+        val bounds = NormalizedPatternBounds(0.1f, 0.1f, 0.9f, 0.9f)
+
+        assertNull(
+            PatternAnnotationPayloadCodec.encode(
+                PatternAnnotationKind.TEXT_BOX,
+                TextBoxPayload(bounds, "   ", textSizeSp = 16f, textArgb = 1),
+            ),
+        )
+        assertNull(
+            PatternAnnotationPayloadCodec.encode(
+                PatternAnnotationKind.CALLOUT,
+                CalloutPayload(bounds, PatternCalloutSymbol.NOTE, "", "\n", argb = 1),
+            ),
+        )
+        assertNull(
+            PatternAnnotationPayloadCodec.encode(
+                PatternAnnotationKind.CHART_REGION,
+                chartRegion().copy(name = ""),
+            ),
+        )
+        assertNull(
+            PatternAnnotationPayloadCodec.encode(
+                PatternAnnotationKind.CHART_REGION,
+                chartRegion().copy(rows = 0),
+            ),
+        )
+        assertNull(
+            PatternAnnotationPayloadCodec.encode(
+                PatternAnnotationKind.CHART_TRACKER,
+                chartTracker(region = chartRegion().copy(columns = 1_000)),
+            ),
+        )
+    }
+
     private fun chartRegion() =
         ChartRegionPayload(
             bounds = NormalizedPatternBounds(0.1f, 0.2f, 0.9f, 0.8f),
@@ -203,6 +273,18 @@ class PatternAnnotationPayloadCodecTest {
             columns = 30,
             rowDirection = ChartRowDirection.BOTTOM_TO_TOP,
             columnDirection = ChartColumnDirection.ALTERNATING,
+        )
+
+    private fun chartTracker(region: ChartRegionPayload) =
+        ChartTrackerPayload(
+            region = region,
+            trackingMode = ChartTrackingMode.CROSSHAIR,
+            counterType = ChartCounterType.MAIN,
+            counterStartValue = 0,
+            gridStartIndex = 0,
+            wrapAtEnd = true,
+            highlightArgb = 1,
+            highlightAlpha = 0.4f,
         )
 
     private fun assertRoundTrips(samples: List<Pair<PatternAnnotationKind, PatternAnnotationPayload>>) {

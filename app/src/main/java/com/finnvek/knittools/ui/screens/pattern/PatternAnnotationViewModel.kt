@@ -136,7 +136,7 @@ data class PatternAnnotationUiState(
 @HiltViewModel
 @OptIn(ExperimentalCoroutinesApi::class)
 // Reittikohtainen ViewModel tarjoaa Compose-kerrokselle jokaisen editorin käyttäjäaikeen erillisenä metodina.
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LargeClass")
 class PatternAnnotationViewModel
     @Inject
     constructor(
@@ -155,6 +155,7 @@ class PatternAnnotationViewModel
         private val layerReadFailed = MutableStateFlow(false)
         private val annotationReadFailed = MutableStateFlow(false)
         private val interaction = MutableStateFlow(PatternAnnotationInteractionState())
+        private var editContext: AnnotationEditContext? = null
         private val counterContext =
             createCounterContextFlow(routeOwner).stateIn(
                 scope = viewModelScope,
@@ -173,6 +174,7 @@ class PatternAnnotationViewModel
         private val layers =
             createLayerFlow(routeOwner)
                 .withReadRecovery(layerReadFailed)
+                .onEach(::handleLayerSelection)
                 .stateIn(
                     scope = viewModelScope,
                     started = SharingStarted.Eagerly,
@@ -278,10 +280,7 @@ class PatternAnnotationViewModel
         fun setCurrentPage(page: Int) {
             require(page >= 0) { "Pattern annotation page must be non-negative" }
             if (page == currentPage.value) return
-            if (interaction.value.draftStroke != null) {
-                commitStroke(DEFAULT_SIMPLIFICATION_TOLERANCE)
-            }
-            interaction.update { state -> state.copy(selectedAnnotationId = null) }
+            interaction.update { state -> state.copy(draftStroke = null, selectedAnnotationId = null) }
             currentPage.value = page
         }
 
@@ -645,16 +644,21 @@ class PatternAnnotationViewModel
             onSuccess: (PatternAnnotationInteractionState) -> PatternAnnotationInteractionState = { it },
         ) {
             if (interaction.value.isSaving) return
+            val commandContext = layers.value.editContext
             interaction.update { it.copy(isSaving = true, writeError = PatternAnnotationWriteError.NONE) }
             viewModelScope.launch {
                 runCatching { command.apply(annotationRepository) }
                     .onSuccess { inverse ->
                         interaction.update { state ->
-                            onSuccess(state).copy(
-                                undoStack = (state.undoStack + inverse).takeLast(HISTORY_LIMIT),
-                                redoStack = emptyList(),
-                                isSaving = false,
-                            )
+                            if (layers.value.editContext == commandContext) {
+                                onSuccess(state).copy(
+                                    undoStack = (state.undoStack + inverse).takeLast(HISTORY_LIMIT),
+                                    redoStack = emptyList(),
+                                    isSaving = false,
+                                )
+                            } else {
+                                state.copy(isSaving = false)
+                            }
                         }
                     }.onFailure { failure ->
                         if (failure is CancellationException) {
@@ -662,7 +666,15 @@ class PatternAnnotationViewModel
                             throw failure
                         }
                         interaction.update { state ->
-                            state.copy(isSaving = false, writeError = PatternAnnotationWriteError.WRITE_FAILED)
+                            state.copy(
+                                isSaving = false,
+                                writeError =
+                                    if (layers.value.editContext == commandContext) {
+                                        PatternAnnotationWriteError.WRITE_FAILED
+                                    } else {
+                                        state.writeError
+                                    },
+                            )
                         }
                     }
             }
@@ -673,24 +685,13 @@ class PatternAnnotationViewModel
             if (state.isSaving) return
             val source = if (isUndo) state.undoStack else state.redoStack
             val command = source.lastOrNull() ?: return
+            val commandContext = layers.value.editContext
             interaction.value = state.copy(isSaving = true, writeError = PatternAnnotationWriteError.NONE)
             viewModelScope.launch {
                 runCatching { command.apply(annotationRepository) }
                     .onSuccess { inverse ->
                         interaction.update { current ->
-                            if (isUndo) {
-                                current.copy(
-                                    undoStack = current.undoStack.dropLast(1),
-                                    redoStack = (current.redoStack + inverse).takeLast(HISTORY_LIMIT),
-                                    isSaving = false,
-                                )
-                            } else {
-                                current.copy(
-                                    undoStack = (current.undoStack + inverse).takeLast(HISTORY_LIMIT),
-                                    redoStack = current.redoStack.dropLast(1),
-                                    isSaving = false,
-                                )
-                            }
+                            historyCommandSuccessState(current, inverse, isUndo, commandContext)
                         }
                     }.onFailure { failure ->
                         if (failure is CancellationException) {
@@ -698,9 +699,58 @@ class PatternAnnotationViewModel
                             throw failure
                         }
                         interaction.update { current ->
-                            current.copy(isSaving = false, writeError = PatternAnnotationWriteError.WRITE_FAILED)
+                            current.copy(
+                                isSaving = false,
+                                writeError =
+                                    if (layers.value.editContext == commandContext) {
+                                        PatternAnnotationWriteError.WRITE_FAILED
+                                    } else {
+                                        current.writeError
+                                    },
+                            )
                         }
                     }
+            }
+        }
+
+        private fun historyCommandSuccessState(
+            current: PatternAnnotationInteractionState,
+            inverse: PatternAnnotationCommand,
+            isUndo: Boolean,
+            commandContext: AnnotationEditContext,
+        ): PatternAnnotationInteractionState {
+            if (layers.value.editContext != commandContext) {
+                return current.copy(isSaving = false)
+            }
+            return if (isUndo) {
+                current.copy(
+                    undoStack = current.undoStack.dropLast(1),
+                    redoStack = (current.redoStack + inverse).takeLast(HISTORY_LIMIT),
+                    isSaving = false,
+                )
+            } else {
+                current.copy(
+                    undoStack = (current.undoStack + inverse).takeLast(HISTORY_LIMIT),
+                    redoStack = current.redoStack.dropLast(1),
+                    isSaving = false,
+                )
+            }
+        }
+
+        private fun handleLayerSelection(selection: AnnotationLayerSelection) {
+            val nextContext = selection.editContext
+            val previousContext = editContext
+            editContext = nextContext
+            if (previousContext != null && previousContext != nextContext) {
+                interaction.update { state ->
+                    state.copy(
+                        draftStroke = null,
+                        writeError = PatternAnnotationWriteError.NONE,
+                        selectedAnnotationId = null,
+                        undoStack = emptyList(),
+                        redoStack = emptyList(),
+                    )
+                }
             }
         }
 
@@ -783,7 +833,15 @@ private data class AnnotationLayerSelection(
                 is PatternAnnotationOwner.Project -> projectLayer?.id
                 is PatternAnnotationOwner.SavedPattern -> masterLayer?.id
             }
+
+    val editContext: AnnotationEditContext
+        get() = AnnotationEditContext(owner = owner, editableLayerId = editableLayerId)
 }
+
+private data class AnnotationEditContext(
+    val owner: PatternAnnotationOwner,
+    val editableLayerId: Long?,
+)
 
 private data class PageAnnotations(
     val master: List<PatternAnnotation> = emptyList(),
@@ -957,7 +1015,6 @@ private fun PatternAnnotationTool.toAnnotationKind(): PatternAnnotationKind? =
         else -> null
     }
 
-private const val DEFAULT_SIMPLIFICATION_TOLERANCE = 0.001f
 private const val DUPLICATE_OFFSET = 0.02f
 private const val HISTORY_LIMIT = 50
 private const val MAX_CHART_DIMENSION = 999

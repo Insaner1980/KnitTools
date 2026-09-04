@@ -7,11 +7,12 @@ enum class SavedPatternSource(
     LocalFile("LOCAL_FILE"),
     WebLink("WEB_LINK"),
     Other("OTHER"),
+    Unknown("UNKNOWN"),
     ;
 
     companion object {
         fun fromPersistedValue(value: String): SavedPatternSource =
-            entries.firstOrNull { it.persistedValue == value } ?: Other
+            entries.firstOrNull { it.persistedValue == value } ?: Unknown
     }
 }
 

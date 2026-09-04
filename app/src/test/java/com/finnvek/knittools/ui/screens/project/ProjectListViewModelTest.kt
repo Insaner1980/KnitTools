@@ -27,6 +27,7 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -85,7 +86,7 @@ class ProjectListViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun createViewModel() =
+    private fun createViewModel(savedStateHandle: SavedStateHandle = SavedStateHandle()) =
         ProjectListViewModel(
             repository = repository,
             proManager = proManager,
@@ -96,7 +97,7 @@ class ProjectListViewModelTest {
             preferencesManager = preferencesManager,
             context = context,
             folderRepository = folderRepository,
-            savedStateHandle = SavedStateHandle(),
+            savedStateHandle = savedStateHandle,
         )
 
     @Test
@@ -215,6 +216,42 @@ class ProjectListViewModelTest {
         }
 
     @Test
+    fun `pending project creation survives view model recreation`() =
+        runTest {
+            val savedStateHandle = SavedStateHandle()
+            every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } returnsMany listOf(false, true)
+            coEvery { repository.getProjectCount() } returns 1
+            coEvery { repository.createProject(any(), any(), any(), any(), any(), null) } returnsMany
+                listOf(
+                    ProjectCreationResult.LimitReached,
+                    ProjectCreationResult.Created(projectId = 42L),
+                )
+
+            createViewModel(savedStateHandle).createProject(
+                name = "Sukat",
+                craftType = com.finnvek.knittools.domain.model.CraftType.KNITTING,
+                mainCounterLabelType = com.finnvek.knittools.domain.model.MainCounterLabelType.ROWS,
+                mainCounterCustomLabel = null,
+            )
+
+            val recreated = createViewModel(savedStateHandle)
+            recreated.retryPendingProjectCreation()
+
+            // CPD-OFF: Uudelleenluonnin tulokset todennetaan skenaarion yhteydessa.
+            assertEquals(42L, withTimeoutOrNull(1) { recreated.navigateToProject.first() })
+            coVerify(exactly = 2) {
+                repository.createProject(
+                    name = "Sukat",
+                    craftType = com.finnvek.knittools.domain.model.CraftType.KNITTING,
+                    mainCounterLabelType = com.finnvek.knittools.domain.model.MainCounterLabelType.ROWS,
+                    mainCounterCustomLabel = null,
+                    canCreateAdditionalProjects = any(),
+                )
+            }
+            // CPD-ON
+        }
+
+    @Test
     fun `created project navigation waits for a collector after recreation`() =
         runTest {
             every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } returns true
@@ -233,6 +270,40 @@ class ProjectListViewModelTest {
         }
 
     @Test
+    fun `duplicate project creation taps start only one mutation`() =
+        runTest {
+            every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } returns true
+            val result = CompletableDeferred<ProjectCreationResult>()
+            coEvery { repository.createProject(any(), any(), any(), any(), true, null) } coAnswers {
+                result.await()
+            }
+            // CPD-OFF: Sama kutsu toistetaan tarkoituksella kaksoisnapautuksen todentamiseksi.
+            val vm = createViewModel()
+
+            vm.createProject(
+                name = "Sukat",
+                craftType = com.finnvek.knittools.domain.model.CraftType.KNITTING,
+                mainCounterLabelType = com.finnvek.knittools.domain.model.MainCounterLabelType.ROWS,
+                mainCounterCustomLabel = null,
+            )
+            vm.createProject(
+                name = "Sukat",
+                craftType = com.finnvek.knittools.domain.model.CraftType.KNITTING,
+                mainCounterLabelType = com.finnvek.knittools.domain.model.MainCounterLabelType.ROWS,
+                mainCounterCustomLabel = null,
+            )
+            // CPD-ON
+            runCurrent()
+
+            coVerify(exactly = 1) { repository.createProject(any(), any(), any(), any(), true, null) }
+
+            result.complete(ProjectCreationResult.Created(42L))
+            runCurrent()
+
+            assertEquals(42L, withTimeoutOrNull(1) { vm.navigateToProject.first() })
+        }
+
+    @Test
     fun `archiveProject calls repository with correct data`() =
         runTest {
             every { proManager.hasFeature(any()) } returns true
@@ -241,7 +312,6 @@ class ProjectListViewModelTest {
             coEvery {
                 repository.completeProjectWithSessionChoice(
                     projectId = 5L,
-                    totalRows = 42,
                     choice = null,
                 )
             } returns ProjectCompletionResult.Completed
@@ -252,7 +322,6 @@ class ProjectListViewModelTest {
             coVerify {
                 repository.completeProjectWithSessionChoice(
                     projectId = 5L,
-                    totalRows = 42,
                     choice = null,
                 )
             }
@@ -446,7 +515,7 @@ class ProjectListViewModelTest {
             coEvery { repository.getProject(1L) } returns active
             coEvery { repository.getProject(2L) } returns completed
             coEvery { repository.refreshActiveSession() } returns null
-            coEvery { repository.completeProjectWithSessionChoice(any(), any(), any()) } returns
+            coEvery { repository.completeProjectWithSessionChoice(any(), any()) } returns
                 ProjectCompletionResult.Completed
             val vm = createViewModel()
             backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.completedProjects.collect() }
@@ -455,9 +524,43 @@ class ProjectListViewModelTest {
             vm.toggleProjectSelection(2L)
             vm.completeSelectedProjects()
 
-            coVerify(exactly = 1) { repository.completeProjectWithSessionChoice(1L, 5, null) }
-            coVerify(exactly = 0) { repository.completeProjectWithSessionChoice(2L, any(), any()) }
+            coVerify(exactly = 1) { repository.completeProjectWithSessionChoice(1L, null) }
+            coVerify(exactly = 0) { repository.completeProjectWithSessionChoice(2L, any()) }
             assertFalse(vm.isMultiSelectMode.value)
+        }
+
+    @Test
+    fun `failed bulk completion preserves selection for retry`() =
+        runTest {
+            val active = CounterProject(id = 1L, name = "Active", count = 5)
+            every { repository.getActiveProjects(ProjectSortOrder.UPDATED) } returns flowOf(listOf(active))
+            coEvery { repository.getProject(1L) } returns active
+            coEvery { repository.refreshActiveSession() } returns null
+            coEvery { repository.completeProjectWithSessionChoice(1L, null) } returns
+                ProjectCompletionResult.PersistenceFailure
+            val vm = createViewModel()
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.activeProjects.collect() }
+
+            vm.enterMultiSelectMode(1L)
+            vm.completeSelectedProjects()
+
+            assertTrue(vm.isMultiSelectMode.value)
+            assertEquals(setOf(1L), vm.selectedProjectIds.value)
+        }
+
+    @Test
+    fun `failed bulk deletion preserves selection for retry`() =
+        runTest {
+            coEvery { repository.refreshActiveSession() } returns null
+            coEvery { repository.deleteProjectResolvingActiveSession(1L, false) } returns
+                ProjectDeletionResult.PersistenceFailure
+            val vm = createViewModel()
+
+            vm.enterMultiSelectMode(1L)
+            vm.deleteSelectedProjects()
+
+            assertTrue(vm.isMultiSelectMode.value)
+            assertEquals(setOf(1L), vm.selectedProjectIds.value)
         }
 
     // CPD-ON

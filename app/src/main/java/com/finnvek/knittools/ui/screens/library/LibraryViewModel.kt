@@ -297,7 +297,7 @@ class LibraryViewModel
         private fun savePendingManualYarnCard() {
             val input = pendingManualYarnCard ?: return
             val yarnName = input.yarnName.trim()
-            if (yarnName.isBlank()) {
+            if (yarnName.isBlank() || input.quantity < 1) {
                 pendingManualYarnCard = null
                 return
             }
@@ -309,7 +309,7 @@ class LibraryViewModel
                         YarnCard(
                             yarnName = yarnName,
                             brand = input.brand.trim(),
-                            quantityInStash = input.quantity.coerceAtLeast(1),
+                            quantityInStash = input.quantity,
                             weightCategory = input.weightCategory.trim(),
                             colorName = input.colorName.trim(),
                             colorNumber = input.colorNumber.trim(),

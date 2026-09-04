@@ -9,16 +9,20 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeoutOrNull
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -93,6 +97,27 @@ class SettingsViewModelTest {
             vm.restorePurchases()
 
             coVerify { billingManager.restorePurchasesWithResult() }
+        }
+
+    @Test
+    fun `repeated restore request does not start a concurrent billing query`() =
+        runTest {
+            val releaseRestore = CompletableDeferred<Unit>()
+            coEvery { billingManager.restorePurchasesWithResult() } coAnswers {
+                releaseRestore.await()
+                RestorePurchasesResult.RESTORED
+            }
+            val vm = createViewModel()
+
+            vm.restorePurchases()
+            vm.restorePurchases()
+            runCurrent()
+
+            assertTrue(vm.isRestoring.value)
+            coVerify(exactly = 1) { billingManager.restorePurchasesWithResult() }
+            releaseRestore.complete(Unit)
+            runCurrent()
+            assertFalse(vm.isRestoring.value)
         }
 
     @Test

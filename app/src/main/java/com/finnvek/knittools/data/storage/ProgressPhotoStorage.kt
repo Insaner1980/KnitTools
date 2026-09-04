@@ -30,10 +30,7 @@ class ProgressPhotoStorage
             sourceUri: Uri,
             targetFile: File,
         ): Boolean {
-            val original =
-                runCatching {
-                    context.contentResolver.openInputStream(sourceUri)?.use(BitmapFactory::decodeStream)
-                }.getOrNull() ?: return false
+            val original = decodeBoundedBitmap(context, sourceUri, MAX_DIMENSION) ?: return false
 
             val scaled = scaleDown(original, MAX_DIMENSION)
             return try {
@@ -124,6 +121,27 @@ class ProgressPhotoStorage
             return bitmap.scale(newWidth, newHeight)
         }
 
+        private fun decodeBoundedBitmap(
+            context: Context,
+            sourceUri: Uri,
+            maxDimension: Int,
+        ): Bitmap? =
+            runCatching {
+                val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                context.contentResolver.openInputStream(sourceUri)?.use { input ->
+                    BitmapFactory.decodeStream(input, null, bounds)
+                }
+                if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
+
+                val options =
+                    BitmapFactory.Options().apply {
+                        inSampleSize = calculateBitmapInSampleSize(bounds.outWidth, bounds.outHeight, maxDimension)
+                    }
+                context.contentResolver.openInputStream(sourceUri)?.use { input ->
+                    BitmapFactory.decodeStream(input, null, options)
+                }
+            }.getOrNull()
+
         private companion object {
             const val MAX_DIMENSION = 1920
             const val JPEG_QUALITY = 80
@@ -136,3 +154,17 @@ class ProgressPhotoStorage
                 canonicalFile.path.startsWith(canonicalRoot.path + File.separator)
         }
     }
+
+internal fun calculateBitmapInSampleSize(
+    width: Int,
+    height: Int,
+    maxDimension: Int,
+): Int {
+    val safeMaxDimension = maxDimension.coerceAtLeast(1)
+    val longestEdge = maxOf(width, height).coerceAtLeast(1)
+    var sampleSize = 1
+    while (longestEdge / sampleSize > safeMaxDimension && sampleSize <= Int.MAX_VALUE / 2) {
+        sampleSize *= 2
+    }
+    return sampleSize
+}

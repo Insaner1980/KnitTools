@@ -43,6 +43,17 @@ class CounterWorkspacePolishSourceTest {
         assertTrue(stitchCounter.contains("label: String"))
     }
 
+    @Test
+    fun `stitch tracker uses named actions and a large font layout`() {
+        val stitchCounter = ProjectSourceFiles.read(STITCH_COUNTER)
+
+        assertTrue(stitchCounter.contains("R.string.counter_decrease_named, label"))
+        assertTrue(stitchCounter.contains("R.string.counter_increase_named, label"))
+        assertTrue(stitchCounter.contains("LocalDensity.current.fontScale >= 1.5f"))
+        assertTrue(stitchCounter.contains("if (useLargeFontLayout)"))
+        assertTrue(stitchCounter.contains("Column("))
+    }
+
     private companion object {
         const val MULTI_COUNTER_COMPONENTS =
             "app/src/main/java/com/finnvek/knittools/ui/screens/counter/MultiCounterComponents.kt"

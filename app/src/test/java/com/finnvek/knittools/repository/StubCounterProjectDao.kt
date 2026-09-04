@@ -74,21 +74,17 @@ open class StubCounterProjectDao(
         updatedAt: Long,
     ) = Unit
 
-    override suspend fun updateStitchCount(
+    override suspend fun updateStitchState(
         id: Long,
         stitchCount: Int?,
+        trackingEnabled: Boolean,
+        currentStitch: Int,
         updatedAt: Long,
     ) = Unit
 
     override suspend fun updateCurrentStitch(
         id: Long,
         stitch: Int,
-        updatedAt: Long,
-    ) = Unit
-
-    override suspend fun updateStitchTrackingEnabled(
-        id: Long,
-        enabled: Boolean,
         updatedAt: Long,
     ) = Unit
 

@@ -24,8 +24,29 @@ class TrialStartSourceTest {
                 .substringBefore("suspend fun claimTrialEndNotice")
 
         assertEqualsOne(needle = "editPreferencesSafely", source = startBody)
+        assertTrue(startBody.contains("if (startTimestamp == 0L && !clockTamperedAlready)"))
         assertTrue(startBody.contains("preferences[KEY_TRIAL_START] = now"))
-        assertTrue(startBody.contains("TrialStartResult.AlreadyStarted"))
+        assertTrue(startBody.contains("preferences[KEY_CLOCK_TAMPERED] = false"))
+        assertTrue(startBody.contains("classifyExistingTrial"))
+    }
+
+    @Test
+    fun `trial clock updates derive the previous timestamp inside the atomic edit`() {
+        val source = ProjectSourceFiles.read(TRIAL_MANAGER)
+        val updateBody =
+            source
+                .substringAfter("suspend fun updateTimestamp()")
+                .substringBefore("private suspend fun refreshTrialState")
+        val refreshBody =
+            source
+                .substringAfter("private suspend fun refreshTrialState()")
+                .substringBefore("private fun startRefreshLoop")
+
+        listOf(updateBody, refreshBody).forEach { body ->
+            assertEqualsOne(needle = "editPreferencesSafely", source = body)
+            assertFalse(body.contains("safePreferencesData.first()"))
+            assertTrue(body.contains("preferences[KEY_LAST_KNOWN_TIMESTAMP]"))
+        }
     }
 
     private fun assertEqualsOne(

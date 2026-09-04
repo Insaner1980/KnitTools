@@ -4,9 +4,20 @@ import type {
   SanitizedPattern,
   SanitizedPatternSearchResponse,
 } from "./sanitizedTypes";
+import { readJsonResponse } from "./boundedResponse";
 import { toSanitizedPattern } from "./sanitizedTypes";
 
 const RAVELRY_API_BASE_URL = "https://api.ravelry.com";
+const RAVELRY_API_REQUEST_TIMEOUT_MILLIS = 10_000;
+const RAVELRY_API_RESPONSE_MAX_BYTES = 1_048_576;
+const MAX_RAVELRY_PATTERN_ID = 2_147_483_647;
+const MAX_PATTERN_TITLE_LENGTH = 500;
+const MAX_DESIGNER_NAME_LENGTH = 300;
+const MAX_RAVELRY_USER_FIELD_LENGTH = 200;
+const MAX_PATTERN_PERMALINK_LENGTH = 512;
+const MAX_REMOTE_URL_LENGTH = 2_048;
+const MAX_PAGINATION_VALUE = 2_147_483_647;
+const CONTROL_CHARACTERS = /[\u0000-\u001F\u007F-\u009F\u2028\u2029]/g;
 
 export class RavelryClientHttpError extends Error {
   readonly code: string;
@@ -46,11 +57,21 @@ export interface RavelryClient {
   getPatternById(accessToken: string, ravelryPatternId: number): Promise<SanitizedPattern | null>;
 }
 
-function stringOrUndefined(value: unknown): string | undefined {
-  if (typeof value === "number") {
-    return String(value);
+function sanitizedTextOrUndefined(value: unknown, maxLength: number): string | undefined {
+  const stringValue =
+    typeof value === "number" && Number.isFinite(value)
+      ? String(value)
+      : typeof value === "string"
+        ? value
+        : undefined;
+  if (stringValue == null) {
+    return undefined;
   }
-  return typeof value === "string" && value.trim().length > 0 ? value : undefined;
+  const sanitized = stringValue.replace(CONTROL_CHARACTERS, " ").replace(/\s+/gu, " ").trim();
+  if (sanitized.length === 0) {
+    return undefined;
+  }
+  return Array.from(sanitized).slice(0, maxLength).join("");
 }
 
 function thumbnailUrlOrUndefined(value: unknown): string | undefined {
@@ -58,11 +79,17 @@ function thumbnailUrlOrUndefined(value: unknown): string | undefined {
     return undefined;
   }
   const trimmedValue = value.trim();
-  if (trimmedValue.length === 0) {
+  if (trimmedValue.length === 0 || trimmedValue.length > MAX_REMOTE_URL_LENGTH) {
     return undefined;
   }
   try {
-    return new URL(trimmedValue).protocol === "https:" ? trimmedValue : undefined;
+    const parsed = new URL(trimmedValue);
+    return parsed.protocol === "https:" &&
+      parsed.hostname.length > 0 &&
+      parsed.username.length === 0 &&
+      parsed.password.length === 0
+      ? trimmedValue
+      : undefined;
   } catch {
     return undefined;
   }
@@ -78,9 +105,11 @@ function currentUserFromResponse(value: unknown): RavelryCurrentUser {
   };
 
   return {
-    ravelryUserId: stringOrUndefined(user.id),
+    ravelryUserId: sanitizedTextOrUndefined(user.id, MAX_RAVELRY_USER_FIELD_LENGTH),
     ravelryUsername:
-      stringOrUndefined(user.username) ?? stringOrUndefined(user.login) ?? stringOrUndefined(user.name),
+      sanitizedTextOrUndefined(user.username, MAX_RAVELRY_USER_FIELD_LENGTH) ??
+      sanitizedTextOrUndefined(user.login, MAX_RAVELRY_USER_FIELD_LENGTH) ??
+      sanitizedTextOrUndefined(user.name, MAX_RAVELRY_USER_FIELD_LENGTH),
   };
 }
 
@@ -88,12 +117,21 @@ function objectOrNull(value: unknown): Record<string, unknown> | null {
   return typeof value === "object" && value !== null ? (value as Record<string, unknown>) : null;
 }
 
-function numberOrUndefined(value: unknown): number | undefined {
-  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+function integerInRangeOrUndefined(
+  value: unknown,
+  minimum: number,
+  maximum: number,
+): number | undefined {
+  return typeof value === "number" &&
+    Number.isSafeInteger(value) &&
+    value >= minimum &&
+    value <= maximum
+    ? value
+    : undefined;
 }
 
 function positiveIntegerOrUndefined(value: unknown): number | undefined {
-  return typeof value === "number" && Number.isInteger(value) && value > 0 ? value : undefined;
+  return integerInRangeOrUndefined(value, 1, MAX_RAVELRY_PATTERN_ID);
 }
 
 function arrayOrEmpty(value: unknown): readonly unknown[] {
@@ -116,7 +154,7 @@ function canonicalPatternUrl(permalink: string): string {
 
 function designerNameFrom(value: Record<string, unknown>): string {
   const designer = objectOrNull(value.designer);
-  return stringOrUndefined(designer?.name) ?? "";
+  return sanitizedTextOrUndefined(designer?.name, MAX_DESIGNER_NAME_LENGTH) ?? "";
 }
 
 function searchThumbnailFrom(value: Record<string, unknown>): string | undefined {
@@ -136,14 +174,14 @@ function sanitizePatternValue(value: unknown, thumbnailUrl?: string): SanitizedP
   }
 
   const ravelryPatternId = positiveIntegerOrUndefined(pattern.id);
-  const permalink = stringOrUndefined(pattern.permalink);
+  const permalink = sanitizedTextOrUndefined(pattern.permalink, MAX_PATTERN_PERMALINK_LENGTH);
   if (ravelryPatternId == null || !permalink) {
     return null;
   }
 
   return toSanitizedPattern({
     ravelryPatternId,
-    title: stringOrUndefined(pattern.name) ?? "",
+    title: sanitizedTextOrUndefined(pattern.name, MAX_PATTERN_TITLE_LENGTH) ?? "",
     designerName: designerNameFrom(pattern),
     ...(thumbnailUrl ? { thumbnailUrl } : {}),
     canonicalUrl: canonicalPatternUrl(permalink),
@@ -154,9 +192,9 @@ function sanitizePatternValue(value: unknown, thumbnailUrl?: string): SanitizedP
 function paginationFrom(value: unknown): SanitizedPagination {
   const paginator = objectOrNull(value);
   return {
-    page: numberOrUndefined(paginator?.page) ?? 1,
-    pageCount: numberOrUndefined(paginator?.page_count) ?? 1,
-    resultCount: numberOrUndefined(paginator?.results) ?? 0,
+    page: integerInRangeOrUndefined(paginator?.page, 1, MAX_PAGINATION_VALUE) ?? 1,
+    pageCount: integerInRangeOrUndefined(paginator?.page_count, 1, MAX_PAGINATION_VALUE) ?? 1,
+    resultCount: integerInRangeOrUndefined(paginator?.results, 0, MAX_PAGINATION_VALUE) ?? 0,
   };
 }
 
@@ -178,7 +216,7 @@ async function ravelryJson(
   accessToken: string,
   url: URL,
 ): Promise<unknown> {
-  const response = await fetchImpl(url.toString(), {
+  const response = await fetchRavelry(fetchImpl, url.toString(), {
     headers: new Headers({
       Authorization: `Bearer ${accessToken}`,
     }),
@@ -191,13 +229,37 @@ async function ravelryJson(
     throw new RavelryClientHttpError(response.status);
   }
 
-  return response.json();
+  return responseJson(response);
+}
+
+async function responseJson(response: Response): Promise<unknown> {
+  try {
+    return await readJsonResponse(response, RAVELRY_API_RESPONSE_MAX_BYTES);
+  } catch {
+    throw new RavelryClientHttpError(503);
+  }
+}
+
+async function fetchRavelry(
+  fetchImpl: typeof fetch,
+  input: string,
+  init: RequestInit,
+): Promise<Response> {
+  try {
+    return await fetchImpl(input, {
+      ...init,
+      redirect: "error",
+      signal: AbortSignal.timeout(RAVELRY_API_REQUEST_TIMEOUT_MILLIS),
+    });
+  } catch {
+    throw new RavelryClientHttpError(503);
+  }
 }
 
 export function createRavelryClient(fetchImpl: typeof fetch = fetch): RavelryClient {
   return {
     async getCurrentUser(accessToken) {
-      const response = await fetchImpl("https://api.ravelry.com/current_user.json", {
+      const response = await fetchRavelry(fetchImpl, "https://api.ravelry.com/current_user.json", {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
@@ -207,7 +269,7 @@ export function createRavelryClient(fetchImpl: typeof fetch = fetch): RavelryCli
         throw new RavelryClientHttpError(response.status);
       }
 
-      return currentUserFromResponse(await response.json());
+      return currentUserFromResponse(await responseJson(response));
     },
     async searchPatterns(accessToken, query) {
       const url = new URL(`${RAVELRY_API_BASE_URL}/patterns/search.json`);

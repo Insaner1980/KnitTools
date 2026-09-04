@@ -6,6 +6,7 @@ import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.pro.ProState
 import com.finnvek.knittools.repository.CounterRepository
+import com.finnvek.knittools.repository.ProjectNotesSaveResult
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -47,6 +48,9 @@ class NotesEditorViewModelTest {
         proManager = mockk()
         every { proManager.proState } returns MutableStateFlow(ProState())
         every { proManager.hasFeature(ProFeature.NOTES) } returns true
+        coEvery {
+            repository.saveProjectNotes(any(), any(), any(), any())
+        } returns ProjectNotesSaveResult.PersistenceFailure
     }
 
     @After
@@ -67,8 +71,8 @@ class NotesEditorViewModelTest {
                 notesCreated = notesCreated,
             )
         every { repository.observeProject(1L) } returns flowOf(project)
-        coEvery { repository.saveProjectNotes(1L, any(), any()) } answers {
-            project.copy(notes = arg(2))
+        coEvery { repository.saveProjectNotes(1L, any(), any(), any()) } answers {
+            ProjectNotesSaveResult.Saved(project.copy(notes = arg(2)))
         }
         return NotesEditorViewModel(
             repository = repository,
@@ -110,8 +114,7 @@ class NotesEditorViewModelTest {
             viewModel.onNotesChanged("Should not persist")
             viewModel.saveImmediately()
 
-            coVerify(exactly = 0) { repository.updateProjectNotes(any(), any()) }
-            coVerify(exactly = 0) { repository.saveProjectNotes(any(), any(), any()) }
+            coVerify(exactly = 0) { repository.saveProjectNotes(any(), any(), any(), any()) }
         }
 
     @Test
@@ -124,8 +127,8 @@ class NotesEditorViewModelTest {
                     emitExternal.await()
                     emit(CounterProject(id = 1L, name = "Test", notes = "External edit"))
                 }
-            coEvery { repository.saveProjectNotes(1L, any(), any()) } answers {
-                CounterProject(id = 1L, name = "Test", notes = arg(2))
+            coEvery { repository.saveProjectNotes(1L, any(), any(), any()) } answers {
+                ProjectNotesSaveResult.Saved(CounterProject(id = 1L, name = "Test", notes = arg(2)))
             }
             val viewModel =
                 NotesEditorViewModel(
@@ -152,10 +155,10 @@ class NotesEditorViewModelTest {
             val viewModel = vm(notes = "Base")
             advanceUntilIdle()
             coEvery {
-                repository.saveProjectNotes(1L, "Base", "Local edit")
+                repository.saveProjectNotes(1L, "Base", "Local edit", false)
             } coAnswers {
                 events += "saved"
-                CounterProject(id = 1L, name = "Test", notes = "Local edit")
+                ProjectNotesSaveResult.Saved(CounterProject(id = 1L, name = "Test", notes = "Local edit"))
             }
 
             viewModel.onNotesChanged("Local edit")
@@ -169,8 +172,8 @@ class NotesEditorViewModelTest {
     fun `debounced save uses original persisted notes as merge base`() =
         runTest {
             coEvery {
-                repository.saveProjectNotes(1L, "Base", "Local edit")
-            } returns CounterProject(id = 1L, name = "Test", notes = "Local edit")
+                repository.saveProjectNotes(1L, "Base", "Local edit", false)
+            } returns ProjectNotesSaveResult.Saved(CounterProject(id = 1L, name = "Test", notes = "Local edit"))
             val viewModel = vm(notes = "Base")
             advanceUntilIdle()
 
@@ -178,7 +181,7 @@ class NotesEditorViewModelTest {
             advanceTimeBy(1_000)
             advanceUntilIdle()
 
-            coVerify(exactly = 1) { repository.saveProjectNotes(1L, "Base", "Local edit") }
+            coVerify(exactly = 1) { repository.saveProjectNotes(1L, "Base", "Local edit", false) }
         }
 
     @Test
@@ -200,7 +203,7 @@ class NotesEditorViewModelTest {
 
             assertEquals("Local edit", savedStateHandle.get<String>("notesDraft"))
             assertEquals("Base", savedStateHandle.get<String>("notesDraftBase"))
-            coVerify(exactly = 0) { repository.saveProjectNotes(any(), any(), any()) }
+            coVerify(exactly = 0) { repository.saveProjectNotes(any(), any(), any(), any()) }
         }
 
     @Test
@@ -209,8 +212,8 @@ class NotesEditorViewModelTest {
             val project = CounterProject(id = 1L, name = "Test", notes = "Base")
             every { repository.observeProject(1L) } returns flowOf(project)
             coEvery {
-                repository.saveProjectNotes(1L, "Base", "Local edit")
-            } returns project.copy(notes = "Local edit")
+                repository.saveProjectNotes(1L, "Base", "Local edit", false)
+            } returns ProjectNotesSaveResult.Saved(project.copy(notes = "Local edit"))
             val savedStateHandle =
                 SavedStateHandle(
                     mapOf(
@@ -230,12 +233,12 @@ class NotesEditorViewModelTest {
             runCurrent()
 
             assertEquals("Local edit", viewModel.uiState.value.notes)
-            coVerify(exactly = 0) { repository.saveProjectNotes(any(), any(), any()) }
+            coVerify(exactly = 0) { repository.saveProjectNotes(any(), any(), any(), any()) }
 
             advanceTimeBy(1_000)
             advanceUntilIdle()
 
-            coVerify(exactly = 1) { repository.saveProjectNotes(1L, "Base", "Local edit") }
+            coVerify(exactly = 1) { repository.saveProjectNotes(1L, "Base", "Local edit", false) }
             assertNull(savedStateHandle.get<String>("notesDraft"))
             assertNull(savedStateHandle.get<String>("notesDraftBase"))
         }
@@ -252,7 +255,7 @@ class NotesEditorViewModelTest {
             advanceUntilIdle()
 
             assertEquals("Local edit", viewModel.uiState.value.notes)
-            coVerify(exactly = 1) { repository.saveProjectNotes(1L, "Base", "Local edit") }
+            coVerify(exactly = 1) { repository.saveProjectNotes(1L, "Base", "Local edit", false) }
         }
 
     @Test
@@ -268,6 +271,34 @@ class NotesEditorViewModelTest {
 
             assertEquals("", viewModel.uiState.value.notes)
             assertFalse(viewModel.uiState.value.canEditNotes)
-            coVerify(exactly = 0) { repository.saveProjectNotes(any(), any(), any()) }
+            coVerify(exactly = 0) { repository.saveProjectNotes(any(), any(), any(), any()) }
+        }
+
+    @Test
+    fun `failed immediate save keeps editor open and draft available`() =
+        runTest {
+            val savedStateHandle = SavedStateHandle(mapOf("projectId" to 1L))
+            every { repository.observeProject(1L) } returns
+                flowOf(CounterProject(id = 1L, name = "Test", notes = "Base", notesCreated = true))
+            coEvery {
+                repository.saveProjectNotes(1L, "Base", "Local edit", false)
+            } returns ProjectNotesSaveResult.PersistenceFailure
+            val viewModel =
+                NotesEditorViewModel(
+                    repository = repository,
+                    proManager = proManager,
+                    applicationScope = applicationScope,
+                    savedStateHandle = savedStateHandle,
+                )
+            advanceUntilIdle()
+            var callbacks = 0
+
+            viewModel.onNotesChanged("Local edit")
+            viewModel.saveImmediately { callbacks += 1 }
+            advanceUntilIdle()
+
+            assertEquals(0, callbacks)
+            assertEquals("Local edit", viewModel.uiState.value.notes)
+            assertEquals("Local edit", savedStateHandle.get<String>("notesDraft"))
         }
 }

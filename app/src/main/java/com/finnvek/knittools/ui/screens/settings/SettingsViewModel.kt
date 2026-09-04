@@ -12,8 +12,10 @@ import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.pro.ProState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -34,9 +36,12 @@ class SettingsViewModel
                 initialValue = AppPreferences(),
             )
         val proState: StateFlow<ProState> = proManager.proState
+        val proStateReady: StateFlow<Boolean> = proManager.initialStateReady
 
         private val messageChannel = Channel<Int>(Channel.BUFFERED)
         val messages = messageChannel.receiveAsFlow()
+        private val _isRestoring = MutableStateFlow(false)
+        val isRestoring: StateFlow<Boolean> = _isRestoring.asStateFlow()
 
         fun setThemeMode(mode: ThemeMode) {
             viewModelScope.launch { preferencesManager.setThemeMode(mode) }
@@ -61,21 +66,27 @@ class SettingsViewModel
         }
 
         fun restorePurchases() {
+            if (_isRestoring.value) return
+            _isRestoring.value = true
             viewModelScope.launch {
-                when (billingManager.restorePurchasesWithResult()) {
-                    RestorePurchasesResult.RESTORED -> {
-                        messageChannel.send(com.finnvek.knittools.R.string.pro_restored)
-                    }
+                try {
+                    when (billingManager.restorePurchasesWithResult()) {
+                        RestorePurchasesResult.RESTORED -> {
+                            messageChannel.send(com.finnvek.knittools.R.string.pro_restored)
+                        }
 
-                    RestorePurchasesResult.NOT_FOUND -> {
-                        messageChannel.send(
-                            com.finnvek.knittools.R.string.no_purchases_found,
-                        )
-                    }
+                        RestorePurchasesResult.NOT_FOUND -> {
+                            messageChannel.send(
+                                com.finnvek.knittools.R.string.no_purchases_found,
+                            )
+                        }
 
-                    RestorePurchasesResult.FAILED -> {
-                        messageChannel.send(com.finnvek.knittools.R.string.generic_error_unknown)
+                        RestorePurchasesResult.FAILED -> {
+                            messageChannel.send(com.finnvek.knittools.R.string.generic_error_unknown)
+                        }
                     }
+                } finally {
+                    _isRestoring.value = false
                 }
             }
         }

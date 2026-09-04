@@ -32,6 +32,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -82,6 +83,7 @@ fun SavedPatternDetailScreen(
 ) {
     var showRemoveConfirmDialog by rememberSaveable { mutableStateOf(false) }
     var pendingReplacementId by rememberSaveable(pattern.id) { mutableStateOf<Long?>(null) }
+    var lastHandledDeleteErrorId by rememberSaveable(pattern.id) { mutableLongStateOf(deleteErrorId) }
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -129,7 +131,8 @@ fun SavedPatternDetailScreen(
     }
 
     LaunchedEffect(deleteErrorId) {
-        if (deleteErrorId > 0L) {
+        if (deleteErrorId > lastHandledDeleteErrorId) {
+            lastHandledDeleteErrorId = deleteErrorId
             snackbarHostState.showSnackbar(deleteFailedMessage)
         }
     }

@@ -8,7 +8,6 @@ import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.finnvek.knittools.data.datastore.editPreferencesSafely
-import com.finnvek.knittools.data.datastore.safePreferencesData
 import com.finnvek.knittools.di.IoDispatcher
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
@@ -19,7 +18,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
@@ -36,7 +34,9 @@ data class TrialState(
 
 enum class TrialStartResult {
     Started,
-    AlreadyStarted,
+    AlreadyActive,
+    AlreadyExpired,
+    AlreadyTampered,
     Failed,
 }
 
@@ -58,24 +58,37 @@ class TrialManager
         }
 
         suspend fun startTrial(): TrialStartResult {
-            var startedNow = false
+            val now = System.currentTimeMillis()
+            var startResult: TrialStartResult? = null
             val didWrite =
                 context.trialDataStore.editPreferencesSafely { preferences ->
-                    if ((preferences[KEY_TRIAL_START] ?: 0L) == 0L) {
-                        val now = System.currentTimeMillis()
+                    val startTimestamp = preferences[KEY_TRIAL_START] ?: 0L
+                    val clockTamperedAlready = preferences[KEY_CLOCK_TAMPERED] ?: false
+                    if (startTimestamp == 0L && !clockTamperedAlready) {
                         preferences[KEY_TRIAL_START] = now
                         preferences[KEY_LAST_KNOWN_TIMESTAMP] =
                             calculateNextLastKnownTimestamp(
                                 now = now,
                                 lastKnownTimestamp = preferences[KEY_LAST_KNOWN_TIMESTAMP] ?: 0L,
                             )
-                        startedNow = true
+                        preferences[KEY_CLOCK_TAMPERED] = false
+                        startResult = TrialStartResult.Started
+                    } else {
+                        startResult =
+                            classifyExistingTrial(
+                                calculateTrialState(
+                                    now = now,
+                                    startTimestamp = startTimestamp,
+                                    lastKnownTimestamp = preferences[KEY_LAST_KNOWN_TIMESTAMP] ?: 0L,
+                                    clockTamperedAlready = clockTamperedAlready,
+                                ),
+                            )
                     }
                 }
             if (!didWrite) return TrialStartResult.Failed
 
             refreshTrialState()
-            return if (startedNow) TrialStartResult.Started else TrialStartResult.AlreadyStarted
+            return startResult ?: TrialStartResult.Failed
         }
 
         suspend fun claimTrialEndNotice(): Boolean {
@@ -101,40 +114,41 @@ class TrialManager
         }
 
         suspend fun updateTimestamp() {
-            val prefs = context.trialDataStore.safePreferencesData.first()
-            val lastKnown = prefs[KEY_LAST_KNOWN_TIMESTAMP] ?: 0L
             val now = System.currentTimeMillis()
-            val nextLastKnown = calculateNextLastKnownTimestamp(now, lastKnown)
-
-            context.trialDataStore.editPreferencesSafely {
-                it[KEY_LAST_KNOWN_TIMESTAMP] = nextLastKnown
+            context.trialDataStore.editPreferencesSafely { preferences ->
+                preferences[KEY_LAST_KNOWN_TIMESTAMP] =
+                    calculateNextLastKnownTimestamp(
+                        now = now,
+                        lastKnownTimestamp = preferences[KEY_LAST_KNOWN_TIMESTAMP] ?: 0L,
+                    )
             }
         }
 
         private suspend fun refreshTrialState() {
-            val prefs = context.trialDataStore.safePreferencesData.first()
-            val startTimestamp = prefs[KEY_TRIAL_START] ?: 0L
-            val lastKnown = prefs[KEY_LAST_KNOWN_TIMESTAMP] ?: 0L
-            val clockTamperedAlready = prefs[KEY_CLOCK_TAMPERED] ?: false
             val now = System.currentTimeMillis()
-
-            val state =
-                calculateTrialState(
-                    now = now,
-                    startTimestamp = startTimestamp,
-                    lastKnownTimestamp = lastKnown,
-                    clockTamperedAlready = clockTamperedAlready,
-                )
-            val nextLastKnown = calculateNextLastKnownTimestamp(now, lastKnown)
-
-            context.trialDataStore.editPreferencesSafely {
-                it[KEY_LAST_KNOWN_TIMESTAMP] = nextLastKnown
-                if (state.clockTampered) {
-                    it[KEY_CLOCK_TAMPERED] = true
+            var refreshedState: TrialState? = null
+            val didWrite =
+                context.trialDataStore.editPreferencesSafely { preferences ->
+                    val state =
+                        calculateTrialState(
+                            now = now,
+                            startTimestamp = preferences[KEY_TRIAL_START] ?: 0L,
+                            lastKnownTimestamp = preferences[KEY_LAST_KNOWN_TIMESTAMP] ?: 0L,
+                            clockTamperedAlready = preferences[KEY_CLOCK_TAMPERED] ?: false,
+                        )
+                    preferences[KEY_LAST_KNOWN_TIMESTAMP] =
+                        calculateNextLastKnownTimestamp(
+                            now = now,
+                            lastKnownTimestamp = preferences[KEY_LAST_KNOWN_TIMESTAMP] ?: 0L,
+                        )
+                    if (state.clockTampered) {
+                        preferences[KEY_CLOCK_TAMPERED] = true
+                    }
+                    refreshedState = state
                 }
+            if (didWrite) {
+                refreshedState?.let { _trialState.value = it }
             }
-
-            _trialState.value = state
         }
 
         private fun startRefreshLoop() {
@@ -193,19 +207,37 @@ class TrialManager
 
             // Puhdas laskentalogiikka erotettuna DataStore-I/O:sta testattavuuden vuoksi
             @VisibleForTesting
+            internal fun classifyExistingTrial(state: TrialState): TrialStartResult =
+                when {
+                    state.clockTampered -> TrialStartResult.AlreadyTampered
+                    state.isActive -> TrialStartResult.AlreadyActive
+                    else -> TrialStartResult.AlreadyExpired
+                }
+
+            @VisibleForTesting
             internal fun calculateTrialState(
                 now: Long,
                 startTimestamp: Long,
                 lastKnownTimestamp: Long,
                 clockTamperedAlready: Boolean = false,
             ): TrialState {
-                if (startTimestamp <= 0L) {
+                if (startTimestamp == 0L && !clockTamperedAlready) {
                     return TrialState()
                 }
+                if (startTimestamp <= 0L) {
+                    return TrialState(
+                        startTimestamp = startTimestamp,
+                        hasStarted = true,
+                        clockTampered = true,
+                    )
+                }
+                val rollbackToleranceMillis = TimeUnit.HOURS.toMillis(1)
                 val clockTampered =
                     clockTamperedAlready ||
                         lastKnownTimestamp > 0L &&
-                        now < lastKnownTimestamp - TimeUnit.HOURS.toMillis(1)
+                        now < lastKnownTimestamp - rollbackToleranceMillis ||
+                        now <= Long.MAX_VALUE - rollbackToleranceMillis &&
+                        startTimestamp > now + rollbackToleranceMillis
                 val trialDurationMillis = TimeUnit.DAYS.toMillis(TRIAL_DURATION_DAYS.toLong())
                 val remainingMillis =
                     (trialDurationMillis - (now - startTimestamp).coerceAtLeast(0L)).coerceAtLeast(0L)

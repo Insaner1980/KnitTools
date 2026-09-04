@@ -23,7 +23,7 @@ internal fun openRavelryUrl(
             false
         } else {
             runCatching {
-                context.startActivity(Intent(Intent.ACTION_VIEW, uri))
+                context.startActivity(createRavelryExternalIntent(uri))
             }.fold(
                 onSuccess = { true },
                 onFailure = { error ->
@@ -56,3 +56,8 @@ internal fun ravelryExternalUrlOrNull(url: String): String? {
 }
 
 internal fun ravelryExternalUriOrNull(url: String): Uri? = ravelryExternalUrlOrNull(url)?.toUri()
+
+internal fun createRavelryExternalIntent(uri: Uri): Intent =
+    Intent(Intent.ACTION_VIEW, uri).apply {
+        addCategory(Intent.CATEGORY_BROWSABLE)
+    }

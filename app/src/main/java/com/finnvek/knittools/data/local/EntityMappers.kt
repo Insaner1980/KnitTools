@@ -40,8 +40,16 @@ fun CounterProject.toEntity(): CounterProjectEntity =
         mainCounterLabelType = mainCounterLabelType.persistedValue,
     ).withDomainProjectDetails(this)
 
-private fun CounterProject.withEntityProjectDetails(entity: CounterProjectEntity): CounterProject =
-    copy(
+private fun CounterProject.withEntityProjectDetails(entity: CounterProjectEntity): CounterProject {
+    val validStitchCount = entity.stitchCount?.takeIf { it > 0 }
+    val trackingEnabled = entity.stitchTrackingEnabled && validStitchCount != null
+    val currentStitch =
+        validStitchCount
+            ?.takeIf { trackingEnabled }
+            ?.let { entity.currentStitch.coerceIn(0, it) }
+            ?: 0
+    return copy(
+        count = entity.count.coerceAtLeast(0),
         mainCounterCustomLabel = sanitizeMainCounterCustomLabel(entity.mainCounterCustomLabel),
         readingLineEnabled = entity.readingLineEnabled,
         readingLineYFraction = entity.readingLineYFraction.coerceIn(0f, 1f),
@@ -50,13 +58,13 @@ private fun CounterProject.withEntityProjectDetails(entity: CounterProjectEntity
         verticalReadingGuideXFraction = sanitizeReadingGuideFraction(entity.verticalReadingGuideXFraction),
         secondaryCount = entity.secondaryCount,
         secondaryCounterUsed = entity.secondaryCounterUsed,
-        stepSize = entity.stepSize,
+        stepSize = entity.stepSize.coerceAtLeast(1),
         notes = entity.notes,
         notesCreated = entity.notesCreated,
         createdAt = entity.createdAt,
         updatedAt = entity.updatedAt,
         sectionName = entity.sectionName,
-        stitchCount = entity.stitchCount,
+        stitchCount = validStitchCount,
         isCompleted = entity.isCompleted,
         totalRows = entity.totalRows,
         completedAt = entity.completedAt,
@@ -66,13 +74,22 @@ private fun CounterProject.withEntityProjectDetails(entity: CounterProjectEntity
         patternName = entity.patternName,
         currentPatternPage = entity.currentPatternPage,
         patternRowMapping = entity.patternRowMapping,
-        stitchTrackingEnabled = entity.stitchTrackingEnabled,
-        currentStitch = entity.currentStitch,
+        stitchTrackingEnabled = trackingEnabled,
+        currentStitch = currentStitch,
         targetRows = entity.targetRows,
     )
+}
 
-private fun CounterProjectEntity.withDomainProjectDetails(project: CounterProject): CounterProjectEntity =
-    copy(
+private fun CounterProjectEntity.withDomainProjectDetails(project: CounterProject): CounterProjectEntity {
+    val validStitchCount = project.stitchCount?.takeIf { it > 0 }
+    val trackingEnabled = project.stitchTrackingEnabled && validStitchCount != null
+    val currentStitch =
+        validStitchCount
+            ?.takeIf { trackingEnabled }
+            ?.let { project.currentStitch.coerceIn(0, it) }
+            ?: 0
+    return copy(
+        count = project.count.coerceAtLeast(0),
         mainCounterCustomLabel = sanitizeMainCounterCustomLabel(project.mainCounterCustomLabel),
         readingLineEnabled = project.readingLineEnabled,
         readingLineYFraction = sanitizeReadingLineYFraction(project.readingLineYFraction),
@@ -81,13 +98,13 @@ private fun CounterProjectEntity.withDomainProjectDetails(project: CounterProjec
         verticalReadingGuideXFraction = sanitizeReadingGuideFraction(project.verticalReadingGuideXFraction),
         secondaryCount = project.secondaryCount,
         secondaryCounterUsed = project.secondaryCounterUsed,
-        stepSize = project.stepSize,
+        stepSize = project.stepSize.coerceAtLeast(1),
         notes = project.notes,
         notesCreated = project.notesCreated,
         createdAt = project.createdAt,
         updatedAt = project.updatedAt,
         sectionName = project.sectionName,
-        stitchCount = project.stitchCount,
+        stitchCount = validStitchCount,
         isCompleted = project.isCompleted,
         totalRows = project.totalRows,
         completedAt = project.completedAt,
@@ -97,22 +114,24 @@ private fun CounterProjectEntity.withDomainProjectDetails(project: CounterProjec
         patternName = project.patternName,
         currentPatternPage = project.currentPatternPage,
         patternRowMapping = project.patternRowMapping,
-        stitchTrackingEnabled = project.stitchTrackingEnabled,
-        currentStitch = project.currentStitch,
+        stitchTrackingEnabled = trackingEnabled,
+        currentStitch = currentStitch,
         targetRows = project.targetRows,
     )
+}
 
-fun ProjectCounterEntity.toDomain(): ProjectCounter =
-    ProjectCounter(
+fun ProjectCounterEntity.toDomain(): ProjectCounter {
+    val type = ProjectCounterType.fromPersistedValue(counterType)
+    return ProjectCounter(
         id = id,
         projectId = projectId,
         name = name,
-        count = count,
-        stepSize = stepSize,
+        count = count.coerceAtLeast(0),
+        stepSize = stepSize.coerceAtLeast(1),
         repeatAt = repeatAt,
         sortOrder = sortOrder,
         createdAt = createdAt,
-        counterType = ProjectCounterType.fromPersistedValue(counterType),
+        counterType = type,
         startingStitches = startingStitches,
         stitchChange = stitchChange,
         shapeEveryN = shapeEveryN,
@@ -120,16 +139,17 @@ fun ProjectCounterEntity.toDomain(): ProjectCounter =
         repeatEndRow = repeatEndRow,
         totalRepeats = totalRepeats,
         currentRepeat = currentRepeat,
-        linkedToMainCounter = linkedToMainCounter,
+        linkedToMainCounter = linkedToMainCounter && type != ProjectCounterType.REPEAT_SECTION,
     )
+}
 
 fun ProjectCounter.toEntity(): ProjectCounterEntity =
     ProjectCounterEntity(
         id = id,
         projectId = projectId,
         name = name,
-        count = count,
-        stepSize = stepSize,
+        count = count.coerceAtLeast(0),
+        stepSize = stepSize.coerceAtLeast(1),
         repeatAt = repeatAt,
         sortOrder = sortOrder,
         createdAt = createdAt,
@@ -141,7 +161,7 @@ fun ProjectCounter.toEntity(): ProjectCounterEntity =
         repeatEndRow = repeatEndRow,
         totalRepeats = totalRepeats,
         currentRepeat = currentRepeat,
-        linkedToMainCounter = linkedToMainCounter,
+        linkedToMainCounter = linkedToMainCounter && counterType != ProjectCounterType.REPEAT_SECTION,
     )
 
 fun ProjectYarnNoteEntity.toDomain(): ProjectYarnNote =

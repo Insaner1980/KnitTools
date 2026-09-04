@@ -102,7 +102,7 @@ fun CounterListItem(
                 .clip(RoundedCornerShape(CounterDimens.ExtraCounterCardCornerRadius))
                 .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                 .combinedClickable(
-                    onClick = {},
+                    onClick = { showContextMenu = true },
                     onLongClick = { showContextMenu = true },
                     // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
                 ).padding(
@@ -786,7 +786,7 @@ fun RepeatSectionItem(
                 .heightIn(min = CounterDimens.ExtraCounterCardMinHeight)
                 .clip(RoundedCornerShape(CounterDimens.ExtraCounterCardCornerRadius))
                 .combinedClickable(
-                    onClick = {},
+                    onClick = { showContextMenu = true },
                     onLongClick = { showContextMenu = true },
                 ).background(MaterialTheme.colorScheme.surfaceContainerHigh)
                 .padding(

@@ -24,7 +24,7 @@ class DomainModelCoverageTest {
     fun `saved pattern source and compatibility fields keep legacy fallbacks`() {
         assertEquals(SavedPatternSource.Ravelry, SavedPatternSource.fromPersistedValue("RAVELRY"))
         assertEquals(SavedPatternSource.LocalFile, SavedPatternSource.fromPersistedValue("LOCAL_FILE"))
-        assertEquals(SavedPatternSource.Other, SavedPatternSource.fromPersistedValue("missing"))
+        assertEquals(SavedPatternSource.Unknown, SavedPatternSource.fromPersistedValue("missing"))
 
         assertEquals(42, savedPattern(ravelryPatternId = 42).ravelryId)
         assertEquals(0, savedPattern(ravelryPatternId = null).ravelryId)

@@ -264,6 +264,15 @@ class CounterWorkspaceSourceTest {
     }
 
     @Test
+    fun `counter launch resolves requested project before rendering and rejects stale target`() {
+        val navGraph = ProjectSourceFiles.read(NAV_GRAPH)
+
+        assertTrue(navGraph.contains("if (counterLaunchRequest != null) return@composable"))
+        assertTrue(navGraph.contains("counterLaunchProjectMissing = !loaded"))
+        assertTrue(navGraph.contains("counterLaunchProjectMissing || counterState.shouldLeaveCounter"))
+    }
+
+    @Test
     fun `counter keep awake flag follows route lifecycle and project changes`() {
         val counterScreen = ProjectSourceFiles.read(COUNTER_SCREEN)
 

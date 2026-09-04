@@ -8,6 +8,7 @@ import com.finnvek.knittools.data.local.DatabaseTransactionRunner
 import com.finnvek.knittools.data.local.ProjectDocumentDao
 import com.finnvek.knittools.data.local.SavedPatternDao
 import com.finnvek.knittools.data.local.SavedPatternEntity
+import com.finnvek.knittools.data.local.distinctSqliteQueryChunks
 import com.finnvek.knittools.data.local.toDomain
 import com.finnvek.knittools.data.local.toEntity
 import com.finnvek.knittools.data.storage.AppFileStorage
@@ -62,11 +63,11 @@ class SavedPatternRepository
 
         suspend fun getById(id: Long): SavedPattern? = dao.getById(id)?.toDomain()
 
-        suspend fun getByIds(ids: List<Long>): List<SavedPattern> {
-            val distinctIds = ids.distinct()
-            if (distinctIds.isEmpty()) return emptyList()
-            return dao.getByIds(distinctIds).map { it.toDomain() }
-        }
+        suspend fun getByIds(ids: List<Long>): List<SavedPattern> =
+            ids
+                .distinctSqliteQueryChunks()
+                .flatMap { chunk -> dao.getByIds(chunk) }
+                .map { it.toDomain() }
 
         suspend fun getByIdIfAvailable(id: Long): SavedPattern? {
             val pattern = dao.getById(id) ?: return null
@@ -174,9 +175,12 @@ class SavedPatternRepository
                 return save(pattern)
             }
             return saveMutex.withLock {
-                findDuplicateCandidate(pattern, includeTitleDesigner = false)?.id ?: dao.insert(pattern.toEntity())
+                transactionRunner.run { saveRavelryPatternIfMissingInCurrentTransaction(pattern) }
             }
         }
+
+        internal suspend fun saveRavelryPatternIfMissingInCurrentTransaction(pattern: SavedPattern): Long =
+            findDuplicateCandidate(pattern, includeTitleDesigner = false)?.id ?: dao.insert(pattern.toEntity())
 
         suspend fun findDuplicateCandidate(
             pattern: SavedPattern,
@@ -218,20 +222,28 @@ class SavedPatternRepository
         ): Long? {
             if (!patternUrl.startsWith("content://") && !patternUrl.startsWith("file://")) return null
             return saveMutex.withLock {
-                val existing = dao.getByLocalPdfUri(patternUrl)
-                if (existing != null) return@withLock existing.id
-
-                dao.insert(
-                    SavedPatternEntity(
-                        source = SavedPatternSource.LocalFile.persistedValue,
-                        name = name,
-                        designerName = context.getString(R.string.imported_pattern_designer),
-                        originalUrl = patternUrl,
-                        localPdfUri = patternUrl,
-                        isAvailableOffline = true,
-                    ),
-                )
+                transactionRunner.run { saveImportedPatternIfMissingInCurrentTransaction(patternUrl, name) }
             }
+        }
+
+        internal suspend fun saveImportedPatternIfMissingInCurrentTransaction(
+            patternUrl: String,
+            name: String,
+        ): Long? {
+            if (!patternUrl.startsWith("content://") && !patternUrl.startsWith("file://")) return null
+            val existing = dao.getByLocalPdfUri(patternUrl)
+            if (existing != null) return existing.id
+
+            return dao.insert(
+                SavedPatternEntity(
+                    source = SavedPatternSource.LocalFile.persistedValue,
+                    name = name,
+                    designerName = context.getString(R.string.imported_pattern_designer),
+                    originalUrl = patternUrl,
+                    localPdfUri = patternUrl,
+                    isAvailableOffline = true,
+                ),
+            )
         }
 
         suspend fun findReusableImportedPatternUrl(
@@ -272,13 +284,25 @@ class SavedPatternRepository
         suspend fun deleteWebPattern(id: Long): SavedPatternDeleteResult = deleteSingleWebPattern(id)
 
         suspend fun deleteByIds(ids: List<Long>) {
-            if (ids.isEmpty()) return
-            val patterns = dao.getByIds(ids)
-            transactionRunner.run {
-                counterProjectDao.clearLinkedPatternIds(ids, System.currentTimeMillis())
-                dao.deleteByIds(ids)
+            val idChunks = ids.distinctSqliteQueryChunks()
+            if (idChunks.isEmpty()) return
+            val patterns =
+                transactionRunner.run {
+                    val currentPatterns = idChunks.flatMap { chunk -> dao.getByIds(chunk) }
+                    val updatedAt = System.currentTimeMillis()
+                    idChunks.forEach { chunk ->
+                        counterProjectDao.clearLinkedPatternIds(chunk, updatedAt)
+                        dao.deleteByIds(chunk)
+                    }
+                    currentPatterns
+                }
+            try {
+                deleteUnusedLocalPatternFiles(patterns)
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (_: Exception) {
+                // Tietokantapoisto on jo valmis; fyysinen jälkisiivous on best effort.
             }
-            deleteUnusedLocalPatternFiles(patterns)
         }
 
         suspend fun deleteLocalPatternFileIfUnused(patternUrl: String) {

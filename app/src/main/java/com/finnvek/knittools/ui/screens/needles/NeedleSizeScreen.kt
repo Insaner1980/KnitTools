@@ -25,10 +25,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.NeedleSizeData
+import com.finnvek.knittools.domain.calculator.formatDecimalForDisplay
 import com.finnvek.knittools.domain.model.NeedleSize
 import com.finnvek.knittools.ui.components.InfoTip
 import com.finnvek.knittools.ui.components.SearchTextField
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
+import com.finnvek.knittools.ui.components.rememberCurrentLocale
 
 @Composable
 fun NeedleSizeScreen(onBack: () -> Unit) {
@@ -127,6 +129,7 @@ private fun NeedleRow(
     isSelected: Boolean,
     onClick: () -> Unit,
 ) {
+    val locale = rememberCurrentLocale()
     val bgColor =
         if (isSelected) {
             MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
@@ -144,7 +147,7 @@ private fun NeedleRow(
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         listOf(
-            needle.metricMm.toString(),
+            formatDecimalForDisplay(needle.metricMm, locale, 0, 2),
             needle.us,
             needle.ukCanadian,
             needle.japanese,

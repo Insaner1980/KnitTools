@@ -132,7 +132,8 @@ object CounterValueFormatter {
         val length =
             when (counter.counterType) {
                 ProjectCounterType.SHAPING -> counter.shapeEveryN
-                else -> counter.repeatAt
+                ProjectCounterType.REPEATING -> counter.repeatAt
+                else -> null
             }?.takeIf { it > 0 }
         return if (length == null) {
             CounterValueDisplay.Plain(counter.count)

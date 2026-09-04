@@ -5,7 +5,9 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.io.ByteArrayInputStream
 import java.io.File
+import java.io.IOException
 import java.nio.file.Files
 
 class PatternDocumentFilesTest {
@@ -102,6 +104,33 @@ class PatternDocumentFilesTest {
 
         assertNull(written)
         assertTrue(directory.listFiles().orEmpty().isEmpty())
+    }
+
+    @Test
+    fun `bounded PDF copy accepts the limit and rejects the next byte`() {
+        val directory = tempDirectory()
+        val accepted = File(directory, "accepted.tmp")
+        val rejected = File(directory, "rejected.tmp")
+
+        assertEquals(
+            3L,
+            PatternDocumentFiles.copyBounded(
+                input = ByteArrayInputStream(byteArrayOf(1, 2, 3)),
+                target = accepted,
+                maxBytes = 3L,
+            ),
+        )
+        assertEquals(listOf<Byte>(1, 2, 3), accepted.readBytes().toList())
+        try {
+            PatternDocumentFiles.copyBounded(
+                input = ByteArrayInputStream(byteArrayOf(1, 2, 3, 4)),
+                target = rejected,
+                maxBytes = 3L,
+            )
+            throw AssertionError("Expected the PDF copy limit to reject excess bytes")
+        } catch (_: IOException) {
+            // Odotettu raja suojaa levytilareservia.
+        }
     }
 
     private fun tempDirectory(): File = Files.createTempDirectory("pattern-documents").toFile()

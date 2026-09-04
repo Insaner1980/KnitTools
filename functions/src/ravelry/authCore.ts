@@ -15,6 +15,9 @@ import type { RavelryTokenStore } from "./tokenStore";
 
 type RandomLabel = "state" | "code-verifier";
 
+const MAX_OAUTH_CALLBACK_VALUE_LENGTH = 2_048;
+const CALLBACK_CONTROL_CHARACTERS = /[\u0000-\u001F\u007F-\u009F\u2028\u2029]/;
+
 interface StartOAuthOptions {
   readonly uid: string;
   readonly stateStore: OAuthStateStore;
@@ -105,6 +108,26 @@ function queryString(query: Record<string, unknown>, key: string): string | unde
     return typeof value[0] === "string" ? value[0] : undefined;
   }
   return typeof value === "string" && value.length > 0 ? value : undefined;
+}
+
+function boundedCallbackValue(
+  value: string | undefined,
+  field: "code" | "error",
+): string | undefined {
+  if (value == null) {
+    return undefined;
+  }
+  if (value.length > MAX_OAUTH_CALLBACK_VALUE_LENGTH || CALLBACK_CONTROL_CHARACTERS.test(value)) {
+    throw new RavelryAuthFlowError(`invalid_${field}`, 400);
+  }
+  return value;
+}
+
+function sanitizedOAuthError(value: string): string {
+  const normalized = value.toLowerCase();
+  return normalized === "access_denied" || normalized === "cancelled" || normalized === "canceled"
+    ? normalized
+    : "oauth_error";
 }
 
 function requireState(value: string | undefined): string {
@@ -270,7 +293,7 @@ export async function completeRavelryOAuthCallback({
   if ("redirectUrl" in storedState) {
     return storedState;
   }
-  const ravelryError = queryString(query, "error");
+  const ravelryError = boundedCallbackValue(queryString(query, "error"), "error");
 
   if (ravelryError) {
     const expiredResult = await markStateUsedOrReject(stateStore, state, now).catch((error: unknown) =>
@@ -279,10 +302,10 @@ export async function completeRavelryOAuthCallback({
     if (expiredResult) {
       return expiredResult;
     }
-    return { redirectUrl: appRedirectUrl(state, ravelryError) };
+    return { redirectUrl: appRedirectUrl(state, sanitizedOAuthError(ravelryError)) };
   }
 
-  const code = queryString(query, "code");
+  const code = boundedCallbackValue(queryString(query, "code"), "code");
   if (!code) {
     throw new RavelryAuthFlowError("missing_code", 400);
   }

@@ -7,23 +7,38 @@ data class CounterState(
 )
 
 object CounterLogic {
-    fun increment(state: CounterState): CounterState =
-        state.copy(
-            count = state.count + state.stepSize,
-            previousCount = state.count,
-        )
-
-    fun decrement(state: CounterState): CounterState =
-        maxOf(0, state.count - state.stepSize).let { newCount ->
-            if (newCount == state.count) {
-                state
-            } else {
-                state.copy(
-                    count = newCount,
-                    previousCount = state.count,
-                )
-            }
+    fun increment(state: CounterState): CounterState {
+        val currentCount = state.count.coerceAtLeast(0)
+        val stepSize = state.stepSize.coerceAtLeast(1)
+        val newCount =
+            (currentCount.toLong() + stepSize.toLong())
+                .coerceAtMost(Int.MAX_VALUE.toLong())
+                .toInt()
+        return if (newCount == currentCount) {
+            state.copy(count = currentCount, stepSize = stepSize)
+        } else {
+            state.copy(
+                count = newCount,
+                previousCount = currentCount,
+                stepSize = stepSize,
+            )
         }
+    }
+
+    fun decrement(state: CounterState): CounterState {
+        val currentCount = state.count.coerceAtLeast(0)
+        val stepSize = state.stepSize.coerceAtLeast(1)
+        val newCount = (currentCount.toLong() - stepSize.toLong()).coerceAtLeast(0L).toInt()
+        return if (newCount == currentCount) {
+            state.copy(count = currentCount, stepSize = stepSize)
+        } else {
+            state.copy(
+                count = newCount,
+                previousCount = currentCount,
+                stepSize = stepSize,
+            )
+        }
+    }
 
     fun undo(state: CounterState): CounterState =
         if (state.previousCount != null) {

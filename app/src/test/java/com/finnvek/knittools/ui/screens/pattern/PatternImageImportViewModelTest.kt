@@ -309,6 +309,24 @@ class PatternImageImportViewModelTest {
         assertFalse(viewModel.uiState.value.closeReady)
     }
 
+    @Test
+    fun `oversized camera capture is rejected and its target is removed`() =
+        runTest {
+            val viewModel = viewModel()
+            val imageUri = uri("content://camera-capture")
+            val imageFile = File("build/test-pattern-import/pattern_captures/7/session/camera.jpg")
+            viewModel.authorizeCameraCapture(7L)
+            every { storage.inspectCameraCapture(imageFile) } throws
+                PatternImageStageException(PatternImageStageFailure.IMAGE_TOO_LARGE)
+
+            viewModel.acceptCameraCapture(7L, imageUri, imageFile)
+            advanceUntilIdle()
+
+            assertEquals(PatternImageImportPhase.ERROR, viewModel.uiState.value.phase)
+            assertEquals(PatternImageImportError.IMAGE_TOO_LARGE, viewModel.uiState.value.error)
+            verify { storage.deleteStagedPage(any()) }
+        }
+
     // CPD-ON
 
     private fun viewModel(handle: SavedStateHandle = savedStateHandle) =

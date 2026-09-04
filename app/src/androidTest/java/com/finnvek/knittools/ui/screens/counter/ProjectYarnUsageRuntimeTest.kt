@@ -133,7 +133,7 @@ class ProjectYarnUsageRuntimeTest {
 
         scenario?.close()
         scenario = null
-        runBlocking { counter.archiveProject(projectId, 0, System.currentTimeMillis()) }
+        runBlocking { counter.archiveProject(projectId, System.currentTimeMillis()) }
         assertEquals(initial.amounts, currentUsage().amounts)
         runBlocking { counter.reactivateProject(projectId) }
         assertEquals(initial.amounts, currentUsage().amounts)
@@ -158,7 +158,11 @@ class ProjectYarnUsageRuntimeTest {
     fun linkedCardEntryUsesTheSamePersistenceAndKeepsGlobalQuantity() {
         runBlocking {
             cardId =
-                yarn.saveCard(YarnCard(yarnName = "Runtime stash", linkedProjectId = projectId, quantityInStash = 11))
+                requireNotNull(
+                    yarn.saveCard(
+                        YarnCard(yarnName = "Runtime stash", linkedProjectId = projectId, quantityInStash = 11),
+                    ),
+                )
         }
         clickDescription(text(R.string.yarn_usage_track_named, "Runtime stash"))
         edit(YarnUsageField.USED, "0")

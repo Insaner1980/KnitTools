@@ -9,3 +9,5 @@ data class ManualYarnCardInput(
     val colorNumber: String = "",
     val dyeLot: String = "",
 )
+
+internal fun parseManualYarnQuantity(value: String): Int? = value.toIntOrNull()?.takeIf { it > 0 }

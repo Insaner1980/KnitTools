@@ -17,10 +17,9 @@ class DataStoreErrorHandlingSourceTest {
     }
 
     @Test
-    fun `other preference stores use IOException fallback`() {
+    fun `other standalone preference reads use IOException fallback`() {
         listOf(
             IN_APP_REVIEW_MANAGER to "context.reviewDataStore.safePreferencesData",
-            TRIAL_MANAGER to "context.trialDataStore.safePreferencesData",
             COUNTER_WIDGET_STATE to "context.widgetDataStore.safePreferencesData",
         ).forEach { (path, expectedRead) ->
             val source = ProjectSourceFiles.read(path)

@@ -16,6 +16,7 @@ class DispatcherDisciplineSourceTest {
         assertTrue(app.contains("applicationScope.launch(ioDispatcher)"))
         assertTrue(activity.contains("withContext(ioDispatcher)"))
         assertFalse(picker.contains("PatternDocumentStorage("))
+        assertFalse(picker.contains("contentResolver"))
         assertTrue(imageImportViewModel.contains("return withContext(ioDispatcher)"))
         assertTrue(imageImportViewModel.contains("storage.createCaptureImageFile(context, projectId, sessionId)"))
         assertTrue(repository.contains("private suspend fun String.isAppOwnedMissingFile(): Boolean"))

@@ -47,6 +47,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.io.Serializable
 import javax.inject.Inject
 
 data class ContinueKnittingProject(
@@ -66,7 +67,11 @@ private data class PendingProjectCreation(
     val mainCounterLabelType: MainCounterLabelType,
     val mainCounterCustomLabel: String?,
     val targetFolderId: Long?,
-)
+) : Serializable {
+    private companion object {
+        const val serialVersionUID = 1L
+    }
+}
 
 data class PendingProjectListSessionAction(
     val session: ActiveWorkSession,
@@ -211,7 +216,12 @@ class ProjectListViewModel
         private val showCreateProjectDialogChannel = Channel<Unit>(Channel.BUFFERED)
         val showCreateProjectDialog = showCreateProjectDialogChannel.receiveAsFlow()
 
-        private var pendingProjectCreation: PendingProjectCreation? = null
+        private var pendingProjectCreation: PendingProjectCreation?
+            get() = savedStateHandle[PENDING_PROJECT_CREATION_KEY]
+            set(value) {
+                savedStateHandle[PENDING_PROJECT_CREATION_KEY] = value
+            }
+        private var projectCreationInFlight = false
 
         init {
             retryFolderLoading()
@@ -230,6 +240,10 @@ class ProjectListViewModel
                         updateHasNotes(projects)
                     }
             }
+        }
+
+        private companion object {
+            const val PENDING_PROJECT_CREATION_KEY = "pending_project_creation"
         }
 
         // === Preferences-toiminnot ===
@@ -288,8 +302,9 @@ class ProjectListViewModel
                     _pendingCompletionSessionAction.value = PendingProjectListSessionAction(active, ids)
                     return@launch
                 }
-                completeProjects(ids, choice = null)
-                exitMultiSelectMode()
+                if (ids.isNotEmpty() && completeProjects(ids, choice = null)) {
+                    exitMultiSelectMode()
+                }
             }
         }
 
@@ -301,8 +316,9 @@ class ProjectListViewModel
                     _pendingDeletionSessionAction.value = PendingProjectListSessionAction(active, ids)
                     return@launch
                 }
-                ids.forEach { id -> repository.deleteProjectResolvingActiveSession(id, false) }
-                exitMultiSelectMode()
+                if (deleteProjects(ids, discardActiveSessionProjectId = null)) {
+                    exitMultiSelectMode()
+                }
             }
         }
 
@@ -460,42 +476,46 @@ class ProjectListViewModel
         }
 
         private suspend fun createProjectInternal(request: PendingProjectCreation) {
-            _projectCreationError.value = null
-            when (
-                val result =
-                    repository.createProject(
-                        name = request.name,
-                        craftType = request.craftType,
-                        mainCounterLabelType = request.mainCounterLabelType,
-                        mainCounterCustomLabel = request.mainCounterCustomLabel,
-                        canCreateAdditionalProjects = isPro,
-                        targetFolderId = request.targetFolderId,
-                    )
-            ) {
-                is ProjectCreationResult.Created -> {
-                    pendingProjectCreation = null
-                    navigateToProjectChannel.send(result.projectId)
+            if (projectCreationInFlight) return
+            projectCreationInFlight = true
+            try {
+                _projectCreationError.value = null
+                when (
+                    val result =
+                        repository.createProject(
+                            name = request.name,
+                            craftType = request.craftType,
+                            mainCounterLabelType = request.mainCounterLabelType,
+                            mainCounterCustomLabel = request.mainCounterCustomLabel,
+                            canCreateAdditionalProjects = isPro,
+                            targetFolderId = request.targetFolderId,
+                        )
+                ) {
+                    is ProjectCreationResult.Created -> {
+                        pendingProjectCreation = null
+                        navigateToProjectChannel.send(result.projectId)
+                    }
+                    ProjectCreationResult.LimitReached -> {
+                        projectCreationPromptChannel.send(repository.getProjectCount())
+                    }
+                    ProjectCreationResult.InvalidProject -> pendingProjectCreation = null
+                    ProjectCreationResult.FolderMissing -> {
+                        pendingProjectCreation = null
+                        _projectCreationError.value = result
+                    }
                 }
-                ProjectCreationResult.LimitReached -> {
-                    projectCreationPromptChannel.send(repository.getProjectCount())
-                }
-                ProjectCreationResult.InvalidProject -> pendingProjectCreation = null
-                ProjectCreationResult.FolderMissing -> {
-                    pendingProjectCreation = null
-                    _projectCreationError.value = result
-                }
+            } finally {
+                projectCreationInFlight = false
             }
         }
 
         @Suppress("kotlin:S1871") // Molemmat aktiivisen session tarkistuspolut avaavat saman jatkotoiminnon.
         fun archiveProject(id: Long) {
             viewModelScope.launch {
-                val project = repository.getProject(id) ?: return@launch
                 when (
                     val result =
                         repository.completeProjectWithSessionChoice(
                             projectId = id,
-                            totalRows = project.count,
                             choice = null,
                         )
                 ) {
@@ -538,17 +558,20 @@ class ProjectListViewModel
                     navigateToProjectChannel.send(pending.session.projectId)
                     return@launch
                 }
-                completeProjects(
-                    projectIds = pending.projectIds,
-                    choice =
-                        if (saveSession) {
-                            ActiveSessionCompletionChoice.SAVE
-                        } else {
-                            ActiveSessionCompletionChoice.DISCARD
-                        },
-                )
-                _pendingCompletionSessionAction.value = null
-                exitMultiSelectMode()
+                val completed =
+                    completeProjects(
+                        projectIds = pending.projectIds,
+                        choice =
+                            if (saveSession) {
+                                ActiveSessionCompletionChoice.SAVE
+                            } else {
+                                ActiveSessionCompletionChoice.DISCARD
+                            },
+                    )
+                if (completed) {
+                    _pendingCompletionSessionAction.value = null
+                    exitMultiSelectMode()
+                }
             }
         }
 
@@ -559,14 +582,10 @@ class ProjectListViewModel
         fun resolvePendingDeletion() {
             val pending = _pendingDeletionSessionAction.value ?: return
             viewModelScope.launch {
-                pending.projectIds.forEach { id ->
-                    repository.deleteProjectResolvingActiveSession(
-                        id = id,
-                        discardActiveSession = id == pending.session.projectId,
-                    )
+                if (deleteProjects(pending.projectIds, pending.session.projectId)) {
+                    _pendingDeletionSessionAction.value = null
+                    exitMultiSelectMode()
                 }
-                _pendingDeletionSessionAction.value = null
-                exitMultiSelectMode()
             }
         }
 
@@ -577,16 +596,36 @@ class ProjectListViewModel
         private suspend fun completeProjects(
             projectIds: Set<Long>,
             choice: ActiveSessionCompletionChoice?,
-        ) {
+        ): Boolean {
             projectIds.forEach { id ->
-                val project = repository.getProject(id) ?: return@forEach
-                if (project.isCompleted) return@forEach
-                repository.completeProjectWithSessionChoice(
-                    projectId = id,
-                    totalRows = project.count,
-                    choice = choice.takeIf { activeSession.value?.projectId == id },
-                )
+                val project = repository.getProject(id) ?: return false
+                if (!project.isCompleted) {
+                    val result =
+                        repository.completeProjectWithSessionChoice(
+                            projectId = id,
+                            choice = choice.takeIf { activeSession.value?.projectId == id },
+                        )
+                    if (result != ProjectCompletionResult.Completed) return false
+                }
+                _selectedProjectIds.update { it - id }
             }
+            return true
+        }
+
+        private suspend fun deleteProjects(
+            projectIds: Set<Long>,
+            discardActiveSessionProjectId: Long?,
+        ): Boolean {
+            projectIds.forEach { id ->
+                val result =
+                    repository.deleteProjectResolvingActiveSession(
+                        id = id,
+                        discardActiveSession = id == discardActiveSessionProjectId,
+                    )
+                if (result != ProjectDeletionResult.Deleted) return false
+                _selectedProjectIds.update { it - id }
+            }
+            return true
         }
 
         fun renameProject(

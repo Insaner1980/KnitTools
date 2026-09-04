@@ -27,7 +27,7 @@ function functionsErrorCodeFor(httpStatus: number): FunctionsErrorCode {
   if (httpStatus === 400) {
     return "invalid-argument";
   }
-  if (httpStatus === 401) {
+  if (httpStatus === 401 || httpStatus === 403) {
     return "unauthenticated";
   }
   if (httpStatus === 404) {

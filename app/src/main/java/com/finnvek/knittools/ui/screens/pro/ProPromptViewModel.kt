@@ -6,8 +6,8 @@ import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.pro.TrialManager
 import com.finnvek.knittools.pro.TrialStartResult
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -20,12 +20,12 @@ class ProPromptViewModel
     ) : ViewModel() {
         val proState = proManager.proState
 
-        private val trialStartResultChannel = Channel<TrialStartResult>(Channel.BUFFERED)
-        val trialStartResults = trialStartResultChannel.receiveAsFlow()
+        private val _trialStartResults = MutableSharedFlow<TrialStartResult>(extraBufferCapacity = 1)
+        val trialStartResults = _trialStartResults.asSharedFlow()
 
         fun startTrial() {
             viewModelScope.launch {
-                trialStartResultChannel.send(proManager.startTrial())
+                _trialStartResults.emit(proManager.startTrial())
             }
         }
 

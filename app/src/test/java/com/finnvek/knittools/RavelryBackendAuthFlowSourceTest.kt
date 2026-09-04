@@ -1,5 +1,6 @@
 package com.finnvek.knittools
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -42,6 +43,12 @@ class RavelryBackendAuthFlowSourceTest {
         assertTrue(navGraph.contains("onLaunchRavelryAuth"))
         assertTrue(mainActivity.contains("AuthTabIntent"))
         assertTrue(mainActivity.contains("CustomTabsIntent"))
+        val authLaunch =
+            mainActivity
+                .substringAfter("fun launchRavelryAuth")
+                .substringBefore("override fun onNewIntent")
+        assertEquals(2, Regex("catch \\(_:\\sActivityNotFoundException\\)").findAll(authLaunch).count())
+        assertTrue(authLaunch.contains("ravelryAuthManager.markBrowserAuthCancelled()"))
         assertTrue(versionCatalog.contains("browser = \"1.10.0\""))
         assertTrue(authManager.contains("backendClient.startAuth"))
         assertTrue(authManager.contains("backendClient.authStatus"))

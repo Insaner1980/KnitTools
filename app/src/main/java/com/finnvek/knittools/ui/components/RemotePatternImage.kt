@@ -49,7 +49,7 @@ fun RemotePatternImage(
 
 internal fun normalizeRemotePatternImageUrl(imageUrl: String?): String? {
     val trimmedUrl = imageUrl?.trim().orEmpty()
-    if (trimmedUrl.isEmpty()) return null
+    if (trimmedUrl.isEmpty() || trimmedUrl.length > REMOTE_PATTERN_IMAGE_URL_MAX_LENGTH) return null
 
     val uri =
         try {
@@ -58,13 +58,14 @@ internal fun normalizeRemotePatternImageUrl(imageUrl: String?): String? {
             return null
         }
 
-    if (
-        !uri.scheme.equals("https", ignoreCase = true) ||
-        uri.host.isNullOrBlank() ||
-        uri.port > 65_535
-    ) {
-        return null
-    }
+    val hasValidAuthority =
+        uri.scheme.equals("https", ignoreCase = true) &&
+            !uri.isOpaque &&
+            !uri.host.isNullOrBlank()
+    if (!hasValidAuthority) return null
+    if (uri.rawUserInfo != null || uri.port > 65_535) return null
 
     return trimmedUrl
 }
+
+private const val REMOTE_PATTERN_IMAGE_URL_MAX_LENGTH = 2_048

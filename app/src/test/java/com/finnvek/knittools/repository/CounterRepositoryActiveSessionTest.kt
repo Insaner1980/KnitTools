@@ -78,7 +78,7 @@ class CounterRepositoryActiveSessionTest {
             val started = repository.startSession(7L) as StartSessionResult.Started
             timeSource.advance(seconds = 65L)
 
-            val stopped = repository.stopSession(started.session.sessionToken)
+            val stopped = stopReviewedSession(started.session.sessionToken)
 
             assertEquals(StopSessionResult.Saved(1L), stopped)
             assertEquals(null, active)
@@ -111,11 +111,101 @@ class CounterRepositoryActiveSessionTest {
         }
 
     @Test
+    fun `repeated completion leaves the original completion state untouched`() =
+        runTest {
+            assertEquals(
+                ProjectCompletionResult.Completed,
+                repository.completeProjectWithSessionChoice(
+                    projectId = 9L,
+                    choice = null,
+                    completedAtMillis = 9_999L,
+                ),
+            )
+
+            coVerify(exactly = 0) { projectDao.archiveProject(any(), any(), any(), any()) }
+            coVerify(exactly = 0) { sessionDao.getActiveSession() }
+        }
+
+    @Test
+    fun `completion requires a choice and then discards or saves the active session`() =
+        runTest {
+            val discardedSession = repository.startSession(7L) as StartSessionResult.Started
+
+            assertEquals(
+                ProjectCompletionResult.NeedsActiveSessionChoice(discardedSession.session),
+                repository.completeProjectWithSessionChoice(7L, choice = null),
+            )
+            assertEquals(
+                ProjectCompletionResult.Completed,
+                repository.completeProjectWithSessionChoice(
+                    7L,
+                    choice = ActiveSessionCompletionChoice.DISCARD,
+                ),
+            )
+            assertTrue(completed.isEmpty())
+
+            val savedSession = repository.startSession(7L) as StartSessionResult.Started
+            timeSource.advance(seconds = 60L)
+
+            assertEquals(
+                ProjectCompletionResult.Completed,
+                repository.completeProjectWithSessionChoice(
+                    7L,
+                    choice = ActiveSessionCompletionChoice.SAVE,
+                ),
+            )
+            assertEquals(60L, completed.single().durationSeconds)
+            coVerify(exactly = 1) { sessionDao.deleteActiveSession(discardedSession.session.sessionToken) }
+            coVerify(exactly = 1) { sessionDao.deleteActiveSession(savedSession.session.sessionToken) }
+            coVerify(exactly = 2) { projectDao.archiveProject(7L, 12, any(), any()) }
+        }
+
+    @Test
+    fun `completion requires recovery review before saving the active session`() =
+        runTest {
+            repository.startSession(7L)
+            timeSource.reboot()
+            val recovery = requireNotNull(repository.refreshActiveSession())
+
+            assertEquals(
+                ProjectCompletionResult.NeedsRecoveryReview(recovery),
+                repository.completeProjectWithSessionChoice(
+                    7L,
+                    choice = ActiveSessionCompletionChoice.SAVE,
+                ),
+            )
+            coVerify(exactly = 0) { projectDao.archiveProject(any(), any(), any(), any()) }
+        }
+
+    @Test
+    fun `completion leaves another project's active session untouched`() =
+        runTest {
+            val otherSession = repository.startSession(8L) as StartSessionResult.Started
+
+            assertEquals(
+                ProjectCompletionResult.Completed,
+                repository.completeProjectWithSessionChoice(7L, choice = null),
+            )
+            assertEquals(otherSession.session.sessionToken, active?.sessionToken)
+            coVerify(exactly = 1) { projectDao.archiveProject(7L, 12, any(), any()) }
+        }
+
+    @Test
+    fun `reopening updates only a completed project`() =
+        runTest {
+            repository.reactivateProject(7L)
+            repository.reactivateProject(9L)
+
+            coVerify(exactly = 0) { projectDao.reactivateProject(7L, any()) }
+            coVerify(exactly = 1) { projectDao.reactivateProject(9L, any()) }
+        }
+
+    @Test
     fun `stop token is idempotent and discard creates no history`() =
         runTest {
             val started = repository.startSession(7L) as StartSessionResult.Started
 
-            assertEquals(StopSessionResult.StaleAction, repository.stopSession("stale"))
+            assertEquals(StopSessionResult.StaleAction, stopReviewedSession("stale"))
             assertEquals(StopSessionResult.Discarded, repository.discardActiveSession(started.session.sessionToken))
             assertEquals(
                 StopSessionResult.NoActiveSession,
@@ -132,7 +222,7 @@ class CounterRepositoryActiveSessionTest {
             timeSource.advance(seconds = 60L)
             failActiveDelete = true
 
-            val failed = repository.stopSession(started.session.sessionToken)
+            val failed = stopReviewedSession(started.session.sessionToken)
 
             assertEquals(StopSessionResult.PersistenceFailure, failed)
             assertEquals(started.session.sessionToken, active?.sessionToken)
@@ -353,10 +443,32 @@ class CounterRepositoryActiveSessionTest {
                 timeSource.advanceMillis(500L)
                 repository.applyMainCounterChange(7L, com.finnvek.knittools.domain.model.MainCounterChange.Increment)
             }
-            repository.stopSession(started.session.sessionToken)
+            stopReviewedSession(started.session.sessionToken)
 
             assertEquals(5L, completed.single().durationSeconds)
             assertEquals(10, completed.single().rowsWorked)
+        }
+
+    @Test
+    fun `saving a reviewed stop keeps the reviewed duration`() =
+        runTest {
+            val started = repository.startSession(7L) as StartSessionResult.Started
+            timeSource.advance(seconds = 10L)
+            val reviewed = requireNotNull(repository.refreshActiveSession())
+            val reviewedDuration = repository.activeSessionDurationSeconds(reviewed)
+            timeSource.advance(seconds = 50L)
+
+            val stopped =
+                repository.stopSession(
+                    sessionToken = started.session.sessionToken,
+                    reviewedDurationSeconds = reviewedDuration,
+                    reviewedRowsWorked = reviewed.trustedRowsWorked,
+                    reviewedEndRow = reviewed.trustedLastObservedRow,
+                )
+
+            assertEquals(StopSessionResult.Saved(1L), stopped)
+            assertEquals(10L, completed.single().durationSeconds)
+            assertEquals(11_000L, completed.single().endedAt)
         }
 
     @Test
@@ -453,6 +565,16 @@ class CounterRepositoryActiveSessionTest {
         }
 
     // CPD-ON
+
+    private suspend fun stopReviewedSession(sessionToken: String): StopSessionResult {
+        val reviewed = requireNotNull(repository.refreshActiveSession())
+        return repository.stopSession(
+            sessionToken = sessionToken,
+            reviewedDurationSeconds = repository.activeSessionDurationSeconds(reviewed),
+            reviewedRowsWorked = reviewed.trustedRowsWorked,
+            reviewedEndRow = reviewed.trustedLastObservedRow,
+        )
+    }
 
     private fun repositoryProjectCounterDao(): ProjectCounterDao =
         mockk<ProjectCounterDao>(relaxed = true) {

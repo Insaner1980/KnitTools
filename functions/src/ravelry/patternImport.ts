@@ -38,6 +38,14 @@ interface ImportPatternByUrlOptions extends UserPatternOptions {
 }
 
 export const RAVELRY_SEARCH_MAX_PAGE_SIZE = 50;
+const RAVELRY_SEARCH_MAX_PAGE = 1_000;
+const RAVELRY_SEARCH_MAX_QUERY_LENGTH = 200;
+const RAVELRY_SEARCH_MAX_FILTER_LENGTH = 100;
+const RAVELRY_DIFFICULTY_MIN = 1;
+const RAVELRY_DIFFICULTY_MAX = 10;
+const RAVELRY_IMPORT_MAX_URL_LENGTH = 2_048;
+const MAX_RAVELRY_PATTERN_ID = 2_147_483_647;
+const CONTROL_CHARACTERS = /[\u0000-\u001F\u007F-\u009F\u2028\u2029]/;
 
 export class RavelryPatternImportError extends Error {
   constructor(
@@ -101,7 +109,12 @@ function withOriginalUrl(pattern: SanitizedPattern, originalUrl: string): Saniti
 }
 
 function positiveInteger(value: unknown): number | undefined {
-  return typeof value === "number" && Number.isInteger(value) && value > 0 ? value : undefined;
+  return typeof value === "number" &&
+    Number.isSafeInteger(value) &&
+    value > 0 &&
+    value <= MAX_RAVELRY_PATTERN_ID
+    ? value
+    : undefined;
 }
 
 function optionalBoundedPositiveInteger(
@@ -119,12 +132,40 @@ function optionalBoundedPositiveInteger(
   return integer;
 }
 
-function optionalNumber(value: unknown): number | undefined {
-  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+function optionalBoundedNumber(
+  value: unknown,
+  minimum: number,
+  maximum: number,
+  errorCode: string,
+): number | undefined {
+  if (value == null) {
+    return undefined;
+  }
+  if (typeof value !== "number" || !Number.isFinite(value) || value < minimum || value > maximum) {
+    throw new RavelryPatternImportError(errorCode, 400);
+  }
+  return value;
 }
 
-function optionalString(value: unknown): string | undefined {
-  return typeof value === "string" && value.trim().length > 0 ? value.trim() : undefined;
+function optionalBoundedString(
+  value: unknown,
+  maximumLength: number,
+  errorCode: string,
+): string | undefined {
+  if (value == null) {
+    return undefined;
+  }
+  if (typeof value !== "string") {
+    throw new RavelryPatternImportError(errorCode, 400);
+  }
+  const trimmed = value.trim();
+  if (trimmed.length === 0) {
+    return undefined;
+  }
+  if (trimmed.length > maximumLength || CONTROL_CHARACTERS.test(trimmed)) {
+    throw new RavelryPatternImportError(errorCode, 400);
+  }
+  return trimmed;
 }
 
 function dataObject(data: unknown): Record<string, unknown> {
@@ -133,26 +174,56 @@ function dataObject(data: unknown): Record<string, unknown> {
 
 export function ravelrySearchQueryFromData(data: unknown): RavelrySearchQuery {
   const value = dataObject(data);
-  const query = optionalString(value.query);
+  const query = optionalBoundedString(
+    value.query,
+    RAVELRY_SEARCH_MAX_QUERY_LENGTH,
+    "invalid_query",
+  );
   if (!query) {
     throw new RavelryPatternImportError("missing_query", 400);
+  }
+  const difficultyFrom = optionalBoundedNumber(
+    value.difficultyFrom,
+    RAVELRY_DIFFICULTY_MIN,
+    RAVELRY_DIFFICULTY_MAX,
+    "invalid_difficulty_from",
+  );
+  const difficultyTo = optionalBoundedNumber(
+    value.difficultyTo,
+    RAVELRY_DIFFICULTY_MIN,
+    RAVELRY_DIFFICULTY_MAX,
+    "invalid_difficulty_to",
+  );
+  if (difficultyFrom != null && difficultyTo != null && difficultyFrom > difficultyTo) {
+    throw new RavelryPatternImportError("invalid_difficulty_range", 400);
   }
   const pageSize = optionalBoundedPositiveInteger(
     value.pageSize,
     RAVELRY_SEARCH_MAX_PAGE_SIZE,
     "invalid_page_size",
   );
+  const page = optionalBoundedPositiveInteger(value.page, RAVELRY_SEARCH_MAX_PAGE, "invalid_page");
+  const craft = optionalBoundedString(value.craft, RAVELRY_SEARCH_MAX_FILTER_LENGTH, "invalid_craft");
+  const availability = optionalBoundedString(
+    value.availability,
+    RAVELRY_SEARCH_MAX_FILTER_LENGTH,
+    "invalid_availability",
+  );
+  const pc = optionalBoundedString(value.pc, RAVELRY_SEARCH_MAX_FILTER_LENGTH, "invalid_pc");
+  const weight = optionalBoundedString(
+    value.weight,
+    RAVELRY_SEARCH_MAX_FILTER_LENGTH,
+    "invalid_weight",
+  );
   return {
     query,
-    ...(optionalString(value.craft) ? { craft: optionalString(value.craft) } : {}),
-    ...(optionalString(value.availability) ? { availability: optionalString(value.availability) } : {}),
-    ...(optionalString(value.pc) ? { pc: optionalString(value.pc) } : {}),
-    ...(optionalString(value.weight) ? { weight: optionalString(value.weight) } : {}),
-    ...(optionalNumber(value.difficultyFrom) != null
-      ? { difficultyFrom: optionalNumber(value.difficultyFrom) }
-      : {}),
-    ...(optionalNumber(value.difficultyTo) != null ? { difficultyTo: optionalNumber(value.difficultyTo) } : {}),
-    ...(positiveInteger(value.page) != null ? { page: positiveInteger(value.page) } : {}),
+    ...(craft ? { craft } : {}),
+    ...(availability ? { availability } : {}),
+    ...(pc ? { pc } : {}),
+    ...(weight ? { weight } : {}),
+    ...(difficultyFrom != null ? { difficultyFrom } : {}),
+    ...(difficultyTo != null ? { difficultyTo } : {}),
+    ...(page != null ? { page } : {}),
     ...(pageSize != null ? { pageSize } : {}),
   };
 }
@@ -163,7 +234,7 @@ export async function searchPatternsForUser(options: SearchPatternsOptions) {
 }
 
 export async function importPatternById(options: ImportPatternByIdOptions): Promise<SanitizedPattern> {
-  if (!Number.isInteger(options.ravelryPatternId) || options.ravelryPatternId <= 0) {
+  if (positiveInteger(options.ravelryPatternId) == null) {
     throw new RavelryPatternImportError("invalid_pattern_id", 400);
   }
 
@@ -280,7 +351,11 @@ export const ravelryImportPatternByUrl = onCall(ravelrySecretOptions, async (req
   try {
     const uid = requireUid(request.auth);
     const { rateLimiter, tokenStore } = stores();
-    const url = optionalString(dataObject(request.data).url);
+    const url = optionalBoundedString(
+      dataObject(request.data).url,
+      RAVELRY_IMPORT_MAX_URL_LENGTH,
+      "invalid_url",
+    );
     if (!url) {
       throw new RavelryPatternImportError("missing_url", 400);
     }

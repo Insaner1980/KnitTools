@@ -130,6 +130,7 @@ class ProjectListWorkspaceSourceTest {
         assertTrue(navGraph.contains("counterViewModel.selectProjectByIdForLaunch(projectId) { loaded ->"))
         assertTrue(navGraph.contains("if (loaded) {"))
         assertTrue(navGraph.contains("navController.navigateSingleTopTo(Screen.PhotoGallery.route)"))
+        assertTrue(navGraph.contains("navController.navigateSingleTopTo(Screen.Counter.route)"))
     }
 
     @Test

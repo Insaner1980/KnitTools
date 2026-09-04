@@ -194,6 +194,26 @@ class ProjectFolderRepositoryTest {
         }
 
     @Test
+    fun `move projects chunks large IN queries below the legacy SQLite variable limit`() =
+        runTest {
+            val ids = (1L..1_001L).toList()
+            coEvery { folderDao.getAssignmentsForProjects(any()) } answers {
+                firstArg<List<Long>>().take(1).map { ProjectFolderAssignmentEntity(it, 5L) }
+            }
+
+            assertEquals(
+                ProjectFolderMutationResult.ProjectsMoved(ids.toSet(), null),
+                repository.moveProjects(ids, null),
+            )
+            coVerify { folderDao.getExistingProjectIds(ids.take(900)) }
+            coVerify { folderDao.getExistingProjectIds(ids.drop(900)) }
+            coVerify { folderDao.getAssignmentsForProjects(ids.take(900)) }
+            coVerify { folderDao.getAssignmentsForProjects(ids.drop(900)) }
+            coVerify { folderDao.deleteAssignmentsForProjects(ids.take(900)) }
+            coVerify { folderDao.deleteAssignmentsForProjects(ids.drop(900)) }
+        }
+
+    @Test
     fun `move projects rejects a stale member or folder before writing anything`() =
         runTest {
             coEvery { folderDao.getExistingProjectIds(listOf(2L, 3L)) } returns listOf(2L)

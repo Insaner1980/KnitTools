@@ -31,6 +31,49 @@ class TrialManagerTest {
     }
 
     @Test
+    fun `malformed negative trial start cannot become a fresh trial`() {
+        val state = TrialManager.calculateTrialState(baseTime, -1L, baseTime)
+
+        assertFalse(state.isActive)
+        assertTrue(state.hasStarted)
+        assertTrue(state.clockTampered)
+    }
+
+    @Test
+    fun `persisted tamper flag without a start cannot become a fresh trial`() {
+        val state = TrialManager.calculateTrialState(baseTime, 0L, baseTime, clockTamperedAlready = true)
+
+        assertFalse(state.isActive)
+        assertTrue(state.hasStarted)
+        assertTrue(state.clockTampered)
+    }
+
+    @Test
+    fun `malformed trial start over an hour in the future is tampered`() {
+        val state = TrialManager.calculateTrialState(baseTime, baseTime + hour + 1L, 0L)
+
+        assertFalse(state.isActive)
+        assertTrue(state.hasStarted)
+        assertTrue(state.clockTampered)
+    }
+
+    @Test
+    fun `repeated trial start distinguishes active expired and tampered state`() {
+        assertEquals(
+            TrialStartResult.AlreadyActive,
+            TrialManager.classifyExistingTrial(TrialState(isActive = true, hasStarted = true)),
+        )
+        assertEquals(
+            TrialStartResult.AlreadyExpired,
+            TrialManager.classifyExistingTrial(TrialState(hasStarted = true)),
+        )
+        assertEquals(
+            TrialStartResult.AlreadyTampered,
+            TrialManager.classifyExistingTrial(TrialState(hasStarted = true, clockTampered = true)),
+        )
+    }
+
+    @Test
     fun `day 3 shows 11 days remaining`() {
         val state = TrialManager.calculateTrialState(baseTime + 3 * day, baseTime, baseTime + 2 * day)
 

@@ -100,7 +100,7 @@ class YarnCardViewModelTest {
     @Test
     fun `updateQuantity leaves detail state unchanged when card update is rejected`() =
         runTest {
-            coEvery { repository.updateQuantity(7L, 4) } returns false
+            coEvery { repository.changeQuantity(7L, 1) } returns false
             val vm = createViewModel()
             vm.loadFromCard(YarnCard(id = 7L, quantityInStash = 3))
 
@@ -108,6 +108,7 @@ class YarnCardViewModelTest {
             advanceUntilIdle()
 
             assertEquals(3, vm.formState.value.quantityInStash)
+            coVerify { repository.changeQuantity(7L, 1) }
         }
 
     @Test

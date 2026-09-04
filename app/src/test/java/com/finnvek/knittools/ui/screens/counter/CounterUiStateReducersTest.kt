@@ -57,6 +57,18 @@ class CounterUiStateReducersTest {
     }
 
     @Test
+    fun `started and observed project preserve completed state`() {
+        val started =
+            CounterUiState().withStartedProject(
+                CounterProject(id = 2L, name = "Completed", isCompleted = true),
+            )
+        val reopened = started.withObservedProject(CounterProject(id = 2L, name = "Active"))
+
+        assertTrue(started.isCompleted)
+        assertFalse(reopened.isCompleted)
+    }
+
+    @Test
     fun `timer update does not change counter hero state`() {
         val state =
             CounterUiState(

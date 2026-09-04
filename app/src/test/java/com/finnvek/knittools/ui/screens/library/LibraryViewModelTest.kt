@@ -222,7 +222,7 @@ class LibraryViewModelTest {
                 ManualYarnCardInput(
                     yarnName = "  Blue sock yarn  ",
                     brand = "  Regia  ",
-                    quantity = 0,
+                    quantity = 2,
                     weightCategory = "  Fingering  ",
                     colorName = "  Blue  ",
                     colorNumber = "  123  ",
@@ -234,12 +234,23 @@ class LibraryViewModelTest {
             coVerify { yarnCardRepository.saveCard(capture(savedCard)) }
             assertEquals("Blue sock yarn", savedCard.captured.yarnName)
             assertEquals("Regia", savedCard.captured.brand)
-            assertEquals(1, savedCard.captured.quantityInStash)
+            assertEquals(2, savedCard.captured.quantityInStash)
             assertEquals("Fingering", savedCard.captured.weightCategory)
             assertEquals("Blue", savedCard.captured.colorName)
             assertEquals("123", savedCard.captured.colorNumber)
             assertEquals("A7", savedCard.captured.dyeLot)
             assertEquals(YarnCardStatus.IN_STASH, savedCard.captured.status)
+        }
+
+    @Test
+    fun `manual yarn creation rejects zero quantity`() =
+        runTest {
+            val viewModel = createViewModel()
+
+            viewModel.createManualYarnCard(ManualYarnCardInput(yarnName = "Blue", quantity = 0))
+            advanceUntilIdle()
+
+            coVerify(exactly = 0) { yarnCardRepository.saveCard(any()) }
         }
 
     @Test

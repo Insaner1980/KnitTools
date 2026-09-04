@@ -49,7 +49,7 @@ internal object RavelryBackendMappers {
     }
 
     private fun Map<*, *>.toSearchResultOrNull(): PatternSearchResult? {
-        val ravelryPatternId = int("ravelryPatternId") ?: return null
+        val ravelryPatternId = int("ravelryPatternId")?.takeIf { it > 0 } ?: return null
         val thumbnailUrl = optionalString("thumbnailUrl")
         val canonicalUrl = optionalString("canonicalUrl")
         val availability = PatternAvailability.fromBackendValue(optionalString("availability"))
@@ -86,8 +86,16 @@ internal object RavelryBackendMappers {
 
     private fun Map<*, *>.int(key: String): Int? =
         when (val value = this[key]) {
-            is Number -> value.toInt()
+            is Number -> value.toExactIntOrNull()
             is String -> value.toIntOrNull()
             else -> null
         }
+
+    private fun Number.toExactIntOrNull(): Int? {
+        val number = toDouble()
+        if (!number.isFinite() || number % 1.0 != 0.0 || number < Int.MIN_VALUE || number > Int.MAX_VALUE) {
+            return null
+        }
+        return number.toInt()
+    }
 }

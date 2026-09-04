@@ -41,6 +41,27 @@ class RowMappingParserTest {
     }
 
     @Test
+    fun `parseMapping preserves valid markers around malformed records`() {
+        val json =
+            """
+            [
+              {"row": 2, "page": 0, "yPosition": 0.2},
+              {"row": "invalid", "page": 0, "yPosition": 0.4},
+              {"row": 4, "page": 0},
+              {"row": 6, "page": 1, "yPosition": 0.6}
+            ]
+            """.trimIndent()
+
+        assertEquals(
+            listOf(
+                RowMarker(row = 2, page = 0, yPosition = 0.2f),
+                RowMarker(row = 6, page = 1, yPosition = 0.6f),
+            ),
+            parseMapping(json),
+        )
+    }
+
+    @Test
     fun `serializeMapping removes duplicate row-page pairs and sorts output`() {
         val result =
             serializeMapping(
@@ -60,6 +81,20 @@ class RowMappingParserTest {
             ),
             parseMapping(result),
         )
+    }
+
+    @Test
+    fun `mapping input and serialization are bounded`() {
+        assertTrue(parseMapping("[" + "0".repeat(ROW_MAPPING_MAX_JSON_LENGTH)).isEmpty())
+
+        val serialized =
+            serializeMapping(
+                (0..ROW_MAPPING_MAX_MARKERS).map { row ->
+                    RowMarker(row = row, page = 0, yPosition = 0.5f)
+                },
+            )
+
+        assertEquals(ROW_MAPPING_MAX_MARKERS, parseMapping(serialized).size)
     }
 
     @Test

@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import com.finnvek.knittools.data.local.ProgressPhotoDao
 import com.finnvek.knittools.data.local.ProgressPhotoEntity
+import com.finnvek.knittools.data.local.distinctSqliteQueryChunks
 import com.finnvek.knittools.data.local.toDomain
 import com.finnvek.knittools.data.storage.ProgressPhotoStorage
 import com.finnvek.knittools.di.IoDispatcher
@@ -61,13 +62,11 @@ class ProgressPhotoRepository
                 storage.createPhotoFile(context, projectId)
             }
 
-        suspend fun getPhotoCountsByProjectIds(projectIds: List<Long>): Map<Long, Int> {
-            val distinctProjectIds = projectIds.distinct()
-            if (distinctProjectIds.isEmpty()) return emptyMap()
-            return dao
-                .getPhotoCountsByProjectIds(distinctProjectIds)
+        suspend fun getPhotoCountsByProjectIds(projectIds: List<Long>): Map<Long, Int> =
+            projectIds
+                .distinctSqliteQueryChunks()
+                .flatMap { chunk -> dao.getPhotoCountsByProjectIds(chunk) }
                 .associate { it.projectId to it.count }
-        }
 
         suspend fun savePhoto(
             projectId: Long,
@@ -124,11 +123,14 @@ class ProgressPhotoRepository
         }
 
         suspend fun deletePhotos(ids: List<Long>) {
-            val distinctIds = ids.distinct()
-            if (distinctIds.isEmpty()) return
-            val photos = dao.getByIds(distinctIds)
+            val idChunks = ids.distinctSqliteQueryChunks()
+            if (idChunks.isEmpty()) return
+            val photos = idChunks.flatMap { chunk -> dao.getByIds(chunk) }
             if (photos.isEmpty()) return
-            dao.deleteByIds(photos.map { it.id })
+            photos
+                .map { it.id }
+                .distinctSqliteQueryChunks()
+                .forEach { chunk -> dao.deleteByIds(chunk) }
             cleanupDeletedPhotos(photos)
         }
 

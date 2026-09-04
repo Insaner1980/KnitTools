@@ -7,6 +7,13 @@ import org.junit.Test
 
 class DaoQuerySourceTest {
     @Test
+    fun `latest counter history uses row id as timestamp tiebreaker`() {
+        val dao = ProjectSourceFiles.read(COUNTER_PROJECT_DAO)
+
+        assertTrue(dao.contains("ORDER BY timestamp DESC, id DESC LIMIT 1"))
+    }
+
+    @Test
     fun `created sort uses createdAt instead of row id`() {
         val dao = ProjectSourceFiles.read(COUNTER_PROJECT_DAO)
 
@@ -25,12 +32,18 @@ class DaoQuerySourceTest {
     }
 
     @Test
-    fun `active name sort uses stable row id tiebreaker`() {
+    fun `project name sort uses stable row id tiebreaker`() {
         val dao = ProjectSourceFiles.read(COUNTER_PROJECT_DAO)
 
         assertTrue(
             dao.contains(
                 "SELECT * FROM counter_projects WHERE isCompleted = 0 " +
+                    "ORDER BY name COLLATE NOCASE ASC, id DESC",
+            ),
+        )
+        assertTrue(
+            dao.contains(
+                "SELECT * FROM counter_projects WHERE isCompleted = 1 " +
                     "ORDER BY name COLLATE NOCASE ASC, id DESC",
             ),
         )

@@ -29,6 +29,7 @@ class ReleaseSigningSourceTest {
             )
         }
         assertTrue(appBuild.contains("Release build estetty."))
+        assertTrue(appBuild.contains("KEYSTORE_PATH ei osoita olemassa olevaan tiedostoon."))
     }
 
     private companion object {

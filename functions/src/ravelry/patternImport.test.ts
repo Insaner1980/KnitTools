@@ -9,7 +9,8 @@ import {
   ravelryDisconnect,
   ravelryStartAuth,
 } from "./auth";
-import { createRavelryClient, type RavelryClient } from "./client";
+import { httpsErrorFor } from "./callable";
+import { createRavelryClient, RavelryClientHttpError, type RavelryClient } from "./client";
 import type { OAuthTokenRefresh } from "./oauth2";
 import {
   importPatternById,
@@ -156,6 +157,16 @@ describe("Ravelry backend search and import", () => {
       patternSlug: "12345",
     });
     assert.equal(parseRavelryPatternUrl("https://example.com/patterns/library/cozy-hat"), null);
+    assert.equal(parseRavelryPatternUrl("https://ravelry.com.example/patterns/library/cozy-hat"), null);
+    assert.equal(parseRavelryPatternUrl("https://user@ravelry.com/patterns/library/cozy-hat"), null);
+    assert.equal(parseRavelryPatternUrl("http://ravelry.com/patterns/library/cozy-hat"), null);
+    assert.equal(parseRavelryPatternUrl("https://ravelry.com/patterns/library/cozy-hat/extra"), null);
+    assert.equal(parseRavelryPatternUrl("https://ravelry.com/patterns/library/cozy%2Fhat"), null);
+    assert.equal(parseRavelryPatternUrl("https://ravelry.com/patterns/library/0"), null);
+    assert.equal(
+      parseRavelryPatternUrl("https://ravelry.com/patterns/library/9007199254740993"),
+      null,
+    );
     assert.equal(parseRavelryPatternUrl("not a url"), null);
   });
 
@@ -173,6 +184,36 @@ describe("Ravelry backend search and import", () => {
       ravelrySearchQueryFromData({ query: "hat", pageSize: RAVELRY_SEARCH_MAX_PAGE_SIZE }),
       { query: "hat", pageSize: RAVELRY_SEARCH_MAX_PAGE_SIZE },
     );
+  });
+
+  it("rejects malformed or unbounded search inputs", () => {
+    for (const data of [
+      { query: "hat\nscarf" },
+      { query: "A".repeat(201) },
+      { query: "hat", craft: 42 },
+      { query: "hat", page: 0 },
+      { query: "hat", page: 1.5 },
+      { query: "hat", page: 1_001 },
+      { query: "hat", difficultyFrom: 0 },
+      { query: "hat", difficultyTo: 11 },
+      { query: "hat", difficultyFrom: 8, difficultyTo: 2 },
+    ]) {
+      assert.throws(() => ravelrySearchQueryFromData(data));
+    }
+  });
+
+  it("rejects unsafe direct pattern IDs before backend work", async () => {
+    for (const ravelryPatternId of [0, -1, 1.5, 2_147_483_648, Number.MAX_SAFE_INTEGER + 1]) {
+      await assert.rejects(
+        importPatternById({
+          uid: "uid",
+          tokenStore: new MemoryTokenStore(),
+          client: {} as RavelryClient,
+          ravelryPatternId,
+        }),
+        /invalid_pattern_id/,
+      );
+    }
   });
 
   it("searches Ravelry with a bearer token and returns only sanitized fields plus pagination", async () => {
@@ -343,6 +384,111 @@ describe("Ravelry backend search and import", () => {
     assert.equal(Object.hasOwn(detailPattern, "thumbnailUrl"), false);
   });
 
+  it("bounds upstream display fields and requires credential-free HTTPS thumbnail URLs", async () => {
+    const client = createRavelryClient(async () =>
+      new Response(
+        JSON.stringify({
+          patterns: [{
+            id: 42,
+            name: `  Cozy\u0000${"H".repeat(600)}  `,
+            designer: { name: "Ada\nDesigner" },
+            permalink: "cozy-hat",
+            first_photo: { medium_url: "https://user@example.com/private.jpg" },
+          }],
+          paginator: { page: -1, page_count: 1.5, results: Number.MAX_SAFE_INTEGER + 1 },
+        }),
+        { status: 200 },
+      ),
+    );
+
+    const response = await client.searchPatterns("access-token", { query: "hat" });
+    assert.equal(response.patterns[0]?.title.length, 500);
+    assert.equal(response.patterns[0]?.title.includes("\u0000"), false);
+    assert.equal(response.patterns[0]?.designerName, "Ada Designer");
+    assert.equal(Object.hasOwn(response.patterns[0] ?? {}, "thumbnailUrl"), false);
+    assert.deepEqual(response.pagination, { page: 1, pageCount: 1, resultCount: 0 });
+  });
+
+  it("sanitizes and bounds current-user metadata", async () => {
+    const client = createRavelryClient(async () =>
+      new Response(
+        JSON.stringify({
+          user: {
+            id: 42,
+            username: `  Ada\n${"D".repeat(300)}  `,
+          },
+        }),
+        { status: 200 },
+      ),
+    );
+
+    const user = await client.getCurrentUser("access-token");
+    assert.equal(user.ravelryUserId, "42");
+    assert.equal(user.ravelryUsername?.length, 200);
+    assert.equal(user.ravelryUsername?.includes("\n"), false);
+  });
+
+  it("bounds Ravelry requests and maps transport failures to a sanitized unavailable error", async () => {
+    let capturedSignal: AbortSignal | undefined;
+    let capturedRedirect: RequestRedirect | undefined;
+    const signalClient = createRavelryClient(async (_input, init) => {
+      capturedSignal = init?.signal ?? undefined;
+      capturedRedirect = init?.redirect;
+      return new Response(JSON.stringify({ patterns: [], paginator: {} }), { status: 200 });
+    });
+    await signalClient.searchPatterns("access-token", { query: "hat" });
+    assert.ok(capturedSignal instanceof AbortSignal);
+    assert.equal(capturedRedirect, "error");
+
+    const failingClient = createRavelryClient(async () => {
+      throw new Error("access-token upstream body");
+    });
+    await assert.rejects(
+      failingClient.searchPatterns("access-token", { query: "hat" }),
+      (error: unknown) => {
+        assert.ok(error instanceof RavelryClientHttpError);
+        assert.equal(error.httpStatus, 503);
+        assert.equal(error.message, "ravelry_http_503");
+        assert.equal(error.message.includes("access-token upstream body"), false);
+        return true;
+      },
+    );
+
+    const malformedResponseClient = createRavelryClient(async () =>
+      new Response("not-json", { status: 200 }),
+    );
+    await assert.rejects(
+      malformedResponseClient.searchPatterns("access-token", { query: "hat" }),
+      (error: unknown) => {
+        assert.ok(error instanceof RavelryClientHttpError);
+        assert.equal(error.httpStatus, 503);
+        return true;
+      },
+    );
+  });
+
+  it("rejects an oversized Ravelry response before parsing it", async () => {
+    const client = createRavelryClient(async () =>
+      new Response(
+        JSON.stringify({
+          patterns: [],
+          paginator: {},
+          padding: "x".repeat(1_048_576),
+        }),
+        { status: 200 },
+      ),
+    );
+
+    await assert.rejects(
+      client.searchPatterns("access-token", { query: "hat" }),
+      (error: unknown) => {
+        assert.ok(error instanceof RavelryClientHttpError);
+        assert.equal(error.httpStatus, 503);
+        return true;
+      },
+    );
+  });
+
   it("preserves Ravelry HTTP status codes for backend error mapping", async () => {
     const client = createRavelryClient(async () => new Response("rate limited", { status: 429 }));
 
@@ -350,6 +496,9 @@ describe("Ravelry backend search and import", () => {
       client.searchPatterns("access-token", { query: "hat" }),
       /ravelry_http_429/,
     );
+    assert.equal(httpsErrorFor(new RavelryClientHttpError(403)).code, "unauthenticated");
+    assert.equal(httpsErrorFor(new RavelryClientHttpError(429)).code, "resource-exhausted");
+    assert.equal(httpsErrorFor(new RavelryClientHttpError(503)).code, "unavailable");
   });
 
   it("imports by ID or URL as metadata without downloading PDFs", async () => {

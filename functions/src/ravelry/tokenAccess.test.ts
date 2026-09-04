@@ -136,4 +136,64 @@ describe("Ravelry token access", () => {
     assert.equal(lateResult?.accessToken, "persisted-access-token");
     assert.equal((await tokenStore.getToken("uid"))?.refreshToken, "persisted-refresh-token");
   });
+
+  it("rejects a concurrently persisted token that expires before the losing refresh reloads it", async () => {
+    const tokenStore = new MemoryTokenStore();
+    await tokenStore.saveToken({
+      uid: "uid",
+      authType: "oauth2",
+      accessToken: "expired-access-token",
+      refreshToken: "old-refresh-token",
+      expiresAtMillis: 999,
+      createdAtMillis: 100,
+      updatedAtMillis: 100,
+    });
+
+    let now = 1_000;
+    let releaseFirstRefresh: (() => void) | undefined;
+    const firstRefreshGate = new Promise<void>((resolve) => {
+      releaseFirstRefresh = resolve;
+    });
+    let firstRefreshStarted: (() => void) | undefined;
+    const firstRefreshStart = new Promise<void>((resolve) => {
+      firstRefreshStarted = resolve;
+    });
+    let refreshCalls = 0;
+    const refresh = async () => {
+      refreshCalls += 1;
+      if (refreshCalls === 1) {
+        firstRefreshStarted?.();
+        await firstRefreshGate;
+        return {
+          accessToken: "late-access-token",
+          refreshToken: "late-refresh-token",
+          expiresAtMillis: 20_000,
+        };
+      }
+      return {
+        accessToken: "brief-access-token",
+        refreshToken: "brief-refresh-token",
+        expiresAtMillis: 1_500,
+      };
+    };
+
+    const lateRefresh = getUsableRavelryToken({
+      uid: "uid",
+      tokenStore,
+      refresh,
+      nowMillis: () => now,
+    });
+    await firstRefreshStart;
+    await getUsableRavelryToken({
+      uid: "uid",
+      tokenStore,
+      refresh,
+      nowMillis: () => now,
+    });
+    now = 2_000;
+    releaseFirstRefresh?.();
+
+    assert.equal(await lateRefresh, null);
+    assert.equal((await tokenStore.getToken("uid"))?.accessToken, "brief-access-token");
+  });
 });

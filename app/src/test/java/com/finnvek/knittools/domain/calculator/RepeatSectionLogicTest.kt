@@ -94,4 +94,18 @@ class RepeatSectionLogicTest {
         assertEquals(0f, RepeatSectionLogic.progress(counter.copy(repeatEndRow = 8), 15))
         assertEquals(0f, RepeatSectionLogic.progress(counter.copy(totalRepeats = 0), 15))
     }
+
+    @Test
+    fun `large repeat ranges do not overflow`() {
+        val counter =
+            repeatSectionCounter().copy(
+                repeatStartRow = 1,
+                repeatEndRow = Int.MAX_VALUE,
+                totalRepeats = Int.MAX_VALUE,
+            )
+
+        assertFalse(RepeatSectionLogic.isComplete(counter, Int.MAX_VALUE))
+        assertEquals(1, RepeatSectionLogic.updatePosition(counter, Int.MAX_VALUE).currentRepeat)
+        assertTrue(RepeatSectionLogic.progress(counter, Int.MAX_VALUE) in 0f..1f)
+    }
 }

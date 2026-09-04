@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.CounterValueFormatter
 import com.finnvek.knittools.domain.calculator.MeasurementNumberParser
+import com.finnvek.knittools.domain.calculator.ReminderLogic
 import com.finnvek.knittools.domain.model.RowReminder
 import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.ui.components.ConfirmationDialog
@@ -338,8 +339,6 @@ fun AddReminderDialog(
     )
 }
 
-private const val REMINDER_MESSAGE_MAX_LENGTH = 200
-
 private data class ReminderDialogForm(
     val rowText: String,
     val selectedType: Int,
@@ -452,4 +451,4 @@ private fun ReminderDialogDismissButton(onDismiss: () -> Unit) {
 private fun limitReminderMessage(
     current: String,
     next: String,
-): String = if (next.length <= REMINDER_MESSAGE_MAX_LENGTH) next else current
+): String = if (next.length <= ReminderLogic.MESSAGE_MAX_LENGTH) next else current

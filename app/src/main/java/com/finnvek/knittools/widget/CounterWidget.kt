@@ -36,6 +36,8 @@ import androidx.glance.layout.padding
 import androidx.glance.layout.size
 import androidx.glance.layout.width
 import androidx.glance.material3.ColorProviders
+import androidx.glance.semantics.contentDescription
+import androidx.glance.semantics.semantics
 import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
@@ -198,17 +200,27 @@ private fun SmallWidget(
         verticalPadding = 4.dp,
         frame = WidgetCardFrame(outerPadding = 2.dp, borderWidth = 2.dp, cornerRadius = 18.dp),
     ) {
-        WidgetHeader(data = data, fontSize = 12.sp, showSection = false)
-        Spacer(modifier = GlanceModifier.defaultWeight())
-        Box(
-            modifier = GlanceModifier.fillMaxWidth(),
-            contentAlignment = Alignment.Center,
+        Row(
+            modifier = GlanceModifier.fillMaxSize(),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
+            Text(
+                text = data.projectName,
+                modifier = GlanceModifier.defaultWeight(),
+                style =
+                    TextStyle(
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = GlanceTheme.colors.onSurface,
+                    ),
+                maxLines = 1,
+            )
+            Spacer(modifier = GlanceModifier.width(4.dp))
             Text(
                 text = formatPrimaryCount(data),
                 style =
                     TextStyle(
-                        fontSize = 28.sp,
+                        fontSize = 22.sp,
                         fontWeight = FontWeight.Bold,
                         color = GlanceTheme.colors.onSurface,
                     ),
@@ -226,9 +238,9 @@ private fun MediumWidget(
     WidgetCard(
         projectId = projectId,
         horizontalPadding = 16.dp,
-        verticalPadding = 10.dp,
+        verticalPadding = 6.dp,
     ) {
-        WidgetHeader(data = data, fontSize = 13.sp, centered = true, maxLines = 2)
+        WidgetHeader(data = data, fontSize = 13.sp, centered = true, maxLines = 1)
         WidgetTargetLabel(data = data, fontSize = 11.sp)
         Spacer(modifier = GlanceModifier.defaultWeight())
         Box(
@@ -239,15 +251,15 @@ private fun MediumWidget(
                 text = formatPrimaryCount(data),
                 style =
                     TextStyle(
-                        fontSize = 40.sp,
+                        fontSize = 32.sp,
                         fontWeight = FontWeight.Bold,
                         color = GlanceTheme.colors.onSurface,
                     ),
                 maxLines = 1,
             )
         }
-        WidgetProgressBar(data = data, topSpacing = 8.dp)
-        Spacer(modifier = GlanceModifier.height(12.dp))
+        WidgetProgressBar(data = data, topSpacing = 4.dp)
+        Spacer(modifier = GlanceModifier.height(6.dp))
         Row(
             modifier = GlanceModifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -255,17 +267,16 @@ private fun MediumWidget(
         ) {
             WidgetActionButton(
                 text = "−",
-                size = 42.dp,
+                size = 48.dp,
                 action = WidgetCountAction.DECREMENT,
             )
             Spacer(modifier = GlanceModifier.width(16.dp))
             WidgetActionButton(
                 text = "+",
-                size = 42.dp,
+                size = 48.dp,
                 action = WidgetCountAction.INCREMENT,
             )
         }
-        Spacer(modifier = GlanceModifier.defaultWeight())
     }
 }
 
@@ -277,11 +288,12 @@ private fun LargeWidget(
     WidgetCard(
         projectId = projectId,
         horizontalPadding = 18.dp,
-        verticalPadding = 8.dp,
+        verticalPadding = 6.dp,
     ) {
-        WidgetHeader(data = data, fontSize = 14.sp, centered = true, maxLines = 2)
+        WidgetHeader(data = data, fontSize = 14.sp, centered = true, maxLines = 1)
         WidgetTargetLabel(data = data, fontSize = 12.sp)
         Spacer(modifier = GlanceModifier.defaultWeight())
+        // CPD-OFF: Widget-koon itsenainen rakenne pidetaan lahdekoodisopimuksen tarkistettavana.
         Box(
             modifier = GlanceModifier.fillMaxWidth(),
             contentAlignment = Alignment.Center,
@@ -290,15 +302,15 @@ private fun LargeWidget(
                 text = formatPrimaryCount(data),
                 style =
                     TextStyle(
-                        fontSize = 44.sp,
+                        fontSize = 34.sp,
                         fontWeight = FontWeight.Bold,
                         color = GlanceTheme.colors.onSurface,
                     ),
                 maxLines = 1,
             )
         }
-        WidgetProgressBar(data = data, topSpacing = 6.dp)
-        Spacer(modifier = GlanceModifier.height(8.dp))
+        WidgetProgressBar(data = data, topSpacing = 4.dp)
+        Spacer(modifier = GlanceModifier.height(6.dp))
         Row(
             modifier = GlanceModifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -306,17 +318,17 @@ private fun LargeWidget(
         ) {
             WidgetActionButton(
                 text = "−",
-                size = 44.dp,
+                size = 48.dp,
                 action = WidgetCountAction.DECREMENT,
             )
             Spacer(modifier = GlanceModifier.width(18.dp))
             WidgetActionButton(
                 text = "+",
-                size = 44.dp,
+                size = 48.dp,
                 action = WidgetCountAction.INCREMENT,
             )
         }
-        Spacer(modifier = GlanceModifier.defaultWeight())
+        // CPD-ON
     }
 }
 
@@ -385,7 +397,7 @@ private fun WidgetHeader(
             TextStyle(
                 fontSize = fontSize,
                 fontWeight = FontWeight.Medium,
-                color = GlanceTheme.colors.tertiary,
+                color = GlanceTheme.colors.onSurface,
                 textAlign = textAlign,
             ),
         maxLines = maxLines,
@@ -479,12 +491,20 @@ private fun WidgetActionButton(
                 WidgetCountAction.INCREMENT -> CounterWidgetActions.incrementIntent(context)
             },
         )
+    val actionDescription =
+        context.getString(
+            when (action) {
+                WidgetCountAction.DECREMENT -> R.string.counter_decrease
+                WidgetCountAction.INCREMENT -> R.string.counter_increase
+            },
+        )
     Box(
         modifier =
             GlanceModifier
                 .size(size)
                 .cornerRadius(size / 2)
                 .background(GlanceTheme.colors.primary)
+                .semantics { contentDescription = actionDescription }
                 .clickable(onClick),
         contentAlignment = Alignment.Center,
     ) {

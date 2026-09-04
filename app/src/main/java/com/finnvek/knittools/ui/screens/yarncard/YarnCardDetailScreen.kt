@@ -66,9 +66,10 @@ data class YarnCardDetailActions(
 // Compose-modal-state ja ruudun orkestrointi tuottavat Sonarille vääriä osumia.
 @Suppress("kotlin:S6615", "kotlin:S3776")
 fun YarnCardDetailScreen(
-    viewModel: YarnCardViewModel,
+    viewModelProvider: @Composable () -> YarnCardViewModel,
     actions: YarnCardDetailActions,
 ) {
+    val viewModel = viewModelProvider()
     val form by viewModel.formState.collectAsStateWithLifecycle()
     val linkedProjectName by viewModel.linkedProjectName.collectAsStateWithLifecycle()
     val availableProjects by viewModel.availableProjects.collectAsStateWithLifecycle()

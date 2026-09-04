@@ -10,8 +10,10 @@ import {
 describe("Ravelry OAuth2 token exchange", () => {
   it("passes a timeout signal to the token request", async () => {
     let capturedSignal: AbortSignal | undefined;
+    let capturedRedirect: RequestRedirect | undefined;
     const fetchImpl: typeof fetch = async (_input, init) => {
       capturedSignal = init?.signal ?? undefined;
+      capturedRedirect = init?.redirect;
       return new Response(
         JSON.stringify({
           access_token: "access-token",
@@ -34,6 +36,7 @@ describe("Ravelry OAuth2 token exchange", () => {
 
     assert.ok(capturedSignal instanceof AbortSignal);
     assert.equal(capturedSignal.aborted, false);
+    assert.equal(capturedRedirect, "error");
     assert.deepEqual(token, {
       accessToken: "access-token",
       refreshToken: "refresh-token",
@@ -106,5 +109,51 @@ describe("Ravelry OAuth2 token exchange", () => {
       refreshToken: "rotated-refresh-token",
       expiresAtMillis: 121_000,
     });
+  });
+
+  it("treats an empty rotated refresh token as absent", async () => {
+    const token = await refreshOAuth2AccessToken({
+      clientId: "client-id",
+      clientSecret: "client-secret",
+      refreshToken: "old-refresh-token",
+      fetchImpl: async () =>
+        new Response(
+          JSON.stringify({
+            access_token: "fresh-access-token",
+            refresh_token: "",
+            expires_in: 120,
+          }),
+          { status: 200 },
+        ),
+      nowMillis: () => 1_000,
+    });
+
+    assert.equal(token.accessToken, "fresh-access-token");
+    assert.equal(token.refreshToken, undefined);
+    assert.equal(token.expiresAtMillis, 121_000);
+  });
+
+  it("rejects an oversized token response before parsing it", async () => {
+    await assert.rejects(
+      exchangeOAuth2CodeForToken({
+        clientId: "client-id",
+        clientSecret: "client-secret",
+        code: "auth-code",
+        codeVerifier: "code-verifier",
+        redirectUri: "https://callback.example/ravelry",
+        fetchImpl: async () =>
+          new Response(
+            JSON.stringify({
+              access_token: "x".repeat(65_536),
+            }),
+            { status: 200 },
+          ),
+      }),
+      (error: unknown) => {
+        assert.ok(error instanceof OAuthTokenExchangeError);
+        assert.equal(error.statusCode, 503);
+        return true;
+      },
+    );
   });
 });

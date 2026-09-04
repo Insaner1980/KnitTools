@@ -10,8 +10,10 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.take
@@ -154,6 +156,31 @@ class InsightsViewModelTest {
         }
 
     @Test
+    fun `project without sessions does not look like an app without session history`() =
+        runTest {
+            val zone = ZoneId.systemDefault()
+            val today = LocalDate.now(zone)
+            val session = sessionAt(date = today, hour = 10, minute = 0, rows = 10, minutes = 30, zone = zone)
+            every { repository.getAllProjects() } returns
+                flowOf(
+                    listOf(
+                        CounterProject(id = 1L, name = "Worked project"),
+                        CounterProject(id = 2L, name = "Empty project"),
+                    ),
+                )
+            every { repository.getSessionsForInsights(null, null) } returns flowOf(listOf(session))
+
+            val viewModel = createViewModel()
+            viewModel.selectProject(2L)
+            val state = viewModel.uiState.first { !it.isLoading && it.selectedProjectId == 2L }
+
+            assertTrue(state.hasAnySessionData)
+            assertFalse(state.hasSessionData)
+            assertEquals(0, state.totalMinutes)
+            assertEquals("Empty project", state.selectedProjectName)
+        }
+
+    @Test
     fun `weekly trend wires the previous period comparison into the ui state`() =
         runTest {
             // Katkaisun reunatapaus (viime viikon loppupään poissulkeminen) on
@@ -271,6 +298,27 @@ class InsightsViewModelTest {
 
             assertFalse(viewModel.uiState.value.isLoading)
             job.cancel()
+        }
+
+    @Test
+    fun `deleted selected project resets the filter to all projects`() =
+        runTest {
+            val projects = MutableStateFlow(listOf(CounterProject(id = 1L, name = "Project")))
+            every { repository.getAllProjects() } returns projects
+            val viewModel = createViewModel()
+            val job = launch { viewModel.uiState.collect {} }
+            runCurrent()
+
+            viewModel.selectProject(1L)
+            runCurrent()
+            assertEquals(1L, viewModel.uiState.value.selectedProjectId)
+
+            projects.value = emptyList()
+            runCurrent()
+
+            assertNull(viewModel.selectedProjectId.value)
+            assertNull(viewModel.uiState.value.selectedProjectId)
+            job.cancelAndJoin()
         }
 
     @Test

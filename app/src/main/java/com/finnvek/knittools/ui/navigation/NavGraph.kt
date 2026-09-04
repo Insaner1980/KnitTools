@@ -315,8 +315,11 @@ private fun NavGraphBuilder.projectsGraph(
             val counterViewModel: CounterViewModel = hiltViewModel(parentEntry)
             ProjectListScreen(
                 onProjectClick = { projectId ->
-                    counterViewModel.selectProjectById(projectId)
-                    navController.navigateSingleTopTo(Screen.Counter.route)
+                    counterViewModel.selectProjectByIdForLaunch(projectId) { loaded ->
+                        if (loaded) {
+                            navController.navigateSingleTopTo(Screen.Counter.route)
+                        }
+                    }
                 },
                 onNotesEditor = { projectId ->
                     navController.navigateSingleTopTo(Screen.NotesEditor(projectId).route)
@@ -347,14 +350,22 @@ private fun NavGraphBuilder.projectsGraph(
                 }
             val counterViewModel: CounterViewModel = hiltViewModel(parentEntry)
             val counterState by counterViewModel.uiState.collectAsStateWithLifecycle()
+            var counterLaunchProjectMissing by remember { mutableStateOf(false) }
             LaunchedEffect(counterLaunchRequest?.requestId) {
                 val launchRequest = counterLaunchRequest ?: return@LaunchedEffect
-                launchRequest.projectId?.let { projectId ->
-                    counterViewModel.selectProjectByIdForLaunch(projectId)
+                counterLaunchProjectMissing = false
+                val projectId = launchRequest.projectId
+                if (projectId == null) {
+                    onCounterLaunchHandled()
+                    return@LaunchedEffect
                 }
-                onCounterLaunchHandled()
+                counterViewModel.selectProjectByIdForLaunch(projectId) { loaded ->
+                    counterLaunchProjectMissing = !loaded
+                    onCounterLaunchHandled()
+                }
             }
-            if (counterState.shouldLeaveCounter) {
+            if (counterLaunchRequest != null) return@composable
+            if (counterLaunchProjectMissing || counterState.shouldLeaveCounter) {
                 RouteArgumentFallback({ navController }, TopLevelDestination.Projects)
                 return@composable
             }
@@ -481,7 +492,7 @@ private fun NavGraphBuilder.projectsGraph(
                 counterViewModelProvider = { counterViewModel },
                 patternViewerViewModelProvider = { patternViewerViewModel },
                 // CPD-OFF: Reittikohtainen argumenttien kasittely pidetaan reitin yhteydessa.
-                annotationViewModel = annotationViewModel,
+                annotationViewModelProvider = { annotationViewModel },
             )
         }
         composable(
@@ -849,10 +860,11 @@ private fun NavGraphBuilder.libraryPatternViewerRoute(navController: NavHostCont
         var patternRouteState by remember(savedPatternId) { mutableStateOf<Pair<String, String>?>(null) }
         LaunchedEffect(savedPatternId) {
             libraryViewModel.loadSavedPattern(savedPatternId) { pattern ->
-                if (pattern == null) {
+                val localPdfUri = pattern?.localPdfUri?.takeIf { it.isNotBlank() }
+                if (pattern == null || localPdfUri == null) {
                     navController.popBackStackOrNavigateToTopLevel(TopLevelDestination.Library)
                 } else {
-                    patternRouteState = (pattern.localPdfUri ?: pattern.patternUrl) to pattern.name
+                    patternRouteState = localPdfUri to pattern.name
                 }
             }
         }
@@ -862,7 +874,7 @@ private fun NavGraphBuilder.libraryPatternViewerRoute(navController: NavHostCont
             patternUri = pattern.first,
             patternName = pattern.second,
             onBack = { navController.popBackStack() },
-            annotationViewModel = annotationViewModel,
+            annotationViewModelProvider = { annotationViewModel },
         )
     }
 }
@@ -952,12 +964,12 @@ private fun NavGraphBuilder.libraryYarnCardDetailRoute(
             rememberLibraryYarnCardDetailReady(
                 cardId = cardId,
                 navControllerProvider = { navController },
-                yarnCardViewModel = yarnCardViewModel,
+                viewModelProvider = { yarnCardViewModel },
                 isDeleteInProgress = localDeleteInProgress,
             )
         if (!cardRouteReady) return@composable
         YarnCardDetailScreen(
-            viewModel = yarnCardViewModel,
+            viewModelProvider = { yarnCardViewModel },
             actions =
                 YarnCardDetailActions(
                     onBack = {
@@ -984,10 +996,11 @@ private fun NavGraphBuilder.libraryYarnCardDetailRoute(
 private fun rememberLibraryYarnCardDetailReady(
     cardId: Long,
     navControllerProvider: @Composable () -> NavHostController,
-    yarnCardViewModel: YarnCardViewModel,
+    viewModelProvider: @Composable () -> YarnCardViewModel,
     isDeleteInProgress: Boolean,
 ): Boolean {
     val navController = navControllerProvider()
+    val yarnCardViewModel = viewModelProvider()
     var cardRouteReady by remember(cardId) { mutableStateOf(false) }
     val cardFlow = remember(cardId, yarnCardViewModel) { yarnCardViewModel.observeCardForDetail(cardId) }
 

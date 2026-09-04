@@ -39,6 +39,7 @@ class CounterRepositoryMainCounterChangeTest {
                     name = "Cardigan",
                     count = 10,
                     stepSize = 2,
+                    stitchCount = 80,
                     stitchTrackingEnabled = true,
                     currentStitch = 11,
                 )
@@ -149,6 +150,7 @@ class CounterRepositoryMainCounterChangeTest {
                     name = "Socks",
                     count = 12,
                     stepSize = 1,
+                    stitchCount = 80,
                     stitchTrackingEnabled = true,
                     currentStitch = 8,
                 )
@@ -170,6 +172,58 @@ class CounterRepositoryMainCounterChangeTest {
                 projectDao.deleteHistoryById(55L)
                 projectDao.updateCurrentStitch(7L, 0, any())
                 counterDao.updateCount(20L, 4)
+            }
+        }
+
+    // CPD-OFF: Undo-testin skenaariokohtainen asetelma pidetaan testin yhteydessa.
+    @Test
+    fun `undo rejects history that no longer matches current project state`() =
+        runTest {
+            val projectDao = mockk<CounterProjectDao>(relaxed = true)
+            val counterDao = linkedCounterDao(projectId = 7L, linkedCount = 6, unlinkedCount = 9)
+            coEvery { projectDao.getProject(7L) } returns
+                CounterProjectEntity(id = 7L, name = "Socks", count = 13)
+            coEvery { projectDao.getLatestHistory(7L) } returns
+                CounterHistoryEntity(
+                    id = 55L,
+                    projectId = 7L,
+                    action = "increment",
+                    previousValue = 10,
+                    newValue = 12,
+                )
+            val repository = buildRepository(projectDao, counterDao)
+
+            assertFalse(repository.applyMainCounterChange(7L, MainCounterChange.Undo))
+
+            coVerify(exactly = 0) {
+                projectDao.updateCount(any(), any(), any())
+                projectDao.deleteHistoryById(any())
+                counterDao.updateCount(any(), any())
+            }
+        }
+    // CPD-ON
+
+    @Test
+    fun `undo rejects incompatible history action`() =
+        runTest {
+            val projectDao = mockk<CounterProjectDao>(relaxed = true)
+            coEvery { projectDao.getProject(7L) } returns
+                CounterProjectEntity(id = 7L, name = "Socks", count = 12)
+            coEvery { projectDao.getLatestHistory(7L) } returns
+                CounterHistoryEntity(
+                    id = 55L,
+                    projectId = 7L,
+                    action = "import",
+                    previousValue = 10,
+                    newValue = 12,
+                )
+            val repository = buildRepository(projectDao, linkedCounterDao(7L, 0, 0))
+
+            assertFalse(repository.applyMainCounterChange(7L, MainCounterChange.Undo))
+
+            coVerify(exactly = 0) {
+                projectDao.updateCount(any(), any(), any())
+                projectDao.deleteHistoryById(any())
             }
         }
 
@@ -220,6 +274,116 @@ class CounterRepositoryMainCounterChangeTest {
                 projectDao.updateCounterStateWithHistory(any(), any(), any(), any(), any(), any(), any())
                 counterDao.updateCount(any(), any())
             }
+        }
+
+    @Test
+    fun `stitch count update clamps and persists the complete state atomically`() =
+        runTest {
+            val projectDao = mockk<CounterProjectDao>(relaxed = true)
+            coEvery { projectDao.getProject(7L) } returns
+                CounterProjectEntity(
+                    id = 7L,
+                    name = "Cardigan",
+                    stitchCount = 96,
+                    stitchTrackingEnabled = true,
+                    currentStitch = 90,
+                )
+            val repository = buildRepository(projectDao, mockk(relaxed = true))
+
+            assertTrue(repository.updateProjectStitchCount(7L, 80))
+            assertFalse(repository.updateProjectStitchCount(7L, 0))
+
+            coVerify(exactly = 1) {
+                projectDao.updateStitchState(
+                    id = 7L,
+                    stitchCount = 80,
+                    trackingEnabled = true,
+                    currentStitch = 80,
+                    updatedAt = any(),
+                )
+            }
+        }
+
+    @Test
+    fun `stitch tracking enable starts from a valid disabled state and disable resets it`() =
+        runTest {
+            val projectDao = mockk<CounterProjectDao>(relaxed = true)
+            coEvery { projectDao.getProject(7L) } returns
+                CounterProjectEntity(
+                    id = 7L,
+                    name = "Cardigan",
+                    stitchCount = 80,
+                    stitchTrackingEnabled = false,
+                    currentStitch = 75,
+                )
+            val repository = buildRepository(projectDao, mockk(relaxed = true))
+
+            assertTrue(repository.updateStitchTrackingEnabled(7L, true))
+            assertTrue(repository.updateStitchTrackingEnabled(7L, false))
+
+            coVerify {
+                projectDao.updateStitchState(7L, 80, true, 0, any())
+                projectDao.updateStitchState(7L, 80, false, 0, any())
+            }
+        }
+
+    @Test
+    fun `stitch change rejects hidden completed and out of range state`() =
+        runTest {
+            val projectDao = mockk<CounterProjectDao>(relaxed = true)
+            val repository = buildRepository(projectDao, mockk(relaxed = true))
+
+            coEvery { projectDao.getProject(7L) } returns
+                CounterProjectEntity(
+                    id = 7L,
+                    name = "Hidden",
+                    stitchCount = null,
+                    stitchTrackingEnabled = true,
+                    currentStitch = 2,
+                )
+            assertFalse(repository.applyStitchChange(7L, increment = false))
+
+            coEvery { projectDao.getProject(7L) } returns
+                CounterProjectEntity(
+                    id = 7L,
+                    name = "Completed",
+                    stitchCount = 80,
+                    stitchTrackingEnabled = true,
+                    currentStitch = 2,
+                    isCompleted = true,
+                )
+            assertFalse(repository.applyStitchChange(7L, increment = true))
+
+            coEvery { projectDao.getProject(7L) } returns
+                CounterProjectEntity(
+                    id = 7L,
+                    name = "Invalid",
+                    stitchCount = 80,
+                    stitchTrackingEnabled = true,
+                    currentStitch = 81,
+                )
+            assertFalse(repository.applyStitchChange(7L, increment = false))
+
+            coVerify(exactly = 0) { projectDao.updateCurrentStitch(any(), any(), any()) }
+        }
+
+    @Test
+    fun `stitch increment reaches Int maximum without overflow`() =
+        runTest {
+            val projectDao = mockk<CounterProjectDao>(relaxed = true)
+            coEvery { projectDao.getProject(7L) } returns
+                CounterProjectEntity(
+                    id = 7L,
+                    name = "Large",
+                    stitchCount = Int.MAX_VALUE,
+                    stitchTrackingEnabled = true,
+                    currentStitch = Int.MAX_VALUE - 1,
+                )
+            val repository = buildRepository(projectDao, mockk(relaxed = true))
+
+            assertTrue(repository.applyStitchChange(7L, increment = true))
+
+            coVerify { projectDao.updateCurrentStitch(7L, Int.MAX_VALUE, any()) }
         }
 
     @Test
@@ -335,6 +499,67 @@ class CounterRepositoryMainCounterChangeTest {
                 )
                 documentRepository.updateViewerStateInTransaction(
                     match { it.currentPage == 1 && it.readingLineYFraction == 0.8f && !it.readingLineFollowCurrentRow },
+                )
+            }
+        }
+
+    @Test
+    fun `viewer write targets the document that initiated the action`() =
+        runTest {
+            val projectDao = mockk<CounterProjectDao>(relaxed = true)
+            val documentRepository = mockk<ProjectDocumentRepository>(relaxed = true)
+            val selectedDocument = projectDocument(currentPage = 1)
+            coEvery { documentRepository.getDocument(selectedDocument.id) } returns selectedDocument
+            coEvery { documentRepository.updateViewerStateInTransaction(any()) } returns true
+            val repository =
+                buildRepository(projectDao, linkedCounterDao(7L, 0, 0), projectDocumentRepository = documentRepository)
+
+            repository.updateCurrentPatternPage(7L, 2, selectedDocument.id)
+
+            coVerify(exactly = 0) { documentRepository.getActiveDocument(7L) }
+            coVerify(exactly = 1) {
+                documentRepository.updateViewerStateInTransaction(
+                    match { it.id == selectedDocument.id && it.currentPage == 2 },
+                )
+            }
+        }
+
+    @Test
+    fun `partial vertical guide writes preserve the target document state`() =
+        runTest {
+            val projectDao = mockk<CounterProjectDao>(relaxed = true)
+            val documentRepository = mockk<ProjectDocumentRepository>(relaxed = true)
+            val selectedDocument =
+                projectDocument().copy(
+                    verticalReadingGuideEnabled = true,
+                    verticalReadingGuideXFraction = 0.8f,
+                )
+            coEvery { documentRepository.getDocument(selectedDocument.id) } returns selectedDocument
+            coEvery { documentRepository.updateViewerStateInTransaction(any()) } returns true
+            val repository =
+                buildRepository(projectDao, linkedCounterDao(7L, 0, 0), projectDocumentRepository = documentRepository)
+
+            repository.updateVerticalReadingGuide(
+                id = 7L,
+                enabled = false,
+                xFraction = null,
+                documentId = selectedDocument.id,
+            )
+            repository.updateVerticalReadingGuide(
+                id = 7L,
+                enabled = null,
+                xFraction = 0.3f,
+                documentId = selectedDocument.id,
+            )
+
+            coVerify(exactly = 1) {
+                documentRepository.updateViewerStateInTransaction(
+                    match { !it.verticalReadingGuideEnabled && it.verticalReadingGuideXFraction == 0.8f },
+                )
+            }
+            coVerify(exactly = 1) {
+                documentRepository.updateViewerStateInTransaction(
+                    match { it.verticalReadingGuideEnabled && it.verticalReadingGuideXFraction == 0.3f },
                 )
             }
         }

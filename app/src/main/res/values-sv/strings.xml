@@ -97,6 +97,7 @@
     <string name="delete_project_message">Ta bort %s? Detta kan inte ångras.</string>
     <string name="rename_project">Byt namn</string>
     <string name="complete_project">Slutför</string>
+    <string name="reactivate_project">Återaktivera</string>
     <string name="complete_project_message">Slutföra %s? Projektet flyttas till dina färdiga projekt.</string>
     <string name="more_options">Fler alternativ</string>
 

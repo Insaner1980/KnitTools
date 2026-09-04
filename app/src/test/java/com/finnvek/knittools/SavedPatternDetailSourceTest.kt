@@ -1,5 +1,6 @@
 package com.finnvek.knittools
 
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.nio.file.Files
@@ -29,6 +30,23 @@ class SavedPatternDetailSourceTest {
         assertTrue(detailRoute.contains("deleteErrorId = patternDeleteErrorId"))
         assertTrue(viewModel.contains("fun deleteSavedPattern("))
         assertTrue(viewModel.contains("savedPatternRepository.deleteById(id)"))
+    }
+
+    @Test
+    fun `library pattern viewer requires a local pdf uri`() {
+        val navGraph = ProjectSourceFiles.read(NAV_GRAPH)
+        val viewerRoute =
+            navGraph
+                .substringAfter("private fun NavGraphBuilder.libraryPatternViewerRoute")
+                .substringBefore("private fun NavGraphBuilder.libraryMyYarnRoute")
+
+        assertTrue(viewerRoute.contains("pattern?.localPdfUri?.takeIf { it.isNotBlank() }"))
+        assertFalse(viewerRoute.contains("pattern.patternUrl"))
+        assertTrue(
+            viewerRoute.contains(
+                "navController.popBackStackOrNavigateToTopLevel(TopLevelDestination.Library)",
+            ),
+        )
     }
 
     @Test
@@ -65,6 +83,7 @@ class SavedPatternDetailSourceTest {
         assertTrue(detail.contains("deleteErrorId: Long = 0L"))
         assertTrue(detail.contains("SnackbarHostState()"))
         assertTrue(detail.contains("LaunchedEffect(deleteErrorId)"))
+        assertTrue(detail.contains("deleteErrorId > lastHandledDeleteErrorId"))
         assertTrue(detail.contains("SnackbarHost(hostState = snackbarHostState)"))
 
         DETAIL_STRINGS.forEach { stringName ->

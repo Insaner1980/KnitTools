@@ -6,6 +6,7 @@ import com.finnvek.knittools.data.local.ProjectFolderAssignmentEntity
 import com.finnvek.knittools.data.local.ProjectFolderDao
 import com.finnvek.knittools.data.local.ProjectFolderEntity
 import com.finnvek.knittools.data.local.ProjectFolderOrganizationRow
+import com.finnvek.knittools.data.local.distinctSqliteQueryChunks
 import com.finnvek.knittools.data.local.toDomain
 import com.finnvek.knittools.domain.model.FolderNameValidationError
 import com.finnvek.knittools.domain.model.ProjectFolder
@@ -199,22 +200,29 @@ class ProjectFolderRepository
             projectIds: Collection<Long>,
             folderId: Long?,
         ): ProjectFolderMutationResult {
-            val ids = projectIds.toCollection(linkedSetOf())
-            if (ids.isEmpty()) return ProjectFolderMutationResult.StaleAction
-            val idList = ids.toList()
+            val idChunks = projectIds.distinctSqliteQueryChunks()
+            if (idChunks.isEmpty()) return ProjectFolderMutationResult.StaleAction
+            val ids = idChunks.flatten().toCollection(linkedSetOf())
             return runMutation {
-                if (folderDao.getExistingProjectIds(idList).toSet() != ids) {
+                val existingProjectIds =
+                    idChunks
+                        .flatMap { chunk -> folderDao.getExistingProjectIds(chunk) }
+                        .toSet()
+                if (existingProjectIds != ids) {
                     return@runMutation ProjectFolderMutationResult.ProjectMissing
                 }
                 if (folderId != null && folderDao.getById(folderId) == null) {
                     return@runMutation ProjectFolderMutationResult.FolderMissing
                 }
-                val currentAssignments = folderDao.getAssignmentsForProjects(idList).associateBy { it.projectId }
+                val currentAssignments =
+                    idChunks
+                        .flatMap { chunk -> folderDao.getAssignmentsForProjects(chunk) }
+                        .associateBy { it.projectId }
                 if (ids.all { currentAssignments[it]?.folderId == folderId }) {
                     return@runMutation ProjectFolderMutationResult.AlreadyAssigned(ids)
                 }
                 if (folderId == null) {
-                    folderDao.deleteAssignmentsForProjects(idList)
+                    idChunks.forEach { chunk -> folderDao.deleteAssignmentsForProjects(chunk) }
                 } else {
                     ids.forEach { projectId ->
                         folderDao.insertOrReplaceAssignment(

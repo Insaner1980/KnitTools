@@ -1,6 +1,7 @@
 package com.finnvek.knittools.ui.screens.session
 
 import androidx.lifecycle.SavedStateHandle
+import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.KnitSession
 import com.finnvek.knittools.repository.CounterRepository
 import io.mockk.coEvery
@@ -8,6 +9,7 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -27,14 +29,16 @@ class SessionHistoryViewModelTest {
     private val projectId = 42L
 
     private lateinit var repository: CounterRepository
+    private lateinit var project: MutableStateFlow<CounterProject?>
 
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         repository = mockk()
+        project = MutableStateFlow(mockk())
         // Naytto lukee projektin nimen otsikkokontekstiksi, koska Insights on uusi
         // sisaankaynti eika pelkka "History" kerro kenen istuntoja katsotaan.
-        every { repository.observeProject(projectId) } returns flowOf(null)
+        every { repository.observeProject(projectId) } returns project
     }
 
     @After
@@ -66,7 +70,6 @@ class SessionHistoryViewModelTest {
     fun `all saved sessions remain visible`() =
         runTest {
             val sessions = listOf(sessionAt(1), sessionAt(48), sessionAt(100))
-            coEvery { repository.getProject(projectId) } returns mockk()
             every { repository.getSessionsForProject(projectId) } returns flowOf(sessions)
 
             val vm = createViewModel()
@@ -93,7 +96,6 @@ class SessionHistoryViewModelTest {
                 )
             val tieLowId = older.copy(id = 2L, startedAt = timestamp)
             val tieHighId = older.copy(id = 3L, startedAt = timestamp)
-            coEvery { repository.getProject(projectId) } returns mockk()
             every { repository.getSessionsForProject(projectId) } returns flowOf(listOf(older, tieLowId, tieHighId))
 
             val result = createViewModel().sessions.first()
@@ -104,7 +106,6 @@ class SessionHistoryViewModelTest {
     @Test
     fun `deleteSession delegates to repository`() =
         runTest {
-            coEvery { repository.getProject(projectId) } returns mockk()
             every { repository.getSessionsForProject(projectId) } returns flowOf(emptyList())
             coEvery { repository.deleteSession(7L) } returns Unit
 
@@ -116,10 +117,21 @@ class SessionHistoryViewModelTest {
     @Test
     fun `missing project marks history for fallback`() =
         runTest {
-            coEvery { repository.getProject(projectId) } returns null
+            project.value = null
             every { repository.getSessionsForProject(projectId) } returns flowOf(emptyList())
 
             val vm = createViewModel()
+
+            assertTrue(vm.projectMissing.value)
+        }
+
+    @Test
+    fun `deleting observed project marks history for fallback`() =
+        runTest {
+            every { repository.getSessionsForProject(projectId) } returns flowOf(emptyList())
+            val vm = createViewModel()
+
+            project.value = null
 
             assertTrue(vm.projectMissing.value)
         }

@@ -2,6 +2,7 @@ package com.finnvek.knittools.ui.screens.counter
 
 import android.Manifest
 import android.app.Activity
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.net.Uri
 import android.widget.Toast
@@ -121,7 +122,24 @@ fun PhotoGalleryScreen(
         requestCameraCaptureTarget(projectId, actions) { captureTarget ->
             pendingPhotoUriString = captureTarget.uri.toString()
             pendingPhotoFilePath = captureTarget.filePath
-            cameraLauncher.launch(captureTarget.uri)
+            try {
+                cameraLauncher.launch(captureTarget.uri)
+            } catch (_: ActivityNotFoundException) {
+                actions.deletePendingPhotoFile(captureTarget.filePath)
+                actions.cancelPhotoCreation()
+                pendingPhotoUriString = null
+                pendingPhotoFilePath = null
+            } catch (_: IllegalStateException) {
+                actions.deletePendingPhotoFile(captureTarget.filePath)
+                actions.cancelPhotoCreation()
+                pendingPhotoUriString = null
+                pendingPhotoFilePath = null
+            } catch (_: SecurityException) {
+                actions.deletePendingPhotoFile(captureTarget.filePath)
+                actions.cancelPhotoCreation()
+                pendingPhotoUriString = null
+                pendingPhotoFilePath = null
+            }
         }
     }
 
@@ -138,12 +156,12 @@ fun PhotoGalleryScreen(
         }
 
     fun launchCamera() {
-        if (canCreatePhoto) {
-            actions.authorizePhotoCreation()
-            permissionLauncher.launch(Manifest.permission.CAMERA)
-        } else {
-            pendingProAction = PendingPhotoProAction.Capture
-        }
+        requestPhotoCapturePermission(
+            canCreatePhoto = canCreatePhoto,
+            actions = actions,
+            onAuthorized = { permissionLauncher.launch(Manifest.permission.CAMERA) },
+            onProRequired = { pendingProAction = PendingPhotoProAction.Capture },
+        )
     }
 
     pendingProAction?.let {
@@ -235,6 +253,20 @@ fun PhotoGalleryScreen(
             onPhotoClick = { viewingPhotoId = it.id },
             onPhotoLongClick = { renamingPhotoId = it.id },
         )
+    }
+}
+
+private fun requestPhotoCapturePermission(
+    canCreatePhoto: Boolean,
+    actions: PhotoGalleryActions,
+    onAuthorized: () -> Unit,
+    onProRequired: () -> Unit,
+) {
+    if (canCreatePhoto) {
+        actions.authorizePhotoCreation()
+        onAuthorized()
+    } else {
+        onProRequired()
     }
 }
 

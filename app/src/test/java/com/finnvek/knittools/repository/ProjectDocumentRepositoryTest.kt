@@ -61,7 +61,7 @@ class ProjectDocumentRepositoryTest {
                 updatedAt = 1,
             )
         coEvery { availability.isAvailable(any()) } returns true
-        coEvery { savedPatternRepository.saveImportedPatternIfMissing(any(), any()) } returns 70L
+        coEvery { savedPatternRepository.saveImportedPatternIfMissingInCurrentTransaction(any(), any()) } returns 70L
         repository = createRepository()
     }
 

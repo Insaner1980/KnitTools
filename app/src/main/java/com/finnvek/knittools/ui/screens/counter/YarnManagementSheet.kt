@@ -55,7 +55,8 @@ import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.ui.components.ProBadge
 import com.finnvek.knittools.ui.components.ProjectYarnTextField
 import com.finnvek.knittools.ui.components.localizedUppercase
-import com.finnvek.knittools.ui.theme.YarnColors
+import com.finnvek.knittools.ui.theme.knitToolsColors
+import com.finnvek.knittools.ui.theme.yarnColorForId
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -196,7 +197,10 @@ private fun LinkedYarnRow(
             modifier =
                 Modifier
                     .size(10.dp)
-                    .background(YarnColors[(id % YarnColors.size).toInt()], CircleShape),
+                    .background(
+                        yarnColorForId(id, MaterialTheme.knitToolsColors.yarnPalette),
+                        CircleShape,
+                    ),
         )
         Spacer(modifier = Modifier.width(10.dp))
         Text(

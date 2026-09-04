@@ -1,6 +1,9 @@
+import { readJsonResponse } from "./boundedResponse";
+
 export const RAVELRY_AUTHORIZATION_URL = "https://www.ravelry.com/oauth2/auth";
 export const RAVELRY_TOKEN_URL = "https://www.ravelry.com/oauth2/token";
 const RAVELRY_TOKEN_EXCHANGE_TIMEOUT_MILLIS = 10_000;
+const RAVELRY_TOKEN_RESPONSE_MAX_BYTES = 65_536;
 
 export interface OAuthTokenExchangeRequest {
   readonly code: string;
@@ -83,6 +86,7 @@ async function requestOAuth2Token({
         "Content-Type": "application/x-www-form-urlencoded",
       },
       body: requestBody.toString(),
+      redirect: "error",
       signal: AbortSignal.timeout(RAVELRY_TOKEN_EXCHANGE_TIMEOUT_MILLIS),
     });
   } catch (error) {
@@ -96,11 +100,16 @@ async function requestOAuth2Token({
     throw new OAuthTokenExchangeError(response.status);
   }
 
-  const body = (await response.json()) as {
+  let body: {
     access_token?: unknown;
     refresh_token?: unknown;
     expires_in?: unknown;
   };
+  try {
+    body = (await readJsonResponse(response, RAVELRY_TOKEN_RESPONSE_MAX_BYTES)) as typeof body;
+  } catch {
+    throw new OAuthTokenExchangeError(503);
+  }
 
   if (typeof body.access_token !== "string" || body.access_token.length === 0) {
     throw new OAuthTokenExchangeError(response.status);
@@ -113,7 +122,10 @@ async function requestOAuth2Token({
 
   return {
     accessToken: body.access_token,
-    refreshToken: typeof body.refresh_token === "string" ? body.refresh_token : undefined,
+    refreshToken:
+      typeof body.refresh_token === "string" && body.refresh_token.length > 0
+        ? body.refresh_token
+        : undefined,
     expiresAtMillis:
       expiresInSeconds == null ? undefined : nowMillis() + Math.max(0, expiresInSeconds) * 1_000,
   };

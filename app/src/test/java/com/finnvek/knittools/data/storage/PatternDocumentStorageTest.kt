@@ -32,9 +32,11 @@ class PatternDocumentStorageTest {
         val targetDir = File(filesDir, "pattern_captures/7").apply { mkdirs() }
         val oldCapture = File(targetDir, "old.jpg").apply { writeText("old") }
         val recentCapture = File(targetDir, "recent.jpg").apply { writeText("recent") }
+        val unknownAgeCapture = File(targetDir, "unknown.jpg").apply { writeText("unknown") }
         val now = 10L * ONE_DAY_MILLIS
         oldCapture.setLastModified(now - TWO_DAYS_MILLIS)
         recentCapture.setLastModified(now - ONE_HOUR_MILLIS)
+        unknownAgeCapture.setLastModified(0L)
         val context = mockk<Context>()
         every { context.filesDir } returns filesDir
 
@@ -46,6 +48,7 @@ class PatternDocumentStorageTest {
 
         assertFalse(oldCapture.exists())
         assertTrue(recentCapture.exists())
+        assertTrue(unknownAgeCapture.exists())
         assertTrue(targetDir.exists())
     }
 

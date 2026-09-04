@@ -15,6 +15,15 @@ class ProgressPhotoGallerySourceTest {
     }
 
     @Test
+    fun `photo gallery cleans up when no camera handler can launch`() {
+        val source = ProjectSourceFiles.read(PHOTO_GALLERY_SCREEN)
+
+        assertTrue(source.contains("catch (_: ActivityNotFoundException)"))
+        assertTrue(source.contains("actions.deletePendingPhotoFile(captureTarget.filePath)"))
+        assertTrue(source.contains("actions.cancelPhotoCreation()"))
+    }
+
+    @Test
     fun `photo gallery deletes pending capture file when capture is not saved`() {
         val source = ProjectSourceFiles.read(PHOTO_GALLERY_SCREEN)
 

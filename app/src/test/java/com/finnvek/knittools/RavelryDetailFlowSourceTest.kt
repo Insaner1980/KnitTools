@@ -34,6 +34,7 @@ class RavelryDetailFlowSourceTest {
 
         assertTrue(externalLinks.contains("ravelryExternalUriOrNull(url)"))
         assertTrue(externalLinks.contains("Intent(Intent.ACTION_VIEW, uri)"))
+        assertTrue(externalLinks.contains("addCategory(Intent.CATEGORY_BROWSABLE)"))
         assertFalse(externalLinks.contains("Intent(Intent.ACTION_VIEW, url.toUri())"))
     }
 

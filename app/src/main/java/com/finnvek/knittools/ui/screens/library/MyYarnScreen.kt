@@ -42,6 +42,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -49,6 +50,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -65,6 +68,7 @@ import com.finnvek.knittools.ui.components.ProPromptSource
 import com.finnvek.knittools.ui.components.ProjectYarnTextField
 import com.finnvek.knittools.ui.components.skeinCountText
 import com.finnvek.knittools.ui.screens.yarncard.ManualYarnCardInput
+import com.finnvek.knittools.ui.screens.yarncard.parseManualYarnQuantity
 import com.finnvek.knittools.ui.theme.knitToolsColors
 
 private const val YARN_CARD_SUMMARY_SEPARATOR = ", "
@@ -111,6 +115,7 @@ fun MyYarnScreen(
     var showDeleteConfirmDialog by rememberSaveable { mutableStateOf(false) }
     var showManualYarnSheet by rememberSaveable { mutableStateOf(false) }
     var pendingProAction by rememberSaveable { mutableStateOf<PendingYarnProAction?>(null) }
+    var lastHandledDeleteErrorId by rememberSaveable { mutableLongStateOf(state.deleteErrorId) }
     val snackbarHostState = remember { SnackbarHostState() }
     val deleteFailedMessage = stringResource(R.string.generic_error_unknown)
     val requestAddYarn = {
@@ -122,7 +127,8 @@ fun MyYarnScreen(
     }
 
     LaunchedEffect(state.deleteErrorId) {
-        if (state.deleteErrorId > 0) {
+        if (state.deleteErrorId > lastHandledDeleteErrorId) {
+            lastHandledDeleteErrorId = state.deleteErrorId
             snackbarHostState.showSnackbar(deleteFailedMessage)
         }
     }
@@ -325,11 +331,12 @@ internal fun ManualYarnCardSheet(
                 }
                 TextButton(
                     onClick = {
+                        val validQuantity = parseManualYarnQuantity(quantity) ?: return@TextButton
                         onSave(
                             ManualYarnCardInput(
                                 yarnName = yarnName,
                                 brand = brand,
-                                quantity = quantity.toIntOrNull() ?: 1,
+                                quantity = validQuantity,
                                 weightCategory = weightCategory,
                                 colorName = colorName,
                                 colorNumber = colorNumber,
@@ -337,7 +344,7 @@ internal fun ManualYarnCardSheet(
                             ),
                         )
                     },
-                    enabled = yarnName.isNotBlank(),
+                    enabled = yarnName.isNotBlank() && parseManualYarnQuantity(quantity) != null,
                 ) {
                     Text(stringResource(R.string.save))
                 }
@@ -474,6 +481,12 @@ private fun YarnStashCardItem(
                 .combinedClickable(
                     onClick = onClick,
                     onLongClick = onLongClick,
+                ).then(
+                    if (isSelectMode) {
+                        Modifier.semantics { selected = isSelected }
+                    } else {
+                        Modifier
+                    },
                 ),
     ) {
         // CPD-ON

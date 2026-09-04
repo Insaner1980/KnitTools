@@ -4,6 +4,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -42,12 +43,14 @@ internal fun PatternAnnotationOverlay(
     val renderStyle = rememberPatternAnnotationRenderStyle()
     val selectionColor = MaterialTheme.colorScheme.primary
     val visibleAnnotations =
-        visiblePatternAnnotations(
-            masterAnnotations = masterAnnotations,
-            projectAnnotations = projectAnnotations,
-            masterVisible = masterVisible,
-            projectVisible = projectVisible,
-        )
+        remember(masterAnnotations, projectAnnotations, masterVisible, projectVisible) {
+            visiblePatternAnnotations(
+                masterAnnotations = masterAnnotations,
+                projectAnnotations = projectAnnotations,
+                masterVisible = masterVisible,
+                projectVisible = projectVisible,
+            )
+        }
     val annotationsWithDraft =
         if (inProgressVisible) visibleAnnotations + listOfNotNull(inProgressAnnotation) else visibleAnnotations
     Canvas(modifier = modifier) {

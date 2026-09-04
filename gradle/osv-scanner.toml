@@ -4,11 +4,6 @@
 # runtime classpaths; new advisories for those packages must remain visible.
 
 [[IgnoredVulns]]
-id = "GHSA-mh99-v99m-4gvg"
-ignoreUntil = 2026-10-31
-reason = "brace-expansion 2.1.2 is reachable only through firebase-admin -> optional Firestore -> google-gax -> unused rimraf/glob tooling; KnitTools Functions do not call brace, glob, minimatch, rimraf, or google-gax pattern APIs."
-
-[[IgnoredVulns]]
 id = "GHSA-r7wm-3cxj-wff9"
 ignoreUntil = 2026-10-31
 reason = "Gradle verification metadata records jackson-core 2.20.1 and 2.21.3 from scanner tooling; Jackson is absent from the app debug/release runtime classpaths."

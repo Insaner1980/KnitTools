@@ -6,7 +6,10 @@ import org.junit.Test
 class YarnCardLinksTest {
     @Test
     fun `parse ignores blanks and duplicate ids`() {
-        assertEquals(listOf(1L, 2L, 3L), parseYarnCardIds(" 1, ,2,1,invalid,3,2 "))
+        assertEquals(
+            listOf(1L, 2L, 3L),
+            parseYarnCardIds(" 1, ,2,1,invalid,9223372036854775808,3,2 "),
+        )
     }
 
     @Test

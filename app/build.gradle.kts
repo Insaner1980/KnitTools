@@ -132,6 +132,9 @@ object GoogleServicesJsonTaskActions {
                     "KNITTOOLS_GOOGLE_SERVICES_JSON_BASE64 -salaisuudesta.",
             )
         }
+        if (googleServicesJsonFile.readText(Charsets.UTF_8).contains(PLACEHOLDER_API_KEY)) {
+            error("Release Firebase -konfiguraatio ei saa olla paikallinen debug-placeholder.")
+        }
     }
 }
 
@@ -418,6 +421,11 @@ gradle.taskGraph.whenReady {
                         "Puuttuvat release signing -muuttujat: " +
                             missingSigningEnvNames.joinToString(),
                     )
+                } else {
+                    val keystorePath = requiredReleaseEnv("${releaseSigningEnvPrefix}_KEYSTORE_PATH")
+                    if (!file(keystorePath).isFile) {
+                        add("${releaseSigningEnvPrefix}_KEYSTORE_PATH ei osoita olemassa olevaan tiedostoon.")
+                    }
                 }
             }
 
@@ -440,7 +448,7 @@ val writeGoogleServicesJsonFromEnv =
         val encodedConfig = googleServicesJsonBase64Env.orNull
 
         inputs.property("base64EnvName", envName)
-        inputs.property("encodedConfig", encodedConfig.orEmpty())
+        inputs.property("encodedConfigPresent", !encodedConfig.isNullOrBlank())
         outputs.file(targetFile)
         outputs.upToDateWhen { targetFile.isFile }
 
@@ -463,7 +471,7 @@ val writeGoogleServicesPlaceholderTasks =
             val placeholderJson = googleServicesPlaceholderJson
 
             inputs.files(rootFile).withPropertyName("rootGoogleServicesJsonFile")
-            inputs.property("encodedConfig", encodedConfig.orEmpty())
+            inputs.property("encodedConfigPresent", !encodedConfig.isNullOrBlank())
             inputs.property("placeholderJson", placeholderJson)
             outputs.file(targetFile)
             outputs.upToDateWhen {
@@ -502,6 +510,11 @@ val firebaseConfiguredArtifactTaskNames =
     setOf(
         "assembleRelease",
         "bundleRelease",
+        "packageRelease",
+        "packageReleaseBundle",
+        "packageReleaseUniversalApk",
+        "signReleaseBundle",
+        "publishRelease",
     )
 
 tasks.configureEach {

@@ -151,8 +151,7 @@ class YarnCardViewModel
 
         fun updateQuantity(delta: Int) {
             val cardId = _formState.value.editingCardId ?: return
-            val newQty = (_formState.value.quantityInStash + delta).coerceAtLeast(0)
-            viewModelScope.launch { repository.updateQuantity(cardId, newQty) }
+            viewModelScope.launch { repository.changeQuantity(cardId, delta) }
         }
 
         fun updateStatus(status: String) {

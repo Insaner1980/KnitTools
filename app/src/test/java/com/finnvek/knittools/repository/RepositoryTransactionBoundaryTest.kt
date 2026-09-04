@@ -45,6 +45,7 @@ import java.nio.file.Files
 import kotlin.coroutines.CoroutineContext
 
 @OptIn(ExperimentalCoroutinesApi::class)
+@Suppress("LargeClass") // Testit todentavat repositoryjen yhteisen transaktiorajan samoilla apuvälineillä.
 class RepositoryTransactionBoundaryTest {
     @Test
     fun `yarn card project link updates both stores inside one transaction`() =
@@ -110,6 +111,7 @@ class RepositoryTransactionBoundaryTest {
         }
 
     @Test
+    @Suppress("LongMethod") // Tapahtumajärjestys pidetään yhdessä näkyvänä transaktiorajan todentamiseksi.
     fun `project delete commits database cleanup before removing files`() =
         runTest {
             val runner = RecordingTransactionRunner()
@@ -123,6 +125,7 @@ class RepositoryTransactionBoundaryTest {
             // CPD-ON
             val patternDocumentStorage = mockk<PatternDocumentStorage>(relaxed = true)
             val context = mockk<Context>(relaxed = true)
+            var cleanupInputsReadInsideTransaction = false
             coEvery { yarnRepository.clearLinkedProject(7L) } coAnswers {
                 events += "clear-yarn"
             }
@@ -136,6 +139,7 @@ class RepositoryTransactionBoundaryTest {
                 events += "delete-captures"
             }
             coEvery { projectDocumentRepository.getDistinctUris(7L) } coAnswers {
+                cleanupInputsReadInsideTransaction = runner.isRunning
                 events += "read-document-uris"
                 listOf("file:///pattern-a.pdf", "file:///pattern-b.pdf")
             }
@@ -161,6 +165,7 @@ class RepositoryTransactionBoundaryTest {
 
             repository.deleteProject(7L)
 
+            assertTrue(cleanupInputsReadInsideTransaction)
             assertEquals(1, runner.runCount)
             assertEquals(
                 listOf(
@@ -268,13 +273,26 @@ class RepositoryTransactionBoundaryTest {
 
             val document = projectDocument(isPrimary = true)
             coEvery { projectDao.getProject(7L) } returns CounterProjectEntity(id = 7L)
-            coEvery { documentRepository.addImportedPdf(7L, "content://pattern", "Pattern") } returns
+            var preflightInsideTransaction = false
+            var documentWriteInsideTransaction = false
+            coEvery { documentRepository.preflightImportedPdf("content://pattern", "Pattern") } coAnswers {
+                preflightInsideTransaction = runner.isRunning
+                null
+            }
+            coEvery {
+                documentRepository.addImportedPdfInCurrentTransaction(7L, "content://pattern", "Pattern")
+            } coAnswers {
+                documentWriteInsideTransaction = runner.isRunning
                 ProjectDocumentMutationResult.Added(document)
+            }
             repository.attachPattern(7L, "content://pattern", "Pattern", 0, null)
 
+            assertFalse(preflightInsideTransaction)
+            assertTrue(documentWriteInsideTransaction)
             assertEquals(1, runner.runCount)
             coVerifyOrder {
-                documentRepository.addImportedPdf(7L, "content://pattern", "Pattern")
+                documentRepository.preflightImportedPdf("content://pattern", "Pattern")
+                documentRepository.addImportedPdfInCurrentTransaction(7L, "content://pattern", "Pattern")
                 projectDao.updatePatternInformation(
                     id = 7L,
                     linkedPatternId = document.savedPatternId,
@@ -291,6 +309,7 @@ class RepositoryTransactionBoundaryTest {
             val projectDao = mockk<CounterProjectDao>(relaxed = true)
             val sessionDao = mockk<SessionDao>(relaxed = true)
             val savedPatternRepository = mockk<SavedPatternRepository>(relaxed = true)
+            val documentRepository = mockk<ProjectDocumentRepository>(relaxed = true)
             coEvery { projectDao.getProject(7L) } returns CounterProjectEntity(id = 7L)
             coEvery { savedPatternRepository.getById(12L) } returns
                 SavedPattern(
@@ -300,6 +319,8 @@ class RepositoryTransactionBoundaryTest {
                     designerName = "Designer",
                     localPdfUri = null,
                 )
+            coEvery { documentRepository.prepareSavedPatternDocument(7L, 12L) } returns
+                SavedPatternDocumentPreparation.MetadataOnlyPattern
             val repository =
                 CounterRepository(
                     dao = projectDao,
@@ -310,7 +331,7 @@ class RepositoryTransactionBoundaryTest {
                     context = mockk(relaxed = true),
                     yarnCardRepository = mockk(relaxed = true),
                     savedPatternRepository = savedPatternRepository,
-                    projectDocumentRepository = mockk(relaxed = true),
+                    projectDocumentRepository = documentRepository,
                     projectFolderDao = mockk(relaxed = true),
                     transactionRunner = runner,
                     ioDispatcher = UnconfinedTestDispatcher(testScheduler),
@@ -590,6 +611,48 @@ class RepositoryTransactionBoundaryTest {
             assertFalse(file.exists())
         }
 
+    @Test
+    fun `saved pattern delete keeps committed rows deleted when file reference cleanup fails`() =
+        runTest {
+            // CPD-OFF: Poistotestin tiedostofixture pidetään skenaarion yhteydessä.
+            val patternDao = mockk<SavedPatternDao>(relaxed = true)
+            val projectDao = mockk<CounterProjectDao>(relaxed = true)
+            val context = mockk<Context>(relaxed = true)
+            val file = Files.createTempFile("pattern", ".pdf").toFile()
+            val patternUri = "file://${file.absolutePath.replace('\\', '/')}"
+            every { context.filesDir } returns file.parentFile
+            coEvery { patternDao.getByIds(listOf(4L)) } returns
+                listOf(
+                    SavedPatternEntity(
+                        id = 4L,
+                        source = SavedPatternSource.LocalFile.persistedValue,
+                        name = "Pattern",
+                        designerName = "Designer",
+                        originalUrl = patternUri,
+                        localPdfUri = patternUri,
+                        isAvailableOffline = true,
+                    ),
+                )
+            coEvery { patternDao.getByLocalPdfUri(patternUri) } throws IOException("reference read failed")
+            // CPD-ON
+            val repository =
+                SavedPatternRepository(
+                    dao = patternDao,
+                    context = context,
+                    counterProjectDao = projectDao,
+                    transactionRunner = RecordingTransactionRunner(),
+                    ioDispatcher = UnconfinedTestDispatcher(testScheduler),
+                )
+
+            var thrown: Throwable? = null
+            withParsedFileUri(patternUri, file.absolutePath) {
+                thrown = runCatching { repository.deleteByIds(listOf(4L)) }.exceptionOrNull()
+            }
+
+            assertEquals(null, thrown)
+            coVerify(exactly = 1) { patternDao.deleteByIds(listOf(4L)) }
+        }
+
     // CPD-OFF: Kuvapoistotestien skenaariokohtainen asetelma pidetaan testien yhteydessa.
     @Test
     fun `progress photo delete removes database row before file`() =
@@ -859,10 +922,17 @@ class RavelryRepositoryTransactionBoundaryTest {
 
 private class RecordingTransactionRunner : DatabaseTransactionRunner {
     var runCount: Int = 0
+    var isRunning: Boolean = false
+        private set
 
     override suspend fun <T> run(block: suspend () -> T): T {
         runCount += 1
-        return block()
+        isRunning = true
+        return try {
+            block()
+        } finally {
+            isRunning = false
+        }
     }
 }
 

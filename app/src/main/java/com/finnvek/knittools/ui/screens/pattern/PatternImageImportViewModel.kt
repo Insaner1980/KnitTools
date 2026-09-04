@@ -142,7 +142,7 @@ internal class PatternImageImportViewModel
                 viewModelScope.launch {
                     _uiState.update { it.copy(phase = PatternImageImportPhase.STAGING, error = null) }
                     try {
-                        val info = withContext(ioDispatcher) { storage.inspectStagedImage(imageFile) }
+                        val info = withContext(ioDispatcher) { storage.inspectCameraCapture(imageFile) }
                         val page =
                             StagedPatternPage(
                                 id = UUID.randomUUID().toString(),
@@ -164,6 +164,9 @@ internal class PatternImageImportViewModel
                     } catch (failure: PatternImageValidationException) {
                         withContext(ioDispatcher) { storage.deleteStagedPage(cameraPage(imageUri, imageFile)) }
                         showRecoverableFailure(PatternImageImportError.UNSUPPORTED, failure)
+                    } catch (failure: PatternImageStageException) {
+                        withContext(ioDispatcher) { storage.deleteStagedPage(cameraPage(imageUri, imageFile)) }
+                        showRecoverableError(failure.reason.toImportError())
                     }
                 }
         }

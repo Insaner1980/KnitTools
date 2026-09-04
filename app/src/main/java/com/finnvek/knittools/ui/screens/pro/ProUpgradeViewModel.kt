@@ -25,8 +25,10 @@ class ProUpgradeViewModel
         private val billingManager: BillingManager,
     ) : ViewModel() {
         val proState: StateFlow<ProState> = proManager.proState
+        val proStateReady: StateFlow<Boolean> = proManager.initialStateReady
         val selectedOffer: StateFlow<SelectedOneTimeOffer?> = billingManager.selectedOffer
         val productStatus: StateFlow<BillingProductStatus> = billingManager.productStatus
+        val purchaseFlowInFlight: StateFlow<Boolean> = billingManager.purchaseFlowInFlight
 
         private val _statusMessageRes = MutableStateFlow<Int?>(null)
         val statusMessageRes: StateFlow<Int?> = _statusMessageRes.asStateFlow()
@@ -43,8 +45,9 @@ class ProUpgradeViewModel
         }
 
         fun restorePurchases() {
+            if (_isRestoring.value) return
+            _isRestoring.value = true
             viewModelScope.launch {
-                _isRestoring.value = true
                 try {
                     _statusMessageRes.value =
                         when (billingManager.restorePurchasesWithResult()) {

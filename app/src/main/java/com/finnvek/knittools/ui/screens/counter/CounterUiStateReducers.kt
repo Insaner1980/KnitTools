@@ -13,6 +13,7 @@ internal val CounterUiState.shouldLeaveCounter: Boolean
 internal fun CounterUiState.withStartedProject(project: CounterProject): CounterUiState =
     copy(
         projectId = project.id,
+        isCompleted = project.isCompleted,
         projectName = project.name,
         // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
         counter = CounterState(count = project.count, stepSize = project.stepSize),
@@ -64,6 +65,7 @@ internal fun CounterUiState.withObservedProject(project: CounterProject): Counte
     val dismissal = dismissedReminderTrigger?.takeIf { it.row == project.count }
     return copy(
         projectName = project.name,
+        isCompleted = project.isCompleted,
         counter = observedCounter,
         craftType = project.craftType,
         mainCounterLabelType = project.mainCounterLabelType,

@@ -52,7 +52,8 @@ export const ravelryStartAuth = onCall(ravelrySecretOptions, async (request) => 
 export const ravelryAuthStatus = onCall(async (request) => {
   try {
     const uid = requireUid(request.auth);
-    const { tokenStore } = stores();
+    const { rateLimiter, tokenStore } = stores();
+    await rateLimiter.consume(uid, "auth");
     return await getRavelryAuthStatus({
       uid,
       tokenStore,
@@ -65,7 +66,8 @@ export const ravelryAuthStatus = onCall(async (request) => {
 export const ravelryDisconnect = onCall(async (request) => {
   try {
     const uid = requireUid(request.auth);
-    const { stateStore, tokenStore } = stores();
+    const { rateLimiter, stateStore, tokenStore } = stores();
+    await rateLimiter.consume(uid, "auth");
     return await disconnectRavelry({
       uid,
       tokenStore,

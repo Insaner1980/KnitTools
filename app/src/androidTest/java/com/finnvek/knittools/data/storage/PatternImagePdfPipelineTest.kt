@@ -22,6 +22,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
+import java.io.RandomAccessFile
 import java.util.Base64
 import java.util.UUID
 
@@ -120,6 +121,21 @@ class PatternImagePdfPipelineTest {
             }
 
         assertEquals(PatternImageFailureReason.ANIMATED, failure.reason)
+    }
+
+    @Test
+    fun cameraCaptureUsesTheSameActualByteLimitAsGalleryImport() {
+        val oversized = File(fixtureDir, "oversized-camera.jpg")
+        RandomAccessFile(oversized, "rw").use { file ->
+            file.setLength(PatternImageImportLimits.MAX_BYTES_PER_IMAGE + 1L)
+        }
+
+        val failure =
+            assertThrows(PatternImageStageException::class.java) {
+                storage.inspectCameraCapture(oversized)
+            }
+
+        assertEquals(PatternImageStageFailure.IMAGE_TOO_LARGE, failure.reason)
     }
 
     @Test

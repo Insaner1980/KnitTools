@@ -5,6 +5,13 @@ import org.junit.Test
 
 class ReadingLineTest {
     @Test
+    fun `non-finite guide positions fall back to the center`() {
+        assertEquals(DEFAULT_READING_LINE_Y_FRACTION, sanitizeReadingLineYFraction(Float.NaN))
+        assertEquals(DEFAULT_READING_LINE_Y_FRACTION, sanitizeReadingLineYFraction(Float.POSITIVE_INFINITY))
+        assertEquals(DEFAULT_READING_GUIDE_FRACTION, sanitizeReadingGuideFraction(Float.NEGATIVE_INFINITY))
+    }
+
+    @Test
     fun `reading line fraction is clamped away from page edges`() {
         assertEquals(READING_LINE_MIN_Y_FRACTION, sanitizeReadingLineYFraction(-1f), 0.0f)
         assertEquals(0.42f, sanitizeReadingLineYFraction(0.42f), 0.0f)

@@ -39,6 +39,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -51,6 +52,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -93,6 +96,7 @@ fun AllPhotosScreen(
     var selectedProjectId by rememberSaveable { mutableStateOf<Long?>(null) }
     var viewingPhotoId by rememberSaveable { mutableStateOf<Long?>(null) }
     var showDeleteConfirmDialog by rememberSaveable { mutableStateOf(false) }
+    var lastHandledDeleteErrorId by rememberSaveable { mutableLongStateOf(state.deleteErrorId) }
     val snackbarHostState = remember { SnackbarHostState() }
     val deleteFailedMessage = stringResource(R.string.generic_error_unknown)
     val viewingPhoto = remember(viewingPhotoId, state.photos) { state.photos.firstOrNull { it.id == viewingPhotoId } }
@@ -112,7 +116,8 @@ fun AllPhotosScreen(
     }
 
     LaunchedEffect(state.deleteErrorId) {
-        if (state.deleteErrorId > 0) {
+        if (state.deleteErrorId > lastHandledDeleteErrorId) {
+            lastHandledDeleteErrorId = state.deleteErrorId
             snackbarHostState.showSnackbar(deleteFailedMessage)
         }
     }
@@ -410,10 +415,17 @@ private fun PhotoGridItem(
 
     Surface(
         modifier =
-            Modifier.combinedClickable(
-                onClick = onClick,
-                onLongClick = onLongClick,
-            ),
+            Modifier
+                .combinedClickable(
+                    onClick = onClick,
+                    onLongClick = onLongClick,
+                ).then(
+                    if (isSelectMode) {
+                        Modifier.semantics { selected = isSelected }
+                    } else {
+                        Modifier
+                    },
+                ),
         shape = MaterialTheme.shapes.medium,
         color = backgroundColor,
     ) {

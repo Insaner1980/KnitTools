@@ -77,18 +77,20 @@ fun ProPromptSheet(
         }
     }
 
-    LaunchedEffect(viewModel, request) {
-        viewModel.trialStartResults.collect { result ->
-            when (result) {
-                TrialStartResult.Started,
-                TrialStartResult.AlreadyStarted,
-                -> {
-                    startFailed = false
-                    resumePendingAction()
-                }
-
-                TrialStartResult.Failed -> startFailed = true
+    CollectWithLifecycleEffect({ viewModel.trialStartResults }) { result ->
+        when (result) {
+            TrialStartResult.Started,
+            TrialStartResult.AlreadyActive,
+            -> {
+                startFailed = false
+                resumePendingAction()
             }
+
+            TrialStartResult.AlreadyExpired,
+            TrialStartResult.AlreadyTampered,
+            -> startFailed = false
+
+            TrialStartResult.Failed -> startFailed = true
         }
     }
 

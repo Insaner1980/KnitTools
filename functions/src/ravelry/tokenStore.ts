@@ -1,4 +1,4 @@
-import type { Firestore } from "firebase-admin/firestore";
+import { FieldValue, type Firestore } from "firebase-admin/firestore";
 
 import { RAVELRY_TOKENS_COLLECTION } from "../config";
 import { connectionGenerationFromData } from "./connectionGeneration";
@@ -175,13 +175,12 @@ export function createTokenStore(firestore: Firestore): RavelryTokenStore {
           return false;
         }
 
-        transaction.set(ref, withoutUndefinedValues({
-          ...current,
-          ravelryUserId: update.ravelryUserId,
-          ravelryUsername: update.ravelryUsername,
+        transaction.update(ref, {
+          ravelryUserId: update.ravelryUserId ?? FieldValue.delete(),
+          ravelryUsername: update.ravelryUsername ?? FieldValue.delete(),
           updatedAtMillis: update.verifiedAtMillis,
           lastVerifiedAtMillis: update.verifiedAtMillis,
-        }));
+        });
         return true;
       });
     },

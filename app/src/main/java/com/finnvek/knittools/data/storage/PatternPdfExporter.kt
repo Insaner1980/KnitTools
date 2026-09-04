@@ -20,6 +20,8 @@ data class PatternPdfExportProgress(
     val totalPages: Int,
 )
 
+internal const val PATTERN_PDF_EXPORT_MAX_BITMAP_DIMENSION = 1_800
+
 @Singleton
 class PatternPdfExporter
     @Inject
@@ -58,7 +60,12 @@ class PatternPdfExporter
                 try {
                     repeat(renderer.pageCount) { pageIndex ->
                         coroutineContext.ensureActive()
-                        val bitmap = renderer.renderPage(pageIndex, EXPORT_TARGET_WIDTH)
+                        val bitmap =
+                            renderer.renderPage(
+                                pageIndex = pageIndex,
+                                targetWidth = PATTERN_PDF_EXPORT_MAX_BITMAP_DIMENSION,
+                                maxBitmapDimension = PATTERN_PDF_EXPORT_MAX_BITMAP_DIMENSION,
+                            )
                         try {
                             val pageInfo =
                                 PdfDocument.PageInfo
@@ -115,7 +122,6 @@ class PatternPdfExporter
         }
 
         private companion object {
-            const val EXPORT_TARGET_WIDTH = 1_800
             const val EXPORT_TEMP_DIRECTORY = "pattern_exports"
             const val EXPORT_TEMP_PREFIX = "annotated-pattern-"
             const val EXPORT_TEMP_SUFFIX = ".tmp"

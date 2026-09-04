@@ -372,10 +372,14 @@ class MainActivity : AppCompatActivity() {
                 .build()
                 .launch(ravelryAuthTabLauncher, uri, RavelryAuthManager.REDIRECT_SCHEME)
         } catch (_: ActivityNotFoundException) {
-            CustomTabsIntent
-                .Builder()
-                .build()
-                .launchUrl(this, uri)
+            try {
+                CustomTabsIntent
+                    .Builder()
+                    .build()
+                    .launchUrl(this, uri)
+            } catch (_: ActivityNotFoundException) {
+                ravelryAuthManager.markBrowserAuthCancelled()
+            }
         }
     }
 

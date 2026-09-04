@@ -97,6 +97,7 @@
     <string name="delete_project_message">%s löschen? Dies kann nicht rückgängig gemacht werden.</string>
     <string name="rename_project">Umbenennen</string>
     <string name="complete_project">Fertigstellen</string>
+    <string name="reactivate_project">Reaktivieren</string>
     <string name="complete_project_message">%s fertigstellen? Das Projekt wird zu deinen fertigen Projekten verschoben.</string>
     <string name="more_options">Weitere Optionen</string>
 

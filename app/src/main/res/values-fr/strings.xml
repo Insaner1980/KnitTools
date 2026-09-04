@@ -99,6 +99,7 @@
     <string name="delete_project_message">Supprimer %s ? Cette action est irréversible.</string>
     <string name="rename_project">Renommer</string>
     <string name="complete_project">Terminer</string>
+    <string name="reactivate_project">Réactiver</string>
     <string name="complete_project_message">Terminer %s ? Le projet sera déplacé dans vos projets terminés.</string>
     <string name="more_options">Plus d’options</string>
 

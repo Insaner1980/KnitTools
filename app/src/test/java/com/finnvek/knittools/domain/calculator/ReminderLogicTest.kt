@@ -52,6 +52,11 @@ class ReminderLogicTest {
     }
 
     @Test
+    fun `completed repeating reminder does not trigger`() {
+        assertFalse(ReminderLogic.shouldTrigger(repeating(8, 8).copy(isCompleted = true), 8))
+    }
+
+    @Test
     fun `one-time does not trigger at row 0`() {
         assertFalse(ReminderLogic.shouldTrigger(oneTime(0), 0))
     }
@@ -92,6 +97,11 @@ class ReminderLogicTest {
     @Test
     fun `repeating does not trigger at row 0`() {
         assertFalse(ReminderLogic.shouldTrigger(repeating(0, 8), 0))
+    }
+
+    @Test
+    fun `invalid repeating interval does not degrade to one-time reminder`() {
+        assertFalse(ReminderLogic.shouldTrigger(repeating(8, 0), 8))
     }
 
     // repeatCount

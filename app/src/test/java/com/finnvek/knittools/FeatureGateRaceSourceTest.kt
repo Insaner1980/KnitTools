@@ -16,6 +16,7 @@ class FeatureGateRaceSourceTest {
         assertTrue(picker.contains("imageImportViewModel.createCameraCaptureTarget"))
         assertTrue(picker.contains("imageImportViewModel.discardCameraCapture(uri, file)"))
         assertTrue(picker.contains("catch (_: ActivityNotFoundException)"))
+        assertTrue(picker.contains("catch (_: SecurityException)"))
         assertTrue(picker.contains("pendingCaptureAuthorized = false"))
     }
 

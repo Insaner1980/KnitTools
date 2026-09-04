@@ -97,6 +97,7 @@
     <string name="delete_project_message">Poistetaanko %s? Tätä ei voi kumota.</string>
     <string name="rename_project">Nimeä uudelleen</string>
     <string name="complete_project">Merkitse valmistuneeksi</string>
+    <string name="reactivate_project">Aktivoi uudelleen</string>
     <string name="complete_project_message">Merkitäänkö %s valmistuneeksi? Projekti siirretään valmiisiin projekteihin.</string>
     <string name="more_options">Lisää vaihtoehtoja</string>
 

@@ -20,16 +20,38 @@ class LifecycleFlowCollectionSourceTest {
         }
     }
 
+    @Test
+    fun `library delete failures are not replayed by a new composition`() {
+        DELETE_ERROR_CONSUMERS.forEach { path ->
+            val source = ProjectSourceFiles.read(path)
+
+            assertTrue("Käsitelty virhetunniste puuttuu tiedostosta $path", source.contains("lastHandledDeleteErrorId"))
+            assertTrue(
+                "Vanha virhetunniste voidaan toistaa tiedostossa $path",
+                source.contains("deleteErrorId > lastHandledDeleteErrorId"),
+            )
+        }
+    }
+
     private companion object {
         private const val LIFECYCLE_COLLECTOR =
             "app/src/main/java/com/finnvek/knittools/ui/components/CollectWithLifecycleEffect.kt"
         private val FLOW_CONSUMERS =
             listOf(
+                "app/src/main/java/com/finnvek/knittools/ui/components/ProPromptSheet.kt",
                 "app/src/main/java/com/finnvek/knittools/ui/navigation/NavGraph.kt",
+                "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterScreen.kt",
                 "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectListScreen.kt",
                 "app/src/main/java/com/finnvek/knittools/ui/screens/ravelry/RavelryDetailScreen.kt",
                 "app/src/main/java/com/finnvek/knittools/ui/screens/ravelry/RavelrySearchScreen.kt",
                 "app/src/main/java/com/finnvek/knittools/ui/screens/settings/SettingsScreen.kt",
+            )
+        private val DELETE_ERROR_CONSUMERS =
+            listOf(
+                "app/src/main/java/com/finnvek/knittools/ui/screens/library/AllPhotosScreen.kt",
+                "app/src/main/java/com/finnvek/knittools/ui/screens/library/MyYarnScreen.kt",
+                "app/src/main/java/com/finnvek/knittools/ui/screens/library/SavedPatternDetailScreen.kt",
+                "app/src/main/java/com/finnvek/knittools/ui/screens/library/SavedPatternsScreen.kt",
             )
     }
 }

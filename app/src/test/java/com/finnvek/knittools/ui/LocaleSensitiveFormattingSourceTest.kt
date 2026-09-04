@@ -34,6 +34,14 @@ class LocaleSensitiveFormattingSourceTest {
     }
 
     @Test
+    fun `needle metric values use locale aware decimal formatting`() {
+        val needleScreen = ProjectSourceFiles.read(NEEDLE_SIZE_SCREEN)
+
+        assertTrue(needleScreen.contains("formatDecimalForDisplay(needle.metricMm, locale, 0, 2)"))
+        assertFalse(needleScreen.contains("needle.metricMm.toString()"))
+    }
+
+    @Test
     fun `new message formats exist in every localized string file`() {
         ProjectSourceFiles.localizedStringFiles().forEach { file ->
             val source = file.toFile().readText()
@@ -52,6 +60,8 @@ class LocaleSensitiveFormattingSourceTest {
             "app/src/main/java/com/finnvek/knittools/ui/screens/insights/InsightsSections.kt"
         private const val PROJECT_LIST_SCREEN =
             "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectListScreen.kt"
+        private const val NEEDLE_SIZE_SCREEN =
+            "app/src/main/java/com/finnvek/knittools/ui/screens/needles/NeedleSizeScreen.kt"
 
         private val DATE_DISPLAY_FILES =
             listOf(

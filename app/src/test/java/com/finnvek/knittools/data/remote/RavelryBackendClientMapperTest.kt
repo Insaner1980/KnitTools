@@ -139,4 +139,35 @@ class RavelryBackendClientMapperTest {
 
         assertEquals("Missing ravelryPatternId in Ravelry pattern detail response", error.message)
     }
+
+    @Test
+    fun `rejects non-positive fractional and overflowing detail ids`() {
+        listOf(0, -1, 42.5, Int.MAX_VALUE.toLong() + 1L).forEach { invalidId ->
+            assertThrows(IllegalArgumentException::class.java) {
+                RavelryBackendMappers.patternDetailFrom(
+                    mapOf(
+                        "ravelryPatternId" to invalidId,
+                        "title" to "Invalid ID",
+                    ),
+                )
+            }
+        }
+    }
+
+    @Test
+    fun `drops search results with invalid ids without coercion`() {
+        val response =
+            RavelryBackendMappers.searchResponseFrom(
+                mapOf(
+                    "patterns" to
+                        listOf(
+                            mapOf("ravelryPatternId" to 0, "title" to "Zero"),
+                            mapOf("ravelryPatternId" to 42.5, "title" to "Fractional"),
+                            mapOf("ravelryPatternId" to 43, "title" to "Valid"),
+                        ),
+                ),
+            )
+
+        assertEquals(listOf(43), response.patterns.map { it.id })
+    }
 }

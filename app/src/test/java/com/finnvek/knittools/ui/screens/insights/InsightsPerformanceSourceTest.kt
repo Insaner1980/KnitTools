@@ -12,8 +12,10 @@ class InsightsPerformanceSourceTest {
 
         assertTrue(viewModel.contains("import com.finnvek.knittools.di.IoDispatcher"))
         assertTrue(viewModel.contains("import kotlinx.coroutines.flow.flowOn"))
+        assertTrue(viewModel.contains("import kotlinx.coroutines.flow.mapLatest"))
         assertTrue(viewModel.contains("@param:IoDispatcher private val ioDispatcher: CoroutineDispatcher"))
         assertTrue(viewModel.contains(".flowOn(ioDispatcher)"))
+        assertTrue(viewModel.contains("}.mapLatest { input ->"))
         assertTrue(viewModel.contains("buildInsightsProjectFabric("))
         assertTrue(viewModel.indexOf("val projectFabric") > viewModel.indexOf("val timePerProject"))
     }

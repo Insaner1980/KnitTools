@@ -11,7 +11,7 @@ This file is the detailed implementation reference for the current KnitTools che
 - build, dependency, CI, and release-surface checks;
 - locating the source of truth for a behavior before changing it.
 
-This file describes the committed Android application and Functions package in this repository. Counts, dependency versions, workflow pins, and generated schema versions are volatile and must be rechecked when precision matters.
+This file describes the current Android application and Functions package in this working tree, including uncommitted source that is present in the checkout. Counts, dependency versions, workflow pins, generated schema versions, and validation results are volatile and must be rechecked when precision matters.
 
 This is a reference, not a replacement for the code. If this file conflicts with executable source, Gradle configuration, the Android manifest, Room schema exports, Firebase configuration, or tests, the executable source wins.
 
@@ -69,15 +69,15 @@ The app does not currently implement cloud synchronization, continuous Drive or 
 
 These are orientation counts, not coverage or pass results:
 
-- 330 production Kotlin files under `app/src/main`;
-- 257 Kotlin files in the JVM test source set under `app/src/test`;
-- 39 Kotlin files in the Android instrumented-test source set under `app/src/androidTest`;
-- 8 TypeScript test files matching `*.test.ts` under `functions/src`;
+- 331 production Kotlin files under `app/src/main`;
+- 259 Kotlin files in the JVM test source set under `app/src/test`;
+- 40 Kotlin files in the Android instrumented-test source set under `app/src/androidTest`;
+- 9 TypeScript test files matching `*.test.ts` under `functions/src`;
 - 65 tracked resource files under `app/src/main/res`.
 
 ### Current local validation
 
-Validation evidence in this section is commit-scoped rather than a perpetual statement about the newest checkout. After the additional regression coverage, the published Android source baseline passed 1,548 debug JVM tests. The Ravelry Functions hardening checkpoint built and passed 51 tests across eight suites under local Node.js 24, while the declared Functions runtime remains Node.js 22. The DeepSec `2.3.8` update resolved that CLI version and passed its six declared matcher tests, but it did not run a repository scan. Build & Test and CodeQL passed for the published Coil verification-metadata commit. These results do not establish Android instrumentation for later dependency commits, Functions behavior on Node.js 22, a DeepSec or MobSF scan of future source, a release artifact, deployment, or live Firebase/Ravelry behavior.
+Validation evidence in this section is commit-scoped rather than a perpetual statement about the newest checkout. This documentation update did not execute the current dirty working tree's Android, Functions, device, scanner, or release suites, so no historical pass count below should be presented as a green result for every current uncommitted change. After the additional regression coverage, the published Android source baseline passed 1,548 debug JVM tests. The earlier Ravelry Functions hardening checkpoint built and passed 51 tests across eight suites under local Node.js 24, while the declared Functions runtime remains Node.js 22; the current Functions source has nine test files and later hardening not covered by that count. The DeepSec `2.3.8` update resolved that CLI version and passed its six declared matcher tests, but it did not run a repository scan. Build & Test and CodeQL passed for the published Coil verification-metadata commit. These results do not establish Android instrumentation for later dependency commits, the current Functions behavior on Node.js 22, a DeepSec or MobSF scan of current source, a release artifact, deployment, or live Firebase/Ravelry behavior.
 
 Web Pattern Link Support V1 final verification on 2026-08-30 passed 1,535 debug JVM tests across 251 suites with `--rerun-tasks`, with no failures, errors, or skipped tests. Separate direct offline commands passed KSP, Android-test compilation, debug app and test APK assembly, `lintDebug`, `ktlintCheck`, `detekt`, `debugStabilityCheck`, and `git diff --check`; the only diff-check output was Git's existing CRLF normalization warning for two counter decision files. Functions and the user's custom check wrappers were not run. These broad Android results predate the later published Functions, security, analyzer, scanner, and dependency-verification commits and therefore are not complete validation of those later changes.
 
@@ -97,7 +97,7 @@ The final focused API 37 run passed all 13 `GaugeScreenTest` tests. The complete
 
 Project-folder verification on 2026-08-28 passed 1,361 debug JVM tests across 234 suites, the complete 126-test installed instrumentation package on API 36 and API 37, KSP, Android-test compilation, debug app and test APK assembly, debug Lint, ktlint, Detekt, and `git diff --check`. No JVM or instrumented test failed or was skipped in the final runs; Lint reported no issues. The instrumented suite includes 31 new tests and covers schema 22 to 23, older migration entrypoints and the full 1 to 23 chain, Room constraints, metadata-only transactions, project creation, folder UI, state restoration, trusted widget navigation, and active-session preservation. Schema 23 adds only the two organization tables; all 14 schema 22 entities remain structurally unchanged.
 
-The same final app APK was checked with normal and disabled system animations, light and dark themes, normal and 200 percent font scale, and a 320 dp viewport. The narrow-width reruns passed 19 component/screen tests and six dark screen tests. Real MainActivity checks confirmed that a selected folder survives background process death and task restoration, while a new task starts at All Projects. Folder strings and plural resources cover all 11 locale sets; automated semantics, focus, touch-target, keyboard, and screenshot checks do not replace a human TalkBack listening pass. All Gradle work was offline, and both emulators ran with restricted networking and no active default network. No Functions tests, external-service setup, release artifact, or deployment was part of the folder work. API 29 runtime testing remains unavailable locally because its system image is not installed.
+The same final app APK was checked with normal and disabled system animations, light and dark themes, normal and 200 percent font scale, and a 320 dp viewport. The narrow-width reruns passed 19 component/screen tests and six dark screen tests. Real MainActivity checks confirmed that a selected folder survives `ActivityScenario.recreate()` activity recreation and state restoration, while a new task starts at All Projects. Folder strings and plural resources cover all 11 locale sets; automated semantics, focus, touch-target, keyboard, and screenshot checks do not replace a human TalkBack listening pass. All Gradle work was offline, and both emulators ran with restricted networking and no active default network. No Functions tests, external-service setup, release artifact, or deployment was part of the folder work. API 29 runtime testing remains unavailable locally because its system image is not installed.
 
 The earlier local stabilization run on 2026-08-26 executed 1,298 debug JVM tests, 95 installed instrumented tests on API 36, 95 installed instrumented tests on API 37, and 46 Functions tests across seven suites, all without failures or skipped tests. That Android run also passed KSP, Android-test compilation, debug app and test APK assembly, focused Room migrations 18 to 19, 19 to 20, 20 to 21, 21 to 22, and 1 to 22, debug Lint, ktlint, Detekt, and `git diff --check`; Lint reported zero errors, 25 existing unused-resource warnings, and three plural suggestions. Both emulator smoke launches opened Projects, Library, Tools, Insights, and Settings without a fatal crash or ANR.
 
@@ -192,6 +192,8 @@ Detekt `2.0.0-alpha.5` and Baseline Profile/Benchmark `1.5.0-beta01` are intenti
 
 Startup locale reads must not use `runBlocking`. Long-lived application work uses the Hilt-owned `@ApplicationScope`. Blocking work in that scope must still move to the injected `@IoDispatcher`.
 
+Yarn-photo pruning, stale pattern-capture pruning, and entitlement-driven widget refresh are best-effort startup work. Each rethrows coroutine cancellation but catches an ordinary failure so a cleanup or Glance update cannot crash the application process. This does not turn a failed cleanup into success evidence; it may leave an orphan for a later run.
+
 `DemoDataSeeder` is a build-variant facade. The debug implementation delegates orchestration to `data/local/DebugDemoDataSeeder`, performs one `DatabaseTransactionRunner` transaction, and reuses repository writers so project counters and yarn links obey normal invariants. The release implementation is a no-op.
 
 ### Main activity
@@ -254,6 +256,7 @@ Production Kotlin lives under `app/src/main/java/com/finnvek/knittools`.
 - Repositories and ViewModels crossing architecture boundaries use injected `@IoDispatcher` rather than hardcoded `Dispatchers.IO`.
 - Multi-DAO Room writes use `DatabaseTransactionRunner` from repository methods.
 - UI-facing Room flows apply `retryOnRepositoryReadFailure` after entity-to-domain mapping. It preserves cancellation and retries at 250, 500, 1000, 2000, and 4000 ms, capped at 5000 ms.
+- Repository operations that pass caller-sized ID lists into SQLite `IN` clauses use `data/local/SqliteQueryChunking.kt`: IDs are deduplicated and split into chunks of at most 900 bind parameters. Current users are `ProgressPhotoRepository`, `ProjectDocumentRepository`, `ProjectFolderRepository`, `SavedPatternRepository`, and `YarnCardRepository`. Operations preserve their own whole-request contract across all chunks: for example, bulk folder moves validate the complete deduplicated project set before committing, while delete-by-ID paths may intentionally operate only on rows that still exist.
 - Final persistence that must outlive a ViewModel may use `@ApplicationScope`; ordinary screen work stays in `viewModelScope`.
 
 ## Navigation
@@ -346,7 +349,7 @@ Insights combines project and session data into total work time, exact rows and 
 
 ### Settings
 
-Settings owns app language, light/dark/system theme, haptic feedback, keep-screen-awake and imperial-unit preferences, Pro status and upgrade/restore entry, the help-guide link, privacy summary, and app version.
+Settings owns app language, light/dark/system theme, haptic feedback, keep-screen-awake and imperial-unit preferences, Pro status and upgrade/restore entry, the help-guide link, privacy summary, and app version. The Help and guide target is `https://knittoolsapp.com/articles/` and is opened through the shared validated external-web-link helper, with explicit no-browser/failure feedback rather than an uncaught Custom Tabs launch.
 
 ### Screen source index
 
@@ -431,6 +434,8 @@ Migration 23 to 24 adds only `project_yarn_usage` and its four indexes. All 16 s
 
 Legacy projects default to knitting plus rows. Crochet projects default to rounds. Custom labels are trimmed and length-limited centrally before persistence and display.
 
+The entity/domain mapping is also a defensive read boundary for legacy or malformed rows. Primary and additional-counter counts are exposed as nonnegative, step sizes are at least one, non-finite reading-guide fractions fall back to their central defaults, and reading fractions are bounded. A nonpositive stitch count becomes absent; stitch tracking is disabled without a valid count; and the current stitch is zero when tracking is off or otherwise clamped to the valid range. A repeat-section row can never emerge from the mapper as linked to the main counter.
+
 #### Project documents and primary pattern
 
 `project_documents` is the canonical list of readable PDFs attached to a project. Each relation has its own label, URI, deterministic sort order, primary flag, stable `documentKey`, optional Saved Pattern relation, current page, row mapping, horizontal reading line and follow state, and vertical guide state. `projectDocumentId` identifies selection and ordering; `documentKey` continues to isolate annotations and bookmarks. Labels are trimmed, nonblank, and limited centrally to 50 characters. Duplicate labels are allowed.
@@ -447,7 +452,7 @@ The project list and counter surface primary-document status from one repository
 
 `sessions` stores project, start/end timestamps and rows, display minutes, exact `durationSeconds` and `rowsWorked`, and nullable `zoneId`. New sessions capture the device zone at session start. Cross-midnight day and pace splitting use that zone. Only a legacy null or invalid zone uses the current device zone as fallback.
 
-`active_sessions` is the canonical source for the one globally active work session. Its fixed primary key and database triggers enforce the singleton, while its indexed project foreign key cascades on deletion. It stores stable session and recovery-interval tokens; original wall-clock time, zone, and start row; latest, trusted, reviewed, and pending row boundaries; trusted, pending, reviewed, and unreviewed net-row progress; checkpointed and reviewed duration baselines; wall-clock, `elapsedRealtime`, and boot-count anchors; and recovery prompt state. Explicit Start creates the row. Stop presents a summary before Save or Discard; Save inserts at most one coherent completed `sessions` row and deletes the active row in one transaction. Navigation, history, app backgrounding, and ViewModel clearing do not finalize it. Counter changes from the app or widget checkpoint the active row in the same transaction as the project count.
+`active_sessions` is the canonical source for the one globally active work session. Its fixed primary key and database triggers enforce the singleton, while its indexed project foreign key cascades on deletion. It stores stable session and recovery-interval tokens; original wall-clock time, zone, and start row; latest, trusted, reviewed, and pending row boundaries; trusted, pending, reviewed, and unreviewed net-row progress; checkpointed and reviewed duration baselines; wall-clock, `elapsedRealtime`, and boot-count anchors; and recovery prompt state. Explicit Start creates the row. Stop presents a summary before Save or Discard. Save submits the displayed duration, net rows, and end row back to `CounterRepository.stopSession`; the repository rejects a stale token, a duration outside the checkpoint-to-current trusted interval, or changed trusted row/end-row values, then persists exactly the reviewed summary. The completed row insert and active-row delete are one transaction. Navigation, history, app backgrounding, and ViewModel clearing do not finalize it. Counter changes from the app or widget checkpoint the active row in the same transaction as the project count.
 
 Same-boot recovery uses monotonic elapsed time and ignores wall-clock and time-zone changes. Reboot, missing boot identity, malformed anchors, or an unreviewed 24-hour interval creates a stable review interval instead of capping or guessing. Add accepts the suggested interval and pending rows, resets trusted anchors, and continues. Discard excludes pending time and rows, saves only already trusted work at most once, and stops. Edit accepts a validated total duration, combines it deterministically with the current row state, and stops once. Dismissal hides the dialog for that interval without resolving it; the passive review state remains visible.
 
@@ -463,7 +468,7 @@ Work-session UI copy is localized in all 11 supported resource directories: defa
 
 #### Saved patterns
 
-`saved_patterns` stores source, nullable positive Ravelry ID, metadata, the canonical `free`/`paid`/`unknown` availability string, original and canonical URLs, optional local PDF URI, offline state, and save/update/sync timestamps. Persisted `ravelryId = 0` and `patternUrl` sentinels are not part of the current schema. Duplicate detection checks Ravelry ID, canonical URL, normalized original URL, then title plus designer only when explicitly requested.
+`saved_patterns` stores source, nullable positive Ravelry ID, metadata, the canonical `free`/`paid`/`unknown` availability string, original and canonical URLs, optional local PDF URI, offline state, and save/update/sync timestamps. Persisted `ravelryId = 0` and `patternUrl` sentinels are not part of the current schema. Unknown stored source values map to `SavedPatternSource.Unknown`, not `Other`, so an unrecognized future/legacy source cannot accidentally become editable web metadata. Duplicate detection checks Ravelry ID, canonical URL, normalized original URL, then title plus designer only when explicitly requested.
 
 #### Web pattern links
 
@@ -480,6 +485,8 @@ Web patterns reuse the existing schema 24 `saved_patterns` row shape. New rows u
 - `project_counters` stores `id`, `projectId`, `name`, `count`, `stepSize`, optional `repeatAt`, `sortOrder`, `createdAt`, `counterType`, shaping fields `startingStitches`/`stitchChange`/`shapeEveryN`, repeat-section fields `repeatStartRow`/`repeatEndRow`/`totalRepeats`/`currentRepeat`, and `linkedToMainCounter`.
 
 `project_counters` is not the legacy `secondaryCount` store. Migrations must not duplicate that value. Old generated `Pattern repeat` backfill copies with the legacy signature are filtered at the counter UI boundary.
+
+Reminder persistence requires a positive target row, a null or positive repeat interval, and a nonblank trimmed message. Messages are capped at 200 Kotlin string units without leaving a trailing unmatched high surrogate. A completed reminder never triggers; a malformed nonpositive repeat interval is rejected and does not silently become a one-time reminder. Additional-counter persistence trims and caps names at 50 units, rejects negative counts and nonpositive steps, requires each type's own fields, clears fields that do not belong to that type, and forces repeat-section linking off.
 
 #### Annotation storage
 
@@ -529,7 +536,9 @@ All primary counter changes go through `CounterRepository.applyMainCounterChange
 - applies linked additional-counter deltas according to domain rules;
 - updates project timestamps.
 
-The widget delegates through `applyWidgetCountChange` to the same semantics. Widget changes therefore affect `linkedToMainCounter` counters exactly as in-app changes do.
+The repository rejects main-counter mutation for a completed project. Arithmetic normalizes a malformed step to at least one, uses a wider intermediate, saturates increment at `Int.MAX_VALUE`, and floors decrement/reset at zero. Undo reads the latest history row and accepts it only when its project ID matches, its `newValue` equals the current project count, its values differ, the previous value is nonnegative, and the action direction is internally consistent for increment, decrement, or reset. A successful undo deletes only that history row and reverses the linked-counter/reading-line delta. The widget delegates through `applyWidgetCountChange` to the same semantics, so widget changes affect `linkedToMainCounter` counters exactly as in-app changes do.
+
+Stitch state is a separate atomic repository boundary. Setting stitch count updates count, tracking-enabled state, and current stitch together; tracking cannot be enabled without a positive stitch count; completed projects cannot mutate it; and increment/decrement re-read the row, validate the current range, and write a bounded result. Compose may optimistically mirror a valid action, but it does not split those fields into independent DAO writes.
 
 `CounterValueFormatter` shapes counter values for the UI. Compose maps its output slots to localized strings for the hero label, target status, button content descriptions, and project-list count text. UI code must not recreate count/target formatting independently.
 
@@ -546,13 +555,17 @@ The widget delegates through `applyWidgetCountChange` to the same semantics. Wid
 - `SHAPING`;
 - `REPEAT_SECTION`.
 
-`ProjectCounterLogic` owns type-specific validation and updates. Repositories apply those rules inside a transaction rather than embedding behavior in DAO SQL or composables.
+`ProjectCounterLogic` owns type-specific validation and updates. Repositories apply those rules inside a transaction rather than embedding behavior in DAO SQL or composables. Count-up clears every type-specific field; repeating requires positive `repeatAt`; shaping requires nonnegative starting stitches, a stitch delta, and positive cadence; repeat sections require a positive start, end at or after start, and positive repeat count. Counter arithmetic and shaping/repeat range calculations use `Long` intermediates and clamp public `Int` results instead of overflowing.
 
 `linkedToMainCounter` is chosen in the add/edit draft. A repeat-section counter must not be linked to the main counter because its progress already derives from main-counter rows. Named counters, shaping events, targets, and repeat-section progress remain separate from legacy `secondaryCount`.
 
+`ProjectCounterRepository` returns `ProjectCounterMutationResult`: `Success`, `ProjectUnavailable`, `CounterUnavailable`, `StaleAction`, `InvalidCounter`, `FeatureUnavailable`, or `PersistenceFailure`. Creation checks `MULTIPLE_COUNTERS` and any type-specific `SHAPING_COUNTER`/`REPEAT_SECTION` gate inside the transaction. Mutation of an existing counter verifies project ownership and remains available without reapplying the creation entitlement. Cancellation propagates.
+
+`ReminderRepository` follows the same ownership pattern with `ReminderMutationResult`: `Success`, `ProjectUnavailable`, `ReminderUnavailable`, `StaleAction`, `InvalidReminder`, `FeatureUnavailable`, or `PersistenceFailure`. Only creation rechecks `ROW_REMINDERS` inside the transaction; edits and deletion of existing rows verify project ownership without deleting access when entitlement changes.
+
 ### Notes
 
-Project note replacement uses `CounterRepository.saveProjectNotes`. It merges the editor's base notes with current persisted notes so concurrent editor flows are preserved instead of blindly overwriting one another.
+Project note replacement uses `CounterRepository.saveProjectNotes`. It merges the editor's base notes with current persisted notes so concurrent editor flows are preserved instead of blindly overwriting one another, and repeating the same merge does not duplicate an already appended concurrent block. The typed result is `Saved`, `ProjectUnavailable`, `FeatureUnavailable`, or `PersistenceFailure`; cancellation propagates and failed saves keep the editor draft.
 
 `notesCreated` is set monotonically when note content is created. After entitlement loss, a project that previously used notes retains access to that existing surface; a never-used project still follows the creation gate.
 
@@ -563,13 +576,15 @@ Project note replacement uses `CounterRepository.saveProjectNotes`. It merges th
 `YarnCardRepository` is the canonical writer:
 
 - `saveCard` normalizes any persisted `linkedProjectId`;
+- a nonzero edit ID must still exist, a new card rechecks `UNLIMITED_YARN` inside the transaction, and negative inventory quantity is rejected;
+- the detail quantity stepper uses transactionally re-read `changeQuantity`, with the result bounded to `0..Int.MAX_VALUE`;
 - `updateLinkedProjectId` updates both the card's `linkedProjectId` and the project's `yarnCardIds`;
 - unlink, relink, and project deletion preserve both directions;
 - `ProjectYarnNoteRepository.saveToMyYarn` creates or reuses a linked inventory card while retaining the project note, setting `savedYarnCardId`, and binding any existing usage row in one repository transaction. It never creates usage automatically or duplicates the note/card pair's existing usage, amounts, or snapshot.
 
 ### Pattern attachment
 
-Pattern database state goes through `CounterRepository.attachPattern` and `detachPattern` so project fields, saved-pattern rows, annotation-layer activation, and related database state remain atomic. File deletion is a separate ownership decision:
+Pattern database state goes through `CounterRepository.attachPattern` and `detachPattern` so project fields, saved-pattern rows, annotation-layer activation, and related database state remain atomic. Imported and Saved Pattern PDFs are checked for availability before the transaction, then the URI and current relation state are checked again inside the transaction. Saved-pattern creation/reuse, `project_documents`, project metadata, and layer activation use explicit in-current-transaction helpers so no nested repository transaction can expose a partially attached document. Metadata-only attachment remains a project information link and never creates a document. File deletion is a separate ownership decision:
 
 - detaching does not delete reusable saved-pattern metadata;
 - `SavedPatternRepository.deleteLocalPatternFileIfUnused` is the cleanup gate after saved-pattern deletion, detach, or project deletion;
@@ -577,7 +592,9 @@ Pattern database state goes through `CounterRepository.attachPattern` and `detac
 
 ### Project creation and deletion
 
-The free-project limit is enforced transactionally in the repository. The repository counts all project rows, not only active projects, before creating another project without unlimited-project access. UI prompts are explanatory; they are not the persistence gate.
+The free-project limit is enforced transactionally in the repository. The repository requires both the caller's authorization snapshot and the current `UNLIMITED_PROJECTS` feature state, then counts all project rows, not only active projects, before creating another project. Name/label validation, an optional folder existence check, optional saved-pattern persistence, project insert, and folder assignment share that transaction. UI prompts are explanatory; they are not the persistence gate.
+
+Completion re-reads the project count in the repository, is idempotent for an already completed project, and does not let a stale UI count overwrite `totalRows` or the original completion time. Reactivation succeeds only for a completed row. Active-session Save/Discard choice is resolved in the same transaction boundary as completion.
 
 Project deletion coordinates child database cascades, soft-link cleanup, app-owned pattern files, progress photos, and yarn links. Every route gathers minimal cleanup inputs first, commits its database transaction without filesystem calls, and performs best-effort cleanup afterward in a non-cancellable post-commit boundary. Database failure or cancellation before commit leaves files intact. A cleanup failure after commit may leave an orphan, but the committed deletion remains authoritative and successful; shared PDFs remain protected by `SavedPatternRepository.deleteLocalPatternFileIfUnused`.
 
@@ -597,17 +614,17 @@ Project deletion coordinates child database cascades, soft-link cleanup, app-own
 
 ### Pattern PDF import
 
-PDF import uses Android Storage Access Framework `OpenDocument(application/pdf)` and persistable URI permissions. The app copies the selected document into app-owned storage under the project. The Drive or Dropbox wording refers only to choosing a document through a provider exposed by the system picker.
+PDF import uses Android Storage Access Framework `OpenDocument(application/pdf)` and persistable URI permissions. The app copies the selected document into app-owned storage under the project. Copying is suspending and cancellation-aware, uses a unique rollback-safe target, and stops before consuming the storage manager's currently allocatable bytes minus the same 32 MiB reserve used by image import. Before publication, `PdfPageRenderer` must open the copy and report at least one page; an empty, unreadable, oversized-for-current-storage, failed, or cancelled copy is not attached. The Drive or Dropbox wording refers only to choosing a document through a provider exposed by the system picker.
 
 There are no Drive or Dropbox SDKs, OAuth flows, provider-specific dependencies, or continuous sync. Future sync constraints are documented separately in `config/future-sync-spec.md` and are not implemented product behavior.
 
 Gallery image import uses the system Photo Picker without broad media permissions. Every accepted image is copied during the picker-result handling into a collision-safe app-owned session before preview, so later reorder, removal, conversion, and restore logic do not depend on a temporary external URI grant. Exact duplicate URIs in one pending import keep their first position.
 
-`PatternImageImportViewModel` owns pending session state, order, cancellation, progress, replacement confirmation, and repository attachment. `PatternDocumentStorage` validates device-supported still images, rejects animated input, decodes with a bounded 1800-pixel long edge, draws transparent pixels onto white, and writes one ordered PDF page at a time. The enforced limits are 20 pages, 25 MiB per image, 200 MiB total staged input, and a 32 MiB free-space reserve. Conversion publishes a unique app-owned PDF only after all pages succeed; failed or cancelled sessions remove uncommitted output and temporary images.
+`PatternImageImportViewModel` owns pending session state, order, cancellation, progress, replacement confirmation, and repository attachment. `PatternDocumentStorage` validates device-supported still images, rejects animated input, decodes with a bounded 1800-pixel long edge, draws transparent pixels onto white, and writes one ordered PDF page at a time. The enforced limits are 20 pages, 25 MiB per image, 200 MiB total staged input, and a 32 MiB free-space reserve. Camera output is checked against the same 25 MiB limit before image decoding. Conversion publishes a unique app-owned PDF only after all pages succeed; failed or cancelled sessions remove uncommitted output and temporary images. Startup pruning deletes capture files only when their timestamps are positive, not in the future, and older than the seven-day threshold.
 
 ### PDF rendering
 
-`PdfPageRenderer` is the single storage-layer renderer. Pattern UI must not create another `PdfRenderer` implementation. Render dimensions are bounded; current page rendering caps either bitmap dimension at 4096 pixels. Renderer ownership, file descriptors, pages, and bitmaps must be closed deterministically.
+`PdfPageRenderer` is the single storage-layer renderer. Pattern UI must not create another `PdfRenderer` implementation. Render dimensions are bounded; current page rendering caps either bitmap dimension at 4096 pixels, while export supplies its stricter 1800-pixel maximum for both axes. A bitmap allocated before a platform render failure is recycled before the exception escapes. Renderer ownership, file descriptors, pages, and bitmaps must be closed deterministically.
 
 ### Pattern camera capture
 
@@ -623,7 +640,7 @@ The internal Pro enum name `PATTERN_CAMERA_SCAN` is a legacy identifier, not use
 
 ### Progress photos
 
-Capture-target creation and abandoned-capture cleanup go through `ProgressPhotoRepository` and `CounterViewModel` on `@IoDispatcher`. Composables do not instantiate `ProgressPhotoStorage` or directly delete files. Gallery and all-photos views consume repository data.
+Capture-target creation and abandoned-capture cleanup go through `ProgressPhotoRepository` and `CounterViewModel` on `@IoDispatcher`. Composables do not instantiate `ProgressPhotoStorage` or directly delete files. Imported progress photos are bounds-decoded first, sampled by a power-of-two factor before full decode, scaled to at most 1920 pixels on the longest edge, and encoded as JPEG quality 80; this prevents the old full-resolution-first allocation path. Gallery and all-photos views consume repository data.
 
 ### Yarn photos
 
@@ -647,7 +664,7 @@ Attached-project reading-line state persists on the selected `ProjectDocument`:
 - `currentPatternPage`;
 - `patternRowMapping`.
 
-`RowMappingParser` owns serialization of `RowMarker(row, page, yPosition)` values. A drag commit creates or updates the selected document's current row/page anchor through `CounterViewModel.upsertPatternRowMarker`. Calibration combines anchors through `mergePatternRowMarkers`. Live drag remains preview state in the viewer until commit. The project count remains global, but canonical counter and widget changes resolve followed reading-line movement only against the active document and never update the retained legacy project-level reader columns.
+`RowMappingParser` owns serialization of `RowMarker(row, page, yPosition)` values. Input longer than 256 KiB becomes an empty mapping. Array elements are decoded independently so one malformed element does not discard valid siblings; invalid markers are removed, duplicate `(row,page)` identities keep the first value, no more than 4096 markers survive, and the result is sorted by page then row. Serialization applies the same validity, deduplication, limit, and ordering rules. A drag commit creates or updates the selected document's current row/page anchor through `CounterViewModel.upsertPatternRowMarker`. Calibration combines anchors through `mergePatternRowMarkers`. Viewer callbacks pass the initiating `projectDocumentId` and that document's row-mapping snapshot, so a late gesture cannot read or overwrite whichever document became active meanwhile. Live drag remains preview state in the viewer until commit. The project count remains global, but canonical counter and widget changes resolve followed reading-line movement only against the active document and never update the retained legacy project-level reader columns.
 
 `resolveReadingLineYFraction` resolves movement in this order:
 
@@ -673,6 +690,8 @@ Annotation kinds currently include `FREEHAND`, `HIGHLIGHTER`, `LINE`, `ARROW`, `
 - Project or saved-pattern deletion cascades through layer ownership.
 
 Geometry is stored in normalized page coordinates and transformed exactly once by `PatternPageCoordinateTransform`. Pointer motion remains in ViewModel memory. Persistence occurs at gesture and command boundaries rather than on every pointer event.
+
+`PatternAnnotationPayloadCodec` rejects non-finite or degenerate geometry instead of coercing it into visible content: lines/arrows need distinct endpoints; rectangles/ellipses/text/chart regions need positive area; text boxes need nonblank text; callouts need a title or description; and chart regions require a nonblank name plus row/column counts in `1..999`. Annotation commands capture the current document/layer edit context. A late write from a previous context may finish in storage, but it cannot populate the new document's undo/redo stack or error state; switching context clears an unfinished stroke, selection, and history.
 
 `PatternAnnotationCanvasRenderer` is the single renderer for both viewer overlays and rasterized export. Adding a second geometry or rendering path risks viewer/export divergence.
 
@@ -731,7 +750,9 @@ Ravelry credentials are Secret Manager secrets used only by Functions. They must
 
 ### Android flow
 
-`RavelryAuthManager` owns backend connection status, start, disconnect, callback completion, and current-user state. The authentication browser uses Auth Tab when available with a Custom Tabs fallback. Android handles only the token-free deep link `knittools://ravelry-auth-complete`.
+`RavelryAuthManager` owns backend connection status, start, disconnect, callback completion, and current-user state. Every start/status/disconnect operation gets a monotonically increasing in-memory operation ID; a response may change state only while it is still the newest operation. Browser cancellation invalidates the pending operation. The authentication browser uses Auth Tab when available with a Custom Tabs fallback; if neither activity exists, the manager records cancellation rather than crashing. Android handles only the token-free deep link `knittools://ravelry-auth-complete`.
+
+The accepted Android callback shape is exact: scheme `knittools`, host and encoded authority `ravelry-auth-complete`, no path, no fragment, and either one nonblank `state` parameter or one nonblank `state` plus one nonblank `error`. Duplicate parameters, extra names, blank values, and the former `status` fallback are rejected before auth-state handling. A pending state, when present, must match the callback state.
 
 The connected Browse Ravelry action opens Custom Tabs with sharing enabled. Android `ACTION_SEND text/plain` accepts a validated Ravelry pattern URL, but the app shows a local confirmation surface before requesting an import preview.
 
@@ -765,9 +786,13 @@ Tokens live in `ravelryTokens/{uid}`. `functions/src/ravelry/tokenAccess.ts` is 
 - current-user verification updates only Ravelry user metadata and verification timestamps, so an in-flight response cannot restore stale credentials;
 - disconnect advances a tombstone generation so late callback, current-user, or refresh writes cannot recreate a disconnected connection.
 
-Search and import callables sanitize upstream fields and return metadata only. They do not download pattern PDFs. URL import validates Ravelry hosts and pattern-library paths before resolving an ID. Numeric paths require a positive ID; slug paths accept only a search result whose canonical URL exactly matches the requested canonical URL. A fuzzy or merely first search result is rejected as `pattern_not_found` rather than imported as unrelated metadata.
+Search and import callables validate caller input before token or upstream work. Search requires a nonblank query of at most 200 characters; text filters are at most 100 characters; controls and line separators are rejected; difficulty endpoints are within 1 through 10 and ordered; page is at most 1000; and page size is at most 50. Import IDs are safe positive integers no larger than `Int.MAX_VALUE`; import URLs are at most 2048 characters.
 
-At the published `6f55bf3` Ravelry hardening checkpoint, the TypeScript build and 51 tests across eight suites passed under local Node.js 24. Import sanitization requires a positive integer pattern ID and accepts only valid HTTPS thumbnail URLs. The package targets Node.js 22, and no Functions-specific GitHub workflow currently proves that runtime. No Firebase deployment, real OAuth callback, Secret Manager access, or live Ravelry/CDN request is established by these local checks.
+URL import accepts only HTTPS `ravelry.com`/`www.ravelry.com`, no credentials, no port other than 443, and a path of exactly `/patterns/library/<slug>`. Query and fragment text may remain in `originalUrl`, but canonical identity strips both and is derived only from the validated path. The decoded slug is nonblank, at most 512 characters, and contains no slash, backslash, question mark, hash, or control character. Numeric paths require a positive bounded ID; slug paths accept only a search result whose canonical URL exactly matches the requested canonical URL. A fuzzy or merely first search result is rejected as `pattern_not_found` rather than imported as unrelated metadata.
+
+All Ravelry API and token fetches use a 10-second abort timeout and `redirect: "error"`. Token JSON is streamed with a 64 KiB maximum and API JSON with a 1 MiB maximum; an oversized declared `Content-Length` cancels the body immediately, while chunked bodies are counted as read. Upstream pattern/user text has controls and line separators replaced, whitespace collapsed, and limits of 500 characters for title, 300 for designer, 200 for user fields, and 512 for permalink. Remote URLs are capped at 2048; thumbnails must be credential-free HTTPS URLs with a hostname. Invalid pattern IDs are discarded and pagination falls back to bounded safe defaults. These callables return metadata only and never download a pattern PDF.
+
+At the published `6f55bf3` Ravelry hardening checkpoint, the TypeScript build and 51 tests across eight suites passed under local Node.js 24. The current tree has nine Functions test files and later response-bound, token-store, callable, and input-validation hardening, but this documentation update did not execute them. The package targets Node.js 22, and the current Build & Test workflow contains a separate Node 22 Functions job; only an actual run of that job is evidence for a particular revision. No Firebase deployment, real OAuth callback, Secret Manager access, or live Ravelry/CDN request is established by local or CI unit tests.
 
 ### Rate limiting
 
@@ -780,7 +805,7 @@ The backend enforces request-key and backend-global fixed windows. Authenticated
 | Search | 30 | 120 |
 | Import | 20 | 80 |
 
-Global limits use ten Firestore shards, giving per-shard capacities of 6, 6, 12, and 8 for authentication, callback, search, and import respectively. Every request also checks an active legacy `<bucket>_global` window before using shards. That compatibility check is temporary and must be removed only after deployment is complete and all legacy single-document writers are confirmed drained. A warm process caches a confirmed saturated shard window so repeated overload rejections do not rescan every shard.
+Global limits use ten Firestore shards, giving per-shard capacities of 6, 6, 12, and 8 for authentication, callback, search, and import respectively. Auth start, status, disconnect, and current-user operations consume the authentication bucket; search/import consume their own buckets; the public callback consumes its callback bucket before OAuth-state lookup. Every request also checks an active legacy `<bucket>_global` window before using shards. That compatibility check is temporary and must be removed only after deployment is complete and all legacy single-document writers are confirmed drained. A warm process caches a confirmed saturated shard window so repeated overload rejections do not rescan every shard.
 
 ### Firestore boundary
 
@@ -812,7 +837,7 @@ Debug builds unlock `hasFeature` through `BuildConfig.DEBUG`. This does not chan
 
 ### Trial
 
-The trial lasts 14 days and does not start automatically. The user starts it through an atomic `TrialManager.startTrial` path. Trial persistence records start state, last-known time, and clock-tamper state. A backward clock movement greater than one hour permanently marks the local trial state as tampered. Refresh is bounded and also reacts to a day boundary. Trial-ended copy is a one-time passive notice.
+The trial lasts 14 days and does not start automatically. The user starts it through one atomic DataStore edit in `TrialManager.startTrial`; the edit classifies the existing state instead of reading, deciding, and writing in separate operations. Results are `Started`, `AlreadyActive`, `AlreadyExpired`, `AlreadyTampered`, or `Failed`. A malformed negative start, a previously persisted tamper flag, a backward clock movement beyond the one-hour tolerance, or a start timestamp more than one hour in the future cannot create a fresh trial. Timestamp refresh also reads and advances the last-known value within one edit. Trial persistence records start state, last-known time, and clock-tamper state. Tamper state is sticky. Refresh is bounded and also reacts to a day boundary. Trial-ended copy is a one-time passive notice.
 
 Status precedence is purchased Pro, active trial, not-started trial, then expired trial.
 
@@ -820,13 +845,15 @@ Status precedence is purchased Pro, active trial, not-started trial, then expire
 
 `BillingManager` uses Google Play Billing 9.1.0 and one in-app product, `knittools_pro`. It:
 
-- reconnects when the billing service disconnects;
+- lets Billing's automatic reconnection serve later calls, but marks product details unavailable and invalidates the cached selected offer when the service disconnects;
 - bounds initial setup retries;
-- queries product details and existing purchases;
+- marks purchase state ready only after a successful existing-purchases query; query failure preserves the last known purchase state but remains not ready;
+- waits at most two seconds for initial connection before a manual restore fails;
+- keeps restore and purchase-launch actions single-flight in the ViewModel/manager boundary;
 - selects a deterministic non-rental one-time offer;
 - handles purchase, pending, already-owned, acknowledgement, and restore states;
 - does not unlock a pending purchase;
-- acknowledges eligible purchases with a bounded retry path;
+- acknowledges only purchased, matching, unacknowledged products; token sets deduplicate in-flight and completed acknowledgements, and at most three retries are scheduled only for transient/service errors;
 - reports restore as restored, not found, or failed.
 
 Purchase state readiness is distinct from the default `ProState`. Cold-start consumers must not fail closed before billing/trial state loads.
@@ -835,7 +862,7 @@ Purchase state readiness is distinct from the default `ProState`. Cold-start con
 
 `ProManager.hasFeatureAfterInitialLoad` waits for initial Pro and billing readiness with a bounded timeout and checks an already-known purchase. Widgets use this API rather than synchronously reading the default state.
 
-`ProPromptSource` values are Projects, ProgressPhotos, Notes, YarnCards, SaveToMyYarn, Counters, Reminders, PatternCamera, and Widget. `ProPromptViewModel` resumes the blocked action exactly once after `TrialStartResult.Started`, `AlreadyStarted`, or observed Pro access.
+`ProPromptSource` values are Projects, ProgressPhotos, Notes, YarnCards, SaveToMyYarn, Counters, Reminders, PatternCamera, and Widget. `ProPromptViewModel` resumes the blocked action exactly once after `TrialStartResult.Started`, `AlreadyActive`, or observed Pro access. `AlreadyExpired` and `AlreadyTampered` do not resume the mutation. Settings and the Pro screen show a loading state until initial Pro state is ready; restore and purchase controls expose and disable their in-flight action rather than accepting duplicate taps.
 
 The repository remains the authoritative gate for mutation. A prompt sheet is not a substitute for transactional enforcement.
 
@@ -853,6 +880,7 @@ Existing-content rules are deliberate:
 
 - Compose screens consume state from ViewModels and repositories; business transactions do not live in composables.
 - Lifecycle-aware collection uses shared helpers such as `collectAsStateWithLifecycle` and `CollectWithLifecycleEffect`.
+- One-shot navigation, close, and failure signals use channel/event or monotonic-event semantics appropriate to the screen; durable state remains in `StateFlow`/`SavedStateHandle`. A newly composed destination must not replay an already handled destructive-action failure or close a different project.
 - Shared scaffolds and components are preferred before adding a feature-local equivalent.
 - `ToolScreenScaffold` provides a plain themed surface, transparent top app bar, and a maximum content width of 600 dp.
 - Scaffold backgrounds use `MaterialTheme.colorScheme.background` rather than `surface`.
@@ -1038,9 +1066,9 @@ Metadata-only Ravelry/saved-pattern links do not masquerade as an attached PDF. 
 
 ### Project-list actions
 
-The top app bar owns sort order, completed visibility, and selection entry. The folder selector stays below it without replacing cardless rows or the Continue hero. Long press on active or completed rows enters selection; Select All selects only currently visible filtered rows. The vertical action area offers Move selected projects, Complete for active selections only, and confirmed Delete. A failed move keeps selection; success exits selection and restores selector focus. Folder deletion restores focus to a remaining folder or Create folder.
+The top app bar owns sort order, completed visibility, and selection entry. The folder selector stays below it without replacing cardless rows or the Continue hero. Long press on active or completed rows enters selection; Select All selects only currently visible filtered rows. The vertical action area offers Move selected projects, Complete for active selections only, and confirmed Delete. Bulk complete/delete removes each successful ID from selection as it commits; the first missing row, session conflict, or persistence failure stops the loop and keeps failed/unprocessed IDs selected for retry. Selection mode exits only when the complete requested set succeeds. A failed move likewise keeps selection; success exits selection and restores selector focus. Folder deletion restores focus to a remaining folder or Create folder.
 
-The create action is not a Material FAB. It uses the image-backed `counter_plus_button.webp` at bottom end with a 72 dp touch target and 64 dp visual. It is absent during selection. Free-limit handling uses `ProPromptSheet`, then retries the original create action if access is granted; the repository still enforces the limit transactionally.
+The create action is not a Material FAB. It uses the image-backed `counter_plus_button.webp` at bottom end with a 72 dp touch target and 64 dp visual. It is absent during selection. The pending creation request stores name, craft, label, optional custom label, and target folder in `SavedStateHandle`; it survives activity recreation, is single-flight, and retries that exact request rather than rebuilding it from changed screen state. Free-limit handling uses `ProPromptSheet`, then retries the original create action if access is granted; the repository still enforces the limit transactionally.
 
 ### Project-list dimensions
 
@@ -1123,9 +1151,11 @@ Reminder alerts remain below the main workspace reveal rather than entering the 
 
 `CounterScreen` owns the sheet/dialog orchestration for project actions, counter editing, reminders, yarn management, photos, pattern choice/capture, and Pro prompts. `CounterUiStateReducers` and decision helpers keep state transitions testable. The screen must reuse shared UI surfaces; if a shared component cannot express a required state, the component contract should be reviewed before adding an isolated duplicate.
 
+`CounterViewModel` cancels an older explicit project-selection job before opening a newer project and applies asynchronously loaded yarn names/session totals only when their project ID still matches. A selected project disappearing from Room clears the graph-owned state and sends one conflated close event. Completion and deletion are single-flight and bind their result/session-choice overlay to the initiating project, so a late result cannot close whichever project was opened later. Pending additional-counter creation captures project ID, main row, and draft; pending reminder creation captures project ID and draft; both are single-flight and retry the captured request after a Pro prompt.
+
 ## Project actions
 
-The project overflow/action sheet provides actions for project metadata, completion/reopen, pattern management, counter configuration, and deletion according to current state. Project actions call ViewModel/repository APIs rather than directly editing entities.
+The project overflow/action sheet is divided into This project, Counter tools, and Project actions. Documents, reminders, counters, Measurements and Gauge, folder move, history, details, rename, and delete remain available according to their own rules. An active project additionally exposes Add counter, stitch count/tracking, Start/Stop session, Reset, and Complete. A completed project hides those mutation/session actions and exposes Reactivate instead. The switch row uses one `Role.Switch` toggleable container with a non-clickable child `Switch`, and the chevron is auto-mirrored for RTL. Project actions call ViewModel/repository APIs rather than directly editing entities.
 
 Completion records `completedAt` and preserves historical content. Reopening restores active-project presentation without inventing new session or history data. Destructive actions require explicit confirmation and coordinated file/link cleanup.
 
@@ -1139,9 +1169,9 @@ The Library landing screen provides direct entry to Saved Patterns, My Yarn, All
 
 Saved Patterns contains local PDFs and metadata-only saved records. The list supports selection and deletion. `SavedPatternDetailScreen` owns metadata availability and actions. `PatternPickerSheet` lists all saved patterns for project attachment.
 
-A saved pattern with `localPdfUri` can open the library viewer. The current Saved Pattern detail UI enables that navigation only for `hasAttachedPdf`, and the web-pattern detail branch has no PDF-open action. A metadata-only record therefore opens detail and can be attached as metadata through the normal UI, but it is not readable as a PDF until a local document is attached/imported.
+A saved pattern with `localPdfUri` can open the library viewer. The Saved Pattern detail UI enables that navigation only for `hasAttachedPdf`, the web-pattern detail branch has no PDF-open action, and `libraryPatternViewerRoute` independently returns to Library when the loaded row lacks a nonblank `localPdfUri`. A metadata-only record therefore opens detail and can be attached as metadata through the normal UI, but it is not readable as a PDF until a local document is attached/imported.
 
-There is one intentional review warning in the current source: `libraryPatternViewerRoute` still resolves `(pattern.localPdfUri ?: pattern.patternUrl)` after an internal route has already been reached. The route is not exported and the current caller is gated as described above, so this is not a normal metadata-to-viewer path. It is nevertheless a non-defensive route boundary: any new internal caller or direct navigation path must be reviewed until the route itself rejects a missing `localPdfUri`.
+The route no longer falls back to a website or legacy `patternUrl`. New viewer entry points must preserve this defense-in-depth rule instead of relying only on the current detail-screen button gate.
 
 Saved Patterns exposes Add web pattern in empty and populated states. Web rows and detail show the user-owned title, optional designer, and source host with separate Open website, Edit, Attach, and Delete actions; HTTP is allowed only with a visible warning and no offline claim. A project may keep one web-pattern information link alongside any number of PDF documents. Readable primary documents retain Pattern-card priority, and replacing or unlinking only the information link requires explicit confirmation.
 
@@ -1299,6 +1329,8 @@ The fabric uses the same themed project/yarn palette as chart segments. Empty ce
 - medium: 160 by 160 dp;
 - large: 300 by 160 dp.
 
+The small layout is a single horizontal row with the project name taking remaining width and the formatted count at the end. Medium and large variants retain the centered header/target/progress/actions hierarchy, keep the header to one line, and use 48 dp increment/decrement targets. Project/header text uses `onSurface` for contrast. Symbol-only buttons expose localized decrement/increment content descriptions through Glance semantics.
+
 The provider XML allows both-axis resizing, declares a one-hour system update period, and targets the home screen.
 
 Widget state has per-instance and shared forms. Resolution can use an existing instance state, shared state, the latest active project, or a default empty state. State updates synchronize widget instances after app or widget mutations.
@@ -1411,7 +1443,7 @@ The guarded set currently includes:
 - `:app:signReleaseBundle`;
 - `:app:publishRelease`.
 
-Missing variables fail the task graph before artifact publication. Release signing and Firebase configuration are separate gates.
+Missing variables fail the task graph before artifact publication, and `KNITTOOLS_KEYSTORE_PATH` must resolve to an existing file. Release signing and Firebase configuration are separate gates.
 
 ### Firebase Android configuration
 
@@ -1419,7 +1451,7 @@ The canonical local config is ignored `app/google-services.json`. CI or local au
 
 Non-distribution variants `debug`, `benchmarkRelease`, and `nonMinifiedRelease` may generate ignored per-variant placeholder JSON when neither a real root file nor encoded config exists. Values such as `google_app_id`, `google_api_key`, and `project_id` come only from Google Services generated resources; they are not maintained in a parallel debug XML.
 
-`assembleRelease` and `bundleRelease` depend on `verifyGoogleServicesJson` and require a real config. `lintRelease` may disable `processReleaseGoogleServices` only when no release artifact task is requested and no real config exists. This lint-only exception must never reach an artifact graph.
+Every guarded release artifact task depends on `verifyGoogleServicesJson` and requires a real config; a file containing the local `debug-placeholder-api-key` is rejected. The base64 secret value itself is not registered as a Gradle input value: only its presence flag is an input, which avoids exposing secret content through task metadata. `lintRelease` may disable `processReleaseGoogleServices` only when no release artifact task is requested and no real config exists. This lint-only exception must never reach an artifact graph.
 
 ## CI and dependency automation
 
@@ -1429,7 +1461,8 @@ Non-distribution variants `debug`, `benchmarkRelease`, and `nonMinifiedRelease` 
 
 - `actions/checkout` v7.0.1, pinned by SHA, with credential persistence disabled;
 - `actions/setup-java` v6.0.0, pinned by SHA, Temurin 17;
-- `gradle/actions/setup-gradle` v6.3.0, pinned by SHA.
+- `gradle/actions/setup-gradle` v6.3.0, pinned by SHA;
+- `actions/setup-node` v7.0.0, pinned by SHA, for the separate Functions job.
 
 It runs, sequentially:
 
@@ -1438,6 +1471,8 @@ It runs, sequentially:
 3. `./gradlew :app:ktlintCheck`;
 4. `./gradlew :app:detekt`;
 5. `./gradlew lint`.
+
+The separate Node 22 Functions job uses `functions/package-lock.json`, runs `npm --prefix functions ci --ignore-scripts`, and then runs `npm --prefix functions test`. The test script compiles the TypeScript source before executing the Node test files.
 
 ### CodeQL workflow
 
@@ -1450,14 +1485,14 @@ It runs, sequentially:
 - has no separate Android setup action;
 - has a six-hour job timeout.
 
-### Backend CI gap
+### Backend CI boundary
 
-The current GitHub workflows do not run Functions TypeScript build or tests. Backend changes require separate evidence from:
+The Build & Test workflow now validates the Functions TypeScript build and local test suite. For direct local evidence, use:
 
 - `npm --prefix functions test`;
 - `npm --prefix functions run build`.
 
-A green Android workflow does not validate Functions.
+A green Android job alone does not validate Functions; the separate Functions job must also pass. Neither local nor CI Functions tests prove deployed or live Firebase/Ravelry behavior.
 
 ### Dependabot
 
@@ -1472,7 +1507,7 @@ CodeQL action updates are grouped.
 
 ### Gradle dependency verification
 
-`gradle/verification-metadata.xml` enables metadata verification and leaves signature verification disabled. It contains verification entries for the `io.coil-kt.coil3:coil-network-core-android:3.5.0` and `io.coil-kt.coil3:coil-network-ktor3-android:3.5.0` POMs. The published `8a1b245` checkpoint added those entries after strict local dependency resolution and direct artifact-byte hashing without changing a dependency version or weakening the trust policy. Build & Test resolves dependencies under the checked-in verification metadata, but neither ordinary GitHub workflow has a separate step that directly re-hashes those POM bytes.
+`gradle/verification-metadata.xml` enables metadata verification and leaves signature verification disabled. The Coil 3.5.0 network family currently includes verified module/POM/AAR metadata for Android plus direct local artifact-byte hashes for `coil-network-core-jvm-3.5.0.module` and `coil-network-ktor3-jvm-3.5.0.module`. The published `8a1b245` checkpoint added the Android POM entries after strict local dependency resolution; the current tree adds the two JVM module hashes without changing a dependency version or weakening the trust policy. Build & Test resolves dependencies under the checked-in verification metadata, but neither ordinary GitHub workflow has a separate step that directly re-hashes those bytes.
 
 ## Local validation and scanner surfaces
 
@@ -1531,7 +1566,7 @@ Each tool proves a different claim. A zero-match raw scan is not automatically t
 
 `config/check-exceptions.json` is the scanner-exception registry. A MobSF exception requires one rule and one exact `findingPath`; a global `.mobsf` suppression must not hide a whole rule.
 
-`gradle/osv-scanner.toml` uses package/advisory-specific exceptions for build-tool dependencies that appear in Gradle verification metadata. It must not return to a project-wide ignore model. Runtime dependency exposure still needs its own resolved-graph or artifact evidence.
+`gradle/osv-scanner.toml` currently has 73 package/advisory-specific exceptions for build-tool dependencies that appear in Gradle verification metadata. It must not return to a project-wide ignore model. The earlier Functions `brace-expansion` exception is absent because the current package graph resolves that finding rather than accepting it. Runtime dependency exposure still needs its own resolved-graph or artifact evidence.
 
 The `.deepsec` workspace currently pins DeepSec `2.3.8`, TypeScript `^7.0.2`, and `@types/node ^26.3.0`. Its custom matchers cover:
 
@@ -1547,7 +1582,7 @@ The `.deepsec` workspace currently pins DeepSec `2.3.8`, TypeScript `^7.0.2`, an
 
 Accepted risk is limited to documented historical Ravelry credential findings in `config/security-decisions.md`. It is not a blanket suppression for API abuse, prompt injection, or unrelated findings.
 
-`config/check-exceptions.json` contains 35 bounded records, including 30 MobSF records. Each MobSF record has one rule, an exact `findingPath`, selectors, an owner, an expiry date, and a tracking reference; `.mobsf` does not globally suppress a rule. At the published `09f217a` registry-validation checkpoint, the local matcher processed 115 raw findings: all 115 matched exactly once, with zero unsuppressed blocking findings, zero multiply covered findings, and zero suppressed confirmed defects. This is evidence for that validated commit, not a guarantee for future source, and GitHub does not run MobSF.
+`config/check-exceptions.json` contains 35 bounded records, including 31 MobSF records. Each MobSF record has one rule, an exact `findingPath`, selectors, an owner, an expiry date, and a tracking reference; `.mobsf` does not globally suppress a rule. At the published `09f217a` registry-validation checkpoint, the local matcher processed 115 raw findings: all 115 matched exactly once, with zero unsuppressed blocking findings, zero multiply covered findings, and zero suppressed confirmed defects. This is evidence for that validated commit, not a guarantee for future source, and GitHub does not run MobSF.
 
 The published `366755d` DeepSec update changed the package and lockfile, resolved CLI version `2.3.8`, and passed the six declared matcher tests; it did not run a repository scan. GitHub does not run DeepSec. Invocation artifacts under `.deepsec/data` are generated local runtime data, not a primary implementation source or part of an ordinary source commit.
 
@@ -1557,11 +1592,11 @@ The published `366755d` DeepSec update changed the package and lockfile, resolve
 
 ### Current inventory
 
-The committed checkout contains:
+The current working tree contains:
 
-- 257 Kotlin files in `app/src/test`;
-- 39 Kotlin files in `app/src/androidTest`;
-- 8 TypeScript test files in `functions/src`.
+- 259 Kotlin files in `app/src/test`;
+- 40 Kotlin files in `app/src/androidTest`;
+- 9 TypeScript test files in `functions/src`.
 
 These source-file counts include test helpers; they are not test-class counts or executed-test totals and should be refreshed after test additions/removals.
 
@@ -1570,22 +1605,25 @@ These source-file counts include test helpers; they are not test-class counts or
 The test surface includes:
 
 - domain calculators and persisted-enum fallbacks;
+- overflow-safe counter, shaping, repeat, yarn-estimator, reminder, row-mapping, and malformed-entity boundaries;
 - regex instruction parsing;
 - locale-sensitive formatting;
 - repository transactions and soft-link invariants;
+- repository ownership/stale-action results, in-transaction Pro creation gates, large SQLite ID-set chunking, and partial bulk-operation failure state;
 - project yarn usage calculations, source identity, rollback, migration preservation, editor restoration, and native Yarn workflows;
 - main-counter/history/linked-counter atomic behavior;
 - Room migration source contracts and instrumented migrations;
 - file storage and photo replacement ordering;
+- bounded PDF copy/readability checks, response/image/PDF size limits, cancellation rollback, and sampled progress-photo decoding;
 - pattern row mapping, annotations, geometry, rendering, and export;
-- Pro/trial state and clock rollback;
-- billing setup, restore, already-owned, pending, and acknowledgement paths;
+- Pro/trial state, atomic start classification, malformed/future timestamps, and clock rollback;
+- billing setup/readiness, restore/purchase single-flight behavior, already-owned, pending, disconnect, and deduplicated bounded acknowledgement paths;
 - navigation arguments and widget launch tokens;
 - widget data resolution and actions;
 - ViewModel reducers and lifecycle state;
 - project workspace and project-list source contracts;
 - accessibility semantics and touch-target contracts;
-- Ravelry auth, callable mapping, import confirmation, saved-pattern detail, and localization;
+- Ravelry auth operation ordering, exact callback shape, bounded callable inputs/upstream responses, callable mapping, import confirmation, saved-pattern detail, and localization;
 - web-pattern validation, canonical duplicate identity, legacy compatibility, repository rollback, project metadata/document independence, shared-text state restoration, external opening, editor semantics, IME order, and all 11 locales;
 - Firebase/release-surface boundaries;
 - Insights metrics, axis layout, selection, stitch lattice, project fabric, palette contrast, and ViewModel aggregation;
@@ -1635,6 +1673,7 @@ Questions:
 - Does migration 21 to 22 backfill exactly one primary relation per readable legacy project while preserving stable document keys and per-document reader state?
 - Does migration 22 to 23 add only empty folder/assignment tables and preserve every existing project-owned row and constraint?
 - Does migration 23 to 24 add only empty usage storage, preserve all 16 earlier tables, and keep source deletion distinct from project deletion?
+- Can any caller-sized `IN` query exceed SQLite's bind limit, or does it pass through the shared deduplicating 900-ID chunker while preserving that operation's intended validation and transaction boundary?
 
 Proof: migration execution against old schemas plus schema identity, not compilation alone.
 
@@ -1652,6 +1691,10 @@ Questions:
 
 - Is current state read inside the transaction?
 - Are count, history, stitch reset, and linked deltas atomic?
+- Are completed rows rejected, arithmetic saturated, and malformed/nonpositive step values normalized without overflow?
+- Does undo prove that the latest history row belongs to the project, ends at the current count, and has an action-consistent direction before reversing it?
+- Are stitch count, tracking state, and current stitch updated coherently rather than as race-prone separate writes?
+- Do additional-counter/reminder creation gates run inside the repository transaction, while edits verify ownership and preserve existing-content access?
 - Do app and widget paths call the same semantics?
 - Does cancellation propagate?
 - Are target and label strings built from shared formatting slots?
@@ -1667,6 +1710,7 @@ Questions:
 - Is `zoneId` captured at session start?
 - Are cross-midnight seconds split in the stored zone?
 - Does pace use `durationSeconds` and `rowsWorked`?
+- Does Stop save exactly the duration/rows/end-row summary the user reviewed, or can elapsed time/state advance behind the confirmation surface?
 - Can an initial empty flow replace the loading skeleton?
 - Does heavy history work run on `@IoDispatcher`?
 - Are Pro data-shaping and measured-data flags distinct?
@@ -1681,12 +1725,14 @@ Inspect `PatternDocumentStorage`, `PdfPageRenderer`, row-mapping calculators, vi
 Questions:
 
 - Is SAF access persisted or copied to app ownership correctly?
+- Does copied PDF input preserve a 32 MiB reserve, propagate cancellation, delete partial output, and prove at least one readable page before attachment?
 - Are Photo Picker results copied into app ownership before the external grant can expire?
 - Are page order, size limits, animated-image rejection, bounded decode, and transparent backgrounds preserved in the generated PDF?
 - Does cancellation remove staged images and any uncommitted PDF while leaving an already attached PDF intact?
 - Is a local PDF required for viewer entry?
 - Does `libraryPatternViewerRoute` reject a missing `localPdfUri` itself instead of relying only on the current detail-screen gate or falling back to `patternUrl`?
 - Are page resources bounded and closed?
+- Are row-mapping JSON and marker counts bounded, malformed elements isolated, duplicates deterministic, and writes bound to the initiating document rather than the later active document?
 - Are project reading-line fields durable while library-only fields remain session state?
 - Do manual page/line movement pause follow without creating markers, while explicit calibration still writes markers?
 - Do app and widget counter changes update count/history/page/Y atomically when following is enabled?
@@ -1708,7 +1754,9 @@ Questions:
 - Is master content read-only in project context?
 - Is project overlay retained across detach/reattach?
 - Is normalized geometry transformed once?
+- Are zero-length/zero-area shapes, blank text/callouts, invalid chart dimensions, and non-finite coordinates rejected before persistence/rendering?
 - Are pointer events persisted only at boundaries?
+- Can a late write from another document/layer contaminate the current undo/redo or error state?
 - Do viewer and export share the renderer?
 - Is temporary output cleaned on success, failure, and cancellation?
 
@@ -1736,6 +1784,7 @@ Inspect `YarnCardLinks`, `YarnCardRepository`, `ProjectYarnNoteRepository`, `Web
 Questions:
 
 - Are both sides of a yarn link changed together?
+- Does a nonzero yarn-card edit target an existing row, does new-card creation recheck `UNLIMITED_YARN`, and can quantity stepping overflow or become negative?
 - Is malformed CSV normalized centrally?
 - Does Save to My Yarn retain the project note and a single logical usage row without changing usage amounts or global inventory automatically?
 - Are Ravelry ID 0 and raw URL sentinels rejected?
@@ -1790,11 +1839,14 @@ Questions:
 - Is availability preserved as unknown when unknown?
 - Is a positive pattern ID required?
 - Does URL import validate the host/path?
+- Are search strings, filters, difficulty, pagination, IDs, callback values, slugs, and URLs rejected outside their documented bounds before backend work?
+- Are Ravelry API/token fetches timeout-bounded, redirect-rejecting, streamed under their 1 MiB/64 KiB caps, and sanitized before a response crosses the callable boundary?
 - Does a slug import require an exact canonical match rather than accepting the first search result?
 - Is PKCE state one-use and generation-bound?
 - Are malformed callback states rejected and the callback bucket consumed before any OAuth-state Firestore lookup?
 - Can disconnect prevent late writes?
 - Does refresh happen only after a limiter passes?
+- Do auth status and disconnect consume the same auth limiter as start/current-user, and does the public callback consume its bucket before state lookup?
 - Can two refreshes that finish out of order overwrite the newer access/refresh token, expiry, or generation?
 - Can current-user verification write stale credentials over a concurrent refresh?
 - Can Android read token documents or secrets?
@@ -1813,6 +1865,7 @@ Questions:
 - Is a ViewModel shared only within the correct graph?
 - Does invalid input return to the correct tab?
 - Does top-level state save/restore without duplicates?
+- Can a late project-selection, completion, deletion, counter/reminder creation, or child-data load mutate/close a different current project?
 - Is bottom navigation visible/hidden according to the explicit route list?
 
 Proof: navigation source tests and runtime back-stack behavior.
@@ -1834,6 +1887,8 @@ Questions:
 - Are theme tokens used in both light and dark themes?
 - Are decorative borders/stripes avoided?
 - Does TalkBack receive useful labels, roles, state, and custom chart actions?
+- Do whole-row switches/radio options expose one semantic action without a separately clickable child control, and do directional icons mirror in RTL?
+- Do completed-project actions hide active-only mutation/session controls and expose Reactivate without changing the fixed counter-workspace hierarchy?
 
 Proof: source contracts, Compose semantics tests, screenshot/device inspection at multiple widths/font scales/themes, and TalkBack review.
 
@@ -1846,6 +1901,7 @@ Questions:
 - Is the changed dependency actually present in the resolved variant?
 - Does a debug-only dependency leak into release?
 - Does release require real Firebase config and signing?
+- Does the keystore path exist, can a debug placeholder pass release verification, and is the base64 secret value kept out of Gradle input metadata?
 - Can lint-only bypass leak into an artifact task?
 - Is `app/google-services.json` untracked?
 - Are generated resources the only Firebase value source?
@@ -1863,7 +1919,7 @@ Questions:
 - Was a finding suppressed, accepted, filtered, or truly absent?
 - Does the DeepSec ignore boundary exclude only generated per-project data, including revalidation output, while leaving matcher/configuration source and tracked scanner documentation reviewable?
 - Does a wrapper return the delegated exit code?
-- Does Android CI omit Functions coverage?
+- Did both the Android job and the separate Node 22 Functions job run for the same revision, and did Functions install use the lockfile with lifecycle scripts disabled?
 - Is a hosted-runner failure distinct from a code failure?
 
 Proof: fresh analyzer-owned artifacts and exact run state.
@@ -1925,7 +1981,7 @@ Common stale assumptions:
 - Saved-pattern detail does not automatically mean PDF viewer.
 - A Ravelry link is metadata until a local PDF is attached.
 - A user-added web pattern is local metadata pointing to an external website; it is not an authored website page, downloaded pattern, offline copy, backend import, or project PDF.
-- The normal Saved Pattern UI gates library viewing on `localPdfUri`, but the internal viewer route still contains a `patternUrl` fallback and must not be treated as a defensive boundary.
+- Both the Saved Pattern UI and the internal library viewer route require a nonblank `localPdfUri`; there is no `patternUrl` or website fallback into PDF rendering.
 - `app/google-services.json` is ignored and required for release artifacts; debug can use a placeholder.
 - Signing and Firebase config are separate gates.
 - Sentry is debug-only.
@@ -1936,7 +1992,7 @@ Common stale assumptions:
 - Project reading-line calibration persists; library-only reading-line state does not.
 - Voice commands are absent.
 - `InstructionParser` is regex-only.
-- Android CI does not test Functions.
+- Build & Test has separate Android and Node 22 Functions jobs; a green Android job alone still does not prove Functions, and neither job proves deployment or live Ravelry/Firebase behavior.
 - `README.md` is not the current implementation source of truth.
 
 ## Relationship to repository documents

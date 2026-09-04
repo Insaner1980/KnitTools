@@ -3,9 +3,7 @@ package com.finnvek.knittools.ui.screens.pattern
 import android.Manifest
 import android.app.Activity
 import android.content.ActivityNotFoundException
-import android.content.Intent
 import android.net.Uri
-import android.provider.OpenableColumns
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -262,11 +260,7 @@ private fun rememberPatternPickerActions(
     val openDocumentLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
             uri ?: return@rememberLauncherForActivityResult
-            val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-            runCatching {
-                context.contentResolver.takePersistableUriPermission(uri, flags)
-            }
-            onDocumentSelected(uri.toString(), resolvePatternName(context, uri))
+            onDocumentSelected(uri.toString(), "")
             onDismiss()
         }
     val cameraLauncher =
@@ -317,6 +311,9 @@ private fun rememberPatternPickerActions(
                     imageImportViewModel.discardCameraCapture(uri, file)
                     clearPendingCapture()
                 } catch (_: IllegalStateException) {
+                    imageImportViewModel.discardCameraCapture(uri, file)
+                    clearPendingCapture()
+                } catch (_: SecurityException) {
                     imageImportViewModel.discardCameraCapture(uri, file)
                     clearPendingCapture()
                 }
@@ -542,20 +539,6 @@ private fun showCameraPermissionDeniedToast(context: android.content.Context) {
             R.string.camera_permission_denied
         }
     Toast.makeText(context, context.getString(messageRes), Toast.LENGTH_SHORT).show()
-}
-
-private fun resolvePatternName(
-    context: android.content.Context,
-    uri: Uri,
-): String {
-    context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
-        val columnIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-        if (columnIndex >= 0 && cursor.moveToFirst()) {
-            val fileName = cursor.getString(columnIndex)
-            if (!fileName.isNullOrBlank()) return fileName
-        }
-    }
-    return uri.lastPathSegment ?: context.getString(R.string.pattern_pdf_fallback_name)
 }
 
 private const val PATTERN_PDF_MIME_TYPE = "application/pdf"

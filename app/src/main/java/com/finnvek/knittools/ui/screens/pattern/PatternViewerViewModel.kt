@@ -380,12 +380,19 @@ class PatternViewerViewModel
                 initialDocumentSelectionApplied = true
                 return
             }
-            val restoredId = selectedDocumentId.value?.takeIf { id -> observed.any { it.id == id } }
+            val restored = selectedDocumentId.value?.let { id -> observed.firstOrNull { it.id == id } }
+            val primary = observed.firstOrNull(ProjectDocument::isPrimary)
+            val ordered = observed.sortedWith(compareBy(ProjectDocument::sortOrder, ProjectDocument::id))
             val fallback =
-                restoredId?.let { id -> observed.first { it.id == id } }
-                    ?: observed.firstOrNull(ProjectDocument::isPrimary)
-                    ?: observed.minWith(compareBy(ProjectDocument::sortOrder, ProjectDocument::id))
-            if (!initialDocumentSelectionApplied || restoredId == null) {
+                sequenceOf(restored, primary)
+                    .filterNotNull()
+                    .plus(ordered)
+                    .distinctBy(ProjectDocument::id)
+                    .firstOrNull { documentAvailability.value[it.id] == true }
+                    ?: restored
+                    ?: primary
+                    ?: ordered.first()
+            if (!initialDocumentSelectionApplied || restored?.id != fallback.id) {
                 initialDocumentSelectionApplied = true
                 if (documentAvailability.value[fallback.id] == true) {
                     selectDocument(fallback.id)

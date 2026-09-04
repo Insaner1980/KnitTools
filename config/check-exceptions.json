@@ -318,6 +318,23 @@
       ]
     },
     {
+      "id": "knittools-mobsf-hardcoded-project-creation-state-key",
+      "tool": "mobsfscan",
+      "rule": "android_kotlin_hardcoded",
+      "scope": "SavedStateHandle project creation key in ProjectListViewModel.kt",
+      "reason": "The exact MobSF match is a SavedStateHandle state key, not a credential or secret.",
+      "owner": "project-maintainers",
+      "added": "2026-09-04",
+      "expires": "2026-10-31",
+      "tracking": "local-review:knittools-mobsf-hardcoded-project-creation-state-key",
+      "sourcePath": "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectListViewModel.kt",
+      "selector": "PENDING_PROJECT_CREATION_KEY = \"pending_project_creation\"",
+      "findingPath": "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectListViewModel.kt",
+      "findingSelectors": [
+        "key = \"pending_project_creation\""
+      ]
+    },
+    {
       "id": "knittools-mobsf-hardcoded-project-document-model-test",
       "tool": "mobsfscan",
       "rule": "android_kotlin_hardcoded",
@@ -580,7 +597,7 @@
       "id": "knittools-osv-build-tool-metadata",
       "tool": "osv-scanner",
       "rule": "IgnoredVulns",
-      "scope": "67 advisory-specific build-tool findings in gradle/osv-scanner.toml",
+      "scope": "73 advisory-specific build-tool findings in gradle/osv-scanner.toml",
       "reason": "The registered advisories affect versions retained in Gradle verification metadata rather than the resolved application runtime classpaths.",
       "owner": "project-maintainers",
       "added": "2026-07-28",
@@ -588,19 +605,6 @@
       "tracking": "local-review:knittools-osv-build-tool-metadata",
       "sourcePath": "gradle/osv-scanner.toml",
       "selector": "[[IgnoredVulns]]"
-    },
-    {
-      "id": "knittools-osv-brace-expansion-ghsa-mh99",
-      "tool": "osv-scanner",
-      "rule": "GHSA-mh99-v99m-4gvg",
-      "scope": "brace-expansion 2.1.2 in functions/package-lock.json",
-      "reason": "Static triage found no source-to-sink path from untrusted Functions input to the transitive rimraf/glob brace-expansion API.",
-      "owner": "project-maintainers",
-      "added": "2026-07-28",
-      "expires": "2026-10-31",
-      "tracking": "local-review:knittools-osv-brace-expansion-ghsa-mh99",
-      "sourcePath": "gradle/osv-scanner.toml",
-      "selector": "GHSA-mh99-v99m-4gvg"
     },
     {
       "id": "knittools-osv-jackson-core-ghsa-r7wm",

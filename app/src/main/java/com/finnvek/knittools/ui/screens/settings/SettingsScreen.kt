@@ -9,11 +9,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -36,10 +40,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.BuildConfig
@@ -50,6 +56,8 @@ import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.ui.components.CollectWithLifecycleEffect
 import com.finnvek.knittools.ui.components.InfoTip
 import com.finnvek.knittools.ui.components.localizedUppercase
+import com.finnvek.knittools.ui.platform.ExternalWebLinkOpenResult
+import com.finnvek.knittools.ui.platform.openExternalWebLink
 import com.finnvek.knittools.ui.theme.knitToolsColors
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -61,6 +69,8 @@ fun SettingsScreen(
     val viewModel = viewModelProvider()
     val prefs by viewModel.preferences.collectAsStateWithLifecycle()
     val proState by viewModel.proState.collectAsStateWithLifecycle()
+    val proStateReady by viewModel.proStateReady.collectAsStateWithLifecycle()
+    val isRestoring by viewModel.isRestoring.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val resources = LocalResources.current
     val showLanguageSheet = remember { mutableStateOf(false) }
@@ -145,14 +155,22 @@ fun SettingsScreen(
             SettingsSelectionRow(
                 label = stringResource(R.string.knittools_pro),
                 supportingText = stringResource(R.string.pro_content_stays_available),
-                valueText = proState.settingsStatusText(),
+                valueText = proState.takeIf { proStateReady }?.settingsStatusText(),
                 onClick = onUpgradeToPro,
             )
             if (proState.status != ProStatus.PRO_PURCHASED) {
                 HorizontalDivider()
                 SettingsActionRow(
-                    label = stringResource(R.string.restore_purchases),
+                    label =
+                        stringResource(
+                            if (isRestoring) {
+                                R.string.restore_purchases_checking
+                            } else {
+                                R.string.restore_purchases
+                            },
+                        ),
                     onClick = viewModel::restorePurchases,
+                    isInProgress = isRestoring,
                 )
             }
 
@@ -162,11 +180,17 @@ fun SettingsScreen(
             SettingsActionRow(
                 label = stringResource(R.string.help_and_guide),
                 onClick = {
-                    val intent =
-                        androidx.browser.customtabs.CustomTabsIntent
-                            .Builder()
-                            .build()
-                    intent.launchUrl(context, "https://knittools.app/guide".toUri())
+                    val messageRes =
+                        when (openExternalWebLink(context, HELP_AND_GUIDE_URL)) {
+                            ExternalWebLinkOpenResult.Opened -> null
+                            ExternalWebLinkOpenResult.NoBrowser -> R.string.web_pattern_no_browser
+                            ExternalWebLinkOpenResult.InvalidUrl,
+                            ExternalWebLinkOpenResult.Failed,
+                            -> R.string.web_pattern_open_failed
+                        }
+                    messageRes?.let {
+                        Toast.makeText(context, resources.getString(it), Toast.LENGTH_SHORT).show()
+                    }
                 },
             )
 
@@ -224,9 +248,17 @@ private fun SectionHeader(title: String) {
 private fun SettingsActionRow(
     label: String,
     onClick: () -> Unit,
+    isInProgress: Boolean = false,
 ) {
-    SettingsClickableRow(onClick = onClick) {
-        Text(label)
+    SettingsClickableRow(onClick = onClick, enabled = !isInProgress) {
+        if (isInProgress) {
+            CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+            Spacer(modifier = Modifier.width(10.dp))
+        }
+        Text(
+            text = label,
+            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+        )
     }
 }
 
@@ -234,7 +266,7 @@ private fun SettingsActionRow(
 private fun SettingsSelectionRow(
     label: String,
     supportingText: String,
-    valueText: String,
+    valueText: String?,
     onClick: () -> Unit,
 ) {
     Row(
@@ -258,11 +290,15 @@ private fun SettingsSelectionRow(
             )
         }
         Spacer(modifier = Modifier.width(12.dp))
-        Text(
-            text = valueText,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.primary,
-        )
+        if (valueText == null) {
+            CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+        } else {
+            Text(
+                text = valueText,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
     }
 }
 
@@ -287,13 +323,16 @@ private fun SwitchRow(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .clickable { onCheckedChange(!checked) }
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .toggleable(
+                    value = checked,
+                    role = Role.Switch,
+                    onValueChange = onCheckedChange,
+                ).padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(label, modifier = Modifier.weight(1f))
         // CPD-ON
-        Switch(checked = checked, onCheckedChange = onCheckedChange)
+        Switch(checked = checked, onCheckedChange = null)
     }
 }
 
@@ -309,14 +348,17 @@ private fun SwitchRowWithTip(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .clickable { onCheckedChange(!checked) }
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .toggleable(
+                    value = checked,
+                    role = Role.Switch,
+                    onValueChange = onCheckedChange,
+                ).padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(label, modifier = Modifier.weight(1f))
         InfoTip(title = tipTitle, description = tipDescription)
         Spacer(modifier = Modifier.width(12.dp))
-        Switch(checked = checked, onCheckedChange = onCheckedChange)
+        Switch(checked = checked, onCheckedChange = null)
     }
 }
 
@@ -326,8 +368,18 @@ private fun ThemeRow(
     selected: Boolean,
     onClick: () -> Unit,
 ) {
-    SettingsClickableRow(onClick = onClick) {
-        RadioButton(selected = selected, onClick = onClick)
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .selectable(
+                    selected = selected,
+                    role = Role.RadioButton,
+                    onClick = onClick,
+                ).padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        RadioButton(selected = selected, onClick = null)
         Spacer(modifier = Modifier.width(12.dp))
         Text(label)
     }
@@ -336,19 +388,22 @@ private fun ThemeRow(
 @Composable
 private fun SettingsClickableRow(
     onClick: () -> Unit,
+    enabled: Boolean = true,
     content: @Composable () -> Unit,
 ) {
     Row(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .clickable(onClick = onClick)
+                .clickable(enabled = enabled, onClick = onClick)
                 .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         content()
     }
 }
+
+private const val HELP_AND_GUIDE_URL = "https://knittoolsapp.com/articles/"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -404,8 +459,11 @@ private fun LanguageOptionRow(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .clickable(onClick = onClick)
-                .padding(vertical = 14.dp),
+                .selectable(
+                    selected = selected,
+                    role = Role.RadioButton,
+                    onClick = onClick,
+                ).padding(vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(

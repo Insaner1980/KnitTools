@@ -146,10 +146,11 @@ fun PatternViewerScreen(
     onEditWebPattern: (Long) -> Unit,
     counterViewModelProvider: @Composable () -> CounterViewModel,
     patternViewerViewModelProvider: @Composable () -> PatternViewerViewModel,
-    annotationViewModel: PatternAnnotationViewModel,
+    annotationViewModelProvider: @Composable () -> PatternAnnotationViewModel,
 ) {
     val counterViewModel = counterViewModelProvider()
     val patternViewerViewModel = patternViewerViewModelProvider()
+    val annotationViewModel = annotationViewModelProvider()
     val counterState by counterViewModel.uiState.collectAsStateWithLifecycle()
     val savedPatterns by counterViewModel.savedPatterns.collectAsStateWithLifecycle()
     val bookmarkState by patternViewerViewModel.uiState.collectAsStateWithLifecycle()
@@ -169,7 +170,7 @@ fun PatternViewerScreen(
         rememberPatternRenderState(
             patternUri = patternUri,
             currentPage = currentPage,
-            onPageClamped = counterViewModel::updatePatternPage,
+            onPageClamped = { page -> counterViewModel.updatePatternPage(page, selectedDocument?.id) },
         )
     var rowCalibrationState by remember(selectedDocument?.id) { mutableStateOf<RowCalibrationState?>(null) }
     var readingLinePreviewYFraction by remember(selectedDocument?.id) {
@@ -271,12 +272,22 @@ fun PatternViewerScreen(
                 actions =
                     TopBarActions(
                         onBack = onBack,
-                        onJumpToPage = counterViewModel::updatePatternPage,
-                        onReadingLineToggle = counterViewModel::setReadingLineEnabled,
-                        onReadingLineFollowToggle = counterViewModel::setReadingLineFollowCurrentRow,
-                        onReturnToCurrentRow = counterViewModel::returnReadingLineToCurrentRow,
-                        onVerticalReadingGuideToggle = counterViewModel::setVerticalReadingGuideEnabled,
-                        onCenterVerticalReadingGuide = counterViewModel::centerVerticalReadingGuide,
+                        onJumpToPage = { page -> counterViewModel.updatePatternPage(page, selectedDocument?.id) },
+                        onReadingLineToggle = { enabled ->
+                            counterViewModel.setReadingLineEnabled(enabled, selectedDocument?.id)
+                        },
+                        onReadingLineFollowToggle = { enabled ->
+                            counterViewModel.setReadingLineFollowCurrentRow(enabled, selectedDocument?.id)
+                        },
+                        onReturnToCurrentRow = {
+                            counterViewModel.returnReadingLineToCurrentRow(selectedDocument?.id)
+                        },
+                        onVerticalReadingGuideToggle = { enabled ->
+                            counterViewModel.setVerticalReadingGuideEnabled(enabled, selectedDocument?.id)
+                        },
+                        onCenterVerticalReadingGuide = {
+                            counterViewModel.centerVerticalReadingGuide(selectedDocument?.id)
+                        },
                         onOpenBookmarks = {
                             patternViewerViewModel.selectNearestBookmark(
                                 pageIndex = currentPage,
@@ -290,19 +301,27 @@ fun PatternViewerScreen(
                                 row = counterState.counter.count,
                                 page = currentPage,
                                 yPosition = selectedDocument?.readingLineYFraction ?: DEFAULT_READING_LINE_Y_FRACTION,
+                                documentId = selectedDocument?.id,
+                                documentRowMapping = selectedDocument?.rowMapping,
                             )
                         },
                         onClearReadingLineRowMarker = {
                             counterViewModel.removePatternRowMarker(
                                 row = counterState.counter.count,
                                 page = currentPage,
+                                documentId = selectedDocument?.id,
+                                documentRowMapping = selectedDocument?.rowMapping,
                             )
                         },
                         onClearReadingLinePageMarkers = {
-                            counterViewModel.removePatternRowMarkersForPage(currentPage)
+                            counterViewModel.removePatternRowMarkersForPage(
+                                page = currentPage,
+                                documentId = selectedDocument?.id,
+                                documentRowMapping = selectedDocument?.rowMapping,
+                            )
                         },
                         onStartRowCalibration = {
-                            counterViewModel.setReadingLineEnabled(true)
+                            counterViewModel.setReadingLineEnabled(true, selectedDocument?.id)
                             rowCalibrationState =
                                 RowCalibrationState(
                                     rowInput = counterState.counter.count.toString(),
@@ -324,8 +343,12 @@ fun PatternViewerScreen(
                     BottomBarActions(
                         onPreviousRow = counterViewModel::decrement,
                         onNextRow = counterViewModel::increment,
-                        onPreviousPage = { counterViewModel.updatePatternPage(currentPage - 1) },
-                        onNextPage = { counterViewModel.updatePatternPage(currentPage + 1) },
+                        onPreviousPage = {
+                            counterViewModel.updatePatternPage(currentPage - 1, selectedDocument?.id)
+                        },
+                        onNextPage = {
+                            counterViewModel.updatePatternPage(currentPage + 1, selectedDocument?.id)
+                        },
                     ),
             )
         },
@@ -389,7 +412,11 @@ fun PatternViewerScreen(
                         if (markers == null) {
                             rowCalibrationState = calibrationState.copy(showInvalidRowError = true)
                         } else {
-                            counterViewModel.mergePatternRowMarkers(markers)
+                            counterViewModel.mergePatternRowMarkers(
+                                markersToMerge = markers,
+                                documentId = selectedDocument?.id,
+                                documentRowMapping = selectedDocument?.rowMapping,
+                            )
                             rowCalibrationState = null
                         }
                     },
@@ -430,7 +457,7 @@ fun PatternViewerScreen(
                             val sanitizedYFraction = sanitizeReadingLineYFraction(yFraction)
                             isReadingLineDragging = false
                             readingLinePreviewYFraction = sanitizedYFraction
-                            counterViewModel.commitManualReadingLinePosition(sanitizedYFraction)
+                            counterViewModel.commitManualReadingLinePosition(sanitizedYFraction, selectedDocument?.id)
                         },
                         onReadingLineDragCancel = {
                             isReadingLineDragging = false
@@ -448,7 +475,10 @@ fun PatternViewerScreen(
                             val sanitizedXFraction = sanitizeReadingGuideFraction(xFraction)
                             isVerticalGuideDragging = false
                             verticalGuidePreviewXFraction = sanitizedXFraction
-                            counterViewModel.updateVerticalReadingGuideXFraction(sanitizedXFraction)
+                            counterViewModel.updateVerticalReadingGuideXFraction(
+                                xFraction = sanitizedXFraction,
+                                documentId = selectedDocument?.id,
+                            )
                         },
                         onVerticalGuideDragCancel = {
                             isVerticalGuideDragging = false
@@ -1205,8 +1235,9 @@ fun LibraryPatternViewerScreen(
     patternUri: String?,
     patternName: String?,
     onBack: () -> Unit,
-    annotationViewModel: PatternAnnotationViewModel,
+    annotationViewModelProvider: @Composable () -> PatternAnnotationViewModel,
 ) {
+    val annotationViewModel = annotationViewModelProvider()
     val annotationState by annotationViewModel.uiState.collectAsStateWithLifecycle()
     var currentPage by rememberSaveable(patternUri) { mutableIntStateOf(0) }
     var readingLineEnabled by rememberSaveable(patternUri) { mutableStateOf(false) }
@@ -1341,20 +1372,27 @@ private fun rememberPatternRenderState(
         renderer = null
         rendererError = null
         if (patternUri == null) return@LaunchedEffect
-        val createdRenderer =
-            withContext(AppDispatchers.IO) {
-                runCatching { PdfPageRenderer(context, patternUri.toUri()) }
-            }
-        createdRenderer
-            .onSuccess { pdfRenderer ->
-                renderer = pdfRenderer
-                val clampedPage = clampPatternPage(currentPage, pdfRenderer.pageCount)
-                if (currentPage != clampedPage) {
-                    onPageClamped(clampedPage)
+        var pendingRenderer: PdfPageRenderer? = null
+        try {
+            val createdRenderer =
+                withContext(AppDispatchers.IO) {
+                    runCatching { PdfPageRenderer(context, patternUri.toUri()) }
+                        .also { pendingRenderer = it.getOrNull() }
                 }
-            }.onFailure {
-                rendererError = patternOpenFailed
-            }
+            pendingRenderer = null
+            createdRenderer
+                .onSuccess { pdfRenderer ->
+                    renderer = pdfRenderer
+                    val clampedPage = clampPatternPage(currentPage, pdfRenderer.pageCount)
+                    if (currentPage != clampedPage) {
+                        onPageClamped(clampedPage)
+                    }
+                }.onFailure {
+                    rendererError = patternOpenFailed
+                }
+        } finally {
+            pendingRenderer?.close()
+        }
     }
 
     DisposableEffect(patternUri) {
@@ -1374,12 +1412,21 @@ private fun rememberPatternRenderState(
             renderer ?: run {
                 return@produceState
             }
-        value =
-            withContext(AppDispatchers.IO) {
-                runCatching {
-                    activeRenderer.renderPage(currentPage, 1600)
-                }.getOrNull()
-            }
+        var pendingBitmap: Bitmap? = null
+        try {
+            val bitmap =
+                withContext(AppDispatchers.IO) {
+                    runCatching {
+                        activeRenderer.renderPage(currentPage, 1600)
+                    }.getOrNull()
+                        .also { pendingBitmap = it }
+                }
+            pendingBitmap = null
+            value = bitmap
+            awaitDispose { bitmap?.recycle() }
+        } finally {
+            pendingBitmap?.recycle()
+        }
     }
 
     return PatternRenderState(

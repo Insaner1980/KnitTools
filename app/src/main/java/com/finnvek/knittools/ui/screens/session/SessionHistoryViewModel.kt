@@ -31,8 +31,8 @@ class SessionHistoryViewModel
         init {
             projectId?.let { loadedProjectId ->
                 viewModelScope.launch {
-                    if (repository.getProject(loadedProjectId) == null) {
-                        _projectMissing.value = true
+                    repository.observeProject(loadedProjectId).collect { project ->
+                        _projectMissing.value = project == null
                     }
                 }
             }

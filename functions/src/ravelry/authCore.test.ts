@@ -305,6 +305,62 @@ describe("Ravelry OAuth2 auth core", () => {
     assert.equal(exchangeCount, 0);
   });
 
+  it("bounds callback values and does not reflect arbitrary OAuth errors to the app", async () => {
+    const stateStore = new MemoryOAuthStateStore();
+    const tokenStore = new MemoryTokenStore();
+    const state = callbackState("bounded-callback");
+    await stateStore.saveState({
+      state,
+      uid: "uid",
+      authType: "oauth2",
+      createdAtMillis: 0,
+      expiresAtMillis: 2_000,
+      usedAtMillis: null,
+      redirectUri: "https://callback",
+      codeVerifier: "verifier",
+      codeChallenge: "challenge",
+      codeChallengeMethod: "S256",
+    });
+
+    const result = await completeCallback({
+      query: { state, error: "token-shaped-private-error" },
+      stateStore,
+      tokenStore,
+      exchange: async () => ({ accessToken: "not-used" }),
+      nowMillis: () => 1_000,
+    });
+
+    assert.equal(
+      result.redirectUrl,
+      `knittools://ravelry-auth-complete?state=${state}&error=oauth_error`,
+    );
+    assert.equal(result.redirectUrl.includes("token-shaped-private-error"), false);
+
+    const codeState = callbackState("oversized-code");
+    await stateStore.saveState({
+      state: codeState,
+      uid: "uid",
+      authType: "oauth2",
+      createdAtMillis: 0,
+      expiresAtMillis: 2_000,
+      usedAtMillis: null,
+      redirectUri: "https://callback",
+      codeVerifier: "verifier",
+      codeChallenge: "challenge",
+      codeChallengeMethod: "S256",
+    });
+    await assert.rejects(
+      completeCallback({
+        query: { state: codeState, code: "A".repeat(2_049) },
+        stateStore,
+        tokenStore,
+        exchange: async () => ({ accessToken: "not-used" }),
+        nowMillis: () => 1_000,
+      }),
+      /invalid_code/,
+    );
+  });
+
   it("exchanges a valid callback code, stores tokens, marks state used, and redirects to the app", async () => {
     const stateStore = new MemoryOAuthStateStore();
     const tokenStore = new MemoryTokenStore();

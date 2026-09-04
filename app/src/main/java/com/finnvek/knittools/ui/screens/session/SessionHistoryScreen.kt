@@ -29,10 +29,8 @@ import com.finnvek.knittools.ui.components.localizedUppercase
 import com.finnvek.knittools.ui.theme.knitToolsColors
 
 @Composable
-fun SessionHistoryScreen(
-    onBack: () -> Unit,
-    viewModel: SessionHistoryViewModel = hiltViewModel(),
-) {
+fun SessionHistoryScreen(onBack: () -> Unit) {
+    val viewModel: SessionHistoryViewModel = hiltViewModel()
     val sessions by viewModel.sessions.collectAsStateWithLifecycle()
     val projectMissing by viewModel.projectMissing.collectAsStateWithLifecycle()
     val projectName by viewModel.projectName.collectAsStateWithLifecycle()

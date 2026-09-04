@@ -123,6 +123,32 @@ class CounterStitchTrackingSourceTest {
         assertTrue(counterRepository.contains("dao.updateCurrentStitch(id, 0, updatedAt)"))
     }
 
+    @Test
+    fun `stitch settings and changes use repository transactions`() {
+        val counterViewModel = ProjectSourceFiles.read(COUNTER_VIEW_MODEL)
+        val counterRepository = ProjectSourceFiles.read(COUNTER_REPOSITORY)
+        val counterDao = ProjectSourceFiles.read(COUNTER_PROJECT_DAO)
+
+        assertTrue(counterRepository.contains("suspend fun applyStitchChange("))
+        assertTrue(counterRepository.contains("transactionRunner.run"))
+        assertTrue(counterRepository.contains("dao.updateStitchState("))
+        assertTrue(counterDao.contains("suspend fun updateStitchState("))
+        assertTrue(counterViewModel.contains("changeStitch(increment = true)"))
+        assertTrue(counterViewModel.contains("changeStitch(increment = false)"))
+        assertTrue(counterViewModel.contains("repository.applyStitchChange(projectId, increment)"))
+        assertFalse(counterViewModel.contains("repository.updateCurrentStitch(projectId"))
+    }
+
+    @Test
+    fun `stitch dialog rejects empty zero and overflow input instead of treating it as deletion`() {
+        val counterScreen = ProjectSourceFiles.read(COUNTER_SCREEN)
+
+        assertTrue(counterScreen.contains("stitchInput.toIntOrNull()?.takeIf { it > 0 }"))
+        assertTrue(counterScreen.contains("enabled = parsedStitchCount != null"))
+        assertTrue(counterScreen.contains("onClick = { parsedStitchCount?.let(onConfirm) }"))
+        assertTrue(counterScreen.contains("onClick = { onConfirm(null) }"))
+    }
+
     private companion object {
         private const val COUNTER_VIEW_MODEL =
             "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterViewModel.kt"
@@ -143,5 +169,7 @@ class CounterStitchTrackingSourceTest {
             "app/src/main/java/com/finnvek/knittools/widget/CounterWidgetActions.kt"
         private const val COUNTER_REPOSITORY =
             "app/src/main/java/com/finnvek/knittools/repository/CounterRepository.kt"
+        private const val COUNTER_PROJECT_DAO =
+            "app/src/main/java/com/finnvek/knittools/data/local/CounterProjectDao.kt"
     }
 }

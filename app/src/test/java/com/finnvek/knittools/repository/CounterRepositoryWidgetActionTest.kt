@@ -33,6 +33,7 @@ class CounterRepositoryWidgetActionTest {
                     name = "Sukat",
                     count = 10,
                     stepSize = 5,
+                    stitchCount = 80,
                     stitchTrackingEnabled = true,
                     currentStitch = 12,
                 )

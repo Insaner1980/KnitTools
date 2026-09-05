@@ -10,7 +10,7 @@ Use [`CLAUDE.md`](CLAUDE.md) when product wording, visual direction, or UX struc
 - Kotlin + Jetpack Compose + Material 3
 - Hilt, Room, DataStore, Glance
 - Room schema version `24`
-- AGP `9.3.1` + Kotlin Compose plugin `2.4.10`
+- AGP `9.4.0` + Kotlin Compose plugin `2.4.10`
 - Gradle daemon and CI use Eclipse Temurin JDK `17`
 - Detekt `2.0.0-alpha.5` and Baseline Profile/Benchmark `1.5.0-beta01` are temporary AGP 9 compatibility exceptions; keep them until stable compatible releases are verified
 

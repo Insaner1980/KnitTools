@@ -34,7 +34,7 @@ sonarqube = "7.3.1.8318"
 sentry = "8.43.1"
 
 baselineprofile = "1.5.0-beta01"
-wire = "6.3.0"
+wire = "6.4.7"
 profileinstaller = "1.4.1"
 splashscreen = "1.2.0"
 playReview = "2.0.2"

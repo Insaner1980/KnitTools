@@ -150,7 +150,7 @@ reason = "Gradle verification metadata records org.apache.httpcomponents:httpcli
 [[IgnoredVulns]]
 id = "GHSA-7xpr-hc2w-34m9"
 ignoreUntil = 2026-10-31
-reason = "Gradle verification metadata retains wire-runtime 6.0.0, but the root resolution policy upgrades active benchmark configurations to fixed 6.3.0; app debug/release runtime has no Wire."
+reason = "Gradle verification metadata retains wire-runtime 6.0.0, but the root resolution policy upgrades active benchmark configurations to fixed 6.4.7; app debug/release runtime has no Wire."
 
 [[IgnoredVulns]]
 id = "GHSA-84h7-rjj3-6jx4"

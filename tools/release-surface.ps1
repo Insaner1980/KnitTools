@@ -1019,11 +1019,29 @@ function Test-RoomSchema {
         $databasePath = $databaseFiles[0]
         $firstPath = $databasePath
         $databaseText = Read-TextFile $databasePath
-        if ($databaseText -notmatch '(?s)@Database\s*\(.*?version\s*=\s*(\d+)') {
+        $versionMatch = [regex]::Match(
+            $databaseText,
+            '(?s)@Database\s*\(.*?version\s*=\s*([A-Za-z_][A-Za-z0-9_]*|\d+)'
+        )
+        if (-not $versionMatch.Success) {
             Add-Fail -Check $check -Message "database version could not be parsed" -RelativePath $databasePath -Line (Get-LineNumber -RelativePath $databasePath -Pattern "@Database")
             return
         }
-        $version = [int]$Matches[1]
+        $versionExpression = $versionMatch.Groups[1].Value
+        if ($versionExpression -match '^\d+$') {
+            $version = [int]$versionExpression
+        } else {
+            $escapedVersionName = [regex]::Escape($versionExpression)
+            $constantMatch = [regex]::Match(
+                $databaseText,
+                "(?m)^\s*const\s+val\s+$escapedVersionName\s*=\s*(\d+)\s*$"
+            )
+            if (-not $constantMatch.Success) {
+                Add-Fail -Check $check -Message "database version constant could not be resolved" -RelativePath $databasePath -Line (Get-LineNumber -RelativePath $databasePath -Pattern $versionExpression)
+                return
+            }
+            $version = [int]$constantMatch.Groups[1].Value
+        }
 
         $problems = @()
         if ($databaseText -notmatch '(?s)@Database\s*\(.*?exportSchema\s*=\s*true') {

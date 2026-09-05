@@ -372,7 +372,7 @@ try {
                 param($fixture)
                 $path = Join-Path $fixture "app/src/main/java/com/finnvek/knittools/data/local/KnitToolsDatabase.kt"
                 $text = Get-Content -Raw -LiteralPath $path
-                $versionPattern = [regex]'(?s)(@Database\s*\(.*?version\s*=\s*)(\d+)'
+                $versionPattern = [regex]'(?m)^(\s*const\s+val\s+KNITTOOLS_DATABASE_VERSION\s*=\s*)(\d+)'
                 $versionMatch = $versionPattern.Match($text)
                 if (-not $versionMatch.Success) {
                     throw "Room database version not found"

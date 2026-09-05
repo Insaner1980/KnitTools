@@ -4,8 +4,11 @@ import com.google.android.gms.tasks.Task
 import com.google.firebase.auth.AuthResult
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -54,7 +57,9 @@ class FirebaseAnonymousAuthGateway
                 try {
                     await()
                 } finally {
-                    clearInFlightSignIn(this)
+                    withContext(NonCancellable) {
+                        clearInFlightSignIn(this@awaitSignIn)
+                    }
                 }
             return result.user?.uid ?: throw FirebaseAnonymousAuthException()
         }

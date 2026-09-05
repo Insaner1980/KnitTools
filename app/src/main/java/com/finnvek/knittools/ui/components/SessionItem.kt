@@ -17,9 +17,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.DurationDisplayFormatter
+import com.finnvek.knittools.ui.theme.ComponentDimens
 import com.finnvek.knittools.ui.theme.knitToolsColors
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -39,11 +39,11 @@ fun SessionItem(
         modifier = modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.surfaceVariant,
-        tonalElevation = 0.dp,
-        shadowElevation = 0.dp,
+        tonalElevation = ComponentDimens.FlatElevation,
+        shadowElevation = ComponentDimens.FlatElevation,
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(ComponentDimens.ContentPadding),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -69,7 +69,7 @@ fun SessionItem(
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(ComponentDimens.CompactSpacing))
             Text(
                 // "Rows 18 → 18" luki virheenä. Ilman edistystä riittää yksi rivinumero.
                 text =

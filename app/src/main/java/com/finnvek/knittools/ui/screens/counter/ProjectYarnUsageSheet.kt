@@ -117,7 +117,9 @@ fun ProjectYarnUsageSheet(
                     style = MaterialTheme.typography.bodyMedium,
                 )
             }
-            YarnUsageField.entries.take(3).forEach { field -> UsageField(draft, field, actions.onEdit) }
+            UsageField(draft, YarnUsageField.PLANNED, actions.onEdit, isLast = false)
+            UsageField(draft, YarnUsageField.ALLOCATED, actions.onEdit, isLast = false)
+            UsageField(draft, YarnUsageField.USED, actions.onEdit, isLast = !draft.conversionEnabled)
             TextButton(
                 onClick = { actions.onConversion(!draft.conversionEnabled) },
                 enabled = !state.busy,
@@ -134,8 +136,8 @@ fun ProjectYarnUsageSheet(
                 )
             }
             if (draft.conversionEnabled) {
-                UsageField(draft, YarnUsageField.LENGTH, actions.onEdit)
-                UsageField(draft, YarnUsageField.WEIGHT, actions.onEdit)
+                UsageField(draft, YarnUsageField.LENGTH, actions.onEdit, isLast = false)
+                UsageField(draft, YarnUsageField.WEIGHT, actions.onEdit, isLast = true)
                 if (!draft.conversionValid) {
                     Text(
                         stringResource(R.string.yarn_usage_conversion_required),
@@ -208,6 +210,7 @@ private fun UsageField(
     draft: YarnUsageDraft,
     field: YarnUsageField,
     onEdit: (YarnUsageField, String, Locale) -> Unit,
+    isLast: Boolean,
 ) {
     val input = draft.input(field)
     val locale = rememberCurrentLocale()
@@ -249,8 +252,7 @@ private fun UsageField(
                 isDecimal = true,
                 preserveRawInput = true,
                 allowZero = !ratio,
-                isLast =
-                    field == YarnUsageField.WEIGHT || field == YarnUsageField.USED,
+                isLast = isLast,
             ),
         errorMessage = error?.let { stringResource(it) },
         inputModifier = Modifier.testTag("yarn_usage_input_${field.name}"),

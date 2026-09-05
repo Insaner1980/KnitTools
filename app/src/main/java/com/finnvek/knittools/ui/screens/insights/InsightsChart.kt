@@ -38,13 +38,14 @@ import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.ui.components.localizedDateTimePattern
+import com.finnvek.knittools.ui.components.rememberCurrentLocale
 import com.finnvek.knittools.ui.components.uppercaseForDisplay
 import com.finnvek.knittools.ui.theme.InsightsDimens
+import com.finnvek.knittools.ui.theme.insightsChartAxis
 import com.finnvek.knittools.ui.theme.knitToolsColors
 import com.finnvek.knittools.ui.theme.yarnColorForId
 import java.time.LocalDate
@@ -531,11 +532,7 @@ private fun ChartAxisLabels(
 private fun ChartAxisLabel(text: String) {
     Text(
         text = text,
-        style =
-            MaterialTheme.typography.labelMedium.copy(
-                fontSize = InsightsDimens.ChartAxisLabelFontSize,
-                fontWeight = FontWeight.SemiBold,
-            ),
+        style = MaterialTheme.typography.insightsChartAxis,
         color = MaterialTheme.knitToolsColors.onSurfaceMuted,
         maxLines = 1,
         softWrap = false,
@@ -557,7 +554,7 @@ internal fun bucketLabel(
     bucketStart: LocalDate,
     interval: PaceGroupingInterval,
 ): String {
-    val locale = currentInsightsLocale()
+    val locale = rememberCurrentLocale()
     val skeleton =
         when (interval) {
             PaceGroupingInterval.MONTH -> "yMMMM"
@@ -584,7 +581,7 @@ private fun axisLabel(
     interval: PaceGroupingInterval,
     timeRange: TimeRange,
 ): String {
-    val locale: Locale = currentInsightsLocale()
+    val locale: Locale = rememberCurrentLocale()
     val skeleton =
         when {
             interval == PaceGroupingInterval.MONTH -> "MMM"

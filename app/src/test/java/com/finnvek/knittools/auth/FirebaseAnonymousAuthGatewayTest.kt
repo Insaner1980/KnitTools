@@ -1,8 +1,6 @@
 package com.finnvek.knittools.auth
 
-import com.google.android.gms.tasks.OnCanceledListener
-import com.google.android.gms.tasks.OnFailureListener
-import com.google.android.gms.tasks.OnSuccessListener
+import com.google.android.gms.tasks.OnCompleteListener
 import com.google.android.gms.tasks.Task
 import com.google.firebase.auth.AuthResult
 import com.google.firebase.auth.FirebaseAuth
@@ -15,10 +13,12 @@ import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import java.util.concurrent.Executor
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class FirebaseAnonymousAuthGatewayTest {
@@ -73,6 +73,43 @@ class FirebaseAnonymousAuthGatewayTest {
         }
 
     @Test
+    fun `cancelled sign in waiter clears the shared task for a later retry`() =
+        runTest {
+            val firebaseAuth = mockk<FirebaseAuth>()
+            val cancelledTask = pendingTask<AuthResult>()
+            val retryTask = pendingTask<AuthResult>()
+            val reloadTask = pendingTask<Void?>()
+            val cachedUser =
+                mockk<FirebaseUser> {
+                    every { uid } returns "cached-uid"
+                    every { reload() } returns reloadTask.task
+                }
+            var showCachedUser = false
+            every { firebaseAuth.currentUser } answers { cachedUser.takeIf { showCachedUser } }
+            every { firebaseAuth.signInAnonymously() } returns cancelledTask.task andThen retryTask.task
+            val gateway = FirebaseAnonymousAuthGateway(firebaseAuth)
+
+            val cancelledWaiter = async { gateway.ensureSignedIn() }
+            runCurrent()
+
+            showCachedUser = true
+            val mutexHolder = async { gateway.ensureSignedIn() }
+            runCurrent()
+            cancelledWaiter.cancel()
+            runCurrent()
+            reloadTask.succeed(null)
+            assertEquals("cached-uid", mutexHolder.await())
+            cancelledWaiter.join()
+
+            showCachedUser = false
+            val retryWaiter = async { gateway.ensureSignedIn() }
+            runCurrent()
+
+            verify(exactly = 2) { firebaseAuth.signInAnonymously() }
+            retryWaiter.cancelAndJoin()
+        }
+
+    @Test
     fun `wiped cached anonymous user signs out and creates a new anonymous user`() =
         runTest {
             val firebaseAuth = mockk<FirebaseAuth>()
@@ -111,33 +148,27 @@ class FirebaseAnonymousAuthGatewayTest {
     // CPD-OFF: Testin skenaariokohtainen asetelma pidetaan paikallisena ja luettavana.
     private fun <T> successTask(value: T): Task<T> {
         val task = mockk<Task<T>>()
-        every { task.addOnSuccessListener(any()) } answers {
-            firstArg<OnSuccessListener<T>>().onSuccess(value)
-            task
-        }
-        every { task.addOnFailureListener(any()) } returns task
-        every { task.addOnCanceledListener(any()) } returns task
+        every { task.isComplete } returns true
+        every { task.isCanceled } returns false
+        every { task.exception } returns null
+        every { task.result } returns value
         return task
     }
 
     private fun <T> failureTask(error: Exception): Task<T> {
         val task = mockk<Task<T>>()
-        every { task.addOnSuccessListener(any()) } returns task
-        every { task.addOnFailureListener(any()) } answers {
-            firstArg<OnFailureListener>().onFailure(error)
-            task
-        }
-        // CPD-ON
-        every { task.addOnCanceledListener(any()) } returns task
+        every { task.isComplete } returns true
+        every { task.exception } returns error
         return task
     }
+    // CPD-ON
 
     private fun <T> pendingTask(): PendingTask<T> = PendingTask()
 
     private class PendingTask<T> {
-        private val successListeners = mutableListOf<OnSuccessListener<T>>()
-        private val failureListeners = mutableListOf<OnFailureListener>()
-        private val canceledListeners = mutableListOf<OnCanceledListener>()
+        private val completionListeners = mutableListOf<OnCompleteListener<T>>()
+        private var resultValue: Any? = null
+        private var failure: Exception? = null
         var isComplete = false
             private set
 
@@ -145,29 +176,33 @@ class FirebaseAnonymousAuthGatewayTest {
         val task: Task<T> = mockk()
 
         init {
-            every { task.addOnSuccessListener(any()) } answers {
-                successListeners += firstArg<OnSuccessListener<T>>()
-                task
-            }
-            every { task.addOnFailureListener(any()) } answers {
-                failureListeners += firstArg<OnFailureListener>()
-                task
-            }
-            // CPD-ON
-            every { task.addOnCanceledListener(any()) } answers {
-                canceledListeners += firstArg<OnCanceledListener>()
+            every { task.isComplete } answers { isComplete }
+            every { task.isCanceled } returns false
+            every { task.exception } answers { failure }
+            @Suppress("UNCHECKED_CAST")
+            every { task.result } answers { resultValue as T }
+            every {
+                task.addOnCompleteListener(
+                    any<Executor>(),
+                    any<OnCompleteListener<T>>(),
+                )
+            } answers {
+                completionListeners += secondArg<OnCompleteListener<T>>()
                 task
             }
         }
+        // CPD-ON
 
         fun succeed(value: T) {
+            resultValue = value
             isComplete = true
-            successListeners.forEach { it.onSuccess(value) }
+            completionListeners.forEach { it.onComplete(task) }
         }
 
         fun fail(error: Exception) {
+            failure = error
             isComplete = true
-            failureListeners.forEach { it.onFailure(error) }
+            completionListeners.forEach { it.onComplete(task) }
         }
     }
 }

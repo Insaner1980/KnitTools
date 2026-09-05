@@ -125,6 +125,7 @@ fun NumberInputField(
                             newValue,
                             options.isDecimal,
                             options.allowNegative,
+                            locale,
                         )
                     },
                 )
@@ -227,8 +228,8 @@ private fun filterNumericInput(
     value: String,
     isDecimal: Boolean,
     allowNegative: Boolean,
+    locale: Locale,
 ): String {
-    val locale = Locale.getDefault()
     val parsed =
         MeasurementNumberParser.parse(
             value,

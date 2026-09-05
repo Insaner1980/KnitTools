@@ -169,6 +169,13 @@ class WebPatternUrlTest {
         assertInvalid("https://example.com/" + "a".repeat(2_100))
     }
 
+    @Test
+    fun `distinguishes required and non-web URL input`() {
+        assertEquals(WebPatternUrlValidation.Required, validateWebPatternUrl(" "))
+        assertEquals(WebPatternUrlValidation.WebOnly, validateWebPatternUrl("ftp://example.com/pattern"))
+        assertEquals(WebPatternUrlValidation.WebOnly, validateWebPatternUrl("example.com/pattern"))
+    }
+
     private fun validUrl(input: String): WebPatternUrl {
         val result = validateWebPatternUrl(input)
         assertTrue("Expected valid URL but got $result for $input", result is WebPatternUrlValidation.Valid)
@@ -178,7 +185,7 @@ class WebPatternUrlTest {
     private fun assertInvalid(input: String) {
         assertTrue(
             "Expected invalid URL for $input",
-            validateWebPatternUrl(input) is WebPatternUrlValidation.Invalid,
+            validateWebPatternUrl(input) !is WebPatternUrlValidation.Valid,
         )
     }
 }

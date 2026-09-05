@@ -34,6 +34,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -44,6 +45,8 @@ import com.finnvek.knittools.ui.components.ProPromptRequest
 import com.finnvek.knittools.ui.components.ProPromptSheet
 import com.finnvek.knittools.ui.components.ProPromptSource
 import com.finnvek.knittools.ui.components.RemotePatternImage
+import com.finnvek.knittools.ui.components.StatusMessage
+import com.finnvek.knittools.ui.components.StatusMessageType
 import com.finnvek.knittools.ui.components.ToolScreenScaffold
 import com.finnvek.knittools.ui.theme.RavelryTeal
 
@@ -213,9 +216,9 @@ private fun PatternDetailBody(
                 modifier = modifier.fillMaxSize().padding(16.dp),
                 contentAlignment = Alignment.Center,
             ) {
-                com.finnvek.knittools.ui.components.StatusMessage(
+                StatusMessage(
                     message = stringResource(detailError.detailMessageRes()),
-                    type = com.finnvek.knittools.ui.components.StatusMessageType.Error,
+                    type = StatusMessageType.Error,
                     actionLabel =
                         stringResource(
                             if (isAuthenticationError) {
@@ -346,13 +349,17 @@ private fun PatternNotes(notes: String?) {
     notes?.takeIf { it.isNotBlank() }?.let { text ->
         Spacer(modifier = Modifier.height(16.dp))
         var expanded by rememberSaveable { mutableStateOf(false) }
+        var hasVisualOverflow by rememberSaveable(text) { mutableStateOf(false) }
         Text(
             text = text,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = if (expanded) Int.MAX_VALUE else 4,
+            onTextLayout = { layout ->
+                if (!expanded) hasVisualOverflow = layout.hasVisualOverflow
+            },
         )
-        if (text.length > 200) {
+        if (hasVisualOverflow || expanded) {
             TextButton(onClick = { expanded = !expanded }) {
                 Text(stringResource(if (expanded) R.string.show_less else R.string.show_more))
             }
@@ -415,7 +422,7 @@ private fun DetailRow(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.width(120.dp),
             maxLines = 1,
-            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            overflow = TextOverflow.Ellipsis,
         )
         Text(
             text = value,

@@ -229,8 +229,16 @@ class WebPatternEditorViewModel
                 try {
                     val result =
                         if (currentRoute.origin == WebPatternEditorOrigin.Edit) {
-                            val patternId = currentRoute.patternId ?: return@launch
-                            val expectedUpdatedAt = state.expectedUpdatedAt ?: return@launch
+                            val patternId =
+                                currentRoute.patternId ?: run {
+                                    mutableUiState.update { it.copy(error = WebPatternEditorError.PatternUnavailable) }
+                                    return@launch
+                                }
+                            val expectedUpdatedAt =
+                                state.expectedUpdatedAt ?: run {
+                                    mutableUiState.update { it.copy(error = WebPatternEditorError.StaleAction) }
+                                    return@launch
+                                }
                             savedPatternRepository.updateWebPattern(patternId, expectedUpdatedAt, input)
                         } else {
                             savedPatternRepository.createWebPattern(input)

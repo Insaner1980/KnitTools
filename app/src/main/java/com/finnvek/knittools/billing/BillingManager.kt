@@ -248,6 +248,8 @@ class BillingManager
             connectionRetryJob = null
             billingClient?.endConnection()
             billingClient = null
+            acknowledgementsInFlight.clear()
+            pendingAcknowledgementRetries.clear()
             _purchaseStateReady.value = false
             _purchaseFlowInFlight.value = false
         }

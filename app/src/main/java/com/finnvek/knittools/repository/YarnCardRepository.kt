@@ -122,7 +122,10 @@ class YarnCardRepository
         suspend fun updateQuantity(
             id: Long,
             quantity: Int,
-        ): Boolean = dao.updateQuantity(id, quantity) > 0
+        ): Boolean {
+            if (quantity < 0) return false
+            return dao.updateQuantity(id, quantity) > 0
+        }
 
         suspend fun changeQuantity(
             id: Long,
@@ -138,7 +141,7 @@ class YarnCardRepository
         suspend fun updateStatus(
             id: Long,
             status: String,
-        ): Boolean = dao.updateStatus(id, status) > 0
+        ): Boolean = dao.updateStatus(id, YarnCardStatus.normalize(status)) > 0
 
         suspend fun updatePhotoUri(
             id: Long,

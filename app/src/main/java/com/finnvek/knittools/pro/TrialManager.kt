@@ -20,6 +20,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -51,6 +53,7 @@ class TrialManager
         val trialState: StateFlow<TrialState> = _trialState.asStateFlow()
         private val refreshScope = CoroutineScope(SupervisorJob() + ioDispatcher)
         private var refreshJob: Job? = null
+        private val refreshLoopMutex = Mutex()
 
         suspend fun initialize() {
             refreshTrialState()
@@ -151,23 +154,24 @@ class TrialManager
             }
         }
 
-        private fun startRefreshLoop() {
-            if (refreshJob?.isActive == true) return
+        private suspend fun startRefreshLoop() =
+            refreshLoopMutex.withLock {
+                if (refreshJob?.isActive == true) return@withLock
 
-            refreshJob =
-                refreshScope.launch {
-                    while (isActive) {
-                        val currentState = _trialState.value
-                        delay(
-                            calculateTrialRefreshDelayMillis(
-                                now = System.currentTimeMillis(),
-                                startTimestamp = currentState.startTimestamp,
-                            ),
-                        )
-                        refreshTrialState()
+                refreshJob =
+                    refreshScope.launch {
+                        while (isActive) {
+                            val currentState = _trialState.value
+                            delay(
+                                calculateTrialRefreshDelayMillis(
+                                    now = System.currentTimeMillis(),
+                                    startTimestamp = currentState.startTimestamp,
+                                ),
+                            )
+                            refreshTrialState()
+                        }
                     }
-                }
-        }
+            }
 
         companion object {
             const val TRIAL_DURATION_DAYS = 14

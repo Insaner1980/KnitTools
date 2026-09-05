@@ -1191,7 +1191,7 @@ class CounterViewModel
             _uiState.update { it.withCounterChange(updatedCounter, resetStitch) }
             syncRepeatSectionCounters(updatedCounter.count, state.projectCounters, persist = true)
             persistCount(
-                action = "increment",
+                change = MainCounterChange.Increment,
                 // CPD-ON
                 previousValue = state.counter.count,
                 newValue = updatedCounter.count,
@@ -1208,7 +1208,7 @@ class CounterViewModel
             _uiState.update { it.withCounterChange(updatedCounter, resetStitch) }
             syncRepeatSectionCounters(updatedCounter.count, state.projectCounters, persist = true)
             persistCount(
-                action = "decrement",
+                change = MainCounterChange.Decrement,
                 previousValue = state.counter.count,
                 newValue = updatedCounter.count,
             )
@@ -1255,7 +1255,7 @@ class CounterViewModel
             _uiState.update { it.withCounterChange(updatedCounter, resetStitch) }
             syncRepeatSectionCounters(updatedCounter.count, state.projectCounters, persist = true)
             persistCount(
-                action = "reset",
+                change = MainCounterChange.Reset,
                 previousValue = state.counter.count,
                 newValue = updatedCounter.count,
             )
@@ -2175,7 +2175,7 @@ class CounterViewModel
         }
 
         private fun persistCount(
-            action: String,
+            change: MainCounterChange,
             previousValue: Int,
             newValue: Int,
         ) {
@@ -2184,19 +2184,10 @@ class CounterViewModel
             val projectId = state.projectId ?: return
             viewModelScope.launch {
                 inAppReviewManager.recordAction()
-                repository.applyMainCounterChange(projectId, action.toMainCounterChange())
+                repository.applyMainCounterChange(projectId, change)
                 syncWidget(projectId, state.projectName, newValue)
             }
         }
-
-        private fun String.toMainCounterChange(): MainCounterChange =
-            when (this) {
-                "increment" -> MainCounterChange.Increment
-                "decrement" -> MainCounterChange.Decrement
-                "reset" -> MainCounterChange.Reset
-                "undo" -> MainCounterChange.Undo
-                else -> MainCounterChange.Increment
-            }
 
         private suspend fun pruneHistory(projectId: Long) {
             val cutoff = System.currentTimeMillis() - 24L * 60L * 60L * 1_000L
@@ -2235,7 +2226,13 @@ class CounterViewModel
             projectSelectionJob?.cancel()
             projectSelectionJob =
                 viewModelScope.launch {
-                    onLoaded(loadProjectForLaunch(id))
+                    try {
+                        onLoaded(loadProjectForLaunch(id))
+                    } catch (cancellation: CancellationException) {
+                        throw cancellation
+                    } catch (_: Exception) {
+                        onLoaded(false)
+                    }
                 }
         }
 

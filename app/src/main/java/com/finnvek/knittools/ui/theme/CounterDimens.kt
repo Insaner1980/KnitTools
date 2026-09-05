@@ -84,4 +84,16 @@ object CounterDimens {
     val StitchTrackerContentSpacing = 12.dp
     val TopBarTitleEndPadding = 8.dp
     val TopBarTextFieldCornerRadius = 12.dp
+    val ProjectActionsHorizontalPadding = 22.dp
+    val ProjectActionsRowVerticalPadding = 12.dp
+    val ProjectActionsSectionTopPadding = 14.dp
+    val ProjectActionsSectionBottomPadding = 8.dp
+    val ProjectActionsDividerVerticalPadding = 4.dp
+    val WorkSessionStartPadding = 16.dp
+    val WorkSessionEndPadding = 8.dp
+    val WorkSessionVerticalPadding = 8.dp
+    val WorkSessionStackBreakpoint = 360.dp
+    val WorkSessionActionMinHeight = 48.dp
+    val WorkSessionStackedSpacing = 4.dp
+    val WorkSessionInlineSpacing = 12.dp
 }

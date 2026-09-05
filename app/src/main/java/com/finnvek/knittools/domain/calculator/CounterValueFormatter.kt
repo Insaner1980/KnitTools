@@ -150,14 +150,13 @@ object CounterValueFormatter {
         counter: ProjectCounter,
         mainRowCount: Int,
     ): CounterValueDisplay {
-        val startRow = counter.repeatStartRow
-        val endRow = counter.repeatEndRow
-        val totalRepeats = counter.totalRepeats
-        if (counter.counterType != ProjectCounterType.REPEAT_SECTION ||
-            startRow == null ||
-            endRow == null ||
-            totalRepeats == null
-        ) {
+        if (counter.counterType != ProjectCounterType.REPEAT_SECTION) {
+            return CounterValueDisplay.Plain(counter.count)
+        }
+        val startRow = counter.repeatStartRow ?: return CounterValueDisplay.Plain(counter.count)
+        val endRow = counter.repeatEndRow ?: return CounterValueDisplay.Plain(counter.count)
+        val totalRepeats = counter.totalRepeats ?: return CounterValueDisplay.Plain(counter.count)
+        if (totalRepeats <= 0 || endRow < startRow) {
             return CounterValueDisplay.Plain(counter.count)
         }
         if (RepeatSectionLogic.isComplete(counter, mainRowCount)) {

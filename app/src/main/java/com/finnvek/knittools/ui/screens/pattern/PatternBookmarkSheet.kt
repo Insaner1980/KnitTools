@@ -1,6 +1,7 @@
 package com.finnvek.knittools.ui.screens.pattern
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,6 +20,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -81,7 +83,7 @@ internal fun PatternBookmarkSheet(
         ) {
             Text(
                 text = stringResource(R.string.pattern_bookmarks),
-                style = androidx.compose.material3.MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.titleLarge,
             )
             TextButton(
                 onClick = { showAddDialog = true },
@@ -93,7 +95,7 @@ internal fun PatternBookmarkSheet(
             state.error?.let { error ->
                 Text(
                     text = errorDescription.orEmpty(),
-                    color = androidx.compose.material3.MaterialTheme.colorScheme.error,
+                    color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.semantics { contentDescription = errorDescription.orEmpty() },
                 )
                 TextButton(
@@ -255,17 +257,17 @@ private fun PatternBookmarkRow(
                             bookmark.pageIndex + 1,
                             totalPages.coerceAtLeast(bookmark.pageIndex + 1),
                         ),
-                    style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodySmall,
                 )
                 if (selected) {
                     Text(
                         text = stringResource(R.string.pattern_bookmark_selected),
-                        style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+                        style = MaterialTheme.typography.labelSmall,
                     )
                 }
             }
         }
-        androidx.compose.foundation.layout.Box {
+        Box {
             IconButton(onClick = { menuExpanded = true }) {
                 Icon(
                     imageVector = Icons.Default.MoreVert,
@@ -320,7 +322,7 @@ private fun PatternBookmarkNameDialog(
                 singleLine = true,
                 isError = !valid,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                keyboardActions = KeyboardActions(onDone = { if (valid) onConfirm(name) }),
+                keyboardActions = KeyboardActions(onDone = { if (valid) onConfirm(trimmedName) }),
                 label = { Text(stringResource(R.string.pattern_bookmark_name)) },
                 supportingText = {
                     Text(
@@ -339,7 +341,7 @@ private fun PatternBookmarkNameDialog(
         },
         confirmButton = {
             TextButton(
-                onClick = { onConfirm(name) },
+                onClick = { onConfirm(trimmedName) },
                 enabled = valid,
                 modifier = Modifier.heightIn(min = 48.dp),
             ) {

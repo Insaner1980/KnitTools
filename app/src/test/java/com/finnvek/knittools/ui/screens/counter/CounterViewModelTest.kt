@@ -359,6 +359,20 @@ class CounterViewModelTest {
         }
 
     @Test
+    fun `project selection failure reports not loaded`() =
+        runTest {
+            coEvery { repository.getProject(8L) } throws IllegalStateException("read failed")
+            val callbacks = mutableListOf<Boolean>()
+            val viewModel = viewModel()
+            advanceUntilIdle()
+
+            viewModel.selectProjectByIdForLaunch(8L) { callbacks += it }
+            advanceUntilIdle()
+
+            assertEquals(listOf(false), callbacks)
+        }
+
+    @Test
     fun `duplicate completion is single flight and late result does not close another project`() =
         runTest {
             val completion = CompletableDeferred<ProjectCompletionResult>()

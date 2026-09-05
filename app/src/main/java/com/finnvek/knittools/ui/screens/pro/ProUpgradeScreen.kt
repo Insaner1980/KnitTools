@@ -47,6 +47,7 @@ import com.finnvek.knittools.pro.ProState
 import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.ui.components.StatusMessage
 import com.finnvek.knittools.ui.components.StatusMessageType
+import com.finnvek.knittools.ui.findActivity
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -100,7 +101,7 @@ fun ProUpgradeScreen(
                 productStatusProvider = { productStatus },
                 purchaseFlowInFlight = purchaseFlowInFlight,
                 isRestoring = isRestoring,
-                onPurchase = { (context as? Activity)?.let(onPurchase) },
+                onPurchase = { context.findActivity()?.let(onPurchase) },
                 onRestore = viewModel::restorePurchases,
                 onRetry = viewModel::retryProductDetails,
                 onStartTrial = viewModel::startTrial,

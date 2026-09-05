@@ -1,12 +1,13 @@
 package com.finnvek.knittools.ui.screens.library
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -18,7 +19,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.YarnCardStatus
@@ -28,8 +31,8 @@ import com.finnvek.knittools.ui.theme.knitToolsColors
 data class YarnStatusUi(
     val key: String,
     val label: String,
-    val containerColor: androidx.compose.ui.graphics.Color,
-    val contentColor: androidx.compose.ui.graphics.Color,
+    val containerColor: Color,
+    val contentColor: Color,
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -58,6 +61,7 @@ fun YarnStatusSheet(
             )
 
             yarnStatusOptions().forEach { option ->
+                val selected = option.key == selectedStatus
                 Row(
                     modifier =
                         Modifier
@@ -65,7 +69,11 @@ fun YarnStatusSheet(
                             .background(
                                 color = option.containerColor,
                                 shape = RoundedCornerShape(18.dp),
-                            ).clickable { onSelect(option.key) }
+                            ).selectable(
+                                selected = selected,
+                                role = Role.RadioButton,
+                                onClick = { onSelect(option.key) },
+                            ).heightIn(min = 48.dp)
                             .padding(horizontal = 14.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -75,7 +83,7 @@ fun YarnStatusSheet(
                         style = MaterialTheme.typography.bodyMedium,
                         color = option.contentColor,
                     )
-                    if (option.key == selectedStatus) {
+                    if (selected) {
                         Icon(
                             imageVector = Icons.Filled.Check,
                             contentDescription = null,

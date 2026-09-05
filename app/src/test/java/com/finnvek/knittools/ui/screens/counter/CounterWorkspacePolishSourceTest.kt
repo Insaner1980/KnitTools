@@ -11,8 +11,7 @@ class CounterWorkspacePolishSourceTest {
         val source = ProjectSourceFiles.read(MULTI_COUNTER_COMPONENTS)
 
         assertTrue(source.contains("maxLines = 2"))
-        assertTrue(source.contains("fontSize = 17.sp"))
-        assertTrue(source.contains("fontWeight = FontWeight.SemiBold"))
+        assertTrue(source.contains("MaterialTheme.typography.counterExtraName"))
         assertTrue(source.contains("textAlign = TextAlign.Center"))
         assertTrue(source.contains("Icons.Filled.MoreVert"))
         assertTrue(source.contains("contentDescription = stringResource(R.string.counter_actions, counterName)"))

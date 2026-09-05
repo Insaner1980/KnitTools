@@ -15,8 +15,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -40,6 +42,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.ChartColumnDirection
@@ -100,19 +103,28 @@ internal fun PatternAnnotationToolbar(
             modifier = Modifier.horizontalScroll(rememberScrollState()),
         ) {
             TOOL_ITEMS.forEach { item ->
-                FilterChip(
-                    selected = state.activeTool == item.tool,
-                    onClick = {
-                        when (item.tool) {
-                            PatternAnnotationTool.TEXT -> showTextEditor = true
-                            PatternAnnotationTool.CALLOUT -> showCalloutEditor = true
-                            else -> actions.onToolSelected(item.tool)
-                        }
-                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                    },
-                    label = { Text(stringResource(item.labelRes)) },
-                    modifier = Modifier.heightIn(min = PatternAnnotationTokens.TOOL_TOUCH_TARGET),
-                )
+                val onClick: () -> Unit = {
+                    when (item.tool) {
+                        PatternAnnotationTool.TEXT -> showTextEditor = true
+                        PatternAnnotationTool.CALLOUT -> showCalloutEditor = true
+                        else -> actions.onToolSelected(item.tool)
+                    }
+                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                }
+                if (item.tool == PatternAnnotationTool.TEXT || item.tool == PatternAnnotationTool.CALLOUT) {
+                    AssistChip(
+                        onClick = onClick,
+                        label = { Text(stringResource(item.labelRes)) },
+                        modifier = Modifier.heightIn(min = PatternAnnotationTokens.TOOL_TOUCH_TARGET),
+                    )
+                } else {
+                    FilterChip(
+                        selected = state.activeTool == item.tool,
+                        onClick = onClick,
+                        label = { Text(stringResource(item.labelRes)) },
+                        modifier = Modifier.heightIn(min = PatternAnnotationTokens.TOOL_TOUCH_TARGET),
+                    )
+                }
             }
         }
         when (state.activeTool) {
@@ -337,12 +349,16 @@ private fun PatternChartTrackerDialog(
                         value = rows,
                         onValueChange = { rows = it },
                         label = { Text(stringResource(R.string.pattern_annotation_chart_rows)) },
+                        isError = validRows == null,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.weight(1f),
                     )
                     OutlinedTextField(
                         value = columns,
                         onValueChange = { columns = it },
                         label = { Text(stringResource(R.string.pattern_annotation_chart_columns)) },
+                        isError = validColumns == null,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.weight(1f),
                     )
                 }
@@ -380,6 +396,8 @@ private fun PatternChartTrackerDialog(
                     value = gridStartIndex,
                     onValueChange = { gridStartIndex = it },
                     label = { Text(stringResource(R.string.pattern_annotation_chart_grid_start)) },
+                    isError = validGridStart == null,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(stringResource(R.string.pattern_annotation_chart_wrap), modifier = Modifier.weight(1f))

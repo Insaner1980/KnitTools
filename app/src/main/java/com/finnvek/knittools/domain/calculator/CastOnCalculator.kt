@@ -45,7 +45,7 @@ object CastOnCalculator {
         density: Double,
         unit: MeasurementUnit,
     ): CastOnResult? {
-        // The target width describes the body; edges are added after repeat rounding.
+        // Tavoiteleveys kuvaa runkoa; reunat lisätään toistopyöristyksen jälkeen.
         val nearestDown = (bodyStitches.toLong() / patternRepeat) * patternRepeat
         val nearestUp = nearestDown + patternRepeat
         val totalDown = nearestDown.takeIf { it > 0 }?.let { supportedCount(it + edgeStitches) }

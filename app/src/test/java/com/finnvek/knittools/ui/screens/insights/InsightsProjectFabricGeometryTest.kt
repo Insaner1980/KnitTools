@@ -30,11 +30,11 @@ class InsightsProjectFabricGeometryTest {
         val labels =
             projectFabricMonthLabels(
                 model = model,
-                formatter = DateTimeFormatter.ofPattern("MMMM", Locale.ENGLISH),
+                formatter = DateTimeFormatter.ofPattern("MMM", Locale.ENGLISH),
                 locale = Locale.ENGLISH,
             )
 
-        assertEquals(listOf("F", "M", "A"), labels.map { it.text })
+        assertEquals(listOf("FEB", "MAR", "APR"), labels.map { it.text })
     }
 
     @Test

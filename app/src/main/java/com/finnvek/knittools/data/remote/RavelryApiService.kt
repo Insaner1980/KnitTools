@@ -22,7 +22,8 @@ internal class TransientRavelryException(
 
 internal class RavelryHttpException(
     val statusCode: Int,
-) : RuntimeException("Ravelry returned HTTP $statusCode")
+    message: String = "Ravelry returned HTTP $statusCode",
+) : RuntimeException(message)
 
 @Singleton
 class RavelryApiService

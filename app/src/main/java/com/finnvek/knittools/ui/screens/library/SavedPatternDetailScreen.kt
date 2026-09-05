@@ -83,6 +83,7 @@ fun SavedPatternDetailScreen(
 ) {
     var showRemoveConfirmDialog by rememberSaveable { mutableStateOf(false) }
     var pendingReplacementId by rememberSaveable(pattern.id) { mutableStateOf<Long?>(null) }
+    var webAttachInFlight by rememberSaveable(pattern.id) { mutableStateOf(false) }
     var lastHandledDeleteErrorId by rememberSaveable(pattern.id) { mutableLongStateOf(deleteErrorId) }
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
@@ -100,6 +101,7 @@ fun SavedPatternDetailScreen(
     val noBrowserMessage = stringResource(R.string.web_pattern_no_browser)
     val webOpenFailedMessage = stringResource(R.string.web_pattern_open_failed)
     val handleWebAttachResult: (SavedPatternMetadataMutationResult) -> Unit = { result ->
+        webAttachInFlight = false
         when (result) {
             is SavedPatternMetadataMutationResult.Attached,
             is SavedPatternMetadataMutationResult.AlreadyAttached,
@@ -167,7 +169,10 @@ fun SavedPatternDetailScreen(
             message = stringResource(R.string.web_pattern_replace_confirm_message, pattern.name),
             confirmText = stringResource(R.string.web_pattern_attach),
             onConfirm = {
-                onAttachWebPattern(expectedExistingId, handleWebAttachResult)
+                if (!webAttachInFlight) {
+                    webAttachInFlight = true
+                    onAttachWebPattern(expectedExistingId, handleWebAttachResult)
+                }
             },
             onDismiss = { pendingReplacementId = null },
         )
@@ -208,7 +213,10 @@ fun SavedPatternDetailScreen(
                     },
                     onEdit = onEditWebPattern,
                     onAttach = {
-                        onAttachWebPattern(null, handleWebAttachResult)
+                        if (!webAttachInFlight) {
+                            webAttachInFlight = true
+                            onAttachWebPattern(null, handleWebAttachResult)
+                        }
                     },
                     onDelete = { showRemoveConfirmDialog = true },
                 )

@@ -1,6 +1,5 @@
 package com.finnvek.knittools.ui.screens.ravelry
 
-import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -26,13 +25,7 @@ internal fun openRavelryUrl(
                 context.startActivity(createRavelryExternalIntent(uri))
             }.fold(
                 onSuccess = { true },
-                onFailure = { error ->
-                    if (error is ActivityNotFoundException) {
-                        false
-                    } else {
-                        throw error
-                    }
-                },
+                onFailure = { false },
             )
         }
     if (!opened) {

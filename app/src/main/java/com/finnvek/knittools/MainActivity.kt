@@ -8,6 +8,7 @@ import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.view.animation.AccelerateInterpolator
+import android.widget.Toast
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -112,8 +113,13 @@ class MainActivity : AppCompatActivity() {
         AuthTabIntent.registerActivityResultLauncher(this) { result ->
             when (result.resultCode) {
                 AuthTabIntent.RESULT_OK -> {
-                    result.resultUri?.let(::handleRavelryCallbackUri) ?: lifecycleScope.launch {
-                        ravelryAuthManager.refreshAuthStatus()
+                    val callbackUri = result.resultUri
+                    if (callbackUri != null) {
+                        handleRavelryCallbackUri(callbackUri)
+                    } else {
+                        lifecycleScope.launch {
+                            ravelryAuthManager.refreshAuthStatus()
+                        }
                     }
                 }
 
@@ -447,7 +453,10 @@ class MainActivity : AppCompatActivity() {
             is PatternShareOfferResult.Queued,
             -> clearPatternShareIntent(intent)
 
-            PatternShareOfferResult.Busy -> Unit
+            PatternShareOfferResult.Busy -> {
+                Toast.makeText(this, R.string.ravelry_import_could_not_import, Toast.LENGTH_SHORT).show()
+                clearPatternShareIntent(intent)
+            }
         }
         return true
     }

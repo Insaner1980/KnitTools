@@ -1,9 +1,9 @@
 package com.finnvek.knittools.data.remote
 
 import com.finnvek.knittools.auth.FirebaseAnonymousAuthGateway
-import com.finnvek.knittools.auth.await
 import com.google.firebase.functions.FirebaseFunctions
 import com.google.firebase.functions.FirebaseFunctionsException
+import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -116,22 +116,24 @@ class FirebaseRavelryBackendClient
                 } catch (error: FirebaseFunctionsException) {
                     throw error.toRavelryException()
                 }
-            return result as? Map<*, *> ?: emptyMap<Any?, Any?>()
+            return result as? Map<*, *> ?: throw RavelryHttpException(500, "Malformed Ravelry backend response")
         }
     }
 
-private fun FirebaseFunctionsException.toRavelryException(): RavelryHttpException =
-    RavelryHttpException(
-        when (code) {
-            FirebaseFunctionsException.Code.INVALID_ARGUMENT -> 400
-            FirebaseFunctionsException.Code.UNAUTHENTICATED -> 401
-            FirebaseFunctionsException.Code.NOT_FOUND -> 404
-            FirebaseFunctionsException.Code.FAILED_PRECONDITION -> 412
-            FirebaseFunctionsException.Code.RESOURCE_EXHAUSTED -> 429
-            FirebaseFunctionsException.Code.UNAVAILABLE -> 503
-            else -> 500
-        },
-    )
+private fun FirebaseFunctionsException.toRavelryException(): Exception = ravelryExceptionForFirebaseCodeName(code.name)
+
+internal fun ravelryExceptionForFirebaseCodeName(codeName: String): Exception =
+    when (codeName) {
+        "RESOURCE_EXHAUSTED" -> TransientRavelryException(429)
+        "UNAVAILABLE" -> TransientRavelryException(503)
+        "DEADLINE_EXCEEDED" -> TransientRavelryException(504)
+        "INTERNAL" -> TransientRavelryException(500)
+        "INVALID_ARGUMENT" -> RavelryHttpException(400)
+        "UNAUTHENTICATED" -> RavelryHttpException(401)
+        "NOT_FOUND" -> RavelryHttpException(404)
+        "FAILED_PRECONDITION" -> RavelryHttpException(412)
+        else -> RavelryHttpException(500)
+    }
 
 private fun PatternSearchParams.toBackendData(): Map<String, Any> =
     buildMap {

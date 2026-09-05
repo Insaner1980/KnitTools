@@ -181,17 +181,17 @@ class ProjectListItemSourceTest {
         assertTrue(item.contains("actionsEnabled = selected == null"))
         assertTrue(
             actions.contains(
-                "contentDescription = stringResource(R.string.pattern_viewer_title).takeIf { actionsEnabled }",
+                "contentDescription = stringResource(R.string.pattern_viewer_title)",
             ),
         )
         assertTrue(
             actions.contains(
-                "contentDescription = stringResource(R.string.progress_photos).takeIf { actionsEnabled }",
+                "contentDescription = stringResource(R.string.progress_photos)",
             ),
         )
         assertTrue(
             actions.contains(
-                "contentDescription = stringResource(R.string.notes).takeIf { actionsEnabled }",
+                "contentDescription = stringResource(R.string.notes)",
             ),
         )
     }

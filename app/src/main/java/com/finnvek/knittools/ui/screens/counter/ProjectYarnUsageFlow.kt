@@ -85,6 +85,9 @@ fun ProjectYarnUsageFlow(
                             returnKey = request.item.key
                             confirmDelete = request.delete
                             model.open(request.item, request.name)
+                            if (model.editor.value.draft == null) {
+                                managementSheet.show()
+                            }
                         } finally {
                             transitioning = false
                         }
@@ -99,12 +102,12 @@ fun ProjectYarnUsageFlow(
             initiallyConfirmDelete = confirmDelete,
             actions =
                 YarnUsageEditorActions(
-                    model::edit,
-                    model::unit,
-                    model::conversion,
-                    model::save,
-                    model::delete,
-                    returnToYarn,
+                    onEdit = model::edit,
+                    onUnit = model::unit,
+                    onConversion = model::conversion,
+                    onSave = model::save,
+                    onDelete = model::delete,
+                    onDismiss = returnToYarn,
                 ),
         )
     }

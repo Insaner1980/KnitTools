@@ -50,6 +50,7 @@ class SavedPatternRepository
         private val transactionRunner: DatabaseTransactionRunner,
         @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
         private val projectDocumentDao: ProjectDocumentDao? = null,
+        private val fileReferenceCoordinator: PatternFileReferenceCoordinator = PatternFileReferenceCoordinator(),
     ) {
         private val saveMutex = Mutex()
 
@@ -221,8 +222,10 @@ class SavedPatternRepository
             name: String,
         ): Long? {
             if (!patternUrl.startsWith("content://") && !patternUrl.startsWith("file://")) return null
-            return saveMutex.withLock {
-                transactionRunner.run { saveImportedPatternIfMissingInCurrentTransaction(patternUrl, name) }
+            return fileReferenceCoordinator.withReferenceLock {
+                saveMutex.withLock {
+                    transactionRunner.run { saveImportedPatternIfMissingInCurrentTransaction(patternUrl, name) }
+                }
             }
         }
 
@@ -306,20 +309,22 @@ class SavedPatternRepository
         }
 
         suspend fun deleteLocalPatternFileIfUnused(patternUrl: String) {
-            if (patternUrl.isBlank()) return
-            val uri = patternUrl.toUri()
-            val isAppOwned = withContext(ioDispatcher) { AppFileStorage.isAppOwnedUri(context, uri) }
-            if (!isAppOwned) return
+            fileReferenceCoordinator.withReferenceLock {
+                if (patternUrl.isBlank()) return@withReferenceLock
+                val uri = patternUrl.toUri()
+                val isAppOwned = withContext(ioDispatcher) { AppFileStorage.isAppOwnedUri(context, uri) }
+                if (!isAppOwned) return@withReferenceLock
 
-            val savedPatternStillReferencesFile = dao.getByLocalPdfUri(patternUrl) != null
-            val projectStillReferencesFile = counterProjectDao.countProjectsUsingPatternUri(patternUrl) > 0
-            val projectDocumentStillReferencesFile = projectDocumentDao?.isUriReferenced(patternUrl) == true
-            if (!savedPatternStillReferencesFile &&
-                !projectStillReferencesFile &&
-                !projectDocumentStillReferencesFile
-            ) {
-                withContext(ioDispatcher) {
-                    AppFileStorage.deleteUri(context, uri)
+                val savedPatternStillReferencesFile = dao.getByLocalPdfUri(patternUrl) != null
+                val projectStillReferencesFile = counterProjectDao.countProjectsUsingPatternUri(patternUrl) > 0
+                val projectDocumentStillReferencesFile = projectDocumentDao?.isUriReferenced(patternUrl) == true
+                if (!savedPatternStillReferencesFile &&
+                    !projectStillReferencesFile &&
+                    !projectDocumentStillReferencesFile
+                ) {
+                    withContext(ioDispatcher) {
+                        AppFileStorage.deleteUri(context, uri)
+                    }
                 }
             }
         }

@@ -16,7 +16,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import com.finnvek.knittools.ui.theme.CounterDimens
@@ -52,17 +54,10 @@ internal fun extraCounterStepperColors(
     surfaceVariant: Color,
     surfaceContainerHighest: Color,
 ): CounterStepperColors =
-    if (isLightTheme) {
-        CounterStepperColors(
-            container = surfaceContainerHighest,
-            content = if (isIncrement) primary else neutralContent,
-        )
-    } else {
-        CounterStepperColors(
-            container = surfaceVariant,
-            content = if (isIncrement) primary else neutralContent,
-        )
-    }
+    CounterStepperColors(
+        container = if (isLightTheme) surfaceContainerHighest else surfaceVariant,
+        content = if (isIncrement) primary else neutralContent,
+    )
 
 @Composable
 fun CounterStepperButton(
@@ -92,8 +87,11 @@ fun CounterStepperButton(
                     interactionSource = null,
                     indication = null,
                     enabled = enabled,
+                    role = Role.Button,
                     onClick = onClick,
-                ),
+                ).semantics {
+                    if (!enabled) disabled()
+                },
         contentAlignment = Alignment.Center,
     ) {
         CounterStepButtonFace(

@@ -8,7 +8,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import com.finnvek.knittools.ui.theme.knitToolsColors
 
 @Composable
 internal fun ProjectYarnTextField(
@@ -31,8 +31,8 @@ internal fun ProjectYarnTextField(
             TextFieldDefaults.colors(
                 focusedContainerColor = MaterialTheme.colorScheme.surface,
                 unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent,
+                focusedIndicatorColor = MaterialTheme.knitToolsColors.transparentIndicator,
+                unfocusedIndicatorColor = MaterialTheme.knitToolsColors.transparentIndicator,
             ),
     )
 }

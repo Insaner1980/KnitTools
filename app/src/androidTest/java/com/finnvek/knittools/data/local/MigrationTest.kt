@@ -28,7 +28,7 @@ class MigrationTest {
 
     private val allMigrations = KnitToolsDatabase.ALL_MANUAL_MIGRATIONS
 
-    private val latestVersion = 24
+    private val latestVersion = KNITTOOLS_DATABASE_VERSION
 
     private fun migrateToLatest(testDb: String): SupportSQLiteDatabase =
         helper.runMigrationsAndValidate(
@@ -708,13 +708,13 @@ class MigrationTest {
         assertTrue(annotationCursor.moveToFirst())
         assertEquals(0, annotationCursor.getInt(0))
         annotationCursor.close()
+        // CPD-ON
 
         db.close()
     }
 
     @Test
     fun migrate1to7() {
-        // CPD-ON
         val testDb = "migration-test-v1-to-v7"
 
         helper.createDatabase(testDb, 1).apply {

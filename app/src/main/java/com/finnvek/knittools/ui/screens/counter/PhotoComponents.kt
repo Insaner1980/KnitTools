@@ -2,11 +2,13 @@ package com.finnvek.knittools.ui.screens.counter
 
 import android.content.ClipData
 import android.content.Intent
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -31,7 +33,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -133,40 +134,40 @@ fun PhotoViewer(
                     Icon(
                         Icons.Filled.Close,
                         contentDescription = stringResource(R.string.cancel),
-                        tint = Color.White,
+                        tint = MaterialTheme.colorScheme.inverseOnSurface,
                     )
                 }
-                IconButton(
-                    onClick = {
-                        val contentUri =
-                            AppFileStorage.shareUriForAppOwnedFile(context, photo.photoUri.toUri())
-                                ?: return@IconButton
-                        val shareIntent =
-                            Intent(Intent.ACTION_SEND).apply {
-                                type = "image/jpeg"
-                                putExtra(Intent.EXTRA_STREAM, contentUri)
-                                clipData = ClipData.newUri(context.contentResolver, "photo", contentUri)
-                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                Row(modifier = Modifier.align(Alignment.TopEnd)) {
+                    IconButton(onClick = { showDeleteConfirm = true }) {
+                        Icon(
+                            Icons.Filled.Delete,
+                            contentDescription = stringResource(R.string.delete_photo),
+                            tint = MaterialTheme.colorScheme.inverseOnSurface,
+                        )
+                    }
+                    IconButton(
+                        onClick = {
+                            val contentUri = AppFileStorage.shareUriForAppOwnedFile(context, photo.photoUri.toUri())
+                            if (contentUri == null) {
+                                Toast.makeText(context, R.string.photo_share_failed, Toast.LENGTH_SHORT).show()
+                                return@IconButton
                             }
-                        context.startActivity(Intent.createChooser(shareIntent, null))
-                    },
-                    modifier = Modifier.align(Alignment.CenterEnd),
-                ) {
-                    Icon(
-                        Icons.Filled.Share,
-                        contentDescription = stringResource(R.string.share_photo),
-                        tint = Color.White,
-                    )
-                }
-                IconButton(
-                    onClick = { showDeleteConfirm = true },
-                    modifier = Modifier.align(Alignment.TopEnd).padding(end = 48.dp),
-                ) {
-                    Icon(
-                        Icons.Filled.Delete,
-                        contentDescription = stringResource(R.string.delete_photo),
-                        tint = Color.White,
-                    )
+                            val shareIntent =
+                                Intent(Intent.ACTION_SEND).apply {
+                                    type = "image/jpeg"
+                                    putExtra(Intent.EXTRA_STREAM, contentUri)
+                                    clipData = ClipData.newUri(context.contentResolver, "photo", contentUri)
+                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                }
+                            context.startActivity(Intent.createChooser(shareIntent, null))
+                        },
+                    ) {
+                        Icon(
+                            Icons.Filled.Share,
+                            contentDescription = stringResource(R.string.share_photo),
+                            tint = MaterialTheme.colorScheme.inverseOnSurface,
+                        )
+                    }
                 }
             }
 
@@ -181,13 +182,13 @@ fun PhotoViewer(
                 Text(
                     text = stringResource(R.string.row_label_format, photo.rowNumber),
                     style = MaterialTheme.typography.titleMedium,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.inverseOnSurface,
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = dateFormat.format(Date(photo.createdAt)),
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.7f),
+                    color = MaterialTheme.colorScheme.inverseOnSurface.copy(alpha = 0.7f),
                 )
             }
         }

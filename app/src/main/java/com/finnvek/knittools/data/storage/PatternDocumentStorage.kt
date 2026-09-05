@@ -275,14 +275,18 @@ class PatternDocumentStorage
                     width = info.width,
                     height = info.height,
                 )
-            return runCatching {
+            return try {
                 convertImagesToPdf(
                     context = context,
                     projectId = projectId,
                     pages = listOf(page),
                     fileName = fileName ?: "pattern-photo-${System.currentTimeMillis()}.pdf",
                 ) { _, _ -> }
-            }.getOrNull()
+            } catch (failure: CancellationException) {
+                throw failure
+            } catch (_: Exception) {
+                null
+            }
         }
 
         internal fun inspectStagedImage(file: File): PatternImageInfo {

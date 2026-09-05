@@ -24,8 +24,9 @@ class RavelryDetailFlowSourceTest {
         assertTrue(detailScreen.contains("fun PatternDetail.ravelryUrlOrNull()"))
         assertTrue(detailScreen.contains("permalink.isBlank()"))
         assertTrue(detailScreen.contains("openRavelryUrl("))
-        assertTrue(externalLinks.contains("ActivityNotFoundException"))
+        assertFalse(externalLinks.contains("ActivityNotFoundException"))
         assertTrue(externalLinks.contains("runCatching"))
+        assertTrue(externalLinks.contains("onFailure = { false }"))
     }
 
     @Test

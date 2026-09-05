@@ -1,9 +1,13 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { androidExportedComponent } from "./android-exported-component.js";
 import { androidIntentInputSurface } from "./android-intent-input-surface.js";
 import { androidKotlinEntrypointSurface } from "./android-kotlin-entrypoint-surface.js";
+import { androidUriShareWithoutClipData } from "./android-uri-share-without-clipdata.js";
+import { fileproviderBroadPath } from "./fileprovider-broad-path.js";
 import { knitToolsFileUriSurface } from "./knittools-file-uri-surface.js";
 import { ravelryFirebaseCallableSurface } from "./ravelry-firebase-callable-surface.js";
+import { sensitiveAndroidLog } from "./sensitive-android-log.js";
 import { widgetMutationSurface } from "./widget-mutation-surface.js";
 
 test("flags Android Kotlin entry points without scanning test files", () => {
@@ -161,5 +165,78 @@ fun button(context: Context) = actionSendBroadcast(CounterWidgetActions.incremen
       "Glance widget broadcast action",
       "Widget counter repository mutation",
     ],
+  );
+});
+
+test("checks every Android URI share independently", () => {
+  const content = `
+fun safeShare(uri: Uri) = Intent(Intent.ACTION_SEND).apply {
+  putExtra(Intent.EXTRA_STREAM, uri)
+  addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+  clipData = ClipData.newRawUri("PDF", uri)
+}
+
+fun unsafeShare(uri: Uri) = Intent(Intent.ACTION_SEND).apply {
+  putExtra(Intent.EXTRA_STREAM, uri)
+  addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+}`;
+
+  const matches = androidUriShareWithoutClipData.match(
+    content,
+    "app/src/main/java/com/finnvek/knittools/ui/PatternShare.kt",
+  );
+
+  assert.deepEqual(
+    matches.map((match) => match.matchedPattern),
+    ["EXTRA_STREAM content URI share without ClipData"],
+  );
+});
+
+test("flags broad external media FileProvider paths", () => {
+  const content = `<paths><external-media-path name="media" path="." /></paths>`;
+
+  const matches = fileproviderBroadPath.match(content, "app/src/main/res/xml/file_paths.xml");
+
+  assert.deepEqual(
+    matches.map((match) => match.matchedPattern),
+    ['FileProvider path="." or equivalent broad directory'],
+  );
+});
+
+test("flags each exported Android component without crossing manifest tags", () => {
+  const content = `
+<manifest>
+  <application>
+    <activity android:name=".PrivateActivity" android:exported="false" />
+    <provider android:name=".ExportedProvider" android:exported="true" />
+    <activity-alias android:name=".ExportedAlias" android:exported="true" />
+  </application>
+</manifest>`;
+
+  const matches = androidExportedComponent.match(content, "app/src/main/AndroidManifest.xml");
+
+  assert.equal(matches.length, 2);
+  assert.deepEqual(
+    matches.flatMap((match) => match.lineNumbers),
+    [5, 6],
+  );
+});
+
+test("flags sensitive multiline Android log calls", () => {
+  const content = `
+Log.w(
+  TAG,
+  "Ravelry token refresh failed",
+  error,
+)`;
+
+  const matches = sensitiveAndroidLog.match(
+    content,
+    "app/src/main/java/com/finnvek/knittools/data/remote/RavelryBackendClient.kt",
+  );
+
+  assert.deepEqual(
+    matches.map((match) => match.matchedPattern),
+    ["Sensitive term in Android log call"],
   );
 });

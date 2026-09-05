@@ -264,6 +264,33 @@ class CounterValueFormatterTest {
     }
 
     @Test
+    fun `invalid repeat section bounds use the plain counter value`() {
+        val zeroRepeats =
+            counter(
+                counterType = ProjectCounterType.REPEAT_SECTION,
+                repeatStartRow = 2,
+                repeatEndRow = 4,
+                totalRepeats = 0,
+            )
+        val invertedRows =
+            counter(
+                counterType = ProjectCounterType.REPEAT_SECTION,
+                repeatStartRow = 4,
+                repeatEndRow = 2,
+                totalRepeats = 2,
+            )
+
+        assertEquals(
+            CounterValueDisplay.Plain(zeroRepeats.count),
+            CounterValueFormatter.forRepeatSection(zeroRepeats, 2),
+        )
+        assertEquals(
+            CounterValueDisplay.Plain(invertedRows.count),
+            CounterValueFormatter.forRepeatSection(invertedRows, 2),
+        )
+    }
+
+    @Test
     fun `reminder repeat reports occurrence and interval`() {
         // targetRow = 4, interval = 3, currentRow = 13 -> (13 - 4) / 3 + 1 = 4
         assertEquals(

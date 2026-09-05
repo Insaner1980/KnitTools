@@ -116,7 +116,7 @@ class CounterStitchTrackingSourceTest {
         assertFalse(counterViewModel.contains("private fun persistCurrentStitchIfNeeded"))
         assertTrue(
             counterViewModel.contains(
-                "repository.applyMainCounterChange(projectId, action.toMainCounterChange())",
+                "repository.applyMainCounterChange(projectId, change)",
             ),
         )
         assertTrue(counterRepository.contains("transactionRunner.run"))

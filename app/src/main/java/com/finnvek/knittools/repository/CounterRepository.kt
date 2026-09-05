@@ -103,6 +103,7 @@ class CounterRepository
         @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
         private val sessionTimeSource: SessionTimeSource = UnavailableBootSessionTimeSource,
         private val proManager: ProManager? = null,
+        private val fileReferenceCoordinator: PatternFileReferenceCoordinator = PatternFileReferenceCoordinator(),
     ) {
         fun getAllProjects(): Flow<List<CounterProject>> =
             dao
@@ -488,33 +489,35 @@ class CounterRepository
             currentPatternPage: Int,
             patternRowMapping: String?,
         ): ProjectDocumentMutationResult {
-            val preflightFailure = projectDocumentRepository.preflightImportedPdf(patternUri, patternName)
             val result =
-                preflightFailure ?: transactionRunner.run {
-                    val project = dao.getProject(id)
-                    val added =
-                        projectDocumentRepository.addImportedPdfInCurrentTransaction(id, patternUri, patternName)
-                    if (added is ProjectDocumentMutationResult.Added) {
-                        if (added.document.isPrimary && project?.linkedPatternId == null) {
-                            dao.updatePatternInformation(
-                                id = id,
-                                linkedPatternId = added.document.savedPatternId,
-                                patternName = added.document.label,
-                                updatedAt = System.currentTimeMillis(),
-                            )
-                        }
-                        if (currentPatternPage != 0 || patternRowMapping != null) {
-                            check(
-                                projectDocumentRepository.updateViewerStateInTransaction(
-                                    added.document.copy(
-                                        currentPage = currentPatternPage,
-                                        rowMapping = patternRowMapping,
+                fileReferenceCoordinator.withReferenceLock {
+                    val preflightFailure = projectDocumentRepository.preflightImportedPdf(patternUri, patternName)
+                    preflightFailure ?: transactionRunner.run {
+                        val project = dao.getProject(id)
+                        val added =
+                            projectDocumentRepository.addImportedPdfInCurrentTransaction(id, patternUri, patternName)
+                        if (added is ProjectDocumentMutationResult.Added) {
+                            if (added.document.isPrimary && project?.linkedPatternId == null) {
+                                dao.updatePatternInformation(
+                                    id = id,
+                                    linkedPatternId = added.document.savedPatternId,
+                                    patternName = added.document.label,
+                                    updatedAt = System.currentTimeMillis(),
+                                )
+                            }
+                            if (currentPatternPage != 0 || patternRowMapping != null) {
+                                check(
+                                    projectDocumentRepository.updateViewerStateInTransaction(
+                                        added.document.copy(
+                                            currentPage = currentPatternPage,
+                                            rowMapping = patternRowMapping,
+                                        ),
                                     ),
-                                ),
-                            )
+                                )
+                            }
                         }
+                        added
                     }
-                    added
                 }
             if (result !is ProjectDocumentMutationResult.Added &&
                 result != ProjectDocumentMutationResult.AlreadyAttached &&
@@ -530,28 +533,29 @@ class CounterRepository
         suspend fun attachSavedPattern(
             projectId: Long,
             savedPatternId: Long,
-        ): SavedPattern? {
-            val preparation = projectDocumentRepository.prepareSavedPatternDocument(projectId, savedPatternId)
-            if (preparation == SavedPatternDocumentPreparation.MissingSavedPattern ||
-                preparation == SavedPatternDocumentPreparation.PdfUnavailable
-            ) {
-                return null
+        ): SavedPattern? =
+            fileReferenceCoordinator.withReferenceLock {
+                val preparation = projectDocumentRepository.prepareSavedPatternDocument(projectId, savedPatternId)
+                if (preparation == SavedPatternDocumentPreparation.MissingSavedPattern ||
+                    preparation == SavedPatternDocumentPreparation.PdfUnavailable
+                ) {
+                    return@withReferenceLock null
+                }
+                transactionRunner.run {
+                    val project = dao.getProject(projectId) ?: return@run null
+                    val pattern = savedPatternRepository.getById(savedPatternId) ?: return@run null
+                    val result =
+                        attachPreparedSavedPattern(
+                            projectId = projectId,
+                            savedPatternId = savedPatternId,
+                            preparation = preparation,
+                            linkedPatternId = project.linkedPatternId,
+                            pattern = pattern,
+                        )
+                    if (!result.isSuccessfulSavedPatternAttachment()) return@run null
+                    pattern
+                }
             }
-            return transactionRunner.run {
-                val project = dao.getProject(projectId) ?: return@run null
-                val pattern = savedPatternRepository.getById(savedPatternId) ?: return@run null
-                val result =
-                    attachPreparedSavedPattern(
-                        projectId = projectId,
-                        savedPatternId = savedPatternId,
-                        preparation = preparation,
-                        linkedPatternId = project.linkedPatternId,
-                        pattern = pattern,
-                    )
-                if (!result.isSuccessfulSavedPatternAttachment()) return@run null
-                pattern
-            }
-        }
 
         private suspend fun attachPreparedSavedPattern(
             projectId: Long,

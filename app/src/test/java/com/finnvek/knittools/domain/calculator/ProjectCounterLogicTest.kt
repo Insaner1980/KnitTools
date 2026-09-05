@@ -181,4 +181,13 @@ class ProjectCounterLogicTest {
         assertEquals(null, result.stitchChange)
         assertEquals(null, result.shapeEveryN)
     }
+
+    @Test
+    fun `persistence validation does not retain half of a surrogate pair`() {
+        val name = "x".repeat(ProjectCounterLogic.MAX_NAME_LENGTH - 1) + "🧶"
+
+        val result = ProjectCounterLogic.validatedForPersistence(counter().copy(name = name))
+
+        assertEquals("x".repeat(ProjectCounterLogic.MAX_NAME_LENGTH - 1), result!!.name)
+    }
 }

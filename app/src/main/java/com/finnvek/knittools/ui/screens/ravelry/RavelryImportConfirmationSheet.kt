@@ -6,9 +6,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
@@ -23,6 +25,7 @@ import com.finnvek.knittools.R
 import com.finnvek.knittools.data.remote.PatternDetail
 import com.finnvek.knittools.ui.components.StatusMessage
 import com.finnvek.knittools.ui.components.StatusMessageType
+import com.finnvek.knittools.ui.theme.ComponentDimens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -128,7 +131,11 @@ private fun ReadyImportContent(
         modifier = Modifier.fillMaxWidth(),
     ) {
         if (state.isSaving) {
-            CircularProgressIndicator()
+            CircularProgressIndicator(
+                modifier = Modifier.size(ComponentDimens.StandardIconSize),
+                color = LocalContentColor.current,
+                strokeWidth = ComponentDimens.CompactProgressStrokeWidth,
+            )
         } else {
             Text(stringResource(R.string.save_pattern))
         }

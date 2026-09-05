@@ -116,6 +116,7 @@
     <!-- Multi-select -->
     <string name="n_selected" tools:ignore="PluralsCandidate">%d selected</string>
     <string name="select_all">Select All</string>
+    <string name="select_photo">Select photo</string>
     <string name="complete_n_projects" tools:ignore="PluralsCandidate">Complete %d projects? They will be moved to your completed projects.</string>
     <string name="delete_n_projects" tools:ignore="PluralsCandidate">Delete %d projects? This cannot be undone.</string>
     <plurals name="rows_format">
@@ -893,6 +894,7 @@
     <string name="counters_list_empty">No extra counters</string>
     <string name="row_label_format" tools:ignore="PluralsCandidate">Row %d</string>
     <string name="share_photo">Share</string>
+    <string name="photo_share_failed">Photo could not be shared.</string>
     <string name="delete_photo">Delete photo</string>
     <string name="delete_photo_confirm">Delete this photo?</string>
     <plurals name="delete_photos_confirm">
@@ -1392,6 +1394,7 @@
     <string name="web_pattern_confirm_details">Confirm pattern details</string>
     <string name="web_pattern_error_title_required">Pattern name required</string>
     <string name="web_pattern_error_title_too_long">Maximum 120 characters</string>
+    <string name="web_pattern_error_designer_too_long">@string/web_pattern_error_title_too_long</string>
     <string name="web_pattern_error_url_required">Website address required</string>
     <string name="web_pattern_error_url_invalid">Invalid website address</string>
     <string name="web_pattern_error_url_web_only">Only website addresses are supported</string>

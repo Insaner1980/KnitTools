@@ -65,6 +65,8 @@ class LibraryViewModel
         val selectedYarnIds: StateFlow<Set<Long>> = _selectedYarnIds.asStateFlow()
         private val _yarnDeleteErrorId = MutableStateFlow(0L)
         val yarnDeleteErrorId: StateFlow<Long> = _yarnDeleteErrorId.asStateFlow()
+        private val _yarnSaveErrorId = MutableStateFlow(0L)
+        val yarnSaveErrorId: StateFlow<Long> = _yarnSaveErrorId.asStateFlow()
 
         // Countit Library-hubille
         val savedPatternCount: Flow<Int> = savedPatternRepository.getCount()
@@ -320,7 +322,7 @@ class LibraryViewModel
                 } catch (cancellation: CancellationException) {
                     throw cancellation
                 } catch (_: Exception) {
-                    _yarnDeleteErrorId.value += 1
+                    _yarnSaveErrorId.value += 1
                 }
             }
         }

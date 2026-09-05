@@ -24,11 +24,15 @@ object AppFileStorage {
     fun openReadDescriptor(
         context: Context,
         uri: Uri,
-    ): ParcelFileDescriptor? =
-        resolveAppOwnedFile(context, uri)
-            ?.takeIf(File::exists)
-            ?.let { file -> ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY) }
-            ?: context.contentResolver.openFileDescriptor(uri, "r")
+    ): ParcelFileDescriptor? {
+        val appOwnedFile = resolveAppOwnedFile(context, uri)
+        if (appOwnedFile != null) {
+            return appOwnedFile
+                .takeIf(File::exists)
+                ?.let { file -> ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY) }
+        }
+        return context.contentResolver.openFileDescriptor(uri, "r")
+    }
 
     fun deleteUri(
         context: Context,

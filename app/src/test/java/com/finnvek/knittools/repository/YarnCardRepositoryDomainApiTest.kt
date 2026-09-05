@@ -8,6 +8,7 @@ import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -164,6 +165,27 @@ class YarnCardRepositoryDomainApiTest {
             assertNull(repository.saveCard(YarnCard(id = 5L, yarnName = "Deleted")))
             assertNull(repository.saveCard(YarnCard(yarnName = "Invalid", quantityInStash = -1)))
             assertNull(yarnDao.lastUpserted)
+        }
+
+    @Test
+    fun `direct yarn updates preserve quantity and status invariants`() =
+        runTest {
+            val yarnDao = mockk<com.finnvek.knittools.data.local.YarnCardDao>(relaxed = true)
+            coEvery { yarnDao.updateStatus(5L, any()) } returns 1
+            val repository =
+                YarnCardRepository(
+                    yarnDao,
+                    RepositoryDomainFakeCounterProjectDao(),
+                    context,
+                    ImmediateDatabaseTransactionRunner,
+                    UnconfinedTestDispatcher(testScheduler),
+                )
+
+            assertEquals(false, repository.updateQuantity(5L, -1))
+            assertEquals(true, repository.updateStatus(5L, "legacy-status"))
+
+            coVerify(exactly = 0) { yarnDao.updateQuantity(any(), any()) }
+            coVerify(exactly = 1) { yarnDao.updateStatus(5L, "IN_STASH") }
         }
 
     @Test

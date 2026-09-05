@@ -2,17 +2,19 @@ package com.finnvek.knittools.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.FilterVintage
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -43,17 +45,13 @@ fun PasteInstructionButton(
         TextButton(
             onClick = { expanded = !expanded },
             colors =
-                androidx.compose.material3.ButtonDefaults.textButtonColors(
+                ButtonDefaults.textButtonColors(
                     containerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.10f),
                     contentColor = MaterialTheme.colorScheme.tertiary,
                 ),
-            shape =
-                androidx.compose.foundation.shape
-                    .RoundedCornerShape(14.dp),
+            shape = RoundedCornerShape(14.dp),
             modifier = Modifier.fillMaxWidth(),
-            contentPadding =
-                androidx.compose.foundation.layout
-                    .PaddingValues(vertical = 14.dp),
+            contentPadding = PaddingValues(vertical = 14.dp),
         ) {
             Icon(Icons.Outlined.FilterVintage, contentDescription = null, modifier = Modifier.padding(end = 4.dp))
             Text(stringResource(R.string.paste_instruction))
@@ -106,13 +104,7 @@ private fun InstructionInputForm(
                 }
             },
             shape = MaterialTheme.shapes.medium,
-            colors =
-                TextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    focusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
-                    unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
-                ),
+            colors = highContainerTextFieldColors(),
         )
 
         TextButton(

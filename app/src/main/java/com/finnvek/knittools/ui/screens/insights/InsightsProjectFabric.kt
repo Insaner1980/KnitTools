@@ -7,7 +7,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -56,7 +58,7 @@ internal fun InsightsProjectFabric(
     val textMeasurer = rememberTextMeasurer()
     val monthFormatter =
         remember(locale) {
-            DateTimeFormatter.ofPattern(localizedDateTimePattern(locale, "MMMM"), locale)
+            DateTimeFormatter.ofPattern(localizedDateTimePattern(locale, "MMM"), locale)
         }
     val monthLabels =
         remember(model, monthFormatter, locale) {
@@ -98,12 +100,13 @@ internal fun InsightsProjectFabric(
                 }
             }
 
+        val currentOnSelectDay by rememberUpdatedState(onSelectDay)
         Canvas(
             modifier =
                 Modifier
                     .fillMaxWidth()
                     .height(canvasHeight)
-                    .pointerInput(model, onSelectDay, monthLabelHeightPx, gapPx) {
+                    .pointerInput(model, monthLabelHeightPx, gapPx) {
                         detectTapGestures { position ->
                             projectFabricDateAt(
                                 x = position.x,
@@ -112,7 +115,7 @@ internal fun InsightsProjectFabric(
                                 monthLabelHeight = monthLabelHeightPx,
                                 gap = gapPx,
                                 model = model,
-                            )?.let(onSelectDay)
+                            )?.let(currentOnSelectDay)
                         }
                     }.clearAndSetSemantics {
                         this.contentDescription = contentDescription
@@ -120,13 +123,13 @@ internal fun InsightsProjectFabric(
                             listOf(
                                 CustomAccessibilityAction(previousActiveDayLabel) {
                                     moveProjectFabricSelection(model.days, selectedDate, STEP_PREVIOUS)?.let {
-                                        onSelectDay(it)
+                                        currentOnSelectDay(it)
                                         true
                                     } ?: false
                                 },
                                 CustomAccessibilityAction(nextActiveDayLabel) {
                                     moveProjectFabricSelection(model.days, selectedDate, STEP_NEXT)?.let {
-                                        onSelectDay(it)
+                                        currentOnSelectDay(it)
                                         true
                                     } ?: false
                                 },
@@ -216,7 +219,6 @@ internal fun projectFabricMonthLabels(
                 text =
                     day.date
                         .format(formatter)
-                        .take(1)
                         .uppercase(locale),
             )
         }.distinctBy { it.column }

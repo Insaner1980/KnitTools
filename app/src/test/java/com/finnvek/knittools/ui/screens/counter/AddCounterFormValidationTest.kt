@@ -1,5 +1,6 @@
 package com.finnvek.knittools.ui.screens.counter
 
+import com.finnvek.knittools.domain.model.ProjectCounterType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -7,6 +8,12 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class AddCounterFormValidationTest {
+    @Test
+    fun `locked repeat section selection cannot create a repeat section counter`() {
+        assertEquals(ProjectCounterType.COUNT_UP, counterTypeForDraft(selectedType = 3, isRepeatSection = false))
+        assertEquals(ProjectCounterType.REPEAT_SECTION, counterTypeForDraft(selectedType = 3, isRepeatSection = true))
+    }
+
     @Test
     fun `repeat section accepts positive start row`() {
         assertTrue(validate(validRepeatSectionParams()))

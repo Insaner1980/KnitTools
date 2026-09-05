@@ -57,8 +57,10 @@ fun KnitToolsBottomBar(navControllerProvider: @Composable () -> NavController) {
     ) {
         BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
             val availablePerTab =
-                (maxWidth - NavBarHorizontalPadding * 2) / destinations.size -
-                    LabelHorizontalSafetyPadding
+                (
+                    (maxWidth - NavBarHorizontalPadding * 2) / destinations.size -
+                        LabelHorizontalSafetyPadding
+                ).coerceAtLeast(0.dp)
             val sharedLabelFontSize =
                 rememberSharedLabelFontSize(
                     labels = labels,
@@ -90,6 +92,7 @@ fun KnitToolsBottomBar(navControllerProvider: @Composable () -> NavController) {
                             )
                         },
                         label = {
+                            // Ajonaikainen yhteinen koko sovittaa kaikki lokalisoidut välilehtinimet samaan leveyteen.
                             Text(
                                 text = stringResource(destination.labelRes).localizedUppercase(),
                                 style = labelStyle.copy(color = LocalContentColor.current),

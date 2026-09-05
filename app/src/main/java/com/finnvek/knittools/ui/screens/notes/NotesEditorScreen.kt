@@ -172,7 +172,7 @@ fun NotesEditorScreen(
     }
 
     // Auto-focus kun data on ladattu
-    LaunchedEffect(state.isLoaded) {
+    LaunchedEffect(state.isLoaded, state.canEditNotes) {
         if (state.isLoaded && state.canEditNotes) {
             focusRequester.requestFocus()
         }

@@ -14,7 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
+import com.finnvek.knittools.ui.theme.ComponentDimens
 
 @Composable
 fun SectionHeader(
@@ -30,10 +30,10 @@ fun SectionHeader(
         Icon(
             imageVector = icon,
             contentDescription = null,
-            modifier = Modifier.size(20.dp),
+            modifier = Modifier.size(ComponentDimens.StandardIconSize),
             tint = color,
         )
-        Spacer(modifier = Modifier.width(8.dp))
+        Spacer(modifier = Modifier.width(ComponentDimens.StandardSpacing))
         Text(
             text = text,
             style = MaterialTheme.typography.titleMedium,

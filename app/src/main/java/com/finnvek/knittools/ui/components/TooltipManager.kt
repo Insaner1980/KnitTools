@@ -16,6 +16,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -33,6 +35,7 @@ class TooltipManager
 
         private val _activeTooltipId = MutableStateFlow<String?>(null)
         val activeTooltipId: StateFlow<String?> = _activeTooltipId.asStateFlow()
+        private val activationMutex = Mutex()
 
         suspend fun shouldShow(id: String): Boolean {
             if (_activeTooltipId.value != null) return false
@@ -41,8 +44,10 @@ class TooltipManager
         }
 
         suspend fun show(id: String) {
-            if (!shouldShow(id)) return
-            _activeTooltipId.value = id
+            activationMutex.withLock {
+                if (!shouldShow(id)) return
+                _activeTooltipId.value = id
+            }
         }
 
         suspend fun dismiss(id: String) {
@@ -83,7 +88,7 @@ fun OnceTooltip(
         return
     }
 
-    val tooltipState = rememberTooltipState(isPersistent = false)
+    val tooltipState = rememberTooltipState(isPersistent = true)
 
     LaunchedEffect(tooltipId) {
         tooltipState.show()

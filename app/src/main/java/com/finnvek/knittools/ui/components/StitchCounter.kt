@@ -14,7 +14,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import com.finnvek.knittools.R
 import com.finnvek.knittools.ui.theme.CounterDimens
@@ -59,7 +58,6 @@ fun StitchCounter(
             Text(
                 text = stringResource(R.string.stitch_counter_compact_format, currentStitch, totalStitches),
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center,
             )

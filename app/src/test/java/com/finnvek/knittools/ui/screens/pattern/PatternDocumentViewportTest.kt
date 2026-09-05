@@ -54,6 +54,13 @@ class PatternDocumentViewportTest {
     }
 
     @Test
+    fun `bitmap aspect ratio uses a finite positive fallback for invalid dimensions`() {
+        assertEquals(2f, patternBitmapAspectRatio(width = 200, height = 100), 0.0001f)
+        assertEquals(0.707f, patternBitmapAspectRatio(width = 0, height = 100), 0.0001f)
+        assertEquals(0.707f, patternBitmapAspectRatio(width = 100, height = 0), 0.0001f)
+    }
+
+    @Test
     fun `viewport creates one center pivot transform for screen and page coordinates`() {
         val viewport = PatternViewportState(scale = 2f, offset = Offset(15f, -25f))
         val transform =

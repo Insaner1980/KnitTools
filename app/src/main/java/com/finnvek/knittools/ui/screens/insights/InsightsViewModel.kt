@@ -254,6 +254,7 @@ class InsightsViewModel
                 .flowOn(ioDispatcher)
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), InsightsUiState())
 
+        @Suppress("LongMethod") // Yksi koonti pitää Insights-tilan keskenään riippuvat laskelmat samassa paikassa.
         private suspend fun buildUiState(
             sessions: List<KnitSession>,
             projectList: List<CounterProject>,
@@ -273,7 +274,14 @@ class InsightsViewModel
             yield()
             val projectFabric =
                 buildProjectFabric(scopedSessions, params, featureGates, zone, firstDayOfWeek, timePerProject)
-            val streakMetrics = buildStreakMetrics(scopedSessions, params.startMillis, featureGates.canUseStreak)
+            val streakMetrics =
+                buildStreakMetrics(
+                    sessions = scopedSessions,
+                    rangeStartMillis = params.startMillis,
+                    canUseStreak = featureGates.canUseStreak,
+                    currentDate = params.currentDate,
+                    zone = zone,
+                )
             yield()
             val measuredBuckets =
                 measuredChartBuckets(
@@ -345,10 +353,18 @@ class InsightsViewModel
             sessions: List<KnitSession>,
             rangeStartMillis: Long?,
             canUseStreak: Boolean,
+            currentDate: LocalDate,
+            zone: ZoneId,
         ): StreakMetrics =
             if (canUseStreak) {
                 StreakMetrics(
-                    current = calculateCurrentStreak(sessions, rangeStartMillis = rangeStartMillis),
+                    current =
+                        calculateCurrentStreak(
+                            sessions,
+                            rangeStartMillis = rangeStartMillis,
+                            zone = zone,
+                            currentDate = currentDate,
+                        ),
                     best = calculateStreak(sessions, rangeStartMillis = rangeStartMillis),
                 )
             } else {
@@ -416,15 +432,15 @@ class InsightsViewModel
             fun calculateCurrentStreak(
                 sessions: List<KnitSession>,
                 rangeStartMillis: Long? = null,
+                zone: ZoneId = ZoneId.systemDefault(),
+                currentDate: LocalDate = LocalDate.now(zone),
             ): Int {
-                val zone = ZoneId.systemDefault()
                 val activeDates = activityDates(sessions, rangeStartMillis, zone)
                 if (activeDates.isEmpty()) return 0
-                val today = LocalDate.now(zone)
                 val anchor =
                     when {
-                        activeDates.contains(today) -> today
-                        activeDates.contains(today.minusDays(1)) -> today.minusDays(1)
+                        activeDates.contains(currentDate) -> currentDate
+                        activeDates.contains(currentDate.minusDays(1)) -> currentDate.minusDays(1)
                         else -> return 0
                     }
 

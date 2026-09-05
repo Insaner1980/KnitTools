@@ -135,7 +135,7 @@ internal fun PatternDocumentViewport(
                 .verticalScroll(scrollState),
     ) {
         BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-            val aspectRatio = renderedBitmap.width.toFloat() / renderedBitmap.height.toFloat()
+            val aspectRatio = patternBitmapAspectRatio(renderedBitmap.width, renderedBitmap.height)
             val density = LocalDensity.current
             val pageSize =
                 with(density) {
@@ -183,6 +183,13 @@ internal fun PatternDocumentViewport(
         }
     }
 }
+
+private const val DEFAULT_PAGE_ASPECT_RATIO = 0.707f
+
+internal fun patternBitmapAspectRatio(
+    width: Int,
+    height: Int,
+): Float = if (width > 0 && height > 0) width.toFloat() / height else DEFAULT_PAGE_ASPECT_RATIO
 
 internal fun eligiblePatternViewportFocusRequest(
     currentPage: Int,

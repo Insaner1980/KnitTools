@@ -26,9 +26,11 @@ internal object RavelryBackendMappers {
     fun patternDetailFrom(data: Any?): PatternDetail {
         val pattern = data.asMap()
         val ravelryPatternId =
-            requireNotNull(pattern.int("ravelryPatternId")?.takeIf { it > 0 }) {
-                "Missing ravelryPatternId in Ravelry pattern detail response"
-            }
+            pattern.int("ravelryPatternId")?.takeIf { it > 0 }
+                ?: throw RavelryHttpException(
+                    statusCode = 500,
+                    message = "Missing ravelryPatternId in Ravelry pattern detail response",
+                )
         val title = pattern.string("title")
         val designerName = pattern.string("designerName")
         val thumbnailUrl = pattern.optionalString("thumbnailUrl")

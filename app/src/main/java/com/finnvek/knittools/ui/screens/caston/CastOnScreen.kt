@@ -168,7 +168,13 @@ fun CastOnScreen(
             }
 
             result?.let { r ->
-                CastOnResultSection(r, unit, edgeStitches.toIntOrNull() ?: 0)
+                val edgeCount =
+                    MeasurementNumberParser
+                        .parse(edgeStitches, locale, integer = true, allowZero = true)
+                        .value
+                        ?.toInt()
+                        ?: 0
+                CastOnResultSection(r, unit, edgeCount)
             }
             val dimensionsValid =
                 MeasurementNumberParser.parse(width, locale).value != null &&

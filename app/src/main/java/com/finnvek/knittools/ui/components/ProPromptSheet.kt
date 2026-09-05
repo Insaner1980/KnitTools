@@ -38,6 +38,7 @@ enum class ProPromptSource {
     Counters,
     Reminders,
     PatternCamera,
+    PatternGallery,
     Widget,
 }
 
@@ -164,7 +165,9 @@ private fun ProPromptRequest.title(): String =
             ProPromptSource.SaveToMyYarn -> R.string.pro_prompt_save_yarn_title
             ProPromptSource.Counters -> R.string.pro_prompt_counters_title
             ProPromptSource.Reminders -> R.string.pro_prompt_reminders_title
-            ProPromptSource.PatternCamera -> R.string.pro_prompt_pattern_camera_title
+            ProPromptSource.PatternCamera,
+            ProPromptSource.PatternGallery,
+            -> R.string.pro_prompt_pattern_camera_title
             ProPromptSource.Widget -> R.string.pro_prompt_widget_title
         },
     )
@@ -192,7 +195,9 @@ private fun ProPromptRequest.body(status: ProStatus): String =
                 ProPromptSource.SaveToMyYarn -> R.string.pro_prompt_save_yarn_body
                 ProPromptSource.Counters -> R.string.pro_prompt_counters_body
                 ProPromptSource.Reminders -> R.string.pro_prompt_reminders_body
-                ProPromptSource.PatternCamera -> R.string.pro_prompt_pattern_camera_body
+                ProPromptSource.PatternCamera,
+                ProPromptSource.PatternGallery,
+                -> R.string.pro_prompt_pattern_camera_body
                 ProPromptSource.Widget -> R.string.pro_prompt_widget_body
                 ProPromptSource.Projects -> error("Project copy uses plurals")
             },

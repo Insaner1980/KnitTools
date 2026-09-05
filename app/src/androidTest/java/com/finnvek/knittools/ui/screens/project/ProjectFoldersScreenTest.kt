@@ -698,7 +698,7 @@ class ProjectFoldersScreenTest {
     }
 
     private fun awaitCommittedFrame(instrumentation: android.app.Instrumentation) {
-        lateinit var frameCommitted: CountDownLatch
+        var frameCommitted: CountDownLatch? = null
         instrumentation.runOnMainSync {
             val roots =
                 WindowInspector
@@ -709,13 +709,17 @@ class ProjectFoldersScreenTest {
                             view.isHardwareAccelerated &&
                             view.viewTreeObserver.isAlive
                     }
-            assertTrue("Expected an attached hardware-rendered window root", roots.isNotEmpty())
-            frameCommitted = CountDownLatch(roots.size)
-            roots.forEach { view ->
-                view.viewTreeObserver.registerFrameCommitCallback { frameCommitted.countDown() }
-                view.invalidate()
+            if (roots.isNotEmpty()) {
+                val latch = CountDownLatch(roots.size)
+                frameCommitted = latch
+                roots.forEach { view ->
+                    view.viewTreeObserver.registerFrameCommitCallback { latch.countDown() }
+                    view.invalidate()
+                }
             }
         }
-        assertEquals(true, frameCommitted.await(5, TimeUnit.SECONDS))
+        val latch = frameCommitted
+        assertTrue("Expected an attached hardware-rendered window root", latch != null)
+        assertEquals(true, requireNotNull(latch).await(5, TimeUnit.SECONDS))
     }
 }

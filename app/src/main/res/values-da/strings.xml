@@ -112,6 +112,7 @@
     <!-- Multi-select -->
     <string name="n_selected">%d valgt</string>
     <string name="select_all">Vælg alle</string>
+    <string name="select_photo">Vælg foto</string>
     <string name="complete_n_projects">Afslutte %d projekter? De flyttes til dine afsluttede projekter.</string>
     <string name="delete_n_projects">Slette %d projekter? Dette kan ikke fortrydes.</string>
     <plurals name="rows_format">
@@ -603,6 +604,7 @@
     <string name="counters_list_empty">Ingen ekstra tællere</string>
     <string name="row_label_format">Pind %d</string>
     <string name="share_photo">Del</string>
+    <string name="photo_share_failed">Billedet kunne ikke deles.</string>
     <string name="delete_photo">Slet billede</string>
     <string name="delete_photo_confirm">Slette dette billede?</string>
     <plurals name="delete_photos_confirm">
@@ -1009,6 +1011,7 @@
     <string name="web_pattern_confirm_details">Bekræft mønsteroplysninger</string>
     <string name="web_pattern_error_title_required">Mønstrets navn er påkrævet</string>
     <string name="web_pattern_error_title_too_long">Højst 120 tegn</string>
+    <string name="web_pattern_error_designer_too_long">@string/web_pattern_error_title_too_long</string>
     <string name="web_pattern_error_url_required">Webadresse er påkrævet</string>
     <string name="web_pattern_error_url_invalid">Ugyldig webadresse</string>
     <string name="web_pattern_error_url_web_only">Kun webadresser understøttes</string>

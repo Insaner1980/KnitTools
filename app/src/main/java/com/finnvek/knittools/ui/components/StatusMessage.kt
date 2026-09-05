@@ -25,7 +25,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
+import com.finnvek.knittools.ui.theme.ComponentDimens
 
 enum class StatusMessageType {
     Info,
@@ -62,11 +62,11 @@ fun StatusMessage(
                 .semantics { liveRegion = LiveRegionMode.Polite }
                 .clip(MaterialTheme.shapes.large)
                 .background(MaterialTheme.colorScheme.surfaceContainerLow)
-                .padding(16.dp),
+                .padding(ComponentDimens.ContentPadding),
         verticalAlignment = Alignment.Top,
     ) {
         StatusIcon(icon = icon, tint = accentColor)
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(ComponentDimens.ContentSpacing))
         Column(modifier = Modifier.weight(1f)) {
             title?.let {
                 Text(
@@ -79,12 +79,12 @@ fun StatusMessage(
                 text = message,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = if (title == null) Modifier else Modifier.padding(top = 4.dp),
+                modifier = if (title == null) Modifier else Modifier.padding(top = ComponentDimens.CompactSpacing),
             )
             if (actionLabel != null && onAction != null) {
                 TextButton(
                     onClick = onAction,
-                    modifier = Modifier.padding(top = 4.dp),
+                    modifier = Modifier.padding(top = ComponentDimens.CompactSpacing),
                 ) {
                     Text(actionLabel)
                 }
@@ -101,7 +101,7 @@ private fun StatusIcon(
     Icon(
         imageVector = icon,
         contentDescription = null,
-        modifier = Modifier.size(20.dp),
+        modifier = Modifier.size(ComponentDimens.StandardIconSize),
         tint = tint,
     )
 }

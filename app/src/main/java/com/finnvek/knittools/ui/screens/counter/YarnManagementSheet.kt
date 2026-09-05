@@ -40,6 +40,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
@@ -79,7 +80,7 @@ fun YarnManagementSheet(
         sheetState = sheetState,
         containerColor = MaterialTheme.colorScheme.surface,
     ) {
-        val windowFocused = androidx.compose.ui.platform.LocalWindowInfo.current.isWindowFocused
+        val windowFocused = LocalWindowInfo.current.isWindowFocused
         val focusHeading = focusKey != null && usageItems.none { it.key == focusKey }
         LaunchedEffect(sheetState.currentValue, windowFocused, focusHeading) {
             if (sheetState.isVisible && windowFocused && focusHeading) headingFocus.requestFocus()
@@ -388,7 +389,12 @@ private fun ProjectYarnForm(
         )
         ProjectYarnTextField(
             value = quantity,
-            onValueChange = { quantity = it.filter(Char::isDigit) },
+            onValueChange = { candidate ->
+                val digits = candidate.filter(Char::isDigit).take(Int.MAX_VALUE.toString().length)
+                if (digits.isEmpty() || digits.toLongOrNull()?.let { it <= Int.MAX_VALUE } == true) {
+                    quantity = digits
+                }
+            },
             label = stringResource(R.string.quantity_label),
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),

@@ -1,7 +1,6 @@
 package com.finnvek.knittools.ui.screens.pattern
 
 import android.Manifest
-import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.net.Uri
 import android.widget.Toast
@@ -50,6 +49,7 @@ import com.finnvek.knittools.ui.components.ProBadge
 import com.finnvek.knittools.ui.components.ProPromptRequest
 import com.finnvek.knittools.ui.components.ProPromptSheet
 import com.finnvek.knittools.ui.components.ProPromptSource
+import com.finnvek.knittools.ui.findActivity
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -119,7 +119,13 @@ fun PatternPickerSheet(
         ProPromptSheet(
             request =
                 ProPromptRequest(
-                    source = ProPromptSource.PatternCamera,
+                    source =
+                        when (pendingProAction) {
+                            PendingPatternProAction.GalleryImages -> ProPromptSource.PatternGallery
+                            PendingPatternProAction.CameraCapture,
+                            null,
+                            -> ProPromptSource.PatternCamera
+                        },
                 ),
             onDismiss = { pendingProAction = null },
             onTrialStarted = {
@@ -528,7 +534,7 @@ internal fun canStartPatternCameraScan(
 private fun pdfMimeTypes(): Array<String> = arrayOf(PATTERN_PDF_MIME_TYPE)
 
 private fun showCameraPermissionDeniedToast(context: android.content.Context) {
-    val activity = context as? Activity
+    val activity = context.findActivity()
     val permanentlyDenied =
         activity != null &&
             !ActivityCompat.shouldShowRequestPermissionRationale(activity, Manifest.permission.CAMERA)

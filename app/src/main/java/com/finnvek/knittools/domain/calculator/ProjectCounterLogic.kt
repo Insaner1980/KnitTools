@@ -17,7 +17,11 @@ object ProjectCounterLogic {
         }
 
     fun validatedForPersistence(counter: ProjectCounter): ProjectCounter? {
-        val name = counter.name.trim().take(MAX_NAME_LENGTH)
+        val name =
+            counter.name
+                .trim()
+                .take(MAX_NAME_LENGTH)
+                .let { value -> if (value.lastOrNull()?.isHighSurrogate() == true) value.dropLast(1) else value }
         if (name.isBlank() || counter.count < 0 || counter.stepSize <= 0) return null
 
         val normalized =

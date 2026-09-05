@@ -30,6 +30,7 @@ import com.finnvek.knittools.domain.model.PatternAnnotationKind
 import com.finnvek.knittools.domain.model.PatternAnnotationLayer
 import com.finnvek.knittools.domain.model.PatternAnnotationLimits
 import com.finnvek.knittools.domain.model.PatternAnnotationOwner
+import com.finnvek.knittools.domain.model.PatternAnnotationPayload
 import com.finnvek.knittools.domain.model.PatternCalloutSymbol
 import com.finnvek.knittools.domain.model.ProjectCounter
 import com.finnvek.knittools.domain.model.ShapePayload
@@ -598,7 +599,10 @@ class PatternAnnotationViewModel
                 }.onSuccess {
                     interaction.update { it.copy(isExporting = false) }
                 }.onFailure { failure ->
-                    if (failure is kotlinx.coroutines.CancellationException) throw failure
+                    if (failure is CancellationException) {
+                        interaction.update { it.copy(isExporting = false) }
+                        throw failure
+                    }
                     interaction.update { it.copy(isExporting = false, exportFailed = true) }
                 }
             }
@@ -623,7 +627,7 @@ class PatternAnnotationViewModel
 
         private fun insertPayload(
             kind: PatternAnnotationKind,
-            payload: com.finnvek.knittools.domain.model.PatternAnnotationPayload,
+            payload: PatternAnnotationPayload,
         ) {
             val layerId = uiState.value.editableLayerId ?: return
             executeCommand(

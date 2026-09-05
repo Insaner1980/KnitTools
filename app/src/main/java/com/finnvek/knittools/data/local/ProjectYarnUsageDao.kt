@@ -25,6 +25,7 @@ interface ProjectYarnUsageDao {
     @Query(
         "SELECT * FROM project_yarn_usage WHERE projectId = :projectId AND (yarnCardId = :cardId OR projectYarnNoteId = :noteId)",
     )
+    // SQL:n null-arvo ei vastaa null-saraketta; haku löytää vain annetun kortin tai muistiinpanon tunnisteen.
     suspend fun getForSource(
         projectId: Long,
         cardId: Long?,
@@ -43,17 +44,74 @@ interface ProjectYarnUsageDao {
         projectId: Long,
     ): Int
 
+    @Transaction
     suspend fun linkSavedCard(
         projectId: Long,
         noteId: Long,
         cardId: Long,
-    ) {
+    ): LinkSavedCardUsageResult {
         val rows = getForSource(projectId, cardId, noteId)
-        check(rows.size <= 1) { "Conflicting yarn usage identities" }
-        rows.singleOrNull()?.let { row ->
-            check(update(row.copy(yarnCardId = cardId, projectYarnNoteId = noteId)) == 1)
+        if (rows.isEmpty()) return LinkSavedCardUsageResult.NoUsage
+        if (rows.size == 1) {
+            check(update(rows.single().copy(yarnCardId = cardId, projectYarnNoteId = noteId)) == 1)
+            return LinkSavedCardUsageResult.Linked
         }
+
+        val merged = mergeLinkedUsageRows(rows, cardId, noteId) ?: return LinkSavedCardUsageResult.Conflict
+        val removed = rows.single { it.id != merged.id }
+        check(delete(removed.id, projectId) == 1)
+        check(update(merged) == 1)
+        return LinkSavedCardUsageResult.Linked
     }
+}
+
+sealed interface LinkSavedCardUsageResult {
+    data object NoUsage : LinkSavedCardUsageResult
+
+    data object Linked : LinkSavedCardUsageResult
+
+    data object Conflict : LinkSavedCardUsageResult
+}
+
+private fun mergeLinkedUsageRows(
+    rows: List<ProjectYarnUsageEntity>,
+    cardId: Long,
+    noteId: Long,
+): ProjectYarnUsageEntity? {
+    if (rows.size != 2) return null
+    val survivor = rows.firstOrNull { it.projectYarnNoteId == noteId } ?: rows.minBy { it.id }
+    val other = rows.single { it.id != survivor.id }
+
+    fun mergedValue(
+        first: Double?,
+        second: Double?,
+    ): Double? =
+        when {
+            first == null -> second
+            second == null || first == second -> first
+            else -> Double.NaN
+        }
+
+    val plannedMeters = mergedValue(survivor.plannedMeters, other.plannedMeters)
+    val allocatedMeters = mergedValue(survivor.allocatedMeters, other.allocatedMeters)
+    val usedMeters = mergedValue(survivor.usedMeters, other.usedMeters)
+    val metersPerSkein = mergedValue(survivor.metersPerSkein, other.metersPerSkein)
+    val gramsPerSkein = mergedValue(survivor.gramsPerSkein, other.gramsPerSkein)
+    if (listOf(plannedMeters, allocatedMeters, usedMeters, metersPerSkein, gramsPerSkein).any { it?.isNaN() == true }) {
+        return null
+    }
+    return survivor.copy(
+        yarnCardId = cardId,
+        projectYarnNoteId = noteId,
+        sourceNameSnapshot = survivor.sourceNameSnapshot.ifBlank { other.sourceNameSnapshot },
+        plannedMeters = plannedMeters,
+        allocatedMeters = allocatedMeters,
+        usedMeters = usedMeters,
+        metersPerSkein = metersPerSkein,
+        gramsPerSkein = gramsPerSkein,
+        createdAt = minOf(survivor.createdAt, other.createdAt),
+        updatedAt = maxOf(survivor.updatedAt, other.updatedAt),
+    )
 }
 
 data class YarnUsageProjectId(

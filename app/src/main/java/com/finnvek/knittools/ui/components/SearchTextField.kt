@@ -5,11 +5,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
+import com.finnvek.knittools.ui.theme.ComponentDimens
 
 @Composable
 fun SearchTextField(
@@ -25,15 +23,9 @@ fun SearchTextField(
         modifier =
             modifier
                 .fillMaxWidth()
-                .padding(vertical = 8.dp),
+                .padding(vertical = ComponentDimens.StandardSpacing),
         singleLine = true,
         shape = MaterialTheme.shapes.medium,
-        colors =
-            TextFieldDefaults.colors(
-                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent,
-            ),
+        colors = highContainerTextFieldColors(),
     )
 }

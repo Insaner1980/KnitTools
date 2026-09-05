@@ -35,6 +35,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -193,15 +194,18 @@ fun ReminderList(
         }
     }
 
-    if (deleteTarget != null) {
-        val targetReminder = reminders.find { it.id == deleteTarget }
+    val targetReminder = reminders.find { it.id == deleteTarget }
+    LaunchedEffect(deleteTarget, targetReminder) {
+        if (deleteTarget != null && targetReminder == null) deleteTarget = null
+    }
+    targetReminder?.let { reminder ->
         ConfirmationDialog(
             title = stringResource(R.string.delete_reminder_title),
-            message = stringResource(R.string.delete_reminder_confirm, targetReminder?.message ?: ""),
+            message = stringResource(R.string.delete_reminder_confirm, reminder.message),
             confirmText = stringResource(R.string.delete),
             isDestructive = true,
             onConfirm = {
-                deleteTarget?.let { onDelete(it) }
+                onDelete(reminder.id)
                 deleteTarget = null
             },
             onDismiss = { deleteTarget = null },

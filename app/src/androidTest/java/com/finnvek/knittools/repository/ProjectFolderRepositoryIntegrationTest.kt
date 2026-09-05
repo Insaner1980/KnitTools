@@ -379,10 +379,20 @@ class ProjectFolderRepositoryIntegrationTest {
             counters = rows("SELECT * FROM project_counters WHERE projectId = $projectId"),
         )
 
-    private fun ProjectOwnedSnapshot.copyProjectLifecycle(updatedAt: Long): ProjectOwnedSnapshot =
-        copy(
-            project = project.map { row -> row.toMutableList().also { it[17] = updatedAt.toString() } },
+    private fun ProjectOwnedSnapshot.copyProjectLifecycle(updatedAt: Long): ProjectOwnedSnapshot {
+        val updatedAtIndex = columnIndex("counter_projects", "updatedAt")
+        return copy(
+            project = project.map { row -> row.toMutableList().also { it[updatedAtIndex] = updatedAt.toString() } },
         )
+    }
+
+    private fun columnIndex(
+        table: String,
+        column: String,
+    ): Int =
+        sql.query("SELECT * FROM $table LIMIT 0").use { cursor ->
+            cursor.getColumnIndexOrThrow(column)
+        }
 
     private fun assignmentCount(
         folderId: Long? = null,

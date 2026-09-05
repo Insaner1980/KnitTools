@@ -1,5 +1,7 @@
 # Privacy Policy
 
+> **Draft:** This policy is not ready for publication until the contact information below is supplied.
+
 This technical privacy summary describes the current KnitTools implementation.
 
 ## Data Collection

@@ -103,7 +103,7 @@ class ActiveSessionMigration21Test {
                 """.trimIndent(),
             )
             fail("Non-singleton active session was accepted")
-        } catch (_: android.database.SQLException) {
+        } catch (_: android.database.sqlite.SQLiteConstraintException) {
             // Skeemaraja esti toisen globaalin aktiivisen istunnon.
         }
         db.close()

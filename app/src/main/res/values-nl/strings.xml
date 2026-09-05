@@ -112,6 +112,7 @@
     <!-- Multi-select -->
     <string name="n_selected">%d geselecteerd</string>
     <string name="select_all">Alles selecteren</string>
+    <string name="select_photo">Foto selecteren</string>
     <string name="complete_n_projects">%d projecten voltooien? Ze worden naar je voltooide projecten verplaatst.</string>
     <string name="delete_n_projects">%d projecten verwijderen? Dit kan niet ongedaan worden gemaakt.</string>
     <plurals name="rows_format">
@@ -603,6 +604,7 @@
     <string name="counters_list_empty">Geen extra tellers</string>
     <string name="row_label_format">Toer %d</string>
     <string name="share_photo">Delen</string>
+    <string name="photo_share_failed">De foto kon niet worden gedeeld.</string>
     <string name="delete_photo">Foto verwijderen</string>
     <string name="delete_photo_confirm">Deze foto verwijderen?</string>
     <plurals name="delete_photos_confirm">
@@ -1009,6 +1011,7 @@
     <string name="web_pattern_confirm_details">Patroongegevens bevestigen</string>
     <string name="web_pattern_error_title_required">Patroonnaam is verplicht</string>
     <string name="web_pattern_error_title_too_long">Maximaal 120 tekens</string>
+    <string name="web_pattern_error_designer_too_long">@string/web_pattern_error_title_too_long</string>
     <string name="web_pattern_error_url_required">Websiteadres is verplicht</string>
     <string name="web_pattern_error_url_invalid">Ongeldig websiteadres</string>
     <string name="web_pattern_error_url_web_only">Alleen websiteadressen worden ondersteund</string>

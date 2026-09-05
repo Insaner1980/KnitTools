@@ -37,7 +37,7 @@ internal fun assertMigratedLegacyFreehand(
 
     assertTrue(payload.points.isEmpty())
     assertEquals(Color.parseColor(expectedColor), payload.argb)
-    assertEquals(expectedStrokeWidth, payload.strokeWidth)
+    assertEquals(expectedStrokeWidth, payload.strokeWidth, 0.0001f)
     assertFalse(payload.pressureEnabled)
     assertEquals(expectedPathData, payload.legacyPathData)
     assertEquals(expectedColor, payload.legacyColor)

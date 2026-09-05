@@ -2,7 +2,7 @@
 
 KnitTools is an Android knitting toolkit built with Kotlin, Jetpack Compose, Material 3, Hilt, Room, DataStore, Ravelry integration, Play Billing, and Glance widgets.
 
-For the most detailed current architecture map, use [`PROJECT.md`](PROJECT.md). Older `knittools-*.md` files are planning/delta notes unless `PROJECT.md` points to them as current source of truth.
+For the most detailed current architecture map, use [`PROJECT.md`](PROJECT.md). Older planning and delta documents are historical unless `PROJECT.md` points to them as a current source of truth.
 
 ## Project Structure
 

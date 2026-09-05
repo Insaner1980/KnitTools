@@ -10,6 +10,7 @@ import android.os.ParcelFileDescriptor
 import android.os.SystemClock
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
@@ -44,6 +45,7 @@ import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
+import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.SAVED_STATE_REGISTRY_OWNER_KEY
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.VIEW_MODEL_STORE_OWNER_KEY
@@ -96,12 +98,12 @@ class ProjectYarnUsageScreenTest {
     private lateinit var noteRepository: ProjectYarnNoteRepository
     private var imperialBefore = false
     private var yarnName = "Project mohair"
-    private lateinit var localesBefore: LocaleList
+    private var localeTagsBefore = ""
     private var fontBefore = "1.0"
 
     @Before
     fun setUp() {
-        localesBefore = context.getSystemService(LocaleManager::class.java).applicationLocales
+        localeTagsBefore = currentApplicationLocaleTags()
         fontBefore = shell("settings get system font_scale").trim()
         database = Room.inMemoryDatabaseBuilder(context, KnitToolsDatabase::class.java).build()
         val runner = RoomDatabaseTransactionRunner(database)
@@ -139,7 +141,7 @@ class ProjectYarnUsageScreenTest {
             composeRule.activity.setContent { }
             stores.forEach { it.clear() }
         }
-        context.getSystemService(LocaleManager::class.java).applicationLocales = localesBefore
+        setApplicationLocales(localeTagsBefore)
         shell("settings put system font_scale $fontBefore")
         runBlocking { PreferencesManager(context).setUseImperial(imperialBefore) }
         database.close()
@@ -436,7 +438,7 @@ class ProjectYarnUsageScreenTest {
         if (composeRule.activity.resources.configuration.locales[0]
                 .language != locale.language
         ) {
-            context.getSystemService(LocaleManager::class.java).applicationLocales = LocaleList(locale)
+            setApplicationLocales(locale.toLanguageTag())
         }
         shell("settings put system font_scale ${if (large) "2.0" else "1.0"}")
         composeRule.waitUntil(10_000) {
@@ -447,6 +449,22 @@ class ProjectYarnUsageScreenTest {
         composeRule.setContent { TestSurface(model, locale, dark, large) }
         waitForManagement()
         return model
+    }
+
+    private fun currentApplicationLocaleTags(): String =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            context.getSystemService(LocaleManager::class.java).applicationLocales.toLanguageTags()
+        } else {
+            AppCompatDelegate.getApplicationLocales().toLanguageTags()
+        }
+
+    private fun setApplicationLocales(languageTags: String) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            context.getSystemService(LocaleManager::class.java).applicationLocales =
+                LocaleList.forLanguageTags(languageTags)
+        } else {
+            AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(languageTags))
+        }
     }
 
     @Composable

@@ -47,13 +47,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.formatIntegerForDisplay
 import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.ui.components.ProBadge
 import com.finnvek.knittools.ui.components.localizedUppercase
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
+import com.finnvek.knittools.ui.theme.CounterDimens
+import com.finnvek.knittools.ui.theme.projectActionsSectionHeader
 
 data class ProjectActionsSheetCallbacks(
     val onDismiss: () -> Unit,
@@ -129,7 +130,7 @@ private fun CurrentProjectActions(
         ActionRow(
             icon = Icons.Outlined.FormatListNumbered,
             label = stringResource(R.string.counters),
-            trailingCount = (state.projectCounterCount + 1).takeIf { it > 0 },
+            trailingCount = state.projectCounterCount + 1,
             onClick = callbacks.onOpenCountersList,
         )
     }
@@ -269,14 +270,15 @@ private fun ProjectActionsSection(
 ) {
     Text(
         text = title.localizedUppercase(),
-        style =
-            MaterialTheme.typography.labelSmall.copy(
-                fontWeight = FontWeight.Bold,
-                fontSize = 11.sp,
-                letterSpacing = 0.8.sp,
-            ),
+        style = MaterialTheme.typography.projectActionsSectionHeader,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(start = 22.dp, end = 22.dp, top = 14.dp, bottom = 8.dp),
+        modifier =
+            Modifier.padding(
+                start = CounterDimens.ProjectActionsHorizontalPadding,
+                end = CounterDimens.ProjectActionsHorizontalPadding,
+                top = CounterDimens.ProjectActionsSectionTopPadding,
+                bottom = CounterDimens.ProjectActionsSectionBottomPadding,
+            ),
     )
     content()
 }
@@ -312,7 +314,10 @@ private fun ActionRow(
                 .fillMaxWidth()
                 .defaultMinSize(minHeight = 48.dp)
                 .clickable(enabled = enabled, onClick = onClick)
-                .padding(horizontal = 22.dp, vertical = 12.dp),
+                .padding(
+                    horizontal = CounterDimens.ProjectActionsHorizontalPadding,
+                    vertical = CounterDimens.ProjectActionsRowVerticalPadding,
+                ),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         ActionRowBody(
@@ -364,7 +369,10 @@ private fun SwitchRow(
                     enabled = enabled,
                     role = Role.Switch,
                     onValueChange = onCheckedChange,
-                ).padding(horizontal = 22.dp, vertical = 12.dp),
+                ).padding(
+                    horizontal = CounterDimens.ProjectActionsHorizontalPadding,
+                    vertical = CounterDimens.ProjectActionsRowVerticalPadding,
+                ),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         ActionRowBody(
@@ -406,6 +414,10 @@ private fun SectionDivider() {
     HorizontalDivider(
         thickness = 1.dp,
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
-        modifier = Modifier.padding(horizontal = 22.dp, vertical = 4.dp),
+        modifier =
+            Modifier.padding(
+                horizontal = CounterDimens.ProjectActionsHorizontalPadding,
+                vertical = CounterDimens.ProjectActionsDividerVerticalPadding,
+            ),
     )
 }

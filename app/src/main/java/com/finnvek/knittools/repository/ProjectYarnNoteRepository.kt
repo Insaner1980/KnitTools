@@ -1,6 +1,7 @@
 package com.finnvek.knittools.repository
 
 import com.finnvek.knittools.data.local.DatabaseTransactionRunner
+import com.finnvek.knittools.data.local.LinkSavedCardUsageResult
 import com.finnvek.knittools.data.local.ProjectYarnNoteDao
 import com.finnvek.knittools.data.local.ProjectYarnUsageDao
 import com.finnvek.knittools.data.local.toDomain
@@ -44,7 +45,12 @@ class ProjectYarnNoteRepository
                 val note = dao.getById(noteId)?.toDomain()?.normalized() ?: return@run null
                 val existingCard = note.savedYarnCardId?.let { yarnCardRepository.getCard(it) }
                 if (existingCard != null) {
-                    usageDao.linkSavedCard(note.projectId, note.id, existingCard.id)
+                    if (
+                        usageDao.linkSavedCard(note.projectId, note.id, existingCard.id) ==
+                        LinkSavedCardUsageResult.Conflict
+                    ) {
+                        return@run null
+                    }
                     return@run existingCard.id
                 }
                 val yarnCardId =
@@ -63,7 +69,12 @@ class ProjectYarnNoteRepository
                     savedYarnCardId = yarnCardId,
                     updatedAt = System.currentTimeMillis(),
                 )
-                usageDao.linkSavedCard(note.projectId, note.id, yarnCardId)
+                if (
+                    usageDao.linkSavedCard(note.projectId, note.id, yarnCardId) ==
+                    LinkSavedCardUsageResult.Conflict
+                ) {
+                    return@run null
+                }
                 yarnCardId
             }
         }

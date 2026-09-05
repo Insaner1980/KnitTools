@@ -112,6 +112,7 @@
     <!-- Monivalinta -->
     <string name="n_selected">%d valittu</string>
     <string name="select_all">Valitse kaikki</string>
+    <string name="select_photo">Valitse kuva</string>
     <string name="complete_n_projects">Merkitäänkö %d projektia valmistuneiksi? Ne siirretään valmiisiin projekteihin.</string>
     <string name="delete_n_projects">Poistetaanko %d projektia? Tätä ei voi kumota.</string>
     <plurals name="rows_format">
@@ -872,6 +873,7 @@
     <string name="counters_list_empty">Lisälaskureita ei ole</string>
     <string name="row_label_format">Kerros %d</string>
     <string name="share_photo">Jaa</string>
+    <string name="photo_share_failed">Kuvan jakaminen epäonnistui.</string>
     <string name="delete_photo">Poista kuva</string>
     <string name="delete_photo_confirm">Poistetaanko tämä kuva?</string>
     <plurals name="delete_photos_confirm">
@@ -1309,6 +1311,7 @@
     <string name="web_pattern_confirm_details">Vahvista kaavan tiedot</string>
     <string name="web_pattern_error_title_required">Kaavan nimi vaaditaan</string>
     <string name="web_pattern_error_title_too_long">Enintään 120 merkkiä</string>
+    <string name="web_pattern_error_designer_too_long">@string/web_pattern_error_title_too_long</string>
     <string name="web_pattern_error_url_required">Verkkosivun osoite vaaditaan</string>
     <string name="web_pattern_error_url_invalid">Virheellinen verkkosivun osoite</string>
     <string name="web_pattern_error_url_web_only">Vain verkkosivujen osoitteita tuetaan</string>

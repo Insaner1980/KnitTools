@@ -114,6 +114,7 @@
     <!-- Multi-select -->
     <string name="n_selected">%d selezionati</string>
     <string name="select_all">Seleziona tutto</string>
+    <string name="select_photo">Seleziona foto</string>
     <string name="complete_n_projects">Completare %d progetti? Verranno spostati tra quelli completati.</string>
     <string name="delete_n_projects">Eliminare %d progetti? Questa azione non può essere annullata.</string>
     <plurals name="rows_format">
@@ -614,6 +615,7 @@
     <string name="counters_list_empty">Nessun contatore extra</string>
     <string name="row_label_format">Ferro %d</string>
     <string name="share_photo">Condividi</string>
+    <string name="photo_share_failed">Impossibile condividere la foto.</string>
     <string name="delete_photo">Elimina foto</string>
     <string name="delete_photo_confirm">Eliminare questa foto?</string>
     <plurals name="delete_photos_confirm">
@@ -1029,6 +1031,7 @@
     <string name="web_pattern_confirm_details">Conferma i dettagli del modello</string>
     <string name="web_pattern_error_title_required">Il nome del modello è obbligatorio</string>
     <string name="web_pattern_error_title_too_long">Massimo 120 caratteri</string>
+    <string name="web_pattern_error_designer_too_long">@string/web_pattern_error_title_too_long</string>
     <string name="web_pattern_error_url_required">L’indirizzo del sito web è obbligatorio</string>
     <string name="web_pattern_error_url_invalid">Indirizzo del sito web non valido</string>
     <string name="web_pattern_error_url_web_only">Sono supportati solo gli indirizzi di siti web</string>

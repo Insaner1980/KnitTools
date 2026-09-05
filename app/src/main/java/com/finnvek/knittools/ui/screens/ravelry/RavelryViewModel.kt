@@ -1,6 +1,7 @@
 package com.finnvek.knittools.ui.screens.ravelry
 
 import android.net.Uri
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.finnvek.knittools.auth.RavelryAuthManager
@@ -26,6 +27,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.coroutines.launch
 import java.io.IOException
 import javax.inject.Inject
@@ -85,6 +87,8 @@ private data class SubmittedRavelrySearch(
     val filters: SearchFilters,
 )
 
+private const val CONSUMED_IMPORT_URL_KEY = "ravelryConsumedImportUrl"
+
 @HiltViewModel
 class RavelryViewModel
     @Inject
@@ -92,6 +96,7 @@ class RavelryViewModel
         private val repository: RavelryRepository,
         private val proManager: ProManager,
         private val authManager: RavelryAuthManager,
+        private val savedStateHandle: SavedStateHandle,
     ) : ViewModel() {
         val authState: StateFlow<RavelryAuthState> = authManager.authState
 
@@ -189,6 +194,8 @@ class RavelryViewModel
 
         fun showImportConfirmationForUrl(url: String) {
             val trimmedUrl = url.trim()
+            if (savedStateHandle.get<String>(CONSUMED_IMPORT_URL_KEY) == trimmedUrl) return
+            savedStateHandle[CONSUMED_IMPORT_URL_KEY] = trimmedUrl
             importRequestId += 1
             isImportSaveInFlight = false
             if (trimmedUrl.isBlank()) {
@@ -409,7 +416,13 @@ class RavelryViewModel
 
         fun deleteSavedPattern(id: Long) {
             viewModelScope.launch {
-                repository.deleteSavedPattern(id)
+                try {
+                    repository.deleteSavedPattern(id)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    // Room pysyy totuuden lähteenä, joten rivi jää näkyviin poiston epäonnistuessa.
+                }
             }
         }
 
@@ -432,13 +445,11 @@ class RavelryViewModel
         }
 
         fun toggleSavedSelection(id: Long) {
-            _selectedSavedIds.update { current ->
-                val next = if (id in current) current - id else current + id
-                if (next.isEmpty()) {
-                    _isSavedSelectMode.value = false
+            val next =
+                _selectedSavedIds.updateAndGet { current ->
+                    if (id in current) current - id else current + id
                 }
-                next
-            }
+            if (next.isEmpty()) _isSavedSelectMode.value = false
         }
 
         fun selectAllSaved(visibleIds: List<Long>) {
@@ -447,11 +458,17 @@ class RavelryViewModel
 
         fun deleteSelectedSaved() {
             viewModelScope.launch {
-                val ids = _selectedSavedIds.value.toList()
-                if (ids.isNotEmpty()) {
-                    repository.deleteSavedPatterns(ids)
+                try {
+                    val ids = _selectedSavedIds.value.toList()
+                    if (ids.isNotEmpty()) {
+                        repository.deleteSavedPatterns(ids)
+                    }
+                    exitSavedSelectMode()
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    // Valinta säilyy, jotta käyttäjä voi yrittää eräpoistoa uudelleen.
                 }
-                exitSavedSelectMode()
             }
         }
 
@@ -472,6 +489,10 @@ class RavelryViewModel
                         ProjectCreationResult.FolderMissing,
                         -> Unit
                     }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    // Tietonäkymä jää käytettäväksi myöhempää uutta yritystä varten.
                 } finally {
                     isProjectCreationInFlight = false
                 }

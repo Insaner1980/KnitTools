@@ -40,7 +40,7 @@ object NeedleSizeData {
         )
 
     fun search(query: String): List<NeedleSize> {
-        val trimmed = query.trim().lowercase()
+        val trimmed = query.trim().lowercase().replace(',', '.')
         if (trimmed.isEmpty()) return sizes
 
         return sizes.filter { needle ->

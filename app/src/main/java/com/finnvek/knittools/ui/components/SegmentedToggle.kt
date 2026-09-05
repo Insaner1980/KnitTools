@@ -21,11 +21,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.finnvek.knittools.ui.theme.ComponentDimens
 
 private val PillContainerShape = RoundedCornerShape(50)
 private val PillItemShape = RoundedCornerShape(50)
@@ -51,7 +50,7 @@ fun SegmentedToggle(
                 .clip(containerShape)
                 .background(MaterialTheme.colorScheme.surfaceVariant)
                 .selectableGroup()
-                .padding(6.dp),
+                .padding(ComponentDimens.SegmentedContainerPadding),
     ) {
         if (isGrid) {
             SegmentedToggleGrid(
@@ -78,7 +77,7 @@ private fun SegmentedToggleGrid(
     onSelect: (Int) -> Unit,
     itemShape: Shape,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(ComponentDimens.CompactSpacing)) {
         for (rowStart in options.indices step 2) {
             SegmentedToggleGridRow(
                 options = options,
@@ -101,7 +100,7 @@ private fun SegmentedToggleGridRow(
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(ComponentDimens.CompactSpacing),
     ) {
         SegmentedToggleItem(
             label = options[rowStart],
@@ -153,7 +152,7 @@ private fun SegmentedToggleItem(
     Box(
         modifier =
             modifier
-                .heightIn(min = 40.dp)
+                .heightIn(min = ComponentDimens.SegmentedItemMinHeight)
                 .clip(shape)
                 .then(
                     if (isSelected) {
@@ -175,7 +174,12 @@ private fun SegmentedToggleItem(
                 ),
         contentAlignment = Alignment.Center,
     ) {
-        val baseStyle = MaterialTheme.typography.labelMedium
+        val labelStyle =
+            if (isSelected) {
+                MaterialTheme.typography.labelMedium
+            } else {
+                MaterialTheme.typography.bodySmall
+            }
         val textColor =
             if (isSelected) {
                 MaterialTheme.colorScheme.onPrimary
@@ -183,18 +187,17 @@ private fun SegmentedToggleItem(
                 MaterialTheme.colorScheme.onSurfaceVariant
             }
         BasicText(
-            modifier = Modifier.padding(horizontal = 6.dp),
+            modifier = Modifier.padding(horizontal = ComponentDimens.SegmentedItemTextInset),
             text = label,
             style =
-                baseStyle.copy(
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                labelStyle.copy(
                     textAlign = TextAlign.Center,
                     color = textColor,
                 ),
             autoSize =
                 TextAutoSize.StepBased(
-                    minFontSize = 9.sp,
-                    maxFontSize = baseStyle.fontSize,
+                    minFontSize = MaterialTheme.typography.labelSmall.fontSize,
+                    maxFontSize = labelStyle.fontSize,
                 ),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,

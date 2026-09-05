@@ -23,7 +23,11 @@ class ProjectFoldersContractTest {
         assertEquals(setOf("project_folders", "project_folder_assignments"), current.keys - old.keys)
         old.forEach { (table, definition) -> assertEquals("Changed existing table $table", definition, current[table]) }
         assertFalse(current.getValue("counter_projects").toString().contains("folderId"))
-        assertTrue(ProjectSourceFiles.read("${SOURCE}data/local/KnitToolsDatabase.kt").contains("version = 24"))
+        assertTrue(
+            ProjectSourceFiles
+                .read("${SOURCE}data/local/KnitToolsDatabase.kt")
+                .contains("version = KNITTOOLS_DATABASE_VERSION"),
+        )
     }
 
     @Test

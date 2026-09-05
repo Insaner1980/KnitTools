@@ -46,7 +46,10 @@ class ProjectYarnUsageViewModel
             if (projectId == project && observation?.isActive == true) return
             observation?.cancel()
             projectId = project
-            if (editor.value.draft?.projectId != project) closeDraft()
+            if (editor.value.draft?.projectId != project) {
+                mutableEditor.value = YarnUsageEditorState()
+                savedStateHandle.saveYarnUsage(null)
+            }
             mutableItems.value = null
             observation =
                 viewModelScope.launch { repository.observeForProject(project).collect { mutableItems.value = it } }

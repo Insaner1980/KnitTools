@@ -40,6 +40,10 @@ class DomainModelCoverageTest {
             "https://example.com/original",
             savedPattern(originalUrl = "https://example.com/original").patternUrl,
         )
+        assertEquals(
+            "https://example.com/canonical",
+            savedPattern(localPdfUri = " ", canonicalUrl = "https://example.com/canonical").patternUrl,
+        )
     }
 
     @Test

@@ -285,7 +285,7 @@ private fun com.finnvek.knittools.ui.components.ProjectListItemAttachmentAction(
     - onClick: STABLE (function type)
 
 @Composable
-private fun com.finnvek.knittools.ui.components.ProjectListItemAttachmentActions(hasPatternAttachment: kotlin.Boolean, photoCount: kotlin.Int, hasNotes: kotlin.Boolean, onPatternClick: kotlin.Function0<kotlin.Unit>?, onPhotosClick: kotlin.Function0<kotlin.Unit>?, onNotesClick: kotlin.Function0<kotlin.Unit>?, actionsEnabled: kotlin.Boolean): kotlin.Unit
+private fun com.finnvek.knittools.ui.components.ProjectListItemAttachmentActions(hasPatternAttachment: kotlin.Boolean, photoCount: kotlin.Int, hasNotes: kotlin.Boolean, onPatternClick: kotlin.Function0<kotlin.Unit>?, onPhotosClick: kotlin.Function0<kotlin.Unit>?, onNotesClick: kotlin.Function0<kotlin.Unit>?): kotlin.Unit
   skippable: true
   restartable: true
   params:
@@ -295,7 +295,6 @@ private fun com.finnvek.knittools.ui.components.ProjectListItemAttachmentActions
     - onPatternClick: STABLE (function type)
     - onPhotosClick: STABLE (function type)
     - onNotesClick: STABLE (function type)
-    - actionsEnabled: STABLE (primitive type)
 
 @Composable
 private fun com.finnvek.knittools.ui.components.ProjectListItemContext(secondaryLine: kotlin.String?, craftType: kotlin.String, compactLayout: kotlin.Boolean): kotlin.Unit
@@ -622,6 +621,12 @@ private fun com.finnvek.knittools.ui.components.formatDuration(minutes: kotlin.I
   restartable: false
   params:
     - minutes: STABLE (primitive type)
+
+@Composable
+internal fun com.finnvek.knittools.ui.components.highContainerTextFieldColors(): androidx.compose.material3.TextFieldColors
+  skippable: false
+  restartable: false
+  params:
 
 @Composable
 internal fun com.finnvek.knittools.ui.components.localizedUppercase(): kotlin.String
@@ -1056,6 +1061,14 @@ private fun com.finnvek.knittools.ui.screens.counter.CounterTargetRowsDialogHost
     - onRemove: STABLE (function type)
 
 @Composable
+private fun com.finnvek.knittools.ui.screens.counter.CounterToolActions(state: com.finnvek.knittools.ui.screens.counter.ProjectActionsSheetState, callbacks: com.finnvek.knittools.ui.screens.counter.ProjectActionsSheetCallbacks): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - state: STABLE (class with no mutable properties)
+    - callbacks: STABLE (class with no mutable properties)
+
+@Composable
 private fun com.finnvek.knittools.ui.screens.counter.CounterTopBar(state: com.finnvek.knittools.ui.screens.counter.CounterUiState, isEditingName: kotlin.Boolean, projectHeaderActions: com.finnvek.knittools.ui.screens.counter.ProjectHeaderActions, actions: com.finnvek.knittools.ui.screens.counter.CounterTopBarActions): kotlin.Unit
   skippable: false
   restartable: true
@@ -1093,6 +1106,14 @@ private fun com.finnvek.knittools.ui.screens.counter.CountersListSheet(projectCo
     - mainRowCount: STABLE (primitive type)
     - actions: STABLE (class with no mutable properties)
     - onDismiss: STABLE (function type)
+
+@Composable
+private fun com.finnvek.knittools.ui.screens.counter.CurrentProjectActions(state: com.finnvek.knittools.ui.screens.counter.ProjectActionsSheetState, callbacks: com.finnvek.knittools.ui.screens.counter.ProjectActionsSheetCallbacks): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - state: STABLE (class with no mutable properties)
+    - callbacks: STABLE (class with no mutable properties)
 
 @Composable
 private fun com.finnvek.knittools.ui.screens.counter.EmptyPhotoGallery(padding: androidx.compose.foundation.layout.PaddingValues): kotlin.Unit
@@ -1249,6 +1270,14 @@ internal fun com.finnvek.knittools.ui.screens.counter.ProjectCounterWorkspaceIte
     - counter: STABLE (class with no mutable properties)
     - mainRowCount: STABLE (primitive type)
     - actions: STABLE (class with no mutable properties)
+
+@Composable
+private fun com.finnvek.knittools.ui.screens.counter.ProjectManagementActions(state: com.finnvek.knittools.ui.screens.counter.ProjectActionsSheetState, callbacks: com.finnvek.knittools.ui.screens.counter.ProjectActionsSheetCallbacks): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - state: STABLE (class with no mutable properties)
+    - callbacks: STABLE (class with no mutable properties)
 
 @Composable
 private fun com.finnvek.knittools.ui.screens.counter.ProjectYarnForm(onSave: kotlin.Function4<kotlin.String, kotlin.String, kotlin.Int, kotlin.String, kotlin.Unit>, onCancel: kotlin.Function0<kotlin.Unit>): kotlin.Unit
@@ -1535,13 +1564,22 @@ private fun com.finnvek.knittools.ui.screens.counter.UsageDerivedSummary(draft: 
     - draft: STABLE (class with no mutable properties)
 
 @Composable
-private fun com.finnvek.knittools.ui.screens.counter.UsageField(draft: com.finnvek.knittools.ui.screens.counter.YarnUsageDraft, field: com.finnvek.knittools.ui.screens.counter.YarnUsageField, onEdit: kotlin.Function3<com.finnvek.knittools.ui.screens.counter.YarnUsageField, kotlin.String, java.util.Locale, kotlin.Unit>): kotlin.Unit
+private fun com.finnvek.knittools.ui.screens.counter.UsageField(draft: com.finnvek.knittools.ui.screens.counter.YarnUsageDraft, field: com.finnvek.knittools.ui.screens.counter.YarnUsageField, onEdit: kotlin.Function3<com.finnvek.knittools.ui.screens.counter.YarnUsageField, kotlin.String, java.util.Locale, kotlin.Unit>, isLast: kotlin.Boolean): kotlin.Unit
   skippable: true
   restartable: true
   params:
     - draft: STABLE (class with no mutable properties)
     - field: STABLE (class with no mutable properties)
     - onEdit: STABLE (function type)
+    - isLast: STABLE (primitive type)
+
+@Composable
+private fun com.finnvek.knittools.ui.screens.counter.WorkSessionActionRow(state: com.finnvek.knittools.ui.screens.counter.ProjectActionsSheetState, callbacks: com.finnvek.knittools.ui.screens.counter.ProjectActionsSheetCallbacks): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - state: STABLE (class with no mutable properties)
+    - callbacks: STABLE (class with no mutable properties)
 
 @Composable
 internal fun com.finnvek.knittools.ui.screens.counter.WorkSessionErrorDialog(message: kotlin.String, canRetry: kotlin.Boolean, onRetry: kotlin.Function0<kotlin.Unit>, onDismiss: kotlin.Function0<kotlin.Unit>): kotlin.Unit
@@ -1699,12 +1737,6 @@ private fun com.finnvek.knittools.ui.screens.counter.rememberProjectHeaderAction
   params:
     - dependencies: STABLE (class with no mutable properties)
     - viewModelProvider: STABLE (composable function type)
-
-@Composable
-private fun com.finnvek.knittools.ui.screens.counter.rememberVibrator(): android.os.Vibrator?
-  skippable: false
-  restartable: false
-  params:
 
 @Composable
 private fun com.finnvek.knittools.ui.screens.counter.summaryText(): kotlin.String
@@ -3593,7 +3625,7 @@ private fun com.finnvek.knittools.ui.screens.ravelry.PatternBadgeRow(difficulty:
     - availability: STABLE (class with no mutable properties)
 
 @Composable
-public fun com.finnvek.knittools.ui.screens.ravelry.PatternCard(state: com.finnvek.knittools.ui.screens.ravelry.PatternCardState, onClick: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier, onLongClick: kotlin.Function0<kotlin.Unit>?, actionContent: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<kotlin.Unit>?): kotlin.Unit
+public fun com.finnvek.knittools.ui.screens.ravelry.PatternCard(state: com.finnvek.knittools.ui.screens.ravelry.PatternCardState, onClick: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier, onLongClick: kotlin.Function0<kotlin.Unit>?, actionContent: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<kotlin.Unit>?, containerColor: androidx.compose.ui.graphics.Color): kotlin.Unit
   skippable: true
   restartable: true
   params:
@@ -3602,6 +3634,7 @@ public fun com.finnvek.knittools.ui.screens.ravelry.PatternCard(state: com.finnv
     - modifier: STABLE (marked @Stable or @Immutable)
     - onLongClick: STABLE (function type)
     - actionContent: STABLE (composable function type)
+    - containerColor: STABLE (marked @Stable or @Immutable)
 
 @Composable
 private fun com.finnvek.knittools.ui.screens.ravelry.PatternCardActionSlot(actionContent: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<kotlin.Unit>?): kotlin.Unit

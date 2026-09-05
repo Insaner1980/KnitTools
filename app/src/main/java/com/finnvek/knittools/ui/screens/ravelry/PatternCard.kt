@@ -23,13 +23,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.PatternAvailability
 import com.finnvek.knittools.ui.components.RemotePatternImage
-import com.finnvek.knittools.ui.theme.RavelryTeal
+import com.finnvek.knittools.ui.theme.knitToolsColors
 
 data class PatternCardState(
     val name: String,
@@ -47,6 +48,7 @@ fun PatternCard(
     modifier: Modifier = Modifier,
     onLongClick: (() -> Unit)? = null,
     actionContent: (@Composable () -> Unit)? = null,
+    containerColor: Color = MaterialTheme.colorScheme.surfaceVariant,
 ) {
     val interactionModifier =
         if (onLongClick == null) {
@@ -57,7 +59,7 @@ fun PatternCard(
     Surface(
         modifier = modifier.fillMaxWidth().then(interactionModifier),
         shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.surfaceVariant,
+        color = containerColor,
     ) {
         Row(
             modifier = Modifier.padding(12.dp),
@@ -137,7 +139,7 @@ private fun PatternBadgeRow(
             Text(
                 text = stringResource(R.string.difficulty_format, difficulty),
                 style = MaterialTheme.typography.labelSmall,
-                color = RavelryTeal,
+                color = MaterialTheme.knitToolsColors.tealAccent,
             )
         }
         PatternAvailabilityBadge(availability = availability)

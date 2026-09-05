@@ -32,7 +32,9 @@ internal fun SavedStateHandle.restoreYarnUsage(): YarnUsageDraft? {
         YarnUsageInput(
             get<String>("yarnUsage${field}Text").orEmpty(),
             get("yarnUsage${field}Value"),
-            get<String>("yarnUsage${field}Error")?.let(MeasurementNumberError::valueOf),
+            get<String>("yarnUsage${field}Error")?.let { stored ->
+                MeasurementNumberError.entries.firstOrNull { it.name == stored }
+            },
             get<Boolean>("yarnUsage${field}Incomplete") ?: false,
         )
     return YarnUsageDraft(
@@ -41,8 +43,13 @@ internal fun SavedStateHandle.restoreYarnUsage(): YarnUsageDraft? {
         name = get<String>("yarnUsageName").orEmpty(),
         usageId = get("yarnUsageId"),
         revision = get<Long>("yarnUsageRevision") ?: 0,
-        unit = get<String>("yarnUsageUnit")?.let(YarnUsageUnit::valueOf) ?: YarnUsageUnit.METERS,
-        pendingUnit = get<String>("yarnUsagePendingUnit")?.let(YarnUsageUnit::valueOf),
+        unit =
+            get<String>("yarnUsageUnit")
+                ?.let { stored -> YarnUsageUnit.entries.firstOrNull { it.name == stored } }
+                ?: YarnUsageUnit.METERS,
+        pendingUnit =
+            get<String>("yarnUsagePendingUnit")
+                ?.let { stored -> YarnUsageUnit.entries.firstOrNull { it.name == stored } },
         conversionEnabled = get<Boolean>("yarnUsageConversion") ?: false,
         planned = input(YarnUsageField.PLANNED),
         allocated = input(YarnUsageField.ALLOCATED),

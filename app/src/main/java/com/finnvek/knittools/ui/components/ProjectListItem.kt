@@ -366,7 +366,7 @@ private fun ProjectListItemFooter(
                         .weight(1f)
                         .defaultMinSize(minHeight = ProjectListDimens.FooterActionTouchSize)
                         .then(
-                            if (onYarnClick != null) {
+                            if (actionsEnabled && onYarnClick != null) {
                                 Modifier.clickable(onClick = onYarnClick)
                             } else {
                                 Modifier
@@ -393,7 +393,6 @@ private fun ProjectListItemFooter(
             onPatternClick = onPatternClick,
             onPhotosClick = onPhotosClick,
             onNotesClick = onNotesClick,
-            actionsEnabled = actionsEnabled,
         )
     }
 }
@@ -406,19 +405,18 @@ private fun ProjectListItemAttachmentActions(
     onPatternClick: (() -> Unit)?,
     onPhotosClick: (() -> Unit)?,
     onNotesClick: (() -> Unit)?,
-    actionsEnabled: Boolean,
 ) {
     if (hasPatternAttachment) {
         ProjectListItemAttachmentAction(
             icon = Icons.Filled.AutoStories,
-            contentDescription = stringResource(R.string.pattern_viewer_title).takeIf { actionsEnabled },
+            contentDescription = stringResource(R.string.pattern_viewer_title),
             onClick = onPatternClick,
         )
     }
     if (photoCount > 0) {
         ProjectListItemAttachmentAction(
             icon = Icons.Filled.CameraAlt,
-            contentDescription = stringResource(R.string.progress_photos).takeIf { actionsEnabled },
+            contentDescription = stringResource(R.string.progress_photos),
             label = formatIntegerForDisplay(photoCount.toLong(), rememberCurrentLocale()),
             onClick = onPhotosClick,
         )
@@ -426,7 +424,7 @@ private fun ProjectListItemAttachmentActions(
     if (hasNotes) {
         ProjectListItemAttachmentAction(
             icon = Icons.AutoMirrored.Outlined.StickyNote2,
-            contentDescription = stringResource(R.string.notes).takeIf { actionsEnabled },
+            contentDescription = stringResource(R.string.notes),
             onClick = onNotesClick,
         )
     }

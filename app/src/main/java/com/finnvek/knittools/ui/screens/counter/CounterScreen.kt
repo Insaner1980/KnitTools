@@ -1,9 +1,5 @@
 package com.finnvek.knittools.ui.screens.counter
 
-import android.os.Build
-import android.os.VibrationEffect
-import android.os.Vibrator
-import android.os.VibratorManager
 import android.view.WindowManager
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -59,7 +55,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.pluralStringResource
@@ -71,7 +69,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.getSystemService
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -100,6 +97,7 @@ import com.finnvek.knittools.ui.components.ProjectDetailsDialog
 import com.finnvek.knittools.ui.components.ProjectDetailsValues
 import com.finnvek.knittools.ui.components.RenameProjectDialog
 import com.finnvek.knittools.ui.components.localizedUppercase
+import com.finnvek.knittools.ui.findActivity
 import com.finnvek.knittools.ui.platform.ExternalWebLinkOpenResult
 import com.finnvek.knittools.ui.platform.openExternalWebLink
 import com.finnvek.knittools.ui.screens.pattern.PatternPickerMode
@@ -278,14 +276,12 @@ fun CounterScreen(
         }
     }
 
-    val vibrator = rememberVibrator()
+    val hapticFeedback = LocalHapticFeedback.current
 
     val performHaptic =
-        remember(state.hapticFeedback, vibrator) {
+        remember(hapticFeedback) {
             {
-                if (state.hapticFeedback) {
-                    vibrator?.vibrate(VibrationEffect.createOneShot(12, 60))
-                }
+                hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
             }
         }
 
@@ -1736,19 +1732,6 @@ private fun CounterTopBarTitle(
     }
 }
 
-@Composable
-private fun rememberVibrator(): Vibrator? {
-    val context = LocalView.current.context
-    return remember {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            context.getSystemService<VibratorManager>()?.defaultVibrator
-        } else {
-            @Suppress("DEPRECATION")
-            context.getSystemService<Vibrator>()
-        }
-    }
-}
-
 private data class CounterDialogActionDependencies(
     val projectId: Long?,
     val editingReminderId: Long?,
@@ -1977,7 +1960,7 @@ private fun KeepScreenAwake(
     val view = LocalView.current
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(view, lifecycleOwner, projectId) {
-        val window = (view.context as? android.app.Activity)?.window
+        val window = view.context.findActivity()?.window
         val lifecycle = lifecycleOwner.lifecycle
         val observer =
             LifecycleEventObserver { _, event ->

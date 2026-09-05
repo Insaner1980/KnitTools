@@ -45,5 +45,5 @@ data class SavedPattern(
         get() = ravelryPatternId ?: 0
 
     val patternUrl: String
-        get() = localPdfUri ?: canonicalUrl.ifBlank { originalUrl }
+        get() = localPdfUri?.takeIf { it.isNotBlank() } ?: canonicalUrl.ifBlank { originalUrl }
 }

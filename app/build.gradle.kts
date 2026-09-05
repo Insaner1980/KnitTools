@@ -622,6 +622,20 @@ tasks.register<JacocoReport>("jacocoDebugUnitTestReport") {
             },
         ),
     )
+
+    doFirst {
+        val hasClassFiles =
+            classDirectories.files.any { candidate ->
+                (candidate.isFile && candidate.extension == "class") ||
+                    (
+                        candidate.isDirectory &&
+                            candidate.walkTopDown().any { file -> file.isFile && file.extension == "class" }
+                    )
+            }
+        check(hasClassFiles) {
+            "JaCoCo debug -raportille ei löytynyt yhtään luokkatiedostoa. Tarkista AGP:n luokkahakemistot."
+        }
+    }
     executionData.setFrom(
         fileTree(layout.buildDirectory) {
             include(
@@ -695,6 +709,7 @@ dependencies {
     // Coroutines
     implementation(libs.coroutines.core)
     implementation(libs.coroutines.android)
+    implementation(libs.coroutines.play.services)
 
     // Serialization
     implementation(libs.kotlinx.serialization.json)

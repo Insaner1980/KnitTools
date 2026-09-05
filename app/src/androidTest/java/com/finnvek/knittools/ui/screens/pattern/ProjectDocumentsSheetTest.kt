@@ -302,7 +302,7 @@ class ProjectDocumentsSheetTest {
     }
 
     @Test
-    fun renameDialogAndPrimaryRemovalUseSpecificLocalizedCopy() {
+    fun renameDialogUsesSpecificLocalizedCopy() {
         composeRule.setContent {
             MaterialTheme(colorScheme = lightColorScheme()) {
                 ProjectDocumentsSheet(

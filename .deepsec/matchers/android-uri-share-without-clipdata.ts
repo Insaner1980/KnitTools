@@ -9,27 +9,29 @@ export const androidUriShareWithoutClipData: MatcherPlugin = {
   filePatterns: ["app/src/main/java/**/*.kt"],
   match(content, filePath): CandidateMatch[] {
     if (isTestFile(filePath)) return [];
-    if (!content.includes("Intent.ACTION_SEND") && !content.includes("Intent.ACTION_SEND_MULTIPLE")) return [];
-    if (!content.includes("Intent.EXTRA_STREAM")) return [];
+    const actionRegex = /Intent\.ACTION_SEND(?:_MULTIPLE)?/g;
+    const actionMatches = [...content.matchAll(actionRegex)];
 
-    const hasReadGrant = content.includes("FLAG_GRANT_READ_URI_PERMISSION");
-    const hasClipData = /\bclipData\b|ClipData\./.test(content);
-    if (hasReadGrant && hasClipData) return [];
+    return actionMatches.flatMap((actionMatch, matchIndex) => {
+      const index = actionMatch.index ?? 0;
+      const nextIndex = actionMatches[matchIndex + 1]?.index ?? content.length;
+      const shareBlock = content.slice(index, nextIndex);
+      if (!shareBlock.includes("Intent.EXTRA_STREAM")) return [];
 
-    const index =
-      content.indexOf("Intent.ACTION_SEND") >= 0
-        ? content.indexOf("Intent.ACTION_SEND")
-        : content.indexOf("Intent.ACTION_SEND_MULTIPLE");
+      const hasReadGrant = shareBlock.includes("FLAG_GRANT_READ_URI_PERMISSION");
+      const hasClipData = /\bclipData\b|ClipData\./.test(shareBlock);
+      if (hasReadGrant && hasClipData) return [];
 
-    return [
-      candidate(
-        "android-uri-share-without-clipdata",
-        content,
-        index,
-        hasReadGrant
-          ? "EXTRA_STREAM content URI share without ClipData"
-          : "EXTRA_STREAM content URI share without FLAG_GRANT_READ_URI_PERMISSION",
-      ),
-    ];
+      return [
+        candidate(
+          "android-uri-share-without-clipdata",
+          content,
+          index,
+          hasReadGrant
+            ? "EXTRA_STREAM content URI share without ClipData"
+            : "EXTRA_STREAM content URI share without FLAG_GRANT_READ_URI_PERMISSION",
+        ),
+      ];
+    });
   },
 };

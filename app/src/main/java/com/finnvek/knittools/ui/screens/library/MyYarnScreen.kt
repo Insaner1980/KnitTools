@@ -85,6 +85,7 @@ data class MyYarnState(
     val canCreateYarnCard: Boolean,
     val proStatus: ProStatus,
     val deleteErrorId: Long = 0L,
+    val saveErrorId: Long = 0L,
 )
 
 data class MyYarnActions(
@@ -115,7 +116,9 @@ fun MyYarnScreen(
     var showDeleteConfirmDialog by rememberSaveable { mutableStateOf(false) }
     var showManualYarnSheet by rememberSaveable { mutableStateOf(false) }
     var pendingProAction by rememberSaveable { mutableStateOf<PendingYarnProAction?>(null) }
+    var actionAwaitingEntitlement by rememberSaveable { mutableStateOf<PendingYarnProAction?>(null) }
     var lastHandledDeleteErrorId by rememberSaveable { mutableLongStateOf(state.deleteErrorId) }
+    var lastHandledSaveErrorId by rememberSaveable { mutableLongStateOf(state.saveErrorId) }
     val snackbarHostState = remember { SnackbarHostState() }
     val deleteFailedMessage = stringResource(R.string.generic_error_unknown)
     val requestAddYarn = {
@@ -130,6 +133,25 @@ fun MyYarnScreen(
         if (state.deleteErrorId > lastHandledDeleteErrorId) {
             lastHandledDeleteErrorId = state.deleteErrorId
             snackbarHostState.showSnackbar(deleteFailedMessage)
+        }
+    }
+
+    LaunchedEffect(state.saveErrorId) {
+        if (state.saveErrorId > lastHandledSaveErrorId) {
+            lastHandledSaveErrorId = state.saveErrorId
+            snackbarHostState.showSnackbar(deleteFailedMessage)
+        }
+    }
+
+    LaunchedEffect(state.canCreateYarnCard, actionAwaitingEntitlement) {
+        val action = actionAwaitingEntitlement ?: return@LaunchedEffect
+        if (!state.canCreateYarnCard) return@LaunchedEffect
+        actionAwaitingEntitlement = null
+        when (action) {
+            PendingYarnProAction.OpenCreation -> showManualYarnSheet = true
+            PendingYarnProAction.RetryCreation -> {
+                if (actions.onRetryCreateYarnCard()) showManualYarnSheet = false
+            }
         }
     }
 
@@ -170,12 +192,7 @@ fun MyYarnScreen(
             onDismiss = { pendingProAction = null },
             onTrialStarted = {
                 pendingProAction = null
-                when (action) {
-                    PendingYarnProAction.OpenCreation -> showManualYarnSheet = true
-                    PendingYarnProAction.RetryCreation -> {
-                        if (actions.onRetryCreateYarnCard()) showManualYarnSheet = false
-                    }
-                }
+                actionAwaitingEntitlement = action
             },
             onSeePro = actions.onUpgradeToPro,
         )

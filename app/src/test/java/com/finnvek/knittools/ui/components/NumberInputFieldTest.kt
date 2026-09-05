@@ -2,6 +2,7 @@ package com.finnvek.knittools.ui.components
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import java.util.Locale
 
 class NumberInputFieldTest {
     @Test
@@ -28,8 +29,9 @@ class NumberInputFieldTest {
                     String::class.java,
                     Boolean::class.javaPrimitiveType,
                     Boolean::class.javaPrimitiveType,
+                    Locale::class.java,
                 )
         method.isAccessible = true
-        return method.invoke(null, value, false, allowNegative) as String
+        return method.invoke(null, value, false, allowNegative, Locale.US) as String
     }
 }

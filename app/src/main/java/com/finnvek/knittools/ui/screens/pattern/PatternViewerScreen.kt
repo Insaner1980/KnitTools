@@ -67,6 +67,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -1479,7 +1480,10 @@ internal fun PatternViewerTopBar(
     var showPageJumpDialog by rememberSaveable { mutableStateOf(false) }
     val titleFocusRequester = remember { FocusRequester() }
     LaunchedEffect(state.patternName) {
-        if (state.patternName != null) titleFocusRequester.requestFocus()
+        if (state.patternName != null) {
+            withFrameNanos { }
+            titleFocusRequester.requestFocus()
+        }
     }
 
     TopAppBar(

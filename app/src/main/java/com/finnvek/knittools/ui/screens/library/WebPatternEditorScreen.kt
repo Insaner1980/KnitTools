@@ -365,13 +365,11 @@ private fun urlSupportingText(
         {
             Text(
                 stringResource(
-                    when {
-                        state.url.isBlank() -> R.string.web_pattern_error_url_required
-                        !state.url.trim().startsWith("http://", ignoreCase = true) &&
-                            !state.url.trim().startsWith("https://", ignoreCase = true) ->
-                            R.string.web_pattern_error_url_web_only
-
-                        else -> R.string.web_pattern_error_url_invalid
+                    when (state.urlValidation) {
+                        WebPatternUrlValidation.Required -> R.string.web_pattern_error_url_required
+                        WebPatternUrlValidation.WebOnly -> R.string.web_pattern_error_url_web_only
+                        WebPatternUrlValidation.Invalid -> R.string.web_pattern_error_url_invalid
+                        is WebPatternUrlValidation.Valid -> error("Valid URL does not have supporting error text")
                     },
                 ),
             )
@@ -388,7 +386,7 @@ private fun designerSupportingText(
         {
             Text(
                 if (state.designer.length > WEB_PATTERN_TEXT_MAX_LENGTH) {
-                    stringResource(R.string.web_pattern_error_title_too_long)
+                    stringResource(R.string.web_pattern_error_designer_too_long)
                 } else {
                     stringResource(R.string.generic_error_unknown)
                 },

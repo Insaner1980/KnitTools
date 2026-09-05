@@ -112,6 +112,7 @@
     <!-- Multi-select -->
     <string name="n_selected">%d valda</string>
     <string name="select_all">Välj alla</string>
+    <string name="select_photo">Välj foto</string>
     <string name="complete_n_projects">Slutföra %d projekt? De flyttas till dina färdiga projekt.</string>
     <string name="delete_n_projects">Ta bort %d projekt? Detta kan inte ångras.</string>
     <plurals name="rows_format">
@@ -603,6 +604,7 @@
     <string name="counters_list_empty">Inga extra räknare</string>
     <string name="row_label_format">Varv %d</string>
     <string name="share_photo">Dela</string>
+    <string name="photo_share_failed">Det gick inte att dela fotot.</string>
     <string name="delete_photo">Ta bort foto</string>
     <string name="delete_photo_confirm">Ta bort det här fotot?</string>
     <plurals name="delete_photos_confirm">
@@ -1026,6 +1028,7 @@
     <string name="web_pattern_confirm_details">Bekräfta mönsteruppgifter</string>
     <string name="web_pattern_error_title_required">Mönstrets namn krävs</string>
     <string name="web_pattern_error_title_too_long">Högst 120 tecken</string>
+    <string name="web_pattern_error_designer_too_long">@string/web_pattern_error_title_too_long</string>
     <string name="web_pattern_error_url_required">Webbadress krävs</string>
     <string name="web_pattern_error_url_invalid">Ogiltig webbadress</string>
     <string name="web_pattern_error_url_web_only">Endast webbadresser stöds</string>

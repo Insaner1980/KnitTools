@@ -6,6 +6,8 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
+const val KNITTOOLS_DATABASE_VERSION = 24
+
 @Database(
     entities = [
         CounterProjectEntity::class,
@@ -26,7 +28,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         ProjectFolderAssignmentEntity::class,
         ProjectYarnUsageEntity::class,
     ],
-    version = 24,
+    version = KNITTOOLS_DATABASE_VERSION,
     exportSchema = true,
     autoMigrations = [
         AutoMigration(from = 1, to = 2),

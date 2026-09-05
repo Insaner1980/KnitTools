@@ -21,6 +21,10 @@ sealed interface WebPatternUrlValidation {
         val value: WebPatternUrl,
     ) : WebPatternUrlValidation
 
+    data object Required : WebPatternUrlValidation
+
+    data object WebOnly : WebPatternUrlValidation
+
     data object Invalid : WebPatternUrlValidation
 }
 
@@ -30,8 +34,15 @@ fun validateWebPatternUrl(input: String): WebPatternUrlValidation {
     if (input.any(::isForbiddenWebPatternUrlCharacter)) return WebPatternUrlValidation.Invalid
 
     val originalUrl = input.trim()
-    if (originalUrl.isEmpty() || originalUrl.length > WEB_PATTERN_URL_MAX_LENGTH) {
+    if (originalUrl.isEmpty()) return WebPatternUrlValidation.Required
+    if (originalUrl.length > WEB_PATTERN_URL_MAX_LENGTH) {
         return WebPatternUrlValidation.Invalid
+    }
+    if (
+        !originalUrl.startsWith("http://", ignoreCase = true) &&
+        !originalUrl.startsWith("https://", ignoreCase = true)
+    ) {
+        return WebPatternUrlValidation.WebOnly
     }
     if (originalUrl.any(Char::isWhitespace) || !hasValidPercentEncoding(originalUrl)) {
         return WebPatternUrlValidation.Invalid

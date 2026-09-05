@@ -898,6 +898,7 @@ private fun NavGraphBuilder.libraryMyYarnRoute(navController: NavHostController)
         val isYarnSelectMode by libraryViewModel.isYarnSelectMode.collectAsStateWithLifecycle()
         val selectedYarnIds by libraryViewModel.selectedYarnIds.collectAsStateWithLifecycle()
         val yarnDeleteErrorId by libraryViewModel.yarnDeleteErrorId.collectAsStateWithLifecycle()
+        val yarnSaveErrorId by libraryViewModel.yarnSaveErrorId.collectAsStateWithLifecycle()
         val canUseYarnCards by libraryViewModel.canUseYarnCards.collectAsStateWithLifecycle()
         val proState by libraryViewModel.proState.collectAsStateWithLifecycle()
 
@@ -911,6 +912,7 @@ private fun NavGraphBuilder.libraryMyYarnRoute(navController: NavHostController)
                     canCreateYarnCard = canUseYarnCards,
                     proStatus = proState.status,
                     deleteErrorId = yarnDeleteErrorId,
+                    saveErrorId = yarnSaveErrorId,
                 ),
             actions =
                 myYarnActions(

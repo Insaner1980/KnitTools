@@ -6,7 +6,6 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -742,16 +741,15 @@ private fun SavedPatternItem(
                 } else {
                     { onEnterSelectMode(pattern.id) }
                 },
+            containerColor = backgroundColor,
             modifier =
-                Modifier
-                    .background(backgroundColor, MaterialTheme.shapes.large)
-                    .then(
-                        if (isSelectMode) {
-                            Modifier.semantics { selected = isSelected }
-                        } else {
-                            Modifier
-                        },
-                    ),
+                Modifier.then(
+                    if (isSelectMode) {
+                        Modifier.semantics { selected = isSelected }
+                    } else {
+                        Modifier
+                    },
+                ),
         )
         if (isSelectMode) {
             SelectionIndicator(

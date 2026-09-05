@@ -139,3 +139,78 @@ val AppTypography =
                 letterSpacing = 1.5.sp,
             ),
     )
+
+val Typography.counterExtraName: TextStyle
+    get() = titleMedium.copy(fontSize = 17.sp)
+
+val Typography.counterExtraValue: TextStyle
+    get() = headlineMedium.copy(fontWeight = FontWeight.Bold)
+
+val Typography.projectActionsSectionHeader: TextStyle
+    get() = labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.8.sp)
+
+val Typography.insightsKicker: TextStyle
+    get() = labelMedium.copy(fontSize = InsightsDimens.KickerFontSize, fontWeight = FontWeight.Medium)
+
+val Typography.insightsHeroLead: TextStyle
+    get() = titleMedium.copy(fontSize = InsightsDimens.HeroLeadFontSize, fontWeight = FontWeight.Medium)
+
+val Typography.insightsTrend: TextStyle
+    get() = bodySmall.copy(fontSize = InsightsDimens.TrendFontSize, fontWeight = FontWeight.Medium)
+
+val Typography.insightsStatValue: TextStyle
+    get() =
+        titleLarge.copy(
+            fontSize = InsightsDimens.StatValueFontSize,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = InsightsDimens.StatValueLetterSpacing,
+        )
+
+val Typography.insightsProjectName: TextStyle
+    get() = titleMedium.copy(fontSize = InsightsDimens.ProjectNameFontSize)
+
+val Typography.insightsProjectSub: TextStyle
+    get() = bodySmall.copy(fontSize = InsightsDimens.ProjectSubFontSize, fontWeight = FontWeight.Medium)
+
+val Typography.insightsProjectDuration: TextStyle
+    get() = titleMedium.copy(fontSize = InsightsDimens.ProjectDurationFontSize, fontWeight = FontWeight.Bold)
+
+val Typography.insightsEmptyTitle: TextStyle
+    get() = headlineMedium.copy(fontSize = InsightsDimens.EmptyTitleFontSize)
+
+val Typography.insightsEmptyBody: TextStyle
+    get() = bodyLarge.copy(fontSize = InsightsDimens.EmptyBodyFontSize)
+
+val Typography.insightsEmptyRangeTitle: TextStyle
+    get() = headlineSmall.copy(fontSize = InsightsDimens.EmptyRangeTitleFontSize)
+
+val Typography.insightsProCardTitle: TextStyle
+    get() = titleMedium.copy(fontSize = InsightsDimens.ProCardTitleFontSize)
+
+val Typography.insightsProCardBody: TextStyle
+    get() = bodyMedium.copy(fontSize = InsightsDimens.ProCardBodyFontSize)
+
+val Typography.insightsChartAxis: TextStyle
+    get() = labelMedium.copy(fontSize = InsightsDimens.ChartAxisLabelFontSize)
+
+val Typography.insightsHeroPrimaryNumber: TextStyle
+    get() =
+        displayLarge.copy(
+            fontSize = InsightsDimens.HeroPrimaryNumberFontSize,
+            fontWeight = FontWeight.ExtraBold,
+            letterSpacing = InsightsDimens.HeroNumberLetterSpacing,
+        )
+
+val Typography.insightsHeroSecondaryNumber: TextStyle
+    get() =
+        displayMedium.copy(
+            fontSize = InsightsDimens.HeroSecondaryNumberFontSize,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = InsightsDimens.HeroNumberLetterSpacing,
+        )
+
+val Typography.insightsHeroPrimaryUnit: TextStyle
+    get() = headlineMedium.copy(fontSize = InsightsDimens.HeroPrimaryUnitFontSize)
+
+val Typography.insightsHeroSecondaryUnit: TextStyle
+    get() = titleLarge.copy(fontSize = InsightsDimens.HeroSecondaryUnitFontSize)

@@ -1,6 +1,7 @@
 package com.finnvek.knittools.ui.screens.ravelry
 
 import android.net.Uri
+import androidx.lifecycle.SavedStateHandle
 import com.finnvek.knittools.auth.RavelryAuthManager
 import com.finnvek.knittools.auth.RavelryAuthState
 import com.finnvek.knittools.data.remote.Paginator
@@ -37,6 +38,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -74,6 +76,7 @@ class RavelryViewModelTest {
             repository,
             proManager,
             authManager,
+            SavedStateHandle(),
         )
     }
 
@@ -128,6 +131,29 @@ class RavelryViewModelTest {
             advanceUntilIdle()
 
             coVerify(exactly = 1) { repository.createProjectFromPattern(pattern, true) }
+        }
+    // CPD-ON
+
+    // CPD-OFF: Testin skenaariokohtainen asetelma pidetaan paikallisena ja luettavana.
+    @Test
+    fun `project creation failure is contained and a later tap can retry`() =
+        runTest(testDispatcher) {
+            val pattern = PatternDetail(id = 42, name = "Test Pattern", permalink = "test-pattern")
+            coEvery { repository.getPatternDetail(42) } returns pattern
+            coEvery { repository.isPatternSaved(42) } returns false
+            coEvery { repository.createProjectFromPattern(pattern, true) } throws
+                IllegalStateException("database unavailable") andThen
+                ProjectCreationResult.Created(7L)
+            val vm = createViewModel(isPro = true)
+            vm.loadDetail(42)
+            advanceUntilIdle()
+
+            vm.createProjectFromPattern()
+            advanceUntilIdle()
+            vm.createProjectFromPattern()
+            advanceUntilIdle()
+
+            coVerify(exactly = 2) { repository.createProjectFromPattern(pattern, true) }
         }
     // CPD-ON
 
@@ -468,6 +494,19 @@ class RavelryViewModelTest {
     // CPD-ON
 
     @Test
+    fun `consumed import URL is not presented again after ViewModel recreation`() {
+        val savedStateHandle = SavedStateHandle()
+        val first = RavelryViewModel(repository, proManager, authManager, savedStateHandle)
+        first.showImportConfirmationForUrl("https://www.ravelry.com/patterns/library/test")
+        first.dismissImportConfirmation()
+
+        val recreated = RavelryViewModel(repository, proManager, authManager, savedStateHandle)
+        recreated.showImportConfirmationForUrl("https://www.ravelry.com/patterns/library/test")
+
+        assertNull(recreated.importConfirmationState.value)
+    }
+
+    @Test
     fun `save import pattern does not restore dismissed sheet when save completes`() =
         runTest(testDispatcher) {
             authState.value = RavelryAuthState.Connected("knitter")
@@ -509,6 +548,21 @@ class RavelryViewModelTest {
             coVerify(exactly = 0) { repository.deleteSavedPattern(any()) }
             assertFalse(vm.isSavedSelectMode.value)
             assertEquals(emptySet<Long>(), vm.selectedSavedIds.value)
+        }
+
+    @Test
+    fun `failed saved pattern batch delete keeps selection available for retry`() =
+        runTest(testDispatcher) {
+            coEvery { repository.deleteSavedPatterns(any()) } throws
+                IllegalStateException("database unavailable")
+            val vm = createViewModel(isPro = true)
+
+            vm.enterSavedSelectMode(1L)
+            vm.deleteSelectedSaved()
+            advanceUntilIdle()
+
+            assertTrue(vm.isSavedSelectMode.value)
+            assertEquals(setOf(1L), vm.selectedSavedIds.value)
         }
 
     private fun searchResponse(

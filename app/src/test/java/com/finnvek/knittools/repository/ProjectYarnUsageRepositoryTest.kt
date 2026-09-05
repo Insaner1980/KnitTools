@@ -2,6 +2,7 @@ package com.finnvek.knittools.repository
 
 import com.finnvek.knittools.data.local.DatabaseTransactionRunner
 import com.finnvek.knittools.data.local.ImmediateDatabaseTransactionRunner
+import com.finnvek.knittools.data.local.LinkSavedCardUsageResult
 import com.finnvek.knittools.data.local.ProjectYarnNoteDao
 import com.finnvek.knittools.data.local.ProjectYarnNoteEntity
 import com.finnvek.knittools.data.local.ProjectYarnUsageDao
@@ -70,6 +71,40 @@ class ProjectYarnUsageRepositoryTest {
         assertEquals("Brand Wool", pairedCard.usageName())
         assertEquals("Sock", looseCard.usageName())
     }
+
+    @Test
+    fun `linking separately tracked note and card does not throw or overwrite either usage`() =
+        runTest {
+            val noteUsage = usage(id = 1, noteId = 4, snapshot = "Note")
+            val cardUsage =
+                usage(
+                    id = 2,
+                    cardId = 3,
+                    snapshot = "Card",
+                ).copy(usedMeters = 400.0)
+            val dao = FakeUsageDao(snapshot = null).apply { sourceRows = listOf(noteUsage, cardUsage) }
+
+            val result = dao.linkSavedCard(projectId = 1, noteId = 4, cardId = 3)
+
+            assertEquals(LinkSavedCardUsageResult.Conflict, result)
+            assertEquals(listOf(noteUsage, cardUsage), dao.sourceRows)
+        }
+
+    @Test
+    fun `linking compatible note and card usages merges known amounts into one identity`() =
+        runTest {
+            val noteUsage = usage(id = 1, noteId = 4, snapshot = "Note").copy(usedMeters = null)
+            val cardUsage = usage(id = 2, cardId = 3, snapshot = "Card")
+            val dao = FakeUsageDao(snapshot = null).apply { sourceRows = listOf(noteUsage, cardUsage) }
+
+            val result = dao.linkSavedCard(projectId = 1, noteId = 4, cardId = 3)
+
+            assertEquals(LinkSavedCardUsageResult.Linked, result)
+            assertEquals(1, dao.sourceRows.size)
+            assertEquals(3L, dao.sourceRows.single().yarnCardId)
+            assertEquals(4L, dao.sourceRows.single().projectYarnNoteId)
+            assertEquals(amounts.usedMeters, dao.sourceRows.single().usedMeters)
+        }
 
     @Test
     fun `observation maps a project snapshot and preserves missing project`() =
@@ -283,6 +318,7 @@ class ProjectYarnUsageRepositoryTest {
         var snapshot: ProjectYarnUsageRelations?,
     ) : ProjectYarnUsageDao {
         var row: ProjectYarnUsageEntity? = null
+        var sourceRows: List<ProjectYarnUsageEntity> = emptyList()
 
         override fun observeProject(projectId: Long): Flow<ProjectYarnUsageRelations?> = flowOf(snapshot)
 
@@ -294,7 +330,7 @@ class ProjectYarnUsageRepositoryTest {
             projectId: Long,
             cardId: Long?,
             noteId: Long?,
-        ): List<ProjectYarnUsageEntity> = emptyList()
+        ): List<ProjectYarnUsageEntity> = sourceRows
 
         override suspend fun insert(usage: ProjectYarnUsageEntity): Long {
             row = usage.copy(id = 88)
@@ -303,6 +339,7 @@ class ProjectYarnUsageRepositoryTest {
 
         override suspend fun update(usage: ProjectYarnUsageEntity): Int {
             row = usage
+            sourceRows = sourceRows.map { existing -> if (existing.id == usage.id) usage else existing }
             return 1
         }
 
@@ -311,9 +348,10 @@ class ProjectYarnUsageRepositoryTest {
             projectId: Long,
         ): Int {
             val current = row
-            if (current?.id != id || current.projectId != projectId) return 0
-            row = null
-            return 1
+            if (current?.id == id && current.projectId == projectId) row = null
+            val before = sourceRows.size
+            sourceRows = sourceRows.filterNot { it.id == id && it.projectId == projectId }
+            return if (current?.id == id || sourceRows.size != before) 1 else 0
         }
     }
 }

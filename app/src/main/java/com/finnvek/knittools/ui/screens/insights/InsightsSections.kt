@@ -40,8 +40,6 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -55,6 +53,18 @@ import com.finnvek.knittools.ui.components.durationText
 import com.finnvek.knittools.ui.components.localizedUppercase
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
 import com.finnvek.knittools.ui.theme.InsightsDimens
+import com.finnvek.knittools.ui.theme.insightsEmptyBody
+import com.finnvek.knittools.ui.theme.insightsEmptyRangeTitle
+import com.finnvek.knittools.ui.theme.insightsEmptyTitle
+import com.finnvek.knittools.ui.theme.insightsHeroLead
+import com.finnvek.knittools.ui.theme.insightsKicker
+import com.finnvek.knittools.ui.theme.insightsProCardBody
+import com.finnvek.knittools.ui.theme.insightsProCardTitle
+import com.finnvek.knittools.ui.theme.insightsProjectDuration
+import com.finnvek.knittools.ui.theme.insightsProjectName
+import com.finnvek.knittools.ui.theme.insightsProjectSub
+import com.finnvek.knittools.ui.theme.insightsStatValue
+import com.finnvek.knittools.ui.theme.insightsTrend
 import com.finnvek.knittools.ui.theme.knitToolsColors
 import com.finnvek.knittools.ui.theme.yarnColorForId
 import java.time.Instant
@@ -89,11 +99,7 @@ internal fun InsightsRangeKicker(
     Text(
         modifier = modifier,
         text = text,
-        style =
-            MaterialTheme.typography.labelMedium.copy(
-                fontSize = InsightsDimens.KickerFontSize,
-                fontWeight = FontWeight.Medium,
-            ),
+        style = MaterialTheme.typography.insightsKicker,
         color = MaterialTheme.knitToolsColors.onSurfaceMuted,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
@@ -126,11 +132,7 @@ internal fun InsightsHero(state: InsightsUiState) {
 private fun HeroSentenceText(text: String) {
     Text(
         text = text,
-        style =
-            MaterialTheme.typography.titleMedium.copy(
-                fontSize = InsightsDimens.HeroLeadFontSize,
-                fontWeight = FontWeight.Medium,
-            ),
+        style = MaterialTheme.typography.insightsHeroLead,
         color = MaterialTheme.knitToolsColors.onSurfaceMuted,
     )
 }
@@ -266,11 +268,7 @@ internal fun InsightsTrendLine(state: InsightsUiState) {
     val text = trendLineText(state) ?: return
     Text(
         text = text,
-        style =
-            MaterialTheme.typography.bodySmall.copy(
-                fontSize = InsightsDimens.TrendFontSize,
-                fontWeight = FontWeight.Medium,
-            ),
+        style = MaterialTheme.typography.insightsTrend,
         color = MaterialTheme.knitToolsColors.onSurfaceMuted,
         maxLines = 2,
         overflow = TextOverflow.Ellipsis,
@@ -328,11 +326,8 @@ private fun InsightsStat(
         BasicText(
             text = value,
             style =
-                TextStyle(
+                MaterialTheme.typography.insightsStatValue.copy(
                     color = MaterialTheme.colorScheme.onSurface,
-                    fontSize = InsightsDimens.StatValueFontSize,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = InsightsDimens.StatValueLetterSpacing,
                     fontFeatureSettings = "tnum",
                 ),
             autoSize =
@@ -434,11 +429,7 @@ internal fun InsightsProjectRow(
                 text =
                     project.projectName
                         ?: stringResource(R.string.new_project_name_format, project.projectId),
-                style =
-                    MaterialTheme.typography.titleMedium.copy(
-                        fontSize = InsightsDimens.ProjectNameFontSize,
-                        fontWeight = FontWeight.SemiBold,
-                    ),
+                style = MaterialTheme.typography.insightsProjectName,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -454,11 +445,7 @@ internal fun InsightsProjectRow(
                         ),
                         relativeDayText(project.lastSessionAt, today),
                     ),
-                style =
-                    MaterialTheme.typography.bodySmall.copy(
-                        fontSize = InsightsDimens.ProjectSubFontSize,
-                        fontWeight = FontWeight.Medium,
-                    ),
+                style = MaterialTheme.typography.insightsProjectSub,
                 color = MaterialTheme.knitToolsColors.onSurfaceMuted,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -469,11 +456,7 @@ internal fun InsightsProjectRow(
         Column(horizontalAlignment = Alignment.End) {
             Text(
                 text = durationText(DurationDisplayFormatter.fromMinutes(project.totalMinutes)),
-                style =
-                    MaterialTheme.typography.titleMedium.copy(
-                        fontSize = InsightsDimens.ProjectDurationFontSize,
-                        fontWeight = FontWeight.Bold,
-                    ),
+                style = MaterialTheme.typography.insightsProjectDuration,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 softWrap = false,
@@ -609,17 +592,13 @@ internal fun InsightsEmptyState() {
     ) {
         Text(
             text = stringResource(R.string.insights_empty_title),
-            style =
-                MaterialTheme.typography.headlineMedium.copy(
-                    // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
-                    fontSize = InsightsDimens.EmptyTitleFontSize,
-                    fontWeight = FontWeight.SemiBold,
-                ),
+            // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
+            style = MaterialTheme.typography.insightsEmptyTitle,
             color = MaterialTheme.colorScheme.onSurface,
         )
         Text(
             text = stringResource(R.string.insights_empty_body),
-            style = MaterialTheme.typography.bodyLarge.copy(fontSize = InsightsDimens.EmptyBodyFontSize),
+            style = MaterialTheme.typography.insightsEmptyBody,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = InsightsDimens.EmptyBodyTopMargin),
         )
@@ -649,16 +628,12 @@ internal fun InsightsRangeEmptyNote(timeRange: TimeRange) {
                         TimeRange.ALL_TIME -> R.string.insights_nothing_yet_all_time
                     },
                 ),
-            style =
-                MaterialTheme.typography.headlineSmall.copy(
-                    fontSize = InsightsDimens.EmptyRangeTitleFontSize,
-                    fontWeight = FontWeight.SemiBold,
-                ),
+            style = MaterialTheme.typography.insightsEmptyRangeTitle,
             color = MaterialTheme.colorScheme.onSurface,
         )
         Text(
             text = stringResource(R.string.insights_empty_body),
-            style = MaterialTheme.typography.bodyLarge.copy(fontSize = InsightsDimens.EmptyBodyFontSize),
+            style = MaterialTheme.typography.insightsEmptyBody,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = InsightsDimens.EmptyBodyTopMargin),
         )
@@ -677,17 +652,13 @@ internal fun InsightsProChartPrompt(onProUpgrade: () -> Unit) {
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         Text(
             text = stringResource(R.string.insights_pro_chart_title),
-            style =
-                MaterialTheme.typography.titleMedium.copy(
-                    fontSize = InsightsDimens.ProCardTitleFontSize,
-                    fontWeight = FontWeight.SemiBold,
-                ),
+            style = MaterialTheme.typography.insightsProCardTitle,
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(top = InsightsDimens.ProCardPadding),
         )
         Text(
             text = stringResource(R.string.insights_pro_chart_body),
-            style = MaterialTheme.typography.bodyMedium.copy(fontSize = InsightsDimens.ProCardBodyFontSize),
+            style = MaterialTheme.typography.insightsProCardBody,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = InsightsDimens.ProCardBodyTopMargin),
         )

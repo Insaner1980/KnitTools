@@ -40,7 +40,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.TextUnit
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.CounterState
@@ -258,9 +257,14 @@ internal fun ActiveWorkSessionRow(
                 .clip(MaterialTheme.shapes.medium)
                 .background(MaterialTheme.colorScheme.surfaceContainer)
                 .semantics { contentDescription = sessionDescription }
-                .padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
+                .padding(
+                    start = CounterDimens.WorkSessionStartPadding,
+                    end = CounterDimens.WorkSessionEndPadding,
+                    top = CounterDimens.WorkSessionVerticalPadding,
+                    bottom = CounterDimens.WorkSessionVerticalPadding,
+                ),
     ) {
-        val stackContent = maxWidth < 360.dp || fontScale >= 1.5f
+        val stackContent = maxWidth < CounterDimens.WorkSessionStackBreakpoint || fontScale >= 1.5f
         val sessionContent: @Composable () -> Unit = {
             WorkSessionStatusText(
                 label = label,
@@ -271,13 +275,13 @@ internal fun ActiveWorkSessionRow(
         val action: @Composable () -> Unit = {
             TextButton(
                 onClick = if (needsRecoveryReview) onResolve else onStop,
-                modifier = Modifier.heightIn(min = 48.dp),
+                modifier = Modifier.heightIn(min = CounterDimens.WorkSessionActionMinHeight),
             ) {
                 Text(actionLabel)
             }
         }
         if (stackContent) {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(CounterDimens.WorkSessionStackedSpacing)) {
                 sessionContent()
                 Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
                     action()
@@ -286,7 +290,7 @@ internal fun ActiveWorkSessionRow(
         } else {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(CounterDimens.WorkSessionInlineSpacing),
             ) {
                 Box(modifier = Modifier.weight(1f)) {
                     sessionContent()
@@ -309,7 +313,7 @@ private fun WorkSessionStatusText(
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onSurface,
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(CounterDimens.WorkSessionInlineSpacing)) {
             Text(
                 text = duration,
                 style = MaterialTheme.typography.bodyMedium,

@@ -267,8 +267,11 @@ class ProjectFoldersActivityTest {
             val parent = target.parent
             target = parent
         }
-        checkNotNull(target) { "No clickable accessibility ancestor" }.let { clickable ->
-            check(clickable.performAction(AccessibilityNodeInfo.ACTION_CLICK)) { "Accessibility click failed" }
+        val clickable = checkNotNull(target) { "No clickable accessibility ancestor" }
+        waitUntil("accessibility click") {
+            clickable.refresh() &&
+                clickable.isEnabled &&
+                clickable.performAction(AccessibilityNodeInfo.ACTION_CLICK)
         }
     }
 

@@ -1,5 +1,7 @@
 package com.finnvek.knittools.ui.screens.pattern
 
+import androidx.annotation.PluralsRes
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
@@ -17,6 +19,8 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
+import androidx.test.platform.app.InstrumentationRegistry
+import com.finnvek.knittools.R
 import org.junit.Rule
 import org.junit.Test
 
@@ -42,12 +46,18 @@ class PatternImageImportSurfaceTest {
             }
         }
 
-        composeRule.onNodeWithText("1 image selected").assertIsDisplayed()
-        composeRule.onNodeWithText("Page 1 of 1").assertIsDisplayed()
-        composeRule.onNodeWithContentDescription("Move page 1 earlier").assertIsNotEnabled()
-        composeRule.onNodeWithContentDescription("Move page 1 later").assertIsNotEnabled()
-        composeRule.onNodeWithContentDescription("Remove page 1").assertIsEnabled().assertHeightIsAtLeast(48.dp)
-        composeRule.onNodeWithText("Create pattern PDF").assertIsEnabled().assertHeightIsAtLeast(48.dp)
+        composeRule.onNodeWithText(plural(R.plurals.pattern_images_selected, 1, 1)).assertIsDisplayed()
+        composeRule.onNodeWithText(string(R.string.pattern_image_page_position, 1, 1)).assertIsDisplayed()
+        composeRule.onNodeWithContentDescription(string(R.string.pattern_image_move_earlier, 1)).assertIsNotEnabled()
+        composeRule.onNodeWithContentDescription(string(R.string.pattern_image_move_later, 1)).assertIsNotEnabled()
+        composeRule
+            .onNodeWithContentDescription(string(R.string.pattern_image_remove_page, 1))
+            .assertIsEnabled()
+            .assertHeightIsAtLeast(48.dp)
+        composeRule
+            .onNodeWithText(string(R.string.pattern_image_create_pdf))
+            .assertIsEnabled()
+            .assertHeightIsAtLeast(48.dp)
     }
 
     // CPD-ON
@@ -73,10 +83,13 @@ class PatternImageImportSurfaceTest {
             }
         }
 
-        composeRule.onNodeWithText("Creating page 1 of 2").assertIsDisplayed()
-        composeRule.onNodeWithText("Add more").assertIsNotEnabled()
-        composeRule.onNodeWithText("Create pattern PDF").assertIsNotEnabled()
-        composeRule.onNodeWithText("Cancel conversion").assertIsEnabled().assertHeightIsAtLeast(48.dp)
+        composeRule.onNodeWithText(string(R.string.pattern_image_conversion_progress, 1, 2)).assertIsDisplayed()
+        composeRule.onNodeWithText(string(R.string.pattern_image_add_more)).assertIsNotEnabled()
+        composeRule.onNodeWithText(string(R.string.pattern_image_create_pdf)).assertIsNotEnabled()
+        composeRule
+            .onNodeWithText(string(R.string.pattern_image_cancel_conversion))
+            .assertIsEnabled()
+            .assertHeightIsAtLeast(48.dp)
     }
 
     @Test
@@ -102,17 +115,17 @@ class PatternImageImportSurfaceTest {
         }
 
         composeRule
-            .onNodeWithText("Add more")
+            .onNodeWithText(string(R.string.pattern_image_add_more))
             .performScrollTo()
             .assertIsDisplayed()
             .assertHeightIsAtLeast(48.dp)
         composeRule
-            .onNodeWithText("Create pattern PDF")
+            .onNodeWithText(string(R.string.pattern_image_create_pdf))
             .performScrollTo()
             .assertIsDisplayed()
             .assertHeightIsAtLeast(72.dp)
         composeRule
-            .onNodeWithText("Cancel")
+            .onNodeWithText(string(R.string.cancel))
             .performScrollTo()
             .assertIsDisplayed()
             .assertHeightIsAtLeast(48.dp)
@@ -125,6 +138,22 @@ class PatternImageImportSurfaceTest {
             selection = PatternImageSelection(pages),
             phase = PatternImageImportPhase.READY,
         )
+
+    private fun string(
+        @StringRes id: Int,
+        vararg arguments: Any,
+    ): String = InstrumentationRegistry.getInstrumentation().targetContext.getString(id, *arguments)
+
+    private fun plural(
+        @PluralsRes id: Int,
+        quantity: Int,
+        vararg arguments: Any,
+    ): String =
+        InstrumentationRegistry
+            .getInstrumentation()
+            .targetContext
+            .resources
+            .getQuantityString(id, quantity, *arguments)
 
     private fun page(id: String) =
         StagedPatternPage(

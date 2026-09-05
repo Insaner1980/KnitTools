@@ -22,6 +22,7 @@ data class KnitToolsExtendedColors(
     val navBarIndicator: Color,
     val primaryTintContainer: Color,
     val activityCellEmpty: Color,
+    val transparentIndicator: Color,
     val activityRamp: List<Color>,
     val yarnPalette: List<Color>,
 )
@@ -39,6 +40,7 @@ val LocalKnitToolsColors =
             navBarIndicator = Color.Unspecified,
             primaryTintContainer = Color.Unspecified,
             activityCellEmpty = Color.Unspecified,
+            transparentIndicator = Color.Transparent,
             activityRamp = emptyList(),
             yarnPalette = YarnColors,
         )
@@ -95,6 +97,7 @@ private val DarkExtendedColors =
         navBarIndicator = NavActiveBg,
         primaryTintContainer = PrimaryTintContainer,
         activityCellEmpty = ActivityCellEmpty,
+        transparentIndicator = Color.Transparent,
         activityRamp = listOf(SecondaryMuted, Secondary, Tertiary, PrimaryContainer),
         yarnPalette = YarnColors,
     )
@@ -146,6 +149,7 @@ private val LightExtendedColors =
         navBarIndicator = LightNavActiveBg,
         primaryTintContainer = LightPrimaryTintContainer,
         activityCellEmpty = LightActivityCellEmpty,
+        transparentIndicator = Color.Transparent,
         activityRamp = listOf(LightActivityLow, Secondary, Tertiary, Primary),
         yarnPalette = LightYarnColors,
     )

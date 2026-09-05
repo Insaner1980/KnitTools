@@ -21,7 +21,6 @@ import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.ui.components.HubListItem
 import com.finnvek.knittools.ui.navigation.Screen
-import com.finnvek.knittools.ui.theme.RavelryTeal
 import com.finnvek.knittools.ui.theme.knitToolsColors
 
 // Historiallinen nimi: tämä composable on Tools-välilehden aloitusruutu,
@@ -95,7 +94,7 @@ fun HomeScreen(onNavigate: (Screen) -> Unit) {
                         title = stringResource(R.string.tool_ravelry),
                         description = stringResource(R.string.desc_ravelry),
                         onClick = { onNavigate(Screen.Ravelry) },
-                        titleColor = RavelryTeal,
+                        titleColor = MaterialTheme.knitToolsColors.tealAccent,
                     )
                 }
             }

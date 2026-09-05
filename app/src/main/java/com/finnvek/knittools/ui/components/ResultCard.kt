@@ -13,7 +13,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import com.finnvek.knittools.ui.theme.ComponentDimens
 
 @Composable
 fun ResultCard(
@@ -23,21 +23,25 @@ fun ResultCard(
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(ComponentDimens.ResultCardCornerRadius),
         colors =
             CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f),
             ),
-        border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.30f)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border =
+            BorderStroke(
+                ComponentDimens.ResultCardBorderWidth,
+                MaterialTheme.colorScheme.primary.copy(alpha = 0.30f),
+            ),
+        elevation = CardDefaults.cardElevation(defaultElevation = ComponentDimens.FlatElevation),
     ) {
-        Column(modifier = Modifier.padding(24.dp)) {
+        Column(modifier = Modifier.padding(ComponentDimens.LargeContentPadding)) {
             Text(
                 text = title.localizedUppercase(),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.outline,
             )
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(ComponentDimens.ContentSpacing))
             content()
         }
     }

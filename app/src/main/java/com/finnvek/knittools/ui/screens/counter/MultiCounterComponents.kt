@@ -44,7 +44,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.CounterValueDisplay
 import com.finnvek.knittools.domain.calculator.CounterValueFormatter
@@ -62,9 +61,12 @@ import com.finnvek.knittools.ui.components.NumberInputOptions
 import com.finnvek.knittools.ui.components.SegmentedToggle
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
 import com.finnvek.knittools.ui.theme.CounterDimens
+import com.finnvek.knittools.ui.theme.counterExtraName
+import com.finnvek.knittools.ui.theme.counterExtraValue
 import java.util.Locale
 
 private const val DISABLED_CONTENT_ALPHA = 0.38f
+private const val COUNTER_NAME_MAX_LENGTH = 50
 
 data class CounterItemActions(
     val onIncrement: () -> Unit,
@@ -117,12 +119,8 @@ fun CounterListItem(
         ) {
             Text(
                 text = counter.name,
-                style =
-                    MaterialTheme.typography.titleMedium.copy(
-                        // CPD-ON
-                        fontSize = 17.sp,
-                        fontWeight = FontWeight.SemiBold,
-                    ),
+                // CPD-ON
+                style = MaterialTheme.typography.counterExtraName,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
@@ -155,8 +153,7 @@ fun CounterListItem(
 
             Text(
                 text = displayText,
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.counterExtraValue,
                 color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.weight(1f),
@@ -322,7 +319,7 @@ private fun RenameCounterDialog(
         text = {
             TextField(
                 value = name,
-                onValueChange = { if (it.length <= 50) name = it },
+                onValueChange = { if (it.length <= COUNTER_NAME_MAX_LENGTH) name = it },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
                 colors =
@@ -424,7 +421,7 @@ fun AddCounterDialog(
                     ),
                 actions =
                     AddCounterDialogContentActions(
-                        onNameChange = { if (it.length <= 50) name = it },
+                        onNameChange = { if (it.length <= COUNTER_NAME_MAX_LENGTH) name = it },
                         onTypeChange = { index ->
                             selectedType = index
                             if (index == 3) {
@@ -488,7 +485,7 @@ private fun createProjectCounterDraft(
         name = params.name.trim(),
         repeatAt = if (params.isRepeating) params.repeatAt else null,
         stepSize = params.stepSize,
-        counterType = counterTypeFromIndex(selectedType),
+        counterType = counterTypeForDraft(selectedType, params.isRepeatSection),
         startingStitches = if (params.isShaping) params.startingStitches else null,
         stitchChange = if (params.isShaping) params.stitchChange else null,
         shapeEveryN = if (params.isShaping) params.shapeEveryN else null,
@@ -547,6 +544,16 @@ private fun counterTypeFromIndex(index: Int): ProjectCounterType =
         2 -> ProjectCounterType.SHAPING
         3 -> ProjectCounterType.REPEAT_SECTION
         else -> ProjectCounterType.COUNT_UP
+    }
+
+internal fun counterTypeForDraft(
+    selectedType: Int,
+    isRepeatSection: Boolean,
+): ProjectCounterType =
+    when {
+        selectedType == 3 && isRepeatSection -> ProjectCounterType.REPEAT_SECTION
+        selectedType == 3 -> ProjectCounterType.COUNT_UP
+        else -> counterTypeFromIndex(selectedType)
     }
 
 // Data-luokka AddCounterDialogContent-parametrien ryhmittelyyn (S107)

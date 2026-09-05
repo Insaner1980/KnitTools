@@ -94,6 +94,7 @@ class ProjectDocumentRepository
         private val layerRepository: PatternAnnotationLayerRepository,
         private val transactionRunner: DatabaseTransactionRunner,
         private val fileAvailability: ProjectDocumentFileAvailability,
+        private val fileReferenceCoordinator: PatternFileReferenceCoordinator = PatternFileReferenceCoordinator(),
     ) {
         private val removal = Removal()
 
@@ -163,21 +164,25 @@ class ProjectDocumentRepository
             projectId: Long,
             savedPatternId: Long,
         ): ProjectDocumentMutationResult =
-            when (val preparation = prepareSavedPatternDocument(projectId, savedPatternId)) {
-                SavedPatternDocumentPreparation.AlreadyAttached -> ProjectDocumentMutationResult.AlreadyAttached
-                SavedPatternDocumentPreparation.MissingSavedPattern -> ProjectDocumentMutationResult.MissingSavedPattern
-                SavedPatternDocumentPreparation.MetadataOnlyPattern -> ProjectDocumentMutationResult.MetadataOnlyPattern
-                SavedPatternDocumentPreparation.PdfUnavailable -> ProjectDocumentMutationResult.PdfUnavailable
-                is SavedPatternDocumentPreparation.Ready ->
-                    mutation {
-                        transactionRunner.run {
-                            addSavedPatternInCurrentTransaction(
-                                projectId = projectId,
-                                savedPatternId = savedPatternId,
-                                verifiedLocalPdfUri = preparation.localPdfUri,
-                            )
+            fileReferenceCoordinator.withReferenceLock {
+                when (val preparation = prepareSavedPatternDocument(projectId, savedPatternId)) {
+                    SavedPatternDocumentPreparation.AlreadyAttached -> ProjectDocumentMutationResult.AlreadyAttached
+                    SavedPatternDocumentPreparation.MissingSavedPattern ->
+                        ProjectDocumentMutationResult.MissingSavedPattern
+                    SavedPatternDocumentPreparation.MetadataOnlyPattern ->
+                        ProjectDocumentMutationResult.MetadataOnlyPattern
+                    SavedPatternDocumentPreparation.PdfUnavailable -> ProjectDocumentMutationResult.PdfUnavailable
+                    is SavedPatternDocumentPreparation.Ready ->
+                        mutation {
+                            transactionRunner.run {
+                                addSavedPatternInCurrentTransaction(
+                                    projectId = projectId,
+                                    savedPatternId = savedPatternId,
+                                    verifiedLocalPdfUri = preparation.localPdfUri,
+                                )
+                            }
                         }
-                    }
+                }
             }
 
         suspend fun addImportedPdf(
@@ -187,9 +192,11 @@ class ProjectDocumentRepository
             documentKey: String? = null,
         ): ProjectDocumentMutationResult {
             preflightImportedPdf(localPdfUri, label, documentKey)?.let { return it }
-            return mutation {
-                transactionRunner.run {
-                    addImportedPdfInCurrentTransaction(projectId, localPdfUri, label, documentKey)
+            return fileReferenceCoordinator.withReferenceLock {
+                mutation {
+                    transactionRunner.run {
+                        addImportedPdfInCurrentTransaction(projectId, localPdfUri, label, documentKey)
+                    }
                 }
             }
         }

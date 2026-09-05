@@ -11,6 +11,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.coroutineContext
@@ -107,9 +108,11 @@ class PatternPdfExporter
             tempFile: File,
             destinationUri: Uri,
         ) {
-            val output = requireNotNull(context.contentResolver.openOutputStream(destinationUri, "w"))
-            tempFile.inputStream().buffered().use { input ->
-                output.buffered().use { target ->
+            val output =
+                context.contentResolver.openOutputStream(destinationUri, "w")
+                    ?: throw IOException("Pattern PDF destination is unavailable")
+            output.buffered().use { target ->
+                tempFile.inputStream().buffered().use { input ->
                     val buffer = ByteArray(COPY_BUFFER_SIZE)
                     while (true) {
                         coroutineContext.ensureActive()

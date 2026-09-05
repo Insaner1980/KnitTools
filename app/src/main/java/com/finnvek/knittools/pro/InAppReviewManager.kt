@@ -11,10 +11,12 @@ import com.finnvek.knittools.data.datastore.editPreferencesSafely
 import com.finnvek.knittools.data.datastore.safePreferencesData
 import com.google.android.play.core.review.ReviewManagerFactory
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -63,9 +65,18 @@ class InAppReviewManager
             if (!saved) return
 
             val manager = ReviewManagerFactory.create(context)
-            manager.requestReviewFlow().addOnSuccessListener { reviewInfo ->
-                manager.launchReviewFlow(activity, reviewInfo)
-            }
+            val reviewInfo =
+                try {
+                    manager.requestReviewFlow().await()
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    context.reviewDataStore.editPreferencesSafely {
+                        it[KEY_REVIEW_REQUESTED] = false
+                    }
+                    return
+                }
+            manager.launchReviewFlow(activity, reviewInfo)
         }
 
         companion object {

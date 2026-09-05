@@ -126,7 +126,7 @@ class RavelryBackendClientMapperTest {
     @Test
     fun `rejects imported pattern detail when backend omits ravelry pattern id`() {
         val error =
-            assertThrows(IllegalArgumentException::class.java) {
+            assertThrows(RavelryHttpException::class.java) {
                 RavelryBackendMappers.patternDetailFrom(
                     mapOf(
                         "title" to "Cozy Hat",
@@ -143,7 +143,7 @@ class RavelryBackendClientMapperTest {
     @Test
     fun `rejects non-positive fractional and overflowing detail ids`() {
         listOf(0, -1, 42.5, Int.MAX_VALUE.toLong() + 1L).forEach { invalidId ->
-            assertThrows(IllegalArgumentException::class.java) {
+            assertThrows(RavelryHttpException::class.java) {
                 RavelryBackendMappers.patternDetailFrom(
                     mapOf(
                         "ravelryPatternId" to invalidId,

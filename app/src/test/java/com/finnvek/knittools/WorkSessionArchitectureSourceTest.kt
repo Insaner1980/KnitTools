@@ -14,7 +14,7 @@ class WorkSessionArchitectureSourceTest {
         val dataStore = ProjectSourceFiles.read(PREFERENCES_MANAGER)
         val onCleared = viewModel.substring(viewModel.indexOf("override fun onCleared()"))
 
-        assertTrue(database.contains("version = 24"))
+        assertTrue(database.contains("version = KNITTOOLS_DATABASE_VERSION"))
         assertTrue(database.contains("MIGRATION_20_21"))
         assertTrue(database.contains("ActiveSessionEntity::class"))
         assertFalse(manifest.contains("POST_NOTIFICATIONS"))

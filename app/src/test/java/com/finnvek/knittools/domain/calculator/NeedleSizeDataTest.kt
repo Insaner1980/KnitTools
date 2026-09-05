@@ -30,6 +30,13 @@ class NeedleSizeDataTest {
     }
 
     @Test
+    fun `search accepts decimal comma for metric size`() {
+        val results = NeedleSizeData.search("2,5")
+
+        assertTrue(results.any { it.metricMm == 2.5 })
+    }
+
+    @Test
     fun `search by US size`() {
         val results = NeedleSizeData.search("8")
         assertTrue(results.any { it.metricMm == 5.0 })

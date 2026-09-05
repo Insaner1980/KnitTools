@@ -55,11 +55,17 @@ object InstructionParser {
         return parseGaugeSwatchResponse(lines)
     }
 
-    private fun parseKeyValueLines(text: String): Map<String, String> =
-        text.lines().associate { line ->
-            val parts = line.split(":", limit = 2)
-            if (parts.size == 2) parts[0].trim().uppercase() to parts[1].trim() else "" to ""
+    private fun parseKeyValueLines(text: String): Map<String, String> {
+        val values = linkedMapOf<String, String>()
+        text.lines().forEach { line ->
+            val delimiter = line.indexOf(':')
+            if (delimiter < 0) return@forEach
+            val key = line.substring(0, delimiter).trim().uppercase()
+            if (key in values) return emptyMap()
+            values[key] = line.substring(delimiter + 1).trim()
         }
+        return values
+    }
 
     private fun parseIncreaseDecreaseResponse(lines: Map<String, String>): ParsedInstruction.IncreaseDecrease? {
         if (lines.containsKey("TYPE") && lines.containsKey("CURRENT") && lines.containsKey("CHANGE")) {
@@ -172,10 +178,15 @@ object InstructionParser {
             "CURENTLY" to "CURRENTLY",
         )
 
+    private val typoRegexes =
+        TYPO_FIXES.map { (typo, fix) ->
+            Regex("""\b${Regex.escape(typo)}\b""") to fix
+        }
+
     private fun fixTypos(text: String): String {
         var result = text
-        for ((typo, fix) in TYPO_FIXES) {
-            result = result.replace(typo, fix)
+        for ((pattern, fix) in typoRegexes) {
+            result = pattern.replace(result, fix)
         }
         return result
     }
@@ -277,8 +288,8 @@ object InstructionParser {
         parseGaugeStandard(upper)
             ?: parseGaugeTension(upper)
             ?: parseGaugePerInch(upper)
-            ?: parseGaugeBareNumbers(upper)
             ?: parseGaugeFallback(upper)
+            ?: parseGaugeBareNumbers(upper)
 
     // "X stitches/sts and Y rows per 10cm/4in" tai "X sts, Y rows = 10cm"
     @Suppress("kotlin:S5843") // Gauge-fallback hyväksyy useita "sts/rows per 10 cm / 4 in" -muotoja.

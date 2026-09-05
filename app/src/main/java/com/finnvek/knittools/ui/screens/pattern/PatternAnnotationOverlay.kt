@@ -224,7 +224,10 @@ private fun updateAnnotationPointerGesture(
 ): PatternAnnotationPointerGestureState {
     val change = event.changes.firstOrNull { it.id.value == state.activePointerId }
     if (change == null || change.changedToUpIgnoreConsumed() || !change.pressed) {
-        if (state.gestureTool != PatternAnnotationTool.ERASER) {
+        if (
+            state.gestureTool != PatternAnnotationTool.ERASER &&
+            state.gestureTool != PatternAnnotationTool.SELECT
+        ) {
             actions.onCommitStroke(simplificationTolerance)
         }
         change?.consume()

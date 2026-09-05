@@ -4,7 +4,9 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -12,15 +14,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
-import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.DurationDisplay
 import com.finnvek.knittools.domain.calculator.DurationShape
 import com.finnvek.knittools.ui.screens.counter.counterMainNumberFittedFontSize
 import com.finnvek.knittools.ui.theme.InsightsDimens
+import com.finnvek.knittools.ui.theme.insightsHeroPrimaryNumber
+import com.finnvek.knittools.ui.theme.insightsHeroPrimaryUnit
+import com.finnvek.knittools.ui.theme.insightsHeroSecondaryNumber
+import com.finnvek.knittools.ui.theme.insightsHeroSecondaryUnit
 
 /**
  * Yksi paikka, jossa [DurationDisplay]-slotit käännetään lokalisoiduksi tekstiksi.
@@ -51,6 +55,7 @@ fun DurationHero(
     val format = durationFormat(display)
     val numbers = durationArguments(display).map { String.format(locale, "%d", it) }
     val runs = durationRuns(format, numbers)
+    val typography = MaterialTheme.typography
     val spacingPx = with(LocalDensity.current) { InsightsDimens.HeroUnitToMinutesSpacing.roundToPx() }
 
     BoxWithConstraints(modifier = modifier) {
@@ -67,7 +72,7 @@ fun DurationHero(
                             textMeasurer
                                 .measure(
                                     text = run.text,
-                                    style = heroRunStyle(run, candidateScale, color),
+                                    style = heroRunStyle(run, candidateScale, color, typography),
                                     softWrap = false,
                                     maxLines = 1,
                                 ).size.width
@@ -85,7 +90,7 @@ fun DurationHero(
                 }
                 Text(
                     text = run.text,
-                    style = heroRunStyle(run, scale, color),
+                    style = heroRunStyle(run, scale, color, typography),
                     maxLines = 1,
                     modifier = Modifier.alignByBaseline(),
                 )
@@ -163,27 +168,20 @@ private fun heroRunStyle(
     run: DurationRun,
     scale: Float,
     color: Color,
+    typography: Typography,
 ): TextStyle {
-    val baseSize =
+    val baseStyle =
         when {
-            run.isNumber && !run.isSecondary -> InsightsDimens.HeroPrimaryNumberFontSize
-            run.isNumber -> InsightsDimens.HeroSecondaryNumberFontSize
-            !run.isSecondary -> InsightsDimens.HeroPrimaryUnitFontSize
-            else -> InsightsDimens.HeroSecondaryUnitFontSize
-        }
-    val weight =
-        when {
-            run.isNumber && !run.isSecondary -> FontWeight.ExtraBold
-            run.isNumber -> FontWeight.Bold
-            else -> FontWeight.SemiBold
+            run.isNumber && !run.isSecondary -> typography.insightsHeroPrimaryNumber
+            run.isNumber -> typography.insightsHeroSecondaryNumber
+            !run.isSecondary -> typography.insightsHeroPrimaryUnit
+            else -> typography.insightsHeroSecondaryUnit
         }
     // Ei tabulaarinumeroita: hero on yksi luku, ei sarake. Tasalevyinen ykkönen
     // repi "1 h" auki samalla kun "9h" pysyi tiiviinä.
-    return TextStyle(
+    return baseStyle.copy(
         color = color,
-        fontSize = (baseSize.value * scale).sp,
-        fontWeight = weight,
-        letterSpacing = if (run.isNumber) InsightsDimens.HeroNumberLetterSpacing else TextUnit.Unspecified,
+        fontSize = (baseStyle.fontSize.value * scale).sp,
     )
 }
 

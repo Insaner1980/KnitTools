@@ -101,6 +101,16 @@ class InstructionParserTest {
         assertTrue(InstructionParser.parseResponse("TYPE: INCREASE\nCURRENT: 96") is ParsedInstruction.Failure)
     }
 
+    @Test
+    fun `parseResponse rejects duplicate normalized keys`() {
+        val result =
+            InstructionParser.parseResponse(
+                "TYPE: INCREASE\nCURRENT: 96\ncurrent: 80\nCHANGE: 12",
+            )
+
+        assertTrue(result is ParsedInstruction.Failure)
+    }
+
     // === parseWithRegex: Increase/Decrease ===
 
     @Test
@@ -244,6 +254,16 @@ class InstructionParserTest {
         assertEquals(ParsedInstruction.GaugeUnit.PER_10_CM, g.unit)
     }
     // CPD-ON
+
+    @Test
+    fun `regex - labelled gauge values win over unrelated leading number`() {
+        val result = InstructionParser.parseWithRegex("GAUGE ON 4 MM: 22 STS 30 ROWS")
+
+        assertTrue(result is ParsedInstruction.Gauge)
+        val gauge = result as ParsedInstruction.Gauge
+        assertEquals(22.0, gauge.stitchesPer10cm, 0.01)
+        assertEquals(30.0, gauge.rowsPer10cm, 0.01)
+    }
 
     @Test
     fun `regex - sts per inch normalizes to 4 inch gauge unit`() {

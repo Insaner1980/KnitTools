@@ -101,6 +101,11 @@ fun AllPhotosScreen(
     val deleteFailedMessage = stringResource(R.string.generic_error_unknown)
     val viewingPhoto = remember(viewingPhotoId, state.photos) { state.photos.firstOrNull { it.id == viewingPhotoId } }
 
+    LaunchedEffect(selectedProjectId, state.photos) {
+        val selectedId = selectedProjectId ?: return@LaunchedEffect
+        if (state.photos.none { it.projectId == selectedId }) selectedProjectId = null
+    }
+
     val filteredPhotos =
         remember(selectedProjectId, state.photos) {
             if (selectedProjectId != null) {
@@ -419,6 +424,7 @@ private fun PhotoGridItem(
                 .combinedClickable(
                     onClick = onClick,
                     onLongClick = onLongClick,
+                    onLongClickLabel = stringResource(R.string.select_photo),
                 ).then(
                     if (isSelectMode) {
                         Modifier.semantics { selected = isSelected }

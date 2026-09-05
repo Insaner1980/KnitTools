@@ -31,7 +31,7 @@ detektComposeRules = "0.5.8"
 androidSecurityLint = "1.0.4"
 composeStabilityAnalyzer = "0.12.0"
 sonarqube = "7.3.1.8318"
-sentry = "8.43.1"
+sentry = "8.54.0"
 
 baselineprofile = "1.5.0-beta01"
 wire = "6.3.0"

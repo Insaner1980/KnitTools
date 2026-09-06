@@ -6,6 +6,58 @@ import org.junit.Test
 
 class RavelryDetailFlowSourceTest {
     @Test
+    fun `pdf save explanation is limited to the unsaved detail action`() {
+        val detailScreen = ProjectSourceFiles.read(RAVELRY_DETAIL_SCREEN)
+        val actions =
+            detailScreen.substringAfter("private fun PatternActions(").substringBefore("private fun DetailRow(")
+        assertTrue(actions.contains("if (!isSaved) {"))
+        val explanation = actions.substringAfter("if (!isSaved) {").substringBefore("\n    }")
+
+        assertTrue(explanation.contains("stringResource(R.string.ravelry_save_pattern_explanation)"))
+        assertFalse(explanation.contains("maxLines"))
+        assertFalse(explanation.contains("TextOverflow"))
+        assertTrue(actions.contains("onClick = onSave"))
+        assertTrue(actions.contains("enabled = !isSaved"))
+        val body =
+            detailScreen
+                .substringAfter("private fun PatternDetailBody(")
+                .substringBefore("private fun RavelrySearchError.")
+        val loading = body.substringAfter("isLoading -> {").substringBefore("detail != null -> {")
+        assertTrue(loading.contains("CircularProgressIndicator()"))
+        assertFalse(loading.contains("PatternDetailContent("))
+        assertTrue(body.substringAfter("detail != null -> {").contains("isSaved = isSaved"))
+    }
+
+    @Test
+    fun `saved ravelry pdf explanation uses attachment absence rather than offline flag`() {
+        val detail = ProjectSourceFiles.read(SAVED_PATTERN_DETAIL_SCREEN)
+        val availability =
+            detail
+                .substringAfter("SavedPatternAvailability(pattern = pattern,")
+                .substringBefore("SavedPatternDetailActions(")
+        assertTrue(availability.contains("if (pattern.requiresRavelryAccess) {"))
+        val explanation =
+            availability.substringAfter("if (pattern.requiresRavelryAccess) {").substringBefore("\n                }")
+
+        assertTrue(explanation.contains("stringResource(R.string.saved_pattern_detail_no_pdf_explanation)"))
+        assertFalse(explanation.contains("maxLines"))
+        assertFalse(explanation.contains("TextOverflow"))
+        val helpers =
+            detail
+                .substringAfter("private val SavedPattern.hasAttachedPdf:")
+                .substringBefore("private fun SavedPattern.ravelryUrlOrNull")
+        assertTrue(helpers.contains("get() = !localPdfUri.isNullOrBlank()"))
+        assertTrue(helpers.contains("get() = source == SavedPatternSource.Ravelry && !hasAttachedPdf"))
+        assertFalse(helpers.contains("isAvailableOffline"))
+        val webContent =
+            detail
+                .substringAfter("private fun WebPatternDetailContent(")
+                .substringBefore("private fun SavedPatternDetailHeader(")
+        assertTrue(webContent.contains("R.string.web_pattern_not_offline"))
+        assertFalse(webContent.contains("R.string.saved_pattern_detail_no_pdf_explanation"))
+    }
+
+    @Test
     fun `detail screen reports save result from view model events`() {
         val detailScreen = ProjectSourceFiles.read(RAVELRY_DETAIL_SCREEN)
 
@@ -52,6 +104,8 @@ class RavelryDetailFlowSourceTest {
     }
 
     private companion object {
+        private const val SAVED_PATTERN_DETAIL_SCREEN =
+            "app/src/main/java/com/finnvek/knittools/ui/screens/library/SavedPatternDetailScreen.kt"
         private const val RAVELRY_DETAIL_SCREEN =
             "app/src/main/java/com/finnvek/knittools/ui/screens/ravelry/RavelryDetailScreen.kt"
         private const val RAVELRY_VIEW_MODEL =

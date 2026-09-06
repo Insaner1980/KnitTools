@@ -206,6 +206,8 @@
     <string name="project_yarn_quantity_format">Antall: %d</string>
     <string name="save_to_my_yarn">Lagre i My Yarn</string>
     <string name="saved_to_my_yarn">Lagret i My Yarn</string>
+    <string name="save_to_my_yarn_explanation">Kopierer garnnavn, beskrivelse og antall til et garnkort i Mitt garn som knyttes til dette prosjektet. Denne oppføringen blir værende her; notatene kopieres ikke.</string>
+    <string name="saved_to_my_yarn_explanation">Denne prosjektoppføringen forblir separat. Notatene ble ikke kopiert til garnkortet i Mitt garn.</string>
     <string name="yarn_count_format">%1$d garn</string>
     <string name="linked_project_label">Koblet prosjekt</string>
     <string name="link_to_project_label">Koble til prosjekt</string>
@@ -612,8 +614,8 @@
         <item quantity="other">Slette %1$d bilder?</item>
     </plurals>
     <plurals name="delete_patterns_confirm">
-        <item quantity="one">Slette %1$d oppskrift?</item>
-        <item quantity="other">Slette %1$d oppskrifter?</item>
+        <item quantity="one">Slette %1$d oppskrift fra biblioteket?\n\nEventuelle PDF-merknader som er laget i biblioteket for denne oppskriften, slettes også og vises ikke lenger i prosjekter. PDF-er som allerede er vedlagt prosjekter, og PDF-merknader som er laget i prosjektene, beholdes.</item>
+        <item quantity="other">Slette %1$d oppskrifter fra biblioteket?\n\nEventuelle PDF-merknader som er laget i biblioteket for de valgte oppskriftene, slettes også og vises ikke lenger i prosjekter. PDF-er som allerede er vedlagt prosjekter, og PDF-merknader som er laget i prosjektene, beholdes.</item>
     </plurals>
     <string name="delete_pattern">Slett oppskrift</string>
     <string name="delete_yarn_cards_confirm">Slette %d garnkort?</string>
@@ -629,6 +631,7 @@
     <string name="ravelry_saved_patterns">Lagrede oppskrifter</string>
     <string name="start_project">Start prosjekt</string>
     <string name="save_pattern">Lagre oppskrift</string>
+    <string name="ravelry_save_pattern_explanation">Lagrer opplysningene om oppskriften i Biblioteket ditt. Ingen PDF lastes ned.</string>
     <string name="ravelry_open_saved_pattern">Åpne</string>
     <string name="open_in_ravelry">Åpne i Ravelry</string>
     <string name="pattern_saved">Oppskrift lagret</string>
@@ -645,9 +648,10 @@
     <string name="saved_pattern_detail_available_offline">Tilgjengelig offline</string>
     <string name="saved_pattern_detail_open_on_ravelry">Åpne i Ravelry</string>
     <string name="saved_pattern_detail_requires_ravelry">Krever Ravelry</string>
+    <string name="saved_pattern_detail_no_pdf_explanation">Opplysningene om oppskriften er lagret. Ingen PDF er vedlagt for lesing uten nett.</string>
     <string name="saved_pattern_detail_open_pattern">Åpne oppskrift</string>
     <string name="saved_pattern_detail_attach_to_project">Knytt til prosjekt</string>
-    <string name="saved_pattern_detail_remove_confirm">Fjerne denne lagrede oppskriften?</string>
+    <string name="saved_pattern_detail_remove_confirm">Fjerne denne lagrede oppskriften fra biblioteket?\n\nEventuelle PDF-merknader som er laget i biblioteket for denne oppskriften, slettes også og vises ikke lenger i prosjekter. PDF-er som allerede er vedlagt prosjekter, og PDF-merknader som er laget i prosjektene, beholdes.</string>
     <string name="filter_weight">Tykkelse</string>
     <string name="filter_difficulty">Vanskelighetsgrad</string>
     <string name="free">Gratis</string>
@@ -996,7 +1000,7 @@
     <string name="web_pattern_edit">Rediger nettmønster</string>
     <string name="web_pattern_delete">Slett nettmønster</string>
     <string name="web_pattern_delete_confirm_title">Slette nettmønsteret?</string>
-    <string name="web_pattern_delete_confirm_message">Slette %1$s fra Lagrede mønstre?</string>
+    <string name="web_pattern_delete_confirm_message">Slette %1$s fra Lagrede oppskrifter i biblioteket?\n\nEventuelle PDF-merknader som er laget i biblioteket for denne oppskriften, slettes også og vises ikke lenger i prosjekter. PDF-er som allerede er vedlagt prosjekter, og PDF-merknader som er laget i prosjektene, beholdes.</string>
     <string name="web_pattern_attach">Koble til nettmønster</string>
     <string name="web_pattern_unlink">Koble fra mønsterinformasjonen</string>
     <string name="web_pattern_replace_confirm_title">Erstatte mønsterinformasjonen?</string>

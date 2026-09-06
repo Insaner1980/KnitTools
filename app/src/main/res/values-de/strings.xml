@@ -206,6 +206,8 @@
     <string name="project_yarn_quantity_format">Menge: %d</string>
     <string name="save_to_my_yarn">In My Yarn speichern</string>
     <string name="saved_to_my_yarn">In My Yarn gespeichert</string>
+    <string name="save_to_my_yarn_explanation">Kopiert Garnname, Beschreibung und Menge auf eine mit diesem Projekt verknüpfte Garnkarte unter Mein Garn. Dieser Eintrag bleibt hier; seine Notizen werden nicht kopiert.</string>
+    <string name="saved_to_my_yarn_explanation">Dieser Projekteintrag bleibt separat. Seine Notizen wurden nicht auf die Garnkarte unter Mein Garn kopiert.</string>
     <string name="yarn_count_format">%1$d Garne</string>
     <string name="linked_project_label">Verknüpftes Projekt</string>
     <string name="link_to_project_label">Mit Projekt verknüpfen</string>
@@ -612,8 +614,8 @@
         <item quantity="other">%1$d Fotos löschen?</item>
     </plurals>
     <plurals name="delete_patterns_confirm">
-        <item quantity="one">%1$d Anleitung löschen?</item>
-        <item quantity="other">%1$d Anleitungen löschen?</item>
+        <item quantity="one">%1$d Anleitung aus der Bibliothek löschen?\n\nFalls für diese Anleitung PDF-Anmerkungen in der Bibliothek erstellt wurden, werden sie ebenfalls gelöscht und nicht mehr in Projekten angezeigt. Bereits an Projekte angehängte PDFs und innerhalb von Projekten erstellte PDF-Anmerkungen bleiben erhalten.</item>
+        <item quantity="other">%1$d Anleitungen aus der Bibliothek löschen?\n\nFalls für die ausgewählten Anleitungen PDF-Anmerkungen in der Bibliothek erstellt wurden, werden sie ebenfalls gelöscht und nicht mehr in Projekten angezeigt. Bereits an Projekte angehängte PDFs und innerhalb von Projekten erstellte PDF-Anmerkungen bleiben erhalten.</item>
     </plurals>
     <string name="delete_pattern">Anleitung löschen</string>
     <string name="delete_yarn_cards_confirm">%d Garnkarten löschen?</string>
@@ -629,6 +631,7 @@
     <string name="ravelry_saved_patterns">Gespeicherte Anleitungen</string>
     <string name="start_project">Projekt starten</string>
     <string name="save_pattern">Anleitung speichern</string>
+    <string name="ravelry_save_pattern_explanation">Speichert die Angaben zur Anleitung in deiner Bibliothek. Dabei wird keine PDF heruntergeladen.</string>
     <string name="ravelry_open_saved_pattern">Öffnen</string>
     <string name="open_in_ravelry">In Ravelry öffnen</string>
     <string name="pattern_saved">Anleitung gespeichert</string>
@@ -645,9 +648,10 @@
     <string name="saved_pattern_detail_available_offline">Offline verfügbar</string>
     <string name="saved_pattern_detail_open_on_ravelry">Auf Ravelry öffnen</string>
     <string name="saved_pattern_detail_requires_ravelry">Benötigt Ravelry</string>
+    <string name="saved_pattern_detail_no_pdf_explanation">Die Angaben zur Anleitung sind gespeichert. Es ist keine PDF zum Lesen ohne Internetverbindung angehängt.</string>
     <string name="saved_pattern_detail_open_pattern">Anleitung öffnen</string>
     <string name="saved_pattern_detail_attach_to_project">An Projekt anhängen</string>
-    <string name="saved_pattern_detail_remove_confirm">Diese gespeicherte Anleitung entfernen?</string>
+    <string name="saved_pattern_detail_remove_confirm">Diese gespeicherte Anleitung aus der Bibliothek entfernen?\n\nFalls für diese Anleitung PDF-Anmerkungen in der Bibliothek erstellt wurden, werden sie ebenfalls gelöscht und nicht mehr in Projekten angezeigt. Bereits an Projekte angehängte PDFs und innerhalb von Projekten erstellte PDF-Anmerkungen bleiben erhalten.</string>
     <string name="filter_weight">Stärke</string>
     <string name="filter_difficulty">Schwierigkeit</string>
     <string name="free">Kostenlos</string>
@@ -996,7 +1000,7 @@
     <string name="web_pattern_edit">Webmuster bearbeiten</string>
     <string name="web_pattern_delete">Webmuster löschen</string>
     <string name="web_pattern_delete_confirm_title">Webmuster löschen?</string>
-    <string name="web_pattern_delete_confirm_message">%1$s aus den gespeicherten Mustern löschen?</string>
+    <string name="web_pattern_delete_confirm_message">%1$s aus den gespeicherten Anleitungen in der Bibliothek löschen?\n\nFalls für diese Anleitung PDF-Anmerkungen in der Bibliothek erstellt wurden, werden sie ebenfalls gelöscht und nicht mehr in Projekten angezeigt. Bereits an Projekte angehängte PDFs und innerhalb von Projekten erstellte PDF-Anmerkungen bleiben erhalten.</string>
     <string name="web_pattern_attach">Webmuster verknüpfen</string>
     <string name="web_pattern_unlink">Musterinformationen entfernen</string>
     <string name="web_pattern_replace_confirm_title">Musterinformationen ersetzen?</string>

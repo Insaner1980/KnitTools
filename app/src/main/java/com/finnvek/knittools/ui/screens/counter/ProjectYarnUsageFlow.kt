@@ -67,7 +67,7 @@ fun ProjectYarnUsageFlow(
             }
         }
     }
-    if (editor.draft == null || editor.draft?.projectId != projectId) {
+    if (editor.draft?.projectId != projectId) {
         YarnManagementSheet(
             linkedYarns = linkedYarns,
             projectYarnNotes = projectYarnNotes,

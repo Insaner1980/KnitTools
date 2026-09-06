@@ -126,6 +126,7 @@ fun RavelrySearchScreen(
 
     if (showDeleteConfirmDialog) {
         ConfirmationDialog(
+            scrollableMessage = true,
             title = stringResource(R.string.delete_pattern),
             message =
                 pluralStringResource(

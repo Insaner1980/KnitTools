@@ -397,6 +397,15 @@ private fun PatternActions(
         )
     }
 
+    if (!isSaved) {
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = stringResource(R.string.ravelry_save_pattern_explanation),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+
     Spacer(modifier = Modifier.height(8.dp))
 
     TextButton(

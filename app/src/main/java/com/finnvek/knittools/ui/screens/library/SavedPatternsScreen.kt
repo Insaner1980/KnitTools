@@ -209,6 +209,7 @@ private fun SavedPatternsDeleteDialog(
     ConfirmationDialog(
         title = stringResource(R.string.delete_pattern),
         message = pluralStringResource(R.plurals.delete_patterns_confirm, selectedCount, selectedCount),
+        scrollableMessage = true,
         confirmText = stringResource(R.string.delete),
         isDestructive = true,
         onConfirm = onConfirm,

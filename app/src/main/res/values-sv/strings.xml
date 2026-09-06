@@ -206,6 +206,8 @@
     <string name="project_yarn_quantity_format">Antal: %d</string>
     <string name="save_to_my_yarn">Spara i My Yarn</string>
     <string name="saved_to_my_yarn">Sparat i My Yarn</string>
+    <string name="save_to_my_yarn_explanation">Kopierar garnets namn, beskrivning och antal till ett garnkort i Mitt garn som länkas till det här projektet. Den här posten finns kvar här; anteckningarna kopieras inte.</string>
+    <string name="saved_to_my_yarn_explanation">Den här projektposten förblir separat. Anteckningarna kopierades inte till garnkortet i Mitt garn.</string>
     <string name="yarn_count_format">%1$d garner</string>
     <string name="linked_project_label">Länkat projekt</string>
     <string name="link_to_project_label">Länka till projekt</string>
@@ -612,8 +614,8 @@
         <item quantity="other">Ta bort %1$d bilder?</item>
     </plurals>
     <plurals name="delete_patterns_confirm">
-        <item quantity="one">Ta bort %1$d mönster?</item>
-        <item quantity="other">Ta bort %1$d mönster?</item>
+        <item quantity="one">Ta bort %1$d mönster från biblioteket?\n\nEventuella PDF-anteckningar som gjorts i biblioteket för det här mönstret tas också bort och visas inte längre i projekt. PDF-filer som redan är bifogade till projekt och PDF-anteckningar som gjorts i projekten behålls.</item>
+        <item quantity="other">Ta bort %1$d mönster från biblioteket?\n\nEventuella PDF-anteckningar som gjorts i biblioteket för de valda mönstren tas också bort och visas inte längre i projekt. PDF-filer som redan är bifogade till projekt och PDF-anteckningar som gjorts i projekten behålls.</item>
     </plurals>
     <string name="delete_pattern">Ta bort mönster</string>
     <string name="delete_yarn_cards_confirm">Ta bort %d garnkort?</string>
@@ -629,6 +631,7 @@
     <string name="ravelry_saved_patterns">Sparade mönster</string>
     <string name="start_project">Starta projekt</string>
     <string name="save_pattern">Spara mönster</string>
+    <string name="ravelry_save_pattern_explanation">Sparar mönstrets uppgifter i ditt Bibliotek. Ingen PDF laddas ner.</string>
     <string name="ravelry_open_saved_pattern">Öppna</string>
     <string name="open_in_ravelry">Öppna i Ravelry</string>
     <string name="pattern_saved">Mönster sparat</string>
@@ -645,9 +648,10 @@
     <string name="saved_pattern_detail_available_offline">Tillgängligt offline</string>
     <string name="saved_pattern_detail_open_on_ravelry">Öppna i Ravelry</string>
     <string name="saved_pattern_detail_requires_ravelry">Kräver Ravelry</string>
+    <string name="saved_pattern_detail_no_pdf_explanation">Mönstrets uppgifter är sparade. Ingen PDF är bifogad för läsning offline.</string>
     <string name="saved_pattern_detail_open_pattern">Öppna mönster</string>
     <string name="saved_pattern_detail_attach_to_project">Koppla till projekt</string>
-    <string name="saved_pattern_detail_remove_confirm">Ta bort det här sparade mönstret?</string>
+    <string name="saved_pattern_detail_remove_confirm">Ta bort det här sparade mönstret från biblioteket?\n\nEventuella PDF-anteckningar som gjorts i biblioteket för det här mönstret tas också bort och visas inte längre i projekt. PDF-filer som redan är bifogade till projekt och PDF-anteckningar som gjorts i projekten behålls.</string>
     <string name="filter_weight">Grovlek</string>
     <string name="filter_difficulty">Svårighet</string>
     <string name="free">Gratis</string>
@@ -1013,7 +1017,7 @@
     <string name="web_pattern_edit">Redigera webbmönster</string>
     <string name="web_pattern_delete">Ta bort webbmönster</string>
     <string name="web_pattern_delete_confirm_title">Ta bort webbmönstret?</string>
-    <string name="web_pattern_delete_confirm_message">Ta bort %1$s från Sparade mönster?</string>
+    <string name="web_pattern_delete_confirm_message">Ta bort %1$s från Sparade mönster i biblioteket?\n\nEventuella PDF-anteckningar som gjorts i biblioteket för det här mönstret tas också bort och visas inte längre i projekt. PDF-filer som redan är bifogade till projekt och PDF-anteckningar som gjorts i projekten behålls.</string>
     <string name="web_pattern_attach">Koppla webbmönster</string>
     <string name="web_pattern_unlink">Koppla bort mönsterinformation</string>
     <string name="web_pattern_replace_confirm_title">Ersätta mönsterinformationen?</string>

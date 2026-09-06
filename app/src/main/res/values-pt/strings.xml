@@ -209,6 +209,8 @@
     <string name="project_yarn_quantity_format">Quantidade: %d</string>
     <string name="save_to_my_yarn">Guardar no My Yarn</string>
     <string name="saved_to_my_yarn">Guardado no My Yarn</string>
+    <string name="save_to_my_yarn_explanation">Copia o nome do fio, a descrição e a quantidade para uma ficha na secção O meu fio ligada a este projeto. Esta entrada mantém-se aqui; as notas não são copiadas.</string>
+    <string name="saved_to_my_yarn_explanation">Esta entrada do projeto mantém-se separada. As notas não foram copiadas para a ficha na secção O meu fio.</string>
     <string name="yarn_count_format">%1$d fios</string>
     <string name="linked_project_label">Projeto ligado</string>
     <string name="link_to_project_label">Ligar ao projeto</string>
@@ -624,9 +626,9 @@
         <item quantity="other">Eliminar %1$d fotos?</item>
     </plurals>
     <plurals name="delete_patterns_confirm">
-        <item quantity="one">Eliminar %1$d receita?</item>
-        <item quantity="many">Eliminar %1$d receitas?</item>
-        <item quantity="other">Eliminar %1$d receitas?</item>
+        <item quantity="one">Eliminar %1$d receita da biblioteca?\n\nSe existirem anotações em PDF criadas na biblioteca para esta receita, também serão eliminadas e deixarão de aparecer nos projetos. Os PDF já anexados aos projetos e as anotações em PDF criadas nos projetos serão mantidos.</item>
+        <item quantity="many">Eliminar %1$d receitas da biblioteca?\n\nSe existirem anotações em PDF criadas na biblioteca para as receitas selecionadas, também serão eliminadas e deixarão de aparecer nos projetos. Os PDF já anexados aos projetos e as anotações em PDF criadas nos projetos serão mantidos.</item>
+        <item quantity="other">Eliminar %1$d receitas da biblioteca?\n\nSe existirem anotações em PDF criadas na biblioteca para as receitas selecionadas, também serão eliminadas e deixarão de aparecer nos projetos. Os PDF já anexados aos projetos e as anotações em PDF criadas nos projetos serão mantidos.</item>
     </plurals>
     <string name="delete_pattern">Eliminar receita</string>
     <string name="delete_yarn_cards_confirm">Eliminar %d fichas de fio?</string>
@@ -642,6 +644,7 @@
     <string name="ravelry_saved_patterns">Receitas guardadas</string>
     <string name="start_project">Iniciar projeto</string>
     <string name="save_pattern">Guardar receita</string>
+    <string name="ravelry_save_pattern_explanation">Guarda os detalhes do modelo na sua Biblioteca. Não descarrega nenhum PDF.</string>
     <string name="ravelry_open_saved_pattern">Abrir</string>
     <string name="open_in_ravelry">Abrir no Ravelry</string>
     <string name="pattern_saved">Receita guardada</string>
@@ -658,9 +661,10 @@
     <string name="saved_pattern_detail_available_offline">Disponível offline</string>
     <string name="saved_pattern_detail_open_on_ravelry">Abrir no Ravelry</string>
     <string name="saved_pattern_detail_requires_ravelry">Requer Ravelry</string>
+    <string name="saved_pattern_detail_no_pdf_explanation">Os detalhes do modelo estão guardados. Não há nenhum PDF anexado para leitura offline.</string>
     <string name="saved_pattern_detail_open_pattern">Abrir receita</string>
     <string name="saved_pattern_detail_attach_to_project">Anexar ao projeto</string>
-    <string name="saved_pattern_detail_remove_confirm">Remover esta receita guardada?</string>
+    <string name="saved_pattern_detail_remove_confirm">Remover esta receita guardada da biblioteca?\n\nSe existirem anotações em PDF criadas na biblioteca para esta receita, também serão eliminadas e deixarão de aparecer nos projetos. Os PDF já anexados aos projetos e as anotações em PDF criadas nos projetos serão mantidos.</string>
     <string name="filter_weight">Espessura</string>
     <string name="filter_difficulty">Dificuldade</string>
     <string name="free">Grátis</string>
@@ -1016,7 +1020,7 @@
     <string name="web_pattern_edit">Editar modelo online</string>
     <string name="web_pattern_delete">Eliminar modelo online</string>
     <string name="web_pattern_delete_confirm_title">Eliminar o modelo online?</string>
-    <string name="web_pattern_delete_confirm_message">Eliminar %1$s dos Modelos guardados?</string>
+    <string name="web_pattern_delete_confirm_message">Eliminar %1$s das Receitas guardadas na biblioteca?\n\nSe existirem anotações em PDF criadas na biblioteca para esta receita, também serão eliminadas e deixarão de aparecer nos projetos. Os PDF já anexados aos projetos e as anotações em PDF criadas nos projetos serão mantidos.</string>
     <string name="web_pattern_attach">Associar modelo online</string>
     <string name="web_pattern_unlink">Desassociar as informações do modelo</string>
     <string name="web_pattern_replace_confirm_title">Substituir as informações do modelo?</string>

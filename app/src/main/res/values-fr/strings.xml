@@ -209,6 +209,8 @@
     <string name="project_yarn_quantity_format">Quantité : %d</string>
     <string name="save_to_my_yarn">Enregistrer dans My Yarn</string>
     <string name="saved_to_my_yarn">Enregistré dans My Yarn</string>
+    <string name="save_to_my_yarn_explanation">Copie le nom du fil, la description et la quantité dans une fiche de Mon fil liée à ce projet. Cette entrée reste ici ; ses notes ne sont pas copiées.</string>
+    <string name="saved_to_my_yarn_explanation">Cette entrée du projet reste distincte. Ses notes n’ont pas été copiées dans la fiche de Mon fil.</string>
     <string name="yarn_count_format">%1$d fils</string>
     <string name="linked_project_label">Projet lié</string>
     <string name="link_to_project_label">Lier au projet</string>
@@ -624,9 +626,9 @@
         <item quantity="other">Supprimer %1$d photos ?</item>
     </plurals>
     <plurals name="delete_patterns_confirm">
-        <item quantity="one">Supprimer %1$d modèle ?</item>
-        <item quantity="many">Supprimer %1$d modèles ?</item>
-        <item quantity="other">Supprimer %1$d modèles ?</item>
+        <item quantity="one">Supprimer %1$d modèle de la bibliothèque ?\n\nLes éventuelles annotations PDF créées dans la bibliothèque pour ce modèle seront aussi supprimées et ne seront plus visibles dans les projets. Les PDF déjà joints aux projets et les annotations PDF créées dans les projets seront conservés.</item>
+        <item quantity="many">Supprimer %1$d modèles de la bibliothèque ?\n\nLes éventuelles annotations PDF créées dans la bibliothèque pour les modèles sélectionnés seront aussi supprimées et ne seront plus visibles dans les projets. Les PDF déjà joints aux projets et les annotations PDF créées dans les projets seront conservés.</item>
+        <item quantity="other">Supprimer %1$d modèles de la bibliothèque ?\n\nLes éventuelles annotations PDF créées dans la bibliothèque pour les modèles sélectionnés seront aussi supprimées et ne seront plus visibles dans les projets. Les PDF déjà joints aux projets et les annotations PDF créées dans les projets seront conservés.</item>
     </plurals>
     <string name="delete_pattern">Supprimer le modèle</string>
     <string name="delete_yarn_cards_confirm">Supprimer %d fiches de fil ?</string>
@@ -642,6 +644,7 @@
     <string name="ravelry_saved_patterns">Modèles enregistrés</string>
     <string name="start_project">Commencer un projet</string>
     <string name="save_pattern">Enregistrer le modèle</string>
+    <string name="ravelry_save_pattern_explanation">Enregistre les informations du modèle dans votre Bibliothèque. Aucun PDF n’est téléchargé.</string>
     <string name="ravelry_open_saved_pattern">Ouvrir</string>
     <string name="open_in_ravelry">Ouvrir dans Ravelry</string>
     <string name="pattern_saved">Modèle enregistré</string>
@@ -658,9 +661,10 @@
     <string name="saved_pattern_detail_available_offline">Disponible hors ligne</string>
     <string name="saved_pattern_detail_open_on_ravelry">Ouvrir sur Ravelry</string>
     <string name="saved_pattern_detail_requires_ravelry">Nécessite Ravelry</string>
+    <string name="saved_pattern_detail_no_pdf_explanation">Les informations du modèle sont enregistrées. Aucun PDF n’est joint pour la lecture hors ligne.</string>
     <string name="saved_pattern_detail_open_pattern">Ouvrir le modèle</string>
     <string name="saved_pattern_detail_attach_to_project">Joindre au projet</string>
-    <string name="saved_pattern_detail_remove_confirm">Supprimer ce modèle enregistré ?</string>
+    <string name="saved_pattern_detail_remove_confirm">Supprimer ce modèle enregistré de la bibliothèque ?\n\nLes éventuelles annotations PDF créées dans la bibliothèque pour ce modèle seront aussi supprimées et ne seront plus visibles dans les projets. Les PDF déjà joints aux projets et les annotations PDF créées dans les projets seront conservés.</string>
     <string name="filter_weight">Grosseur</string>
     <string name="filter_difficulty">Difficulté</string>
     <string name="free">Gratuit</string>
@@ -1016,7 +1020,7 @@
     <string name="web_pattern_edit">Modifier le modèle en ligne</string>
     <string name="web_pattern_delete">Supprimer le modèle en ligne</string>
     <string name="web_pattern_delete_confirm_title">Supprimer le modèle en ligne ?</string>
-    <string name="web_pattern_delete_confirm_message">Supprimer %1$s des modèles enregistrés ?</string>
+    <string name="web_pattern_delete_confirm_message">Supprimer %1$s des modèles enregistrés dans la bibliothèque ?\n\nLes éventuelles annotations PDF créées dans la bibliothèque pour ce modèle seront aussi supprimées et ne seront plus visibles dans les projets. Les PDF déjà joints aux projets et les annotations PDF créées dans les projets seront conservés.</string>
     <string name="web_pattern_attach">Associer le modèle en ligne</string>
     <string name="web_pattern_unlink">Dissocier les informations du modèle</string>
     <string name="web_pattern_replace_confirm_title">Remplacer les informations du modèle ?</string>

@@ -224,6 +224,8 @@ class SavedPatternRepositoryDomainApiTest {
                                 name = "Old name",
                                 designerName = "Designer",
                                 canonicalUrl = "https://example.com/patterns/42",
+                                localPdfUri = "content://test/existing.pdf",
+                                isAvailableOffline = true,
                             ),
                         ),
                 )
@@ -249,6 +251,10 @@ class SavedPatternRepositoryDomainApiTest {
 
             assertEquals(7L, savedId)
             assertEquals(0, dao.insertCount)
+            val existing = repository.getById(savedId)
+            assertEquals("Old name", existing?.name)
+            assertEquals("content://test/existing.pdf", existing?.localPdfUri)
+            assertEquals(true, existing?.isAvailableOffline)
         }
 
     @Test

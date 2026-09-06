@@ -141,6 +141,7 @@ fun SavedPatternDetailScreen(
 
     if (showRemoveConfirmDialog) {
         ConfirmationDialog(
+            scrollableMessage = true,
             title =
                 stringResource(
                     if (isWebPattern) R.string.web_pattern_delete_confirm_title else R.string.remove_pattern,
@@ -223,6 +224,13 @@ fun SavedPatternDetailScreen(
             } else {
                 SavedPatternDetailHeader(pattern = pattern)
                 SavedPatternAvailability(pattern = pattern, canOpenRavelry = ravelryUrl != null)
+                if (pattern.requiresRavelryAccess) {
+                    Text(
+                        text = stringResource(R.string.saved_pattern_detail_no_pdf_explanation),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 SavedPatternDetailActions(
                     canOpenPattern = pattern.hasAttachedPdf,
                     canOpenRavelry = ravelryUrl != null,

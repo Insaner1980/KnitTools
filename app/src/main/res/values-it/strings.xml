@@ -209,6 +209,8 @@
     <string name="project_yarn_quantity_format">Quantità: %d</string>
     <string name="save_to_my_yarn">Salva in My Yarn</string>
     <string name="saved_to_my_yarn">Salvato in My Yarn</string>
+    <string name="save_to_my_yarn_explanation">Copia il nome del filato, la descrizione e la quantità in una scheda nella sezione Il mio filato, collegata a questo progetto. Questa voce rimane qui; le note non vengono copiate.</string>
+    <string name="saved_to_my_yarn_explanation">Questa voce del progetto rimane separata. Le note non sono state copiate nella scheda della sezione Il mio filato.</string>
     <string name="yarn_count_format">%1$d filati</string>
     <string name="linked_project_label">Progetto collegato</string>
     <string name="link_to_project_label">Collega al progetto</string>
@@ -624,9 +626,9 @@
         <item quantity="other">Eliminare %1$d foto?</item>
     </plurals>
     <plurals name="delete_patterns_confirm">
-        <item quantity="one">Eliminare %1$d modello?</item>
-        <item quantity="many">Eliminare %1$d modelli?</item>
-        <item quantity="other">Eliminare %1$d modelli?</item>
+        <item quantity="one">Eliminare %1$d modello dalla libreria?\n\nLe eventuali annotazioni PDF create nella libreria per questo modello verranno eliminate e non saranno più visibili nei progetti. I PDF già allegati ai progetti e le annotazioni PDF create nei progetti verranno conservati.</item>
+        <item quantity="many">Eliminare %1$d modelli dalla libreria?\n\nLe eventuali annotazioni PDF create nella libreria per i modelli selezionati verranno eliminate e non saranno più visibili nei progetti. I PDF già allegati ai progetti e le annotazioni PDF create nei progetti verranno conservati.</item>
+        <item quantity="other">Eliminare %1$d modelli dalla libreria?\n\nLe eventuali annotazioni PDF create nella libreria per i modelli selezionati verranno eliminate e non saranno più visibili nei progetti. I PDF già allegati ai progetti e le annotazioni PDF create nei progetti verranno conservati.</item>
     </plurals>
     <string name="delete_pattern">Elimina modello</string>
     <string name="delete_yarn_cards_confirm">Eliminare %d schede filato?</string>
@@ -642,6 +644,7 @@
     <string name="ravelry_saved_patterns">Modelli salvati</string>
     <string name="start_project">Inizia progetto</string>
     <string name="save_pattern">Salva modello</string>
+    <string name="ravelry_save_pattern_explanation">Salva i dettagli del modello nella tua Libreria. Non viene scaricato alcun PDF.</string>
     <string name="ravelry_open_saved_pattern">Apri</string>
     <string name="open_in_ravelry">Apri in Ravelry</string>
     <string name="pattern_saved">Modello salvato</string>
@@ -658,9 +661,10 @@
     <string name="saved_pattern_detail_available_offline">Disponibile offline</string>
     <string name="saved_pattern_detail_open_on_ravelry">Apri su Ravelry</string>
     <string name="saved_pattern_detail_requires_ravelry">Richiede Ravelry</string>
+    <string name="saved_pattern_detail_no_pdf_explanation">I dettagli del modello sono salvati. Non è allegato alcun PDF per la lettura offline.</string>
     <string name="saved_pattern_detail_open_pattern">Apri modello</string>
     <string name="saved_pattern_detail_attach_to_project">Collega al progetto</string>
-    <string name="saved_pattern_detail_remove_confirm">Rimuovere questo modello salvato?</string>
+    <string name="saved_pattern_detail_remove_confirm">Rimuovere questo modello salvato dalla libreria?\n\nLe eventuali annotazioni PDF create nella libreria per questo modello verranno eliminate e non saranno più visibili nei progetti. I PDF già allegati ai progetti e le annotazioni PDF create nei progetti verranno conservati.</string>
     <string name="filter_weight">Spessore</string>
     <string name="filter_difficulty">Difficoltà</string>
     <string name="free">Gratis</string>
@@ -1016,7 +1020,7 @@
     <string name="web_pattern_edit">Modifica modello web</string>
     <string name="web_pattern_delete">Elimina modello web</string>
     <string name="web_pattern_delete_confirm_title">Eliminare il modello web?</string>
-    <string name="web_pattern_delete_confirm_message">Eliminare %1$s dai Modelli salvati?</string>
+    <string name="web_pattern_delete_confirm_message">Eliminare %1$s dai Modelli salvati nella libreria?\n\nLe eventuali annotazioni PDF create nella libreria per questo modello verranno eliminate e non saranno più visibili nei progetti. I PDF già allegati ai progetti e le annotazioni PDF create nei progetti verranno conservati.</string>
     <string name="web_pattern_attach">Collega modello web</string>
     <string name="web_pattern_unlink">Scollega le informazioni del modello</string>
     <string name="web_pattern_replace_confirm_title">Sostituire le informazioni del modello?</string>

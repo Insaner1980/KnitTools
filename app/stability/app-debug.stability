@@ -52,7 +52,7 @@ public fun com.finnvek.knittools.ui.components.CollectWithLifecycleEffect(flowPr
     - onEach: STABLE (function type)
 
 @Composable
-public fun com.finnvek.knittools.ui.components.ConfirmationDialog(title: kotlin.String, message: kotlin.String, confirmText: kotlin.String, isDestructive: kotlin.Boolean, onConfirm: kotlin.Function0<kotlin.Unit>, onDismiss: kotlin.Function0<kotlin.Unit>): kotlin.Unit
+public fun com.finnvek.knittools.ui.components.ConfirmationDialog(title: kotlin.String, message: kotlin.String, confirmText: kotlin.String, isDestructive: kotlin.Boolean, onConfirm: kotlin.Function0<kotlin.Unit>, onDismiss: kotlin.Function0<kotlin.Unit>, scrollableMessage: kotlin.Boolean): kotlin.Unit
   skippable: true
   restartable: true
   params:
@@ -62,6 +62,7 @@ public fun com.finnvek.knittools.ui.components.ConfirmationDialog(title: kotlin.
     - isDestructive: STABLE (primitive type)
     - onConfirm: STABLE (function type)
     - onDismiss: STABLE (function type)
+    - scrollableMessage: STABLE (primitive type)
 
 @Composable
 public fun com.finnvek.knittools.ui.components.CounterImageButton(imageRes: kotlin.Int, contentDescription: kotlin.String, visualSize: androidx.compose.ui.unit.Dp, onClick: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier, visualOffsetY: androidx.compose.ui.unit.Dp, enabled: kotlin.Boolean): kotlin.Unit

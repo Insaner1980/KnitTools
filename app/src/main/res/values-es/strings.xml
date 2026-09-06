@@ -209,6 +209,8 @@
     <string name="project_yarn_quantity_format">Cantidad: %d</string>
     <string name="save_to_my_yarn">Guardar en My Yarn</string>
     <string name="saved_to_my_yarn">Guardado en My Yarn</string>
+    <string name="save_to_my_yarn_explanation">Copia el nombre del hilo, la descripción y la cantidad a una ficha de Mi hilo vinculada a este proyecto. Esta entrada permanece aquí; sus notas no se copian.</string>
+    <string name="saved_to_my_yarn_explanation">Esta entrada del proyecto permanece separada. Sus notas no se copiaron a la ficha de Mi hilo.</string>
     <string name="yarn_count_format">%1$d hilos</string>
     <string name="linked_project_label">Proyecto vinculado</string>
     <string name="link_to_project_label">Vincular al proyecto</string>
@@ -624,9 +626,9 @@
         <item quantity="other">¿Eliminar %1$d fotos?</item>
     </plurals>
     <plurals name="delete_patterns_confirm">
-        <item quantity="one">¿Eliminar %1$d patrón?</item>
-        <item quantity="many">¿Eliminar %1$d patrones?</item>
-        <item quantity="other">¿Eliminar %1$d patrones?</item>
+        <item quantity="one">¿Eliminar %1$d patrón de la biblioteca?\n\nSi hay anotaciones PDF creadas en la biblioteca para este patrón, también se eliminarán y dejarán de aparecer en los proyectos. Se conservarán los PDF ya adjuntos a los proyectos y las anotaciones PDF creadas dentro de los proyectos.</item>
+        <item quantity="many">¿Eliminar %1$d patrones de la biblioteca?\n\nSi hay anotaciones PDF creadas en la biblioteca para los patrones seleccionados, también se eliminarán y dejarán de aparecer en los proyectos. Se conservarán los PDF ya adjuntos a los proyectos y las anotaciones PDF creadas dentro de los proyectos.</item>
+        <item quantity="other">¿Eliminar %1$d patrones de la biblioteca?\n\nSi hay anotaciones PDF creadas en la biblioteca para los patrones seleccionados, también se eliminarán y dejarán de aparecer en los proyectos. Se conservarán los PDF ya adjuntos a los proyectos y las anotaciones PDF creadas dentro de los proyectos.</item>
     </plurals>
     <string name="delete_pattern">Eliminar patrón</string>
     <string name="delete_yarn_cards_confirm">¿Eliminar %d fichas de hilo?</string>
@@ -642,6 +644,7 @@
     <string name="ravelry_saved_patterns">Patrones guardados</string>
     <string name="start_project">Empezar proyecto</string>
     <string name="save_pattern">Guardar patrón</string>
+    <string name="ravelry_save_pattern_explanation">Guarda los detalles del patrón en tu Biblioteca. No se descarga ningún PDF.</string>
     <string name="ravelry_open_saved_pattern">Abrir</string>
     <string name="open_in_ravelry">Abrir en Ravelry</string>
     <string name="pattern_saved">Patrón guardado</string>
@@ -658,9 +661,10 @@
     <string name="saved_pattern_detail_available_offline">Disponible sin conexión</string>
     <string name="saved_pattern_detail_open_on_ravelry">Abrir en Ravelry</string>
     <string name="saved_pattern_detail_requires_ravelry">Requiere Ravelry</string>
+    <string name="saved_pattern_detail_no_pdf_explanation">Los detalles del patrón están guardados. No hay ningún PDF adjunto para leer sin conexión.</string>
     <string name="saved_pattern_detail_open_pattern">Abrir patrón</string>
     <string name="saved_pattern_detail_attach_to_project">Adjuntar al proyecto</string>
-    <string name="saved_pattern_detail_remove_confirm">¿Eliminar este patrón guardado?</string>
+    <string name="saved_pattern_detail_remove_confirm">¿Eliminar este patrón guardado de la biblioteca?\n\nSi hay anotaciones PDF creadas en la biblioteca para este patrón, también se eliminarán y dejarán de aparecer en los proyectos. Se conservarán los PDF ya adjuntos a los proyectos y las anotaciones PDF creadas dentro de los proyectos.</string>
     <string name="filter_weight">Grosor</string>
     <string name="filter_difficulty">Dificultad</string>
     <string name="free">Gratis</string>
@@ -1016,7 +1020,7 @@
     <string name="web_pattern_edit">Editar patrón web</string>
     <string name="web_pattern_delete">Eliminar patrón web</string>
     <string name="web_pattern_delete_confirm_title">¿Eliminar el patrón web?</string>
-    <string name="web_pattern_delete_confirm_message">¿Eliminar %1$s de Patrones guardados?</string>
+    <string name="web_pattern_delete_confirm_message">¿Eliminar %1$s de Patrones guardados en la biblioteca?\n\nSi hay anotaciones PDF creadas en la biblioteca para este patrón, también se eliminarán y dejarán de aparecer en los proyectos. Se conservarán los PDF ya adjuntos a los proyectos y las anotaciones PDF creadas dentro de los proyectos.</string>
     <string name="web_pattern_attach">Vincular patrón web</string>
     <string name="web_pattern_unlink">Desvincular la información del patrón</string>
     <string name="web_pattern_replace_confirm_title">¿Sustituir la información del patrón?</string>

@@ -582,6 +582,8 @@ Project note replacement uses `CounterRepository.saveProjectNotes`. It merges th
 - unlink, relink, and project deletion preserve both directions;
 - `ProjectYarnNoteRepository.saveToMyYarn` creates or reuses a linked inventory card while retaining the project note, setting `savedYarnCardId`, and binding any existing usage row in one repository transaction. It never creates usage automatically or duplicates the note/card pair's existing usage, amounts, or snapshot.
 
+`YarnManagementSheet` explains beside each unsaved project entry that Save to My Yarn copies its name, description, and quantity into a project-linked card while retaining the entry and omitting its free-text notes. The saved-state explanation says that the entry remains separate and its notes were not copied; it does not promise continued synchronization or a currently active project link.
+
 ### Pattern attachment
 
 Pattern database state goes through `CounterRepository.attachPattern` and `detachPattern` so project fields, saved-pattern rows, annotation-layer activation, and related database state remain atomic. Imported and Saved Pattern PDFs are checked for availability before the transaction, then the URI and current relation state are checked again inside the transaction. Saved-pattern creation/reuse, `project_documents`, project metadata, and layer activation use explicit in-current-transaction helpers so no nested repository transaction can expose a partially attached document. Metadata-only attachment remains a project information link and never creates a document. File deletion is a separate ownership decision:
@@ -761,6 +763,8 @@ The connected Browse Ravelry action opens Custom Tabs with sharing enabled. Andr
 Ravelry search, import confirmation, saved-pattern lists, Ravelry detail, and saved-pattern detail share one thumbnail field and the `RemotePatternImage` component. Only trimmed HTTPS URLs with a host are eligible. Loading uses a quiet themed footprint without a spinner; missing, malformed, non-HTTPS, and failed images remove their slot while adjacent text and actions remain usable. This path uses Coil's cache only and does not copy thumbnails into project, PDF, progress-photo, yarn-photo, capture, or Firebase Storage.
 
 Ravelry results and saved-pattern metadata are not attached PDF documents. Project PDF viewing requires a local `patternUri`. Metadata detail opens `SavedPatternDetailScreen`; a local PDF opens the appropriate viewer.
+
+`RavelryDetailScreen` explains beside the unsaved Save Pattern action that saving details does not download a PDF. Saved Pattern detail shows the persistent no-PDF explanation only for a Ravelry record whose `localPdfUri` is null or blank, using `requiresRavelryAccess`. An existing nonblank attachment suppresses that explanation regardless of the offline flag; this is not a file-readability check.
 
 ### Backend functions
 
@@ -1169,6 +1173,8 @@ The Library landing screen provides direct entry to Saved Patterns, My Yarn, All
 
 Saved Patterns contains local PDFs and metadata-only saved records. The list supports selection and deletion. `SavedPatternDetailScreen` owns metadata availability and actions. `PatternPickerSheet` lists all saved patterns for project attachment.
 
+Single-item, named web-pattern, and bulk deletion confirmations explain before deletion that any Library PDF annotations are deleted and disappear from projects displaying them, while existing project PDF attachments and project-owned PDF annotations remain. These Saved Pattern confirmations opt into a scrollable message so long titles and larger text do not hide the consequences; other confirmations retain their existing presentation.
+
 A saved pattern with `localPdfUri` can open the library viewer. The Saved Pattern detail UI enables that navigation only for `hasAttachedPdf`, the web-pattern detail branch has no PDF-open action, and `libraryPatternViewerRoute` independently returns to Library when the loaded row lacks a nonblank `localPdfUri`. A metadata-only record therefore opens detail and can be attached as metadata through the normal UI, but it is not readable as a PDF until a local document is attached/imported.
 
 The route no longer falls back to a website or legacy `patternUrl`. New viewer entry points must preserve this defense-in-depth rule instead of relying only on the current detail-screen button gate.
@@ -1512,6 +1518,8 @@ CodeQL action updates are grouped.
 ## Local validation and scanner surfaces
 
 ### Small direct checks
+
+2026-09-06 bounded mental-model close-out: inspected `main` at `caffef92c7ccfa4cedfe3a569468be9971477c50` with uncommitted source and documentation changes; these results do not describe committed HEAD alone. The fresh offline union covered Saved Pattern deletion/localization, project-yarn source/gates/copying, and Ravelry detail/save-state/duplicate preservation: 33 JVM tests, zero failures/errors/skips (`:app:processDebugResources :app:testDebugUnitTest --rerun` with focused selectors). Runtime inspection found a clipped long-title web-pattern deletion message at large text; the Saved Pattern confirmations now opt into scrolling. The directly affected `SavedPatternDetailSourceTest` then passed all 5 tests. Debug and instrumentation APKs compiled offline. `MentalModelClarityRuntimeTest` passed 6 tests in each configuration on the temporary API 36 `emulator-5580`: English/light at 400 x 800 dp and 100% font scale, Finnish/dark at 320 x 800 dp and 200% font scale. Synthetic fixtures exercised the production composables, cancellation/confirmation, yarn save/usage callbacks, and Ravelry save/PDF-presence states; external connectivity was disabled and Ravelry used a fake backend. Visual inspection included initial/scrolled warnings and retained project-yarn entries; 26 final screenshots and the combined JVM XML reports are under ignored `reports/mental-model-closeout/`. Initial fixture compilation/locale/scroll issues and an emulator System UI ANR were resolved before the final runs. This does not establish native-language review, user comprehension, PDF readability, release validation, or live service integration.
 
 Choose the smallest command that proves the claim:
 

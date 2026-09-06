@@ -206,6 +206,8 @@
     <string name="project_yarn_quantity_format">Aantal: %d</string>
     <string name="save_to_my_yarn">Opslaan in My Yarn</string>
     <string name="saved_to_my_yarn">Opgeslagen in My Yarn</string>
+    <string name="save_to_my_yarn_explanation">Kopieert de garennaam, beschrijving en hoeveelheid naar een garenkaart in Mijn garen die aan dit project is gekoppeld. Deze vermelding blijft hier; de notities worden niet gekopieerd.</string>
+    <string name="saved_to_my_yarn_explanation">Deze projectvermelding blijft apart bestaan. De notities zijn niet naar de garenkaart in Mijn garen gekopieerd.</string>
     <string name="yarn_count_format">%1$d garens</string>
     <string name="linked_project_label">Gekoppeld project</string>
     <string name="link_to_project_label">Aan project koppelen</string>
@@ -612,8 +614,8 @@
         <item quantity="other">%1$d foto\'s verwijderen?</item>
     </plurals>
     <plurals name="delete_patterns_confirm">
-        <item quantity="one">%1$d patroon verwijderen?</item>
-        <item quantity="other">%1$d patronen verwijderen?</item>
+        <item quantity="one">%1$d patroon uit de bibliotheek verwijderen?\n\nEventuele PDF-annotaties die in de bibliotheek voor dit patroon zijn gemaakt, worden ook verwijderd en zijn niet meer zichtbaar in projecten. PDF-bestanden die al aan projecten zijn gekoppeld en PDF-annotaties die binnen projecten zijn gemaakt, blijven behouden.</item>
+        <item quantity="other">%1$d patronen uit de bibliotheek verwijderen?\n\nEventuele PDF-annotaties die in de bibliotheek voor de geselecteerde patronen zijn gemaakt, worden ook verwijderd en zijn niet meer zichtbaar in projecten. PDF-bestanden die al aan projecten zijn gekoppeld en PDF-annotaties die binnen projecten zijn gemaakt, blijven behouden.</item>
     </plurals>
     <string name="delete_pattern">Patroon verwijderen</string>
     <string name="delete_yarn_cards_confirm">%d garenkaarten verwijderen?</string>
@@ -629,6 +631,7 @@
     <string name="ravelry_saved_patterns">Opgeslagen patronen</string>
     <string name="start_project">Project starten</string>
     <string name="save_pattern">Patroon opslaan</string>
+    <string name="ravelry_save_pattern_explanation">Slaat de patroongegevens op in je Bibliotheek. Er wordt geen PDF gedownload.</string>
     <string name="ravelry_open_saved_pattern">Openen</string>
     <string name="open_in_ravelry">Openen in Ravelry</string>
     <string name="pattern_saved">Patroon opgeslagen</string>
@@ -645,9 +648,10 @@
     <string name="saved_pattern_detail_available_offline">Offline beschikbaar</string>
     <string name="saved_pattern_detail_open_on_ravelry">Openen op Ravelry</string>
     <string name="saved_pattern_detail_requires_ravelry">Vereist Ravelry</string>
+    <string name="saved_pattern_detail_no_pdf_explanation">De patroongegevens zijn opgeslagen. Er is geen PDF gekoppeld om offline te lezen.</string>
     <string name="saved_pattern_detail_open_pattern">Patroon openen</string>
     <string name="saved_pattern_detail_attach_to_project">Aan project koppelen</string>
-    <string name="saved_pattern_detail_remove_confirm">Dit opgeslagen patroon verwijderen?</string>
+    <string name="saved_pattern_detail_remove_confirm">Dit opgeslagen patroon uit de bibliotheek verwijderen?\n\nEventuele PDF-annotaties die in de bibliotheek voor dit patroon zijn gemaakt, worden ook verwijderd en zijn niet meer zichtbaar in projecten. PDF-bestanden die al aan projecten zijn gekoppeld en PDF-annotaties die binnen projecten zijn gemaakt, blijven behouden.</string>
     <string name="filter_weight">Dikte</string>
     <string name="filter_difficulty">Moeilijkheidsgraad</string>
     <string name="free">Gratis</string>
@@ -996,7 +1000,7 @@
     <string name="web_pattern_edit">Webpatroon bewerken</string>
     <string name="web_pattern_delete">Webpatroon verwijderen</string>
     <string name="web_pattern_delete_confirm_title">Webpatroon verwijderen?</string>
-    <string name="web_pattern_delete_confirm_message">%1$s uit Opgeslagen patronen verwijderen?</string>
+    <string name="web_pattern_delete_confirm_message">%1$s uit Opgeslagen patronen in de bibliotheek verwijderen?\n\nEventuele PDF-annotaties die in de bibliotheek voor dit patroon zijn gemaakt, worden ook verwijderd en zijn niet meer zichtbaar in projecten. PDF-bestanden die al aan projecten zijn gekoppeld en PDF-annotaties die binnen projecten zijn gemaakt, blijven behouden.</string>
     <string name="web_pattern_attach">Webpatroon koppelen</string>
     <string name="web_pattern_unlink">Patroongegevens ontkoppelen</string>
     <string name="web_pattern_replace_confirm_title">Patroongegevens vervangen?</string>

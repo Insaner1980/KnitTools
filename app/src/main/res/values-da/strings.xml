@@ -206,6 +206,8 @@
     <string name="project_yarn_quantity_format">Antal: %d</string>
     <string name="save_to_my_yarn">Gem i My Yarn</string>
     <string name="saved_to_my_yarn">Gemt i My Yarn</string>
+    <string name="save_to_my_yarn_explanation">Kopierer garnnavn, beskrivelse og antal til et garnkort i Mit garn, som knyttes til dette projekt. Denne post bliver her; noterne kopieres ikke.</string>
+    <string name="saved_to_my_yarn_explanation">Denne projektpost forbliver separat. Noterne blev ikke kopieret til garnkortet i Mit garn.</string>
     <string name="yarn_count_format">%1$d garner</string>
     <string name="linked_project_label">Tilknyttet projekt</string>
     <string name="link_to_project_label">Knyt til projekt</string>
@@ -612,8 +614,8 @@
         <item quantity="other">Slette %1$d billeder?</item>
     </plurals>
     <plurals name="delete_patterns_confirm">
-        <item quantity="one">Slette %1$d opskrift?</item>
-        <item quantity="other">Slette %1$d opskrifter?</item>
+        <item quantity="one">Slette %1$d opskrift fra biblioteket?\n\nEventuelle PDF-annotationer oprettet i biblioteket til denne opskrift slettes også og vises ikke længere i projekter. PDF-filer, der allerede er vedhæftet projekter, og PDF-annotationer oprettet i projekterne bevares.</item>
+        <item quantity="other">Slette %1$d opskrifter fra biblioteket?\n\nEventuelle PDF-annotationer oprettet i biblioteket til de valgte opskrifter slettes også og vises ikke længere i projekter. PDF-filer, der allerede er vedhæftet projekter, og PDF-annotationer oprettet i projekterne bevares.</item>
     </plurals>
     <string name="delete_pattern">Slet opskrift</string>
     <string name="delete_yarn_cards_confirm">Slette %d garnkort?</string>
@@ -629,6 +631,7 @@
     <string name="ravelry_saved_patterns">Gemte opskrifter</string>
     <string name="start_project">Start projekt</string>
     <string name="save_pattern">Gem opskrift</string>
+    <string name="ravelry_save_pattern_explanation">Gemmer opskriftens oplysninger i dit Bibliotek. Der downloades ingen PDF.</string>
     <string name="ravelry_open_saved_pattern">Åbn</string>
     <string name="open_in_ravelry">Åbn i Ravelry</string>
     <string name="pattern_saved">Opskrift gemt</string>
@@ -645,9 +648,10 @@
     <string name="saved_pattern_detail_available_offline">Tilgængelig offline</string>
     <string name="saved_pattern_detail_open_on_ravelry">Åbn på Ravelry</string>
     <string name="saved_pattern_detail_requires_ravelry">Kræver Ravelry</string>
+    <string name="saved_pattern_detail_no_pdf_explanation">Opskriftens oplysninger er gemt. Der er ikke vedhæftet en PDF til læsning offline.</string>
     <string name="saved_pattern_detail_open_pattern">Åbn opskrift</string>
     <string name="saved_pattern_detail_attach_to_project">Knyt til projekt</string>
-    <string name="saved_pattern_detail_remove_confirm">Fjerne denne gemte opskrift?</string>
+    <string name="saved_pattern_detail_remove_confirm">Fjerne denne gemte opskrift fra biblioteket?\n\nEventuelle PDF-annotationer oprettet i biblioteket til denne opskrift slettes også og vises ikke længere i projekter. PDF-filer, der allerede er vedhæftet projekter, og PDF-annotationer oprettet i projekterne bevares.</string>
     <string name="filter_weight">Tykkelse</string>
     <string name="filter_difficulty">Sværhedsgrad</string>
     <string name="free">Gratis</string>
@@ -996,7 +1000,7 @@
     <string name="web_pattern_edit">Rediger webmønster</string>
     <string name="web_pattern_delete">Slet webmønster</string>
     <string name="web_pattern_delete_confirm_title">Slet webmønsteret?</string>
-    <string name="web_pattern_delete_confirm_message">Slet %1$s fra Gemte mønstre?</string>
+    <string name="web_pattern_delete_confirm_message">Slet %1$s fra Gemte opskrifter i biblioteket?\n\nEventuelle PDF-annotationer oprettet i biblioteket til denne opskrift slettes også og vises ikke længere i projekter. PDF-filer, der allerede er vedhæftet projekter, og PDF-annotationer oprettet i projekterne bevares.</string>
     <string name="web_pattern_attach">Tilknyt webmønster</string>
     <string name="web_pattern_unlink">Fjern tilknytningen til mønsteroplysninger</string>
     <string name="web_pattern_replace_confirm_title">Erstat mønsteroplysningerne?</string>

@@ -38,10 +38,7 @@ fun validateWebPatternUrl(input: String): WebPatternUrlValidation {
     if (originalUrl.length > WEB_PATTERN_URL_MAX_LENGTH) {
         return WebPatternUrlValidation.Invalid
     }
-    if (
-        !originalUrl.startsWith("http://", ignoreCase = true) &&
-        !originalUrl.startsWith("https://", ignoreCase = true)
-    ) {
+    if (!originalUrl.startsWithWebScheme()) {
         return WebPatternUrlValidation.WebOnly
     }
     if (originalUrl.any(Char::isWhitespace) || !hasValidPercentEncoding(originalUrl)) {
@@ -95,6 +92,9 @@ fun validateWebPatternUrl(input: String): WebPatternUrlValidation {
         ),
     )
 }
+
+private fun String.startsWithWebScheme(): Boolean =
+    startsWith("http://", ignoreCase = true) || startsWith("https://", ignoreCase = true)
 
 private data class WebPatternAuthority(
     val host: String,

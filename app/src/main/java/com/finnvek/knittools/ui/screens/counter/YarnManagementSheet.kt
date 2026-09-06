@@ -308,6 +308,18 @@ private fun ProjectYarnNoteRow(
                 ProBadge(status = proStatus)
             }
         }
+        Text(
+            text =
+                stringResource(
+                    if (note.savedYarnCardId == null) {
+                        R.string.save_to_my_yarn_explanation
+                    } else {
+                        R.string.saved_to_my_yarn_explanation
+                    },
+                ),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 

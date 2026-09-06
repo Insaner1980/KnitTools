@@ -823,6 +823,8 @@ class RavelryRepositoryTransactionBoundaryTest {
                 savedPatternRepository.saveRavelryPatternIfMissing(
                     match {
                         it.ravelryPatternId == 99 &&
+                            it.localPdfUri == null &&
+                            !it.isAvailableOffline &&
                             it.availability == PatternAvailability.Paid &&
                             it.canonicalUrl == "https://www.ravelry.com/patterns/library/cardigan" &&
                             it.originalUrl == "https://www.ravelry.com/patterns/library/cardigan?utm_source=share"

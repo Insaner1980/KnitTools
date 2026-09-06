@@ -217,6 +217,8 @@
     <string name="project_yarn_quantity_format" tools:ignore="PluralsCandidate">Quantity: %d</string>
     <string name="save_to_my_yarn">Save to My Yarn</string>
     <string name="saved_to_my_yarn">Saved to My Yarn</string>
+    <string name="save_to_my_yarn_explanation">Copies the yarn name, description and quantity to a My Yarn card linked to this project. This entry stays here; its notes are not copied.</string>
+    <string name="saved_to_my_yarn_explanation">This project entry stays separate. Its notes were not copied to the My Yarn card.</string>
     <string name="yarn_count_format" tools:ignore="PluralsCandidate,UnusedResources">%1$d yarns</string>
     <string name="linked_project_label">Linked project</string>
     <string name="link_to_project_label">Link to project</string>
@@ -902,8 +904,8 @@
         <item quantity="other">Delete %1$d photos?</item>
     </plurals>
     <plurals name="delete_patterns_confirm">
-        <item quantity="one">Delete %1$d pattern?</item>
-        <item quantity="other">Delete %1$d patterns?</item>
+        <item quantity="one">Delete %1$d pattern from the Library?\n\nAny PDF annotations made in the Library for this pattern will also be deleted and will no longer appear in projects. PDFs already attached to projects and PDF annotations made within projects will be kept.</item>
+        <item quantity="other">Delete %1$d patterns from the Library?\n\nAny PDF annotations made in the Library for the selected patterns will also be deleted and will no longer appear in projects. PDFs already attached to projects and PDF annotations made within projects will be kept.</item>
     </plurals>
     <string name="delete_pattern">Delete pattern</string>
     <string name="delete_yarn_cards_confirm" tools:ignore="PluralsCandidate">Delete %d yarn cards?</string>
@@ -919,6 +921,7 @@
     <string name="ravelry_saved_patterns">Saved Patterns</string>
     <string name="start_project">Start Project</string>
     <string name="save_pattern">Save Pattern</string>
+    <string name="ravelry_save_pattern_explanation">Saves the pattern details to your Library. This does not download a PDF.</string>
     <string name="ravelry_open_saved_pattern">Open</string>
     <string name="open_in_ravelry">Open in Ravelry</string>
     <string name="pattern_saved">Pattern saved</string>
@@ -935,9 +938,10 @@
     <string name="saved_pattern_detail_available_offline">Available offline</string>
     <string name="saved_pattern_detail_open_on_ravelry">Open on Ravelry</string>
     <string name="saved_pattern_detail_requires_ravelry">Requires Ravelry</string>
+    <string name="saved_pattern_detail_no_pdf_explanation">The pattern details are saved. No PDF is attached for offline reading.</string>
     <string name="saved_pattern_detail_open_pattern">Open Pattern</string>
     <string name="saved_pattern_detail_attach_to_project">Attach to Project</string>
-    <string name="saved_pattern_detail_remove_confirm">Remove this saved pattern?</string>
+    <string name="saved_pattern_detail_remove_confirm">Remove this saved pattern from the Library?\n\nAny PDF annotations made in the Library for this pattern will also be deleted and will no longer appear in projects. PDFs already attached to projects and PDF annotations made within projects will be kept.</string>
     <string name="filter_weight">Weight</string>
     <string name="filter_difficulty">Difficulty</string>
     <string name="free">Free</string>
@@ -1379,7 +1383,7 @@
     <string name="web_pattern_edit">Edit web pattern</string>
     <string name="web_pattern_delete">Delete web pattern</string>
     <string name="web_pattern_delete_confirm_title">Delete web pattern?</string>
-    <string name="web_pattern_delete_confirm_message">Delete %1$s from Saved Patterns?</string>
+    <string name="web_pattern_delete_confirm_message">Delete %1$s from Saved Patterns in the Library?\n\nAny PDF annotations made in the Library for this pattern will also be deleted and will no longer appear in projects. PDFs already attached to projects and PDF annotations made within projects will be kept.</string>
     <string name="web_pattern_attach">Attach web pattern</string>
     <string name="web_pattern_unlink">Unlink pattern information</string>
     <string name="web_pattern_replace_confirm_title">Replace pattern information?</string>

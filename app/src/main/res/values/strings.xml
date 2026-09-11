@@ -1081,12 +1081,12 @@
     <string name="pro_prompt_trial_body">Start your free 14-day Pro trial. No payment method is required. Anything you create stays available after the trial.</string>
     <string name="pro_prompt_projects_title">Create another project with Pro</string>
     <plurals name="pro_prompt_projects_trial_body">
-        <item quantity="one">You already have %1$d project. Start your free 14-day Pro trial to create another. All your projects remain available after the trial.</item>
-        <item quantity="other">You already have %1$d projects. Start your free 14-day Pro trial to create another. All your projects remain available after the trial.</item>
+        <item quantity="one">You already have %1$d project. Completed projects also count. Start your free 14-day Pro trial to create another. All your projects remain available after the trial.</item>
+        <item quantity="other">You already have %1$d projects. Completed projects also count. Start your free 14-day Pro trial to create another. All your projects remain available after the trial.</item>
     </plurals>
     <plurals name="pro_prompt_projects_body">
-        <item quantity="one">Creating a new project requires Pro because you already have %1$d project. Your existing project remains available.</item>
-        <item quantity="other">Creating a new project requires Pro because you already have %1$d projects. All your existing projects remain available.</item>
+        <item quantity="one">Creating a new project requires Pro because you already have %1$d project. Completed projects also count. Your existing project remains available.</item>
+        <item quantity="other">Creating a new project requires Pro because you already have %1$d projects. Completed projects also count. All your existing projects remain available.</item>
     </plurals>
     <string name="pro_prompt_photos_title">Add progress photos with Pro</string>
     <string name="pro_prompt_photos_body">Creating a new progress photo requires Pro. Your existing photos stay available.</string>

@@ -9,6 +9,47 @@ import javax.xml.parsers.DocumentBuilderFactory
 
 class ProLocalizationSourceTest {
     @Test
+    fun `project limit clarification follows the first sentence once in every plural item`() {
+        val clarifications =
+            mapOf(
+                "values" to "Completed projects also count.",
+                "values-fi" to "Myös valmistuneet projektit lasketaan mukaan.",
+                "values-sv" to "Färdiga projekt räknas också med.",
+                "values-de" to "Abgeschlossene Projekte zählen ebenfalls mit.",
+                "values-fr" to "Les projets terminés comptent aussi.",
+                "values-es" to "Los proyectos terminados también cuentan.",
+                "values-pt" to "Os projetos concluídos também contam.",
+                "values-it" to "Anche i progetti completati vengono conteggiati.",
+                "values-nb" to "Fullførte prosjekter teller også med.",
+                "values-da" to "Afsluttede projekter tæller også med.",
+                "values-nl" to "Voltooide projecten tellen ook mee.",
+            )
+        assertEquals(allResourceDirectories.toSet(), clarifications.keys)
+        clarifications.forEach { (directory, clarification) ->
+            val document =
+                DocumentBuilderFactory
+                    .newInstance()
+                    .newDocumentBuilder()
+                    .parse(ProjectSourceFiles.file("app/src/main/res/$directory/strings.xml").toFile())
+            listOf("pro_prompt_projects_trial_body", "pro_prompt_projects_body").forEach { key ->
+                val plurals = document.getElementsByTagName("plurals")
+                val resource =
+                    (0 until plurals.length)
+                        .map { plurals.item(it) as Element }
+                        .single { it.getAttribute("name") == key }
+                val items = resource.getElementsByTagName("item")
+                repeat(items.length) { index ->
+                    val item = items.item(index) as Element
+                    val text = item.textContent
+                    val context = "$directory/$key/${item.getAttribute("quantity")}"
+                    assertTrue(context, text.substringAfter(". ").startsWith("$clarification "))
+                    assertEquals(context, 1, Regex(Regex.escape(clarification)).findAll(text).count())
+                }
+            }
+        }
+    }
+
+    @Test
     fun `user visible locale resources reject the middle dot separator`() {
         allResourceDirectories.forEach { directory ->
             val source =

@@ -994,12 +994,12 @@
     <string name="pro_prompt_trial_body">Aloita ilmainen 14 päivän Pro-kokeilu. Maksutapaa ei tarvita. Kaikki luomasi säilyy käytettävissä kokeilun jälkeen.</string>
     <string name="pro_prompt_projects_title">Luo uusi projekti Prolla</string>
     <plurals name="pro_prompt_projects_trial_body">
-        <item quantity="one">Sinulla on jo %1$d projekti. Aloita ilmainen 14 päivän Pro-kokeilu ja luo uusi. Kaikki projektisi säilyvät käytettävissä kokeilun jälkeen.</item>
-        <item quantity="other">Sinulla on jo %1$d projektia. Aloita ilmainen 14 päivän Pro-kokeilu ja luo uusi. Kaikki projektisi säilyvät käytettävissä kokeilun jälkeen.</item>
+        <item quantity="one">Sinulla on jo %1$d projekti. Myös valmistuneet projektit lasketaan mukaan. Aloita ilmainen 14 päivän Pro-kokeilu ja luo uusi. Kaikki projektisi säilyvät käytettävissä kokeilun jälkeen.</item>
+        <item quantity="other">Sinulla on jo %1$d projektia. Myös valmistuneet projektit lasketaan mukaan. Aloita ilmainen 14 päivän Pro-kokeilu ja luo uusi. Kaikki projektisi säilyvät käytettävissä kokeilun jälkeen.</item>
     </plurals>
     <plurals name="pro_prompt_projects_body">
-        <item quantity="one">Uuden projektin luominen vaatii Pron, koska sinulla on jo %1$d projekti. Nykyinen projektisi säilyy käytettävissä.</item>
-        <item quantity="other">Uuden projektin luominen vaatii Pron, koska sinulla on jo %1$d projektia. Kaikki nykyiset projektisi säilyvät käytettävissä.</item>
+        <item quantity="one">Uuden projektin luominen vaatii Pron, koska sinulla on jo %1$d projekti. Myös valmistuneet projektit lasketaan mukaan. Nykyinen projektisi säilyy käytettävissä.</item>
+        <item quantity="other">Uuden projektin luominen vaatii Pron, koska sinulla on jo %1$d projektia. Myös valmistuneet projektit lasketaan mukaan. Kaikki nykyiset projektisi säilyvät käytettävissä.</item>
     </plurals>
     <string name="pro_prompt_photos_title">Lisää edistymiskuvia Prolla</string>
     <string name="pro_prompt_photos_body">Uuden edistymiskuvan luominen vaatii Pron. Nykyiset kuvasi säilyvät käytettävissä.</string>

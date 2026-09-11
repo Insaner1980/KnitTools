@@ -17,7 +17,6 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
@@ -51,6 +50,7 @@ import com.finnvek.knittools.domain.model.ChartRowDirection
 import com.finnvek.knittools.domain.model.ChartTrackingMode
 import com.finnvek.knittools.domain.model.PatternAnnotationLimits
 import com.finnvek.knittools.domain.model.PatternCalloutSymbol
+import com.finnvek.knittools.ui.components.ScrollableFormDialog
 import com.finnvek.knittools.ui.theme.PatternAnnotationTokens
 
 internal data class PatternAnnotationToolbarActions(
@@ -262,7 +262,7 @@ private fun PatternTextEditorDialog(
     onConfirm: (String) -> Unit,
 ) {
     var text by rememberSaveable { mutableStateOf("") }
-    AlertDialog(
+    ScrollableFormDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.pattern_annotation_text_editor_title)) },
         text = {
@@ -290,7 +290,7 @@ private fun PatternCalloutEditorDialog(
 ) {
     var title by rememberSaveable { mutableStateOf("") }
     var description by rememberSaveable { mutableStateOf("") }
-    AlertDialog(
+    ScrollableFormDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.pattern_annotation_callout_editor_title)) },
         text = {
@@ -339,7 +339,7 @@ private fun PatternChartTrackerDialog(
     val validRows = rows.toIntOrNull()?.takeIf { it in 1..MAX_CHART_DIMENSION }
     val validColumns = columns.toIntOrNull()?.takeIf { it in 1..MAX_CHART_DIMENSION }
     val validGridStart = gridStartIndex.toIntOrNull()
-    AlertDialog(
+    ScrollableFormDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.pattern_annotation_chart_setup_title)) },
         text = {

@@ -63,7 +63,7 @@ class PreferencesManager
                         ThemeMode.entries.firstOrNull {
                             it.value == (prefs[KEY_THEME_MODE] ?: 1)
                         } ?: ThemeMode.LIGHT,
-                    appLanguage = resolveAppLanguage(prefs),
+                    appLanguage = AppLanguage.fromValue(prefs[KEY_APP_LANGUAGE]),
                     hapticFeedback = prefs[KEY_HAPTIC_FEEDBACK] ?: true,
                     keepScreenAwake = prefs[KEY_KEEP_SCREEN_AWAKE] ?: false,
                     useImperial = prefs[KEY_USE_IMPERIAL] ?: false,
@@ -186,18 +186,6 @@ class PreferencesManager
                         ?: storedLanguage
                 it[KEY_APP_LANGUAGE] = languageToStore.value
                 it[KEY_APP_LANGUAGE_MIGRATED_TO_SYSTEM] = true
-            }
-        }
-
-        private fun resolveAppLanguage(prefs: Preferences): AppLanguage {
-            val currentLanguage = currentAppLanguage()
-            if (currentLanguage != AppLanguage.SYSTEM) return currentLanguage
-
-            val migratedToSystem = prefs[KEY_APP_LANGUAGE_MIGRATED_TO_SYSTEM] ?: false
-            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && migratedToSystem) {
-                AppLanguage.SYSTEM
-            } else {
-                AppLanguage.fromValue(prefs[KEY_APP_LANGUAGE])
             }
         }
 

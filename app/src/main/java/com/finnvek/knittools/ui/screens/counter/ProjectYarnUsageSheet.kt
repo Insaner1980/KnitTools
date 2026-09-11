@@ -64,14 +64,14 @@ fun ProjectYarnUsageSheet(
     val draft = state.draft ?: return
     var confirmDelete by rememberSaveable(draft.usageId) { mutableStateOf(initiallyConfirmDelete) }
     val headingFocus = remember { FocusRequester() }
-    LaunchedEffect(sheetState.currentValue) {
-        if (sheetState.isVisible) headingFocus.requestFocus()
-    }
     ModalBottomSheet(
         onDismissRequest = { if (!state.busy) actions.onDismiss() },
         sheetState = sheetState,
         containerColor = MaterialTheme.colorScheme.surface,
     ) {
+        LaunchedEffect(Unit) {
+            headingFocus.requestFocus()
+        }
         Column(
             modifier =
                 Modifier
@@ -237,11 +237,17 @@ private fun UsageField(
         }
     val error =
         when (input.error) {
-            MeasurementNumberError.MUST_BE_POSITIVE ->
+            MeasurementNumberError.MUST_BE_POSITIVE -> {
                 if (ratio) R.string.yarn_usage_positive else R.string.yarn_usage_nonnegative
-            MeasurementNumberError.INVALID_NUMBER, MeasurementNumberError.TOO_LARGE ->
+            }
+
+            MeasurementNumberError.INVALID_NUMBER, MeasurementNumberError.TOO_LARGE -> {
                 R.string.yarn_usage_invalid_amount
-            null -> if (input.incomplete) R.string.yarn_usage_invalid_amount else null
+            }
+
+            null -> {
+                if (input.incomplete) R.string.yarn_usage_invalid_amount else null
+            }
         }
     NumberInputField(
         value = input.text,
@@ -286,8 +292,10 @@ private fun usageErrorResource(
 ): Int =
     when (result) {
         is YarnUsageResult.AlreadyExists -> R.string.yarn_usage_exists
+
         YarnUsageResult.ProjectMissing, YarnUsageResult.SourceMissing, YarnUsageResult.SourceNotOwnedByProject,
         YarnUsageResult.UsageMissing, YarnUsageResult.StaleAction,
         -> R.string.yarn_usage_stale
+
         else -> if (deleting) R.string.yarn_usage_delete_failed else R.string.yarn_usage_save_failed
     }

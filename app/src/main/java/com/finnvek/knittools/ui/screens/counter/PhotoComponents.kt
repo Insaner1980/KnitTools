@@ -46,6 +46,7 @@ import com.finnvek.knittools.data.storage.AppFileStorage
 import com.finnvek.knittools.domain.model.ProgressPhoto
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.rememberLocaleDateFormat
+import com.finnvek.knittools.ui.theme.knitToolsColors
 import java.util.Date
 
 @Composable
@@ -134,7 +135,7 @@ fun PhotoViewer(
                     Icon(
                         Icons.Filled.Close,
                         contentDescription = stringResource(R.string.cancel),
-                        tint = MaterialTheme.colorScheme.inverseOnSurface,
+                        tint = MaterialTheme.knitToolsColors.onPhotoScrim,
                     )
                 }
                 Row(modifier = Modifier.align(Alignment.TopEnd)) {
@@ -142,7 +143,7 @@ fun PhotoViewer(
                         Icon(
                             Icons.Filled.Delete,
                             contentDescription = stringResource(R.string.delete_photo),
-                            tint = MaterialTheme.colorScheme.inverseOnSurface,
+                            tint = MaterialTheme.knitToolsColors.onPhotoScrim,
                         )
                     }
                     IconButton(
@@ -165,7 +166,7 @@ fun PhotoViewer(
                         Icon(
                             Icons.Filled.Share,
                             contentDescription = stringResource(R.string.share_photo),
-                            tint = MaterialTheme.colorScheme.inverseOnSurface,
+                            tint = MaterialTheme.knitToolsColors.onPhotoScrim,
                         )
                     }
                 }
@@ -182,13 +183,13 @@ fun PhotoViewer(
                 Text(
                     text = stringResource(R.string.row_label_format, photo.rowNumber),
                     style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.inverseOnSurface,
+                    color = MaterialTheme.knitToolsColors.onPhotoScrim,
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = dateFormat.format(Date(photo.createdAt)),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.inverseOnSurface.copy(alpha = 0.7f),
+                    color = MaterialTheme.knitToolsColors.onPhotoScrim.copy(alpha = 0.7f),
                 )
             }
         }

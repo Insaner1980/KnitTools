@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -248,39 +249,42 @@ fun RavelrySearchScreen(
         },
         // CPD-ON
     ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            if (!isSavedSelectMode) {
-                RavelryAccountHeader(
-                    authState = authState,
-                    onSignIn = viewModel::startSignIn,
-                    onBrowseRavelry = actions.onBrowseRavelry,
-                    onDisconnect = viewModel::disconnectRavelry,
-                )
-            }
+        Column(modifier = Modifier.fillMaxSize().padding(padding).imePadding()) {
+            val header: @Composable () -> Unit = {
+                if (!isSavedSelectMode) {
+                    RavelryAccountHeader(
+                        authState = authState,
+                        onSignIn = viewModel::startSignIn,
+                        onBrowseRavelry = actions.onBrowseRavelry,
+                        onDisconnect = viewModel::disconnectRavelry,
+                    )
+                }
 
-            // Välilehdet (piilotetaan select-modessa)
-            if (!isSavedSelectMode) {
-                PrimaryTabRow(
-                    selectedTabIndex = selectedTab,
-                    containerColor = MaterialTheme.colorScheme.background,
-                    contentColor = MaterialTheme.colorScheme.primary,
-                ) {
-                    Tab(
-                        selected = selectedTab == 0,
-                        onClick = { selectedTab = 0 },
-                        text = { Text(stringResource(R.string.ravelry_search)) },
-                    )
-                    Tab(
-                        selected = selectedTab == 1,
-                        onClick = { selectedTab = 1 },
-                        text = { Text(stringResource(R.string.ravelry_saved_patterns)) },
-                    )
+                // Välilehdet (piilotetaan select-modessa)
+                if (!isSavedSelectMode) {
+                    PrimaryTabRow(
+                        selectedTabIndex = selectedTab,
+                        containerColor = MaterialTheme.colorScheme.background,
+                        contentColor = MaterialTheme.colorScheme.primary,
+                    ) {
+                        Tab(
+                            selected = selectedTab == 0,
+                            onClick = { selectedTab = 0 },
+                            text = { Text(stringResource(R.string.ravelry_search)) },
+                        )
+                        Tab(
+                            selected = selectedTab == 1,
+                            onClick = { selectedTab = 1 },
+                            text = { Text(stringResource(R.string.ravelry_saved_patterns)) },
+                        )
+                    }
                 }
             }
 
             when (selectedTab) {
                 0 -> {
                     SearchTab(
+                        header = header,
                         state =
                             SearchTabState(
                                 searchQuery = searchQuery,
@@ -307,6 +311,7 @@ fun RavelrySearchScreen(
 
                 1 -> {
                     SavedTab(
+                        header = header,
                         patterns = savedPatterns,
                         isSelectMode = isSavedSelectMode,
                         selectedIds = selectedSavedIds,
@@ -384,6 +389,7 @@ private fun SearchTabState.isCurrentSubmittedSearch(): Boolean =
 
 @Composable
 private fun SearchTab(
+    header: @Composable () -> Unit,
     state: SearchTabState,
     onQueryChange: (String) -> Unit,
     onSearch: () -> Unit,
@@ -434,6 +440,7 @@ private fun SearchTab(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.fillMaxSize(),
     ) {
+        item { header() }
         item {
             RavelrySearchField(
                 query = state.searchQuery,
@@ -641,21 +648,31 @@ private fun RavelrySearchResultActionContent(
 
 private fun RavelrySearchError.messageRes(isLoadMoreError: Boolean): Int =
     when (this) {
-        RavelrySearchError.Network, RavelrySearchError.Unknown ->
+        RavelrySearchError.Network, RavelrySearchError.Unknown -> {
             if (isLoadMoreError) {
                 R.string.search_more_error
             } else {
                 R.string.search_error
             }
+        }
 
-        RavelrySearchError.RateLimited -> R.string.ravelry_search_rate_limited
-        RavelrySearchError.Authentication -> R.string.ravelry_search_auth_error
-        RavelrySearchError.ServiceUnavailable -> R.string.ravelry_search_service_error
+        RavelrySearchError.RateLimited -> {
+            R.string.ravelry_search_rate_limited
+        }
+
+        RavelrySearchError.Authentication -> {
+            R.string.ravelry_search_auth_error
+        }
+
+        RavelrySearchError.ServiceUnavailable -> {
+            R.string.ravelry_search_service_error
+        }
     }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun SavedTab(
+    header: @Composable () -> Unit,
     patterns: List<SavedPattern>,
     isSelectMode: Boolean,
     selectedIds: Set<Long>,
@@ -663,14 +680,15 @@ private fun SavedTab(
     onEnterSelectMode: (Long) -> Unit,
     onToggleSelection: (Long) -> Unit,
 ) {
-    if (patterns.isEmpty()) {
-        SavedTabEmptyState()
-    } else {
-        LazyColumn(
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.fillMaxSize(),
-        ) {
+    LazyColumn(
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.fillMaxSize(),
+    ) {
+        item { header() }
+        if (patterns.isEmpty()) {
+            item { SavedTabEmptyState() }
+        } else {
             items(patterns, key = { it.id }) { pattern ->
                 SavedPatternItem(
                     pattern = pattern,
@@ -744,7 +762,7 @@ private fun SavedPatternItem(
                 },
             containerColor = backgroundColor,
             modifier =
-                Modifier.then(
+                Modifier.padding(start = if (isSelectMode) 48.dp else 0.dp).then(
                     if (isSelectMode) {
                         Modifier.semantics { selected = isSelected }
                     } else {

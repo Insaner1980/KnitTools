@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.assertHeightIsAtLeast
@@ -17,6 +18,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.platform.app.InstrumentationRegistry
@@ -65,6 +67,48 @@ class WebPatternEditorScreenTest {
         composeRule.onNodeWithText(context.getString(R.string.web_pattern_error_title_required)).assertIsDisplayed()
         composeRule.onNodeWithText(context.getString(R.string.web_pattern_error_url_required)).assertIsDisplayed()
         composeRule.onNodeWithTag(WEB_PATTERN_TITLE_FIELD_TAG).assertIsFocused()
+    }
+
+    @Test
+    fun correctingValidationKeepsFocusUntilAnotherSaveAttempt() {
+        val state =
+            mutableStateOf(WebPatternEditorUiState(route = WebPatternEditorRoute(WebPatternEditorOrigin.Manual)))
+        var saves = 0
+        composeRule.setContent {
+            KnitToolsTheme(isDarkTheme = false) {
+                WebPatternEditorContent(
+                    state = state.value,
+                    onBack = {},
+                    onTitleChange = { state.value = state.value.copy(title = it) },
+                    onDesignerChange = { state.value = state.value.copy(designer = it) },
+                    onUrlChange = { state.value = state.value.copy(url = it) },
+                    onSave = { saves += 1 },
+                    onKeepDraft = {},
+                    onUseSharedLink = {},
+                    onDismissReplacement = {},
+                    onConfirmReplacement = {},
+                )
+            }
+        }
+        composeRule.onNodeWithText(context.getString(R.string.save)).performClick()
+        for (part in listOf("C", "able ", "cardigan")) {
+            composeRule.onNodeWithTag(WEB_PATTERN_TITLE_FIELD_TAG).assertIsFocused().performTextInput(part)
+            composeRule.onNodeWithTag(WEB_PATTERN_TITLE_FIELD_TAG).assertIsFocused()
+        }
+        composeRule.runOnIdle {
+            assertEquals("Cable cardigan", state.value.title)
+            assertEquals("", state.value.url)
+            assertEquals(0, saves)
+        }
+        composeRule.onNodeWithText(context.getString(R.string.save)).performScrollTo().performClick()
+        composeRule
+            .onNodeWithTag(
+                WEB_PATTERN_URL_FIELD_TAG,
+            ).assertIsFocused()
+            .performTextInput("https://example.com/pattern")
+        composeRule.onNodeWithTag(WEB_PATTERN_URL_FIELD_TAG).assertIsFocused().performImeAction()
+        composeRule.onNodeWithTag(WEB_PATTERN_DESIGNER_FIELD_TAG).assertIsFocused().performImeAction()
+        composeRule.runOnIdle { assertEquals(1, saves) }
     }
 
     @Test

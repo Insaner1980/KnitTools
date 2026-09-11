@@ -2,10 +2,12 @@ package com.finnvek.knittools.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -18,6 +20,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -89,9 +92,13 @@ fun ProPromptSheet(
 
             TrialStartResult.AlreadyExpired,
             TrialStartResult.AlreadyTampered,
-            -> startFailed = false
+            -> {
+                startFailed = false
+            }
 
-            TrialStartResult.Failed -> startFailed = true
+            TrialStartResult.Failed -> {
+                startFailed = true
+            }
         }
     }
 
@@ -104,6 +111,7 @@ fun ProPromptSheet(
                 Modifier
                     .fillMaxWidth()
                     .navigationBarsPadding()
+                    .verticalScroll(rememberScrollState())
                     .padding(horizontal = 24.dp)
                     .padding(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -124,9 +132,10 @@ fun ProPromptSheet(
                     color = MaterialTheme.colorScheme.error,
                 )
             }
-            Row(
+            FlowRow(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 TextButton(onClick = onDismiss) {
                     Text(stringResource(R.string.pro_prompt_not_now))
@@ -159,15 +168,23 @@ private fun ProPromptRequest.title(): String =
     stringResource(
         when (source) {
             ProPromptSource.Projects -> R.string.pro_prompt_projects_title
+
             ProPromptSource.ProgressPhotos -> R.string.pro_prompt_photos_title
+
             ProPromptSource.Notes -> R.string.pro_prompt_notes_title
+
             ProPromptSource.YarnCards -> R.string.pro_prompt_yarn_title
+
             ProPromptSource.SaveToMyYarn -> R.string.pro_prompt_save_yarn_title
+
             ProPromptSource.Counters -> R.string.pro_prompt_counters_title
+
             ProPromptSource.Reminders -> R.string.pro_prompt_reminders_title
+
             ProPromptSource.PatternCamera,
             ProPromptSource.PatternGallery,
             -> R.string.pro_prompt_pattern_camera_title
+
             ProPromptSource.Widget -> R.string.pro_prompt_widget_title
         },
     )
@@ -190,15 +207,23 @@ private fun ProPromptRequest.body(status: ProStatus): String =
         stringResource(
             when (source) {
                 ProPromptSource.ProgressPhotos -> R.string.pro_prompt_photos_body
+
                 ProPromptSource.Notes -> R.string.pro_prompt_notes_body
+
                 ProPromptSource.YarnCards -> R.string.pro_prompt_yarn_body
+
                 ProPromptSource.SaveToMyYarn -> R.string.pro_prompt_save_yarn_body
+
                 ProPromptSource.Counters -> R.string.pro_prompt_counters_body
+
                 ProPromptSource.Reminders -> R.string.pro_prompt_reminders_body
+
                 ProPromptSource.PatternCamera,
                 ProPromptSource.PatternGallery,
                 -> R.string.pro_prompt_pattern_camera_body
+
                 ProPromptSource.Widget -> R.string.pro_prompt_widget_body
+
                 ProPromptSource.Projects -> error("Project copy uses plurals")
             },
         )

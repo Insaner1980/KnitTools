@@ -2,7 +2,6 @@ package com.finnvek.knittools.ui.screens.ravelry
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -21,10 +20,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.auth.RavelryAuthState
@@ -46,14 +43,13 @@ internal fun RavelryAccountHeader(
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
         shape = MaterialTheme.shapes.medium,
     ) {
-        Row(
+        Column(
             modifier = Modifier.fillMaxWidth().padding(headerContentPadding),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(headerActionSpacing),
+            verticalArrangement = Arrangement.spacedBy(headerActionSpacing),
         ) {
             RavelryAccountStatus(
                 authState = authState,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.fillMaxWidth(),
             )
             RavelryAccountActions(
                 authState = authState,
@@ -75,8 +71,6 @@ private fun RavelryAccountStatus(
             text = authState.messageText(),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = authState.messageMaxLines(),
-            overflow = TextOverflow.Ellipsis,
         )
     }
 }
@@ -164,18 +158,39 @@ private val headerTextSpacing = 2.dp
 @Composable
 private fun RavelryAuthState.messageText(): String =
     when (this) {
-        RavelryAuthState.NotConnected -> stringResource(R.string.ravelry_not_connected)
-        RavelryAuthState.Starting -> stringResource(R.string.ravelry_connecting)
-        RavelryAuthState.AwaitingBrowser -> stringResource(R.string.ravelry_auth_pending)
-        is RavelryAuthState.Connected ->
+        RavelryAuthState.NotConnected -> {
+            stringResource(R.string.ravelry_not_connected)
+        }
+
+        RavelryAuthState.Starting -> {
+            stringResource(R.string.ravelry_connecting)
+        }
+
+        RavelryAuthState.AwaitingBrowser -> {
+            stringResource(R.string.ravelry_auth_pending)
+        }
+
+        is RavelryAuthState.Connected -> {
             if (username.isNullOrBlank()) {
                 stringResource(R.string.ravelry_connected)
             } else {
                 stringResource(R.string.ravelry_connected_as, username)
             }
+        }
 
-        RavelryAuthState.Cancelled -> stringResource(R.string.ravelry_auth_cancelled)
-        RavelryAuthState.Expired -> stringResource(R.string.ravelry_auth_expired)
-        RavelryAuthState.BackendUnavailable -> stringResource(R.string.ravelry_backend_unavailable)
-        RavelryAuthState.Disconnecting -> stringResource(R.string.ravelry_disconnecting)
+        RavelryAuthState.Cancelled -> {
+            stringResource(R.string.ravelry_auth_cancelled)
+        }
+
+        RavelryAuthState.Expired -> {
+            stringResource(R.string.ravelry_auth_expired)
+        }
+
+        RavelryAuthState.BackendUnavailable -> {
+            stringResource(R.string.ravelry_backend_unavailable)
+        }
+
+        RavelryAuthState.Disconnecting -> {
+            stringResource(R.string.ravelry_disconnecting)
+        }
     }

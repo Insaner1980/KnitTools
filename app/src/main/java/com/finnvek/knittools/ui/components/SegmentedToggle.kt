@@ -20,9 +20,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.ui.theme.ComponentDimens
 
@@ -40,13 +40,14 @@ fun SegmentedToggle(
     fraction: Float = 0.7f,
 ) {
     val isGrid = options.size > 3
-    val containerShape: Shape = if (isGrid) GridContainerShape else PillContainerShape
-    val itemShape: Shape = if (isGrid) GridItemShape else PillItemShape
+    val expandedLabels = LocalDensity.current.fontScale >= 1.5f
+    val containerShape: Shape = if (isGrid || expandedLabels) GridContainerShape else PillContainerShape
+    val itemShape: Shape = if (isGrid || expandedLabels) GridItemShape else PillItemShape
 
     Box(
         modifier =
             modifier
-                .fillMaxWidth(if (isGrid) 1f else fraction)
+                .fillMaxWidth(if (isGrid || expandedLabels) 1f else fraction)
                 .clip(containerShape)
                 .background(MaterialTheme.colorScheme.surfaceVariant)
                 .selectableGroup()
@@ -187,7 +188,11 @@ private fun SegmentedToggleItem(
                 MaterialTheme.colorScheme.onSurfaceVariant
             }
         BasicText(
-            modifier = Modifier.padding(horizontal = ComponentDimens.SegmentedItemTextInset),
+            modifier =
+                Modifier.padding(
+                    horizontal = ComponentDimens.SegmentedItemTextInset,
+                    vertical = ComponentDimens.CompactSpacing,
+                ),
             text = label,
             style =
                 labelStyle.copy(
@@ -199,8 +204,7 @@ private fun SegmentedToggleItem(
                     minFontSize = MaterialTheme.typography.labelSmall.fontSize,
                     maxFontSize = labelStyle.fontSize,
                 ),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
+            maxLines = 3,
         )
     }
 }

@@ -53,7 +53,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -207,6 +210,8 @@ fun PhotoGalleryScreen(
         )
     }
 
+    val density = LocalDensity.current
+    var actionHeight by remember { mutableStateOf(0.dp) }
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
@@ -236,6 +241,7 @@ fun PhotoGalleryScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
+                modifier = Modifier.onSizeChanged { actionHeight = with(density) { it.height.toDp() } },
                 onClick = { launchCamera() },
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -255,7 +261,14 @@ fun PhotoGalleryScreen(
     ) { padding ->
         PhotoGalleryContent(
             photos = photos,
-            padding = padding,
+            padding =
+                PaddingValues(
+                    start = padding.calculateLeftPadding(LocalLayoutDirection.current),
+                    top = padding.calculateTopPadding(),
+                    end = padding.calculateRightPadding(LocalLayoutDirection.current),
+                    bottom =
+                        padding.calculateBottomPadding() + actionHeight + 32.dp,
+                ),
             onPhotoClick = { viewingPhotoId = it.id },
             onPhotoLongClick = { renamingPhotoId = it.id },
         )

@@ -294,6 +294,7 @@ private fun ProjectYarnNoteRow(
             enabled = note.savedYarnCardId == null,
         ) {
             Text(
+                modifier = Modifier.weight(1f),
                 text =
                     stringResource(
                         if (note.savedYarnCardId == null) {

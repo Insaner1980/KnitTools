@@ -7,13 +7,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.MoreVert
@@ -122,8 +122,6 @@ fun CounterListItem(
                 // CPD-ON
                 style = MaterialTheme.typography.counterExtraName,
                 color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f),
             )
 
@@ -137,9 +135,18 @@ fun CounterListItem(
             )
         }
 
+        Text(
+            text = displayText.replace(Regex("(?<=\\d) (?=\\d)"), "\u00a0"),
+            style = MaterialTheme.typography.counterExtraValue,
+            color = MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             CounterStepperButton(
                 symbol = CounterStepSymbol.Minus,
@@ -148,18 +155,6 @@ fun CounterListItem(
                 onClick = onDecrement,
                 enabled = canDecrement,
             )
-
-            Spacer(modifier = Modifier.width(CounterDimens.ExtraCounterValueSpacing))
-
-            Text(
-                text = displayText,
-                style = MaterialTheme.typography.counterExtraValue,
-                color = MaterialTheme.colorScheme.onSurface,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.weight(1f),
-            )
-
-            Spacer(modifier = Modifier.width(CounterDimens.ExtraCounterValueSpacing))
 
             CounterStepperButton(
                 symbol = CounterStepSymbol.Plus,
@@ -224,10 +219,15 @@ internal fun extraCounterIncrementIsProminent(counter: ProjectCounter): Boolean 
 @Composable
 internal fun CounterValueDisplay.asText(): String =
     when (this) {
-        is CounterValueDisplay.Plain -> formatIntegerForDisplay(count.toLong(), rememberCurrentLocale())
-        is CounterValueDisplay.Cycle ->
+        is CounterValueDisplay.Plain -> {
+            formatIntegerForDisplay(count.toLong(), rememberCurrentLocale())
+        }
+
+        is CounterValueDisplay.Cycle -> {
             stringResource(R.string.repeating_counter_value_format, current, length)
-        is CounterValueDisplay.Section ->
+        }
+
+        is CounterValueDisplay.Section -> {
             stringResource(
                 R.string.repeat_section_progress_format,
                 repeat,
@@ -235,15 +235,20 @@ internal fun CounterValueDisplay.asText(): String =
                 rowInRepeat,
                 rowsInRepeat,
             )
-        CounterValueDisplay.SectionComplete ->
+        }
+
+        CounterValueDisplay.SectionComplete -> {
             stringResource(R.string.repeat_section_complete)
-        is CounterValueDisplay.ReminderRepeat ->
+        }
+
+        is CounterValueDisplay.ReminderRepeat -> {
             pluralStringResource(
                 R.plurals.reminder_repeat_occurrence_format,
                 intervalRows,
                 occurrence,
                 intervalRows,
             )
+        }
     }
 
 @Composable
@@ -594,7 +599,10 @@ private fun AddCounterDialogContent(
     state: AddCounterDialogContentState,
     actions: AddCounterDialogContentActions,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(
+        modifier = Modifier.verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
         TextField(
             value = state.name,
             onValueChange = actions.onNameChange,

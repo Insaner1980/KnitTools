@@ -12,6 +12,31 @@ import java.util.Locale
 
 class InsightsProjectFabricGeometryTest {
     @Test
+    fun `month labels wrap overlapping positions onto separate lanes`() {
+        val positions =
+            projectFabricMonthLabelPositions(
+                starts = listOf(0f, 20f, 120f, 290f),
+                widths = listOf(80f, 80f, 80f, 90f),
+                availableWidth = 320f,
+                gap = 8f,
+            )
+        assertEquals(listOf(0f to 0, 20f to 1, 120f to 0, 230f to 0), positions)
+    }
+
+    @Test
+    fun `month label placements keep every label inside the canvas without overlap`() {
+        val widths = List(7) { 150f }
+        val positions = projectFabricMonthLabelPositions(List(7) { it * 42f }, widths, 320f, 8f)
+        assertEquals(widths.size, positions.size)
+        positions.forEachIndexed { index, (x, lane) ->
+            assertTrue(x >= 0f && x + widths[index] <= 320f)
+            positions.take(index).forEachIndexed { previousIndex, (previousX, previousLane) ->
+                if (lane == previousLane) assertTrue(previousX + widths[previousIndex] + 8f <= x)
+            }
+        }
+    }
+
+    @Test
     fun `month labels use localized uppercase initials`() {
         val start = LocalDate.of(2026, 2, 22)
         val end = LocalDate.of(2026, 4, 5)

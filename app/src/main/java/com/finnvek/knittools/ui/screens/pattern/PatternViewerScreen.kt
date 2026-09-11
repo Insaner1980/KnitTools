@@ -80,6 +80,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalResources
@@ -120,6 +121,7 @@ import com.finnvek.knittools.domain.model.webPatternUrlOrNull
 import com.finnvek.knittools.repository.ProjectDocumentMutationResult
 import com.finnvek.knittools.repository.SavedPatternMetadataMutationResult
 import com.finnvek.knittools.ui.components.CollectWithLifecycleEffect
+import com.finnvek.knittools.ui.components.ScrollableFormDialog
 import com.finnvek.knittools.ui.platform.ExternalWebLinkOpenResult
 import com.finnvek.knittools.ui.platform.openExternalWebLink
 import com.finnvek.knittools.ui.screens.counter.CounterViewModel
@@ -223,6 +225,7 @@ fun PatternViewerScreen(
                         renderState.renderer?.pageCount ?: (event.page + 1),
                     )
             }
+
             is CounterViewerEvent.ReadingLineFollowingResumed -> {
                 accessibilityAnnouncement =
                     resources.getString(
@@ -570,7 +573,9 @@ fun PatternViewerScreen(
                 val messageRes =
                     when (result) {
                         ExternalWebLinkOpenResult.Opened -> null
+
                         ExternalWebLinkOpenResult.NoBrowser -> R.string.web_pattern_no_browser
+
                         ExternalWebLinkOpenResult.InvalidUrl,
                         ExternalWebLinkOpenResult.Failed,
                         -> R.string.web_pattern_open_failed
@@ -797,7 +802,10 @@ internal fun ProjectDocumentsSheet(
                 }
             }
             when {
-                state.isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                state.isLoading -> {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                }
+
                 state.documents.isEmpty() -> {
                     Text(
                         text = stringResource(R.string.project_documents_empty),
@@ -806,6 +814,7 @@ internal fun ProjectDocumentsSheet(
                         modifier = Modifier.padding(vertical = 24.dp),
                     )
                 }
+
                 else -> {
                     LazyColumn(
                         modifier = Modifier.fillMaxWidth().heightIn(max = 520.dp),
@@ -839,7 +848,7 @@ internal fun ProjectDocumentsSheet(
 
     if (showUnlinkConfirmation) {
         val patternName = metadataPattern?.name.orEmpty()
-        AlertDialog(
+        ScrollableFormDialog(
             onDismissRequest = { showUnlinkConfirmation = false },
             title = { Text(stringResource(R.string.web_pattern_unlink)) },
             text = { Text(stringResource(R.string.web_pattern_unlink_description, patternName)) },
@@ -1003,7 +1012,7 @@ private fun ProjectDocumentRow(
         }
     ListItem(
         headlineContent = {
-            Text(document.label, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(document.label)
         },
         supportingContent = {
             Column {
@@ -1208,8 +1217,6 @@ private fun RowCalibrationPanel(
                 ) {
                     Text(
                         text = stringResource(state.saveButtonLabelRes()),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
                     )
                 }
                 TextButton(
@@ -1218,8 +1225,6 @@ private fun RowCalibrationPanel(
                 ) {
                     Text(
                         text = stringResource(R.string.cancel),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
                     )
                 }
             }
@@ -2351,7 +2356,9 @@ private fun ReadingLineRowLabel(
     modifier: Modifier = Modifier,
 ) {
     val verticalMargin = 4.dp
-    val labelHeight = 28.dp
+    val density = LocalDensity.current
+    var measuredLabelHeight by remember { mutableIntStateOf(0) }
+    val labelHeight = with(density) { measuredLabelHeight.toDp() }
     val maxOffset = containerHeight - labelHeight - verticalMargin
     val boundedMaxOffset = if (maxOffset > verticalMargin) maxOffset else verticalMargin
     val labelOffset =
@@ -2366,7 +2373,8 @@ private fun ReadingLineRowLabel(
         modifier =
             modifier
                 .padding(start = 8.dp)
-                .offset(y = labelOffset),
+                .offset(y = labelOffset)
+                .onSizeChanged { measuredLabelHeight = it.height },
     ) {
         Text(
             text = stringResource(R.string.current_row_short, currentRow),

@@ -10,7 +10,10 @@ class ArchitectureSingleSourceSourceTest {
     fun `additional counter name inputs use the domain limit`() {
         val source = ProjectSourceFiles.read(MULTI_COUNTER_COMPONENTS)
         val functions = source.split(Regex("\\bfun\\s+"))
-        mapOf("AddCounterDialog" to "onNameChange", "RenameCounterDialog" to "onValueChange").forEach { (name, handler) ->
+        mapOf(
+            "AddCounterDialog" to "onNameChange",
+            "RenameCounterDialog" to "onValueChange",
+        ).forEach { (name, handler) ->
             val function = functions.single { Regex("^$name\\s*\\(").containsMatchIn(it) }
             assertTrue(
                 "$name must reject overlong input using the domain limit",

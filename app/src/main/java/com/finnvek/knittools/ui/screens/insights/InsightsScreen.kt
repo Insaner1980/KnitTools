@@ -116,9 +116,15 @@ fun InsightsScreen(
                     .padding(horizontal = InsightsDimens.ScreenHorizontalPadding),
         ) {
             when {
-                uiState.isLoading -> item { InsightsSkeleton() }
-                !uiState.hasAnySessionData -> item { InsightsEmptyState() }
-                else ->
+                uiState.isLoading -> {
+                    item { InsightsSkeleton() }
+                }
+
+                !uiState.hasAnySessionData -> {
+                    item { InsightsEmptyState() }
+                }
+
+                else -> {
                     insightsContent(
                         uiState = uiState,
                         rangeLabel = rangeLabel,
@@ -132,6 +138,7 @@ fun InsightsScreen(
                         onLaunchCounter = onLaunchCounter,
                         onSessionHistory = onSessionHistory,
                     )
+                }
             }
         }
     }
@@ -676,8 +683,6 @@ private fun InsightsMenuItem(
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
                 color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
             )
         },
         leadingIcon =

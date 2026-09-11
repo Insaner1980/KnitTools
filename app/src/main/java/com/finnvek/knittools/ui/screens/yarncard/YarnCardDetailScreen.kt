@@ -39,7 +39,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
@@ -326,6 +325,7 @@ private fun YarnActionsSection(
                 label = stringResource(R.string.quantity_label),
                 value = {
                     Row(
+                        modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
@@ -340,6 +340,7 @@ private fun YarnActionsSection(
                         }
                         Text(
                             text = skeinCountText(form.quantityInStash),
+                            modifier = Modifier.weight(1f),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurface,
                         )
@@ -368,8 +369,6 @@ private fun YarnActionsSection(
                             } else {
                                 MaterialTheme.colorScheme.onSurface
                             },
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
                     )
                 },
                 onClick = onLinkedProjectClick,
@@ -392,7 +391,7 @@ private fun ActionRow(
     value: @Composable () -> Unit,
     onClick: (() -> Unit)? = null,
 ) {
-    Row(
+    Column(
         modifier =
             Modifier
                 .fillMaxWidth()
@@ -403,15 +402,13 @@ private fun ActionRow(
                         Modifier
                     },
                 ),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(
             text = label,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.knitToolsColors.onSurfaceMuted,
         )
-        Spacer(modifier = Modifier.width(16.dp))
         value()
     }
 }
@@ -610,6 +607,7 @@ private fun LinkedProjectSheet(
                 Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp)
+                    .verticalScroll(rememberScrollState())
                     .padding(bottom = 32.dp),
             // CPD-ON
             verticalArrangement = Arrangement.spacedBy(8.dp),

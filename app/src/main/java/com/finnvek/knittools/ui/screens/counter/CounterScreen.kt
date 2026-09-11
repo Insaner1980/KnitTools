@@ -96,6 +96,7 @@ import com.finnvek.knittools.ui.components.ProPromptSource
 import com.finnvek.knittools.ui.components.ProjectDetailsDialog
 import com.finnvek.knittools.ui.components.ProjectDetailsValues
 import com.finnvek.knittools.ui.components.RenameProjectDialog
+import com.finnvek.knittools.ui.components.ScrollableFormDialog
 import com.finnvek.knittools.ui.components.localizedUppercase
 import com.finnvek.knittools.ui.findActivity
 import com.finnvek.knittools.ui.platform.ExternalWebLinkOpenResult
@@ -130,18 +131,23 @@ private fun ProjectDocumentMutationResult.toProjectDocumentError(): ProjectDocum
         is ProjectDocumentMutationResult.Removed,
         ProjectDocumentMutationResult.ViewerStateUpdated,
         -> null
+
         ProjectDocumentMutationResult.InvalidLabel -> ProjectDocumentError.INVALID_LABEL
+
         ProjectDocumentMutationResult.AlreadyAttached,
         ProjectDocumentMutationResult.DuplicateUri,
         ProjectDocumentMutationResult.DuplicateDocumentKey,
         -> ProjectDocumentError.DUPLICATE
+
         ProjectDocumentMutationResult.PdfUnavailable -> ProjectDocumentError.UNAVAILABLE
+
         ProjectDocumentMutationResult.MissingProject,
         ProjectDocumentMutationResult.MissingDocument,
         ProjectDocumentMutationResult.MissingSavedPattern,
         ProjectDocumentMutationResult.MetadataOnlyPattern,
         ProjectDocumentMutationResult.StaleAction,
         -> ProjectDocumentError.STALE_ACTION
+
         ProjectDocumentMutationResult.PersistenceFailure -> ProjectDocumentError.MUTATION_FAILURE
     }
 
@@ -598,7 +604,9 @@ fun CounterScreen(
                 val messageRes =
                     when (result) {
                         ExternalWebLinkOpenResult.Opened -> null
+
                         ExternalWebLinkOpenResult.NoBrowser -> R.string.web_pattern_no_browser
+
                         ExternalWebLinkOpenResult.InvalidUrl,
                         ExternalWebLinkOpenResult.Failed,
                         -> R.string.web_pattern_open_failed
@@ -817,18 +825,23 @@ fun CounterScreen(
             when (action) {
                 PendingCounterProAction.OpenReminder,
                 PendingCounterProAction.RetryReminder,
-                ->
+                -> {
                     ProPromptRequest(
                         source = ProPromptSource.Reminders,
                     )
-                PendingCounterProAction.SaveToMyYarn ->
+                }
+
+                PendingCounterProAction.SaveToMyYarn -> {
                     ProPromptRequest(
                         source = ProPromptSource.SaveToMyYarn,
                     )
-                else ->
+                }
+
+                else -> {
                     ProPromptRequest(
                         source = ProPromptSource.Counters,
                     )
+                }
             }
         ProPromptSheet(
             request = request,
@@ -836,19 +849,31 @@ fun CounterScreen(
             onTrialStarted = {
                 pendingProAction = null
                 when (action) {
-                    PendingCounterProAction.OpenCounter -> showAddCounter = true
+                    PendingCounterProAction.OpenCounter -> {
+                        showAddCounter = true
+                    }
+
                     PendingCounterProAction.RetryCounter -> {
                         if (viewModel.retryAddProjectCounter()) showAddCounter = false
                     }
-                    PendingCounterProAction.OpenReminder -> showAddReminder = true
+
+                    PendingCounterProAction.OpenReminder -> {
+                        showAddReminder = true
+                    }
+
                     PendingCounterProAction.RetryReminder -> {
                         if (viewModel.retryAddReminder()) showAddReminder = false
                     }
-                    PendingCounterProAction.SaveToMyYarn -> viewModel.retrySaveProjectYarnNoteToMyYarn()
+
+                    PendingCounterProAction.SaveToMyYarn -> {
+                        viewModel.retrySaveProjectYarnNoteToMyYarn()
+                    }
+
                     PendingCounterProAction.IncrementSecondary -> {
                         performHaptic()
                         viewModel.incrementSecondary()
                     }
+
                     PendingCounterProAction.DecrementSecondary -> {
                         performHaptic()
                         viewModel.decrementSecondary()
@@ -1024,7 +1049,7 @@ internal fun SessionRecoveryDialog(
     LaunchedEffect(recoveryIntervalToken) {
         headingFocusRequester.requestFocus()
     }
-    AlertDialog(
+    ScrollableFormDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
@@ -1038,7 +1063,6 @@ internal fun SessionRecoveryDialog(
         },
         text = {
             Column(
-                modifier = Modifier.verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Text(projectName, style = MaterialTheme.typography.titleMedium)
@@ -1147,7 +1171,12 @@ internal fun SessionStartConflictDialog(
     AlertDialog(
         onDismissRequest = onCancel,
         title = { Text(stringResource(R.string.work_session_conflict_title)) },
-        text = { Text(stringResource(R.string.work_session_conflict_body, activeProjectName)) },
+        text = {
+            Text(
+                text = stringResource(R.string.work_session_conflict_body, activeProjectName),
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+            )
+        },
         confirmButton = {
             Column(horizontalAlignment = Alignment.End) {
                 TextButton(onClick = onReturnToActive, modifier = Modifier.defaultMinSize(minHeight = 48.dp)) {
@@ -1177,7 +1206,12 @@ internal fun ActiveSessionCompletionDialog(
     AlertDialog(
         onDismissRequest = onCancel,
         title = { Text(stringResource(R.string.work_session_complete_project_title)) },
-        text = { Text(stringResource(R.string.work_session_complete_project_body)) },
+        text = {
+            Text(
+                text = stringResource(R.string.work_session_complete_project_body),
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+            )
+        },
         confirmButton = {
             Column(horizontalAlignment = Alignment.End) {
                 TextButton(onClick = onSave, modifier = Modifier.defaultMinSize(minHeight = 48.dp)) {
@@ -1302,8 +1336,11 @@ private fun recoveryReasonText(reason: ActiveSessionRecoveryReason?): String =
     stringResource(
         when (reason) {
             ActiveSessionRecoveryReason.REBOOTED -> R.string.work_session_reason_restarted
+
             ActiveSessionRecoveryReason.LONG_RUNNING -> R.string.work_session_reason_long_running
+
             ActiveSessionRecoveryReason.BOOT_IDENTITY_UNAVAILABLE -> R.string.work_session_reason_clock_unavailable
+
             ActiveSessionRecoveryReason.INVALID_ANCHORS,
             null,
             -> R.string.work_session_reason_clock_changed
@@ -1857,7 +1894,7 @@ private fun YarnPickerItem(
 ) {
     val fallbackYarnName = stringResource(R.string.yarn_card_number_fallback, card.id)
     val name = card.displayName { fallbackYarnName }
-    Row(
+    Column(
         modifier =
             Modifier
                 .fillMaxWidth()
@@ -1865,9 +1902,9 @@ private fun YarnPickerItem(
                 .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                 .clickable(onClick = onSelect)
                 .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Column(modifier = Modifier.weight(1f)) {
+        Column {
             Text(text = name, style = MaterialTheme.typography.titleMedium)
             if (card.colorName.isNotBlank()) {
                 Text(
@@ -1965,11 +2002,17 @@ private fun KeepScreenAwake(
         val observer =
             LifecycleEventObserver { _, event ->
                 when (event) {
-                    Lifecycle.Event.ON_START ->
+                    Lifecycle.Event.ON_START -> {
                         window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-                    Lifecycle.Event.ON_STOP ->
+                    }
+
+                    Lifecycle.Event.ON_STOP -> {
                         window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-                    else -> Unit
+                    }
+
+                    else -> {
+                        Unit
+                    }
                 }
             }
         lifecycle.addObserver(observer)
@@ -2132,10 +2175,13 @@ private fun rememberCounterSheetActions(
                         when (result) {
                             is SavedPatternMetadataMutationResult.Attached,
                             is SavedPatternMetadataMutationResult.AlreadyAttached,
-                            -> onHidePatternPicker()
+                            -> {
+                                onHidePatternPicker()
+                            }
 
-                            is SavedPatternMetadataMutationResult.ReplacementRequired ->
+                            is SavedPatternMetadataMutationResult.ReplacementRequired -> {
                                 onWebPatternReplacementRequired(pattern, result.existingSavedPatternId)
+                            }
 
                             SavedPatternMetadataMutationResult.ProjectMissing,
                             SavedPatternMetadataMutationResult.PatternMissing,
@@ -2144,7 +2190,9 @@ private fun rememberCounterSheetActions(
                             SavedPatternMetadataMutationResult.PersistenceFailure,
                             SavedPatternMetadataMutationResult.Unlinked,
                             SavedPatternMetadataMutationResult.AlreadyUnlinked,
-                            -> onPatternMetadataAttachFailed()
+                            -> {
+                                onPatternMetadataAttachFailed()
+                            }
                         }
                     }
                 } else {

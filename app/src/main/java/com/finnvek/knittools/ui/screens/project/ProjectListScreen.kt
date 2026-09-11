@@ -23,6 +23,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
@@ -94,6 +96,7 @@ import com.finnvek.knittools.ui.components.ProjectDetailsDialog
 import com.finnvek.knittools.ui.components.ProjectDetailsValues
 import com.finnvek.knittools.ui.components.ProjectListItem
 import com.finnvek.knittools.ui.components.RenameProjectDialog
+import com.finnvek.knittools.ui.components.ScrollableFormDialog
 import com.finnvek.knittools.ui.components.localizedUppercase
 import com.finnvek.knittools.ui.components.mainCounterCountText
 import com.finnvek.knittools.ui.components.mainCounterTargetFraction
@@ -175,6 +178,7 @@ fun ProjectListScreen(
             is ProjectFolderMutationResult.Created, is ProjectFolderMutationResult.Renamed -> {
                 showFolderNameDialog = false
             }
+
             is ProjectFolderMutationResult.Deleted -> {
                 deletingFolderId = null
                 val remaining = folders.filterNot { it.id == result.folder.id }
@@ -184,6 +188,7 @@ fun ProjectListScreen(
                 focusCreateFolder = remaining.isEmpty()
                 coroutineScope.launch { snackbarHostState.showSnackbar(resources.getString(R.string.folder_deleted)) }
             }
+
             is ProjectFolderMutationResult.Assigned,
             is ProjectFolderMutationResult.Unassigned,
             is ProjectFolderMutationResult.ProjectsMoved,
@@ -203,7 +208,10 @@ fun ProjectListScreen(
                     )
                 }
             }
-            else -> Unit
+
+            else -> {
+                Unit
+            }
         }
     }
     // Luonnin jälkeen navigoi uuteen projektiin
@@ -464,19 +472,25 @@ fun ProjectListScreen(
             isLoading = folderState.isLoading,
             errorMessage =
                 when {
-                    folderState.readFailed -> stringResource(R.string.folder_load_error)
-                    folderState.mutationError == ProjectFolderMutationResult.PersistenceFailure ->
+                    folderState.readFailed -> {
+                        stringResource(R.string.folder_load_error)
+                    }
+
+                    folderState.mutationError == ProjectFolderMutationResult.PersistenceFailure -> {
                         pluralStringResource(
                             R.plurals.folder_move_projects_error,
                             selectedProjectIds.size,
                             selectedProjectIds.size,
                         )
-                    else ->
+                    }
+
+                    else -> {
                         folderState.mutationError?.let {
                             stringResource(
                                 it.errorResource(R.string.folder_move_error),
                             )
                         }
+                    }
                 },
             isMoving = folderState.isMutating,
             onMoveToFolder = viewModel::moveSelectedProjects,
@@ -698,7 +712,12 @@ private fun ProjectListActiveSessionCompletionDialog(
     AlertDialog(
         onDismissRequest = onCancel,
         title = { Text(stringResource(R.string.work_session_complete_project_title)) },
-        text = { Text(stringResource(R.string.work_session_complete_project_body)) },
+        text = {
+            Text(
+                text = stringResource(R.string.work_session_complete_project_body),
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+            )
+        },
         confirmButton = {
             Column(horizontalAlignment = Alignment.End) {
                 TextButton(onClick = onSave, modifier = Modifier.defaultMinSize(minHeight = 48.dp)) {
@@ -750,7 +769,7 @@ private fun MultiCompleteDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    AlertDialog(
+    ScrollableFormDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.complete_project)) },
         text = { Text(stringResource(R.string.complete_n_projects, selectedCount)) },
@@ -1502,17 +1521,23 @@ internal fun normalizedContinueKnittingSectionName(sectionName: String?): String
 private fun continueKnittingTargetStatusText(statusProvider: @Composable () -> MainCounterTargetStatus): String {
     val status = statusProvider()
     return when (status) {
-        is MainCounterTargetStatus.Remaining ->
+        is MainCounterTargetStatus.Remaining -> {
             stringResource(
                 R.string.counter_target_remaining_format,
                 formatIntegerForDisplay(status.countSlot.count.toLong(), rememberCurrentLocale()),
             )
-        MainCounterTargetStatus.Reached -> stringResource(R.string.counter_target_reached)
-        is MainCounterTargetStatus.Past ->
+        }
+
+        MainCounterTargetStatus.Reached -> {
+            stringResource(R.string.counter_target_reached)
+        }
+
+        is MainCounterTargetStatus.Past -> {
             stringResource(
                 R.string.counter_target_past_format,
                 formatIntegerForDisplay(status.countSlot.count.toLong(), rememberCurrentLocale()),
             )
+        }
     }
 }
 // CPD-ON

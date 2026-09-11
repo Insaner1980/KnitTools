@@ -1,5 +1,6 @@
 package com.finnvek.knittools.ui.components
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -48,6 +49,7 @@ fun SessionItem(
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(ComponentDimens.CompactSpacing),
             ) {
                 Text(
                     text = formatSessionDate(startedAt, dateFormat),

@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -25,7 +24,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.PatternAvailability
@@ -61,9 +59,9 @@ fun PatternCard(
         shape = MaterialTheme.shapes.large,
         color = containerColor,
     ) {
-        Row(
+        Column(
             modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             RemotePatternImage(
                 imageUrl = state.thumbnailUrl,
@@ -78,7 +76,7 @@ fun PatternCard(
                 designerName = state.designerName,
                 difficulty = state.difficulty,
                 availability = state.availability,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.fillMaxWidth(),
             )
             PatternCardActionSlot(actionContent = actionContent)
         }
@@ -89,9 +87,8 @@ fun PatternCard(
 private fun PatternCardActionSlot(actionContent: (@Composable () -> Unit)?) {
     if (actionContent == null) return
 
-    Spacer(modifier = Modifier.width(8.dp))
     Box(
-        modifier = Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp),
+        modifier = Modifier.fillMaxWidth().defaultMinSize(minWidth = 48.dp, minHeight = 48.dp),
         contentAlignment = Alignment.CenterEnd,
     ) {
         actionContent()
@@ -110,16 +107,12 @@ private fun PatternDetails(
         Text(
             text = name,
             style = MaterialTheme.typography.titleMedium,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
         )
         Spacer(modifier = Modifier.height(2.dp))
         Text(
             text = designerName,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
         )
         Spacer(modifier = Modifier.height(4.dp))
         PatternBadgeRow(difficulty = difficulty, availability = availability)

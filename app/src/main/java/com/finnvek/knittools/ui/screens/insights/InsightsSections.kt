@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -101,8 +102,6 @@ internal fun InsightsRangeKicker(
         text = text,
         style = MaterialTheme.typography.insightsKicker,
         color = MaterialTheme.knitToolsColors.onSurfaceMuted,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
     )
 }
 
@@ -219,7 +218,7 @@ internal fun InsightsStatsRow(state: InsightsUiState) {
     // yksinäisen "0 ROWS" -sarakkeen.
     if (!showsRows && !showsPace && !showsStreak) return
 
-    Row(
+    FlowRow(
         modifier =
             Modifier
                 .fillMaxWidth()
@@ -228,6 +227,7 @@ internal fun InsightsStatsRow(state: InsightsUiState) {
                     bottom = InsightsDimens.StatsRowBottomPadding,
                 ),
         horizontalArrangement = Arrangement.spacedBy(InsightsDimens.StatColumnGap),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         if (showsRows) {
             InsightsStat(
@@ -289,20 +289,23 @@ private fun trendLineText(state: InsightsUiState): String? {
     val percent = formatPercentForDisplay(trend.percentChange / 100.0, locale)
     val isWeek = state.timeRange == TimeRange.THIS_WEEK
     return when (trend.direction) {
-        InsightsTrendDirection.UP ->
+        InsightsTrendDirection.UP -> {
             stringResource(
                 if (isWeek) R.string.insights_trend_more_week else R.string.insights_trend_more_month,
                 percent,
             )
+        }
 
-        InsightsTrendDirection.DOWN ->
+        InsightsTrendDirection.DOWN -> {
             stringResource(
                 if (isWeek) R.string.insights_trend_less_week else R.string.insights_trend_less_month,
                 percent,
             )
+        }
 
-        InsightsTrendDirection.FLAT ->
+        InsightsTrendDirection.FLAT -> {
             stringResource(if (isWeek) R.string.insights_trend_same_week else R.string.insights_trend_same_month)
+        }
     }
 }
 
@@ -343,8 +346,6 @@ private fun InsightsStat(
             text = label.localizedUppercase(),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.knitToolsColors.onSurfaceMuted,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(top = InsightsDimens.StatLabelTopMargin),
         )
     }
@@ -361,7 +362,7 @@ internal fun InsightsSectionHeader(
     meta: String? = null,
     metaIsLive: Boolean = false,
 ) {
-    Row(
+    Column(
         modifier =
             Modifier
                 .fillMaxWidth()
@@ -369,22 +370,18 @@ internal fun InsightsSectionHeader(
                     top = InsightsDimens.SectionTopPadding,
                     bottom = InsightsDimens.SectionHeaderBottomPadding,
                 ).semantics { heading() },
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(
             text = title.localizedUppercase(),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.knitToolsColors.brandWine,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
         )
         if (meta != null) {
             Text(
                 text = meta,
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.knitToolsColors.onSurfaceMuted,
-                maxLines = 1,
                 // Kaavion lukema asuu tällä rivillä, joten uusi arvo on luettava ilman
                 // uutta fokusointia kun valinta siirtyy vedolla tai ruudunlukijan toiminnolla.
                 modifier =

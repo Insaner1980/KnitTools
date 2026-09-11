@@ -45,7 +45,7 @@ fun KnitToolsBottomBar(navControllerProvider: @Composable () -> NavController) {
             ?: navBackStackEntry?.destination?.route
 
     val destinations = TopLevelDestination.entries
-    val labels = destinations.map { stringResource(it.labelRes) }
+    val labels = destinations.map { stringResource(it.labelRes).localizedUppercase() }
     val labelStyle =
         MaterialTheme.typography.labelSmall.copy(
             letterSpacing = 0.sp,

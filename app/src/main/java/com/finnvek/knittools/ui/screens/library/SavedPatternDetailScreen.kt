@@ -46,7 +46,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.SavedPattern
@@ -204,6 +203,7 @@ fun SavedPatternDetailScreen(
                         val message =
                             when (result) {
                                 ExternalWebLinkOpenResult.NoBrowser -> noBrowserMessage
+
                                 ExternalWebLinkOpenResult.InvalidUrl,
                                 ExternalWebLinkOpenResult.Failed,
                                 -> webOpenFailedMessage
@@ -359,8 +359,6 @@ private fun SavedPatternDetailHeader(pattern: SavedPattern) {
                 text = pattern.designerName,
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
             )
         }
     }

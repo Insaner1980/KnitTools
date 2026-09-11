@@ -140,81 +140,84 @@ fun CounterWorkspace(
     projectCountersActions: ProjectCountersSectionActions,
     actions: CounterWorkspaceActions,
 ) {
-    LazyColumn(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .padding(scaffoldPadding)
-                .clipToBounds(),
-        contentPadding =
-            PaddingValues(
-                start = CounterDimens.ScreenHorizontalPadding,
-                end = CounterDimens.ScreenHorizontalPadding,
-                bottom = CounterDimens.ContentBottomPadding,
-            ),
-        verticalArrangement = Arrangement.spacedBy(CounterDimens.WorkspaceSectionSpacing),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        item(key = "counter-hero") {
-            CounterHero(
-                state = state.toCounterHeroState(),
-                actions = actions,
-                modifier = Modifier.fillParentMaxHeight(),
-            )
-        }
-        state.activeSession?.takeIf { it.projectId == state.projectId }?.let { activeSession ->
-            item(key = "active-work-session") {
-                ActiveWorkSessionRow(
-                    projectName = state.projectName,
-                    durationSeconds = state.sessionSeconds,
-                    rowsWorked =
-                        (activeSession.trustedRowsWorked.toLong() + activeSession.pendingRowsWorked.toLong())
-                            .coerceAtMost(Int.MAX_VALUE.toLong())
-                            .toInt(),
-                    needsRecoveryReview = activeSession.needsRecoveryReview,
-                    onStop = actions.onStopSession,
-                    onResolve = actions.onResolveSessionRecovery,
+    BoxWithConstraints(modifier = Modifier.fillMaxSize().padding(scaffoldPadding)) {
+        val heroMinimumHeight =
+            (maxHeight - CounterDimens.ContentBottomPadding).coerceAtLeast(CounterDimens.HeroMinimumHeight)
+        LazyColumn(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .clipToBounds(),
+            contentPadding =
+                PaddingValues(
+                    start = CounterDimens.ScreenHorizontalPadding,
+                    end = CounterDimens.ScreenHorizontalPadding,
+                    bottom = CounterDimens.ContentBottomPadding,
+                ),
+            verticalArrangement = Arrangement.spacedBy(CounterDimens.WorkspaceSectionSpacing),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            item(key = "counter-hero") {
+                CounterHero(
+                    state = state.toCounterHeroState(),
+                    actions = actions,
+                    modifier = Modifier.heightIn(min = heroMinimumHeight),
                 )
             }
-        }
-        item(key = "counter-hero-reveal-gap") {
-            Spacer(modifier = Modifier.height(CounterDimens.CounterProjectRevealGap))
-        }
-        item(key = "project-content") {
-            ProjectContentCards(
-                onCardClick = { kind -> actions.onProjectContentClick(kind, state) },
-                hasPattern =
-                    hasProjectPatternContent(
-                        hasMetadataLink = state.linkedPattern != null,
-                        hasDocuments = state.projectDocuments.isNotEmpty(),
-                    ),
-            )
-        }
-        if (state.projectCounters.isNotEmpty()) {
-            item(key = "extra-counters-title") {
-                WorkspaceSectionTitle(
-                    title = stringResource(R.string.extra_counters_title),
-                    actionLabel = stringResource(R.string.add_counter),
-                    onAction = actions.onShowAddCounter,
-                    proStatus = state.proStatus,
-                )
-            }
-            items(items = state.projectCounters, key = { counter -> counter.id }) { counter ->
-                ProjectCounterWorkspaceItem(
-                    counter = counter,
-                    mainRowCount = state.counter.count,
-                    actions = projectCountersActions,
-                )
-            }
-        }
-        if (state.activeAlert != null) {
-            state.activeAlert.let { reminder ->
-                item(key = "active-reminder-alert") {
-                    ReminderAlertCard(
-                        reminder = reminder,
-                        currentRow = state.counter.count,
-                        onDismiss = actions.onDismissReminder,
+            state.activeSession?.takeIf { it.projectId == state.projectId }?.let { activeSession ->
+                item(key = "active-work-session") {
+                    ActiveWorkSessionRow(
+                        projectName = state.projectName,
+                        durationSeconds = state.sessionSeconds,
+                        rowsWorked =
+                            (activeSession.trustedRowsWorked.toLong() + activeSession.pendingRowsWorked.toLong())
+                                .coerceAtMost(Int.MAX_VALUE.toLong())
+                                .toInt(),
+                        needsRecoveryReview = activeSession.needsRecoveryReview,
+                        onStop = actions.onStopSession,
+                        onResolve = actions.onResolveSessionRecovery,
                     )
+                }
+            }
+            item(key = "counter-hero-reveal-gap") {
+                Spacer(modifier = Modifier.height(CounterDimens.CounterProjectRevealGap))
+            }
+            item(key = "project-content") {
+                ProjectContentCards(
+                    onCardClick = { kind -> actions.onProjectContentClick(kind, state) },
+                    hasPattern =
+                        hasProjectPatternContent(
+                            hasMetadataLink = state.linkedPattern != null,
+                            hasDocuments = state.projectDocuments.isNotEmpty(),
+                        ),
+                )
+            }
+            if (state.projectCounters.isNotEmpty()) {
+                item(key = "extra-counters-title") {
+                    WorkspaceSectionTitle(
+                        title = stringResource(R.string.extra_counters_title),
+                        actionLabel = stringResource(R.string.add_counter),
+                        onAction = actions.onShowAddCounter,
+                        proStatus = state.proStatus,
+                    )
+                }
+                items(items = state.projectCounters, key = { counter -> counter.id }) { counter ->
+                    ProjectCounterWorkspaceItem(
+                        counter = counter,
+                        mainRowCount = state.counter.count,
+                        actions = projectCountersActions,
+                    )
+                }
+            }
+            if (state.activeAlert != null) {
+                state.activeAlert.let { reminder ->
+                    item(key = "active-reminder-alert") {
+                        ReminderAlertCard(
+                            reminder = reminder,
+                            currentRow = state.counter.count,
+                            onDismiss = actions.onDismissReminder,
+                        )
+                    }
                 }
             }
         }

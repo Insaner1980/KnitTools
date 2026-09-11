@@ -61,7 +61,9 @@ class PatternViewerSourceTest {
 
         assertTrue(source.contains("R.string.pattern_show_reading_line"))
         assertTrue(source.contains("R.string.pattern_hide_reading_line"))
-        assertTrue(viewport.contains(".transformable(state = transformableState)"))
+        assertTrue(
+            viewport.contains(".transformable(state = transformableState, canPan = { viewportState.scale > 1f })"),
+        )
         assertTrue(source.contains("ReadingLineOverlay("))
         assertTrue(source.contains("dragAmount / scale"))
         assertTrue(source.contains("READING_LINE_MIN_Y_FRACTION"))
@@ -518,11 +520,11 @@ class PatternViewerSourceTest {
     fun `hidden editable annotation layer disables pointer input`() {
         val viewer = ProjectSourceFiles.read(PATTERN_VIEWER_SCREEN)
         val interactionOverlay = viewer.blockBetween("interactionOverlay =", "PatternAnnotationInputOverlay(")
-        val normalizedGuard = interactionOverlay.replace(Regex("\\s+"), " ")
+        val normalizedGuard = interactionOverlay.replace(Regex("\\s+"), "")
 
         assertTrue(
             normalizedGuard.contains(
-                "if (editableLayerVisible && state.annotationState.activeTool != PatternAnnotationTool.BROWSE)",
+                "if(editableLayerVisible&&state.annotationState.activeTool!=PatternAnnotationTool.BROWSE)",
             ),
         )
     }

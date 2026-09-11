@@ -87,7 +87,11 @@ class PatternViewerTopBarTest {
 
         repeat(2) {
             composeRule.onNodeWithContentDescription("More options").performClick()
-            composeRule.onNodeWithText(label).performScrollTo().assertIsDisplayed().performClick()
+            composeRule
+                .onNodeWithText(label)
+                .performScrollTo()
+                .assertIsDisplayed()
+                .performClick()
             composeRule.onNodeWithText(label).assertDoesNotExist()
         }
         composeRule.runOnIdle { assertEquals(2, opened) }

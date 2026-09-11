@@ -54,7 +54,6 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.YarnCard
@@ -148,7 +147,10 @@ fun MyYarnScreen(
         if (!state.canCreateYarnCard) return@LaunchedEffect
         actionAwaitingEntitlement = null
         when (action) {
-            PendingYarnProAction.OpenCreation -> showManualYarnSheet = true
+            PendingYarnProAction.OpenCreation -> {
+                showManualYarnSheet = true
+            }
+
             PendingYarnProAction.RetryCreation -> {
                 if (actions.onRetryCreateYarnCard()) showManualYarnSheet = false
             }
@@ -508,7 +510,7 @@ private fun YarnStashCardItem(
     ) {
         // CPD-ON
         Surface(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().padding(start = if (isSelectMode) 48.dp else 0.dp),
             shape = MaterialTheme.shapes.large,
             color = backgroundColor,
         ) {
@@ -552,8 +554,6 @@ private fun YarnCardContent(
                 text = displayName,
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
             )
             YarnCardMetaLine(card = card, status = status)
             YarnManualColorRow(card = card)
@@ -561,8 +561,6 @@ private fun YarnCardContent(
                 text = projectLine,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.knitToolsColors.onSurfaceMuted,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
             )
         }
         if (showOpenAffordance) {
@@ -592,8 +590,6 @@ private fun YarnCardMetaLine(
         text = summary,
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.knitToolsColors.onSurfaceMuted,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
     )
 }
 
@@ -624,8 +620,6 @@ private fun YarnManualColorRow(card: YarnCard) {
             text = colorSummary,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.knitToolsColors.onSurfaceMuted,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
         )
     }
 }

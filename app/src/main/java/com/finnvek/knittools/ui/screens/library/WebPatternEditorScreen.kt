@@ -128,17 +128,18 @@ internal fun WebPatternEditorContent(
         }
     }
 
-    LaunchedEffect(validationAttempted, state.firstInvalidField) {
-        if (!validationAttempted) return@LaunchedEffect
+    fun attemptSave() {
+        validationAttempted = true
         when (state.firstInvalidField) {
             WebPatternEditorField.Title -> titleFocus.requestFocus()
             WebPatternEditorField.Url -> urlFocus.requestFocus()
             WebPatternEditorField.Designer -> designerFocus.requestFocus()
-            null -> Unit
+            null -> if (state.canSave) onSave()
         }
     }
 
     ToolScreenScaffold(
+        wrapTitle = true,
         title = editorTitle(state.route?.origin),
         onBack = onBack,
     ) { contentPadding ->
@@ -214,8 +215,7 @@ internal fun WebPatternEditorContent(
                     KeyboardActions(
                         onDone = {
                             focusManager.clearFocus()
-                            validationAttempted = true
-                            if (state.canSave) onSave()
+                            attemptSave()
                         },
                     ),
             )
@@ -270,8 +270,7 @@ internal fun WebPatternEditorContent(
                 }
                 Button(
                     onClick = {
-                        validationAttempted = true
-                        if (state.canSave) onSave()
+                        attemptSave()
                     },
                     modifier = Modifier.heightIn(min = 48.dp),
                     enabled = !state.isLoading && !state.isSaving && !state.didPersist && state.route != null,
@@ -327,7 +326,9 @@ private fun editorTitle(origin: WebPatternEditorOrigin?): String =
     stringResource(
         when (origin) {
             WebPatternEditorOrigin.Edit -> R.string.web_pattern_edit
+
             WebPatternEditorOrigin.Share -> R.string.web_pattern_confirm_details
+
             WebPatternEditorOrigin.Manual,
             WebPatternEditorOrigin.Project,
             null,
@@ -399,17 +400,21 @@ private fun editorError(error: WebPatternEditorError): String =
     stringResource(
         when (error) {
             WebPatternEditorError.AlreadySaved -> R.string.web_pattern_already_saved
+
             WebPatternEditorError.SaveFailed -> R.string.web_pattern_save_failed
+
             WebPatternEditorError.UpdateFailed,
             WebPatternEditorError.StaleAction,
             -> R.string.web_pattern_update_failed
 
             WebPatternEditorError.ProjectUnavailable -> R.string.web_pattern_project_unavailable
+
             WebPatternEditorError.PatternUnavailable,
             WebPatternEditorError.NotEditable,
             -> R.string.generic_error_unknown
 
             WebPatternEditorError.SharedLinkInvalid -> R.string.web_pattern_error_url_invalid
+
             WebPatternEditorError.SharedLinkAmbiguous -> R.string.web_pattern_share_ambiguous
         },
     )

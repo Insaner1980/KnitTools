@@ -37,11 +37,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.PATTERN_BOOKMARK_NAME_MAX_LENGTH
 import com.finnvek.knittools.domain.model.PatternBookmark
+import com.finnvek.knittools.ui.components.ScrollableFormDialog
 
 internal data class PatternBookmarkSheetActions(
     val onDismiss: () -> Unit,
@@ -106,9 +106,15 @@ internal fun PatternBookmarkSheet(
                 }
             }
             when {
-                state.isLoading -> Text(stringResource(R.string.pattern_bookmark_loading))
-                state.bookmarks.isEmpty() -> Text(stringResource(R.string.pattern_bookmark_empty))
-                else ->
+                state.isLoading -> {
+                    Text(stringResource(R.string.pattern_bookmark_loading))
+                }
+
+                state.bookmarks.isEmpty() -> {
+                    Text(stringResource(R.string.pattern_bookmark_empty))
+                }
+
+                else -> {
                     state.bookmarks.forEach { bookmark ->
                         PatternBookmarkRow(
                             bookmark = bookmark,
@@ -119,6 +125,7 @@ internal fun PatternBookmarkSheet(
                             onDelete = { deleteBookmarkId = bookmark.id },
                         )
                     }
+                }
             }
             HorizontalDivider()
             Row(
@@ -127,24 +134,22 @@ internal fun PatternBookmarkSheet(
             ) {
                 TextButton(
                     onClick = actions.onPrevious,
+                    shape = MaterialTheme.shapes.small,
                     enabled = state.canGoPrevious && !state.isMutating,
                     modifier = Modifier.weight(1f).heightIn(min = 48.dp),
                 ) {
                     Text(
                         text = stringResource(R.string.pattern_bookmark_previous),
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
                     )
                 }
                 TextButton(
                     onClick = actions.onNext,
+                    shape = MaterialTheme.shapes.small,
                     enabled = state.canGoNext && !state.isMutating,
                     modifier = Modifier.weight(1f).heightIn(min = 48.dp),
                 ) {
                     Text(
                         text = stringResource(R.string.pattern_bookmark_next),
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
                     )
                 }
             }
@@ -238,17 +243,16 @@ private fun PatternBookmarkRow(
     Column(modifier = Modifier.fillMaxWidth()) {
         TextButton(
             onClick = onJump,
+            shape = MaterialTheme.shapes.small,
             modifier =
                 Modifier
                     .fillMaxWidth()
                     .heightIn(min = 48.dp)
                     .semantics { contentDescription = description },
         ) {
-            Column(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
                 Text(
                     text = bookmark.name,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
                 )
                 Text(
                     text =
@@ -312,7 +316,7 @@ private fun PatternBookmarkNameDialog(
     val empty = trimmedName.isEmpty()
     val tooLong = trimmedName.length > PATTERN_BOOKMARK_NAME_MAX_LENGTH
     val valid = !empty && !tooLong
-    AlertDialog(
+    ScrollableFormDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
         text = {
@@ -327,13 +331,20 @@ private fun PatternBookmarkNameDialog(
                 supportingText = {
                     Text(
                         when {
-                            empty -> stringResource(R.string.pattern_bookmark_name_required)
-                            tooLong -> stringResource(R.string.pattern_bookmark_name_too_long)
-                            else ->
+                            empty -> {
+                                stringResource(R.string.pattern_bookmark_name_required)
+                            }
+
+                            tooLong -> {
+                                stringResource(R.string.pattern_bookmark_name_too_long)
+                            }
+
+                            else -> {
                                 stringResource(
                                     R.string.pattern_bookmark_name_limit,
                                     PATTERN_BOOKMARK_NAME_MAX_LENGTH,
                                 )
+                            }
                         },
                     )
                 },

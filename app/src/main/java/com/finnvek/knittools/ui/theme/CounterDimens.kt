@@ -56,6 +56,7 @@ object CounterDimens {
     val ProjectCardGridSpacing = 12.dp
     val ProjectCardPadding = 12.dp
     val ProjectCardIconSize = 56.dp
+    val ProjectCardCompactIconSize = 32.dp
     val ProjectCardIconTitleSpacing = 12.dp
     val ProjectCardCornerRadius = 8.dp
     val ExtraCounterCardMinHeight = 88.dp

@@ -9,10 +9,10 @@ import android.net.ConnectivityManager
 import android.net.Uri
 import android.os.Bundle
 import android.os.SystemClock
-import android.view.accessibility.AccessibilityNodeInfo
 import android.view.InputDevice
 import android.view.MotionEvent
 import android.view.WindowInsets
+import android.view.accessibility.AccessibilityNodeInfo
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -36,8 +36,8 @@ import com.finnvek.knittools.repository.StartSessionResult
 import com.finnvek.knittools.widget.WidgetEntryPoint
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -79,8 +79,14 @@ class PatternNotesNavigationRuntimeTest {
         check(InstrumentationRegistry.getArguments().getString("notesNavigationIsolated") == "true")
         app = ApplicationProvider.getApplicationContext()
         if (app.packageName == "com.finnvek.knittools.notestest") {
-            check(app.checkSelfPermission(android.Manifest.permission.INTERNET) == android.content.pm.PackageManager.PERMISSION_DENIED)
-            check(app.checkSelfPermission("com.android.vending.BILLING") == android.content.pm.PackageManager.PERMISSION_DENIED)
+            check(
+                app.checkSelfPermission(android.Manifest.permission.INTERNET) ==
+                    android.content.pm.PackageManager.PERMISSION_DENIED,
+            )
+            check(
+                app.checkSelfPermission("com.android.vending.BILLING") ==
+                    android.content.pm.PackageManager.PERMISSION_DENIED,
+            )
         } else {
             check(shell("getprop ro.kernel.qemu").trim() == "1")
             check(app.getSystemService(ConnectivityManager::class.java).activeNetwork == null)
@@ -88,35 +94,65 @@ class PatternNotesNavigationRuntimeTest {
         database = app.database.get()
         repository = EntryPointAccessors.fromApplication(app, WidgetEntryPoint::class.java).counterRepository()
         val transactions = RoomDatabaseTransactionRunner(database)
-        savedPatterns = SavedPatternRepository(
-            database.savedPatternDao(), app, database.counterProjectDao(), transactions,
-            Dispatchers.IO, database.projectDocumentDao(),
-        )
-        documents = ProjectDocumentRepository(
-            database.projectDocumentDao(), database.counterProjectDao(), savedPatterns,
-            PatternAnnotationLayerRepository(database.patternAnnotationLayerDao(), transactions),
-            transactions, ProjectDocumentFileAvailability(app, Dispatchers.IO),
-        )
+        savedPatterns =
+            SavedPatternRepository(
+                database.savedPatternDao(),
+                app,
+                database.counterProjectDao(),
+                transactions,
+                Dispatchers.IO,
+                database.projectDocumentDao(),
+            )
+        documents =
+            ProjectDocumentRepository(
+                database.projectDocumentDao(),
+                database.counterProjectDao(),
+                savedPatterns,
+                PatternAnnotationLayerRepository(database.patternAnnotationLayerDao(), transactions),
+                transactions,
+                ProjectDocumentFileAvailability(app, Dispatchers.IO),
+            )
         runBlocking(Dispatchers.IO) {
             InstrumentationRegistry.getArguments().getString("readerTheme")?.let { theme ->
-                previousTheme = app.preferencesManager.get().preferences.first().themeMode
+                previousTheme =
+                    app.preferencesManager
+                        .get()
+                        .preferences
+                        .first()
+                        .themeMode
                 app.preferencesManager.get().setThemeMode(ThemeMode.valueOf(theme))
             }
-            projectIds += database.counterProjectDao().insert(
-                CounterProjectEntity(name = firstName, count = 72, notes = FIRST_NOTES, notesCreated = true),
-            )
-            projectIds += database.counterProjectDao().insert(
-                CounterProjectEntity(name = secondName, count = 9, notes = SECOND_NOTES, notesCreated = true),
-            )
+            projectIds +=
+                database.counterProjectDao().insert(
+                    CounterProjectEntity(name = firstName, count = 72, notes = FIRST_NOTES, notesCreated = true),
+                )
+            projectIds +=
+                database.counterProjectDao().insert(
+                    CounterProjectEntity(name = secondName, count = 9, notes = SECOND_NOTES, notesCreated = true),
+                )
             val sharedPdf = createPdf("sleeve")
             primary = addPdf(projectIds.first(), createPdf("main"), primaryLabel)
             secondary = addPdf(projectIds.first(), sharedPdf, secondaryLabel)
             addPdf(projectIds.last(), sharedPdf, secondaryLabel)
-            documents.updateViewerState(projectIds.first(), secondary.id, if (isNarrowLayout) 2 else 0, "[]", true, 0.63f, false, true, 0.37f)
+            documents.updateViewerState(
+                projectIds.first(),
+                secondary.id,
+                if (isNarrowLayout) 2 else 0,
+                "[]",
+                true,
+                0.63f,
+                false,
+                true,
+                0.37f,
+            )
             database.patternBookmarkDao().insert(
                 PatternBookmarkEntity(
-                    projectId = projectIds.first(), documentKey = secondary.documentKey,
-                    name = "Continue sleeve", pageIndex = 2, yFraction = 0.63f, createdAt = 1L,
+                    projectId = projectIds.first(),
+                    documentKey = secondary.documentKey,
+                    name = "Continue sleeve",
+                    pageIndex = 2,
+                    yFraction = 0.63f,
+                    createdAt = 1L,
                 ),
             )
         }
@@ -130,7 +166,11 @@ class PatternNotesNavigationRuntimeTest {
             if (::repository.isInitialized) {
                 runBlocking(Dispatchers.IO) {
                     val active = database.sessionDao().getActiveSession()
-                    if (active?.projectId in projectIds) repository.discardActiveSession(checkNotNull(active).sessionToken)
+                    if (active?.projectId in
+                        projectIds
+                    ) {
+                        repository.discardActiveSession(checkNotNull(active).sessionToken)
+                    }
                     projectIds.forEach { repository.deleteProject(it) }
                     savedPatternIds.forEach { savedPatterns.deleteById(it) }
                     previousTheme?.let { app.preferencesManager.get().setThemeMode(it) }
@@ -280,7 +320,10 @@ class PatternNotesNavigationRuntimeTest {
         assertNull(find(visibleOnly = false) { hasText(it, text(R.string.pattern_open_project_notes)) })
     }
 
-    private fun physicalPageChange(next: Boolean, expectedPage: Int) {
+    private fun physicalPageChange(
+        next: Boolean,
+        expectedPage: Int,
+    ) {
         physicalTapDescription(text(if (next) R.string.pattern_next_page else R.string.pattern_previous_page))
         waitForText(text(R.string.pattern_page_indicator, expectedPage, 4))
     }
@@ -294,10 +337,21 @@ class PatternNotesNavigationRuntimeTest {
         val usable = usableWindowBounds()
         assertTrue("Control outside usable window: $description $bounds / $usable", usable.contains(bounds))
         val density = app.resources.displayMetrics.density
-        assertTrue("Touch target too small: $description $bounds", bounds.width() >= 47 * density && bounds.height() >= 47 * density)
+        assertTrue(
+            "Touch target too small: $description $bounds",
+            bounds.width() >= 47 * density && bounds.height() >= 47 * density,
+        )
         val time = SystemClock.uptimeMillis()
         listOf(MotionEvent.ACTION_DOWN, MotionEvent.ACTION_UP).forEachIndexed { index, action ->
-            val event = MotionEvent.obtain(time, time + index * 50L, action, bounds.exactCenterX(), bounds.exactCenterY(), 0)
+            val event =
+                MotionEvent.obtain(
+                    time,
+                    time + index * 50L,
+                    action,
+                    bounds.exactCenterX(),
+                    bounds.exactCenterY(),
+                    0,
+                )
             event.source = InputDevice.SOURCE_TOUCHSCREEN
             try {
                 assertTrue(automation.injectInputEvent(event, true))
@@ -319,10 +373,17 @@ class PatternNotesNavigationRuntimeTest {
     }
 
     private fun assertReadablePdf() {
-        val pdf = waitFor { it.contentDescription?.toString() == secondaryLabel && it.className == "android.widget.ImageView" }
+        val pdf =
+            waitFor {
+                it.contentDescription?.toString() == secondaryLabel &&
+                    it.className == "android.widget.ImageView"
+            }
         val visible = Rect().also(pdf::getBoundsInScreen)
         assertTrue(visible.intersect(usableWindowBounds()))
-        assertTrue("PDF viewport is too short: $visible", visible.height() >= 120 * app.resources.displayMetrics.density)
+        assertTrue(
+            "PDF viewport is too short: $visible",
+            visible.height() >= 120 * app.resources.displayMetrics.density,
+        )
     }
 
     private fun recordReaderLayout(name: String) {
@@ -355,7 +416,10 @@ class PatternNotesNavigationRuntimeTest {
         assertSecondaryPage()
     }
 
-    private fun openProjectDocument(projectName: String, documentLabel: String) {
+    private fun openProjectDocument(
+        projectName: String,
+        documentLabel: String,
+    ) {
         scrollToText(projectName)
         clickText(projectName)
         clickDescription(text(R.string.project_actions_title))
@@ -366,7 +430,10 @@ class PatternNotesNavigationRuntimeTest {
         waitFor { it.contentDescription?.toString() == text(R.string.more_options) }
     }
 
-    private fun openNotes(projectName: String = firstName, repeatActivation: Boolean = false) {
+    private fun openNotes(
+        projectName: String = firstName,
+        repeatActivation: Boolean = false,
+    ) {
         clickDescription(text(R.string.more_options))
         scrollToText(text(R.string.pattern_open_project_notes))
         capture("reader-menu")
@@ -402,33 +469,41 @@ class PatternNotesNavigationRuntimeTest {
         val bookmarkAndAnnotationRows: List<List<String?>>,
     )
 
-    private fun snapshot(): Snapshot = runBlocking(Dispatchers.IO) {
-        Snapshot(
-            documents.getDocuments(projectIds.first()),
-            database.sessionDao().getActiveSession()?.sessionToken,
-            database.openHelper.readableDatabase.query("SELECT COUNT(*) FROM sessions").use {
-                check(it.moveToFirst())
-                it.getLong(0)
-            },
-            listOf("pattern_bookmarks", "pattern_annotations").flatMap { table ->
-                database.openHelper.readableDatabase.query("SELECT * FROM $table ORDER BY id").use { cursor ->
-                    buildList {
-                        while (cursor.moveToNext()) add((0 until cursor.columnCount).map(cursor::getString))
+    private fun snapshot(): Snapshot =
+        runBlocking(Dispatchers.IO) {
+            Snapshot(
+                documents.getDocuments(projectIds.first()),
+                database.sessionDao().getActiveSession()?.sessionToken,
+                database.openHelper.readableDatabase.query("SELECT COUNT(*) FROM sessions").use {
+                    check(it.moveToFirst())
+                    it.getLong(0)
+                },
+                listOf("pattern_bookmarks", "pattern_annotations").flatMap { table ->
+                    database.openHelper.readableDatabase.query("SELECT * FROM $table ORDER BY id").use { cursor ->
+                        buildList {
+                            while (cursor.moveToNext()) add((0 until cursor.columnCount).map(cursor::getString))
+                        }
                     }
-                }
-            },
-        )
-    }
-
-    private fun assertPreserved(before: Snapshot, pageControlsUsed: Boolean = false) {
-        val after = snapshot()
-        val expected = if (pageControlsUsed) {
-            before.copy(documents = before.documents.map { document ->
-                document.copy(updatedAt = after.documents.single { it.id == document.id }.updatedAt)
-            })
-        } else {
-            before
+                },
+            )
         }
+
+    private fun assertPreserved(
+        before: Snapshot,
+        pageControlsUsed: Boolean = false,
+    ) {
+        val after = snapshot()
+        val expected =
+            if (pageControlsUsed) {
+                before.copy(
+                    documents =
+                        before.documents.map { document ->
+                            document.copy(updatedAt = after.documents.single { it.id == document.id }.updatedAt)
+                        },
+                )
+            } else {
+                before
+            }
         assertEquals(expected, after)
         runBlocking(Dispatchers.IO) {
             assertEquals(primary.id, documents.getPrimary(projectIds.first())?.id)
@@ -437,7 +512,11 @@ class PatternNotesNavigationRuntimeTest {
         }
     }
 
-    private suspend fun addPdf(projectId: Long, file: File, label: String): ProjectDocument {
+    private suspend fun addPdf(
+        projectId: Long,
+        file: File,
+        label: String,
+    ): ProjectDocument {
         val result = documents.addImportedPdf(projectId, Uri.fromFile(file).toString(), label)
         val document = (result as ProjectDocumentMutationResult.Added).document
         document.savedPatternId?.let(savedPatternIds::add)
@@ -465,17 +544,27 @@ class PatternNotesNavigationRuntimeTest {
     private fun editable(): AccessibilityNodeInfo = waitFor { it.isEditable }
 
     private fun setNotes(value: String) {
-        val arguments = Bundle().apply {
-            putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, value)
-        }
+        val arguments =
+            Bundle().apply {
+                putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, value)
+            }
         assertTrue(editable().performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, arguments))
         waitUntil("edited notes") { find { it.isEditable }?.text?.toString() == value }
     }
 
-    private fun text(id: Int, vararg arguments: Any): String = app.getString(id, *arguments)
+    private fun text(
+        id: Int,
+        vararg arguments: Any,
+    ): String = app.getString(id, *arguments)
 
-    private fun hasText(node: AccessibilityNodeInfo, value: String): Boolean =
-        node.text?.toString()?.lineSequence()?.any { it.equals(value, ignoreCase = true) } == true
+    private fun hasText(
+        node: AccessibilityNodeInfo,
+        value: String,
+    ): Boolean =
+        node.text
+            ?.toString()
+            ?.lineSequence()
+            ?.any { it.equals(value, ignoreCase = true) } == true
 
     private fun waitForText(value: String) = waitFor { hasText(it, value) }
 
@@ -483,7 +572,10 @@ class PatternNotesNavigationRuntimeTest {
 
     private fun clickDescription(value: String) = click { it.contentDescription?.toString() == value }
 
-    private fun click(repeatActivation: Boolean = false, matches: (AccessibilityNodeInfo) -> Boolean) {
+    private fun click(
+        repeatActivation: Boolean = false,
+        matches: (AccessibilityNodeInfo) -> Boolean,
+    ) {
         var node: AccessibilityNodeInfo? = waitFor(matches)
         while (node != null && !node.isClickable) node = node.parent
         assertTrue(checkNotNull(node).performAction(AccessibilityNodeInfo.ACTION_CLICK))
@@ -500,11 +592,12 @@ class PatternNotesNavigationRuntimeTest {
             } else {
                 val scrollable = find { it.isScrollable }
                 if (scrollable != null && scrollable.actionList.none { it.id == direction }) {
-                    direction = if (direction == AccessibilityNodeInfo.ACTION_SCROLL_FORWARD) {
-                        AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD
-                    } else {
-                        AccessibilityNodeInfo.ACTION_SCROLL_FORWARD
-                    }
+                    direction =
+                        if (direction == AccessibilityNodeInfo.ACTION_SCROLL_FORWARD) {
+                            AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD
+                        } else {
+                            AccessibilityNodeInfo.ACTION_SCROLL_FORWARD
+                        }
                 }
                 scrollable?.performAction(direction)
                 automation.waitForIdle(500, 5_000)
@@ -528,6 +621,7 @@ class PatternNotesNavigationRuntimeTest {
     ): AccessibilityNodeInfo? {
         if (android.os.Build.VERSION.SDK_INT >= 33) automation.clearCache()
         val root = automation.rootInActiveWindow ?: return null
+
         fun visit(node: AccessibilityNodeInfo): AccessibilityNodeInfo? {
             if ((!visibleOnly || node.isVisibleToUser) && matches(node)) return node
             repeat(node.childCount) { index ->
@@ -539,29 +633,37 @@ class PatternNotesNavigationRuntimeTest {
         return visit(root)
     }
 
-    private fun waitUntil(description: String, condition: () -> Boolean) {
+    private fun waitUntil(
+        description: String,
+        condition: () -> Boolean,
+    ) {
         val deadline = SystemClock.uptimeMillis() + 10_000
         while (SystemClock.uptimeMillis() < deadline) {
             if (condition()) return
             Thread.sleep(50)
         }
         val root = automation.rootInActiveWindow
-        val visibleText = buildList {
-            fun collect(node: AccessibilityNodeInfo) {
-                if (node.packageName?.toString() != app.packageName) return
-                node.text?.let { add(it.toString()) }
-                node.contentDescription?.let { add(it.toString()) }
-                repeat(node.childCount) { node.getChild(it)?.let(::collect) }
+        val visibleText =
+            buildList {
+                fun collect(node: AccessibilityNodeInfo) {
+                    if (node.packageName?.toString() != app.packageName) return
+                    node.text?.let { add(it.toString()) }
+                    node.contentDescription?.let { add(it.toString()) }
+                    repeat(node.childCount) { node.getChild(it)?.let(::collect) }
+                }
+                root?.let(::collect)
             }
-            root?.let(::collect)
-        }
         if (root?.packageName?.toString() == app.packageName) capture("failure")
         throw AssertionError("Timed out: $description; visible: $visibleText")
     }
 
-    private fun shell(command: String): String = automation.executeShellCommand(command).use {
-        android.os.ParcelFileDescriptor.AutoCloseInputStream(it).bufferedReader().use { reader -> reader.readText() }
-    }
+    private fun shell(command: String): String =
+        automation.executeShellCommand(command).use {
+            android.os.ParcelFileDescriptor
+                .AutoCloseInputStream(it)
+                .bufferedReader()
+                .use { reader -> reader.readText() }
+        }
 
     private fun capture(name: String) {
         val layout = InstrumentationRegistry.getArguments().getString("notesLayout", "default")

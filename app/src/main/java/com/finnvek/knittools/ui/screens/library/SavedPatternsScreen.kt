@@ -47,6 +47,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.selected
@@ -113,6 +116,8 @@ fun SavedPatternsScreen(
         )
     }
 
+    val density = LocalDensity.current
+    var actionHeight by remember { mutableStateOf(0.dp) }
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
@@ -127,6 +132,7 @@ fun SavedPatternsScreen(
         floatingActionButton = {
             if (!state.isSelectMode && state.patterns.isNotEmpty()) {
                 ExtendedFloatingActionButton(
+                    modifier = Modifier.onSizeChanged { actionHeight = with(density) { it.height.toDp() } },
                     onClick = actions.onAddWebPattern,
                     icon = { Icon(Icons.Filled.Add, contentDescription = null) },
                     text = { Text(stringResource(R.string.web_pattern_add)) },
@@ -160,7 +166,18 @@ fun SavedPatternsScreen(
                 }
             }
         } else {
-            SavedPatternsList(state = state, actions = actions, padding = padding)
+            SavedPatternsList(
+                state = state,
+                actions = actions,
+                padding =
+                    PaddingValues(
+                        start = padding.calculateLeftPadding(LocalLayoutDirection.current),
+                        top = padding.calculateTopPadding(),
+                        end = padding.calculateRightPadding(LocalLayoutDirection.current),
+                        bottom =
+                            padding.calculateBottomPadding() + actionHeight + 32.dp,
+                    ),
+            )
         }
     }
 }
@@ -350,6 +367,7 @@ private fun SavedPatternItem(
                 onLongClick = onLongClick,
                 modifier =
                     Modifier
+                        .padding(start = if (isSelectMode) 48.dp else 0.dp)
                         .background(backgroundColor, MaterialTheme.shapes.large)
                         .then(
                             if (isSelectMode) {

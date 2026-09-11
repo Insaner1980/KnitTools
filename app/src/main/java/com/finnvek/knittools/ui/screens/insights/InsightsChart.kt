@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -504,7 +505,7 @@ private fun ChartAxisLabels(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .height(InsightsDimens.ChartAxisBandHeight),
+                .heightIn(min = InsightsDimens.ChartAxisBandHeight),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         buckets.forEachIndexed { index, bucket ->
@@ -585,9 +586,12 @@ private fun axisLabel(
     val skeleton =
         when {
             interval == PaceGroupingInterval.MONTH -> "MMM"
+
             // Viikkoakselilla pelkkä päivänumero olisi monitulkintainen kuukausirajan yli.
             interval == PaceGroupingInterval.WEEK -> "MMMd"
+
             timeRange == TimeRange.THIS_WEEK -> "E"
+
             else -> "d"
         }
     val formatter =

@@ -2,6 +2,7 @@ package com.finnvek.knittools.ui.screens.settings
 
 import android.widget.Toast
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -183,7 +184,9 @@ fun SettingsScreen(
                     val messageRes =
                         when (openExternalWebLink(context, HELP_AND_GUIDE_URL)) {
                             ExternalWebLinkOpenResult.Opened -> null
+
                             ExternalWebLinkOpenResult.NoBrowser -> R.string.web_pattern_no_browser
+
                             ExternalWebLinkOpenResult.InvalidUrl,
                             ExternalWebLinkOpenResult.Failed,
                             -> R.string.web_pattern_open_failed
@@ -220,15 +223,25 @@ fun SettingsScreen(
 @Composable
 private fun com.finnvek.knittools.pro.ProState.settingsStatusText(): String =
     when (status) {
-        ProStatus.TRIAL_NOT_STARTED -> stringResource(R.string.pro_status_not_started)
-        ProStatus.TRIAL_ACTIVE ->
+        ProStatus.TRIAL_NOT_STARTED -> {
+            stringResource(R.string.pro_status_not_started)
+        }
+
+        ProStatus.TRIAL_ACTIVE -> {
             androidx.compose.ui.res.pluralStringResource(
                 R.plurals.pro_status_trial_days,
                 trialDaysRemaining,
                 trialDaysRemaining,
             )
-        ProStatus.TRIAL_EXPIRED -> stringResource(R.string.pro_status_trial_ended)
-        ProStatus.PRO_PURCHASED -> stringResource(R.string.pro_status_purchased)
+        }
+
+        ProStatus.TRIAL_EXPIRED -> {
+            stringResource(R.string.pro_status_trial_ended)
+        }
+
+        ProStatus.PRO_PURCHASED -> {
+            stringResource(R.string.pro_status_purchased)
+        }
     }
 
 @Composable
@@ -269,15 +282,15 @@ private fun SettingsSelectionRow(
     valueText: String?,
     onClick: () -> Unit,
 ) {
-    Row(
+    Column(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .clickable(onClick = onClick)
                 .padding(horizontal = 16.dp, vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Column(modifier = Modifier.weight(1f)) {
+        Column {
             Text(
                 text = label,
                 style = MaterialTheme.typography.bodyLarge,
@@ -289,7 +302,6 @@ private fun SettingsSelectionRow(
                 color = MaterialTheme.knitToolsColors.onSurfaceMuted,
             )
         }
-        Spacer(modifier = Modifier.width(12.dp))
         if (valueText == null) {
             CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
         } else {
@@ -424,6 +436,7 @@ private fun LanguagePickerBottomSheet(
                 Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp)
+                    .verticalScroll(rememberScrollState())
                     .padding(bottom = 24.dp),
         ) {
             Text(

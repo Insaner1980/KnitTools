@@ -157,7 +157,7 @@ internal fun PatternDocumentViewport(
                         .onSizeChanged { pageHeightPx = it.height }
                         .pointerInput(Unit) {
                             detectTapGestures(onDoubleTap = { viewportState = viewportState.reset() })
-                        }.transformable(state = transformableState),
+                        }.transformable(state = transformableState, canPan = { viewportState.scale > 1f }),
             ) {
                 Box(
                     modifier =

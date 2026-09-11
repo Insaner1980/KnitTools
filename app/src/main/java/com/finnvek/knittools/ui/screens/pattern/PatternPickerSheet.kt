@@ -473,7 +473,7 @@ private fun PatternPickerSheetContent(
             modifier = Modifier.fillMaxWidth(),
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(stringResource(R.string.pattern_picker_camera_scan))
+                Text(stringResource(R.string.pattern_picker_camera_scan), modifier = Modifier.weight(1f))
                 ProBadge(status = proStatus)
             }
         }

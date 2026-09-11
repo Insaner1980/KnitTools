@@ -30,6 +30,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.ui.components.localizedDateTimePattern
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
 import com.finnvek.knittools.ui.theme.InsightsDimens
@@ -75,13 +76,27 @@ internal fun InsightsProjectFabric(
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
         val gap = InsightsDimens.ProjectFabricCellGap
         val cellSize = (maxWidth - gap * (PROJECT_FABRIC_WEEK_COUNT - 1)) / PROJECT_FABRIC_WEEK_COUNT
-        val canvasHeight =
-            InsightsDimens.ProjectFabricMonthLabelHeight +
-                cellSize * DAYS_PER_WEEK +
-                gap * (DAYS_PER_WEEK - 1)
         val cellSizePx = with(density) { cellSize.toPx() }
         val gapPx = with(density) { gap.toPx() }
-        val monthLabelHeightPx = with(density) { InsightsDimens.ProjectFabricMonthLabelHeight.toPx() }
+        val monthLayouts =
+            monthLabels.map {
+                textMeasurer.measure(
+                    text = it.text,
+                    style = monthLabelStyle,
+                    maxLines = 1,
+                )
+            }
+        val monthPositions =
+            projectFabricMonthLabelPositions(
+                monthLabels.map { it.column * (cellSizePx + gapPx) },
+                monthLayouts.map { it.size.width.toFloat() },
+                with(density) { maxWidth.toPx() },
+                with(density) { 8.dp.toPx() },
+            )
+        val labelLineHeight = (monthLayouts.maxOfOrNull { it.size.height } ?: 0) + with(density) { 4.dp.toPx() }
+        val monthLabelHeightPx = labelLineHeight * ((monthPositions.maxOfOrNull { it.second } ?: 0) + 1)
+        val canvasHeight =
+            with(density) { monthLabelHeightPx.toDp() } + cellSize * DAYS_PER_WEEK + gap * (DAYS_PER_WEEK - 1)
         val strokeWidthPx = with(density) { InsightsDimens.ProjectFabricSelectionStroke.toPx() }
         val cornerPx = with(density) { InsightsDimens.ChartBarCorner.toPx() }
         val lattice =
@@ -137,16 +152,9 @@ internal fun InsightsProjectFabric(
                     },
         ) {
             val pitch = cellSizePx + gapPx
-            monthLabels.forEach { label ->
-                val layout = textMeasurer.measure(text = label.text, style = monthLabelStyle, maxLines = 1)
-                drawText(
-                    textLayoutResult = layout,
-                    topLeft =
-                        Offset(
-                            x = label.column * pitch,
-                            y = (monthLabelHeightPx - layout.size.height) / 2f,
-                        ),
-                )
+            monthLayouts.forEachIndexed { index, layout ->
+                val position = monthPositions[index]
+                drawText(textLayoutResult = layout, topLeft = Offset(position.first, position.second * labelLineHeight))
             }
 
             model.days.forEach { day ->
@@ -301,3 +309,19 @@ internal fun projectFabricDateAt(
 }
 
 private const val DAYS_PER_WEEK = 7
+
+internal fun projectFabricMonthLabelPositions(
+    starts: List<Float>,
+    widths: List<Float>,
+    availableWidth: Float,
+    gap: Float,
+): List<Pair<Float, Int>> {
+    val laneEnds = mutableListOf<Float>()
+    return starts.mapIndexed { index, start ->
+        val width = widths[index]
+        val x = start.coerceIn(0f, (availableWidth - width).coerceAtLeast(0f))
+        val lane = laneEnds.indexOfFirst { it + gap <= x }.let { if (it < 0) laneEnds.size else it }
+        if (lane == laneEnds.size) laneEnds.add(x + width) else laneEnds[lane] = x + width
+        x to lane
+    }
+}

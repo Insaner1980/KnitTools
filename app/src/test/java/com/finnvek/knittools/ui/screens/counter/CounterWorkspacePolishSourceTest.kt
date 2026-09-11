@@ -10,7 +10,9 @@ class CounterWorkspacePolishSourceTest {
     fun `extra counters stack the name above the centered control row with visible overflow actions`() {
         val source = ProjectSourceFiles.read(MULTI_COUNTER_COMPONENTS)
 
-        assertTrue(source.contains("maxLines = 2"))
+        val nameBlock = source.substringAfter("text = counter.name,").substringBefore("CounterOverflowMenu(")
+        assertFalse(nameBlock.contains("maxLines"))
+        assertFalse(nameBlock.contains("TextOverflow.Ellipsis"))
         assertTrue(source.contains("MaterialTheme.typography.counterExtraName"))
         assertTrue(source.contains("textAlign = TextAlign.Center"))
         assertTrue(source.contains("Icons.Filled.MoreVert"))

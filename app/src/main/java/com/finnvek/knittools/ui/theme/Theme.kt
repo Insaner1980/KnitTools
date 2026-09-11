@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.Color
 
 @Immutable
 data class KnitToolsExtendedColors(
+    val onPhotoScrim: Color = TextPrimary,
     val surfaceTint: Color,
     val secondaryOutline: Color,
     val onSurfaceMuted: Color,

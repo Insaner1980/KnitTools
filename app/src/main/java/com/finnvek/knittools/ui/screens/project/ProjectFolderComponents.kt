@@ -55,7 +55,6 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.FolderNameValidationError
@@ -98,8 +97,6 @@ fun ProjectFolderSelector(
     ) {
         Text(
             text = label,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
         )
     }
 }
@@ -164,9 +161,15 @@ fun ProjectFoldersSheet(
             )
 
             when {
-                isLoading -> Text(stringResource(R.string.folder_loading))
-                folders.isEmpty() -> Text(stringResource(R.string.folder_no_folders))
-                else ->
+                isLoading -> {
+                    Text(stringResource(R.string.folder_loading))
+                }
+
+                folders.isEmpty() -> {
+                    Text(stringResource(R.string.folder_no_folders))
+                }
+
+                else -> {
                     folders.forEachIndexed { index, folder ->
                         key(folder.id) {
                             val focusRequester =
@@ -190,6 +193,7 @@ fun ProjectFoldersSheet(
                             )
                         }
                     }
+                }
             }
 
             errorMessage?.let { message ->
@@ -369,15 +373,21 @@ fun MoveToFolderSheet(
     }
     val title =
         when {
-            projectCount == 1 && projectName != null ->
+            projectCount == 1 && projectName != null -> {
                 stringResource(R.string.folder_move_project_to, projectName)
-            projectCount == 1 -> stringResource(R.string.folder_move_to)
-            else ->
+            }
+
+            projectCount == 1 -> {
+                stringResource(R.string.folder_move_to)
+            }
+
+            else -> {
                 pluralStringResource(
                     R.plurals.folder_move_selected_projects_count,
                     projectCount,
                     projectCount,
                 )
+            }
         }
     // CPD-OFF: Siirtolomakkeen Compose-rakenne pidetaan toiminnon yhteydessa.
     ModalBottomSheet(onDismissRequest = { if (!isMoving) onDismiss() }, sheetState = sheetState) {
@@ -406,9 +416,15 @@ fun MoveToFolderSheet(
                 onClick = { onMoveToFolder(null) },
             )
             when {
-                isLoading -> Text(stringResource(R.string.folder_loading))
-                folders.isEmpty() -> Text(stringResource(R.string.folder_no_folders))
-                else ->
+                isLoading -> {
+                    Text(stringResource(R.string.folder_loading))
+                }
+
+                folders.isEmpty() -> {
+                    Text(stringResource(R.string.folder_no_folders))
+                }
+
+                else -> {
                     folders.forEach { folder ->
                         DestinationRow(
                             label = folder.name,
@@ -418,6 +434,7 @@ fun MoveToFolderSheet(
                             onClick = { onMoveToFolder(folder.id) },
                         )
                     }
+                }
             }
             errorMessage?.let { message ->
                 FolderError(message = message, onRetry = onRetry, enabled = !isMoving)
@@ -449,12 +466,18 @@ fun ProjectFolderEmptyState(
         } else {
             val message =
                 when (filter) {
-                    ProjectFolderFilter.Unfiled -> stringResource(R.string.folder_no_unfiled)
+                    ProjectFolderFilter.Unfiled -> {
+                        stringResource(R.string.folder_no_unfiled)
+                    }
+
                     is ProjectFolderFilter.Folder -> {
                         val folder = folders.firstOrNull { it.id == filter.folderId }
                         stringResource(R.string.folder_empty, folder?.name.orEmpty())
                     }
-                    ProjectFolderFilter.AllProjects -> error("Handled above")
+
+                    ProjectFolderFilter.AllProjects -> {
+                        error("Handled above")
+                    }
                 }
             Text(message)
         }
@@ -483,8 +506,6 @@ private fun FolderFilterRow(
             Text(
                 text = label,
                 modifier = Modifier.weight(1f),
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
             )
             if (selected) {
                 androidx.compose.material3.Icon(
@@ -529,8 +550,6 @@ private fun UserFolderRow(
                 Text(
                     text = folder.name,
                     modifier = Modifier.weight(1f),
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
                 )
                 if (isSelected) {
                     androidx.compose.material3.Icon(
@@ -647,8 +666,6 @@ private fun DestinationRow(
             Text(
                 text = label,
                 modifier = Modifier.weight(1f),
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
             )
             if (selected) {
                 androidx.compose.material3.Icon(
@@ -706,13 +723,20 @@ private fun selectedFilterDescription(
 ): String {
     val base =
         when (filter) {
-            ProjectFolderFilter.AllProjects -> stringResource(R.string.folder_all_projects_description)
-            ProjectFolderFilter.Unfiled -> stringResource(R.string.folder_unfiled_description)
-            is ProjectFolderFilter.Folder ->
+            ProjectFolderFilter.AllProjects -> {
+                stringResource(R.string.folder_all_projects_description)
+            }
+
+            ProjectFolderFilter.Unfiled -> {
+                stringResource(R.string.folder_unfiled_description)
+            }
+
+            is ProjectFolderFilter.Folder -> {
                 stringResource(
                     R.string.folder_user_description,
                     folders.firstOrNull { it.id == filter.folderId }?.name.orEmpty(),
                 )
+            }
         }
     return if (selected) stringResource(R.string.folder_selected_description, base) else base
 }
@@ -720,13 +744,17 @@ private fun selectedFilterDescription(
 @Composable
 private fun validationErrorMessage(validation: ProjectFolderNameValidationResult): String? =
     when (validation) {
-        is ProjectFolderNameValidationResult.Valid -> null
-        is ProjectFolderNameValidationResult.Invalid ->
+        is ProjectFolderNameValidationResult.Valid -> {
+            null
+        }
+
+        is ProjectFolderNameValidationResult.Invalid -> {
             when (validation.error) {
                 FolderNameValidationError.REQUIRED -> stringResource(R.string.folder_name_required)
                 FolderNameValidationError.TOO_LONG -> stringResource(R.string.folder_name_max_length)
                 FolderNameValidationError.CONTROL_CHARACTER -> stringResource(R.string.folder_name_invalid)
             }
+        }
     }
 
 @OptIn(ExperimentalMaterial3Api::class)

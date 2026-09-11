@@ -1417,4 +1417,5 @@
     <string name="web_pattern_discard_current_draft">Discard current draft</string>
     <string name="web_pattern_share_ambiguous">More than one website address was shared</string>
     <string name="web_pattern_project_unavailable">Project no longer available</string>
+    <string name="pattern_open_project_notes">Open project notes</string>
 </resources>

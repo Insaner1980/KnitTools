@@ -5,6 +5,7 @@ import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.pro.ProState
+import com.finnvek.knittools.pro.ProStatus
 import com.finnvek.knittools.repository.CounterRepository
 import com.finnvek.knittools.repository.ProjectNotesSaveResult
 import io.mockk.coEvery
@@ -300,5 +301,71 @@ class NotesEditorViewModelTest {
             assertEquals(0, callbacks)
             assertEquals("Local edit", viewModel.uiState.value.notes)
             assertEquals("Local edit", savedStateHandle.get<String>("notesDraft"))
+        }
+
+    @Test
+    fun `production trial access allows first notes without a reader entitlement gate`() =
+        runTest {
+            val entitlement = ProState(status = ProStatus.TRIAL_ACTIVE)
+            every { proManager.hasFeature(ProFeature.NOTES) } returns
+                entitlement.hasFeature(ProFeature.NOTES, debugUnlockAllFeatures = false)
+            val viewModel = vm()
+            advanceUntilIdle()
+
+            assertTrue(viewModel.uiState.value.canEditNotes)
+            viewModel.onNotesChanged("First project notes")
+            viewModel.saveImmediately()
+            advanceUntilIdle()
+
+            coVerify(exactly = 1) { repository.saveProjectNotes(1L, "", "First project notes", false) }
+        }
+
+    @Test
+    fun `expired access preserves a previously used but now empty notes surface`() =
+        runTest {
+            val entitlement = ProState(status = ProStatus.TRIAL_EXPIRED)
+            every { proManager.hasFeature(ProFeature.NOTES) } returns
+                entitlement.hasFeature(ProFeature.NOTES, debugUnlockAllFeatures = false)
+            val viewModel = vm(notes = "", notesCreated = true)
+            advanceUntilIdle()
+
+            assertTrue(viewModel.uiState.value.canEditNotes)
+            viewModel.onNotesChanged("New text in existing notes")
+            viewModel.saveImmediately()
+            advanceUntilIdle()
+
+            coVerify(exactly = 1) { repository.saveProjectNotes(1L, "", "New text in existing notes", false) }
+        }
+
+    @Test
+    fun `contextual authorization and cancellation stay with the initiating project`() =
+        runTest {
+            every { proManager.hasFeature(ProFeature.NOTES) } returns false
+            val first = vm(notesCreated = false)
+            every { repository.observeProject(2L) } returns
+                flowOf(CounterProject(id = 2L, name = "Other project"))
+            val other =
+                NotesEditorViewModel(
+                    repository,
+                    proManager,
+                    applicationScope,
+                    SavedStateHandle(mapOf("projectId" to 2L)),
+                )
+            advanceUntilIdle()
+
+            first.cancelFirstNotesCreation()
+            assertFalse(first.uiState.value.canEditNotes)
+            first.authorizeFirstNotesCreation()
+            first.cancelFirstNotesCreation()
+            assertFalse(first.uiState.value.canEditNotes)
+            first.authorizeFirstNotesCreation()
+            first.authorizeFirstNotesCreation()
+            first.onNotesChanged("Authorized first notes")
+            first.saveImmediately()
+            advanceUntilIdle()
+
+            assertFalse(other.uiState.value.canEditNotes)
+            coVerify(exactly = 1) { repository.saveProjectNotes(1L, "", "Authorized first notes", true) }
+            coVerify(exactly = 0) { repository.saveProjectNotes(2L, any(), any(), any()) }
         }
 }

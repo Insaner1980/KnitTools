@@ -1034,4 +1034,5 @@
     <string name="web_pattern_discard_current_draft">Huidig concept weggooien</string>
     <string name="web_pattern_share_ambiguous">Er is meer dan één websiteadres gedeeld</string>
     <string name="web_pattern_project_unavailable">Het project is niet meer beschikbaar</string>
+    <string name="pattern_open_project_notes">Projectnotities openen</string>
 </resources>

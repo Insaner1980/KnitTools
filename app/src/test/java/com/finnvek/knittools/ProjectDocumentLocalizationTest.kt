@@ -52,6 +52,7 @@ class ProjectDocumentLocalizationTest {
             )
         val requiredNames =
             setOf(
+                "pattern_open_project_notes",
                 "project_documents_title",
                 "project_documents_primary",
                 "project_documents_secondary",

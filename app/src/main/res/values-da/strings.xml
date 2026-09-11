@@ -1034,4 +1034,5 @@
     <string name="web_pattern_discard_current_draft">Kassér nuværende kladde</string>
     <string name="web_pattern_share_ambiguous">Der blev delt mere end én webadresse</string>
     <string name="web_pattern_project_unavailable">Projektet er ikke længere tilgængeligt</string>
+    <string name="pattern_open_project_notes">Åbn projektnoter</string>
 </resources>

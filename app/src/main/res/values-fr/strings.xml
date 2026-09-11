@@ -1054,4 +1054,5 @@
     <string name="web_pattern_discard_current_draft">Abandonner le brouillon actuel</string>
     <string name="web_pattern_share_ambiguous">Plusieurs adresses de sites web ont été partagées</string>
     <string name="web_pattern_project_unavailable">Le projet n’est plus disponible</string>
+    <string name="pattern_open_project_notes">Ouvrir les notes du projet</string>
 </resources>

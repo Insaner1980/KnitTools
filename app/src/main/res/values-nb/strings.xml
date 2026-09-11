@@ -1034,4 +1034,5 @@
     <string name="web_pattern_discard_current_draft">Forkast gjeldende utkast</string>
     <string name="web_pattern_share_ambiguous">Mer enn én nettadresse ble delt</string>
     <string name="web_pattern_project_unavailable">Prosjektet er ikke lenger tilgjengelig</string>
+    <string name="pattern_open_project_notes">Åpne prosjektnotater</string>
 </resources>

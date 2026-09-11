@@ -1054,4 +1054,5 @@
     <string name="web_pattern_discard_current_draft">Descartar o rascunho atual</string>
     <string name="web_pattern_share_ambiguous">Foi partilhado mais de um endereço de site</string>
     <string name="web_pattern_project_unavailable">O projeto já não está disponível</string>
+    <string name="pattern_open_project_notes">Abrir notas do projeto</string>
 </resources>

@@ -1051,4 +1051,5 @@
     <string name="web_pattern_discard_current_draft">Kassera aktuellt utkast</string>
     <string name="web_pattern_share_ambiguous">Fler än en webbadress delades</string>
     <string name="web_pattern_project_unavailable">Projektet är inte längre tillgängligt</string>
+    <string name="pattern_open_project_notes">Öppna projektanteckningar</string>
 </resources>

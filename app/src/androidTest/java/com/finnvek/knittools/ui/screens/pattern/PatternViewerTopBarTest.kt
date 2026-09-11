@@ -13,9 +13,11 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.platform.app.InstrumentationRegistry
+import com.finnvek.knittools.R
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -68,6 +70,49 @@ class PatternViewerTopBarTest {
             hasCurrentRowMarker = false,
             hasPageRowMarkers = false,
         )
+
+    @Test
+    fun projectNotesActionDismissesTheMenuAndCanBeOpenedAgain() {
+        var opened = 0
+        val label =
+            InstrumentationRegistry.getInstrumentation().targetContext.getString(R.string.pattern_open_project_notes)
+        composeRule.setContent {
+            MaterialTheme {
+                PatternViewerTopBar(
+                    state = topBarState("Chart"),
+                    actions = topBarActions {}.copy(onOpenProjectNotes = { opened++ }),
+                )
+            }
+        }
+
+        repeat(2) {
+            composeRule.onNodeWithContentDescription("More options").performClick()
+            composeRule.onNodeWithText(label).performScrollTo().assertIsDisplayed().performClick()
+            composeRule.onNodeWithText(label).assertDoesNotExist()
+        }
+        composeRule.runOnIdle { assertEquals(2, opened) }
+    }
+
+    @Test
+    fun libraryMenuDoesNotOfferProjectNotes() {
+        val label =
+            InstrumentationRegistry.getInstrumentation().targetContext.getString(R.string.pattern_open_project_notes)
+        composeRule.setContent {
+            MaterialTheme {
+                PatternViewerTopBar(
+                    state =
+                        topBarState("Library chart").copy(
+                            currentRow = null,
+                            canManageDocuments = false,
+                            canManageBookmarks = false,
+                        ),
+                    actions = topBarActions {},
+                )
+            }
+        }
+        composeRule.onNodeWithContentDescription("More options").performClick()
+        composeRule.onNodeWithText(label).assertDoesNotExist()
+    }
 
     private fun topBarActions(onOpenDocuments: () -> Unit) =
         TopBarActions(

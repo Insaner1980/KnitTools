@@ -481,6 +481,9 @@ private fun NavGraphBuilder.projectsGraph(
             if (!routeProjectReady) return@composable
             PatternViewerScreen(
                 onBack = { navController.popBackStack() },
+                onOpenProjectNotes = {
+                    navController.navigateSingleTopTo(Screen.NotesEditor(projectId).route)
+                },
                 onImportFromRavelry = onImportFromRavelry,
                 onSeePro = { navController.navigateSingleTopTo(Screen.ProUpgrade.route) },
                 onSavedPatternDetail = { savedPatternId ->

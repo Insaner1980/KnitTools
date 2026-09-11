@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -27,7 +28,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
@@ -145,6 +148,7 @@ fun PatternViewerScreen(
     onSeePro: () -> Unit,
     onSavedPatternDetail: (Long) -> Unit,
     onEditWebPattern: (Long) -> Unit,
+    onOpenProjectNotes: () -> Unit,
     counterViewModelProvider: @Composable () -> CounterViewModel,
     patternViewerViewModelProvider: @Composable () -> PatternViewerViewModel,
     annotationViewModelProvider: @Composable () -> PatternAnnotationViewModel,
@@ -297,6 +301,7 @@ fun PatternViewerScreen(
                             showBookmarkSheet = true
                         },
                         onOpenDocuments = { showDocumentSheet = true },
+                        onOpenProjectNotes = onOpenProjectNotes.takeIf { selectedDocument != null },
                         onSaveReadingLineAsCurrentRow = {
                             counterViewModel.upsertPatternRowMarker(
                                 row = counterState.counter.count,
@@ -1468,6 +1473,7 @@ internal data class TopBarActions(
     val onClearReadingLinePageMarkers: () -> Unit,
     val onStartRowCalibration: () -> Unit,
     val onDetachPattern: () -> Unit,
+    val onOpenProjectNotes: (() -> Unit)? = null,
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -1651,6 +1657,15 @@ private fun PatternViewerOverflowMenu(
                 onClick = {
                     closeOverflowMenu()
                     actions.onOpenDocuments()
+                },
+            )
+        }
+        actions.onOpenProjectNotes?.let { openProjectNotes ->
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.pattern_open_project_notes)) },
+                onClick = {
+                    closeOverflowMenu()
+                    openProjectNotes()
                 },
             )
         }
@@ -1867,142 +1882,151 @@ private fun PatternViewerContent(
     val exportBaseName = state.patternName?.substringBeforeLast('.')?.ifBlank { null } ?: fallbackPatternName
     val exportFilename = stringResource(R.string.pattern_annotation_export_filename, exportBaseName)
     val viewportFocusRequester = remember { FocusRequester() }
-    Column(modifier = modifier) {
-        if (state.patternUri != null) {
-            PatternAnnotationLayerPanel(
-                state = state.annotationState,
-                onMasterVisibilityChange = actions.onMasterLayerVisibilityChange,
-                onProjectVisibilityChange = actions.onProjectLayerVisibilityChange,
-            )
-            PatternAnnotationToolbar(
-                state = state.annotationState,
-                actions = actions.annotationToolbarActions,
-            )
-            TextButton(
-                enabled = !state.annotationState.isExporting,
-                onClick = { exportLauncher.launch(exportFilename) },
-            ) {
-                val exportText =
-                    if (state.annotationState.isExporting) {
-                        stringResource(
-                            R.string.pattern_annotation_export_progress,
-                            state.annotationState.exportCompletedPages,
-                            state.annotationState.exportTotalPages,
-                        )
-                    } else {
-                        stringResource(R.string.pattern_annotation_export_pdf)
+    BoxWithConstraints(modifier = modifier) {
+        val toolsMaxHeight = maxHeight / 2
+        Column(modifier = Modifier.fillMaxSize()) {
+            if (state.patternUri != null) {
+                Column(
+                    modifier = Modifier.heightIn(max = toolsMaxHeight).verticalScroll(rememberScrollState()),
+                ) {
+                    PatternAnnotationLayerPanel(
+                        state = state.annotationState,
+                        onMasterVisibilityChange = actions.onMasterLayerVisibilityChange,
+                        onProjectVisibilityChange = actions.onProjectLayerVisibilityChange,
+                    )
+                    PatternAnnotationToolbar(
+                        state = state.annotationState,
+                        actions = actions.annotationToolbarActions,
+                    )
+                    TextButton(
+                        enabled = !state.annotationState.isExporting,
+                        onClick = { exportLauncher.launch(exportFilename) },
+                    ) {
+                        val exportText =
+                            if (state.annotationState.isExporting) {
+                                stringResource(
+                                    R.string.pattern_annotation_export_progress,
+                                    state.annotationState.exportCompletedPages,
+                                    state.annotationState.exportTotalPages,
+                                )
+                            } else {
+                                stringResource(R.string.pattern_annotation_export_pdf)
+                            }
+                        Text(exportText)
                     }
-                Text(exportText)
-            }
-            if (state.annotationState.exportFailed) {
-                Text(
-                    text = stringResource(R.string.pattern_annotation_export_failed),
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(horizontal = 12.dp),
-                )
-            }
-        }
-        when {
-            state.patternUri == null -> {
-                PatternViewerMessage(message = stringResource(R.string.no_pattern_attached))
-            }
-
-            state.rendererError != null -> {
-                PatternViewerMessage(
-                    message = state.rendererError.ifBlank { stringResource(R.string.pattern_open_failed) },
-                )
-            }
-
-            renderedImage == null -> {
-                PatternViewerMessage(message = stringResource(R.string.pattern_loading))
-            }
-
-            else -> {
-                PatternDocumentViewport(
-                    renderedBitmapProvider = { renderedImage },
-                    contentDescription = state.patternName,
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .weight(1f)
-                            .focusRequester(viewportFocusRequester)
-                            .focusable(),
-                    currentPage = state.currentPage,
-                    focusRequest = state.viewportFocusRequest,
-                    onFocusRequestConsumed = { requestId ->
-                        viewportFocusRequester.requestFocus()
-                        actions.onViewportFocusRequestConsumed(requestId)
-                    },
-                    overlay = { viewport ->
-                        RowHighlightOverlay(
-                            yPosition = state.positionPercent?.let { it / 100f },
-                            modifier = Modifier.fillMaxSize(),
-                            accessibilityDescription =
-                                if (state.currentRow != null && state.positionPercent != null) {
-                                    stringResource(
-                                        R.string.pattern_row_highlight_description,
-                                        state.currentRow,
-                                        state.positionPercent,
-                                    )
-                                } else {
-                                    null
-                                },
+                    if (state.annotationState.exportFailed) {
+                        Text(
+                            text = stringResource(R.string.pattern_annotation_export_failed),
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.padding(horizontal = 12.dp),
                         )
-                        PatternAnnotationOverlay(
-                            masterAnnotations = state.annotationState.masterAnnotations,
-                            projectAnnotations = state.annotationState.projectAnnotations,
-                            masterVisible = state.annotationState.masterLayerVisible,
-                            projectVisible = state.annotationState.projectLayerVisible,
-                            inProgressAnnotation = state.annotationState.inProgressAnnotation,
-                            inProgressVisible = editableLayerVisible,
-                            selectedAnnotationId = state.annotationState.selectedAnnotationId,
-                            trackerHighlights = state.annotationState.trackerHighlights,
-                            modifier = Modifier.fillMaxSize(),
-                        )
-                        if (state.readingLineEnabled) {
-                            ReadingLineOverlay(
-                                yFraction = state.readingLineYFraction,
-                                currentRow = state.currentRow,
-                                followingCurrentRow = state.readingLineFollowCurrentRow,
-                                scale = viewport.state.scale,
-                                actions =
-                                    ReadingLineOverlayActions(
-                                        onDragStart = actions.onReadingLineDragStart,
-                                        onYFractionChange = actions.onReadingLineYFractionChange,
-                                        onYFractionCommit = actions.onReadingLineYFractionCommit,
-                                        onDragCancel = actions.onReadingLineDragCancel,
-                                    ),
+                    }
+                }
+            }
+            when {
+                state.patternUri == null -> {
+                    PatternViewerMessage(message = stringResource(R.string.no_pattern_attached))
+                }
+
+                state.rendererError != null -> {
+                    PatternViewerMessage(
+                        message = state.rendererError.ifBlank { stringResource(R.string.pattern_open_failed) },
+                    )
+                }
+
+                renderedImage == null -> {
+                    PatternViewerMessage(message = stringResource(R.string.pattern_loading))
+                }
+
+                else -> {
+                    PatternDocumentViewport(
+                        renderedBitmapProvider = { renderedImage },
+                        contentDescription = state.patternName,
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .weight(1f)
+                                .focusRequester(viewportFocusRequester)
+                                .focusable(),
+                        currentPage = state.currentPage,
+                        focusRequest = state.viewportFocusRequest,
+                        onFocusRequestConsumed = { requestId ->
+                            viewportFocusRequester.requestFocus()
+                            actions.onViewportFocusRequestConsumed(requestId)
+                        },
+                        overlay = { viewport ->
+                            RowHighlightOverlay(
+                                yPosition = state.positionPercent?.let { it / 100f },
+                                modifier = Modifier.fillMaxSize(),
+                                accessibilityDescription =
+                                    if (state.currentRow != null && state.positionPercent != null) {
+                                        stringResource(
+                                            R.string.pattern_row_highlight_description,
+                                            state.currentRow,
+                                            state.positionPercent,
+                                        )
+                                    } else {
+                                        null
+                                    },
+                            )
+                            PatternAnnotationOverlay(
+                                masterAnnotations = state.annotationState.masterAnnotations,
+                                projectAnnotations = state.annotationState.projectAnnotations,
+                                masterVisible = state.annotationState.masterLayerVisible,
+                                projectVisible = state.annotationState.projectLayerVisible,
+                                inProgressAnnotation = state.annotationState.inProgressAnnotation,
+                                inProgressVisible = editableLayerVisible,
+                                selectedAnnotationId = state.annotationState.selectedAnnotationId,
+                                trackerHighlights = state.annotationState.trackerHighlights,
                                 modifier = Modifier.fillMaxSize(),
                             )
-                        }
-                        if (state.verticalReadingGuideEnabled) {
-                            VerticalReadingGuideOverlay(
-                                xFraction = state.verticalReadingGuideXFraction,
-                                scale = viewport.state.scale,
-                                actions =
-                                    VerticalGuideOverlayActions(
-                                        onDragStart = actions.onVerticalGuideDragStart,
-                                        onXFractionChange = actions.onVerticalGuideXFractionChange,
-                                        onXFractionCommit = actions.onVerticalGuideXFractionCommit,
-                                        onDragCancel = actions.onVerticalGuideDragCancel,
-                                    ),
-                                modifier = Modifier.fillMaxSize(),
-                            )
-                        }
-                    },
-                    interactionOverlay = { viewport ->
-                        if (editableLayerVisible && state.annotationState.activeTool != PatternAnnotationTool.BROWSE) {
-                            PatternAnnotationInputOverlay(
-                                activeTool = state.annotationState.activeTool,
-                                coordinateTransform = viewport.coordinateTransform,
-                                viewportScale = viewport.state.scale,
-                                pressureEnabled = state.annotationState.pressureEnabled,
-                                actions = actions.annotationInputActions,
-                                modifier = Modifier.fillMaxSize(),
-                            )
-                        }
-                    },
-                )
+                            if (state.readingLineEnabled) {
+                                ReadingLineOverlay(
+                                    yFraction = state.readingLineYFraction,
+                                    currentRow = state.currentRow,
+                                    followingCurrentRow = state.readingLineFollowCurrentRow,
+                                    scale = viewport.state.scale,
+                                    actions =
+                                        ReadingLineOverlayActions(
+                                            onDragStart = actions.onReadingLineDragStart,
+                                            onYFractionChange = actions.onReadingLineYFractionChange,
+                                            onYFractionCommit = actions.onReadingLineYFractionCommit,
+                                            onDragCancel = actions.onReadingLineDragCancel,
+                                        ),
+                                    modifier = Modifier.fillMaxSize(),
+                                )
+                            }
+                            if (state.verticalReadingGuideEnabled) {
+                                VerticalReadingGuideOverlay(
+                                    xFraction = state.verticalReadingGuideXFraction,
+                                    scale = viewport.state.scale,
+                                    actions =
+                                        VerticalGuideOverlayActions(
+                                            onDragStart = actions.onVerticalGuideDragStart,
+                                            onXFractionChange = actions.onVerticalGuideXFractionChange,
+                                            onXFractionCommit = actions.onVerticalGuideXFractionCommit,
+                                            onDragCancel = actions.onVerticalGuideDragCancel,
+                                        ),
+                                    modifier = Modifier.fillMaxSize(),
+                                )
+                            }
+                        },
+                        interactionOverlay = { viewport ->
+                            if (editableLayerVisible &&
+                                state.annotationState.activeTool != PatternAnnotationTool.BROWSE
+                            ) {
+                                PatternAnnotationInputOverlay(
+                                    activeTool = state.annotationState.activeTool,
+                                    coordinateTransform = viewport.coordinateTransform,
+                                    viewportScale = viewport.state.scale,
+                                    pressureEnabled = state.annotationState.pressureEnabled,
+                                    actions = actions.annotationInputActions,
+                                    modifier = Modifier.fillMaxSize(),
+                                )
+                            }
+                        },
+                    )
+                }
             }
         }
     }
@@ -2393,9 +2417,9 @@ private fun BottomBarNavigationRow(
     state: BottomBarState,
     actions: BottomBarActions,
 ) {
-    Row(
+    FlowRow(
         horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
+        verticalArrangement = Arrangement.spacedBy(4.dp),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {

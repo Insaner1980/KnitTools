@@ -1334,4 +1334,5 @@
     <string name="web_pattern_discard_current_draft">Hylkää nykyinen luonnos</string>
     <string name="web_pattern_share_ambiguous">Jaossa oli useampi kuin yksi verkkosivun osoite</string>
     <string name="web_pattern_project_unavailable">Projekti ei ole enää saatavilla</string>
+    <string name="pattern_open_project_notes">Avaa projektin muistiinpanot</string>
 </resources>

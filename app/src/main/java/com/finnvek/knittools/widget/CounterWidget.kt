@@ -16,6 +16,7 @@ import androidx.glance.LocalContext
 import androidx.glance.LocalSize
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
+import androidx.glance.appwidget.LinearProgressIndicator
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.action.actionSendBroadcast
 import androidx.glance.appwidget.action.actionStartActivity
@@ -64,7 +65,7 @@ class CounterWidget : GlanceAppWidget() {
 
     override val sizeMode =
         SizeMode.Responsive(
-            setOf(SMALL_SIZE, MEDIUM_SIZE, LARGE_SIZE),
+            setOf(SMALL_SIZE, STACKED_SMALL_SIZE, MEDIUM_SIZE, LARGE_SIZE),
         )
 
     override suspend fun provideGlance(
@@ -111,6 +112,7 @@ class CounterWidget : GlanceAppWidget() {
 
     companion object {
         val SMALL_SIZE = DpSize(120.dp, 48.dp)
+        val STACKED_SMALL_SIZE = DpSize(120.dp, 80.dp)
         val MEDIUM_SIZE = DpSize(160.dp, 160.dp)
         val LARGE_SIZE = DpSize(300.dp, 160.dp)
     }
@@ -167,18 +169,26 @@ private fun WidgetSizedContent(
 @androidx.compose.runtime.Composable
 private fun ProRequiredWidget() {
     val context = LocalContext.current
+    val description = context.getString(R.string.widget_pro_required)
+    val label =
+        if (LocalSize.current.height < CounterWidget.MEDIUM_SIZE.height) {
+            context.getString(R.string.upgrade_to_pro)
+        } else {
+            description
+        }
     WidgetCard(
         projectId = null,
         openProUpgrade = true,
         horizontalPadding = 12.dp,
-        verticalPadding = 12.dp,
+        verticalPadding = 4.dp,
     ) {
         Box(
             modifier = GlanceModifier.fillMaxSize(),
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                text = context.getString(R.string.widget_pro_required),
+                text = label,
+                modifier = GlanceModifier.semantics { contentDescription = description },
                 style =
                     TextStyle(
                         fontSize = 12.sp,
@@ -194,40 +204,67 @@ private fun SmallWidget(
     data: WidgetData,
     projectId: Long?,
 ) {
+    val stacked = LocalSize.current.height >= CounterWidget.STACKED_SMALL_SIZE.height
     WidgetCard(
         projectId = projectId,
-        horizontalPadding = 14.dp,
-        verticalPadding = 4.dp,
+        horizontalPadding = if (stacked) 8.dp else 14.dp,
+        verticalPadding = if (stacked) 0.dp else 4.dp,
         frame = WidgetCardFrame(outerPadding = 2.dp, borderWidth = 2.dp, cornerRadius = 18.dp),
     ) {
-        Row(
-            modifier = GlanceModifier.fillMaxSize(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = data.projectName,
-                modifier = GlanceModifier.defaultWeight(),
-                style =
-                    TextStyle(
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = GlanceTheme.colors.onSurface,
-                    ),
-                maxLines = 1,
-            )
-            Spacer(modifier = GlanceModifier.width(4.dp))
-            Text(
-                text = formatPrimaryCount(data),
-                style =
-                    TextStyle(
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = GlanceTheme.colors.onSurface,
-                    ),
-                maxLines = 1,
-            )
+        if (stacked) {
+            Column(
+                modifier = GlanceModifier.fillMaxSize(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                SmallWidgetProjectName(data, GlanceModifier.fillMaxWidth(), TextAlign.Center)
+                SmallWidgetCount(data)
+            }
+        } else {
+            Row(
+                modifier = GlanceModifier.fillMaxSize(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                SmallWidgetProjectName(data, GlanceModifier.defaultWeight(), TextAlign.Start)
+                Spacer(modifier = GlanceModifier.width(4.dp))
+                SmallWidgetCount(data)
+            }
         }
     }
+}
+
+@androidx.compose.runtime.Composable
+private fun SmallWidgetProjectName(
+    data: WidgetData,
+    modifier: GlanceModifier,
+    textAlign: TextAlign,
+) {
+    Text(
+        text = data.projectName,
+        modifier = modifier,
+        style =
+            TextStyle(
+                fontSize = 11.sp,
+                textAlign = textAlign,
+                fontWeight = FontWeight.Medium,
+                color = GlanceTheme.colors.onSurface,
+            ),
+        maxLines = 1,
+    )
+}
+
+@androidx.compose.runtime.Composable
+private fun SmallWidgetCount(data: WidgetData) {
+    Text(
+        text = formatPrimaryCount(data),
+        style =
+            TextStyle(
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                color = GlanceTheme.colors.onSurface,
+            ),
+        maxLines = 1,
+    )
 }
 
 @androidx.compose.runtime.Composable
@@ -438,7 +475,7 @@ private fun WidgetTargetLabel(
                 color = GlanceTheme.colors.onSurfaceVariant,
                 textAlign = TextAlign.Center,
             ),
-        maxLines = 1,
+        maxLines = 3,
     )
 }
 
@@ -453,28 +490,12 @@ private fun WidgetProgressBar(
     val completed = data.count >= target
     val fillColor = if (completed) GlanceTheme.colors.tertiary else GlanceTheme.colors.primary
     Spacer(modifier = GlanceModifier.height(topSpacing))
-    Row(modifier = GlanceModifier.fillMaxWidth().height(4.dp)) {
-        if (fraction > 0f) {
-            Box(
-                modifier =
-                    GlanceModifier
-                        .defaultWeight()
-                        .height(4.dp)
-                        .background(fillColor),
-                content = {},
-            )
-        }
-        if (fraction < 1f) {
-            val emptyBox =
-                GlanceModifier
-                    .height(4.dp)
-                    .background(GlanceTheme.colors.surfaceVariant)
-            Box(
-                modifier = if (fraction > 0f) emptyBox.defaultWeight() else emptyBox.fillMaxWidth(),
-                content = {},
-            )
-        }
-    }
+    LinearProgressIndicator(
+        progress = fraction,
+        modifier = GlanceModifier.fillMaxWidth().height(4.dp),
+        color = fillColor,
+        backgroundColor = GlanceTheme.colors.surfaceVariant,
+    )
 }
 
 @androidx.compose.runtime.Composable

@@ -25,6 +25,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -95,6 +96,12 @@ fun PatternPickerSheet(
     val imageImportState by imageImportViewModel.uiState.collectAsStateWithLifecycle()
     var pendingProAction by rememberSaveable { mutableStateOf<PendingPatternProAction?>(null) }
     var showDiscardConfirmation by rememberSaveable { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState()
+    val scope = rememberCoroutineScope()
+    val keepSelectedImages: () -> Unit = {
+        showDiscardConfirmation = false
+        scope.launch { sheetState.show() }
+    }
     val actions =
         rememberPatternPickerActions(
             projectId = projectId,
@@ -122,6 +129,7 @@ fun PatternPickerSheet(
                     source =
                         when (pendingProAction) {
                             PendingPatternProAction.GalleryImages -> ProPromptSource.PatternGallery
+
                             PendingPatternProAction.CameraCapture,
                             null,
                             -> ProPromptSource.PatternCamera
@@ -142,6 +150,7 @@ fun PatternPickerSheet(
     }
 
     ModalBottomSheet(
+        sheetState = sheetState,
         onDismissRequest = {
             when {
                 imageImportState.isBusy -> imageImportViewModel.cancelImport()
@@ -204,7 +213,7 @@ fun PatternPickerSheet(
 
     if (showDiscardConfirmation) {
         AlertDialog(
-            onDismissRequest = { showDiscardConfirmation = false },
+            onDismissRequest = keepSelectedImages,
             title = { Text(stringResource(R.string.pattern_image_discard_title)) },
             text = { Text(stringResource(R.string.pattern_image_discard_message)) },
             confirmButton = {
@@ -218,7 +227,7 @@ fun PatternPickerSheet(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDiscardConfirmation = false }) {
+                TextButton(onClick = keepSelectedImages) {
                     Text(stringResource(R.string.cancel))
                 }
             },
@@ -256,7 +265,7 @@ private fun rememberPatternPickerActions(
 
     val imagePickerLauncher =
         rememberLauncherForActivityResult(
-            ActivityResultContracts.PickMultipleVisualMedia(PatternImageImportLimits.MAX_PAGES),
+            PatternImagePickerContract(),
         ) { uris ->
             val requestId = pendingGalleryRequestId
             pendingGalleryRequestId = null

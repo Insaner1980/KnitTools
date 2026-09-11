@@ -6,14 +6,16 @@ import org.junit.Test
 
 class CounterWidgetSourceTest {
     @Test
-    fun `small widget uses a horizontal project and count layout`() {
+    fun `small widget stacks the project name when height allows`() {
         val widget = ProjectSourceFiles.read(COUNTER_WIDGET)
         val smallWidget =
             widget
                 .substringAfter("private fun SmallWidget(")
                 .substringBefore("private fun MediumWidget(")
 
+        assertTrue(smallWidget.contains("Column("))
         assertTrue(smallWidget.contains("Row("))
+        assertTrue(smallWidget.contains("LocalSize.current.height >= CounterWidget.STACKED_SMALL_SIZE.height"))
         assertTrue(smallWidget.contains("fontSize = 11.sp"))
         assertTrue(smallWidget.contains("fontSize = 22.sp"))
         assertTrue(!smallWidget.contains("WidgetHeader("))

@@ -72,13 +72,19 @@ class PatternPickerSourceTest {
     }
 
     @Test
-    fun `gallery import uses Photo Picker without changing Room or storage permissions`() {
+    fun `gallery import uses shared picker contract without changing Room or storage permissions`() {
         val picker = ProjectSourceFiles.read(PATTERN_PICKER)
+        val pickerContract = ProjectSourceFiles.read(PATTERN_IMAGE_PICKER_CONTRACT)
         val database = ProjectSourceFiles.read(DATABASE)
         val manifest = ProjectSourceFiles.read(MANIFEST)
 
-        assertTrue(picker.contains("ActivityResultContracts.PickMultipleVisualMedia"))
+        assertTrue(picker.contains("PatternImagePickerContract()"))
+        assertFalse(picker.contains("ActivityResultContracts.PickMultipleVisualMedia"))
+        assertFalse(picker.contains("ActivityResultContracts.OpenMultipleDocuments"))
         assertTrue(picker.contains("ActivityResultContracts.PickVisualMedia.ImageOnly"))
+        assertTrue(picker.contains("imageImportViewModel.onGalleryPickerResult(requestId, uris)"))
+        assertTrue(pickerContract.contains("ActivityResultContracts.PickMultipleVisualMedia"))
+        assertTrue(pickerContract.contains(".OpenMultipleDocuments()"))
         assertTrue(database.contains("version = KNITTOOLS_DATABASE_VERSION"))
         assertFalse(manifest.contains("READ_EXTERNAL_STORAGE"))
         assertFalse(manifest.contains("WRITE_EXTERNAL_STORAGE"))
@@ -88,6 +94,8 @@ class PatternPickerSourceTest {
     private companion object {
         private const val PATTERN_PICKER =
             "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternPickerSheet.kt"
+        private const val PATTERN_IMAGE_PICKER_CONTRACT =
+            "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternImagePickerContract.kt"
         private const val COUNTER_SCREEN =
             "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterScreen.kt"
         private const val COUNTER_VIEW_MODEL =

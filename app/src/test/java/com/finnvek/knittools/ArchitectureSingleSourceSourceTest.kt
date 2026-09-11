@@ -7,6 +7,25 @@ import org.junit.Test
 
 class ArchitectureSingleSourceSourceTest {
     @Test
+    fun `additional counter name inputs use the domain limit`() {
+        val source = ProjectSourceFiles.read(MULTI_COUNTER_COMPONENTS)
+        val functions = source.split(Regex("\\bfun\\s+"))
+        mapOf("AddCounterDialog" to "onNameChange", "RenameCounterDialog" to "onValueChange").forEach { (name, handler) ->
+            val function = functions.single { Regex("^$name\\s*\\(").containsMatchIn(it) }
+            assertTrue(
+                "$name must reject overlong input using the domain limit",
+                function.replace(Regex("\\s+"), "").contains(
+                    "$handler={if(it.length<=ProjectCounterLogic.MAX_NAME_LENGTH)name=it}",
+                ),
+            )
+        }
+        assertFalse(
+            "Additional counter UI must not define a numeric name limit",
+            Regex("\\bval\\s+\\w*NAME\\w*\\s*(?::\\s*Int\\s*)?=\\s*\\d+").containsMatchIn(source),
+        )
+    }
+
+    @Test
     fun `project counter type rules stay centralized`() {
         val projectCounter = ProjectSourceFiles.read(PROJECT_COUNTER)
         val projectCounterDraft = ProjectSourceFiles.read(PROJECT_COUNTER_DRAFT)

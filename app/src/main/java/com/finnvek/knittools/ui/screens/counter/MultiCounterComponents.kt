@@ -48,6 +48,7 @@ import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.calculator.CounterValueDisplay
 import com.finnvek.knittools.domain.calculator.CounterValueFormatter
 import com.finnvek.knittools.domain.calculator.MeasurementNumberParser
+import com.finnvek.knittools.domain.calculator.ProjectCounterLogic
 import com.finnvek.knittools.domain.calculator.RepeatSectionLogic
 import com.finnvek.knittools.domain.calculator.formatIntegerForDisplay
 import com.finnvek.knittools.domain.model.ProjectCounter
@@ -66,7 +67,6 @@ import com.finnvek.knittools.ui.theme.counterExtraValue
 import java.util.Locale
 
 private const val DISABLED_CONTENT_ALPHA = 0.38f
-private const val COUNTER_NAME_MAX_LENGTH = 50
 
 data class CounterItemActions(
     val onIncrement: () -> Unit,
@@ -319,7 +319,7 @@ private fun RenameCounterDialog(
         text = {
             TextField(
                 value = name,
-                onValueChange = { if (it.length <= COUNTER_NAME_MAX_LENGTH) name = it },
+                onValueChange = { if (it.length <= ProjectCounterLogic.MAX_NAME_LENGTH) name = it },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
                 colors =
@@ -421,7 +421,7 @@ fun AddCounterDialog(
                     ),
                 actions =
                     AddCounterDialogContentActions(
-                        onNameChange = { if (it.length <= COUNTER_NAME_MAX_LENGTH) name = it },
+                        onNameChange = { if (it.length <= ProjectCounterLogic.MAX_NAME_LENGTH) name = it },
                         onTypeChange = { index ->
                             selectedType = index
                             if (index == 3) {

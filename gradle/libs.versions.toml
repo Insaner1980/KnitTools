@@ -33,7 +33,7 @@ composeStabilityAnalyzer = "0.12.0"
 sonarqube = "7.3.1.8318"
 sentry = "8.54.0"
 
-baselineprofile = "1.5.0-beta01"
+baselineprofile = "1.5.0-rc02"
 wire = "6.4.7"
 profileinstaller = "1.4.1"
 splashscreen = "1.2.0"

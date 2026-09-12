@@ -14,6 +14,7 @@ import com.finnvek.knittools.domain.model.ProjectFolderMembership
 import com.finnvek.knittools.domain.model.ProjectFolderSnapshot
 import com.finnvek.knittools.domain.model.ProjectSortOrder
 import com.finnvek.knittools.pro.ProManager
+import com.finnvek.knittools.pro.ProState
 import com.finnvek.knittools.repository.CounterRepository
 import com.finnvek.knittools.repository.ProjectCreationResult
 import com.finnvek.knittools.repository.ProjectDocumentRepository
@@ -93,6 +94,7 @@ class ProjectFoldersViewModelTest {
         every { folderRepository.observeOrganization(any()) } returns organization
         every { documents.observeDocuments(any<List<Long>>()) } returns flowOf(emptyMap())
         every { proManager.hasFeature(any()) } returns true
+        every { proManager.proState } returns MutableStateFlow(ProState())
         every { repository.observeActiveSession() } returns flowOf(null)
         every { repository.getActiveProjects(ProjectSortOrder.UPDATED) } returns
             flowOf(listOf(active[3], active[1], active[0], active[2]))

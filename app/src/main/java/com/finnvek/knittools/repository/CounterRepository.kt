@@ -72,6 +72,16 @@ sealed interface ProjectCreationResult {
     data object FolderMissing : ProjectCreationResult
 }
 
+sealed interface ProjectReactivationResult {
+    data object Reactivated : ProjectReactivationResult
+
+    data object ProjectUnavailable : ProjectReactivationResult
+
+    data object LimitReached : ProjectReactivationResult
+
+    data object PersistenceFailure : ProjectReactivationResult
+}
+
 sealed interface ProjectNotesSaveResult {
     data class Saved(
         val project: CounterProject,
@@ -165,8 +175,7 @@ class CounterRepository
         ): ProjectCreationResult =
             try {
                 transactionRunner.run {
-                    val canCreateAdditionalProjectsNow = hasAdditionalProjectAccess(canCreateAdditionalProjects)
-                    if (!canCreateAdditionalProjectsNow && dao.getProjectCount() >= 1) {
+                    if (!canAddActiveProject(canCreateAdditionalProjects)) {
                         return@run ProjectCreationResult.LimitReached
                     }
                     val projectName = uniqueProjectName(name) ?: return@run ProjectCreationResult.InvalidProject
@@ -215,6 +224,8 @@ class CounterRepository
 
         suspend fun updateProject(project: CounterProject) {
             transactionRunner.run {
+                val current = dao.getProject(project.id) ?: return@run
+                if (current.isCompleted && !project.isCompleted) return@run
                 val projectName = uniqueProjectName(project.name, excludedProjectId = project.id) ?: return@run
                 val normalized = normalizeProjectDetails(project.copy(name = projectName)) ?: return@run
                 dao.update(normalized.copy(updatedAt = System.currentTimeMillis()).toEntity())
@@ -884,12 +895,27 @@ class CounterRepository
             )
         }
 
-        suspend fun reactivateProject(id: Long): Boolean =
-            transactionRunner.run {
-                val project = dao.getProject(id) ?: return@run false
-                if (!project.isCompleted) return@run false
-                dao.reactivateProject(id, System.currentTimeMillis())
-                true
+        suspend fun reactivateProject(
+            id: Long,
+            expectedCompletedAt: Long?,
+            canCreateAdditionalProjects: Boolean = true,
+        ): ProjectReactivationResult =
+            try {
+                transactionRunner.run {
+                    val project = dao.getProject(id) ?: return@run ProjectReactivationResult.ProjectUnavailable
+                    if (!project.isCompleted || project.completedAt != expectedCompletedAt) {
+                        return@run ProjectReactivationResult.ProjectUnavailable
+                    }
+                    if (!canAddActiveProject(canCreateAdditionalProjects)) {
+                        return@run ProjectReactivationResult.LimitReached
+                    }
+                    dao.reactivateProject(id, System.currentTimeMillis())
+                    ProjectReactivationResult.Reactivated
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                ProjectReactivationResult.PersistenceFailure
             }
 
         suspend fun deleteProject(id: Long) {
@@ -922,9 +948,11 @@ class CounterRepository
             return ProjectNameRules.uniqueName(name, existingNames)
         }
 
-        private fun hasAdditionalProjectAccess(callerAllowsAdditionalProjects: Boolean): Boolean =
-            callerAllowsAdditionalProjects &&
-                (proManager?.hasFeature(ProFeature.UNLIMITED_PROJECTS) ?: true)
+        private suspend fun canAddActiveProject(callerAllowsAdditionalProjects: Boolean): Boolean {
+            val activeCount = dao.getActiveProjectCount()
+            val hasCurrentAccess = proManager?.hasFeature(ProFeature.UNLIMITED_PROJECTS) ?: true
+            return activeCount == 0 || (callerAllowsAdditionalProjects && hasCurrentAccess)
+        }
 
         private fun normalizeProjectDetails(project: CounterProject): CounterProject? {
             val labelType =

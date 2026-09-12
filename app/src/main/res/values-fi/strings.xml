@@ -992,14 +992,17 @@
     <string name="pro_prompt_not_now">Ei nyt</string>
     <string name="pro_prompt_see_pro">Tutustu Prohon</string>
     <string name="pro_prompt_trial_body">Aloita ilmainen 14 päivän Pro-kokeilu. Maksutapaa ei tarvita. Kaikki luomasi säilyy käytettävissä kokeilun jälkeen.</string>
-    <string name="pro_prompt_projects_title">Luo uusi projekti Prolla</string>
+    <string name="pro_prompt_reactivation_title">Aktivoi projekti uudelleen Prolla</string>
+    <string name="pro_prompt_reactivation_trial_body">Aloita ilmainen 14 päivän Pro-kokeilu, niin voit aktivoida tämän projektin uudelleen ja työskennellä usean projektin parissa yhtä aikaa. Voit säilyttää ja katsella valmistuneita projekteja ilmaiseksi. Projektisi pysyvät käytettävissä kokeilun jälkeen.</string>
+    <string name="pro_prompt_reactivation_body">Prolla voit aktivoida tämän projektin uudelleen ja työskennellä usean projektin parissa yhtä aikaa. Voit säilyttää ja katsella valmistuneita projekteja ilmaiseksi. Nykyiset projektisi pysyvät käytettävissä.</string>
+    <string name="pro_prompt_projects_title">Luo toinen aktiivinen projekti Prolla</string>
     <plurals name="pro_prompt_projects_trial_body">
-        <item quantity="one">Sinulla on jo %1$d projekti. Myös valmistuneet projektit lasketaan mukaan. Aloita ilmainen 14 päivän Pro-kokeilu ja luo uusi. Kaikki projektisi säilyvät käytettävissä kokeilun jälkeen.</item>
-        <item quantity="other">Sinulla on jo %1$d projektia. Myös valmistuneet projektit lasketaan mukaan. Aloita ilmainen 14 päivän Pro-kokeilu ja luo uusi. Kaikki projektisi säilyvät käytettävissä kokeilun jälkeen.</item>
+        <item quantity="one">Sinulla on %1$d aktiivinen projekti. Aloita ilmainen 14 päivän Pro-kokeilu, niin voit luoda uuden projektin ja työskennellä usean projektin parissa yhtä aikaa. Valmistuneet projektit eivät kuluta ilmaisversion projektikiintiötä. Projektisi pysyvät käytettävissä kokeilun jälkeen.</item>
+        <item quantity="other">Sinulla on %1$d aktiivista projektia. Aloita ilmainen 14 päivän Pro-kokeilu, niin voit luoda uuden projektin ja työskennellä usean projektin parissa yhtä aikaa. Valmistuneet projektit eivät kuluta ilmaisversion projektikiintiötä. Projektisi pysyvät käytettävissä kokeilun jälkeen.</item>
     </plurals>
     <plurals name="pro_prompt_projects_body">
-        <item quantity="one">Uuden projektin luominen vaatii Pron, koska sinulla on jo %1$d projekti. Myös valmistuneet projektit lasketaan mukaan. Nykyinen projektisi säilyy käytettävissä.</item>
-        <item quantity="other">Uuden projektin luominen vaatii Pron, koska sinulla on jo %1$d projektia. Myös valmistuneet projektit lasketaan mukaan. Kaikki nykyiset projektisi säilyvät käytettävissä.</item>
+        <item quantity="one">Sinulla on %1$d aktiivinen projekti. Prolla voit luoda uuden projektin ja työskennellä usean projektin parissa yhtä aikaa. Valmistuneet projektit eivät kuluta ilmaisversion projektikiintiötä. Nykyiset projektisi pysyvät käytettävissä.</item>
+        <item quantity="other">Sinulla on %1$d aktiivista projektia. Prolla voit luoda uuden projektin ja työskennellä usean projektin parissa yhtä aikaa. Valmistuneet projektit eivät kuluta ilmaisversion projektikiintiötä. Nykyiset projektisi pysyvät käytettävissä.</item>
     </plurals>
     <string name="pro_prompt_photos_title">Lisää edistymiskuvia Prolla</string>
     <string name="pro_prompt_photos_body">Uuden edistymiskuvan luominen vaatii Pron. Nykyiset kuvasi säilyvät käytettävissä.</string>
@@ -1035,7 +1038,7 @@
     <string name="pro_page_intro">Anna kaikille projekteillesi enemmän tilaa ja pidä työnkulkusi yhdessä.</string>
     <string name="pro_page_trust">Kaikki luomasi säilyy käytettävissä, vaikka kokeilusi päättyisi.</string>
     <string name="pro_group_projects_title">Projektit ja materiaalit</string>
-    <string name="pro_group_projects_body">Luo lisää projekteja, projektin ensimmäiset muistiinpanot, edistymiskuvia ja lankakortteja.</string>
+    <string name="pro_group_projects_body">Työskentele usean aktiivisen projektin parissa ja luo projektin ensimmäiset muistiinpanot, edistymiskuvia ja lankakortteja.</string>
     <string name="pro_group_workflow_title">Laskeminen ja työnkulku</string>
     <string name="pro_group_workflow_body">Käytä pientä toistolaskuria, lisä-, toisto-, muotoilu- ja osiolaskureita, rivimuistutuksia, mallikuvia PDF:nä sekä aloitusnäytön pienoissovellusta.</string>
     <string name="pro_group_insights_title">Tilastot</string>

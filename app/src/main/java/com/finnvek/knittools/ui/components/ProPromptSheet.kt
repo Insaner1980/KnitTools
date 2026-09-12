@@ -34,6 +34,7 @@ import com.finnvek.knittools.ui.screens.pro.ProPromptViewModel
 
 enum class ProPromptSource {
     Projects,
+    ProjectReactivation,
     ProgressPhotos,
     Notes,
     YarnCards,
@@ -169,6 +170,8 @@ private fun ProPromptRequest.title(): String =
         when (source) {
             ProPromptSource.Projects -> R.string.pro_prompt_projects_title
 
+            ProPromptSource.ProjectReactivation -> R.string.pro_prompt_reactivation_title
+
             ProPromptSource.ProgressPhotos -> R.string.pro_prompt_photos_title
 
             ProPromptSource.Notes -> R.string.pro_prompt_notes_title
@@ -201,6 +204,14 @@ private fun ProPromptRequest.body(status: ProStatus): String =
             existingProjectCount,
             existingProjectCount,
         )
+    } else if (source == ProPromptSource.ProjectReactivation) {
+        stringResource(
+            if (status == ProStatus.TRIAL_NOT_STARTED) {
+                R.string.pro_prompt_reactivation_trial_body
+            } else {
+                R.string.pro_prompt_reactivation_body
+            },
+        )
     } else if (status == ProStatus.TRIAL_NOT_STARTED) {
         stringResource(R.string.pro_prompt_trial_body)
     } else {
@@ -224,7 +235,9 @@ private fun ProPromptRequest.body(status: ProStatus): String =
 
                 ProPromptSource.Widget -> R.string.pro_prompt_widget_body
 
-                ProPromptSource.Projects -> error("Project copy uses plurals")
+                ProPromptSource.Projects,
+                ProPromptSource.ProjectReactivation,
+                -> error("Project copy uses dedicated resources")
             },
         )
     }

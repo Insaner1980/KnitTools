@@ -57,6 +57,11 @@ class RavelryViewModelTest {
         Dispatchers.setMain(testDispatcher)
         repository = mockk(relaxed = true)
         proManager = mockk()
+        every { proManager.proState } returns
+            MutableStateFlow(
+                com.finnvek.knittools.pro
+                    .ProState(),
+            )
         authManager = mockk(relaxed = true)
         authState = MutableStateFlow(RavelryAuthState.NotConnected)
 
@@ -70,20 +75,52 @@ class RavelryViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun createViewModel(isPro: Boolean): RavelryViewModel {
+    private fun createViewModel(
+        isPro: Boolean,
+        savedStateHandle: SavedStateHandle = SavedStateHandle(),
+    ): RavelryViewModel {
         every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } returns isPro
         return RavelryViewModel(
             repository,
             proManager,
             authManager,
-            SavedStateHandle(),
+            savedStateHandle,
         )
     }
+
+    @Test
+    fun `Pro retry retains original pattern even when detail changes and resumes only once`() =
+        runTest(testDispatcher) {
+            val original = PatternDetail(id = 42, name = "Original", permalink = "original")
+            val other = PatternDetail(id = 43, name = "Other", permalink = "other")
+            coEvery { repository.getPatternDetail(42) } returns original
+            coEvery { repository.getPatternDetail(43) } returns other
+            coEvery { repository.createProjectFromPattern(original, false) } returns ProjectCreationResult.LimitReached
+            coEvery { repository.createProjectFromPattern(original, true) } returns ProjectCreationResult.Created(7L)
+            coEvery { repository.getActiveProjectCount() } returns 2
+            val vm = createViewModel(false)
+            vm.loadDetail(42)
+            advanceUntilIdle()
+            vm.createProjectFromPattern()
+            advanceUntilIdle()
+            vm.loadDetail(43)
+            advanceUntilIdle()
+            every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } returns true
+            vm.createProjectFromPattern(retryPending = true)
+            vm.createProjectFromPattern(retryPending = true)
+            advanceUntilIdle()
+            vm.createProjectFromPattern(retryPending = true)
+            advanceUntilIdle()
+            coVerify(exactly = 1) { repository.createProjectFromPattern(original, true) }
+            coVerify(exactly = 0) { repository.createProjectFromPattern(other, any()) }
+            coVerify(exactly = 2) { repository.getActiveProjectCount() }
+        }
 
     // CPD-OFF: Testin skenaariokohtainen asetelma pidetaan paikallisena ja luettavana.
     @Test
     fun `free user with existing active project is routed to pro upgrade instead of creating project`() =
         runTest(testDispatcher) {
+            coEvery { repository.getActiveProjectCount() } returns 1
             val pattern = PatternDetail(id = 42, name = "Test Pattern", permalink = "test-pattern")
             coEvery { repository.getPatternDetail(42) } returns pattern
             coEvery { repository.isPatternSaved(42) } returns false

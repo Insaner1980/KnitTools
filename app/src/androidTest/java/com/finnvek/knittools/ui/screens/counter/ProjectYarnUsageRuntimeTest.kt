@@ -135,7 +135,7 @@ class ProjectYarnUsageRuntimeTest {
         scenario = null
         runBlocking { counter.archiveProject(projectId, System.currentTimeMillis()) }
         assertEquals(initial.amounts, currentUsage().amounts)
-        runBlocking { counter.reactivateProject(projectId) }
+        runBlocking { counter.reactivateProject(projectId, counter.getProject(projectId)?.completedAt) }
         assertEquals(initial.amounts, currentUsage().amounts)
         launchProject()
         runBlocking { yarn.updateLinkedProjectId(cardId, null) }

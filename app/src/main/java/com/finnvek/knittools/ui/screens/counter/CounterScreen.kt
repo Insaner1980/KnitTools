@@ -757,7 +757,7 @@ fun CounterScreen(
                 },
                 onReactivateProject = {
                     showProjectActionsSheet = false
-                    viewModel.reactivateProject()
+                    viewModel.reactivateProject(projectActionTargetId, state.completedAt)
                 },
                 onShowDeleteDialog = {
                     showProjectActionsSheet = false
@@ -818,6 +818,20 @@ fun CounterScreen(
             onDelete = { reminderId -> viewModel.deleteReminder(reminderId) },
             onDismiss = { showRemindersSheet = false },
         )
+    }
+
+    state.reactivationPromptCount?.let { count ->
+        ProPromptSheet(
+            request = ProPromptRequest(ProPromptSource.ProjectReactivation, count),
+            onDismiss = viewModel::dismissPendingReactivation,
+            onTrialStarted = viewModel::retryPendingReactivation,
+            onSeePro = onUpgradeToPro,
+        )
+    }
+
+    val genericErrorUnknown = stringResource(R.string.generic_error_unknown)
+    CollectWithLifecycleEffect({ viewModel.reactivationErrors }) {
+        snackbarHostState.showSnackbar(genericErrorUnknown)
     }
 
     pendingProAction?.let { action ->

@@ -398,12 +398,14 @@ class CounterViewModelTest {
         savedPatternRows: Flow<List<SavedPattern>> = flowOf(emptyList()),
         countersOverride: ProjectCounterRepository? = null,
         proManagerOverride: ProManager? = null,
+        savedStateHandle: SavedStateHandle = SavedStateHandle(),
     ): CounterViewModel {
         val preferences = mockk<PreferencesManager>()
         every { preferences.preferences } returns emptyFlow()
         val proManager = proManagerOverride ?: mockk<ProManager>()
         if (proManagerOverride == null) {
             every { proManager.proState } returns MutableStateFlow(ProState())
+            every { proManager.hasFeature(any()) } returns false
         }
         val yarnRepository = mockk<YarnCardRepository>()
         every { yarnRepository.getAllCards() } returns emptyFlow()
@@ -441,7 +443,7 @@ class CounterViewModelTest {
             projectDocumentRepository = documents,
             patternDocumentStorage = mockk(),
             inAppReviewManager = mockk(),
-            savedStateHandle = SavedStateHandle(),
+            savedStateHandle = savedStateHandle,
             context = mockk<Context>(relaxed = true),
             ioDispatcher = dispatcher,
             applicationScope = backgroundScope,

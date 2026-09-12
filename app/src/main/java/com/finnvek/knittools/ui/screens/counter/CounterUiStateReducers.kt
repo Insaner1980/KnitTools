@@ -8,12 +8,13 @@ import com.finnvek.knittools.domain.model.DEFAULT_READING_LINE_Y_FRACTION
 import com.finnvek.knittools.domain.model.RowReminder
 
 internal val CounterUiState.shouldLeaveCounter: Boolean
-    get() = projectsLoaded && projects.isEmpty()
+    get() = projectsLoaded && projects.isEmpty() && projectId == null
 
 internal fun CounterUiState.withStartedProject(project: CounterProject): CounterUiState =
     copy(
         projectId = project.id,
         isCompleted = project.isCompleted,
+        completedAt = project.completedAt,
         projectName = project.name,
         // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
         counter = CounterState(count = project.count, stepSize = project.stepSize),
@@ -66,6 +67,7 @@ internal fun CounterUiState.withObservedProject(project: CounterProject): Counte
     return copy(
         projectName = project.name,
         isCompleted = project.isCompleted,
+        completedAt = project.completedAt,
         counter = observedCounter,
         craftType = project.craftType,
         mainCounterLabelType = project.mainCounterLabelType,

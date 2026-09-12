@@ -126,6 +126,7 @@ class CounterRepositoryDomainApiTest {
     @Test
     fun `counter repository accepts project domain model when updating`() =
         runTest {
+            coEvery { projectDao.getProject(7L) } returns CounterProjectEntity(id = 7L, name = "Existing")
             val updatedEntity = slot<CounterProjectEntity>()
             coEvery { projectDao.update(capture(updatedEntity)) } returns Unit
             val beforeUpdate = System.currentTimeMillis()
@@ -300,7 +301,7 @@ class CounterRepositoryDomainApiTest {
     fun `createProject tarkistaa ilmaisen projektikiintiön ja kirjoittaa samassa transaktiossa`() =
         runTest {
             val runner = ProjectCreationTransactionRunner()
-            coEvery { projectDao.getProjectCount() } returns 0
+            coEvery { projectDao.getActiveProjectCount() } returns 0
             coEvery { projectDao.insert(any()) } returns 11L
             val transactionRepository = createRepository(transactionRunner = runner)
 
@@ -313,16 +314,16 @@ class CounterRepositoryDomainApiTest {
             assertEquals(ProjectCreationResult.Created(11L), result)
             assertEquals(1, runner.runCount)
             coVerifyOrder {
-                projectDao.getProjectCount()
+                projectDao.getActiveProjectCount()
                 projectDao.getAllProjectsOnce()
                 projectDao.insert(any())
             }
         }
 
     @Test
-    fun `createProject laskee myös arkistoidut projektit kiintiöön`() =
+    fun `createProject blocks another active project`() =
         runTest {
-            coEvery { projectDao.getProjectCount() } returns 1
+            coEvery { projectDao.getActiveProjectCount() } returns 1
 
             val result =
                 repository.createProject(
@@ -339,7 +340,7 @@ class CounterRepositoryDomainApiTest {
     fun `createProject rechecks additional project entitlement inside transaction`() =
         runTest {
             every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } returns false
-            coEvery { projectDao.getProjectCount() } returns 1
+            coEvery { projectDao.getActiveProjectCount() } returns 1
 
             val result =
                 repository.createProject(
@@ -349,6 +350,21 @@ class CounterRepositoryDomainApiTest {
 
             assertEquals(ProjectCreationResult.LimitReached, result)
             coVerify(exactly = 0) { projectDao.insert(any()) }
+        }
+
+    @Test
+    fun `completed history does not consume the free active project slot`() =
+        runTest {
+            every { proManager.hasFeature(any()) } returns false
+            coEvery { projectDao.getActiveProjectCount() } returns 0
+            coEvery { projectDao.getProjectCount() } returns 5
+            coEvery { projectDao.insert(any()) } returns 11L
+
+            assertEquals(
+                ProjectCreationResult.Created(11L),
+                repository.createProject("Next project", canCreateAdditionalProjects = false),
+            )
+            coVerify(exactly = 0) { projectDao.getProjectCount() }
         }
 
     @Test

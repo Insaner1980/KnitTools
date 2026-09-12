@@ -60,6 +60,7 @@ import com.finnvek.knittools.repository.ProjectDeletionResult
 import com.finnvek.knittools.repository.ProjectDocumentMutationResult
 import com.finnvek.knittools.repository.ProjectDocumentRepository
 import com.finnvek.knittools.repository.ProjectNotesSaveResult
+import com.finnvek.knittools.repository.ProjectReactivationResult
 import com.finnvek.knittools.repository.ProjectYarnNoteRepository
 import com.finnvek.knittools.repository.RecoveryResolutionResult
 import com.finnvek.knittools.repository.ReminderMutationResult
@@ -94,6 +95,11 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
+private data class PendingProjectReactivation(
+    val projectId: Long,
+    val completedAt: Long?,
+)
+
 data class CounterUiState(
     val projectName: String = "",
     val counter: CounterState = CounterState(),
@@ -115,6 +121,8 @@ data class CounterUiState(
     val workSessionErrorCanRetry: Boolean = false,
     val projectId: Long? = null,
     val isCompleted: Boolean = false,
+    val completedAt: Long? = null,
+    val reactivationPromptCount: Int? = null,
     val hapticFeedback: Boolean = true,
     val keepScreenAwake: Boolean = false,
     val isPro: Boolean = false,
@@ -282,6 +290,19 @@ class CounterViewModel
         private var reminderCreationInFlight = false
         private var projectCounterCreationInFlight = false
         private var projectCompletionJob: Job? = null
+        private var pendingReactivation: PendingProjectReactivation?
+            get() =
+                savedStateHandle.get<Long>("pending_reactivation_project_id")?.let { projectId ->
+                    PendingProjectReactivation(projectId, savedStateHandle["pending_reactivation_completed_at"])
+                }
+            set(value) {
+                savedStateHandle["pending_reactivation_completed_at"] = value?.completedAt
+                savedStateHandle["pending_reactivation_project_id"] = value?.projectId
+            }
+        private var reactivationJob: Job? = null
+        private var reactivationRetryRequested = false
+        private val reactivationErrorsChannel = Channel<Unit>(Channel.BUFFERED)
+        val reactivationErrors = reactivationErrorsChannel.receiveAsFlow()
         private var projectDeletionJob: Job? = null
         private var pendingReminderDraft: PendingReminderDraft? = null
         private var pendingProjectYarnNoteId: Long? = null
@@ -340,6 +361,7 @@ class CounterViewModel
                             canUseYarnCards = proState.hasFeature(ProFeature.UNLIMITED_YARN),
                         )
                     }
+                    launchPendingReactivation(checkEligibility = true)
                 }
             }
         }
@@ -352,6 +374,10 @@ class CounterViewModel
                             projects = list,
                             projectsLoaded = true,
                         )
+                    }
+                    restorePendingReactivation()
+                    if (list.isEmpty()) {
+                        launchPendingReactivation(checkEligibility = true)
                     }
                     if (selectedProjectJob != null) return@collect
                     if (list.isEmpty()) {
@@ -371,11 +397,29 @@ class CounterViewModel
         }
 
         fun selectProject(project: CounterProject) {
+            if (project.id != (_uiState.value.projectId ?: pendingReactivation?.projectId)) dismissPendingReactivation()
             projectSelectionJob?.cancel()
             projectSelectionJob =
                 viewModelScope.launch {
                     openProject(project)
                 }
+        }
+
+        private suspend fun restorePendingReactivation() {
+            if (_uiState.value.projectId != null) return
+            val request = pendingReactivation ?: return
+            if (savedStateHandle.get<Long>(KEY_SELECTED_PROJECT_ID) != request.projectId) {
+                clearPendingReactivation()
+                return
+            }
+            val project = repository.getProject(request.projectId)
+            if (pendingReactivation != request || _uiState.value.projectId != null) return
+            if (project == null || !project.isCompleted || project.completedAt != request.completedAt) {
+                clearPendingReactivation()
+                return
+            }
+            openProject(project)
+            launchPendingReactivation(checkEligibility = true)
         }
 
         private fun observeSelectedProject(projectId: Long) {
@@ -411,6 +455,14 @@ class CounterViewModel
                 return previousObservedProject
             }
 
+            pendingReactivation?.let { pending ->
+                if (pending.projectId != project.id ||
+                    !project.isCompleted ||
+                    pending.completedAt != project.completedAt
+                ) {
+                    dismissPendingReactivation()
+                }
+            }
             val previousState = _uiState.value
             val countChanged = previousState.counter.count != project.count
             _uiState.update { state ->
@@ -554,6 +606,7 @@ class CounterViewModel
         }
 
         private suspend fun openProject(project: CounterProject) {
+            if (pendingReactivation?.projectId != project.id) dismissPendingReactivation()
             pruneHistory(project.id)
             linkedYarnIdsCache = project.yarnCardIds
 
@@ -673,6 +726,7 @@ class CounterViewModel
         }
 
         private fun clearSelectedProject() {
+            dismissPendingReactivation()
             savedStateHandle.remove<Long>(KEY_SELECTED_PROJECT_ID)
         }
 
@@ -1116,11 +1170,89 @@ class CounterViewModel
                 }
         }
 
-        fun reactivateProject() {
+        fun reactivateProject(
+            projectId: Long? = _uiState.value.projectId,
+            expectedCompletedAt: Long? = _uiState.value.completedAt,
+        ) {
             val state = _uiState.value
-            val projectId = state.projectId ?: return
-            if (!state.isCompleted) return
-            viewModelScope.launch { repository.reactivateProject(projectId) }
+            if (projectId == null || projectId != state.projectId || expectedCompletedAt != state.completedAt) return
+            if (!state.isCompleted || reactivationJob?.isActive == true || pendingReactivation != null) return
+            pendingReactivation = PendingProjectReactivation(projectId, expectedCompletedAt)
+            retryPendingReactivation()
+        }
+
+        fun dismissPendingReactivation() {
+            clearPendingReactivation()
+            reactivationJob?.cancel()
+        }
+
+        fun retryPendingReactivation() {
+            launchPendingReactivation(checkEligibility = false)
+        }
+
+        private fun launchPendingReactivation(checkEligibility: Boolean) {
+            val request = pendingReactivation ?: return
+            val state = _uiState.value
+            if (state.projectId == null) return
+            if (state.projectId != request.projectId ||
+                !state.isCompleted ||
+                state.completedAt != request.completedAt
+            ) {
+                dismissPendingReactivation()
+                return
+            }
+            if (reactivationJob?.isActive == true) {
+                reactivationRetryRequested = true
+                return
+            }
+            reactivationJob =
+                viewModelScope.launch(start = kotlinx.coroutines.CoroutineStart.LAZY) {
+                    var limited = false
+                    try {
+                        if (checkEligibility) {
+                            val activeCount = repository.getActiveProjectCount()
+                            if (activeCount >= 1 && !proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS)) {
+                                _uiState.update { it.copy(reactivationPromptCount = activeCount) }
+                                return@launch
+                            }
+                        }
+                        limited = performPendingReactivation(request)
+                    } finally {
+                        reactivationJob = null
+                        val reconsider = reactivationRetryRequested || (limited && !checkEligibility)
+                        reactivationRetryRequested = false
+                        if (pendingReactivation == request && reconsider) {
+                            launchPendingReactivation(checkEligibility = true)
+                        }
+                    }
+                }
+            reactivationJob?.start()
+        }
+
+        private suspend fun performPendingReactivation(request: PendingProjectReactivation): Boolean {
+            val result = repository.reactivateProject(request.projectId, request.completedAt)
+            if (pendingReactivation != request) return false
+            when (result) {
+                ProjectReactivationResult.LimitReached -> {
+                    val activeCount = repository.getActiveProjectCount()
+                    _uiState.update { it.copy(reactivationPromptCount = activeCount) }
+                    return true
+                }
+                ProjectReactivationResult.Reactivated,
+                ProjectReactivationResult.ProjectUnavailable,
+                -> clearPendingReactivation()
+                ProjectReactivationResult.PersistenceFailure -> {
+                    clearPendingReactivation()
+                    reactivationErrorsChannel.send(Unit)
+                }
+            }
+            return false
+        }
+
+        private fun clearPendingReactivation() {
+            pendingReactivation = null
+            reactivationRetryRequested = false
+            _uiState.update { it.copy(reactivationPromptCount = null) }
         }
 
         fun cancelProjectDeletionSessionChoice() {
@@ -2223,6 +2355,7 @@ class CounterViewModel
             id: Long,
             onLoaded: (Boolean) -> Unit = {},
         ) {
+            if (id != (_uiState.value.projectId ?: pendingReactivation?.projectId)) dismissPendingReactivation()
             projectSelectionJob?.cancel()
             projectSelectionJob =
                 viewModelScope.launch {

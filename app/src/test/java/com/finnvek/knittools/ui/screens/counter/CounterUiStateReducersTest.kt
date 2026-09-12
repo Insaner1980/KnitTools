@@ -26,6 +26,13 @@ class CounterUiStateReducersTest {
     }
 
     @Test
+    fun `completed project remains open without active projects and leaves after deletion`() {
+        val state = CounterUiState(projectsLoaded = true, projectId = 2L, isCompleted = true)
+        assertFalse(state.shouldLeaveCounter)
+        assertTrue(state.copy(projectId = null).shouldLeaveCounter)
+    }
+
+    @Test
     fun `counter route stays when a project exists`() {
         val state =
             CounterUiState(

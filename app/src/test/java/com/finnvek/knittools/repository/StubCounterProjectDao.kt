@@ -239,7 +239,7 @@ open class StubCounterProjectDao(
 
     override fun getCompletedProjectsByCreated(): Flow<List<CounterProjectEntity>> = flowOf(emptyList())
 
-    override suspend fun getActiveProjectCount(): Int = projects.size
+    override suspend fun getActiveProjectCount(): Int = projects.count { !it.isCompleted }
 
     override suspend fun updateTargetRows(
         id: Long,

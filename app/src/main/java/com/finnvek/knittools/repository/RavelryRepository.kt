@@ -7,6 +7,7 @@ import com.finnvek.knittools.data.remote.RavelryApiService
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.SavedPatternSource
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -44,7 +45,9 @@ class RavelryRepository
 
         suspend fun deleteSavedPatterns(ids: List<Long>) = savedPatternRepository.deleteByIds(ids)
 
-        suspend fun getProjectCount(): Int = counterRepository.getProjectCount()
+        suspend fun getActiveProjectCount(): Int = counterRepository.getActiveProjectCount()
+
+        fun observeActiveProjectCount(): Flow<Int> = counterRepository.getActiveProjects().map { it.size }
 
         suspend fun createProjectFromPattern(
             detail: PatternDetail,

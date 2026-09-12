@@ -22,7 +22,6 @@ import com.finnvek.knittools.repository.ActiveSessionCompletionChoice
 import com.finnvek.knittools.repository.CounterRepository
 import com.finnvek.knittools.repository.ProgressPhotoRepository
 import com.finnvek.knittools.repository.ProjectCompletionResult
-import com.finnvek.knittools.repository.ProjectCreationResult
 import com.finnvek.knittools.repository.ProjectDeletionResult
 import com.finnvek.knittools.repository.ProjectDocumentRepository
 import com.finnvek.knittools.repository.ProjectFolderMutationResult
@@ -47,7 +46,6 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.io.Serializable
 import javax.inject.Inject
 
 data class ContinueKnittingProject(
@@ -60,18 +58,6 @@ data class ContinueKnittingProject(
     val mainCounterLabelType: MainCounterLabelType,
     val mainCounterCustomLabel: String?,
 )
-
-private data class PendingProjectCreation(
-    val name: String,
-    val craftType: CraftType,
-    val mainCounterLabelType: MainCounterLabelType,
-    val mainCounterCustomLabel: String?,
-    val targetFolderId: Long?,
-) : Serializable {
-    private companion object {
-        const val serialVersionUID = 1L
-    }
-}
 
 data class PendingProjectListSessionAction(
     val session: ActiveWorkSession,
@@ -105,9 +91,6 @@ class ProjectListViewModel
 
         private val folderEventChannel = Channel<ProjectFolderMutationResult>(Channel.BUFFERED)
         val folderEvents = folderEventChannel.receiveAsFlow()
-
-        private val _projectCreationError = MutableStateFlow<ProjectCreationResult?>(null)
-        val projectCreationError: StateFlow<ProjectCreationResult?> = _projectCreationError.asStateFlow()
 
         // === Preferences ===
 
@@ -210,18 +193,18 @@ class ProjectListViewModel
         private val navigateToPhotoGalleryChannel = Channel<Long>(Channel.BUFFERED)
         val navigateToPhotoGallery = navigateToPhotoGalleryChannel.receiveAsFlow()
 
-        private val projectCreationPromptChannel = Channel<Int>(Channel.BUFFERED)
-        val projectCreationPrompts = projectCreationPromptChannel.receiveAsFlow()
-
-        private val showCreateProjectDialogChannel = Channel<Unit>(Channel.BUFFERED)
-        val showCreateProjectDialog = showCreateProjectDialogChannel.receiveAsFlow()
-
-        private var pendingProjectCreation: PendingProjectCreation?
-            get() = savedStateHandle[PENDING_PROJECT_CREATION_KEY]
-            set(value) {
-                savedStateHandle[PENDING_PROJECT_CREATION_KEY] = value
-            }
-        private var projectCreationInFlight = false
+        private val creationActions =
+            ProjectCreationActions(
+                repository,
+                proManager,
+                savedStateHandle,
+                viewModelScope,
+                onCreated = { navigateToProjectChannel.send(it) },
+            )
+        val projectCreationError = creationActions.projectCreationError
+        val projectCreationPromptCount = creationActions.projectCreationPromptCount
+        val projectCreationPrompts = creationActions.projectCreationPrompts
+        val showCreateProjectDialog = creationActions.showCreateProjectDialog
 
         init {
             retryFolderLoading()
@@ -240,10 +223,6 @@ class ProjectListViewModel
                         updateHasNotes(projects)
                     }
             }
-        }
-
-        private companion object {
-            const val PENDING_PROJECT_CREATION_KEY = "pending_project_creation"
         }
 
         // === Preferences-toiminnot ===
@@ -421,17 +400,9 @@ class ProjectListViewModel
             _projectHasNotes.value = projects.filter { it.notesCreated }.map { it.id }.toSet()
         }
 
-        fun requestProjectCreation() {
-            _projectCreationError.value = null
-            viewModelScope.launch {
-                val count = repository.getProjectCount()
-                if (!isPro && count >= 1) {
-                    projectCreationPromptChannel.send(count)
-                } else {
-                    showCreateProjectDialogChannel.send(Unit)
-                }
-            }
-        }
+        fun requestProjectCreation() = creationActions.requestProjectCreation()
+
+        fun dismissPendingProjectCreation() = creationActions.dismissPendingProjectCreation()
 
         fun createProject() {
             viewModelScope.launch {
@@ -444,8 +415,7 @@ class ProjectListViewModel
                         mainCounterCustomLabel = null,
                         targetFolderId = (selectedFolderFilter.value as? ProjectFolderFilter.Folder)?.folderId,
                     )
-                pendingProjectCreation = request
-                createProjectInternal(request)
+                creationActions.create(request)
             }
         }
 
@@ -464,50 +434,10 @@ class ProjectListViewModel
                     mainCounterCustomLabel = mainCounterCustomLabel,
                     targetFolderId = targetFolderId,
                 )
-            pendingProjectCreation = request
-            viewModelScope.launch {
-                createProjectInternal(request)
-            }
+            creationActions.create(request)
         }
 
-        fun retryPendingProjectCreation() {
-            val request = pendingProjectCreation ?: return
-            viewModelScope.launch { createProjectInternal(request) }
-        }
-
-        private suspend fun createProjectInternal(request: PendingProjectCreation) {
-            if (projectCreationInFlight) return
-            projectCreationInFlight = true
-            try {
-                _projectCreationError.value = null
-                when (
-                    val result =
-                        repository.createProject(
-                            name = request.name,
-                            craftType = request.craftType,
-                            mainCounterLabelType = request.mainCounterLabelType,
-                            mainCounterCustomLabel = request.mainCounterCustomLabel,
-                            canCreateAdditionalProjects = isPro,
-                            targetFolderId = request.targetFolderId,
-                        )
-                ) {
-                    is ProjectCreationResult.Created -> {
-                        pendingProjectCreation = null
-                        navigateToProjectChannel.send(result.projectId)
-                    }
-                    ProjectCreationResult.LimitReached -> {
-                        projectCreationPromptChannel.send(repository.getProjectCount())
-                    }
-                    ProjectCreationResult.InvalidProject -> pendingProjectCreation = null
-                    ProjectCreationResult.FolderMissing -> {
-                        pendingProjectCreation = null
-                        _projectCreationError.value = result
-                    }
-                }
-            } finally {
-                projectCreationInFlight = false
-            }
-        }
+        fun retryPendingProjectCreation() = creationActions.retryPendingProjectCreation()
 
         @Suppress("kotlin:S1871") // Molemmat aktiivisen session tarkistuspolut avaavat saman jatkotoiminnon.
         fun archiveProject(id: Long) {
@@ -639,7 +569,8 @@ class ProjectListViewModel
 
         fun reactivateProject(id: Long) {
             viewModelScope.launch {
-                repository.reactivateProject(id)
+                val project = repository.getProject(id) ?: return@launch
+                repository.reactivateProject(id, project.completedAt, isPro)
             }
         }
 

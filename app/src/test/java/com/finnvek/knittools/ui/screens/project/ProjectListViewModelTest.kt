@@ -2,6 +2,7 @@ package com.finnvek.knittools.ui.screens.project
 
 import android.content.Context
 import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModelStore
 import com.finnvek.knittools.data.datastore.AppPreferences
 import com.finnvek.knittools.data.datastore.PreferencesManager
 import com.finnvek.knittools.domain.model.CounterProject
@@ -22,6 +23,7 @@ import com.finnvek.knittools.repository.ProjectDocumentRepository
 import com.finnvek.knittools.repository.ProjectFolderRepository
 import com.finnvek.knittools.repository.SavedPatternRepository
 import com.finnvek.knittools.repository.YarnCardRepository
+import com.finnvek.knittools.serializedCopy
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -67,6 +69,11 @@ class ProjectListViewModelTest {
         Dispatchers.setMain(testDispatcher)
         repository = mockk(relaxed = true)
         proManager = mockk()
+        every { proManager.proState } returns
+            MutableStateFlow(
+                com.finnvek.knittools.pro
+                    .ProState(),
+            )
         yarnCardRepository = mockk(relaxed = true)
         photoRepository = mockk(relaxed = true)
         savedPatternRepository = mockk(relaxed = true)
@@ -101,10 +108,30 @@ class ProjectListViewModelTest {
         )
 
     @Test
+    fun `completed history permits creation precheck while default numbering still uses total count`() =
+        runTest {
+            every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } returns false
+            coEvery { repository.getActiveProjectCount() } returns 0
+            coEvery { repository.getProjectCount() } returns 5
+            coEvery { repository.createProject(any(), any(), any(), any(), any(), any(), any()) } returns
+                ProjectCreationResult.Created(7L)
+            val vm = createViewModel()
+            var dialogs = 0
+            backgroundScope.launch(
+                UnconfinedTestDispatcher(testScheduler),
+            ) { vm.showCreateProjectDialog.collect { dialogs++ } }
+            vm.requestProjectCreation()
+            assertEquals(1, dialogs)
+            vm.createProject()
+            verify { context.getString(com.finnvek.knittools.R.string.new_project_name_format, 6) }
+            coVerify(exactly = 1) { repository.getProjectCount() }
+        }
+
+    @Test
     fun `free user cannot create project when one exists`() =
         runTest {
             every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } returns false
-            coEvery { repository.getProjectCount() } returns 1
+            coEvery { repository.getActiveProjectCount() } returns 1
 
             val vm = createViewModel()
             var upgradeEvents = 0
@@ -123,7 +150,7 @@ class ProjectListViewModelTest {
     fun `pro user can open project creation when one exists`() =
         runTest {
             every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } returns true
-            coEvery { repository.getProjectCount() } returns 1
+            coEvery { repository.getActiveProjectCount() } returns 1
 
             val vm = createViewModel()
             var dialogEvents = 0
@@ -139,7 +166,7 @@ class ProjectListViewModelTest {
     fun `free user can open first project creation`() =
         runTest {
             every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } returns false
-            coEvery { repository.getProjectCount() } returns 0
+            coEvery { repository.getActiveProjectCount() } returns 0
 
             val vm = createViewModel()
             var dialogEvents = 0
@@ -177,7 +204,7 @@ class ProjectListViewModelTest {
     fun `pending project creation retries after prompt and navigates when created`() =
         runTest {
             every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } returns false
-            coEvery { repository.getProjectCount() } returns 1
+            coEvery { repository.getActiveProjectCount() } returns 1
             coEvery { repository.createProject(any(), any(), any(), any(), false, null) } returnsMany
                 listOf(
                     ProjectCreationResult.LimitReached,
@@ -219,22 +246,26 @@ class ProjectListViewModelTest {
     fun `pending project creation survives view model recreation`() =
         runTest {
             val savedStateHandle = SavedStateHandle()
-            every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } returnsMany listOf(false, true)
-            coEvery { repository.getProjectCount() } returns 1
+            every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } returns false
+            coEvery { repository.getActiveProjectCount() } returns 1
             coEvery { repository.createProject(any(), any(), any(), any(), any(), null) } returnsMany
                 listOf(
                     ProjectCreationResult.LimitReached,
                     ProjectCreationResult.Created(projectId = 42L),
                 )
 
-            createViewModel(savedStateHandle).createProject(
+            val first = createViewModel(savedStateHandle)
+            first.createProject(
                 name = "Sukat",
                 craftType = com.finnvek.knittools.domain.model.CraftType.KNITTING,
                 mainCounterLabelType = com.finnvek.knittools.domain.model.MainCounterLabelType.ROWS,
                 mainCounterCustomLabel = null,
             )
 
-            val recreated = createViewModel(savedStateHandle)
+            val restored = savedStateHandle.serializedCopy()
+            ViewModelStore().apply { put("projects", first) }.clear()
+            every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } returns true
+            val recreated = createViewModel(restored)
             recreated.retryPendingProjectCreation()
 
             // CPD-OFF: Uudelleenluonnin tulokset todennetaan skenaarion yhteydessa.
@@ -596,9 +627,14 @@ class ProjectListViewModelTest {
             every { proManager.hasFeature(any()) } returns true
 
             val vm = createViewModel()
+            coEvery { repository.getProject(7L) } returns
+                CounterProject(id = 7L, name = "Completed", isCompleted = true, completedAt = 10L)
+            coEvery { repository.reactivateProject(7L, 10L, any()) } returns
+                com.finnvek.knittools.repository.ProjectReactivationResult.Reactivated
+            every { proManager.hasFeature(any()) } returns false
             vm.reactivateProject(7L)
 
-            coVerify { repository.reactivateProject(7L) }
+            coVerify { repository.reactivateProject(7L, 10L, false) }
         }
 
     @Test

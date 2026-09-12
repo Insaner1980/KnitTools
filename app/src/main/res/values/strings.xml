@@ -1079,14 +1079,17 @@
     <string name="pro_prompt_not_now">Not now</string>
     <string name="pro_prompt_see_pro">See Pro</string>
     <string name="pro_prompt_trial_body">Start your free 14-day Pro trial. No payment method is required. Anything you create stays available after the trial.</string>
-    <string name="pro_prompt_projects_title">Create another project with Pro</string>
+    <string name="pro_prompt_reactivation_title">Reactivate this project with Pro</string>
+    <string name="pro_prompt_reactivation_trial_body">Start your free 14-day Pro trial to reactivate this project and work on multiple projects at a time. You can keep and view completed projects for free. Your projects stay available after the trial.</string>
+    <string name="pro_prompt_reactivation_body">Pro lets you reactivate this project and work on multiple projects at a time. You can keep and view completed projects for free. Your existing projects stay available.</string>
+    <string name="pro_prompt_projects_title">Create another active project with Pro</string>
     <plurals name="pro_prompt_projects_trial_body">
-        <item quantity="one">You already have %1$d project. Completed projects also count. Start your free 14-day Pro trial to create another. All your projects remain available after the trial.</item>
-        <item quantity="other">You already have %1$d projects. Completed projects also count. Start your free 14-day Pro trial to create another. All your projects remain available after the trial.</item>
+        <item quantity="one">You have %1$d active project. Start your free 14-day Pro trial to create another and work on multiple projects at a time. Completed projects don’t count toward the free limit. Your projects stay available after the trial.</item>
+        <item quantity="other">You have %1$d active projects. Start your free 14-day Pro trial to create another and work on multiple projects at a time. Completed projects don’t count toward the free limit. Your projects stay available after the trial.</item>
     </plurals>
     <plurals name="pro_prompt_projects_body">
-        <item quantity="one">Creating a new project requires Pro because you already have %1$d project. Completed projects also count. Your existing project remains available.</item>
-        <item quantity="other">Creating a new project requires Pro because you already have %1$d projects. Completed projects also count. All your existing projects remain available.</item>
+        <item quantity="one">You have %1$d active project. Pro lets you create another and work on multiple projects at a time. Completed projects don’t count toward the free limit. Your existing projects stay available.</item>
+        <item quantity="other">You have %1$d active projects. Pro lets you create another and work on multiple projects at a time. Completed projects don’t count toward the free limit. Your existing projects stay available.</item>
     </plurals>
     <string name="pro_prompt_photos_title">Add progress photos with Pro</string>
     <string name="pro_prompt_photos_body">Creating a new progress photo requires Pro. Your existing photos stay available.</string>
@@ -1122,7 +1125,7 @@
     <string name="pro_page_intro">Make more room for every project and keep your workflow together.</string>
     <string name="pro_page_trust">Everything you create remains available, even if your trial ends.</string>
     <string name="pro_group_projects_title">Projects and materials</string>
-    <string name="pro_group_projects_body">Create additional projects, first project notes, progress photos and yarn cards.</string>
+    <string name="pro_group_projects_body">Work on multiple active projects and create first project notes, progress photos and yarn cards.</string>
     <string name="pro_group_workflow_title">Counting and workflow</string>
     <string name="pro_group_workflow_body">Use the compact repeat counter; extra, repeating, shaping and section counters; row reminders; pattern photos as PDF; and the home-screen widget.</string>
     <string name="pro_group_insights_title">Insights</string>

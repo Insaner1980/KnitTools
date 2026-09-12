@@ -193,8 +193,8 @@ class CounterRepositoryActiveSessionTest {
     @Test
     fun `reopening updates only a completed project`() =
         runTest {
-            repository.reactivateProject(7L)
-            repository.reactivateProject(9L)
+            repository.reactivateProject(7L, repository.getProject(7L)?.completedAt)
+            repository.reactivateProject(9L, repository.getProject(9L)?.completedAt)
 
             coVerify(exactly = 0) { projectDao.reactivateProject(7L, any()) }
             coVerify(exactly = 1) { projectDao.reactivateProject(9L, any()) }

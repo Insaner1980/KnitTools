@@ -53,7 +53,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -105,11 +104,6 @@ import com.finnvek.knittools.ui.components.mainCounterTargetText
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
 import com.finnvek.knittools.ui.theme.ProjectListDimens
 import kotlinx.coroutines.launch
-
-private enum class PendingProjectProAction {
-    OpenCreation,
-    RetryCreation,
-}
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -164,8 +158,7 @@ fun ProjectListScreen(
     var creationFolderId by rememberSaveable { mutableStateOf<Long?>(null) }
     var creationFolderName by rememberSaveable { mutableStateOf<String?>(null) }
     var showCreateProjectDialog by rememberSaveable { mutableStateOf(false) }
-    var pendingProAction by rememberSaveable { mutableStateOf<PendingProjectProAction?>(null) }
-    var projectPromptCount by rememberSaveable { mutableIntStateOf(0) }
+    val projectPromptCount by viewModel.projectCreationPromptCount.collectAsStateWithLifecycle()
     LaunchedEffect(restoreSelectorFocus, showMoveSheet, showFoldersSheet) {
         if (restoreSelectorFocus && !showMoveSheet && !showFoldersSheet) {
             withFrameNanos { }
@@ -217,18 +210,7 @@ fun ProjectListScreen(
     // Luonnin jälkeen navigoi uuteen projektiin
     CollectWithLifecycleEffect({ viewModel.navigateToProject }) { projectId ->
         showCreateProjectDialog = false
-        pendingProAction = null
         onProjectClick(projectId)
-    }
-
-    CollectWithLifecycleEffect({ viewModel.projectCreationPrompts }) { projectCount ->
-        projectPromptCount = projectCount
-        pendingProAction =
-            if (showCreateProjectDialog) {
-                PendingProjectProAction.RetryCreation
-            } else {
-                PendingProjectProAction.OpenCreation
-            }
     }
 
     CollectWithLifecycleEffect({ viewModel.navigateToNotesEditor }) { projectId ->
@@ -243,21 +225,15 @@ fun ProjectListScreen(
         showCreateProjectDialog = true
     }
 
-    pendingProAction?.let { action ->
+    projectPromptCount?.let { count ->
         ProPromptSheet(
             request =
                 ProPromptRequest(
                     source = ProPromptSource.Projects,
-                    existingProjectCount = projectPromptCount,
+                    existingProjectCount = count,
                 ),
-            onDismiss = { pendingProAction = null },
-            onTrialStarted = {
-                pendingProAction = null
-                when (action) {
-                    PendingProjectProAction.OpenCreation -> showCreateProjectDialog = true
-                    PendingProjectProAction.RetryCreation -> viewModel.retryPendingProjectCreation()
-                }
-            },
+            onDismiss = viewModel::dismissPendingProjectCreation,
+            onTrialStarted = viewModel::retryPendingProjectCreation,
             onSeePro = onUpgradeToPro,
         )
     }

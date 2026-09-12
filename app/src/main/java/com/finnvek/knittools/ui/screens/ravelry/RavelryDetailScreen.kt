@@ -70,7 +70,7 @@ fun RavelryDetailScreen(
     val savedMessage = stringResource(R.string.pattern_saved_to_library)
     val saveFailedMessage = stringResource(R.string.generic_error_unknown)
     val openFailedMessage = stringResource(R.string.pattern_open_failed)
-    var projectPromptCount by rememberSaveable { mutableStateOf<Int?>(null) }
+    val projectPromptCount by viewModel.projectCreationPromptCount.collectAsStateWithLifecycle()
     LaunchedEffect(viewModel, patternId) {
         viewModel.refreshAuthStatus()
         viewModel.loadDetail(patternId)
@@ -84,10 +84,6 @@ fun RavelryDetailScreen(
         onStartProject(projectId)
     }
 
-    CollectWithLifecycleEffect({ viewModel.projectCreationPrompts }) { count ->
-        projectPromptCount = count
-    }
-
     projectPromptCount?.let { count ->
         ProPromptSheet(
             request =
@@ -95,10 +91,9 @@ fun RavelryDetailScreen(
                     source = ProPromptSource.Projects,
                     existingProjectCount = count,
                 ),
-            onDismiss = { projectPromptCount = null },
+            onDismiss = viewModel.projectCreationActions::dismissPendingProjectCreation,
             onTrialStarted = {
-                projectPromptCount = null
-                viewModel.createProjectFromPattern()
+                viewModel.createProjectFromPattern(retryPending = true)
             },
             onSeePro = onUpgradeToPro,
         )

@@ -9,44 +9,41 @@ import javax.xml.parsers.DocumentBuilderFactory
 
 class ProLocalizationSourceTest {
     @Test
-    fun `project limit clarification follows the first sentence once in every plural item`() {
-        val clarifications =
-            mapOf(
-                "values" to "Completed projects also count.",
-                "values-fi" to "Myös valmistuneet projektit lasketaan mukaan.",
-                "values-sv" to "Färdiga projekt räknas också med.",
-                "values-de" to "Abgeschlossene Projekte zählen ebenfalls mit.",
-                "values-fr" to "Les projets terminés comptent aussi.",
-                "values-es" to "Los proyectos terminados también cuentan.",
-                "values-pt" to "Os projetos concluídos também contam.",
-                "values-it" to "Anche i progetti completati vengono conteggiati.",
-                "values-nb" to "Fullførte prosjekter teller også med.",
-                "values-da" to "Afsluttede projekter tæller også med.",
-                "values-nl" to "Voltooide projecten tellen ook mee.",
-            )
-        assertEquals(allResourceDirectories.toSet(), clarifications.keys)
-        clarifications.forEach { (directory, clarification) ->
-            val document =
-                DocumentBuilderFactory
-                    .newInstance()
-                    .newDocumentBuilder()
-                    .parse(ProjectSourceFiles.file("app/src/main/res/$directory/strings.xml").toFile())
-            listOf("pro_prompt_projects_trial_body", "pro_prompt_projects_body").forEach { key ->
-                val plurals = document.getElementsByTagName("plurals")
-                val resource =
-                    (0 until plurals.length)
-                        .map { plurals.item(it) as Element }
-                        .single { it.getAttribute("name") == key }
-                val items = resource.getElementsByTagName("item")
-                repeat(items.length) { index ->
-                    val item = items.item(index) as Element
-                    val text = item.textContent
-                    val context = "$directory/$key/${item.getAttribute("quantity")}"
-                    assertTrue(context, text.substringAfter(". ").startsWith("$clarification "))
-                    assertEquals(context, 1, Regex(Regex.escape(clarification)).findAll(text).count())
-                }
+    fun `active project policy resources cover configured locales quantities and distinct actions`() {
+        val configuration =
+            DocumentBuilderFactory
+                .newInstance()
+                .newDocumentBuilder()
+                .parse(ProjectSourceFiles.file("app/src/main/res/xml/locales_config.xml").toFile())
+        val locales = configuration.getElementsByTagName("locale")
+        val directories =
+            (0 until locales.length).map {
+                val language = (locales.item(it) as Element).getAttribute("android:name")
+                if (language == "en") "values" else "values-$language"
             }
-        }
+        assertEquals(allResourceDirectories.toSet(), directories.toSet())
+        val activeWords =
+            mapOf(
+                "values" to "active",
+                "values-fi" to "aktiivi",
+                "values-sv" to "aktiv",
+                "values-de" to "aktiv",
+                "values-fr" to "actif",
+                "values-es" to "activo",
+                "values-pt" to "ativo",
+                "values-it" to "attiv",
+                "values-nb" to "aktiv",
+                "values-da" to "aktiv",
+                "values-nl" to "actie",
+            )
+        directories.forEach { directory -> assertActiveProjectCopy(directory, activeWords.getValue(directory)) }
+        val prompt = ProjectSourceFiles.read("app/src/main/java/com/finnvek/knittools/ui/components/ProPromptSheet.kt")
+        assertTrue(prompt.contains("ProPromptSource.ProjectReactivation -> R.string.pro_prompt_reactivation_title"))
+        assertTrue(prompt.contains("R.string.pro_prompt_reactivation_trial_body"))
+        assertTrue(prompt.contains("R.string.pro_prompt_reactivation_body"))
+        assertFalse(
+            ProjectSourceFiles.read("app/src/main/res/values/strings.xml").contains("Completed projects also count."),
+        )
     }
 
     @Test
@@ -96,6 +93,59 @@ class ProLocalizationSourceTest {
                 )
             }
         }
+    }
+
+    private fun assertActiveProjectCopy(
+        directory: String,
+        activeWord: String,
+    ) {
+        val document =
+            DocumentBuilderFactory
+                .newInstance()
+                .newDocumentBuilder()
+                .parse(ProjectSourceFiles.file("app/src/main/res/$directory/strings.xml").toFile())
+        val resources = document.documentElement.childNodes
+        val elements =
+            (0 until resources.length)
+                .mapNotNull { resources.item(it) as? Element }
+                .associateBy { it.getAttribute("name") }
+        val expectedQuantities =
+            if (directory in setOf("values-fr", "values-es", "values-it", "values-pt")) {
+                setOf("one", "many", "other")
+            } else {
+                setOf("one", "other")
+            }
+        for (key in listOf("pro_prompt_projects_trial_body", "pro_prompt_projects_body")) {
+            val items = elements.getValue(key).getElementsByTagName("item")
+            val quantities =
+                (0 until items.length)
+                    .map {
+                        (
+                            items.item(
+                                it,
+                            ) as Element
+                        ).getAttribute("quantity")
+                    }.toSet()
+            assertEquals(directory, expectedQuantities, quantities)
+            repeat(items.length) { index ->
+                val text = items.item(index).textContent
+                assertEquals(
+                    "$directory/$key",
+                    listOf("%1\$d"),
+                    placeholderRegex.findAll(text).map { it.value }.toList(),
+                )
+                assertTrue("$directory/$key", text.contains(activeWord))
+            }
+        }
+        assertTrue(
+            directory,
+            elements.getValue("pro_group_projects_body").textContent.contains(activeWord),
+        )
+        assertFalse(
+            directory,
+            elements.getValue("pro_prompt_reactivation_title").textContent ==
+                elements.getValue("pro_prompt_projects_title").textContent,
+        )
     }
 
     private fun readResources(directory: String): Map<String, ResourceShape> {
@@ -151,6 +201,9 @@ class ProLocalizationSourceTest {
                 "pro_prompt_see_pro",
                 "pro_prompt_trial_body",
                 "pro_prompt_projects_title",
+                "pro_prompt_reactivation_title",
+                "pro_prompt_reactivation_trial_body",
+                "pro_prompt_reactivation_body",
                 "pro_prompt_projects_trial_body",
                 "pro_prompt_projects_body",
                 "pro_prompt_photos_title",

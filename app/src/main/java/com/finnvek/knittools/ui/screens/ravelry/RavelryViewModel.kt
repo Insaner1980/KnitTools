@@ -14,7 +14,6 @@ import com.finnvek.knittools.data.remote.TransientRavelryException
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
-import com.finnvek.knittools.repository.ProjectCreationResult
 import com.finnvek.knittools.repository.RavelryRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
@@ -133,11 +132,11 @@ class RavelryViewModel
         private val _isPatternSaved = MutableStateFlow(false)
         val isPatternSaved: StateFlow<Boolean> = _isPatternSaved.asStateFlow()
 
-        private val navigateToProjectChannel = Channel<Long>(Channel.BUFFERED)
-        val navigateToProject = navigateToProjectChannel.receiveAsFlow()
-
-        private val projectCreationPromptChannel = Channel<Int>(Channel.BUFFERED)
-        val projectCreationPrompts = projectCreationPromptChannel.receiveAsFlow()
+        internal val projectCreationActions =
+            RavelryProjectCreationActions(repository, proManager, savedStateHandle, viewModelScope)
+        val navigateToProject = projectCreationActions.navigateToProject
+        val projectCreationPromptCount = projectCreationActions.projectCreationPromptCount
+        val projectCreationPrompts = projectCreationActions.projectCreationPrompts
 
         private val patternSaveResultChannel = Channel<PatternSaveResult>(Channel.BUFFERED)
         val patternSaveResults = patternSaveResultChannel.receiveAsFlow()
@@ -158,7 +157,6 @@ class RavelryViewModel
 
         private var currentPage = 1
         private var totalPages = 1
-        private var isProjectCreationInFlight = false
         private var isSaveInFlight = false
         private var isImportSaveInFlight = false
         private var importRequestId = 0L
@@ -472,30 +470,13 @@ class RavelryViewModel
             }
         }
 
-        fun createProjectFromPattern() {
-            val detail = _patternDetail.value ?: return
-            if (isProjectCreationInFlight) return
-            isProjectCreationInFlight = true
-            viewModelScope.launch {
-                try {
-                    when (
-                        val result = repository.createProjectFromPattern(detail, isPro)
-                    ) {
-                        is ProjectCreationResult.Created -> navigateToProjectChannel.send(result.projectId)
-                        ProjectCreationResult.LimitReached -> {
-                            projectCreationPromptChannel.send(repository.getProjectCount())
-                        }
-                        ProjectCreationResult.InvalidProject,
-                        ProjectCreationResult.FolderMissing,
-                        -> Unit
-                    }
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (_: Exception) {
-                    // Tietonäkymä jää käytettäväksi myöhempää uutta yritystä varten.
-                } finally {
-                    isProjectCreationInFlight = false
-                }
+        fun createProjectFromPattern(retryPending: Boolean = false) {
+            if (retryPending) {
+                projectCreationActions.retry()
+            } else {
+                _patternDetail.value?.let(
+                    projectCreationActions::create,
+                )
             }
         }
 

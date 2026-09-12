@@ -732,9 +732,18 @@
     <string name="pro_prompt_not_now">Inte nu</string>
     <string name="pro_prompt_see_pro">Se Pro</string>
     <string name="pro_prompt_trial_body">Starta din kostnadsfria 14-dagars provperiod med Pro. Ingen betalningsmetod krävs. Allt du skapar finns kvar efter provperioden.</string>
-    <string name="pro_prompt_projects_title">Skapa ett till projekt med Pro</string>
-    <plurals name="pro_prompt_projects_trial_body"><item quantity="one">Du har redan %1$d projekt. Färdiga projekt räknas också med. Starta din kostnadsfria 14-dagars provperiod med Pro för att skapa ett till. Alla dina projekt finns kvar efter provperioden.</item><item quantity="other">Du har redan %1$d projekt. Färdiga projekt räknas också med. Starta din kostnadsfria 14-dagars provperiod med Pro för att skapa ett till. Alla dina projekt finns kvar efter provperioden.</item></plurals>
-    <plurals name="pro_prompt_projects_body"><item quantity="one">Ett nytt projekt kräver Pro eftersom du redan har %1$d projekt. Färdiga projekt räknas också med. Ditt befintliga projekt finns kvar.</item><item quantity="other">Ett nytt projekt kräver Pro eftersom du redan har %1$d projekt. Färdiga projekt räknas också med. Alla dina befintliga projekt finns kvar.</item></plurals>
+    <string name="pro_prompt_reactivation_title">Återaktivera projektet med Pro</string>
+    <string name="pro_prompt_reactivation_trial_body">Starta din kostnadsfria 14-dagars provperiod med Pro för att återaktivera projektet och arbeta med flera projekt samtidigt. Du kan behålla och visa färdiga projekt gratis. Dina projekt finns kvar efter provperioden.</string>
+    <string name="pro_prompt_reactivation_body">Med Pro kan du återaktivera projektet och arbeta med flera projekt samtidigt. Du kan behålla och visa färdiga projekt gratis. Dina befintliga projekt finns kvar.</string>
+    <string name="pro_prompt_projects_title">Skapa ett till aktivt projekt med Pro</string>
+    <plurals name="pro_prompt_projects_trial_body">
+        <item quantity="one">Du har %1$d aktivt projekt. Starta din kostnadsfria 14-dagars provperiod med Pro för att skapa ett till och arbeta med flera projekt samtidigt. Färdiga projekt räknas inte mot gratisgränsen. Dina projekt finns kvar efter provperioden.</item>
+        <item quantity="other">Du har %1$d aktiva projekt. Starta din kostnadsfria 14-dagars provperiod med Pro för att skapa ett till och arbeta med flera projekt samtidigt. Färdiga projekt räknas inte mot gratisgränsen. Dina projekt finns kvar efter provperioden.</item>
+    </plurals>
+    <plurals name="pro_prompt_projects_body">
+        <item quantity="one">Du har %1$d aktivt projekt. Med Pro kan du skapa ett till och arbeta med flera projekt samtidigt. Färdiga projekt räknas inte mot gratisgränsen. Dina befintliga projekt finns kvar.</item>
+        <item quantity="other">Du har %1$d aktiva projekt. Med Pro kan du skapa ett till och arbeta med flera projekt samtidigt. Färdiga projekt räknas inte mot gratisgränsen. Dina befintliga projekt finns kvar.</item>
+    </plurals>
     <string name="pro_prompt_photos_title">Lägg till framstegsbilder med Pro</string>
     <string name="pro_prompt_photos_body">En ny framstegsbild kräver Pro. Dina befintliga bilder finns kvar.</string>
     <string name="pro_prompt_notes_title">Lägg till projektanteckningar med Pro</string>
@@ -757,7 +766,7 @@
     <string name="pro_status_trial_ended">Provperioden är slut</string><string name="pro_status_purchased">Köpt</string>
     <string name="pro_trial_ended_title">Din Pro-provperiod är slut</string><string name="pro_trial_ended_body">Allt du har skapat finns fortfarande kvar. Du kan fortsätta använda och redigera det. Pro krävs bara för nya Pro-objekt och avancerade vyer.</string><string name="pro_continue_free">Fortsätt gratis</string>
     <string name="pro_page_intro">Ge varje projekt mer utrymme och håll ihop ditt arbetsflöde.</string><string name="pro_page_trust">Allt du skapar finns kvar, även när provperioden tar slut.</string>
-    <string name="pro_group_projects_title">Projekt och material</string><string name="pro_group_projects_body">Skapa fler projekt, den första projektanteckningen, framstegsbilder och garnkort.</string>
+    <string name="pro_group_projects_title">Projekt och material</string><string name="pro_group_projects_body">Arbeta med flera aktiva projekt och skapa den första projektanteckningen, framstegsbilder och garnkort.</string>
     <string name="pro_group_workflow_title">Räkning och arbetsflöde</string><string name="pro_group_workflow_body">Använd den kompakta repetitionsräknaren, extra-, repetitions-, formnings- och sektionsräknare, radpåminnelser, mönsterbilder som PDF och startskärmswidgeten.</string>
     <string name="pro_group_insights_title">Insikter</string><string name="pro_group_insights_body">Se dagliga, veckovisa och månatliga aktivitetsdiagram och din aktivitetssvit.</string>
     <string name="pro_page_purchased">Pro köpt</string><string name="pro_buy_for_price">Köp Pro för %1$s</string><string name="pro_price_unavailable">Priset är inte tillgängligt</string><string name="billing_purchase_pending">Ditt köp väntar. Pro blir tillgängligt när Google Play har slutfört betalningen.</string>

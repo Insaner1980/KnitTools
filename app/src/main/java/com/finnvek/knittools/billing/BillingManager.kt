@@ -22,6 +22,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -49,6 +50,9 @@ class BillingManager
         private val _purchaseStateReady = MutableStateFlow(false)
         val purchaseStateReady: StateFlow<Boolean> = _purchaseStateReady.asStateFlow()
 
+        private val _purchaseQueryFailed = MutableStateFlow(false)
+        val purchaseQueryFailed: StateFlow<Boolean> = _purchaseQueryFailed.asStateFlow()
+
         private val _productDetails = MutableStateFlow<ProductDetails?>(null)
         val productDetails: StateFlow<ProductDetails?> = _productDetails.asStateFlow()
 
@@ -73,7 +77,9 @@ class BillingManager
         private var connectionRetryJob: Job? = null
 
         fun initialize() {
+            if (billingClient != null) destroy()
             _purchaseStateReady.value = false
+            _purchaseQueryFailed.value = false
             _purchaseFlowInFlight.value = false
             resetProductDetails()
             connectionAttempt = 0
@@ -97,24 +103,26 @@ class BillingManager
             client.startConnection(
                 object : BillingClientStateListener {
                     override fun onBillingSetupFinished(result: BillingResult) {
+                        if (billingClient !== client) return
                         if (result.responseCode == BillingClient.BillingResponseCode.OK) {
                             connectionAttempt = 0
                             connectionRetryJob?.cancel()
                             connectionRetryJob = null
                             scope.launch {
-                                _purchaseStateReady.value = queryPurchases()
+                                queryPurchases()
                                 queryProductDetails()
                             }
                         } else {
                             if (scheduleConnectionRetry()) {
                                 return
                             }
-                            _purchaseStateReady.value = false
+                            _purchaseQueryFailed.value = !_purchaseStateReady.value
                             applyProductUnavailable(result.toUserMessage())
                         }
                     }
 
                     override fun onBillingServiceDisconnected() {
+                        if (billingClient !== client) return
                         applyProductUnavailable(BillingUserMessage.PURCHASE_NETWORK_ERROR)
                     }
                 },
@@ -187,15 +195,9 @@ class BillingManager
         suspend fun restorePurchasesWithResult(): RestorePurchasesResult {
             if (!awaitInitialBillingConnection()) return RestorePurchasesResult.FAILED
 
-            // CPD-OFF: Ostohaun sama tila kasitellaan kahdessa elinkaarivaiheessa.
             return when (val result = queryPurchasesInternal()) {
                 is PurchaseQueryResult.Success -> {
-                    _isProPurchased.value = result.proPurchases.isNotEmpty()
-                    result.proPurchases
-                        .filter { !it.isAcknowledged }
-                        .forEach { acknowledgePurchase(it) }
                     if (result.proPurchases.isNotEmpty()) {
-                        // CPD-ON
                         RestorePurchasesResult.RESTORED
                     } else {
                         RestorePurchasesResult.NOT_FOUND
@@ -244,50 +246,41 @@ class BillingManager
         }
 
         fun destroy() {
+            scope.coroutineContext.cancelChildren()
             connectionRetryJob?.cancel()
             connectionRetryJob = null
-            billingClient?.endConnection()
+            val client = billingClient
             billingClient = null
+            client?.endConnection()
             acknowledgementsInFlight.clear()
+            acknowledgedPurchaseTokens.clear()
             pendingAcknowledgementRetries.clear()
+            acknowledgementRetryCounts.clear()
             _purchaseStateReady.value = false
+            _purchaseQueryFailed.value = false
             _purchaseFlowInFlight.value = false
         }
 
-        internal suspend fun queryPurchases(): Boolean =
-            when (val result = queryPurchasesInternal()) {
-                is PurchaseQueryResult.Success -> {
-                    _isProPurchased.value = result.proPurchases.isNotEmpty()
-                    // Google Play palauttaa vahvistamattomat ostot 3 päivän jälkeen —
-                    // varmista vahvistus joka käynnistyskerralla
-                    result.proPurchases
-                        .filter { !it.isAcknowledged }
-                        .forEach { acknowledgePurchase(it) }
-                    true
-                }
-
-                PurchaseQueryResult.Failure -> {
-                    // Säilytä viimeksi tunnettu ostotila, jos Play-kysely epäonnistuu.
-                    false
-                }
-            }
+        internal suspend fun queryPurchases(): Boolean = queryPurchasesInternal() is PurchaseQueryResult.Success
 
         private suspend fun awaitInitialBillingConnection(): Boolean {
             val client = billingClient ?: return false
             if (client.isReady || _purchaseStateReady.value) return true
-            return withTimeoutOrNull(RESTORE_CONNECTION_WAIT_TIMEOUT_MS) {
-                purchaseStateReady.first { it }
-                true
-            } ?: false
+            if (_purchaseQueryFailed.value) {
+                connectionAttempt = 0
+                startBillingConnection()
+            }
+            val connected =
+                withTimeoutOrNull(RESTORE_CONNECTION_WAIT_TIMEOUT_MS) {
+                    purchaseStateReady.first { it }
+                    true
+                } ?: false
+            return connected && billingClient === client
         }
 
         private suspend fun restoreAlreadyOwnedPurchase() {
             when (val result = queryPurchasesInternal()) {
                 is PurchaseQueryResult.Success -> {
-                    _isProPurchased.value = result.proPurchases.isNotEmpty()
-                    result.proPurchases
-                        .filter { !it.isAcknowledged }
-                        .forEach { acknowledgePurchase(it) }
                     if (result.proPurchases.isEmpty()) {
                         emitPurchaseMessage(BillingUserMessage.ALREADY_OWNED_RESTORE_FAILED)
                     }
@@ -314,9 +307,11 @@ class BillingManager
                 } catch (e: CancellationException) {
                     throw e
                 } catch (_: Exception) {
-                    return PurchaseQueryResult.Failure
+                    null
                 }
-            if (result.billingResult.responseCode != BillingClient.BillingResponseCode.OK) {
+            if (billingClient !== client) return PurchaseQueryResult.Failure
+            if (result == null || result.billingResult.responseCode != BillingClient.BillingResponseCode.OK) {
+                _purchaseQueryFailed.value = !_purchaseStateReady.value
                 return PurchaseQueryResult.Failure
             }
 
@@ -325,6 +320,10 @@ class BillingManager
                     it.products.contains(PRODUCT_ID) &&
                         it.purchaseState == Purchase.PurchaseState.PURCHASED
                 }
+            _isProPurchased.value = proPurchases.isNotEmpty()
+            _purchaseStateReady.value = true
+            _purchaseQueryFailed.value = false
+            proPurchases.filter { !it.isAcknowledged }.forEach { acknowledgePurchase(it) }
             return PurchaseQueryResult.Success(proPurchases)
         }
 
@@ -350,9 +349,10 @@ class BillingManager
                 } catch (e: CancellationException) {
                     throw e
                 } catch (_: Exception) {
-                    applyProductUnavailable(BillingUserMessage.PURCHASE_FAILED)
+                    if (billingClient === client) applyProductUnavailable(BillingUserMessage.PURCHASE_FAILED)
                     return
                 }
+            if (billingClient !== client) return
             applyProductDetailsResult(result)
         }
 
@@ -394,16 +394,19 @@ class BillingManager
                     return
                 }
                 client.acknowledgePurchase(params) { result ->
-                    acknowledgementsInFlight.remove(purchaseToken)
-                    if (result.responseCode == BillingClient.BillingResponseCode.OK) {
-                        acknowledgedPurchaseTokens.add(purchaseToken)
-                        pendingAcknowledgementRetries.remove(purchaseToken)
-                        acknowledgementRetryCounts.remove(purchaseToken)
-                    } else if (shouldRetryAcknowledgement(result.responseCode)) {
-                        scheduleAcknowledgementRetry(purchaseToken)
-                    } else {
-                        pendingAcknowledgementRetries.remove(purchaseToken)
-                        acknowledgementRetryCounts.remove(purchaseToken)
+                    scope.launch {
+                        if (billingClient !== client) return@launch
+                        acknowledgementsInFlight.remove(purchaseToken)
+                        if (result.responseCode == BillingClient.BillingResponseCode.OK) {
+                            acknowledgedPurchaseTokens.add(purchaseToken)
+                            pendingAcknowledgementRetries.remove(purchaseToken)
+                            acknowledgementRetryCounts.remove(purchaseToken)
+                        } else if (shouldRetryAcknowledgement(result.responseCode)) {
+                            scheduleAcknowledgementRetry(purchaseToken)
+                        } else {
+                            pendingAcknowledgementRetries.remove(purchaseToken)
+                            acknowledgementRetryCounts.remove(purchaseToken)
+                        }
                     }
                 }
             } catch (e: CancellationException) {

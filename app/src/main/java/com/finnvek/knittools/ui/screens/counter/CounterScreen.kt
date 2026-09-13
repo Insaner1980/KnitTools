@@ -189,7 +189,9 @@ fun CounterScreen(
     val resources = LocalResources.current
     val context = LocalContext.current
 
-    CollectWithLifecycleEffect({ viewModel.projectClosedEvents }) { onBack() }
+    CollectWithLifecycleEffect({ viewModel.projectClosedEvents }) { selectionVersion ->
+        viewModel.consumeProjectClosedEvent(selectionVersion, onBack)
+    }
 
     var showResetDialog by rememberSaveable { mutableStateOf(false) }
     var showProjectActionsSheet by rememberSaveable { mutableStateOf(false) }

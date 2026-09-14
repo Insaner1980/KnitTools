@@ -366,3 +366,13 @@ reason = "Kotlin 2.4.10 is the latest stable project toolchain and the first lis
 id = "GHSA-pmhh-3w7g-xqp8"
 ignoreUntil = 2026-10-31
 reason = "Dependency-Check 13.0.0 resolves fixed jsoup 1.23.1; verification metadata retains obsolete 1.22.1 and 1.22.2 entries that are absent from the current buildscript and app debug/release runtime classpaths."
+
+[[IgnoredVulns]]
+id = "GHSA-c4c3-7fpv-j4q5"
+ignoreUntil = 2026-10-31
+reason = "Gradle verification metadata retains netty-handler 4.1.110.Final and 4.1.93.Final; neither is present in the resolved app debug/release runtime or root buildscript classpaths. The affected Netty server-side SNI ClientHello handler is not used by this app."
+
+[[IgnoredVulns]]
+id = "GHSA-fccg-mwvh-qqg4"
+ignoreUntil = 2026-10-31
+reason = "Gradle verification metadata retains netty-handler 4.1.110.Final and 4.1.93.Final; neither is present in the resolved app debug/release runtime or root buildscript classpaths. The affected Netty server-side SNI ClientHello handler is not used by this app."

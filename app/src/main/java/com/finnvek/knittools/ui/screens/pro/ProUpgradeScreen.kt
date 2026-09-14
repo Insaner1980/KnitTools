@@ -59,6 +59,7 @@ fun ProUpgradeScreen(
     val viewModel = viewModelProvider()
     val proState by viewModel.proState.collectAsStateWithLifecycle()
     val proStateReady by viewModel.proStateReady.collectAsStateWithLifecycle()
+    val purchaseQueryFailed by viewModel.purchaseQueryFailed.collectAsStateWithLifecycle()
     val selectedOffer by viewModel.selectedOffer.collectAsStateWithLifecycle()
     val productStatus by viewModel.productStatus.collectAsStateWithLifecycle()
     val purchaseFlowInFlight by viewModel.purchaseFlowInFlight.collectAsStateWithLifecycle()
@@ -97,6 +98,7 @@ fun ProUpgradeScreen(
             ProPurchaseSection(
                 proState = proState,
                 proStateReady = proStateReady,
+                purchaseQueryFailed = purchaseQueryFailed,
                 price = selectedOffer?.formattedPrice,
                 productStatusProvider = { productStatus },
                 purchaseFlowInFlight = purchaseFlowInFlight,
@@ -168,6 +170,7 @@ private fun ProBenefitGroup(
 private fun ProPurchaseSection(
     proState: ProState,
     proStateReady: Boolean,
+    purchaseQueryFailed: Boolean,
     price: String?,
     productStatusProvider: @Composable () -> BillingProductStatus,
     purchaseFlowInFlight: Boolean,
@@ -179,7 +182,14 @@ private fun ProPurchaseSection(
 ) {
     val productStatus = productStatusProvider()
     if (!proStateReady) {
-        CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+        if (purchaseQueryFailed) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                ProStatusMessage(messageRes = R.string.generic_error_unknown)
+                ProRestoreButton(isRestoring = isRestoring, onRestore = onRestore)
+            }
+        } else {
+            CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+        }
         return
     }
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -277,23 +287,31 @@ private fun ProPurchaseSection(
             )
         }
 
-        TextButton(
-            onClick = onRestore,
-            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-            enabled = !isRestoring,
-        ) {
-            if (isRestoring) {
-                CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
-                Spacer(modifier = Modifier.width(8.dp))
-            }
-            Text(
-                if (isRestoring) {
-                    stringResource(R.string.restore_purchases_checking)
-                } else {
-                    stringResource(R.string.restore_purchases)
-                },
-            )
+        ProRestoreButton(isRestoring = isRestoring, onRestore = onRestore)
+    }
+}
+
+@Composable
+private fun ProRestoreButton(
+    isRestoring: Boolean,
+    onRestore: () -> Unit,
+) {
+    TextButton(
+        onClick = onRestore,
+        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+        enabled = !isRestoring,
+    ) {
+        if (isRestoring) {
+            CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+            Spacer(modifier = Modifier.width(8.dp))
         }
+        Text(
+            if (isRestoring) {
+                stringResource(R.string.restore_purchases_checking)
+            } else {
+                stringResource(R.string.restore_purchases)
+            },
+        )
     }
 }
 

@@ -74,6 +74,7 @@ import com.finnvek.knittools.ui.components.ProPromptSheet
 import com.finnvek.knittools.ui.components.ProPromptSource
 import com.finnvek.knittools.ui.components.highContainerTextFieldColors
 import com.finnvek.knittools.ui.components.rememberLocaleDateFormat
+import com.finnvek.knittools.ui.components.withExtraBottom
 import com.finnvek.knittools.ui.theme.knitToolsColors
 import java.util.Date
 
@@ -262,13 +263,7 @@ fun PhotoGalleryScreen(
         PhotoGalleryContent(
             photos = photos,
             padding =
-                PaddingValues(
-                    start = padding.calculateLeftPadding(LocalLayoutDirection.current),
-                    top = padding.calculateTopPadding(),
-                    end = padding.calculateRightPadding(LocalLayoutDirection.current),
-                    bottom =
-                        padding.calculateBottomPadding() + actionHeight + 32.dp,
-                ),
+                padding.withExtraBottom(actionHeight + 32.dp, LocalLayoutDirection.current),
             onPhotoClick = { viewingPhotoId = it.id },
             onPhotoLongClick = { renamingPhotoId = it.id },
         )

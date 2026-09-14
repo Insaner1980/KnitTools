@@ -10,6 +10,7 @@ import com.finnvek.knittools.di.ApplicationScope
 import com.finnvek.knittools.di.IoDispatcher
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
+import com.finnvek.knittools.repository.BackupRepository
 import com.finnvek.knittools.repository.ProjectCounterRepository
 import com.finnvek.knittools.repository.YarnCardRepository
 import com.finnvek.knittools.widget.CounterWidgetState
@@ -35,6 +36,9 @@ class App : Application() {
 
     @Inject
     lateinit var yarnCardRepository: dagger.Lazy<YarnCardRepository>
+
+    @Inject
+    lateinit var backupRepository: dagger.Lazy<BackupRepository>
 
     @Inject
     lateinit var projectCounterRepository: dagger.Lazy<ProjectCounterRepository>
@@ -64,6 +68,7 @@ class App : Application() {
         }
         applicationScope.launch {
             try {
+                backupRepository.get().recoverInterruptedOperations()
                 yarnCardRepository.get().pruneUnreferencedPhotoFiles()
             } catch (e: CancellationException) {
                 throw e

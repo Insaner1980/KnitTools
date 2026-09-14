@@ -26,6 +26,7 @@ class ProUpgradeViewModel
     ) : ViewModel() {
         val proState: StateFlow<ProState> = proManager.proState
         val proStateReady: StateFlow<Boolean> = proManager.initialStateReady
+        val purchaseQueryFailed: StateFlow<Boolean> = billingManager.purchaseQueryFailed
         val selectedOffer: StateFlow<SelectedOneTimeOffer?> = billingManager.selectedOffer
         val productStatus: StateFlow<BillingProductStatus> = billingManager.productStatus
         val purchaseFlowInFlight: StateFlow<Boolean> = billingManager.purchaseFlowInFlight

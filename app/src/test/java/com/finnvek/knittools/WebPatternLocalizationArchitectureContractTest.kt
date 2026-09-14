@@ -74,8 +74,9 @@ class WebPatternLocalizationArchitectureContractTest {
         val projectDocumentCreateSql = roomCreateSql(schema, "project_documents")
 
         assertTrue(database.contains("version = KNITTOOLS_DATABASE_VERSION"))
-        assertFalse(database.contains("MIGRATION_24_25"))
-        assertFalse(Files.exists(ProjectSourceFiles.file(SCHEMA_25)))
+        val currentSchema = ProjectSourceFiles.read(SCHEMA_25)
+        assertEquals(savedPatternCreateSql, roomCreateSql(currentSchema, "saved_patterns"))
+        assertEquals(projectDocumentCreateSql, roomCreateSql(currentSchema, "project_documents"))
         assertTrue(schema.contains("\"version\": 24"))
         assertTrue(schema.contains("\"identityHash\": \"f9a2845195abd670d0bf330708bdcd75\""))
         assertEquals("TEXT", roomTextColumnDefinition(savedPatternCreateSql, "localPdfUri"))

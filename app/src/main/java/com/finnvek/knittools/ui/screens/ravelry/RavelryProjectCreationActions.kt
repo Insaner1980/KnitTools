@@ -137,9 +137,8 @@ internal class RavelryProjectCreationActions(
                         navigateToProjectChannel.send(result.projectId)
                     }
                     ProjectCreationResult.LimitReached -> {
-                        val activeCount = repository.getActiveProjectCount()
+                        updateProjectCreationPrompt(detail)
                         limited = true
-                        if (pendingProjectPattern == detail) _projectCreationPromptCount.value = activeCount
                     }
                     ProjectCreationResult.InvalidProject,
                     ProjectCreationResult.FolderMissing,
@@ -161,5 +160,10 @@ internal class RavelryProjectCreationActions(
                 }
             }
         }
+    }
+
+    private suspend fun updateProjectCreationPrompt(detail: PatternDetail) {
+        val activeCount = repository.getActiveProjectCount()
+        if (pendingProjectPattern == detail) _projectCreationPromptCount.value = activeCount
     }
 }

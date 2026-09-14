@@ -6,7 +6,7 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-const val KNITTOOLS_DATABASE_VERSION = 24
+const val KNITTOOLS_DATABASE_VERSION = 25
 
 @Database(
     entities = [
@@ -27,6 +27,7 @@ const val KNITTOOLS_DATABASE_VERSION = 24
         ProjectFolderEntity::class,
         ProjectFolderAssignmentEntity::class,
         ProjectYarnUsageEntity::class,
+        ProjectCompletionEntity::class,
     ],
     version = KNITTOOLS_DATABASE_VERSION,
     exportSchema = true,
@@ -725,6 +726,8 @@ abstract class KnitToolsDatabase : RoomDatabase() {
 
         val MIGRATION_23_24: Migration = ProjectYarnUsageMigration24.migration
 
+        val MIGRATION_24_25: Migration = ProjectCompletionMigration25.migration
+
         val ALL_MANUAL_MIGRATIONS: Array<Migration>
             get() =
                 arrayOf(
@@ -749,6 +752,7 @@ abstract class KnitToolsDatabase : RoomDatabase() {
                     MIGRATION_21_22,
                     MIGRATION_22_23,
                     MIGRATION_23_24,
+                    MIGRATION_24_25,
                 )
     }
 }

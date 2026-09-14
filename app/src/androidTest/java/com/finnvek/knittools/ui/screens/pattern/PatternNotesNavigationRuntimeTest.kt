@@ -301,6 +301,7 @@ class PatternNotesNavigationRuntimeTest {
 
     @Test
     fun visibleLibraryPageControlsKeepPdfUsable() {
+        // CPD-OFF: Keep the complete Library navigation sequence beside this independent navigation assertion.
         scenario = ActivityScenario.launch(Intent(app, MainActivity::class.java))
         clickText(text(R.string.tab_library))
         clickText(text(R.string.saved_patterns_title))
@@ -309,6 +310,7 @@ class PatternNotesNavigationRuntimeTest {
         scrollToText(text(R.string.saved_pattern_detail_open_pattern))
         clickText(text(R.string.saved_pattern_detail_open_pattern))
         waitForText(text(R.string.pattern_page_indicator, 1, 4))
+        // CPD-ON
         recordReaderLayout("library-first")
         physicalPageChange(next = true, expectedPage = 2)
         physicalPageChange(next = true, expectedPage = 3)

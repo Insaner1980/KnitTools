@@ -174,7 +174,7 @@ Current core versions are `firebase-functions 7.3.2`, `firebase-admin 14.3.0`, `
 | Detekt | 2.0.0-alpha.5 |
 | OWASP dependency-check | 13.0.0 |
 | Compose Stability Analyzer | 0.12.0 |
-| Sonar Gradle plugin | 7.3.1.8318 |
+| Sonar Gradle plugin | 7.5.0.8588 |
 
 Detekt `2.0.0-alpha.5` and Baseline Profile/Benchmark `1.5.0-beta01` are intentional temporary compatibility exceptions. WorkManager is directly pinned because it is part of the Glance transitive surface; there is no production `Worker` implementation. Ktor and OkHttp are present, but the current Ravelry product path uses authenticated Firebase callables rather than direct Android-to-Ravelry requests. Coil declares `coil-network-ktor3` explicitly and reuses the existing Ktor 3 and OkHttp engine surface for HTTPS thumbnail loading; it does not introduce a second image-network stack. `kotlinx-coroutines-play-services` supplies the cancellable Firebase `Task.await()` bridge; the repository no longer carries a custom task-await implementation. Wire is forced to `6.4.7` for the benchmark/profile toolchain and is absent from the app runtime graph. The Dependency Analysis Gradle plugin version remains catalogued, but plugin application is disabled because that plugin is not currently compatible with AGP 9; its presence in the catalog is not an active analyzer gate.
 

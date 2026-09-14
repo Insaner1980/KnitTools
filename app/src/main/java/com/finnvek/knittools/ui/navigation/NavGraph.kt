@@ -41,6 +41,7 @@ import com.finnvek.knittools.ui.components.ProPromptRequest
 import com.finnvek.knittools.ui.components.ProPromptSheet
 import com.finnvek.knittools.ui.components.ProPromptSource
 import com.finnvek.knittools.ui.screens.abbreviations.AbbreviationsScreen
+import com.finnvek.knittools.ui.screens.backup.BackupScreen
 import com.finnvek.knittools.ui.screens.caston.CastOnScreen
 import com.finnvek.knittools.ui.screens.chartsymbols.ChartSymbolScreen
 import com.finnvek.knittools.ui.screens.counter.CounterScreen
@@ -49,6 +50,7 @@ import com.finnvek.knittools.ui.screens.counter.CounterViewModel
 import com.finnvek.knittools.ui.screens.counter.PhotoGalleryActions
 import com.finnvek.knittools.ui.screens.counter.PhotoGalleryScreen
 import com.finnvek.knittools.ui.screens.counter.shouldLeaveCounter
+import com.finnvek.knittools.ui.screens.counterhistory.CounterHistoryScreen
 import com.finnvek.knittools.ui.screens.gauge.GaugeScreen
 import com.finnvek.knittools.ui.screens.home.HomeScreen
 import com.finnvek.knittools.ui.screens.increase.IncreaseDecreaseScreen
@@ -134,7 +136,7 @@ fun KnitToolsNavHost(
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
-    val showBottomBar = currentRoute !in HIDE_BOTTOM_BAR_ROUTES
+    val showBottomBar = currentRoute !in HIDE_BOTTOM_BAR_ROUTES && currentRoute != Screen.Backup.route
 
     LaunchedEffect(effectiveCounterLaunch?.requestId) {
         if (effectiveCounterLaunch == null) return@LaunchedEffect
@@ -373,6 +375,9 @@ private fun NavGraphBuilder.projectsGraph(
                 actions =
                     CounterScreenActions(
                         onBack = { navController.popBackStack() },
+                        onCounterHistory = { projectId ->
+                            navController.navigateSingleTopTo(Screen.CounterHistory(projectId).route)
+                        },
                         onSessionHistory = { projectId ->
                             navController.navigateSingleTopTo(Screen.SessionHistory(projectId).route)
                         },
@@ -512,6 +517,7 @@ private fun NavGraphBuilder.projectsGraph(
                 onBack = { navController.popBackStack() },
             )
         }
+        counterHistoryDestination(navController)
         gaugeDestination(navController)
         composable(
             Screen.NotesEditor.ROUTE,
@@ -1107,8 +1113,20 @@ private fun NavGraphBuilder.settingsGraph(navController: NavHostController) {
     ) {
         composable(Screen.Settings.route) {
             SettingsScreen(
+                onBackup = { navController.navigateSingleTopTo(Screen.Backup.route) },
                 onUpgradeToPro = {
                     navController.navigateSingleTopTo(Screen.ProUpgrade.route)
+                },
+            )
+        }
+        composable(Screen.Backup.route) {
+            BackupScreen(
+                onBack = { navController.popBackStack() },
+                onRestored = {
+                    TopLevelDestination.entries.forEach { navController.clearBackStack(it.route) }
+                    navController.navigate(TopLevelDestination.Projects.route) {
+                        popUpTo(navController.graph.id) { inclusive = true }
+                    }
                 },
             )
         }
@@ -1162,6 +1180,29 @@ private fun NavBackStackEntry.positiveLongArgument(name: String): Long? =
 
 private fun NavBackStackEntry.positiveIntArgument(name: String): Int? =
     arguments?.getInt(name)?.toPositiveRouteIdOrNull()
+
+private fun NavGraphBuilder.counterHistoryDestination(navController: NavHostController) {
+    composable(
+        Screen.CounterHistory.ROUTE,
+        arguments = listOf(navArgument(ARG_PROJECT_ID) { type = NavType.LongType }),
+    ) { backStackEntry ->
+        if (backStackEntry.positiveLongArgument(ARG_PROJECT_ID) == null) {
+            RouteArgumentFallback({ navController }, TopLevelDestination.Projects)
+            return@composable
+        }
+        CounterHistoryScreen(
+            onBack = { navController.popBackStackOrNavigateToTopLevel(TopLevelDestination.Projects) },
+            onProjectMissing = {
+                if (!navController.popBackStack(Screen.ProjectList.route, false)) {
+                    navController.navigate(Screen.ProjectList.route) {
+                        popUpTo(TopLevelDestination.Projects.route)
+                        launchSingleTop = true
+                    }
+                }
+            },
+        )
+    }
+}
 
 @Composable
 private fun RouteArgumentFallback(

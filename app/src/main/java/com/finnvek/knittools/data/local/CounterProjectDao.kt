@@ -9,6 +9,14 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface CounterProjectDao {
+    @Insert
+    suspend fun insertCompletion(event: ProjectCompletionEntity): Long
+
+    @Query(
+        "SELECT * FROM project_completions WHERE (:projectId IS NULL OR projectId = :projectId) ORDER BY completedAt DESC, id DESC",
+    )
+    fun observeCompletions(projectId: Long?): Flow<List<ProjectCompletionEntity>>
+
     @Query("SELECT * FROM counter_projects ORDER BY updatedAt DESC")
     fun getAllProjects(): Flow<List<CounterProjectEntity>>
 
@@ -510,17 +518,14 @@ interface CounterProjectDao {
         )
     }
 
-    @Query("DELETE FROM counter_history WHERE projectId = :projectId AND timestamp < :before")
-    suspend fun deleteHistoryBefore(
-        projectId: Long,
-        before: Long,
-    )
-
     @Query(
         "SELECT * FROM counter_history WHERE projectId = :projectId " +
             "ORDER BY timestamp DESC, id DESC LIMIT 1",
     )
     suspend fun getLatestHistory(projectId: Long): CounterHistoryEntity?
+
+    @Query("SELECT * FROM counter_history WHERE projectId = :projectId ORDER BY timestamp DESC, id DESC")
+    fun observeCounterHistory(projectId: Long): Flow<List<CounterHistoryEntity>>
 
     @Query("DELETE FROM counter_history WHERE id = :id")
     suspend fun deleteHistoryById(id: Long)

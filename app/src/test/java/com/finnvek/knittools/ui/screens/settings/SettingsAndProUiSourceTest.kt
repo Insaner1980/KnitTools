@@ -35,6 +35,17 @@ class SettingsAndProUiSourceTest {
         assertTrue(statusMessage.contains("liveRegion = LiveRegionMode.Polite"))
     }
 
+    @Test
+    fun `initial billing failure exposes the production restore action before readiness`() {
+        val upgrade = ProjectSourceFiles.read(PRO_UPGRADE_SCREEN)
+        val initialSection = upgrade.substringAfter("if (!proStateReady)").substringBefore("return")
+
+        assertTrue(upgrade.contains("onRestore = viewModel::restorePurchases"))
+        assertTrue(initialSection.contains("if (purchaseQueryFailed)"))
+        assertTrue(initialSection.contains("ProRestoreButton(isRestoring = isRestoring, onRestore = onRestore)"))
+        assertTrue(upgrade.contains("enabled = !isRestoring"))
+    }
+
     private companion object {
         const val SETTINGS_SCREEN =
             "app/src/main/java/com/finnvek/knittools/ui/screens/settings/SettingsScreen.kt"

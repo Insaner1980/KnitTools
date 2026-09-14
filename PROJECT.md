@@ -57,7 +57,7 @@ The app does not currently implement cloud synchronization, continuous Drive or 
 | Android target SDK | 37 |
 | Android minimum SDK | 29 |
 | App version | `versionCode 1`, `versionName "1.0.0"` |
-| Room schema | 24 |
+| Room schema | 25 |
 | Java toolchain | Eclipse Temurin JDK 17 |
 | Gradle wrapper | 9.7.1 |
 | Android Gradle Plugin | 9.4.0 |
@@ -186,7 +186,7 @@ Detekt `2.0.0-alpha.5` and Baseline Profile/Benchmark `1.5.0-beta01` are intenti
 
 1. initializes the source-set-specific `SentryInit` implementation;
 2. launches `PreferencesManager.applyStoredAppLanguage()` in the injected application coroutine scope;
-3. schedules yarn-photo orphan pruning;
+3. schedules interrupted manual-restore recovery followed by yarn-photo orphan pruning;
 4. schedules stale pattern-capture pruning on the injected I/O dispatcher;
 5. invokes the build-variant `DemoDataSeeder` facade;
 6. initializes billing and Pro state;
@@ -284,6 +284,7 @@ Top-level navigation saves and restores state and avoids duplicate destinations.
 | `photo_gallery` | Current project's progress photos |
 | `pattern_viewer/{projectId}?selectedProjectDocumentId={selectedProjectDocumentId}` | Attached project PDF viewer with an optional selected document |
 | `session_history/{projectId}` | Project session history |
+| `counter_history/{projectId}` | Retained main-counter change history |
 | `notes_editor/{projectId}` | Project notes editor |
 | `library` | Library hub |
 | `saved_patterns` | Saved-pattern list |
@@ -388,9 +389,9 @@ Settings owns app language, light/dark/system theme, haptic feedback, keep-scree
 
 ### Room database
 
-`KnitToolsDatabase` uses schema version 24. `KNITTOOLS_DATABASE_VERSION` in `data/local/KnitToolsDatabase.kt` is the single source used by the `@Database` annotation; release-surface verification resolves that constant and compares it with the exported schema directory instead of relying on a duplicated numeric literal. Its 17 entities are `CounterProjectEntity`, `CounterHistoryEntity`, `YarnCardEntity`, `SessionEntity`, `ActiveSessionEntity`, `RowReminderEntity`, `ProgressPhotoEntity`, `ProjectCounterEntity`, `ProjectYarnNoteEntity`, `ProjectYarnUsageEntity`, `SavedPatternEntity`, `PatternAnnotationLayerEntity`, `PatternAnnotationEntity`, `PatternBookmarkEntity`, `ProjectDocumentEntity`, `ProjectFolderEntity`, and `ProjectFolderAssignmentEntity`.
+`KnitToolsDatabase` uses schema version 25. `KNITTOOLS_DATABASE_VERSION` in `data/local/KnitToolsDatabase.kt` is the single source used by the `@Database` annotation; release-surface verification resolves that constant and compares it with the exported schema directory instead of relying on a duplicated numeric literal. Its 18 entities are `CounterProjectEntity`, `CounterHistoryEntity`, `YarnCardEntity`, `SessionEntity`, `ActiveSessionEntity`, `RowReminderEntity`, `ProgressPhotoEntity`, `ProjectCounterEntity`, `ProjectYarnNoteEntity`, `ProjectYarnUsageEntity`, `SavedPatternEntity`, `PatternAnnotationLayerEntity`, `PatternAnnotationEntity`, `PatternBookmarkEntity`, `ProjectDocumentEntity`, `ProjectFolderEntity`, `ProjectFolderAssignmentEntity`, and `ProjectCompletionEntity`.
 
-Automatic migrations cover 1 to 2 and 2 to 3. Manual migrations cover every step from 3 to 4 through 23 to 24. `DatabaseModule` registers `ALL_MANUAL_MIGRATIONS`. Exported schemas 1 through 24 are retained.
+Automatic migrations cover 1 to 2 and 2 to 3. Manual migrations cover every step from 3 to 4 through 24 to 25. `DatabaseModule` registers `ALL_MANUAL_MIGRATIONS`. Exported schemas 1 through 25 are retained.
 
 #### Schema 18
 
@@ -440,6 +441,14 @@ Legacy projects default to knitting plus rows. Crochet projects default to round
 
 The entity/domain mapping is also a defensive read boundary for legacy or malformed rows. Primary and additional-counter counts are exposed as nonnegative, step sizes are at least one, non-finite reading-guide fractions fall back to their central defaults, and reading fractions are bounded. A nonpositive stitch count becomes absent; stitch tracking is disabled without a valid count; and the current stitch is zero when tracking is off or otherwise clamped to the valid range. A repeat-section row can never emerge from the mapper as linked to the main counter.
 
+#### Schema 25 and project completion history
+
+Migration 24 to 25 adds only `project_completions`, its project index, and a cascading project foreign key. The 17 previous entities remain unchanged. Legacy backfill records at most one event for a currently completed project with a positive completion timestamp no earlier than its creation; its zone is null.
+
+`CounterRepository` records each active-to-completed transition and its completion-zone ID in the same transaction as project/session finalization. Repeated completion without reopening is idempotent; reactivation preserves history and a later completion adds another event. Project deletion cascades to its events. Ordinary project updates cannot bypass this transition writer.
+
+Insights observes completion events, waits for their first real snapshot, and applies its existing project and time-range filters using each event's zone with a captured device-zone fallback for legacy events. Completion counts and the event list are basic data; the timeline follows `INSIGHTS_CHARTS`. All 11 supported locales include completion wording.
+
 #### Project documents and primary pattern
 
 `project_documents` is the canonical list of readable PDFs attached to a project. Each relation has its own label, URI, deterministic sort order, primary flag, stable `documentKey`, optional Saved Pattern relation, current page, row mapping, horizontal reading line and follow state, and vertical guide state. `projectDocumentId` identifies selection and ordering; `documentKey` continues to isolate annotations and bookmarks. Labels are trimmed, nonblank, and limited centrally to 50 characters. Duplicate labels are allowed.
@@ -453,6 +462,33 @@ The project list and counter surface primary-document status from one repository
 #### History and sessions
 
 `counter_history` stores project, action, previous value, new value, and timestamp.
+
+The Counter tools section of project actions opens **Counter history**, distinct from **Session history**. The dedicated `counter_history/{projectId}` destination and `CounterHistoryViewModel` observe the explicit project ID through `CounterRepository.observeCounterHistory`; they do not depend on later shared counter selection. Invalid route IDs use the Projects fallback, and a deleted project returns to the Projects list. Completed projects keep access.
+
+The screen shows retained main-counter `increment`, `decrement`, and `reset` changes with their actual previous/new values, including larger steps. Unknown action strings remain visible as a generic counter change. Successful undo removes its corresponding latest event; no undo event is added. Main-counter history persists for the lifetime of the project, including opening, app restarts, completion, and reactivation. Deleting the project cascades to its history. Rows already deleted by previous app versions cannot be reconstructed. Additional counters, sessions, and completion events do not gain or share this history.
+
+Room observation updates the lazy list after canonical and widget mutations or undo. SQL orders by `timestamp DESC, id DESC`, using the existing project index without limiting retained rows. Presentation groups and formats data off the UI thread using one current device zone per snapshot, the app locale, and device 12/24-hour preference with seconds. Original historical zones are not stored. Read-only event rows expose a single localized accessibility description; a loaded empty history has its own non-error message. All 11 configured locales contain the vocabulary.
+
+This feature leaves Room at schema 25 and the full-app backup format unchanged: restored `counter_history` rows need no conversion and are consumed by the same observation. Screen state is derived and is not backed up.
+
+Retention correction verified on 2026-09-14: focused JVM tests passed 34/34; the full rerun passed 1,857/1,857 with no skipped tests. API 36 emulator results were 3/3 Room tests, 8/8 backup integration tests, and 9/9 history content/navigation tests. Coverage includes 2-, 7-, and 180-day-old rows, ordinary project opening and Activity relaunch, closing/reopening the on-disk Room database, completion/reactivation, new changes, newest-only Undo, rejection of stale/unknown latest events, project-delete cascade, and old-history replacement restore. Activity relaunch and database reopen were exercised separately; this was not a force-stop/process-death test. The existing 2,001-row ordering fixture added 65,536 SQLite bytes including the project index; actual storage depends on field values and page allocation. No retention cap or schema/backup-format change was added.
+
+Executed verification commands (PowerShell, repository root):
+
+```powershell
+.\gradlew.bat :app:testDebugUnitTest --tests '*CounterHistory*' --tests '*FeatureGateRaceSourceTest' --tests '*CounterRepositoryMainCounterChangeTest' --console=plain
+.\gradlew.bat :app:compileDebugAndroidTestKotlin :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug :app:ktlintCheck :app:detekt --console=plain
+.\gradlew.bat :app:testDebugUnitTest --rerun-tasks :app:compileDebugAndroidTestKotlin :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug :app:ktlintCheck :app:detekt --continue --console=plain
+adb -s emulator-5580 install -r app/build/outputs/apk/debug/app-debug.apk
+adb -s emulator-5580 install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+adb -s emulator-5580 shell am instrument -w -r -e class com.finnvek.knittools.repository.CounterHistoryRoomTest,com.finnvek.knittools.repository.BackupRepositoryTest,com.finnvek.knittools.ui.screens.counterhistory.CounterHistoryContentTest,com.finnvek.knittools.ui.screens.counterhistory.CounterHistoryNavigationTest com.finnvek.knittools.test/androidx.test.runner.AndroidJUnitRunner
+adb -s emulator-5580 shell am instrument -w -r -e class com.finnvek.knittools.repository.CounterHistoryRoomTest com.finnvek.knittools.test/androidx.test.runner.AndroidJUnitRunner
+git diff --check
+```
+
+The first instrumented run passed 17 tests and reported one Room test-class initialization error caused by the added measurement returning an integer; the corrected Room class then passed all three tests. The initial build/check command reported six ktlint formatting findings in that test, corrected before the final command. The final Gradle command succeeded with all 117 tasks executed: both APK builds, instrumentation compilation, ktlint, Detekt, and debug lint passed. Lint reported zero errors and four unrelated existing warnings. No migration test was required. No commit, push, merge, or pull request was made.
+
+Counter-history validation (2026-09-14): `:app:testDebugUnitTest --rerun-tasks` passed all 1,857 JVM tests; the final production source also passed the complete JVM task. The focused API 36 emulator run passed 12 tests: three Room tests, the existing full-backup replacement test with a restored-history assertion, six Compose tests (including 320 dp and 200% font in both themes), and two real navigation tests. Debug application/test APK builds, Android-test Kotlin compilation, ktlint, Detekt, and `git diff --check` passed. Final `:app:lintDebug` passed with zero errors and four warnings outside this change (three unused widget-preview strings and the backup usable-space advisory). Room schema 25 and backup production files matched their task-start hashes.
 
 `sessions` stores project, start/end timestamps and rows, display minutes, exact `durationSeconds` and `rowsWorked`, and nullable `zoneId`. New sessions capture the device zone at session start. Cross-midnight day and pace splitting use that zone. Only a legacy null or invalid zone uses the current device zone as fallback.
 
@@ -866,7 +902,7 @@ Status precedence is purchased Pro, active trial, not-started trial, then expire
 
 - lets Billing's automatic reconnection serve later calls, but marks product details unavailable and invalidates the cached selected offer when the service disconnects;
 - bounds initial setup retries;
-- marks purchase state ready only after a successful existing-purchases query; query failure preserves the last known purchase state but remains not ready;
+- marks purchase state ready after any successful existing-purchases query, including restore and already-owned recovery; failure preserves known purchase state and readiness, while an unresolved initial failure exposes Restore purchases on the Pro screen;
 - waits at most two seconds for initial connection before a manual restore fails;
 - keeps restore and purchase-launch actions single-flight in the ViewModel/manager boundary;
 - selects a deterministic non-rental one-time offer;
@@ -882,7 +918,7 @@ Purchase state readiness is distinct from the default `ProState`. Cold-start con
 
 `ProManager.hasFeatureAfterInitialLoad` waits for initial Pro and billing readiness with a bounded timeout and checks an already-known purchase. Widgets use this API rather than synchronously reading the default state.
 
-`ProPromptSource` values are Projects, ProjectReactivation, ProgressPhotos, Notes, YarnCards, SaveToMyYarn, Counters, Reminders, PatternCamera, PatternGallery, and Widget. Camera and gallery entry retain distinct source identities even where they intentionally reuse the same current prompt copy. `ProPromptSheet`, backed by `ProPromptViewModel`, resumes the blocked action exactly once after `TrialStartResult.Started`, `AlreadyActive`, or observed Pro access. `AlreadyExpired` and `AlreadyTampered` do not resume the mutation. Creation and reactivation have separate localized prompt copy in all configured locales; the creation count is an active-project count. Counter reactivation retains the initiating project ID and `completedAt`, is single-flight, and discards its pending request on dismissal, target deletion/state change, or navigation to another project. A real active-project observation dropping to zero retries that same request through the repository without a UI entitlement override. Returning from the Pro page reuses the pending request; opening that page grants no permission. Ravelry retries retain the original `PatternDetail` instead of reading the later detail selection. `CounterReactivationPolicyTest`, `ProjectListViewModelTest`, `RavelryViewModelTest`, and `ProLocalizationSourceTest` cover these boundaries; `ActiveProjectPolicyRuntimeTest` is restricted to an offline isolated test installation with controlled entitlement state. Settings and the Pro screen show a loading state until initial Pro state is ready; restore and purchase controls expose and disable their in-flight action rather than accepting duplicate taps.
+`ProPromptSource` values are Projects, ProjectReactivation, ProgressPhotos, Notes, YarnCards, SaveToMyYarn, Counters, Reminders, PatternCamera, PatternGallery, and Widget. Camera and gallery entry retain distinct source identities even where they intentionally reuse the same current prompt copy. `ProPromptSheet`, backed by `ProPromptViewModel`, resumes the blocked action exactly once after `TrialStartResult.Started`, `AlreadyActive`, or observed Pro access. `AlreadyExpired` and `AlreadyTampered` do not resume the mutation. Creation and reactivation have separate localized prompt copy in all configured locales; the creation count is an active-project count. Counter reactivation retains the initiating project ID and `completedAt`, is single-flight, and discards its pending request on dismissal, target deletion/state change, or navigation to another project. A real active-project observation dropping to zero retries that same request through the repository without a UI entitlement override. Returning from the Pro page reuses the pending request; opening that page grants no permission. Ravelry retries retain the original `PatternDetail` instead of reading the later detail selection. `CounterReactivationPolicyTest`, `ProjectListViewModelTest`, `RavelryViewModelTest`, and `ProLocalizationSourceTest` cover these boundaries; `ActiveProjectPolicyRuntimeTest` is restricted to an offline isolated test installation with controlled entitlement state. Settings and the Pro screen wait for initial Pro state readiness; an initial Billing failure offers restore on the Pro screen before readiness; restore and purchase controls expose and disable their in-flight action rather than accepting duplicate taps.
 
 The repository remains the authoritative gate for mutation. A prompt sheet is not a substitute for transactional enforcement.
 
@@ -1710,7 +1746,7 @@ Inspect:
 - `data/local/KnitToolsDatabase.kt`;
 - every relevant entity and DAO;
 - `di/DatabaseModule.kt`;
-- schema JSON 24 and the preceding schema;
+- schema JSON 25 and the preceding schema;
 - migration tests.
 
 Questions:
@@ -1991,6 +2027,22 @@ Proof: fresh analyzer-owned artifacts and exact run state.
 
 ## Implemented versus intentionally absent
 
+### Manual local backup and replacement restore
+
+Settings contains **Backup & restore**. Export uses Android SAF `CreateDocument`; restore uses `OpenDocument`, private staging, full validation, a dated/count-based preview and an explicit destructive confirmation. The file is unencrypted and the UI says so. SAF providers may include Drive or Dropbox, but this adds no cloud sync, storage SDK, account or paid service.
+
+`BackupRepository` orchestrates a logical export of all 18 current Room 25 tables through `data/backup`. A single Room transaction covers table reads and referenced-file copies. PatternFileReferenceCoordinator protects pattern reference changes, and YarnCardRepository shares its photo mutex with backup to exclude startup photo pruning and replacement. Published photo/PDF files are immutable; missing required bytes fail the export. No live database/WAL/SHM files are copied or replaced, and the Hilt Room singleton stays open.
+
+The `.knittools-backup` file uses `application/octet-stream`, ZIP, manifest format version 1, data version 1 and schema version 25. Each table is JSON-lines with an explicit ordered column header; files have logical SHA-256 names. The manifest carries app version, timestamp, schema/data/format versions and every entry's size and SHA-256. Paths, duplicates, central/local entry inventories, EOF, sizes, hashes, JSON nesting, row sizes and total decompression are checked before any live mutation. An isolated current-schema Room database validates field types, foreign keys, indexes, production triggers, primary documents and annotation payloads. Future/other data versions require an explicit adapter; versionName is informational.
+
+Restore publishes fresh files and replaces all content tables in one transaction. Internal IDs, foreign keys, yarn links, document keys and annotation counter bindings are rebased together above destination ID high-water marks. Thus old saved navigation/widget actions and delayed old-project cleanup cannot address restored rows/files. Active session anchors become untrusted and require the existing conservative recovery review; stored checkpointed duration is retained without inventing elapsed time. The SQL transaction supplies rollback. A private journal records old/new file cleanup candidates before file publication; post-operation and startup cleanup uses current committed Room references to retain the authoritative files. Cancellation before commit leaves prior content intact. Successful return clears saved navigation when the user opens Projects; singleton database consumers observe the replacement.
+
+The backup includes projects, completion events, counters/history, reminders, sessions, folders, yarn/cards/usage/notes, saved pattern metadata, documents, bookmarks, all annotation layers/annotations, progress photo metadata and every referenced durable PDF/photo. Current and legacy app-owned URI roots are supported, and readable legacy external document references are copied into portable bytes. Orphan directories are not scanned into the backup.
+
+V1 deliberately leaves the destination's ordinary DataStore preferences and per-app language unchanged. Trial/tamper state is untouched; Play owns purchases; Firebase/Ravelry authentication is not transferred. Widget identities/state, launch trust tokens, review state, SavedStateHandle, caches, abandoned captures/import sessions, temporary exports, debug/build/Firebase configuration and credentials are excluded. No FileProvider root or storage permission is broadened.
+
+Limits and the exact storage inventory, recovery design and executed verification are maintained in [config/local-backup.md](config/local-backup.md).
+
 ### Implemented
 
 - Local projects with knitting/crochet semantics, targets, completion, sorting, and bulk actions.
@@ -2003,11 +2055,12 @@ Proof: fresh analyzer-owned artifacts and exact run state.
 - Local calculators and references.
 - Per-app language, fixed themes, haptic preference.
 - User-started trial and one-time Pro purchase.
+- Manual local full-content backup and replacement restore through Android SAF.
 
 ### Not implemented
 
 - Drive/Dropbox SDK integration or continuous sync.
-- Cross-device sync, backup/restore workflow, conflict resolution, background sync, or OAuth token storage for storage providers.
+- Cross-device sync, merge restore, conflict resolution, background sync, or OAuth token storage for storage providers.
 - Ravelry PDF download.
 - Web-page download, scraping, in-app web preview, or offline website capture.
 - Voice or microphone commands.
@@ -2037,7 +2090,7 @@ Common stale assumptions:
 
 - The root `package.json` is a DeepSec command facade, not evidence of an app website or JavaScript product runtime.
 - `allowBackup` is false, not true.
-- Room is schema 24, not an earlier schema.
+- Room is schema 25.
 - `ProjectCard.kt` is deleted; the current row is `ProjectListItem.kt`.
 - Projects are cardless list rows plus a separate Continue hero.
 - The current main buttons use `CounterImageButton` and WebP assets.

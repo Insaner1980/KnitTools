@@ -11,6 +11,10 @@ import androidx.compose.ui.unit.sp
  * kuin laskurinäyttö [CounterDimens]-tokeneillaan. Type.kt:n perusrooleja ei muuteta.
  */
 object InsightsDimens {
+    val CompletionPlotHeight = 48.dp
+    val CompletionBucketWidth = 112.dp
+    val CompletionBarWidth = 20.dp
+
     // Sama vaakapehmuste kuin Libraryssa ja Toolsissa.
     val ScreenHorizontalPadding = 16.dp
     val ContentBottomPadding = 32.dp

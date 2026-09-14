@@ -227,7 +227,7 @@
     <string name="skein_count_many">%1$d nøgler</string>
 
     <!-- Session History -->
-    <string name="session_history_title">Historik</string>
+    <string name="session_history_title">Arbejdshistorik</string>
     <string name="no_sessions">Ingen sessioner registreret endnu. Begynd at strikke for at se din historik her.</string>
     <string name="session_row_range">Pinde %1$d \u2192 %2$d</string>
     <string name="session_row_single">Række %1$d</string>
@@ -1044,4 +1044,51 @@
     <string name="web_pattern_share_ambiguous">Der blev delt mere end én webadresse</string>
     <string name="web_pattern_project_unavailable">Projektet er ikke længere tilgængeligt</string>
     <string name="pattern_open_project_notes">Åbn projektnoter</string>
+    <string name="insights_completions_title">Projektafslutninger</string>
+    <string name="insights_completions_empty">Ingen afslutninger i denne periode.</string>
+    <string name="insights_completions_project_empty">Ingen afslutning registreret for dette projekt i denne periode.</string>
+    <string name="insights_completions_period">%1$s – %2$s</string>
+    <plurals name="insights_completion_count">
+        <item quantity="one">%d afslutning</item>
+        <item quantity="other">%d afslutninger</item>
+    </plurals>
+
+    <string name="backup_title">Sikkerhedskopiering og gendannelse</string>
+    <string name="backup_description">Gem projekter, noter, opskrifter og lokale billeder i én sikkerhedskopi.</string>
+    <string name="backup_privacy">Sikkerhedskopien er ikke krypteret. Den kan indeholde private noter, billeder og PDF-opskrifter. Gem den et sted, du stoler på.</string>
+    <string name="backup_exclusions">Enhedens indstillinger og sprog forbliver uændrede. Prøveperioder, køb, login og widgets overføres ikke. En aktiv arbejdssession skal gennemgås efter gendannelse.</string>
+    <string name="backup_export">Eksportér sikkerhedskopi</string>
+    <string name="backup_restore">Gendan sikkerhedskopi</string>
+    <string name="backup_preview_date">Sikkerhedskopiens dato: %1$s</string>
+    <string name="backup_preview_version">KnitTools-version: %1$s</string>
+    <string name="backup_preview_projects">Projekter: %1$d</string>
+    <string name="backup_preview_patterns">Gemte opskrifter: %1$d</string>
+    <string name="backup_preview_yarn">Garnkort: %1$d</string>
+    <string name="backup_preview_files">Filer: %1$d</string>
+    <string name="backup_continue">Åbn projekter</string>
+    <string name="backup_confirm_title">Erstat aktuelle data?</string>
+    <string name="backup_confirm_message">Gendannelsen erstatter alle aktuelle KnitTools-projekter, noter, opskrifter, billeder og andet lokalt indhold. Dette kan ikke fortrydes. Eksportér først en sikkerhedskopi, hvis du vil beholde dit nuværende indhold.</string>
+    <string name="backup_replace">Erstat og gendan</string>
+    <string name="backup_exporting">Opretter sikkerhedskopi…</string>
+    <string name="backup_validating">Kontrollerer sikkerhedskopi…</string>
+    <string name="backup_restoring">Gendanner data. Vent venligst…</string>
+    <string name="backup_restored">Sikkerhedskopien er gendannet.</string>
+    <string name="backup_exported">Sikkerhedskopien er eksporteret.</string>
+    <string name="backup_error_unsupported">Denne version af sikkerhedskopien understøttes ikke. Opdater KnitTools, og prøv igen.</string>
+    <string name="backup_error_invalid">Dette er ikke en KnitTools-sikkerhedskopi. Vælg en KnitTools-sikkerhedskopi.</string>
+    <string name="backup_error_corrupt">Sikkerhedskopien er beskadiget eller indeholder ugyldige data. Vælg en anden. Dine aktuelle data er ikke erstattet.</string>
+    <string name="backup_error_space">Der er ikke nok ledig plads. Frigør lagerplads, og prøv igen.</string>
+    <string name="backup_error_read">Kilden kunne ikke læses. Kontrollér, at filen er tilgængelig, og prøv igen.</string>
+    <string name="backup_error_write">Sikkerhedskopien kunne ikke gemmes. Kontrollér destinationen, og prøv igen. Slet eventuelle ufuldstændige destinationsfiler.</string>
+    <string name="backup_error_restore">Gendannelsen mislykkedes. Dit tidligere indhold er bevaret. Prøv igen.</string>
+
+    <string name="counter_history_title">Tællerhistorik</string>
+    <string name="counter_history_empty_title">Ingen tællerhistorik endnu</string>
+    <string name="counter_history_empty_body">Ændringer i tælleren vises her, mens du arbejder på projektet.</string>
+    <string name="counter_history_increase">Forøgelse</string>
+    <string name="counter_history_decrease">Reduktion</string>
+    <string name="counter_history_reset">Nulstilling</string>
+    <string name="counter_history_changed">Tælleren blev ændret</string>
+    <string name="counter_history_event_description">%1$s. Fra %2$s til %3$s. %4$s, %5$s.</string>
+    <string name="counter_history_transition">%1$s → %2$s</string>
 </resources>

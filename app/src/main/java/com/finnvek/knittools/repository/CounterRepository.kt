@@ -6,6 +6,7 @@ import com.finnvek.knittools.data.local.ActiveSessionEntity
 import com.finnvek.knittools.data.local.CounterHistoryEntity
 import com.finnvek.knittools.data.local.CounterProjectDao
 import com.finnvek.knittools.data.local.DatabaseTransactionRunner
+import com.finnvek.knittools.data.local.ProjectCompletionEntity
 import com.finnvek.knittools.data.local.ProjectCounterDao
 import com.finnvek.knittools.data.local.ProjectFolderAssignmentEntity
 import com.finnvek.knittools.data.local.ProjectFolderDao
@@ -29,11 +30,14 @@ import com.finnvek.knittools.domain.calculator.saturatingAdd
 import com.finnvek.knittools.domain.model.ActiveSessionRecoveryReason
 import com.finnvek.knittools.domain.model.ActiveSessionTimeEvaluation
 import com.finnvek.knittools.domain.model.ActiveWorkSession
+import com.finnvek.knittools.domain.model.CounterHistory
+import com.finnvek.knittools.domain.model.CounterHistoryAction
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.KnitSession
 import com.finnvek.knittools.domain.model.MainCounterChange
 import com.finnvek.knittools.domain.model.MainCounterLabelType
+import com.finnvek.knittools.domain.model.ProjectCompletion
 import com.finnvek.knittools.domain.model.ProjectCounterType
 import com.finnvek.knittools.domain.model.ProjectDocument
 import com.finnvek.knittools.domain.model.ProjectSortOrder
@@ -115,6 +119,29 @@ class CounterRepository
         private val proManager: ProManager? = null,
         private val fileReferenceCoordinator: PatternFileReferenceCoordinator = PatternFileReferenceCoordinator(),
     ) {
+        fun observeCounterHistory(projectId: Long): Flow<List<CounterHistory>> =
+            dao
+                .observeCounterHistory(projectId)
+                .map { entries ->
+                    entries.map { entry ->
+                        CounterHistory(
+                            id = entry.id,
+                            action = CounterHistoryAction.fromPersistedValue(entry.action),
+                            previousValue = entry.previousValue,
+                            newValue = entry.newValue,
+                            timestamp = entry.timestamp,
+                        )
+                    }
+                }.retryOnRepositoryReadFailure()
+                .flowOn(ioDispatcher)
+
+        fun observeCompletions(projectId: Long? = null): Flow<List<ProjectCompletion>> =
+            dao
+                .observeCompletions(projectId)
+                .map { events -> events.map { it.toDomain() } }
+                .retryOnRepositoryReadFailure()
+                .flowOn(ioDispatcher)
+
         fun getAllProjects(): Flow<List<CounterProject>> =
             dao
                 .getAllProjects()
@@ -225,7 +252,7 @@ class CounterRepository
         suspend fun updateProject(project: CounterProject) {
             transactionRunner.run {
                 val current = dao.getProject(project.id) ?: return@run
-                if (current.isCompleted && !project.isCompleted) return@run
+                if (current.isCompleted != project.isCompleted) return@run
                 val projectName = uniqueProjectName(project.name, excludedProjectId = project.id) ?: return@run
                 val normalized = normalizeProjectDetails(project.copy(name = projectName)) ?: return@run
                 dao.update(normalized.copy(updatedAt = System.currentTimeMillis()).toEntity())
@@ -1139,11 +1166,6 @@ class CounterRepository
                 }
         }
 
-        suspend fun deleteHistoryBefore(
-            projectId: Long,
-            before: Long,
-        ) = dao.deleteHistoryBefore(projectId, before)
-
         suspend fun undoLastChange(projectId: Long) {
             applyMainCounterChange(projectId, MainCounterChange.Undo)
         }
@@ -1415,6 +1437,9 @@ class CounterRepository
                 if (activeSessionResult != null) return@runSessionMutation activeSessionResult
                 val completedAt = completedAtMillis ?: now.wallClockMillis
                 dao.archiveProject(projectId, project.count, completedAt, completedAt)
+                dao.insertCompletion(
+                    ProjectCompletionEntity(projectId = projectId, completedAt = completedAt, zoneId = now.zoneId),
+                )
                 ProjectCompletionResult.Completed
             }
 

@@ -400,16 +400,11 @@ class CounterViewModel
                     if (selectedProjectJob != null || projectSelectionJob != null) return@collect
                     if (list.isEmpty()) {
                         clearSelectedProject()
-                    } else {
-                        val currentId = _uiState.value.projectId ?: savedStateHandle.get<Long>(KEY_SELECTED_PROJECT_ID)
-                        val targetProject =
-                            currentId?.let { id -> list.find { it.id == id } }
-                                ?: list.first()
-
-                        if (_uiState.value.projectId != targetProject.id || selectedProjectJob == null) {
-                            openProject(targetProject)
-                        }
+                        return@collect
                     }
+                    val currentId = _uiState.value.projectId ?: savedStateHandle.get<Long>(KEY_SELECTED_PROJECT_ID)
+                    val targetProject = currentId?.let { id -> list.find { it.id == id } } ?: list.first()
+                    openProject(targetProject)
                 }
             }
         }
@@ -654,7 +649,6 @@ class CounterViewModel
             projectSelectionVersion++
             if (_uiState.value.projectId != project.id) invalidateProjectCompletion()
             if (pendingReactivation?.projectId != project.id) dismissPendingReactivation()
-            if (!restoring) pruneHistory(project.id)
             linkedYarnIdsCache = project.yarnCardIds
 
             saveSelectedProject(project.id)
@@ -2406,11 +2400,6 @@ class CounterViewModel
                 repository.applyMainCounterChange(projectId, change)
                 syncWidget(projectId, state.projectName, newValue)
             }
-        }
-
-        private suspend fun pruneHistory(projectId: Long) {
-            val cutoff = System.currentTimeMillis() - 24L * 60L * 60L * 1_000L
-            repository.deleteHistoryBefore(projectId, cutoff)
         }
 
         private suspend fun syncWidget(

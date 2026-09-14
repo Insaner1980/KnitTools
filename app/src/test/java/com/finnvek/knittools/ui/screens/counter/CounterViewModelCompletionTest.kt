@@ -1,82 +1,31 @@
 package com.finnvek.knittools.ui.screens.counter
 
-import android.content.Context
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.ProcessLifecycleOwner
-import androidx.lifecycle.SavedStateHandle
 import com.finnvek.knittools.R
-import com.finnvek.knittools.data.datastore.PreferencesManager
 import com.finnvek.knittools.domain.model.ActiveSessionRecoveryReason
-import com.finnvek.knittools.domain.model.ActiveSessionTimingAnchors
 import com.finnvek.knittools.domain.model.ActiveWorkSession
 import com.finnvek.knittools.domain.model.CounterProject
-import com.finnvek.knittools.pro.ProManager
-import com.finnvek.knittools.pro.ProState
 import com.finnvek.knittools.repository.ActiveSessionCompletionChoice
-import com.finnvek.knittools.repository.CounterRepository
-import com.finnvek.knittools.repository.ProgressPhotoRepository
 import com.finnvek.knittools.repository.ProjectCompletionResult
-import com.finnvek.knittools.repository.ProjectCounterRepository
-import com.finnvek.knittools.repository.ProjectDocumentRepository
-import com.finnvek.knittools.repository.ProjectYarnNoteRepository
-import com.finnvek.knittools.repository.ReminderRepository
-import com.finnvek.knittools.repository.SavedPatternRepository
 import com.finnvek.knittools.repository.StartSessionResult
-import com.finnvek.knittools.repository.YarnCardRepository
-import com.finnvek.knittools.widget.CounterWidgetState
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
-import io.mockk.mockk
-import io.mockk.mockkObject
-import io.mockk.unmockkObject
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
-import org.junit.Before
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class CounterViewModelCompletionTest {
-    private val dispatcher = StandardTestDispatcher()
-    private val repository = mockk<CounterRepository>(relaxed = true)
-    private val observedProject = MutableStateFlow(CounterProject(id = 7L, name = "Project"))
-
-    @Before
-    fun setUp() {
-        Dispatchers.setMain(dispatcher)
-        mockkObject(ProcessLifecycleOwner.Companion, CounterWidgetState)
-        every { ProcessLifecycleOwner.get() } returns mockk<LifecycleOwner>(relaxed = true)
-        coEvery { CounterWidgetState.syncAll(any(), any()) } returns Unit
-        val project = CounterProject(id = 7L, name = "Project")
-        observedProject.value = project
-        every { repository.getActiveProjects() } returns flowOf(listOf(project))
-        every { repository.observeProject(7L) } returns observedProject
-        every { repository.observeActiveSession() } returns flowOf(null)
-        coEvery { repository.refreshActiveSession() } returns null
-    }
-
-    @After
-    fun tearDown() {
-        unmockkObject(ProcessLifecycleOwner.Companion, CounterWidgetState)
-        Dispatchers.resetMain()
-    }
-
+class CounterViewModelCompletionTest : CounterViewModelFixture() {
     @Test
     fun `completion failure after project switch cannot retry another project`() =
         runTest {
@@ -336,66 +285,5 @@ class CounterViewModelCompletionTest {
         }
     }
 
-    private fun TestScope.viewModel(): CounterViewModel {
-        val preferences = mockk<PreferencesManager>()
-        every { preferences.preferences } returns emptyFlow()
-        val proManager = mockk<ProManager>()
-        every { proManager.proState } returns MutableStateFlow(ProState())
-        every { proManager.hasFeature(any()) } returns false
-        val yarns = mockk<YarnCardRepository>()
-        every { yarns.getAllCards() } returns emptyFlow()
-        val savedPatterns = mockk<SavedPatternRepository>()
-        every { savedPatterns.getAll() } returns flowOf(emptyList())
-        val reminders = mockk<ReminderRepository>()
-        every { reminders.getRemindersForProject(any()) } returns flowOf(emptyList())
-        val counters = mockk<ProjectCounterRepository>()
-        every { counters.getCountersForProject(any()) } returns flowOf(emptyList())
-        val photos = mockk<ProgressPhotoRepository>()
-        every { photos.getLatestPhotos(any()) } returns flowOf(emptyList())
-        every { photos.getPhotosForProject(any()) } returns flowOf(emptyList())
-        val yarnNotes = mockk<ProjectYarnNoteRepository>()
-        every { yarnNotes.observeForProject(any()) } returns flowOf(emptyList())
-        val documents = mockk<ProjectDocumentRepository>()
-        every { documents.observeDocuments(any<Long>()) } returns flowOf(emptyList())
-        every { documents.observeActiveDocument(any()) } returns flowOf(null)
-        return CounterViewModel(
-            repository = repository,
-            reminderRepository = reminders,
-            projectCounterRepository = counters,
-            photoRepository = photos,
-            projectYarnNoteRepository = yarnNotes,
-            preferencesManager = preferences,
-            proManager = proManager,
-            yarnCardRepository = yarns,
-            savedPatternRepository = savedPatterns,
-            projectDocumentRepository = documents,
-            patternDocumentStorage = mockk(),
-            inAppReviewManager = mockk(),
-            savedStateHandle = SavedStateHandle(),
-            context = mockk<Context>(relaxed = true),
-            ioDispatcher = dispatcher,
-            applicationScope = backgroundScope,
-        )
-    }
-
-    private fun activeSession() =
-        ActiveWorkSession(
-            sessionToken = "existing",
-            projectId = 8L,
-            startedAtWallMillis = 1_000L,
-            startZoneId = "Europe/Helsinki",
-            startRow = 0,
-            lastObservedRow = 0,
-            trustedLastObservedRow = 0,
-            trustedRowsWorked = 0,
-            pendingRowsWorked = 0,
-            reviewedRowsWorked = 0,
-            reviewedLastObservedRow = 0,
-            unreviewedRowsWorked = 0,
-            timingAnchors = ActiveSessionTimingAnchors(1_000L, 1_000L, 1L, 0L, 0L),
-            recoveryReason = null,
-            recoveryIntervalToken = null,
-            recoverySuggestedDurationSeconds = null,
-            recoveryPromptShown = false,
-        )
+    private fun TestScope.viewModel(): CounterViewModel = emptyCounterViewModel(repository, dispatcher)
 }

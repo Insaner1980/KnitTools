@@ -1,36 +1,24 @@
 package com.finnvek.knittools.ui.screens.project
 
-import android.content.Context
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModelStore
 import com.finnvek.knittools.data.datastore.AppPreferences
-import com.finnvek.knittools.data.datastore.PreferencesManager
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.ProjectDocument
-import com.finnvek.knittools.domain.model.ProjectFolderSnapshot
 import com.finnvek.knittools.domain.model.ProjectSortOrder
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.SavedPatternSource
 import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.pro.ProFeature
-import com.finnvek.knittools.pro.ProManager
-import com.finnvek.knittools.repository.CounterRepository
-import com.finnvek.knittools.repository.ProgressPhotoRepository
 import com.finnvek.knittools.repository.ProjectCompletionResult
 import com.finnvek.knittools.repository.ProjectCreationResult
 import com.finnvek.knittools.repository.ProjectDeletionResult
-import com.finnvek.knittools.repository.ProjectDocumentRepository
-import com.finnvek.knittools.repository.ProjectFolderRepository
-import com.finnvek.knittools.repository.SavedPatternRepository
-import com.finnvek.knittools.repository.YarnCardRepository
 import com.finnvek.knittools.serializedCopy
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
-import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
@@ -38,75 +26,16 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeoutOrNull
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
-import org.junit.Before
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class ProjectListViewModelTest {
-    private val testDispatcher = UnconfinedTestDispatcher()
-
-    private lateinit var repository: CounterRepository
-    private lateinit var proManager: ProManager
-    private lateinit var yarnCardRepository: YarnCardRepository
-    private lateinit var photoRepository: ProgressPhotoRepository
-    private lateinit var savedPatternRepository: SavedPatternRepository
-    private lateinit var projectDocumentRepository: ProjectDocumentRepository
-    private lateinit var folderRepository: ProjectFolderRepository
-    private lateinit var preferencesManager: PreferencesManager
-    private lateinit var context: Context
-
-    @Before
-    fun setup() {
-        Dispatchers.setMain(testDispatcher)
-        repository = mockk(relaxed = true)
-        proManager = mockk()
-        every { proManager.proState } returns
-            MutableStateFlow(
-                com.finnvek.knittools.pro
-                    .ProState(),
-            )
-        yarnCardRepository = mockk(relaxed = true)
-        photoRepository = mockk(relaxed = true)
-        savedPatternRepository = mockk(relaxed = true)
-        projectDocumentRepository = mockk(relaxed = true)
-        folderRepository = mockk()
-        every { folderRepository.observeOrganization(any()) } returns
-            flowOf(ProjectFolderSnapshot(emptyList(), emptyList()))
-        every { projectDocumentRepository.observeDocuments(any<List<Long>>()) } returns
-            flowOf(emptyMap<Long, List<ProjectDocument>>())
-        preferencesManager = mockk(relaxed = true)
-        context = mockk()
-        every { context.getString(any(), any()) } returns "Project 2"
-    }
-
-    @After
-    fun tearDown() {
-        Dispatchers.resetMain()
-    }
-
-    private fun createViewModel(savedStateHandle: SavedStateHandle = SavedStateHandle()) =
-        ProjectListViewModel(
-            repository = repository,
-            proManager = proManager,
-            yarnCardRepository = yarnCardRepository,
-            photoRepository = photoRepository,
-            savedPatternRepository = savedPatternRepository,
-            projectDocumentRepository = projectDocumentRepository,
-            preferencesManager = preferencesManager,
-            context = context,
-            folderRepository = folderRepository,
-            savedStateHandle = savedStateHandle,
-        )
-
+class ProjectListViewModelTest : ProjectListViewModelFixture() {
     @Test
     fun `completed history permits creation precheck while default numbering still uses total count`() =
         runTest {
@@ -200,12 +129,14 @@ class ProjectListViewModelTest {
             assertEquals(1, upgradeEvents)
         }
 
+    // CPD-OFF: Keep the independent creation or reactivation race sequence and its assertions together.
     @Test
     fun `pending project creation retries after prompt and navigates when created`() =
         runTest {
             every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } returns false
             coEvery { repository.getActiveProjectCount() } returns 1
             coEvery { repository.createProject(any(), any(), any(), any(), false, null) } returnsMany
+                // CPD-ON
                 listOf(
                     ProjectCreationResult.LimitReached,
                     ProjectCreationResult.Created(projectId = 42L),

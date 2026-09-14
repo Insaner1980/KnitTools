@@ -263,6 +263,7 @@ class BillingRecoveryTest {
             assertEquals(ProStatus.PRO_PURCHASED, viewModel.proState.value.status)
         }
 
+    // CPD-OFF: Keep callback ordering and virtual-time assertions local to each recovery race scenario.
     @Test
     fun `cancelled restore releases view model busy state without resolving purchase`() =
         runTest(dispatcher) {
@@ -270,6 +271,7 @@ class BillingRecoveryTest {
             val pending = CompletableDeferred<PurchasesResult>()
             coEvery { client.queryPurchasesAsync(any()) } coAnswers { pending.await() }
             viewModel.restorePurchases()
+            // CPD-ON
             assertTrue(viewModel.isRestoring.value)
 
             viewModels.clear()
@@ -492,6 +494,7 @@ class BillingRecoveryTest {
                 runCurrent()
                 worker.submit { oldCallback.onAcknowledgePurchaseResponse(response) }.get(5, TimeUnit.SECONDS)
                 runCurrent()
+                // CPD-OFF: Keep callback ordering and virtual-time assertions local to each recovery race scenario.
                 assertEquals("Stale response must be rejected before processing", null, responseThread.get())
                 advanceTimeBy(5_001)
                 runCurrent()
@@ -499,6 +502,7 @@ class BillingRecoveryTest {
                 coVerify(exactly = 1) { nextClient.queryProductDetails(any()) }
                 verify(exactly = 1) { nextClient.startConnection(any()) }
                 billing.restorePurchasesWithResult()
+                // CPD-ON
                 assertEquals(1, currentCallbacks.size)
 
                 val currentCallback = currentCallbacks.single()

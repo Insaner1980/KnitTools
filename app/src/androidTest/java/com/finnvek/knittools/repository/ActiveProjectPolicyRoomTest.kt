@@ -4,16 +4,16 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.finnvek.knittools.data.local.ActiveSessionSchemaConstraints
+import com.finnvek.knittools.data.local.CounterProjectDao
 import com.finnvek.knittools.data.local.CounterProjectEntity
 import com.finnvek.knittools.data.local.KnitToolsDatabase
 import com.finnvek.knittools.data.local.PatternAnnotationSchemaConstraints
+import com.finnvek.knittools.data.local.ProjectCompletionEntity
 import com.finnvek.knittools.data.local.ProjectDocumentSchemaConstraints
-import com.finnvek.knittools.data.local.RoomDatabaseTransactionRunner
-import com.finnvek.knittools.data.storage.PatternDocumentStorage
-import com.finnvek.knittools.data.storage.ProgressPhotoStorage
 import com.finnvek.knittools.domain.model.MainCounterChange
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.SavedPatternSource
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -181,6 +181,116 @@ class ActiveProjectPolicyRoomTest {
             )
         }
 
+    @Test
+    fun completionHistoryPreservesCyclesFiltersAndCascades() =
+        runBlocking {
+            val first = seed("Cycles")
+            val second = seed("Other")
+            assertTrue(repository.observeCompletions().first().isEmpty())
+            assertEquals(
+                ProjectCompletionResult.Completed,
+                repository.completeProjectWithSessionChoice(first, null, 200L),
+            )
+            repository.archiveProject(first, 300L)
+            assertEquals(1, repository.observeCompletions(first).first().size)
+            assertEquals(
+                java.time.ZoneId
+                    .systemDefault()
+                    .id,
+                repository
+                    .observeCompletions(first)
+                    .first()
+                    .single()
+                    .zoneId,
+            )
+            assertEquals(ProjectReactivationResult.Reactivated, repository.reactivateProject(first, 200L, true))
+            assertEquals(1, repository.observeCompletions(first).first().size)
+            repository.archiveProject(first, 400L)
+            repository.archiveProject(second, 500L)
+            assertEquals(listOf(400L, 200L), repository.observeCompletions(first).first().map { it.completedAt })
+            assertEquals(3, repository.observeCompletions().first().size)
+            repository.deleteProject(first)
+            assertEquals(listOf(second), repository.observeCompletions().first().map { it.projectId })
+        }
+
+    @Test
+    fun completionEventFailureRollsBackProjectAndSession() =
+        runBlocking {
+            val id = seed("Rollback")
+            repository.startSession(id)
+            val before = repository.getProject(id)
+            val session = database.sessionDao().getActiveSession()
+            database.openHelper.writableDatabase.execSQL(
+                "CREATE TRIGGER fail_completion BEFORE INSERT ON project_completions " +
+                    "BEGIN SELECT RAISE(ABORT, 'test'); END",
+            )
+            assertEquals(
+                ProjectCompletionResult.PersistenceFailure,
+                repository.completeProjectWithSessionChoice(id, ActiveSessionCompletionChoice.DISCARD),
+            )
+            assertEquals(before, repository.getProject(id))
+            assertEquals(session, database.sessionDao().getActiveSession())
+            assertTrue(repository.observeCompletions().first().isEmpty())
+        }
+
+    @Test
+    fun bulkCompletionRecordsOnlySuccessfulTransitions() =
+        runBlocking {
+            val first = seed("First")
+            val blocked = seed("Needs choice")
+            repository.startSession(blocked)
+            val results =
+                listOf(
+                    first,
+                    blocked,
+                    first,
+                    999L,
+                ).map { repository.completeProjectWithSessionChoice(it, null) }
+            assertEquals(ProjectCompletionResult.Completed, results[0])
+            assertTrue(results[1] is ProjectCompletionResult.NeedsActiveSessionChoice)
+            assertEquals(ProjectCompletionResult.ProjectUnavailable, results[3])
+            assertEquals(listOf(first), repository.observeCompletions().first().map { it.projectId })
+        }
+
+    @Test
+    fun cancelledCompletionRollsBackBothWritesAndPropagates() =
+        runBlocking {
+            val id = seed("Cancelled")
+            val before = repository.getProject(id)
+            val dao = database.counterProjectDao()
+            val cancelling =
+                object : CounterProjectDao by dao {
+                    override suspend fun insertCompletion(event: ProjectCompletionEntity): Long {
+                        dao.insertCompletion(event)
+                        throw CancellationException("test cancellation")
+                    }
+                }
+            var cancelled = false
+            try {
+                newCounterRepository(cancelling).completeProjectWithSessionChoice(id, null)
+            } catch (_: CancellationException) {
+                cancelled = true
+            }
+            assertTrue(cancelled)
+            assertEquals(before, repository.getProject(id))
+            assertTrue(repository.observeCompletions().first().isEmpty())
+        }
+
+    @Test
+    fun concurrentCompletionCreatesExactlyOneEvent() =
+        runBlocking {
+            val id = seed("Concurrent")
+            coroutineScope {
+                listOf(
+                    async(Dispatchers.IO) {
+                        repository.completeProjectWithSessionChoice(id, null)
+                    },
+                    async(Dispatchers.IO) { repository.completeProjectWithSessionChoice(id, null) },
+                ).awaitAll()
+            }
+            assertEquals(1, repository.observeCompletions(id).first().size)
+        }
+
     private suspend fun race(
         first: suspend () -> Any,
         second: suspend () -> Any,
@@ -225,50 +335,6 @@ class ActiveProjectPolicyRoomTest {
     private suspend fun reactivate(id: Long) =
         repository.reactivateProject(id, 100L, canCreateAdditionalProjects = false)
 
-    private fun newCounterRepository(): CounterRepository {
-        val transactionRunner = RoomDatabaseTransactionRunner(database)
-        val savedPatternRepository =
-            SavedPatternRepository(
-                dao = database.savedPatternDao(),
-                context = context,
-                counterProjectDao = database.counterProjectDao(),
-                transactionRunner = transactionRunner,
-                ioDispatcher = Dispatchers.IO,
-                projectDocumentDao = database.projectDocumentDao(),
-            )
-        val projectDocumentRepository =
-            ProjectDocumentRepository(
-                documentDao = database.projectDocumentDao(),
-                projectDao = database.counterProjectDao(),
-                savedPatternRepository = savedPatternRepository,
-                layerRepository =
-                    PatternAnnotationLayerRepository(
-                        database.patternAnnotationLayerDao(),
-                        transactionRunner,
-                    ),
-                transactionRunner = transactionRunner,
-                fileAvailability = ProjectDocumentFileAvailability(context, Dispatchers.IO),
-            )
-        return CounterRepository(
-            dao = database.counterProjectDao(),
-            projectCounterDao = database.projectCounterDao(),
-            sessionDao = database.sessionDao(),
-            photoStorage = ProgressPhotoStorage(),
-            patternDocumentStorage = PatternDocumentStorage(),
-            context = context,
-            yarnCardRepository =
-                YarnCardRepository(
-                    dao = database.yarnCardDao(),
-                    counterProjectDao = database.counterProjectDao(),
-                    context = context,
-                    transactionRunner = transactionRunner,
-                    ioDispatcher = Dispatchers.IO,
-                ),
-            savedPatternRepository = savedPatternRepository,
-            projectDocumentRepository = projectDocumentRepository,
-            projectFolderDao = database.projectFolderDao(),
-            transactionRunner = transactionRunner,
-            ioDispatcher = Dispatchers.IO,
-        )
-    }
+    private fun newCounterRepository(projectDao: CounterProjectDao = database.counterProjectDao()): CounterRepository =
+        counterHistoryTestRepository(database, context, projectDao)
 }

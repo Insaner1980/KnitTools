@@ -6,6 +6,7 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 
 @Entity(
+    // CPD-OFF: Room requires each entity to declare its own project foreign key and index.
     tableName = "row_reminders",
     foreignKeys = [
         ForeignKey(
@@ -18,6 +19,7 @@ import androidx.room.PrimaryKey
     indices = [Index("projectId")],
 )
 data class RowReminderEntity(
+    // CPD-ON
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
     val projectId: Long,

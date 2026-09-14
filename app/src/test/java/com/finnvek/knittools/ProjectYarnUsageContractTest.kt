@@ -1,9 +1,5 @@
 package com.finnvek.knittools
 
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -14,24 +10,8 @@ import javax.xml.parsers.DocumentBuilderFactory
 class ProjectYarnUsageContractTest {
     @Test
     fun `schema 24 only adds usage and leaves all sixteen older entities unchanged`() {
-        fun schema(version: Int) =
-            Json
-                .parseToJsonElement(
-                    ProjectSourceFiles.read(
-                        "app/schemas/com.finnvek.knittools.data.local.KnitToolsDatabase/$version.json",
-                    ),
-                ).jsonObject
-                .getValue("database")
-                .jsonObject
-                .getValue("entities")
-                .jsonArray
-                .associateBy {
-                    it.jsonObject
-                        .getValue("tableName")
-                        .jsonPrimitive.content
-                }
-        val previous = schema(23)
-        val current = schema(24)
+        val previous = ProjectSourceFiles.schemaEntities(23)
+        val current = ProjectSourceFiles.schemaEntities(24)
         assertEquals(16, previous.size)
         assertEquals(setOf("project_yarn_usage"), current.keys - previous.keys)
         previous.forEach { (table, entity) -> assertEquals(table, entity, current[table]) }

@@ -33,13 +33,16 @@ class FeatureGateRaceSourceTest {
     }
 
     @Test
-    fun `counter history pruning is independent of pro and billing state`() {
+    fun `project opening has no age based counter history deletion`() {
         val viewModel = ProjectSourceFiles.read(COUNTER_VIEW_MODEL)
 
-        assertTrue(viewModel.contains("pruneHistory(project.id)"))
-        assertTrue(viewModel.contains("private suspend fun pruneHistory(projectId: Long)"))
-        assertFalse(viewModel.contains("pruneHistoryForFree"))
-        assertFalse(viewModel.contains("initialStateReady && !proState.isPro"))
+        assertFalse(viewModel.contains("pruneHistory"))
+        listOf(
+            "app/src/main/java/com/finnvek/knittools/repository/CounterRepository.kt",
+            "app/src/main/java/com/finnvek/knittools/data/local/CounterProjectDao.kt",
+        ).forEach { path ->
+            assertFalse(ProjectSourceFiles.read(path).contains("deleteHistoryBefore"))
+        }
     }
 
     private companion object {

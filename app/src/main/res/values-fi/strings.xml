@@ -227,7 +227,7 @@
     <string name="skein_count_many">%1$d kerää</string>
 
     <!-- Istuntohistoria -->
-    <string name="session_history_title">Historia</string>
+    <string name="session_history_title">Työskentelyhistoria</string>
     <string name="no_sessions">Istuntoja ei ole vielä tallennettu. Aloita neulominen, niin näet historian täällä.</string>
     <string name="session_row_range">Kerrokset %1$d \u2192 %2$d</string>
     <string name="session_row_single">Rivi %1$d</string>
@@ -1338,4 +1338,51 @@
     <string name="web_pattern_share_ambiguous">Jaossa oli useampi kuin yksi verkkosivun osoite</string>
     <string name="web_pattern_project_unavailable">Projekti ei ole enää saatavilla</string>
     <string name="pattern_open_project_notes">Avaa projektin muistiinpanot</string>
+    <string name="insights_completions_title">Projektien valmistumiset</string>
+    <string name="insights_completions_empty">Ei valmistumisia tällä aikavälillä.</string>
+    <string name="insights_completions_project_empty">Tälle projektille ei ole kirjattu valmistumista tällä aikavälillä.</string>
+    <string name="insights_completions_period">%1$s – %2$s</string>
+    <plurals name="insights_completion_count">
+        <item quantity="one">%d valmistuminen</item>
+        <item quantity="other">%d valmistumista</item>
+    </plurals>
+
+    <string name="backup_title">Varmuuskopiointi ja palautus</string>
+    <string name="backup_description">Tallenna projektit, muistiinpanot, ohjeet ja paikalliset kuvat yhteen varmuuskopiotiedostoon.</string>
+    <string name="backup_privacy">Varmuuskopiota ei salata. Se voi sisältää yksityisiä muistiinpanoja, kuvia ja PDF-ohjeita. Tallenna se luotettavaan paikkaan.</string>
+    <string name="backup_exclusions">Laitteen asetukset ja kieli säilyvät ennallaan. Kokeilua, ostoja, kirjautumisia ja widgettejä ei siirretä. Aktiivinen työistunto on tarkistettava palautuksen jälkeen.</string>
+    <string name="backup_export">Vie varmuuskopio</string>
+    <string name="backup_restore">Palauta varmuuskopio</string>
+    <string name="backup_preview_date">Varmuuskopion ajankohta: %1$s</string>
+    <string name="backup_preview_version">KnitTools-versio: %1$s</string>
+    <string name="backup_preview_projects">Projektit: %1$d</string>
+    <string name="backup_preview_patterns">Tallennetut ohjeet: %1$d</string>
+    <string name="backup_preview_yarn">Lankakortit: %1$d</string>
+    <string name="backup_preview_files">Tiedostot: %1$d</string>
+    <string name="backup_continue">Avaa projektit</string>
+    <string name="backup_confirm_title">Korvataanko nykyiset tiedot?</string>
+    <string name="backup_confirm_message">Tämän varmuuskopion palautus korvaa kaikki nykyiset KnitTools-projektit, muistiinpanot, ohjeet, kuvat ja muun paikallisen sisällön. Tätä ei voi kumota. Vie ensin varmuuskopio, jos haluat säilyttää nykyisen sisällön.</string>
+    <string name="backup_replace">Korvaa ja palauta</string>
+    <string name="backup_exporting">Luodaan varmuuskopiota…</string>
+    <string name="backup_validating">Tarkistetaan varmuuskopiota…</string>
+    <string name="backup_restoring">Palautetaan tietoja. Odota hetki…</string>
+    <string name="backup_restored">Varmuuskopio palautettu.</string>
+    <string name="backup_exported">Varmuuskopio viety.</string>
+    <string name="backup_error_unsupported">Tätä varmuuskopioversiota ei tueta. Päivitä KnitTools ja yritä uudelleen.</string>
+    <string name="backup_error_invalid">Tämä ei ole KnitTools-varmuuskopio. Valitse KnitTools-varmuuskopio.</string>
+    <string name="backup_error_corrupt">Varmuuskopio on vioittunut tai sisältää virheellisiä tietoja. Valitse toinen varmuuskopio. Nykyisiä tietojasi ei ole korvattu.</string>
+    <string name="backup_error_space">Vapaata tilaa ei ole riittävästi. Vapauta tallennustilaa ja yritä uudelleen.</string>
+    <string name="backup_error_read">Lähdettä ei voitu lukea. Tarkista tiedoston saatavuus ja yritä uudelleen.</string>
+    <string name="backup_error_write">Varmuuskopiota ei voitu tallentaa. Tarkista kohde ja yritä uudelleen. Poista mahdollinen keskeneräinen kohdetiedosto.</string>
+    <string name="backup_error_restore">Palautus epäonnistui. Aiempi sisältösi säilytettiin. Yritä uudelleen.</string>
+
+    <string name="counter_history_title">Laskurihistoria</string>
+    <string name="counter_history_empty_title">Ei vielä laskurihistoriaa</string>
+    <string name="counter_history_empty_body">Laskurin muutokset näkyvät täällä, kun työskentelet projektin parissa.</string>
+    <string name="counter_history_increase">Lisäys</string>
+    <string name="counter_history_decrease">Vähennys</string>
+    <string name="counter_history_reset">Nollaus</string>
+    <string name="counter_history_changed">Laskuri muuttui</string>
+    <string name="counter_history_event_description">%1$s. Arvosta %2$s arvoon %3$s. %4$s, %5$s.</string>
+    <string name="counter_history_transition">%1$s → %2$s</string>
 </resources>

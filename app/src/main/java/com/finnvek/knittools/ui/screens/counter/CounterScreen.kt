@@ -154,6 +154,7 @@ private fun ProjectDocumentMutationResult.toProjectDocumentError(): ProjectDocum
 data class CounterScreenActions(
     val onBack: () -> Unit = {},
     val onSessionHistory: (Long) -> Unit = {},
+    val onCounterHistory: (Long) -> Unit = {},
     val onPhotoGallery: () -> Unit = {},
     val onPatternViewer: (Long, Long?) -> Unit = { _, _ -> },
     val onSavedPatternDetail: (Long) -> Unit = {},
@@ -728,6 +729,10 @@ fun CounterScreen(
                         },
                         onSetStitchTrackingEnabled = viewModel::setStitchTrackingEnabled,
                     )
+                },
+                onOpenCounterHistory = {
+                    showProjectActionsSheet = false
+                    state.projectId?.let(actions.onCounterHistory)
                 },
                 onOpenSessionHistory = {
                     showProjectActionsSheet = false
@@ -2026,9 +2031,7 @@ private fun KeepScreenAwake(
                         window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                     }
 
-                    else -> {
-                        Unit
-                    }
+                    else -> {}
                 }
             }
         lifecycle.addObserver(observer)

@@ -3,12 +3,17 @@ package com.finnvek.knittools.repository
 import com.finnvek.knittools.data.local.CounterHistoryEntity
 import com.finnvek.knittools.data.local.CounterProjectDao
 import com.finnvek.knittools.data.local.CounterProjectEntity
+import com.finnvek.knittools.data.local.ProjectCompletionEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
 open class StubCounterProjectDao(
     private val projects: List<CounterProjectEntity> = emptyList(),
 ) : CounterProjectDao {
+    override suspend fun insertCompletion(event: ProjectCompletionEntity): Long = 0L
+
+    override fun observeCompletions(projectId: Long?): Flow<List<ProjectCompletionEntity>> = flowOf(emptyList())
+
     override fun getAllProjects(): Flow<List<CounterProjectEntity>> = flowOf(projects)
 
     override suspend fun getAllProjectsOnce(): List<CounterProjectEntity> = projects
@@ -210,12 +215,9 @@ open class StubCounterProjectDao(
 
     override suspend fun getLatestActiveProject(): CounterProjectEntity? = projects.firstOrNull()
 
-    override suspend fun insertHistory(entry: CounterHistoryEntity) = Unit
+    override fun observeCounterHistory(projectId: Long): Flow<List<CounterHistoryEntity>> = flowOf(emptyList())
 
-    override suspend fun deleteHistoryBefore(
-        projectId: Long,
-        before: Long,
-    ) = Unit
+    override suspend fun insertHistory(entry: CounterHistoryEntity) = Unit
 
     override suspend fun getLatestHistory(projectId: Long): CounterHistoryEntity? = null
 

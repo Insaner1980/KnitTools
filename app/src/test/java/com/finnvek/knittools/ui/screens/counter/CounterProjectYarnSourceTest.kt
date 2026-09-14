@@ -93,16 +93,7 @@ class CounterProjectYarnSourceTest {
     @Test
     fun `all configured locales explain both project yarn save states`() {
         val builder = DocumentBuilderFactory.newInstance().newDocumentBuilder()
-        val locales =
-            builder
-                .parse(ProjectSourceFiles.file("app/src/main/res/xml/locales_config.xml").toFile())
-                .getElementsByTagName("locale")
-        val directories =
-            (0 until locales.length)
-                .map { index ->
-                    val language = (locales.item(index) as Element).getAttribute("android:name")
-                    if (language == "en") "values" else "values-$language"
-                }.toSet()
+        val directories = ProjectSourceFiles.configuredResourceDirectories()
         val files = ProjectSourceFiles.localizedStringFiles()
         assertEquals(directories, files.map { it.parent.fileName.toString() }.toSet())
         files.forEach { file ->

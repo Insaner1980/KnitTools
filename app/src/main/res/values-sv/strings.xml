@@ -227,7 +227,7 @@
     <string name="skein_count_many">%1$d nystan</string>
 
     <!-- Session History -->
-    <string name="session_history_title">Historik</string>
+    <string name="session_history_title">Arbetspasshistorik</string>
     <string name="no_sessions">Inga sessioner registrerade ännu. Börja sticka för att se din historik här.</string>
     <string name="session_row_range">Varv %1$d \u2192 %2$d</string>
     <string name="session_row_single">Varv %1$d</string>
@@ -1061,4 +1061,51 @@
     <string name="web_pattern_share_ambiguous">Fler än en webbadress delades</string>
     <string name="web_pattern_project_unavailable">Projektet är inte längre tillgängligt</string>
     <string name="pattern_open_project_notes">Öppna projektanteckningar</string>
+    <string name="insights_completions_title">Projektavslut</string>
+    <string name="insights_completions_empty">Inga avslut under perioden.</string>
+    <string name="insights_completions_project_empty">Inget avslut registrerat för detta projekt under perioden.</string>
+    <string name="insights_completions_period">%1$s – %2$s</string>
+    <plurals name="insights_completion_count">
+        <item quantity="one">%d avslut</item>
+        <item quantity="other">%d avslut</item>
+    </plurals>
+
+    <string name="backup_title">Säkerhetskopiering och återställning</string>
+    <string name="backup_description">Spara projekt, anteckningar, mönster och lokala foton i en säkerhetskopia.</string>
+    <string name="backup_privacy">Säkerhetskopian är inte krypterad. Den kan innehålla privata anteckningar, foton och PDF-mönster. Spara den på en betrodd plats.</string>
+    <string name="backup_exclusions">Enhetens inställningar och språk förblir oförändrade. Provperioder, köp, inloggningar och widgetar överförs inte. En aktiv arbetssession måste granskas efter återställning.</string>
+    <string name="backup_export">Exportera säkerhetskopia</string>
+    <string name="backup_restore">Återställ säkerhetskopia</string>
+    <string name="backup_preview_date">Datum för säkerhetskopian: %1$s</string>
+    <string name="backup_preview_version">KnitTools-version: %1$s</string>
+    <string name="backup_preview_projects">Projekt: %1$d</string>
+    <string name="backup_preview_patterns">Sparade mönster: %1$d</string>
+    <string name="backup_preview_yarn">Garnkort: %1$d</string>
+    <string name="backup_preview_files">Filer: %1$d</string>
+    <string name="backup_continue">Öppna projekt</string>
+    <string name="backup_confirm_title">Ersätta aktuella data?</string>
+    <string name="backup_confirm_message">Återställningen ersätter alla nuvarande KnitTools-projekt, anteckningar, mönster, foton och annat lokalt innehåll. Detta kan inte ångras. Exportera en säkerhetskopia först om du vill behålla ditt nuvarande innehåll.</string>
+    <string name="backup_replace">Ersätt och återställ</string>
+    <string name="backup_exporting">Skapar säkerhetskopia…</string>
+    <string name="backup_validating">Kontrollerar säkerhetskopia…</string>
+    <string name="backup_restoring">Återställer data. Vänta…</string>
+    <string name="backup_restored">Säkerhetskopian har återställts.</string>
+    <string name="backup_exported">Säkerhetskopian har exporterats.</string>
+    <string name="backup_error_unsupported">Denna version av säkerhetskopian stöds inte. Uppdatera KnitTools och försök igen.</string>
+    <string name="backup_error_invalid">Detta är inte en KnitTools-säkerhetskopia. Välj en KnitTools-säkerhetskopia.</string>
+    <string name="backup_error_corrupt">Säkerhetskopian är skadad eller innehåller ogiltiga data. Välj en annan. Dina aktuella data har inte ersatts.</string>
+    <string name="backup_error_space">Det finns inte tillräckligt med ledigt utrymme. Frigör lagringsutrymme och försök igen.</string>
+    <string name="backup_error_read">Källan kunde inte läsas. Kontrollera att filen är tillgänglig och försök igen.</string>
+    <string name="backup_error_write">Säkerhetskopian kunde inte sparas. Kontrollera destinationen och försök igen. Ta bort eventuell ofullständig målfil.</string>
+    <string name="backup_error_restore">Återställningen misslyckades. Ditt tidigare innehåll har behållits. Försök igen.</string>
+
+    <string name="counter_history_title">Räknarhistorik</string>
+    <string name="counter_history_empty_title">Ingen räknarhistorik ännu</string>
+    <string name="counter_history_empty_body">Ändringar i räknaren visas här när du arbetar med projektet.</string>
+    <string name="counter_history_increase">Ökning</string>
+    <string name="counter_history_decrease">Minskning</string>
+    <string name="counter_history_reset">Nollställning</string>
+    <string name="counter_history_changed">Räknaren ändrades</string>
+    <string name="counter_history_event_description">%1$s. Från %2$s till %3$s. %4$s, %5$s.</string>
+    <string name="counter_history_transition">%1$s → %2$s</string>
 </resources>

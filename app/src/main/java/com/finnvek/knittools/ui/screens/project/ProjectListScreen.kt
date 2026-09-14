@@ -202,9 +202,7 @@ fun ProjectListScreen(
                 }
             }
 
-            else -> {
-                Unit
-            }
+            else -> {}
         }
     }
     // Luonnin jälkeen navigoi uuteen projektiin

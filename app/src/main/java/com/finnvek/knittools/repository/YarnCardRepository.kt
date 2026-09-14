@@ -45,6 +45,9 @@ class YarnCardRepository
     ) {
         private val photoStorageMutex = Mutex()
 
+        internal suspend fun <T> withPhotoStorageLock(block: suspend () -> T): T =
+            photoStorageMutex.withLock { block() }
+
         fun getAllCards(): Flow<List<YarnCard>> =
             dao
                 .getAllCards()

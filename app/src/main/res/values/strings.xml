@@ -238,7 +238,7 @@
     <string name="skein_count_many" tools:ignore="PluralsCandidate">%1$d skeins</string>
 
     <!-- Session History -->
-    <string name="session_history_title">History</string>
+    <string name="session_history_title">Session history</string>
     <string name="no_sessions">No sessions recorded yet. Start knitting to see your history here.</string>
     <string name="session_row_range">Rows %1$d \u2192 %2$d</string>
     <string name="session_row_single">Row %1$d</string>
@@ -447,9 +447,6 @@
     <string name="row_label_with_target">Row %1$d / %2$d</string>
     <string name="widget_undo_action" tools:ignore="UnusedResources">Undo</string>
     <string name="widget_undo_content_description" tools:ignore="UnusedResources">Undo last change</string>
-    <string name="widget_preview_decrement" translatable="false">−</string>
-    <string name="widget_preview_count" translatable="false">42 / 100</string>
-    <string name="widget_preview_increment" translatable="false">+</string>
 
     <!-- Hubs -->
     <string name="desc_increase_decrease">Evenly space increases or decreases across a row</string>
@@ -1422,4 +1419,51 @@
     <string name="web_pattern_project_unavailable">Project no longer available</string>
     <string name="pattern_open_project_notes">Open project notes</string>
     <string name="widget_preview_primary_count" translatable="false">42</string>
+    <string name="insights_completions_title">Project completions</string>
+    <string name="insights_completions_empty">No completions in this period.</string>
+    <string name="insights_completions_project_empty">No completion recorded for this project in this period.</string>
+    <string name="insights_completions_period">%1$s – %2$s</string>
+    <plurals name="insights_completion_count">
+        <item quantity="one">%d completion</item>
+        <item quantity="other">%d completions</item>
+    </plurals>
+
+    <string name="backup_title">Backup &amp; restore</string>
+    <string name="backup_description">Save your projects, notes, patterns and local photos in one backup file.</string>
+    <string name="backup_privacy">The backup is not encrypted. It may contain private notes, photos and pattern PDFs. Save it somewhere you trust.</string>
+    <string name="backup_exclusions">Device settings and language stay unchanged. Trials, purchases, logins and widgets are not transferred. An active work session will require review after restore.</string>
+    <string name="backup_export">Export backup</string>
+    <string name="backup_restore">Restore backup</string>
+    <string name="backup_preview_date">Backup date: %1$s</string>
+    <string name="backup_preview_version">KnitTools version: %1$s</string>
+    <string name="backup_preview_projects">Projects: %1$d</string>
+    <string name="backup_preview_patterns">Saved patterns: %1$d</string>
+    <string name="backup_preview_yarn">Yarn cards: %1$d</string>
+    <string name="backup_preview_files">Files: %1$d</string>
+    <string name="backup_continue">Open projects</string>
+    <string name="backup_confirm_title">Replace current data?</string>
+    <string name="backup_confirm_message">Restoring this backup replaces all current KnitTools projects, notes, patterns, photos and other local content. This cannot be undone. Export a backup first if you want to keep your current content.</string>
+    <string name="backup_replace">Replace and restore</string>
+    <string name="backup_exporting">Creating backup…</string>
+    <string name="backup_validating">Checking backup…</string>
+    <string name="backup_restoring">Restoring data. Please wait…</string>
+    <string name="backup_restored">Backup restored.</string>
+    <string name="backup_exported">Backup exported.</string>
+    <string name="backup_error_unsupported">This backup version is not supported. Update KnitTools and try again.</string>
+    <string name="backup_error_invalid">This is not a KnitTools backup file. Choose a KnitTools backup.</string>
+    <string name="backup_error_corrupt">The backup is damaged or contains invalid data. Choose another backup. Your current data has not been replaced.</string>
+    <string name="backup_error_space">There is not enough free space. Free up storage and try again.</string>
+    <string name="backup_error_read">The source could not be read. Check that the file is available and try again.</string>
+    <string name="backup_error_write">The backup could not be saved. Check the destination and try again. Delete any incomplete destination file.</string>
+    <string name="backup_error_restore">Restore failed. Your previous content has been kept. Try again.</string>
+
+    <string name="counter_history_title">Counter history</string>
+    <string name="counter_history_empty_title">No counter history yet</string>
+    <string name="counter_history_empty_body">Counter changes will appear here as you work on this project.</string>
+    <string name="counter_history_increase">Increase</string>
+    <string name="counter_history_decrease">Decrease</string>
+    <string name="counter_history_reset">Reset</string>
+    <string name="counter_history_changed">Counter changed</string>
+    <string name="counter_history_event_description">%1$s. From %2$s to %3$s. %4$s, %5$s.</string>
+    <string name="counter_history_transition">%1$s → %2$s</string>
 </resources>

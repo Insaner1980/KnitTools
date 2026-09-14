@@ -227,7 +227,7 @@
     <string name="skein_count_many">%1$d Knäuel</string>
 
     <!-- Session History -->
-    <string name="session_history_title">Verlauf</string>
+    <string name="session_history_title">Arbeitsverlauf</string>
     <string name="no_sessions">Noch keine Sitzungen aufgezeichnet. Beginne zu stricken, um hier deinen Verlauf zu sehen.</string>
     <string name="session_row_range">Reihen %1$d \u2192 %2$d</string>
     <string name="session_row_single">Reihe %1$d</string>
@@ -1044,4 +1044,51 @@
     <string name="web_pattern_share_ambiguous">Mehr als eine Website-Adresse wurde geteilt</string>
     <string name="web_pattern_project_unavailable">Projekt ist nicht mehr verfügbar</string>
     <string name="pattern_open_project_notes">Projektnotizen öffnen</string>
+    <string name="insights_completions_title">Projektabschlüsse</string>
+    <string name="insights_completions_empty">Keine Abschlüsse in diesem Zeitraum.</string>
+    <string name="insights_completions_project_empty">Für dieses Projekt wurde in diesem Zeitraum kein Abschluss erfasst.</string>
+    <string name="insights_completions_period">%1$s – %2$s</string>
+    <plurals name="insights_completion_count">
+        <item quantity="one">%d Abschluss</item>
+        <item quantity="other">%d Abschlüsse</item>
+    </plurals>
+
+    <string name="backup_title">Sicherung und Wiederherstellung</string>
+    <string name="backup_description">Speichere Projekte, Notizen, Anleitungen und lokale Fotos in einer Sicherungsdatei.</string>
+    <string name="backup_privacy">Die Sicherung ist nicht verschlüsselt. Sie kann private Notizen, Fotos und PDF-Anleitungen enthalten. Speichere sie an einem vertrauenswürdigen Ort.</string>
+    <string name="backup_exclusions">Geräteeinstellungen und Sprache bleiben unverändert. Testzeiträume, Käufe, Anmeldungen und Widgets werden nicht übertragen. Eine aktive Arbeitssitzung muss nach der Wiederherstellung überprüft werden.</string>
+    <string name="backup_export">Sicherung exportieren</string>
+    <string name="backup_restore">Sicherung wiederherstellen</string>
+    <string name="backup_preview_date">Sicherungsdatum: %1$s</string>
+    <string name="backup_preview_version">KnitTools-Version: %1$s</string>
+    <string name="backup_preview_projects">Projekte: %1$d</string>
+    <string name="backup_preview_patterns">Gespeicherte Anleitungen: %1$d</string>
+    <string name="backup_preview_yarn">Garnkarten: %1$d</string>
+    <string name="backup_preview_files">Dateien: %1$d</string>
+    <string name="backup_continue">Projekte öffnen</string>
+    <string name="backup_confirm_title">Aktuelle Daten ersetzen?</string>
+    <string name="backup_confirm_message">Die Wiederherstellung ersetzt alle aktuellen KnitTools-Projekte, Notizen, Anleitungen, Fotos und anderen lokalen Inhalte. Dies kann nicht rückgängig gemacht werden. Exportiere zuerst eine Sicherung, wenn du deine aktuellen Inhalte behalten möchtest.</string>
+    <string name="backup_replace">Ersetzen und wiederherstellen</string>
+    <string name="backup_exporting">Sicherung wird erstellt…</string>
+    <string name="backup_validating">Sicherung wird geprüft…</string>
+    <string name="backup_restoring">Daten werden wiederhergestellt. Bitte warten…</string>
+    <string name="backup_restored">Sicherung wiederhergestellt.</string>
+    <string name="backup_exported">Sicherung exportiert.</string>
+    <string name="backup_error_unsupported">Diese Sicherungsversion wird nicht unterstützt. Aktualisiere KnitTools und versuche es erneut.</string>
+    <string name="backup_error_invalid">Dies ist keine KnitTools-Sicherung. Wähle eine KnitTools-Sicherung.</string>
+    <string name="backup_error_corrupt">Die Sicherung ist beschädigt oder enthält ungültige Daten. Wähle eine andere Sicherung. Deine aktuellen Daten wurden nicht ersetzt.</string>
+    <string name="backup_error_space">Nicht genügend freier Speicherplatz. Gib Speicherplatz frei und versuche es erneut.</string>
+    <string name="backup_error_read">Die Quelle konnte nicht gelesen werden. Prüfe, ob die Datei verfügbar ist, und versuche es erneut.</string>
+    <string name="backup_error_write">Die Sicherung konnte nicht gespeichert werden. Prüfe das Ziel und versuche es erneut. Lösche eine eventuell unvollständige Zieldatei.</string>
+    <string name="backup_error_restore">Wiederherstellung fehlgeschlagen. Deine bisherigen Inhalte wurden beibehalten. Versuche es erneut.</string>
+
+    <string name="counter_history_title">Zählerverlauf</string>
+    <string name="counter_history_empty_title">Noch kein Zählerverlauf</string>
+    <string name="counter_history_empty_body">Änderungen am Zähler erscheinen hier, während du an diesem Projekt arbeitest.</string>
+    <string name="counter_history_increase">Erhöht</string>
+    <string name="counter_history_decrease">Verringert</string>
+    <string name="counter_history_reset">Zurückgesetzt</string>
+    <string name="counter_history_changed">Zähler geändert</string>
+    <string name="counter_history_event_description">%1$s. Von %2$s auf %3$s. %4$s, %5$s.</string>
+    <string name="counter_history_transition">%1$s → %2$s</string>
 </resources>

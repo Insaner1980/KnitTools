@@ -65,6 +65,7 @@ import com.finnvek.knittools.ui.theme.knitToolsColors
 @Composable
 fun SettingsScreen(
     onUpgradeToPro: () -> Unit,
+    onBackup: () -> Unit = {},
     viewModelProvider: @Composable () -> SettingsViewModel = { hiltViewModel() },
 ) {
     val viewModel = viewModelProvider()
@@ -177,6 +178,12 @@ fun SettingsScreen(
 
             HorizontalDivider()
             SectionHeader(stringResource(R.string.settings_section_info))
+
+            SettingsActionRow(
+                label = stringResource(R.string.backup_title),
+                onClick = onBackup,
+            )
+            HorizontalDivider()
 
             SettingsActionRow(
                 label = stringResource(R.string.help_and_guide),

@@ -230,7 +230,7 @@
     <string name="skein_count_many">%1$d pelotes</string>
 
     <!-- Session History -->
-    <string name="session_history_title">Historique</string>
+    <string name="session_history_title">Historique des séances</string>
     <string name="no_sessions">Aucune session enregistrée pour le moment. Commencez à tricoter pour voir votre historique ici.</string>
     <string name="session_row_range">Rangs %1$d \u2192 %2$d</string>
     <string name="session_row_single">Rang %1$d</string>
@@ -1066,4 +1066,52 @@
     <string name="web_pattern_share_ambiguous">Plusieurs adresses de sites web ont été partagées</string>
     <string name="web_pattern_project_unavailable">Le projet n’est plus disponible</string>
     <string name="pattern_open_project_notes">Ouvrir les notes du projet</string>
+    <string name="insights_completions_title">Achèvements de projets</string>
+    <string name="insights_completions_empty">Aucun achèvement pendant cette période.</string>
+    <string name="insights_completions_project_empty">Aucun achèvement enregistré pour ce projet pendant cette période.</string>
+    <string name="insights_completions_period">%1$s – %2$s</string>
+    <plurals name="insights_completion_count">
+        <item quantity="one">%d achèvement</item>
+        <item quantity="many">%d achèvements</item>
+        <item quantity="other">%d achèvements</item>
+    </plurals>
+
+    <string name="backup_title">Sauvegarde et restauration</string>
+    <string name="backup_description">Enregistrez vos projets, notes, modèles et photos locales dans un fichier de sauvegarde.</string>
+    <string name="backup_privacy">La sauvegarde n’est pas chiffrée. Elle peut contenir des notes privées, des photos et des modèles PDF. Enregistrez-la dans un emplacement de confiance.</string>
+    <string name="backup_exclusions">Les réglages et la langue de cet appareil restent inchangés. Les essais, achats, connexions et widgets ne sont pas transférés. Une session de travail active devra être vérifiée après la restauration.</string>
+    <string name="backup_export">Exporter une sauvegarde</string>
+    <string name="backup_restore">Restaurer une sauvegarde</string>
+    <string name="backup_preview_date">Date de sauvegarde : %1$s</string>
+    <string name="backup_preview_version">Version de KnitTools : %1$s</string>
+    <string name="backup_preview_projects">Projets : %1$d</string>
+    <string name="backup_preview_patterns">Modèles enregistrés : %1$d</string>
+    <string name="backup_preview_yarn">Fiches de fil : %1$d</string>
+    <string name="backup_preview_files">Fichiers : %1$d</string>
+    <string name="backup_continue">Ouvrir les projets</string>
+    <string name="backup_confirm_title">Remplacer les données actuelles ?</string>
+    <string name="backup_confirm_message">La restauration remplace tous les projets, notes, modèles, photos et autres contenus locaux actuels de KnitTools. Cette action est irréversible. Exportez d’abord une sauvegarde pour conserver votre contenu actuel.</string>
+    <string name="backup_replace">Remplacer et restaurer</string>
+    <string name="backup_exporting">Création de la sauvegarde…</string>
+    <string name="backup_validating">Vérification de la sauvegarde…</string>
+    <string name="backup_restoring">Restauration des données. Veuillez patienter…</string>
+    <string name="backup_restored">Sauvegarde restaurée.</string>
+    <string name="backup_exported">Sauvegarde exportée.</string>
+    <string name="backup_error_unsupported">Cette version de sauvegarde n’est pas prise en charge. Mettez KnitTools à jour et réessayez.</string>
+    <string name="backup_error_invalid">Ce fichier n’est pas une sauvegarde KnitTools. Choisissez une sauvegarde KnitTools.</string>
+    <string name="backup_error_corrupt">La sauvegarde est endommagée ou contient des données invalides. Choisissez-en une autre. Vos données actuelles n’ont pas été remplacées.</string>
+    <string name="backup_error_space">Espace libre insuffisant. Libérez de l’espace et réessayez.</string>
+    <string name="backup_error_read">La source n’a pas pu être lue. Vérifiez que le fichier est disponible et réessayez.</string>
+    <string name="backup_error_write">La sauvegarde n’a pas pu être enregistrée. Vérifiez la destination et réessayez. Supprimez tout fichier de destination incomplet.</string>
+    <string name="backup_error_restore">La restauration a échoué. Votre contenu précédent a été conservé. Réessayez.</string>
+
+    <string name="counter_history_title">Historique du compteur</string>
+    <string name="counter_history_empty_title">Aucun historique du compteur</string>
+    <string name="counter_history_empty_body">Les modifications du compteur apparaîtront ici au fil de votre travail sur ce projet.</string>
+    <string name="counter_history_increase">Augmentation</string>
+    <string name="counter_history_decrease">Diminution</string>
+    <string name="counter_history_reset">Remise à zéro</string>
+    <string name="counter_history_changed">Compteur modifié</string>
+    <string name="counter_history_event_description">%1$s. De %2$s à %3$s. %4$s, %5$s.</string>
+    <string name="counter_history_transition">%1$s → %2$s</string>
 </resources>

@@ -1,105 +1,32 @@
 package com.finnvek.knittools.ui.screens.project
 
-import android.content.Context
 import androidx.lifecycle.SavedStateHandle
-import com.finnvek.knittools.data.datastore.PreferencesManager
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.CraftType.CROCHET
 import com.finnvek.knittools.domain.model.MainCounterLabelType.CUSTOM
-import com.finnvek.knittools.domain.model.ProjectDocument
-import com.finnvek.knittools.domain.model.ProjectFolderSnapshot
 import com.finnvek.knittools.pro.ProFeature
-import com.finnvek.knittools.pro.ProManager
-import com.finnvek.knittools.repository.CounterRepository
-import com.finnvek.knittools.repository.ProgressPhotoRepository
 import com.finnvek.knittools.repository.ProjectCreationResult
-import com.finnvek.knittools.repository.ProjectDocumentRepository
-import com.finnvek.knittools.repository.ProjectFolderRepository
-import com.finnvek.knittools.repository.SavedPatternRepository
-import com.finnvek.knittools.repository.YarnCardRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
-import io.mockk.mockk
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
-import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Before
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class ProjectCreationPolicyTest {
-    private val testDispatcher = UnconfinedTestDispatcher()
-
-    private lateinit var repository: CounterRepository
-    private lateinit var proManager: ProManager
-    private lateinit var yarnCardRepository: YarnCardRepository
-    private lateinit var photoRepository: ProgressPhotoRepository
-    private lateinit var savedPatternRepository: SavedPatternRepository
-    private lateinit var projectDocumentRepository: ProjectDocumentRepository
-    private lateinit var folderRepository: ProjectFolderRepository
-    private lateinit var preferencesManager: PreferencesManager
-    private lateinit var context: Context
-
-    @Before
-    fun setup() {
-        Dispatchers.setMain(testDispatcher)
-        repository = mockk(relaxed = true)
-        proManager = mockk()
-        every { proManager.proState } returns
-            MutableStateFlow(
-                com.finnvek.knittools.pro
-                    .ProState(),
-            )
-        yarnCardRepository = mockk(relaxed = true)
-        photoRepository = mockk(relaxed = true)
-        savedPatternRepository = mockk(relaxed = true)
-        projectDocumentRepository = mockk(relaxed = true)
-        folderRepository = mockk()
-        every { folderRepository.observeOrganization(any()) } returns
-            flowOf(ProjectFolderSnapshot(emptyList(), emptyList()))
-        every { projectDocumentRepository.observeDocuments(any<List<Long>>()) } returns
-            flowOf(emptyMap<Long, List<ProjectDocument>>())
-        preferencesManager = mockk(relaxed = true)
-        context = mockk()
-        every { context.getString(any(), any()) } returns "Project 2"
-    }
-
-    @After
-    fun tearDown() {
-        Dispatchers.resetMain()
-    }
-
-    private fun createViewModel(savedStateHandle: SavedStateHandle = SavedStateHandle()) =
-        ProjectListViewModel(
-            repository = repository,
-            proManager = proManager,
-            yarnCardRepository = yarnCardRepository,
-            photoRepository = photoRepository,
-            savedPatternRepository = savedPatternRepository,
-            projectDocumentRepository = projectDocumentRepository,
-            preferencesManager = preferencesManager,
-            context = context,
-            folderRepository = folderRepository,
-            savedStateHandle = savedStateHandle,
-        )
-
+class ProjectCreationPolicyTest : ProjectListViewModelFixture() {
     @Test
     fun `zero observed during stale count resumes the exact pending draft once`() =
         runTest {
@@ -224,6 +151,7 @@ class ProjectCreationPolicyTest {
             coVerify(exactly = 1) { repository.getActiveProjectCount() }
         }
 
+    // CPD-OFF: Keep the independent creation or reactivation race sequence and its assertions together.
     @Test
     fun `queued reconciliation stops at unchanged limit and does not loop on query failure`() =
         runTest {
@@ -231,6 +159,7 @@ class ProjectCreationPolicyTest {
             every { repository.getActiveProjects() } returns active
             every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } returns false
             val count = CompletableDeferred<Int>()
+            // CPD-ON
             var reads = 0
             coEvery { repository.getActiveProjectCount() } coAnswers {
                 reads++
@@ -320,6 +249,7 @@ class ProjectCreationPolicyTest {
             vm.retryPendingProjectCreation()
             active.value = listOf(CounterProject(id = 11L, name = "Later"))
             runCurrent()
+            // CPD-OFF: Keep the independent creation or reactivation race sequence and its assertions together.
             active.value = emptyList()
             runCurrent()
             assertEquals(listOf(42L), navigated)
@@ -331,6 +261,7 @@ class ProjectCreationPolicyTest {
 
     @Test
     fun `automatic limit without a new signal stays gated`() = assertAutomaticCreationStops(signal = false)
+    // CPD-ON
 
     @Test
     fun `dismissal during automatic create discards queued signals`() = assertAutomaticCreationStops(dismiss = true)
@@ -357,12 +288,14 @@ class ProjectCreationPolicyTest {
         result: ProjectCreationResult = ProjectCreationResult.LimitReached,
         failure: Throwable? = null,
         failCount: Boolean = false,
+        // CPD-OFF: Keep the independent creation or reactivation race sequence and its assertions together.
     ) = runTest {
         val active = MutableStateFlow(listOf(CounterProject(id = 9L, name = "Active")))
         every { repository.getActiveProjects() } returns active
         every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } returns false
         coEvery { repository.getActiveProjectCount() } answers { active.value.size }
         val heldCreate = CompletableDeferred<ProjectCreationResult>()
+        // CPD-ON
         coEvery { repository.createProject(any(), any(), any(), any(), any(), any(), any()) } coAnswers
             { heldCreate.await() }
         val errors = mutableListOf<Throwable>()
@@ -450,6 +383,7 @@ class ProjectCreationPolicyTest {
             assertEquals(null, vm.projectCreationPromptCount.value)
         }
 
+    // CPD-OFF: Keep the independent creation or reactivation race sequence and its assertions together.
     @Test
     fun `creation reconciles a slot opened before limit result arrives`() =
         runTest {
@@ -462,6 +396,7 @@ class ProjectCreationPolicyTest {
             coEvery { repository.createProject(any(), any(), any(), any(), any(), any(), any()) } coAnswers {
                 attempts++
                 if (attempts == 1) firstResult.await() else ProjectCreationResult.Created(42L)
+                // CPD-ON
             }
             val vm = createViewModel()
             vm.createProject(
@@ -478,6 +413,7 @@ class ProjectCreationPolicyTest {
             assertEquals(2, attempts)
         }
 
+    // CPD-OFF: Keep the independent creation or reactivation race sequence and its assertions together.
     @Test
     fun `dismissed opening and draft do not resume on a later free slot`() =
         runTest {
@@ -486,6 +422,7 @@ class ProjectCreationPolicyTest {
             every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } returns false
             coEvery { repository.getActiveProjectCount() } answers { active.value.size }
             coEvery { repository.createProject(any(), any(), any(), any(), any(), any(), any()) } returns
+                // CPD-ON
                 ProjectCreationResult.LimitReached
             val vm = createViewModel()
             var dialogs = 0
@@ -512,6 +449,7 @@ class ProjectCreationPolicyTest {
             assertEquals(null, vm.projectCreationPromptCount.value)
         }
 
+    // CPD-OFF: Keep the independent creation or reactivation race sequence and its assertions together.
     @Test
     fun `pending opening resumes once when unfiltered active projects become empty`() =
         runTest {
@@ -519,6 +457,7 @@ class ProjectCreationPolicyTest {
             every { repository.getActiveProjects() } returns active
             every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } returns false
             coEvery { repository.getActiveProjectCount() } answers { active.value.size }
+            // CPD-ON
             val vm = createViewModel()
             var dialogs = 0
             backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
@@ -535,6 +474,7 @@ class ProjectCreationPolicyTest {
             assertEquals(1, dialogs)
         }
 
+    // CPD-OFF: Keep the independent creation or reactivation race sequence and its assertions together.
     @Test
     fun `pending draft resumes exact creation when free slot opens`() =
         runTest {
@@ -556,6 +496,7 @@ class ProjectCreationPolicyTest {
                 "Circuits",
                 12L,
             )
+            // CPD-ON
             active.value = emptyList()
             runCurrent()
             assertEquals(listOf(42L), navigated)

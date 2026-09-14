@@ -31,7 +31,8 @@ class FirebaseAnonymousAuthGateway
                         AuthState.SignedIn(currentUid)
                     } else {
                         AuthState.SigningIn(
-                            inFlightSignIn ?: firebaseAuth.signInAnonymously().also { inFlightSignIn = it },
+                            inFlightSignIn?.takeUnless { it.isComplete }
+                                ?: firebaseAuth.signInAnonymously().also { inFlightSignIn = it },
                         )
                     }
                 }
@@ -66,7 +67,7 @@ class FirebaseAnonymousAuthGateway
 
         private suspend fun clearInFlightSignIn(task: Task<AuthResult>) {
             authMutex.withLock {
-                if (inFlightSignIn === task) {
+                if (inFlightSignIn === task && task.isComplete) {
                     inFlightSignIn = null
                 }
             }

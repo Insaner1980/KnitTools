@@ -73,11 +73,10 @@ class FirebaseAnonymousAuthGatewayTest {
         }
 
     @Test
-    fun `cancelled sign in waiter clears the shared task for a later retry`() =
+    fun `cancelled sign in waiter preserves the shared task for a later caller`() =
         runTest {
             val firebaseAuth = mockk<FirebaseAuth>()
             val cancelledTask = pendingTask<AuthResult>()
-            val retryTask = pendingTask<AuthResult>()
             val reloadTask = pendingTask<Void?>()
             val cachedUser =
                 mockk<FirebaseUser> {
@@ -86,7 +85,7 @@ class FirebaseAnonymousAuthGatewayTest {
                 }
             var showCachedUser = false
             every { firebaseAuth.currentUser } answers { cachedUser.takeIf { showCachedUser } }
-            every { firebaseAuth.signInAnonymously() } returns cancelledTask.task andThen retryTask.task
+            every { firebaseAuth.signInAnonymously() } returns cancelledTask.task
             val gateway = FirebaseAnonymousAuthGateway(firebaseAuth)
 
             val cancelledWaiter = async { gateway.ensureSignedIn() }
@@ -105,8 +104,28 @@ class FirebaseAnonymousAuthGatewayTest {
             val retryWaiter = async { gateway.ensureSignedIn() }
             runCurrent()
 
+            verify(exactly = 1) { firebaseAuth.signInAnonymously() }
+            cancelledTask.succeed(authResult(firebaseUser("shared-uid")))
+            assertEquals("shared-uid", retryWaiter.await())
+        }
+
+    @Test
+    fun `failed sign in after waiter cancellation allows a fresh retry`() =
+        runTest {
+            val firebaseAuth = mockk<FirebaseAuth>()
+            val signInTask = pendingTask<AuthResult>()
+            every { firebaseAuth.currentUser } returns null
+            every { firebaseAuth.signInAnonymously() } returns
+                signInTask.task andThen authResultTask(firebaseUser("retry-uid"))
+            val gateway = FirebaseAnonymousAuthGateway(firebaseAuth)
+
+            val waiter = async { gateway.ensureSignedIn() }
+            runCurrent()
+            waiter.cancelAndJoin()
+            signInTask.fail(IllegalStateException("auth unavailable"))
+
+            assertEquals("retry-uid", gateway.ensureSignedIn())
             verify(exactly = 2) { firebaseAuth.signInAnonymously() }
-            retryWaiter.cancelAndJoin()
         }
 
     @Test

@@ -162,7 +162,7 @@ Current core versions are `firebase-functions 7.3.2`, `firebase-admin 14.3.0`, `
 | Play In-App Updates | 2.1.0 |
 | Google Play Billing | 9.1.0 |
 | Glance | 1.1.1 |
-| Coil Compose and Ktor 3 network loader | 3.5.0 |
+| Coil Compose and Ktor 3 network loader | 3.6.2 |
 | Ktor | 3.5.2 |
 | AndroidX Browser | 1.10.0 |
 | WorkManager | 2.11.2 |

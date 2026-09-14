@@ -118,21 +118,14 @@ class SavedPatternDetailSourceTest {
         }
     }
 
+    // CPD-OFF: This independent localization contract verifies its own resource coverage before testing deletion wording.
     @Test
     fun `saved pattern deletion warnings cover pdf scope in every supported locale`() {
         val builder = DocumentBuilderFactory.newInstance().newDocumentBuilder()
-        val locales =
-            builder
-                .parse(ProjectSourceFiles.file("app/src/main/res/xml/locales_config.xml").toFile())
-                .getElementsByTagName("locale")
-        val expectedDirectories =
-            (0 until locales.length)
-                .map { index ->
-                    val language = (locales.item(index) as Element).getAttribute("android:name")
-                    if (language == "en") "values" else "values-$language"
-                }.toSet()
+        val expectedDirectories = ProjectSourceFiles.configuredResourceDirectories()
         val files = ProjectSourceFiles.localizedStringFiles()
         assertEquals(expectedDirectories, files.map { it.parent.fileName.toString() }.toSet())
+        // CPD-ON
         files.forEach { file ->
             assertDeletionWarnings(file, builder)
         }

@@ -230,7 +230,7 @@
     <string name="skein_count_many">%1$d gomitoli</string>
 
     <!-- Session History -->
-    <string name="session_history_title">Cronologia</string>
+    <string name="session_history_title">Cronologia delle sessioni</string>
     <string name="no_sessions">Nessuna sessione registrata per ora. Inizia a lavorare per vedere qui la cronologia.</string>
     <string name="session_row_range">Ferri %1$d \u2192 %2$d</string>
     <string name="session_row_single">Ferro %1$d</string>
@@ -1066,4 +1066,52 @@
     <string name="web_pattern_share_ambiguous">È stato condiviso più di un indirizzo di sito web</string>
     <string name="web_pattern_project_unavailable">Il progetto non è più disponibile</string>
     <string name="pattern_open_project_notes">Apri le note del progetto</string>
+    <string name="insights_completions_title">Completamenti dei progetti</string>
+    <string name="insights_completions_empty">Nessun completamento in questo periodo.</string>
+    <string name="insights_completions_project_empty">Nessun completamento registrato per questo progetto in questo periodo.</string>
+    <string name="insights_completions_period">%1$s – %2$s</string>
+    <plurals name="insights_completion_count">
+        <item quantity="one">%d completamento</item>
+        <item quantity="many">%d completamenti</item>
+        <item quantity="other">%d completamenti</item>
+    </plurals>
+
+    <string name="backup_title">Backup e ripristino</string>
+    <string name="backup_description">Salva progetti, note, modelli e foto locali in un unico file di backup.</string>
+    <string name="backup_privacy">Il backup non è crittografato. Può contenere note private, foto e modelli PDF. Salvalo in un luogo sicuro.</string>
+    <string name="backup_exclusions">Le impostazioni e la lingua del dispositivo restano invariate. Prove, acquisti, accessi e widget non vengono trasferiti. Una sessione di lavoro attiva dovrà essere verificata dopo il ripristino.</string>
+    <string name="backup_export">Esporta backup</string>
+    <string name="backup_restore">Ripristina backup</string>
+    <string name="backup_preview_date">Data del backup: %1$s</string>
+    <string name="backup_preview_version">Versione di KnitTools: %1$s</string>
+    <string name="backup_preview_projects">Progetti: %1$d</string>
+    <string name="backup_preview_patterns">Modelli salvati: %1$d</string>
+    <string name="backup_preview_yarn">Schede filato: %1$d</string>
+    <string name="backup_preview_files">File: %1$d</string>
+    <string name="backup_continue">Apri progetti</string>
+    <string name="backup_confirm_title">Sostituire i dati attuali?</string>
+    <string name="backup_confirm_message">Il ripristino sostituisce tutti i progetti, le note, i modelli, le foto e gli altri contenuti locali attuali di KnitTools. L’azione non può essere annullata. Esporta prima un backup se vuoi conservare i contenuti attuali.</string>
+    <string name="backup_replace">Sostituisci e ripristina</string>
+    <string name="backup_exporting">Creazione del backup…</string>
+    <string name="backup_validating">Verifica del backup…</string>
+    <string name="backup_restoring">Ripristino dei dati. Attendi…</string>
+    <string name="backup_restored">Backup ripristinato.</string>
+    <string name="backup_exported">Backup esportato.</string>
+    <string name="backup_error_unsupported">Questa versione del backup non è supportata. Aggiorna KnitTools e riprova.</string>
+    <string name="backup_error_invalid">Questo file non è un backup di KnitTools. Scegli un backup di KnitTools.</string>
+    <string name="backup_error_corrupt">Il backup è danneggiato o contiene dati non validi. Scegline un altro. I dati attuali non sono stati sostituiti.</string>
+    <string name="backup_error_space">Spazio libero insufficiente. Libera spazio e riprova.</string>
+    <string name="backup_error_read">Impossibile leggere la sorgente. Verifica che il file sia disponibile e riprova.</string>
+    <string name="backup_error_write">Impossibile salvare il backup. Controlla la destinazione e riprova. Elimina eventuali file di destinazione incompleti.</string>
+    <string name="backup_error_restore">Ripristino non riuscito. I contenuti precedenti sono stati conservati. Riprova.</string>
+
+    <string name="counter_history_title">Cronologia del contatore</string>
+    <string name="counter_history_empty_title">Nessuna cronologia del contatore</string>
+    <string name="counter_history_empty_body">Le modifiche al contatore appariranno qui mentre lavori a questo progetto.</string>
+    <string name="counter_history_increase">Aumento</string>
+    <string name="counter_history_decrease">Diminuzione</string>
+    <string name="counter_history_reset">Azzeramento</string>
+    <string name="counter_history_changed">Contatore modificato</string>
+    <string name="counter_history_event_description">%1$s. Da %2$s a %3$s. %4$s, %5$s.</string>
+    <string name="counter_history_transition">%1$s → %2$s</string>
 </resources>

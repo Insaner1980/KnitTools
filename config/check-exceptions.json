@@ -2,6 +2,97 @@
   "schemaVersion": 1,
   "exceptions": [
     {
+      "id": "knittools-mobsf-hardcoded-counter-history",
+      "tool": "mobsfscan",
+      "rule": "android_kotlin_hardcoded",
+      "scope": "Exact MobSF matches in CounterHistoryScreen.kt",
+      "reason": "Compose list item identities, not credentials or secrets.",
+      "owner": "project-maintainers",
+      "added": "2026-09-14",
+      "expires": "2026-10-31",
+      "tracking": "local-review:knittools-mobsf-hardcoded-counter-history",
+      "sourcePath": "app/src/main/java/com/finnvek/knittools/ui/screens/counterhistory/CounterHistoryScreen.kt",
+      "selector": "item(key = \"project\")",
+      "findingPath": "app/src/main/java/com/finnvek/knittools/ui/screens/counterhistory/CounterHistoryScreen.kt",
+      "findingSelectors": [
+        "key = \"date:${day.key}\", contenttype = \"date\"",
+        "key = \"empty\"",
+        "key = \"project\""
+      ]
+    },
+    {
+      "id": "knittools-mobsf-hardcoded-insights-completion",
+      "tool": "mobsfscan",
+      "rule": "android_kotlin_hardcoded",
+      "scope": "Exact MobSF matches in InsightsCompletionSection.kt",
+      "reason": "Compose list item identities, not credentials or secrets.",
+      "owner": "project-maintainers",
+      "added": "2026-09-14",
+      "expires": "2026-10-31",
+      "tracking": "local-review:knittools-mobsf-hardcoded-insights-completion",
+      "sourcePath": "app/src/main/java/com/finnvek/knittools/ui/screens/insights/InsightsCompletionSection.kt",
+      "selector": "item(key = \"completion_heading\")",
+      "findingPath": "app/src/main/java/com/finnvek/knittools/ui/screens/insights/InsightsCompletionSection.kt",
+      "findingSelectors": [
+        "key = \"completion_empty\"",
+        "key = \"completion_events\"",
+        "key = \"completion_heading\"",
+        "key = \"completion_timeline\""
+      ]
+    },
+    {
+      "id": "knittools-mobsf-hardcoded-ravelry-project-state",
+      "tool": "mobsfscan",
+      "rule": "android_kotlin_hardcoded",
+      "scope": "Exact MobSF matches in RavelryProjectCreationActions.kt",
+      "reason": "SavedStateHandle lookup key for pending pattern metadata, not a credential or secret.",
+      "owner": "project-maintainers",
+      "added": "2026-09-14",
+      "expires": "2026-10-31",
+      "tracking": "local-review:knittools-mobsf-hardcoded-ravelry-project-state",
+      "sourcePath": "app/src/main/java/com/finnvek/knittools/ui/screens/ravelry/RavelryProjectCreationActions.kt",
+      "selector": "private const val PENDING_PROJECT_PATTERN_KEY",
+      "findingPath": "app/src/main/java/com/finnvek/knittools/ui/screens/ravelry/RavelryProjectCreationActions.kt",
+      "findingSelectors": [
+        "key = \"ravelrypendingprojectpattern\""
+      ]
+    },
+    {
+      "id": "knittools-mobsf-hardcoded-ravelry-import-state",
+      "tool": "mobsfscan",
+      "rule": "android_kotlin_hardcoded",
+      "scope": "Exact MobSF matches in RavelryViewModel.kt",
+      "reason": "SavedStateHandle lookup key for the consumed import URL, not a credential or secret.",
+      "owner": "project-maintainers",
+      "added": "2026-09-14",
+      "expires": "2026-10-31",
+      "tracking": "local-review:knittools-mobsf-hardcoded-ravelry-import-state",
+      "sourcePath": "app/src/main/java/com/finnvek/knittools/ui/screens/ravelry/RavelryViewModel.kt",
+      "selector": "private const val CONSUMED_IMPORT_URL_KEY",
+      "findingPath": "app/src/main/java/com/finnvek/knittools/ui/screens/ravelry/RavelryViewModel.kt",
+      "findingSelectors": [
+        "key = \"ravelryconsumedimporturl\""
+      ]
+    },
+    {
+      "id": "knittools-mobsf-fixed-active-session-migration-sql-test",
+      "tool": "mobsfscan",
+      "rule": "android_kotlin_sql_raw_query",
+      "scope": "Exact MobSF matches in ActiveSessionMigration21Test.kt",
+      "reason": "Test-only fixed SQL fixtures and a SQLite constraint exception; no untrusted SQL input.",
+      "owner": "project-maintainers",
+      "added": "2026-09-14",
+      "expires": "2026-10-31",
+      "tracking": "local-review:knittools-mobsf-fixed-active-session-migration-sql-test",
+      "sourcePath": "app/src/androidTest/java/com/finnvek/knittools/data/local/ActiveSessionMigration21Test.kt",
+      "selector": "execSQL(",
+      "findingPath": "app/src/androidTest/java/com/finnvek/knittools/data/local/ActiveSessionMigration21Test.kt",
+      "findingSelectors": [
+        "android.database.sqlite",
+        "execsql("
+      ]
+    },
+    {
       "id": "knittools-detekt-baseline",
       "tool": "detekt",
       "rule": "baseline",
@@ -321,15 +412,15 @@
       "id": "knittools-mobsf-hardcoded-project-creation-state-key",
       "tool": "mobsfscan",
       "rule": "android_kotlin_hardcoded",
-      "scope": "SavedStateHandle project creation key in ProjectListViewModel.kt",
+      "scope": "SavedStateHandle project creation key in ProjectCreationActions.kt",
       "reason": "The exact MobSF match is a SavedStateHandle state key, not a credential or secret.",
       "owner": "project-maintainers",
       "added": "2026-09-04",
       "expires": "2026-10-31",
       "tracking": "local-review:knittools-mobsf-hardcoded-project-creation-state-key",
-      "sourcePath": "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectListViewModel.kt",
+      "sourcePath": "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectCreationActions.kt",
       "selector": "PENDING_PROJECT_CREATION_KEY = \"pending_project_creation\"",
-      "findingPath": "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectListViewModel.kt",
+      "findingPath": "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectCreationActions.kt",
       "findingSelectors": [
         "key = \"pending_project_creation\""
       ]
@@ -443,15 +534,15 @@
       "id": "knittools-mobsf-hardcoded-counter-view-model-test",
       "tool": "mobsfscan",
       "rule": "android_kotlin_hardcoded",
-      "scope": "Generated project document key in CounterViewModelTest.kt",
+      "scope": "Generated project document key in CounterViewModelFixture.kt",
       "reason": "The exact MobSF match is a test document identifier, not a credential or secret.",
       "owner": "project-maintainers",
       "added": "2026-08-31",
       "expires": "2026-10-31",
       "tracking": "local-review:knittools-mobsf-hardcoded-counter-view-model-test",
-      "sourcePath": "app/src/test/java/com/finnvek/knittools/ui/screens/counter/CounterViewModelTest.kt",
+      "sourcePath": "app/src/test/java/com/finnvek/knittools/ui/screens/counter/CounterViewModelFixture.kt",
       "selector": "documentKey = \"local:$id\"",
-      "findingPath": "app/src/test/java/com/finnvek/knittools/ui/screens/counter/CounterViewModelTest.kt",
+      "findingPath": "app/src/test/java/com/finnvek/knittools/ui/screens/counter/CounterViewModelFixture.kt",
       "findingSelectors": [
         "key = \"local:$id\""
       ]
@@ -597,7 +688,7 @@
       "id": "knittools-osv-build-tool-metadata",
       "tool": "osv-scanner",
       "rule": "IgnoredVulns",
-      "scope": "73 advisory-specific build-tool findings in gradle/osv-scanner.toml",
+      "scope": "75 advisory-specific build-tool findings in gradle/osv-scanner.toml",
       "reason": "The registered advisories affect versions retained in Gradle verification metadata rather than the resolved application runtime classpaths.",
       "owner": "project-maintainers",
       "added": "2026-07-28",

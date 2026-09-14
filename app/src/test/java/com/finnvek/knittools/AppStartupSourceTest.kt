@@ -47,7 +47,7 @@ class AppStartupSourceTest {
     }
 
     @Test
-    fun `app startup schedules yarn photo orphan cleanup without blocking main thread`() {
+    fun `app startup recovers interrupted restores before yarn photo cleanup`() {
         val app = ProjectSourceFiles.read(APP)
 
         assertTrue(app.contains("import com.finnvek.knittools.repository.YarnCardRepository"))
@@ -56,6 +56,7 @@ class AppStartupSourceTest {
             app.contains(
                 "applicationScope.launch {\n" +
                     "            try {\n" +
+                    "                backupRepository.get().recoverInterruptedOperations()\n" +
                     "                yarnCardRepository.get().pruneUnreferencedPhotoFiles()",
             ),
         )

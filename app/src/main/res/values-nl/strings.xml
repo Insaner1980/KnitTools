@@ -227,7 +227,7 @@
     <string name="skein_count_many">%1$d strengen</string>
 
     <!-- Session History -->
-    <string name="session_history_title">Geschiedenis</string>
+    <string name="session_history_title">Sessiegeschiedenis</string>
     <string name="no_sessions">Nog geen sessies geregistreerd. Begin met breien om hier je geschiedenis te zien.</string>
     <string name="session_row_range">Toeren %1$d \u2192 %2$d</string>
     <string name="session_row_single">Naald %1$d</string>
@@ -1044,4 +1044,51 @@
     <string name="web_pattern_share_ambiguous">Er is meer dan één websiteadres gedeeld</string>
     <string name="web_pattern_project_unavailable">Het project is niet meer beschikbaar</string>
     <string name="pattern_open_project_notes">Projectnotities openen</string>
+    <string name="insights_completions_title">Projectafrondingen</string>
+    <string name="insights_completions_empty">Geen afrondingen in deze periode.</string>
+    <string name="insights_completions_project_empty">Geen afronding vastgelegd voor dit project in deze periode.</string>
+    <string name="insights_completions_period">%1$s – %2$s</string>
+    <plurals name="insights_completion_count">
+        <item quantity="one">%d afronding</item>
+        <item quantity="other">%d afrondingen</item>
+    </plurals>
+
+    <string name="backup_title">Back-up en herstel</string>
+    <string name="backup_description">Bewaar projecten, notities, patronen en lokale foto’s in één back-upbestand.</string>
+    <string name="backup_privacy">De back-up is niet versleuteld. Deze kan persoonlijke notities, foto’s en PDF-patronen bevatten. Bewaar het bestand op een vertrouwde plek.</string>
+    <string name="backup_exclusions">De instellingen en taal van dit apparaat blijven ongewijzigd. Proefperioden, aankopen, aanmeldingen en widgets worden niet overgezet. Een actieve werksessie moet na herstel worden gecontroleerd.</string>
+    <string name="backup_export">Back-up exporteren</string>
+    <string name="backup_restore">Back-up herstellen</string>
+    <string name="backup_preview_date">Back-updatum: %1$s</string>
+    <string name="backup_preview_version">KnitTools-versie: %1$s</string>
+    <string name="backup_preview_projects">Projecten: %1$d</string>
+    <string name="backup_preview_patterns">Opgeslagen patronen: %1$d</string>
+    <string name="backup_preview_yarn">Garenkaarten: %1$d</string>
+    <string name="backup_preview_files">Bestanden: %1$d</string>
+    <string name="backup_continue">Projecten openen</string>
+    <string name="backup_confirm_title">Huidige gegevens vervangen?</string>
+    <string name="backup_confirm_message">Herstellen vervangt alle huidige KnitTools-projecten, notities, patronen, foto’s en andere lokale inhoud. Dit kan niet ongedaan worden gemaakt. Exporteer eerst een back-up als je je huidige inhoud wilt behouden.</string>
+    <string name="backup_replace">Vervangen en herstellen</string>
+    <string name="backup_exporting">Back-up maken…</string>
+    <string name="backup_validating">Back-up controleren…</string>
+    <string name="backup_restoring">Gegevens herstellen. Even geduld…</string>
+    <string name="backup_restored">Back-up hersteld.</string>
+    <string name="backup_exported">Back-up geëxporteerd.</string>
+    <string name="backup_error_unsupported">Deze back-upversie wordt niet ondersteund. Werk KnitTools bij en probeer het opnieuw.</string>
+    <string name="backup_error_invalid">Dit is geen KnitTools-back-up. Kies een KnitTools-back-up.</string>
+    <string name="backup_error_corrupt">De back-up is beschadigd of bevat ongeldige gegevens. Kies een andere back-up. Je huidige gegevens zijn niet vervangen.</string>
+    <string name="backup_error_space">Er is onvoldoende vrije ruimte. Maak opslagruimte vrij en probeer het opnieuw.</string>
+    <string name="backup_error_read">De bron kon niet worden gelezen. Controleer of het bestand beschikbaar is en probeer het opnieuw.</string>
+    <string name="backup_error_write">De back-up kon niet worden opgeslagen. Controleer de bestemming en probeer het opnieuw. Verwijder eventuele onvolledige doelbestanden.</string>
+    <string name="backup_error_restore">Herstellen is mislukt. Je vorige inhoud is behouden. Probeer het opnieuw.</string>
+
+    <string name="counter_history_title">Tellergeschiedenis</string>
+    <string name="counter_history_empty_title">Nog geen tellergeschiedenis</string>
+    <string name="counter_history_empty_body">Wijzigingen aan de teller verschijnen hier terwijl je aan dit project werkt.</string>
+    <string name="counter_history_increase">Verhoging</string>
+    <string name="counter_history_decrease">Verlaging</string>
+    <string name="counter_history_reset">Teruggezet</string>
+    <string name="counter_history_changed">Teller gewijzigd</string>
+    <string name="counter_history_event_description">%1$s. Van %2$s naar %3$s. %4$s, %5$s.</string>
+    <string name="counter_history_transition">%1$s → %2$s</string>
 </resources>

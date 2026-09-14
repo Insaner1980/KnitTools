@@ -130,7 +130,7 @@ The module applies the Android application, Compose, Kotlin serialization, KSP, 
 
 ### `:baselineprofile`
 
-The baseline-profile module targets `:app`, uses the Android test and Baseline Profile plugins, and shares SDK values from the version catalog. Its existence is not proof that the profile has been regenerated for this checkout. Baseline Profile/Benchmark `1.5.0-beta01` is a documented temporary AGP 9 compatibility exception.
+The baseline-profile module targets `:app`, uses the Android test and Baseline Profile plugins, and shares SDK values from the version catalog. Its existence is not proof that the profile has been regenerated for this checkout. Baseline Profile/Benchmark uses stable `1.5.0`.
 
 ### `functions`
 
@@ -162,7 +162,7 @@ Current core versions are `firebase-functions 7.3.2`, `firebase-admin 14.3.0`, `
 | Play In-App Updates | 2.1.0 |
 | Google Play Billing | 9.1.0 |
 | Glance | 1.1.1 |
-| Coil Compose and Ktor 3 network loader | 3.5.0 |
+| Coil Compose and Ktor 3 network loader | 3.6.2 |
 | Ktor | 3.5.2 |
 | AndroidX Browser | 1.10.0 |
 | WorkManager | 2.11.2 |
@@ -176,7 +176,7 @@ Current core versions are `firebase-functions 7.3.2`, `firebase-admin 14.3.0`, `
 | Compose Stability Analyzer | 0.12.0 |
 | Sonar Gradle plugin | 7.5.0.8588 |
 
-Detekt `2.0.0-alpha.5` and Baseline Profile/Benchmark `1.5.0-beta01` are intentional temporary compatibility exceptions. WorkManager is directly pinned because it is part of the Glance transitive surface; there is no production `Worker` implementation. Ktor and OkHttp are present, but the current Ravelry product path uses authenticated Firebase callables rather than direct Android-to-Ravelry requests. Coil declares `coil-network-ktor3` explicitly and reuses the existing Ktor 3 and OkHttp engine surface for HTTPS thumbnail loading; it does not introduce a second image-network stack. `kotlinx-coroutines-play-services` supplies the cancellable Firebase `Task.await()` bridge; the repository no longer carries a custom task-await implementation. Wire is forced to `6.4.7` for the benchmark/profile toolchain and is absent from the app runtime graph. The Dependency Analysis Gradle plugin version remains catalogued, but plugin application is disabled because that plugin is not currently compatible with AGP 9; its presence in the catalog is not an active analyzer gate.
+Detekt `2.0.0-alpha.5` is an intentional temporary compatibility exception. Baseline Profile/Benchmark uses stable `1.5.0`. WorkManager is directly pinned because it is part of the Glance transitive surface; there is no production `Worker` implementation. Ktor and OkHttp are present, but the current Ravelry product path uses authenticated Firebase callables rather than direct Android-to-Ravelry requests. Coil declares `coil-network-ktor3` explicitly and reuses the existing Ktor 3 and OkHttp engine surface for HTTPS thumbnail loading; it does not introduce a second image-network stack. `kotlinx-coroutines-play-services` supplies the cancellable Firebase `Task.await()` bridge; the repository no longer carries a custom task-await implementation. Wire is forced to `6.4.7` for the benchmark/profile toolchain and is absent from the app runtime graph. The Dependency Analysis Gradle plugin version remains catalogued, but plugin application is disabled because that plugin is not currently compatible with AGP 9; its presence in the catalog is not an active analyzer gate.
 
 ## Application startup and process lifetime
 

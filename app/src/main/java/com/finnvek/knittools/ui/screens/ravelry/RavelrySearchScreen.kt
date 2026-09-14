@@ -258,10 +258,6 @@ fun RavelrySearchScreen(
                         onBrowseRavelry = actions.onBrowseRavelry,
                         onDisconnect = viewModel::disconnectRavelry,
                     )
-                }
-
-                // Välilehdet (piilotetaan select-modessa)
-                if (!isSavedSelectMode) {
                     PrimaryTabRow(
                         selectedTabIndex = selectedTab,
                         containerColor = MaterialTheme.colorScheme.background,
@@ -733,6 +729,10 @@ private fun SavedPatternItem(
         } else {
             MaterialTheme.colorScheme.surfaceVariant
         }
+    val itemModifier =
+        Modifier.padding(start = if (isSelectMode) 48.dp else 0.dp).then(
+            if (isSelectMode) Modifier.semantics { selected = isSelected } else Modifier,
+        )
 
     Box(
         modifier = Modifier.fillMaxWidth(),
@@ -761,14 +761,7 @@ private fun SavedPatternItem(
                     { onEnterSelectMode(pattern.id) }
                 },
             containerColor = backgroundColor,
-            modifier =
-                Modifier.padding(start = if (isSelectMode) 48.dp else 0.dp).then(
-                    if (isSelectMode) {
-                        Modifier.semantics { selected = isSelected }
-                    } else {
-                        Modifier
-                    },
-                ),
+            modifier = itemModifier,
         )
         if (isSelectMode) {
             SelectionIndicator(

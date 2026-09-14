@@ -423,6 +423,18 @@ public fun com.finnvek.knittools.ui.components.RollingCounter(count: kotlin.Int,
     - contentDescription: STABLE (String is immutable)
 
 @Composable
+internal fun com.finnvek.knittools.ui.components.ScrollableFormDialog(onDismissRequest: kotlin.Function0<kotlin.Unit>, title: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<kotlin.Unit>, text: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<kotlin.Unit>, confirmButton: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier, dismissButton: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<kotlin.Unit>): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - onDismissRequest: STABLE (function type)
+    - title: STABLE (composable function type)
+    - text: STABLE (composable function type)
+    - confirmButton: STABLE (composable function type)
+    - modifier: STABLE (marked @Stable or @Immutable)
+    - dismissButton: STABLE (composable function type)
+
+@Composable
 public fun com.finnvek.knittools.ui.components.SearchTextField(value: kotlin.String, onValueChange: kotlin.Function1<kotlin.String, kotlin.Unit>, label: kotlin.String, modifier: androidx.compose.ui.Modifier): kotlin.Unit
   skippable: true
   restartable: true
@@ -816,6 +828,35 @@ public fun com.finnvek.knittools.ui.screens.abbreviations.AbbreviationsScreen(cr
   params:
     - craftType: STABLE (class with no mutable properties)
     - onBack: STABLE (function type)
+
+@Composable
+internal fun com.finnvek.knittools.ui.screens.backup.BackupContent(state: com.finnvek.knittools.ui.screens.backup.BackupUiState, onBack: kotlin.Function0<kotlin.Unit>, onExport: kotlin.Function0<kotlin.Unit>, onSelectRestore: kotlin.Function0<kotlin.Unit>, onConfirm: kotlin.Function0<kotlin.Unit>, onCancel: kotlin.Function0<kotlin.Unit>, onRestored: kotlin.Function0<kotlin.Unit>): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - state: STABLE (class with no mutable properties)
+    - onBack: STABLE (function type)
+    - onExport: STABLE (function type)
+    - onSelectRestore: STABLE (function type)
+    - onConfirm: STABLE (function type)
+    - onCancel: STABLE (function type)
+    - onRestored: STABLE (function type)
+
+@Composable
+private fun com.finnvek.knittools.ui.screens.backup.BackupProgress(phase: com.finnvek.knittools.ui.screens.backup.BackupPhase, onCancel: kotlin.Function0<kotlin.Unit>): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - phase: STABLE (class with no mutable properties)
+    - onCancel: STABLE (function type)
+
+@Composable
+public fun com.finnvek.knittools.ui.screens.backup.BackupScreen(onBack: kotlin.Function0<kotlin.Unit>, onRestored: kotlin.Function0<kotlin.Unit>): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - onBack: STABLE (function type)
+    - onRestored: STABLE (function type)
 
 @Composable
 private fun com.finnvek.knittools.ui.screens.caston.CastOnResultSection(result: com.finnvek.knittools.domain.model.CastOnResult, unit: kotlin.String, edgeCount: kotlin.Int): kotlin.Unit
@@ -1763,6 +1804,36 @@ internal fun com.finnvek.knittools.ui.screens.counter.yarnUsageRemaining(amounts
     - unit: STABLE (class with no mutable properties)
 
 @Composable
+internal fun com.finnvek.knittools.ui.screens.counterhistory.CounterHistoryContent(state: com.finnvek.knittools.ui.screens.counterhistory.CounterHistoryUiState, onBack: kotlin.Function0<kotlin.Unit>, modifier: androidx.compose.ui.Modifier): kotlin.Unit
+  skippable: false
+  restartable: true
+  params:
+    - state: RUNTIME (requires runtime check)
+    - onBack: STABLE (function type)
+    - modifier: STABLE (marked @Stable or @Immutable)
+
+@Composable
+private fun com.finnvek.knittools.ui.screens.counterhistory.CounterHistoryEmpty(): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+
+@Composable
+private fun com.finnvek.knittools.ui.screens.counterhistory.CounterHistoryEvent(row: com.finnvek.knittools.ui.screens.counterhistory.CounterHistoryRow): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - row: STABLE (class with no mutable properties)
+
+@Composable
+public fun com.finnvek.knittools.ui.screens.counterhistory.CounterHistoryScreen(onBack: kotlin.Function0<kotlin.Unit>, onProjectMissing: kotlin.Function0<kotlin.Unit>): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - onBack: STABLE (function type)
+    - onProjectMissing: STABLE (function type)
+
+@Composable
 private fun com.finnvek.knittools.ui.screens.gauge.ActualGaugeFields(state: com.finnvek.knittools.ui.screens.gauge.GaugeUiState, onAction: kotlin.Function1<com.finnvek.knittools.ui.screens.gauge.GaugeAction, kotlin.Unit>, axis: com.finnvek.knittools.ui.screens.gauge.GaugeAxis?): kotlin.Unit
   skippable: false
   restartable: true
@@ -1940,6 +2011,28 @@ private fun com.finnvek.knittools.ui.screens.insights.ChartPlot(buckets: kotlin.
     - selectedIndex: STABLE (class with no mutable properties)
     - maxMinutes: STABLE (primitive type)
     - onSelectBucket: STABLE (function type)
+
+@Composable
+private fun com.finnvek.knittools.ui.screens.insights.CompletionEventRow(event: com.finnvek.knittools.ui.screens.insights.InsightsCompletionEvent, state: com.finnvek.knittools.ui.screens.insights.InsightsUiState): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - event: STABLE (class with no mutable properties)
+    - state: STABLE (marked @Stable or @Immutable)
+
+@Composable
+private fun com.finnvek.knittools.ui.screens.insights.CompletionHistory(state: com.finnvek.knittools.ui.screens.insights.InsightsUiState): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - state: STABLE (marked @Stable or @Immutable)
+
+@Composable
+private fun com.finnvek.knittools.ui.screens.insights.CompletionTimeline(buckets: kotlin.collections.List<com.finnvek.knittools.ui.screens.insights.InsightsCompletionBucket>): kotlin.Unit
+  skippable: false
+  restartable: true
+  params:
+    - buckets: RUNTIME (requires runtime check)
 
 @Composable
 private fun com.finnvek.knittools.ui.screens.insights.HeroSentenceText(text: kotlin.String): kotlin.Unit
@@ -2182,6 +2275,20 @@ private fun com.finnvek.knittools.ui.screens.insights.chartHeaderMeta(uiState: c
     - uiState: STABLE (marked @Stable or @Immutable)
     - selectedBucketIndex: STABLE (class with no mutable properties)
     - hasUserSelection: STABLE (primitive type)
+
+@Composable
+private fun com.finnvek.knittools.ui.screens.insights.completionCount(count: kotlin.Int): kotlin.String
+  skippable: false
+  restartable: false
+  params:
+    - count: STABLE (primitive type)
+
+@Composable
+private fun com.finnvek.knittools.ui.screens.insights.completionDate(date: java.time.LocalDate): kotlin.String
+  skippable: false
+  restartable: false
+  params:
+    - date: STABLE (stability configuration file type)
 
 @Composable
 internal fun com.finnvek.knittools.ui.screens.insights.craftVerbText(craftMix: com.finnvek.knittools.ui.screens.insights.InsightsCraftMix): kotlin.String
@@ -3018,7 +3125,7 @@ private fun com.finnvek.knittools.ui.screens.pattern.PatternViewerOverflowMenu(e
     - closeOverflowMenu: STABLE (function type)
 
 @Composable
-public fun com.finnvek.knittools.ui.screens.pattern.PatternViewerScreen(onBack: kotlin.Function0<kotlin.Unit>, onImportFromRavelry: kotlin.Function0<kotlin.Unit>, onSeePro: kotlin.Function0<kotlin.Unit>, onSavedPatternDetail: kotlin.Function1<kotlin.Long, kotlin.Unit>, onEditWebPattern: kotlin.Function1<kotlin.Long, kotlin.Unit>, counterViewModelProvider: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<com.finnvek.knittools.ui.screens.counter.CounterViewModel>, patternViewerViewModelProvider: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<com.finnvek.knittools.ui.screens.pattern.PatternViewerViewModel>, annotationViewModelProvider: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<com.finnvek.knittools.ui.screens.pattern.PatternAnnotationViewModel>): kotlin.Unit
+public fun com.finnvek.knittools.ui.screens.pattern.PatternViewerScreen(onBack: kotlin.Function0<kotlin.Unit>, onImportFromRavelry: kotlin.Function0<kotlin.Unit>, onSeePro: kotlin.Function0<kotlin.Unit>, onSavedPatternDetail: kotlin.Function1<kotlin.Long, kotlin.Unit>, onEditWebPattern: kotlin.Function1<kotlin.Long, kotlin.Unit>, onOpenProjectNotes: kotlin.Function0<kotlin.Unit>, counterViewModelProvider: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<com.finnvek.knittools.ui.screens.counter.CounterViewModel>, patternViewerViewModelProvider: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<com.finnvek.knittools.ui.screens.pattern.PatternViewerViewModel>, annotationViewModelProvider: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<com.finnvek.knittools.ui.screens.pattern.PatternAnnotationViewModel>): kotlin.Unit
   skippable: true
   restartable: true
   params:
@@ -3027,6 +3134,7 @@ public fun com.finnvek.knittools.ui.screens.pattern.PatternViewerScreen(onBack: 
     - onSeePro: STABLE (function type)
     - onSavedPatternDetail: STABLE (function type)
     - onEditWebPattern: STABLE (function type)
+    - onOpenProjectNotes: STABLE (function type)
     - counterViewModelProvider: STABLE (composable function type)
     - patternViewerViewModelProvider: STABLE (composable function type)
     - annotationViewModelProvider: STABLE (composable function type)
@@ -3184,12 +3292,13 @@ private fun com.finnvek.knittools.ui.screens.pro.ProIntroduction(): kotlin.Unit
   params:
 
 @Composable
-private fun com.finnvek.knittools.ui.screens.pro.ProPurchaseSection(proState: com.finnvek.knittools.pro.ProState, proStateReady: kotlin.Boolean, price: kotlin.String?, productStatusProvider: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<com.finnvek.knittools.billing.BillingProductStatus>, purchaseFlowInFlight: kotlin.Boolean, isRestoring: kotlin.Boolean, onPurchase: kotlin.Function0<kotlin.Unit>, onRestore: kotlin.Function0<kotlin.Unit>, onRetry: kotlin.Function0<kotlin.Unit>, onStartTrial: kotlin.Function0<kotlin.Unit>): kotlin.Unit
+private fun com.finnvek.knittools.ui.screens.pro.ProPurchaseSection(proState: com.finnvek.knittools.pro.ProState, proStateReady: kotlin.Boolean, purchaseQueryFailed: kotlin.Boolean, price: kotlin.String?, productStatusProvider: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<com.finnvek.knittools.billing.BillingProductStatus>, purchaseFlowInFlight: kotlin.Boolean, isRestoring: kotlin.Boolean, onPurchase: kotlin.Function0<kotlin.Unit>, onRestore: kotlin.Function0<kotlin.Unit>, onRetry: kotlin.Function0<kotlin.Unit>, onStartTrial: kotlin.Function0<kotlin.Unit>): kotlin.Unit
   skippable: true
   restartable: true
   params:
     - proState: STABLE (marked @Stable or @Immutable)
     - proStateReady: STABLE (primitive type)
+    - purchaseQueryFailed: STABLE (primitive type)
     - price: STABLE (class with no mutable properties)
     - productStatusProvider: STABLE (composable function type)
     - purchaseFlowInFlight: STABLE (primitive type)
@@ -3198,6 +3307,14 @@ private fun com.finnvek.knittools.ui.screens.pro.ProPurchaseSection(proState: co
     - onRestore: STABLE (function type)
     - onRetry: STABLE (function type)
     - onStartTrial: STABLE (function type)
+
+@Composable
+private fun com.finnvek.knittools.ui.screens.pro.ProRestoreButton(isRestoring: kotlin.Boolean, onRestore: kotlin.Function0<kotlin.Unit>): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - isRestoring: STABLE (primitive type)
+    - onRestore: STABLE (function type)
 
 @Composable
 private fun com.finnvek.knittools.ui.screens.pro.ProStatusMessage(messageRes: kotlin.Int): kotlin.Unit
@@ -3819,10 +3936,11 @@ private fun com.finnvek.knittools.ui.screens.ravelry.SavedPatternItem(pattern: c
     - onToggleSelection: STABLE (function type)
 
 @Composable
-private fun com.finnvek.knittools.ui.screens.ravelry.SavedTab(patterns: kotlin.collections.List<com.finnvek.knittools.domain.model.SavedPattern>, isSelectMode: kotlin.Boolean, selectedIds: kotlin.collections.Set<kotlin.Long>, onSavedPatternDetail: kotlin.Function1<kotlin.Long, kotlin.Unit>, onEnterSelectMode: kotlin.Function1<kotlin.Long, kotlin.Unit>, onToggleSelection: kotlin.Function1<kotlin.Long, kotlin.Unit>): kotlin.Unit
+private fun com.finnvek.knittools.ui.screens.ravelry.SavedTab(header: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<kotlin.Unit>, patterns: kotlin.collections.List<com.finnvek.knittools.domain.model.SavedPattern>, isSelectMode: kotlin.Boolean, selectedIds: kotlin.collections.Set<kotlin.Long>, onSavedPatternDetail: kotlin.Function1<kotlin.Long, kotlin.Unit>, onEnterSelectMode: kotlin.Function1<kotlin.Long, kotlin.Unit>, onToggleSelection: kotlin.Function1<kotlin.Long, kotlin.Unit>): kotlin.Unit
   skippable: false
   restartable: true
   params:
+    - header: STABLE (composable function type)
     - patterns: RUNTIME (requires runtime check)
     - isSelectMode: STABLE (primitive type)
     - selectedIds: RUNTIME (requires runtime check)
@@ -3837,10 +3955,11 @@ private fun com.finnvek.knittools.ui.screens.ravelry.SavedTabEmptyState(): kotli
   params:
 
 @Composable
-private fun com.finnvek.knittools.ui.screens.ravelry.SearchTab(state: com.finnvek.knittools.ui.screens.ravelry.SearchTabState, onQueryChange: kotlin.Function1<kotlin.String, kotlin.Unit>, onSearch: kotlin.Function0<kotlin.Unit>, onPatternClick: kotlin.Function1<kotlin.Int, kotlin.Unit>, onImportPattern: kotlin.Function1<kotlin.Int, kotlin.Unit>, onLoadMore: kotlin.Function0<kotlin.Unit>): kotlin.Unit
+private fun com.finnvek.knittools.ui.screens.ravelry.SearchTab(header: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<kotlin.Unit>, state: com.finnvek.knittools.ui.screens.ravelry.SearchTabState, onQueryChange: kotlin.Function1<kotlin.String, kotlin.Unit>, onSearch: kotlin.Function0<kotlin.Unit>, onPatternClick: kotlin.Function1<kotlin.Int, kotlin.Unit>, onImportPattern: kotlin.Function1<kotlin.Int, kotlin.Unit>, onLoadMore: kotlin.Function0<kotlin.Unit>): kotlin.Unit
   skippable: true
   restartable: true
   params:
+    - header: STABLE (composable function type)
     - state: STABLE (marked @Stable or @Immutable)
     - onQueryChange: STABLE (function type)
     - onSearch: STABLE (function type)
@@ -3912,11 +4031,12 @@ private fun com.finnvek.knittools.ui.screens.settings.SettingsInfoText(text: kot
     - text: STABLE (String is immutable)
 
 @Composable
-public fun com.finnvek.knittools.ui.screens.settings.SettingsScreen(onUpgradeToPro: kotlin.Function0<kotlin.Unit>, viewModelProvider: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<com.finnvek.knittools.ui.screens.settings.SettingsViewModel>): kotlin.Unit
+public fun com.finnvek.knittools.ui.screens.settings.SettingsScreen(onUpgradeToPro: kotlin.Function0<kotlin.Unit>, onBackup: kotlin.Function0<kotlin.Unit>, viewModelProvider: @[Composable] androidx.compose.runtime.internal.ComposableFunction0<com.finnvek.knittools.ui.screens.settings.SettingsViewModel>): kotlin.Unit
   skippable: true
   restartable: true
   params:
     - onUpgradeToPro: STABLE (function type)
+    - onBackup: STABLE (function type)
     - viewModelProvider: STABLE (composable function type)
 
 @Composable
@@ -4181,6 +4301,22 @@ private fun com.finnvek.knittools.widget.SmallWidget(data: com.finnvek.knittools
   params:
     - data: STABLE (class with no mutable properties)
     - projectId: STABLE (class with no mutable properties)
+
+@Composable
+private fun com.finnvek.knittools.widget.SmallWidgetCount(data: com.finnvek.knittools.widget.WidgetData): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - data: STABLE (class with no mutable properties)
+
+@Composable
+private fun com.finnvek.knittools.widget.SmallWidgetProjectName(data: com.finnvek.knittools.widget.WidgetData, modifier: androidx.glance.GlanceModifier, textAlign: androidx.glance.text.TextAlign): kotlin.Unit
+  skippable: false
+  restartable: true
+  params:
+    - data: STABLE (class with no mutable properties)
+    - modifier: STABLE (marked @Stable or @Immutable)
+    - textAlign: RUNTIME (requires runtime check)
 
 @Composable
 private fun com.finnvek.knittools.widget.WidgetActionButton(text: kotlin.String, size: androidx.compose.ui.unit.Dp, action: com.finnvek.knittools.widget.WidgetCountAction): kotlin.Unit

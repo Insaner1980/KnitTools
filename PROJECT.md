@@ -155,7 +155,7 @@ Current core versions are `firebase-functions 7.3.2`, `firebase-admin 14.3.0`, `
 | DataStore | 1.2.1 |
 | AndroidX Core | 1.19.0 |
 | Activity Compose | 1.13.0 |
-| AppCompat | 1.7.1 |
+| AppCompat | 1.8.0 |
 | Kotlin serialization | 1.11.0 |
 | Splash Screen | 1.2.0 |
 | Play Review | 2.0.2 |

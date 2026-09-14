@@ -120,7 +120,7 @@ fun InsightsScreen(
                     item { InsightsSkeleton() }
                 }
 
-                !uiState.hasAnySessionData -> {
+                !uiState.hasAnySessionData && !uiState.hasAnyCompletionData -> {
                     item { InsightsEmptyState() }
                 }
 
@@ -257,6 +257,8 @@ private fun LazyListScope.insightsContent(
         selectedFabricDate = selectedFabricDate,
         onSelectFabricDate = onSelectFabricDate,
     )
+
+    completionSection(uiState)
 
     projectBreakdownSection(uiState = uiState, onLaunchCounter = onLaunchCounter)
 

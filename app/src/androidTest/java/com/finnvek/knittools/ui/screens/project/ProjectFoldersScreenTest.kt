@@ -48,21 +48,14 @@ import com.finnvek.knittools.data.local.KnitToolsDatabase
 import com.finnvek.knittools.data.local.PatternAnnotationSchemaConstraints
 import com.finnvek.knittools.data.local.ProjectDocumentSchemaConstraints
 import com.finnvek.knittools.data.local.RoomDatabaseTransactionRunner
-import com.finnvek.knittools.data.storage.PatternDocumentStorage
 import com.finnvek.knittools.data.storage.ProgressPhotoStorage
 import com.finnvek.knittools.domain.model.ProjectFolderFilter
 import com.finnvek.knittools.domain.model.ProjectSortOrder
 import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.pro.TrialManager
-import com.finnvek.knittools.repository.CounterRepository
-import com.finnvek.knittools.repository.PatternAnnotationLayerRepository
 import com.finnvek.knittools.repository.ProgressPhotoRepository
-import com.finnvek.knittools.repository.ProjectDocumentFileAvailability
-import com.finnvek.knittools.repository.ProjectDocumentRepository
 import com.finnvek.knittools.repository.ProjectFolderMutationResult
 import com.finnvek.knittools.repository.ProjectFolderRepository
-import com.finnvek.knittools.repository.SavedPatternRepository
-import com.finnvek.knittools.repository.YarnCardRepository
 import com.finnvek.knittools.ui.theme.KnitToolsTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -525,55 +518,13 @@ class ProjectFoldersScreenTest {
     }
 
     private fun createViewModel(savedStateHandle: SavedStateHandle): ProjectListViewModel {
-        val transactionRunner = RoomDatabaseTransactionRunner(database)
-        val savedPatternRepository =
-            SavedPatternRepository(
-                dao = database.savedPatternDao(),
-                context = context,
-                counterProjectDao = database.counterProjectDao(),
-                transactionRunner = transactionRunner,
-                ioDispatcher = Dispatchers.IO,
-                projectDocumentDao = database.projectDocumentDao(),
-            )
-        val projectDocumentRepository =
-            ProjectDocumentRepository(
-                documentDao = database.projectDocumentDao(),
-                projectDao = database.counterProjectDao(),
-                savedPatternRepository = savedPatternRepository,
-                layerRepository =
-                    PatternAnnotationLayerRepository(
-                        database.patternAnnotationLayerDao(),
-                        transactionRunner,
-                    ),
-                transactionRunner = transactionRunner,
-                fileAvailability = ProjectDocumentFileAvailability(context, Dispatchers.IO),
-            )
-        val yarnCardRepository =
-            YarnCardRepository(
-                dao = database.yarnCardDao(),
-                counterProjectDao = database.counterProjectDao(),
-                context = context,
-                transactionRunner = transactionRunner,
-                ioDispatcher = Dispatchers.IO,
-            )
+        val fixture =
+            com.finnvek.knittools.repository
+                .RoomCounterTestFixture(database, context)
         return ProjectListViewModel(
-            repository =
-                CounterRepository(
-                    dao = database.counterProjectDao(),
-                    projectCounterDao = database.projectCounterDao(),
-                    sessionDao = database.sessionDao(),
-                    photoStorage = ProgressPhotoStorage(),
-                    patternDocumentStorage = PatternDocumentStorage(),
-                    context = context,
-                    yarnCardRepository = yarnCardRepository,
-                    savedPatternRepository = savedPatternRepository,
-                    projectDocumentRepository = projectDocumentRepository,
-                    projectFolderDao = database.projectFolderDao(),
-                    transactionRunner = transactionRunner,
-                    ioDispatcher = Dispatchers.IO,
-                ),
+            repository = fixture.counterRepository(),
             proManager = ProManager(TrialManager(context, Dispatchers.IO), BillingManager(context)),
-            yarnCardRepository = yarnCardRepository,
+            yarnCardRepository = fixture.yarnCardRepository,
             photoRepository =
                 ProgressPhotoRepository(
                     dao = database.progressPhotoDao(),
@@ -581,8 +532,8 @@ class ProjectFoldersScreenTest {
                     context = context,
                     ioDispatcher = Dispatchers.IO,
                 ),
-            savedPatternRepository = savedPatternRepository,
-            projectDocumentRepository = projectDocumentRepository,
+            savedPatternRepository = fixture.savedPatternRepository,
+            projectDocumentRepository = fixture.projectDocumentRepository,
             preferencesManager = preferencesManager,
             context = context,
             folderRepository = folderRepository,

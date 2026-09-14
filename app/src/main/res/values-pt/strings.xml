@@ -230,7 +230,7 @@
     <string name="skein_count_many">%1$d novelos</string>
 
     <!-- Session History -->
-    <string name="session_history_title">Histórico</string>
+    <string name="session_history_title">Histórico de sessões</string>
     <string name="no_sessions">Ainda não há sessões registadas. Comece a tricotar para ver o seu histórico aqui.</string>
     <string name="session_row_range">Carreiras %1$d \u2192 %2$d</string>
     <string name="session_row_single">Carreira %1$d</string>
@@ -1066,4 +1066,52 @@
     <string name="web_pattern_share_ambiguous">Foi partilhado mais de um endereço de site</string>
     <string name="web_pattern_project_unavailable">O projeto já não está disponível</string>
     <string name="pattern_open_project_notes">Abrir notas do projeto</string>
+    <string name="insights_completions_title">Conclusões de projetos</string>
+    <string name="insights_completions_empty">Nenhuma conclusão neste período.</string>
+    <string name="insights_completions_project_empty">Nenhuma conclusão registada para este projeto neste período.</string>
+    <string name="insights_completions_period">%1$s – %2$s</string>
+    <plurals name="insights_completion_count">
+        <item quantity="one">%d conclusão</item>
+        <item quantity="many">%d conclusões</item>
+        <item quantity="other">%d conclusões</item>
+    </plurals>
+
+    <string name="backup_title">Cópia de segurança e restauro</string>
+    <string name="backup_description">Guarde projetos, notas, padrões e fotografias locais num ficheiro de cópia de segurança.</string>
+    <string name="backup_privacy">A cópia não está encriptada. Pode conter notas privadas, fotografias e padrões PDF. Guarde-a num local de confiança.</string>
+    <string name="backup_exclusions">As definições e o idioma do dispositivo não mudam. Períodos de teste, compras, sessões de conta e widgets não são transferidos. Uma sessão de trabalho ativa terá de ser revista após o restauro.</string>
+    <string name="backup_export">Exportar cópia de segurança</string>
+    <string name="backup_restore">Restaurar cópia de segurança</string>
+    <string name="backup_preview_date">Data da cópia: %1$s</string>
+    <string name="backup_preview_version">Versão do KnitTools: %1$s</string>
+    <string name="backup_preview_projects">Projetos: %1$d</string>
+    <string name="backup_preview_patterns">Padrões guardados: %1$d</string>
+    <string name="backup_preview_yarn">Fichas de fio: %1$d</string>
+    <string name="backup_preview_files">Ficheiros: %1$d</string>
+    <string name="backup_continue">Abrir projetos</string>
+    <string name="backup_confirm_title">Substituir os dados atuais?</string>
+    <string name="backup_confirm_message">O restauro substitui todos os projetos, notas, padrões, fotografias e outros conteúdos locais atuais do KnitTools. Não é possível anular esta ação. Exporte primeiro uma cópia se quiser manter o conteúdo atual.</string>
+    <string name="backup_replace">Substituir e restaurar</string>
+    <string name="backup_exporting">A criar cópia de segurança…</string>
+    <string name="backup_validating">A verificar cópia de segurança…</string>
+    <string name="backup_restoring">A restaurar dados. Aguarde…</string>
+    <string name="backup_restored">Cópia de segurança restaurada.</string>
+    <string name="backup_exported">Cópia de segurança exportada.</string>
+    <string name="backup_error_unsupported">Esta versão da cópia não é suportada. Atualize o KnitTools e tente novamente.</string>
+    <string name="backup_error_invalid">Este ficheiro não é uma cópia do KnitTools. Escolha uma cópia do KnitTools.</string>
+    <string name="backup_error_corrupt">A cópia está danificada ou contém dados inválidos. Escolha outra. Os dados atuais não foram substituídos.</string>
+    <string name="backup_error_space">Não existe espaço livre suficiente. Liberte espaço e tente novamente.</string>
+    <string name="backup_error_read">Não foi possível ler a origem. Verifique se o ficheiro está disponível e tente novamente.</string>
+    <string name="backup_error_write">Não foi possível guardar a cópia. Verifique o destino e tente novamente. Elimine qualquer ficheiro de destino incompleto.</string>
+    <string name="backup_error_restore">O restauro falhou. O conteúdo anterior foi mantido. Tente novamente.</string>
+
+    <string name="counter_history_title">Histórico do contador</string>
+    <string name="counter_history_empty_title">Ainda não há histórico do contador</string>
+    <string name="counter_history_empty_body">As alterações do contador aparecerão aqui enquanto trabalha neste projeto.</string>
+    <string name="counter_history_increase">Aumento</string>
+    <string name="counter_history_decrease">Diminuição</string>
+    <string name="counter_history_reset">Reposição a zero</string>
+    <string name="counter_history_changed">Contador alterado</string>
+    <string name="counter_history_event_description">%1$s. De %2$s para %3$s. %4$s, %5$s.</string>
+    <string name="counter_history_transition">%1$s → %2$s</string>
 </resources>

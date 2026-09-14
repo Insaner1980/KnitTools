@@ -2,7 +2,6 @@ package com.finnvek.knittools.ui.screens.ravelry
 
 import android.net.Uri
 import androidx.lifecycle.SavedStateHandle
-import com.finnvek.knittools.auth.RavelryAuthManager
 import com.finnvek.knittools.auth.RavelryAuthState
 import com.finnvek.knittools.data.remote.Paginator
 import com.finnvek.knittools.data.remote.PatternDetail
@@ -12,82 +11,27 @@ import com.finnvek.knittools.data.remote.RavelryHttpException
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.SavedPatternSource
 import com.finnvek.knittools.pro.ProFeature
-import com.finnvek.knittools.pro.ProManager
 import com.finnvek.knittools.repository.ProjectCreationResult
-import com.finnvek.knittools.repository.RavelryRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
-import org.junit.Before
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class RavelryViewModelTest {
-    private lateinit var testDispatcher: TestDispatcher
-
-    private lateinit var repository: RavelryRepository
-    private lateinit var proManager: ProManager
-    private lateinit var authManager: RavelryAuthManager
-    private lateinit var authState: MutableStateFlow<RavelryAuthState>
-
-    @Before
-    fun setup() {
-        testDispatcher = StandardTestDispatcher()
-        Dispatchers.setMain(testDispatcher)
-        repository = mockk(relaxed = true)
-        proManager = mockk()
-        every { proManager.proState } returns
-            MutableStateFlow(
-                com.finnvek.knittools.pro
-                    .ProState(),
-            )
-        authManager = mockk(relaxed = true)
-        authState = MutableStateFlow(RavelryAuthState.NotConnected)
-
-        every { authManager.authState } returns authState
-        coEvery { authManager.refreshAuthStatus() } returns RavelryAuthState.NotConnected
-        every { repository.getSavedPatterns() } returns flowOf(emptyList())
-    }
-
-    @After
-    fun tearDown() {
-        Dispatchers.resetMain()
-    }
-
-    private fun createViewModel(
-        isPro: Boolean,
-        savedStateHandle: SavedStateHandle = SavedStateHandle(),
-    ): RavelryViewModel {
-        every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } returns isPro
-        return RavelryViewModel(
-            repository,
-            proManager,
-            authManager,
-            savedStateHandle,
-        )
-    }
-
+class RavelryViewModelTest : RavelryViewModelFixture() {
     @Test
     fun `Pro retry retains original pattern even when detail changes and resumes only once`() =
         runTest(testDispatcher) {

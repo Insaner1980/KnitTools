@@ -194,50 +194,55 @@ private fun ProPromptRequest.title(): String =
 
 @Composable
 private fun ProPromptRequest.body(status: ProStatus): String =
-    if (source == ProPromptSource.Projects) {
-        pluralStringResource(
-            if (status == ProStatus.TRIAL_NOT_STARTED) {
-                R.plurals.pro_prompt_projects_trial_body
-            } else {
-                R.plurals.pro_prompt_projects_body
-            },
-            existingProjectCount,
-            existingProjectCount,
-        )
-    } else if (source == ProPromptSource.ProjectReactivation) {
-        stringResource(
-            if (status == ProStatus.TRIAL_NOT_STARTED) {
-                R.string.pro_prompt_reactivation_trial_body
-            } else {
-                R.string.pro_prompt_reactivation_body
-            },
-        )
-    } else if (status == ProStatus.TRIAL_NOT_STARTED) {
-        stringResource(R.string.pro_prompt_trial_body)
-    } else {
-        stringResource(
-            when (source) {
-                ProPromptSource.ProgressPhotos -> R.string.pro_prompt_photos_body
+    when {
+        source == ProPromptSource.Projects -> {
+            pluralStringResource(
+                if (status == ProStatus.TRIAL_NOT_STARTED) {
+                    R.plurals.pro_prompt_projects_trial_body
+                } else {
+                    R.plurals.pro_prompt_projects_body
+                },
+                existingProjectCount,
+                existingProjectCount,
+            )
+        }
+        source == ProPromptSource.ProjectReactivation -> {
+            stringResource(
+                if (status == ProStatus.TRIAL_NOT_STARTED) {
+                    R.string.pro_prompt_reactivation_trial_body
+                } else {
+                    R.string.pro_prompt_reactivation_body
+                },
+            )
+        }
+        status == ProStatus.TRIAL_NOT_STARTED -> {
+            stringResource(R.string.pro_prompt_trial_body)
+        }
+        else -> {
+            stringResource(
+                when (source) {
+                    ProPromptSource.ProgressPhotos -> R.string.pro_prompt_photos_body
 
-                ProPromptSource.Notes -> R.string.pro_prompt_notes_body
+                    ProPromptSource.Notes -> R.string.pro_prompt_notes_body
 
-                ProPromptSource.YarnCards -> R.string.pro_prompt_yarn_body
+                    ProPromptSource.YarnCards -> R.string.pro_prompt_yarn_body
 
-                ProPromptSource.SaveToMyYarn -> R.string.pro_prompt_save_yarn_body
+                    ProPromptSource.SaveToMyYarn -> R.string.pro_prompt_save_yarn_body
 
-                ProPromptSource.Counters -> R.string.pro_prompt_counters_body
+                    ProPromptSource.Counters -> R.string.pro_prompt_counters_body
 
-                ProPromptSource.Reminders -> R.string.pro_prompt_reminders_body
+                    ProPromptSource.Reminders -> R.string.pro_prompt_reminders_body
 
-                ProPromptSource.PatternCamera,
-                ProPromptSource.PatternGallery,
-                -> R.string.pro_prompt_pattern_camera_body
+                    ProPromptSource.PatternCamera,
+                    ProPromptSource.PatternGallery,
+                    -> R.string.pro_prompt_pattern_camera_body
 
-                ProPromptSource.Widget -> R.string.pro_prompt_widget_body
+                    ProPromptSource.Widget -> R.string.pro_prompt_widget_body
 
-                ProPromptSource.Projects,
-                ProPromptSource.ProjectReactivation,
-                -> error("Project copy uses dedicated resources")
-            },
-        )
+                    ProPromptSource.Projects,
+                    ProPromptSource.ProjectReactivation,
+                    -> error("Project copy uses dedicated resources")
+                },
+            )
+        }
     }

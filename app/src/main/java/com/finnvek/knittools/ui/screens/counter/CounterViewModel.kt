@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.provider.OpenableColumns
+import androidx.annotation.MainThread
 import androidx.core.net.toUri
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
@@ -80,6 +81,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -88,9 +91,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -138,6 +143,7 @@ data class CounterUiState(
     val canUseYarnCards: Boolean = false,
     val projects: List<CounterProject> = emptyList(),
     val projectsLoaded: Boolean = false,
+    val isRestoringProject: Boolean = false,
     val sectionName: String? = null,
     val stitchCount: Int? = null,
     val stitchTrackingEnabled: Boolean = false,
@@ -254,8 +260,17 @@ class CounterViewModel
         val uiState: StateFlow<CounterUiState> = _uiState.asStateFlow()
         private val _viewerEvents = MutableSharedFlow<CounterViewerEvent>(extraBufferCapacity = 1)
         val viewerEvents: SharedFlow<CounterViewerEvent> = _viewerEvents.asSharedFlow()
-        private val projectClosedEventChannel = Channel<Unit>(Channel.CONFLATED)
+        private var projectSelectionVersion = 0L
+        private val projectClosedEventChannel = Channel<Long>(Channel.CONFLATED)
         val projectClosedEvents = projectClosedEventChannel.receiveAsFlow()
+
+        @MainThread
+        fun consumeProjectClosedEvent(
+            selectionVersion: Long,
+            onClose: () -> Unit,
+        ) {
+            if (selectionVersion == projectSelectionVersion) onClose()
+        }
 
         val savedYarnCards: StateFlow<List<YarnCard>> =
             yarnCardRepository.getAllCards().stateIn(
@@ -290,6 +305,8 @@ class CounterViewModel
         private var reminderCreationInFlight = false
         private var projectCounterCreationInFlight = false
         private var projectCompletionJob: Job? = null
+        private var projectCompletionVersion = 0L
+        private var hasProjectCompletionRetry = false
         private var pendingReactivation: PendingProjectReactivation?
             get() =
                 savedStateHandle.get<Long>("pending_reactivation_project_id")?.let { projectId ->
@@ -321,6 +338,7 @@ class CounterViewModel
 
         init {
             ProcessLifecycleOwner.get().lifecycle.addObserver(lifecycleObserver)
+            restoreSelectedProject()
             observeProjects()
             observeActiveSession()
             observePreferences()
@@ -375,28 +393,41 @@ class CounterViewModel
                             projectsLoaded = true,
                         )
                     }
-                    restorePendingReactivation()
+                    if (projectSelectionJob == null) restorePendingReactivation()
                     if (list.isEmpty()) {
                         launchPendingReactivation(checkEligibility = true)
                     }
-                    if (selectedProjectJob != null) return@collect
+                    if (selectedProjectJob != null || projectSelectionJob != null) return@collect
                     if (list.isEmpty()) {
                         clearSelectedProject()
-                    } else {
-                        val currentId = _uiState.value.projectId ?: savedStateHandle.get<Long>(KEY_SELECTED_PROJECT_ID)
-                        val targetProject =
-                            currentId?.let { id -> list.find { it.id == id } }
-                                ?: list.first()
-
-                        if (_uiState.value.projectId != targetProject.id || selectedProjectJob == null) {
-                            openProject(targetProject)
-                        }
+                        return@collect
                     }
+                    val currentId = _uiState.value.projectId ?: savedStateHandle.get<Long>(KEY_SELECTED_PROJECT_ID)
+                    val targetProject = currentId?.let { id -> list.find { it.id == id } } ?: list.first()
+                    openProject(targetProject)
                 }
             }
         }
 
+        private fun restoreSelectedProject() {
+            val projectId = savedStateHandle.get<Long>(KEY_SELECTED_PROJECT_ID) ?: return
+            if (pendingReactivation != null) return
+            val selectionVersion = projectSelectionVersion
+            _uiState.update { it.copy(isRestoringProject = true) }
+            projectSelectionJob =
+                viewModelScope.launch {
+                    val project = repository.observeProject(projectId).first()
+                    currentCoroutineContext().ensureActive()
+                    if (project == null) {
+                        closeSelectedProject(selectionVersion)
+                    } else {
+                        openProject(project, restoring = true)
+                    }
+                }
+        }
+
         fun selectProject(project: CounterProject) {
+            projectSelectionVersion++
             if (project.id != (_uiState.value.projectId ?: pendingReactivation?.projectId)) dismissPendingReactivation()
             projectSelectionJob?.cancel()
             projectSelectionJob =
@@ -423,6 +454,7 @@ class CounterViewModel
         }
 
         private fun observeSelectedProject(projectId: Long) {
+            val selectionVersion = projectSelectionVersion
             selectedProjectJob?.cancel()
             selectedProjectJob =
                 viewModelScope.launch {
@@ -436,6 +468,7 @@ class CounterViewModel
                         previousObservedProject =
                             handleSelectedProjectObservation(
                                 projectId = projectId,
+                                selectionVersion = selectionVersion,
                                 project = project,
                                 linkedPattern = linkedPattern,
                                 previousObservedProject = previousObservedProject,
@@ -446,12 +479,13 @@ class CounterViewModel
 
         private suspend fun handleSelectedProjectObservation(
             projectId: Long,
+            selectionVersion: Long,
             project: CounterProject?,
             linkedPattern: SavedPattern?,
             previousObservedProject: CounterProject?,
         ): CounterProject? {
             if (project == null) {
-                handleMissingSelectedProject(projectId)
+                handleMissingSelectedProject(projectId, selectionVersion)
                 return previousObservedProject
             }
 
@@ -486,14 +520,17 @@ class CounterViewModel
             return project
         }
 
-        private fun handleMissingSelectedProject(projectId: Long) {
+        private fun handleMissingSelectedProject(
+            projectId: Long,
+            selectionVersion: Long,
+        ) {
+            if (selectionVersion != projectSelectionVersion) return
             val wasSelected = _uiState.value.projectId == projectId
             _uiState.update { state ->
                 if (state.projectId == projectId) state.copy(projectId = null) else state
             }
             if (wasSelected) {
-                clearSelectedProject()
-                projectClosedEventChannel.trySend(Unit)
+                closeSelectedProject(selectionVersion)
             }
         }
 
@@ -605,9 +642,13 @@ class CounterViewModel
             }
         }
 
-        private suspend fun openProject(project: CounterProject) {
+        private suspend fun openProject(
+            project: CounterProject,
+            restoring: Boolean = false,
+        ) {
+            projectSelectionVersion++
+            if (_uiState.value.projectId != project.id) invalidateProjectCompletion()
             if (pendingReactivation?.projectId != project.id) dismissPendingReactivation()
-            pruneHistory(project.id)
             linkedYarnIdsCache = project.yarnCardIds
 
             saveSelectedProject(project.id)
@@ -615,7 +656,7 @@ class CounterViewModel
             _uiState.update { it.withStartedProject(project) }
             observeSelectedProject(project.id)
             observeReminders(project.id)
-            observeProjectCounters(project.id)
+            observeProjectCounters(project.id, persistInitialSync = !restoring)
             observeLatestPhotos(project.id)
             observeProjectYarnNotes(project.id)
             observeProjectDocuments(project.id)
@@ -726,8 +767,17 @@ class CounterViewModel
         }
 
         private fun clearSelectedProject() {
+            projectSelectionVersion++
+            invalidateProjectCompletion()
             dismissPendingReactivation()
             savedStateHandle.remove<Long>(KEY_SELECTED_PROJECT_ID)
+            _uiState.update { it.copy(isRestoringProject = false) }
+        }
+
+        private fun closeSelectedProject(selectionVersion: Long) {
+            if (selectionVersion != projectSelectionVersion) return
+            clearSelectedProject()
+            projectClosedEventChannel.trySend(projectSelectionVersion)
         }
 
         fun openSessionHistory(onReady: (Long) -> Unit) {
@@ -1069,11 +1119,16 @@ class CounterViewModel
             choice: ActiveSessionCompletionChoice?,
         ) {
             if (projectCompletionJob?.isActive == true) return
+            invalidateProjectCompletion()
+            val requestVersion = projectCompletionVersion
+            val selectionVersion = projectSelectionVersion
             projectCompletionJob =
                 viewModelScope.launch {
                     try {
                         handleProjectCompletionResult(
                             projectId,
+                            requestVersion,
+                            selectionVersion,
                             repository.completeProjectWithSessionChoice(projectId, choice),
                         )
                     } finally {
@@ -1088,10 +1143,14 @@ class CounterViewModel
 
         private fun handleProjectCompletionResult(
             projectId: Long,
+            requestVersion: Long,
+            selectionVersion: Long,
             result: ProjectCompletionResult,
         ) {
+            if (requestVersion != projectCompletionVersion || _uiState.value.projectId != projectId) return
             when (result) {
                 ProjectCompletionResult.Completed -> {
+                    if (selectionVersion != projectSelectionVersion) return
                     val closedCurrentProject = _uiState.value.projectId == projectId
                     _uiState.update { state ->
                         when {
@@ -1106,8 +1165,7 @@ class CounterViewModel
                         }
                     }
                     if (closedCurrentProject) {
-                        clearSelectedProject()
-                        projectClosedEventChannel.trySend(Unit)
+                        closeSelectedProject(selectionVersion)
                     }
                 }
                 is ProjectCompletionResult.NeedsActiveSessionChoice ->
@@ -1120,9 +1178,21 @@ class CounterViewModel
                         )
                     }
                 ProjectCompletionResult.ProjectUnavailable -> Unit
-                ProjectCompletionResult.PersistenceFailure ->
-                    showWorkSessionError(R.string.work_session_could_not_save, ::completeProject)
+                ProjectCompletionResult.PersistenceFailure -> {
+                    showWorkSessionError(R.string.work_session_could_not_save) {
+                        if (_uiState.value.projectId == projectId) {
+                            launchProjectCompletion(projectId, choice = null)
+                        }
+                    }
+                    hasProjectCompletionRetry = true
+                }
             }
+        }
+
+        private fun invalidateProjectCompletion() {
+            projectCompletionVersion++
+            if (hasProjectCompletionRetry) dismissWorkSessionError()
+            cancelProjectCompletionSessionChoice()
         }
 
         fun setTargetRows(target: Int?) {
@@ -1153,11 +1223,13 @@ class CounterViewModel
             discardActiveSession: Boolean,
         ) {
             if (projectDeletionJob?.isActive == true) return
+            val selectionVersion = projectSelectionVersion
             projectDeletionJob =
                 viewModelScope.launch {
                     try {
                         handleProjectDeletionResult(
                             id = projectId,
+                            selectionVersion = selectionVersion,
                             result =
                                 repository.deleteProjectResolvingActiveSession(
                                     id = projectId,
@@ -1261,10 +1333,12 @@ class CounterViewModel
 
         private fun handleProjectDeletionResult(
             id: Long,
+            selectionVersion: Long,
             result: ProjectDeletionResult,
         ) {
             when (result) {
                 ProjectDeletionResult.Deleted -> {
+                    if (selectionVersion != projectSelectionVersion) return
                     if (_uiState.value.projectId == id) {
                         _uiState.update {
                             it.copy(
@@ -1272,8 +1346,7 @@ class CounterViewModel
                                 pendingProjectDeletionSession = null,
                             )
                         }
-                        clearSelectedProject()
-                        projectClosedEventChannel.trySend(Unit)
+                        closeSelectedProject(selectionVersion)
                     }
                 }
                 is ProjectDeletionResult.NeedsActiveSessionDiscard ->
@@ -1288,6 +1361,7 @@ class CounterViewModel
             messageRes: Int,
             retry: (() -> Unit)? = null,
         ) {
+            invalidateProjectCompletion()
             pendingWorkSessionRetry = retry
             _uiState.update {
                 it.copy(
@@ -1298,6 +1372,7 @@ class CounterViewModel
         }
 
         fun dismissWorkSessionError() {
+            hasProjectCompletionRetry = false
             pendingWorkSessionRetry = null
             _uiState.update { it.copy(workSessionErrorRes = null, workSessionErrorCanRetry = false) }
         }
@@ -1310,6 +1385,7 @@ class CounterViewModel
 
         private fun launchWorkSessionAction(block: suspend () -> Unit) {
             if (workSessionActionJob?.isActive == true) return
+            invalidateProjectCompletion()
             workSessionActionJob = viewModelScope.launch { block() }
         }
 
@@ -1428,17 +1504,22 @@ class CounterViewModel
 
         // — Multiple Counters —
 
-        private fun observeProjectCounters(projectId: Long) {
+        private fun observeProjectCounters(
+            projectId: Long,
+            persistInitialSync: Boolean = true,
+        ) {
             counterCollectionJob?.cancel()
             counterCollectionJob =
                 viewModelScope.launch {
+                    var persistSync = persistInitialSync
                     projectCounterRepository.getCountersForProject(projectId).collect { counters ->
                         val visibleCounters = withoutLegacySecondaryBackfillCopies(counters)
                         syncRepeatSectionCounters(
                             mainRowCount = _uiState.value.counter.count,
                             counters = visibleCounters,
-                            persist = true,
+                            persist = persistSync,
                         )
+                        persistSync = true
                     }
                 }
         }
@@ -2321,11 +2402,6 @@ class CounterViewModel
             }
         }
 
-        private suspend fun pruneHistory(projectId: Long) {
-            val cutoff = System.currentTimeMillis() - 24L * 60L * 60L * 1_000L
-            repository.deleteHistoryBefore(projectId, cutoff)
-        }
-
         private suspend fun syncWidget(
             projectId: Long? = _uiState.value.projectId,
             projectName: String = _uiState.value.projectName,
@@ -2355,6 +2431,7 @@ class CounterViewModel
             id: Long,
             onLoaded: (Boolean) -> Unit = {},
         ) {
+            projectSelectionVersion++
             if (id != (_uiState.value.projectId ?: pendingReactivation?.projectId)) dismissPendingReactivation()
             projectSelectionJob?.cancel()
             projectSelectionJob =
@@ -2365,6 +2442,10 @@ class CounterViewModel
                         throw cancellation
                     } catch (_: Exception) {
                         onLoaded(false)
+                    } finally {
+                        if (currentCoroutineContext().isActive) {
+                            _uiState.update { it.copy(isRestoringProject = false) }
+                        }
                     }
                 }
         }

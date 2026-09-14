@@ -12,7 +12,7 @@ Use [`CLAUDE.md`](CLAUDE.md) when product wording, visual direction, or UX struc
 - Room schema version `25`
 - AGP `9.4.0` + Kotlin Compose plugin `2.4.10`
 - Gradle daemon and CI use Eclipse Temurin JDK `17`
-- Detekt `2.0.0-alpha.5` and Baseline Profile/Benchmark `1.5.0-beta01` are temporary AGP 9 compatibility exceptions; keep them until stable compatible releases are verified
+- Detekt `2.0.0-alpha.5` is a temporary AGP 9 compatibility exception; keep it until a stable compatible release is verified. Baseline Profile/Benchmark uses stable `1.5.0`.
 
 ## Architecture
 

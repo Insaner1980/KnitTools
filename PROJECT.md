@@ -168,7 +168,7 @@ Current core versions are `firebase-functions 7.3.2`, `firebase-admin 14.3.0`, `
 | WorkManager | 2.11.2 |
 | Firebase BOM | 34.17.0 |
 | Google Services plugin | 4.5.0 |
-| Sentry Android Core | 8.55.0, debug only |
+| Sentry Android Core | 8.56.0, debug only |
 | Wire | 6.4.7, benchmark/profile toolchain only |
 | ktlint Gradle plugin | 14.2.0 |
 | Detekt | 2.0.0-alpha.5 |

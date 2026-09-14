@@ -365,6 +365,7 @@ class RepositoryTransactionBoundaryTest {
             coEvery { documentRepository.getPrimary(7L) } returns document
             val repository =
                 CounterRepository(
+                    // CPD-OFF: Keep the transaction-boundary dependency wiring explicit beside its failure assertions.
                     dao = projectDao,
                     projectCounterDao = mockk(relaxed = true),
                     sessionDao = mockk(relaxed = true),
@@ -373,6 +374,7 @@ class RepositoryTransactionBoundaryTest {
                     context = mockk(relaxed = true),
                     yarnCardRepository = mockk(relaxed = true),
                     savedPatternRepository = mockk(relaxed = true),
+                    // CPD-ON
                     projectDocumentRepository = documentRepository,
                     projectFolderDao = mockk(relaxed = true),
                     transactionRunner = runner,

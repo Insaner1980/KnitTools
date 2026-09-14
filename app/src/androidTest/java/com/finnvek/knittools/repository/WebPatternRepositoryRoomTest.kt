@@ -15,8 +15,6 @@ import com.finnvek.knittools.data.local.ProjectDocumentSchemaConstraints
 import com.finnvek.knittools.data.local.RoomDatabaseTransactionRunner
 import com.finnvek.knittools.data.local.SavedPatternDao
 import com.finnvek.knittools.data.local.SavedPatternEntity
-import com.finnvek.knittools.data.storage.PatternDocumentStorage
-import com.finnvek.knittools.data.storage.ProgressPhotoStorage
 import com.finnvek.knittools.domain.model.SavedPatternSource
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -321,30 +319,11 @@ class WebPatternRepositoryRoomTest {
         )
     }
 
-    private fun createCounterRepository(): CounterRepository {
-        val transactionRunner = RoomDatabaseTransactionRunner(database)
-        return CounterRepository(
-            dao = database.counterProjectDao(),
-            projectCounterDao = database.projectCounterDao(),
-            sessionDao = database.sessionDao(),
-            photoStorage = ProgressPhotoStorage(),
-            patternDocumentStorage = PatternDocumentStorage(),
-            context = context,
-            yarnCardRepository =
-                YarnCardRepository(
-                    dao = database.yarnCardDao(),
-                    counterProjectDao = database.counterProjectDao(),
-                    context = context,
-                    transactionRunner = transactionRunner,
-                    ioDispatcher = Dispatchers.IO,
-                ),
-            savedPatternRepository = repository,
-            projectDocumentRepository = projectDocumentRepository,
-            projectFolderDao = database.projectFolderDao(),
-            transactionRunner = transactionRunner,
-            ioDispatcher = Dispatchers.IO,
+    private fun createCounterRepository(): CounterRepository =
+        RoomCounterTestFixture(database, context).counterRepository(
+            savedPatterns = repository,
+            documents = projectDocumentRepository,
         )
-    }
 
     private suspend fun createWebPattern(
         name: String,

@@ -54,6 +54,7 @@ class InsightsViewModelTest {
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         repository = mockk()
+        every { repository.observeCompletions() } returns flowOf(emptyList())
         proManager = mockk()
         insightsFeature = MutableStateFlow(false)
         streakFeature = MutableStateFlow(false)

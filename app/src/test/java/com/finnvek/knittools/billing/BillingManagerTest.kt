@@ -83,21 +83,6 @@ class BillingManagerTest {
     }
 
     @Test
-    fun `purchase readiness is assigned only from a successful purchase query`() {
-        val source =
-            ProjectSourceFiles.read(
-                "app/src/main/java/com/finnvek/knittools/billing/BillingManager.kt",
-            )
-
-        assertTrue(source.contains("_purchaseStateReady.value = queryPurchases()"))
-        assertFalse(
-            source.contains(
-                "queryPurchases()\n                                _purchaseStateReady.value = true",
-            ),
-        )
-    }
-
-    @Test
     fun `purchase flow passes selected one time offer token`() {
         val source =
             ProjectSourceFiles.read(

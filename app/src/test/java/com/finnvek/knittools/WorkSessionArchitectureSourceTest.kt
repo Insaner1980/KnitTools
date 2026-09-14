@@ -57,8 +57,9 @@ class WorkSessionArchitectureSourceTest {
 
         assertFalse(confirmationActions.contains("dependencies.onBack()"))
         assertTrue(screen.contains("CollectWithLifecycleEffect({ viewModel.projectClosedEvents })"))
-        assertTrue(viewModel.contains("Channel<Unit>(Channel.CONFLATED)"))
-        assertTrue(viewModel.contains("projectClosedEventChannel.trySend(Unit)"))
+        assertTrue(screen.contains("viewModel.consumeProjectClosedEvent(selectionVersion, onBack)"))
+        assertTrue(viewModel.contains("Channel<Long>(Channel.CONFLATED)"))
+        assertTrue(viewModel.contains("projectClosedEventChannel.trySend(projectSelectionVersion)"))
     }
 
     private fun workSessionKeys(source: String): Set<String> =

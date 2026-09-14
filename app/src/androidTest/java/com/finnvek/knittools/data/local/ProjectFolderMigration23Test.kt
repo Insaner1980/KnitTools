@@ -31,6 +31,43 @@ class ProjectFolderMigration23Test {
         )
 
     @Test
+    fun migrate24to25PreservesAllExistingStateAndBackfillsOnlyProvenCompletion() {
+        val testDb = "migration-completion-v25"
+        lateinit var before: DatabaseSnapshot
+        helper.createDatabase(testDb, 24).apply {
+            insertProject(1, "Completed", isCompleted = true, updatedAt = 300)
+            insertProject(2, "Reopened", updatedAt = 400)
+            insertProject(3, "Missing date", isCompleted = true, updatedAt = 500)
+            insertProject(4, "Invalid date", isCompleted = true, updatedAt = 600)
+            execSQL("UPDATE counter_projects SET completedAt = NULL WHERE id = 3")
+            execSQL("UPDATE counter_projects SET completedAt = 50 WHERE id = 4")
+            insertSavedPattern(30)
+            insertCompletedSession(1)
+            insertActiveSession(2, false)
+            insertProjectDocument(1)
+            insertAnnotationAndBookmark(1)
+            insertProjectOwnedRows(1)
+            execSQL(
+                "INSERT INTO project_folders (id, name, normalizedName, sortOrder) VALUES (90, 'Gifts', 'gifts', 0)",
+            )
+            execSQL("INSERT INTO project_folder_assignments (projectId, folderId) VALUES (1, 90)")
+            execSQL(
+                "INSERT INTO project_yarn_usage (projectId, sourceNameSnapshot, usedMeters, createdAt, updatedAt) VALUES (1, 'Wool', 42, 100, 200)",
+            )
+            before = snapshotExistingState(this)
+            close()
+        }
+        helper.runMigrationsAndValidate(testDb, 25, true, KnitToolsDatabase.MIGRATION_24_25).use { db ->
+            assertEquals(before, snapshotExistingState(db, before.tables.keys))
+            assertEquals(1L, scalarLong(db, "SELECT COUNT(*) FROM project_completions"))
+            assertEquals(1L, scalarLong(db, "SELECT projectId FROM project_completions"))
+            assertEquals(300L, scalarLong(db, "SELECT completedAt FROM project_completions"))
+            assertEquals(1L, scalarLong(db, "SELECT COUNT(*) FROM project_completions WHERE zoneId IS NULL"))
+            assertTrue(db.query("PRAGMA foreign_key_check").use { !it.moveToFirst() })
+        }
+    }
+
+    @Test
     fun migrate23to24PreservesEveryTableAndBothActiveSessionStatesWithoutBackfill() {
         listOf(false, true).forEach { recovery ->
             val testDb = "migration-test-yarn-usage-v24-$recovery"

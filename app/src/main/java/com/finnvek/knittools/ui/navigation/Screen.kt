@@ -50,6 +50,8 @@ sealed class Screen(
 
     data object Settings : Screen("settings")
 
+    data object Backup : Screen("backup")
+
     data object ProUpgrade : Screen("pro_upgrade")
 
     data class YarnCardDetail(
@@ -94,6 +96,14 @@ sealed class Screen(
         ) {
         companion object {
             const val ROUTE = "pattern_viewer/{projectId}?selectedProjectDocumentId={selectedProjectDocumentId}"
+        }
+    }
+
+    data class CounterHistory(
+        val projectId: Long,
+    ) : Screen("counter_history/$projectId") {
+        companion object {
+            const val ROUTE = "counter_history/{projectId}"
         }
     }
 

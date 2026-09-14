@@ -75,6 +75,7 @@ data class ProjectActionsSheetCallbacks(
     val onShowDeleteDialog: () -> Unit,
     val onMoveToFolder: () -> Unit,
     val onMeasurements: () -> Unit = {},
+    val onOpenCounterHistory: () -> Unit = {},
 )
 
 data class ProjectActionsSheetState(
@@ -146,6 +147,11 @@ private fun CounterToolActions(
             icon = Icons.Outlined.FormatListNumbered,
             label = stringResource(R.string.measurement_title),
             onClick = callbacks.onMeasurements,
+        )
+        ActionRow(
+            icon = Icons.Outlined.History,
+            label = stringResource(R.string.counter_history_title),
+            onClick = callbacks.onOpenCounterHistory,
         )
         if (!state.isCompleted) {
             ActionRow(

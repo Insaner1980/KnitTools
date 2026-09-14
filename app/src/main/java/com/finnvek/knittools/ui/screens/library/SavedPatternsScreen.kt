@@ -61,6 +61,7 @@ import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.isWebPatternCompatible
 import com.finnvek.knittools.domain.model.webPatternUrlOrNull
 import com.finnvek.knittools.ui.components.ConfirmationDialog
+import com.finnvek.knittools.ui.components.withExtraBottom
 import com.finnvek.knittools.ui.screens.ravelry.PatternCard
 import com.finnvek.knittools.ui.screens.ravelry.PatternCardState
 
@@ -170,13 +171,7 @@ fun SavedPatternsScreen(
                 state = state,
                 actions = actions,
                 padding =
-                    PaddingValues(
-                        start = padding.calculateLeftPadding(LocalLayoutDirection.current),
-                        top = padding.calculateTopPadding(),
-                        end = padding.calculateRightPadding(LocalLayoutDirection.current),
-                        bottom =
-                            padding.calculateBottomPadding() + actionHeight + 32.dp,
-                    ),
+                    padding.withExtraBottom(actionHeight + 32.dp, LocalLayoutDirection.current),
             )
         }
     }

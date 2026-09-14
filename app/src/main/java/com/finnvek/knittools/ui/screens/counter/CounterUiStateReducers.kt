@@ -8,11 +8,12 @@ import com.finnvek.knittools.domain.model.DEFAULT_READING_LINE_Y_FRACTION
 import com.finnvek.knittools.domain.model.RowReminder
 
 internal val CounterUiState.shouldLeaveCounter: Boolean
-    get() = projectsLoaded && projects.isEmpty() && projectId == null
+    get() = !isRestoringProject && projectsLoaded && projects.isEmpty() && projectId == null
 
 internal fun CounterUiState.withStartedProject(project: CounterProject): CounterUiState =
     copy(
         projectId = project.id,
+        isRestoringProject = false,
         isCompleted = project.isCompleted,
         completedAt = project.completedAt,
         projectName = project.name,

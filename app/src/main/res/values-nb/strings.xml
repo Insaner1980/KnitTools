@@ -227,7 +227,7 @@
     <string name="skein_count_many">%1$d nøster</string>
 
     <!-- Session History -->
-    <string name="session_history_title">Historikk</string>
+    <string name="session_history_title">Økthistorikk</string>
     <string name="no_sessions">Ingen økter registrert ennå. Begynn å strikke for å se historikken her.</string>
     <string name="session_row_range">Rader %1$d \u2192 %2$d</string>
     <string name="session_row_single">Rad %1$d</string>
@@ -1044,4 +1044,51 @@
     <string name="web_pattern_share_ambiguous">Mer enn én nettadresse ble delt</string>
     <string name="web_pattern_project_unavailable">Prosjektet er ikke lenger tilgjengelig</string>
     <string name="pattern_open_project_notes">Åpne prosjektnotater</string>
+    <string name="insights_completions_title">Prosjektfullføringer</string>
+    <string name="insights_completions_empty">Ingen fullføringer i denne perioden.</string>
+    <string name="insights_completions_project_empty">Ingen fullføring registrert for dette prosjektet i denne perioden.</string>
+    <string name="insights_completions_period">%1$s – %2$s</string>
+    <plurals name="insights_completion_count">
+        <item quantity="one">%d fullføring</item>
+        <item quantity="other">%d fullføringer</item>
+    </plurals>
+
+    <string name="backup_title">Sikkerhetskopiering og gjenoppretting</string>
+    <string name="backup_description">Lagre prosjekter, notater, oppskrifter og lokale bilder i én sikkerhetskopi.</string>
+    <string name="backup_privacy">Sikkerhetskopien er ikke kryptert. Den kan inneholde private notater, bilder og PDF-oppskrifter. Lagre den på et sted du stoler på.</string>
+    <string name="backup_exclusions">Enhetens innstillinger og språk forblir uendret. Prøveperioder, kjøp, innlogginger og widgeter overføres ikke. En aktiv arbeidsøkt må gjennomgås etter gjenoppretting.</string>
+    <string name="backup_export">Eksporter sikkerhetskopi</string>
+    <string name="backup_restore">Gjenopprett sikkerhetskopi</string>
+    <string name="backup_preview_date">Dato for sikkerhetskopien: %1$s</string>
+    <string name="backup_preview_version">KnitTools-versjon: %1$s</string>
+    <string name="backup_preview_projects">Prosjekter: %1$d</string>
+    <string name="backup_preview_patterns">Lagrede oppskrifter: %1$d</string>
+    <string name="backup_preview_yarn">Garnkort: %1$d</string>
+    <string name="backup_preview_files">Filer: %1$d</string>
+    <string name="backup_continue">Åpne prosjekter</string>
+    <string name="backup_confirm_title">Erstatte gjeldende data?</string>
+    <string name="backup_confirm_message">Gjenopprettingen erstatter alle gjeldende KnitTools-prosjekter, notater, oppskrifter, bilder og annet lokalt innhold. Dette kan ikke angres. Eksporter først en sikkerhetskopi hvis du vil beholde innholdet ditt.</string>
+    <string name="backup_replace">Erstatt og gjenopprett</string>
+    <string name="backup_exporting">Oppretter sikkerhetskopi…</string>
+    <string name="backup_validating">Kontrollerer sikkerhetskopi…</string>
+    <string name="backup_restoring">Gjenoppretter data. Vent litt…</string>
+    <string name="backup_restored">Sikkerhetskopien er gjenopprettet.</string>
+    <string name="backup_exported">Sikkerhetskopien er eksportert.</string>
+    <string name="backup_error_unsupported">Denne sikkerhetskopiversjonen støttes ikke. Oppdater KnitTools og prøv igjen.</string>
+    <string name="backup_error_invalid">Dette er ikke en KnitTools-sikkerhetskopi. Velg en KnitTools-sikkerhetskopi.</string>
+    <string name="backup_error_corrupt">Sikkerhetskopien er skadet eller inneholder ugyldige data. Velg en annen. Gjeldende data er ikke erstattet.</string>
+    <string name="backup_error_space">Det er ikke nok ledig plass. Frigjør lagringsplass og prøv igjen.</string>
+    <string name="backup_error_read">Kilden kunne ikke leses. Kontroller at filen er tilgjengelig, og prøv igjen.</string>
+    <string name="backup_error_write">Sikkerhetskopien kunne ikke lagres. Kontroller målet og prøv igjen. Slett eventuelle ufullstendige målfiler.</string>
+    <string name="backup_error_restore">Gjenopprettingen mislyktes. Det tidligere innholdet er beholdt. Prøv igjen.</string>
+
+    <string name="counter_history_title">Tellerhistorikk</string>
+    <string name="counter_history_empty_title">Ingen tellerhistorikk ennå</string>
+    <string name="counter_history_empty_body">Endringer i telleren vises her mens du arbeider med prosjektet.</string>
+    <string name="counter_history_increase">Økning</string>
+    <string name="counter_history_decrease">Reduksjon</string>
+    <string name="counter_history_reset">Nullstilling</string>
+    <string name="counter_history_changed">Telleren ble endret</string>
+    <string name="counter_history_event_description">%1$s. Fra %2$s til %3$s. %4$s, %5$s.</string>
+    <string name="counter_history_transition">%1$s → %2$s</string>
 </resources>

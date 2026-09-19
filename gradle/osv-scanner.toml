@@ -73,11 +73,6 @@ ignoreUntil = 2026-10-31
 reason = "Gradle verification metadata records io.netty:netty-codec-http2@4.1.110.Final, io.netty:netty-codec-http2@4.1.93.Final; the affected version is absent from the app debug/release runtime classpaths."
 
 [[IgnoredVulns]]
-id = "GHSA-574f-3g2m-x479"
-ignoreUntil = 2026-10-31
-reason = "Gradle verification metadata records org.bouncycastle:bcprov-jdk18on@1.79; the affected version is absent from the app debug/release runtime classpaths."
-
-[[IgnoredVulns]]
 id = "GHSA-57rv-r2g8-2cj3"
 ignoreUntil = 2026-10-31
 reason = "Gradle verification metadata records io.netty:netty-codec-http@4.1.110.Final, io.netty:netty-codec-http@4.1.93.Final; the affected version is absent from the app debug/release runtime classpaths."
@@ -148,11 +143,6 @@ ignoreUntil = 2026-10-31
 reason = "Gradle verification metadata records org.apache.httpcomponents:httpclient@4.5.6; the affected version is absent from the app debug/release runtime classpaths."
 
 [[IgnoredVulns]]
-id = "GHSA-7xpr-hc2w-34m9"
-ignoreUntil = 2026-10-31
-reason = "Gradle verification metadata retains wire-runtime 6.0.0, but the root resolution policy upgrades active benchmark configurations to fixed 6.4.7; app debug/release runtime has no Wire."
-
-[[IgnoredVulns]]
 id = "GHSA-84h7-rjj3-6jx4"
 ignoreUntil = 2026-10-31
 reason = "Gradle verification metadata records io.netty:netty-codec-http@4.1.110.Final, io.netty:netty-codec-http@4.1.93.Final; the affected version is absent from the app debug/release runtime classpaths."
@@ -171,11 +161,6 @@ reason = "Gradle verification metadata records com.fasterxml.jackson.core:jackso
 id = "GHSA-c2gf-v879-257j"
 ignoreUntil = 2026-10-31
 reason = "Gradle verification metadata records io.netty:netty-codec-http2@4.1.110.Final, io.netty:netty-codec-http2@4.1.93.Final; the affected version is absent from the app debug/release runtime classpaths."
-
-[[IgnoredVulns]]
-id = "GHSA-c3fc-8qff-9hwx"
-ignoreUntil = 2026-10-31
-reason = "Gradle verification metadata records org.bouncycastle:bcprov-jdk18on@1.79; the affected version is absent from the app debug/release runtime classpaths."
 
 [[IgnoredVulns]]
 id = "GHSA-c653-97m9-rcg9"
@@ -313,11 +298,6 @@ ignoreUntil = 2026-10-31
 reason = "Gradle verification metadata records io.netty:netty-codec-http2@4.1.110.Final, io.netty:netty-codec-http2@4.1.93.Final; the affected version is absent from the app debug/release runtime classpaths."
 
 [[IgnoredVulns]]
-id = "GHSA-wg6q-6289-32hp"
-ignoreUntil = 2026-10-31
-reason = "Gradle verification metadata records org.bouncycastle:bcpkix-jdk18on@1.79; the affected version is absent from the app debug/release runtime classpaths."
-
-[[IgnoredVulns]]
 id = "GHSA-x4gw-5cx5-pgmh"
 ignoreUntil = 2026-10-31
 reason = "Gradle verification metadata records io.netty:netty-handler@4.1.110.Final, io.netty:netty-handler@4.1.93.Final; the affected version is absent from the app debug/release runtime classpaths."
@@ -360,7 +340,7 @@ reason = "Dependency-Check 13.0.0 resolves fixed httpcore5-h2 5.4.3; verificatio
 [[IgnoredVulns]]
 id = "GHSA-r937-wjx7-w2jp"
 ignoreUntil = 2026-10-31
-reason = "Kotlin 2.4.10 is the latest stable project toolchain and the first listed fix is 2.4.20-Beta1; exploitation requires a privileged local attacker to supply malicious build-cache metadata, and this project configures no shared remote Gradle build cache."
+reason = "Gradle requires kotlin-gradle-plugin 2.2.10 module metadata to resolve KSP 2.3.11, but buildEnvironment and all app configurations select fixed Kotlin 2.4.20; strict dependency verification fails if that metadata entry is removed."
 
 [[IgnoredVulns]]
 id = "GHSA-pmhh-3w7g-xqp8"
@@ -376,3 +356,23 @@ reason = "Gradle verification metadata retains netty-handler 4.1.110.Final and 4
 id = "GHSA-fccg-mwvh-qqg4"
 ignoreUntil = 2026-10-31
 reason = "Gradle verification metadata retains netty-handler 4.1.110.Final and 4.1.93.Final; neither is present in the resolved app debug/release runtime or root buildscript classpaths. The affected Netty server-side SNI ClientHello handler is not used by this app."
+
+[[IgnoredVulns]]
+id = "GHSA-wg6q-6289-32hp"
+ignoreUntil = 2026-10-31
+reason = "Dependency-Check records AGP 9.4.0's requested bcpkix-jdk18on 1.80.2 artifact, while root buildEnvironment resolves Bouncy Castle to fixed 1.85; Bouncy Castle is absent from app debug/release runtime classpaths."
+
+[[IgnoredVulns]]
+id = "GHSA-9pwp-9qqc-pr26"
+ignoreUntil = 2026-10-31
+reason = "Dependency-Check records AGP 9.4.0's requested bcprov-jdk18on 1.80.2 artifact, while root buildEnvironment resolves Bouncy Castle to fixed 1.85; Bouncy Castle is absent from app debug/release runtime classpaths."
+
+[[IgnoredVulns]]
+id = "GHSA-c3fc-8qff-9hwx"
+ignoreUntil = 2026-10-31
+reason = "Dependency-Check records AGP 9.4.0's requested bcprov-jdk18on 1.80.2 artifact, while root buildEnvironment resolves Bouncy Castle to fixed 1.85; Bouncy Castle is absent from app debug/release runtime classpaths."
+
+[[IgnoredVulns]]
+id = "GHSA-qp49-qgx5-5m26"
+ignoreUntil = 2026-10-31
+reason = "Dependency-Check records AGP 9.4.0's requested bcprov-jdk18on 1.80.2 artifact, while root buildEnvironment resolves Bouncy Castle to fixed 1.85; Bouncy Castle is absent from app debug/release runtime classpaths."

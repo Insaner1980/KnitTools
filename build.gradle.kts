@@ -1,3 +1,17 @@
+buildscript {
+    configurations.configureEach {
+        resolutionStrategy.eachDependency {
+            if (
+                requested.group == "org.bouncycastle" &&
+                requested.name in setOf("bcpkix-jdk18on", "bcprov-jdk18on", "bcutil-jdk18on")
+            ) {
+                useVersion("1.85")
+                because("AGP 9.4.0:n build-työkaluketjun Bouncy Castle päivitetään haavoittuvuudet korjaavaan versioon")
+            }
+        }
+    }
+}
+
 plugins {
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.android.test) apply false
@@ -27,7 +41,7 @@ subprojects {
                 requested.name == turvallinenWireRuntime.module.name
             ) {
                 useVersion(turvallinenWireRuntime.versionConstraint.requiredVersion)
-                because("Wire-dekoodauksen negatiivisen pituuden tarkistus korjattiin versiossa 6.3.0")
+                because("Wire-dekoodauksen 32-bittisen pituuden ylivuoto korjattiin versiossa 6.4.5")
             }
         }
     }

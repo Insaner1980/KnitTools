@@ -63,26 +63,6 @@
 
     <suppress until="2026-10-31Z">
         <notes><![CDATA[
-        Kotlin runtime stdlib -JARit matchautuvat JetBrains Kotlin -tuotteen CPE:hen, mutta
-        CVE-2026-53914 koskee build cache -metadataa eikä sovelluksen runtime-luokkapolkua.
-        Rajaus pidetään nykyisissä raportoiduissa PURL-versioissa, jotta uusi Kotlin-versio
-        pakottaa arvioimaan tilanteen uudelleen.
-        ]]></notes>
-        <packageUrl regex="true">^pkg:maven/org\.jetbrains\.kotlin/kotlin-stdlib@2\.4\.10$</packageUrl>
-        <cve>CVE-2026-53914</cve>
-    </suppress>
-
-    <suppress until="2026-10-31Z">
-        <notes><![CDATA[
-        Kotlin stdlib jdk7 runtime -JAR matchautuu JetBrains Kotlin -tuotteen CPE:hen, mutta
-        CVE-2026-53914 koskee build cache -metadataa eikä sovelluksen runtime-luokkapolkua.
-        ]]></notes>
-        <packageUrl regex="true">^pkg:maven/org\.jetbrains\.kotlin/kotlin-stdlib-jdk7@2\.4\.10$</packageUrl>
-        <cve>CVE-2026-53914</cve>
-    </suppress>
-
-    <suppress until="2026-10-31Z">
-        <notes><![CDATA[
         Kotlin stdlib jdk8 runtime -JAR matchautuu JetBrains Kotlin -tuotteen CPE:hen.
         CVE-2026-53914 koskee build cache -metadataa, ja CVE-2020-29582 koski ennen 1.4.21
         korjattua tilapäistiedostojen luontia, joten nämä eivät kuvaa tätä runtime-artefaktia.
@@ -99,5 +79,14 @@
         ]]></notes>
         <packageUrl regex="true">^pkg:maven/org\.jetbrains\.kotlinx/kotlinx-coroutines-play-services@1\.11\.0$</packageUrl>
         <cpe>cpe:/a:tasks:tasks</cpe>
+    </suppress>
+
+    <suppress until="2026-10-31Z">
+        <notes><![CDATA[
+        JetBrains Compose Runtime Android -artefaktit eivät ole JetBrains Runtime (JBR).
+        CVE-2025-29903 koskee JBR:n macOS-lippuja, ei näitä Android Maven -kirjastoja.
+        ]]></notes>
+        <packageUrl regex="true">^pkg:maven/org\.jetbrains\.compose\.runtime/runtime(?:-saveable)?-android@1\.12\.0$</packageUrl>
+        <cve>CVE-2025-29903</cve>
     </suppress>
 </suppressions>

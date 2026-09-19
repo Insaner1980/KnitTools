@@ -61,7 +61,7 @@ The app does not currently implement cloud synchronization, continuous Drive or 
 | Java toolchain | Eclipse Temurin JDK 17 |
 | Gradle wrapper | 9.7.1 |
 | Android Gradle Plugin | 9.4.0 |
-| Kotlin and Compose compiler plugin | 2.4.10 |
+| Kotlin and Compose compiler plugin | 2.4.20 |
 | Firebase Functions runtime | Node.js 22 |
 | Production UI | Jetpack Compose with Material 3 |
 

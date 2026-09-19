@@ -166,7 +166,7 @@ Current core versions are `firebase-functions 7.4.0`, `firebase-admin 14.4.0`, `
 | Ktor | 3.5.2 |
 | AndroidX Browser | 1.10.0 |
 | WorkManager | 2.11.2 |
-| Firebase BOM | 34.17.0 |
+| Firebase BOM | 34.19.0 |
 | Google Services plugin | 4.5.0 |
 | Sentry Android Core | 8.56.0, debug only |
 | Wire | 6.4.7, benchmark/profile toolchain only |

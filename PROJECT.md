@@ -147,7 +147,7 @@ Current core versions are `firebase-functions 7.4.0`, `firebase-admin 14.4.0`, `
 | Hilt | 2.60.1 |
 | AndroidX Hilt | 1.4.0 |
 | Room | 2.8.5 |
-| Compose BOM | 2026.06.01 |
+| Compose BOM | 2026.09.00 |
 | Navigation Compose | 2.10.1 |
 | Lifecycle | 2.11.0 |
 | Kotlin coroutines | 1.11.0 |

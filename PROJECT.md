@@ -136,7 +136,7 @@ The baseline-profile module targets `:app`, uses the Android test and Baseline P
 
 The backend package is not a Gradle module. It uses TypeScript and Firebase Functions v2, targets Node.js 22, compiles to `functions/lib`, exposes authenticated callables and an OAuth callback, and stores OAuth state, tokens, and rate-limit windows in Firestore. It never downloads or stores pattern PDFs.
 
-Current core versions are `firebase-functions 7.3.2`, `firebase-admin 14.3.0`, `typescript 7.0.2`, and `@types/node 26.4.1`. Package overrides pin security-sensitive transitive packages including `brace-expansion`, `form-data`, `js-yaml`, `protobufjs`, `rimraf`, and `uuid`.
+Current core versions are `firebase-functions 7.4.0`, `firebase-admin 14.4.0`, `typescript 7.0.2`, and `@types/node 26.6.1`. Package overrides pin security-sensitive transitive packages including `brace-expansion`, `form-data`, `js-yaml`, `protobufjs`, `rimraf`, and `uuid`.
 
 ## Android dependency map
 
@@ -146,7 +146,7 @@ Current core versions are `firebase-functions 7.3.2`, `firebase-admin 14.3.0`, `
 |---|---|
 | Hilt | 2.60.1 |
 | AndroidX Hilt | 1.4.0 |
-| Room | 2.8.4 |
+| Room | 2.8.5 |
 | Compose BOM | 2026.06.01 |
 | Navigation Compose | 2.9.8 |
 | Lifecycle | 2.11.0 |
@@ -166,7 +166,7 @@ Current core versions are `firebase-functions 7.3.2`, `firebase-admin 14.3.0`, `
 | Ktor | 3.5.2 |
 | AndroidX Browser | 1.10.0 |
 | WorkManager | 2.11.2 |
-| Firebase BOM | 34.17.0 |
+| Firebase BOM | 34.19.0 |
 | Google Services plugin | 4.5.0 |
 | Sentry Android Core | 8.56.0, debug only |
 | Wire | 6.4.7, benchmark/profile toolchain only |
@@ -1654,7 +1654,7 @@ Each tool proves a different claim. A zero-match raw scan is not automatically t
 
 `gradle/osv-scanner.toml` currently has 73 package/advisory-specific exceptions for build-tool dependencies that appear in Gradle verification metadata. It must not return to a project-wide ignore model. The earlier Functions `brace-expansion` exception is absent because the current package graph resolves that finding rather than accepting it. Runtime dependency exposure still needs its own resolved-graph or artifact evidence.
 
-The `.deepsec` workspace currently pins DeepSec `2.3.8`, TypeScript `^7.0.2`, and `@types/node ^26.4.1`. Its custom matchers cover:
+The `.deepsec` workspace currently pins DeepSec `2.3.8`, TypeScript `^7.0.2`, and `@types/node ^26.6.1`. Its custom matchers cover:
 
 - exported Android components;
 - Kotlin entry points;

@@ -136,7 +136,7 @@ The baseline-profile module targets `:app`, uses the Android test and Baseline P
 
 The backend package is not a Gradle module. It uses TypeScript and Firebase Functions v2, targets Node.js 22, compiles to `functions/lib`, exposes authenticated callables and an OAuth callback, and stores OAuth state, tokens, and rate-limit windows in Firestore. It never downloads or stores pattern PDFs.
 
-Current core versions are `firebase-functions 7.3.2`, `firebase-admin 14.3.0`, `typescript 7.0.2`, and `@types/node 26.4.1`. Package overrides pin security-sensitive transitive packages including `brace-expansion`, `form-data`, `js-yaml`, `protobufjs`, `rimraf`, and `uuid`.
+Current core versions are `firebase-functions 7.3.2`, `firebase-admin 14.3.0`, `typescript 7.0.2`, and `@types/node 26.6.1`. Package overrides pin security-sensitive transitive packages including `brace-expansion`, `form-data`, `js-yaml`, `protobufjs`, `rimraf`, and `uuid`.
 
 ## Android dependency map
 
@@ -1654,7 +1654,7 @@ Each tool proves a different claim. A zero-match raw scan is not automatically t
 
 `gradle/osv-scanner.toml` currently has 73 package/advisory-specific exceptions for build-tool dependencies that appear in Gradle verification metadata. It must not return to a project-wide ignore model. The earlier Functions `brace-expansion` exception is absent because the current package graph resolves that finding rather than accepting it. Runtime dependency exposure still needs its own resolved-graph or artifact evidence.
 
-The `.deepsec` workspace currently pins DeepSec `2.3.8`, TypeScript `^7.0.2`, and `@types/node ^26.4.1`. Its custom matchers cover:
+The `.deepsec` workspace currently pins DeepSec `2.3.8`, TypeScript `^7.0.2`, and `@types/node ^26.6.1`. Its custom matchers cover:
 
 - exported Android components;
 - Kotlin entry points;

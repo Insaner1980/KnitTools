@@ -136,7 +136,7 @@ The baseline-profile module targets `:app`, uses the Android test and Baseline P
 
 The backend package is not a Gradle module. It uses TypeScript and Firebase Functions v2, targets Node.js 22, compiles to `functions/lib`, exposes authenticated callables and an OAuth callback, and stores OAuth state, tokens, and rate-limit windows in Firestore. It never downloads or stores pattern PDFs.
 
-Current core versions are `firebase-functions 7.3.2`, `firebase-admin 14.3.0`, `typescript 7.0.2`, and `@types/node 26.6.1`. Package overrides pin security-sensitive transitive packages including `brace-expansion`, `form-data`, `js-yaml`, `protobufjs`, `rimraf`, and `uuid`.
+Current core versions are `firebase-functions 7.4.0`, `firebase-admin 14.3.0`, `typescript 7.0.2`, and `@types/node 26.6.1`. Package overrides pin security-sensitive transitive packages including `brace-expansion`, `form-data`, `js-yaml`, `protobufjs`, `rimraf`, and `uuid`.
 
 ## Android dependency map
 

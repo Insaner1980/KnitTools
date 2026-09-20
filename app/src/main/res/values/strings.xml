@@ -358,7 +358,9 @@
     <string name="upgrade_to_pro">Upgrade to Pro</string>
     <string name="restore_purchases">Restore purchases</string>
     <string name="restore_purchases_checking">Checking purchases…</string>
-    <string name="privacy_summary">Project data stays on your device. Ravelry and Google Play features use network services. No analytics or cloud sync.</string>
+    <string name="privacy_summary">Project data stays on your device. Ravelry and Google Play use network services. Firebase Crashlytics sends crash reports to Google. Usage statistics are optional. No cloud sync.</string>
+    <string name="usage_analytics">Share usage statistics</string>
+    <string name="usage_analytics_description">When enabled, KnitTools sends screen names, feature usage, usage duration, and app and device information to PostHog in the EU. Project contents are excluded. You can turn this off at any time.</string>
     <string name="pro_restored">Pro restored</string>
     <string name="no_purchases_found">No purchases found</string>
     <string name="version_format">KnitTools %s</string>

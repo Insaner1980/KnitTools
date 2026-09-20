@@ -328,6 +328,11 @@ private class SyntheticRavelryBackend : RavelryBackendClient {
 
     override suspend fun startAuth(): RavelryStartAuthResponse = error("External auth is forbidden in this fixture")
 
+    override suspend fun completeAuth(
+        state: String,
+        proof: String,
+    ): Unit = error("External auth is forbidden in this fixture")
+
     override suspend fun disconnect() = Unit
 
     override suspend fun currentUser() = RavelryBackendCurrentUser(true)

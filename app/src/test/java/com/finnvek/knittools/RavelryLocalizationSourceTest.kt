@@ -66,7 +66,7 @@ class RavelryLocalizationSourceTest {
             (listOf(DEFAULT_STRINGS) + LOCALE_STRINGS)
                 .joinToString(separator = "\n") { ProjectSourceFiles.read(it) }
         assertFalse(allStrings.contains("Saved from Ravelry"))
-        assertTrue(defaultStrings.contains("Ravelry and Google Play features use network services"))
+        assertTrue(defaultStrings.contains("Ravelry and Google Play use network services"))
         assertFalse(defaultStrings.contains("All data stays on your device"))
         assertFalse(defaultStrings.contains("no accounts"))
     }

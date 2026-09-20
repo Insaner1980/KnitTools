@@ -2,7 +2,7 @@ import type { DocumentReference, Firestore } from "firebase-admin/firestore";
 
 import { RAVELRY_RATE_LIMITS_COLLECTION } from "../config";
 
-export type RavelryRateLimitBucket = "auth" | "callback" | "search" | "import";
+export type RavelryRateLimitBucket = "auth" | "callback" | "disconnect" | "search" | "import";
 export type RavelryRateLimitScope = "uid" | "global";
 
 export interface RavelryRateLimitRule {
@@ -28,6 +28,7 @@ export interface RavelryRateLimitTarget {
 
 export interface RavelryRateLimiter {
   consume(uid: string, bucket: RavelryRateLimitBucket): Promise<void>;
+  consumeUid(uid: string, bucket: RavelryRateLimitBucket): Promise<void>;
 }
 
 export interface RavelryRateLimitRuntimeState {
@@ -37,6 +38,7 @@ export interface RavelryRateLimitRuntimeState {
 export const RAVELRY_RATE_LIMIT_RULES: Record<RavelryRateLimitBucket, RavelryRateLimitRule> = {
   auth: { limit: 10, windowMillis: 60_000 },
   callback: { limit: 10, windowMillis: 60_000 },
+  disconnect: { limit: 10, windowMillis: 60_000 },
   search: { limit: 30, windowMillis: 60_000 },
   import: { limit: 20, windowMillis: 60_000 },
 };
@@ -44,6 +46,7 @@ export const RAVELRY_RATE_LIMIT_RULES: Record<RavelryRateLimitBucket, RavelryRat
 export const RAVELRY_GLOBAL_RATE_LIMIT_RULES: Record<RavelryRateLimitBucket, RavelryRateLimitRule> = {
   auth: { limit: 60, windowMillis: 60_000 },
   callback: { limit: 60, windowMillis: 60_000 },
+  disconnect: { limit: 60, windowMillis: 60_000 },
   search: { limit: 120, windowMillis: 60_000 },
   import: { limit: 80, windowMillis: 60_000 },
 };
@@ -60,6 +63,9 @@ const processRateLimitRuntimeState = createRavelryRateLimitRuntimeState();
 
 export const disabledRavelryRateLimiter: RavelryRateLimiter = {
   async consume() {
+    return;
+  },
+  async consumeUid() {
     return;
   },
 };
@@ -157,6 +163,27 @@ export function createRavelryRateLimiter(
   runtimeState: RavelryRateLimitRuntimeState = processRateLimitRuntimeState,
 ): RavelryRateLimiter {
   return {
+    async consumeUid(uid, bucket) {
+      const collection = firestore.collection(RAVELRY_RATE_LIMITS_COLLECTION);
+      const currentMillis = nowMillis();
+      const target = uidRateLimitTarget(uid, bucket);
+      const ref = collection.doc(target.documentId);
+      await firestore.runTransaction(async (transaction) => {
+        const snapshot = await transaction.get(ref);
+        const decision = nextRavelryRateLimitState(snapshot.data(), currentMillis, target.rule);
+        if (!decision.allowed) {
+          throw new RavelryRateLimitError(bucket, "uid", target.rule.limit, target.rule.windowMillis);
+        }
+        transaction.set(ref, {
+          uid,
+          bucket,
+          scope: "uid",
+          windowStartMillis: decision.state.windowStartMillis,
+          count: decision.state.count,
+          updatedAtMillis: currentMillis,
+        });
+      });
+    },
     async consume(uid, bucket) {
       const collection = firestore.collection(RAVELRY_RATE_LIMITS_COLLECTION);
       const currentMillis = nowMillis();

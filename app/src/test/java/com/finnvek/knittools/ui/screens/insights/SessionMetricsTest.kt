@@ -2,6 +2,7 @@ package com.finnvek.knittools.ui.screens.insights
 
 import com.finnvek.knittools.domain.model.KnitSession
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDate
 import java.time.ZoneId
@@ -212,6 +213,29 @@ class SessionMetricsTest {
         assertEquals(0, summary.totalRows)
         assertEquals(0, summary.sessionCount)
         assertEquals(0f, summary.rowsPerHour, 0.01f)
+    }
+
+    @Test
+    fun `malformed multi year session expands into at most one bounded analysis year`() {
+        val zone = ZoneId.of("UTC")
+        val session =
+            KnitSession(
+                id = 1L,
+                projectId = 1L,
+                startedAt = instantMillis(1970, 1, 1, 0, 0, zone),
+                endedAt = instantMillis(2070, 1, 1, 0, 0, zone),
+                startRow = 0,
+                endRow = 100,
+                durationMinutes = 60,
+                durationSeconds = 3_600L,
+                rowsWorked = 100,
+            )
+
+        val activity = SessionMetrics.dailyActivitySeconds(listOf(session), LocalDate.MIN, zone)
+        val buckets = SessionMetrics.paceBuckets(listOf(session), null, PaceGroupingInterval.DAY, zone)
+
+        assertTrue(activity.size <= 366)
+        assertTrue(buckets.size <= 366)
     }
 
     @Test

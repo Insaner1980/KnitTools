@@ -210,4 +210,26 @@ class BackupFilesTest {
         assertThrows(BackupException::class.java) { restore.publish {} }
         assertEquals("data", File(URI(row.getValue("photoUri").jsonPrimitive.content)).readText())
     }
+
+    @Test fun restoredProgressPhotoRowsReceiveDistinctFilesForSharedArchiveContent() {
+        val source =
+            File(payload, "files/${"c".repeat(64)}.bin").apply {
+                requireNotNull(parentFile).mkdirs()
+                writeText("shared photo")
+            }
+        val restore = BackupRestoreFiles(context, payload)
+        val rows =
+            listOf(11, 12).map { id ->
+                mutableMapOf<String, JsonElement>(
+                    "id" to JsonPrimitive(id),
+                    "projectId" to JsonPrimitive(7),
+                    "photoUri" to JsonPrimitive(source.relativeTo(payload).invariantSeparatorsPath),
+                ).also { restore.rebase("progress_photos", it) }
+            }
+
+        val restoredUris = rows.map { it.getValue("photoUri").jsonPrimitive.content }
+        assertEquals(2, restoredUris.toSet().size)
+        restore.publish {}
+        restoredUris.forEach { assertEquals("shared photo", File(URI(it)).readText()) }
+    }
 }

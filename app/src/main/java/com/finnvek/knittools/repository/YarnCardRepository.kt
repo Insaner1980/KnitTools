@@ -25,6 +25,7 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -154,7 +155,7 @@ class YarnCardRepository
                 val currentCard = dao.getCard(id) ?: return@withLock false
                 val copiedPhotoUri =
                     withContext(ioDispatcher) {
-                        yarnPhotoStorage.copyPhoto(context, id, sourceUri)
+                        runInterruptible { yarnPhotoStorage.copyPhoto(context, id, sourceUri) }
                     }
                 val updateResult = runCatching { dao.updatePhotoUri(id, copiedPhotoUri) }
                 updateResult.exceptionOrNull()?.let { failure ->

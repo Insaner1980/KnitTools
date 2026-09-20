@@ -168,7 +168,7 @@ private fun CalloutPayload.sanitize(): CalloutPayload? {
 }
 
 private fun ChartRegionPayload.sanitize(): ChartRegionPayload? {
-    if (name.isBlank() || rows !in 1..999 || columns !in 1..999) return null
+    if (name.isBlank() || !PatternAnnotationLimits.isValidChartDimensions(rows, columns)) return null
     return copy(bounds = bounds.sanitizeArea() ?: return null)
 }
 

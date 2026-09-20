@@ -47,6 +47,14 @@ class SettingsViewModel
             viewModelScope.launch { preferencesManager.setThemeMode(mode) }
         }
 
+        fun setUsageAnalyticsEnabled(enabled: Boolean) {
+            viewModelScope.launch {
+                if (!preferencesManager.setUsageAnalyticsEnabled(enabled)) {
+                    messageChannel.send(com.finnvek.knittools.R.string.generic_error_unknown)
+                }
+            }
+        }
+
         fun setAppLanguage(language: AppLanguage) {
             viewModelScope.launch {
                 preferencesManager.setAppLanguage(language)

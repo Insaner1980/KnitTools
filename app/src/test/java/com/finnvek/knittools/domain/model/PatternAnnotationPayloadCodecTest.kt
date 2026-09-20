@@ -185,6 +185,15 @@ class PatternAnnotationPayloadCodecTest {
     }
 
     @Test
+    fun `chart cell budget is enforced across both dimensions`() {
+        val accepted = chartRegion().copy(rows = 100, columns = 100)
+        val rejected = chartRegion().copy(rows = 101, columns = 100)
+
+        assertTrue(PatternAnnotationPayloadCodec.encode(PatternAnnotationKind.CHART_REGION, accepted) != null)
+        assertNull(PatternAnnotationPayloadCodec.encode(PatternAnnotationKind.CHART_REGION, rejected))
+    }
+
+    @Test
     fun `payload kind mismatch is rejected`() {
         assertNull(
             PatternAnnotationPayloadCodec.encode(

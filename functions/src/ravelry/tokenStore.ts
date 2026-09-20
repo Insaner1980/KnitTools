@@ -23,6 +23,13 @@ export interface RavelryTokenUserMetadataUpdate {
   readonly verifiedAtMillis: number;
 }
 
+export interface PendingRavelryToken {
+  readonly token: StoredRavelryToken;
+  readonly state: string;
+  readonly completionProofHash: string;
+  readonly expiresAtMillis: number;
+}
+
 export interface RavelryTokenStore {
   readonly collectionPath: string;
   getToken(uid: string): Promise<StoredRavelryToken | null>;
@@ -31,6 +38,16 @@ export interface RavelryTokenStore {
   saveTokenIfGenerationCurrent(
     token: StoredRavelryToken,
     expectedGeneration: number,
+  ): Promise<boolean>;
+  savePendingTokenIfGenerationCurrent(
+    pending: PendingRavelryToken,
+    expectedGeneration: number,
+  ): Promise<boolean>;
+  activatePendingToken(
+    uid: string,
+    state: string,
+    completionProofHash: string,
+    nowMillis: number,
   ): Promise<boolean>;
   saveRefreshedTokenIfCurrent(
     token: StoredRavelryToken,
@@ -71,6 +88,27 @@ function withoutUndefinedValues(token: StoredRavelryToken): Record<string, unkno
       connectionGeneration: token.connectionGeneration ?? 0,
     }).filter(([, value]) => value !== undefined),
   );
+}
+
+function toPendingToken(value: FirebaseFirestore.DocumentData | undefined): PendingRavelryToken | null {
+  const pending = value?.pending;
+  if (typeof pending !== "object" || pending == null) return null;
+  const fields = pending as Record<string, unknown>;
+  const token = toStoredToken(fields.token as FirebaseFirestore.DocumentData | undefined);
+  if (
+    token == null ||
+    typeof fields.state !== "string" ||
+    typeof fields.completionProofHash !== "string" ||
+    typeof fields.expiresAtMillis !== "number"
+  ) {
+    return null;
+  }
+  return {
+    token,
+    state: fields.state,
+    completionProofHash: fields.completionProofHash,
+    expiresAtMillis: fields.expiresAtMillis,
+  };
 }
 
 function hasSameCredentials(
@@ -135,6 +173,50 @@ export function createTokenStore(firestore: Firestore): RavelryTokenStore {
           ref,
           withoutUndefinedValues({ ...token, connectionGeneration: expectedGeneration }),
         );
+        return true;
+      });
+    },
+    async savePendingTokenIfGenerationCurrent(pending, expectedGeneration) {
+      const ref = collection.doc(pending.token.uid);
+      return firestore.runTransaction(async (transaction) => {
+        const snapshot = await transaction.get(ref);
+        if (connectionGenerationFromData(snapshot.data()) !== expectedGeneration) return false;
+        transaction.set(
+          ref,
+          {
+            uid: pending.token.uid,
+            connectionGeneration: expectedGeneration,
+            pending: {
+              token: withoutUndefinedValues({
+                ...pending.token,
+                connectionGeneration: expectedGeneration,
+              }),
+              state: pending.state,
+              completionProofHash: pending.completionProofHash,
+              expiresAtMillis: pending.expiresAtMillis,
+            },
+          },
+          { merge: true },
+        );
+        return true;
+      });
+    },
+    async activatePendingToken(uid, state, completionProofHash, nowMillis) {
+      const ref = collection.doc(uid);
+      return firestore.runTransaction(async (transaction) => {
+        const snapshot = await transaction.get(ref);
+        const pending = toPendingToken(snapshot.data());
+        if (
+          pending == null ||
+          pending.token.uid !== uid ||
+          pending.state !== state ||
+          pending.completionProofHash !== completionProofHash ||
+          pending.expiresAtMillis <= nowMillis ||
+          (pending.token.connectionGeneration ?? 0) !== connectionGenerationFromData(snapshot.data())
+        ) {
+          return false;
+        }
+        transaction.set(ref, withoutUndefinedValues(pending.token));
         return true;
       });
     },

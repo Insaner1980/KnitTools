@@ -1,6 +1,8 @@
 package com.finnvek.knittools
 
 import android.app.Application
+import androidx.lifecycle.ProcessLifecycleOwner
+import com.finnvek.knittools.analytics.PostHogAnalytics
 import com.finnvek.knittools.billing.BillingManager
 import com.finnvek.knittools.data.datastore.PreferencesManager
 import com.finnvek.knittools.data.local.DatabaseTransactionRunner
@@ -19,12 +21,17 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltAndroidApp
 class App : Application() {
+    @Inject
+    lateinit var analytics: PostHogAnalytics
+
     @Inject
     lateinit var preferencesManager: dagger.Lazy<PreferencesManager>
 
@@ -63,6 +70,17 @@ class App : Application() {
     override fun onCreate() {
         super.onCreate()
         SentryInit.init(this)
+        if (BuildConfig.POSTHOG_ENABLED && BuildConfig.POSTHOG_PROJECT_TOKEN.isNotBlank()) {
+            ProcessLifecycleOwner.get().lifecycle.addObserver(analytics)
+            applicationScope.launch {
+                preferencesManager
+                    .get()
+                    .preferences
+                    .map { it.usageAnalyticsEnabled }
+                    .distinctUntilChanged()
+                    .collect(analytics::setEnabled)
+            }
+        }
         applicationScope.launch {
             preferencesManager.get().applyStoredAppLanguage()
         }

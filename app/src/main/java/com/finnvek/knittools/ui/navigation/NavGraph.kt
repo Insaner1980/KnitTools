@@ -127,6 +127,7 @@ fun KnitToolsNavHost(
     requests: KnitToolsNavRequests = KnitToolsNavRequests(),
     snackbarHostState: SnackbarHostState? = null,
     actions: KnitToolsNavActions = KnitToolsNavActions(),
+    onScreenViewed: (String?) -> Unit = {},
 ) {
     val navController = rememberNavController()
     // Ravelry "Start Project" käyttää samaa mekanismia kuin widget-launch
@@ -136,6 +137,7 @@ fun KnitToolsNavHost(
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+    LaunchedEffect(currentRoute) { onScreenViewed(currentRoute) }
     val showBottomBar = currentRoute !in HIDE_BOTTOM_BAR_ROUTES && currentRoute != Screen.Backup.route
 
     LaunchedEffect(effectiveCounterLaunch?.requestId) {

@@ -113,6 +113,7 @@ class RavelryFirebaseIntegrationSourceTest {
 
                     if (name in firebaseConfiguredArtifactTaskNames) {
                         dependsOn(verifyGoogleServicesJson)
+                        dependsOn(verifyPostHogConfig)
                     }
                 }
                 """.trimIndent(),

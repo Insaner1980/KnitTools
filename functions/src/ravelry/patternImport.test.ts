@@ -29,7 +29,7 @@ import {
   type RavelryRateLimitBucket,
   type RavelryRateLimiter,
 } from "./rateLimit";
-import type { RavelryTokenStore, StoredRavelryToken } from "./tokenStore";
+import type { PendingRavelryToken, RavelryTokenStore, StoredRavelryToken } from "./tokenStore";
 import { parseRavelryPatternUrl } from "./urlParsing";
 
 class MemoryTokenStore implements RavelryTokenStore {
@@ -61,6 +61,17 @@ class MemoryTokenStore implements RavelryTokenStore {
     this.generations.set(token.uid, expectedGeneration);
     this.tokens.set(token.uid, { ...token, connectionGeneration: expectedGeneration });
     return true;
+  }
+
+  async savePendingTokenIfGenerationCurrent(
+    _pending: PendingRavelryToken,
+    _expectedGeneration: number,
+  ): Promise<boolean> {
+    return false;
+  }
+
+  async activatePendingToken(): Promise<boolean> {
+    return false;
   }
 
   async saveRefreshedTokenIfCurrent(
@@ -115,10 +126,19 @@ class RecordingRateLimiter implements RavelryRateLimiter {
   async consume(uid: string, bucket: RavelryRateLimitBucket): Promise<void> {
     this.calls.push({ uid, bucket });
   }
+
+  async consumeUid(uid: string, bucket: RavelryRateLimitBucket): Promise<void> {
+    this.calls.push({ uid, bucket });
+  }
 }
 
 class BlockingRateLimiter implements RavelryRateLimiter {
   async consume(_uid: string, bucket: RavelryRateLimitBucket): Promise<void> {
+    const rule = RAVELRY_RATE_LIMIT_RULES[bucket];
+    throw new RavelryRateLimitError(bucket, "uid", rule.limit, rule.windowMillis);
+  }
+
+  async consumeUid(_uid: string, bucket: RavelryRateLimitBucket): Promise<void> {
     const rule = RAVELRY_RATE_LIMIT_RULES[bucket];
     throw new RavelryRateLimitError(bucket, "uid", rule.limit, rule.windowMillis);
   }

@@ -345,7 +345,9 @@
     <string name="use_imperial_units">Imperiale eenheden gebruiken</string>
     <string name="upgrade_to_pro">Upgrade naar Pro</string>
     <string name="restore_purchases">Aankopen herstellen</string>
-    <string name="privacy_summary">Je projectgegevens blijven op je apparaat. Ravelry- en Google Play-functies gebruiken netwerkdiensten. Geen analytics of cloudsynchronisatie.</string>
+    <string name="privacy_summary">Je projectgegevens blijven op je apparaat. Ravelry en Google Play gebruiken netwerkdiensten. Firebase Crashlytics stuurt crashrapporten naar Google. Gebruiksstatistieken zijn optioneel. Geen cloudsynchronisatie.</string>
+    <string name="usage_analytics">Gebruiksstatistieken delen</string>
+    <string name="usage_analytics_description">Als dit is ingeschakeld, stuurt KnitTools schermnamen, functiegebruik, gebruiksduur en app- en apparaatinformatie naar PostHog in de EU. Projectinhoud wordt niet verzonden. Je kunt dit op elk moment uitschakelen.</string>
     <string name="pro_restored">Pro hersteld</string>
     <string name="no_purchases_found">Geen aankopen gevonden</string>
     <string name="version_format">KnitTools %s</string>

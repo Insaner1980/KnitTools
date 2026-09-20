@@ -14,6 +14,8 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.finnvek.knittools.R
+import com.finnvek.knittools.analytics.UsageAnalytics
+import com.finnvek.knittools.analytics.UsageEvent
 import com.finnvek.knittools.data.datastore.PreferencesManager
 import com.finnvek.knittools.data.storage.AppFileStorage
 import com.finnvek.knittools.data.storage.PatternDocumentStorage
@@ -250,6 +252,7 @@ class CounterViewModel
         @param:ApplicationContext private val context: Context,
         @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
         @param:ApplicationScope private val applicationScope: CoroutineScope,
+        private val analytics: UsageAnalytics = UsageAnalytics.NONE,
     ) : ViewModel() {
         private val _uiState =
             MutableStateFlow(
@@ -830,6 +833,7 @@ class CounterViewModel
         }
 
         fun startWorkSession() {
+            analytics.track(UsageEvent.WORK_SESSION_START_REQUESTED)
             val projectId = _uiState.value.projectId ?: return
             launchWorkSessionAction {
                 when (val result = repository.startSession(projectId)) {
@@ -928,6 +932,7 @@ class CounterViewModel
                     )
                 ) {
                     is StopSessionResult.Saved -> {
+                        analytics.track(UsageEvent.WORK_SESSION_SAVED)
                         loadTotalSessionMinutes(projectId)
                         _uiState.update { it.copy(sessionStopSummary = null) }
                     }
@@ -1394,6 +1399,7 @@ class CounterViewModel
             state.projectId ?: return
             // CPD-OFF: Ruudun paikallinen Compose-rakenne pidetaan vastuun yhteydessa.
             val updatedCounter = CounterLogic.increment(state.counter)
+            analytics.track(UsageEvent.COUNTER_INCREMENTED)
             if (updatedCounter.count == state.counter.count) return
             val resetStitch = state.stitchTrackingEnabled && updatedCounter.count != state.counter.count
             _uiState.update { it.withCounterChange(updatedCounter, resetStitch) }
@@ -1411,6 +1417,7 @@ class CounterViewModel
             val state = _uiState.value
             state.projectId ?: return
             val updatedCounter = CounterLogic.decrement(state.counter)
+            analytics.track(UsageEvent.COUNTER_DECREMENTED)
             if (updatedCounter.count == state.counter.count) return
             val resetStitch = state.stitchTrackingEnabled && updatedCounter.count != state.counter.count
             _uiState.update { it.withCounterChange(updatedCounter, resetStitch) }
@@ -1918,6 +1925,7 @@ class CounterViewModel
             val projectId = state.projectId ?: return
 
             viewModelScope.launch {
+                analytics.track(UsageEvent.PDF_IMPORT_STARTED)
                 val sourceUri = uri.toUri()
                 val sanitizedName =
                     withContext(ioDispatcher) {
@@ -1931,17 +1939,27 @@ class CounterViewModel
                         sanitizedName = sanitizedName,
                     )
                 if (attachment == null) {
+                    analytics.track(UsageEvent.PDF_IMPORT_FAILED)
                     onResult(ProjectDocumentMutationResult.PersistenceFailure)
                     return@launch
                 }
 
-                onResult(
+                val result =
                     persistPatternAttachment(
                         projectId = projectId,
                         patternName = sanitizedName,
                         attachment = attachment,
-                    ),
+                    )
+                analytics.track(
+                    if (result is ProjectDocumentMutationResult.Added ||
+                        result == ProjectDocumentMutationResult.AlreadyAttached
+                    ) {
+                        UsageEvent.PDF_IMPORT_SUCCEEDED
+                    } else {
+                        UsageEvent.PDF_IMPORT_FAILED
+                    },
                 )
+                onResult(result)
             }
         }
 

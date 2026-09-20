@@ -135,6 +135,24 @@ describe("Ravelry callable rate limits", () => {
     assert.equal(fixedWindowStartMillis(120_000, 60_000), 120_000);
   });
 
+  it("consumes a uid-only bucket without touching a global counter", async () => {
+    const firestore = new FakeFirestore();
+    const limiter = createRavelryRateLimiter(
+      firestore as unknown as Firestore,
+      () => 61_000,
+      () => 0,
+      createRavelryRateLimitRuntimeState(),
+    );
+
+    await limiter.consumeUid("uid", "disconnect");
+
+    assert.equal(firestore.documents.get("disconnect_dWlk")?.count, 1);
+    assert.equal(
+      [...firestore.documents.keys()].some((id) => id.startsWith("disconnect_global")),
+      false,
+    );
+  });
+
   it("falls through a full global shard without consuming the uid bucket", async () => {
     const firestore = new FakeFirestore();
     const globalShardRule = ravelryRateLimitTargets("uid", "search", 0)[1].rule;

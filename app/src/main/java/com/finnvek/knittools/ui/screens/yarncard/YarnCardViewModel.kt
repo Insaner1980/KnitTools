@@ -9,6 +9,7 @@ import com.finnvek.knittools.domain.model.YarnCardStatus
 import com.finnvek.knittools.repository.CounterRepository
 import com.finnvek.knittools.repository.YarnCardRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -160,9 +161,20 @@ class YarnCardViewModel
             viewModelScope.launch { repository.updateStatus(cardId, status) }
         }
 
-        fun updatePhotoUri(uri: Uri) {
+        fun updatePhotoUri(
+            uri: Uri,
+            onFailure: () -> Unit = {},
+        ) {
             val cardId = _formState.value.editingCardId ?: return
-            viewModelScope.launch { repository.updatePhotoUri(cardId, uri) }
+            viewModelScope.launch {
+                try {
+                    if (!repository.updatePhotoUri(cardId, uri)) onFailure()
+                } catch (failure: CancellationException) {
+                    throw failure
+                } catch (_: Exception) {
+                    onFailure()
+                }
+            }
         }
 
         fun setLinkedProject(projectId: Long?) {

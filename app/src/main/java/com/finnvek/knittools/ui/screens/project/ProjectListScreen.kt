@@ -328,7 +328,10 @@ fun ProjectListScreen(
                     targetFolderId = creationFolderId,
                 )
             },
-            onDismiss = { showCreateProjectDialog = false },
+            onDismiss = {
+                viewModel.projectCreationDismissed()
+                showCreateProjectDialog = false
+            },
             destinationText =
                 stringResource(
                     R.string.folder_project_creation_destination,

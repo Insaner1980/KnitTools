@@ -15,6 +15,7 @@ plugins {
     alias(libs.plugins.stability.analyzer) apply false
     alias(libs.plugins.sonarqube)
     alias(libs.plugins.google.services) apply false
+    alias(libs.plugins.crashlytics) apply false
 }
 
 val turvallinenWireRuntime = libs.wire.runtime.get()

@@ -45,6 +45,7 @@ data class AppPreferences(
     val useImperial: Boolean = false,
     val showCompletedProjects: Boolean = false,
     val projectSortOrder: ProjectSortOrder = ProjectSortOrder.DEFAULT,
+    val usageAnalyticsEnabled: Boolean = false,
 )
 
 @Singleton
@@ -69,8 +70,12 @@ class PreferencesManager
                     useImperial = prefs[KEY_USE_IMPERIAL] ?: false,
                     showCompletedProjects = prefs[KEY_SHOW_COMPLETED] ?: false,
                     projectSortOrder = ProjectSortOrder.fromPersistedValue(prefs[KEY_SORT_ORDER]),
+                    usageAnalyticsEnabled = prefs[KEY_USAGE_ANALYTICS] ?: false,
                 )
             }
+
+        suspend fun setUsageAnalyticsEnabled(enabled: Boolean): Boolean =
+            context.dataStore.editPreferencesSafely { it[KEY_USAGE_ANALYTICS] = enabled }
 
         suspend fun setThemeMode(mode: ThemeMode) {
             context.dataStore.editPreferencesSafely {
@@ -205,6 +210,7 @@ class PreferencesManager
 
         private companion object {
             val KEY_THEME_MODE = intPreferencesKey("theme_mode")
+            val KEY_USAGE_ANALYTICS = booleanPreferencesKey("usage_analytics_enabled")
             val KEY_APP_LANGUAGE = stringPreferencesKey("app_language")
             val KEY_APP_LANGUAGE_MIGRATED_TO_SYSTEM =
                 booleanPreferencesKey("app_language_migrated_to_system")

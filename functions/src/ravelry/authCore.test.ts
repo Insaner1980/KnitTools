@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { describe, it } from "node:test";
 
 import {
+  completeRavelryOAuth,
   completeRavelryOAuthCallback,
   disconnectRavelry,
   getRavelryAuthStatus,
@@ -13,7 +14,7 @@ import type { RavelryCurrentUserClient } from "./client";
 import type { OAuthStateStore } from "./oauthStateStore";
 import type { OAuthTokenExchange, OAuthTokenRefresh } from "./oauth2";
 import { disabledRavelryRateLimiter } from "./rateLimit";
-import type { RavelryTokenStore, StoredRavelryToken } from "./tokenStore";
+import type { PendingRavelryToken, RavelryTokenStore, StoredRavelryToken } from "./tokenStore";
 
 function callbackState(label: string): string {
   return createHash("sha256").update(`callback-test:${label}`).digest("base64url");
@@ -67,6 +68,7 @@ class MemoryTokenStore implements RavelryTokenStore {
   readonly collectionPath = "ravelryTokens";
   readonly tokens = new Map<string, StoredRavelryToken>();
   private readonly generations = new Map<string, number>();
+  private readonly pending = new Map<string, PendingRavelryToken>();
 
   async getToken(uid: string): Promise<StoredRavelryToken | null> {
     return this.tokens.get(uid) ?? null;
@@ -91,6 +93,34 @@ class MemoryTokenStore implements RavelryTokenStore {
     }
     this.generations.set(token.uid, expectedGeneration);
     this.tokens.set(token.uid, { ...token, connectionGeneration: expectedGeneration });
+    return true;
+  }
+
+  async savePendingTokenIfGenerationCurrent(
+    pending: PendingRavelryToken,
+    expectedGeneration: number,
+  ): Promise<boolean> {
+    if (await this.getConnectionGeneration(pending.token.uid) !== expectedGeneration) return false;
+    this.pending.set(pending.token.uid, pending);
+    return true;
+  }
+
+  async activatePendingToken(
+    uid: string,
+    state: string,
+    completionProofHash: string,
+    nowMillis: number,
+  ): Promise<boolean> {
+    const pending = this.pending.get(uid);
+    if (
+      pending == null ||
+      pending.state !== state ||
+      pending.completionProofHash !== completionProofHash ||
+      pending.expiresAtMillis <= nowMillis ||
+      await this.getConnectionGeneration(uid) !== (pending.token.connectionGeneration ?? 0)
+    ) return false;
+    this.tokens.set(uid, pending.token);
+    this.pending.delete(uid);
     return true;
   }
 
@@ -143,6 +173,7 @@ class MemoryTokenStore implements RavelryTokenStore {
   async deleteToken(uid: string, _nowMillis?: number): Promise<void> {
     this.generations.set(uid, await this.getConnectionGeneration(uid) + 1);
     this.tokens.delete(uid);
+    this.pending.delete(uid);
   }
 }
 
@@ -206,7 +237,10 @@ describe("Ravelry OAuth2 auth core", () => {
     const rateLimitError = new Error("ravelry_rate_limited");
     const calls: Array<{ readonly key: string; readonly bucket: string }> = [];
     const rateLimiter = {
-      async consume(key: string, bucket: string): Promise<void> {
+      async consume(): Promise<void> {
+        throw new Error("global callback budget must not run before state lookup");
+      },
+      async consumeUid(key: string, bucket: string): Promise<void> {
         calls.push({ key, bucket });
         throw rateLimitError;
       },
@@ -230,6 +264,36 @@ describe("Ravelry OAuth2 auth core", () => {
 
     assert.deepEqual(calls, [{ key: "callback-client", bucket: "callback" }]);
     assert.equal(stateStore.getStateCalls, 0);
+  });
+
+  it("does not spend the global callback budget for an unknown state", async () => {
+    const stateStore = new MemoryOAuthStateStore();
+    const tokenStore = new MemoryTokenStore();
+    const calls: Array<{ readonly scope: string; readonly key: string; readonly bucket: string }> = [];
+    const rateLimiter = {
+      async consume(key: string, bucket: string): Promise<void> {
+        calls.push({ scope: "global", key, bucket });
+      },
+      async consumeUid(key: string, bucket: string): Promise<void> {
+        calls.push({ scope: "uid", key, bucket });
+      },
+    };
+
+    await assert.rejects(
+      completeRavelryOAuthCallback({
+        query: { state: "A".repeat(43), code: "code" },
+        stateStore,
+        tokenStore,
+        exchange: async () => ({ accessToken: "not-used" }),
+        rateLimiter,
+        rateLimitKey: "callback-client",
+      }),
+      (error: unknown) => error instanceof Error && error.message === "invalid_state",
+    );
+
+    assert.deepEqual(calls, [
+      { scope: "uid", key: "callback-client", bucket: "callback" },
+    ]);
   });
 
   it("rejects missing and used callback params while redirecting expired states before token exchange", async () => {
@@ -361,7 +425,7 @@ describe("Ravelry OAuth2 auth core", () => {
     );
   });
 
-  it("exchanges a valid callback code, stores tokens, marks state used, and redirects to the app", async () => {
+  it("keeps callback tokens pending until the initiating uid submits the callback proof", async () => {
     const stateStore = new MemoryOAuthStateStore();
     const tokenStore = new MemoryTokenStore();
 
@@ -393,13 +457,42 @@ describe("Ravelry OAuth2 auth core", () => {
         };
       },
       nowMillis: () => 1_000,
+      randomString: () => "P".repeat(43),
     });
 
     assert.equal(
       result.redirectUrl,
-      `knittools://ravelry-auth-complete?state=${callbackState("valid")}`,
+      `knittools://ravelry-auth-complete?state=${callbackState("valid")}&proof=${"P".repeat(43)}`,
     );
     assert.equal((await stateStore.getState(callbackState("valid")))?.usedAtMillis, 1_000);
+    assert.equal(await tokenStore.getToken("uid"), null);
+    await assert.rejects(
+      completeRavelryOAuth({
+        uid: "other-uid",
+        state: callbackState("valid"),
+        completionProof: "P".repeat(43),
+        tokenStore,
+        nowMillis: () => 1_001,
+      }),
+      /invalid_completion/,
+    );
+    await assert.rejects(
+      completeRavelryOAuth({
+        uid: "uid",
+        state: callbackState("valid"),
+        completionProof: "W".repeat(43),
+        tokenStore,
+        nowMillis: () => 1_001,
+      }),
+      /invalid_completion/,
+    );
+    await completeRavelryOAuth({
+      uid: "uid",
+      state: callbackState("valid"),
+      completionProof: "P".repeat(43),
+      tokenStore,
+      nowMillis: () => 1_001,
+    });
     assert.deepEqual(await tokenStore.getToken("uid"), {
       uid: "uid",
       authType: "oauth2",
@@ -410,6 +503,16 @@ describe("Ravelry OAuth2 auth core", () => {
       updatedAtMillis: 1_000,
       connectionGeneration: 0,
     });
+    await assert.rejects(
+      completeRavelryOAuth({
+        uid: "uid",
+        state: callbackState("valid"),
+        completionProof: "P".repeat(43),
+        tokenStore,
+        nowMillis: () => 1_002,
+      }),
+      /invalid_completion/,
+    );
   });
 
   it("does not restore a disconnected token when OAuth callback exchange finishes late", async () => {
@@ -534,6 +637,15 @@ describe("Ravelry OAuth2 auth core", () => {
       tokenStore,
       exchange: async () => ({ accessToken: "access-token" }),
       nowMillis: () => 1_000,
+      randomString: () => "P".repeat(43),
+    });
+
+    await completeRavelryOAuth({
+      uid: "uid",
+      state: callbackState("minimal-token"),
+      completionProof: "P".repeat(43),
+      tokenStore,
+      nowMillis: () => 1_001,
     });
 
     const token = await tokenStore.getToken("uid");

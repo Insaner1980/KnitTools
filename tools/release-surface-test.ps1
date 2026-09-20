@@ -316,6 +316,18 @@ try {
             }
 
         Test-Mutation `
+            -Name "analytics-dependency" `
+            -ExpectedStatus "FAIL" `
+            -ExpectedCheck "forbidden-dependencies" `
+            -PassMessage "Firebase Analytics remains forbidden after enabling Crashlytics" `
+            -Mutate {
+                param($fixture)
+                $path = Join-Path $fixture "app/build.gradle.kts"
+                $text = Get-Content -Raw -LiteralPath $path
+                Set-FileText -Path $path -Text ($text + "`nimplementation(libs.firebase.analytics)`n")
+            }
+
+        Test-Mutation `
             -Name "mlkit-dependency" `
             -ExpectedStatus "FAIL" `
             -ExpectedCheck "forbidden-dependencies" `

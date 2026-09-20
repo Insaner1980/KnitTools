@@ -58,17 +58,10 @@ internal fun buildInsightsCompletions(
     val axisEnd = maxOf(params.currentDate, dated.maxOfOrNull { it.date } ?: params.currentDate)
     val axis = insightsChartAxis(params.timeRange, axisEnd, dated.minOfOrNull { it.date }, firstDayOfWeek)
     val counts = dated.groupingBy { it.date.bucketStart(axis.interval, firstDayOfWeek) }.eachCount()
-    val first = dated.minOfOrNull { it.date }?.bucketStart(axis.interval, firstDayOfWeek)
-    val starts =
-        if (params.timeRange == TimeRange.ALL_TIME && first != null) {
-            generateSequence(first) { it.nextBucketStart(axis.interval) }.takeWhile { !it.isAfter(axisEnd) }.toList()
-        } else {
-            axis.bucketStarts
-        }
     return InsightsCompletions(
         events = dated,
         buckets =
-            starts.map {
+            axis.bucketStarts.map {
                 InsightsCompletionBucket(
                     it,
                     minOf(it.nextBucketStart(axis.interval).minusDays(1), axisEnd),

@@ -94,8 +94,10 @@ app/src/*/google-services.json
 /functions/firebase-debug.log
 /functions/.runtimeconfig.json
 /functions/.secret.local
+/functions/.env.*
 
 # Compose-vakauden paikallinen tarkistus käyttää debug-baselinea.
 /app/stability/*
 !/app/stability/app-debug.stability
 .worktrees/
+/posthog.properties

@@ -5,6 +5,8 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.finnvek.knittools.R
+import com.finnvek.knittools.analytics.UsageAnalytics
+import com.finnvek.knittools.analytics.UsageEvent
 import com.finnvek.knittools.data.datastore.PreferencesManager
 import com.finnvek.knittools.domain.model.ActiveWorkSession
 import com.finnvek.knittools.domain.model.CounterProject
@@ -80,6 +82,7 @@ class ProjectListViewModel
         @param:ApplicationContext private val context: Context,
         private val folderRepository: ProjectFolderRepository,
         private val savedStateHandle: SavedStateHandle,
+        private val analytics: UsageAnalytics = UsageAnalytics.NONE,
     ) : ViewModel() {
         private val _selectedFolderFilter =
             MutableStateFlow(restoreFolderFilter(savedStateHandle["project_folder_filter"]))
@@ -200,6 +203,7 @@ class ProjectListViewModel
                 savedStateHandle,
                 viewModelScope,
                 onCreated = { navigateToProjectChannel.send(it) },
+                analytics = analytics,
             )
         val projectCreationError = creationActions.projectCreationError
         val projectCreationPromptCount = creationActions.projectCreationPromptCount
@@ -401,6 +405,8 @@ class ProjectListViewModel
         }
 
         fun requestProjectCreation() = creationActions.requestProjectCreation()
+
+        fun projectCreationDismissed() = analytics.track(UsageEvent.PROJECT_CREATION_CANCELLED)
 
         fun dismissPendingProjectCreation() = creationActions.dismissPendingProjectCreation()
 

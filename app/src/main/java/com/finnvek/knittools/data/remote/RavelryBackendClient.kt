@@ -29,6 +29,11 @@ interface RavelryBackendClient {
 
     suspend fun authStatus(): RavelryBackendAuthStatus
 
+    suspend fun completeAuth(
+        state: String,
+        proof: String,
+    )
+
     suspend fun disconnect()
 
     suspend fun currentUser(): RavelryBackendCurrentUser
@@ -62,6 +67,13 @@ class FirebaseRavelryBackendClient
                 connected = data.boolean("connected"),
                 username = data.optionalString("username"),
             )
+        }
+
+        override suspend fun completeAuth(
+            state: String,
+            proof: String,
+        ) {
+            callBackend("ravelryCompleteAuth", mapOf("state" to state, "proof" to proof))
         }
 
         override suspend fun disconnect() {

@@ -501,13 +501,21 @@ class InsightsViewModel
                 firstDayOfWeek: DayOfWeek,
                 projectOrder: List<Long> = emptyList(),
             ): Map<LocalDate, InsightsChartBucket> {
+                val axisStartMillis =
+                    axis.bucketStarts
+                        .firstOrNull()
+                        ?.atStartOfDay(zone)
+                        ?.toInstant()
+                        ?.toEpochMilli()
+                val analysisStartMillis =
+                    listOfNotNull(params.startMillis, axisStartMillis).maxOrNull()
                 val bucketsByProject =
                     sessions
                         .groupBy { it.projectId }
                         .mapValues { (_, projectSessions) ->
                             SessionMetrics.paceBuckets(
                                 sessions = projectSessions,
-                                rangeStartMillis = params.startMillis,
+                                rangeStartMillis = analysisStartMillis,
                                 interval = axis.interval,
                                 zone = zone,
                                 firstDayOfWeek = firstDayOfWeek,

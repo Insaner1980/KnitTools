@@ -855,6 +855,40 @@ class PatternAnnotationDocumentSelectionTest {
         }
 
     @Test
+    fun `export bounds tracker highlights across all document pages`() =
+        runTest {
+            val route = projectRoute()
+            val exporter = mockk<PatternPdfExporter>(relaxed = true)
+            val sourceUri = mockk<Uri>()
+            val destinationUri = mockk<Uri>()
+            val style = mockk<PatternAnnotationRenderStyle>()
+            val trackers =
+                listOf(
+                    trackerAnnotation(id = 101L, layerId = 41L, page = 0),
+                    trackerAnnotation(id = 102L, layerId = 41L, page = 1),
+                    trackerAnnotation(id = 103L, layerId = 41L, page = 2),
+                )
+            every { route.annotationRepository.observePage(any(), 0) } returns flowOf(emptyList())
+            coEvery { route.annotationRepository.getForLayers(any()) } returns trackers
+            val viewModel = route.viewModel(pdfExporter = exporter)
+            advanceUntilIdle()
+
+            viewModel.exportAnnotatedPdf(sourceUri, destinationUri, style)
+            advanceUntilIdle()
+
+            coVerify(exactly = 1) {
+                exporter.export(
+                    sourceUri = sourceUri,
+                    destinationUri = destinationUri,
+                    annotations = trackers,
+                    trackerHighlights = match { it.keys == setOf(101L, 102L) },
+                    style = style,
+                    onProgress = any(),
+                )
+            }
+        }
+
+    @Test
     fun `detaching document hides retained annotation layers`() =
         runTest {
             val route = projectRoute()
@@ -986,5 +1020,36 @@ private fun annotation(
             strokeWidth = 2f,
         ),
     zIndex = zIndex,
+)
+
+private fun trackerAnnotation(
+    id: Long,
+    layerId: Long,
+    page: Int,
+) = PatternAnnotation(
+    id = id,
+    layerId = layerId,
+    page = page,
+    kind = PatternAnnotationKind.CHART_TRACKER,
+    payload =
+        ChartTrackerPayload(
+            region =
+                ChartRegionPayload(
+                    bounds = NormalizedPatternBounds(0.1f, 0.1f, 0.9f, 0.9f),
+                    name = "Large chart",
+                    rows = 100,
+                    columns = 100,
+                    rowDirection = ChartRowDirection.TOP_TO_BOTTOM,
+                    columnDirection = ChartColumnDirection.LEFT_TO_RIGHT,
+                ),
+            trackingMode = ChartTrackingMode.COMPLETED_CELLS,
+            counterType = ChartCounterType.MAIN,
+            counterStartValue = 0,
+            gridStartIndex = 0,
+            wrapAtEnd = false,
+            highlightArgb = 0xFF00FF00.toInt(),
+            highlightAlpha = 0.4f,
+        ),
+    zIndex = 0L,
 )
 // CPD-ON

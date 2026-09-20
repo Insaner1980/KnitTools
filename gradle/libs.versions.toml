@@ -47,6 +47,8 @@ browser = "1.10.0"
 work = "2.11.2"
 firebaseBom = "34.19.0"
 googleServices = "4.5.0"
+crashlyticsPlugin = "3.0.8"
+posthog = "3.64.1"
 androidCompileSdk = "37"
 androidMinSdk = "29"
 androidTargetSdk = "37"
@@ -148,6 +150,8 @@ work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
 firebase-auth = { group = "com.google.firebase", name = "firebase-auth" }
 firebase-functions = { group = "com.google.firebase", name = "firebase-functions" }
+firebase-crashlytics = { group = "com.google.firebase", name = "firebase-crashlytics" }
+posthog-android = { module = "com.posthog:posthog-android", version.ref = "posthog" }
 
 # Debug-only Sentry
 sentry-android-core = { group = "io.sentry", name = "sentry-android-core", version.ref = "sentry" }
@@ -175,3 +179,4 @@ owasp-dependency-check = { id = "org.owasp.dependencycheck", version.ref = "owas
 stability-analyzer = { id = "com.github.skydoves.compose.stability.analyzer", version.ref = "composeStabilityAnalyzer" }
 sonarqube = { id = "org.sonarqube", version.ref = "sonarqube" }
 google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }
+crashlytics = { id = "com.google.firebase.crashlytics", version.ref = "crashlyticsPlugin" }

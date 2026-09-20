@@ -42,6 +42,7 @@ import androidx.core.net.toUri
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
+import com.finnvek.knittools.analytics.PostHogAnalytics
 import com.finnvek.knittools.auth.RavelryAuthManager
 import com.finnvek.knittools.billing.BillingManager
 import com.finnvek.knittools.data.datastore.PreferencesManager
@@ -140,6 +141,9 @@ class MainActivity : AppCompatActivity() {
     private var suppressPassiveTrialNotice by mutableStateOf(true)
     private var showTrialEndedNotice by mutableStateOf(false)
 
+    @Inject
+    lateinit var analytics: PostHogAnalytics
+
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
@@ -237,6 +241,7 @@ class MainActivity : AppCompatActivity() {
                 }
                 Surface(modifier = Modifier.fillMaxSize()) {
                     KnitToolsNavHost(
+                        onScreenViewed = analytics::screenViewed,
                         startDestination = TopLevelDestination.Projects.route,
                         requests =
                             KnitToolsNavRequests(

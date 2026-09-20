@@ -208,6 +208,12 @@ fun SettingsScreen(
             SettingsInfoText(
                 text = stringResource(R.string.privacy_summary),
             )
+            SwitchRow(
+                label = stringResource(R.string.usage_analytics),
+                checked = prefs.usageAnalyticsEnabled,
+                onCheckedChange = viewModel::setUsageAnalyticsEnabled,
+            )
+            SettingsInfoText(text = stringResource(R.string.usage_analytics_description))
             HorizontalDivider()
             SettingsInfoText(
                 text = stringResource(R.string.version_format, BuildConfig.VERSION_NAME),

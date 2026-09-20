@@ -1,4 +1,5 @@
 import com.android.build.api.variant.BuildConfigField
+import com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension
 import org.gradle.api.GradleException
 import org.gradle.testing.jacoco.tasks.JacocoReport
 import java.io.File
@@ -31,6 +32,20 @@ val releaseSigningEnvPrefix = "KNITTOOLS" // Change to your app name, e.g. "KNIT
 val debugCredentialsFile = rootProject.layout.projectDirectory.file("debug.credentials.properties")
 val debugCredentialsText = providers.fileContents(debugCredentialsFile).asText.orElse("")
 val googleServicesJsonConfigFile = layout.projectDirectory.file("google-services.json")
+val posthogProjectToken =
+    providers
+        .environmentVariable("KNITTOOLS_POSTHOG_PROJECT_TOKEN")
+        .orElse(
+            providers
+                .fileContents(
+                    rootProject.layout.projectDirectory.file("posthog.properties"),
+                ).asText
+                .orElse("")
+                .map { text ->
+                    Properties().apply { StringReader(text).use { load(it) } }.getProperty("projectToken", "")
+                },
+        ).map(String::trim)
+val posthogTokenValid = posthogProjectToken.map { it.matches(Regex("phc_[A-Za-z0-9]+")) }
 
 // Variantit, jotka eivät päädy jakeluun ja joille riittää paikallinen placeholder-config.
 // benchmarkRelease ja nonMinifiedRelease tulevat baselineprofile-pluginista.
@@ -75,6 +90,7 @@ val googleServicesPlaceholderJson =
     """.trimIndent()
 
 apply(plugin = "com.google.gms.google-services")
+apply(plugin = "com.google.firebase.crashlytics")
 
 object GoogleServicesJsonTaskActions {
     private const val PLACEHOLDER_API_KEY = "debug-placeholder-api-key"
@@ -225,6 +241,11 @@ android {
     }
 
     buildTypes {
+        configureEach {
+            configure<CrashlyticsExtension> {
+                mappingFileUploadEnabled = name == "release"
+            }
+        }
         release {
             isDebuggable = false
             isMinifyEnabled = true
@@ -284,6 +305,20 @@ android {
 }
 
 androidComponents {
+    onVariants { variant ->
+        variant.manifestPlaceholders.put("crashlyticsCollectionEnabled", (variant.name == "release").toString())
+        variant.buildConfigFields?.put(
+            "POSTHOG_PROJECT_TOKEN",
+            posthogProjectToken.map { token ->
+                val safeToken = token.takeIf { it.matches(Regex("phc_[A-Za-z0-9]+")) }.orEmpty()
+                BuildConfigField("String", "\"$safeToken\"", null)
+            },
+        )
+        variant.buildConfigFields?.put(
+            "POSTHOG_ENABLED",
+            BuildConfigField("boolean", (variant.name == "release").toString(), null),
+        )
+    }
     onVariants(selector().withBuildType("debug")) { variant ->
         val buildConfigFields =
             variant.buildConfigFields
@@ -296,20 +331,22 @@ androidComponents {
     }
 }
 
+// Yksi lähde OWASP-tietokannan polulle: security-check antaa sen
+// DEPENDENCY_CHECK_DATA_DIRECTORY-muuttujassa, muuten käytetään projektin omaa oletusta.
+val dependencyCheckDataDirectory: String =
+    providers
+        .environmentVariable("DEPENDENCY_CHECK_DATA_DIRECTORY")
+        .orElse(
+            rootProject.layout.projectDirectory
+                .dir(".gradle/dependency-check-data")
+                .asFile.absolutePath,
+        ).get()
+
 dependencyCheck {
     formats = listOf("HTML", "JSON")
     outputDirectory = rootProject.layout.projectDirectory.dir("reports")
     data {
-        val defaultDataDirectory =
-            rootProject.layout.projectDirectory
-                .dir(".gradle/dependency-check-data")
-                .asFile.absolutePath
-
-        directory =
-            providers
-                .environmentVariable("DEPENDENCY_CHECK_DATA_DIRECTORY")
-                .orElse(defaultDataDirectory)
-                .get()
+        directory = dependencyCheckDataDirectory
     }
     autoUpdate =
         (providers.environmentVariable("DEPENDENCY_CHECK_AUTO_UPDATE").orNull ?: "true")
@@ -377,6 +414,14 @@ dependencyCheck {
                 ?.toIntOrNull()
                 ?: 24
     }
+}
+
+// Plugin 13.0.0: DataExtension asettaa hakemiston jo konstruktorissaan set()-kutsulla, joten
+// ConfiguredTaskin convention(defaults.data.directory) ei pure eikä yllä oleva data.directory
+// mene perille — tietokanta päätyisi polkuun $GRADLE_USER_HOME/dependency-check-data/11.0.
+// Asetetaan sama polku suoraan taskeille. Korjattu upstreamissa, poistettavissa kun julkaistaan.
+tasks.withType<org.owasp.dependencycheck.gradle.tasks.ConfiguredTask>().configureEach {
+    data.directory.set(dependencyCheckDataDirectory)
 }
 
 gradle.taskGraph.whenReady {
@@ -517,6 +562,19 @@ val firebaseConfiguredArtifactTaskNames =
         "publishRelease",
     )
 
+val verifyPostHogConfig =
+    tasks.register("verifyPostHogConfig") {
+        group = "verification"
+        description = "Tarkistaa, että julkaisuversion PostHog-projektitunnus on kelvollinen."
+
+        val validToken = posthogTokenValid
+        doLast {
+            check(validToken.get()) {
+                "Release requires KNITTOOLS_POSTHOG_PROJECT_TOKEN or ignored posthog.properties with projectToken."
+            }
+        }
+    }
+
 tasks.configureEach {
     if (name.startsWith("process") && name.endsWith("GoogleServices")) {
         dependsOn(writeGoogleServicesJsonFromEnv)
@@ -532,6 +590,7 @@ tasks.configureEach {
 
     if (name in firebaseConfiguredArtifactTaskNames) {
         dependsOn(verifyGoogleServicesJson)
+        dependsOn(verifyPostHogConfig)
     }
 }
 
@@ -755,6 +814,8 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
     implementation(libs.firebase.functions)
+    implementation(libs.firebase.crashlytics)
+    implementation(libs.posthog.android)
 
     // Baseline Profiles
     implementation(libs.profileinstaller)

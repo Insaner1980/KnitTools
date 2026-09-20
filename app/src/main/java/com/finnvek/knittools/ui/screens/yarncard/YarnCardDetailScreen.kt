@@ -27,12 +27,16 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -54,6 +58,7 @@ import com.finnvek.knittools.ui.screens.library.ManualYarnCardSheet
 import com.finnvek.knittools.ui.screens.library.YarnStatusSheet
 import com.finnvek.knittools.ui.screens.library.yarnStatusUi
 import com.finnvek.knittools.ui.theme.knitToolsColors
+import kotlinx.coroutines.launch
 
 data class YarnCardDetailActions(
     val onBack: () -> Unit,
@@ -76,9 +81,16 @@ fun YarnCardDetailScreen(
     var showProjectSheet by rememberSaveable { mutableStateOf(false) }
     var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
     var showManualDetailsSheet by rememberSaveable { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+    val photoImportError = stringResource(R.string.generic_error_unknown)
     val yarnPhotoPicker =
         rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-            uri?.let { viewModel.updatePhotoUri(uri) }
+            uri?.let {
+                viewModel.updatePhotoUri(uri) {
+                    coroutineScope.launch { snackbarHostState.showSnackbar(photoImportError) }
+                }
+            }
         }
 
     if (showStatusSheet) {
@@ -149,6 +161,7 @@ fun YarnCardDetailScreen(
     ToolScreenScaffold(
         title = form.yarnName.ifBlank { stringResource(R.string.yarn_card_fallback_name) },
         onBack = actions.onBack,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         YarnCardDetailContent(
             form = form,

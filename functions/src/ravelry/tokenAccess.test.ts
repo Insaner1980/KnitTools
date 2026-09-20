@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { getUsableRavelryToken } from "./tokenAccess";
-import type { RavelryTokenStore, StoredRavelryToken } from "./tokenStore";
+import type { PendingRavelryToken, RavelryTokenStore, StoredRavelryToken } from "./tokenStore";
 
 class MemoryTokenStore implements RavelryTokenStore {
   readonly collectionPath = "ravelryTokens";
@@ -31,6 +31,17 @@ class MemoryTokenStore implements RavelryTokenStore {
     }
     this.token = { ...token, connectionGeneration: expectedGeneration };
     return true;
+  }
+
+  async savePendingTokenIfGenerationCurrent(
+    _pending: PendingRavelryToken,
+    _expectedGeneration: number,
+  ): Promise<boolean> {
+    return false;
+  }
+
+  async activatePendingToken(): Promise<boolean> {
+    return false;
   }
 
   async saveRefreshedTokenIfCurrent(

@@ -336,8 +336,12 @@ private fun PatternChartTrackerDialog(
     var selectedCounterIndex by rememberSaveable { mutableIntStateOf(0) }
     var wrapAtEnd by rememberSaveable { mutableStateOf(false) }
     var c2cOrigin by rememberSaveable { mutableStateOf(ChartCorner.BOTTOM_LEFT) }
-    val validRows = rows.toIntOrNull()?.takeIf { it in 1..MAX_CHART_DIMENSION }
-    val validColumns = columns.toIntOrNull()?.takeIf { it in 1..MAX_CHART_DIMENSION }
+    val validRows = rows.toIntOrNull()?.takeIf { it in 1..PatternAnnotationLimits.MAX_CHART_DIMENSION }
+    val validColumns = columns.toIntOrNull()?.takeIf { it in 1..PatternAnnotationLimits.MAX_CHART_DIMENSION }
+    val validDimensions =
+        validRows != null &&
+            validColumns != null &&
+            PatternAnnotationLimits.isValidChartDimensions(validRows, validColumns)
     val validGridStart = gridStartIndex.toIntOrNull()
     ScrollableFormDialog(
         onDismissRequest = onDismiss,
@@ -349,7 +353,7 @@ private fun PatternChartTrackerDialog(
                         value = rows,
                         onValueChange = { rows = it },
                         label = { Text(stringResource(R.string.pattern_annotation_chart_rows)) },
-                        isError = validRows == null,
+                        isError = !validDimensions,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.weight(1f),
                     )
@@ -357,7 +361,7 @@ private fun PatternChartTrackerDialog(
                         value = columns,
                         onValueChange = { columns = it },
                         label = { Text(stringResource(R.string.pattern_annotation_chart_columns)) },
-                        isError = validColumns == null,
+                        isError = !validDimensions,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.weight(1f),
                     )
@@ -415,7 +419,7 @@ private fun PatternChartTrackerDialog(
         },
         confirmButton = {
             TextButton(
-                enabled = validRows != null && validColumns != null && validGridStart != null,
+                enabled = validDimensions && validGridStart != null,
                 onClick = {
                     onConfirm(
                         PatternChartTrackerDraft(
@@ -629,4 +633,3 @@ private const val SELECTION_NUDGE = 0.01f
 private const val SELECTION_SCALE_DOWN = 0.9f
 private const val SELECTION_SCALE_UP = 1.1f
 private const val DEFAULT_CHART_DIMENSION = 10
-private const val MAX_CHART_DIMENSION = 999

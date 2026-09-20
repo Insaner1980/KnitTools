@@ -33,11 +33,11 @@ class InsightsCompletionModelTest {
     }
 
     @Test
-    fun allTimeKeepsOlderHistoryAndGapsBeyondSessionChartWindow() {
+    fun allTimeKeepsOlderEventsWhileBoundingTheChartWindow() {
         val result = aggregate(listOf(event(1, "2024-01-01"), event(2, "2026-09-13")), TimeRange.ALL_TIME)
-        assertEquals(33, result.buckets.size)
-        assertEquals(2, result.buckets.sumOf { it.count })
-        assertEquals(31, result.buckets.count { it.count == 0 })
+        assertEquals(2, result.events.size)
+        assertEquals(12, result.buckets.size)
+        assertEquals(1, result.buckets.sumOf { it.count })
     }
 
     @Test

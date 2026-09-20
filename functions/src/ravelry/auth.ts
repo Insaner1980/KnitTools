@@ -10,6 +10,7 @@ import {
 } from "../config";
 import {
   RavelryAuthFlowError,
+  completeRavelryOAuth,
   completeRavelryOAuthCallback,
   disconnectRavelry,
   getRavelryAuthStatus,
@@ -30,6 +31,15 @@ function stores() {
 
 function callbackRateLimitKey(ipAddress: string | undefined): string {
   return `callback_${createHash("sha256").update(ipAddress?.trim() || "unknown").digest("base64url")}`;
+}
+
+function callableString(data: unknown, key: string): string {
+  if (typeof data !== "object" || data == null) throw new RavelryAuthFlowError("invalid_completion", 400);
+  const value = (data as Record<string, unknown>)[key];
+  if (typeof value !== "string" || value.length === 0) {
+    throw new RavelryAuthFlowError("invalid_completion", 400);
+  }
+  return value;
 }
 
 export const ravelryStartAuth = onCall(ravelrySecretOptions, async (request) => {
@@ -53,9 +63,25 @@ export const ravelryAuthStatus = onCall(async (request) => {
   try {
     const uid = requireUid(request.auth);
     const { rateLimiter, tokenStore } = stores();
-    await rateLimiter.consume(uid, "auth");
+    await rateLimiter.consumeUid(uid, "auth");
     return await getRavelryAuthStatus({
       uid,
+      tokenStore,
+    });
+  } catch (error) {
+    throw httpsErrorFor(error);
+  }
+});
+
+export const ravelryCompleteAuth = onCall(async (request) => {
+  try {
+    const uid = requireUid(request.auth);
+    const { rateLimiter, tokenStore } = stores();
+    await rateLimiter.consumeUid(uid, "auth");
+    return await completeRavelryOAuth({
+      uid,
+      state: callableString(request.data, "state"),
+      completionProof: callableString(request.data, "proof"),
       tokenStore,
     });
   } catch (error) {
@@ -67,7 +93,7 @@ export const ravelryDisconnect = onCall(async (request) => {
   try {
     const uid = requireUid(request.auth);
     const { rateLimiter, stateStore, tokenStore } = stores();
-    await rateLimiter.consume(uid, "auth");
+    await rateLimiter.consumeUid(uid, "disconnect");
     return await disconnectRavelry({
       uid,
       tokenStore,

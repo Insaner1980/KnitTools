@@ -39,7 +39,7 @@ internal class BackupRestoreFiles(
             when (table) {
                 "progress_photos" -> "progress_photos/${row.getValue(
                     "projectId",
-                ).jsonPrimitive.content}/restore-$token-$name.jpg"
+                ).jsonPrimitive.content}/restore-$token-${row.getValue("id").jsonPrimitive.content}-$name.jpg"
                 "yarn_cards" -> "yarn_photos/${row.getValue("id").jsonPrimitive.content}/restore-$token-$name.jpg"
                 else -> "pattern_pdfs/0/restore-$token-$name.pdf"
             }

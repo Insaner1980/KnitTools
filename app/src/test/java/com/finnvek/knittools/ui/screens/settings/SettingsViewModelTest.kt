@@ -55,6 +55,23 @@ class SettingsViewModelTest {
     private fun createViewModel() = SettingsViewModel(preferencesManager, billingManager, proManager)
 
     @Test
+    fun `analytics consent is persisted through preferences`() =
+        runTest {
+            coEvery { preferencesManager.setUsageAnalyticsEnabled(true) } returns true
+            createViewModel().setUsageAnalyticsEnabled(true)
+            coVerify(exactly = 1) { preferencesManager.setUsageAnalyticsEnabled(true) }
+        }
+
+    @Test
+    fun `failed consent write reports an error`() =
+        runTest {
+            coEvery { preferencesManager.setUsageAnalyticsEnabled(true) } returns false
+            val vm = createViewModel()
+            vm.setUsageAnalyticsEnabled(true)
+            assertEquals(com.finnvek.knittools.R.string.generic_error_unknown, vm.messages.first())
+        }
+
+    @Test
     fun `setThemeMode calls preferencesManager`() =
         runTest {
             val vm = createViewModel()

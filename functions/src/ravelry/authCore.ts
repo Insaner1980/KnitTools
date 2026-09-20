@@ -13,7 +13,7 @@ import type { RavelryRateLimiter } from "./rateLimit";
 import { getUsableRavelryToken } from "./tokenAccess";
 import type { RavelryTokenStore } from "./tokenStore";
 
-type RandomLabel = "state" | "code-verifier";
+type RandomLabel = "state" | "code-verifier" | "completion-proof";
 
 const MAX_OAUTH_CALLBACK_VALUE_LENGTH = 2_048;
 const CALLBACK_CONTROL_CHARACTERS = /[\u0000-\u001F\u007F-\u009F\u2028\u2029]/;
@@ -35,6 +35,15 @@ interface CompleteCallbackOptions {
   readonly exchange: OAuthTokenExchange;
   readonly rateLimiter: RavelryRateLimiter;
   readonly rateLimitKey: string;
+  readonly nowMillis?: () => number;
+  readonly randomString?: (label: RandomLabel) => string;
+}
+
+interface CompleteOAuthOptions {
+  readonly uid: string;
+  readonly state: string;
+  readonly completionProof: string;
+  readonly tokenStore: RavelryTokenStore;
   readonly nowMillis?: () => number;
 }
 
@@ -93,11 +102,14 @@ function codeChallengeFor(verifier: string): string {
   return createHash("sha256").update(verifier).digest("base64url");
 }
 
-function appRedirectUrl(state: string, error?: string): string {
+function appRedirectUrl(state: string, error?: string, completionProof?: string): string {
   const url = new URL(KNITTOOLS_RAVELRY_AUTH_COMPLETE_DEEP_LINK);
   url.searchParams.set("state", state);
   if (error) {
     url.searchParams.set("error", error);
+  }
+  if (completionProof) {
+    url.searchParams.set("proof", completionProof);
   }
   return url.toString();
 }
@@ -138,6 +150,17 @@ function requireState(value: string | undefined): string {
     throw new RavelryAuthFlowError("invalid_state", 400);
   }
   return value;
+}
+
+function requireCompletionProof(value: string): string {
+  if (!/^[A-Za-z0-9_-]{43}$/.test(value)) {
+    throw new RavelryAuthFlowError("invalid_completion", 400);
+  }
+  return value;
+}
+
+function completionProofHash(value: string): string {
+  return createHash("sha256").update(value).digest("base64url");
 }
 
 function redirectExpiredStateOrThrow(error: unknown, state: string): CallbackResponse {
@@ -283,16 +306,18 @@ export async function completeRavelryOAuthCallback({
   rateLimiter,
   rateLimitKey,
   nowMillis = Date.now,
+  randomString = randomBase64Url,
 }: CompleteCallbackOptions): Promise<CallbackResponse> {
   const now = nowMillis();
   const state = requireState(queryString(query, "state"));
-  await rateLimiter.consume(rateLimitKey, "callback");
+  await rateLimiter.consumeUid(rateLimitKey, "callback");
   const storedState = await loadUsableState(stateStore, state, now).catch((error: unknown) =>
     redirectExpiredStateOrThrow(error, state),
   );
   if ("redirectUrl" in storedState) {
     return storedState;
   }
+  await rateLimiter.consume(storedState.uid, "callback");
   const ravelryError = boundedCallbackValue(queryString(query, "error"), "error");
 
   if (ravelryError) {
@@ -326,15 +351,40 @@ export async function completeRavelryOAuthCallback({
     redirectUri: storedState.redirectUri,
   });
 
-  const saved = await tokenStore.saveTokenIfGenerationCurrent(
-    tokenForStorage(storedState.uid, token, now, connectionGeneration),
+  const completionProof = randomString("completion-proof");
+  const saved = await tokenStore.savePendingTokenIfGenerationCurrent(
+    {
+      token: tokenForStorage(storedState.uid, token, now, connectionGeneration),
+      state,
+      completionProofHash: completionProofHash(completionProof),
+      expiresAtMillis: now + RAVELRY_OAUTH_STATE_TTL_MILLIS,
+    },
     connectionGeneration,
   );
   if (!saved) {
     return { redirectUrl: appRedirectUrl(state, "state_expired") };
   }
 
-  return { redirectUrl: appRedirectUrl(state) };
+  return { redirectUrl: appRedirectUrl(state, undefined, completionProof) };
+}
+
+export async function completeRavelryOAuth({
+  uid,
+  state,
+  completionProof,
+  tokenStore,
+  nowMillis = Date.now,
+}: CompleteOAuthOptions): Promise<{ connected: true }> {
+  const validState = requireState(state);
+  const validProof = requireCompletionProof(completionProof);
+  const activated = await tokenStore.activatePendingToken(
+    uid,
+    validState,
+    completionProofHash(validProof),
+    nowMillis(),
+  );
+  if (!activated) throw new RavelryAuthFlowError("invalid_completion", 412);
+  return { connected: true };
 }
 
 export async function getRavelryAuthStatus({

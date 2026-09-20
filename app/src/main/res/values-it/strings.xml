@@ -349,7 +349,9 @@
     <string name="use_imperial_units">Usa unità imperiali</string>
     <string name="upgrade_to_pro">Passa a Pro</string>
     <string name="restore_purchases">Ripristina acquisti</string>
-    <string name="privacy_summary">I dati dei tuoi progetti restano sul dispositivo. Le funzioni Ravelry e Google Play usano servizi di rete. Nessuna analisi né sincronizzazione cloud.</string>
+    <string name="privacy_summary">I dati dei tuoi progetti restano sul dispositivo. Ravelry e Google Play usano servizi di rete. Firebase Crashlytics invia rapporti sugli arresti anomali a Google. Le statistiche di utilizzo sono facoltative. Nessuna sincronizzazione cloud.</string>
+    <string name="usage_analytics">Condividi statistiche di utilizzo</string>
+    <string name="usage_analytics_description">Se attivata, questa opzione invia nomi delle schermate, utilizzo delle funzioni, durata di utilizzo e informazioni su app e dispositivo a PostHog nell’UE. Il contenuto dei progetti è escluso. Puoi disattivare la raccolta in qualsiasi momento.</string>
     <string name="pro_restored">Pro ripristinato</string>
     <string name="no_purchases_found">Nessun acquisto trovato</string>
     <string name="version_format">KnitTools %s</string>

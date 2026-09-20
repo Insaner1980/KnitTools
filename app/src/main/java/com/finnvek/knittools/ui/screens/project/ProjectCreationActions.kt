@@ -1,6 +1,8 @@
 package com.finnvek.knittools.ui.screens.project
 
 import androidx.lifecycle.SavedStateHandle
+import com.finnvek.knittools.analytics.UsageAnalytics
+import com.finnvek.knittools.analytics.UsageEvent
 import com.finnvek.knittools.domain.model.CraftType
 import com.finnvek.knittools.domain.model.MainCounterLabelType
 import com.finnvek.knittools.pro.ProFeature
@@ -35,6 +37,7 @@ internal class ProjectCreationActions(
     private val proManager: ProManager,
     private val savedStateHandle: SavedStateHandle,
     private val scope: CoroutineScope,
+    private val analytics: UsageAnalytics = UsageAnalytics.NONE,
     private val onCreated: suspend (Long) -> Unit,
 ) {
     private val isPro: Boolean get() = proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS)
@@ -67,6 +70,7 @@ internal class ProjectCreationActions(
     }
 
     fun requestProjectCreation() {
+        analytics.track(UsageEvent.PROJECT_CREATION_STARTED)
         _projectCreationError.value = null
         pendingCreationOpening = true
         reconcilePendingCreation()
@@ -132,6 +136,7 @@ internal class ProjectCreationActions(
     ) {
         if (projectCreationInFlight || pendingProjectCreation != request) return
         projectCreationInFlight = true
+        analytics.track(UsageEvent.PROJECT_CREATION_SUBMITTED)
         var limited = false
         try {
             _projectCreationError.value = null
@@ -147,6 +152,7 @@ internal class ProjectCreationActions(
             if (pendingProjectCreation != request) return
             when (result) {
                 is ProjectCreationResult.Created -> {
+                    analytics.track(UsageEvent.PROJECT_CREATED)
                     pendingProjectCreation = null
                     _projectCreationPromptCount.value = null
                     onCreated(result.projectId)
@@ -156,8 +162,12 @@ internal class ProjectCreationActions(
                     limited = true
                     if (pendingProjectCreation == request) _projectCreationPromptCount.value = activeCount
                 }
-                ProjectCreationResult.InvalidProject -> pendingProjectCreation = null
+                ProjectCreationResult.InvalidProject -> {
+                    analytics.track(UsageEvent.PROJECT_CREATION_FAILED)
+                    pendingProjectCreation = null
+                }
                 ProjectCreationResult.FolderMissing -> {
+                    analytics.track(UsageEvent.PROJECT_CREATION_FAILED)
                     pendingProjectCreation = null
                     _projectCreationError.value = result
                 }

@@ -1,6 +1,8 @@
 package com.finnvek.knittools.ui.screens.project
 
 import androidx.lifecycle.SavedStateHandle
+import com.finnvek.knittools.analytics.UsageAnalytics
+import com.finnvek.knittools.analytics.UsageEvent
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.CraftType.CROCHET
 import com.finnvek.knittools.domain.model.MainCounterLabelType.CUSTOM
@@ -27,6 +29,31 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ProjectCreationPolicyTest : ProjectListViewModelFixture() {
+    @Test
+    fun `analytics reports creation only after confirmed persistence`() =
+        runTest {
+            val result = CompletableDeferred<ProjectCreationResult>()
+            every { proManager.hasFeature(ProFeature.UNLIMITED_PROJECTS) } returns true
+            coEvery { repository.createProject(any(), any(), any(), any(), any(), any(), any()) } coAnswers
+                { result.await() }
+            val events = mutableListOf<UsageEvent>()
+            val actions =
+                ProjectCreationActions(
+                    repository,
+                    proManager,
+                    SavedStateHandle(),
+                    backgroundScope,
+                    analytics = UsageAnalytics { events += it },
+                    onCreated = {},
+                )
+            actions.create(PendingProjectCreation("Private name", CROCHET, CUSTOM, "Private label", null))
+            runCurrent()
+            assertEquals(listOf(UsageEvent.PROJECT_CREATION_SUBMITTED), events)
+            result.complete(ProjectCreationResult.Created(42L))
+            runCurrent()
+            assertEquals(listOf(UsageEvent.PROJECT_CREATION_SUBMITTED, UsageEvent.PROJECT_CREATED), events)
+        }
+
     @Test
     fun `zero observed during stale count resumes the exact pending draft once`() =
         runTest {

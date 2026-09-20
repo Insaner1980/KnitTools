@@ -40,7 +40,7 @@ internal fun buildInsightsProjectFabric(
             .mapValues { (_, projectSessions) ->
                 SessionMetrics.paceBuckets(
                     sessions = projectSessions,
-                    rangeStartMillis = null,
+                    rangeStartMillis = startDate.atStartOfDay(zone).toInstant().toEpochMilli(),
                     interval = PaceGroupingInterval.DAY,
                     zone = zone,
                     firstDayOfWeek = firstDayOfWeek,

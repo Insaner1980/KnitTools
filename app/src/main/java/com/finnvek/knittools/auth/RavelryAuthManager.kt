@@ -42,6 +42,7 @@ class RavelryAuthManager
             const val REDIRECT_HOST = "ravelry-auth-complete"
             private const val QUERY_STATE = "state"
             private const val QUERY_ERROR = "error"
+            private const val QUERY_PROOF = "proof"
         }
 
         private val _authState = MutableStateFlow<RavelryAuthState>(RavelryAuthState.NotConnected)
@@ -132,8 +133,18 @@ class RavelryAuthManager
                 null -> Unit
             }
 
-            pendingState = null
-            refreshAuthStatus(RavelryAuthState.Expired)
+            val completionProof = uri.getQueryParameter(QUERY_PROOF) ?: return true
+            try {
+                backendClient.completeAuth(callbackState, completionProof)
+                pendingState = null
+                refreshAuthStatus(RavelryAuthState.Expired)
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: Exception) {
+                pendingState = null
+                beginOperation()
+                _authState.value = RavelryAuthState.BackendUnavailable
+            }
             return true
         }
 
@@ -148,12 +159,17 @@ class RavelryAuthManager
             if (!uri.path.isNullOrEmpty() || uri.fragment != null) return false
 
             val parameterNames = uri.queryParameterNames.toSet()
-            if (parameterNames != setOf(QUERY_STATE) && parameterNames != setOf(QUERY_STATE, QUERY_ERROR)) {
+            val successParameters = setOf(QUERY_STATE, QUERY_PROOF)
+            val failureParameters = setOf(QUERY_STATE, QUERY_ERROR)
+            if (parameterNames != successParameters && parameterNames != failureParameters) {
                 return false
             }
             if (uri.getQueryParameters(QUERY_STATE).singleOrNull().isNullOrBlank()) return false
-            return QUERY_ERROR !in parameterNames ||
+            return if (QUERY_ERROR in parameterNames) {
                 !uri.getQueryParameters(QUERY_ERROR).singleOrNull().isNullOrBlank()
+            } else {
+                !uri.getQueryParameters(QUERY_PROOF).singleOrNull().isNullOrBlank()
+            }
         }
 
         suspend fun disconnect(): RavelryAuthState {

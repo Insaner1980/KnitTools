@@ -163,8 +163,24 @@ internal object SessionMetrics {
         val sessionZone = analyticsZoneOr(zone)
         val started = startedAt
         val ended = effectiveEndedAt()
-        var cursor = started
-        var allocatedSeconds = 0L
+        if (ended <= started) return emptyMap()
+        val sessionMillis = (ended - started).coerceAtLeast(1L)
+        val boundedEarliestDate =
+            maxOf(
+                earliestDate,
+                Instant
+                    .ofEpochMilli(ended - 1L)
+                    .atZone(sessionZone)
+                    .toLocalDate()
+                    .minusDays(MAX_SESSION_ANALYSIS_DAYS - 1L),
+            )
+        var cursor =
+            maxOf(
+                started,
+                boundedEarliestDate.atStartOfDay(sessionZone).toInstant().toEpochMilli(),
+            )
+        val initialFraction = (cursor - started).toDouble() / sessionMillis
+        var allocatedSeconds = scaledSeconds(activeSeconds, initialFraction)
         val contributions = mutableMapOf<LocalDate, Long>()
 
         while (cursor < ended) {
@@ -202,7 +218,17 @@ internal object SessionMetrics {
         val sessionZone = analyticsZoneOr(zone)
         val started = startedAt
         val ended = effectiveEndedAt()
-        var cursor = maxOf(started, rangeStartMillis ?: started)
+        if (ended <= started) return emptyMap()
+        val boundedStartMillis =
+            Instant
+                .ofEpochMilli(ended - 1L)
+                .atZone(sessionZone)
+                .toLocalDate()
+                .minusDays(MAX_SESSION_ANALYSIS_DAYS - 1L)
+                .atStartOfDay(sessionZone)
+                .toInstant()
+                .toEpochMilli()
+        var cursor = maxOf(started, rangeStartMillis ?: started, boundedStartMillis)
         val sessionMillis = (ended - started).coerceAtLeast(1L)
         val initialFraction = (cursor - started).toDouble() / sessionMillis
         var allocatedSeconds = scaledSeconds(activeSeconds, initialFraction)
@@ -248,6 +274,8 @@ internal object SessionMetrics {
         return contributions
     }
 }
+
+private const val MAX_SESSION_ANALYSIS_DAYS = 366L
 
 private data class SessionContribution(
     val seconds: Long,

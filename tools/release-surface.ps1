@@ -25,6 +25,7 @@ Odotetut sopimusarvot, varmistettu nykyisista lahdetiedostoista:
   yarn_photos, pattern_pdfs, broad files/cache/external roots ja external storage roots eivat kuulu jaettuun pintaan.
 - Release signing gate riippuu KNITTOOLS_* signing -ymparistomuuttujista.
 - Firebase Auth/Functions ja Google Services ovat sallittuja vain Ravelry-backendia varten.
+  Firebase Crashlytics SDK ja Gradle-plugin ovat sallittuja julkaisuversion kaatumisraportointiin.
   app/google-services.json saa olla paikallinen ignoroitu tiedosto, ja debug-build voi luoda
   app/src/debug/google-services.json -placeholderin, mutta kumpikaan ei saa olla git-indexissa.
 - debug.credentials.properties on paikallinen, ignoroitu ja git-indexin ulkopuolella.
@@ -707,7 +708,7 @@ function Test-ForbiddenDependencies {
 
                 if ($line.Text -match '^\s*(implementation|api|runtimeOnly|compileOnly|debugImplementation|releaseImplementation|testImplementation|androidTestImplementation)\s*\(\s*libs\.firebase\.([A-Za-z0-9_.-]+)') {
                     $alias = $Matches[2]
-                    if ($alias -notin @("bom", "auth", "functions")) {
+                    if ($alias -notin @("bom", "auth", "functions", "crashlytics")) {
                         $problems += "unapproved Firebase dependency alias '$alias' found in $file"
                         if ($null -eq $firstLine) {
                             $firstPath = $file
@@ -718,7 +719,7 @@ function Test-ForbiddenDependencies {
 
                 if ($file -eq "gradle/libs.versions.toml" -and $line.Text -match '^\s*(firebase[-A-Za-z0-9_.]*)\s*=') {
                     $key = $Matches[1]
-                    if ($key -notin @("firebaseBom", "firebase-bom", "firebase-auth", "firebase-functions")) {
+                    if ($key -notin @("firebaseBom", "firebase-bom", "firebase-auth", "firebase-functions", "firebase-crashlytics")) {
                         $problems += "unapproved Firebase catalog entry '$key' found in $file"
                         if ($null -eq $firstLine) {
                             $firstPath = $file
@@ -727,7 +728,7 @@ function Test-ForbiddenDependencies {
                     }
                 }
 
-                if ($line.Text -match 'com\.google\.firebase' -and $line.Text -notmatch 'firebase-(bom|auth|functions)') {
+                if ($line.Text -match 'com\.google\.firebase' -and $line.Text -notmatch 'firebase-(bom|auth|functions|crashlytics)"|com\.google\.firebase\.crashlytics"|^import com\.google\.firebase\.crashlytics\.buildtools\.gradle\.CrashlyticsExtension$') {
                     $problems += "unapproved direct Firebase dependency found in $file"
                     if ($null -eq $firstLine) {
                         $firstPath = $file

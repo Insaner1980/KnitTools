@@ -376,3 +376,18 @@ reason = "Gradle verification metadata retains netty-handler 4.1.110.Final and 4
 id = "GHSA-fccg-mwvh-qqg4"
 ignoreUntil = 2026-10-31
 reason = "Gradle verification metadata retains netty-handler 4.1.110.Final and 4.1.93.Final; neither is present in the resolved app debug/release runtime or root buildscript classpaths. The affected Netty server-side SNI ClientHello handler is not used by this app."
+
+[[IgnoredVulns]]
+id = "GHSA-9rm7-3qhh-h2mc"
+ignoreUntil = 2026-10-31
+reason = "Gradle verification metadata retains wire-runtime 6.0.0 and 6.3.0, but active benchmark configurations resolve fixed 6.4.7 through the root resolution policy; app debug/release runtime has no Wire."
+
+[[IgnoredVulns]]
+id = "GHSA-9pwp-9qqc-pr26"
+ignoreUntil = 2026-10-31
+reason = "Gradle verification metadata retains affected bcprov-jdk18on versions used by Android build tooling; Bouncy Castle is absent from the app debug/release and benchmark runtime classpaths."
+
+[[IgnoredVulns]]
+id = "GHSA-qp49-qgx5-5m26"
+ignoreUntil = 2026-10-31
+reason = "Gradle verification metadata retains affected bcprov-jdk18on versions used by Android build tooling; Bouncy Castle is absent from the app debug/release and benchmark runtime classpaths."

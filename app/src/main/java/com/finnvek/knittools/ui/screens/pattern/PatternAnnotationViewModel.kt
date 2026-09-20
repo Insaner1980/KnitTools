@@ -433,10 +433,11 @@ class PatternAnnotationViewModel
                     is ChartTrackerPayload -> selectedPayload.region
                     else -> return
                 }
+            if (!PatternAnnotationLimits.isValidChartDimensions(draft.rows, draft.columns)) return
             val region =
                 sourceRegion.copy(
-                    rows = draft.rows.coerceIn(1, MAX_CHART_DIMENSION),
-                    columns = draft.columns.coerceIn(1, MAX_CHART_DIMENSION),
+                    rows = draft.rows,
+                    columns = draft.columns,
                     rowDirection = draft.rowDirection,
                     columnDirection = draft.columnDirection,
                 )
@@ -939,12 +940,24 @@ private data class PatternCounterContext(
 private fun resolveTrackerHighlights(
     annotations: List<PatternAnnotation>,
     counterContext: PatternCounterContext,
-): Map<Long, ChartTrackerHighlight> =
-    annotations
-        .mapNotNull { annotation ->
-            val tracker = annotation.payload as? ChartTrackerPayload ?: return@mapNotNull null
-            annotation.id to resolveChartTrackerHighlight(tracker, counterContext.valueFor(tracker))
-        }.toMap()
+): Map<Long, ChartTrackerHighlight> {
+    val consumedCellsByPage = mutableMapOf<Int, Int>()
+    var consumedCells = 0
+    return buildMap {
+        annotations.forEach { annotation ->
+            val tracker = annotation.payload as? ChartTrackerPayload ?: return@forEach
+            val cellCount = tracker.region.rows * tracker.region.columns
+            val consumed = consumedCellsByPage[annotation.page] ?: 0
+            if (cellCount > PatternAnnotationLimits.MAX_CHART_CELLS_PER_PAGE - consumed) return@forEach
+            if (cellCount > PatternAnnotationLimits.MAX_CHART_CELLS_PER_DOCUMENT - consumedCells) {
+                return@forEach
+            }
+            consumedCellsByPage[annotation.page] = consumed + cellCount
+            consumedCells += cellCount
+            put(annotation.id, resolveChartTrackerHighlight(tracker, counterContext.valueFor(tracker)))
+        }
+    }
+}
 
 private fun PatternStrokeDraft.toAnnotation(
     layerId: Long?,
@@ -1021,7 +1034,6 @@ private fun PatternAnnotationTool.toAnnotationKind(): PatternAnnotationKind? =
 
 private const val DUPLICATE_OFFSET = 0.02f
 private const val HISTORY_LIMIT = 50
-private const val MAX_CHART_DIMENSION = 999
 private const val DEFAULT_CHART_ROWS = 10
 private const val DEFAULT_CHART_COLUMNS = 10
 private const val DEFAULT_CHART_NAME = "Chart"

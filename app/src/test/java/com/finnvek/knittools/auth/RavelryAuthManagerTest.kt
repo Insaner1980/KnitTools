@@ -65,6 +65,7 @@ class RavelryAuthManagerTest {
 
             assertTrue(handled)
             assertEquals(RavelryAuthState.Connected("knitter"), manager.authState.value)
+            assertEquals(listOf("state-1" to "proof-1"), backend.completeAuthCalls)
         }
 
     @Test
@@ -232,6 +233,7 @@ class RavelryAuthManagerTest {
     private fun callbackUri(
         state: String? = null,
         error: String? = null,
+        proof: String? = if (state != null && error == null) "proof-1" else null,
         uriScheme: String = RavelryAuthManager.REDIRECT_SCHEME,
         uriHost: String = RavelryAuthManager.REDIRECT_HOST,
         uriAuthority: String = uriHost,
@@ -241,6 +243,7 @@ class RavelryAuthManagerTest {
             buildMap {
                 state?.let { put("state", listOf(it)) }
                 error?.let { put("error", listOf(it)) }
+                proof?.let { put("proof", listOf(it)) }
             },
     ): Uri {
         val uri = mockk<Uri>()
@@ -266,6 +269,7 @@ class RavelryAuthManagerTest {
     ) : RavelryBackendClient {
         var disconnectCalls = 0
         var authStatusCalls = 0
+        val completeAuthCalls = mutableListOf<Pair<String, String>>()
 
         override suspend fun startAuth(): RavelryStartAuthResponse =
             startAuthResponse?.await()
@@ -278,6 +282,13 @@ class RavelryAuthManagerTest {
         override suspend fun authStatus(): RavelryBackendAuthStatus {
             authStatusCalls += 1
             return authStatusResponse?.await() ?: authStatus
+        }
+
+        override suspend fun completeAuth(
+            state: String,
+            proof: String,
+        ) {
+            completeAuthCalls += state to proof
         }
 
         override suspend fun disconnect() {

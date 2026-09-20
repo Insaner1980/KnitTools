@@ -345,7 +345,9 @@
     <string name="use_imperial_units">Imperiale Einheiten verwenden</string>
     <string name="upgrade_to_pro">Auf Pro upgraden</string>
     <string name="restore_purchases">Käufe wiederherstellen</string>
-    <string name="privacy_summary">Deine Projektdaten bleiben auf deinem Gerät. Ravelry- und Google-Play-Funktionen nutzen Netzwerkdienste. Keine Analysen und keine Cloud-Synchronisierung.</string>
+    <string name="privacy_summary">Deine Projektdaten bleiben auf deinem Gerät. Ravelry und Google Play nutzen Netzwerkdienste. Firebase Crashlytics sendet Absturzberichte an Google. Nutzungsstatistiken sind freiwillig. Keine Cloud-Synchronisierung.</string>
+    <string name="usage_analytics">Nutzungsstatistiken teilen</string>
+    <string name="usage_analytics_description">Wenn aktiviert, sendet KnitTools Bildschirmnamen, Funktionsnutzung, Nutzungsdauer sowie App- und Geräteinformationen an PostHog in der EU. Projektinhalte werden nicht gesendet. Du kannst die Erfassung jederzeit ausschalten.</string>
     <string name="pro_restored">Pro wiederhergestellt</string>
     <string name="no_purchases_found">Keine Käufe gefunden</string>
     <string name="version_format">KnitTools %s</string>

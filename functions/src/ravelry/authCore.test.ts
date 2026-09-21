@@ -244,6 +244,9 @@ describe("Ravelry OAuth2 auth core", () => {
         calls.push({ key, bucket });
         throw rateLimitError;
       },
+      async consumeGlobal(): Promise<void> {
+        throw new Error("global callback budget must not run directly");
+      },
     };
     const options = {
       query: { state: "A".repeat(43), code: "code" },
@@ -276,6 +279,9 @@ describe("Ravelry OAuth2 auth core", () => {
       },
       async consumeUid(key: string, bucket: string): Promise<void> {
         calls.push({ scope: "uid", key, bucket });
+      },
+      async consumeGlobal(): Promise<void> {
+        throw new Error("global callback budget must not run directly");
       },
     };
 

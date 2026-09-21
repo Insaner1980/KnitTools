@@ -86,18 +86,20 @@ async function requireAccessTokenForOperation(
   options: UserPatternOptions,
   bucket: RavelryRateLimitBucket,
 ): Promise<string> {
-  let consumed = false;
-  const consumeRateLimit = async () => {
-    if (!consumed) {
-      await rateLimiterFor(options).consume(options.uid, bucket);
-      consumed = true;
+  const rateLimiter = rateLimiterFor(options);
+  await rateLimiter.consumeUid(options.uid, bucket);
+  let consumedGlobal = false;
+  const consumeGlobalRateLimit = async () => {
+    if (!consumedGlobal) {
+      await rateLimiter.consumeGlobal(bucket);
+      consumedGlobal = true;
     }
   };
   const accessToken = await requireAccessToken({
     ...options,
-    beforeRefresh: consumeRateLimit,
+    beforeRefresh: consumeGlobalRateLimit,
   });
-  await consumeRateLimit();
+  await consumeGlobalRateLimit();
   return accessToken;
 }
 

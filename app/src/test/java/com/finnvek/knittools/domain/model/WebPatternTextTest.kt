@@ -144,6 +144,11 @@ class WebPatternTextTest {
                 "Try https://example.com/pattern_(knit).",
                 null,
             )
+        val unmatchedSuffix =
+            parseWebPatternSharedText(
+                "Try https://example.com/pattern)]}.,!;:",
+                null,
+            )
 
         assertEquals(
             "https://example.com/pattern!",
@@ -156,6 +161,64 @@ class WebPatternTextTest {
         assertEquals(
             "https://example.com/pattern_(knit)",
             (balancedPath as WebPatternShareParseResult.WebLink).url.originalUrl,
+        )
+        assertEquals(
+            "https://example.com/pattern",
+            (unmatchedSuffix as WebPatternShareParseResult.WebLink).url.originalUrl,
+        )
+    }
+
+    @Test
+    fun `share parser accepts the 2048 character URL boundary`() {
+        val prefix = "https://example.com/"
+        val boundaryUrl = prefix + "a".repeat(WEB_PATTERN_URL_MAX_LENGTH - prefix.length)
+
+        val result = parseWebPatternSharedText(boundaryUrl, null)
+
+        assertEquals(
+            boundaryUrl,
+            (result as WebPatternShareParseResult.WebLink).url.originalUrl,
+        )
+    }
+
+    @Test
+    fun `share parser rejects overlong URL representations before normalization`() {
+        val prefix = "https://example.com/"
+        val boundaryUrl = prefix + "a".repeat(WEB_PATTERN_URL_MAX_LENGTH - prefix.length)
+        val overLimitUrl = boundaryUrl + "a"
+        val overLimitHiddenByDelimiter = boundaryUrl + ")"
+        val overLimitHiddenAfterApostrophe =
+            "https://example.com/a'" + "b".repeat(WEB_PATTERN_URL_MAX_LENGTH)
+
+        assertTrue(
+            parseWebPatternSharedText(overLimitUrl, null) is WebPatternShareParseResult.TooLong,
+        )
+        assertTrue(
+            parseWebPatternSharedText(overLimitHiddenByDelimiter, null) is WebPatternShareParseResult.TooLong,
+        )
+        assertTrue(
+            parseWebPatternSharedText(
+                "$overLimitHiddenByDelimiter https://example.com/safe",
+                null,
+            ) is WebPatternShareParseResult.TooLong,
+        )
+        assertTrue(
+            validateWebPatternUrl("https://example.com/a'b") is WebPatternUrlValidation.Valid,
+        )
+        assertTrue(overLimitHiddenAfterApostrophe.length > WEB_PATTERN_URL_MAX_LENGTH)
+        assertTrue(
+            parseWebPatternSharedText(overLimitHiddenAfterApostrophe, null) is WebPatternShareParseResult.TooLong,
+        )
+    }
+
+    @Test
+    fun `share parser rejects delimiter heavy 16 KiB URL before trimming`() {
+        val prefix = "https://example.com/pattern"
+        val hostileUrl = prefix + ")".repeat(WEB_PATTERN_SHARED_TEXT_MAX_LENGTH - prefix.length)
+
+        assertEquals(WEB_PATTERN_SHARED_TEXT_MAX_LENGTH, hostileUrl.length)
+        assertTrue(
+            parseWebPatternSharedText(hostileUrl, null) is WebPatternShareParseResult.TooLong,
         )
     }
 

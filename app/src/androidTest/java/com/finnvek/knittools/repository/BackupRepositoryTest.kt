@@ -14,11 +14,14 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.finnvek.knittools.data.backup.BackupArchive
+import com.finnvek.knittools.data.backup.BackupError
 import com.finnvek.knittools.data.backup.BackupException
 import com.finnvek.knittools.data.backup.BackupFormat
 import com.finnvek.knittools.data.backup.BackupPreview
+import com.finnvek.knittools.data.backup.BackupProviderIo
 import com.finnvek.knittools.data.backup.BackupRestoreFiles
 import com.finnvek.knittools.data.backup.BackupTables
+import com.finnvek.knittools.data.backup.ContentResolverBackupProviderIo
 import com.finnvek.knittools.data.datastore.PreferencesManager
 import com.finnvek.knittools.data.datastore.ThemeMode
 import com.finnvek.knittools.data.local.ActiveSessionSchemaConstraints
@@ -32,12 +35,18 @@ import com.finnvek.knittools.domain.calculator.evaluateActiveSessionTime
 import com.finnvek.knittools.domain.model.ActiveSessionTimeEvaluation
 import com.finnvek.knittools.domain.model.CounterHistoryAction
 import com.finnvek.knittools.domain.model.SessionTimeSnapshot
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
@@ -53,7 +62,9 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
+import java.io.IOException
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicInteger
 
 @RunWith(AndroidJUnit4::class)
 class BackupRepositoryTest {
@@ -61,6 +72,8 @@ class BackupRepositoryTest {
     private lateinit var directory: File
     private lateinit var db: KnitToolsDatabase
     private lateinit var repository: BackupRepository
+    private lateinit var patternFiles: PatternFileReferenceCoordinator
+    private lateinit var yarnCards: YarnCardRepository
     private var selectionId = UUID.randomUUID()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -87,7 +100,8 @@ class BackupRepositoryTest {
                 .addCallback(ActiveSessionSchemaConstraints.callback)
                 .addCallback(ProjectDocumentSchemaConstraints.callback)
                 .build()
-        val yarn =
+        patternFiles = PatternFileReferenceCoordinator()
+        yarnCards =
             YarnCardRepository(
                 db.yarnCardDao(),
                 db.counterProjectDao(),
@@ -95,7 +109,7 @@ class BackupRepositoryTest {
                 RoomDatabaseTransactionRunner(db),
                 Dispatchers.IO,
             )
-        repository = BackupRepository(context, db, PatternFileReferenceCoordinator(), yarn, Dispatchers.IO, scope)
+        repository = createRepository(ContentResolverBackupProviderIo(context))
     }
 
     @After fun tearDown() {
@@ -215,6 +229,70 @@ class BackupRepositoryTest {
             assertEquals("Current", text("SELECT name FROM counter_projects"))
             repository.restore(secondId)
             assertEquals("Second backup", text("SELECT name FROM counter_projects"))
+            assertTrue(File(context.noBackupFilesDir, "manual-backup").listFiles().orEmpty().isEmpty())
+        }
+
+    @Test fun competingPreparationsCannotPublishOrDeleteAnotherSelectionsPreview() =
+        runBlocking {
+            seed()
+            val archive = File(directory, "racing-source")
+            repository.export(archive.toUri())
+            db.openHelper.writableDatabase.execSQL("UPDATE counter_projects SET name = 'Current'")
+            val racingIo = RacingReadProviderIo(archive)
+            val racingRepository = createRepository(racingIo)
+            val firstId = UUID.randomUUID()
+            val secondId = UUID.randomUUID()
+            val first = async(Dispatchers.IO) { runCatching { racingRepository.prepare(mockUri("first"), firstId) } }
+            racingIo.firstStarted.await()
+
+            val second = async(Dispatchers.IO) { racingRepository.prepare(mockUri("second"), secondId) }
+            assertEquals(1, second.await().projects)
+            racingIo.releaseFirst.complete(Unit)
+
+            assertTrue(first.await().exceptionOrNull() is CancellationException)
+            racingRepository.cancelPreview(firstId)
+            racingRepository.restore(secondId)
+            assertEquals("Cardigan", text("SELECT name FROM counter_projects"))
+            assertTrue(File(context.noBackupFilesDir, "manual-backup").listFiles().orEmpty().isEmpty())
+        }
+
+    @Test fun stalledExternalReferenceDoesNotHoldBackupContentOrDatabaseLocks() =
+        runBlocking {
+            seed()
+            db.openHelper.writableDatabase.execSQL(
+                "UPDATE yarn_cards SET photoUri = 'content://stalled.provider/photo'",
+            )
+            val stalledIo = StalledReadProviderIo()
+            val stalledRepository = createRepository(stalledIo)
+            val export = async(Dispatchers.IO) { stalledRepository.export(mockUri("destination")) }
+            stalledIo.started.await()
+
+            withTimeout(2_000) {
+                stalledRepository.cancelPreview(null)
+                patternFiles.withReferenceLock {
+                    yarnCards.withPhotoStorageLock {
+                        db.withTransaction {
+                            db.openHelper.writableDatabase
+                                .query("SELECT COUNT(*) FROM yarn_cards")
+                                .close()
+                        }
+                    }
+                }
+            }
+
+            export.cancelAndJoin()
+            assertTrue(File(context.noBackupFilesDir, "manual-backup").listFiles().orEmpty().isEmpty())
+        }
+
+    @Test fun providerWriteFailureMapsToWriteAndCleansLocalArchive() =
+        runBlocking {
+            seed()
+            val failingRepository = createRepository(FailingWriteProviderIo())
+
+            val failure = runCatching { failingRepository.export(mockUri("destination")) }.exceptionOrNull()
+
+            assertTrue(failure is BackupException)
+            assertEquals(BackupError.WRITE, (failure as BackupException).error)
             assertTrue(File(context.noBackupFilesDir, "manual-backup").listFiles().orEmpty().isEmpty())
         }
 
@@ -537,11 +615,90 @@ class BackupRepositoryTest {
             it.getString(0)
         }
 
+    private fun createRepository(providerIo: BackupProviderIo): BackupRepository =
+        BackupRepository(
+            context,
+            db,
+            patternFiles,
+            yarnCards,
+            Dispatchers.IO,
+            scope,
+            providerIo,
+        )
+
+    private fun mockUri(name: String): Uri = "content://backup-test/$name".toUri()
+
     private suspend fun expectBackupFailure(block: suspend () -> Unit) {
         try {
             block()
             throw AssertionError("Expected backup failure")
         } catch (_: BackupException) {
         }
+    }
+
+    private class RacingReadProviderIo(
+        private val archive: File,
+    ) : BackupProviderIo {
+        val firstStarted = CompletableDeferred<Unit>()
+        val releaseFirst = CompletableDeferred<Unit>()
+        private val reads = AtomicInteger()
+
+        override suspend fun read(
+            source: Uri,
+            target: File,
+            maxBytes: Long,
+            check: () -> Unit,
+        ) {
+            if (reads.incrementAndGet() == 1) {
+                firstStarted.complete(Unit)
+                releaseFirst.await()
+            }
+            check()
+            archive.copyTo(target)
+        }
+
+        override suspend fun write(
+            source: File,
+            destination: Uri,
+            maxBytes: Long,
+            check: () -> Unit,
+        ) = error("Unexpected write")
+    }
+
+    private class StalledReadProviderIo : BackupProviderIo {
+        val started = CompletableDeferred<Unit>()
+
+        override suspend fun read(
+            source: Uri,
+            target: File,
+            maxBytes: Long,
+            check: () -> Unit,
+        ) {
+            started.complete(Unit)
+            awaitCancellation()
+        }
+
+        override suspend fun write(
+            source: File,
+            destination: Uri,
+            maxBytes: Long,
+            check: () -> Unit,
+        ) = error("Unexpected write")
+    }
+
+    private class FailingWriteProviderIo : BackupProviderIo {
+        override suspend fun read(
+            source: Uri,
+            target: File,
+            maxBytes: Long,
+            check: () -> Unit,
+        ) = error("Unexpected read")
+
+        override suspend fun write(
+            source: File,
+            destination: Uri,
+            maxBytes: Long,
+            check: () -> Unit,
+        ) = throw IOException("provider unavailable")
     }
 }

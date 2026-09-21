@@ -1,6 +1,5 @@
 package com.finnvek.knittools.data.backup
 
-import android.content.ContentResolver
 import android.content.Context
 import android.net.Uri
 import io.mockk.every
@@ -29,7 +28,6 @@ class BackupFilesTest {
     private lateinit var context: Context
     private lateinit var files: File
     private lateinit var payload: File
-    private val resolver = mockk<ContentResolver>()
 
     @Before fun setUp() {
         files = temporary.newFolder()
@@ -37,7 +35,6 @@ class BackupFilesTest {
         context =
             mockk {
                 every { filesDir } returns files
-                every { contentResolver } returns resolver
             }
         mockkStatic(Uri::class)
         every { Uri.parse(any()) } answers { uri(firstArg()) }
@@ -64,7 +61,9 @@ class BackupFilesTest {
         }
 
     @Test fun exportCopiesOwnedAndProviderFilesAndDeduplicatesByContent() {
-        val exporter = BackupFiles(context, payload)
+        val providerUri = "content://provider/image"
+        val providerFile = temporary.newFile().apply { writeText("photo bytes") }
+        val exporter = BackupFiles(context, payload, mapOf(providerUri to providerFile))
         val photo = photo()
         val first = mutableMapOf<String, JsonElement>("photoUri" to JsonPrimitive(photo.toURI().toString()))
         exporter.export("yarn_cards", first) {}
@@ -73,9 +72,8 @@ class BackupFilesTest {
         for (source in listOf(
             photo.toURI().toString(),
             photo("second.jpg").toURI().toString(),
-            "content://provider/image",
+            providerUri,
         )) {
-            every { resolver.openInputStream(any()) } answers { "photo bytes".byteInputStream() }
             val row = mutableMapOf<String, JsonElement>("photoUri" to JsonPrimitive(source))
             exporter.export("yarn_cards", row) {}
             assertEquals(first, row)
@@ -112,7 +110,6 @@ class BackupFilesTest {
         assertThrows(BackupException::class.java) {
             exporter.export("yarn_cards", mutableMapOf("photoUri" to JsonPrimitive("https://example.com/image"))) {}
         }
-        every { resolver.openInputStream(any()) } returns null
         assertThrows(BackupException::class.java) {
             exporter.export("yarn_cards", mutableMapOf("photoUri" to JsonPrimitive("content://provider/missing"))) {}
         }

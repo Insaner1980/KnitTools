@@ -15,6 +15,7 @@ import java.nio.file.Files
 internal class BackupFiles(
     private val context: Context,
     private val directory: File,
+    private val externalFiles: Map<String, File> = emptyMap(),
 ) {
     private val exported = mutableMapOf<String, String>()
 
@@ -37,12 +38,11 @@ internal class BackupFiles(
                 val local = AppFileStorage.resolveAppOwnedFile(context, parsed)
                 if (local != null) requireDurable(local)
                 BackupFormat.requireValid(local != null || parsed.scheme == "content", BackupError.READ)
+                val sourceFile = local ?: externalFiles[uri]
+                BackupFormat.requireValid(sourceFile?.isFile == true, BackupError.READ)
                 val temporary = File(directory, "file-copy.tmp")
                 try {
-                    val input =
-                        local?.inputStream() ?: context.contentResolver.openInputStream(parsed)
-                            ?: throw BackupException(BackupError.READ)
-                    input.use { source ->
+                    checkNotNull(sourceFile).inputStream().use { source ->
                         FileOutputStream(temporary).use { output ->
                             BackupFormat.copy(source, output, BackupFormat.MAX_FILE) {
                                 check()

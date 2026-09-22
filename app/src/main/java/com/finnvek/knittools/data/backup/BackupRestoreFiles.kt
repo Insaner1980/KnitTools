@@ -16,10 +16,13 @@ import java.util.UUID
 internal class BackupRestoreFiles(
     private val context: Context,
     private val directory: File,
+    private val budget: BackupBudget = BackupBudget(),
 ) {
     private val token = UUID.randomUUID().toString()
     private val copies = linkedMapOf<File, File>()
-    val requiredBytes: Long get() = copies.values.sumOf { it.length() }
+    private val referencedArchivePaths = mutableSetOf<String>()
+    val requiredBytes: Long get() = budget.requiredDurableCopyBytes
+    val archivePaths: Set<String> get() = referencedArchivePaths
 
     fun rebase(
         table: String,
@@ -44,7 +47,15 @@ internal class BackupRestoreFiles(
                 else -> "pattern_pdfs/0/restore-$token-$name.pdf"
             }
         val file = File(context.filesDir, target)
-        copies[file] = File(directory, path)
+        val source = File(directory, path)
+        BackupFormat.requireValid(source.isFile, BackupError.VALIDATION)
+        BackupFormat.requireValid(
+            source.length() <= BackupFormat.durableFileLimit(table),
+            BackupError.VALIDATION,
+        )
+        referencedArchivePaths += path
+        budget.addDurableCopy(file.canonicalPath, source.length())
+        copies[file] = source
         row[column] = JsonPrimitive(file.toUri().toString())
     }
 

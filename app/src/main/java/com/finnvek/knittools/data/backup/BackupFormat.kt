@@ -1,6 +1,7 @@
 package com.finnvek.knittools.data.backup
 
 import android.annotation.SuppressLint
+import com.finnvek.knittools.data.storage.YarnPhotoStorage
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.io.File
@@ -57,13 +58,13 @@ internal object BackupFormat {
     const val EXTENSION = "knittools-backup"
     const val MIME = "application/octet-stream"
     const val MANIFEST = "manifest.json"
-    const val MAX_ENTRIES = 100_000
-    const val MAX_FILE = 2L * 1024 * 1024 * 1024
-    const val MAX_TOTAL = 16L * 1024 * 1024 * 1024
-    const val MAX_TABLE = 256L * 1024 * 1024
-    const val MAX_MANIFEST = 32L * 1024 * 1024
-    const val MAX_ROW = 8 * 1024 * 1024
-    const val MAX_ROWS = 2_000_000
+    const val MAX_ENTRIES = 2_019
+    const val MAX_FILE = BackupLimits.MAX_DURABLE_FILE_BYTES
+    const val MAX_TOTAL = BackupLimits.MAX_ARCHIVE_BYTES
+    const val MAX_TABLE = BackupLimits.MAX_TABLE_BYTES
+    const val MAX_MANIFEST = 512L * 1_024L
+    const val MAX_ROW = BackupLimits.MAX_ROW_CHARACTERS
+    const val MAX_ROWS = BackupLimits.MAX_ROWS_PER_TABLE
     const val RESERVE = 32L * 1024 * 1024
     val json = Json { encodeDefaults = true }
     val hashPattern = Regex("[0-9a-f]{64}")
@@ -91,11 +92,15 @@ internal object BackupFormat {
             "project_completions",
         )
     val tablePaths = tables.map { "tables/$it.jsonl" }.toSet()
+    val identityTables = tables - setOf("active_sessions", "project_folder_assignments")
     private val filePath = Regex("files/[0-9a-f]{64}\\.bin")
 
     fun allowedPath(path: String): Boolean = path in tablePaths || filePath.matches(path)
 
     fun limit(path: String): Long = if (path in tablePaths) MAX_TABLE else MAX_FILE
+
+    fun durableFileLimit(table: String): Long =
+        if (table == "yarn_cards") YarnPhotoStorage.YARN_PHOTO_MAX_BYTES else MAX_FILE
 
     fun requireValid(
         value: Boolean,
@@ -144,7 +149,9 @@ internal object BackupFormat {
         directory: File,
         bytes: Long,
     ) {
-        if (bytes < 0 || directory.usableSpace < bytes + RESERVE) throw BackupException(BackupError.SPACE)
+        if (bytes < 0 || bytes > Long.MAX_VALUE - RESERVE || directory.usableSpace < bytes + RESERVE) {
+            throw BackupException(BackupError.SPACE)
+        }
     }
 
     fun digest(
@@ -173,15 +180,38 @@ internal object BackupFormat {
         maxBytes: Long,
         check: () -> Unit = {},
     ): Long {
+        requireValid(maxBytes >= 0L)
         var total = 0L
         val buffer = ByteArray(64 * 1024)
         while (true) {
             check()
             val count = input.read(buffer)
             if (count < 0) return total
+            requireValid(total <= maxBytes && count.toLong() <= maxBytes - total)
             total += count
-            requireValid(total <= maxBytes)
             output.write(buffer, 0, count)
         }
+    }
+
+    fun addWithinLimit(
+        current: Long,
+        additional: Long,
+        limit: Long,
+        error: BackupError = BackupError.CORRUPT,
+    ): Long {
+        requireValid(current >= 0L && additional >= 0L && limit >= 0L, error)
+        requireValid(current <= limit && additional <= limit - current, error)
+        return current + additional
+    }
+
+    fun multiplyWithinLimit(
+        value: Long,
+        multiplier: Long,
+        limit: Long = Long.MAX_VALUE,
+        error: BackupError = BackupError.SPACE,
+    ): Long {
+        requireValid(value >= 0L && multiplier >= 0L && limit >= 0L, error)
+        requireValid(value == 0L || multiplier <= limit / value, error)
+        return value * multiplier
     }
 }

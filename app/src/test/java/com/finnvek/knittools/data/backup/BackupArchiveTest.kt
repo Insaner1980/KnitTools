@@ -115,6 +115,78 @@ class BackupArchiveTest {
         }
     }
 
+    @Test fun manifestBudgetsAcceptExactMobileLimitsAndRejectLimitPlusOne() {
+        fun tableEntries(sizes: Map<String, Long> = emptyMap()) =
+            BackupFormat.tablePaths.map { path -> BackupEntry(path, sizes[path] ?: 0L, "0".repeat(64)) }
+
+        fun file(
+            index: Int,
+            size: Long,
+        ): BackupEntry = BackupEntry("files/${index.toString(16).padStart(64, '0')}.bin", size, "0".repeat(64))
+
+        fun manifest(entries: List<BackupEntry>) =
+            BackupManifest(createdAt = 1, versionCode = 1, versionName = "1.0", entries = entries)
+
+        val tablePaths = BackupFormat.tablePaths.toList()
+        val exact =
+            tableEntries(
+                mapOf(
+                    tablePaths[0] to BackupLimits.MAX_TABLE_BYTES,
+                    tablePaths[1] to BackupLimits.MAX_TABLE_BYTES,
+                ),
+            ) +
+                listOf(
+                    file(1, BackupLimits.MAX_DURABLE_FILE_BYTES),
+                    file(2, BackupLimits.MAX_DURABLE_FILE_BYTES),
+                    file(3, BackupLimits.MAX_DURABLE_BYTES - 2 * BackupLimits.MAX_DURABLE_FILE_BYTES),
+                )
+        BackupArchive.validateManifest(manifest(exact))
+
+        assertThrows(BackupException::class.java) {
+            BackupArchive.validateManifest(
+                manifest(tableEntries(mapOf(tablePaths[0] to BackupLimits.MAX_TABLE_BYTES + 1))),
+            )
+        }
+        assertThrows(BackupException::class.java) {
+            BackupArchive.validateManifest(
+                manifest(
+                    tableEntries(
+                        mapOf(
+                            tablePaths[0] to BackupLimits.MAX_TABLE_BYTES,
+                            tablePaths[1] to BackupLimits.MAX_TABLE_BYTES,
+                            tablePaths[2] to 1,
+                        ),
+                    ),
+                ),
+            )
+        }
+        assertThrows(BackupException::class.java) {
+            BackupArchive.validateManifest(
+                manifest(tableEntries() + file(1, BackupLimits.MAX_DURABLE_FILE_BYTES + 1)),
+            )
+        }
+        assertThrows(BackupException::class.java) {
+            BackupArchive.validateManifest(
+                manifest(
+                    tableEntries() +
+                        listOf(
+                            file(1, BackupLimits.MAX_DURABLE_FILE_BYTES),
+                            file(2, BackupLimits.MAX_DURABLE_FILE_BYTES),
+                            file(3, BackupLimits.MAX_DURABLE_BYTES - 2 * BackupLimits.MAX_DURABLE_FILE_BYTES + 1),
+                        ),
+                ),
+            )
+        }
+
+        val exactFileCount =
+            tableEntries() +
+                List(BackupLimits.MAX_DURABLE_FILE_COUNT.toInt()) { index -> file(index, 0) }
+        BackupArchive.validateManifest(manifest(exactFileCount))
+        assertThrows(BackupException::class.java) {
+            BackupArchive.validateManifest(manifest(exactFileCount + file(Int.MAX_VALUE, 0)))
+        }
+    }
+
     private fun fixture(): Pair<File, BackupManifest> {
         val directory = temporary.newFolder()
         val paths = BackupFormat.tablePaths + "files/${"a".repeat(64)}.bin"

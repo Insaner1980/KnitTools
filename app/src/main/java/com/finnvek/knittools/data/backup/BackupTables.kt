@@ -23,6 +23,21 @@ internal data class BackupColumn(
 )
 
 internal object BackupTables {
+    fun preflight(
+        db: SupportSQLiteDatabase,
+        directory: File,
+        budget: BackupBudget = BackupBudget(),
+        check: () -> Unit = {},
+        consume: (String, MutableMap<String, JsonElement>) -> Unit = { _, _ -> },
+    ) {
+        BackupFormat.tables.forEach { table ->
+            read(directory, table, columns(db, table).map { it.name }, check, budget) { row ->
+                consume(table, row)
+            }
+        }
+        budget.complete()
+    }
+
     fun preflightYarnCardIds(
         directory: File,
         columns: List<String>,
@@ -49,6 +64,7 @@ internal object BackupTables {
         db: SupportSQLiteDatabase,
         directory: File,
         transform: (String, MutableMap<String, JsonElement>) -> Unit,
+        budget: BackupBudget = BackupBudget(),
         check: () -> Unit,
     ) {
         BackupFormat.requireValid(db.version == 25, BackupError.UNSUPPORTED)
@@ -56,13 +72,20 @@ internal object BackupTables {
             val columns = columns(db, table)
             val file = File(directory, "tables/$table.jsonl")
             file.parentFile?.mkdirs()
+            val header = JsonArray(columns.map { JsonPrimitive(it.name) }).toString()
+            var tableBytes =
+                BackupFormat.addWithinLimit(
+                    0L,
+                    header.toByteArray(Charsets.UTF_8).size.toLong() + 1L,
+                    budget.limits.maxTableBytes,
+                    BackupError.VALIDATION,
+                )
             file.bufferedWriter().use { output ->
-                output.appendLine(JsonArray(columns.map { JsonPrimitive(it.name) }).toString())
+                output.append(header).append('\n')
                 db.query("SELECT * FROM `$table`").use { cursor ->
-                    var count = 0
                     while (cursor.moveToNext()) {
                         check()
-                        BackupFormat.requireValid(++count <= BackupFormat.MAX_ROWS)
+                        budget.addRow(table)
                         val row =
                             columns
                                 .associate {
@@ -72,14 +95,24 @@ internal object BackupTables {
                                         )
                                 }.toMutableMap()
                         transform(table, row)
+                        validateFields(table, row, budget)
+                        budget.observeRow(table, row)
                         val line = JsonArray(columns.map { row.getValue(it.name) }).toString()
-                        BackupFormat.requireValid(line.length <= BackupFormat.MAX_ROW)
-                        output.appendLine(line)
-                        BackupFormat.requireValid(file.length() <= BackupFormat.MAX_TABLE)
+                        budget.requireRowLength(line.length)
+                        tableBytes =
+                            BackupFormat.addWithinLimit(
+                                tableBytes,
+                                line.toByteArray(Charsets.UTF_8).size.toLong() + 1L,
+                                budget.limits.maxTableBytes,
+                                BackupError.VALIDATION,
+                            )
+                        output.append(line).append('\n')
                     }
                 }
             }
+            budget.addTable(table, file.length())
         }
+        budget.complete()
     }
 
     fun import(
@@ -87,13 +120,14 @@ internal object BackupTables {
         directory: File,
         transform: (String, MutableMap<String, JsonElement>) -> Unit = { _, _ -> },
         check: () -> Unit = {},
+        budget: BackupBudget = BackupBudget(),
     ) {
         BackupFormat.tables.forEach { table ->
             val columns = columns(db, table)
             val names = columns.joinToString(",") { "`${it.name}`" }
             val placeholders = columns.joinToString(",") { "?" }
             db.compileStatement("INSERT INTO `$table` ($names) VALUES ($placeholders)").use { statement ->
-                read(directory, table, columns.map { it.name }, check) { row ->
+                read(directory, table, columns.map { it.name }, check, budget) { row ->
                     transform(table, row)
                     statement.clearBindings()
                     columns.forEachIndexed { index, column ->
@@ -128,6 +162,7 @@ internal object BackupTables {
                 }
             }
         }
+        budget.complete()
         verify(db)
     }
 
@@ -136,18 +171,20 @@ internal object BackupTables {
         table: String,
         columns: List<String>,
         check: () -> Unit = {},
+        budget: BackupBudget = BackupBudget(),
         consume: (MutableMap<String, JsonElement>) -> Unit,
     ) {
-        File(directory, "tables/$table.jsonl").bufferedReader().use { input ->
-            val headerText = input.boundedLine() ?: ""
+        val file = File(directory, "tables/$table.jsonl")
+        budget.addTable(table, file.length())
+        file.bufferedReader().use { input ->
+            val headerText = input.boundedLine(budget.limits.maxRowCharacters) ?: ""
             BackupFormat.requireJsonDepth(headerText, 1)
-            val header = BackupFormat.json.parseToJsonElement(headerText).jsonArray
-            BackupFormat.requireValid(header == JsonArray(columns.map(::JsonPrimitive)), BackupError.VALIDATION)
-            var count = 0
+            val expectedHeader = JsonArray(columns.map(::JsonPrimitive)).toString()
+            BackupFormat.requireValid(headerText == expectedHeader, BackupError.VALIDATION)
             while (true) {
                 check()
-                val line = input.boundedLine() ?: break
-                BackupFormat.requireValid(++count <= BackupFormat.MAX_ROWS, BackupError.VALIDATION)
+                val line = input.boundedLine(budget.limits.maxRowCharacters) ?: break
+                budget.addRow(table)
                 BackupFormat.requireJsonDepth(line, 1)
                 val values = BackupFormat.json.parseToJsonElement(line).jsonArray
                 BackupFormat.requireValid(
@@ -155,7 +192,9 @@ internal object BackupTables {
                     BackupError.VALIDATION,
                 )
                 val row = columns.zip(values).toMap().toMutableMap()
+                validateFields(table, row, budget)
                 validateYarnCardIds(table, row)
+                budget.observeRow(table, row)
                 consume(row)
             }
         }
@@ -276,7 +315,26 @@ internal object BackupTables {
             else -> throw BackupException(BackupError.VALIDATION)
         }
 
-    private fun BufferedReader.boundedLine(): String? {
+    private fun validateFields(
+        table: String,
+        row: Map<String, JsonElement>,
+        budget: BackupBudget,
+    ) {
+        row.values.forEach { value ->
+            if (value is JsonPrimitive && value.isString) budget.requireFieldLength(value.content.length)
+        }
+        if (table == "pattern_annotations") {
+            val payload = row["payloadJson"] as? JsonPrimitive
+            if (payload?.isString == true) {
+                BackupFormat.requireValid(
+                    payload.content.encodeToByteArray().size <= PatternAnnotationPayloadCodec.MAX_PAYLOAD_BYTES,
+                    BackupError.VALIDATION,
+                )
+            }
+        }
+    }
+
+    private fun BufferedReader.boundedLine(maxCharacters: Int): String? {
         val line = StringBuilder()
         while (true) {
             val value = read()
@@ -285,7 +343,7 @@ internal object BackupTables {
                 return null
             }
             if (value == '\n'.code) return line.toString()
-            BackupFormat.requireValid(line.length < BackupFormat.MAX_ROW)
+            BackupFormat.requireValid(line.length < maxCharacters, BackupError.VALIDATION)
             line.append(value.toChar())
         }
     }

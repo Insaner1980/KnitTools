@@ -7,12 +7,14 @@ import androidx.room.Room
 import androidx.room.withTransaction
 import com.finnvek.knittools.BuildConfig
 import com.finnvek.knittools.data.backup.BackupArchive
+import com.finnvek.knittools.data.backup.BackupBudget
 import com.finnvek.knittools.data.backup.BackupEntry
 import com.finnvek.knittools.data.backup.BackupError
 import com.finnvek.knittools.data.backup.BackupException
 import com.finnvek.knittools.data.backup.BackupFiles
 import com.finnvek.knittools.data.backup.BackupFormat
 import com.finnvek.knittools.data.backup.BackupIdentityMap
+import com.finnvek.knittools.data.backup.BackupLimits
 import com.finnvek.knittools.data.backup.BackupManifest
 import com.finnvek.knittools.data.backup.BackupPreview
 import com.finnvek.knittools.data.backup.BackupProviderIo
@@ -151,50 +153,7 @@ class BackupRepository
                     if (latestSelectionId == selectionId) latestSelectionId = null
                     try {
                         operationResult(BackupError.RESTORE) {
-                            val coroutine = currentCoroutineContext()
-                            val check = { coroutine.ensureActive() }
-                            val payload = File(directory, "payload")
-                            // Tarkistetaan valmistellut tavut uudelleen juuri ennen vahvistettua palautusta.
-                            validate(File(directory, BACKUP_ARCHIVE_NAME), payload, check)
-                            withContentLocks {
-                                withShadow(payload) { source ->
-                                    source.withTransaction {
-                                        BackupTables.import(source.openHelper.writableDatabase, payload, check = check)
-                                    }
-                                    database.withTransaction {
-                                        val live = database.openHelper.writableDatabase
-                                        val identities = BackupIdentityMap(source.openHelper.writableDatabase, live)
-                                        val files = BackupRestoreFiles(context, payload)
-                                        val replacement = File(directory, "replacement").apply { mkdirs() }
-                                        source.withTransaction {
-                                            BackupTables
-                                                .export(source.openHelper.writableDatabase, replacement, { table, row ->
-                                                    identities.apply(table, row)
-                                                    files.rebase(table, row)
-                                                }, check)
-                                        }
-                                        BackupFormat.space(
-                                            context.filesDir,
-                                            files.requiredBytes + databaseSpace(payload) +
-                                                live.path.orEmpty().let {
-                                                    File(
-                                                        it,
-                                                    ).length() + File("$it-wal").length()
-                                                },
-                                        )
-                                        files.journal(BackupTables.references(live))
-                                        files.publish(check)
-                                        check()
-                                        BackupTables.clear(live)
-                                        BackupTables.import(live, replacement, check = check)
-                                        identities.reserveIds(live)
-                                        BackupTables.references(live).forEach { uri ->
-                                            val file = AppFileStorage.resolveAppOwnedFile(context, uri.toUri())
-                                            BackupFormat.requireValid(file?.isFile == true, BackupError.RESTORE)
-                                        }
-                                    }
-                                }
-                            }
+                            restoreValidated(directory)
                         }
                     } finally {
                         withContext(NonCancellable) { cleanup(directory) }
@@ -202,6 +161,97 @@ class BackupRepository
                     refreshWidgets()
                 }
             }
+
+        private suspend fun restoreValidated(directory: File) {
+            val coroutine = currentCoroutineContext()
+            val check = { coroutine.ensureActive() }
+            val payload = File(directory, "payload")
+            // Tarkistetaan valmistellut tavut uudelleen juuri ennen vahvistettua palautusta.
+            validate(File(directory, BACKUP_ARCHIVE_NAME), payload, check)
+            withContentLocks {
+                withShadow(payload) { source ->
+                    source.withTransaction {
+                        BackupTables.import(source.openHelper.writableDatabase, payload, check = check)
+                    }
+                    database.withTransaction {
+                        replaceLiveData(directory, payload, source, check)
+                    }
+                }
+            }
+        }
+
+        private suspend fun replaceLiveData(
+            directory: File,
+            payload: File,
+            source: KnitToolsDatabase,
+            check: () -> Unit,
+        ) {
+            val live = database.openHelper.writableDatabase
+            val identities = BackupIdentityMap(source.openHelper.writableDatabase, live)
+            val replacementBudget = BackupBudget(trackEmbeddedIdentities = false)
+            val files = BackupRestoreFiles(context, payload, replacementBudget)
+            val replacement = buildReplacement(directory, source, identities, files, replacementBudget, check)
+            BackupFormat.space(context.filesDir, restoreSpace(payload, live.path.orEmpty(), files.requiredBytes))
+            files.journal(BackupTables.references(live))
+            files.publish(check)
+            check()
+            BackupTables.clear(live)
+            BackupTables.import(
+                live,
+                replacement,
+                check = check,
+                budget = BackupBudget(trackEmbeddedIdentities = false),
+            )
+            identities.reserveIds(live)
+            BackupTables.references(live).forEach { uri ->
+                val file = AppFileStorage.resolveAppOwnedFile(context, uri.toUri())
+                BackupFormat.requireValid(file?.isFile == true, BackupError.RESTORE)
+            }
+        }
+
+        private suspend fun buildReplacement(
+            directory: File,
+            source: KnitToolsDatabase,
+            identities: BackupIdentityMap,
+            files: BackupRestoreFiles,
+            budget: BackupBudget,
+            check: () -> Unit,
+        ): File =
+            File(directory, "replacement").apply {
+                mkdirs()
+                source.withTransaction {
+                    BackupTables.export(
+                        source.openHelper.writableDatabase,
+                        this@apply,
+                        { table, row ->
+                            identities.apply(table, row)
+                            files.rebase(table, row)
+                        },
+                        budget,
+                        check,
+                    )
+                }
+            }
+
+        private fun restoreSpace(
+            payload: File,
+            livePath: String,
+            fileBytes: Long,
+        ): Long {
+            val liveBytes =
+                BackupFormat.addWithinLimit(
+                    File(livePath).length(),
+                    File("$livePath-wal").length(),
+                    Long.MAX_VALUE,
+                    BackupError.SPACE,
+                )
+            return BackupFormat.addWithinLimit(
+                BackupFormat.addWithinLimit(fileBytes, databaseSpace(payload), Long.MAX_VALUE, BackupError.SPACE),
+                liveBytes,
+                Long.MAX_VALUE,
+                BackupError.SPACE,
+            )
+        }
 
         suspend fun cancelPreview(selectionId: UUID?) =
             withContext(ioDispatcher) {
@@ -249,12 +299,17 @@ class BackupRepository
             check: () -> Unit,
         ): File {
             val payload = File(directory, "payload").apply { mkdirs() }
-            val files = BackupFiles(context, payload, externalFiles)
+            val budget = BackupBudget()
+            val files = BackupFiles(context, payload, externalFiles, budget)
             withContentLocks {
                 database.withTransaction {
-                    BackupTables.export(database.openHelper.writableDatabase, payload, { table, row ->
-                        files.export(table, row, check)
-                    }, check)
+                    BackupTables.export(
+                        database.openHelper.writableDatabase,
+                        payload,
+                        { table, row -> files.export(table, row, check) },
+                        budget,
+                        check,
+                    )
                 }
             }
             val entries =
@@ -276,7 +331,14 @@ class BackupRepository
                     versionName = BuildConfig.VERSION_NAME,
                     entries = entries,
                 )
-            BackupFormat.space(directory, entries.sumOf { it.size } + BackupFormat.MAX_MANIFEST)
+            val payloadBytes =
+                entries.fold(0L) { current, entry ->
+                    BackupFormat.addWithinLimit(current, entry.size, BackupLimits.MAX_EXTRACTED_BYTES)
+                }
+            BackupFormat.space(
+                directory,
+                BackupFormat.addWithinLimit(payloadBytes, BackupFormat.MAX_MANIFEST, Long.MAX_VALUE),
+            )
             val archive = File(directory, BACKUP_ARCHIVE_NAME)
             BackupArchive.write(payload, archive, manifest, check)
             val validation = File(directory, "validation").apply { mkdirs() }
@@ -291,27 +353,29 @@ class BackupRepository
             val references =
                 withContentLocks {
                     database.withTransaction {
-                        BackupTables.references(database.openHelper.writableDatabase)
+                        BackupFiles.boundedReferences(database.openHelper.writableDatabase)
                     }
                 }
             val external =
                 references
-                    .map { it to it.toUri() }
-                    .filter { (_, uri) ->
+                    .map { (reference, limit) -> Triple(reference, reference.toUri(), limit) }
+                    .filter { (_, uri, _) ->
                         AppFileStorage.resolveAppOwnedFile(context, uri) == null && uri.scheme == "content"
                     }
             if (external.isEmpty()) return emptyMap()
             val staging = File(directory, "provider-staging").apply { mkdirs() }
+            val budget = BackupBudget()
             return external
-                .mapIndexed { index, (reference, uri) ->
+                .mapIndexed { index, (reference, uri, maxBytes) ->
                     check()
                     val file = File(staging, "$index.tmp")
                     operationResult(BackupError.READ) {
-                        providerIo.read(uri, file, BackupFormat.MAX_FILE) {
+                        providerIo.read(uri, file, maxBytes) {
                             check()
                             BackupFormat.space(directory, 64 * 1024)
                         }
                     }
+                    budget.addDurableCopy("external:$reference", file.length())
                     reference to file
                 }.toMap()
         }
@@ -322,30 +386,38 @@ class BackupRepository
             check: () -> Unit,
         ): BackupPreview {
             val manifest = BackupArchive.extract(archive, payload, check)
+            val entries =
+                manifest.entries
+                    .filter { it.path.startsWith("files/") }
+                    .map { it.path }
+                    .toSet()
             BackupFormat.space(payload, databaseSpace(payload))
             return withShadow(payload) { db ->
                 db.withTransaction {
                     val sql = db.openHelper.writableDatabase
-                    BackupTables.preflightYarnCardIds(
+                    val preflightBudget = BackupBudget()
+                    val preflightFiles = BackupRestoreFiles(context, payload, preflightBudget)
+                    BackupTables.preflight(sql, payload, preflightBudget, check) { table, row ->
+                        preflightFiles.rebase(table, row)
+                    }
+                    BackupFormat.requireValid(preflightFiles.archivePaths == entries, BackupError.VALIDATION)
+                    BackupTables.import(
+                        sql,
                         payload,
-                        BackupTables.columns(sql, "counter_projects").map { it.name },
-                        check,
+                        check = check,
+                        budget = BackupBudget(trackEmbeddedIdentities = false),
                     )
-                    BackupTables.import(sql, payload, check = check)
                     val references = BackupTables.references(sql)
-                    val entries =
-                        manifest.entries
-                            .filter { it.path.startsWith("files/") }
-                            .map { it.path }
-                            .toSet()
                     BackupFormat.requireValid(references == entries, BackupError.VALIDATION)
                     val identities = BackupIdentityMap(sql, sql)
+                    val remapBudget = BackupBudget(trackEmbeddedIdentities = false)
                     BackupFormat.tables.forEach { table ->
                         BackupTables.read(
                             payload,
                             table,
                             BackupTables.columns(sql, table).map { it.name },
                             check,
+                            remapBudget,
                         ) { row ->
                             identities.apply(table, row)
                         }
@@ -429,8 +501,13 @@ class BackupRepository
                 BackupFormat.space(this, 0)
             }
 
-        private fun databaseSpace(payload: File): Long =
-            BackupFormat.tablePaths.sumOf { File(payload, it).length() } * 4
+        private fun databaseSpace(payload: File): Long {
+            val tableBytes =
+                BackupFormat.tablePaths.fold(0L) { current, path ->
+                    BackupFormat.addWithinLimit(current, File(payload, path).length(), Long.MAX_VALUE)
+                }
+            return BackupFormat.multiplyWithinLimit(tableBytes, 4L)
+        }
 
         private fun discardPending() {
             pending?.deleteRecursively()

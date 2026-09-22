@@ -156,6 +156,7 @@ internal class ContentResolverBackupProviderIo private constructor(
         deadline: ProviderDeadline,
         check: () -> Unit,
     ) {
+        BackupFormat.requireValid(maxBytes >= 0L)
         var total = 0L
         var resetDeadline = true
         val buffer = ByteArray(COPY_BUFFER_SIZE)
@@ -168,8 +169,8 @@ internal class ContentResolverBackupProviderIo private constructor(
                 continue
             }
             resetDeadline = true
+            BackupFormat.requireValid(total <= maxBytes && count.toLong() <= maxBytes - total)
             total += count
-            BackupFormat.requireValid(total <= maxBytes)
             output.write(buffer, 0, count)
         }
     }
@@ -181,14 +182,15 @@ internal class ContentResolverBackupProviderIo private constructor(
         deadline: ProviderDeadline,
         check: () -> Unit,
     ) {
+        BackupFormat.requireValid(maxBytes >= 0L)
         var total = 0L
         val buffer = ByteArray(COPY_BUFFER_SIZE)
         while (true) {
             check()
             val count = input.read(buffer)
             if (count < 0) return
+            BackupFormat.requireValid(total <= maxBytes && count.toLong() <= maxBytes - total)
             total += count
-            BackupFormat.requireValid(total <= maxBytes)
             deadline.call { output.write(buffer, 0, count) }
         }
     }

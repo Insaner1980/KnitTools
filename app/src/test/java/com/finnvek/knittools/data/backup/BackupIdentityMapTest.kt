@@ -53,6 +53,7 @@ class BackupIdentityMapTest {
                         backupCursor(
                             listOf(
                                 listOf("""{"extraCounterId":7}"""),
+                                listOf("""{"extraCounterId":7}"""),
                                 listOf("{}"),
                                 listOf("""{"extraCounterId":null}"""),
                             ),
@@ -183,6 +184,30 @@ class BackupIdentityMapTest {
                     "kind" to JsonPrimitive("CHART_TRACKER"),
                     "payloadJson" to JsonPrimitive("""{"extraCounterId":999}"""),
                 ),
+            )
+        }
+    }
+
+    @Test fun directConstructionEnforcesPerTableAndAggregateIdentityBudgets() {
+        val source = database()
+        val destination = database()
+        assertThrows(BackupException::class.java) {
+            BackupIdentityMap(
+                source,
+                destination,
+                BackupLimits(maxIdentitiesPerTable = 1, maxTotalIdentities = 100),
+            )
+        }
+        BackupIdentityMap(
+            source,
+            destination,
+            BackupLimits(maxIdentitiesPerTable = 3, maxTotalIdentities = 33),
+        )
+        assertThrows(BackupException::class.java) {
+            BackupIdentityMap(
+                source,
+                destination,
+                BackupLimits(maxIdentitiesPerTable = 3, maxTotalIdentities = 32),
             )
         }
     }

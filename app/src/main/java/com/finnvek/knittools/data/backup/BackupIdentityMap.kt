@@ -15,13 +15,14 @@ import java.util.UUID
 internal class BackupIdentityMap(
     source: SupportSQLiteDatabase,
     destination: SupportSQLiteDatabase,
+    limits: BackupLimits = BackupLimits(),
 ) {
     private val ids = mutableMapOf<String, Map<Long, Long>>()
     private val archiveKeyPrefix = "restored-key:${UUID.randomUUID()}:"
 
     init {
-        val identityTables = BackupFormat.tables - setOf("active_sessions", "project_folder_assignments")
-        identityTables.forEach { table ->
+        val budget = BackupBudget(limits)
+        BackupFormat.identityTables.forEach { table ->
             val maximum =
                 destination.query("SELECT COALESCE(MAX(id), 0) FROM `$table`").use {
                     it.moveToFirst()
@@ -31,31 +32,31 @@ internal class BackupIdentityMap(
                 destination.query("SELECT seq FROM sqlite_sequence WHERE name = ?", arrayOf(table)).use {
                     if (it.moveToFirst()) it.getLong(0) else 0
                 }
-            var next = maxOf(maximum, sequence)
-            val sourceIds =
-                source
-                    .query("SELECT id FROM `$table` ORDER BY id")
-                    .use { cursor ->
-                        buildSet { while (cursor.moveToNext()) add(cursor.getLong(0)) }
-                    }.toMutableSet()
-            if (table == "project_counters") {
-                source.query("SELECT payloadJson FROM pattern_annotations WHERE kind = 'CHART_TRACKER'").use { cursor ->
-                    while (cursor.moveToNext()) {
-                        BackupFormat.json
-                            .parseToJsonElement(cursor.getString(0))
-                            .jsonObject["extraCounterId"]
-                            ?.takeUnless { it == JsonNull }
-                            ?.jsonPrimitive
-                            ?.long
-                            ?.let(sourceIds::add)
-                    }
-                }
+            var next = maxOf(0L, maximum, sequence)
+            val mapping = linkedMapOf<Long, Long>()
+
+            fun retain(sourceId: Long) {
+                BackupFormat.requireValid(sourceId > 0L, BackupError.VALIDATION)
+                if (sourceId in mapping) return
+                budget.addIdentity(table)
+                BackupFormat.requireValid(next < Long.MAX_VALUE, BackupError.RESTORE)
+                mapping[sourceId] = ++next
             }
-            ids[table] =
-                sourceIds.associateWith {
-                    BackupFormat.requireValid(next < Long.MAX_VALUE, BackupError.RESTORE)
-                    ++next
-                }
+
+            source.query("SELECT id FROM `$table` ORDER BY id").use { cursor ->
+                while (cursor.moveToNext()) retain(cursor.getLong(0))
+            }
+            if (table == "project_counters") {
+                source
+                    .query(
+                        "SELECT payloadJson FROM pattern_annotations WHERE kind = 'CHART_TRACKER' ORDER BY id",
+                    ).use { cursor ->
+                        while (cursor.moveToNext()) {
+                            parseChartCounterId(cursor.getString(0), budget)?.let(::retain)
+                        }
+                    }
+            }
+            ids[table] = mapping
         }
     }
 

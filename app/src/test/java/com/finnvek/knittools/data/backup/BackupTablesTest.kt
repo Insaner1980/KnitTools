@@ -141,7 +141,7 @@ class BackupTablesTest {
                 writeText("[\"timestamp\"]\n[9223372036854775807]\n[null]\n")
             }
         }
-        BackupTables.import(db, folder)
+        BackupTables.import(db, folder, budget = BackupBudget(trackEmbeddedIdentities = false))
         verify { statement.bindLong(1, Long.MAX_VALUE) }
         verify { statement.bindNull(1) }
     }
@@ -177,5 +177,30 @@ class BackupTablesTest {
             }
         }
         assertThrows(BackupException::class.java) { BackupTables.export(db, temporary.newFolder(), { _, _ -> }) {} }
+    }
+
+    @Test fun exportAndRestoreRejectTheSameOversizedTextField() {
+        val limits = BackupLimits(maxFieldCharacters = 4, maxRowCharacters = 100)
+        val db = database()
+        every { db.query(match<String> { it.startsWith("SELECT *") }) } answers {
+            backupCursor(listOf(listOf(1L, "12345", 2.5, null))).also {
+                every { it.getColumnIndexOrThrow(any()) } answers
+                    { columns.indexOfFirst { it[1] == firstArg<String>() } }
+            }
+        }
+        assertThrows(BackupException::class.java) {
+            BackupTables.export(db, temporary.newFolder(), { _, _ -> }, BackupBudget(limits)) {}
+        }
+
+        val folder = temporary.newFolder()
+        File(folder, "tables/sessions.jsonl").apply {
+            requireNotNull(parentFile).mkdirs()
+            writeText("[\"name\"]\n[\"1234\"]\n")
+        }
+        BackupTables.read(folder, "sessions", listOf("name"), budget = BackupBudget(limits)) {}
+        File(folder, "tables/sessions.jsonl").writeText("[\"name\"]\n[\"12345\"]\n")
+        assertThrows(BackupException::class.java) {
+            BackupTables.read(folder, "sessions", listOf("name"), budget = BackupBudget(limits)) {}
+        }
     }
 }

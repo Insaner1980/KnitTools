@@ -2,6 +2,7 @@ package com.finnvek.knittools.data.backup
 
 import android.content.Context
 import androidx.core.net.toUri
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.finnvek.knittools.data.storage.AppFileStorage
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
@@ -16,6 +17,7 @@ internal class BackupFiles(
     private val context: Context,
     private val directory: File,
     private val externalFiles: Map<String, File> = emptyMap(),
+    private val budget: BackupBudget = BackupBudget(),
 ) {
     private val exported = mutableMapOf<String, String>()
 
@@ -32,6 +34,12 @@ internal class BackupFiles(
                 ?.content
                 .orEmpty()
         if (uri.isBlank()) return
+        if (uri !in exported) {
+            BackupFormat.requireValid(
+                exported.size.toLong() < budget.limits.maxDurableFileCount,
+                BackupError.WRITE,
+            )
+        }
         val path =
             exported.getOrPut(uri) {
                 val parsed = uri.toUri()
@@ -40,11 +48,15 @@ internal class BackupFiles(
                 BackupFormat.requireValid(local != null || parsed.scheme == "content", BackupError.READ)
                 val sourceFile = local ?: externalFiles[uri]
                 BackupFormat.requireValid(sourceFile?.isFile == true, BackupError.READ)
+                BackupFormat.requireValid(
+                    checkNotNull(sourceFile).length() <= BackupFormat.durableFileLimit(table),
+                    BackupError.WRITE,
+                )
                 val temporary = File(directory, "file-copy.tmp")
                 try {
-                    checkNotNull(sourceFile).inputStream().use { source ->
+                    sourceFile.inputStream().use { source ->
                         FileOutputStream(temporary).use { output ->
-                            BackupFormat.copy(source, output, BackupFormat.MAX_FILE) {
+                            BackupFormat.copy(source, output, BackupFormat.durableFileLimit(table)) {
                                 check()
                                 BackupFormat.space(directory, 64 * 1024)
                             }
@@ -59,6 +71,16 @@ internal class BackupFiles(
                     deleteTemporaryFile(temporary)
                 }
             }
+        BackupFormat.requireValid(
+            File(directory, path).length() <= BackupFormat.durableFileLimit(table),
+            BackupError.WRITE,
+        )
+        val copyKey =
+            when (table) {
+                "progress_photos", "yarn_cards" -> "$table:${row["id"]?.jsonPrimitive?.content}"
+                else -> "pdf:$path"
+            }
+        budget.addDurableCopy(copyKey, File(directory, path).length())
         row[column] = JsonPrimitive(path)
     }
 
@@ -71,6 +93,26 @@ internal class BackupFiles(
     }
 
     companion object {
+        fun boundedReferences(db: SupportSQLiteDatabase): Map<String, Long> =
+            buildMap {
+                columns.forEach { (table, column) ->
+                    db
+                        .query(
+                            "SELECT DISTINCT `$column` FROM `$table` WHERE `$column` IS NOT NULL AND `$column` != ''",
+                        ).use { cursor ->
+                            while (cursor.moveToNext()) {
+                                val reference = cursor.getString(0)
+                                val limit = BackupFormat.durableFileLimit(table)
+                                put(reference, minOf(get(reference) ?: limit, limit))
+                                BackupFormat.requireValid(
+                                    size.toLong() <= BackupLimits.MAX_DURABLE_FILE_COUNT,
+                                    BackupError.WRITE,
+                                )
+                            }
+                        }
+                }
+            }
+
         fun deleteTemporaryFile(file: File) {
             try {
                 Files.deleteIfExists(file.toPath())

@@ -17,6 +17,7 @@ import com.finnvek.knittools.data.backup.BackupArchive
 import com.finnvek.knittools.data.backup.BackupError
 import com.finnvek.knittools.data.backup.BackupException
 import com.finnvek.knittools.data.backup.BackupFormat
+import com.finnvek.knittools.data.backup.BackupLimits
 import com.finnvek.knittools.data.backup.BackupPreview
 import com.finnvek.knittools.data.backup.BackupProviderIo
 import com.finnvek.knittools.data.backup.BackupRestoreFiles
@@ -208,6 +209,55 @@ class BackupRepositoryTest {
             assertEquals(references, BackupTables.references(db.openHelper.writableDatabase))
             references.forEach { assertTrue(AppFileStorage.resolveAppOwnedFile(context, it.toUri())?.exists() == true) }
             assertTrue(File(context.noBackupFilesDir, "manual-backup").listFiles().orEmpty().isEmpty())
+        }
+
+    @Test fun oversizedFieldsAreRejectedBeforePreviewAndAgainAtConfirmationWithoutLiveMutation() =
+        runBlocking {
+            seed()
+            db.openHelper.writableDatabase.execSQL("UPDATE counter_projects SET name = 'Current'")
+            val archive = File(directory, "oversized-source")
+            repository.export(archive.toUri())
+            rewriteTableText(
+                archive,
+                "counter_projects",
+                "notes",
+                "x".repeat(BackupLimits.MAX_FIELD_CHARACTERS + 1),
+            )
+
+            expectBackupFailure { prepare(archive.toUri()) }
+            assertEquals("Current", text("SELECT name FROM counter_projects"))
+            assertTrue(File(context.noBackupFilesDir, "manual-backup").listFiles().orEmpty().isEmpty())
+
+            val valid = File(directory, "valid-source")
+            repository.export(valid.toUri())
+            prepare(valid.toUri())
+            val staged = File(context.noBackupFilesDir, "manual-backup/$selectionId/backup.zip")
+            rewriteTableText(
+                staged,
+                "counter_projects",
+                "notes",
+                "x".repeat(BackupLimits.MAX_FIELD_CHARACTERS + 1),
+            )
+
+            expectBackupFailure { repository.restore(selectionId) }
+            assertEquals("Current", text("SELECT name FROM counter_projects"))
+            assertTrue(File(context.noBackupFilesDir, "manual-backup").listFiles().orEmpty().isEmpty())
+        }
+
+    @Test fun exportRefusesContentThatTheRestoreBudgetWouldReject() =
+        runBlocking {
+            seed()
+            val oversized = "x".repeat(BackupLimits.MAX_FIELD_CHARACTERS + 1)
+            db.openHelper.writableDatabase.execSQL(
+                "UPDATE counter_projects SET notes = ?",
+                arrayOf(oversized),
+            )
+            val archive = File(directory, "rejected-export")
+
+            expectBackupFailure { repository.export(archive.toUri()) }
+
+            assertEquals(oversized.length.toLong(), number("SELECT LENGTH(notes) FROM counter_projects"))
+            assertFalse(archive.exists())
         }
 
     @Test fun stalePreviewCannotRestoreOrDiscardAnotherSelectionsBackup() =
@@ -573,6 +623,40 @@ class BackupRepositoryTest {
             file.outputStream().use(document::writeTo)
         } finally {
             document.close()
+        }
+    }
+
+    private fun rewriteTableText(
+        archive: File,
+        tableName: String,
+        columnName: String,
+        value: String,
+    ) {
+        val payload = File(directory, "rewrite-${UUID.randomUUID()}").apply { mkdirs() }
+        try {
+            val manifest = BackupArchive.extract(archive, payload)
+            val table = File(payload, "tables/$tableName.jsonl")
+            val lines = table.readLines()
+            val header = BackupFormat.json.parseToJsonElement(lines.first()).jsonArray
+            val column = header.indexOf(JsonPrimitive(columnName))
+            val row =
+                BackupFormat.json
+                    .parseToJsonElement(lines[1])
+                    .jsonArray
+                    .toMutableList()
+            row[column] = JsonPrimitive(value)
+            table.writeText(lines.first() + "\n" + JsonArray(row) + "\n")
+            val updated =
+                manifest.copy(
+                    entries =
+                        manifest.entries.map { entry ->
+                            val file = File(payload, entry.path)
+                            entry.copy(size = file.length(), sha256 = BackupFormat.digest(file))
+                        },
+                )
+            BackupArchive.write(payload, archive, updated)
+        } finally {
+            payload.deleteRecursively()
         }
     }
 

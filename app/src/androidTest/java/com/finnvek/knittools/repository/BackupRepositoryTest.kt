@@ -260,6 +260,67 @@ class BackupRepositoryTest {
             assertFalse(archive.exists())
         }
 
+    @Test fun oversizedSessionsAreRejectedBeforePreviewAndAtConfirmationWithoutLiveMutation() =
+        runBlocking {
+            seed()
+            db.openHelper.writableDatabase.execSQL("UPDATE counter_projects SET name = 'Current'")
+            val archive = File(directory, "oversized-sessions")
+            repository.export(archive.toUri())
+            rewriteOversizedSessions(archive)
+            expectBackupFailure { prepare(archive.toUri()) }
+            assertEquals("Current", text("SELECT name FROM counter_projects"))
+            assertTrue(File(context.noBackupFilesDir, "manual-backup").listFiles().orEmpty().isEmpty())
+            val valid = File(directory, "valid-sessions")
+            repository.export(valid.toUri())
+            prepare(valid.toUri())
+            rewriteOversizedSessions(File(context.noBackupFilesDir, "manual-backup/$selectionId/backup.zip"))
+            expectBackupFailure { repository.restore(selectionId) }
+            assertEquals("Current", text("SELECT name FROM counter_projects"))
+            assertTrue(File(context.noBackupFilesDir, "manual-backup").listFiles().orEmpty().isEmpty())
+        }
+
+    @Test fun exportRefusesSessionsAboveTheRestoreCeiling() =
+        runBlocking {
+            seed()
+            val sql = db.openHelper.writableDatabase
+            sql.execSQL("DELETE FROM sessions")
+            sql.execSQL(
+                "WITH RECURSIVE n(x) AS (SELECT 1 UNION ALL SELECT x + 1 FROM n WHERE x < ?) " +
+                    "INSERT INTO sessions(projectId, startedAt, endedAt, startRow, endRow, " +
+                    "durationMinutes, durationSeconds, rowsWorked) " +
+                    "SELECT (SELECT MIN(id) FROM counter_projects), 1000, 2000, 0, 1, 1, 1, 1 FROM n",
+                arrayOf(BackupLimits.MAX_SESSION_ROWS + 1),
+            )
+            val archive = File(directory, "rejected-session-export")
+            expectBackupFailure { repository.export(archive.toUri()) }
+            assertFalse(archive.exists())
+            assertEquals(BackupLimits.MAX_SESSION_ROWS + 1, number("SELECT COUNT(*) FROM sessions"))
+        }
+
+    private fun rewriteOversizedSessions(archive: File) {
+        val payload = File(directory, "session-rewrite-${UUID.randomUUID()}").apply { mkdirs() }
+        try {
+            val manifest = BackupArchive.extract(archive, payload)
+            val table = File(payload, "tables/sessions.jsonl")
+            val lines = table.readLines()
+            table.bufferedWriter().use { writer ->
+                writer.appendLine(lines.first())
+                repeat((BackupLimits.MAX_SESSION_ROWS + 1).toInt()) { writer.appendLine(lines[1]) }
+            }
+            val updated =
+                manifest.copy(
+                    entries =
+                        manifest.entries.map { entry ->
+                            val file = File(payload, entry.path)
+                            entry.copy(size = file.length(), sha256 = BackupFormat.digest(file))
+                        },
+                )
+            BackupArchive.write(payload, archive, updated)
+        } finally {
+            payload.deleteRecursively()
+        }
+    }
+
     @Test fun stalePreviewCannotRestoreOrDiscardAnotherSelectionsBackup() =
         runBlocking {
             seed()

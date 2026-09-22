@@ -12,6 +12,7 @@ internal data class BackupLimits(
     val maxTableBytes: Long = MAX_TABLE_BYTES,
     val maxTableTotalBytes: Long = MAX_TABLE_TOTAL_BYTES,
     val maxRowsPerTable: Long = MAX_ROWS_PER_TABLE,
+    val maxSessionRows: Long = MAX_SESSION_ROWS,
     val maxTotalRows: Long = MAX_TOTAL_ROWS,
     val maxRowCharacters: Int = MAX_ROW_CHARACTERS,
     val maxFieldCharacters: Int = MAX_FIELD_CHARACTERS,
@@ -27,6 +28,7 @@ internal data class BackupLimits(
         const val MAX_TABLE_BYTES = 32L * 1_024L * 1_024L
         const val MAX_TABLE_TOTAL_BYTES = 64L * 1_024L * 1_024L
         const val MAX_ROWS_PER_TABLE = 100_000L
+        const val MAX_SESSION_ROWS = 10_000L
         const val MAX_TOTAL_ROWS = 250_000L
         const val MAX_ROW_CHARACTERS = 2 * 1_024 * 1_024
         const val MAX_FIELD_CHARACTERS = 256 * 1_024
@@ -92,7 +94,13 @@ internal class BackupBudget(
     }
 
     fun addRow(table: String) {
-        val tableRows = BackupFormat.addWithinLimit(rowsByTable[table] ?: 0L, 1L, limits.maxRowsPerTable)
+        val rowLimit =
+            if (table == "sessions") {
+                minOf(limits.maxRowsPerTable, limits.maxSessionRows, BackupLimits.MAX_SESSION_ROWS)
+            } else {
+                limits.maxRowsPerTable
+            }
+        val tableRows = BackupFormat.addWithinLimit(rowsByTable[table] ?: 0L, 1L, rowLimit)
         rowsByTable[table] = tableRows
         totalRows = BackupFormat.addWithinLimit(totalRows, 1L, limits.maxTotalRows)
         if (table in BackupFormat.identityTables) addIdentity(table)

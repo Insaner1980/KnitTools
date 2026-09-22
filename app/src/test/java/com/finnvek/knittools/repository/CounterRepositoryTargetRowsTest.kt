@@ -157,16 +157,39 @@ private class StubSessionDao : SessionDao {
 
     override fun getAllSessions(projectId: Long?): Flow<List<SessionEntity>> = flowOf(emptyList())
 
-    override fun getAllSessionsForInsights(): Flow<List<SessionEntity>> = flowOf(emptyList())
+    override suspend fun getFirstSessionStart(projectId: Long?): Long? = null
 
-    override fun getAllSessionsForInsightsSince(start: Long): Flow<List<SessionEntity>> = flowOf(emptyList())
+    override suspend fun getInsightFirstDateBatch(
+        projectId: Long?,
+        afterId: Long,
+        latestStart: Long,
+    ): List<com.finnvek.knittools.data.local.SessionStart> = emptyList()
 
-    override fun getProjectSessionsForInsights(projectId: Long): Flow<List<SessionEntity>> = flowOf(emptyList())
+    override fun observeSessionChanges(): Flow<Boolean> = flowOf(false)
 
-    override fun getProjectSessionsForInsightsSince(
-        projectId: Long,
+    override suspend fun hasAnySessions(): Boolean = false
+
+    override suspend fun getSessionProjectActivity(
+        projectId: Long?,
+    ): List<com.finnvek.knittools.data.local.SessionProjectActivity> = emptyList()
+
+    override suspend fun getInsightSessionBatch(afterId: Long): List<SessionEntity> = emptyList()
+
+    override suspend fun getInsightSessionBatchSince(
+        afterId: Long,
         start: Long,
-    ): Flow<List<SessionEntity>> = flowOf(emptyList())
+    ): List<SessionEntity> = emptyList()
+
+    override suspend fun getProjectInsightSessionBatch(
+        projectId: Long,
+        afterId: Long,
+    ): List<SessionEntity> = emptyList()
+
+    override suspend fun getProjectInsightSessionBatchSince(
+        projectId: Long,
+        afterId: Long,
+        start: Long,
+    ): List<SessionEntity> = emptyList()
 
     override suspend fun getLatestSession(projectId: Long): SessionEntity? = null
 

@@ -38,7 +38,7 @@ class InsightsCompletionViewModelTest {
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         every { repository.getAllProjects() } returns flowOf(emptyList())
-        every { repository.getSessionsForInsights(null, null) } returns flowOf(emptyList())
+        stubSessions(repository, flowOf(emptyList()))
         every { proManager.hasFeature(ProFeature.INSIGHTS_CHARTS) } returns false
         every { proManager.hasFeatureFlow(ProFeature.INSIGHTS_CHARTS) } returns flowOf(false)
         every { proManager.hasFeature(ProFeature.STREAK) } returns false

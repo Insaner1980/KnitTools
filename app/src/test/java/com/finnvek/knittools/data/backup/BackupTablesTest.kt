@@ -18,6 +18,47 @@ import org.junit.rules.TemporaryFolder
 import java.io.File
 
 class BackupTablesTest {
+    @Test fun sessionReadAndExportShareTheExactBoundaryIncludingDirectReads() {
+        val folder = temporary.newFolder()
+        val file = File(folder, "tables/sessions.jsonl").apply { requireNotNull(parentFile).mkdirs() }
+        file.writeText("[\"id\"]\n[1]\n[2]\n")
+        var consumed = 0
+        BackupTables.read(folder, "sessions", listOf("id"), budget = BackupBudget(BackupLimits(maxSessionRows = 2))) {
+            consumed++
+        }
+        assertEquals(2, consumed)
+        file.appendText("[3]\n")
+        consumed = 0
+        assertThrows(BackupException::class.java) {
+            BackupTables.read(
+                folder,
+                "sessions",
+                listOf("id"),
+                budget = BackupBudget(BackupLimits(maxSessionRows = 2)),
+            ) {
+                consumed++
+            }
+        }
+        assertEquals(2, consumed)
+        val db = database()
+        every { db.query("SELECT * FROM `sessions`") } answers {
+            backupCursor(List(3) { listOf(1L, "Wool", 2.5, null) }).also { cursor ->
+                every { cursor.getColumnIndexOrThrow(any()) } answers
+                    { columns.indexOfFirst { it[1] == firstArg<String>() } }
+            }
+        }
+        assertThrows(BackupException::class.java) {
+            BackupTables.export(db, folder, { _, _ -> }, BackupBudget(BackupLimits(maxSessionRows = 2))) {}
+        }
+    }
+
+    @Test fun directDatabaseVerificationCannotBypassTheSessionCeiling() {
+        val db = database()
+        every { db.query("SELECT 1 FROM sessions LIMIT 1 OFFSET ${BackupLimits.MAX_SESSION_ROWS}") } returns
+            backupCursor(listOf(listOf(1)))
+        assertThrows(BackupException::class.java) { BackupTables.verify(db) }
+    }
+
     @get:Rule val temporary = TemporaryFolder()
     private val statement = mockk<SupportSQLiteStatement>(relaxed = true)
     private val columns =

@@ -205,6 +205,9 @@ internal object BackupTables {
     }
 
     fun verify(db: SupportSQLiteDatabase) {
+        db.query("SELECT 1 FROM sessions LIMIT 1 OFFSET ${BackupLimits.MAX_SESSION_ROWS}").use {
+            BackupFormat.requireValid(!it.moveToFirst(), BackupError.VALIDATION)
+        }
         db
             .query(
                 "PRAGMA foreign_key_check",

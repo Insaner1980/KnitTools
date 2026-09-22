@@ -7,6 +7,24 @@ import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class BackupBudgetTest {
+    @Test fun sessionsHaveAnIndependentCeilingThatCustomBudgetsCannotRelax() {
+        for (trackIdentities in listOf(true, false)) {
+            val budget =
+                BackupBudget(
+                    BackupLimits(maxSessionRows = Long.MAX_VALUE, maxRowsPerTable = Long.MAX_VALUE),
+                    trackEmbeddedIdentities = trackIdentities,
+                )
+            repeat(BackupLimits.MAX_SESSION_ROWS.toInt()) { budget.addRow("sessions") }
+            assertThrows(BackupException::class.java) { budget.addRow("sessions") }
+        }
+        val tighter = BackupBudget(BackupLimits(maxSessionRows = 2))
+        repeat(2) { tighter.addRow("sessions") }
+        assertThrows(BackupException::class.java) { tighter.addRow("sessions") }
+        val generic = BackupBudget(BackupLimits(maxRowsPerTable = 1))
+        generic.addRow("sessions")
+        assertThrows(BackupException::class.java) { generic.addRow("sessions") }
+    }
+
     @Test fun tableAndExtractedByteLimitsAcceptExactBoundaryAndRejectNextByte() {
         val limits =
             BackupLimits(

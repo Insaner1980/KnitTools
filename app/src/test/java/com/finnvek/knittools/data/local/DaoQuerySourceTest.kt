@@ -1,6 +1,7 @@
 package com.finnvek.knittools.data.local
 
 import com.finnvek.knittools.ProjectSourceFiles
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -124,7 +125,11 @@ class DaoQuerySourceTest {
 
         assertFalse(dao.contains("fun getSessionsForInsights("))
         assertFalse(dao.contains("(:start IS NULL OR endedAt >= :start)"))
-        assertTrue(dao.contains("WHERE endedAt >= :start"))
+        val boundedQuery = dao.substringBefore("suspend fun getInsightSessionBatchSince").substringAfterLast("@Query(")
+        assertTrue(boundedQuery.contains("WHERE id > :afterId"))
+        assertTrue(boundedQuery.contains("AND (endedAt >= :start OR endedAt < :start AND"))
+        assertEquals(1, ":afterId".toRegex().findAll(boundedQuery).count())
+        assertTrue(boundedQuery.contains("ORDER BY id LIMIT 256"))
         assertTrue(dao.contains("WHERE projectId = :projectId"))
         assertTrue(entity.contains("Index(value = [\"endedAt\", \"startedAt\"])"))
         assertTrue(entity.contains("Index(value = [\"projectId\", \"endedAt\", \"startedAt\"])"))

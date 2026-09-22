@@ -4,6 +4,7 @@ import android.content.Context
 import com.finnvek.knittools.data.local.CounterProjectEntity
 import com.finnvek.knittools.data.local.ImmediateDatabaseTransactionRunner
 import com.finnvek.knittools.data.local.YarnCardEntity
+import com.finnvek.knittools.domain.model.YARN_CARD_IDS_MAX_TOKENS
 import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
@@ -317,6 +318,40 @@ class YarnCardRepositoryDomainApiTest {
             assertEquals(true, updated)
             assertEquals(5L to 11L, yarnDao.lastLinkedProjectUpdate)
             assertEquals(mapOf(10L to "1", 11L to "2,5"), projectDao.updatedYarnCardIds)
+        }
+
+    @Test
+    fun `yarn card relink rejects a target at the link budget`() =
+        runTest {
+            val cardId = YARN_CARD_IDS_MAX_TOKENS.toLong() + 1L
+            val yarnDao =
+                FakeYarnCardDao(
+                    yarnCards = listOf(YarnCardEntity(id = cardId, yarnName = "Overflow")),
+                )
+            val projectDao =
+                RepositoryDomainFakeCounterProjectDao(
+                    projects =
+                        listOf(
+                            CounterProjectEntity(
+                                id = 10L,
+                                yarnCardIds = (1..YARN_CARD_IDS_MAX_TOKENS).joinToString(","),
+                            ),
+                        ),
+                )
+            val repository =
+                YarnCardRepository(
+                    yarnDao,
+                    projectDao,
+                    context,
+                    ImmediateDatabaseTransactionRunner,
+                    UnconfinedTestDispatcher(testScheduler),
+                )
+
+            val updated = repository.updateLinkedProjectId(cardId, 10L)
+
+            assertEquals(false, updated)
+            assertNull(yarnDao.lastLinkedProjectUpdate)
+            assertEquals(emptyMap<Long, String>(), projectDao.updatedYarnCardIds)
         }
 
     @Test

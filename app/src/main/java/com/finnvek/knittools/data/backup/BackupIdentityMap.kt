@@ -2,7 +2,7 @@ package com.finnvek.knittools.data.backup
 
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.finnvek.knittools.domain.model.formatYarnCardIds
-import com.finnvek.knittools.domain.model.parseYarnCardIds
+import com.finnvek.knittools.domain.model.parseYarnCardIdsWithinLimits
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
@@ -63,6 +63,7 @@ internal class BackupIdentityMap(
         table: String,
         row: MutableMap<String, JsonElement>,
     ) {
+        val yarnCardIds = validatedYarnCardIds(row)
         if (table in ids) remap(row, "id", table)
         remap(row, "projectId", "counter_projects")
         remap(row, "linkedProjectId", "counter_projects", optional = true)
@@ -73,11 +74,11 @@ internal class BackupIdentityMap(
         remap(row, "projectYarnNoteId", "project_yarn_notes")
         remap(row, "layerId", "pattern_annotation_layers")
         remap(row, "folderId", "project_folders")
-        row["yarnCardIds"]?.let { value ->
+        yarnCardIds?.let { sourceIds ->
             row["yarnCardIds"] =
                 JsonPrimitive(
                     formatYarnCardIds(
-                        parseYarnCardIds(value.jsonPrimitive.content).mapNotNull {
+                        sourceIds.mapNotNull {
                             ids["yarn_cards"]?.get(it)
                         },
                     ),
@@ -86,6 +87,12 @@ internal class BackupIdentityMap(
         rebaseDocumentKey(row)
         rebaseAnnotationCounter(table, row)
         if (table == "active_sessions") resetSessionAnchors(row)
+    }
+
+    private fun validatedYarnCardIds(row: Map<String, JsonElement>): List<Long>? {
+        val value = row["yarnCardIds"] ?: return null
+        return parseYarnCardIdsWithinLimits(value.jsonPrimitive.content)
+            ?: throw BackupException(BackupError.VALIDATION)
     }
 
     private fun rebaseDocumentKey(row: MutableMap<String, JsonElement>) {

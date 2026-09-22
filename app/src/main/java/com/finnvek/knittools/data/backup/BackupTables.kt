@@ -4,6 +4,7 @@ import android.database.Cursor
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.finnvek.knittools.domain.model.PatternAnnotationKind
 import com.finnvek.knittools.domain.model.PatternAnnotationPayloadCodec
+import com.finnvek.knittools.domain.model.parseYarnCardIdsWithinLimits
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
@@ -22,6 +23,14 @@ internal data class BackupColumn(
 )
 
 internal object BackupTables {
+    fun preflightYarnCardIds(
+        directory: File,
+        columns: List<String>,
+        check: () -> Unit = {},
+    ) {
+        read(directory, "counter_projects", columns, check) {}
+    }
+
     fun columns(
         db: SupportSQLiteDatabase,
         table: String,
@@ -145,7 +154,9 @@ internal object BackupTables {
                     values.size == columns.size && values.all { it is JsonPrimitive },
                     BackupError.VALIDATION,
                 )
-                consume(columns.zip(values).toMap().toMutableMap())
+                val row = columns.zip(values).toMap().toMutableMap()
+                validateYarnCardIds(table, row)
+                consume(row)
             }
         }
     }
@@ -192,6 +203,19 @@ internal object BackupTables {
         }
 
     private fun invalidValue(): Nothing = throw BackupException(BackupError.VALIDATION)
+
+    private fun validateYarnCardIds(
+        table: String,
+        row: Map<String, JsonElement>,
+    ) {
+        if (table != "counter_projects") return
+        val value = row["yarnCardIds"] as? JsonPrimitive ?: return
+        if (!value.isString) return
+        BackupFormat.requireValid(
+            parseYarnCardIdsWithinLimits(value.content) != null,
+            BackupError.VALIDATION,
+        )
+    }
 
     private fun validateInteger(
         column: String,

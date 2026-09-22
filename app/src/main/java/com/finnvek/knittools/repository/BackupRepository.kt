@@ -326,6 +326,11 @@ class BackupRepository
             return withShadow(payload) { db ->
                 db.withTransaction {
                     val sql = db.openHelper.writableDatabase
+                    BackupTables.preflightYarnCardIds(
+                        payload,
+                        BackupTables.columns(sql, "counter_projects").map { it.name },
+                        check,
+                    )
                     BackupTables.import(sql, payload, check = check)
                     val references = BackupTables.references(sql)
                     val entries =

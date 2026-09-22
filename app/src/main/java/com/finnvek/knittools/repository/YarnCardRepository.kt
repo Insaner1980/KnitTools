@@ -13,10 +13,12 @@ import com.finnvek.knittools.data.local.toEntity
 import com.finnvek.knittools.data.storage.AppFileStorage
 import com.finnvek.knittools.data.storage.YarnPhotoStorage
 import com.finnvek.knittools.di.IoDispatcher
+import com.finnvek.knittools.domain.model.YARN_CARD_IDS_MAX_TOKENS
 import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.domain.model.YarnCardStatus
 import com.finnvek.knittools.domain.model.formatYarnCardIds
 import com.finnvek.knittools.domain.model.parseYarnCardIds
+import com.finnvek.knittools.domain.model.parseYarnCardIdsWithinLimits
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -85,6 +87,7 @@ class YarnCardRepository
                 cardWithPreservedDetails.linkedProjectId?.takeIf { projectId ->
                     projects.any { it.id == projectId }
                 }
+            if (!canLinkCard(projects, card.id.takeIf { it != 0L }, linkedProjectId)) return null
             val normalizedCard =
                 cardWithPreservedDetails.copy(
                     status = YarnCardStatus.normalize(cardWithPreservedDetails.status),
@@ -194,6 +197,7 @@ class YarnCardRepository
                 if (dao.getCard(id) == null) return@run false
                 val projects = counterProjectDao.getAllProjectsOnce()
                 if (projectId != null && projects.none { it.id == projectId }) return@run false
+                if (!canLinkCard(projects, id, projectId)) return@run false
 
                 updateProjectYarnLinks(
                     projects = projects,
@@ -267,6 +271,16 @@ class YarnCardRepository
                     )
                 }
             }
+        }
+
+        private fun canLinkCard(
+            projects: List<CounterProjectEntity>,
+            cardId: Long?,
+            projectId: Long?,
+        ): Boolean {
+            val project = projects.firstOrNull { it.id == projectId } ?: return projectId == null
+            val currentIds = parseYarnCardIdsWithinLimits(project.yarnCardIds) ?: return false
+            return (cardId != null && cardId in currentIds) || currentIds.size < YARN_CARD_IDS_MAX_TOKENS
         }
 
         private suspend fun deleteAppOwnedPhoto(photoUri: String) {

@@ -2,6 +2,7 @@ package com.finnvek.knittools.data.backup
 
 import android.database.Cursor
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.finnvek.knittools.domain.model.YARN_CARD_IDS_MAX_CHARACTERS
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -77,7 +78,8 @@ class BackupIdentityMapTest {
                 "projectYarnNoteId" to JsonPrimitive(2),
                 "layerId" to JsonPrimitive(1),
                 "folderId" to JsonPrimitive(2),
-                "yarnCardIds" to JsonPrimitive("1,2,999"),
+                "yarnCardIds" to
+                    JsonPrimitive(" 1,invalid,2,1,9223372036854775808,-1,0,999 "),
                 "documentKey" to JsonPrimitive("saved:1:v1"),
                 "kind" to JsonPrimitive("CHART_TRACKER"),
                 "payloadJson" to JsonPrimitive("""{"extraCounterId":7}"""),
@@ -103,6 +105,25 @@ class BackupIdentityMapTest {
                 arrayOf<Any>(53L, "project_counters"),
             )
         }
+    }
+
+    @Test fun oversizedYarnCardIdsAreRejectedBeforeIdentityRemapping() {
+        val identities = BackupIdentityMap(database(), database())
+        val oversized = "x".repeat(YARN_CARD_IDS_MAX_CHARACTERS + 1)
+        val row =
+            mutableMapOf<String, JsonElement>(
+                "id" to JsonPrimitive(1),
+                "yarnCardIds" to JsonPrimitive(oversized),
+            )
+
+        val failure =
+            assertThrows(BackupException::class.java) {
+                identities.apply("counter_projects", row)
+            }
+
+        assertEquals(BackupError.VALIDATION, failure.error)
+        assertEquals(JsonPrimitive(1), row["id"])
+        assertEquals(JsonPrimitive(oversized), row["yarnCardIds"])
     }
 
     @Test fun documentKeysRemainConsistentWhileOrphanKeysCannotCollideWithLiveKeys() {

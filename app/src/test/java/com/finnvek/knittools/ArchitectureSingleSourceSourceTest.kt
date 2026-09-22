@@ -66,6 +66,7 @@ class ArchitectureSingleSourceSourceTest {
         val yarnCardRepository = ProjectSourceFiles.read(YARN_CARD_REPOSITORY)
         val counterScreen = ProjectSourceFiles.read(COUNTER_SCREEN)
         val yarnCardLinks = ProjectSourceFiles.read(YARN_CARD_LINKS)
+        val yarnCardParser = yarnCardLinks.substringBefore("fun formatYarnCardIds")
         val yarnCard = ProjectSourceFiles.read(YARN_CARD)
 
         assertFalse(counterViewModel.contains(".split(\",\")"))
@@ -76,6 +77,9 @@ class ArchitectureSingleSourceSourceTest {
         assertFalse(counterScreen.contains("Yarn #"))
         assertTrue(yarnCardLinks.contains("fun parseYarnCardIds"))
         assertTrue(yarnCardLinks.contains("fun formatYarnCardIds"))
+        assertFalse(yarnCardParser.contains(".split("))
+        assertFalse(yarnCardParser.contains(".mapNotNull"))
+        assertFalse(yarnCardParser.contains(".distinct("))
         assertTrue(yarnCard.contains("fun YarnCard.displayName"))
     }
 

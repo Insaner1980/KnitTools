@@ -2,10 +2,12 @@ package com.finnvek.knittools.data.backup
 
 import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.sqlite.db.SupportSQLiteStatement
+import com.finnvek.knittools.domain.model.YARN_CARD_IDS_MAX_CHARACTERS
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import io.mockk.verifyOrder
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
 import org.junit.Assert.assertEquals
@@ -108,6 +110,23 @@ class BackupTablesTest {
             }
             assertThrows(BackupException::class.java) { BackupTables.import(db, folder) }
         }
+    }
+
+    @Test fun yarnCardIdsPreflightRejectsOversizedValueBeforeDatabaseMutation() {
+        val folder = temporary.newFolder()
+        val oversized = "x".repeat(YARN_CARD_IDS_MAX_CHARACTERS + 1)
+        File(folder, "tables/counter_projects.jsonl").apply {
+            requireNotNull(parentFile).mkdirs()
+            writeText("[\"yarnCardIds\"]\n${JsonArray(listOf(JsonPrimitive(oversized)))}\n")
+        }
+
+        val failure =
+            assertThrows(BackupException::class.java) {
+                BackupTables.preflightYarnCardIds(folder, listOf("yarnCardIds"))
+            }
+
+        assertEquals(BackupError.VALIDATION, failure.error)
+        verify(exactly = 0) { statement.executeInsert() }
     }
 
     @Test fun timestampsKeepLongPrecisionAndNullableValuesRemainUnknown() {

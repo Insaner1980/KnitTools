@@ -2,7 +2,10 @@ package com.finnvek.knittools.ui.screens.pattern
 
 import android.net.Uri
 import androidx.lifecycle.SavedStateHandle
+import com.finnvek.knittools.data.storage.PATTERN_PDF_EXPORT_MAX_ANNOTATIONS
 import com.finnvek.knittools.data.storage.PatternAnnotationRenderStyle
+import com.finnvek.knittools.data.storage.PatternPdfExportLimitException
+import com.finnvek.knittools.data.storage.PatternPdfExportLimitReason
 import com.finnvek.knittools.data.storage.PatternPdfExporter
 import com.finnvek.knittools.domain.model.ChartColumnDirection
 import com.finnvek.knittools.domain.model.ChartCorner
@@ -830,7 +833,7 @@ class PatternAnnotationDocumentSelectionTest {
                 val layerId = firstArg<Long>()
                 flowOf(allAnnotations.filter { it.layerId == layerId })
             }
-            coEvery { route.annotationRepository.getForLayers(any()) } answers {
+            coEvery { route.annotationRepository.getForLayersForExport(any(), any(), any()) } answers {
                 val layerIds = firstArg<List<Long>>()
                 allAnnotations.filter { it.layerId in layerIds }
             }
@@ -869,7 +872,7 @@ class PatternAnnotationDocumentSelectionTest {
                     trackerAnnotation(id = 103L, layerId = 41L, page = 2),
                 )
             every { route.annotationRepository.observePage(any(), 0) } returns flowOf(emptyList())
-            coEvery { route.annotationRepository.getForLayers(any()) } returns trackers
+            coEvery { route.annotationRepository.getForLayersForExport(any(), any(), any()) } returns trackers
             val viewModel = route.viewModel(pdfExporter = exporter)
             advanceUntilIdle()
 
@@ -886,6 +889,64 @@ class PatternAnnotationDocumentSelectionTest {
                     onProgress = any(),
                 )
             }
+        }
+
+    @Test
+    fun `export rejects annotation limit plus one before exporter or success state`() =
+        runTest {
+            val route = projectRoute()
+            val exporter = mockk<PatternPdfExporter>(relaxed = true)
+            val sourceUri = mockk<Uri>()
+            val destinationUri = mockk<Uri>()
+            val style = mockk<PatternAnnotationRenderStyle>()
+            every { route.annotationRepository.observePage(any(), 0) } returns flowOf(emptyList())
+            coEvery {
+                route.annotationRepository.getForLayersForExport(
+                    any(),
+                    PATTERN_PDF_EXPORT_MAX_ANNOTATIONS,
+                    any(),
+                )
+            } returns
+                List(PATTERN_PDF_EXPORT_MAX_ANNOTATIONS + 1) { index ->
+                    annotation(layerId = 41L, page = 0, zIndex = index.toLong())
+                }
+            val viewModel = route.viewModel(pdfExporter = exporter)
+            advanceUntilIdle()
+
+            viewModel.exportAnnotatedPdf(sourceUri, destinationUri, style)
+            advanceUntilIdle()
+
+            assertTrue(viewModel.uiState.value.exportFailed)
+            assertFalse(viewModel.uiState.value.isExporting)
+            coVerify(exactly = 0) { exporter.export(any(), any(), any(), any(), any(), any()) }
+        }
+
+    @Test
+    fun `failed preflight does not request SAF destination`() =
+        runTest {
+            val route = projectRoute()
+            val exporter = mockk<PatternPdfExporter>()
+            val sourceUri = mockk<Uri>()
+            var destinationRequested = false
+            every { route.annotationRepository.observePage(any(), 0) } returns flowOf(emptyList())
+            coEvery {
+                route.annotationRepository.getForLayersForExport(
+                    any(),
+                    PATTERN_PDF_EXPORT_MAX_ANNOTATIONS,
+                    any(),
+                )
+            } returns emptyList()
+            coEvery { exporter.preflight(sourceUri, emptyList(), emptyMap()) } throws
+                PatternPdfExportLimitException(PatternPdfExportLimitReason.PAGE_COUNT)
+            val viewModel = route.viewModel(pdfExporter = exporter)
+            advanceUntilIdle()
+
+            viewModel.requestAnnotatedPdfExport(sourceUri) { destinationRequested = true }
+            advanceUntilIdle()
+
+            assertFalse(destinationRequested)
+            assertTrue(viewModel.uiState.value.exportFailed)
+            assertFalse(viewModel.uiState.value.isExporting)
         }
 
     @Test

@@ -4,7 +4,10 @@ import android.net.Uri
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.finnvek.knittools.data.storage.PATTERN_PDF_EXPORT_MAX_ANNOTATIONS
+import com.finnvek.knittools.data.storage.PATTERN_PDF_EXPORT_MAX_ANNOTATION_PAYLOAD_BYTES
 import com.finnvek.knittools.data.storage.PatternAnnotationRenderStyle
+import com.finnvek.knittools.data.storage.PatternPdfExportBudget
 import com.finnvek.knittools.data.storage.PatternPdfExporter
 import com.finnvek.knittools.domain.calculator.ChartTrackerHighlight
 import com.finnvek.knittools.domain.calculator.resolveChartTrackerHighlight
@@ -559,6 +562,26 @@ class PatternAnnotationViewModel
             interaction.update { it.copy(writeError = PatternAnnotationWriteError.NONE) }
         }
 
+        fun requestAnnotatedPdfExport(
+            sourceUri: Uri,
+            onPreflightPassed: () -> Unit,
+        ) {
+            val exporter = pdfExporter ?: return
+            if (interaction.value.isExporting) return
+            val layerIds = visibleExportLayerIds()
+            markExportStarted()
+            viewModelScope.launch {
+                runCatching {
+                    val annotations = loadExportAnnotations(layerIds)
+                    val trackerHighlights = resolveTrackerHighlights(annotations, counterContext.value)
+                    exporter.preflight(sourceUri, annotations, trackerHighlights)
+                }.onSuccess {
+                    interaction.update { it.copy(isExporting = false) }
+                    onPreflightPassed()
+                }.onFailure(::handleExportFailure)
+            }
+        }
+
         fun exportAnnotatedPdf(
             sourceUri: Uri,
             destinationUri: Uri,
@@ -566,23 +589,11 @@ class PatternAnnotationViewModel
         ) {
             val exporter = pdfExporter ?: return
             if (interaction.value.isExporting) return
-            val state = uiState.value
-            val layerIds =
-                buildList {
-                    if (state.masterLayerVisible) state.masterLayerId?.let(::add)
-                    if (state.projectLayerVisible) state.projectLayerId?.let(::add)
-                }
-            interaction.update {
-                it.copy(
-                    isExporting = true,
-                    exportCompletedPages = 0,
-                    exportTotalPages = 0,
-                    exportFailed = false,
-                )
-            }
+            val layerIds = visibleExportLayerIds()
+            markExportStarted()
             viewModelScope.launch {
                 runCatching {
-                    val annotations = annotationRepository.getForLayers(layerIds)
+                    val annotations = loadExportAnnotations(layerIds)
                     exporter.export(
                         sourceUri = sourceUri,
                         destinationUri = destinationUri,
@@ -599,14 +610,46 @@ class PatternAnnotationViewModel
                     }
                 }.onSuccess {
                     interaction.update { it.copy(isExporting = false) }
-                }.onFailure { failure ->
-                    if (failure is CancellationException) {
-                        interaction.update { it.copy(isExporting = false) }
-                        throw failure
-                    }
-                    interaction.update { it.copy(isExporting = false, exportFailed = true) }
-                }
+                }.onFailure(::handleExportFailure)
             }
+        }
+
+        private fun visibleExportLayerIds(): List<Long> {
+            val state = uiState.value
+            return buildList {
+                if (state.masterLayerVisible) state.masterLayerId?.let(::add)
+                if (state.projectLayerVisible) state.projectLayerId?.let(::add)
+            }
+        }
+
+        private suspend fun loadExportAnnotations(layerIds: List<Long>): List<PatternAnnotation> {
+            val annotations =
+                annotationRepository.getForLayersForExport(
+                    layerIds = layerIds,
+                    maxAnnotations = PATTERN_PDF_EXPORT_MAX_ANNOTATIONS,
+                    maxPayloadBytes = PATTERN_PDF_EXPORT_MAX_ANNOTATION_PAYLOAD_BYTES,
+                )
+            PatternPdfExportBudget.requireAnnotationCount(annotations.size)
+            return annotations
+        }
+
+        private fun markExportStarted() {
+            interaction.update {
+                it.copy(
+                    isExporting = true,
+                    exportCompletedPages = 0,
+                    exportTotalPages = 0,
+                    exportFailed = false,
+                )
+            }
+        }
+
+        private fun handleExportFailure(failure: Throwable) {
+            if (failure is CancellationException) {
+                interaction.update { it.copy(isExporting = false) }
+                throw failure
+            }
+            interaction.update { it.copy(isExporting = false, exportFailed = true) }
         }
 
         private fun editableAnnotations(): List<PatternAnnotation> =

@@ -50,6 +50,14 @@ class PdfPageRenderer(
         get() = renderer.pageCount
 
     @Synchronized
+    internal fun pageSize(pageIndex: Int): PatternPdfSourcePageSize {
+        require(pageIndex in 0 until pageCount) { "PDF page index is outside the document" }
+        return renderer.openPage(pageIndex).use { page ->
+            PatternPdfSourcePageSize(width = page.width, height = page.height)
+        }
+    }
+
+    @Synchronized
     fun renderPage(
         pageIndex: Int,
         targetWidth: Int,

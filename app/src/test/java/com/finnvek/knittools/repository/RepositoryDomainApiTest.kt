@@ -7,6 +7,7 @@ import com.finnvek.knittools.data.local.CounterProjectEntity
 import com.finnvek.knittools.data.local.ImmediateDatabaseTransactionRunner
 import com.finnvek.knittools.data.local.PatternAnnotationDao
 import com.finnvek.knittools.data.local.PatternAnnotationEntity
+import com.finnvek.knittools.data.local.PatternAnnotationExportStats
 import com.finnvek.knittools.data.local.SavedPatternDao
 import com.finnvek.knittools.data.local.SavedPatternEntity
 import com.finnvek.knittools.data.local.YarnCardDao
@@ -655,6 +656,7 @@ internal class FakePatternAnnotationDao(
     private val patternAnnotations: List<PatternAnnotationEntity> = emptyList(),
 ) : PatternAnnotationDao {
     var lastInserted: PatternAnnotationEntity? = null
+    var lastExportQueryLimit: Int? = null
 
     override fun observePage(
         layerId: Long,
@@ -664,6 +666,28 @@ internal class FakePatternAnnotationDao(
 
     override suspend fun getForLayers(layerIds: List<Long>): List<PatternAnnotationEntity> =
         patternAnnotations.filter { it.layerId in layerIds }
+
+    override suspend fun getForLayersLimited(
+        layerIds: List<Long>,
+        limit: Int,
+    ): List<PatternAnnotationEntity> {
+        lastExportQueryLimit = limit
+        return patternAnnotations.filter { it.layerId in layerIds }.take(limit)
+    }
+
+    override suspend fun getExportStats(layerIds: List<Long>): PatternAnnotationExportStats {
+        val annotations = patternAnnotations.filter { it.layerId in layerIds }
+        return PatternAnnotationExportStats(
+            annotationCount = annotations.size.toLong(),
+            payloadBytes =
+                annotations.sumOf {
+                    it.payloadJson
+                        .encodeToByteArray()
+                        .size
+                        .toLong()
+                },
+        )
+    }
 
     override suspend fun insert(annotation: PatternAnnotationEntity): Long {
         lastInserted = annotation

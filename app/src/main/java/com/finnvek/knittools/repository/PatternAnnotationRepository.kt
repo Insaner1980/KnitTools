@@ -1,6 +1,7 @@
 package com.finnvek.knittools.repository
 
 import com.finnvek.knittools.data.local.PatternAnnotationDao
+import com.finnvek.knittools.data.local.PatternAnnotationEntity
 import com.finnvek.knittools.data.local.toDomain
 import com.finnvek.knittools.data.local.toEntity
 import com.finnvek.knittools.domain.model.PatternAnnotation
@@ -30,17 +31,25 @@ class PatternAnnotationRepository
             if (layerIds.isEmpty()) {
                 emptyList()
             } else {
-                val layerOrder = layerIds.withIndex().associate { (index, layerId) -> layerId to index }
-                dao
-                    .getForLayers(layerIds)
-                    .mapNotNull { it.toDomain() }
-                    .sortedWith(
-                        compareBy<PatternAnnotation> { layerOrder[it.layerId] ?: Int.MAX_VALUE }
-                            .thenBy(PatternAnnotation::page)
-                            .thenBy(PatternAnnotation::zIndex)
-                            .thenBy(PatternAnnotation::id),
-                    )
+                orderForLayers(layerIds, dao.getForLayers(layerIds))
             }
+
+        suspend fun getForLayersForExport(
+            layerIds: List<Long>,
+            maxAnnotations: Int,
+            maxPayloadBytes: Long,
+        ): List<PatternAnnotation> {
+            require(maxAnnotations in 0 until Int.MAX_VALUE) {
+                "Pattern annotation export limit must allow a bounded overflow probe"
+            }
+            require(maxPayloadBytes >= 0L) { "Pattern annotation export payload limit must be non-negative" }
+            return if (layerIds.isEmpty()) {
+                emptyList()
+            } else {
+                val entities = dao.getForLayersBounded(layerIds, maxAnnotations, maxPayloadBytes)
+                orderForLayers(layerIds, entities)
+            }
+        }
 
         suspend fun updateAnnotation(annotation: PatternAnnotation) = dao.update(annotation.toEntity())
 
@@ -59,4 +68,19 @@ class PatternAnnotationRepository
             zIndex: Long,
             updatedAt: Long,
         ) = dao.updateZIndex(id, zIndex, updatedAt)
+
+        private fun orderForLayers(
+            layerIds: List<Long>,
+            annotations: List<PatternAnnotationEntity>,
+        ): List<PatternAnnotation> {
+            val layerOrder = layerIds.withIndex().associate { (index, layerId) -> layerId to index }
+            return annotations
+                .mapNotNull { it.toDomain() }
+                .sortedWith(
+                    compareBy<PatternAnnotation> { layerOrder[it.layerId] ?: Int.MAX_VALUE }
+                        .thenBy(PatternAnnotation::page)
+                        .thenBy(PatternAnnotation::zIndex)
+                        .thenBy(PatternAnnotation::id),
+                )
+        }
     }

@@ -503,6 +503,7 @@ fun PatternViewerScreen(
                         onProjectLayerVisibilityChange = annotationViewModel::setProjectLayerVisible,
                         annotationInputActions = annotationViewModel.patternInputActions(),
                         annotationToolbarActions = annotationViewModel.patternToolbarActions(),
+                        onExportRequest = annotationViewModel::requestAnnotatedPdfExport,
                         onExport = annotationViewModel::exportAnnotatedPdf,
                     ),
                 modifier =
@@ -1357,6 +1358,7 @@ fun LibraryPatternViewerScreen(
                     onProjectLayerVisibilityChange = annotationViewModel::setProjectLayerVisible,
                     annotationInputActions = annotationViewModel.patternInputActions(),
                     annotationToolbarActions = annotationViewModel.patternToolbarActions(),
+                    onExportRequest = annotationViewModel::requestAnnotatedPdfExport,
                     onExport = annotationViewModel::exportAnnotatedPdf,
                 ),
             modifier =
@@ -1873,9 +1875,11 @@ private fun PatternViewerContent(
     val state = stateProvider()
     val renderedImage = remember(state.renderedBitmap) { state.renderedBitmap?.asImageBitmap() }
     val exportStyle = rememberPatternAnnotationRenderStyle()
+    var pendingExportSource by rememberSaveable { mutableStateOf<String?>(null) }
     val exportLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { destination ->
-            val source = state.patternUri?.toUri()
+            val source = pendingExportSource?.toUri()
+            pendingExportSource = null
             if (source != null && destination != null) actions.onExport(source, destination, exportStyle)
         }
     val editableLayerVisible =
@@ -1905,7 +1909,14 @@ private fun PatternViewerContent(
                     )
                     TextButton(
                         enabled = !state.annotationState.isExporting,
-                        onClick = { exportLauncher.launch(exportFilename) },
+                        onClick = {
+                            state.patternUri.toUri().let { source ->
+                                actions.onExportRequest(source) {
+                                    pendingExportSource = source.toString()
+                                    exportLauncher.launch(exportFilename)
+                                }
+                            }
+                        },
                     ) {
                         val exportText =
                             if (state.annotationState.isExporting) {
@@ -2068,6 +2079,7 @@ private data class PatternViewerContentActions(
     val onProjectLayerVisibilityChange: (Boolean) -> Unit,
     val annotationInputActions: PatternAnnotationInputActions,
     val annotationToolbarActions: PatternAnnotationToolbarActions,
+    val onExportRequest: (Uri, () -> Unit) -> Unit,
     val onExport: (Uri, Uri, PatternAnnotationRenderStyle) -> Unit,
 )
 

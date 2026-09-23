@@ -149,9 +149,10 @@ class CounterRepositoryInsightsTest {
             coEvery { dao.getInsightSessionBatch(Long.MIN_VALUE) } returns listOf(session(1))
             coEvery { dao.getInsightSessionBatch(1) } returns emptyList()
 
-            repository.observeSessionsForInsights(null, null, java.time.ZoneOffset.UTC, { 0 }) { _, _ ->
-                assertFalse(inTransaction)
-            }.first()
+            repository
+                .observeSessionsForInsights(null, null, java.time.ZoneOffset.UTC, { 0 }) { _, _ ->
+                    assertFalse(inTransaction)
+                }.first()
 
             assertFalse(inTransaction)
         }
@@ -234,21 +235,20 @@ class CounterRepositoryInsightsTest {
     private fun repository(
         dispatcher: kotlinx.coroutines.CoroutineDispatcher,
         runner: DatabaseTransactionRunner = ImmediateDatabaseTransactionRunner,
-    ) =
-        CounterRepository(
-            dao = mockk(),
-            projectCounterDao = mockk(),
-            sessionDao = dao,
-            photoStorage = mockk(),
-            patternDocumentStorage = mockk(),
-            context = mockk(),
-            yarnCardRepository = mockk(),
-            savedPatternRepository = mockk(),
-            projectDocumentRepository = mockk(),
-            projectFolderDao = mockk(),
-            transactionRunner = runner,
-            ioDispatcher = dispatcher,
-        )
+    ) = CounterRepository(
+        dao = mockk(),
+        projectCounterDao = mockk(),
+        sessionDao = dao,
+        photoStorage = mockk(),
+        patternDocumentStorage = mockk(),
+        context = mockk(),
+        yarnCardRepository = mockk(),
+        savedPatternRepository = mockk(),
+        projectDocumentRepository = mockk(),
+        projectFolderDao = mockk(),
+        transactionRunner = runner,
+        ioDispatcher = dispatcher,
+    )
 
     private fun session(id: Long) = SessionEntity(id, 7, 1000, 2000, 0, 1, 1, 1, 1)
 }

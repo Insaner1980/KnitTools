@@ -386,11 +386,17 @@ class YarnCardRepositoryDomainApiTest {
     @Test
     fun `detail edit preserves an over limit legacy project link`() =
         runTest {
-            val yarnDao = FakeYarnCardDao(yarnCards = listOf(YarnCardEntity(id = 5L, yarnName = "Old", linkedProjectId = 10L)))
+            val yarnDao =
+                FakeYarnCardDao(yarnCards = listOf(YarnCardEntity(id = 5L, yarnName = "Old", linkedProjectId = 10L)))
             val projectDao =
                 RepositoryDomainFakeCounterProjectDao(
                     projects =
-                        listOf(CounterProjectEntity(id = 10L, yarnCardIds = (1..YARN_CARD_IDS_MAX_TOKENS + 1).joinToString(","))),
+                        listOf(
+                            CounterProjectEntity(
+                                id = 10L,
+                                yarnCardIds = (1..YARN_CARD_IDS_MAX_TOKENS + 1).joinToString(","),
+                            ),
+                        ),
                 )
             val repository =
                 YarnCardRepository(

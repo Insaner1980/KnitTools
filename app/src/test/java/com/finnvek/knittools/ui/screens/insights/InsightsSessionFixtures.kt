@@ -43,11 +43,11 @@ internal fun stubSessions(
                         start == null ||
                             it.endedAt >= start ||
                             it.startedAt +
-                                when {
-                                    it.durationSeconds > 0L -> it.durationSeconds
-                                    it.durationMinutes > 0 -> it.durationMinutes * 60L
-                                    else -> 1L
-                                } * 1000L >= start
+                            when {
+                                it.durationSeconds > 0L -> it.durationSeconds
+                                it.durationMinutes > 0 -> it.durationMinutes * 60L
+                                else -> 1L
+                            } * 1000L >= start
                     }.chunked(2)
                     .forEach { add(accumulator, it) }
                 accumulator

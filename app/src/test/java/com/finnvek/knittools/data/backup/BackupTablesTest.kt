@@ -77,6 +77,7 @@ class BackupTablesTest {
                 when {
                     firstArg<String>().startsWith("PRAGMA table_info") -> backupCursor(columns)
                     firstArg<String>() == "PRAGMA quick_check" -> backupCursor(listOf(listOf("ok")))
+                    firstArg<String>() == "SELECT * FROM `pattern_annotations`" -> backupCursor(emptyList())
                     firstArg<String>().startsWith("SELECT *") ->
                         backupCursor(listOf(listOf(1L, "Wool", 2.5, null))).also {
                             every { it.getColumnIndexOrThrow(any()) } answers
@@ -97,11 +98,11 @@ class BackupTablesTest {
             File(folder, "tables/sessions.jsonl").readText(),
         )
         BackupTables.import(db, folder)
-        verify(exactly = BackupFormat.tables.size) { statement.bindDouble(1, 2.5) }
-        verify(exactly = BackupFormat.tables.size) { statement.bindLong(2, 1) }
-        verify(exactly = BackupFormat.tables.size) { statement.bindString(3, "Renamed") }
-        verify(exactly = BackupFormat.tables.size) { statement.bindNull(4) }
-        verify(exactly = BackupFormat.tables.size) { statement.executeInsert() }
+        verify(exactly = BackupFormat.tables.size - 1) { statement.bindDouble(1, 2.5) }
+        verify(exactly = BackupFormat.tables.size - 1) { statement.bindLong(2, 1) }
+        verify(exactly = BackupFormat.tables.size - 1) { statement.bindString(3, "Renamed") }
+        verify(exactly = BackupFormat.tables.size - 1) { statement.bindNull(4) }
+        verify(exactly = BackupFormat.tables.size - 1) { statement.executeInsert() }
         assertEquals(setOf("files/shared.bin"), BackupTables.references(db))
         BackupTables.clear(db)
         verifyOrder {
@@ -179,7 +180,15 @@ class BackupTablesTest {
         BackupFormat.tables.forEach {
             File(folder, "tables/$it.jsonl").apply {
                 requireNotNull(parentFile).mkdirs()
-                writeText("[\"timestamp\"]\n[9223372036854775807]\n[null]\n")
+                writeText(
+                    if (it ==
+                        "pattern_annotations"
+                    ) {
+                        "[\"timestamp\"]\n"
+                    } else {
+                        "[\"timestamp\"]\n[9223372036854775807]\n[null]\n"
+                    },
+                )
             }
         }
         BackupTables.import(db, folder, budget = BackupBudget(trackEmbeddedIdentities = false))
@@ -195,9 +204,9 @@ class BackupTablesTest {
                 "PRAGMA quick_check" to listOf(listOf<Any?>("corrupt")),
                 "SELECT projectId FROM project_documents GROUP BY projectId HAVING SUM(isPrimary) != 1" to
                     listOf(listOf<Any?>(1)),
-                "SELECT kind, payloadVersion, payloadJson FROM pattern_annotations" to
+                "SELECT kind, payloadVersion, payloadJson, layerId, page FROM pattern_annotations" to
                     listOf(listOf<Any?>("UNKNOWN", 1, "{}")),
-                "SELECT kind, payloadVersion, payloadJson FROM pattern_annotations" to
+                "SELECT kind, payloadVersion, payloadJson, layerId, page FROM pattern_annotations" to
                     listOf(listOf<Any?>("CHART_TRACKER", 999, "{}")),
             )
         failures.forEach { (query, rows) ->

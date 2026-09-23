@@ -1,5 +1,9 @@
 package com.finnvek.knittools.data.backup
 
+import com.finnvek.knittools.domain.model.PatternAnnotationKind
+import com.finnvek.knittools.domain.model.PatternAnnotationPageBudget
+import com.finnvek.knittools.domain.model.PatternAnnotationPageLimitException
+import com.finnvek.knittools.domain.model.PatternAnnotationPayloadCodec
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.jsonObject
@@ -56,6 +60,7 @@ internal class BackupBudget(
     private val danglingChartCounterIds = mutableSetOf<Long>()
     private var durableCopyBytes = 0L
     private val durableCopies = mutableSetOf<String>()
+    private val annotationPages = mutableMapOf<Pair<Long, Int>, PatternAnnotationPageBudget>()
 
     fun requireArchiveSize(
         bytes: Long,
@@ -118,6 +123,22 @@ internal class BackupBudget(
         table: String,
         row: Map<String, JsonElement>,
     ) {
+        if (table == "pattern_annotations") {
+            val layerId = row["layerId"]?.jsonPrimitive?.longOrNull ?: 0L
+            val page = row["page"]?.jsonPrimitive?.longOrNull ?: -1L
+            val version = row["payloadVersion"]?.jsonPrimitive?.longOrNull
+            BackupFormat.requireValid(layerId > 0L && page in 0L..Int.MAX_VALUE, BackupError.VALIDATION)
+            BackupFormat.requireValid(
+                version == PatternAnnotationPayloadCodec.CURRENT_VERSION.toLong(),
+                BackupError.VALIDATION,
+            )
+            observeAnnotation(
+                layerId,
+                page.toInt(),
+                row["kind"]?.jsonPrimitive?.content.orEmpty(),
+                row["payloadJson"]?.jsonPrimitive?.content.orEmpty(),
+            )
+        }
         if (!trackEmbeddedIdentities) return
         if (table == "project_counters") {
             val id = row["id"]?.jsonPrimitive?.longOrNull ?: throw BackupException(BackupError.VALIDATION)
@@ -142,6 +163,28 @@ internal class BackupBudget(
                     BackupError.VALIDATION,
                 )
             }
+        }
+    }
+
+    fun observeAnnotation(
+        layerId: Long,
+        page: Int,
+        kindName: String,
+        payloadJson: String,
+    ) {
+        BackupFormat.requireJsonDepth(payloadJson, 8)
+        val kind = PatternAnnotationKind.entries.firstOrNull { it.name == kindName }
+        val payload =
+            kind?.let {
+                PatternAnnotationPayloadCodec.decode(it, PatternAnnotationPayloadCodec.CURRENT_VERSION, payloadJson)
+            }
+                ?: throw BackupException(BackupError.VALIDATION)
+        try {
+            annotationPages
+                .getOrPut(layerId to page) { PatternAnnotationPageBudget() }
+                .add(payload, payloadJson.encodeToByteArray().size.toLong())
+        } catch (failure: PatternAnnotationPageLimitException) {
+            throw BackupException(BackupError.VALIDATION, failure)
         }
     }
 

@@ -35,7 +35,7 @@ class PatternAnnotationRepositoryTest {
         runTest {
             val acceptedRows =
                 (1L..PATTERN_PDF_EXPORT_MAX_ANNOTATIONS.toLong()).map { id ->
-                    annotation(id = id, layerId = 100L, zIndex = id).toEntity()
+                    annotation(id = id, layerId = 100L, zIndex = id).copy(page = (id / 256L).toInt()).toEntity()
                 }
             val acceptedDao = FakePatternAnnotationDao(patternAnnotations = acceptedRows)
             val acceptedRepository = PatternAnnotationRepository(acceptedDao)

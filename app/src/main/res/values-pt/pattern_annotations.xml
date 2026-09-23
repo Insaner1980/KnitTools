@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="pattern_annotation_page_limit">Esta página contém demasiadas anotações ou anotações demasiado complexas para serem apresentadas em segurança. As suas anotações foram preservadas.</string>
     <string name="pattern_annotations_layers">Camadas de anotações</string>
     <string name="pattern_annotations_master">Notas do padrão</string>
     <string name="pattern_annotations_project">Notas do projeto</string>

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="pattern_annotation_page_limit">Tämän sivun merkintöjä on liikaa tai ne ovat liian monimutkaisia näytettäviksi turvallisesti. Merkintäsi on säilytetty.</string>
     <string name="pattern_annotations_layers">Merkintätasot</string>
     <string name="pattern_annotations_master">Ohjeen merkinnät</string>
     <string name="pattern_annotations_project">Projektin merkinnät</string>

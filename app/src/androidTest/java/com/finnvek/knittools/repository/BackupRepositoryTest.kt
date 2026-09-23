@@ -35,6 +35,10 @@ import com.finnvek.knittools.data.storage.AppFileStorage
 import com.finnvek.knittools.domain.calculator.evaluateActiveSessionTime
 import com.finnvek.knittools.domain.model.ActiveSessionTimeEvaluation
 import com.finnvek.knittools.domain.model.CounterHistoryAction
+import com.finnvek.knittools.domain.model.FreehandPayload
+import com.finnvek.knittools.domain.model.NormalizedPatternPoint
+import com.finnvek.knittools.domain.model.PatternAnnotationKind
+import com.finnvek.knittools.domain.model.PatternAnnotationPayloadCodec
 import com.finnvek.knittools.domain.model.SessionTimeSnapshot
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
@@ -318,6 +322,102 @@ class BackupRepositoryTest {
             BackupArchive.write(payload, archive, updated)
         } finally {
             payload.deleteRecursively()
+        }
+    }
+
+    @Test fun annotationBudgetsRejectBeforePreviewAndAgainBeforeLiveMutation() =
+        runBlocking {
+            seed()
+            for (workLimit in listOf(false, true)) {
+                val archive = File(directory, "annotation-source-$workLimit")
+                repository.export(archive.toUri())
+                rewriteAnnotationRows(archive, unsafeAnnotationPayloads(workLimit))
+                expectBackupFailure { prepare(archive.toUri()) }
+                assertEquals(1L, number("SELECT COUNT(*) FROM pattern_annotations"))
+                assertEquals("Cardigan", text("SELECT name FROM counter_projects"))
+                val valid = File(directory, "annotation-valid-$workLimit")
+                repository.export(valid.toUri())
+                prepare(valid.toUri())
+                rewriteAnnotationRows(
+                    File(context.noBackupFilesDir, "manual-backup/$selectionId/backup.zip"),
+                    unsafeAnnotationPayloads(workLimit),
+                )
+                expectBackupFailure { repository.restore(selectionId) }
+                assertEquals(1L, number("SELECT COUNT(*) FROM pattern_annotations"))
+                assertEquals("Cardigan", text("SELECT name FROM counter_projects"))
+            }
+        }
+
+    @Test fun annotationExportRefusesTheSameCountAndWorkAsRestoreWithoutDeletingRows() =
+        runBlocking {
+            seed()
+            val sql = db.openHelper.writableDatabase
+            for (workLimit in listOf(false, true)) {
+                sql.execSQL("DELETE FROM pattern_annotations WHERE id != (SELECT MIN(id) FROM pattern_annotations)")
+                val payloads = unsafeAnnotationPayloads(workLimit)
+                sql.execSQL("UPDATE pattern_annotations SET payloadJson = ?", arrayOf(payloads.first()))
+                payloads.drop(1).forEach { payload ->
+                    sql.execSQL(
+                        "INSERT INTO pattern_annotations(layerId,page,kind,payloadVersion,payloadJson," +
+                            "zIndex,createdAt,updatedAt) SELECT layerId,page,kind,payloadVersion,?,zIndex," +
+                            "createdAt,updatedAt FROM pattern_annotations LIMIT 1",
+                        arrayOf(payload),
+                    )
+                }
+                val archive = File(directory, "annotation-rejected-$workLimit")
+                expectBackupFailure { repository.export(archive.toUri()) }
+                assertFalse(archive.exists())
+                assertEquals(payloads.size.toLong(), number("SELECT COUNT(*) FROM pattern_annotations"))
+                expectBackupFailure { BackupTables.verify(sql) }
+            }
+        }
+
+    private fun unsafeAnnotationPayloads(workLimit: Boolean): List<String> {
+        val sizes = if (workLimit) List(8) { 2_048 } + 1 else List(257) { 1 }
+        return sizes.map { size ->
+            requireNotNull(
+                PatternAnnotationPayloadCodec.encode(
+                    PatternAnnotationKind.FREEHAND,
+                    FreehandPayload(List(size) { NormalizedPatternPoint(it / 2_048f, 0.5f) }, 0, 2f),
+                ),
+            ).payloadJson
+        }
+    }
+
+    private fun rewriteAnnotationRows(
+        archive: File,
+        payloads: List<String>,
+    ) {
+        val directory = File(this.directory, "annotation-rewrite-${UUID.randomUUID()}").apply { mkdirs() }
+        try {
+            val manifest = BackupArchive.extract(archive, directory)
+            val table = File(directory, "tables/pattern_annotations.jsonl")
+            val lines = table.readLines()
+            val header = BackupFormat.json.parseToJsonElement(lines.first()).jsonArray
+            val row =
+                BackupFormat.json
+                    .parseToJsonElement(lines[1])
+                    .jsonArray
+                    .toMutableList()
+            table.bufferedWriter().use { writer ->
+                writer.appendLine(lines.first())
+                payloads.forEachIndexed { index, payload ->
+                    row[header.indexOf(JsonPrimitive("id"))] = JsonPrimitive(index + 1)
+                    row[header.indexOf(JsonPrimitive("payloadJson"))] = JsonPrimitive(payload)
+                    writer.appendLine(JsonArray(row).toString())
+                }
+            }
+            val updated =
+                manifest.copy(
+                    entries =
+                        manifest.entries.map { entry ->
+                            val file = File(directory, entry.path)
+                            entry.copy(size = file.length(), sha256 = BackupFormat.digest(file))
+                        },
+                )
+            BackupArchive.write(directory, archive, updated)
+        } finally {
+            directory.deleteRecursively()
         }
     }
 

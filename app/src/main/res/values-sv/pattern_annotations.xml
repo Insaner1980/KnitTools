@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="pattern_annotation_page_limit">Den här sidan har för många eller för komplexa markeringar för att visas säkert. Dina markeringar har bevarats.</string>
     <string name="pattern_annotations_layers">Anteckningslager</string>
     <string name="pattern_annotations_master">Mönsteranteckningar</string>
     <string name="pattern_annotations_project">Projektanteckningar</string>

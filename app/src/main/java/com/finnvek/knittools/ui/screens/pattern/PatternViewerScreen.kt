@@ -1907,6 +1907,13 @@ private fun PatternViewerContent(
                         state = state.annotationState,
                         actions = actions.annotationToolbarActions,
                     )
+                    if (state.annotationState.loadError == PatternAnnotationLoadError.PAGE_LIMIT) {
+                        Text(
+                            text = stringResource(R.string.pattern_annotation_page_limit),
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.padding(horizontal = 12.dp),
+                        )
+                    }
                     TextButton(
                         enabled = !state.annotationState.isExporting,
                         onClick = {

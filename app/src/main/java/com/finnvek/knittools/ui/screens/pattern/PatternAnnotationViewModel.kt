@@ -33,6 +33,7 @@ import com.finnvek.knittools.domain.model.PatternAnnotationKind
 import com.finnvek.knittools.domain.model.PatternAnnotationLayer
 import com.finnvek.knittools.domain.model.PatternAnnotationLimits
 import com.finnvek.knittools.domain.model.PatternAnnotationOwner
+import com.finnvek.knittools.domain.model.PatternAnnotationPageLimitException
 import com.finnvek.knittools.domain.model.PatternAnnotationPayload
 import com.finnvek.knittools.domain.model.PatternCalloutSymbol
 import com.finnvek.knittools.domain.model.ProjectCounter
@@ -52,12 +53,14 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -66,6 +69,7 @@ import javax.inject.Inject
 enum class PatternAnnotationLoadError {
     NONE,
     READ_FAILED,
+    PAGE_LIMIT,
 }
 
 enum class PatternAnnotationWriteError {
@@ -193,7 +197,10 @@ class PatternAnnotationViewModel
                         observePage(selection.projectLayer, page),
                     ) { master, project ->
                         PageAnnotations(master = master, project = project)
-                    }
+                    }.catch { failure ->
+                        if (failure !is PatternAnnotationPageLimitException) throw failure
+                        emit(PageAnnotations(limitExceeded = true))
+                    }.onStart { emit(PageAnnotations()) }
                 }.withReadRecovery(annotationReadFailed)
                 .stateIn(
                     scope = viewModelScope,
@@ -206,9 +213,19 @@ class PatternAnnotationViewModel
                 LayerVisibility(master = master, project = project)
             }
 
+        private val trackerHighlights =
+            combine(pageAnnotations, counterContext) { annotations, counters ->
+                resolveTrackerHighlights(annotations.master + annotations.project, counters)
+            }
+
         private val annotationFeedback =
-            combine(loadError, interaction, counterContext) { readError, interactionState, counters ->
-                PatternAnnotationFeedback(readError, interactionState, counters)
+            combine(
+                loadError,
+                interaction,
+                counterContext,
+                trackerHighlights,
+            ) { readError, interactionState, counters, highlights ->
+                PatternAnnotationFeedback(readError, interactionState, counters, highlights)
             }
 
         val uiState: StateFlow<PatternAnnotationUiState> =
@@ -219,14 +236,11 @@ class PatternAnnotationViewModel
                 visibility,
                 feedback,
                 ->
-                val topZIndex =
-                    (annotations.master + annotations.project)
-                        .maxOfOrNull(PatternAnnotation::zIndex)
-                        ?.plus(1L)
-                        ?: 0L
+                val topZIndex = annotations.topZIndex
                 val selectedAnnotation =
                     feedback.interaction.selectedAnnotationId?.let { selectedId ->
-                        (annotations.master + annotations.project).firstOrNull { it.id == selectedId }
+                        annotations.master.firstOrNull { it.id == selectedId }
+                            ?: annotations.project.firstOrNull { it.id == selectedId }
                     }
                 PatternAnnotationUiState(
                     owner = selection.owner,
@@ -235,10 +249,11 @@ class PatternAnnotationViewModel
                     projectLayerVisible = visibility.project,
                     masterAnnotations = annotations.master,
                     projectAnnotations = annotations.project,
-                    editableLayerId = selection.editableLayerId,
+                    editableLayerId = selection.editableLayerId.takeUnless { annotations.limitExceeded },
                     masterLayerId = selection.masterLayer?.id,
                     projectLayerId = selection.projectLayer?.id,
-                    loadError = feedback.loadError,
+                    loadError =
+                        if (annotations.limitExceeded) PatternAnnotationLoadError.PAGE_LIMIT else feedback.loadError,
                     activeTool = feedback.interaction.activeTool,
                     penArgb = feedback.interaction.penArgb,
                     penStrokeWidth = feedback.interaction.penStrokeWidth,
@@ -248,7 +263,7 @@ class PatternAnnotationViewModel
                     highlighterAxisLock = feedback.interaction.highlighterAxisLock,
                     draftStroke = feedback.interaction.draftStroke,
                     inProgressAnnotation =
-                        feedback.interaction.draftStroke?.toAnnotation(
+                        feedback.interaction.draftStroke?.takeUnless { annotations.limitExceeded }?.toAnnotation(
                             layerId = selection.editableLayerId,
                             page = page,
                             zIndex = topZIndex,
@@ -265,11 +280,7 @@ class PatternAnnotationViewModel
                     canUndo = feedback.interaction.undoStack.isNotEmpty(),
                     canRedo = feedback.interaction.redoStack.isNotEmpty(),
                     chartCounterOptions = feedback.counterContext.options,
-                    trackerHighlights =
-                        resolveTrackerHighlights(
-                            annotations.master + annotations.project,
-                            feedback.counterContext,
-                        ),
+                    trackerHighlights = feedback.trackerHighlights,
                     isExporting = feedback.interaction.isExporting,
                     exportCompletedPages = feedback.interaction.exportCompletedPages,
                     exportTotalPages = feedback.interaction.exportTotalPages,
@@ -342,6 +353,7 @@ class PatternAnnotationViewModel
         }
 
         fun beginStroke(point: NormalizedPatternPoint) {
+            if (uiState.value.loadError == PatternAnnotationLoadError.PAGE_LIMIT) return
             val state = interaction.value
             val style = state.styleForTool() ?: return
             interaction.value =
@@ -400,6 +412,7 @@ class PatternAnnotationViewModel
             point: NormalizedPatternPoint,
             tolerance: Float = PatternAnnotationTokens.ERASER_HIT_TOLERANCE,
         ) {
+            if (uiState.value.loadError == PatternAnnotationLoadError.PAGE_LIMIT || interaction.value.isSaving) return
             val hit = topmostAnnotationAt(editableAnnotations(), point, tolerance) ?: return
             executeCommand(PatternAnnotationCommand.Delete(hit))
         }
@@ -691,7 +704,7 @@ class PatternAnnotationViewModel
             command: PatternAnnotationCommand,
             onSuccess: (PatternAnnotationInteractionState) -> PatternAnnotationInteractionState = { it },
         ) {
-            if (interaction.value.isSaving) return
+            if (interaction.value.isSaving || uiState.value.loadError == PatternAnnotationLoadError.PAGE_LIMIT) return
             val commandContext = layers.value.editContext
             interaction.update { it.copy(isSaving = true, writeError = PatternAnnotationWriteError.NONE) }
             viewModelScope.launch {
@@ -894,7 +907,13 @@ private data class AnnotationEditContext(
 private data class PageAnnotations(
     val master: List<PatternAnnotation> = emptyList(),
     val project: List<PatternAnnotation> = emptyList(),
-)
+    val limitExceeded: Boolean = false,
+) {
+    val topZIndex: Long =
+        listOfNotNull(master.maxOfOrNull(PatternAnnotation::zIndex), project.maxOfOrNull(PatternAnnotation::zIndex))
+            .maxOrNull()
+            ?.plus(1L) ?: 0L
+}
 
 private data class LayerVisibility(
     val master: Boolean,
@@ -943,6 +962,7 @@ private data class PatternAnnotationFeedback(
     val loadError: PatternAnnotationLoadError,
     val interaction: PatternAnnotationInteractionState,
     val counterContext: PatternCounterContext,
+    val trackerHighlights: Map<Long, ChartTrackerHighlight>,
 )
 
 private data class PatternCounterContext(

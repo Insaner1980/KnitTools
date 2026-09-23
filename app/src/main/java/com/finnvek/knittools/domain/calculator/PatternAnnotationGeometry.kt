@@ -48,7 +48,10 @@ fun isPointNearStroke(
 ): Boolean {
     if (stroke.isEmpty()) return false
     if (stroke.size == 1) return distance(point, stroke.first()) <= tolerance
-    return stroke.zipWithNext().any { (start, end) -> pointSegmentDistance(point, start, end) <= tolerance }
+    for (index in 1 until stroke.size) {
+        if (pointSegmentDistance(point, stroke[index - 1], stroke[index]) <= tolerance) return true
+    }
+    return false
 }
 
 fun isPointNearShape(

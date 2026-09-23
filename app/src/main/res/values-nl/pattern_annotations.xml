@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="pattern_annotation_page_limit">Deze pagina bevat te veel of te complexe annotaties om veilig weer te geven. Je annotaties zijn behouden.</string>
     <string name="pattern_annotations_layers">Annotatielagen</string>
     <string name="pattern_annotations_master">Patroonnotities</string>
     <string name="pattern_annotations_project">Projectnotities</string>

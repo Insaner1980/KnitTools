@@ -4,7 +4,10 @@ import com.finnvek.knittools.data.local.PatternAnnotationDao
 import com.finnvek.knittools.data.local.PatternAnnotationEntity
 import com.finnvek.knittools.data.local.toDomain
 import com.finnvek.knittools.data.local.toEntity
+import com.finnvek.knittools.data.storage.PATTERN_PDF_EXPORT_MAX_ANNOTATIONS
+import com.finnvek.knittools.data.storage.PATTERN_PDF_EXPORT_MAX_ANNOTATION_PAYLOAD_BYTES
 import com.finnvek.knittools.domain.model.PatternAnnotation
+import com.finnvek.knittools.domain.model.PatternAnnotationPageLimitException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -23,7 +26,7 @@ class PatternAnnotationRepository
             dao
                 .observePage(layerId, page)
                 .map { annotations -> annotations.mapNotNull { it.toDomain() } }
-                .retryOnRepositoryReadFailure()
+                .retryOnRepositoryReadFailureIf(retryIf = { it !is PatternAnnotationPageLimitException })
 
         suspend fun insertAnnotation(annotation: PatternAnnotation): Long = dao.insert(annotation.toEntity())
 
@@ -31,7 +34,11 @@ class PatternAnnotationRepository
             if (layerIds.isEmpty()) {
                 emptyList()
             } else {
-                orderForLayers(layerIds, dao.getForLayers(layerIds))
+                getForLayersForExport(
+                    layerIds,
+                    PATTERN_PDF_EXPORT_MAX_ANNOTATIONS,
+                    PATTERN_PDF_EXPORT_MAX_ANNOTATION_PAYLOAD_BYTES,
+                )
             }
 
         suspend fun getForLayersForExport(

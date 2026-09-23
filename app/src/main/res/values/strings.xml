@@ -1,4 +1,5 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="pattern_annotation_page_limit">This page has too many or overly complex annotations to display safely. Your annotations have been preserved.</string>
     <string name="app_name">KnitTools</string>
 
     <!-- Navigation & common -->

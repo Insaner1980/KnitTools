@@ -23,6 +23,7 @@ import com.finnvek.knittools.domain.model.PatternAnnotationDocumentKey
 import com.finnvek.knittools.domain.model.PatternAnnotationKind
 import com.finnvek.knittools.domain.model.PatternAnnotationLayer
 import com.finnvek.knittools.domain.model.PatternAnnotationOwner
+import com.finnvek.knittools.domain.model.PatternAnnotationPageLimitException
 import com.finnvek.knittools.domain.model.ProjectDocument
 import com.finnvek.knittools.domain.model.ShapePayload
 import com.finnvek.knittools.repository.CounterRepository
@@ -40,6 +41,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
@@ -56,6 +58,68 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import java.io.IOException
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class PatternAnnotationPageLimitViewModelTest {
+    @Before
+    fun setUp() {
+        Dispatchers.setMain(StandardTestDispatcher())
+    }
+
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
+    }
+
+    @Test fun `blocked page clears prior annotations and leaves valid pages available`() =
+        runTest {
+            val layerRepository = mockk<PatternAnnotationLayerRepository>()
+            val annotationRepository = mockk<PatternAnnotationRepository>()
+            val documentKey = PatternAnnotationDocumentKey.savedPattern(12L)
+            coEvery { layerRepository.getOrCreateMasterLayer(12L, documentKey) } returns
+                layer(id = 31L, owner = PatternAnnotationOwner.SavedPattern(12L, documentKey))
+            val visible =
+                PatternAnnotation(
+                    1L,
+                    31L,
+                    0,
+                    PatternAnnotationKind.LINE,
+                    ShapePayload(NormalizedPatternPoint(0f, 0f), NormalizedPatternPoint(1f, 1f), 0, 2f),
+                    0L,
+                )
+            every { annotationRepository.observePage(31L, 0) } returns flowOf(listOf(visible))
+            every { annotationRepository.observePage(31L, 1) } returns
+                flow { throw PatternAnnotationPageLimitException() }
+            val viewModel =
+                PatternAnnotationViewModel(
+                    SavedStateHandle(mapOf("savedPatternId" to 12L)),
+                    mockk(relaxed = true),
+                    layerRepository,
+                    annotationRepository,
+                    projectDocumentRepository = mockk(),
+                )
+            advanceUntilIdle()
+            assertEquals(listOf(visible), viewModel.uiState.value.masterAnnotations)
+            viewModel.setCurrentPage(1)
+            advanceUntilIdle()
+            assertEquals(PatternAnnotationLoadError.PAGE_LIMIT, viewModel.uiState.value.loadError)
+            assertTrue(
+                viewModel.uiState.value.masterAnnotations
+                    .isEmpty(),
+            )
+            assertTrue(
+                viewModel.uiState.value.projectAnnotations
+                    .isEmpty(),
+            )
+            assertEquals(null, viewModel.uiState.value.editableLayerId)
+            viewModel.eraseStrokeAt(NormalizedPatternPoint(0.5f, 0.5f))
+            coVerify(exactly = 0) { annotationRepository.deleteAnnotation(any()) }
+            viewModel.setCurrentPage(0)
+            advanceUntilIdle()
+            assertEquals(PatternAnnotationLoadError.NONE, viewModel.uiState.value.loadError)
+            assertEquals(listOf(visible), viewModel.uiState.value.masterAnnotations)
+        }
+}
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class PatternAnnotationViewModelTest {
@@ -612,6 +676,9 @@ class PatternAnnotationViewModelTest {
                 )
             advanceUntilIdle()
 
+            viewModel.selectAnnotationAt(NormalizedPatternPoint(0.2f, 0.5f))
+            runCurrent()
+            assertEquals(61L, viewModel.uiState.value.selectedAnnotationId)
             viewModel.eraseStrokeAt(NormalizedPatternPoint(0.2f, 0.5f))
             advanceUntilIdle()
 

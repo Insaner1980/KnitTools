@@ -154,10 +154,11 @@ class BackupBudgetTest {
         }
         budget.addRow("pattern_annotations")
         val dangling =
-            mutableMapOf<String, JsonElement>(
-                "kind" to JsonPrimitive("CHART_TRACKER"),
-                "payloadJson" to JsonPrimitive("""{"extraCounterId":7}"""),
-            )
+            backupAnnotationRow() +
+                mapOf<String, JsonElement>(
+                    "kind" to JsonPrimitive("CHART_TRACKER"),
+                    "payloadJson" to JsonPrimitive(chartPayload(7L)),
+                )
         budget.observeRow("pattern_annotations", dangling)
         budget.observeRow("pattern_annotations", dangling)
         budget.complete()
@@ -172,11 +173,20 @@ class BackupBudgetTest {
         assertThrows(BackupException::class.java) {
             exceeded.observeRow(
                 "pattern_annotations",
-                mapOf(
-                    "kind" to JsonPrimitive("CHART_TRACKER"),
-                    "payloadJson" to JsonPrimitive("""{"extraCounterId":8}"""),
-                ),
+                backupAnnotationRow() +
+                    mapOf(
+                        "kind" to JsonPrimitive("CHART_TRACKER"),
+                        "payloadJson" to JsonPrimitive(chartPayload(8L)),
+                    ),
             )
         }
     }
+
+    private fun chartPayload(id: Long): String =
+        """
+        {"region":{"bounds":{"left":0,"top":0,"right":1,"bottom":1},"name":"Chart","rows":1,"columns":1,
+        "rowDirection":"TOP_TO_BOTTOM","columnDirection":"LEFT_TO_RIGHT"},"trackingMode":"ACTIVE_ROW",
+        "counterType":"EXTRA","extraCounterId":$id,"counterStartValue":0,"gridStartIndex":0,"wrapAtEnd":false,
+        "highlightArgb":0,"highlightAlpha":0.2}
+        """.trimIndent()
 }

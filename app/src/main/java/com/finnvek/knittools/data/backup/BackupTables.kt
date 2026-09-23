@@ -218,7 +218,8 @@ internal object BackupTables {
         db.query("SELECT projectId FROM project_documents GROUP BY projectId HAVING SUM(isPrimary) != 1").use {
             BackupFormat.requireValid(!it.moveToFirst(), BackupError.VALIDATION)
         }
-        db.query("SELECT kind, payloadVersion, payloadJson FROM pattern_annotations").use { cursor ->
+        val annotationBudget = BackupBudget(trackEmbeddedIdentities = false)
+        db.query("SELECT kind, payloadVersion, payloadJson, layerId, page FROM pattern_annotations").use { cursor ->
             while (cursor.moveToNext()) {
                 val kind =
                     PatternAnnotationKind.entries.firstOrNull { it.name == cursor.getString(0) }
@@ -228,6 +229,7 @@ internal object BackupTables {
                     PatternAnnotationPayloadCodec.decode(kind, cursor.getInt(1), cursor.getString(2)) != null,
                     BackupError.VALIDATION,
                 )
+                annotationBudget.observeAnnotation(cursor.getLong(3), cursor.getInt(4), kind.name, cursor.getString(2))
             }
         }
     }

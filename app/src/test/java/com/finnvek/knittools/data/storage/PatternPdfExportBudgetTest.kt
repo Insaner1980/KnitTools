@@ -145,10 +145,24 @@ class PatternPdfExportBudgetTest {
         val output = PatternPdfExportBoundedOutputStream(target, maxBytes = 3L)
 
         output.write(byteArrayOf(1, 2, 3))
+        output.throwIfLimitExceeded()
 
         assertArrayEquals(byteArrayOf(1, 2, 3), target.toByteArray())
         assertLimit(PatternPdfExportLimitReason.OUTPUT_BYTES) { output.write(4) }
         assertArrayEquals(byteArrayOf(1, 2, 3), target.toByteArray())
+    }
+
+    @Test
+    fun `output limit remains failed when a native writer consumes the exception`() {
+        val target = ByteArrayOutputStream()
+        val output = PatternPdfExportBoundedOutputStream(target, maxBytes = 3L)
+
+        assertLimit(PatternPdfExportLimitReason.OUTPUT_BYTES) { output.write(byteArrayOf(1, 2, 3, 4)) }
+
+        assertLimit(PatternPdfExportLimitReason.OUTPUT_BYTES) { output.throwIfLimitExceeded() }
+        assertLimit(PatternPdfExportLimitReason.OUTPUT_BYTES) { output.write(1) }
+        assertLimit(PatternPdfExportLimitReason.OUTPUT_BYTES) { output.write(byteArrayOf(1)) }
+        assertArrayEquals(byteArrayOf(), target.toByteArray())
     }
 
     private fun lineAnnotation(id: Long) =

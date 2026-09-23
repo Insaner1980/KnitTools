@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="pattern_annotation_page_limit">Denne side har for mange eller for komplekse markeringer til at blive vist sikkert. Dine markeringer er bevaret.</string>
     <string name="pattern_annotations_layers">Annoteringslag</string>
     <string name="pattern_annotations_master">Mønsternoter</string>
     <string name="pattern_annotations_project">Projektnoter</string>

@@ -155,6 +155,7 @@ internal class PatternPdfExportBoundedOutputStream(
     private val checkCancelled: () -> Unit = {},
 ) : OutputStream() {
     private var writtenBytes = 0L
+    private var limitExceeded = false
 
     init {
         require(maxBytes >= 0L)
@@ -181,8 +182,13 @@ internal class PatternPdfExportBoundedOutputStream(
 
     override fun flush() = output.flush()
 
+    fun throwIfLimitExceeded() {
+        if (limitExceeded) fail(PatternPdfExportLimitReason.OUTPUT_BYTES)
+    }
+
     private fun requireCapacity(additionalBytes: Int) {
-        if (additionalBytes.toLong() > maxBytes - writtenBytes) fail(PatternPdfExportLimitReason.OUTPUT_BYTES)
+        if (additionalBytes.toLong() > maxBytes - writtenBytes) limitExceeded = true
+        throwIfLimitExceeded()
     }
 }
 

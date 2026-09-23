@@ -139,20 +139,32 @@ class PatternPdfExporter private constructor(
                 onProgress(PatternPdfExportProgress(pageIndex + 1, plan.pages.size))
             }
             coroutineContext.ensureActive()
-            val exportContext = coroutineContext
-            tempFile.outputStream().buffered().use { output ->
-                val boundedOutput =
-                    PatternPdfExportBoundedOutputStream(
-                        output = output,
-                        maxBytes = limits.maxTemporaryOutputBytes,
-                        checkCancelled = exportContext::ensureActive,
-                    )
-                document.writeTo(boundedOutput)
-                boundedOutput.flush()
-            }
+            writeDocument(document, tempFile)
             coroutineContext.ensureActive()
         } finally {
             document.close()
+        }
+    }
+
+    private suspend fun writeDocument(
+        document: PdfDocument,
+        tempFile: File,
+    ) {
+        val exportContext = coroutineContext
+        tempFile.outputStream().buffered().use { output ->
+            val boundedOutput =
+                PatternPdfExportBoundedOutputStream(
+                    output = output,
+                    maxBytes = limits.maxTemporaryOutputBytes,
+                    checkCancelled = exportContext::ensureActive,
+                )
+            try {
+                document.writeTo(boundedOutput)
+            } finally {
+                // Androidin natiivikirjoitin voi niellä streamin poikkeuksen tai korvata sen toisella.
+                boundedOutput.throwIfLimitExceeded()
+            }
+            boundedOutput.flush()
         }
     }
 

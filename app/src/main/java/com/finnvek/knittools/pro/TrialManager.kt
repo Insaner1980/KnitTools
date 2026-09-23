@@ -343,6 +343,7 @@ class TrialManager
                     )
                 val clockTampered =
                     clockTamperedAlready ||
+                        storedTiming == StoredTrialTiming.Legacy ||
                         rollbackExceedsTolerance(now.wallClockMillis, lastKnownTimestamp) ||
                         rollbackExceedsTolerance(now.wallClockMillis, startTimestamp)
                 return createTimingEvaluation(
@@ -398,13 +399,9 @@ class TrialManager
                 storedTiming: StoredTrialTiming.Anchored,
                 now: SessionTimeSnapshot,
             ): Long? {
-                val storedBootCount = storedTiming.anchorBootCount
-                val currentBootCount = now.bootCount
-                return if (storedBootCount != null && currentBootCount != null) {
-                    calculateKnownBootDelta(storedTiming, now, storedBootCount, currentBootCount)
-                } else {
-                    calculateUnavailableBootDelta(storedTiming, now)
-                }
+                val storedBootCount = storedTiming.anchorBootCount ?: return null
+                val currentBootCount = now.bootCount ?: return null
+                return calculateKnownBootDelta(storedTiming, now, storedBootCount, currentBootCount)
             }
 
             private fun calculateKnownBootDelta(
@@ -412,8 +409,8 @@ class TrialManager
                 now: SessionTimeSnapshot,
                 storedBootCount: Long,
                 currentBootCount: Long,
-            ): Long? =
-                when {
+            ): Long? {
+                return when {
                     currentBootCount < storedBootCount -> null
                     currentBootCount == storedBootCount ->
                         nonNegativeDifference(
@@ -421,29 +418,20 @@ class TrialManager
                             storedTiming.anchorElapsedRealtimeMillis,
                         )
 
-                    else ->
-                        nonNegativeDifference(
-                            now.wallClockMillis,
-                            storedTiming.anchorWallClockMillis,
-                        )
+                    else -> {
+                        val wallClockDelta =
+                            nonNegativeDifference(
+                                now.wallClockMillis,
+                                storedTiming.anchorWallClockMillis,
+                            ) ?: return null
+                        val bootCountDelta = currentBootCount - storedBootCount
+                        if (bootCountDelta > (Long.MAX_VALUE - wallClockDelta) / ROLLBACK_TOLERANCE_MILLIS) {
+                            return null
+                        }
+                        val compensatedDelta = wallClockDelta + bootCountDelta * ROLLBACK_TOLERANCE_MILLIS
+                        compensatedDelta.takeIf { it >= now.elapsedRealtimeMillis }
+                    }
                 }
-
-            private fun calculateUnavailableBootDelta(
-                storedTiming: StoredTrialTiming.Anchored,
-                now: SessionTimeSnapshot,
-            ): Long? {
-                val elapsedDelta =
-                    nonNegativeDifference(
-                        now.elapsedRealtimeMillis,
-                        storedTiming.anchorElapsedRealtimeMillis,
-                    )
-                val wallClockDelta =
-                    nonNegativeDifference(
-                        now.wallClockMillis,
-                        storedTiming.anchorWallClockMillis,
-                    )
-                if (elapsedDelta == null && wallClockDelta == null) return null
-                return maxOf(elapsedDelta ?: 0L, wallClockDelta ?: 0L)
             }
 
             private fun createTimingEvaluation(
@@ -535,7 +523,7 @@ class TrialManager
                 storedTiming.elapsedDurationMillis < 0L ||
                     storedTiming.anchorWallClockMillis <= 0L ||
                     storedTiming.anchorElapsedRealtimeMillis < 0L ||
-                    storedTiming.anchorBootCount?.let { it < 0L } == true
+                    storedTiming.anchorBootCount?.let { it < 0L } != false
 
             private fun hasInconsistentWallAnchors(
                 storedTiming: StoredTrialTiming.Anchored,
@@ -549,7 +537,7 @@ class TrialManager
             private fun isValidTimeSnapshot(snapshot: SessionTimeSnapshot): Boolean =
                 snapshot.wallClockMillis > 0L &&
                     snapshot.elapsedRealtimeMillis >= 0L &&
-                    snapshot.bootCount?.let { it >= 0L } != false
+                    snapshot.bootCount?.let { it >= 0L } == true
 
             private fun rollbackExceedsTolerance(
                 currentTimestamp: Long,

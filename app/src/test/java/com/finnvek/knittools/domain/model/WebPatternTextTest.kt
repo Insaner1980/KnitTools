@@ -230,7 +230,26 @@ class WebPatternTextTest {
                 null,
             )
 
-        assertTrue(result is WebPatternShareParseResult.WebLink)
+        assertEquals(
+            "https://EXAMPLE.com:443/pattern",
+            (result as WebPatternShareParseResult.WebLink).url.originalUrl,
+        )
+    }
+
+    @Test
+    fun `share parser handles many short URL matches at the shared text limit`() {
+        val firstUrl = "https://EXAMPLE.com:443/pattern"
+        val duplicateUrl = "https://example.com/pattern"
+        val repeatedUrls = "$firstUrl. $duplicateUrl "
+        val repeated = repeatedUrls.repeat(WEB_PATTERN_SHARED_TEXT_MAX_LENGTH / repeatedUrls.length)
+        val text = repeated.padEnd(WEB_PATTERN_SHARED_TEXT_MAX_LENGTH)
+
+        assertEquals(WEB_PATTERN_SHARED_TEXT_MAX_LENGTH, text.length)
+        val result = parseWebPatternSharedText(text, "  Cozy Cardigan  ")
+
+        assertEquals(firstUrl, (result as WebPatternShareParseResult.WebLink).url.originalUrl)
+        assertEquals("Cozy Cardigan", result.titleSuggestion)
+        assertTrue(parseWebPatternSharedText("$text ", null) is WebPatternShareParseResult.TooLong)
     }
 
     @Test
@@ -246,6 +265,12 @@ class WebPatternTextTest {
                 "https://www.ravelry.com/patterns/library/cozy-hat https://example.com/other",
                 null,
             ) is WebPatternShareParseResult.Ambiguous,
+        )
+        assertTrue(
+            parseWebPatternSharedText(
+                "https://example.com/one https://example.com/two https://example.com/%GG",
+                null,
+            ) is WebPatternShareParseResult.Invalid,
         )
     }
 

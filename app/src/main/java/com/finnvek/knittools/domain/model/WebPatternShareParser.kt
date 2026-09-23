@@ -42,25 +42,27 @@ fun parseWebPatternSharedText(
         return WebPatternShareParseResult.TooLong
     }
 
-    val matches = SHARED_URL_PATTERN.findAll(text).toList()
-    if (matches.isEmpty()) {
-        return if (POTENTIAL_UNSUPPORTED_URL_PATTERN.containsMatchIn(text)) {
-            WebPatternShareParseResult.Invalid
-        } else {
-            WebPatternShareParseResult.Empty
-        }
-    }
+    val firstTextIndex = text.indexOfFirst(Char::isLetterOrDigit)
+    val lastTextIndex = text.indexOfLast(Char::isLetterOrDigit)
 
     val distinctUrls = linkedMapOf<String, WebPatternUrl>()
-    for (match in matches) {
+    var foundMatch = false
+    for (match in SHARED_URL_PATTERN.findAll(text)) {
+        foundMatch = true
         val hasSurroundingText =
-            text.substring(0, match.range.first).any(Char::isLetterOrDigit) ||
-                text.substring(match.range.last + 1).any(Char::isLetterOrDigit)
+            firstTextIndex < match.range.first || lastTextIndex > match.range.last
         val candidate = match.value.trimSharedUrlPunctuation(hasSurroundingText)
         val validation =
             validateWebPatternUrl(candidate) as? WebPatternUrlValidation.Valid
                 ?: return WebPatternShareParseResult.Invalid
         distinctUrls.putIfAbsent(validation.value.canonicalUrl, validation.value)
+    }
+    if (!foundMatch) {
+        return if (POTENTIAL_UNSUPPORTED_URL_PATTERN.containsMatchIn(text)) {
+            WebPatternShareParseResult.Invalid
+        } else {
+            WebPatternShareParseResult.Empty
+        }
     }
     if (distinctUrls.size > 1) return WebPatternShareParseResult.Ambiguous
 

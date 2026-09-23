@@ -94,6 +94,8 @@ class ProjectListViewModel
 
         private val folderEventChannel = Channel<ProjectFolderMutationResult>(Channel.BUFFERED)
         val folderEvents = folderEventChannel.receiveAsFlow()
+        private val sessionErrorChannel = Channel<Int>(Channel.BUFFERED)
+        val sessionErrors = sessionErrorChannel.receiveAsFlow()
 
         // === Preferences ===
 
@@ -467,6 +469,8 @@ class ProjectListViewModel
                     ProjectCompletionResult.PersistenceFailure,
                     ProjectCompletionResult.ProjectUnavailable,
                     -> Unit
+                    ProjectCompletionResult.HistoryLimitReached ->
+                        sessionErrorChannel.trySend(R.string.work_session_history_full)
                 }
             }
         }
@@ -541,6 +545,9 @@ class ProjectListViewModel
                             projectId = id,
                             choice = choice.takeIf { activeSession.value?.projectId == id },
                         )
+                    if (result == ProjectCompletionResult.HistoryLimitReached) {
+                        sessionErrorChannel.trySend(R.string.work_session_history_full)
+                    }
                     if (result != ProjectCompletionResult.Completed) return false
                 }
                 _selectedProjectIds.update { it - id }

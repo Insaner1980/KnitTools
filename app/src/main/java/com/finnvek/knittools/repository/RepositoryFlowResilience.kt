@@ -12,8 +12,14 @@ private const val MAX_RETRY_EXPONENT = 5
 // onReadFailure kutsutaan jokaisesta uudelleenyritettävästä lukuvirheestä, jotta
 // kutsuja voi näyttää virhetilan ilman omaa retry-toteutusta.
 internal fun <T> Flow<T>.retryOnRepositoryReadFailure(onReadFailure: () -> Unit = {}): Flow<T> =
+    retryOnRepositoryReadFailureIf(retryIf = { true }, onReadFailure = onReadFailure)
+
+internal fun <T> Flow<T>.retryOnRepositoryReadFailureIf(
+    retryIf: (Exception) -> Boolean,
+    onReadFailure: () -> Unit = {},
+): Flow<T> =
     retryWhen { cause, attempt ->
-        if (cause is CancellationException || cause !is Exception) {
+        if (cause is CancellationException || cause !is Exception || !retryIf(cause)) {
             return@retryWhen false
         }
 

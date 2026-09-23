@@ -16,6 +16,7 @@ internal object BackupArchive {
         manifest: BackupManifest,
         check: () -> Unit = {},
     ) {
+        validateManifest(manifest)
         FileOutputStream(archive).use { file ->
             ZipOutputStream(file.buffered()).use { zip ->
                 zip.putNextEntry(ZipEntry(BackupFormat.MANIFEST))
@@ -25,7 +26,7 @@ internal object BackupArchive {
                     check()
                     zip.putNextEntry(ZipEntry(entry.path))
                     File(directory, entry.path).inputStream().use { input ->
-                        BackupFormat.copy(input, zip, entry.size, check)
+                        BackupFormat.requireValid(BackupFormat.copy(input, zip, entry.size, check) == entry.size)
                     }
                     zip.closeEntry()
                 }
@@ -34,6 +35,7 @@ internal object BackupArchive {
                 file.fd.sync()
             }
         }
+        BackupBudget().requireArchiveSize(archive.length(), BackupError.WRITE)
     }
 
     fun extract(
@@ -41,6 +43,7 @@ internal object BackupArchive {
         directory: File,
         check: () -> Unit = {},
     ): BackupManifest {
+        BackupBudget().requireArchiveSize(archive.length(), BackupError.INVALID)
         BackupZipStructure.verify(archive, check)
         val manifest =
             ZipFile(archive).use { zip ->
@@ -64,7 +67,10 @@ internal object BackupArchive {
                 val manifest = BackupFormat.json.decodeFromString<BackupManifest>(headerText)
                 validateManifest(manifest)
                 BackupFormat.requireValid(seen == manifest.entries.map { it.path }.toSet() + BackupFormat.MANIFEST)
-                val total = manifest.entries.sumOf { it.size }
+                val total =
+                    manifest.entries.fold(0L) { current, entry ->
+                        BackupFormat.addWithinLimit(current, entry.size, BackupLimits.MAX_EXTRACTED_BYTES)
+                    }
                 BackupFormat.space(directory, total)
                 manifest.entries.forEach { item ->
                     check()
@@ -114,7 +120,7 @@ internal object BackupArchive {
         }
     }
 
-    private fun validateManifest(manifest: BackupManifest) {
+    internal fun validateManifest(manifest: BackupManifest) {
         BackupFormat.requireValid(manifest.format == "KnitTools", BackupError.INVALID)
         BackupFormat.requireValid(
             manifest.formatVersion == 1 && manifest.dataVersion == 1 && manifest.schemaVersion == 25,
@@ -131,13 +137,12 @@ internal object BackupArchive {
                 .size == manifest.entries.size,
         )
         BackupFormat.requireValid(manifest.entries.map { it.path }.containsAll(BackupFormat.tablePaths))
-        var total = 0L
+        val budget = BackupBudget()
         manifest.entries.forEach { entry ->
             BackupFormat.requireValid(BackupFormat.allowedPath(entry.path))
             BackupFormat.requireValid(entry.size in 0..BackupFormat.limit(entry.path))
             BackupFormat.requireValid(BackupFormat.hashPattern.matches(entry.sha256))
-            total += entry.size
-            BackupFormat.requireValid(total <= BackupFormat.MAX_TOTAL)
+            budget.addArchiveEntry(entry.path, entry.size)
         }
     }
 

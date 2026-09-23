@@ -34,18 +34,27 @@ internal fun buildInsightsProjectFabric(
         today
             .with(TemporalAdjusters.previousOrSame(firstDayOfWeek))
             .minusWeeks((PROJECT_FABRIC_WEEK_COUNT - 1).toLong())
-    val bucketsByProject =
-        sessions
-            .groupBy { it.projectId }
-            .mapValues { (_, projectSessions) ->
-                SessionMetrics.paceBuckets(
-                    sessions = projectSessions,
-                    rangeStartMillis = startDate.atStartOfDay(zone).toInstant().toEpochMilli(),
-                    interval = PaceGroupingInterval.DAY,
-                    zone = zone,
-                    firstDayOfWeek = firstDayOfWeek,
-                )
-            }
+    val buckets =
+        SessionPaceAccumulator(
+            startDate.atStartOfDay(zone).toInstant().toEpochMilli(),
+            PaceGroupingInterval.DAY,
+            zone,
+            firstDayOfWeek,
+        )
+    sessions.forEach(buckets::add)
+    return buildInsightsProjectFabric(buckets.values, today, firstDayOfWeek, projectOrder)
+}
+
+internal fun buildInsightsProjectFabric(
+    bucketsByProject: Map<Long, Map<LocalDate, PaceBucketMetric>>,
+    today: LocalDate,
+    firstDayOfWeek: DayOfWeek,
+    projectOrder: List<Long>,
+): InsightsProjectFabricModel? {
+    val startDate =
+        today
+            .with(TemporalAdjusters.previousOrSame(firstDayOfWeek))
+            .minusWeeks((PROJECT_FABRIC_WEEK_COUNT - 1).toLong())
     val projectRank = projectOrder.withIndex().associate { (index, projectId) -> projectId to index }
     val orderedProjectIds =
         bucketsByProject.keys.sortedWith(

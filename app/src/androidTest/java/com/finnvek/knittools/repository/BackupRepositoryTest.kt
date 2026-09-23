@@ -14,11 +14,15 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.finnvek.knittools.data.backup.BackupArchive
+import com.finnvek.knittools.data.backup.BackupError
 import com.finnvek.knittools.data.backup.BackupException
 import com.finnvek.knittools.data.backup.BackupFormat
+import com.finnvek.knittools.data.backup.BackupLimits
 import com.finnvek.knittools.data.backup.BackupPreview
+import com.finnvek.knittools.data.backup.BackupProviderIo
 import com.finnvek.knittools.data.backup.BackupRestoreFiles
 import com.finnvek.knittools.data.backup.BackupTables
+import com.finnvek.knittools.data.backup.ContentResolverBackupProviderIo
 import com.finnvek.knittools.data.datastore.PreferencesManager
 import com.finnvek.knittools.data.datastore.ThemeMode
 import com.finnvek.knittools.data.local.ActiveSessionSchemaConstraints
@@ -31,13 +35,23 @@ import com.finnvek.knittools.data.storage.AppFileStorage
 import com.finnvek.knittools.domain.calculator.evaluateActiveSessionTime
 import com.finnvek.knittools.domain.model.ActiveSessionTimeEvaluation
 import com.finnvek.knittools.domain.model.CounterHistoryAction
+import com.finnvek.knittools.domain.model.FreehandPayload
+import com.finnvek.knittools.domain.model.NormalizedPatternPoint
+import com.finnvek.knittools.domain.model.PatternAnnotationKind
+import com.finnvek.knittools.domain.model.PatternAnnotationPayloadCodec
 import com.finnvek.knittools.domain.model.SessionTimeSnapshot
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
@@ -53,7 +67,9 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
+import java.io.IOException
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicInteger
 
 @RunWith(AndroidJUnit4::class)
 class BackupRepositoryTest {
@@ -61,6 +77,8 @@ class BackupRepositoryTest {
     private lateinit var directory: File
     private lateinit var db: KnitToolsDatabase
     private lateinit var repository: BackupRepository
+    private lateinit var patternFiles: PatternFileReferenceCoordinator
+    private lateinit var yarnCards: YarnCardRepository
     private var selectionId = UUID.randomUUID()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -87,7 +105,8 @@ class BackupRepositoryTest {
                 .addCallback(ActiveSessionSchemaConstraints.callback)
                 .addCallback(ProjectDocumentSchemaConstraints.callback)
                 .build()
-        val yarn =
+        patternFiles = PatternFileReferenceCoordinator()
+        yarnCards =
             YarnCardRepository(
                 db.yarnCardDao(),
                 db.counterProjectDao(),
@@ -95,7 +114,7 @@ class BackupRepositoryTest {
                 RoomDatabaseTransactionRunner(db),
                 Dispatchers.IO,
             )
-        repository = BackupRepository(context, db, PatternFileReferenceCoordinator(), yarn, Dispatchers.IO, scope)
+        repository = createRepository(ContentResolverBackupProviderIo(context))
     }
 
     @After fun tearDown() {
@@ -196,6 +215,212 @@ class BackupRepositoryTest {
             assertTrue(File(context.noBackupFilesDir, "manual-backup").listFiles().orEmpty().isEmpty())
         }
 
+    @Test fun oversizedFieldsAreRejectedBeforePreviewAndAgainAtConfirmationWithoutLiveMutation() =
+        runBlocking {
+            seed()
+            db.openHelper.writableDatabase.execSQL("UPDATE counter_projects SET name = 'Current'")
+            val archive = File(directory, "oversized-source")
+            repository.export(archive.toUri())
+            rewriteTableText(
+                archive,
+                "counter_projects",
+                "notes",
+                "x".repeat(BackupLimits.MAX_FIELD_CHARACTERS + 1),
+            )
+
+            expectBackupFailure { prepare(archive.toUri()) }
+            assertEquals("Current", text("SELECT name FROM counter_projects"))
+            assertTrue(File(context.noBackupFilesDir, "manual-backup").listFiles().orEmpty().isEmpty())
+
+            val valid = File(directory, "valid-source")
+            repository.export(valid.toUri())
+            prepare(valid.toUri())
+            val staged = File(context.noBackupFilesDir, "manual-backup/$selectionId/backup.zip")
+            rewriteTableText(
+                staged,
+                "counter_projects",
+                "notes",
+                "x".repeat(BackupLimits.MAX_FIELD_CHARACTERS + 1),
+            )
+
+            expectBackupFailure { repository.restore(selectionId) }
+            assertEquals("Current", text("SELECT name FROM counter_projects"))
+            assertTrue(File(context.noBackupFilesDir, "manual-backup").listFiles().orEmpty().isEmpty())
+        }
+
+    @Test fun exportRefusesContentThatTheRestoreBudgetWouldReject() =
+        runBlocking {
+            seed()
+            val oversized = "x".repeat(BackupLimits.MAX_FIELD_CHARACTERS + 1)
+            db.openHelper.writableDatabase.execSQL(
+                "UPDATE counter_projects SET notes = ?",
+                arrayOf(oversized),
+            )
+            val archive = File(directory, "rejected-export")
+
+            expectBackupFailure { repository.export(archive.toUri()) }
+
+            assertEquals(oversized.length.toLong(), number("SELECT LENGTH(notes) FROM counter_projects"))
+            assertFalse(archive.exists())
+        }
+
+    @Test fun oversizedSessionsAreRejectedBeforePreviewAndAtConfirmationWithoutLiveMutation() =
+        runBlocking {
+            seed()
+            db.openHelper.writableDatabase.execSQL("UPDATE counter_projects SET name = 'Current'")
+            val archive = File(directory, "oversized-sessions")
+            repository.export(archive.toUri())
+            rewriteOversizedSessions(archive)
+            expectBackupFailure { prepare(archive.toUri()) }
+            assertEquals("Current", text("SELECT name FROM counter_projects"))
+            assertTrue(File(context.noBackupFilesDir, "manual-backup").listFiles().orEmpty().isEmpty())
+            val valid = File(directory, "valid-sessions")
+            repository.export(valid.toUri())
+            prepare(valid.toUri())
+            rewriteOversizedSessions(File(context.noBackupFilesDir, "manual-backup/$selectionId/backup.zip"))
+            expectBackupFailure { repository.restore(selectionId) }
+            assertEquals("Current", text("SELECT name FROM counter_projects"))
+            assertTrue(File(context.noBackupFilesDir, "manual-backup").listFiles().orEmpty().isEmpty())
+        }
+
+    @Test fun exportRefusesSessionsAboveTheRestoreCeiling() =
+        runBlocking {
+            seed()
+            val sql = db.openHelper.writableDatabase
+            sql.execSQL("DELETE FROM sessions")
+            sql.execSQL(
+                "WITH RECURSIVE n(x) AS (SELECT 1 UNION ALL SELECT x + 1 FROM n WHERE x < ?) " +
+                    "INSERT INTO sessions(projectId, startedAt, endedAt, startRow, endRow, " +
+                    "durationMinutes, durationSeconds, rowsWorked) " +
+                    "SELECT (SELECT MIN(id) FROM counter_projects), 1000, 2000, 0, 1, 1, 1, 1 FROM n",
+                arrayOf(BackupLimits.MAX_SESSION_ROWS + 1),
+            )
+            val archive = File(directory, "rejected-session-export")
+            expectBackupFailure { repository.export(archive.toUri()) }
+            assertFalse(archive.exists())
+            assertEquals(BackupLimits.MAX_SESSION_ROWS + 1, number("SELECT COUNT(*) FROM sessions"))
+        }
+
+    private fun rewriteOversizedSessions(archive: File) {
+        val payload = File(directory, "session-rewrite-${UUID.randomUUID()}").apply { mkdirs() }
+        try {
+            val manifest = BackupArchive.extract(archive, payload)
+            val table = File(payload, "tables/sessions.jsonl")
+            val lines = table.readLines()
+            table.bufferedWriter().use { writer ->
+                writer.appendLine(lines.first())
+                repeat((BackupLimits.MAX_SESSION_ROWS + 1).toInt()) { writer.appendLine(lines[1]) }
+            }
+            val updated =
+                manifest.copy(
+                    entries =
+                        manifest.entries.map { entry ->
+                            val file = File(payload, entry.path)
+                            entry.copy(size = file.length(), sha256 = BackupFormat.digest(file))
+                        },
+                )
+            BackupArchive.write(payload, archive, updated)
+        } finally {
+            payload.deleteRecursively()
+        }
+    }
+
+    @Test fun annotationBudgetsRejectBeforePreviewAndAgainBeforeLiveMutation() =
+        runBlocking {
+            seed()
+            for (workLimit in listOf(false, true)) {
+                val archive = File(directory, "annotation-source-$workLimit")
+                repository.export(archive.toUri())
+                rewriteAnnotationRows(archive, unsafeAnnotationPayloads(workLimit))
+                expectBackupFailure { prepare(archive.toUri()) }
+                assertEquals(1L, number("SELECT COUNT(*) FROM pattern_annotations"))
+                assertEquals("Cardigan", text("SELECT name FROM counter_projects"))
+                val valid = File(directory, "annotation-valid-$workLimit")
+                repository.export(valid.toUri())
+                prepare(valid.toUri())
+                rewriteAnnotationRows(
+                    File(context.noBackupFilesDir, "manual-backup/$selectionId/backup.zip"),
+                    unsafeAnnotationPayloads(workLimit),
+                )
+                expectBackupFailure { repository.restore(selectionId) }
+                assertEquals(1L, number("SELECT COUNT(*) FROM pattern_annotations"))
+                assertEquals("Cardigan", text("SELECT name FROM counter_projects"))
+            }
+        }
+
+    @Test fun annotationExportRefusesTheSameCountAndWorkAsRestoreWithoutDeletingRows() =
+        runBlocking {
+            seed()
+            val sql = db.openHelper.writableDatabase
+            for (workLimit in listOf(false, true)) {
+                sql.execSQL("DELETE FROM pattern_annotations WHERE id != (SELECT MIN(id) FROM pattern_annotations)")
+                val payloads = unsafeAnnotationPayloads(workLimit)
+                sql.execSQL("UPDATE pattern_annotations SET payloadJson = ?", arrayOf(payloads.first()))
+                payloads.drop(1).forEach { payload ->
+                    sql.execSQL(
+                        "INSERT INTO pattern_annotations(layerId,page,kind,payloadVersion,payloadJson," +
+                            "zIndex,createdAt,updatedAt) SELECT layerId,page,kind,payloadVersion,?,zIndex," +
+                            "createdAt,updatedAt FROM pattern_annotations LIMIT 1",
+                        arrayOf(payload),
+                    )
+                }
+                val archive = File(directory, "annotation-rejected-$workLimit")
+                expectBackupFailure { repository.export(archive.toUri()) }
+                assertFalse(archive.exists())
+                assertEquals(payloads.size.toLong(), number("SELECT COUNT(*) FROM pattern_annotations"))
+                expectBackupFailure { BackupTables.verify(sql) }
+            }
+        }
+
+    private fun unsafeAnnotationPayloads(workLimit: Boolean): List<String> {
+        val sizes = if (workLimit) List(8) { 2_048 } + 1 else List(257) { 1 }
+        return sizes.map { size ->
+            requireNotNull(
+                PatternAnnotationPayloadCodec.encode(
+                    PatternAnnotationKind.FREEHAND,
+                    FreehandPayload(List(size) { NormalizedPatternPoint(it / 2_048f, 0.5f) }, 0, 2f),
+                ),
+            ).payloadJson
+        }
+    }
+
+    private fun rewriteAnnotationRows(
+        archive: File,
+        payloads: List<String>,
+    ) {
+        val directory = File(this.directory, "annotation-rewrite-${UUID.randomUUID()}").apply { mkdirs() }
+        try {
+            val manifest = BackupArchive.extract(archive, directory)
+            val table = File(directory, "tables/pattern_annotations.jsonl")
+            val lines = table.readLines()
+            val header = BackupFormat.json.parseToJsonElement(lines.first()).jsonArray
+            val row =
+                BackupFormat.json
+                    .parseToJsonElement(lines[1])
+                    .jsonArray
+                    .toMutableList()
+            table.bufferedWriter().use { writer ->
+                writer.appendLine(lines.first())
+                payloads.forEachIndexed { index, payload ->
+                    row[header.indexOf(JsonPrimitive("id"))] = JsonPrimitive(index + 1)
+                    row[header.indexOf(JsonPrimitive("payloadJson"))] = JsonPrimitive(payload)
+                    writer.appendLine(JsonArray(row).toString())
+                }
+            }
+            val updated =
+                manifest.copy(
+                    entries =
+                        manifest.entries.map { entry ->
+                            val file = File(directory, entry.path)
+                            entry.copy(size = file.length(), sha256 = BackupFormat.digest(file))
+                        },
+                )
+            BackupArchive.write(directory, archive, updated)
+        } finally {
+            directory.deleteRecursively()
+        }
+    }
+
     @Test fun stalePreviewCannotRestoreOrDiscardAnotherSelectionsBackup() =
         runBlocking {
             seed()
@@ -215,6 +440,70 @@ class BackupRepositoryTest {
             assertEquals("Current", text("SELECT name FROM counter_projects"))
             repository.restore(secondId)
             assertEquals("Second backup", text("SELECT name FROM counter_projects"))
+            assertTrue(File(context.noBackupFilesDir, "manual-backup").listFiles().orEmpty().isEmpty())
+        }
+
+    @Test fun competingPreparationsCannotPublishOrDeleteAnotherSelectionsPreview() =
+        runBlocking {
+            seed()
+            val archive = File(directory, "racing-source")
+            repository.export(archive.toUri())
+            db.openHelper.writableDatabase.execSQL("UPDATE counter_projects SET name = 'Current'")
+            val racingIo = RacingReadProviderIo(archive)
+            val racingRepository = createRepository(racingIo)
+            val firstId = UUID.randomUUID()
+            val secondId = UUID.randomUUID()
+            val first = async(Dispatchers.IO) { runCatching { racingRepository.prepare(mockUri("first"), firstId) } }
+            racingIo.firstStarted.await()
+
+            val second = async(Dispatchers.IO) { racingRepository.prepare(mockUri("second"), secondId) }
+            assertEquals(1, second.await().projects)
+            racingIo.releaseFirst.complete(Unit)
+
+            assertTrue(first.await().exceptionOrNull() is CancellationException)
+            racingRepository.cancelPreview(firstId)
+            racingRepository.restore(secondId)
+            assertEquals("Cardigan", text("SELECT name FROM counter_projects"))
+            assertTrue(File(context.noBackupFilesDir, "manual-backup").listFiles().orEmpty().isEmpty())
+        }
+
+    @Test fun stalledExternalReferenceDoesNotHoldBackupContentOrDatabaseLocks() =
+        runBlocking {
+            seed()
+            db.openHelper.writableDatabase.execSQL(
+                "UPDATE yarn_cards SET photoUri = 'content://stalled.provider/photo'",
+            )
+            val stalledIo = StalledReadProviderIo()
+            val stalledRepository = createRepository(stalledIo)
+            val export = async(Dispatchers.IO) { stalledRepository.export(mockUri("destination")) }
+            stalledIo.started.await()
+
+            withTimeout(2_000) {
+                stalledRepository.cancelPreview(null)
+                patternFiles.withReferenceLock {
+                    yarnCards.withPhotoStorageLock {
+                        db.withTransaction {
+                            db.openHelper.writableDatabase
+                                .query("SELECT COUNT(*) FROM yarn_cards")
+                                .close()
+                        }
+                    }
+                }
+            }
+
+            export.cancelAndJoin()
+            assertTrue(File(context.noBackupFilesDir, "manual-backup").listFiles().orEmpty().isEmpty())
+        }
+
+    @Test fun providerWriteFailureMapsToWriteAndCleansLocalArchive() =
+        runBlocking {
+            seed()
+            val failingRepository = createRepository(FailingWriteProviderIo())
+
+            val failure = runCatching { failingRepository.export(mockUri("destination")) }.exceptionOrNull()
+
+            assertTrue(failure is BackupException)
+            assertEquals(BackupError.WRITE, (failure as BackupException).error)
             assertTrue(File(context.noBackupFilesDir, "manual-backup").listFiles().orEmpty().isEmpty())
         }
 
@@ -498,6 +787,40 @@ class BackupRepositoryTest {
         }
     }
 
+    private fun rewriteTableText(
+        archive: File,
+        tableName: String,
+        columnName: String,
+        value: String,
+    ) {
+        val payload = File(directory, "rewrite-${UUID.randomUUID()}").apply { mkdirs() }
+        try {
+            val manifest = BackupArchive.extract(archive, payload)
+            val table = File(payload, "tables/$tableName.jsonl")
+            val lines = table.readLines()
+            val header = BackupFormat.json.parseToJsonElement(lines.first()).jsonArray
+            val column = header.indexOf(JsonPrimitive(columnName))
+            val row =
+                BackupFormat.json
+                    .parseToJsonElement(lines[1])
+                    .jsonArray
+                    .toMutableList()
+            row[column] = JsonPrimitive(value)
+            table.writeText(lines.first() + "\n" + JsonArray(row) + "\n")
+            val updated =
+                manifest.copy(
+                    entries =
+                        manifest.entries.map { entry ->
+                            val file = File(payload, entry.path)
+                            entry.copy(size = file.length(), sha256 = BackupFormat.digest(file))
+                        },
+                )
+            BackupArchive.write(payload, archive, updated)
+        } finally {
+            payload.deleteRecursively()
+        }
+    }
+
     private fun insert(
         table: String,
         changes: Map<String, Any?>,
@@ -537,11 +860,90 @@ class BackupRepositoryTest {
             it.getString(0)
         }
 
+    private fun createRepository(providerIo: BackupProviderIo): BackupRepository =
+        BackupRepository(
+            context,
+            db,
+            patternFiles,
+            yarnCards,
+            Dispatchers.IO,
+            scope,
+            providerIo,
+        )
+
+    private fun mockUri(name: String): Uri = "content://backup-test/$name".toUri()
+
     private suspend fun expectBackupFailure(block: suspend () -> Unit) {
         try {
             block()
             throw AssertionError("Expected backup failure")
         } catch (_: BackupException) {
         }
+    }
+
+    private class RacingReadProviderIo(
+        private val archive: File,
+    ) : BackupProviderIo {
+        val firstStarted = CompletableDeferred<Unit>()
+        val releaseFirst = CompletableDeferred<Unit>()
+        private val reads = AtomicInteger()
+
+        override suspend fun read(
+            source: Uri,
+            target: File,
+            maxBytes: Long,
+            check: () -> Unit,
+        ) {
+            if (reads.incrementAndGet() == 1) {
+                firstStarted.complete(Unit)
+                releaseFirst.await()
+            }
+            check()
+            archive.copyTo(target)
+        }
+
+        override suspend fun write(
+            source: File,
+            destination: Uri,
+            maxBytes: Long,
+            check: () -> Unit,
+        ) = error("Unexpected write")
+    }
+
+    private class StalledReadProviderIo : BackupProviderIo {
+        val started = CompletableDeferred<Unit>()
+
+        override suspend fun read(
+            source: Uri,
+            target: File,
+            maxBytes: Long,
+            check: () -> Unit,
+        ) {
+            started.complete(Unit)
+            awaitCancellation()
+        }
+
+        override suspend fun write(
+            source: File,
+            destination: Uri,
+            maxBytes: Long,
+            check: () -> Unit,
+        ) = error("Unexpected write")
+    }
+
+    private class FailingWriteProviderIo : BackupProviderIo {
+        override suspend fun read(
+            source: Uri,
+            target: File,
+            maxBytes: Long,
+            check: () -> Unit,
+        ) = error("Unexpected read")
+
+        override suspend fun write(
+            source: File,
+            destination: Uri,
+            maxBytes: Long,
+            check: () -> Unit,
+        ) = throw IOException("provider unavailable")
     }
 }

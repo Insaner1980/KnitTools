@@ -414,9 +414,13 @@ object DebugDemoDataSeeder {
                 DemoSession(blanketId, 10, 104, 112, 49),
                 DemoSession(beanieId, 14, 88, 96, 45),
             )
+        val sessionDao = database.sessionDao()
+        if (sessionDao.countCompletedSessions() > MAX_COMPLETED_SESSIONS - sessions.size) {
+            return
+        }
         sessions.forEach { session ->
             val endedAt = now - session.daysAgo * DAY_MILLIS - 2L * 60L * 60L * 1_000L
-            database.sessionDao().insert(
+            sessionDao.insert(
                 SessionEntity(
                     projectId = session.projectId,
                     startedAt = endedAt - session.minutes * MINUTE_MILLIS,

@@ -2,10 +2,12 @@ package com.finnvek.knittools.data.backup
 
 import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.sqlite.db.SupportSQLiteStatement
+import com.finnvek.knittools.domain.model.YARN_CARD_IDS_MAX_CHARACTERS
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import io.mockk.verifyOrder
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
 import org.junit.Assert.assertEquals
@@ -16,6 +18,47 @@ import org.junit.rules.TemporaryFolder
 import java.io.File
 
 class BackupTablesTest {
+    @Test fun sessionReadAndExportShareTheExactBoundaryIncludingDirectReads() {
+        val folder = temporary.newFolder()
+        val file = File(folder, "tables/sessions.jsonl").apply { requireNotNull(parentFile).mkdirs() }
+        file.writeText("[\"id\"]\n[1]\n[2]\n")
+        var consumed = 0
+        BackupTables.read(folder, "sessions", listOf("id"), budget = BackupBudget(BackupLimits(maxSessionRows = 2))) {
+            consumed++
+        }
+        assertEquals(2, consumed)
+        file.appendText("[3]\n")
+        consumed = 0
+        assertThrows(BackupException::class.java) {
+            BackupTables.read(
+                folder,
+                "sessions",
+                listOf("id"),
+                budget = BackupBudget(BackupLimits(maxSessionRows = 2)),
+            ) {
+                consumed++
+            }
+        }
+        assertEquals(2, consumed)
+        val db = database()
+        every { db.query("SELECT * FROM `sessions`") } answers {
+            backupCursor(List(3) { listOf(1L, "Wool", 2.5, null) }).also { cursor ->
+                every { cursor.getColumnIndexOrThrow(any()) } answers
+                    { columns.indexOfFirst { it[1] == firstArg<String>() } }
+            }
+        }
+        assertThrows(BackupException::class.java) {
+            BackupTables.export(db, folder, { _, _ -> }, BackupBudget(BackupLimits(maxSessionRows = 2))) {}
+        }
+    }
+
+    @Test fun directDatabaseVerificationCannotBypassTheSessionCeiling() {
+        val db = database()
+        every { db.query("SELECT 1 FROM sessions LIMIT 1 OFFSET ${BackupLimits.MAX_SESSION_ROWS}") } returns
+            backupCursor(listOf(listOf(1)))
+        assertThrows(BackupException::class.java) { BackupTables.verify(db) }
+    }
+
     @get:Rule val temporary = TemporaryFolder()
     private val statement = mockk<SupportSQLiteStatement>(relaxed = true)
     private val columns =
@@ -34,6 +77,7 @@ class BackupTablesTest {
                 when {
                     firstArg<String>().startsWith("PRAGMA table_info") -> backupCursor(columns)
                     firstArg<String>() == "PRAGMA quick_check" -> backupCursor(listOf(listOf("ok")))
+                    firstArg<String>() == "SELECT * FROM `pattern_annotations`" -> backupCursor(emptyList())
                     firstArg<String>().startsWith("SELECT *") ->
                         backupCursor(listOf(listOf(1L, "Wool", 2.5, null))).also {
                             every { it.getColumnIndexOrThrow(any()) } answers
@@ -54,11 +98,11 @@ class BackupTablesTest {
             File(folder, "tables/sessions.jsonl").readText(),
         )
         BackupTables.import(db, folder)
-        verify(exactly = BackupFormat.tables.size) { statement.bindDouble(1, 2.5) }
-        verify(exactly = BackupFormat.tables.size) { statement.bindLong(2, 1) }
-        verify(exactly = BackupFormat.tables.size) { statement.bindString(3, "Renamed") }
-        verify(exactly = BackupFormat.tables.size) { statement.bindNull(4) }
-        verify(exactly = BackupFormat.tables.size) { statement.executeInsert() }
+        verify(exactly = BackupFormat.tables.size - 1) { statement.bindDouble(1, 2.5) }
+        verify(exactly = BackupFormat.tables.size - 1) { statement.bindLong(2, 1) }
+        verify(exactly = BackupFormat.tables.size - 1) { statement.bindString(3, "Renamed") }
+        verify(exactly = BackupFormat.tables.size - 1) { statement.bindNull(4) }
+        verify(exactly = BackupFormat.tables.size - 1) { statement.executeInsert() }
         assertEquals(setOf("files/shared.bin"), BackupTables.references(db))
         BackupTables.clear(db)
         verifyOrder {
@@ -110,6 +154,23 @@ class BackupTablesTest {
         }
     }
 
+    @Test fun yarnCardIdsPreflightRejectsOversizedValueBeforeDatabaseMutation() {
+        val folder = temporary.newFolder()
+        val oversized = "x".repeat(YARN_CARD_IDS_MAX_CHARACTERS + 1)
+        File(folder, "tables/counter_projects.jsonl").apply {
+            requireNotNull(parentFile).mkdirs()
+            writeText("[\"yarnCardIds\"]\n${JsonArray(listOf(JsonPrimitive(oversized)))}\n")
+        }
+
+        val failure =
+            assertThrows(BackupException::class.java) {
+                BackupTables.preflightYarnCardIds(folder, listOf("yarnCardIds"))
+            }
+
+        assertEquals(BackupError.VALIDATION, failure.error)
+        verify(exactly = 0) { statement.executeInsert() }
+    }
+
     @Test fun timestampsKeepLongPrecisionAndNullableValuesRemainUnknown() {
         val db = database()
         every { db.query(match<String> { it.startsWith("PRAGMA table_info") }) } answers {
@@ -119,10 +180,18 @@ class BackupTablesTest {
         BackupFormat.tables.forEach {
             File(folder, "tables/$it.jsonl").apply {
                 requireNotNull(parentFile).mkdirs()
-                writeText("[\"timestamp\"]\n[9223372036854775807]\n[null]\n")
+                writeText(
+                    if (it ==
+                        "pattern_annotations"
+                    ) {
+                        "[\"timestamp\"]\n"
+                    } else {
+                        "[\"timestamp\"]\n[9223372036854775807]\n[null]\n"
+                    },
+                )
             }
         }
-        BackupTables.import(db, folder)
+        BackupTables.import(db, folder, budget = BackupBudget(trackEmbeddedIdentities = false))
         verify { statement.bindLong(1, Long.MAX_VALUE) }
         verify { statement.bindNull(1) }
     }
@@ -135,9 +204,9 @@ class BackupTablesTest {
                 "PRAGMA quick_check" to listOf(listOf<Any?>("corrupt")),
                 "SELECT projectId FROM project_documents GROUP BY projectId HAVING SUM(isPrimary) != 1" to
                     listOf(listOf<Any?>(1)),
-                "SELECT kind, payloadVersion, payloadJson FROM pattern_annotations" to
+                "SELECT kind, payloadVersion, payloadJson, layerId, page FROM pattern_annotations" to
                     listOf(listOf<Any?>("UNKNOWN", 1, "{}")),
-                "SELECT kind, payloadVersion, payloadJson FROM pattern_annotations" to
+                "SELECT kind, payloadVersion, payloadJson, layerId, page FROM pattern_annotations" to
                     listOf(listOf<Any?>("CHART_TRACKER", 999, "{}")),
             )
         failures.forEach { (query, rows) ->
@@ -158,5 +227,30 @@ class BackupTablesTest {
             }
         }
         assertThrows(BackupException::class.java) { BackupTables.export(db, temporary.newFolder(), { _, _ -> }) {} }
+    }
+
+    @Test fun exportAndRestoreRejectTheSameOversizedTextField() {
+        val limits = BackupLimits(maxFieldCharacters = 4, maxRowCharacters = 100)
+        val db = database()
+        every { db.query(match<String> { it.startsWith("SELECT *") }) } answers {
+            backupCursor(listOf(listOf(1L, "12345", 2.5, null))).also {
+                every { it.getColumnIndexOrThrow(any()) } answers
+                    { columns.indexOfFirst { it[1] == firstArg<String>() } }
+            }
+        }
+        assertThrows(BackupException::class.java) {
+            BackupTables.export(db, temporary.newFolder(), { _, _ -> }, BackupBudget(limits)) {}
+        }
+
+        val folder = temporary.newFolder()
+        File(folder, "tables/sessions.jsonl").apply {
+            requireNotNull(parentFile).mkdirs()
+            writeText("[\"name\"]\n[\"1234\"]\n")
+        }
+        BackupTables.read(folder, "sessions", listOf("name"), budget = BackupBudget(limits)) {}
+        File(folder, "tables/sessions.jsonl").writeText("[\"name\"]\n[\"12345\"]\n")
+        assertThrows(BackupException::class.java) {
+            BackupTables.read(folder, "sessions", listOf("name"), budget = BackupBudget(limits)) {}
+        }
     }
 }

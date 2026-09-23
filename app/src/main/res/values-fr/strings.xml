@@ -816,6 +816,7 @@
     <string name="work_session_active_description">Session de travail pour %1$s, %2$s écoulé</string>
     <string name="work_session_could_not_start">Impossible de démarrer la session</string>
     <string name="work_session_could_not_save">Impossible d’enregistrer la session</string>
+    <string name="work_session_history_full">L’historique des sessions est plein. Vos sessions existantes sont conservées.</string>
     <string name="work_session_could_not_discard">Impossible d’ignorer la session</string>
     <string name="work_session_recovery_already_handled">Cette vérification de session a déjà été traitée.</string>
     <string name="work_session_retry">Réessayer</string>

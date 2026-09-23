@@ -120,27 +120,72 @@ class MemoryTokenStore implements RavelryTokenStore {
   }
 }
 
+class RecordingTokenStore extends MemoryTokenStore {
+  constructor(private readonly events: string[]) {
+    super();
+  }
+
+  override async getToken(uid: string): Promise<StoredRavelryToken | null> {
+    this.events.push("token:get");
+    return super.getToken(uid);
+  }
+}
+
+interface RecordedRateLimitCall {
+  readonly scope: "combined" | "uid" | "global";
+  readonly uid?: string;
+  readonly bucket: RavelryRateLimitBucket;
+}
+
 class RecordingRateLimiter implements RavelryRateLimiter {
-  readonly calls: Array<{ uid: string; bucket: RavelryRateLimitBucket }> = [];
+  readonly calls: RecordedRateLimitCall[] = [];
+
+  constructor(private readonly events?: string[]) {}
 
   async consume(uid: string, bucket: RavelryRateLimitBucket): Promise<void> {
-    this.calls.push({ uid, bucket });
+    this.calls.push({ scope: "combined", uid, bucket });
+    this.events?.push(`combined:${bucket}`);
   }
 
   async consumeUid(uid: string, bucket: RavelryRateLimitBucket): Promise<void> {
-    this.calls.push({ uid, bucket });
+    this.calls.push({ scope: "uid", uid, bucket });
+    this.events?.push(`uid:${bucket}`);
+  }
+
+  async consumeGlobal(bucket: RavelryRateLimitBucket): Promise<void> {
+    this.calls.push({ scope: "global", bucket });
+    this.events?.push(`global:${bucket}`);
   }
 }
 
 class BlockingRateLimiter implements RavelryRateLimiter {
+  constructor(
+    private readonly blockedScope: "uid" | "global" = "uid",
+    private readonly events?: string[],
+  ) {}
+
   async consume(_uid: string, bucket: RavelryRateLimitBucket): Promise<void> {
+    this.events?.push(`combined:${bucket}`);
+    const rule = RAVELRY_RATE_LIMIT_RULES[bucket];
+    throw new RavelryRateLimitError(bucket, this.blockedScope, rule.limit, rule.windowMillis);
+  }
+
+  async consumeUid(_uid: string, bucket: RavelryRateLimitBucket): Promise<void> {
+    this.events?.push(`uid:${bucket}`);
+    if (this.blockedScope !== "uid") {
+      return;
+    }
     const rule = RAVELRY_RATE_LIMIT_RULES[bucket];
     throw new RavelryRateLimitError(bucket, "uid", rule.limit, rule.windowMillis);
   }
 
-  async consumeUid(_uid: string, bucket: RavelryRateLimitBucket): Promise<void> {
+  async consumeGlobal(bucket: RavelryRateLimitBucket): Promise<void> {
+    this.events?.push(`global:${bucket}`);
+    if (this.blockedScope !== "global") {
+      return;
+    }
     const rule = RAVELRY_RATE_LIMIT_RULES[bucket];
-    throw new RavelryRateLimitError(bucket, "uid", rule.limit, rule.windowMillis);
+    throw new RavelryRateLimitError(bucket, "global", rule.limit, rule.windowMillis);
   }
 }
 
@@ -594,6 +639,73 @@ describe("Ravelry backend search and import", () => {
     assert.equal(JSON.stringify(fromUrl).includes("pdf_url"), false);
   });
 
+  it("consumes each connected search and direct import scope exactly once before Ravelry", async () => {
+    const events: string[] = [];
+    const tokenStore = new RecordingTokenStore(events);
+    await tokenStore.saveToken({
+      uid: "uid",
+      authType: "oauth2",
+      accessToken: "access-token",
+      createdAtMillis: 1_000,
+      updatedAtMillis: 1_000,
+    });
+    const rateLimiter = new RecordingRateLimiter(events);
+    const client: RavelryClient = {
+      async getCurrentUser() {
+        throw new Error("not used");
+      },
+      async searchPatterns() {
+        events.push("client:search");
+        return {
+          patterns: [],
+          pagination: { page: 1, pageCount: 1, resultCount: 0 },
+        };
+      },
+      async getPatternById(_accessToken, ravelryPatternId) {
+        events.push("client:import");
+        return {
+          ravelryPatternId,
+          title: "Cozy Hat",
+          designerName: "Ada Designer",
+          canonicalUrl: "https://www.ravelry.com/patterns/library/cozy-hat",
+          availability: "unknown",
+        };
+      },
+    };
+
+    await searchPatternsForUser({
+      uid: "uid",
+      tokenStore,
+      client,
+      rateLimiter,
+      query: { query: "hat" },
+    });
+    await importPatternById({
+      uid: "uid",
+      tokenStore,
+      client,
+      rateLimiter,
+      ravelryPatternId: 42,
+    });
+
+    assert.deepEqual(events, [
+      "uid:search",
+      "token:get",
+      "global:search",
+      "client:search",
+      "uid:import",
+      "token:get",
+      "global:import",
+      "client:import",
+    ]);
+    assert.deepEqual(rateLimiter.calls, [
+      { scope: "uid", uid: "uid", bucket: "search" },
+      { scope: "global", bucket: "search" },
+      { scope: "uid", uid: "uid", bucket: "import" },
+      { scope: "global", bucket: "import" },
+    ]);
+  });
+
   it("consumes search and import rate-limit buckets for slug URL imports", async () => {
     const tokenStore = new MemoryTokenStore();
     await tokenStore.saveToken({
@@ -645,8 +757,10 @@ describe("Ravelry backend search and import", () => {
     });
 
     assert.deepEqual(rateLimiter.calls, [
-      { uid: "uid", bucket: "search" },
-      { uid: "uid", bucket: "import" },
+      { scope: "uid", uid: "uid", bucket: "search" },
+      { scope: "global", bucket: "search" },
+      { scope: "uid", uid: "uid", bucket: "import" },
+      { scope: "global", bucket: "import" },
     ]);
   });
 
@@ -701,11 +815,15 @@ describe("Ravelry backend search and import", () => {
         error instanceof RavelryPatternImportError && error.code === "pattern_not_found",
     );
     assert.equal(detailCalls, 0);
-    assert.deepEqual(rateLimiter.calls, [{ uid: "uid", bucket: "search" }]);
+    assert.deepEqual(rateLimiter.calls, [
+      { scope: "uid", uid: "uid", bucket: "search" },
+      { scope: "global", bucket: "search" },
+    ]);
   });
 
   it("does not call Ravelry when the authenticated search bucket is exhausted", async () => {
-    const tokenStore = new MemoryTokenStore();
+    const events: string[] = [];
+    const tokenStore = new RecordingTokenStore(events);
     await tokenStore.saveToken({
       uid: "uid",
       authType: "oauth2",
@@ -732,12 +850,13 @@ describe("Ravelry backend search and import", () => {
         uid: "uid",
         tokenStore,
         client,
-        rateLimiter: new BlockingRateLimiter(),
+        rateLimiter: new BlockingRateLimiter("uid", events),
         query: { query: "hat" },
       }),
       /ravelry_rate_limited/,
     );
     assert.equal(searchCount, 0);
+    assert.deepEqual(events, ["uid:search"]);
   });
 
   it("does not refresh expired Ravelry tokens before search or import buckets are consumed", async () => {
@@ -801,8 +920,9 @@ describe("Ravelry backend search and import", () => {
   });
 
   it("does not call Ravelry when the Firebase user has no stored Ravelry token", async () => {
-    const tokenStore = new MemoryTokenStore();
-    const rateLimiter = new RecordingRateLimiter();
+    const events: string[] = [];
+    const tokenStore = new RecordingTokenStore(events);
+    const rateLimiter = new RecordingRateLimiter(events);
     let searchCount = 0;
     const client = {
       async getCurrentUser() {
@@ -828,7 +948,55 @@ describe("Ravelry backend search and import", () => {
       /ravelry_not_connected/,
     );
     assert.equal(searchCount, 0);
-    assert.deepEqual(rateLimiter.calls, []);
+    assert.deepEqual(events, ["uid:search", "token:get"]);
+    assert.deepEqual(rateLimiter.calls, [
+      { scope: "uid", uid: "uid", bucket: "search" },
+    ]);
+  });
+
+  it("does not consume global capacity for an expired token that cannot be refreshed", async () => {
+    const events: string[] = [];
+    const tokenStore = new RecordingTokenStore(events);
+    await tokenStore.saveToken({
+      uid: "uid",
+      authType: "oauth2",
+      accessToken: "expired-access-token",
+      expiresAtMillis: 999,
+      createdAtMillis: 100,
+      updatedAtMillis: 100,
+    });
+    const rateLimiter = new RecordingRateLimiter(events);
+    let clientCalls = 0;
+    const client: RavelryClient = {
+      async getCurrentUser() {
+        throw new Error("not used");
+      },
+      async searchPatterns() {
+        throw new Error("not used");
+      },
+      async getPatternById() {
+        clientCalls += 1;
+        throw new Error("not used");
+      },
+    };
+
+    await assert.rejects(
+      importPatternById({
+        uid: "uid",
+        tokenStore,
+        client,
+        rateLimiter,
+        nowMillis: () => 1_000,
+        ravelryPatternId: 42,
+      }),
+      /ravelry_not_connected/,
+    );
+
+    assert.equal(clientCalls, 0);
+    assert.deepEqual(events, ["uid:import", "token:get"]);
+    assert.deepEqual(rateLimiter.calls, [
+      { scope: "uid", uid: "uid", bucket: "import" },
+    ]);
   });
 
   it("rejects unauthenticated Ravelry callables before backend work or request data validation", async () => {
@@ -852,7 +1020,8 @@ describe("Ravelry backend search and import", () => {
   });
 
   it("refreshes an expired token before searching patterns", async () => {
-    const tokenStore = new MemoryTokenStore();
+    const events: string[] = [];
+    const tokenStore = new RecordingTokenStore(events);
     await tokenStore.saveToken({
       uid: "uid",
       authType: "oauth2",
@@ -862,8 +1031,10 @@ describe("Ravelry backend search and import", () => {
       createdAtMillis: 100,
       updatedAtMillis: 100,
     });
+    const rateLimiter = new RecordingRateLimiter(events);
     const refresh: OAuthTokenRefresh = async ({ refreshToken }) => {
       assert.equal(refreshToken, "old-refresh-token");
+      events.push("refresh");
       return {
         accessToken: "fresh-access-token",
         refreshToken: "rotated-refresh-token",
@@ -876,6 +1047,7 @@ describe("Ravelry backend search and import", () => {
       },
       async searchPatterns(accessToken: string) {
         assert.equal(accessToken, "fresh-access-token");
+        events.push("client:search");
         return {
           patterns: [],
           pagination: { page: 1, pageCount: 1, resultCount: 0 },
@@ -890,11 +1062,23 @@ describe("Ravelry backend search and import", () => {
       uid: "uid",
       tokenStore,
       client,
+      rateLimiter,
       refresh,
       nowMillis: () => 1_000,
       query: { query: "hat" },
     });
 
+    assert.deepEqual(events, [
+      "uid:search",
+      "token:get",
+      "global:search",
+      "refresh",
+      "client:search",
+    ]);
+    assert.deepEqual(rateLimiter.calls, [
+      { scope: "uid", uid: "uid", bucket: "search" },
+      { scope: "global", bucket: "search" },
+    ]);
     assert.deepEqual(await tokenStore.getToken("uid"), {
       uid: "uid",
       authType: "oauth2",
@@ -905,6 +1089,56 @@ describe("Ravelry backend search and import", () => {
       updatedAtMillis: 1_000,
       connectionGeneration: 0,
     });
+  });
+
+  it("rejects global capacity before refreshing an expired token or calling Ravelry", async () => {
+    const events: string[] = [];
+    const tokenStore = new RecordingTokenStore(events);
+    await tokenStore.saveToken({
+      uid: "uid",
+      authType: "oauth2",
+      accessToken: "expired-access-token",
+      refreshToken: "old-refresh-token",
+      expiresAtMillis: 999,
+      createdAtMillis: 100,
+      updatedAtMillis: 100,
+    });
+    let refreshCalls = 0;
+    let clientCalls = 0;
+    const client: RavelryClient = {
+      async getCurrentUser() {
+        throw new Error("not used");
+      },
+      async searchPatterns() {
+        clientCalls += 1;
+        throw new Error("not used");
+      },
+      async getPatternById() {
+        clientCalls += 1;
+        throw new Error("not used");
+      },
+    };
+
+    await assert.rejects(
+      importPatternById({
+        uid: "uid",
+        tokenStore,
+        client,
+        rateLimiter: new BlockingRateLimiter("global", events),
+        refresh: async () => {
+          refreshCalls += 1;
+          return { accessToken: "not-used" };
+        },
+        nowMillis: () => 1_000,
+        ravelryPatternId: 42,
+      }),
+      (error: unknown) =>
+        error instanceof RavelryRateLimitError && error.scope === "global",
+    );
+
+    assert.equal(refreshCalls, 0);
+    assert.equal(clientCalls, 0);
+    assert.deepEqual(events, ["uid:import", "token:get", "global:import"]);
   });
 
   it("keeps refresh handling when importing a slug URL", async () => {

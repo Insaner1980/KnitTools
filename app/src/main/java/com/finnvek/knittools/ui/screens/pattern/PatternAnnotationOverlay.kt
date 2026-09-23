@@ -52,7 +52,13 @@ internal fun PatternAnnotationOverlay(
             )
         }
     val annotationsWithDraft =
-        if (inProgressVisible) visibleAnnotations + listOfNotNull(inProgressAnnotation) else visibleAnnotations
+        if (inProgressVisible &&
+            inProgressAnnotation != null
+        ) {
+            visibleAnnotations + inProgressAnnotation
+        } else {
+            visibleAnnotations
+        }
     Canvas(modifier = modifier) {
         drawIntoCanvas { canvas ->
             PatternAnnotationCanvasRenderer.render(

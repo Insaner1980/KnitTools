@@ -801,6 +801,7 @@
     <string name="work_session_active_description">Arbeitssitzung für %1$s, %2$s vergangen</string>
     <string name="work_session_could_not_start">Sitzung konnte nicht gestartet werden</string>
     <string name="work_session_could_not_save">Sitzung konnte nicht gespeichert werden</string>
+    <string name="work_session_history_full">Der Sitzungsverlauf ist voll. Deine bisherigen Sitzungen bleiben erhalten.</string>
     <string name="work_session_could_not_discard">Sitzung konnte nicht verworfen werden</string>
     <string name="work_session_recovery_already_handled">Diese Sitzungsprüfung wurde bereits erledigt.</string>
     <string name="work_session_retry">Erneut versuchen</string>

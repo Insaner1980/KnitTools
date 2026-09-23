@@ -59,7 +59,7 @@ class InsightsViewModelTest {
         insightsFeature = MutableStateFlow(false)
         streakFeature = MutableStateFlow(false)
         every { repository.getAllProjects() } returns flowOf(emptyList())
-        every { repository.getSessionsForInsights(null, null) } returns flowOf(emptyList())
+        stubSessions(repository, flowOf(emptyList()))
         every { proManager.hasFeature(ProFeature.INSIGHTS_CHARTS) } answers { insightsFeature.value }
         every { proManager.hasFeatureFlow(ProFeature.INSIGHTS_CHARTS) } returns insightsFeature
         every { proManager.hasFeature(ProFeature.STREAK) } answers { streakFeature.value }
@@ -99,7 +99,7 @@ class InsightsViewModelTest {
             val zone = ZoneId.systemDefault()
             val today = LocalDate.now(zone)
             val session = sessionAt(date = today, hour = 10, minute = 0, rows = 12, minutes = 30, zone = zone)
-            every { repository.getSessionsForInsights(null, null) } returns flowOf(listOf(session))
+            stubSessions(repository, flowOf(listOf(session)))
 
             val viewModel = createViewModel()
             val state = viewModel.uiState.first { it.hasSessionData }
@@ -122,7 +122,7 @@ class InsightsViewModelTest {
                     sessionAt(date = today.minusWeeks(2), hour = 10, minute = 0, rows = 8, minutes = 20, zone = zone),
                     sessionAt(date = today, hour = 10, minute = 0, rows = 12, minutes = 30, zone = zone),
                 )
-            every { repository.getSessionsForInsights(null, null) } returns flowOf(sessions)
+            stubSessions(repository, flowOf(sessions))
 
             val state = createViewModel().uiState.first { it.hasSessionData }
 
@@ -138,7 +138,7 @@ class InsightsViewModelTest {
             val today = LocalDate.now(zone)
             val oldDate = today.minusDays(40)
             val session = sessionAt(date = oldDate, hour = 10, minute = 0, rows = 10, minutes = 30, zone = zone)
-            every { repository.getSessionsForInsights(null, null) } returns flowOf(listOf(session))
+            stubSessions(repository, flowOf(listOf(session)))
 
             val viewModel = createViewModel()
             viewModel.selectTimeRange(TimeRange.THIS_WEEK)
@@ -169,7 +169,7 @@ class InsightsViewModelTest {
                         CounterProject(id = 2L, name = "Empty project"),
                     ),
                 )
-            every { repository.getSessionsForInsights(null, null) } returns flowOf(listOf(session))
+            stubSessions(repository, flowOf(listOf(session)))
 
             val viewModel = createViewModel()
             viewModel.selectProject(2L)
@@ -209,7 +209,7 @@ class InsightsViewModelTest {
                         zone = zone,
                     ),
                 )
-            every { repository.getSessionsForInsights(null, null) } returns flowOf(sessions)
+            stubSessions(repository, flowOf(sessions))
 
             val viewModel = createViewModel()
             viewModel.selectTimeRange(TimeRange.THIS_WEEK)
@@ -227,8 +227,10 @@ class InsightsViewModelTest {
         runTest {
             val zone = ZoneId.systemDefault()
             val today = LocalDate.now(zone)
-            every { repository.getSessionsForInsights(null, null) } returns
-                flowOf(listOf(sessionAt(date = today, hour = 10, minute = 0, rows = 10, minutes = 60, zone = zone)))
+            stubSessions(
+                repository,
+                flowOf(listOf(sessionAt(date = today, hour = 10, minute = 0, rows = 10, minutes = 60, zone = zone))),
+            )
 
             val viewModel = createViewModel()
             viewModel.selectTimeRange(TimeRange.ALL_TIME)
@@ -247,7 +249,7 @@ class InsightsViewModelTest {
             val zone = ZoneId.systemDefault()
             val today = LocalDate.now(zone)
             val session = sessionAt(date = today, hour = 10, minute = 0, rows = 10, minutes = 90, zone = zone)
-            every { repository.getSessionsForInsights(null, null) } returns flowOf(listOf(session))
+            stubSessions(repository, flowOf(listOf(session)))
 
             val viewModel = createViewModel()
             val state = viewModel.uiState.first { it.hasSessionData }
@@ -272,7 +274,7 @@ class InsightsViewModelTest {
                     rowsWorked = 1,
                     zoneId = zone.id,
                 )
-            every { repository.getSessionsForInsights(null, null) } returns flowOf(listOf(session))
+            stubSessions(repository, flowOf(listOf(session)))
 
             val state = createViewModel().uiState.first { !it.isLoading }
 
@@ -285,7 +287,7 @@ class InsightsViewModelTest {
             val projectRows = MutableSharedFlow<List<CounterProject>>(replay = 1)
             val sessionRows = MutableSharedFlow<List<KnitSession>>(replay = 1)
             every { repository.getAllProjects() } returns projectRows
-            every { repository.getSessionsForInsights(null, null) } returns sessionRows
+            stubSessions(repository, sessionRows)
             val viewModel = createViewModel()
             val observed = mutableListOf<InsightsUiState>()
             val job = launch { viewModel.uiState.take(2).toList(observed) }
@@ -618,8 +620,10 @@ class InsightsViewModelTest {
         runTest {
             val zone = ZoneId.systemDefault()
             val today = LocalDate.now(zone)
-            every { repository.getSessionsForInsights(null, null) } returns
-                flowOf(listOf(sessionAt(date = today, hour = 10, minute = 0, rows = 10, minutes = 30, zone = zone)))
+            stubSessions(
+                repository,
+                flowOf(listOf(sessionAt(date = today, hour = 10, minute = 0, rows = 10, minutes = 30, zone = zone))),
+            )
 
             val viewModel = createViewModel()
             val freeState = viewModel.uiState.first { it.hasSessionData }
@@ -650,7 +654,7 @@ class InsightsViewModelTest {
                     sessionAt(date = today, hour = 11, minute = 0, rows = 20, minutes = 60, zone = zone)
                         .copy(projectId = 3L),
                 )
-            every { repository.getSessionsForInsights(null, null) } returns flowOf(sessions)
+            stubSessions(repository, flowOf(sessions))
 
             val state = createViewModel().uiState.first { it.projectFabric != null }
 

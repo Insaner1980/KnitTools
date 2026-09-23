@@ -6,12 +6,14 @@ import com.finnvek.knittools.data.local.ActiveSessionEntity
 import com.finnvek.knittools.data.local.CounterHistoryEntity
 import com.finnvek.knittools.data.local.CounterProjectDao
 import com.finnvek.knittools.data.local.DatabaseTransactionRunner
+import com.finnvek.knittools.data.local.MAX_COMPLETED_SESSIONS
 import com.finnvek.knittools.data.local.ProjectCompletionEntity
 import com.finnvek.knittools.data.local.ProjectCounterDao
 import com.finnvek.knittools.data.local.ProjectFolderAssignmentEntity
 import com.finnvek.knittools.data.local.ProjectFolderDao
 import com.finnvek.knittools.data.local.SessionDao
 import com.finnvek.knittools.data.local.SessionEntity
+import com.finnvek.knittools.data.local.SessionProjectActivity
 import com.finnvek.knittools.data.local.toDomain
 import com.finnvek.knittools.data.local.toEntity
 import com.finnvek.knittools.data.storage.PatternDocumentStorage
@@ -52,17 +54,25 @@ import com.finnvek.knittools.pro.ProManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.withContext
+import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+
+internal class SessionHistoryLimitReachedException : IllegalStateException()
 
 sealed interface ProjectCreationResult {
     data class Created(
@@ -1205,7 +1215,7 @@ class CounterRepository
                 ) is ActiveSessionTimeEvaluation.NeedsReview
 
         suspend fun startSession(projectId: Long): StartSessionResult =
-            runSessionMutation(StartSessionResult.PersistenceFailure) {
+            runSessionMutation(StartSessionResult.PersistenceFailure, StartSessionResult.HistoryLimitReached) {
                 val project =
                     dao.getProject(projectId)?.toDomain()
                         ?: return@runSessionMutation StartSessionResult.ProjectMissing
@@ -1256,7 +1266,7 @@ class CounterRepository
             reviewedRowsWorked: Int,
             reviewedEndRow: Int,
         ): StopSessionResult =
-            runSessionMutation(StopSessionResult.PersistenceFailure) {
+            runSessionMutation(StopSessionResult.PersistenceFailure, StopSessionResult.HistoryLimitReached) {
                 val now = sessionTimeSource.snapshot()
                 val active =
                     synchronizeActiveSession(now)
@@ -1302,7 +1312,10 @@ class CounterRepository
             recoveryIntervalToken: String,
             durationSeconds: Long,
         ): RecoveryResolutionResult =
-            runSessionMutation(RecoveryResolutionResult.PersistenceFailure) {
+            runSessionMutation(
+                RecoveryResolutionResult.PersistenceFailure,
+                RecoveryResolutionResult.HistoryLimitReached,
+            ) {
                 if (durationSeconds < 0L) return@runSessionMutation RecoveryResolutionResult.InvalidDuration
                 val active =
                     activeRecoverySession(sessionToken, recoveryIntervalToken)
@@ -1337,7 +1350,10 @@ class CounterRepository
             recoveryIntervalToken: String,
             totalDurationSeconds: Long,
         ): RecoveryResolutionResult =
-            runSessionMutation(RecoveryResolutionResult.PersistenceFailure) {
+            runSessionMutation(
+                RecoveryResolutionResult.PersistenceFailure,
+                RecoveryResolutionResult.HistoryLimitReached,
+            ) {
                 val active =
                     activeRecoverySession(sessionToken, recoveryIntervalToken)
                         ?: return@runSessionMutation RecoveryResolutionResult.StaleAction
@@ -1359,7 +1375,10 @@ class CounterRepository
             sessionToken: String,
             recoveryIntervalToken: String,
         ): RecoveryResolutionResult =
-            runSessionMutation(RecoveryResolutionResult.PersistenceFailure) {
+            runSessionMutation(
+                RecoveryResolutionResult.PersistenceFailure,
+                RecoveryResolutionResult.HistoryLimitReached,
+            ) {
                 val active =
                     sessionDao.getActiveSession()
                         ?: return@runSessionMutation RecoveryResolutionResult.StaleAction
@@ -1396,7 +1415,7 @@ class CounterRepository
             expectedSessionToken: String,
             saveCurrent: Boolean,
         ): StartSessionResult =
-            runSessionMutation(StartSessionResult.PersistenceFailure) {
+            runSessionMutation(StartSessionResult.PersistenceFailure, StartSessionResult.HistoryLimitReached) {
                 val requested =
                     dao.getProject(requestedProjectId)?.toDomain()
                         ?: return@runSessionMutation StartSessionResult.ProjectMissing
@@ -1425,7 +1444,10 @@ class CounterRepository
             choice: ActiveSessionCompletionChoice?,
             completedAtMillis: Long? = null,
         ): ProjectCompletionResult =
-            runSessionMutation(ProjectCompletionResult.PersistenceFailure) {
+            runSessionMutation(
+                ProjectCompletionResult.PersistenceFailure,
+                ProjectCompletionResult.HistoryLimitReached,
+            ) {
                 val project = dao.getProject(projectId)
                 if (project == null) {
                     return@runSessionMutation ProjectCompletionResult.ProjectUnavailable
@@ -1547,26 +1569,87 @@ class CounterRepository
 
         fun getCompletedProjectCount(): Flow<Int> = sessionDao.getCompletedProjectCount().retryOnRepositoryReadFailure()
 
-        fun getSessionsForInsights(
+        /** Koostaa yhden eheän tilannekuvan säilyttämättä istuntohistoriaa muistissa. */
+        @OptIn(ExperimentalCoroutinesApi::class)
+        fun <T> observeSessionsForInsights(
             projectId: Long?,
             start: Long?,
-        ): Flow<List<KnitSession>> {
-            val sessions =
-                when {
-                    projectId == null && start == null -> sessionDao.getAllSessionsForInsights()
-                    projectId == null && start != null -> sessionDao.getAllSessionsForInsightsSince(start)
-                    projectId != null && start == null -> sessionDao.getProjectSessionsForInsights(projectId)
-                    projectId != null && start != null ->
-                        sessionDao.getProjectSessionsForInsightsSince(
-                            projectId = projectId,
-                            start = start,
-                        )
-                    else -> sessionDao.getAllSessionsForInsights()
+            zone: ZoneId,
+            create: (SessionInsightsFacts) -> T,
+            accumulate: suspend (T, List<KnitSession>) -> Unit,
+        ): Flow<T> =
+            sessionDao
+                .observeSessionChanges()
+                .mapLatest {
+                    val facts =
+                        transactionRunner.run {
+                            SessionInsightsFacts(
+                                sessionDao.hasAnySessions(),
+                                sessionDao.getSessionProjectActivity(projectId),
+                            )
+                        }
+                    val firstSessionDate = if (start == null) firstInsightDate(projectId, zone) else null
+                    val result = create(facts.copy(firstSessionDate = firstSessionDate))
+                    var afterId = Long.MIN_VALUE
+                    do {
+                        currentCoroutineContext().ensureActive()
+                        val batch =
+                            when {
+                                projectId == null && start == null -> sessionDao.getInsightSessionBatch(afterId)
+                                projectId == null && start != null ->
+                                    sessionDao.getInsightSessionBatchSince(
+                                        afterId,
+                                        start,
+                                    )
+                                projectId != null && start == null ->
+                                    sessionDao.getProjectInsightSessionBatch(
+                                        projectId,
+                                        afterId,
+                                    )
+                                else ->
+                                    sessionDao.getProjectInsightSessionBatchSince(
+                                        requireNotNull(projectId),
+                                        afterId,
+                                        requireNotNull(start),
+                                    )
+                            }
+                        if (batch.isEmpty()) break
+                        accumulate(result, batch.map { it.toDomain() })
+                        afterId = batch.last().id
+                    } while (true)
+                    result
+                }.retryOnRepositoryReadFailure()
+                .flowOn(ioDispatcher)
+
+        private suspend fun firstInsightDate(
+            projectId: Long?,
+            fallbackZone: ZoneId,
+        ): LocalDate? {
+            val earliestStart = sessionDao.getFirstSessionStart(projectId) ?: return null
+            val latestStart = saturatingAdd(earliestStart, 36L * 60L * 60L * 1_000L)
+            var first: LocalDate? = null
+            var afterId = Long.MIN_VALUE
+            // Vyöhykkeet kattavat -18..+18 tuntia. Myöhemmät alut eivät voi edeltää näitä paikallispäiviä.
+            do {
+                currentCoroutineContext().ensureActive()
+                val batch = sessionDao.getInsightFirstDateBatch(projectId, afterId, latestStart)
+                if (batch.isEmpty()) break
+                batch.forEach { row ->
+                    val zone = row.zoneId?.let { runCatching { ZoneId.of(it) }.getOrNull() } ?: fallbackZone
+                    val date =
+                        Instant
+                            .ofEpochMilli(row.startedAt)
+                            .atZone(zone)
+                            .toLocalDate()
+                    first = first?.let { minOf(it, date) } ?: date
                 }
-            return sessions.toDomainSessions()
+                afterId = batch.last().id
+            } while (true)
+            return first
         }
 
-        suspend fun insertSession(session: KnitSession): Long = sessionDao.insert(session.toEntity())
+        suspend fun insertSession(session: KnitSession): Long =
+            transactionRunner.run { insertCompletedSessionRow(session.toEntity()) }
 
         suspend fun deleteSession(id: Long) = sessionDao.deleteById(id)
 
@@ -1750,7 +1833,7 @@ class CounterRepository
             val durationMillis =
                 if (safeDuration > Long.MAX_VALUE / 1_000L) Long.MAX_VALUE else safeDuration * 1_000L
             val endedAt = saturatingAdd(active.startedAtWallMillis.coerceAtLeast(0L), durationMillis)
-            return sessionDao.insert(
+            return insertCompletedSessionRow(
                 SessionEntity(
                     projectId = active.projectId,
                     startedAt = active.startedAtWallMillis.coerceAtLeast(0L),
@@ -1765,11 +1848,21 @@ class CounterRepository
             )
         }
 
+        private suspend fun insertCompletedSessionRow(session: SessionEntity): Long {
+            if (sessionDao.countCompletedSessions() >= MAX_COMPLETED_SESSIONS) {
+                throw SessionHistoryLimitReachedException()
+            }
+            return sessionDao.insert(session)
+        }
+
         private suspend fun createStartedSession(
             projectId: Long,
             startRow: Int,
             now: com.finnvek.knittools.domain.model.SessionTimeSnapshot,
         ): StartSessionResult.Started {
+            if (sessionDao.countCompletedSessions() >= MAX_COMPLETED_SESSIONS) {
+                throw SessionHistoryLimitReachedException()
+            }
             val session =
                 ActiveSessionEntity(
                     sessionToken = UUID.randomUUID().toString(),
@@ -1844,12 +1937,15 @@ class CounterRepository
 
         private suspend fun <T> runSessionMutation(
             persistenceFailure: T,
+            historyLimitReached: T? = null,
             block: suspend () -> T,
         ): T =
             try {
                 transactionRunner.run(block)
             } catch (cancellation: CancellationException) {
                 throw cancellation
+            } catch (_: SessionHistoryLimitReachedException) {
+                historyLimitReached ?: persistenceFailure
             } catch (_: Exception) {
                 persistenceFailure
             }
@@ -1904,3 +2000,9 @@ private fun String.containsMergedNoteBlock(block: String): Boolean =
     block.isNotEmpty() && split(MERGED_NOTES_SEPARATOR).any { it == block }
 
 private const val MERGED_NOTES_SEPARATOR = "\n\n---\n\n"
+
+data class SessionInsightsFacts(
+    val hasAnySessionData: Boolean,
+    val projects: List<SessionProjectActivity>,
+    val firstSessionDate: LocalDate? = null,
+)

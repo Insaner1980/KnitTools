@@ -4,6 +4,7 @@ import android.content.Context
 import com.finnvek.knittools.data.local.CounterProjectEntity
 import com.finnvek.knittools.data.local.ImmediateDatabaseTransactionRunner
 import com.finnvek.knittools.data.local.YarnCardEntity
+import com.finnvek.knittools.domain.model.YARN_CARD_IDS_MAX_TOKENS
 import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
@@ -317,6 +318,99 @@ class YarnCardRepositoryDomainApiTest {
             assertEquals(true, updated)
             assertEquals(5L to 11L, yarnDao.lastLinkedProjectUpdate)
             assertEquals(mapOf(10L to "1", 11L to "2,5"), projectDao.updatedYarnCardIds)
+        }
+
+    @Test
+    fun `yarn card relink rejects a target at the link budget`() =
+        runTest {
+            val cardId = YARN_CARD_IDS_MAX_TOKENS.toLong() + 1L
+            val yarnDao =
+                FakeYarnCardDao(
+                    yarnCards = listOf(YarnCardEntity(id = cardId, yarnName = "Overflow")),
+                )
+            val projectDao =
+                RepositoryDomainFakeCounterProjectDao(
+                    projects =
+                        listOf(
+                            CounterProjectEntity(
+                                id = 10L,
+                                yarnCardIds = (1..YARN_CARD_IDS_MAX_TOKENS).joinToString(","),
+                            ),
+                        ),
+                )
+            val repository =
+                YarnCardRepository(
+                    yarnDao,
+                    projectDao,
+                    context,
+                    ImmediateDatabaseTransactionRunner,
+                    UnconfinedTestDispatcher(testScheduler),
+                )
+
+            val updated = repository.updateLinkedProjectId(cardId, 10L)
+
+            assertEquals(false, updated)
+            assertNull(yarnDao.lastLinkedProjectUpdate)
+            assertEquals(emptyMap<Long, String>(), projectDao.updatedYarnCardIds)
+        }
+
+    @Test
+    fun `over limit legacy project blocks relink and deletion without partial writes`() =
+        runTest {
+            val legacyIds = (1..YARN_CARD_IDS_MAX_TOKENS + 1).joinToString(",")
+            val yarnDao = FakeYarnCardDao(yarnCards = listOf(YarnCardEntity(id = 5L, linkedProjectId = 10L)))
+            val projectDao =
+                RepositoryDomainFakeCounterProjectDao(
+                    projects =
+                        listOf(
+                            CounterProjectEntity(id = 10L, yarnCardIds = legacyIds),
+                            CounterProjectEntity(id = 11L, yarnCardIds = ""),
+                        ),
+                )
+            val repository =
+                YarnCardRepository(
+                    yarnDao,
+                    projectDao,
+                    context,
+                    ImmediateDatabaseTransactionRunner,
+                    UnconfinedTestDispatcher(testScheduler),
+                )
+
+            assertEquals(false, repository.updateLinkedProjectId(5L, 11L))
+            assertEquals(false, repository.deleteCard(5L))
+            assertNull(yarnDao.lastLinkedProjectUpdate)
+            assertEquals(emptyList<Long>(), yarnDao.deletedIds)
+            assertEquals(emptyMap<Long, String>(), projectDao.updatedYarnCardIds)
+        }
+
+    @Test
+    fun `detail edit preserves an over limit legacy project link`() =
+        runTest {
+            val yarnDao =
+                FakeYarnCardDao(yarnCards = listOf(YarnCardEntity(id = 5L, yarnName = "Old", linkedProjectId = 10L)))
+            val projectDao =
+                RepositoryDomainFakeCounterProjectDao(
+                    projects =
+                        listOf(
+                            CounterProjectEntity(
+                                id = 10L,
+                                yarnCardIds = (1..YARN_CARD_IDS_MAX_TOKENS + 1).joinToString(","),
+                            ),
+                        ),
+                )
+            val repository =
+                YarnCardRepository(
+                    yarnDao,
+                    projectDao,
+                    context,
+                    ImmediateDatabaseTransactionRunner,
+                    UnconfinedTestDispatcher(testScheduler),
+                )
+
+            assertEquals(5L, repository.saveCard(YarnCard(id = 5L, yarnName = "New")))
+            assertEquals("New", yarnDao.lastUpserted?.yarnName)
+            assertEquals(10L, yarnDao.lastUpserted?.linkedProjectId)
+            assertEquals(emptyMap<Long, String>(), projectDao.updatedYarnCardIds)
         }
 
     @Test

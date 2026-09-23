@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="pattern_annotation_page_limit">Diese Seite enthält zu viele oder zu komplexe Markierungen für eine sichere Anzeige. Deine Markierungen bleiben erhalten.</string>
     <string name="pattern_annotations_layers">Anmerkungsebenen</string>
     <string name="pattern_annotations_master">Anleitungshinweise</string>
     <string name="pattern_annotations_project">Projekthinweise</string>

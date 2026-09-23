@@ -851,6 +851,7 @@ class CounterViewModel
                     -> Unit
                     StartSessionResult.PersistenceFailure ->
                         showWorkSessionError(R.string.work_session_could_not_start, ::startWorkSession)
+                    StartSessionResult.HistoryLimitReached -> showWorkSessionError(R.string.work_session_history_full)
                 }
             }
         }
@@ -883,6 +884,8 @@ class CounterViewModel
                         showWorkSessionError(R.string.work_session_could_not_start) {
                             resolveSessionStartConflict(saveCurrent)
                         }
+                    result == StartSessionResult.HistoryLimitReached ->
+                        showWorkSessionError(R.string.work_session_history_full)
                     result !is StartSessionResult.ProjectConflict ->
                         _uiState.update { it.copy(sessionStartConflict = null) }
                 }
@@ -949,6 +952,7 @@ class CounterViewModel
                     StopSessionResult.Discarded -> Unit
                     StopSessionResult.PersistenceFailure ->
                         showWorkSessionError(R.string.work_session_could_not_save, ::saveStoppedWorkSession)
+                    StopSessionResult.HistoryLimitReached -> showWorkSessionError(R.string.work_session_history_full)
                 }
             }
         }
@@ -966,6 +970,7 @@ class CounterViewModel
                     -> Unit
                     StopSessionResult.PersistenceFailure ->
                         showWorkSessionError(R.string.work_session_could_not_discard, ::discardStoppedWorkSession)
+                    StopSessionResult.HistoryLimitReached -> Unit
                 }
             }
         }
@@ -1010,6 +1015,7 @@ class CounterViewModel
                         showWorkSessionError(R.string.work_session_could_not_save) {
                             addRecoveryInterval(durationSeconds)
                         }
+                    RecoveryResolutionResult.HistoryLimitReached -> Unit
                     is RecoveryResolutionResult.DiscardedAndStopped,
                     is RecoveryResolutionResult.EditedAndStopped,
                     -> Unit
@@ -1035,6 +1041,8 @@ class CounterViewModel
                         showWorkSessionError(R.string.work_session_recovery_already_handled)
                     RecoveryResolutionResult.PersistenceFailure ->
                         showWorkSessionError(R.string.work_session_could_not_discard, ::discardRecoveryInterval)
+                    RecoveryResolutionResult.HistoryLimitReached ->
+                        showWorkSessionError(R.string.work_session_history_full)
                     is RecoveryResolutionResult.Continued,
                     is RecoveryResolutionResult.EditedAndStopped,
                     RecoveryResolutionResult.InvalidDuration,
@@ -1066,6 +1074,8 @@ class CounterViewModel
                         showWorkSessionError(R.string.work_session_could_not_save) {
                             editRecoveryDurationAndStop(totalDurationSeconds)
                         }
+                    RecoveryResolutionResult.HistoryLimitReached ->
+                        showWorkSessionError(R.string.work_session_history_full)
                     is RecoveryResolutionResult.Continued,
                     is RecoveryResolutionResult.DiscardedAndStopped,
                     -> Unit
@@ -1183,6 +1193,7 @@ class CounterViewModel
                         )
                     }
                 ProjectCompletionResult.ProjectUnavailable -> Unit
+                ProjectCompletionResult.HistoryLimitReached -> showWorkSessionError(R.string.work_session_history_full)
                 ProjectCompletionResult.PersistenceFailure -> {
                     showWorkSessionError(R.string.work_session_could_not_save) {
                         if (_uiState.value.projectId == projectId) {

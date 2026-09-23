@@ -1,6 +1,5 @@
 package com.finnvek.knittools.data.backup
 
-import android.content.ContentResolver
 import android.content.Context
 import android.net.Uri
 import io.mockk.every
@@ -22,6 +21,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import java.io.File
+import java.io.RandomAccessFile
 import java.net.URI
 
 class BackupFilesTest {
@@ -29,7 +29,6 @@ class BackupFilesTest {
     private lateinit var context: Context
     private lateinit var files: File
     private lateinit var payload: File
-    private val resolver = mockk<ContentResolver>()
 
     @Before fun setUp() {
         files = temporary.newFolder()
@@ -37,7 +36,6 @@ class BackupFilesTest {
         context =
             mockk {
                 every { filesDir } returns files
-                every { contentResolver } returns resolver
             }
         mockkStatic(Uri::class)
         every { Uri.parse(any()) } answers { uri(firstArg()) }
@@ -64,7 +62,9 @@ class BackupFilesTest {
         }
 
     @Test fun exportCopiesOwnedAndProviderFilesAndDeduplicatesByContent() {
-        val exporter = BackupFiles(context, payload)
+        val providerUri = "content://provider/image"
+        val providerFile = temporary.newFile().apply { writeText("photo bytes") }
+        val exporter = BackupFiles(context, payload, mapOf(providerUri to providerFile))
         val photo = photo()
         val first = mutableMapOf<String, JsonElement>("photoUri" to JsonPrimitive(photo.toURI().toString()))
         exporter.export("yarn_cards", first) {}
@@ -73,9 +73,8 @@ class BackupFilesTest {
         for (source in listOf(
             photo.toURI().toString(),
             photo("second.jpg").toURI().toString(),
-            "content://provider/image",
+            providerUri,
         )) {
-            every { resolver.openInputStream(any()) } answers { "photo bytes".byteInputStream() }
             val row = mutableMapOf<String, JsonElement>("photoUri" to JsonPrimitive(source))
             exporter.export("yarn_cards", row) {}
             assertEquals(first, row)
@@ -112,7 +111,6 @@ class BackupFilesTest {
         assertThrows(BackupException::class.java) {
             exporter.export("yarn_cards", mutableMapOf("photoUri" to JsonPrimitive("https://example.com/image"))) {}
         }
-        every { resolver.openInputStream(any()) } returns null
         assertThrows(BackupException::class.java) {
             exporter.export("yarn_cards", mutableMapOf("photoUri" to JsonPrimitive("content://provider/missing"))) {}
         }
@@ -231,5 +229,72 @@ class BackupFilesTest {
         assertEquals(2, restoredUris.toSet().size)
         restore.publish {}
         restoredUris.forEach { assertEquals("shared photo", File(URI(it)).readText()) }
+    }
+
+    @Test fun restoreFilePlanIsBoundedBeforeRetainingAnotherCopy() {
+        val first =
+            File(payload, "files/${"d".repeat(64)}.bin").apply {
+                requireNotNull(parentFile).mkdirs()
+                writeText("1234")
+            }
+        val second = File(payload, "files/${"e".repeat(64)}.bin").apply { writeText("12") }
+        val budget =
+            BackupBudget(
+                BackupLimits(
+                    maxDurableFileBytes = 4,
+                    maxDurableFileCount = 1,
+                    maxDurableBytes = 4,
+                ),
+            )
+        val restore = BackupRestoreFiles(context, payload, budget)
+        restore.rebase(
+            "yarn_cards",
+            mutableMapOf(
+                "id" to JsonPrimitive(1),
+                "photoUri" to JsonPrimitive(first.relativeTo(payload).invariantSeparatorsPath),
+            ),
+        )
+        assertEquals(4, restore.requiredBytes)
+
+        assertThrows(BackupException::class.java) {
+            restore.rebase(
+                "yarn_cards",
+                mutableMapOf(
+                    "id" to JsonPrimitive(2),
+                    "photoUri" to JsonPrimitive(second.relativeTo(payload).invariantSeparatorsPath),
+                ),
+            )
+        }
+        assertEquals(4, restore.requiredBytes)
+    }
+
+    @Test fun yarnPhotoLimitAcceptsExactBoundaryAndRejectsOneMoreByte() {
+        fun source(
+            hash: Char,
+            bytes: Long,
+        ): File =
+            File(payload, "files/${hash.toString().repeat(64)}.bin").apply {
+                requireNotNull(parentFile).mkdirs()
+                RandomAccessFile(this, "rw").use { it.setLength(bytes) }
+            }
+
+        val exact = source('f', BackupFormat.durableFileLimit("yarn_cards"))
+        BackupRestoreFiles(context, payload).rebase(
+            "yarn_cards",
+            mutableMapOf(
+                "id" to JsonPrimitive(1),
+                "photoUri" to JsonPrimitive(exact.relativeTo(payload).invariantSeparatorsPath),
+            ),
+        )
+        val oversized = source('a', BackupFormat.durableFileLimit("yarn_cards") + 1)
+        assertThrows(BackupException::class.java) {
+            BackupRestoreFiles(context, payload).rebase(
+                "yarn_cards",
+                mutableMapOf(
+                    "id" to JsonPrimitive(2),
+                    "photoUri" to JsonPrimitive(oversized.relativeTo(payload).invariantSeparatorsPath),
+                ),
+            )
+        }
     }
 }

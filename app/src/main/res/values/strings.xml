@@ -1,4 +1,5 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="pattern_annotation_page_limit">This page has too many or overly complex annotations to display safely. Your annotations have been preserved.</string>
     <string name="app_name">KnitTools</string>
 
     <!-- Navigation & common -->
@@ -1175,6 +1176,7 @@
     <string name="work_session_active_description">Work session for %1$s, %2$s elapsed</string>
     <string name="work_session_could_not_start">Could not start session</string>
     <string name="work_session_could_not_save">Could not save session</string>
+    <string name="work_session_history_full">Session history is full. Your existing sessions are safe.</string>
     <string name="work_session_could_not_discard">Could not discard session</string>
     <string name="work_session_recovery_already_handled">This session review was already handled.</string>
     <string name="work_session_retry">Retry</string>

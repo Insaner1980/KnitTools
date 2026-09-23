@@ -153,6 +153,64 @@ describe("Ravelry callable rate limits", () => {
     );
   });
 
+  it("consumes global-only capacity from an active legacy window without touching a uid", async () => {
+    const firestore = new FakeFirestore();
+    firestore.documents.set("search_global", {
+      windowStartMillis: 60_000,
+      count: 5,
+    });
+    const limiter = createRavelryRateLimiter(
+      firestore as unknown as Firestore,
+      () => 61_000,
+      () => 0,
+      createRavelryRateLimitRuntimeState(),
+    );
+
+    await limiter.consumeGlobal("search");
+
+    assert.equal(firestore.documents.get("search_global")?.count, 6);
+    assert.equal(firestore.documents.has("search_global_0"), false);
+    assert.equal(firestore.documents.has("search_dWlk"), false);
+  });
+
+  it("consumes global-only capacity from a shard without touching a uid", async () => {
+    const firestore = new FakeFirestore();
+    const limiter = createRavelryRateLimiter(
+      firestore as unknown as Firestore,
+      () => 61_000,
+      () => 0,
+      createRavelryRateLimitRuntimeState(),
+    );
+
+    await limiter.consumeGlobal("import");
+
+    assert.equal(firestore.documents.get("import_global_0")?.count, 1);
+    assert.equal(firestore.documents.has("import_dWlk"), false);
+  });
+
+  it("rejects global-only capacity when the active legacy window is full", async () => {
+    const firestore = new FakeFirestore();
+    firestore.documents.set("search_global", {
+      windowStartMillis: 60_000,
+      count: RAVELRY_GLOBAL_RATE_LIMIT_RULES.search.limit,
+    });
+    const limiter = createRavelryRateLimiter(
+      firestore as unknown as Firestore,
+      () => 61_000,
+      () => 0,
+      createRavelryRateLimitRuntimeState(),
+    );
+
+    await assert.rejects(
+      limiter.consumeGlobal("search"),
+      (error: unknown) =>
+        error instanceof RavelryRateLimitError &&
+        error.scope === "global" &&
+        error.limit === RAVELRY_GLOBAL_RATE_LIMIT_RULES.search.limit,
+    );
+    assert.equal(firestore.documents.has("search_global_0"), false);
+  });
+
   it("falls through a full global shard without consuming the uid bucket", async () => {
     const firestore = new FakeFirestore();
     const globalShardRule = ravelryRateLimitTargets("uid", "search", 0)[1].rule;

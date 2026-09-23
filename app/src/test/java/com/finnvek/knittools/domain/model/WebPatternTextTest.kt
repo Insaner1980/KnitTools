@@ -144,6 +144,11 @@ class WebPatternTextTest {
                 "Try https://example.com/pattern_(knit).",
                 null,
             )
+        val unmatchedSuffix =
+            parseWebPatternSharedText(
+                "Try https://example.com/pattern)]}.,!;:",
+                null,
+            )
 
         assertEquals(
             "https://example.com/pattern!",
@@ -157,6 +162,64 @@ class WebPatternTextTest {
             "https://example.com/pattern_(knit)",
             (balancedPath as WebPatternShareParseResult.WebLink).url.originalUrl,
         )
+        assertEquals(
+            "https://example.com/pattern",
+            (unmatchedSuffix as WebPatternShareParseResult.WebLink).url.originalUrl,
+        )
+    }
+
+    @Test
+    fun `share parser accepts the 2048 character URL boundary`() {
+        val prefix = "https://example.com/"
+        val boundaryUrl = prefix + "a".repeat(WEB_PATTERN_URL_MAX_LENGTH - prefix.length)
+
+        val result = parseWebPatternSharedText(boundaryUrl, null)
+
+        assertEquals(
+            boundaryUrl,
+            (result as WebPatternShareParseResult.WebLink).url.originalUrl,
+        )
+    }
+
+    @Test
+    fun `share parser rejects overlong URL representations before normalization`() {
+        val prefix = "https://example.com/"
+        val boundaryUrl = prefix + "a".repeat(WEB_PATTERN_URL_MAX_LENGTH - prefix.length)
+        val overLimitUrl = boundaryUrl + "a"
+        val overLimitHiddenByDelimiter = boundaryUrl + ")"
+        val overLimitHiddenAfterApostrophe =
+            "https://example.com/a'" + "b".repeat(WEB_PATTERN_URL_MAX_LENGTH)
+
+        assertTrue(
+            parseWebPatternSharedText(overLimitUrl, null) is WebPatternShareParseResult.TooLong,
+        )
+        assertTrue(
+            parseWebPatternSharedText(overLimitHiddenByDelimiter, null) is WebPatternShareParseResult.TooLong,
+        )
+        assertTrue(
+            parseWebPatternSharedText(
+                "$overLimitHiddenByDelimiter https://example.com/safe",
+                null,
+            ) is WebPatternShareParseResult.TooLong,
+        )
+        assertTrue(
+            validateWebPatternUrl("https://example.com/a'b") is WebPatternUrlValidation.Valid,
+        )
+        assertTrue(overLimitHiddenAfterApostrophe.length > WEB_PATTERN_URL_MAX_LENGTH)
+        assertTrue(
+            parseWebPatternSharedText(overLimitHiddenAfterApostrophe, null) is WebPatternShareParseResult.TooLong,
+        )
+    }
+
+    @Test
+    fun `share parser rejects delimiter heavy 16 KiB URL before trimming`() {
+        val prefix = "https://example.com/pattern"
+        val hostileUrl = prefix + ")".repeat(WEB_PATTERN_SHARED_TEXT_MAX_LENGTH - prefix.length)
+
+        assertEquals(WEB_PATTERN_SHARED_TEXT_MAX_LENGTH, hostileUrl.length)
+        assertTrue(
+            parseWebPatternSharedText(hostileUrl, null) is WebPatternShareParseResult.TooLong,
+        )
     }
 
     @Test
@@ -167,7 +230,26 @@ class WebPatternTextTest {
                 null,
             )
 
-        assertTrue(result is WebPatternShareParseResult.WebLink)
+        assertEquals(
+            "https://EXAMPLE.com:443/pattern",
+            (result as WebPatternShareParseResult.WebLink).url.originalUrl,
+        )
+    }
+
+    @Test
+    fun `share parser handles many short URL matches at the shared text limit`() {
+        val firstUrl = "https://EXAMPLE.com:443/pattern"
+        val duplicateUrl = "https://example.com/pattern"
+        val repeatedUrls = "$firstUrl. $duplicateUrl "
+        val repeated = repeatedUrls.repeat(WEB_PATTERN_SHARED_TEXT_MAX_LENGTH / repeatedUrls.length)
+        val text = repeated.padEnd(WEB_PATTERN_SHARED_TEXT_MAX_LENGTH)
+
+        assertEquals(WEB_PATTERN_SHARED_TEXT_MAX_LENGTH, text.length)
+        val result = parseWebPatternSharedText(text, "  Cozy Cardigan  ")
+
+        assertEquals(firstUrl, (result as WebPatternShareParseResult.WebLink).url.originalUrl)
+        assertEquals("Cozy Cardigan", result.titleSuggestion)
+        assertTrue(parseWebPatternSharedText("$text ", null) is WebPatternShareParseResult.TooLong)
     }
 
     @Test
@@ -183,6 +265,12 @@ class WebPatternTextTest {
                 "https://www.ravelry.com/patterns/library/cozy-hat https://example.com/other",
                 null,
             ) is WebPatternShareParseResult.Ambiguous,
+        )
+        assertTrue(
+            parseWebPatternSharedText(
+                "https://example.com/one https://example.com/two https://example.com/%GG",
+                null,
+            ) is WebPatternShareParseResult.Invalid,
         )
     }
 

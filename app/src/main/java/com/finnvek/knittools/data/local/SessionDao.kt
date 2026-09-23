@@ -7,6 +7,8 @@ import androidx.room.Query
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
+internal const val MAX_COMPLETED_SESSIONS = 100_000L
+
 @Dao
 @Suppress("TooManyFunctions") // Valmiit ja aktiivinen istunto kuuluvat samaan Room-istuntorajapintaan.
 interface SessionDao {
@@ -31,6 +33,9 @@ interface SessionDao {
     @Insert
     suspend fun insert(session: SessionEntity): Long
 
+    @Query("SELECT COUNT(*) FROM sessions")
+    suspend fun countCompletedSessions(): Long
+
     @Query("DELETE FROM sessions WHERE id = :id")
     suspend fun deleteById(id: Long)
 
@@ -52,44 +57,60 @@ interface SessionDao {
     @Query("SELECT * FROM sessions WHERE (:projectId IS NULL OR projectId = :projectId) ORDER BY startedAt, id")
     fun getAllSessions(projectId: Long?): Flow<List<SessionEntity>>
 
-    @Query(
-        """
-        SELECT *
-        FROM sessions
-        """,
-    )
-    fun getAllSessionsForInsights(): Flow<List<SessionEntity>>
+    @Query("SELECT EXISTS(SELECT 1 FROM sessions)")
+    fun observeSessionChanges(): Flow<Boolean>
+
+    @Query("SELECT EXISTS(SELECT 1 FROM sessions)")
+    suspend fun hasAnySessions(): Boolean
 
     @Query(
-        """
-        SELECT *
-        FROM sessions
-        WHERE endedAt >= :start
-        """,
+        "SELECT projectId, MAX(startedAt) AS lastSessionAt FROM sessions " +
+            "WHERE (:projectId IS NULL OR projectId = :projectId) GROUP BY projectId ORDER BY MIN(id)",
     )
-    fun getAllSessionsForInsightsSince(start: Long): Flow<List<SessionEntity>>
+    suspend fun getSessionProjectActivity(projectId: Long?): List<SessionProjectActivity>
+
+    @Query("SELECT MIN(startedAt) FROM sessions WHERE (:projectId IS NULL OR projectId = :projectId)")
+    suspend fun getFirstSessionStart(projectId: Long?): Long?
 
     @Query(
-        """
-        SELECT *
-        FROM sessions
-        WHERE projectId = :projectId
-        """,
+        "SELECT id, startedAt, zoneId FROM sessions WHERE (:projectId IS NULL OR projectId = :projectId) " +
+            "AND id > :afterId AND startedAt <= :latestStart " +
+            "ORDER BY id LIMIT 256",
     )
-    fun getProjectSessionsForInsights(projectId: Long): Flow<List<SessionEntity>>
+    suspend fun getInsightFirstDateBatch(
+        projectId: Long?,
+        afterId: Long,
+        latestStart: Long,
+    ): List<SessionStart>
+
+    @Query("SELECT * FROM sessions WHERE id > :afterId ORDER BY id LIMIT 256")
+    suspend fun getInsightSessionBatch(afterId: Long): List<SessionEntity>
 
     @Query(
-        """
-        SELECT *
-        FROM sessions
-        WHERE projectId = :projectId
-            AND endedAt >= :start
-        """,
+        "SELECT * FROM sessions WHERE id > :afterId " +
+            "AND (endedAt >= :start OR endedAt < :start AND " + SESSION_EFFECTIVE_END + " >= :start) " +
+            "ORDER BY id LIMIT 256",
     )
-    fun getProjectSessionsForInsightsSince(
-        projectId: Long,
+    suspend fun getInsightSessionBatchSince(
+        afterId: Long,
         start: Long,
-    ): Flow<List<SessionEntity>>
+    ): List<SessionEntity>
+
+    @Query("SELECT * FROM sessions WHERE projectId = :projectId AND id > :afterId ORDER BY id LIMIT 256")
+    suspend fun getProjectInsightSessionBatch(
+        projectId: Long,
+        afterId: Long,
+    ): List<SessionEntity>
+
+    @Query(
+        "SELECT * FROM sessions WHERE projectId = :projectId AND id > :afterId " +
+            "AND (endedAt >= :start OR " + SESSION_EFFECTIVE_END + " >= :start) ORDER BY id LIMIT 256",
+    )
+    suspend fun getProjectInsightSessionBatchSince(
+        projectId: Long,
+        afterId: Long,
+        start: Long,
+    ): List<SessionEntity>
 
     @Query("SELECT * FROM sessions WHERE projectId = :projectId ORDER BY endedAt DESC LIMIT 1")
     suspend fun getLatestSession(projectId: Long): SessionEntity?
@@ -97,3 +118,19 @@ interface SessionDao {
     @Query("SELECT COUNT(*) FROM counter_projects WHERE isCompleted = 1")
     fun getCompletedProjectCount(): Flow<Int>
 }
+
+// Säilyttää SessionMetricsin vanhan kesto- ja rivivaralaskennan ennen aikarajausta.
+private const val SESSION_EFFECTIVE_END =
+    "startedAt + (CASE WHEN durationSeconds > 0 THEN durationSeconds " +
+        "WHEN durationMinutes > 0 THEN durationMinutes * 60 ELSE 1 END) * 1000"
+
+data class SessionProjectActivity(
+    val projectId: Long,
+    val lastSessionAt: Long,
+)
+
+data class SessionStart(
+    val id: Long,
+    val startedAt: Long,
+    val zoneId: String?,
+)

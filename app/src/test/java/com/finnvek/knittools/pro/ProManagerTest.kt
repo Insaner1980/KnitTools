@@ -3,9 +3,11 @@ package com.finnvek.knittools.pro
 import com.finnvek.knittools.billing.BillingManager
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
@@ -57,4 +59,26 @@ class ProManagerTest {
             assertEquals(TrialStartResult.Started, result)
             coVerify(exactly = 1) { trialManager.startTrial() }
         }
+
+    @Test
+    fun `verified purchase stays purchased when trial is expired or tampered`() {
+        val trialStates = MutableStateFlow(TrialState(hasStarted = true))
+        val trialManager =
+            mockk<TrialManager> {
+                coEvery { initialize() } returns Unit
+                every { trialState } returns trialStates
+            }
+        val billingManager =
+            mockk<BillingManager> {
+                every { isProPurchased } returns MutableStateFlow(true)
+                every { purchaseStateReady } returns MutableStateFlow(true)
+            }
+        val manager = ProManager(trialManager, billingManager)
+
+        manager.initialize()
+        assertEquals(ProStatus.PRO_PURCHASED, manager.proState.value.status)
+
+        trialStates.value = TrialState(hasStarted = true, clockTampered = true)
+        assertEquals(ProStatus.PRO_PURCHASED, manager.proState.value.status)
+    }
 }

@@ -801,6 +801,7 @@
     <string name="work_session_active_description">Arbeidsøkt for %1$s, %2$s har gått</string>
     <string name="work_session_could_not_start">Kunne ikke starte økten</string>
     <string name="work_session_could_not_save">Kunne ikke lagre økten</string>
+    <string name="work_session_history_full">Økthistorikken er full. De eksisterende øktene dine er bevart.</string>
     <string name="work_session_could_not_discard">Kunne ikke forkaste økten</string>
     <string name="work_session_recovery_already_handled">Denne øktgjennomgangen er allerede behandlet.</string>
     <string name="work_session_retry">Prøv igjen</string>

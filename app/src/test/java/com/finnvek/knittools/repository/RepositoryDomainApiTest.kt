@@ -7,6 +7,7 @@ import com.finnvek.knittools.data.local.CounterProjectEntity
 import com.finnvek.knittools.data.local.ImmediateDatabaseTransactionRunner
 import com.finnvek.knittools.data.local.PatternAnnotationDao
 import com.finnvek.knittools.data.local.PatternAnnotationEntity
+import com.finnvek.knittools.data.local.PatternAnnotationExportStats
 import com.finnvek.knittools.data.local.SavedPatternDao
 import com.finnvek.knittools.data.local.SavedPatternEntity
 import com.finnvek.knittools.data.local.YarnCardDao
@@ -652,27 +653,69 @@ internal class RepositoryDomainFakeCounterProjectDao(
 }
 
 internal class FakePatternAnnotationDao(
-    private val patternAnnotations: List<PatternAnnotationEntity> = emptyList(),
-) : PatternAnnotationDao {
+    patternAnnotations: List<PatternAnnotationEntity> = emptyList(),
+) : PatternAnnotationDao() {
+    private val patternAnnotations = patternAnnotations.toMutableList()
     var lastInserted: PatternAnnotationEntity? = null
+    var lastExportQueryLimit: Int? = null
 
-    override fun observePage(
+    override fun observePageChanges(
         layerId: Long,
         page: Int,
-    ): Flow<List<PatternAnnotationEntity>> =
-        flowOf(patternAnnotations.filter { it.layerId == layerId && it.page == page })
+    ): Flow<Boolean> = flowOf(patternAnnotations.any { it.layerId == layerId && it.page == page })
 
-    override suspend fun getForLayers(layerIds: List<Long>): List<PatternAnnotationEntity> =
-        patternAnnotations.filter { it.layerId in layerIds }
+    override suspend fun getPageRows(
+        layerId: Long,
+        page: Int,
+    ): List<PatternAnnotationEntity> = patternAnnotations.filter { it.layerId == layerId && it.page == page }.take(257)
 
-    override suspend fun insert(annotation: PatternAnnotationEntity): Long {
+    override suspend fun getPageStats(
+        layerId: Long,
+        page: Int,
+    ): PatternAnnotationExportStats {
+        val rows = getPageRows(layerId, page)
+        return PatternAnnotationExportStats(
+            rows.size.toLong(),
+            rows.sumOf {
+                it.payloadJson
+                    .encodeToByteArray()
+                    .size
+                    .toLong()
+            },
+        )
+    }
+
+    override suspend fun getForLayersLimited(
+        layerIds: List<Long>,
+        limit: Int,
+    ): List<PatternAnnotationEntity> {
+        lastExportQueryLimit = limit
+        return patternAnnotations.filter { it.layerId in layerIds }.take(limit)
+    }
+
+    override suspend fun getExportStats(layerIds: List<Long>): PatternAnnotationExportStats {
+        val annotations = patternAnnotations.filter { it.layerId in layerIds }
+        return PatternAnnotationExportStats(
+            annotationCount = annotations.size.toLong(),
+            payloadBytes =
+                annotations.sumOf {
+                    it.payloadJson
+                        .encodeToByteArray()
+                        .size
+                        .toLong()
+                },
+        )
+    }
+
+    override suspend fun insertUnchecked(annotation: PatternAnnotationEntity): Long {
         lastInserted = annotation
+        patternAnnotations += annotation.copy(id = 77L)
         return 77L
     }
 
-    override suspend fun restoreBatch(annotations: List<PatternAnnotationEntity>) = Unit
+    override suspend fun restoreUnchecked(annotations: List<PatternAnnotationEntity>) = Unit
 
-    override suspend fun update(annotation: PatternAnnotationEntity) = Unit
+    override suspend fun updateUnchecked(annotation: PatternAnnotationEntity) = Unit
 
     override suspend fun deleteForPage(
         layerId: Long,

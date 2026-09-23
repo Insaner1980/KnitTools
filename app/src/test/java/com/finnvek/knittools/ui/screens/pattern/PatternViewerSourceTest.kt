@@ -550,9 +550,30 @@ class PatternViewerSourceTest {
         assertFalse(viewer.contains("-annotated.pdf"))
     }
 
+    @Test
+    fun `annotated export preflights before opening SAF destination`() {
+        val viewer = ProjectSourceFiles.read(PATTERN_VIEWER_SCREEN)
+        val viewModel = ProjectSourceFiles.read(PATTERN_ANNOTATION_VIEW_MODEL)
+        val request = viewModel.blockBetween("fun requestAnnotatedPdfExport(sourceUri: Uri)", "fun exportAnnotatedPdf(")
+        val preflightIndex = request.indexOf("exporter.preflight(")
+        val destinationRequestIndex = request.indexOf("exportDestinationChannel.trySend(sourceUri)")
+
+        assertTrue(preflightIndex >= 0)
+        assertTrue(destinationRequestIndex > preflightIndex)
+        assertTrue(request.contains("}.onSuccess {"))
+        assertTrue(viewer.contains("actions.onExportRequest(state.patternUri.toUri())"))
+        assertTrue(viewer.contains("CollectWithLifecycleEffect({ actions.exportDestinationRequests }) { source ->"))
+        assertTrue(viewer.contains("if (source.toString() == state.patternUri)"))
+        assertTrue(viewer.contains("exportLauncher.launch(exportFilename)"))
+        assertTrue(viewer.contains("val source = pendingExportSource?.toUri()"))
+        assertTrue(viewer.contains("pendingExportSource by rememberSaveable"))
+    }
+
     private companion object {
         const val PATTERN_VIEWER_SCREEN =
             "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternViewerScreen.kt"
+        const val PATTERN_ANNOTATION_VIEW_MODEL =
+            "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternAnnotationViewModel.kt"
         const val PATTERN_DOCUMENT_VIEWPORT =
             "app/src/main/java/com/finnvek/knittools/ui/screens/pattern/PatternDocumentViewport.kt"
         const val COUNTER_SCREEN =

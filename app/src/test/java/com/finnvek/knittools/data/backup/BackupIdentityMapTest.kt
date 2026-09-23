@@ -127,6 +127,15 @@ class BackupIdentityMapTest {
         assertEquals(JsonPrimitive(oversized), row["yarnCardIds"])
     }
 
+    @Test fun nullYarnCardIdsRemainNullForRequiredColumnValidation() {
+        val identities = BackupIdentityMap(database(), database())
+        val row = mutableMapOf<String, JsonElement>("yarnCardIds" to JsonNull)
+
+        identities.apply("counter_projects", row)
+
+        assertEquals(JsonNull, row["yarnCardIds"])
+    }
+
     @Test fun documentKeysRemainConsistentWhileOrphanKeysCannotCollideWithLiveKeys() {
         val identities = BackupIdentityMap(database(), database())
         for ((key, expected) in listOf("legacy-project:2" to "legacy-project:52", "content:abc" to "content:abc")) {

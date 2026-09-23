@@ -80,7 +80,9 @@ class TrialStartSourceTest {
                 .substringAfter("private suspend fun refreshTrialState()")
                 .substringBefore("private fun MutablePreferences.evaluateAndPersistTrialState")
 
-        assertTrue(updateBody.contains("if (!didWrite)"))
+        assertTrue(updateBody.contains("if (didWrite)"))
+        assertTrue(updateBody.contains("updatedState?.let { _trialState.value = it }"))
+        assertTrue(updateBody.contains("else {"))
         assertTrue(updateBody.contains("_trialState.value = TrialState()"))
         assertTrue(refreshBody.contains("else {"))
         assertTrue(refreshBody.contains("_trialState.value = TrialState()"))

@@ -49,6 +49,7 @@ import com.finnvek.knittools.ui.theme.PatternAnnotationTokens
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -61,6 +62,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -163,6 +165,8 @@ class PatternAnnotationViewModel
         private val layerReadFailed = MutableStateFlow(false)
         private val annotationReadFailed = MutableStateFlow(false)
         private val interaction = MutableStateFlow(PatternAnnotationInteractionState())
+        private val exportDestinationChannel = Channel<Uri>(Channel.BUFFERED)
+        val exportDestinationRequests: Flow<Uri> = exportDestinationChannel.receiveAsFlow()
         private var editContext: AnnotationEditContext? = null
         private val counterContext =
             createCounterContextFlow(routeOwner).stateIn(
@@ -575,10 +579,7 @@ class PatternAnnotationViewModel
             interaction.update { it.copy(writeError = PatternAnnotationWriteError.NONE) }
         }
 
-        fun requestAnnotatedPdfExport(
-            sourceUri: Uri,
-            onPreflightPassed: () -> Unit,
-        ) {
+        fun requestAnnotatedPdfExport(sourceUri: Uri) {
             val exporter = pdfExporter ?: return
             if (interaction.value.isExporting) return
             val layerIds = visibleExportLayerIds()
@@ -590,7 +591,7 @@ class PatternAnnotationViewModel
                     exporter.preflight(sourceUri, annotations, trackerHighlights)
                 }.onSuccess {
                     interaction.update { it.copy(isExporting = false) }
-                    onPreflightPassed()
+                    exportDestinationChannel.trySend(sourceUri)
                 }.onFailure(::handleExportFailure)
             }
         }

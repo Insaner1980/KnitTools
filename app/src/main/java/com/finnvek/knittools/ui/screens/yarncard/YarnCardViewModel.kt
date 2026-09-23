@@ -141,8 +141,7 @@ class YarnCardViewModel
             onDeleted: () -> Unit,
         ) {
             viewModelScope.launch {
-                repository.deleteCard(id)
-                onDeleted()
+                if (repository.deleteCard(id)) onDeleted()
             }
         }
 

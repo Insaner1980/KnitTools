@@ -127,6 +127,7 @@ import com.finnvek.knittools.ui.platform.openExternalWebLink
 import com.finnvek.knittools.ui.screens.counter.CounterViewModel
 import com.finnvek.knittools.ui.screens.counter.CounterViewerEvent
 import com.finnvek.knittools.ui.theme.rememberPatternAnnotationRenderStyle
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -503,6 +504,7 @@ fun PatternViewerScreen(
                         onProjectLayerVisibilityChange = annotationViewModel::setProjectLayerVisible,
                         annotationInputActions = annotationViewModel.patternInputActions(),
                         annotationToolbarActions = annotationViewModel.patternToolbarActions(),
+                        exportDestinationRequests = annotationViewModel.exportDestinationRequests,
                         onExportRequest = annotationViewModel::requestAnnotatedPdfExport,
                         onExport = annotationViewModel::exportAnnotatedPdf,
                     ),
@@ -1358,6 +1360,7 @@ fun LibraryPatternViewerScreen(
                     onProjectLayerVisibilityChange = annotationViewModel::setProjectLayerVisible,
                     annotationInputActions = annotationViewModel.patternInputActions(),
                     annotationToolbarActions = annotationViewModel.patternToolbarActions(),
+                    exportDestinationRequests = annotationViewModel.exportDestinationRequests,
                     onExportRequest = annotationViewModel::requestAnnotatedPdfExport,
                     onExport = annotationViewModel::exportAnnotatedPdf,
                 ),
@@ -1890,6 +1893,12 @@ private fun PatternViewerContent(
     val fallbackPatternName = stringResource(R.string.pattern_annotation_export_default_name)
     val exportBaseName = state.patternName?.substringBeforeLast('.')?.ifBlank { null } ?: fallbackPatternName
     val exportFilename = stringResource(R.string.pattern_annotation_export_filename, exportBaseName)
+    CollectWithLifecycleEffect({ actions.exportDestinationRequests }) { source ->
+        if (source.toString() == state.patternUri) {
+            pendingExportSource = source.toString()
+            exportLauncher.launch(exportFilename)
+        }
+    }
     val viewportFocusRequester = remember { FocusRequester() }
     BoxWithConstraints(modifier = modifier) {
         val toolsMaxHeight = maxHeight / 2
@@ -1917,12 +1926,7 @@ private fun PatternViewerContent(
                     TextButton(
                         enabled = !state.annotationState.isExporting,
                         onClick = {
-                            state.patternUri.toUri().let { source ->
-                                actions.onExportRequest(source) {
-                                    pendingExportSource = source.toString()
-                                    exportLauncher.launch(exportFilename)
-                                }
-                            }
+                            actions.onExportRequest(state.patternUri.toUri())
                         },
                     ) {
                         val exportText =
@@ -2086,7 +2090,8 @@ private data class PatternViewerContentActions(
     val onProjectLayerVisibilityChange: (Boolean) -> Unit,
     val annotationInputActions: PatternAnnotationInputActions,
     val annotationToolbarActions: PatternAnnotationToolbarActions,
-    val onExportRequest: (Uri, () -> Unit) -> Unit,
+    val exportDestinationRequests: Flow<Uri>,
+    val onExportRequest: (Uri) -> Unit,
     val onExport: (Uri, Uri, PatternAnnotationRenderStyle) -> Unit,
 )
 

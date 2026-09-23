@@ -94,15 +94,14 @@ class TrialManager
                     val lastKnownTimestamp = preferences[KEY_LAST_KNOWN_TIMESTAMP] ?: 0L
                     val clockTamperedAlready = preferences[KEY_CLOCK_TAMPERED] ?: false
                     val storedTiming = preferences.readStoredTrialTiming()
-                    if (
+                    val cleanUnstarted =
                         isCleanUnstartedState(
                             startTimestamp = startTimestamp,
                             lastKnownTimestamp = lastKnownTimestamp,
                             clockTamperedAlready = clockTamperedAlready,
                             storedTiming = storedTiming,
-                        ) &&
-                        isValidTimeSnapshot(now)
-                    ) {
+                        )
+                    if (cleanUnstarted && isValidTimeSnapshot(now)) {
                         preferences[KEY_TRIAL_START] = now.wallClockMillis
                         preferences.persistTrialEvaluation(
                             TrialTimingEvaluation(
@@ -123,6 +122,8 @@ class TrialManager
                             ),
                         )
                         startResult = TrialStartResult.Started
+                    } else if (cleanUnstarted) {
+                        startResult = TrialStartResult.Failed
                     } else {
                         startResult =
                             classifyExistingTrial(
@@ -160,11 +161,14 @@ class TrialManager
 
         suspend fun updateTimestamp() {
             val now = sessionTimeSource.snapshot()
+            var updatedState: TrialState? = null
             val didWrite =
                 context.trialDataStore.editPreferencesSafely { preferences ->
-                    preferences.evaluateAndPersistTrialState(now)
+                    updatedState = preferences.evaluateAndPersistTrialState(now)
                 }
-            if (!didWrite) {
+            if (didWrite) {
+                updatedState?.let { _trialState.value = it }
+            } else {
                 _trialState.value = TrialState()
             }
         }
@@ -307,8 +311,7 @@ class TrialManager
                         lastKnownTimestamp = lastKnownTimestamp,
                         clockTamperedAlready = clockTamperedAlready,
                         storedTiming = storedTiming,
-                    ) &&
-                    isValidTimeSnapshot(now)
+                    )
                 ) {
                     return TrialTimingEvaluation(
                         state = TrialState(),

@@ -17,7 +17,6 @@ import com.finnvek.knittools.domain.model.YARN_CARD_IDS_MAX_TOKENS
 import com.finnvek.knittools.domain.model.YarnCard
 import com.finnvek.knittools.domain.model.YarnCardStatus
 import com.finnvek.knittools.domain.model.formatYarnCardIds
-import com.finnvek.knittools.domain.model.parseYarnCardIds
 import com.finnvek.knittools.domain.model.parseYarnCardIdsWithinLimits
 import com.finnvek.knittools.pro.ProFeature
 import com.finnvek.knittools.pro.ProManager
@@ -87,7 +86,8 @@ class YarnCardRepository
                 cardWithPreservedDetails.linkedProjectId?.takeIf { projectId ->
                     projects.any { it.id == projectId }
                 }
-            if (!canLinkCard(projects, card.id.takeIf { it != 0L }, linkedProjectId)) return null
+            val linkChanged = existingCard?.linkedProjectId != linkedProjectId
+            if (linkChanged && !canLinkCard(projects, card.id.takeIf { it != 0L }, linkedProjectId)) return null
             val normalizedCard =
                 cardWithPreservedDetails.copy(
                     status = YarnCardStatus.normalize(cardWithPreservedDetails.status),
@@ -95,8 +95,7 @@ class YarnCardRepository
                 )
             val upsertedId = dao.upsert(normalizedCard.toEntity())
             val savedId = normalizedCard.id.takeIf { it != 0L } ?: upsertedId
-            val linkChanged = existingCard?.linkedProjectId != linkedProjectId
-            if (linkedProjectId != null || linkChanged) {
+            if (linkChanged) {
                 updateProjectYarnLinks(
                     projects = projects,
                     cardId = savedId,
@@ -212,26 +211,29 @@ class YarnCardRepository
 
         suspend fun deleteCard(id: Long) = deleteCards(listOf(id))
 
-        suspend fun deleteCards(ids: List<Long>) {
+        suspend fun deleteCards(ids: List<Long>): Boolean {
             val idChunks = ids.distinctSqliteQueryChunks()
-            if (idChunks.isEmpty()) return
+            if (idChunks.isEmpty()) return true
             val distinctIds = idChunks.flatten()
             val cards =
                 transactionRunner.run {
                     val cards = idChunks.flatMap { chunk -> dao.getCards(chunk) }
-                    removeCardIdsFromProjects(distinctIds.toSet())
+                    if (!removeCardIdsFromProjects(distinctIds.toSet())) return@run null
                     idChunks.forEach { chunk -> dao.deleteByIds(chunk) }
                     cards
-                }
+                } ?: return false
             withContext(ioDispatcher + NonCancellable) {
                 cards.forEach { card -> AppFileStorage.deleteIfAppOwned(context, card.photoUri) }
             }
+            return true
         }
 
-        private suspend fun removeCardIdsFromProjects(cardIds: Set<Long>) {
+        private suspend fun removeCardIdsFromProjects(cardIds: Set<Long>): Boolean {
             val updatedAt = System.currentTimeMillis()
-            counterProjectDao.getAllProjectsOnce().forEach { project ->
-                val currentIds = parseYarnCardIds(project.yarnCardIds)
+            val projects = counterProjectDao.getAllProjectsOnce()
+            if (projects.any { parseYarnCardIdsWithinLimits(it.yarnCardIds) == null }) return false
+            projects.forEach { project ->
+                val currentIds = checkNotNull(parseYarnCardIdsWithinLimits(project.yarnCardIds))
                 val nextIds = currentIds.filterNot { it in cardIds }
                 if (nextIds.size != currentIds.size) {
                     counterProjectDao.updateYarnCardIds(
@@ -241,6 +243,7 @@ class YarnCardRepository
                     )
                 }
             }
+            return true
         }
 
         private suspend fun updateProjectYarnLinks(
@@ -250,7 +253,7 @@ class YarnCardRepository
             updatedAt: Long,
         ) {
             projects.forEach { project ->
-                val currentIds = parseYarnCardIds(project.yarnCardIds)
+                val currentIds = checkNotNull(parseYarnCardIdsWithinLimits(project.yarnCardIds))
                 val nextIds =
                     if (project.id == projectId) {
                         if (cardId in currentIds) currentIds else currentIds + cardId
@@ -278,8 +281,9 @@ class YarnCardRepository
             cardId: Long?,
             projectId: Long?,
         ): Boolean {
+            if (projects.any { parseYarnCardIdsWithinLimits(it.yarnCardIds) == null }) return false
             val project = projects.firstOrNull { it.id == projectId } ?: return projectId == null
-            val currentIds = parseYarnCardIdsWithinLimits(project.yarnCardIds) ?: return false
+            val currentIds = checkNotNull(parseYarnCardIdsWithinLimits(project.yarnCardIds))
             return (cardId != null && cardId in currentIds) || currentIds.size < YARN_CARD_IDS_MAX_TOKENS
         }
 

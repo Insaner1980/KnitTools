@@ -73,7 +73,7 @@ class BackupRepository
                         newDirectory().also { activeDirectories += it }
                     }
                 try {
-                    val externalFiles = stageExternalFiles(directory, check)
+                    val externalFiles = operationResult(BackupError.WRITE) { stageExternalFiles(directory, check) }
                     val archive =
                         operation.withLock {
                             operationResult(BackupError.WRITE) {

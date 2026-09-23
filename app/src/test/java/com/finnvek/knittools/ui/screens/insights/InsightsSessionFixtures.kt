@@ -42,7 +42,12 @@ internal fun stubSessions(
                     .filter {
                         start == null ||
                             it.endedAt >= start ||
-                            it.startedAt + maxOf(it.durationSeconds, it.durationMinutes * 60L, 1L) * 1000L >= start
+                            it.startedAt +
+                                when {
+                                    it.durationSeconds > 0L -> it.durationSeconds
+                                    it.durationMinutes > 0 -> it.durationMinutes * 60L
+                                    else -> 1L
+                                } * 1000L >= start
                     }.chunked(2)
                     .forEach { add(accumulator, it) }
                 accumulator

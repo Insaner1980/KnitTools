@@ -355,6 +355,59 @@ class YarnCardRepositoryDomainApiTest {
         }
 
     @Test
+    fun `over limit legacy project blocks relink and deletion without partial writes`() =
+        runTest {
+            val legacyIds = (1..YARN_CARD_IDS_MAX_TOKENS + 1).joinToString(",")
+            val yarnDao = FakeYarnCardDao(yarnCards = listOf(YarnCardEntity(id = 5L, linkedProjectId = 10L)))
+            val projectDao =
+                RepositoryDomainFakeCounterProjectDao(
+                    projects =
+                        listOf(
+                            CounterProjectEntity(id = 10L, yarnCardIds = legacyIds),
+                            CounterProjectEntity(id = 11L, yarnCardIds = ""),
+                        ),
+                )
+            val repository =
+                YarnCardRepository(
+                    yarnDao,
+                    projectDao,
+                    context,
+                    ImmediateDatabaseTransactionRunner,
+                    UnconfinedTestDispatcher(testScheduler),
+                )
+
+            assertEquals(false, repository.updateLinkedProjectId(5L, 11L))
+            assertEquals(false, repository.deleteCard(5L))
+            assertNull(yarnDao.lastLinkedProjectUpdate)
+            assertEquals(emptyList<Long>(), yarnDao.deletedIds)
+            assertEquals(emptyMap<Long, String>(), projectDao.updatedYarnCardIds)
+        }
+
+    @Test
+    fun `detail edit preserves an over limit legacy project link`() =
+        runTest {
+            val yarnDao = FakeYarnCardDao(yarnCards = listOf(YarnCardEntity(id = 5L, yarnName = "Old", linkedProjectId = 10L)))
+            val projectDao =
+                RepositoryDomainFakeCounterProjectDao(
+                    projects =
+                        listOf(CounterProjectEntity(id = 10L, yarnCardIds = (1..YARN_CARD_IDS_MAX_TOKENS + 1).joinToString(","))),
+                )
+            val repository =
+                YarnCardRepository(
+                    yarnDao,
+                    projectDao,
+                    context,
+                    ImmediateDatabaseTransactionRunner,
+                    UnconfinedTestDispatcher(testScheduler),
+                )
+
+            assertEquals(5L, repository.saveCard(YarnCard(id = 5L, yarnName = "New")))
+            assertEquals("New", yarnDao.lastUpserted?.yarnName)
+            assertEquals(10L, yarnDao.lastUpserted?.linkedProjectId)
+            assertEquals(emptyMap<Long, String>(), projectDao.updatedYarnCardIds)
+        }
+
+    @Test
     fun `yarn card save preserves existing detail-only fields when editing same card`() =
         runTest {
             val existingYarnCard = detailedYarnCardEntity()

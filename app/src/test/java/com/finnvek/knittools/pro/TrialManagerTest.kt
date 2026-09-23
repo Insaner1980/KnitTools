@@ -32,7 +32,7 @@ class TrialManagerTest {
     }
 
     @Test
-    fun `unavailable boot identity before trial start fails closed`() {
+    fun `unavailable boot identity before trial start preserves unstarted state`() {
         val evaluation =
             TrialManager.evaluateTrialTiming(
                 now = snapshot(bootCount = null),
@@ -40,7 +40,8 @@ class TrialManagerTest {
                 lastKnownTimestamp = 0L,
             )
 
-        assertTrue(evaluation.state.clockTampered)
+        assertFalse(evaluation.state.clockTampered)
+        assertFalse(evaluation.state.hasStarted)
         assertFalse(evaluation.state.isActive)
         assertEquals(null, evaluation.anchors)
     }

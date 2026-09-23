@@ -1,5 +1,6 @@
 package com.finnvek.knittools.repository
 
+import com.finnvek.knittools.data.local.DatabaseTransactionRunner
 import com.finnvek.knittools.data.local.ImmediateDatabaseTransactionRunner
 import com.finnvek.knittools.data.local.SessionDao
 import com.finnvek.knittools.data.local.SessionEntity
@@ -18,6 +19,7 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -121,6 +123,39 @@ class CounterRepositoryInsightsTest {
             )
         }
 
+    @Test fun sessionAccumulationRunsAfterTheFactsTransaction() =
+        runTest {
+            var inTransaction = false
+            val runner =
+                object : DatabaseTransactionRunner {
+                    override suspend fun <T> run(block: suspend () -> T): T {
+                        inTransaction = true
+                        return try {
+                            block()
+                        } finally {
+                            inTransaction = false
+                        }
+                    }
+                }
+            val repository = repository(StandardTestDispatcher(testScheduler), runner)
+            every { dao.observeSessionChanges() } returns flowOf(true)
+            coEvery { dao.hasAnySessions() } returns true
+            coEvery { dao.getSessionProjectActivity(null) } returns emptyList()
+            coEvery { dao.getFirstSessionStart(null) } returns 1000L
+            coEvery { dao.getInsightFirstDateBatch(any(), any(), any()) } answers {
+                assertFalse(inTransaction)
+                emptyList()
+            }
+            coEvery { dao.getInsightSessionBatch(Long.MIN_VALUE) } returns listOf(session(1))
+            coEvery { dao.getInsightSessionBatch(1) } returns emptyList()
+
+            repository.observeSessionsForInsights(null, null, java.time.ZoneOffset.UTC, { 0 }) { _, _ ->
+                assertFalse(inTransaction)
+            }.first()
+
+            assertFalse(inTransaction)
+        }
+
     @Test fun sameExistenceInvalidationCancelsAnIncompleteSnapshot() =
         runTest {
             val changes = MutableSharedFlow<Boolean>(replay = 1)
@@ -196,7 +231,10 @@ class CounterRepositoryInsightsTest {
             coVerify(exactly = 2) { dao.getInsightSessionBatch(Long.MIN_VALUE) }
         }
 
-    private fun repository(dispatcher: kotlinx.coroutines.CoroutineDispatcher) =
+    private fun repository(
+        dispatcher: kotlinx.coroutines.CoroutineDispatcher,
+        runner: DatabaseTransactionRunner = ImmediateDatabaseTransactionRunner,
+    ) =
         CounterRepository(
             dao = mockk(),
             projectCounterDao = mockk(),
@@ -208,7 +246,7 @@ class CounterRepositoryInsightsTest {
             savedPatternRepository = mockk(),
             projectDocumentRepository = mockk(),
             projectFolderDao = mockk(),
-            transactionRunner = ImmediateDatabaseTransactionRunner,
+            transactionRunner = runner,
             ioDispatcher = dispatcher,
         )
 

@@ -1581,44 +1581,43 @@ class CounterRepository
             sessionDao
                 .observeSessionChanges()
                 .mapLatest {
-                    transactionRunner.run {
-                        val result =
-                            create(
-                                SessionInsightsFacts(
-                                    sessionDao.hasAnySessions(),
-                                    sessionDao.getSessionProjectActivity(projectId),
-                                    if (start == null) firstInsightDate(projectId, zone) else null,
-                                ),
+                    val facts =
+                        transactionRunner.run {
+                            SessionInsightsFacts(
+                                sessionDao.hasAnySessions(),
+                                sessionDao.getSessionProjectActivity(projectId),
                             )
-                        var afterId = Long.MIN_VALUE
-                        do {
-                            currentCoroutineContext().ensureActive()
-                            val batch =
-                                when {
-                                    projectId == null && start == null -> sessionDao.getInsightSessionBatch(afterId)
-                                    projectId == null && start != null ->
-                                        sessionDao.getInsightSessionBatchSince(
-                                            afterId,
-                                            start,
-                                        )
-                                    projectId != null && start == null ->
-                                        sessionDao.getProjectInsightSessionBatch(
-                                            projectId,
-                                            afterId,
-                                        )
-                                    else ->
-                                        sessionDao.getProjectInsightSessionBatchSince(
-                                            requireNotNull(projectId),
-                                            afterId,
-                                            requireNotNull(start),
-                                        )
-                                }
-                            if (batch.isEmpty()) break
-                            accumulate(result, batch.map { it.toDomain() })
-                            afterId = batch.last().id
-                        } while (true)
-                        result
-                    }
+                        }
+                    val firstSessionDate = if (start == null) firstInsightDate(projectId, zone) else null
+                    val result = create(facts.copy(firstSessionDate = firstSessionDate))
+                    var afterId = Long.MIN_VALUE
+                    do {
+                        currentCoroutineContext().ensureActive()
+                        val batch =
+                            when {
+                                projectId == null && start == null -> sessionDao.getInsightSessionBatch(afterId)
+                                projectId == null && start != null ->
+                                    sessionDao.getInsightSessionBatchSince(
+                                        afterId,
+                                        start,
+                                    )
+                                projectId != null && start == null ->
+                                    sessionDao.getProjectInsightSessionBatch(
+                                        projectId,
+                                        afterId,
+                                    )
+                                else ->
+                                    sessionDao.getProjectInsightSessionBatchSince(
+                                        requireNotNull(projectId),
+                                        afterId,
+                                        requireNotNull(start),
+                                    )
+                            }
+                        if (batch.isEmpty()) break
+                        accumulate(result, batch.map { it.toDomain() })
+                        afterId = batch.last().id
+                    } while (true)
+                    result
                 }.retryOnRepositoryReadFailure()
                 .flowOn(ioDispatcher)
 

@@ -91,7 +91,7 @@ internal class BackupIdentityMap(
     }
 
     private fun validatedYarnCardIds(row: Map<String, JsonElement>): List<Long>? {
-        val value = row["yarnCardIds"] ?: return null
+        val value = row["yarnCardIds"]?.takeUnless { it == JsonNull } ?: return null
         return parseYarnCardIdsWithinLimits(value.jsonPrimitive.content)
             ?: throw BackupException(BackupError.VALIDATION)
     }

@@ -7,6 +7,8 @@ import androidx.room.Query
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
+internal const val MAX_COMPLETED_SESSIONS = 100_000L
+
 @Dao
 @Suppress("TooManyFunctions") // Valmiit ja aktiivinen istunto kuuluvat samaan Room-istuntorajapintaan.
 interface SessionDao {

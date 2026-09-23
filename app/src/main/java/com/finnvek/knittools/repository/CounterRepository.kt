@@ -6,6 +6,7 @@ import com.finnvek.knittools.data.local.ActiveSessionEntity
 import com.finnvek.knittools.data.local.CounterHistoryEntity
 import com.finnvek.knittools.data.local.CounterProjectDao
 import com.finnvek.knittools.data.local.DatabaseTransactionRunner
+import com.finnvek.knittools.data.local.MAX_COMPLETED_SESSIONS
 import com.finnvek.knittools.data.local.ProjectCompletionEntity
 import com.finnvek.knittools.data.local.ProjectCounterDao
 import com.finnvek.knittools.data.local.ProjectFolderAssignmentEntity
@@ -70,8 +71,6 @@ import java.time.ZoneId
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
-
-internal const val MAX_COMPLETED_SESSIONS = 100_000L
 
 internal class SessionHistoryLimitReachedException : IllegalStateException()
 

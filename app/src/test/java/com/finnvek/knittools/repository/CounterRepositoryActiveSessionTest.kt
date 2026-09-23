@@ -7,6 +7,7 @@ import com.finnvek.knittools.data.local.CounterProjectDao
 import com.finnvek.knittools.data.local.CounterProjectEntity
 import com.finnvek.knittools.data.local.DatabaseTransactionRunner
 import com.finnvek.knittools.data.local.ImmediateDatabaseTransactionRunner
+import com.finnvek.knittools.data.local.MAX_COMPLETED_SESSIONS
 import com.finnvek.knittools.data.local.ProjectCounterDao
 import com.finnvek.knittools.data.local.SessionDao
 import com.finnvek.knittools.data.local.SessionEntity

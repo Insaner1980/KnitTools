@@ -16,8 +16,12 @@ Ordinary sessions cover one or two days. Archive byte/field/identity budgets rem
 independent additional bounds. Numeric session-value hardening (triage-015) is not
 part of this change.
 
-Native history remains complete and is never truncated or rejected by this backup
-budget. Insights reads **256 rows per Room query**, folds and releases each batch,
+Native history remains complete and is never truncated by this backup budget.
+Repository session writers stop adding completed rows at 100,000 in one transaction,
+including Start/Stop, recovery, replacement, project completion, and direct insertion.
+Existing histories above that ceiling remain intact and readable. This ceiling allows
+ten sessions each day for more than 27 years; the smaller backup ceiling remains
+independent. Insights reads **256 rows per Room query**, folds and releases each batch,
 and publishes only the completed transaction snapshot. Memory retains aggregate
 date/project/bucket facts required by existing results, not session history or
 lists of batches. Total work still grows with history; cancellation is checked per
@@ -35,8 +39,8 @@ The first All-time local date is resolved before the fold so the existing chart'
 leading-edge clipping is unchanged. Only starts within 36 hours of the earliest
 UTC timestamp can win across accepted -18..+18 offsets; these candidate projections
 are also read in 256-row batches. The minimum timestamp is read once per snapshot
-using existing indexes. No fixed limit is placed on the number of batches or years
-of native history.
+using existing indexes. Preexisting native history is read in full, even when it
+predates the writer ceiling.
 
 Active days use sparse 4,096-day bit blocks instead of one date object per active
 day. A session's existing 366-day analysis window touches at most two blocks, so

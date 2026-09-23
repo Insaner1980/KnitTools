@@ -1095,6 +1095,7 @@
     <string name="work_session_active_description">Projektin %1$s työskentelyistunto, kulunut %2$s</string>
     <string name="work_session_could_not_start">Istuntoa ei voitu aloittaa</string>
     <string name="work_session_could_not_save">Istuntoa ei voitu tallentaa</string>
+    <string name="work_session_history_full">Istuntohistoria on täynnä. Aiemmat istuntosi säilyvät.</string>
     <string name="work_session_could_not_discard">Istuntoa ei voitu hylätä</string>
     <string name="work_session_recovery_already_handled">Tämä istunnon tarkistus on jo käsitelty.</string>
     <string name="work_session_retry">Yritä uudelleen</string>

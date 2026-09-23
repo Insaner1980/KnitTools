@@ -146,6 +146,8 @@ private class StubSessionDao : SessionDao {
 
     override suspend fun insert(session: SessionEntity): Long = 0L
 
+    override suspend fun countCompletedSessions(): Long = 0L
+
     override suspend fun deleteById(id: Long) = Unit
 
     override suspend fun deleteSessionsBefore(

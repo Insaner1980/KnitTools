@@ -20,6 +20,8 @@ sealed interface StartSessionResult {
 
     data object ProjectCompleted : StartSessionResult
 
+    data object HistoryLimitReached : StartSessionResult
+
     data object PersistenceFailure : StartSessionResult
 }
 
@@ -37,6 +39,8 @@ sealed interface StopSessionResult {
     data object StaleAction : StopSessionResult
 
     data object NoActiveSession : StopSessionResult
+
+    data object HistoryLimitReached : StopSessionResult
 
     data object PersistenceFailure : StopSessionResult
 }
@@ -58,6 +62,8 @@ sealed interface RecoveryResolutionResult {
 
     data object StaleAction : RecoveryResolutionResult
 
+    data object HistoryLimitReached : RecoveryResolutionResult
+
     data object PersistenceFailure : RecoveryResolutionResult
 }
 
@@ -78,6 +84,8 @@ sealed interface ProjectCompletionResult {
     ) : ProjectCompletionResult
 
     data object ProjectUnavailable : ProjectCompletionResult
+
+    data object HistoryLimitReached : ProjectCompletionResult
 
     data object PersistenceFailure : ProjectCompletionResult
 }

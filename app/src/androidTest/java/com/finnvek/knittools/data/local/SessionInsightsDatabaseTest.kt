@@ -68,6 +68,7 @@ class SessionInsightsDatabaseTest {
                     ),
                 )
             assertEquals(256, dao.getInsightSessionBatch(Long.MIN_VALUE).size)
+            assertEquals(259L, dao.countCompletedSessions())
             assertEquals(3, dao.getInsightSessionBatch(256).size)
             assertEquals(1, dao.getProjectInsightSessionBatch(1, 256).size)
             assertEquals(listOf(fallback), dao.getInsightSessionBatchSince(Long.MIN_VALUE, 11_000).map { it.id })
@@ -76,6 +77,8 @@ class SessionInsightsDatabaseTest {
             assertTrue(dao.getInsightSessionBatchSince(Long.MIN_VALUE, 11_001).isEmpty())
             assertTrue(dao.hasAnySessions())
             assertEquals(1000L, dao.getSessionProjectActivity(2).single().lastSessionAt)
+            dao.deleteById(old)
+            assertEquals(258L, dao.countCompletedSessions())
             val sql = database.openHelper.writableDatabase
             sql.query("EXPLAIN QUERY PLAN SELECT * FROM sessions WHERE id > 256 ORDER BY id LIMIT 256").use { cursor ->
                 assertTrue(cursor.moveToFirst())

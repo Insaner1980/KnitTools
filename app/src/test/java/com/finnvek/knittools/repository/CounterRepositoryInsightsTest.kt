@@ -162,6 +162,40 @@ class CounterRepositoryInsightsTest {
             assertEquals(listOf(1), values)
         }
 
+    @Test fun consecutiveChangesRebuildCompleteSnapshotsAcrossBatchBoundary() =
+        runTest {
+            val changes = MutableSharedFlow<Boolean>(replay = 1)
+            val rows = (1L..257L).map(::session).toMutableList()
+            every { dao.observeSessionChanges() } returns changes
+            coEvery { dao.getFirstSessionStart(any()) } returns null
+            coEvery { dao.hasAnySessions() } returns true
+            coEvery { dao.getSessionProjectActivity(null) } returns emptyList()
+            coEvery { dao.getInsightSessionBatch(any()) } answers {
+                rows.filter { it.id > firstArg<Long>() }.take(256)
+            }
+            val counts = mutableListOf<Int>()
+            backgroundScope.launch {
+                repository(StandardTestDispatcher(testScheduler))
+                    .observeSessionsForInsights(
+                        null,
+                        null,
+                        java.time.ZoneOffset.UTC,
+                        { intArrayOf(0) },
+                    ) { total, batch ->
+                        total[0] += batch.size
+                    }.collect { counts += it[0] }
+            }
+
+            changes.emit(true)
+            runCurrent()
+            rows += session(258)
+            changes.emit(true)
+            runCurrent()
+
+            assertEquals(listOf(257, 258), counts)
+            coVerify(exactly = 2) { dao.getInsightSessionBatch(Long.MIN_VALUE) }
+        }
+
     private fun repository(dispatcher: kotlinx.coroutines.CoroutineDispatcher) =
         CounterRepository(
             dao = mockk(),

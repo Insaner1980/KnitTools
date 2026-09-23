@@ -816,6 +816,7 @@
     <string name="work_session_active_description">Sessione di lavoro per %1$s, %2$s trascorsi</string>
     <string name="work_session_could_not_start">Impossibile avviare la sessione</string>
     <string name="work_session_could_not_save">Impossibile salvare la sessione</string>
+    <string name="work_session_history_full">La cronologia delle sessioni è piena. Le sessioni esistenti restano salvate.</string>
     <string name="work_session_could_not_discard">Impossibile scartare la sessione</string>
     <string name="work_session_recovery_already_handled">Questa verifica della sessione è già stata gestita.</string>
     <string name="work_session_retry">Riprova</string>

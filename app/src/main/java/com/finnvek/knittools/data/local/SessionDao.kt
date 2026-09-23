@@ -31,6 +31,9 @@ interface SessionDao {
     @Insert
     suspend fun insert(session: SessionEntity): Long
 
+    @Query("SELECT COUNT(*) FROM sessions")
+    suspend fun countCompletedSessions(): Long
+
     @Query("DELETE FROM sessions WHERE id = :id")
     suspend fun deleteById(id: Long)
 

@@ -816,6 +816,7 @@
     <string name="work_session_active_description">Sessão de trabalho de %1$s, %2$s decorridos</string>
     <string name="work_session_could_not_start">Não foi possível iniciar a sessão</string>
     <string name="work_session_could_not_save">Não foi possível guardar a sessão</string>
+    <string name="work_session_history_full">O histórico de sessões está cheio. As sessões existentes continuam guardadas.</string>
     <string name="work_session_could_not_discard">Não foi possível descartar a sessão</string>
     <string name="work_session_recovery_already_handled">Esta revisão da sessão já foi tratada.</string>
     <string name="work_session_retry">Tentar novamente</string>

@@ -801,6 +801,7 @@
     <string name="work_session_active_description">Werksessie voor %1$s, %2$s verstreken</string>
     <string name="work_session_could_not_start">Sessie kon niet worden gestart</string>
     <string name="work_session_could_not_save">Sessie kon niet worden opgeslagen</string>
+    <string name="work_session_history_full">De sessiegeschiedenis is vol. Je bestaande sessies blijven bewaard.</string>
     <string name="work_session_could_not_discard">Sessie kon niet worden verwijderd</string>
     <string name="work_session_recovery_already_handled">Deze sessiecontrole is al afgehandeld.</string>
     <string name="work_session_retry">Opnieuw proberen</string>

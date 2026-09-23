@@ -801,6 +801,7 @@
     <string name="work_session_active_description">Arbejdssession for %1$s, %2$s forløbet</string>
     <string name="work_session_could_not_start">Sessionen kunne ikke startes</string>
     <string name="work_session_could_not_save">Sessionen kunne ikke gemmes</string>
+    <string name="work_session_history_full">Sessionshistorikken er fuld. Dine eksisterende sessioner er bevaret.</string>
     <string name="work_session_could_not_discard">Sessionen kunne ikke kasseres</string>
     <string name="work_session_recovery_already_handled">Denne sessionsgennemgang er allerede behandlet.</string>
     <string name="work_session_retry">Prøv igen</string>

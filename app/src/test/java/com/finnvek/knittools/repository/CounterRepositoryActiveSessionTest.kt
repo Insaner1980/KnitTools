@@ -90,6 +90,104 @@ class CounterRepositoryActiveSessionTest {
         }
 
     @Test
+    fun `last available history slot saves then rejects a new start without changing history`() =
+        runTest {
+            coEvery { sessionDao.countCompletedSessions() } answers { MAX_COMPLETED_SESSIONS - 1 + completed.size }
+            val started = repository.startSession(7L) as StartSessionResult.Started
+            timeSource.advance(seconds = 60L)
+
+            assertEquals(StopSessionResult.Saved(1L), stopReviewedSession(started.session.sessionToken))
+            assertEquals(StartSessionResult.HistoryLimitReached, repository.startSession(7L))
+            assertEquals(1, completed.size)
+            assertEquals(null, active)
+            coVerify(exactly = 1) { sessionDao.insert(any()) }
+        }
+
+    @Test
+    fun `full history rejects direct insertion and retains an already active session on stop`() =
+        runTest {
+            coEvery { sessionDao.countCompletedSessions() } returns MAX_COMPLETED_SESSIONS - 1
+            val started = repository.startSession(7L) as StartSessionResult.Started
+            coEvery { sessionDao.countCompletedSessions() } returns MAX_COMPLETED_SESSIONS
+            timeSource.advance(seconds = 60L)
+
+            assertEquals(StopSessionResult.HistoryLimitReached, stopReviewedSession(started.session.sessionToken))
+            assertEquals(started.session.sessionToken, active?.sessionToken)
+            val direct =
+                runCatching {
+                    repository.insertSession(
+                        com.finnvek.knittools.domain.model.KnitSession(
+                            projectId = 7L,
+                            startedAt = 1_000L,
+                            endedAt = 61_000L,
+                            startRow = 0,
+                            endRow = 0,
+                            durationMinutes = 1,
+                        ),
+                    )
+                }
+            assertTrue(direct.exceptionOrNull() is SessionHistoryLimitReachedException)
+            assertTrue(completed.isEmpty())
+            coVerify(exactly = 0) { sessionDao.insert(any()) }
+        }
+
+    @Test
+    fun `full history leaves replacement and project completion transactions unchanged`() =
+        runTest {
+            repository = buildRepository(repositoryProjectCounterDao(), SnapshotTransactionRunner())
+            coEvery { sessionDao.countCompletedSessions() } returns MAX_COMPLETED_SESSIONS - 1
+            val started = repository.startSession(7L) as StartSessionResult.Started
+            coEvery { sessionDao.countCompletedSessions() } returns MAX_COMPLETED_SESSIONS
+            timeSource.advance(seconds = 60L)
+
+            assertEquals(
+                StartSessionResult.HistoryLimitReached,
+                repository.replaceActiveSession(8L, started.session.sessionToken, saveCurrent = true),
+            )
+            assertEquals(
+                StartSessionResult.HistoryLimitReached,
+                repository.replaceActiveSession(8L, started.session.sessionToken, saveCurrent = false),
+            )
+            assertEquals(
+                ProjectCompletionResult.HistoryLimitReached,
+                repository.completeProjectWithSessionChoice(7L, ActiveSessionCompletionChoice.SAVE),
+            )
+            assertEquals(started.session.sessionToken, active?.sessionToken)
+            coVerify(exactly = 0) { projectDao.archiveProject(any(), any(), any(), any()) }
+            coVerify(exactly = 0) { sessionDao.insert(any()) }
+        }
+
+    @Test
+    fun `full history retains recovery session when finalization is rejected`() =
+        runTest {
+            coEvery { sessionDao.countCompletedSessions() } returns MAX_COMPLETED_SESSIONS - 1
+            val started = repository.startSession(7L) as StartSessionResult.Started
+            timeSource.advance(seconds = 30L)
+            repository.checkpointActiveSession()
+            timeSource.reboot()
+            val recovery = requireNotNull(repository.refreshActiveSession())
+            coEvery { sessionDao.countCompletedSessions() } returns MAX_COMPLETED_SESSIONS
+
+            assertEquals(
+                RecoveryResolutionResult.HistoryLimitReached,
+                repository.editRecoveryDurationAndStop(
+                    started.session.sessionToken,
+                    requireNotNull(recovery.recoveryIntervalToken),
+                    60L,
+                ),
+            )
+            assertEquals(
+                RecoveryResolutionResult.HistoryLimitReached,
+                repository.discardRecoveryInterval(
+                    started.session.sessionToken,
+                    requireNotNull(recovery.recoveryIntervalToken),
+                ),
+            )
+            assertEquals(started.session.sessionToken, active?.sessionToken)
+            assertTrue(completed.isEmpty())
+        }
+
+    @Test
     fun `singleton start is idempotent for same project and conflicts for another`() =
         runTest {
             val first = repository.startSession(7L) as StartSessionResult.Started

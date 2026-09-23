@@ -818,6 +818,7 @@
     <string name="work_session_active_description">Arbetspass för %1$s, %2$s har gått</string>
     <string name="work_session_could_not_start">Passet kunde inte startas</string>
     <string name="work_session_could_not_save">Passet kunde inte sparas</string>
+    <string name="work_session_history_full">Passhistoriken är full. Dina befintliga pass finns kvar.</string>
     <string name="work_session_could_not_discard">Passet kunde inte kasseras</string>
     <string name="work_session_recovery_already_handled">Den här passgranskningen har redan hanterats.</string>
     <string name="work_session_retry">Försök igen</string>

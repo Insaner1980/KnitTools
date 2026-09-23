@@ -205,6 +205,9 @@ fun ProjectListScreen(
             else -> {}
         }
     }
+    CollectWithLifecycleEffect({ viewModel.sessionErrors }) { error ->
+        coroutineScope.launch { snackbarHostState.showSnackbar(resources.getString(error)) }
+    }
     // Luonnin jälkeen navigoi uuteen projektiin
     CollectWithLifecycleEffect({ viewModel.navigateToProject }) { projectId ->
         showCreateProjectDialog = false

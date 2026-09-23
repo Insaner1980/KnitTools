@@ -71,6 +71,10 @@ import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
+internal const val MAX_COMPLETED_SESSIONS = 100_000L
+
+internal class SessionHistoryLimitReachedException : IllegalStateException()
+
 sealed interface ProjectCreationResult {
     data class Created(
         val projectId: Long,
@@ -1212,7 +1216,7 @@ class CounterRepository
                 ) is ActiveSessionTimeEvaluation.NeedsReview
 
         suspend fun startSession(projectId: Long): StartSessionResult =
-            runSessionMutation(StartSessionResult.PersistenceFailure) {
+            runSessionMutation(StartSessionResult.PersistenceFailure, StartSessionResult.HistoryLimitReached) {
                 val project =
                     dao.getProject(projectId)?.toDomain()
                         ?: return@runSessionMutation StartSessionResult.ProjectMissing
@@ -1263,7 +1267,7 @@ class CounterRepository
             reviewedRowsWorked: Int,
             reviewedEndRow: Int,
         ): StopSessionResult =
-            runSessionMutation(StopSessionResult.PersistenceFailure) {
+            runSessionMutation(StopSessionResult.PersistenceFailure, StopSessionResult.HistoryLimitReached) {
                 val now = sessionTimeSource.snapshot()
                 val active =
                     synchronizeActiveSession(now)
@@ -1309,7 +1313,10 @@ class CounterRepository
             recoveryIntervalToken: String,
             durationSeconds: Long,
         ): RecoveryResolutionResult =
-            runSessionMutation(RecoveryResolutionResult.PersistenceFailure) {
+            runSessionMutation(
+                RecoveryResolutionResult.PersistenceFailure,
+                RecoveryResolutionResult.HistoryLimitReached,
+            ) {
                 if (durationSeconds < 0L) return@runSessionMutation RecoveryResolutionResult.InvalidDuration
                 val active =
                     activeRecoverySession(sessionToken, recoveryIntervalToken)
@@ -1344,7 +1351,10 @@ class CounterRepository
             recoveryIntervalToken: String,
             totalDurationSeconds: Long,
         ): RecoveryResolutionResult =
-            runSessionMutation(RecoveryResolutionResult.PersistenceFailure) {
+            runSessionMutation(
+                RecoveryResolutionResult.PersistenceFailure,
+                RecoveryResolutionResult.HistoryLimitReached,
+            ) {
                 val active =
                     activeRecoverySession(sessionToken, recoveryIntervalToken)
                         ?: return@runSessionMutation RecoveryResolutionResult.StaleAction
@@ -1366,7 +1376,10 @@ class CounterRepository
             sessionToken: String,
             recoveryIntervalToken: String,
         ): RecoveryResolutionResult =
-            runSessionMutation(RecoveryResolutionResult.PersistenceFailure) {
+            runSessionMutation(
+                RecoveryResolutionResult.PersistenceFailure,
+                RecoveryResolutionResult.HistoryLimitReached,
+            ) {
                 val active =
                     sessionDao.getActiveSession()
                         ?: return@runSessionMutation RecoveryResolutionResult.StaleAction
@@ -1403,7 +1416,7 @@ class CounterRepository
             expectedSessionToken: String,
             saveCurrent: Boolean,
         ): StartSessionResult =
-            runSessionMutation(StartSessionResult.PersistenceFailure) {
+            runSessionMutation(StartSessionResult.PersistenceFailure, StartSessionResult.HistoryLimitReached) {
                 val requested =
                     dao.getProject(requestedProjectId)?.toDomain()
                         ?: return@runSessionMutation StartSessionResult.ProjectMissing
@@ -1432,7 +1445,10 @@ class CounterRepository
             choice: ActiveSessionCompletionChoice?,
             completedAtMillis: Long? = null,
         ): ProjectCompletionResult =
-            runSessionMutation(ProjectCompletionResult.PersistenceFailure) {
+            runSessionMutation(
+                ProjectCompletionResult.PersistenceFailure,
+                ProjectCompletionResult.HistoryLimitReached,
+            ) {
                 val project = dao.getProject(projectId)
                 if (project == null) {
                     return@runSessionMutation ProjectCompletionResult.ProjectUnavailable
@@ -1634,7 +1650,8 @@ class CounterRepository
             return first
         }
 
-        suspend fun insertSession(session: KnitSession): Long = sessionDao.insert(session.toEntity())
+        suspend fun insertSession(session: KnitSession): Long =
+            transactionRunner.run { insertCompletedSessionRow(session.toEntity()) }
 
         suspend fun deleteSession(id: Long) = sessionDao.deleteById(id)
 
@@ -1818,7 +1835,7 @@ class CounterRepository
             val durationMillis =
                 if (safeDuration > Long.MAX_VALUE / 1_000L) Long.MAX_VALUE else safeDuration * 1_000L
             val endedAt = saturatingAdd(active.startedAtWallMillis.coerceAtLeast(0L), durationMillis)
-            return sessionDao.insert(
+            return insertCompletedSessionRow(
                 SessionEntity(
                     projectId = active.projectId,
                     startedAt = active.startedAtWallMillis.coerceAtLeast(0L),
@@ -1833,11 +1850,21 @@ class CounterRepository
             )
         }
 
+        private suspend fun insertCompletedSessionRow(session: SessionEntity): Long {
+            if (sessionDao.countCompletedSessions() >= MAX_COMPLETED_SESSIONS) {
+                throw SessionHistoryLimitReachedException()
+            }
+            return sessionDao.insert(session)
+        }
+
         private suspend fun createStartedSession(
             projectId: Long,
             startRow: Int,
             now: com.finnvek.knittools.domain.model.SessionTimeSnapshot,
         ): StartSessionResult.Started {
+            if (sessionDao.countCompletedSessions() >= MAX_COMPLETED_SESSIONS) {
+                throw SessionHistoryLimitReachedException()
+            }
             val session =
                 ActiveSessionEntity(
                     sessionToken = UUID.randomUUID().toString(),
@@ -1912,12 +1939,15 @@ class CounterRepository
 
         private suspend fun <T> runSessionMutation(
             persistenceFailure: T,
+            historyLimitReached: T? = null,
             block: suspend () -> T,
         ): T =
             try {
                 transactionRunner.run(block)
             } catch (cancellation: CancellationException) {
                 throw cancellation
+            } catch (_: SessionHistoryLimitReachedException) {
+                historyLimitReached ?: persistenceFailure
             } catch (_: Exception) {
                 persistenceFailure
             }

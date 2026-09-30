@@ -151,6 +151,19 @@ function requireState(value: string | undefined): string {
   return value;
 }
 
+export function validateRavelryOAuthCallbackQuery(query: Record<string, unknown>) {
+  for (const field of ["state", "code", "error"] as const) {
+    if (query[field] != null && typeof query[field] !== "string") {
+      throw new RavelryAuthFlowError(`invalid_${field}`, 400);
+    }
+  }
+  const state = requireState(queryString(query, "state"));
+  const ravelryError = boundedCallbackValue(queryString(query, "error"), "error");
+  const code = boundedCallbackValue(queryString(query, "code"), "code");
+  if (!ravelryError && !code) throw new RavelryAuthFlowError("missing_code", 400);
+  return { state, ravelryError, code };
+}
+
 function requireCompletionProof(value: string): string {
   if (!/^[A-Za-z0-9_-]{43}$/.test(value)) {
     throw new RavelryAuthFlowError("invalid_completion", 400);
@@ -311,9 +324,7 @@ export async function completeRavelryOAuthCallback({
   randomString = randomBase64Url,
 }: CompleteCallbackOptions): Promise<CallbackResponse> {
   const now = nowMillis();
-  const state = requireState(queryString(query, "state"));
-  const ravelryError = boundedCallbackValue(queryString(query, "error"), "error");
-  const code = boundedCallbackValue(queryString(query, "code"), "code");
+  const { state, ravelryError, code } = validateRavelryOAuthCallbackQuery(query);
   await rateLimiter.consumeGlobal("callback");
   const storedState = await loadUsableState(stateStore, state, now).catch((error: unknown) =>
     redirectExpiredStateOrThrow(error, state),

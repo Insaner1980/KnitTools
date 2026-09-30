@@ -1,4 +1,9 @@
 <resources>
+    <string name="notes_save_failed">Kunne ikke lagre notatene. Endringene dine er fortsatt her. Prøv igjen.</string>
+    <string name="notes_discard_title">Forkaste ulagrede notater?</string>
+    <string name="notes_discard_message">Endringene dine kunne ikke lagres. Hvis du forlater siden nå, forkastes ulagrede endringer.</string>
+    <string name="notes_discard_action">Forkast endringer</string>
+
     <string name="app_name">KnitTools</string>
 
     <!-- Navigation & common -->

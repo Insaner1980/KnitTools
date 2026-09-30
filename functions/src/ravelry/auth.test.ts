@@ -19,6 +19,9 @@ describe("production Ravelry HTTP callback with local responses", () => {
   let consumeState: () => Promise<boolean>;
   let fetchResponse: () => Promise<Response>;
   let fetchCalls: number;
+  let globalCalls: number;
+  let stateReads: number;
+  let browserBinds: number;
   let status: number;
   let body: unknown;
   let redirect: string | undefined;
@@ -39,6 +42,9 @@ describe("production Ravelry HTTP callback with local responses", () => {
     pending = undefined;
     generation = 3;
     fetchCalls = 0;
+    globalCalls = 0;
+    stateReads = 0;
+    browserBinds = 0;
     status = 200;
     body = undefined;
     redirect = undefined;
@@ -78,7 +84,15 @@ describe("production Ravelry HTTP callback with local responses", () => {
     });
     mock.method(stores, "createRavelryBackendStores", () => ({
       stateStore: {
+        async bindBrowser(key: string, _ticketHash: string, bindingHash: string) {
+          browserBinds++;
+          assert.equal(globalCalls, 1);
+          if (key !== state || !stored) return null;
+          stored = { ...stored, browserBindingHash: bindingHash };
+          return stored;
+        },
         async getState(key: string) {
+          stateReads++;
           if (failRead) throw new Error(rawError);
           return key === state ? stored : null;
         },
@@ -96,6 +110,7 @@ describe("production Ravelry HTTP callback with local responses", () => {
       rateLimiter: {
         ...disabledRavelryRateLimiter,
         async consumeGlobal() {
+          globalCalls++;
           if (failLimiter) throw new Error(rawError);
         },
         async consumeUid() {
@@ -107,9 +122,9 @@ describe("production Ravelry HTTP callback with local responses", () => {
 
   afterEach(() => { mock.restoreAll(); });
 
-  async function invoke(query: Record<string, unknown> = { state, code: "synthetic-code" }) {
+  async function invoke(query: Record<string, unknown> = { state, code: "synthetic-code" }, method = "GET") {
     await ravelryCallback(
-      { query, method: "GET", ip: "127.0.0.1", headers: {} } as Parameters<typeof ravelryCallback>[0],
+      { query, body: query, method, ip: "127.0.0.1", headers: {} } as Parameters<typeof ravelryCallback>[0],
       {
         set() { return this; },
         redirect(code: number, url: string) { status = code; redirect = url; },
@@ -131,6 +146,54 @@ describe("production Ravelry HTTP callback with local responses", () => {
     assert.equal(body, undefined);
     assert.equal(pending, undefined);
   }
+
+  for (const query of [
+    {}, { state: "bad-state", code: "synthetic-code" }, { state: [state], code: "synthetic-code" },
+    { state }, { state, code: "bad\ncode" }, { state, error: ["denied"] },
+    { state, code: "x".repeat(2_049) }, { state, start: "bad-ticket" },
+  ]) {
+    it(`rejects malformed ${JSON.stringify(Object.keys(query))} before quota and state access`, async () => {
+      await invoke(query);
+      assert.equal(status, 400);
+      assert.equal(globalCalls, 0);
+      assert.equal(stateReads, 0);
+      assert.equal(fetchCalls, 0);
+    });
+  }
+
+  it("rejects a browser start POST before quota and state access", async () => {
+    await invoke({ state, start: "t".repeat(43) }, "POST");
+    assert.equal(status, 400);
+    assert.equal(globalCalls, 0);
+    assert.equal(stateReads, 0);
+  });
+
+  it("limits syntactically valid unknown states before any database lookup", async () => {
+    failLimiter = true;
+    await invoke({ state: "u".repeat(43), code: "synthetic-code" });
+    assert.equal(status, 500);
+    assert.equal(globalCalls, 1);
+    assert.equal(stateReads, 0);
+  });
+
+  it("charges valid browser starts before binding and redirects to Ravelry", async () => {
+    await invoke({ state, start: "t".repeat(43) });
+    assert.equal(globalCalls, 1);
+    assert.equal(browserBinds, 1);
+    assert.equal(stateReads, 0);
+    assert.equal(status, 302);
+    assert.equal(new URL(redirect!).origin, "https://www.ravelry.com");
+    assert.equal(fetchCalls, 0);
+  });
+
+  it("rejects an overloaded browser start before binding", async () => {
+    failLimiter = true;
+    await invoke({ state, start: "t".repeat(43) });
+    assert.equal(status, 500);
+    assert.equal(globalCalls, 1);
+    assert.equal(browserBinds, 0);
+    assert.equal(stateReads, 0);
+  });
 
   for (const failure of ["http", "network", "timeout", "invalid-json", "missing-token"] as const) {
     it(`redirects ${failure} exchange failure only after consuming accepted state`, async () => {

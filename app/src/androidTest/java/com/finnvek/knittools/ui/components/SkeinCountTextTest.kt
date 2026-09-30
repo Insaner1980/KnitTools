@@ -40,31 +40,37 @@ class SkeinCountTextTest(
         val configuration = Configuration(baseContext.resources.configuration).apply { setLocale(locale) }
         val context = baseContext.createConfigurationContext(configuration)
         val quantities = listOf(0, 1, 2, 21, 1_000_000, 2_000_000, 1_000_001, Int.MAX_VALUE)
-        val expectedWords = listOf(
-            if (zeroUsesOne) singular else plural,
-            singular,
-            plural,
-            plural,
-            million,
-            million,
-            plural,
-            plural,
-        )
-        val expectedCategories = listOf(
-            if (zeroUsesOne) "one" else "other",
-            "one",
-            "other",
-            "other",
-            if (hasMany) "many" else "other",
-            if (hasMany) "many" else "other",
-            "other",
-            "other",
-        )
+        val expectedWords =
+            listOf(
+                if (zeroUsesOne) singular else plural,
+                singular,
+                plural,
+                plural,
+                million,
+                million,
+                plural,
+                plural,
+            )
+        val expectedCategories =
+            listOf(
+                if (zeroUsesOne) "one" else "other",
+                "one",
+                "other",
+                "other",
+                if (hasMany) "many" else "other",
+                if (hasMany) "many" else "other",
+                "other",
+                "other",
+            )
         val rules = PluralRules.forLocale(locale)
         val expectedTexts = quantities.zip(expectedWords) { quantity, word -> "$quantity $word" }
 
         quantities.forEachIndexed { index, quantity ->
-            assertEquals("$languageTag category for $quantity", expectedCategories[index], rules.select(quantity.toDouble()))
+            assertEquals(
+                "$languageTag category for $quantity",
+                expectedCategories[index],
+                rules.select(quantity.toDouble()),
+            )
             assertEquals(
                 "$languageTag resources for $quantity",
                 expectedTexts[index],
@@ -89,20 +95,21 @@ class SkeinCountTextTest(
     companion object {
         @JvmStatic
         @Parameterized.Parameters(name = "{0}")
-        fun locales(): List<Array<Any>> = listOf(
-            arrayOf("en", "skein", "skeins", "skeins", false, false),
-            arrayOf("fi", "kerä", "kerää", "kerää", false, false),
-            arrayOf("sv", "nystan", "nystan", "nystan", false, false),
-            arrayOf("de", "Knäuel", "Knäuel", "Knäuel", false, false),
-            arrayOf("fr", "pelote", "pelotes", "de pelotes", true, true),
-            arrayOf("es", "ovillo", "ovillos", "de ovillos", false, true),
-            arrayOf("pt", "novelo", "novelos", "de novelos", true, true),
-            arrayOf("pt-BR", "novelo", "novelos", "de novelos", true, true),
-            arrayOf("pt-PT", "novelo", "novelos", "de novelos", false, true),
-            arrayOf("it", "gomitolo", "gomitoli", "di gomitoli", false, true),
-            arrayOf("nb", "nøste", "nøster", "nøster", false, false),
-            arrayOf("da", "nøgle", "nøgler", "nøgler", false, false),
-            arrayOf("nl", "streng", "strengen", "strengen", false, false),
-        )
+        fun locales(): List<Array<Any>> =
+            listOf(
+                arrayOf("en", "skein", "skeins", "skeins", false, false),
+                arrayOf("fi", "kerä", "kerää", "kerää", false, false),
+                arrayOf("sv", "nystan", "nystan", "nystan", false, false),
+                arrayOf("de", "Knäuel", "Knäuel", "Knäuel", false, false),
+                arrayOf("fr", "pelote", "pelotes", "pelotes", true, true),
+                arrayOf("es", "ovillo", "ovillos", "ovillos", false, true),
+                arrayOf("pt", "novelo", "novelos", "novelos", true, true),
+                arrayOf("pt-BR", "novelo", "novelos", "novelos", true, true),
+                arrayOf("pt-PT", "novelo", "novelos", "novelos", false, true),
+                arrayOf("it", "gomitolo", "gomitoli", "gomitoli", false, true),
+                arrayOf("nb", "nøste", "nøster", "nøster", false, false),
+                arrayOf("da", "nøgle", "nøgler", "nøgler", false, false),
+                arrayOf("nl", "streng", "strengen", "strengen", false, false),
+            )
     }
 }

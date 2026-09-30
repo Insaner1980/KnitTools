@@ -1,4 +1,9 @@
 <resources>
+    <string name="notes_save_failed">Muistiinpanoja ei voitu tallentaa. Muutoksesi ovat yhä tässä. Yritä uudelleen.</string>
+    <string name="notes_discard_title">Hylätäänkö tallentamattomat muistiinpanot?</string>
+    <string name="notes_discard_message">Muutoksiasi ei voitu tallentaa. Jos poistut nyt, tallentamattomat muutokset hylätään.</string>
+    <string name="notes_discard_action">Hylkää muutokset</string>
+
     <string name="app_name">KnitTools</string>
 
     <!-- Navigaatio ja yleiset -->

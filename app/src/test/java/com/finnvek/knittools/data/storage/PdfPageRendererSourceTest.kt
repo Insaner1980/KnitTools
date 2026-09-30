@@ -77,9 +77,10 @@ class PdfPageRendererSourceTest {
         val source = ProjectSourceFiles.read(PDF_PAGE_RENDERER)
         val mutated = source.replace(".getOrThrow()", ".getOrElse { bitmap }")
         assertTrue(mutated.contains("throw failure"))
-        val failure = assertThrows(AssertionError::class.java) {
-            assertRenderFailurePropagation(mutated)
-        }
+        val failure =
+            assertThrows(AssertionError::class.java) {
+                assertRenderFailurePropagation(mutated)
+            }
         assertTrue(failure.message.orEmpty().contains("original rendering failure"))
     }
 

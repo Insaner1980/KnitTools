@@ -1,4 +1,9 @@
 <resources>
+    <string name="notes_save_failed">Noterne kunne ikke gemmes. Dine ændringer er stadig her. Prøv igen.</string>
+    <string name="notes_discard_title">Kassér noter, der ikke er gemt?</string>
+    <string name="notes_discard_message">Dine ændringer kunne ikke gemmes. Hvis du forlader siden nu, går ændringer, der ikke er gemt, tabt.</string>
+    <string name="notes_discard_action">Kassér ændringer</string>
+
     <string name="app_name">KnitTools</string>
 
     <!-- Navigation & common -->

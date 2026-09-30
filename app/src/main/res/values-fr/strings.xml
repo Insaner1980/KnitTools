@@ -1,4 +1,9 @@
 <resources>
+    <string name="notes_save_failed">Impossible d’enregistrer les notes. Vos modifications sont toujours présentes. Réessayez.</string>
+    <string name="notes_discard_title">Abandonner les notes non enregistrées ?</string>
+    <string name="notes_discard_message">Vos modifications n’ont pas pu être enregistrées. Si vous quittez maintenant, les modifications non enregistrées seront perdues.</string>
+    <string name="notes_discard_action">Abandonner les modifications</string>
+
     <string name="app_name">KnitTools</string>
 
     <!-- Navigation & common -->
@@ -228,7 +233,7 @@
     <string name="delete_yarn_card_message">Supprimer cette fiche de fil ? Cette action est irréversible.</string>
     <plurals name="skein_count">
         <item quantity="one">%1$d pelote</item>
-        <item quantity="many">%1$d de pelotes</item>
+        <item quantity="many">%1$d pelotes</item>
         <item quantity="other">%1$d pelotes</item>
     </plurals>
 

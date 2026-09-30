@@ -1,4 +1,9 @@
 <resources>
+    <string name="notes_save_failed">Impossibile salvare le note. Le tue modifiche sono ancora qui. Riprova.</string>
+    <string name="notes_discard_title">Scartare le note non salvate?</string>
+    <string name="notes_discard_message">Non è stato possibile salvare le modifiche. Se esci ora, le modifiche non salvate verranno scartate.</string>
+    <string name="notes_discard_action">Scarta modifiche</string>
+
     <string name="app_name">KnitTools</string>
 
     <!-- Navigation & common -->
@@ -228,7 +233,7 @@
     <string name="delete_yarn_card_message">Eliminare questa scheda filato? Questa azione non può essere annullata.</string>
     <plurals name="skein_count">
         <item quantity="one">%1$d gomitolo</item>
-        <item quantity="many">%1$d di gomitoli</item>
+        <item quantity="many">%1$d gomitoli</item>
         <item quantity="other">%1$d gomitoli</item>
     </plurals>
 

@@ -52,11 +52,11 @@ interface ProjectYarnUsageDao {
     ): LinkSavedCardUsageResult {
         val rows = getForSource(projectId, cardId, noteId)
         if (rows.isEmpty()) return LinkSavedCardUsageResult.NoUsage
+        if (rows.any { it.projectYarnNoteId != null && it.projectYarnNoteId != noteId }) {
+            return LinkSavedCardUsageResult.Conflict
+        }
         if (rows.size == 1) {
             val row = rows.single()
-            if (row.projectYarnNoteId != null && row.projectYarnNoteId != noteId) {
-                return LinkSavedCardUsageResult.Conflict
-            }
             check(update(row.copy(yarnCardId = cardId, projectYarnNoteId = noteId)) == 1)
             return LinkSavedCardUsageResult.Linked
         }

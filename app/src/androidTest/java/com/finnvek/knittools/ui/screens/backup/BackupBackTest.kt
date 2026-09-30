@@ -20,11 +20,17 @@ class BackupBackTest {
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
 
     @Test fun exportingToolbarCancelsThenNavigatesAfterCompletion() = cancelAndBack(BackupPhase.EXPORTING, false)
+
     @Test fun exportingSystemBackCancelsThenNavigatesAfterCompletion() = cancelAndBack(BackupPhase.EXPORTING, true)
+
     @Test fun validatingToolbarCancelsThenNavigatesAfterCompletion() = cancelAndBack(BackupPhase.VALIDATING, false)
+
     @Test fun validatingSystemBackCancelsThenNavigatesAfterCompletion() = cancelAndBack(BackupPhase.VALIDATING, true)
 
-    private fun cancelAndBack(phase: BackupPhase, system: Boolean) {
+    private fun cancelAndBack(
+        phase: BackupPhase,
+        system: Boolean,
+    ) {
         val state = mutableStateOf(BackupUiState(phase))
         var cancels = 0
         var exits = 0

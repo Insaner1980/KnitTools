@@ -85,9 +85,10 @@ class TrialStartSourceTest {
     fun `refresh boundary fails clearly when either delimiter is missing`() {
         val source = ProjectSourceFiles.read(TRIAL_MANAGER)
         for (delimiter in listOf(REFRESH_START, REFRESH_END)) {
-            val failure = assertThrows(AssertionError::class.java) {
-                refreshTrialStateBody(source.replace(delimiter, "missingDelimiter"))
-            }
+            val failure =
+                assertThrows(AssertionError::class.java) {
+                    refreshTrialStateBody(source.replace(delimiter, "missingDelimiter"))
+                }
             assertTrue(failure.message.orEmpty().contains(delimiter))
         }
     }

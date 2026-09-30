@@ -32,14 +32,15 @@ class PatternAnnotationInputPressureTest {
                 coordinateTransform = PatternPageCoordinateTransform(0f, 0f, 1_000f, 1_000f, scale = 1f),
                 viewportScale = 1f,
                 pressureEnabled = tool.value == PatternAnnotationTool.PEN,
-                actions = PatternAnnotationInputActions(
-                    onBeginStroke = { points += it },
-                    onAppendStrokePoint = { points += it },
-                    onCommitStroke = { commits++ },
-                    onCancelStroke = {},
-                    onEraseStroke = {},
-                    onSelectAnnotation = {},
-                ),
+                actions =
+                    PatternAnnotationInputActions(
+                        onBeginStroke = { points += it },
+                        onAppendStrokePoint = { points += it },
+                        onCommitStroke = { commits++ },
+                        onCancelStroke = {},
+                        onEraseStroke = {},
+                        onSelectAnnotation = {},
+                    ),
                 modifier = Modifier.fillMaxSize().testTag("input"),
             )
         }
@@ -50,22 +51,40 @@ class PatternAnnotationInputPressureTest {
             }
             val bounds = composeRule.onNodeWithTag("input").fetchSemanticsNode().boundsInRoot
             val downTime = SystemClock.uptimeMillis()
-            val properties = MotionEvent.PointerProperties().apply {
-                id = 0
-                toolType = MotionEvent.TOOL_TYPE_STYLUS
-            }
-            listOf(MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE, MotionEvent.ACTION_UP).forEachIndexed { index, action ->
-                val coordinates = MotionEvent.PointerCoords().apply {
-                    x = bounds.left + bounds.width * (0.2f + index * 0.2f)
-                    y = bounds.center.y
-                    pressure = if (index == 0) 0.2f else 0.9f
-                    size = 1f
+            val properties =
+                MotionEvent.PointerProperties().apply {
+                    id = 0
+                    toolType = MotionEvent.TOOL_TYPE_STYLUS
                 }
+            listOf(MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE, MotionEvent.ACTION_UP).forEachIndexed {
+                index,
+                action,
+                ->
+                val coordinates =
+                    MotionEvent.PointerCoords().apply {
+                        x = bounds.left + bounds.width * (0.2f + index * 0.2f)
+                        y = bounds.center.y
+                        pressure = if (index == 0) 0.2f else 0.9f
+                        size = 1f
+                    }
                 composeRule.runOnUiThread {
-                    val event = MotionEvent.obtain(
-                        downTime, downTime + index * 20L, action, 1, arrayOf(properties), arrayOf(coordinates),
-                        0, 0, 1f, 1f, 0, 0, InputDevice.SOURCE_STYLUS, 0,
-                    )
+                    val event =
+                        MotionEvent.obtain(
+                            downTime,
+                            downTime + index * 20L,
+                            action,
+                            1,
+                            arrayOf(properties),
+                            arrayOf(coordinates),
+                            0,
+                            0,
+                            1f,
+                            1f,
+                            0,
+                            0,
+                            InputDevice.SOURCE_STYLUS,
+                            0,
+                        )
                     try {
                         composeRule.activity.dispatchTouchEvent(event)
                     } finally {

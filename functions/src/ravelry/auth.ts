@@ -16,6 +16,7 @@ import {
   getRavelryCurrentUser,
   ravelryAuthorizeUrl,
   resolveBackendCallbackUrl,
+  validateRavelryOAuthCallbackQuery,
 } from "./authCore";
 import {
   BROWSER_AUTH_COOKIE,
@@ -133,7 +134,6 @@ export const ravelryCallback = onRequest(ravelrySecretOptions, async (request, r
       response.status(405).json({ code: "method_not_allowed" });
       return;
     }
-    await rateLimiter.consumeGlobal("callback");
     const query = request.method === "POST"
       ? (request.body && typeof request.body === "object" ? request.body : {}) as Record<string, unknown>
       : request.query;
@@ -141,6 +141,7 @@ export const ravelryCallback = onRequest(ravelrySecretOptions, async (request, r
       if (request.method !== "GET") throw new RavelryAuthFlowError("invalid_browser_session", 400);
       const state = requireBrowserValue(query.state);
       const ticket = requireBrowserValue(query.start);
+      await rateLimiter.consumeGlobal("callback");
       const secret = randomBytes(32).toString("base64url");
       const stored = await stateStore.bindBrowser(state, browserSecretHash(ticket), browserSecretHash(secret), Date.now());
       if (!stored || await tokenStore.getConnectionGeneration(stored.uid) !== (stored.connectionGeneration ?? 0)) {
@@ -151,11 +152,9 @@ export const ravelryCallback = onRequest(ravelrySecretOptions, async (request, r
       response.redirect(302, ravelryAuthorizeUrl(ravelryClientId.value(), stored.redirectUri, state, stored.codeChallenge));
       return;
     }
-    if (query.state != null && typeof query.state !== "string") {
-      throw new RavelryAuthFlowError("invalid_state", 400);
-    }
-    const state = typeof query.state === "string" && /^[A-Za-z0-9_-]{43}$/.test(query.state)
-      ? await stateStore.getState(query.state) : null;
+    const validated = validateRavelryOAuthCallbackQuery(query);
+    await rateLimiter.consumeGlobal("callback");
+    const state = await stateStore.getState(validated.state);
     const options = {
       query,
       stateStore,

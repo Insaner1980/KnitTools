@@ -63,9 +63,19 @@ class PatternBookmarkDraftTest {
     }
 
     private fun rename(name: String) {
-        val options = context.getString(R.string.pattern_bookmark_action_accessibility_description, context.getString(R.string.more_options), name)
+        val options =
+            context.getString(
+                R.string.pattern_bookmark_action_accessibility_description,
+                context.getString(R.string.more_options),
+                name,
+            )
         composeRule.onNodeWithContentDescription(options).performScrollTo().performClick()
-        val action = context.getString(R.string.pattern_bookmark_action_accessibility_description, context.getString(R.string.pattern_bookmark_rename), name)
+        val action =
+            context.getString(
+                R.string.pattern_bookmark_action_accessibility_description,
+                context.getString(R.string.pattern_bookmark_rename),
+                name,
+            )
         composeRule.onNodeWithContentDescription(action).performClick()
     }
 
@@ -80,19 +90,22 @@ class PatternBookmarkDraftTest {
     private fun content(
         onAdd: (String) -> Unit = {},
         onRename: (Long, String) -> Unit = { _, _ -> },
-    ): @Composable () -> Unit = {
-        KnitToolsTheme {
-            PatternBookmarkSheet(
-                state = PatternBookmarkUiState(
-                    documentKey = "document",
-                    isLoading = false,
-                    bookmarks = listOf("First", "Second").mapIndexed { index, name ->
-                        PatternBookmark(index + 1L, 1L, "document", name, index, 0.5f, 1L)
-                    },
-                ),
-                totalPages = 2,
-                actions = PatternBookmarkSheetActions({}, onAdd, {}, {}, {}, onRename, {}, {}),
-            )
+    ): @Composable () -> Unit =
+        {
+            KnitToolsTheme {
+                PatternBookmarkSheet(
+                    state =
+                        PatternBookmarkUiState(
+                            documentKey = "document",
+                            isLoading = false,
+                            bookmarks =
+                                listOf("First", "Second").mapIndexed { index, name ->
+                                    PatternBookmark(index + 1L, 1L, "document", name, index, 0.5f, 1L)
+                                },
+                        ),
+                    totalPages = 2,
+                    actions = PatternBookmarkSheetActions({}, onAdd, {}, {}, {}, onRename, {}, {}),
+                )
+            }
         }
-    }
 }

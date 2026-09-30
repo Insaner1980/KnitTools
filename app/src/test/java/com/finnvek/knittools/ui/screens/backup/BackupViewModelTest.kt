@@ -40,47 +40,57 @@ class BackupViewModelTest {
 
     @Test fun validationCancellationWaitsForCleanupBeforeReturningToIdle() = cancellation(BackupPhase.VALIDATING)
 
-    private fun cancellation(phase: BackupPhase) = runTest(dispatcher) {
-        val cleanup = CompletableDeferred<Unit>()
-        var cancelled = false
-        coEvery { repository.export(uri) } coAnswers {
-            try { awaitCancellation() } finally { cancelled = true }
+    private fun cancellation(phase: BackupPhase) =
+        runTest(dispatcher) {
+            val cleanup = CompletableDeferred<Unit>()
+            var cancelled = false
+            coEvery { repository.export(uri) } coAnswers {
+                try {
+                    awaitCancellation()
+                } finally {
+                    cancelled = true
+                }
+            }
+            coEvery { repository.prepare(uri, any()) } coAnswers {
+                try {
+                    awaitCancellation()
+                } finally {
+                    cancelled = true
+                }
+            }
+            coEvery { repository.cancelPreview(any()) } coAnswers { cleanup.await() }
+            val viewModel = BackupViewModel(repository)
+            store.put("backup", viewModel)
+            if (phase == BackupPhase.EXPORTING) viewModel.export(uri) else viewModel.prepare(uri)
+            runCurrent()
+            assertEquals(phase, viewModel.state.value.phase)
+            viewModel.cancel()
+            runCurrent()
+            assertTrue(cancelled)
+            assertEquals(phase, viewModel.state.value.phase)
+            cleanup.complete(Unit)
+            runCurrent()
+            assertEquals(BackupUiState(), viewModel.state.value)
+            coVerify(exactly = 1) { repository.cancelPreview(any()) }
         }
-        coEvery { repository.prepare(uri, any()) } coAnswers {
-            try { awaitCancellation() } finally { cancelled = true }
-        }
-        coEvery { repository.cancelPreview(any()) } coAnswers { cleanup.await() }
-        val viewModel = BackupViewModel(repository)
-        store.put("backup", viewModel)
-        if (phase == BackupPhase.EXPORTING) viewModel.export(uri) else viewModel.prepare(uri)
-        runCurrent()
-        assertEquals(phase, viewModel.state.value.phase)
-        viewModel.cancel()
-        runCurrent()
-        assertTrue(cancelled)
-        assertEquals(phase, viewModel.state.value.phase)
-        cleanup.complete(Unit)
-        runCurrent()
-        assertEquals(BackupUiState(), viewModel.state.value)
-        coVerify(exactly = 1) { repository.cancelPreview(any()) }
-    }
 
-    @Test fun restoringIgnoresCancellationAndCompletesNormally() = runTest(dispatcher) {
-        val finished = CompletableDeferred<Unit>()
-        coEvery { repository.prepare(uri, any()) } returns BackupPreview(0, "1", 1, 0, 0, 0)
-        coEvery { repository.restore(any()) } coAnswers { finished.await() }
-        val viewModel = BackupViewModel(repository)
-        store.put("backup", viewModel)
-        viewModel.prepare(uri)
-        runCurrent()
-        viewModel.restore()
-        runCurrent()
-        viewModel.cancel()
-        runCurrent()
-        assertEquals(BackupPhase.RESTORING, viewModel.state.value.phase)
-        coVerify(exactly = 0) { repository.cancelPreview(any()) }
-        finished.complete(Unit)
-        runCurrent()
-        assertEquals(BackupPhase.RESTORED, viewModel.state.value.phase)
-    }
+    @Test fun restoringIgnoresCancellationAndCompletesNormally() =
+        runTest(dispatcher) {
+            val finished = CompletableDeferred<Unit>()
+            coEvery { repository.prepare(uri, any()) } returns BackupPreview(0, "1", 1, 0, 0, 0)
+            coEvery { repository.restore(any()) } coAnswers { finished.await() }
+            val viewModel = BackupViewModel(repository)
+            store.put("backup", viewModel)
+            viewModel.prepare(uri)
+            runCurrent()
+            viewModel.restore()
+            runCurrent()
+            viewModel.cancel()
+            runCurrent()
+            assertEquals(BackupPhase.RESTORING, viewModel.state.value.phase)
+            coVerify(exactly = 0) { repository.cancelPreview(any()) }
+            finished.complete(Unit)
+            runCurrent()
+            assertEquals(BackupPhase.RESTORED, viewModel.state.value.phase)
+        }
 }

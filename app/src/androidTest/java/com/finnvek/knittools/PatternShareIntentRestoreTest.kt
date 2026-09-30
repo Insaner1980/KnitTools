@@ -7,8 +7,8 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.platform.app.InstrumentationRegistry
-import androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry
 import androidx.test.runner.lifecycle.ActivityLifecycleCallback
+import androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry
 import androidx.test.runner.lifecycle.Stage
 import com.finnvek.knittools.ui.navigation.PatternShareCoordinatorViewModel
 import com.finnvek.knittools.ui.navigation.PatternShareOfferResult
@@ -35,12 +35,13 @@ class PatternShareIntentRestoreTest {
             }
             awaitConsumed(scenario)
             var originalIntentRestored = false
-            val restoreIntent = ActivityLifecycleCallback { activity, stage ->
-                if (activity is MainActivity && stage == Stage.PRE_ON_CREATE) {
-                    activity.intent = Intent(original)
-                    originalIntentRestored = true
+            val restoreIntent =
+                ActivityLifecycleCallback { activity, stage ->
+                    if (activity is MainActivity && stage == Stage.PRE_ON_CREATE) {
+                        activity.intent = Intent(original)
+                        originalIntentRestored = true
+                    }
                 }
-            }
             val lifecycle = ActivityLifecycleMonitorRegistry.getInstance()
             lifecycle.addLifecycleCallback(restoreIntent)
             try {

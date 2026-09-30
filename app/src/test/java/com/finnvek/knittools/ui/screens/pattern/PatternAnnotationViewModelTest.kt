@@ -139,46 +139,6 @@ class PatternAnnotationViewModelTest {
     }
 
     @Test
-    fun `tool switches keep pen preference while highlighter input draft and payload ignore pressure`() =
-        runTest {
-            val route = projectRoute()
-            every { route.annotationRepository.observePage(any(), any()) } returns flowOf(emptyList())
-            val saved = mutableListOf<PatternAnnotation>()
-            coEvery { route.annotationRepository.insertAnnotation(capture(saved)) } answers { saved.size.toLong() }
-            val viewModel = route.viewModel()
-            advanceUntilIdle()
-            for (penPressure in listOf(true, false, true)) {
-                viewModel.setPressureEnabled(penPressure)
-                for (tool in listOf(PatternAnnotationTool.PEN, PatternAnnotationTool.HIGHLIGHTER, PatternAnnotationTool.PEN)) {
-                    viewModel.setActiveTool(tool)
-                    runCurrent()
-                    val expectedPressure = tool == PatternAnnotationTool.PEN && penPressure
-                    assertEquals(expectedPressure, viewModel.uiState.value.pressureEnabled)
-                    viewModel.beginStroke(NormalizedPatternPoint(0.1f, 0.2f, pressure = 0.2f))
-                    viewModel.appendStrokePoint(NormalizedPatternPoint(0.5f, 0.4f, pressure = 0.9f))
-                    runCurrent()
-                    val draft = requireNotNull(viewModel.uiState.value.draftStroke)
-                    assertEquals(expectedPressure, draft.pressureEnabled)
-                    assertEquals(if (expectedPressure) listOf(0.2f, 0.9f) else listOf(1f, 1f), draft.points.map { it.pressure })
-                    val preview = requireNotNull(viewModel.uiState.value.inProgressAnnotation)
-                    assertEquals(expectedPressure, (preview.payload as FreehandPayload).pressureEnabled)
-                    viewModel.commitStroke(0f)
-                    advanceUntilIdle()
-                    val annotation = saved.last()
-                    assertEquals(preview.payload, annotation.payload)
-                    val encoded = requireNotNull(
-                        com.finnvek.knittools.domain.model.PatternAnnotationPayloadCodec.encode(annotation.kind, annotation.payload),
-                    )
-                    assertEquals(
-                        annotation.payload,
-                        com.finnvek.knittools.domain.model.PatternAnnotationPayloadCodec.decode(annotation.kind, encoded),
-                    )
-                }
-            }
-            assertEquals(9, saved.size)
-        }
-
-    @Test
     fun `route requires exactly one positive owner id`() {
         val counterRepository = mockk<CounterRepository>(relaxed = true)
         val layerRepository = mockk<PatternAnnotationLayerRepository>(relaxed = true)
@@ -824,6 +784,73 @@ class PatternAnnotationViewModelTest {
                     },
                 )
             }
+        }
+}
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class PatternAnnotationPressureViewModelTest {
+    @Before
+    fun setUp() {
+        Dispatchers.setMain(StandardTestDispatcher())
+    }
+
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
+    }
+
+    @Test
+    fun `tool switches keep pen preference while highlighter input draft and payload ignore pressure`() =
+        runTest {
+            val route = projectRoute()
+            every { route.annotationRepository.observePage(any(), any()) } returns flowOf(emptyList())
+            val saved = mutableListOf<PatternAnnotation>()
+            coEvery { route.annotationRepository.insertAnnotation(capture(saved)) } answers { saved.size.toLong() }
+            val viewModel = route.viewModel()
+            advanceUntilIdle()
+            for (penPressure in listOf(true, false, true)) {
+                viewModel.setPressureEnabled(penPressure)
+                for (tool in listOf(
+                    PatternAnnotationTool.PEN,
+                    PatternAnnotationTool.HIGHLIGHTER,
+                    PatternAnnotationTool.PEN,
+                )) {
+                    viewModel.setActiveTool(tool)
+                    runCurrent()
+                    val expectedPressure = tool == PatternAnnotationTool.PEN && penPressure
+                    assertEquals(expectedPressure, viewModel.uiState.value.pressureEnabled)
+                    viewModel.beginStroke(NormalizedPatternPoint(0.1f, 0.2f, pressure = 0.2f))
+                    viewModel.appendStrokePoint(NormalizedPatternPoint(0.5f, 0.4f, pressure = 0.9f))
+                    runCurrent()
+                    val draft = requireNotNull(viewModel.uiState.value.draftStroke)
+                    assertEquals(expectedPressure, draft.pressureEnabled)
+                    assertEquals(
+                        if (expectedPressure) listOf(0.2f, 0.9f) else listOf(1f, 1f),
+                        draft.points.map { it.pressure },
+                    )
+                    val preview = requireNotNull(viewModel.uiState.value.inProgressAnnotation)
+                    assertEquals(expectedPressure, (preview.payload as FreehandPayload).pressureEnabled)
+                    viewModel.commitStroke(0f)
+                    advanceUntilIdle()
+                    val annotation = saved.last()
+                    assertEquals(preview.payload, annotation.payload)
+                    val encoded =
+                        requireNotNull(
+                            com.finnvek.knittools.domain.model.PatternAnnotationPayloadCodec.encode(
+                                annotation.kind,
+                                annotation.payload,
+                            ),
+                        )
+                    assertEquals(
+                        annotation.payload,
+                        com.finnvek.knittools.domain.model.PatternAnnotationPayloadCodec.decode(
+                            annotation.kind,
+                            encoded,
+                        ),
+                    )
+                }
+            }
+            assertEquals(9, saved.size)
         }
 }
 

@@ -1,4 +1,9 @@
 <resources>
+    <string name="notes_save_failed">Notizen konnten nicht gespeichert werden. Deine Änderungen sind noch vorhanden. Versuche es erneut.</string>
+    <string name="notes_discard_title">Nicht gespeicherte Notizen verwerfen?</string>
+    <string name="notes_discard_message">Deine Änderungen konnten nicht gespeichert werden. Wenn du jetzt gehst, werden nicht gespeicherte Änderungen verworfen.</string>
+    <string name="notes_discard_action">Änderungen verwerfen</string>
+
     <string name="app_name">KnitTools</string>
 
     <!-- Navigation & common -->

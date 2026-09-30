@@ -1,4 +1,9 @@
 <resources>
+    <string name="notes_save_failed">Não foi possível guardar as notas. As suas alterações continuam aqui. Tente novamente.</string>
+    <string name="notes_discard_title">Descartar notas não guardadas?</string>
+    <string name="notes_discard_message">Não foi possível guardar as suas alterações. Se sair agora, as alterações não guardadas serão descartadas.</string>
+    <string name="notes_discard_action">Descartar alterações</string>
+
     <string name="app_name">KnitTools</string>
 
     <!-- Navigation & common -->
@@ -228,7 +233,7 @@
     <string name="delete_yarn_card_message">Eliminar esta ficha de fio? Esta ação não pode ser anulada.</string>
     <plurals name="skein_count">
         <item quantity="one">%1$d novelo</item>
-        <item quantity="many">%1$d de novelos</item>
+        <item quantity="many">%1$d novelos</item>
         <item quantity="other">%1$d novelos</item>
     </plurals>
 

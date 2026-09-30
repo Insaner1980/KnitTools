@@ -124,7 +124,8 @@ internal object BackupArchive {
     internal fun validateManifest(manifest: BackupManifest) {
         BackupFormat.requireValid(manifest.format == "KnitTools", BackupError.INVALID)
         BackupFormat.requireValid(
-            manifest.formatVersion == 1 && manifest.dataVersion == 1 &&
+            manifest.formatVersion == 1 &&
+                manifest.dataVersion == 1 &&
                 manifest.schemaVersion == KNITTOOLS_DATABASE_VERSION,
             BackupError.UNSUPPORTED,
         )

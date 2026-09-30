@@ -1,4 +1,9 @@
 <resources>
+    <string name="notes_save_failed">De notities konden niet worden opgeslagen. Je wijzigingen zijn er nog. Probeer het opnieuw.</string>
+    <string name="notes_discard_title">Niet-opgeslagen notities verwerpen?</string>
+    <string name="notes_discard_message">Je wijzigingen konden niet worden opgeslagen. Als je nu weggaat, worden niet-opgeslagen wijzigingen verworpen.</string>
+    <string name="notes_discard_action">Wijzigingen verwerpen</string>
+
     <string name="app_name">KnitTools</string>
 
     <!-- Navigation & common -->

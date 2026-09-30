@@ -1,4 +1,9 @@
 <resources>
+    <string name="notes_save_failed">Det gick inte att spara anteckningarna. Dina ändringar finns kvar. Försök igen.</string>
+    <string name="notes_discard_title">Kasta osparade anteckningar?</string>
+    <string name="notes_discard_message">Dina ändringar kunde inte sparas. Om du lämnar nu förloras de osparade ändringarna.</string>
+    <string name="notes_discard_action">Kasta ändringar</string>
+
     <string name="app_name">KnitTools</string>
 
     <!-- Navigation & common -->

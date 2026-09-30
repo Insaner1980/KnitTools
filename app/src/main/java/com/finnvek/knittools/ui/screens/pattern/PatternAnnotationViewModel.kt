@@ -264,7 +264,8 @@ class PatternAnnotationViewModel
                     penArgb = feedback.interaction.penArgb,
                     penStrokeWidth = feedback.interaction.penStrokeWidth,
                     pressureEnabled =
-                        feedback.interaction.activeTool == PatternAnnotationTool.PEN && feedback.interaction.pressureEnabled,
+                        feedback.interaction.activeTool == PatternAnnotationTool.PEN &&
+                            feedback.interaction.pressureEnabled,
                     highlighterArgb = feedback.interaction.highlighterArgb,
                     highlighterStrokeWidth = feedback.interaction.highlighterStrokeWidth,
                     highlighterAxisLock = feedback.interaction.highlighterAxisLock,
@@ -391,8 +392,13 @@ class PatternAnnotationViewModel
             val interactionState = interaction.value
             val originalDraft = interactionState.draftStroke ?: return
             val layerId = uiState.value.editableLayerId ?: return
-            if (uiState.value.loadError == PatternAnnotationLoadError.PAGE_LIMIT) return
-            if (savingStroke?.draft === originalDraft || pendingStrokes.any { it.draft === originalDraft }) return
+            if (
+                uiState.value.loadError == PatternAnnotationLoadError.PAGE_LIMIT ||
+                savingStroke?.draft === originalDraft ||
+                pendingStrokes.any { it.draft === originalDraft }
+            ) {
+                return
+            }
             val lockedPoints =
                 if (originalDraft.tool == PatternAnnotationTool.HIGHLIGHTER) {
                     lockHighlighterPoints(originalDraft.points, interactionState.highlighterAxisLock)

@@ -14,7 +14,9 @@ class PatternAnnotationInteractionSourceTest {
 
         assertFalse(appendBlock.contains("annotationRepository"))
         assertTrue(commitBlock.contains("pendingStrokes.addLast(PendingAnnotationStroke(originalDraft, annotation,"))
-        assertTrue(commitBlock.contains("persistCommand(PatternAnnotationCommand.Insert(stroke.annotation), stroke.context)"))
+        assertTrue(
+            commitBlock.contains("persistCommand(PatternAnnotationCommand.Insert(stroke.annotation), stroke.context)"),
+        )
     }
 
     @Test

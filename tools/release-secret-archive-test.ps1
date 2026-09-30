@@ -56,10 +56,12 @@ try {
     New-Archive 'clean.apk' 'clean synthetic content' 'Optimal'
     New-Archive 'unicode.aab' 'synthetic-ää-秘密-value' 'Optimal'
     if (-not (Test-BinaryFileContainsSecret 'unicode.aab' @('synthetic-ää-秘密-value'))) { throw 'UTF-8 matching failed' }
-    foreach ($name in @('clean.apk', 'missing.aab')) {
-        if (Test-BinaryFileContainsSecret $name @($secret)) { throw "False match: $name" }
-        Write-Output "PASS: no match in $name"
-    }
+    if (Test-BinaryFileContainsSecret 'clean.apk' @($secret)) { throw 'False match: clean.apk' }
+    Write-Output 'PASS: no match in clean.apk'
+    $script:checkedFile = 'missing.aab'
+    Test-KnownRavelrySecrets
+    if ($result -ne 'FAIL' -or $message -ne 'Checked binary file is missing: missing.aab') { throw 'Disappeared checked archive must fail closed' }
+    Write-Output 'PASS: disappeared checked archive fails closed, value redacted'
     Set-Content -LiteralPath (Join-Path $fixture 'output.bin') -Value $content -Encoding utf8
     if (-not (Test-BinaryFileContainsSecret 'output.bin' @($secret))) { throw 'Raw file regression' }
     Set-Content -LiteralPath (Join-Path $fixture 'invalid.apk') -Value 'invalid synthetic archive'

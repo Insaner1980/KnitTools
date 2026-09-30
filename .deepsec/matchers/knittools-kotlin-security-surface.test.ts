@@ -41,6 +41,15 @@ for (const [base, label] of [
         .map((match) => match.lineNumbers), [[2], [4]]);
     }
   });
+  test(`constructor lambda defaults preserve the ${base} entry point`, () => {
+    const content = `class Helper {}\nclass Entry(val hook: () -> Unit = { run { } }) : ${base}() {}`;
+    assert.deepEqual(androidKotlinEntrypointSurface.match(content, productionPath)
+      .map((match) => [match.matchedPattern, match.lineNumbers]), [[label, [2]]]);
+    if (base === "BroadcastReceiver") {
+      assert.deepEqual(widgetMutationSurface.match(content, productionPath)
+        .map((match) => match.lineNumbers), [[2]]);
+    }
+  });
 }
 
 test("widget receiver matching cannot start in a previous class", () => {
@@ -50,7 +59,26 @@ test("widget receiver matching cannot start in a previous class", () => {
   assert.ok(matches[0].snippet.includes("class Receiver"));
 });
 
+test("constructor defaults still expose WorkManager scheduling", () => {
+  const content = "class Scheduler(val manager: WorkManager = WorkManager.getInstance(context)) {}";
+  assert.deepEqual(androidKotlinEntrypointSurface.match(content, productionPath)
+    .map((match) => match.matchedPattern), ["WorkManager scheduling surface"]);
+});
+
 for (const action of ["ACTION_SEND", "ACTION_SEND_MULTIPLE"]) {
+  test(`${action} ignores fun inside strings and comments at the function boundary`, () => {
+    const content = `fun share(uri: Uri) = Intent(Intent.${action}).apply {
+  putExtra(Intent.EXTRA_TITLE, "A fun pattern")
+  // fun is a keyword, not a declaration here
+  putExtra(Intent.EXTRA_STREAM, uri)
+}
+private fun later() {
+  addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+  clipData = ClipData.newRawUri("synthetic", uri)
+}`;
+    assert.deepEqual(androidUriShareWithoutClipData.match(content, productionPath)
+      .map((match) => match.lineNumbers), [[1]]);
+  });
   for (const grants of ["", "addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)",
     'clipData = ClipData.newRawUri("synthetic", uri)']) {
     test(`${action} cannot borrow later function permissions: ${grants || "neither"}`, () => {

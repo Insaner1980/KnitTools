@@ -1,5 +1,5 @@
 import type { CandidateMatch, MatcherPlugin } from "deepsec/config";
-import { candidate, isTestFile } from "./utils.js";
+import { candidate, isTestFile, kotlinStructuralCode } from "./utils.js";
 
 export const androidUriShareWithoutClipData: MatcherPlugin = {
   slug: "android-uri-share-without-clipdata",
@@ -11,11 +11,12 @@ export const androidUriShareWithoutClipData: MatcherPlugin = {
     if (isTestFile(filePath)) return [];
     const actionRegex = /\bIntent\.ACTION_SEND(?:_MULTIPLE)?\b/g;
     const actionMatches = [...content.matchAll(actionRegex)];
+    const code = kotlinStructuralCode(content);
 
     return actionMatches.flatMap((actionMatch, matchIndex) => {
       const index = actionMatch.index ?? 0;
       const nextIndex = actionMatches[matchIndex + 1]?.index ?? content.length;
-      const nextFunction = /\bfun\s+/.exec(content.slice(index));
+      const nextFunction = /\bfun\s+/.exec(code.slice(index));
       const endIndex = Math.min(nextIndex, nextFunction ? index + nextFunction.index : content.length);
       const shareBlock = content.slice(index, endIndex);
       if (!shareBlock.includes("Intent.EXTRA_STREAM")) return [];

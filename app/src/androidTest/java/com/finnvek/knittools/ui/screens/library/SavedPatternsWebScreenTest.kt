@@ -1,21 +1,21 @@
 package com.finnvek.knittools.ui.screens.library
 
-import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.Density
-import androidx.compose.ui.test.captureToImage
-import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.unit.Density
 import androidx.test.platform.app.InstrumentationRegistry
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.SavedPattern
@@ -41,10 +41,11 @@ class SavedPatternsWebScreenTest {
             CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale = 2f)) {
                 KnitToolsTheme {
                     SavedPatternsScreen(
-                        state = state(listOf(webPattern().copy(name = title, designerName = "Pattern designer"))).copy(
-                            isSelectMode = selection.value,
-                            selectedPatternIds = if (selected.value) setOf(7L) else emptySet(),
-                        ),
+                        state =
+                            state(listOf(webPattern().copy(name = title, designerName = "Pattern designer"))).copy(
+                                isSelectMode = selection.value,
+                                selectedPatternIds = if (selected.value) setOf(7L) else emptySet(),
+                            ),
                         actions = actions(),
                     )
                 }
@@ -57,13 +58,20 @@ class SavedPatternsWebScreenTest {
                 selection.value = mode == "unselected" || mode == "selected"
                 selected.value = mode == "selected"
             }
-            val titleBounds = composeRule.onNodeWithText(title, useUnmergedTree = true)
-                .assertIsDisplayed().fetchSemanticsNode().boundsInRoot
+            val titleBounds =
+                composeRule
+                    .onNodeWithText(title, useUnmergedTree = true)
+                    .assertIsDisplayed()
+                    .fetchSemanticsNode()
+                    .boundsInRoot
             val cardBounds = composeRule.onNode(hasText(title) and hasClickAction()).fetchSemanticsNode().boundsInRoot
             if (mode == "normal") normalTitleLeft = titleBounds.left
             if (selection.value) {
                 // Indicator ends at 8 + 2 + 22 + 2 dp from the row's leading edge.
-                assertTrue("Text overlaps selection slot: $mode", titleBounds.left - normalTitleLeft >= 48f * density - 1f)
+                assertTrue(
+                    "Text overlaps selection slot: $mode",
+                    titleBounds.left - normalTitleLeft >= 48f * density - 1f,
+                )
             } else {
                 assertTrue("Normal card reserves selection space", titleBounds.left - cardBounds.left <= 24f * density)
             }

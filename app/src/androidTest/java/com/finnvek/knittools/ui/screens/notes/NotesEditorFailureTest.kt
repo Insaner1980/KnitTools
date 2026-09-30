@@ -8,8 +8,8 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
-import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -49,6 +49,7 @@ class NotesEditorFailureTest {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val store = ViewModelStore()
     private val visible = mutableStateOf(true)
+
     @Volatile private var failWrites = true
     private var exits = 0
 
@@ -56,15 +57,29 @@ class NotesEditorFailureTest {
     fun setup() {
         database = Room.inMemoryDatabaseBuilder(context, KnitToolsDatabase::class.java).build()
         val dao = database.counterProjectDao()
-        runBlocking { dao.insert(CounterProjectEntity(id = 1L, name = "Notes test", notes = "Base", notesCreated = true)) }
-        val failingDao = object : CounterProjectDao by dao {
-            override suspend fun updateNotes(id: Long, notes: String, updatedAt: Long) {
-                if (failWrites) throw IOException("Controlled note write failure")
-                dao.updateNotes(id, notes, updatedAt)
-            }
+        runBlocking {
+            dao.insert(
+                CounterProjectEntity(id = 1L, name = "Notes test", notes = "Base", notesCreated = true),
+            )
         }
+        val failingDao =
+            object : CounterProjectDao by dao {
+                override suspend fun updateNotes(
+                    id: Long,
+                    notes: String,
+                    updatedAt: Long,
+                ) {
+                    if (failWrites) throw IOException("Controlled note write failure")
+                    dao.updateNotes(id, notes, updatedAt)
+                }
+            }
         val repository = counterHistoryTestRepository(database, context, failingDao)
-        val proManager = EntryPointAccessors.fromApplication(context.applicationContext, WidgetEntryPoint::class.java).proManager()
+        val proManager =
+            EntryPointAccessors
+                .fromApplication(
+                    context.applicationContext,
+                    WidgetEntryPoint::class.java,
+                ).proManager()
         composeRule.runOnUiThread {
             viewModel = NotesEditorViewModel(repository, proManager, scope, handle)
             store.put("notes", viewModel)
@@ -125,7 +140,10 @@ class NotesEditorFailureTest {
             assertEquals(1, exits)
             assertNull(handle.get<String>("notesDraft"))
         }
-        assertEquals("Local edit\nExternal addition", runBlocking { database.counterProjectDao().getProject(1L)?.notes })
+        assertEquals(
+            "Local edit\nExternal addition",
+            runBlocking { database.counterProjectDao().getProject(1L)?.notes },
+        )
     }
 
     @Test

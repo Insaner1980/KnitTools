@@ -21,8 +21,8 @@ import com.finnvek.knittools.domain.model.PatternAnnotationKind
 import com.finnvek.knittools.domain.model.PatternCalloutSymbol
 import com.finnvek.knittools.domain.model.ShapePayload
 import com.finnvek.knittools.domain.model.TextBoxPayload
-import org.junit.Assert.assertTrue
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -32,27 +32,46 @@ class PatternAnnotationCanvasRendererTest {
     fun constantPressurePayloadRendersUniformlyAndLegacyPressurePayloadStillVaries() {
         for (kind in listOf(PatternAnnotationKind.FREEHAND, PatternAnnotationKind.HIGHLIGHTER)) {
             for (enabled in listOf(false, true)) {
-                val payload = FreehandPayload(
-                    points = listOf(
-                        NormalizedPatternPoint(0.1f, 0.5f, 0.2f),
-                        NormalizedPatternPoint(0.4f, 0.5f, 0.2f),
-                        NormalizedPatternPoint(0.6f, 0.5f, 1f),
-                        NormalizedPatternPoint(0.9f, 0.5f, 1f),
-                    ),
-                    argb = Color.BLACK,
-                    strokeWidth = 40f,
-                    pressureEnabled = enabled,
-                )
-                val encoded = requireNotNull(com.finnvek.knittools.domain.model.PatternAnnotationPayloadCodec.encode(kind, payload))
-                val decoded = requireNotNull(com.finnvek.knittools.domain.model.PatternAnnotationPayloadCodec.decode(kind, encoded))
+                val payload =
+                    FreehandPayload(
+                        points =
+                            listOf(
+                                NormalizedPatternPoint(0.1f, 0.5f, 0.2f),
+                                NormalizedPatternPoint(0.4f, 0.5f, 0.2f),
+                                NormalizedPatternPoint(0.6f, 0.5f, 1f),
+                                NormalizedPatternPoint(0.9f, 0.5f, 1f),
+                            ),
+                        argb = Color.BLACK,
+                        strokeWidth = 40f,
+                        pressureEnabled = enabled,
+                    )
+                val encoded =
+                    requireNotNull(
+                        com.finnvek.knittools.domain.model.PatternAnnotationPayloadCodec
+                            .encode(kind, payload),
+                    )
+                val decoded =
+                    requireNotNull(
+                        com.finnvek.knittools.domain.model.PatternAnnotationPayloadCodec
+                            .decode(kind, encoded),
+                    )
                 val bitmap = Bitmap.createBitmap(1_000, 1_000, Bitmap.Config.ARGB_8888)
                 try {
-                    PatternAnnotationCanvasRenderer.render(Canvas(bitmap), 1_000f, 1_000f, listOf(annotation(kind, decoded)), TEST_STYLE)
+                    PatternAnnotationCanvasRenderer.render(
+                        Canvas(bitmap),
+                        1_000f,
+                        1_000f,
+                        listOf(annotation(kind, decoded)),
+                        TEST_STYLE,
+                    )
                     val low = (0 until bitmap.height).count { Color.alpha(bitmap.getPixel(250, it)) > 0 }
                     val high = (0 until bitmap.height).count { Color.alpha(bitmap.getPixel(750, it)) > 0 }
                     assertTrue(low > 0)
-                    if (enabled) assertTrue("Stored pressure must remain compatible: $kind", high > low * 2)
-                    else assertEquals("Constant width must ignore point pressure: $kind", low, high)
+                    if (enabled) {
+                        assertTrue("Stored pressure must remain compatible: $kind", high > low * 2)
+                    } else {
+                        assertEquals("Constant width must ignore point pressure: $kind", low, high)
+                    }
                 } finally {
                     bitmap.recycle()
                 }

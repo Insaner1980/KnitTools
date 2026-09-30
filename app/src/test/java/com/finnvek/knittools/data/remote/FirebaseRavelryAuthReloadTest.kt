@@ -122,18 +122,22 @@ class FirebaseRavelryAuthReloadTest {
     @Test
     fun `deleted disabled and invalid token users retain sign out and anonymous sign in`() =
         runTest {
-            listOf("ERROR_USER_NOT_FOUND", "ERROR_USER_DISABLED", "ERROR_INVALID_USER_TOKEN", "ERROR_USER_TOKEN_EXPIRED")
-                .forEach { code ->
-                    val fixture = Fixture()
-                    val invalidUser = sdkError<FirebaseAuthInvalidUserException>()
-                    every { invalidUser.errorCode } returns code
-                    fixture.reload.finish(error = invalidUser)
+            listOf(
+                "ERROR_USER_NOT_FOUND",
+                "ERROR_USER_DISABLED",
+                "ERROR_INVALID_USER_TOKEN",
+                "ERROR_USER_TOKEN_EXPIRED",
+            ).forEach { code ->
+                val fixture = Fixture()
+                val invalidUser = sdkError<FirebaseAuthInvalidUserException>()
+                every { invalidUser.errorCode } returns code
+                fixture.reload.finish(error = invalidUser)
 
-                    assertTrue(fixture.client.authStatus().connected)
-                    assertSame(fixture.newUser, fixture.currentUser)
-                    verify(exactly = 1) { fixture.auth.signOut() }
-                    verify(exactly = 1) { fixture.auth.signInAnonymously() }
-                }
+                assertTrue(fixture.client.authStatus().connected)
+                assertSame(fixture.newUser, fixture.currentUser)
+                verify(exactly = 1) { fixture.auth.signOut() }
+                verify(exactly = 1) { fixture.auth.signInAnonymously() }
+            }
         }
 
     @Test

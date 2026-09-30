@@ -341,6 +341,7 @@ class PatternImageImportViewModelTest {
     private fun verifyImportAfterFailedPreview(origin: PatternImageImportOrigin) =
         runTest {
             val vm = viewModel()
+
             suspend fun acceptImage(id: String) {
                 val imageUri = uri("content://$id")
                 if (origin == PatternImageImportOrigin.GALLERY) {
@@ -359,7 +360,10 @@ class PatternImageImportViewModelTest {
 
             acceptImage("broken")
             val oldSession = requireNotNull(vm.uiState.value.sessionId)
-            val brokenPage = vm.uiState.value.selection.pages.single().id
+            val brokenPage =
+                vm.uiState.value.selection.pages
+                    .single()
+                    .id
             vm.markPreviewFailed(brokenPage)
             assertEquals(setOf(brokenPage), vm.uiState.value.invalidPageIds)
             assertEquals(PatternImageImportError.UNSUPPORTED, vm.uiState.value.error)
@@ -375,7 +379,10 @@ class PatternImageImportViewModelTest {
             acceptImage("valid")
 
             assertNotEquals(oldSession, vm.uiState.value.sessionId)
-            assertTrue(vm.uiState.value.invalidPageIds.isEmpty())
+            assertTrue(
+                vm.uiState.value.invalidPageIds
+                    .isEmpty(),
+            )
             assertEquals(null, vm.uiState.value.error)
             assertFalse(vm.uiState.value.closeReady)
             val pages = vm.uiState.value.selection.pages

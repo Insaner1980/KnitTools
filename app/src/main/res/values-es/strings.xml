@@ -1,4 +1,9 @@
 <resources>
+    <string name="notes_save_failed">No se pudieron guardar las notas. Tus cambios siguen aquí. Inténtalo de nuevo.</string>
+    <string name="notes_discard_title">¿Descartar las notas sin guardar?</string>
+    <string name="notes_discard_message">No se pudieron guardar tus cambios. Si sales ahora, se perderán los cambios sin guardar.</string>
+    <string name="notes_discard_action">Descartar cambios</string>
+
     <string name="app_name">KnitTools</string>
 
     <!-- Navigation & common -->
@@ -228,7 +233,7 @@
     <string name="delete_yarn_card_message">¿Eliminar esta ficha de hilo? Esto no se puede deshacer.</string>
     <plurals name="skein_count">
         <item quantity="one">%1$d ovillo</item>
-        <item quantity="many">%1$d de ovillos</item>
+        <item quantity="many">%1$d ovillos</item>
         <item quantity="other">%1$d ovillos</item>
     </plurals>
 

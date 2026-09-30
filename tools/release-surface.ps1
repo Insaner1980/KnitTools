@@ -822,7 +822,7 @@ function Test-BinaryFileContainsSecret {
 
     $path = Join-RepoPath $RelativePath
     if (-not (Test-Path -LiteralPath $path)) {
-        return $false
+        throw "Checked binary file is missing: $RelativePath"
     }
 
     if ([System.IO.Path]::GetExtension($path).ToLowerInvariant() -in @('.apk', '.aab')) {

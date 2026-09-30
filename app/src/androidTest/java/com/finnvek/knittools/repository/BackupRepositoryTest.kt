@@ -137,7 +137,11 @@ class BackupRepositoryTest {
             val table = File(payload, "tables/project_yarn_notes.jsonl")
             val lines = table.readLines()
             val header = BackupFormat.json.parseToJsonElement(lines.first()).jsonArray
-            val second = BackupFormat.json.parseToJsonElement(lines[1]).jsonArray.toMutableList()
+            val second =
+                BackupFormat.json
+                    .parseToJsonElement(lines[1])
+                    .jsonArray
+                    .toMutableList()
             second[header.indexOf(JsonPrimitive("id"))] = JsonPrimitive(2)
             second[header.indexOf(JsonPrimitive("name"))] = JsonPrimitive("Second note")
             table.appendText(JsonArray(second).toString() + "\n")

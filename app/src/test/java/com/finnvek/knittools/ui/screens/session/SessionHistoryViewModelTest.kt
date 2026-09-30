@@ -9,15 +9,21 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -35,7 +41,7 @@ class SessionHistoryViewModelTest {
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         repository = mockk()
-        project = MutableStateFlow(mockk())
+        project = MutableStateFlow(CounterProject(id = projectId, name = "Project"))
         // Naytto lukee projektin nimen otsikkokontekstiksi, koska Insights on uusi
         // sisaankaynti eika pelkka "History" kerro kenen istuntoja katsotaan.
         every { repository.observeProject(projectId) } returns project
@@ -134,5 +140,53 @@ class SessionHistoryViewModelTest {
             project.value = null
 
             assertTrue(vm.projectMissing.value)
+        }
+
+    @Test
+    fun `project name and missing state share one subscription while history is empty`() =
+        runTest {
+            val updates = MutableSharedFlow<CounterProject?>()
+            var subscriptions = 0
+            every { repository.observeProject(projectId) } returns
+                flow {
+                    subscriptions++
+                    updates.collect { emit(it) }
+                }
+            every { repository.getSessionsForProject(projectId) } returns flowOf(emptyList())
+            val vm = createViewModel()
+            val names = backgroundScope.launch(testDispatcher) { vm.projectName.collect() }
+            backgroundScope.launch(testDispatcher) { vm.projectMissing.collect() }
+            backgroundScope.launch(testDispatcher) { vm.sessions.collect() }
+
+            assertEquals(1, subscriptions)
+            assertFalse(vm.projectMissing.value)
+            assertNull(vm.projectName.value)
+            assertTrue(vm.sessions.value.isEmpty())
+
+            updates.emit(CounterProject(id = projectId, name = "First"))
+            assertEquals("First", vm.projectName.value)
+            assertFalse(vm.projectMissing.value)
+            updates.emit(CounterProject(id = projectId, name = "Renamed"))
+            assertEquals("Renamed", vm.projectName.value)
+
+            names.cancel()
+            backgroundScope.launch(testDispatcher) { vm.projectName.collect() }
+            assertEquals(1, subscriptions)
+            updates.emit(null)
+            assertTrue(vm.projectMissing.value)
+            assertNull(vm.projectName.value)
+        }
+
+    @Test
+    fun `invalid project route is missing without repository observation`() =
+        runTest {
+            for (id in listOf(null, 0L, -1L)) {
+                val vm = SessionHistoryViewModel(SavedStateHandle(mapOf("projectId" to id)), repository)
+                assertTrue(vm.projectMissing.value)
+                assertNull(vm.projectName.value)
+                assertTrue(vm.sessions.value.isEmpty())
+            }
+            io.mockk.verify(exactly = 0) { repository.observeProject(any()) }
+            io.mockk.verify(exactly = 0) { repository.getSessionsForProject(any()) }
         }
 }

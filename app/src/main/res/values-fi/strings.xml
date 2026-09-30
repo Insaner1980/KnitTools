@@ -223,8 +223,10 @@
     <string name="yarn_details_title">Tiedot</string>
     <string name="yarn_details_empty_body">Merkki, vahvuus, väri ja värjäyserä ovat valinnaisia. Lisää vain se, mikä auttaa tätä projektia.</string>
     <string name="delete_yarn_card_message">Poistetaanko tämä lankakortti? Tätä ei voi kumota.</string>
-    <string name="skein_count_one">%1$d kerä</string>
-    <string name="skein_count_many">%1$d kerää</string>
+    <plurals name="skein_count">
+        <item quantity="one">%1$d kerä</item>
+        <item quantity="other">%1$d kerää</item>
+    </plurals>
 
     <!-- Istuntohistoria -->
     <string name="session_history_title">Työskentelyhistoria</string>

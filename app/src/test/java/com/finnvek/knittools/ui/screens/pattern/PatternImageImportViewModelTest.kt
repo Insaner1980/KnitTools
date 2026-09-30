@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.SavedStateHandle
 import com.finnvek.knittools.data.storage.PatternDocumentStorage
+import com.finnvek.knittools.data.storage.PatternImageInfo
 import com.finnvek.knittools.data.storage.PatternImageStageBatch
 import com.finnvek.knittools.data.storage.PatternImageStageException
 import com.finnvek.knittools.data.storage.PatternImageStageFailure
@@ -328,6 +329,69 @@ class PatternImageImportViewModelTest {
         }
 
     // CPD-ON
+
+    @Test
+    fun `cancelled failed gallery preview does not block a new gallery import`() =
+        verifyImportAfterFailedPreview(PatternImageImportOrigin.GALLERY)
+
+    @Test
+    fun `cancelled failed camera preview does not block a new camera import`() =
+        verifyImportAfterFailedPreview(PatternImageImportOrigin.CAMERA)
+
+    private fun verifyImportAfterFailedPreview(origin: PatternImageImportOrigin) =
+        runTest {
+            val vm = viewModel()
+            suspend fun acceptImage(id: String) {
+                val imageUri = uri("content://$id")
+                if (origin == PatternImageImportOrigin.GALLERY) {
+                    val request = vm.authorizeGalleryPicker(7L)
+                    coEvery { storage.stageSelectedImages(any(), 7L, any(), any(), listOf(imageUri)) } returns
+                        PatternImageStageBatch(listOf(page(id)), duplicatesIgnored = 0)
+                    vm.onGalleryPickerResult(request, listOf(imageUri))
+                } else {
+                    vm.authorizeCameraCapture(7L)
+                    val file = File("build/test-pattern-import/$id.jpg")
+                    every { storage.inspectCameraCapture(file) } returns PatternImageInfo(100, 200)
+                    vm.acceptCameraCapture(7L, imageUri, file)
+                }
+                advanceUntilIdle()
+            }
+
+            acceptImage("broken")
+            val oldSession = requireNotNull(vm.uiState.value.sessionId)
+            val brokenPage = vm.uiState.value.selection.pages.single().id
+            vm.markPreviewFailed(brokenPage)
+            assertEquals(setOf(brokenPage), vm.uiState.value.invalidPageIds)
+            assertEquals(PatternImageImportError.UNSUPPORTED, vm.uiState.value.error)
+            vm.createPatternPdf(replaceExisting = false)
+            advanceUntilIdle()
+            coVerify(exactly = 0) { storage.convertImagesToPdf(any(), any(), any(), any(), any()) }
+
+            vm.cancelImport()
+            advanceUntilIdle()
+            assertTrue(vm.uiState.value.closeReady)
+            verify(exactly = 1) { storage.deleteImportSession(context, 7L, oldSession) }
+            vm.consumeCloseRequest()
+            acceptImage("valid")
+
+            assertNotEquals(oldSession, vm.uiState.value.sessionId)
+            assertTrue(vm.uiState.value.invalidPageIds.isEmpty())
+            assertEquals(null, vm.uiState.value.error)
+            assertFalse(vm.uiState.value.closeReady)
+            val pages = vm.uiState.value.selection.pages
+            every { storage.hasCreationSpace(context, any()) } returns true
+            coEvery { storage.convertImagesToPdf(context, 7L, pages, any(), any()) } returns
+                ("file:///pattern_pdfs/7/valid.pdf" to "valid.pdf")
+
+            vm.createPatternPdf(replaceExisting = false)
+            advanceUntilIdle()
+
+            coVerify(exactly = 1) { storage.convertImagesToPdf(context, 7L, pages, any(), any()) }
+            coVerify(exactly = 1) {
+                repository.attachPattern(7L, "file:///pattern_pdfs/7/valid.pdf", "valid.pdf", 0, null)
+            }
+            assertEquals(PatternImageImportPhase.SUCCESS, vm.uiState.value.phase)
+        }
 
     private fun viewModel(handle: SavedStateHandle = savedStateHandle) =
         PatternImageImportViewModel(

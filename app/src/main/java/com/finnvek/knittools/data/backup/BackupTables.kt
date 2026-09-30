@@ -2,6 +2,7 @@ package com.finnvek.knittools.data.backup
 
 import android.database.Cursor
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.finnvek.knittools.data.local.KNITTOOLS_DATABASE_VERSION
 import com.finnvek.knittools.domain.model.PatternAnnotationKind
 import com.finnvek.knittools.domain.model.PatternAnnotationPayloadCodec
 import com.finnvek.knittools.domain.model.parseYarnCardIdsWithinLimits
@@ -67,7 +68,7 @@ internal object BackupTables {
         budget: BackupBudget = BackupBudget(),
         check: () -> Unit,
     ) {
-        BackupFormat.requireValid(db.version == 25, BackupError.UNSUPPORTED)
+        BackupFormat.requireValid(db.version == KNITTOOLS_DATABASE_VERSION, BackupError.UNSUPPORTED)
         BackupFormat.tables.forEach { table ->
             val columns = columns(db, table)
             val file = File(directory, "tables/$table.jsonl")

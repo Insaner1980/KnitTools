@@ -600,7 +600,7 @@ describe("Ravelry backend search and import", () => {
           pattern: {
             id: 42,
             name: "Cozy Hat",
-            designer: { name: "Ada Designer" },
+            pattern_author: { name: "Ada Designer" },
             photos: [{ medium_url: "https://images.example/detail.jpg" }],
             permalink: "cozy-hat",
             free: true,
@@ -635,8 +635,56 @@ describe("Ravelry backend search and import", () => {
       url: "https://www.ravelry.com/patterns/library/cozy-hat?utm_source=share",
     });
     assert.equal(fromUrl.ravelryPatternId, 42);
+    assert.equal(fromUrl.designerName, "Ada Designer");
     assert.equal(fromUrl.originalUrl, "https://www.ravelry.com/patterns/library/cozy-hat?utm_source=share");
     assert.equal(JSON.stringify(fromUrl).includes("pdf_url"), false);
+  });
+
+  it("sanitizes the detail pattern author before the legacy designer field", async () => {
+    const client = createRavelryClient(async () => new Response(JSON.stringify({
+      pattern: {
+        id: 42,
+        name: "Cozy Hat",
+        permalink: "cozy-hat",
+        pattern_author: { name: "  Ada\nDesigner\u0000  " },
+        designer: { name: "Legacy Name" },
+      },
+    })));
+
+    assert.equal((await client.getPatternById("access-token", 42))?.designerName, "Ada Designer");
+  });
+
+  it("keeps missing detail designers empty without reusing search or previous pattern data", async () => {
+    let author: unknown = { name: "Previous Designer" };
+    const client = createRavelryClient(async (input) => {
+      const url = input.toString();
+      if (url.includes("/patterns/search.json")) {
+        return new Response(JSON.stringify({
+          patterns: [{
+            id: 43,
+            name: "Other Hat",
+            permalink: "other-hat",
+            designer: { name: "Search Designer" },
+          }],
+        }));
+      }
+      return new Response(JSON.stringify({
+        pattern: {
+          id: url.endsWith("/42.json") ? 42 : 43,
+          name: "Hat",
+          permalink: "hat",
+          pattern_author: author,
+        },
+      }));
+    });
+
+    assert.equal((await client.getPatternById("access-token", 42))?.designerName, "Previous Designer");
+    assert.equal((await client.searchPatterns("access-token", { query: "hat" })).patterns[0]?.designerName, "Search Designer");
+    for (author of [undefined, null, {}, { name: null }, { name: " \n\u0000 " }]) {
+      const pattern = await client.getPatternById("access-token", 43);
+      assert.equal(pattern?.ravelryPatternId, 43);
+      assert.equal(pattern.designerName, "");
+    }
   });
 
   it("consumes each connected search and direct import scope exactly once before Ravelry", async () => {

@@ -34,7 +34,6 @@ interface CompleteCallbackOptions {
   readonly tokenStore: RavelryTokenStore;
   readonly exchange: OAuthTokenExchange;
   readonly rateLimiter: RavelryRateLimiter;
-  readonly rateLimitKey: string;
   readonly nowMillis?: () => number;
   readonly randomString?: (label: RandomLabel) => string;
 }
@@ -282,6 +281,14 @@ export async function startRavelryOAuth({
     connectionGeneration,
   });
 
+  return {
+    authorizeUrl: ravelryAuthorizeUrl(clientId, backendCallbackUrl, state, codeChallenge),
+    state,
+    expiresAtMillis,
+  };
+}
+
+export function ravelryAuthorizeUrl(clientId: string, backendCallbackUrl: string, state: string, codeChallenge: string): string {
   const authorizeUrl = new URL(RAVELRY_AUTHORIZATION_URL);
   authorizeUrl.searchParams.set("response_type", "code");
   authorizeUrl.searchParams.set("client_id", clientId);
@@ -291,11 +298,7 @@ export async function startRavelryOAuth({
   authorizeUrl.searchParams.set("code_challenge", codeChallenge);
   authorizeUrl.searchParams.set("code_challenge_method", "S256");
 
-  return {
-    authorizeUrl: authorizeUrl.toString(),
-    state,
-    expiresAtMillis,
-  };
+  return authorizeUrl.toString();
 }
 
 export async function completeRavelryOAuthCallback({
@@ -304,21 +307,21 @@ export async function completeRavelryOAuthCallback({
   tokenStore,
   exchange,
   rateLimiter,
-  rateLimitKey,
   nowMillis = Date.now,
   randomString = randomBase64Url,
 }: CompleteCallbackOptions): Promise<CallbackResponse> {
   const now = nowMillis();
   const state = requireState(queryString(query, "state"));
-  await rateLimiter.consumeUid(rateLimitKey, "callback");
+  const ravelryError = boundedCallbackValue(queryString(query, "error"), "error");
+  const code = boundedCallbackValue(queryString(query, "code"), "code");
+  await rateLimiter.consumeGlobal("callback");
   const storedState = await loadUsableState(stateStore, state, now).catch((error: unknown) =>
     redirectExpiredStateOrThrow(error, state),
   );
   if ("redirectUrl" in storedState) {
     return storedState;
   }
-  await rateLimiter.consume(storedState.uid, "callback");
-  const ravelryError = boundedCallbackValue(queryString(query, "error"), "error");
+  await rateLimiter.consumeUid(storedState.uid, "callback");
 
   if (ravelryError) {
     const expiredResult = await markStateUsedOrReject(stateStore, state, now).catch((error: unknown) =>
@@ -330,7 +333,6 @@ export async function completeRavelryOAuthCallback({
     return { redirectUrl: appRedirectUrl(state, sanitizedOAuthError(ravelryError)) };
   }
 
-  const code = boundedCallbackValue(queryString(query, "code"), "code");
   if (!code) {
     throw new RavelryAuthFlowError("missing_code", 400);
   }
@@ -345,11 +347,16 @@ export async function completeRavelryOAuthCallback({
   if (await tokenStore.getConnectionGeneration(storedState.uid) !== connectionGeneration) {
     return { redirectUrl: appRedirectUrl(state, "state_expired") };
   }
-  const token = await exchange({
-    code,
-    codeVerifier: storedState.codeVerifier,
-    redirectUri: storedState.redirectUri,
-  });
+  let token: Awaited<ReturnType<OAuthTokenExchange>>;
+  try {
+    token = await exchange({
+      code,
+      codeVerifier: storedState.codeVerifier,
+      redirectUri: storedState.redirectUri,
+    });
+  } catch {
+    return { redirectUrl: appRedirectUrl(state, "oauth_error") };
+  }
 
   const completionProof = randomString("completion-proof");
   const saved = await tokenStore.savePendingTokenIfGenerationCurrent(

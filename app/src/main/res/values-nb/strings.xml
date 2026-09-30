@@ -223,8 +223,10 @@
     <string name="yarn_details_title">Detaljer</string>
     <string name="yarn_details_empty_body">Merke, tykkelse, farge og innfargingsparti er valgfritt. Legg bare til det som hjelper dette prosjektet.</string>
     <string name="delete_yarn_card_message">Slette dette garnkortet? Dette kan ikke angres.</string>
-    <string name="skein_count_one">%1$d nøste</string>
-    <string name="skein_count_many">%1$d nøster</string>
+    <plurals name="skein_count">
+        <item quantity="one">%1$d nøste</item>
+        <item quantity="other">%1$d nøster</item>
+    </plurals>
 
     <!-- Session History -->
     <string name="session_history_title">Økthistorikk</string>

@@ -1,4 +1,8 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="notes_save_failed">Could not save notes. Your changes are still here. Try again.</string>
+    <string name="notes_discard_title">Discard unsaved notes?</string>
+    <string name="notes_discard_message">Your changes could not be saved. Leaving now will discard unsaved changes.</string>
+    <string name="notes_discard_action">Discard changes</string>
     <string name="pattern_annotation_page_limit">This page has too many or overly complex annotations to display safely. Your annotations have been preserved.</string>
     <string name="app_name">KnitTools</string>
 
@@ -235,8 +239,10 @@
     <string name="yarn_details_title">Details</string>
     <string name="yarn_details_empty_body">Brand, weight, color, and dye lot are optional. Add only what helps this project.</string>
     <string name="delete_yarn_card_message">Delete this yarn card? This cannot be undone.</string>
-    <string name="skein_count_one" tools:ignore="PluralsCandidate">%1$d skein</string>
-    <string name="skein_count_many" tools:ignore="PluralsCandidate">%1$d skeins</string>
+    <plurals name="skein_count">
+        <item quantity="one">%1$d skein</item>
+        <item quantity="other">%1$d skeins</item>
+    </plurals>
 
     <!-- Session History -->
     <string name="session_history_title">Session history</string>

@@ -1,6 +1,7 @@
 package com.finnvek.knittools.data.storage
 
 import com.finnvek.knittools.ProjectSourceFiles
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -68,11 +69,30 @@ class PdfPageRendererSourceTest {
 
     @Test
     fun `pdf bitmap is recycled when page rendering fails`() {
+        assertRenderFailurePropagation(ProjectSourceFiles.read(PDF_PAGE_RENDERER))
+    }
+
+    @Test
+    fun `renderer construction throw cannot replace renderPage failure propagation`() {
         val source = ProjectSourceFiles.read(PDF_PAGE_RENDERER)
+        val mutated = source.replace(".getOrThrow()", ".getOrElse { bitmap }")
+        assertTrue(mutated.contains("throw failure"))
+        val failure = assertThrows(AssertionError::class.java) {
+            assertRenderFailurePropagation(mutated)
+        }
+        assertTrue(failure.message.orEmpty().contains("original rendering failure"))
+    }
+
+    private fun assertRenderFailurePropagation(fullSource: String) {
+        val start = fullSource.indexOf("fun renderPage(")
+        assertTrue("Missing renderPage start delimiter.", start >= 0)
+        val end = fullSource.indexOf("@Synchronized\n    override fun close()", start)
+        assertTrue("Missing renderPage end delimiter before close.", end > start)
+        val source = fullSource.substring(start, end)
         val allocationIndex = source.indexOf("val bitmap = createBitmap(width, height)")
         val renderIndex = source.indexOf("page.render(bitmap")
         val recycleIndex = source.indexOf("bitmap.recycle()", renderIndex)
-        val rethrowIndex = source.indexOf("throw failure", recycleIndex)
+        val rethrowIndex = source.indexOf(".getOrThrow()", recycleIndex)
 
         assertTrue("The rendered bitmap must be held for failure cleanup.", allocationIndex >= 0)
         assertTrue("Page rendering must happen after bitmap allocation.", renderIndex > allocationIndex)

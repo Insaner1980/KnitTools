@@ -226,8 +226,11 @@
     <string name="yarn_details_title">Détails</string>
     <string name="yarn_details_empty_body">La marque, la grosseur, la couleur et le bain sont facultatifs. Ajoutez seulement ce qui aide ce projet.</string>
     <string name="delete_yarn_card_message">Supprimer cette fiche de fil ? Cette action est irréversible.</string>
-    <string name="skein_count_one">%1$d pelote</string>
-    <string name="skein_count_many">%1$d pelotes</string>
+    <plurals name="skein_count">
+        <item quantity="one">%1$d pelote</item>
+        <item quantity="many">%1$d de pelotes</item>
+        <item quantity="other">%1$d pelotes</item>
+    </plurals>
 
     <!-- Session History -->
     <string name="session_history_title">Historique des séances</string>

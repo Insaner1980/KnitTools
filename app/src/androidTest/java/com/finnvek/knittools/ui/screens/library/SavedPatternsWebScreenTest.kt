@@ -1,6 +1,13 @@
 package com.finnvek.knittools.ui.screens.library
 
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.test.captureToImage
+import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasClickAction
@@ -24,6 +31,48 @@ class SavedPatternsWebScreenTest {
     val composeRule = createComposeRule()
 
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
+
+    @Test
+    fun largeFontReservesSelectionSpaceAndRestoresNormalInset() {
+        val selection = mutableStateOf(false)
+        val selected = mutableStateOf(false)
+        val title = "Long cable cardigan pattern with detailed instructions"
+        composeRule.setContent {
+            CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale = 2f)) {
+                KnitToolsTheme {
+                    SavedPatternsScreen(
+                        state = state(listOf(webPattern().copy(name = title, designerName = "Pattern designer"))).copy(
+                            isSelectMode = selection.value,
+                            selectedPatternIds = if (selected.value) setOf(7L) else emptySet(),
+                        ),
+                        actions = actions(),
+                    )
+                }
+            }
+        }
+        val density = context.resources.displayMetrics.density
+        var normalTitleLeft = 0f
+        for (mode in listOf("normal", "unselected", "selected", "normal-again")) {
+            composeRule.runOnIdle {
+                selection.value = mode == "unselected" || mode == "selected"
+                selected.value = mode == "selected"
+            }
+            val titleBounds = composeRule.onNodeWithText(title, useUnmergedTree = true)
+                .assertIsDisplayed().fetchSemanticsNode().boundsInRoot
+            val cardBounds = composeRule.onNode(hasText(title) and hasClickAction()).fetchSemanticsNode().boundsInRoot
+            if (mode == "normal") normalTitleLeft = titleBounds.left
+            if (selection.value) {
+                // Indicator ends at 8 + 2 + 22 + 2 dp from the row's leading edge.
+                assertTrue("Text overlaps selection slot: $mode", titleBounds.left - normalTitleLeft >= 48f * density - 1f)
+            } else {
+                assertTrue("Normal card reserves selection space", titleBounds.left - cardBounds.left <= 24f * density)
+            }
+            val bitmap = composeRule.onRoot().captureToImage().asAndroidBitmap()
+            java.io.File(context.getExternalFilesDir(null), "p2-web-$mode.png").outputStream().use {
+                bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it)
+            }
+        }
+    }
 
     @Test
     fun emptyCollectionExposesAddWebPattern() {

@@ -22,11 +22,11 @@
     <string name="size_row_child_s">Bambino S</string>
     <string name="size_row_child_m">Bambino M</string>
     <string name="size_row_child_l">Bambino L</string>
-    <string name="size_row_age_0_3m">0–3 metri</string>
-    <string name="size_row_age_3_6m">3–6 metri</string>
-    <string name="size_row_age_6_12m">6–12 metri</string>
-    <string name="size_row_age_12_18m">12–18 metri</string>
-    <string name="size_row_age_18_24m">18–24 metri</string>
+    <string name="size_row_age_0_3m">0–3 mesi</string>
+    <string name="size_row_age_3_6m">3–6 mesi</string>
+    <string name="size_row_age_6_12m">6–12 mesi</string>
+    <string name="size_row_age_12_18m">12–18 mesi</string>
+    <string name="size_row_age_18_24m">18–24 mesi</string>
     <string name="size_row_child_2">2</string>
     <string name="size_row_child_4">4</string>
     <string name="size_row_child_6">6</string>

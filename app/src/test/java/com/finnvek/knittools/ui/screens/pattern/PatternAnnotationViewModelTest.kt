@@ -139,6 +139,46 @@ class PatternAnnotationViewModelTest {
     }
 
     @Test
+    fun `tool switches keep pen preference while highlighter input draft and payload ignore pressure`() =
+        runTest {
+            val route = projectRoute()
+            every { route.annotationRepository.observePage(any(), any()) } returns flowOf(emptyList())
+            val saved = mutableListOf<PatternAnnotation>()
+            coEvery { route.annotationRepository.insertAnnotation(capture(saved)) } answers { saved.size.toLong() }
+            val viewModel = route.viewModel()
+            advanceUntilIdle()
+            for (penPressure in listOf(true, false, true)) {
+                viewModel.setPressureEnabled(penPressure)
+                for (tool in listOf(PatternAnnotationTool.PEN, PatternAnnotationTool.HIGHLIGHTER, PatternAnnotationTool.PEN)) {
+                    viewModel.setActiveTool(tool)
+                    runCurrent()
+                    val expectedPressure = tool == PatternAnnotationTool.PEN && penPressure
+                    assertEquals(expectedPressure, viewModel.uiState.value.pressureEnabled)
+                    viewModel.beginStroke(NormalizedPatternPoint(0.1f, 0.2f, pressure = 0.2f))
+                    viewModel.appendStrokePoint(NormalizedPatternPoint(0.5f, 0.4f, pressure = 0.9f))
+                    runCurrent()
+                    val draft = requireNotNull(viewModel.uiState.value.draftStroke)
+                    assertEquals(expectedPressure, draft.pressureEnabled)
+                    assertEquals(if (expectedPressure) listOf(0.2f, 0.9f) else listOf(1f, 1f), draft.points.map { it.pressure })
+                    val preview = requireNotNull(viewModel.uiState.value.inProgressAnnotation)
+                    assertEquals(expectedPressure, (preview.payload as FreehandPayload).pressureEnabled)
+                    viewModel.commitStroke(0f)
+                    advanceUntilIdle()
+                    val annotation = saved.last()
+                    assertEquals(preview.payload, annotation.payload)
+                    val encoded = requireNotNull(
+                        com.finnvek.knittools.domain.model.PatternAnnotationPayloadCodec.encode(annotation.kind, annotation.payload),
+                    )
+                    assertEquals(
+                        annotation.payload,
+                        com.finnvek.knittools.domain.model.PatternAnnotationPayloadCodec.decode(annotation.kind, encoded),
+                    )
+                }
+            }
+            assertEquals(9, saved.size)
+        }
+
+    @Test
     fun `route requires exactly one positive owner id`() {
         val counterRepository = mockk<CounterRepository>(relaxed = true)
         val layerRepository = mockk<PatternAnnotationLayerRepository>(relaxed = true)
@@ -480,6 +520,13 @@ class PatternAnnotationViewModelTest {
                     ?.points
                     ?.size,
             )
+            coEvery { annotationRepository.insertAnnotation(any()) } returns 55L
+            viewModel.commitStroke(simplificationTolerance = 0f)
+            advanceUntilIdle()
+
+            coVerify(exactly = 2) { annotationRepository.insertAnnotation(any()) }
+            assertEquals(null, viewModel.uiState.value.draftStroke)
+            assertEquals(PatternAnnotationWriteError.NONE, viewModel.uiState.value.writeError)
         }
 
     // CPD-OFF: Testin skenaariokohtainen asetelma pidetaan paikallisena ja luettavana.
@@ -793,6 +840,101 @@ class PatternAnnotationDocumentSelectionTest {
     fun tearDown() {
         Dispatchers.resetMain()
     }
+
+    @Test
+    fun `completed strokes wait for a successful write without being overwritten`() =
+        verifyCompletedStrokesDuringWrite(firstWriteFails = false, switchDocument = false)
+
+    @Test
+    fun `completed strokes are saved after the previous write fails`() =
+        verifyCompletedStrokesDuringWrite(firstWriteFails = true, switchDocument = false)
+
+    @Test
+    fun `queued strokes retain their page and layer after document switch`() =
+        verifyCompletedStrokesDuringWrite(firstWriteFails = false, switchDocument = true)
+
+    private fun verifyCompletedStrokesDuringWrite(
+        firstWriteFails: Boolean,
+        switchDocument: Boolean,
+    ) = runTest {
+        val route = projectRoute()
+        val gate = CompletableDeferred<Unit>()
+        val writes = mutableListOf<PatternAnnotation>()
+        every { route.annotationRepository.observePage(any(), any()) } returns flowOf(emptyList())
+        coEvery { route.annotationRepository.insertAnnotation(any()) } coAnswers {
+            writes += firstArg<PatternAnnotation>()
+            if (writes.size == 1) {
+                gate.await()
+                if (firstWriteFails) throw IOException("synthetic write failure")
+            }
+            writes.size.toLong() + 100L
+        }
+        val viewModel = route.viewModel()
+        advanceUntilIdle()
+        viewModel.setActiveTool(PatternAnnotationTool.PEN)
+        for (index in 1..3) {
+            viewModel.beginStroke(NormalizedPatternPoint(index / 10f, 0.2f))
+            viewModel.appendStrokePoint(NormalizedPatternPoint(index / 10f, 0.5f))
+            viewModel.commitStroke(0f)
+            viewModel.commitStroke(0f)
+            runCurrent()
+        }
+        assertEquals(1, writes.size)
+        assertTrue(viewModel.uiState.value.isSaving)
+        if (switchDocument) {
+            val key = PatternAnnotationDocumentKey.savedPattern(13L)
+            route.documents.value += projectDocument(id = 52L, savedPatternId = 13L, isPrimary = false)
+            coEvery { route.layerRepository.getOrCreateMasterLayer(13L, key) } returns
+                layer(id = 32L, owner = PatternAnnotationOwner.SavedPattern(13L, key))
+            route.projectLayers.value =
+                listOf(route.projectLayer.copy(isActive = false), layer(42L, PatternAnnotationOwner.Project(7L, key)))
+        }
+        viewModel.setCurrentPage(1)
+        runCurrent()
+        gate.complete(Unit)
+        advanceUntilIdle()
+
+        assertEquals(3, writes.size)
+        assertEquals(listOf(0.1f, 0.2f, 0.3f), writes.map { (it.payload as FreehandPayload).points.first().x })
+        assertTrue(writes.all { it.layerId == 41L && it.page == 0 })
+        assertFalse(viewModel.uiState.value.isSaving)
+        assertEquals(null, viewModel.uiState.value.draftStroke)
+        assertEquals(!switchDocument, viewModel.uiState.value.canUndo)
+        assertEquals(
+            if (firstWriteFails) PatternAnnotationWriteError.WRITE_FAILED else PatternAnnotationWriteError.NONE,
+            viewModel.uiState.value.writeError,
+        )
+    }
+
+    @Test
+    fun `stroke completed during undo is persisted after undo finishes`() =
+        runTest {
+            val route = projectRoute()
+            val gate = CompletableDeferred<Unit>()
+            every { route.annotationRepository.observePage(any(), any()) } returns flowOf(emptyList())
+            coEvery { route.annotationRepository.insertAnnotation(any()) } returnsMany listOf(101L, 102L)
+            coEvery { route.annotationRepository.deleteAnnotation(101L) } coAnswers { gate.await() }
+            val viewModel = route.viewModel()
+            advanceUntilIdle()
+            viewModel.setActiveTool(PatternAnnotationTool.PEN)
+            viewModel.beginStroke(NormalizedPatternPoint(0.1f, 0.2f))
+            viewModel.appendStrokePoint(NormalizedPatternPoint(0.2f, 0.3f))
+            viewModel.commitStroke(0f)
+            advanceUntilIdle()
+            viewModel.undo()
+            runCurrent()
+            viewModel.beginStroke(NormalizedPatternPoint(0.4f, 0.5f))
+            viewModel.appendStrokePoint(NormalizedPatternPoint(0.5f, 0.6f))
+            viewModel.commitStroke(0f)
+            runCurrent()
+            coVerify(exactly = 1) { route.annotationRepository.insertAnnotation(any()) }
+            gate.complete(Unit)
+            advanceUntilIdle()
+            coVerify(exactly = 2) { route.annotationRepository.insertAnnotation(any()) }
+            assertTrue(viewModel.uiState.value.canUndo)
+            assertFalse(viewModel.uiState.value.canRedo)
+            assertEquals(null, viewModel.uiState.value.draftStroke)
+        }
 
     @Test
     fun `selecting secondary project document switches its master and editable annotations`() =

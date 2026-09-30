@@ -507,6 +507,7 @@ class RavelryViewModel
                         }
                     if (requestId != importRequestId) return@launch
                     val duplicate = repository.findDuplicateFor(detail)
+                    if (requestId != importRequestId) return@launch
                     _importConfirmationState.value =
                         if (duplicate != null) {
                             RavelryImportConfirmationState(

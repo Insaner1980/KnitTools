@@ -35,7 +35,7 @@
         Ktor utils ei ole fredsmith/utils screenshot_sync -projekti.
         Tämä on artefaktin nimen aiheuttama CPE/CVE false positive.
         ]]></notes>
-        <packageUrl regex="true">^pkg:maven/io\.ktor/ktor-utils-jvm@3\.5\.1$</packageUrl>
+        <packageUrl regex="true">^pkg:maven/io\.ktor/ktor-utils-jvm@3\.5\.2$</packageUrl>
         <cve>CVE-2021-4277</cve>
     </suppress>
 

@@ -223,8 +223,10 @@
     <string name="yarn_details_title">Detaljer</string>
     <string name="yarn_details_empty_body">Märke, grovlek, färg och färgbad är valfria. Lägg bara till det som hjälper projektet.</string>
     <string name="delete_yarn_card_message">Ta bort detta garnkort? Detta kan inte ångras.</string>
-    <string name="skein_count_one">%1$d nystan</string>
-    <string name="skein_count_many">%1$d nystan</string>
+    <plurals name="skein_count">
+        <item quantity="one">%1$d nystan</item>
+        <item quantity="other">%1$d nystan</item>
+    </plurals>
 
     <!-- Session History -->
     <string name="session_history_title">Arbetspasshistorik</string>
@@ -717,7 +719,7 @@
     <string name="project_content_notes">Anteckningar</string>
     <string name="project_content_photos">Foton</string>
     <string name="extra_counters_title">Extra räknare</string>
-    <string name="counter_repeat_label">Upprepa</string>
+    <string name="counter_repeat_label">Upprepning</string>
     <string name="counters_list_title">Räknare</string>
 
     <!-- Täydennetyt lokalisoidut käyttöliittymätekstit -->

@@ -153,8 +153,10 @@ function canonicalPatternUrl(permalink: string): string {
 }
 
 function designerNameFrom(value: Record<string, unknown>): string {
+  const patternAuthor = objectOrNull(value.pattern_author);
   const designer = objectOrNull(value.designer);
-  return sanitizedTextOrUndefined(designer?.name, MAX_DESIGNER_NAME_LENGTH) ?? "";
+  return sanitizedTextOrUndefined(patternAuthor?.name, MAX_DESIGNER_NAME_LENGTH) ??
+    sanitizedTextOrUndefined(designer?.name, MAX_DESIGNER_NAME_LENGTH) ?? "";
 }
 
 function searchThumbnailFrom(value: Record<string, unknown>): string | undefined {

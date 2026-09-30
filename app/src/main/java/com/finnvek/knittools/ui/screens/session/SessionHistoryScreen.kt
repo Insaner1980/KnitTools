@@ -67,6 +67,14 @@ fun SessionHistoryScreen(onBack: () -> Unit) {
                     .padding(padding),
         ) {
             if (sessions.isEmpty()) {
+                projectName?.let { name ->
+                    Text(
+                        text = name.localizedUppercase(),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.knitToolsColors.brandWine,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    )
+                }
                 Column(
                     modifier =
                         Modifier

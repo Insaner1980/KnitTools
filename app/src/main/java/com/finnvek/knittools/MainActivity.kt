@@ -134,6 +134,7 @@ class MainActivity : AppCompatActivity() {
     private var openProUpgradeRequest by mutableStateOf(false)
     private var openWidgetProPromptRequest by mutableStateOf(false)
     private var consumedCounterLaunchRequestId: String? = null
+    private var consumedPatternShareIntent = false
     private var startupThemeLoaded = false
     private var edgeToEdgeDarkTheme: Boolean? = null
     private var launchRequestJob: Job? = null
@@ -204,23 +205,7 @@ class MainActivity : AppCompatActivity() {
         // In-App Update: näytä snackbar aina kun ladattu päivitys havaitaan.
         val downloadedUpdatePromptId by
             inAppUpdateManager.downloadedUpdatePromptId.collectAsStateWithLifecycle()
-        var lastShownDownloadedUpdatePromptId by rememberSaveable { mutableLongStateOf(0L) }
-        val updateMessage = stringResource(R.string.update_downloaded)
-        val restartLabel = stringResource(R.string.restart)
-        LaunchedEffect(downloadedUpdatePromptId) {
-            if (downloadedUpdatePromptId > lastShownDownloadedUpdatePromptId) {
-                lastShownDownloadedUpdatePromptId = downloadedUpdatePromptId
-                val result =
-                    snackbarHostState.showSnackbar(
-                        message = updateMessage,
-                        actionLabel = restartLabel,
-                        duration = SnackbarDuration.Indefinite,
-                    )
-                if (result == SnackbarResult.ActionPerformed) {
-                    inAppUpdateManager.completeUpdate()
-                }
-            }
-        }
+        DownloadedUpdatePromptEffect(downloadedUpdatePromptId, snackbarHostState, inAppUpdateManager::completeUpdate)
 
         ProvidePreferenceAwareHapticFeedback(enabled = prefs?.hapticFeedback == true) {
             KnitToolsTheme(isDarkTheme = isDarkTheme) {
@@ -300,6 +285,8 @@ class MainActivity : AppCompatActivity() {
 
     private suspend fun initializeLaunchRequests(savedInstanceState: Bundle?) {
         launchRequestsReady = false
+        consumedPatternShareIntent = savedInstanceState?.getBoolean(STATE_PATTERN_SHARE_INTENT_CONSUMED) == true
+        if (consumedPatternShareIntent) clearPatternShareIntent()
         restoreCounterLaunchRequest(savedInstanceState)
         openProUpgradeRequest = intent?.action == ACTION_OPEN_PRO_UPGRADE
         openWidgetProPromptRequest = intent?.action == ACTION_OPEN_WIDGET_PRO_PROMPT
@@ -357,6 +344,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
+        outState.putBoolean(STATE_PATTERN_SHARE_INTENT_CONSUMED, consumedPatternShareIntent)
         consumedCounterLaunchRequestId?.let {
             outState.putString(STATE_CONSUMED_COUNTER_LAUNCH_REQUEST_ID, it)
         }
@@ -396,6 +384,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        consumedPatternShareIntent = false
         setIntent(intent)
         launchRequestsReady = false
         openProUpgradeRequest = intent.action == ACTION_OPEN_PRO_UPGRADE
@@ -488,6 +477,7 @@ class MainActivity : AppCompatActivity() {
         sourceIntent
             ?.takeIf { it.action == Intent.ACTION_SEND }
             ?.apply {
+                consumedPatternShareIntent = true
                 setAction(Intent.ACTION_MAIN)
                 setType(null)
                 removeExtra(Intent.EXTRA_TEXT)
@@ -518,6 +508,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     companion object {
+        private const val STATE_PATTERN_SHARE_INTENT_CONSUMED = "pattern_share_intent_consumed"
         private const val EXTRA_OPEN_COUNTER = "com.finnvek.knittools.extra.OPEN_COUNTER"
         private const val EXTRA_PROJECT_ID = "com.finnvek.knittools.extra.PROJECT_ID"
         private const val EXTRA_COUNTER_LAUNCH_ID = "com.finnvek.knittools.extra.COUNTER_LAUNCH_ID"
@@ -552,6 +543,31 @@ class MainActivity : AppCompatActivity() {
                 action = ACTION_OPEN_WIDGET_PRO_PROMPT
                 addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
             }
+    }
+}
+
+@Composable
+internal fun DownloadedUpdatePromptEffect(
+    downloadedUpdatePromptId: Long,
+    snackbarHostState: SnackbarHostState,
+    onRestart: () -> Unit,
+) {
+    var lastShownDownloadedUpdatePromptId by remember(snackbarHostState) { mutableLongStateOf(0L) }
+    val updateMessage = stringResource(R.string.update_downloaded)
+    val restartLabel = stringResource(R.string.restart)
+    LaunchedEffect(downloadedUpdatePromptId, snackbarHostState) {
+        if (downloadedUpdatePromptId > lastShownDownloadedUpdatePromptId) {
+            lastShownDownloadedUpdatePromptId = downloadedUpdatePromptId
+            val result =
+                snackbarHostState.showSnackbar(
+                    message = updateMessage,
+                    actionLabel = restartLabel,
+                    duration = SnackbarDuration.Indefinite,
+                )
+            if (result == SnackbarResult.ActionPerformed) {
+                onRestart()
+            }
+        }
     }
 }
 

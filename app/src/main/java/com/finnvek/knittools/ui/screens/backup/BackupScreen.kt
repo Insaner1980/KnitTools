@@ -49,18 +49,9 @@ fun BackupScreen(
     val export =
         rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument(BackupFormat.MIME), viewModel::export)
     val restore = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument(), viewModel::prepare)
-    BackHandler(state.busy || state.preview != null) { viewModel.cancel() }
-    BackHandler(state.phase == BackupPhase.RESTORED) { onRestored() }
     BackupContent(
         state = state,
-        onBack = {
-            if (state.phase == BackupPhase.RESTORED) {
-                onRestored()
-            } else if (!state.busy) {
-                viewModel.cancel()
-                onBack()
-            }
-        },
+        onBack = onBack,
         onExport = {
             if (viewModel.select()) {
                 export.launch(
@@ -86,7 +77,22 @@ internal fun BackupContent(
     onRestored: () -> Unit,
 ) {
     var confirm by rememberSaveable { mutableStateOf(false) }
-    ToolScreenScaffold(title = stringResource(R.string.backup_title), onBack = onBack, wrapTitle = true) { padding ->
+    BackHandler(state.busy || state.preview != null) { onCancel() }
+    BackHandler(state.phase == BackupPhase.RESTORED) { onRestored() }
+    ToolScreenScaffold(
+        title = stringResource(R.string.backup_title),
+        onBack = {
+            when {
+                state.phase == BackupPhase.RESTORED -> onRestored()
+                state.busy -> onCancel()
+                else -> {
+                    onCancel()
+                    onBack()
+                }
+            }
+        },
+        wrapTitle = true,
+    ) { padding ->
         Column(
             Modifier
                 .fillMaxSize()

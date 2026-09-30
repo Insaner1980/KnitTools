@@ -9,13 +9,15 @@ export const androidUriShareWithoutClipData: MatcherPlugin = {
   filePatterns: ["app/src/main/java/**/*.kt"],
   match(content, filePath): CandidateMatch[] {
     if (isTestFile(filePath)) return [];
-    const actionRegex = /Intent\.ACTION_SEND(?:_MULTIPLE)?/g;
+    const actionRegex = /\bIntent\.ACTION_SEND(?:_MULTIPLE)?\b/g;
     const actionMatches = [...content.matchAll(actionRegex)];
 
     return actionMatches.flatMap((actionMatch, matchIndex) => {
       const index = actionMatch.index ?? 0;
       const nextIndex = actionMatches[matchIndex + 1]?.index ?? content.length;
-      const shareBlock = content.slice(index, nextIndex);
+      const nextFunction = /\bfun\s+/.exec(content.slice(index));
+      const endIndex = Math.min(nextIndex, nextFunction ? index + nextFunction.index : content.length);
+      const shareBlock = content.slice(index, endIndex);
       if (!shareBlock.includes("Intent.EXTRA_STREAM")) return [];
 
       const hasReadGrant = shareBlock.includes("FLAG_GRANT_READ_URI_PERMISSION");

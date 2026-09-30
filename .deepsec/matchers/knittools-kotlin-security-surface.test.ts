@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
 import { test } from "node:test";
 import { androidExportedComponent } from "./android-exported-component.js";
 import { androidIntentInputSurface } from "./android-intent-input-surface.js";
@@ -9,6 +11,133 @@ import { knitToolsFileUriSurface } from "./knittools-file-uri-surface.js";
 import { ravelryFirebaseCallableSurface } from "./ravelry-firebase-callable-surface.js";
 import { sensitiveAndroidLog } from "./sensitive-android-log.js";
 import { widgetMutationSurface } from "./widget-mutation-surface.js";
+
+const productionPath = "app/src/main/java/com/finnvek/knittools/Surface.kt";
+
+for (const [base, label] of [
+  ["AppCompatActivity", "Android activity entry point"],
+  ["GlanceAppWidgetReceiver", "Glance app widget receiver entry point"],
+  ["BroadcastReceiver", "Android broadcast receiver entry point"],
+  ["LifecycleService", "Android service entry point"],
+  ["CoroutineWorker", "WorkManager background execution entry point"],
+]) {
+  test(`class boundaries preserve names and lines for ${base}`, () => {
+    const content = [
+      "class Helper {}",
+      `class First : ${base}() {}`,
+      "class BodylessHelper",
+      "class Second(",
+      "  value: String,",
+      `) : android.example.${base}() {}`,
+    ].join("\n");
+    const matches = androidKotlinEntrypointSurface.match(content, productionPath);
+    assert.deepEqual(matches.map((match) => match.matchedPattern), [label, label]);
+    assert.deepEqual(matches.map((match) => match.lineNumbers), [[2], [4]]);
+    assert.deepEqual(matches.map((match) =>
+      content.split("\n")[match.lineNumbers[0] - 1].match(/class (\w+)/)?.[1]),
+    ["First", "Second"]);
+    if (base === "BroadcastReceiver") {
+      assert.deepEqual(widgetMutationSurface.match(content, productionPath)
+        .map((match) => match.lineNumbers), [[2], [4]]);
+    }
+  });
+}
+
+test("widget receiver matching cannot start in a previous class", () => {
+  const content = "class Helper {}\r\nclass Receiver\r\n : BroadcastReceiver() {}";
+  const matches = widgetMutationSurface.match(content, productionPath);
+  assert.deepEqual(matches.map((match) => match.lineNumbers), [[2]]);
+  assert.ok(matches[0].snippet.includes("class Receiver"));
+});
+
+for (const action of ["ACTION_SEND", "ACTION_SEND_MULTIPLE"]) {
+  for (const grants of ["", "addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)",
+    'clipData = ClipData.newRawUri("synthetic", uri)']) {
+    test(`${action} cannot borrow later function permissions: ${grants || "neither"}`, () => {
+      const content = `fun share(uri: Uri) = Intent(Intent.${action}).apply {
+  putExtra(Intent.EXTRA_STREAM, uri)
+  ${grants}
+}
+private suspend fun later(uri: Uri) {
+  addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+  clipData = ClipData.newRawUri("synthetic", uri)
+}`;
+      const matches = androidUriShareWithoutClipData.match(content, productionPath);
+      assert.deepEqual(matches.map((match) => match.lineNumbers), [[1]]);
+      assert.equal(matches[0].matchedPattern, grants.includes("FLAG_GRANT")
+        ? "EXTRA_STREAM content URI share without ClipData"
+        : "EXTRA_STREAM content URI share without FLAG_GRANT_READ_URI_PERMISSION");
+    });
+  }
+  test(`${action} with both permissions is safe`, () => {
+    const content = `fun share(uri: Uri) = Intent(Intent.${action}).apply {
+  putExtra(Intent.EXTRA_STREAM, uri)
+  addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+  clipData = ClipData.newRawUri("synthetic", uri)
+}`;
+    assert.deepEqual(androidUriShareWithoutClipData.match(content, productionPath), []);
+  });
+}
+
+test("ACTION_SENDTO and longer identifiers are not stream share actions", () => {
+  for (const action of ["ACTION_SENDTO", "ACTION_SENDER", "ACTION_SEND_MULTIPLE_EXTRA"]) {
+    assert.deepEqual(androidUriShareWithoutClipData.match(
+      `Intent(Intent.${action}).putExtra(Intent.EXTRA_STREAM, uri)`, productionPath), []);
+  }
+});
+
+for (const expression of [
+  'format(normalize(value)) + syntheticToken',
+  '")" + syntheticToken',
+  String.raw`"escaped quote: \" )" + syntheticToken`,
+  String.raw`"escaped slash: \\" + syntheticToken`,
+  `'(' + format(value) + syntheticToken`,
+  '"""raw ) ( " text""" + syntheticToken',
+]) {
+  test(`sensitive argument survives log call boundaries: ${expression}`, () => {
+    const content = `android.util.Log.d(TAG, ${expression})`;
+    assert.deepEqual(sensitiveAndroidLog.match(content, productionPath)
+      .map((match) => match.lineNumbers), [[1]]);
+  });
+}
+
+test("safe logs end before a later sensitive identifier despite strings and escapes", () => {
+  const content = String.raw`Log.d(TAG, format(normalize(value)) + "( \" )" + '(' + "\\")
+val syntheticToken = "synthetic-only"
+Log.i(TAG, """raw ( ) " text""")`;
+  assert.deepEqual(sensitiveAndroidLog.match(content, productionPath), []);
+});
+
+test("named callable matches cover actual Android calls and only backend onCall exports", () => {
+  const root = path.resolve(process.cwd(), "..");
+  const client = fs.readFileSync(path.join(root,
+    "app/src/main/java/com/finnvek/knittools/data/remote/RavelryBackendClient.kt"), "utf8");
+  const backend = ["auth.ts", "patternImport.ts"].map((file) =>
+    fs.readFileSync(path.join(root, "functions/src/ravelry", file), "utf8")).join("\n");
+  const exports = fs.readFileSync(path.join(root, "functions/src/index.ts"), "utf8");
+  const calls = [...client.matchAll(/\bcallBackend\(\s*"(ravelry\w+)"/g)];
+  const callableNames = [...backend.matchAll(/export const (ravelry\w+) = onCall\(/g)]
+    .map((match) => match[1]).sort();
+  assert.equal(calls.length, 8);
+  assert.deepEqual(calls.map((match) => match[1]).sort(), callableNames);
+  const named = ravelryFirebaseCallableSurface.match(client, productionPath)
+    .filter((match) => match.matchedPattern === "Ravelry backend callable name");
+  assert.deepEqual(named.map((match) => match.lineNumbers[0]).sort((a, b) => a - b),
+    calls.map((match) => client.slice(0, match.index + match[0].indexOf('"'))
+      .split(/\r\n|\r|\n/).length).sort((a, b) => a - b));
+  for (const name of callableNames) {
+    assert.ok(exports.includes(name));
+    for (const call of [`callBackend("${name}")`, `functions.getHttpsCallable("${name}").call()`]) {
+      const matches = ravelryFirebaseCallableSurface.match(`// Ravelry\n${call}`, productionPath);
+      assert.equal(matches.filter((match) => match.matchedPattern === "Ravelry backend callable name").length, 1);
+    }
+  }
+  assert.match(backend, /export const ravelryCallback = onRequest\(/);
+  for (const name of ["ravelryCallback", "ravelryOAuthStart", "ravelryOAuthCallback"]) {
+    assert.deepEqual(ravelryFirebaseCallableSurface.match(
+      `// Ravelry\ncallBackend("${name}")`, productionPath), []);
+  }
+});
 
 test("flags Android Kotlin entry points without scanning test files", () => {
   const content = `

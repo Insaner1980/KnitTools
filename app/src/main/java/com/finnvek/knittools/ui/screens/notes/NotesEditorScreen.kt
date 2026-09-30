@@ -18,6 +18,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
@@ -40,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.finnvek.knittools.R
+import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.ProBadge
 import com.finnvek.knittools.ui.components.ProPromptRequest
 import com.finnvek.knittools.ui.components.ProPromptSheet
@@ -57,6 +59,15 @@ fun NotesEditorScreen(
     val proState by viewModel.proState.collectAsStateWithLifecycle()
     val focusRequester = remember { FocusRequester() }
     var showProPrompt by rememberSaveable { mutableStateOf(false) }
+    var showDiscardConfirmation by rememberSaveable { mutableStateOf(false) }
+    val requestBack: () -> Unit = {
+        if (state.saveFailed) {
+            showDiscardConfirmation = true
+        } else {
+            viewModel.cancelFirstNotesCreation()
+            viewModel.saveImmediately(onBack)
+        }
+    }
 
     LaunchedEffect(state.isMissingProject) {
         if (state.isMissingProject) {
@@ -64,10 +75,7 @@ fun NotesEditorScreen(
         }
     }
 
-    BackHandler {
-        viewModel.cancelFirstNotesCreation()
-        viewModel.saveImmediately(onBack)
-    }
+    BackHandler(onBack = requestBack)
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -81,10 +89,7 @@ fun NotesEditorScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = {
-                        viewModel.cancelFirstNotesCreation()
-                        viewModel.saveImmediately(onBack)
-                    }) {
+                    IconButton(onClick = requestBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(R.string.back),
@@ -100,34 +105,52 @@ fun NotesEditorScreen(
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding).imePadding()) {
             if (state.canEditNotes) {
-                TextField(
-                    value = state.notes,
-                    onValueChange = viewModel::onNotesChanged,
-                    enabled = state.canEditNotes,
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 16.dp)
-                            .padding(top = 16.dp)
-                            .focusRequester(focusRequester),
-                    placeholder = {
-                        Text(
-                            text = stringResource(R.string.write_your_notes_here),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    },
-                    textStyle =
-                        MaterialTheme.typography.bodyLarge.copy(
-                            color = MaterialTheme.colorScheme.onBackground,
-                        ),
-                    colors =
-                        TextFieldDefaults.colors(
-                            focusedContainerColor = Color.Transparent,
-                            unfocusedContainerColor = Color.Transparent,
-                            focusedIndicatorColor = Color.Transparent,
-                            unfocusedIndicatorColor = Color.Transparent,
-                        ),
-                )
+                Column {
+                    if (state.saveFailed) {
+                        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+                            Text(
+                                text = stringResource(R.string.notes_save_failed),
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                TextButton(onClick = { viewModel.saveImmediately() }) {
+                                    Text(stringResource(R.string.retry))
+                                }
+                                TextButton(onClick = { showDiscardConfirmation = true }) {
+                                    Text(stringResource(R.string.notes_discard_action))
+                                }
+                            }
+                        }
+                    }
+                    TextField(
+                        value = state.notes,
+                        onValueChange = viewModel::onNotesChanged,
+                        enabled = state.canEditNotes,
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 16.dp)
+                                .padding(top = 16.dp)
+                                .focusRequester(focusRequester),
+                        placeholder = {
+                            Text(
+                                text = stringResource(R.string.write_your_notes_here),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        },
+                        textStyle =
+                            MaterialTheme.typography.bodyLarge.copy(
+                                color = MaterialTheme.colorScheme.onBackground,
+                            ),
+                        colors =
+                            TextFieldDefaults.colors(
+                                focusedContainerColor = Color.Transparent,
+                                unfocusedContainerColor = Color.Transparent,
+                                focusedIndicatorColor = Color.Transparent,
+                                unfocusedIndicatorColor = Color.Transparent,
+                            ),
+                    )
+                }
             } else if (state.isLoaded) {
                 Column(
                     modifier = Modifier.fillMaxSize().padding(24.dp),
@@ -154,6 +177,21 @@ fun NotesEditorScreen(
                 }
             }
         }
+    }
+
+    if (showDiscardConfirmation) {
+        ConfirmationDialog(
+            title = stringResource(R.string.notes_discard_title),
+            message = stringResource(R.string.notes_discard_message),
+            confirmText = stringResource(R.string.notes_discard_action),
+            isDestructive = true,
+            onConfirm = {
+                showDiscardConfirmation = false
+                viewModel.discardChanges()
+                onBack()
+            },
+            onDismiss = { showDiscardConfirmation = false },
+        )
     }
 
     if (showProPrompt) {

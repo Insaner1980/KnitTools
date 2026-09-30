@@ -223,8 +223,10 @@
     <string name="yarn_details_title">Details</string>
     <string name="yarn_details_empty_body">Marke, Garnstärke, Farbe und Partie sind optional. Füge nur hinzu, was diesem Projekt hilft.</string>
     <string name="delete_yarn_card_message">Diese Garnkarte löschen? Dies kann nicht rückgängig gemacht werden.</string>
-    <string name="skein_count_one">%1$d Knäuel</string>
-    <string name="skein_count_many">%1$d Knäuel</string>
+    <plurals name="skein_count">
+        <item quantity="one">%1$d Knäuel</item>
+        <item quantity="other">%1$d Knäuel</item>
+    </plurals>
 
     <!-- Session History -->
     <string name="session_history_title">Arbeitsverlauf</string>

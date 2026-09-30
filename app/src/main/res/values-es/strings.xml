@@ -226,8 +226,11 @@
     <string name="yarn_details_title">Detalles</string>
     <string name="yarn_details_empty_body">La marca, el grosor, el color y el lote son opcionales. Añade solo lo que ayude a este proyecto.</string>
     <string name="delete_yarn_card_message">¿Eliminar esta ficha de hilo? Esto no se puede deshacer.</string>
-    <string name="skein_count_one">%1$d ovillo</string>
-    <string name="skein_count_many">%1$d ovillos</string>
+    <plurals name="skein_count">
+        <item quantity="one">%1$d ovillo</item>
+        <item quantity="many">%1$d de ovillos</item>
+        <item quantity="other">%1$d ovillos</item>
+    </plurals>
 
     <!-- Session History -->
     <string name="session_history_title">Historial de sesiones</string>
@@ -252,7 +255,7 @@
 
     <string name="counter_decrease">Disminuir</string>
     <string name="counter_increase">Aumentar</string>
-    <string name="counter_value_of_target_format">Fila %1$d / %2$d</string>
+    <string name="counter_value_of_target_format">Vuelta %1$d / %2$d</string>
     <string name="repeating_counter_value_format">%1$d de %2$d</string>
     <string name="counter_decrease_named">Disminuir %1$s</string>
     <string name="counter_increase_named">Aumentar %1$s</string>
@@ -704,19 +707,19 @@
     <string name="tip_needle_sizes_desc">El sistema métrico (mm) es el estándar universal. Las tallas US usan un sistema numerado (0–50). Las tallas UK/Canadá usan un sistema numerado diferente. Las tallas japonesas tienen su propia numeración. Comprueba siempre la medida en mm para asegurarte.</string>
     <string name="tip_imperial_units_title">Unidades imperiales</string>
     <string name="tip_imperial_units_desc">Cuando está activado, todas las calculadoras usan pulgadas en lugar de centímetros y yardas en lugar de metros. La muestra se mide por 4 pulgadas en lugar de por 10 cm.</string>
-    <string name="pattern_row_highlight_description">Fila %1$d resaltada aproximadamente al %2$d por ciento de la página</string>
+    <string name="pattern_row_highlight_description">Valor %1$d resaltado aproximadamente al %2$d por ciento de la página</string>
     <string name="open_notes_editor">Abrir editor de notas</string>
     <string name="restore_purchases_checking">Comprobando compras…</string>
     <string name="retry">Reintentar</string>
     <string name="widget_rows_remaining_format">Quedan %d filas</string>
     <string name="widget_target_reached">Objetivo alcanzado</string>
     <string name="widget_stitches_format">Puntos: %1$d / %2$d</string>
-    <string name="target_rows_dialog_title">Establecer filas objetivo</string>
+    <string name="target_rows_dialog_title">Establecer objetivo</string>
     <string name="target_rows_set">Establecer objetivo…</string>
     <string name="target_rows_edit">Editar objetivo</string>
     <string name="target_rows_remove">Quitar objetivo</string>
-    <string name="target_rows_hint">Número de filas</string>
-    <string name="row_label_with_target">Fila %1$d / %2$d</string>
+    <string name="target_rows_hint">Valor objetivo</string>
+    <string name="row_label_with_target">%1$d / %2$d</string>
     <string name="widget_undo_action">Deshacer</string>
     <string name="widget_undo_content_description">Deshacer el último cambio</string>
     <string name="search_more_error">No se pudieron cargar más patrones. Comprueba tu conexión a internet.</string>

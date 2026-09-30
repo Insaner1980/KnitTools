@@ -123,6 +123,59 @@ class BackupRepositoryTest {
         directory.deleteRecursively()
     }
 
+    @Test fun restoredSharedCardCannotStealAnotherNotesUsage() =
+        runBlocking {
+            seed()
+            db.openHelper.writableDatabase.execSQL(
+                "UPDATE project_yarn_usage SET plannedMeters = 1200, allocatedMeters = 600, usedMeters = 350, " +
+                    "metersPerSkein = 200, gramsPerSkein = 100, sourceNameSnapshot = 'First note usage'",
+            )
+            val archive = File(directory, "shared-card.knittools-backup")
+            repository.export(archive.toUri())
+            val payload = File(directory, "shared-card-payload").apply { mkdirs() }
+            val manifest = BackupArchive.extract(archive, payload)
+            val table = File(payload, "tables/project_yarn_notes.jsonl")
+            val lines = table.readLines()
+            val header = BackupFormat.json.parseToJsonElement(lines.first()).jsonArray
+            val second = BackupFormat.json.parseToJsonElement(lines[1]).jsonArray.toMutableList()
+            second[header.indexOf(JsonPrimitive("id"))] = JsonPrimitive(2)
+            second[header.indexOf(JsonPrimitive("name"))] = JsonPrimitive("Second note")
+            table.appendText(JsonArray(second).toString() + "\n")
+            val updated =
+                manifest.copy(
+                    entries =
+                        manifest.entries.map { entry ->
+                            val file = File(payload, entry.path)
+                            entry.copy(size = file.length(), sha256 = BackupFormat.digest(file))
+                        },
+                )
+            BackupArchive.write(payload, archive, updated)
+            prepare(archive.toUri())
+            repository.restore(selectionId)
+
+            val project = db.counterProjectDao().getAllProjectsOnce().single()
+            val notes = db.projectYarnNoteDao().observeForProject(project.id).first()
+            assertEquals(2, notes.size)
+            val secondNote = notes.single { it.name == "Second note" }
+            val before = requireNotNull(db.projectYarnUsageDao().getProject(project.id)).usages.single().usage
+            assertTrue(before.projectYarnNoteId != secondNote.id)
+            assertEquals(before.yarnCardId, secondNote.savedYarnCardId)
+            val noteRepository =
+                ProjectYarnNoteRepository(
+                    db.projectYarnNoteDao(),
+                    yarnCards,
+                    RoomDatabaseTransactionRunner(db),
+                    db.projectYarnUsageDao(),
+                )
+            val result = noteRepository.saveToMyYarn(secondNote.id)
+            assertEquals(before, db.projectYarnUsageDao().getById(before.id))
+            assertEquals(null, result)
+            assertEquals(notes, db.projectYarnNoteDao().observeForProject(project.id).first())
+            assertEquals(project, db.counterProjectDao().getProject(project.id))
+            assertEquals(1L, number("SELECT COUNT(*) FROM yarn_cards"))
+            assertEquals(1L, number("SELECT COUNT(*) FROM project_yarn_usage"))
+        }
+
     @Test fun allEighteenTablesFilesRelationshipsAndCompletionEventsSurviveRealReplacement() =
         runBlocking {
             seed()

@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PROJECT_ARG="${1:-.}"
-if (($# > 0)); then
+PROJECT_ARG="."
+if (($# > 0)) && [[ "$1" != -* ]]; then
+  PROJECT_ARG="$1"
   shift
 fi
-PROJECT_DIR="$(cd "$PROJECT_ARG" && pwd)"
+PROJECT_DIR="$(cd -- "$PROJECT_ARG" && pwd)"
 REPO_LOCAL_SCRIPT="$PROJECT_DIR/scripts/security-check.sh"
 
 if [[ ! -f "$REPO_LOCAL_SCRIPT" ]]; then

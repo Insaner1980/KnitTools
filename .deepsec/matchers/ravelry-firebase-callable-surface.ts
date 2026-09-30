@@ -22,7 +22,7 @@ export const ravelryFirebaseCallableSurface: MatcherPlugin = {
       },
       {
         regex:
-          /["']ravelry(?:SearchPatterns|ImportPatternById|ImportPatternByUrl|OAuthStart|OAuthCallback|AuthStatus|Disconnect|CurrentUser)["']/,
+          /["']ravelry(?:SearchPatterns|ImportPatternById|ImportPatternByUrl|StartAuth|CompleteAuth|AuthStatus|Disconnect|CurrentUser)["']/,
         label: "Ravelry backend callable name",
       },
       {

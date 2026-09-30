@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 
@@ -218,6 +219,46 @@ class ProjectCounterRepositoryTest {
 
             assertEquals(3L, fakeDao.lastRenamedId)
             assertEquals(50, fakeDao.lastRenamedName!!.length)
+        }
+
+    @Test
+    fun `creation and rename normalize name boundaries identically`() =
+        runTest {
+            val emoji = "\uD83E\uDDF6"
+            val cases =
+                listOf(
+                    "  Sleeve  " to "Sleeve",
+                    "A".repeat(49) to "A".repeat(49),
+                    "A".repeat(50) to "A".repeat(50),
+                    "A".repeat(51) to "A".repeat(50),
+                    "A".repeat(48) + emoji to "A".repeat(48) + emoji,
+                    "A".repeat(49) + emoji to "A".repeat(49),
+                    "  " + "A".repeat(49) + emoji + "  " to "A".repeat(49),
+                )
+            for ((input, expected) in cases) {
+                val created = repository.addCounter(ProjectCounter(projectId = 1L, name = input))
+                assertEquals(ProjectCounterMutationResult.Success(1L), created)
+                assertEquals(expected, requireNotNull(fakeDao.lastInserted).name)
+
+                fakeDao.store(ProjectCounter(id = 3L, projectId = 1L, name = "Counter"))
+                assertEquals(ProjectCounterMutationResult.Success(3L), repository.renameCounter(1L, 3L, input))
+                assertEquals(expected, fakeDao.lastRenamedName)
+            }
+        }
+
+    @Test
+    fun `creation and rename reject empty normalized names without writing`() =
+        runTest {
+            fakeDao.store(ProjectCounter(id = 3L, projectId = 1L, name = "Counter"))
+            for (input in listOf("", " \t\n ")) {
+                assertEquals(
+                    ProjectCounterMutationResult.InvalidCounter,
+                    repository.addCounter(ProjectCounter(projectId = 1L, name = input)),
+                )
+                assertEquals(ProjectCounterMutationResult.InvalidCounter, repository.renameCounter(1L, 3L, input))
+            }
+            assertNull(fakeDao.lastInserted)
+            assertNull(fakeDao.lastRenamedName)
         }
 
     @Test

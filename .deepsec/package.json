@@ -10,7 +10,8 @@
     "deepsec:export": "deepsec export --project-id knittools --format md-dir --out ./findings",
     "deepsec:report": "pnpm run deepsec:scan && pnpm run deepsec:process && pnpm run deepsec:revalidate && node scripts/mark-accepted-risks.mjs && pnpm run deepsec:export",
     "deepsec:report:custom": "pnpm run deepsec:scan:custom && pnpm run deepsec:process && pnpm run deepsec:revalidate && node scripts/mark-accepted-risks.mjs && pnpm run deepsec:export",
-    "test:matchers": "tsc --project tsconfig.json --noEmit false --outDir .tmp/test-build && node --test .tmp/test-build/matchers/knittools-kotlin-security-surface.test.js"
+    "test:matchers": "tsc --project tsconfig.json --noEmit false --outDir .tmp/test-build && node --test .tmp/test-build/matchers/knittools-kotlin-security-surface.test.js",
+    "test:accepted-risks": "node --test scripts/mark-accepted-risks.test.mjs"
   },
   "dependencies": {
     "deepsec": "2.3.9"

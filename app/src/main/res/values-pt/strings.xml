@@ -226,8 +226,11 @@
     <string name="yarn_details_title">Detalhes</string>
     <string name="yarn_details_empty_body">Marca, espessura, cor e lote são opcionais. Adicione apenas o que ajuda este projeto.</string>
     <string name="delete_yarn_card_message">Eliminar esta ficha de fio? Esta ação não pode ser anulada.</string>
-    <string name="skein_count_one">%1$d novelo</string>
-    <string name="skein_count_many">%1$d novelos</string>
+    <plurals name="skein_count">
+        <item quantity="one">%1$d novelo</item>
+        <item quantity="many">%1$d de novelos</item>
+        <item quantity="other">%1$d novelos</item>
+    </plurals>
 
     <!-- Session History -->
     <string name="session_history_title">Histórico de sessões</string>
@@ -252,7 +255,7 @@
 
     <string name="counter_decrease">Diminuir</string>
     <string name="counter_increase">Aumentar</string>
-    <string name="counter_value_of_target_format">Fila %1$d / %2$d</string>
+    <string name="counter_value_of_target_format">Carreira %1$d / %2$d</string>
     <string name="repeating_counter_value_format">%1$d de %2$d</string>
     <string name="counter_decrease_named">Diminuir %1$s</string>
     <string name="counter_increase_named">Aumentar %1$s</string>
@@ -704,19 +707,19 @@
     <string name="tip_needle_sizes_desc">O sistema métrico (mm) é o padrão universal. Os tamanhos US usam um sistema numerado (0–50). UK/Canadá usam outro sistema numerado. Os tamanhos japoneses têm a sua própria numeração. Verifique sempre o tamanho em mm para ter a certeza.</string>
     <string name="tip_imperial_units_title">Unidades imperiais</string>
     <string name="tip_imperial_units_desc">Quando ativado, todas as calculadoras usam polegadas em vez de centímetros e jardas em vez de metros. A tensão passa a ser medida por 4 polegadas em vez de por 10 cm.</string>
-    <string name="pattern_row_highlight_description">Fila %1$d destacada a cerca de %2$d por cento da página</string>
+    <string name="pattern_row_highlight_description">Contagem %1$d destacada a cerca de %2$d por cento da página</string>
     <string name="open_notes_editor">Abrir editor de notas</string>
     <string name="restore_purchases_checking">A verificar compras…</string>
     <string name="retry">Tentar novamente</string>
     <string name="widget_rows_remaining_format">Faltam %d filas</string>
     <string name="widget_target_reached">Objetivo atingido</string>
     <string name="widget_stitches_format">Pontos: %1$d / %2$d</string>
-    <string name="target_rows_dialog_title">Definir filas-alvo</string>
+    <string name="target_rows_dialog_title">Definir objetivo</string>
     <string name="target_rows_set">Definir objetivo…</string>
     <string name="target_rows_edit">Editar objetivo</string>
     <string name="target_rows_remove">Remover objetivo</string>
-    <string name="target_rows_hint">Número de filas</string>
-    <string name="row_label_with_target">Fila %1$d / %2$d</string>
+    <string name="target_rows_hint">Valor do objetivo</string>
+    <string name="row_label_with_target">%1$d / %2$d</string>
     <string name="widget_undo_action">Anular</string>
     <string name="widget_undo_content_description">Anular última alteração</string>
     <string name="search_more_error">Não foi possível carregar mais modelos. Verifique a ligação à internet.</string>
@@ -738,7 +741,7 @@
     <string name="pattern_detail_needles">Agulhas</string>
     <string name="pattern_detail_yardage">Metragem</string>
     <string name="pattern_detail_sizes">Tamanhos</string>
-    <string name="pattern_saved_to_library">Salvo na biblioteca</string>
+    <string name="pattern_saved_to_library">Guardado na biblioteca</string>
     <string name="show_more">Mostrar mais</string>
     <string name="show_less">Mostrar menos</string>
     <string name="pro_start_free_trial">Iniciar avaliação gratuita</string><string name="pro_start_14_day_trial">Iniciar avaliação gratuita de 14 dias</string><string name="pro_trial_start_failed">Não foi possível iniciar a avaliação. Tente novamente.</string>

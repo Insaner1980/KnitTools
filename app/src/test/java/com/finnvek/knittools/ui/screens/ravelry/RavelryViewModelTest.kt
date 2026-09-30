@@ -33,6 +33,60 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class RavelryViewModelTest : RavelryViewModelFixture() {
     @Test
+    fun `dismissed import ignores a delayed duplicate result`() =
+        verifyDelayedDuplicate(startNewImport = false, duplicateFound = true)
+
+    @Test
+    fun `dismissed import ignores a delayed nonduplicate result`() =
+        verifyDelayedDuplicate(startNewImport = false, duplicateFound = false)
+
+    @Test
+    fun `new import ignores an older delayed duplicate result`() =
+        verifyDelayedDuplicate(startNewImport = true, duplicateFound = true)
+
+    @Test
+    fun `new import ignores an older delayed nonduplicate result`() =
+        verifyDelayedDuplicate(startNewImport = true, duplicateFound = false)
+
+    private fun verifyDelayedDuplicate(
+        startNewImport: Boolean,
+        duplicateFound: Boolean,
+    ) = runTest(testDispatcher) {
+        authState.value = RavelryAuthState.Connected("knitter")
+        val oldPattern = PatternDetail(id = 42, name = "Old", permalink = "old")
+        val newPattern = PatternDetail(id = 43, name = "New", permalink = "new")
+        val duplicate = CompletableDeferred<SavedPattern?>()
+        coEvery { repository.getPatternDetail(42) } returns oldPattern
+        coEvery { repository.getPatternDetail(43) } returns newPattern
+        coEvery { repository.findDuplicateFor(oldPattern) } coAnswers { duplicate.await() }
+        coEvery { repository.findDuplicateFor(newPattern) } returns null
+        val vm = createViewModel(isPro = true)
+
+        vm.showImportConfirmationForPattern(42)
+        runCurrent()
+        coVerify(exactly = 1) { repository.findDuplicateFor(oldPattern) }
+        if (startNewImport) {
+            vm.showImportConfirmationForPattern(43)
+            runCurrent()
+            assertEquals(newPattern, vm.importConfirmationState.value?.pattern)
+        } else {
+            vm.dismissImportConfirmation()
+            assertNull(vm.importConfirmationState.value)
+        }
+        val expectedState = vm.importConfirmationState.value
+        duplicate.complete(
+            if (duplicateFound) {
+                SavedPattern(id = 7L, source = SavedPatternSource.Ravelry, name = "Old", designerName = "Designer")
+            } else {
+                null
+            },
+        )
+        advanceUntilIdle()
+
+        assertEquals(expectedState, vm.importConfirmationState.value)
+    }
+
+    @Test
     fun `Pro retry retains original pattern even when detail changes and resumes only once`() =
         runTest(testDispatcher) {
             val original = PatternDetail(id = 42, name = "Original", permalink = "original")

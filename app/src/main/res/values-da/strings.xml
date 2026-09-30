@@ -223,8 +223,10 @@
     <string name="yarn_details_title">Detaljer</string>
     <string name="yarn_details_empty_body">Mærke, tykkelse, farve og indfarvningsparti er valgfrie. Tilføj kun det, der hjælper dette projekt.</string>
     <string name="delete_yarn_card_message">Slette dette garnkort? Dette kan ikke fortrydes.</string>
-    <string name="skein_count_one">%1$d nøgle</string>
-    <string name="skein_count_many">%1$d nøgler</string>
+    <plurals name="skein_count">
+        <item quantity="one">%1$d nøgle</item>
+        <item quantity="other">%1$d nøgler</item>
+    </plurals>
 
     <!-- Session History -->
     <string name="session_history_title">Arbejdshistorik</string>

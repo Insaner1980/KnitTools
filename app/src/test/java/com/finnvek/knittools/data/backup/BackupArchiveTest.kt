@@ -18,6 +18,9 @@ class BackupArchiveTest {
 
     @Test fun roundTripChecksAllTablesAndFileBytes() {
         val (source, manifest) = fixture()
+        assertEquals(25, manifest.schemaVersion)
+        assertEquals(1, manifest.formatVersion)
+        assertEquals(1, manifest.dataVersion)
         val archive = temporary.newFile()
         BackupArchive.write(source, archive, manifest)
         val target = temporary.newFolder()
@@ -37,11 +40,12 @@ class BackupArchiveTest {
         rejected(source, manifest)
     }
 
-    @Test fun futureFormatDataAndSchemaAreRejected() {
+    @Test fun unsupportedFormatDataAndSchemaAreRejected() {
         val (source, manifest) = fixture()
         listOf(
             manifest.copy(formatVersion = 2),
             manifest.copy(dataVersion = 2),
+            manifest.copy(schemaVersion = 24),
             manifest.copy(schemaVersion = 26),
         ).forEach {
             val error = rejected(source, it)

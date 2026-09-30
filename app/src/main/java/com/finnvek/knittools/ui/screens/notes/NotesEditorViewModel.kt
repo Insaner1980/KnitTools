@@ -26,6 +26,7 @@ data class NotesEditorUiState(
     val isLoaded: Boolean = false,
     val canEditNotes: Boolean = false,
     val isMissingProject: Boolean = false,
+    val saveFailed: Boolean = false,
 )
 
 @HiltViewModel
@@ -129,6 +130,7 @@ class NotesEditorViewModel
             saveJob?.cancel()
             if (!hasLocalEdits) {
                 clearSavedDraft()
+                _uiState.update { it.copy(saveFailed = false) }
                 return
             }
             saveDraft(text, persistedNotes)
@@ -190,7 +192,10 @@ class NotesEditorViewModel
                         _uiState.update { it.copy(canEditNotes = false) }
                         return false
                     }
-                    ProjectNotesSaveResult.PersistenceFailure -> return false
+                    ProjectNotesSaveResult.PersistenceFailure -> {
+                        _uiState.update { it.copy(saveFailed = true) }
+                        return false
+                    }
                 }
             persistedNotes = savedProject.notes
             if (savedProject.notesCreated) {
@@ -208,6 +213,7 @@ class NotesEditorViewModel
                     projectName = savedProject.name,
                     notes = if (shouldApplySavedNotes) savedProject.notes else state.notes,
                     isMissingProject = false,
+                    saveFailed = false,
                 )
             }
             return true
@@ -222,6 +228,13 @@ class NotesEditorViewModel
                     delay(DEBOUNCE_MS)
                     persistNotes(loadedProjectId, notes)
                 }
+        }
+
+        fun discardChanges() {
+            saveJob?.cancel()
+            hasLocalEdits = false
+            clearSavedDraft()
+            _uiState.update { it.copy(notes = persistedNotes, saveFailed = false) }
         }
 
         private fun saveDraft(

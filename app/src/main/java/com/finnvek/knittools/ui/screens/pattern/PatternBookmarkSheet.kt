@@ -28,6 +28,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -168,15 +169,17 @@ internal fun PatternBookmarkSheet(
         )
     }
     renameBookmark?.let { bookmark ->
-        PatternBookmarkNameDialog(
-            title = stringResource(R.string.pattern_bookmark_rename_title),
-            initialName = bookmark.name,
-            onDismiss = { renameBookmarkId = null },
-            onConfirm = { name ->
-                actions.onRename(bookmark.id, name)
-                renameBookmarkId = null
-            },
-        )
+        key(bookmark.id) {
+            PatternBookmarkNameDialog(
+                title = stringResource(R.string.pattern_bookmark_rename_title),
+                initialName = bookmark.name,
+                onDismiss = { renameBookmarkId = null },
+                onConfirm = { name ->
+                    actions.onRename(bookmark.id, name)
+                    renameBookmarkId = null
+                },
+            )
+        }
     }
     deleteBookmark?.let { bookmark ->
         AlertDialog(
@@ -311,7 +314,7 @@ private fun PatternBookmarkNameDialog(
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit,
 ) {
-    var name by remember(initialName) { mutableStateOf(initialName) }
+    var name by rememberSaveable(initialName) { mutableStateOf(initialName) }
     val trimmedName = name.trim()
     val empty = trimmedName.isEmpty()
     val tooLong = trimmedName.length > PATTERN_BOOKMARK_NAME_MAX_LENGTH

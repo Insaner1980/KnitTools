@@ -359,14 +359,7 @@ internal class PatternImageImportViewModel
         ) = withContext(NonCancellable) {
             withContext(ioDispatcher) { storage.deleteImportSession(context, projectId, sessionId) }
             clearSavedState()
-            _uiState.update {
-                it.copy(
-                    selection = PatternImageSelection(),
-                    phase = phase,
-                    progress = null,
-                    closeReady = true,
-                )
-            }
+            _uiState.value = PatternImageImportUiState(phase = phase, closeReady = true)
         }
 
         private fun updateSelection(transform: (PatternImageSelection) -> PatternImageSelection) {

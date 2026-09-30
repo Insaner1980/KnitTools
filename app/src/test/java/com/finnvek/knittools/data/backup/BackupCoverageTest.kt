@@ -1,5 +1,6 @@
 package com.finnvek.knittools.data.backup
 
+import com.finnvek.knittools.data.local.KNITTOOLS_DATABASE_VERSION
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -10,6 +11,7 @@ import java.io.File
 
 class BackupCoverageTest {
     @Test fun formatCoversEveryCurrentRoomTable() {
+        assertEquals(25, KNITTOOLS_DATABASE_VERSION)
         val schema = File("schemas/com.finnvek.knittools.data.local.KnitToolsDatabase/25.json")
         val root =
             BackupFormat.json

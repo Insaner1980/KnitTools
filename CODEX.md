@@ -148,7 +148,7 @@ Use [`CLAUDE.md`](CLAUDE.md) when product wording, visual direction, or UX struc
 ## Verification
 
 - Prefer the smallest useful check
-- Project-local PowerShell wrappers are mostly short `tools/*.ps1` scripts; check wrappers delegate to `C:\Dev\Android-check\tools\InvokeProjectCheck.ps1`, `ad` delegates to `C:\Dev\Android-check\tools\InstallDebugToDevice.ps1`, and release-surface wrappers are repo-local.
+- Project-local PowerShell wrappers are mostly short `tools/*.ps1` scripts; check wrappers delegate to `tools/InvokeProjectCheck.ps1` and `ad` to `tools/InstallDebugToDevice.ps1` under `ANDROID_CHECK_ROOT` when set, otherwise under `C:\Dev\Android-check`. An explicitly invalid root fails without fallback. Release-surface wrappers are repo-local.
 - `lc` runs ktlint, detekt, and debug Android lint into `reports/ktlint.txt`, `reports/detekt.txt`, and `reports/lint.txt`; the shared checker parses fresh analyzer-owned reports separately, surfaces Detekt baseline entries and toolchain diagnostics, records the before/after Git and lint-input fingerprints in the run manifest plus `reports/input-state.txt`, and fails if lint inputs change during execution. `lc -Full` also runs release lint, while `lc -Fresh` adds `--rerun-tasks --no-build-cache` for an explicit uncached audit.
 - `ad`, `ac`, `dc`, `ss`, `ds`, `ms`, `os`, `ql`, `db`, `pc`, `cs`, `cr`, `ga`, `sentry`, `rs`, `rst`, and `sc` are project-local wrappers; use `-PlanOnly` or `-ResolveOnly` for dry checks where supported
 - `ad` builds `assembleDebug`, resolves `adb.exe` from `local.properties` `sdk.dir`, and installs `app/build/outputs/apk/debug/app-debug.apk` with `adb install -r`; use `ad -NoBuild` to install an already-built APK

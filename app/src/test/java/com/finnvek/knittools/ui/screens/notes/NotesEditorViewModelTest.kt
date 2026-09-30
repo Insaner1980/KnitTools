@@ -321,6 +321,58 @@ class NotesEditorViewModelTest {
         }
 
     @Test
+    fun `autosave failure is visible and retry preserves the merge base and clears the error`() =
+        runTest {
+            val project = CounterProject(id = 1L, name = "Test", notes = "Base", notesCreated = true)
+            val handle = SavedStateHandle(mapOf("projectId" to 1L))
+            val projects = MutableStateFlow(project)
+            every { repository.observeProject(1L) } returns projects
+            val viewModel = NotesEditorViewModel(repository, proManager, applicationScope, handle)
+            runCurrent()
+            viewModel.onNotesChanged("Local edit")
+            advanceUntilIdle()
+            assertTrue(viewModel.uiState.value.saveFailed)
+            assertEquals("Local edit", handle.get<String>("notesDraft"))
+            projects.value = project.copy(notes = "External edit")
+            runCurrent()
+            assertEquals("Local edit", viewModel.uiState.value.notes)
+            coEvery { repository.saveProjectNotes(1L, "Base", "Local edit", false) } returns
+                ProjectNotesSaveResult.Saved(project.copy(notes = "External edit\n\nLocal edit"))
+            var exits = 0
+            viewModel.saveImmediately { exits++ }
+            advanceUntilIdle()
+            assertEquals(1, exits)
+            assertFalse(viewModel.uiState.value.saveFailed)
+            assertEquals("External edit\n\nLocal edit", viewModel.uiState.value.notes)
+            assertNull(handle.get<String>("notesDraft"))
+            assertNull(handle.get<String>("notesDraftBase"))
+        }
+
+    @Test
+    fun `explicit discard cancels debounce and prevents the final persistence flush`() =
+        runTest {
+            val project = CounterProject(id = 1L, name = "Test", notes = "Base", notesCreated = true)
+            val handle = SavedStateHandle(mapOf("projectId" to 1L))
+            every { repository.observeProject(1L) } returns flowOf(project)
+            val viewModel = NotesEditorViewModel(repository, proManager, applicationScope, handle)
+            runCurrent()
+            viewModel.onNotesChanged("Failed edit")
+            viewModel.saveImmediately()
+            advanceUntilIdle()
+            assertTrue(viewModel.uiState.value.saveFailed)
+            viewModel.onNotesChanged("Later edit")
+            viewModel.discardChanges()
+            val store = androidx.lifecycle.ViewModelStore()
+            store.put("editor", viewModel)
+            store.clear()
+            advanceUntilIdle()
+            assertNull(handle.get<String>("notesDraft"))
+            assertNull(handle.get<String>("notesDraftBase"))
+            assertFalse(viewModel.uiState.value.saveFailed)
+            coVerify(exactly = 1) { repository.saveProjectNotes(any(), any(), any(), any()) }
+        }
+
+    @Test
     fun `expired access preserves a previously used but now empty notes surface`() =
         runTest {
             val entitlement = ProState(status = ProStatus.TRIAL_EXPIRED)

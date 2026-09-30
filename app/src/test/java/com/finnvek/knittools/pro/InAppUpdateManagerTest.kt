@@ -134,6 +134,32 @@ class InAppUpdateManagerTest {
             }
         }
 
+    @Test
+    fun `downloaded state survives activity cleanup and failed installation remains retryable`() {
+        val updateInfo = mockk<AppUpdateInfo> { every { installStatus() } returns InstallStatus.DOWNLOADED }
+        val install = pendingTask<Void>()
+        every { appUpdateManager.appUpdateInfo } returns successTask(updateInfo)
+        every { appUpdateManager.completeUpdate() } returns install.task
+        val manager = InAppUpdateManager(appUpdateManager)
+
+        manager.checkDownloadedOnResume()
+        assertEquals(1L, manager.downloadedUpdatePromptId.value)
+        manager.cleanup()
+        manager.checkDownloadedOnResume()
+        assertEquals(1L, manager.downloadedUpdatePromptId.value)
+
+        manager.completeUpdate()
+        install.fail(IllegalStateException("install failed"))
+        assertEquals(2L, manager.downloadedUpdatePromptId.value)
+        manager.cleanup()
+        manager.checkDownloadedOnResume()
+        assertEquals(2L, manager.downloadedUpdatePromptId.value)
+
+        every { appUpdateManager.completeUpdate() } returns mockk(relaxed = true)
+        manager.completeUpdate()
+        verify(exactly = 2) { appUpdateManager.completeUpdate() }
+    }
+
     private fun flexibleUpdateInfo(): AppUpdateInfo =
         mockk {
             every { updateAvailability() } returns UpdateAvailability.UPDATE_AVAILABLE
@@ -180,6 +206,10 @@ class InAppUpdateManagerTest {
 
         fun succeed(value: T) {
             successListeners.forEach { it.onSuccess(value) }
+        }
+
+        fun fail(error: Exception) {
+            failureListeners.forEach { it.onFailure(error) }
         }
     }
 }

@@ -224,7 +224,8 @@ export function createTokenStore(firestore: Firestore): RavelryTokenStore {
       const ref = collection.doc(token.uid);
       return firestore.runTransaction(async (transaction) => {
         const snapshot = await transaction.get(ref);
-        const current = toStoredToken(snapshot.data());
+        const currentData = snapshot.data();
+        const current = toStoredToken(currentData);
         if (!hasSameCredentials(current, expectedToken)) {
           return null;
         }
@@ -244,7 +245,13 @@ export function createTokenStore(firestore: Firestore): RavelryTokenStore {
             : {}),
           connectionGeneration: current.connectionGeneration ?? 0,
         };
-        transaction.set(ref, withoutUndefinedValues(persisted));
+        const pending = toPendingToken(currentData);
+        transaction.set(ref, {
+          ...withoutUndefinedValues(persisted),
+          ...(pending && (pending.token.connectionGeneration ?? 0) === persisted.connectionGeneration
+            ? { pending: currentData?.pending }
+            : {}),
+        });
         return persisted;
       });
     },

@@ -1,5 +1,6 @@
 package com.finnvek.knittools.data.backup
 
+import com.finnvek.knittools.data.local.MAX_COMPLETED_SESSIONS
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
 import org.junit.Assert.assertEquals
@@ -7,6 +8,17 @@ import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class BackupBudgetTest {
+    @Test fun fullNativeHistoryFitsWithoutRelaxingTheAggregateIdentityBudget() {
+        val budget = BackupBudget()
+        budget.addRow("counter_projects")
+        repeat(MAX_COMPLETED_SESSIONS.toInt()) { budget.addRow("sessions") }
+        repeat((BackupLimits.MAX_TOTAL_IDENTITIES - MAX_COMPLETED_SESSIONS - 1).toInt()) {
+            budget.addRow("counter_history")
+        }
+        val failure = assertThrows(BackupException::class.java) { budget.addRow("counter_history") }
+        assertEquals(BackupError.VALIDATION, failure.error)
+    }
+
     @Test fun sessionsHaveAnIndependentCeilingThatCustomBudgetsCannotRelax() {
         for (trackIdentities in listOf(true, false)) {
             val budget =

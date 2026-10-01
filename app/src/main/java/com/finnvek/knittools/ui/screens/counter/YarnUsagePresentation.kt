@@ -1,5 +1,6 @@
 package com.finnvek.knittools.ui.screens.counter
 
+import android.icu.text.PluralRules
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -9,6 +10,8 @@ import com.finnvek.knittools.domain.calculator.YarnUsageCalculator
 import com.finnvek.knittools.domain.model.YarnUsageAmounts
 import com.finnvek.knittools.domain.model.YarnUsageUnit
 import com.finnvek.knittools.ui.components.rememberCurrentLocale
+import java.text.NumberFormat
+import java.util.Locale
 import kotlin.math.abs
 
 internal fun YarnUsageUnit.titleResource(): Int =
@@ -36,9 +39,21 @@ internal fun yarnUsageAmount(
         YarnUsageUnit.SKEINS ->
             pluralStringResource(
                 R.plurals.yarn_usage_skeins_format,
-                if (value == 1.0 || (locale.language in listOf("fr", "pt") && value < 2.0)) 1 else 2,
+                skeinPluralQuantity(formatted, locale),
                 formatted,
             )
+    }
+}
+
+internal fun skeinPluralQuantity(
+    formatted: String,
+    locale: Locale,
+): Int {
+    val displayedValue = checkNotNull(NumberFormat.getNumberInstance(locale).parse(formatted)).toDouble()
+    return when (PluralRules.forLocale(locale).select(displayedValue)) {
+        "one" -> 1
+        "many" -> 1_000_000
+        else -> 2
     }
 }
 

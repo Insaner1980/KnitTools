@@ -28,6 +28,7 @@ class BackupProviderIoTest {
     @Test fun stalledOpenIsCancelledAtTheNoProgressDeadline() =
         runBlocking {
             val released = CountDownLatch(1)
+            val allowCancellation = CountDownLatch(1)
             val cancellations = AtomicInteger()
             val request =
                 TestRequest(
@@ -36,16 +37,23 @@ class BackupProviderIoTest {
                         throw IOException("open cancelled")
                     },
                     cancelOpen = {
+                        assertTrue(allowCancellation.await(2, TimeUnit.SECONDS))
                         cancellations.incrementAndGet()
                         released.countDown()
                     },
                 )
             val io = providerIo(request)
 
-            val failure = runCatching { io.read(mockk(), temporary.newFile(), 1024) }.exceptionOrNull()
+            try {
+                val failure = runCatching { io.read(mockk(), temporary.newFile(), 1024) }.exceptionOrNull()
 
-            assertTrue(failure is IOException)
-            assertTrue(cancellations.get() > 0)
+                assertTrue(failure is IOException)
+                allowCancellation.countDown()
+                assertTrue("Provider open cancellation did not finish", released.await(2, TimeUnit.SECONDS))
+                assertTrue(cancellations.get() > 0)
+            } finally {
+                allowCancellation.countDown()
+            }
         }
 
     @Test fun zeroAndPartialReadStallsCloseTheDescriptorAndFail() =

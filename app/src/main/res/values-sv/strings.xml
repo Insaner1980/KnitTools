@@ -118,8 +118,14 @@
     <string name="n_selected">%d valda</string>
     <string name="select_all">Välj alla</string>
     <string name="select_photo">Välj foto</string>
-    <string name="complete_n_projects">Slutföra %d projekt? De flyttas till dina färdiga projekt.</string>
-    <string name="delete_n_projects">Ta bort %d projekt? Detta kan inte ångras.</string>
+    <plurals name="complete_n_projects">
+        <item quantity="one">Slutföra %d projekt? Det flyttas till dina färdiga projekt.</item>
+        <item quantity="other">Slutföra %d projekt? De flyttas till dina färdiga projekt.</item>
+    </plurals>
+    <plurals name="delete_n_projects">
+        <item quantity="one">Ta bort %d projekt? Detta kan inte ångras.</item>
+        <item quantity="other">Ta bort %d projekt? Detta kan inte ångras.</item>
+    </plurals>
     <plurals name="rows_format">
         <item quantity="one">%1$d varv</item>
         <item quantity="other">%1$d varv</item>
@@ -305,7 +311,10 @@
     <string name="pattern_repeat_optional">Mönsterrapport (valfritt)</string>
     <string name="edge_stitches_optional">Kantmaskor totalt</string>
     <string name="edge_stitches_total_format">Kantmaskor totalt: %1$d</string>
-    <string name="stitches_result">%d maskor</string>
+    <plurals name="stitches_result">
+        <item quantity="one">%d maska</item>
+        <item quantity="other">%d maskor</item>
+    </plurals>
     <string name="actual_width">Faktisk bredd: %1$s %2$s</string>
     <string name="adjusted_down">Avrundat nedåt: %1$d m (%2$s %3$s)</string>
     <string name="adjusted_up">Avrundat uppåt: %1$d m (%2$s %3$s)</string>
@@ -385,8 +394,8 @@
     <!-- Instruction parser -->
     <string name="paste_instruction">Klistra in instruktion</string>
     <string name="instruction_hint">Klistra in din stickinstruktion här</string>
-    <string name="instruction_hint_increase">t.ex. "Öka 12 maskor jämnt fördelat över 96 maskor"</string>
-    <string name="instruction_hint_gauge">t.ex. "22 maskor och 30 varv per 10 cm" eller "bredd 30 cm, 22 maskor"</string>
+    <string name="instruction_hint_increase">Endast engelska instruktioner, t.ex. \"Increase 12 stitches evenly across 96 stitches\"</string>
+    <string name="instruction_hint_gauge">Endast engelska instruktioner, t.ex. \"22 stitches and 30 rows per 10cm\" eller \"width 30 cm, 22 stitches\"</string>
     <string name="parsing_instruction">Tolkar…</string>
     <string name="instruction_parsed">Värden ifyllda från instruktionen</string>
     <string name="instruction_parse_failed">Kunde inte förstå instruktionen — försök formulera om den</string>
@@ -574,7 +583,7 @@
     <string name="edit_reminder">Redigera påminnelse</string>
     <string name="no_reminders">Inga påminnelser ännu</string>
     <string name="delete_reminder_title">Ta bort påminnelse?</string>
-    <string name="delete_reminder_confirm">Ta bort påminnelsen "%1$s"?</string>
+    <string name="delete_reminder_confirm">Ta bort påminnelsen \"%1$s\"?</string>
     <string name="row_number">Varvnummer</string>
     <string name="reminder_message">Meddelande</string>
     <string name="reminder_message_hint">t.ex. Byt till hällapp</string>
@@ -627,7 +636,10 @@
         <item quantity="other">Ta bort %1$d mönster från biblioteket?\n\nEventuella PDF-anteckningar som gjorts i biblioteket för de valda mönstren tas också bort och visas inte längre i projekt. PDF-filer som redan är bifogade till projekt och PDF-anteckningar som gjorts i projekten behålls.</item>
     </plurals>
     <string name="delete_pattern">Ta bort mönster</string>
-    <string name="delete_yarn_cards_confirm">Ta bort %d garnkort?</string>
+    <plurals name="delete_yarn_cards_confirm">
+        <item quantity="one">Ta bort %d garnkort?</item>
+        <item quantity="other">Ta bort %d garnkort?</item>
+    </plurals>
     <string name="delete_yarn_card">Ta bort garnkort</string>
     <string name="no_photos">Inga bilder ännu</string>
     <string name="rename_photo">Byt namn på foto</string>
@@ -685,7 +697,10 @@
     <string name="ravelry_backend_unavailable">Ravelry-anslutningen är tillfälligt otillgänglig.</string>
     <string name="ravelry_disconnecting">Kopplar från Ravelry…</string>
     <string name="difficulty_format">%.1f / 5</string>
-    <string name="yardage_format">%d yard</string>
+    <plurals name="yardage_format">
+        <item quantity="one">%d yard</item>
+        <item quantity="other">%d yard</item>
+    </plurals>
 
     <!-- Info tips -->
     <string name="tip_pattern_repeat_title">Mönsterrapport</string>

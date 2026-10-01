@@ -105,7 +105,10 @@ class ArchitectureSingleSourceSourceTest {
         assertFalse(ravelryDetailScreen.contains("label = \"Yardage\""))
         assertFalse(ravelryDetailScreen.contains("value = \"${'$'}it yards\""))
         assertTrue(ravelryDetailScreen.contains("R.string.pattern_detail_yardage"))
-        assertTrue(ravelryDetailScreen.contains("R.string.yardage_format"))
+        assertTrue(
+            Regex("""pluralStringResource\(\s*R\.plurals\.yardage_format,\s*it,\s*it\s*\)""")
+                .containsMatchIn(ravelryDetailScreen),
+        )
     }
 
     @Test

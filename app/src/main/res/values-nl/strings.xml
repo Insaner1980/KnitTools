@@ -118,8 +118,14 @@
     <string name="n_selected">%d geselecteerd</string>
     <string name="select_all">Alles selecteren</string>
     <string name="select_photo">Foto selecteren</string>
-    <string name="complete_n_projects">%d projecten voltooien? Ze worden naar je voltooide projecten verplaatst.</string>
-    <string name="delete_n_projects">%d projecten verwijderen? Dit kan niet ongedaan worden gemaakt.</string>
+    <plurals name="complete_n_projects">
+        <item quantity="one">%d project voltooien? Het wordt naar je voltooide projecten verplaatst.</item>
+        <item quantity="other">%d projecten voltooien? Ze worden naar je voltooide projecten verplaatst.</item>
+    </plurals>
+    <plurals name="delete_n_projects">
+        <item quantity="one">%d project verwijderen? Dit kan niet ongedaan worden gemaakt.</item>
+        <item quantity="other">%d projecten verwijderen? Dit kan niet ongedaan worden gemaakt.</item>
+    </plurals>
     <plurals name="rows_format">
         <item quantity="one">%1$d toer</item>
         <item quantity="other">%1$d toeren</item>
@@ -305,7 +311,10 @@
     <string name="pattern_repeat_optional">Patroonherhaling (optioneel)</string>
     <string name="edge_stitches_optional">Kantsteken totaal</string>
     <string name="edge_stitches_total_format">Kantsteken totaal: %1$d</string>
-    <string name="stitches_result">%d steken</string>
+    <plurals name="stitches_result">
+        <item quantity="one">%d steek</item>
+        <item quantity="other">%d steken</item>
+    </plurals>
     <string name="actual_width">Werkelijke breedte: %1$s %2$s</string>
     <string name="adjusted_down">Naar beneden aangepast: %1$d st (%2$s %3$s)</string>
     <string name="adjusted_up">Naar boven aangepast: %1$d st (%2$s %3$s)</string>
@@ -385,8 +394,8 @@
     <!-- Instruction parser -->
     <string name="paste_instruction">Instructie plakken</string>
     <string name="instruction_hint">Plak hier je brei-instructie</string>
-    <string name="instruction_hint_increase">bijv. "Meerder 12 steken gelijkmatig verdeeld over 96 steken"</string>
-    <string name="instruction_hint_gauge">bijv. "22 steken en 30 toeren per 10 cm" of "breedte 30 cm, 22 steken"</string>
+    <string name="instruction_hint_increase">Alleen Engelse instructies, bijv. \"Increase 12 stitches evenly across 96 stitches\"</string>
+    <string name="instruction_hint_gauge">Alleen Engelse instructies, bijv. \"22 stitches and 30 rows per 10cm\" of \"width 30 cm, 22 stitches\"</string>
     <string name="parsing_instruction">Verwerken…</string>
     <string name="instruction_parsed">Waarden ingevuld op basis van instructie</string>
     <string name="instruction_parse_failed">De instructie werd niet begrepen — probeer het anders te formuleren</string>
@@ -627,7 +636,10 @@
         <item quantity="other">%1$d patronen uit de bibliotheek verwijderen?\n\nEventuele PDF-annotaties die in de bibliotheek voor de geselecteerde patronen zijn gemaakt, worden ook verwijderd en zijn niet meer zichtbaar in projecten. PDF-bestanden die al aan projecten zijn gekoppeld en PDF-annotaties die binnen projecten zijn gemaakt, blijven behouden.</item>
     </plurals>
     <string name="delete_pattern">Patroon verwijderen</string>
-    <string name="delete_yarn_cards_confirm">%d garenkaarten verwijderen?</string>
+    <plurals name="delete_yarn_cards_confirm">
+        <item quantity="one">%d garenkaart verwijderen?</item>
+        <item quantity="other">%d garenkaarten verwijderen?</item>
+    </plurals>
     <string name="delete_yarn_card">Garenkaart verwijderen</string>
     <string name="no_photos">Nog geen foto\'s</string>
     <string name="rename_photo">Foto hernoemen</string>
@@ -685,7 +697,10 @@
     <string name="ravelry_backend_unavailable">Ravelry-verbinding is tijdelijk niet beschikbaar.</string>
     <string name="ravelry_disconnecting">Verbinding met Ravelry verbreken…</string>
     <string name="difficulty_format">%.1f / 5</string>
-    <string name="yardage_format">%d yard</string>
+    <plurals name="yardage_format">
+        <item quantity="one">%d yard</item>
+        <item quantity="other">%d yard</item>
+    </plurals>
 
     <!-- Info tips -->
     <string name="tip_pattern_repeat_title">Patroonherhaling</string>

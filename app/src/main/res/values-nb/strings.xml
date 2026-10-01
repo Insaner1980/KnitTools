@@ -118,8 +118,14 @@
     <string name="n_selected">%d valgt</string>
     <string name="select_all">Velg alle</string>
     <string name="select_photo">Velg bilde</string>
-    <string name="complete_n_projects">Fullføre %d prosjekter? De flyttes til fullførte prosjekter.</string>
-    <string name="delete_n_projects">Slette %d prosjekter? Dette kan ikke angres.</string>
+    <plurals name="complete_n_projects">
+        <item quantity="one">Fullføre %d prosjekt? Det flyttes til fullførte prosjekter.</item>
+        <item quantity="other">Fullføre %d prosjekter? De flyttes til fullførte prosjekter.</item>
+    </plurals>
+    <plurals name="delete_n_projects">
+        <item quantity="one">Slette %d prosjekt? Dette kan ikke angres.</item>
+        <item quantity="other">Slette %d prosjekter? Dette kan ikke angres.</item>
+    </plurals>
     <plurals name="rows_format">
         <item quantity="one">%1$d rad</item>
         <item quantity="other">%1$d rader</item>
@@ -305,7 +311,10 @@
     <string name="pattern_repeat_optional">Mønsterrapport (valgfritt)</string>
     <string name="edge_stitches_optional">Kantmasker totalt</string>
     <string name="edge_stitches_total_format">Kantmasker totalt: %1$d</string>
-    <string name="stitches_result">%d masker</string>
+    <plurals name="stitches_result">
+        <item quantity="one">%d maske</item>
+        <item quantity="other">%d masker</item>
+    </plurals>
     <string name="actual_width">Faktisk bredde: %1$s %2$s</string>
     <string name="adjusted_down">Justert ned: %1$d m (%2$s %3$s)</string>
     <string name="adjusted_up">Justert opp: %1$d m (%2$s %3$s)</string>
@@ -385,8 +394,8 @@
     <!-- Instruction parser -->
     <string name="paste_instruction">Lim inn instruksjon</string>
     <string name="instruction_hint">Lim inn strikkeinstruksjonen her</string>
-    <string name="instruction_hint_increase">f.eks. "Øk 12 masker jevnt fordelt over 96 masker"</string>
-    <string name="instruction_hint_gauge">f.eks. "22 masker og 30 rader per 10 cm" eller "bredde 30 cm, 22 masker"</string>
+    <string name="instruction_hint_increase">Kun engelske instruksjoner, f.eks. \"Increase 12 stitches evenly across 96 stitches\"</string>
+    <string name="instruction_hint_gauge">Kun engelske instruksjoner, f.eks. \"22 stitches and 30 rows per 10cm\" eller \"width 30 cm, 22 stitches\"</string>
     <string name="parsing_instruction">Tolker…</string>
     <string name="instruction_parsed">Verdier fylt inn fra instruksjon</string>
     <string name="instruction_parse_failed">Forsto ikke instruksjonen — prøv å formulere den annerledes</string>
@@ -627,7 +636,10 @@
         <item quantity="other">Slette %1$d oppskrifter fra biblioteket?\n\nEventuelle PDF-merknader som er laget i biblioteket for de valgte oppskriftene, slettes også og vises ikke lenger i prosjekter. PDF-er som allerede er vedlagt prosjekter, og PDF-merknader som er laget i prosjektene, beholdes.</item>
     </plurals>
     <string name="delete_pattern">Slett oppskrift</string>
-    <string name="delete_yarn_cards_confirm">Slette %d garnkort?</string>
+    <plurals name="delete_yarn_cards_confirm">
+        <item quantity="one">Slette %d garnkort?</item>
+        <item quantity="other">Slette %d garnkort?</item>
+    </plurals>
     <string name="delete_yarn_card">Slett garnkort</string>
     <string name="no_photos">Ingen bilder ennå</string>
     <string name="rename_photo">Gi nytt navn til bilde</string>
@@ -685,7 +697,10 @@
     <string name="ravelry_backend_unavailable">Ravelry-tilkoblingen er midlertidig utilgjengelig.</string>
     <string name="ravelry_disconnecting">Kobler fra Ravelry…</string>
     <string name="difficulty_format">%.1f / 5</string>
-    <string name="yardage_format">%d yard</string>
+    <plurals name="yardage_format">
+        <item quantity="one">%d yard</item>
+        <item quantity="other">%d yard</item>
+    </plurals>
 
     <!-- Info tips -->
     <string name="tip_pattern_repeat_title">Mønsterrapport</string>

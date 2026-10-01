@@ -3,6 +3,11 @@ package com.finnvek.knittools.data.local
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -25,6 +30,95 @@ class SessionInsightsDatabaseTest {
     }
 
     @After fun close() = database.close()
+
+    @Test fun sessionSnapshotSurvivesProjectDeletionBetweenBatches() = checkConcurrentReplacement(restore = false)
+
+    @Test fun sessionSnapshotSurvivesHistoryReplacementBetweenBatches() = checkConcurrentReplacement(restore = true)
+
+    private fun checkConcurrentReplacement(restore: Boolean) =
+        runTest {
+            val runner = RoomDatabaseTransactionRunner(database)
+            val dao = database.sessionDao()
+            runner.run { seedHistory(projectId = 1, seconds = 60) }
+            val firstBatchRead = CompletableDeferred<Unit>()
+            val finishRead = CompletableDeferred<Unit>()
+            val read =
+                async {
+                    runner.run {
+                        assertTrue(dao.hasAnySessions())
+                        assertEquals(listOf(SessionProjectActivity(1, 0)), dao.getSessionProjectActivity(null))
+                        assertEquals(0L, dao.getFirstSessionStart(null))
+                        assertEquals(256, dao.getInsightFirstDateBatch(null, Long.MIN_VALUE, 129600000L).size)
+                        val first = dao.getInsightSessionBatch(Long.MIN_VALUE)
+                        assertEquals(256, first.size)
+                        firstBatchRead.complete(Unit)
+                        finishRead.await()
+                        val last = dao.getInsightSessionBatch(first.last().id)
+                        assertEquals(1, last.size)
+                        assertTrue(dao.getInsightSessionBatch(last.last().id).isEmpty())
+                        first.sumOf { it.durationSeconds } + last.sumOf { it.durationSeconds }
+                    }
+                }
+            firstBatchRead.await()
+            val write =
+                async(start = CoroutineStart.UNDISPATCHED) {
+                    runner.run {
+                        database.counterProjectDao().delete(1)
+                        if (restore) seedHistory(projectId = 2, seconds = 120)
+                    }
+                }
+            finishRead.complete(Unit)
+            assertEquals(257L * 60, read.await())
+            write.await()
+            assertEquals(if (restore) 257L else 0L, dao.countCompletedSessions())
+            assertEquals(
+                if (restore) listOf(SessionProjectActivity(2, 0)) else emptyList<SessionProjectActivity>(),
+                dao.getSessionProjectActivity(null),
+            )
+        }
+
+    @Test fun cancellingSnapshotReleasesRoomTransactionForWaitingWriter() =
+        runTest {
+            val runner = RoomDatabaseTransactionRunner(database)
+            runner.run { seedHistory(projectId = 1, seconds = 60) }
+            val firstBatchRead = CompletableDeferred<Unit>()
+            val read =
+                async {
+                    runner.run {
+                        database.sessionDao().getInsightSessionBatch(Long.MIN_VALUE)
+                        firstBatchRead.complete(Unit)
+                        awaitCancellation()
+                    }
+                }
+            firstBatchRead.await()
+            val write =
+                async(start = CoroutineStart.UNDISPATCHED) {
+                    runner.run { database.counterProjectDao().delete(1) }
+                }
+            read.cancelAndJoin()
+            write.await()
+            assertEquals(0L, database.sessionDao().countCompletedSessions())
+        }
+
+    private suspend fun seedHistory(
+        projectId: Long,
+        seconds: Long,
+    ) {
+        database.counterProjectDao().insert(CounterProjectEntity(id = projectId, name = "Synthetic"))
+        repeat(257) {
+            database.sessionDao().insert(
+                SessionEntity(
+                    projectId = projectId,
+                    startedAt = 0,
+                    endedAt = seconds * 1000,
+                    startRow = 0,
+                    endRow = 1,
+                    durationMinutes = (seconds / 60).toInt(),
+                    durationSeconds = seconds,
+                ),
+            )
+        }
+    }
 
     @Test fun keysetBatchesCoverAllRowsAndApplyProjectAndEffectiveEndBoundaries() =
         runTest {

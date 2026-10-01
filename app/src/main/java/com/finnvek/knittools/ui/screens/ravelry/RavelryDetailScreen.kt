@@ -33,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -330,7 +331,7 @@ private fun PatternDetailRows(pattern: PatternDetail) {
         (pattern.yardage ?: pattern.yardageMax)?.let {
             DetailRow(
                 label = stringResource(R.string.pattern_detail_yardage),
-                value = stringResource(R.string.yardage_format, it),
+                value = pluralStringResource(R.plurals.yardage_format, it, it),
             )
         }
         pattern.sizesAvailable?.let {

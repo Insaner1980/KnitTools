@@ -49,6 +49,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -380,7 +381,7 @@ private fun MyYarnDeleteDialog(
 ) {
     ConfirmationDialog(
         title = stringResource(R.string.delete_yarn_card),
-        message = stringResource(R.string.delete_yarn_cards_confirm, selectedCount),
+        message = pluralStringResource(R.plurals.delete_yarn_cards_confirm, selectedCount, selectedCount),
         confirmText = stringResource(R.string.delete),
         isDestructive = true,
         onConfirm = onConfirm,

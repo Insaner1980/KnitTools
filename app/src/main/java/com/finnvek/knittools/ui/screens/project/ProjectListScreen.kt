@@ -752,7 +752,7 @@ private fun MultiCompleteDialog(
     ScrollableFormDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.complete_project)) },
-        text = { Text(stringResource(R.string.complete_n_projects, selectedCount)) },
+        text = { Text(pluralStringResource(R.plurals.complete_n_projects, selectedCount, selectedCount)) },
         confirmButton = {
             TextButton(onClick = onConfirm) {
                 Text(stringResource(R.string.complete_project))
@@ -774,7 +774,7 @@ private fun MultiDeleteDialog(
 ) {
     ConfirmationDialog(
         title = stringResource(R.string.delete_project),
-        message = stringResource(R.string.delete_n_projects, selectedCount),
+        message = pluralStringResource(R.plurals.delete_n_projects, selectedCount, selectedCount),
         confirmText = stringResource(R.string.delete_project),
         isDestructive = true,
         onConfirm = onConfirm,

@@ -676,7 +676,7 @@ tasks.register<JacocoReport>("jacocoDebugUnitTestReport") {
             fileTree(layout.buildDirectory.dir("intermediates/built_in_kotlinc/debug/compileDebugKotlin/classes")) {
                 exclude(*jacocoCoverageExclusions.toTypedArray())
             },
-            fileTree(layout.buildDirectory.dir("intermediates/javac/debug/classes")) {
+            fileTree(layout.buildDirectory.dir("intermediates/javac/debug/compileDebugJavaWithJavac/classes")) {
                 exclude(*jacocoCoverageExclusions.toTypedArray())
             },
         ),

@@ -120,8 +120,16 @@
     <string name="n_selected">%d seleccionados</string>
     <string name="select_all">Seleccionar todo</string>
     <string name="select_photo">Seleccionar foto</string>
-    <string name="complete_n_projects">¿Terminar %d proyectos? Se moverán a tus proyectos terminados.</string>
-    <string name="delete_n_projects">¿Eliminar %d proyectos? Esto no se puede deshacer.</string>
+    <plurals name="complete_n_projects">
+        <item quantity="one">¿Terminar %d proyecto? Se moverá a tus proyectos terminados.</item>
+        <item quantity="many">¿Terminar %d proyectos? Se moverán a tus proyectos terminados.</item>
+        <item quantity="other">¿Terminar %d proyectos? Se moverán a tus proyectos terminados.</item>
+    </plurals>
+    <plurals name="delete_n_projects">
+        <item quantity="one">¿Eliminar %d proyecto? Esto no se puede deshacer.</item>
+        <item quantity="many">¿Eliminar %d proyectos? Esto no se puede deshacer.</item>
+        <item quantity="other">¿Eliminar %d proyectos? Esto no se puede deshacer.</item>
+    </plurals>
     <plurals name="rows_format">
         <item quantity="one">%1$d vuelta</item>
         <item quantity="many">%1$d vueltas</item>
@@ -310,7 +318,11 @@
     <string name="pattern_repeat_optional">Repetición del patrón (opcional)</string>
     <string name="edge_stitches_optional">Puntos de borde totales</string>
     <string name="edge_stitches_total_format">Puntos de borde totales: %1$d</string>
-    <string name="stitches_result">%d puntos</string>
+    <plurals name="stitches_result">
+        <item quantity="one">%d punto</item>
+        <item quantity="many">%d puntos</item>
+        <item quantity="other">%d puntos</item>
+    </plurals>
     <string name="actual_width">Ancho real: %1$s %2$s</string>
     <string name="adjusted_down">Ajustado hacia abajo: %1$d p (%2$s %3$s)</string>
     <string name="adjusted_up">Ajustado hacia arriba: %1$d p (%2$s %3$s)</string>
@@ -390,8 +402,8 @@
     <!-- Instruction parser -->
     <string name="paste_instruction">Pegar instrucción</string>
     <string name="instruction_hint">Pega aquí tu instrucción de tejido</string>
-    <string name="instruction_hint_increase">p. ej., "Aumentar 12 puntos repartidos uniformemente en 96 puntos"</string>
-    <string name="instruction_hint_gauge">p. ej., "22 puntos y 30 vueltas por 10 cm" o "ancho 30 cm, 22 puntos"</string>
+    <string name="instruction_hint_increase">Solo instrucciones en inglés, p. ej. \"Increase 12 stitches evenly across 96 stitches\"</string>
+    <string name="instruction_hint_gauge">Solo instrucciones en inglés, p. ej. \"22 stitches and 30 rows per 10cm\" o \"width 30 cm, 22 stitches\"</string>
     <string name="parsing_instruction">Analizando…</string>
     <string name="instruction_parsed">Valores rellenados a partir de la instrucción</string>
     <string name="instruction_parse_failed">No se pudo entender la instrucción; intenta reformularla</string>
@@ -586,7 +598,7 @@
     <string name="edit_reminder">Editar recordatorio</string>
     <string name="no_reminders">Aún no hay recordatorios</string>
     <string name="delete_reminder_title">¿Eliminar recordatorio?</string>
-    <string name="delete_reminder_confirm">¿Eliminar el recordatorio "%1$s"?</string>
+    <string name="delete_reminder_confirm">¿Eliminar el recordatorio \"%1$s\"?</string>
     <string name="row_number">Número de vuelta</string>
     <string name="reminder_message">Mensaje</string>
     <string name="reminder_message_hint">p. ej., Cambiar al talón</string>
@@ -641,7 +653,11 @@
         <item quantity="other">¿Eliminar %1$d patrones de la biblioteca?\n\nSi hay anotaciones PDF creadas en la biblioteca para los patrones seleccionados, también se eliminarán y dejarán de aparecer en los proyectos. Se conservarán los PDF ya adjuntos a los proyectos y las anotaciones PDF creadas dentro de los proyectos.</item>
     </plurals>
     <string name="delete_pattern">Eliminar patrón</string>
-    <string name="delete_yarn_cards_confirm">¿Eliminar %d fichas de hilo?</string>
+    <plurals name="delete_yarn_cards_confirm">
+        <item quantity="one">¿Eliminar %d ficha de hilo?</item>
+        <item quantity="many">¿Eliminar %d fichas de hilo?</item>
+        <item quantity="other">¿Eliminar %d fichas de hilo?</item>
+    </plurals>
     <string name="delete_yarn_card">Eliminar ficha de hilo</string>
     <string name="no_photos">Aún no hay fotos</string>
     <string name="rename_photo">Renombrar foto</string>
@@ -699,7 +715,11 @@
     <string name="ravelry_backend_unavailable">La conexión con Ravelry no está disponible temporalmente.</string>
     <string name="ravelry_disconnecting">Desconectando Ravelry…</string>
     <string name="difficulty_format">%.1f / 5</string>
-    <string name="yardage_format">%d yardas</string>
+    <plurals name="yardage_format">
+        <item quantity="one">%d yarda</item>
+        <item quantity="many">%d yardas</item>
+        <item quantity="other">%d yardas</item>
+    </plurals>
 
     <!-- Info tips -->
     <string name="tip_pattern_repeat_title">Repetición del patrón</string>

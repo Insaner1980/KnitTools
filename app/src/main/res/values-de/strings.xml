@@ -118,8 +118,14 @@
     <string name="n_selected">%d ausgewählt</string>
     <string name="select_all">Alle auswählen</string>
     <string name="select_photo">Foto auswählen</string>
-    <string name="complete_n_projects">%d Projekte fertigstellen? Sie werden zu deinen fertigen Projekten verschoben.</string>
-    <string name="delete_n_projects">%d Projekte löschen? Dies kann nicht rückgängig gemacht werden.</string>
+    <plurals name="complete_n_projects">
+        <item quantity="one">%d Projekt fertigstellen? Es wird zu deinen fertigen Projekten verschoben.</item>
+        <item quantity="other">%d Projekte fertigstellen? Sie werden zu deinen fertigen Projekten verschoben.</item>
+    </plurals>
+    <plurals name="delete_n_projects">
+        <item quantity="one">%d Projekt löschen? Dies kann nicht rückgängig gemacht werden.</item>
+        <item quantity="other">%d Projekte löschen? Dies kann nicht rückgängig gemacht werden.</item>
+    </plurals>
     <plurals name="rows_format">
         <item quantity="one">%1$d Reihe</item>
         <item quantity="other">%1$d Reihen</item>
@@ -305,7 +311,10 @@
     <string name="pattern_repeat_optional">Rapport (optional)</string>
     <string name="edge_stitches_optional">Randmaschen gesamt</string>
     <string name="edge_stitches_total_format">Randmaschen gesamt: %1$d</string>
-    <string name="stitches_result">%d Maschen</string>
+    <plurals name="stitches_result">
+        <item quantity="one">%d Masche</item>
+        <item quantity="other">%d Maschen</item>
+    </plurals>
     <string name="actual_width">Tatsächliche Breite: %1$s %2$s</string>
     <string name="adjusted_down">Nach unten angepasst: %1$d M (%2$s %3$s)</string>
     <string name="adjusted_up">Nach oben angepasst: %1$d M (%2$s %3$s)</string>
@@ -385,8 +394,8 @@
     <!-- Instruction parser -->
     <string name="paste_instruction">Anweisung einfügen</string>
     <string name="instruction_hint">Füge hier deine Strickanweisung ein</string>
-    <string name="instruction_hint_increase">z. B. "12 Maschen gleichmäßig über 96 Maschen verteilt zunehmen"</string>
-    <string name="instruction_hint_gauge">z. B. "22 Maschen und 30 Reihen pro 10 cm" oder "Breite 30 cm, 22 Maschen"</string>
+    <string name="instruction_hint_increase">Nur englische Anweisungen, z. B. \"Increase 12 stitches evenly across 96 stitches\"</string>
+    <string name="instruction_hint_gauge">Nur englische Anweisungen, z. B. \"22 stitches and 30 rows per 10cm\" oder \"width 30 cm, 22 stitches\"</string>
     <string name="parsing_instruction">Wird analysiert…</string>
     <string name="instruction_parsed">Werte aus der Anweisung übernommen</string>
     <string name="instruction_parse_failed">Die Anweisung konnte nicht verstanden werden — versuche eine andere Formulierung</string>
@@ -627,7 +636,10 @@
         <item quantity="other">%1$d Anleitungen aus der Bibliothek löschen?\n\nFalls für die ausgewählten Anleitungen PDF-Anmerkungen in der Bibliothek erstellt wurden, werden sie ebenfalls gelöscht und nicht mehr in Projekten angezeigt. Bereits an Projekte angehängte PDFs und innerhalb von Projekten erstellte PDF-Anmerkungen bleiben erhalten.</item>
     </plurals>
     <string name="delete_pattern">Anleitung löschen</string>
-    <string name="delete_yarn_cards_confirm">%d Garnkarten löschen?</string>
+    <plurals name="delete_yarn_cards_confirm">
+        <item quantity="one">%d Garnkarte löschen?</item>
+        <item quantity="other">%d Garnkarten löschen?</item>
+    </plurals>
     <string name="delete_yarn_card">Garnkarte löschen</string>
     <string name="no_photos">Noch keine Fotos</string>
     <string name="rename_photo">Foto umbenennen</string>
@@ -685,7 +697,10 @@
     <string name="ravelry_backend_unavailable">Ravelry-Verbindung ist vorübergehend nicht verfügbar.</string>
     <string name="ravelry_disconnecting">Ravelry wird getrennt…</string>
     <string name="difficulty_format">%.1f / 5</string>
-    <string name="yardage_format">%d Yard</string>
+    <plurals name="yardage_format">
+        <item quantity="one">%d Yard</item>
+        <item quantity="other">%d Yard</item>
+    </plurals>
 
     <!-- Info tips -->
     <string name="tip_pattern_repeat_title">Rapport</string>

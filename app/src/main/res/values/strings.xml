@@ -122,8 +122,14 @@
     <string name="n_selected" tools:ignore="PluralsCandidate">%d selected</string>
     <string name="select_all">Select All</string>
     <string name="select_photo">Select photo</string>
-    <string name="complete_n_projects" tools:ignore="PluralsCandidate">Complete %d projects? They will be moved to your completed projects.</string>
-    <string name="delete_n_projects" tools:ignore="PluralsCandidate">Delete %d projects? This cannot be undone.</string>
+    <plurals name="complete_n_projects">
+        <item quantity="one">Complete %d project? It will be moved to your completed projects.</item>
+        <item quantity="other">Complete %d projects? They will be moved to your completed projects.</item>
+    </plurals>
+    <plurals name="delete_n_projects">
+        <item quantity="one">Delete %d project? This cannot be undone.</item>
+        <item quantity="other">Delete %d projects? This cannot be undone.</item>
+    </plurals>
     <plurals name="rows_format">
         <item quantity="one">%1$d row</item>
         <item quantity="other">%1$d rows</item>
@@ -317,7 +323,10 @@
     <string name="pattern_repeat_optional">Pattern repeat (optional)</string>
     <string name="edge_stitches_optional">Edge stitches total</string>
     <string name="edge_stitches_total_format">Edge stitches total: %1$d</string>
-    <string name="stitches_result" tools:ignore="PluralsCandidate">%d stitches</string>
+    <plurals name="stitches_result">
+        <item quantity="one">%d stitch</item>
+        <item quantity="other">%d stitches</item>
+    </plurals>
     <string name="actual_width">Actual width: %1$s %2$s</string>
     <string name="adjusted_down">Adjusted down: %1$d st (%2$s %3$s)</string>
     <string name="adjusted_up">Adjusted up: %1$d st (%2$s %3$s)</string>
@@ -398,8 +407,8 @@
     <!-- Instruction parser -->
     <string name="paste_instruction">Paste instruction</string>
     <string name="instruction_hint">Paste your knitting instruction here</string>
-    <string name="instruction_hint_increase">e.g. "Increase 12 stitches evenly across 96 stitches"</string>
-    <string name="instruction_hint_gauge">e.g. "22 stitches and 30 rows per 10cm" or "width 30 cm, 22 stitches"</string>
+    <string name="instruction_hint_increase">English instructions only, e.g. \"Increase 12 stitches evenly across 96 stitches\"</string>
+    <string name="instruction_hint_gauge">English instructions only, e.g. \"22 stitches and 30 rows per 10cm\" or \"width 30 cm, 22 stitches\"</string>
     <string name="parsing_instruction">Parsing…</string>
     <string name="instruction_parsed">Values filled from instruction</string>
     <string name="instruction_parse_failed">Couldn\'t understand the instruction — try rephrasing</string>
@@ -914,7 +923,10 @@
         <item quantity="other">Delete %1$d patterns from the Library?\n\nAny PDF annotations made in the Library for the selected patterns will also be deleted and will no longer appear in projects. PDFs already attached to projects and PDF annotations made within projects will be kept.</item>
     </plurals>
     <string name="delete_pattern">Delete pattern</string>
-    <string name="delete_yarn_cards_confirm" tools:ignore="PluralsCandidate">Delete %d yarn cards?</string>
+    <plurals name="delete_yarn_cards_confirm">
+        <item quantity="one">Delete %d yarn card?</item>
+        <item quantity="other">Delete %d yarn cards?</item>
+    </plurals>
     <string name="delete_yarn_card">Delete yarn card</string>
     <string name="no_photos">No photos yet</string>
     <string name="rename_photo">Rename photo</string>
@@ -974,7 +986,10 @@
     <string name="ravelry_backend_unavailable">Ravelry connection is temporarily unavailable.</string>
     <string name="ravelry_disconnecting">Disconnecting Ravelry…</string>
     <string name="difficulty_format">%.1f / 5</string>
-    <string name="yardage_format" tools:ignore="PluralsCandidate">%d yards</string>
+    <plurals name="yardage_format">
+        <item quantity="one">%d yard</item>
+        <item quantity="other">%d yards</item>
+    </plurals>
     <string name="pattern_detail_needles">Needles</string>
     <string name="pattern_detail_yardage">Yardage</string>
     <string name="pattern_detail_sizes">Sizes</string>

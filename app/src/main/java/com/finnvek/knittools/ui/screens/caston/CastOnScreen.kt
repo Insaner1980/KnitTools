@@ -24,6 +24,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -202,7 +203,7 @@ private fun CastOnResultSection(
     val actualWidth = formatDecimalForDisplay(result.actualWidth, locale, 1, 1)
     ResultCard(title = stringResource(R.string.result)) {
         AnimatedResultNumber(
-            targetValue = stringResource(R.string.stitches_result, result.stitches),
+            targetValue = pluralStringResource(R.plurals.stitches_result, result.stitches, result.stitches),
         ) { value ->
             Text(
                 text = value,

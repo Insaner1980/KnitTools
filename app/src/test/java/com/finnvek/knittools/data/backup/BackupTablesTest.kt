@@ -2,6 +2,7 @@ package com.finnvek.knittools.data.backup
 
 import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.sqlite.db.SupportSQLiteStatement
+import com.finnvek.knittools.data.local.MAX_COMPLETED_SESSIONS
 import com.finnvek.knittools.domain.model.YARN_CARD_IDS_MAX_CHARACTERS
 import io.mockk.every
 import io.mockk.mockk
@@ -10,6 +11,8 @@ import io.mockk.verifyOrder
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.long
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
 import org.junit.Rule
@@ -18,6 +21,33 @@ import org.junit.rules.TemporaryFolder
 import java.io.File
 
 class BackupTablesTest {
+    @Test fun sessionTablesAcceptOldAndNativeBoundariesAndRejectTheNextRow() {
+        val folder = temporary.newFolder()
+        val file = File(folder, "tables/sessions.jsonl").apply { requireNotNull(parentFile).mkdirs() }
+        val names = listOf("durationSeconds", "id", "projectId", "zoneId")
+        for (count in listOf(10_000L, 10_001L, MAX_COMPLETED_SESSIONS)) {
+            file.bufferedWriter().use { writer ->
+                writer.appendLine(JsonArray(names.map(::JsonPrimitive)).toString())
+                for (id in 1L..count) writer.appendLine("[60,$id,1,\"Europe/Helsinki\"]")
+            }
+            var consumed = 0L
+            BackupTables.read(folder, "sessions", names) { row ->
+                consumed++
+                assertEquals(consumed, row.getValue("id").jsonPrimitive.long)
+                assertEquals(60L, row.getValue("durationSeconds").jsonPrimitive.long)
+            }
+            assertEquals(count, consumed)
+        }
+        file.appendText("[60,${MAX_COMPLETED_SESSIONS + 1},1,\"Europe/Helsinki\"]\n")
+        var consumed = 0L
+        val failure =
+            assertThrows(BackupException::class.java) {
+                BackupTables.read(folder, "sessions", names) { consumed++ }
+            }
+        assertEquals(MAX_COMPLETED_SESSIONS, consumed)
+        assertEquals(BackupError.CORRUPT, failure.error)
+    }
+
     @Test fun sessionReadAndExportShareTheExactBoundaryIncludingDirectReads() {
         val folder = temporary.newFolder()
         val file = File(folder, "tables/sessions.jsonl").apply { requireNotNull(parentFile).mkdirs() }

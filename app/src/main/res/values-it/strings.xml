@@ -120,8 +120,16 @@
     <string name="n_selected">%d selezionati</string>
     <string name="select_all">Seleziona tutto</string>
     <string name="select_photo">Seleziona foto</string>
-    <string name="complete_n_projects">Completare %d progetti? Verranno spostati tra quelli completati.</string>
-    <string name="delete_n_projects">Eliminare %d progetti? Questa azione non può essere annullata.</string>
+    <plurals name="complete_n_projects">
+        <item quantity="one">Completare %d progetto? Verrà spostato tra quelli completati.</item>
+        <item quantity="many">Completare %d progetti? Verranno spostati tra quelli completati.</item>
+        <item quantity="other">Completare %d progetti? Verranno spostati tra quelli completati.</item>
+    </plurals>
+    <plurals name="delete_n_projects">
+        <item quantity="one">Eliminare %d progetto? Questa azione non può essere annullata.</item>
+        <item quantity="many">Eliminare %d progetti? Questa azione non può essere annullata.</item>
+        <item quantity="other">Eliminare %d progetti? Questa azione non può essere annullata.</item>
+    </plurals>
     <plurals name="rows_format">
         <item quantity="one">%1$d ferro</item>
         <item quantity="many">%1$d ferri</item>
@@ -310,7 +318,11 @@
     <string name="pattern_repeat_optional">Ripetizione del motivo (facoltativa)</string>
     <string name="edge_stitches_optional">Maglie di vivagno totali</string>
     <string name="edge_stitches_total_format">Maglie di vivagno totali: %1$d</string>
-    <string name="stitches_result">%d maglie</string>
+    <plurals name="stitches_result">
+        <item quantity="one">%d maglia</item>
+        <item quantity="many">%d maglie</item>
+        <item quantity="other">%d maglie</item>
+    </plurals>
     <string name="actual_width">Larghezza effettiva: %1$s %2$s</string>
     <string name="adjusted_down">Arrotondato per difetto: %1$d m (%2$s %3$s)</string>
     <string name="adjusted_up">Arrotondato per eccesso: %1$d m (%2$s %3$s)</string>
@@ -390,8 +402,8 @@
     <!-- Instruction parser -->
     <string name="paste_instruction">Incolla istruzione</string>
     <string name="instruction_hint">Incolla qui l\'istruzione di maglia</string>
-    <string name="instruction_hint_increase">es. "Aumenta 12 maglie in modo uniforme su 96 maglie"</string>
-    <string name="instruction_hint_gauge">es. "22 maglie e 30 ferri per 10 cm" oppure "larghezza 30 cm, 22 maglie"</string>
+    <string name="instruction_hint_increase">Solo istruzioni in inglese, ad esempio \"Increase 12 stitches evenly across 96 stitches\"</string>
+    <string name="instruction_hint_gauge">Solo istruzioni in inglese, ad esempio \"22 stitches and 30 rows per 10cm\" oppure \"width 30 cm, 22 stitches\"</string>
     <string name="parsing_instruction">Analisi…</string>
     <string name="instruction_parsed">Valori compilati dall\'istruzione</string>
     <string name="instruction_parse_failed">Impossibile capire l\'istruzione — prova a riformularla</string>
@@ -641,7 +653,11 @@
         <item quantity="other">Eliminare %1$d modelli dalla libreria?\n\nLe eventuali annotazioni PDF create nella libreria per i modelli selezionati verranno eliminate e non saranno più visibili nei progetti. I PDF già allegati ai progetti e le annotazioni PDF create nei progetti verranno conservati.</item>
     </plurals>
     <string name="delete_pattern">Elimina modello</string>
-    <string name="delete_yarn_cards_confirm">Eliminare %d schede filato?</string>
+    <plurals name="delete_yarn_cards_confirm">
+        <item quantity="one">Eliminare %d scheda filato?</item>
+        <item quantity="many">Eliminare %d schede filato?</item>
+        <item quantity="other">Eliminare %d schede filato?</item>
+    </plurals>
     <string name="delete_yarn_card">Elimina scheda filato</string>
     <string name="no_photos">Nessuna foto per ora</string>
     <string name="rename_photo">Rinomina foto</string>
@@ -699,7 +715,11 @@
     <string name="ravelry_backend_unavailable">Connessione a Ravelry temporaneamente non disponibile.</string>
     <string name="ravelry_disconnecting">Disconnessione da Ravelry…</string>
     <string name="difficulty_format">%.1f / 5</string>
-    <string name="yardage_format">%d yard</string>
+    <plurals name="yardage_format">
+        <item quantity="one">%d yard</item>
+        <item quantity="many">%d yard</item>
+        <item quantity="other">%d yard</item>
+    </plurals>
 
     <!-- Info tips -->
     <string name="tip_pattern_repeat_title">Ripetizione del motivo</string>

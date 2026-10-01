@@ -1,5 +1,6 @@
 package com.finnvek.knittools.data.backup
 
+import com.finnvek.knittools.data.local.MAX_COMPLETED_SESSIONS
 import com.finnvek.knittools.domain.model.PatternAnnotationKind
 import com.finnvek.knittools.domain.model.PatternAnnotationPageBudget
 import com.finnvek.knittools.domain.model.PatternAnnotationPageLimitException
@@ -32,7 +33,7 @@ internal data class BackupLimits(
         const val MAX_TABLE_BYTES = 32L * 1_024L * 1_024L
         const val MAX_TABLE_TOTAL_BYTES = 64L * 1_024L * 1_024L
         const val MAX_ROWS_PER_TABLE = 100_000L
-        const val MAX_SESSION_ROWS = 10_000L
+        const val MAX_SESSION_ROWS = MAX_COMPLETED_SESSIONS
         const val MAX_TOTAL_ROWS = 250_000L
         const val MAX_ROW_CHARACTERS = 2 * 1_024 * 1_024
         const val MAX_FIELD_CHARACTERS = 256 * 1_024

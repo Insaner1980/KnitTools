@@ -117,17 +117,7 @@ class PatternPdfExporterTest {
             val destination = File(context.cacheDir, "annotated-page-limit.pdf").apply { writeBytes(SENTINEL) }
             val progress = mutableListOf<PatternPdfExportProgress>()
 
-            val failure =
-                runCatching {
-                    exporter.export(
-                        sourceUri = source.toUri(),
-                        destinationUri = destination.toUri(),
-                        annotations = emptyList(),
-                        trackerHighlights = emptyMap(),
-                        style = renderStyle(),
-                        onProgress = progress::add,
-                    )
-                }.exceptionOrNull()
+            val failure = exportEmptyPdfFailure(exporter, source, destination, progress)
 
             assertLimitReason(PatternPdfExportLimitReason.PAGE_COUNT, failure)
             assertTrue(progress.isEmpty())
@@ -178,17 +168,7 @@ class PatternPdfExporterTest {
             val destination = File(context.cacheDir, "annotated-low-cache.pdf").apply { writeBytes(SENTINEL) }
             val progress = mutableListOf<PatternPdfExportProgress>()
 
-            val failure =
-                runCatching {
-                    lowSpaceExporter.export(
-                        sourceUri = source.toUri(),
-                        destinationUri = destination.toUri(),
-                        annotations = emptyList(),
-                        trackerHighlights = emptyMap(),
-                        style = renderStyle(),
-                        onProgress = progress::add,
-                    )
-                }.exceptionOrNull()
+            val failure = exportEmptyPdfFailure(lowSpaceExporter, source, destination, progress)
 
             assertLimitReason(PatternPdfExportLimitReason.CACHE_SPACE, failure)
             assertTrue(progress.isEmpty())
@@ -229,6 +209,23 @@ class PatternPdfExporterTest {
             assertArrayEquals(SENTINEL, destination.readBytes())
             assertTempDirectoryEmpty()
         }
+
+    private suspend fun exportEmptyPdfFailure(
+        pdfExporter: PatternPdfExporter,
+        source: File,
+        destination: File,
+        progress: MutableList<PatternPdfExportProgress>,
+    ): Throwable? =
+        runCatching {
+            pdfExporter.export(
+                sourceUri = source.toUri(),
+                destinationUri = destination.toUri(),
+                annotations = emptyList(),
+                trackerHighlights = emptyMap(),
+                style = renderStyle(),
+                onProgress = progress::add,
+            )
+        }.exceptionOrNull()
 
     private fun createPdf(
         name: String,

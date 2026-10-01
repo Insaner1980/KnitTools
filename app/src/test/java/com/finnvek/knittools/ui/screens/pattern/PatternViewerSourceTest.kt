@@ -561,8 +561,12 @@ class PatternViewerSourceTest {
         assertTrue(preflightIndex >= 0)
         assertTrue(destinationRequestIndex > preflightIndex)
         assertTrue(request.contains("}.onSuccess {"))
-        assertTrue(viewer.contains("actions.onExportRequest(state.patternUri.toUri())"))
-        assertTrue(viewer.contains("CollectWithLifecycleEffect({ actions.exportDestinationRequests }) { source ->"))
+        assertTrue(viewer.contains("annotationActions.onExportRequest(state.patternUri.toUri())"))
+        assertTrue(
+            viewer.contains(
+                "CollectWithLifecycleEffect({ annotationActions.exportDestinationRequestsProvider() }) { source ->",
+            ),
+        )
         assertTrue(viewer.contains("if (source.toString() == state.patternUri)"))
         assertTrue(viewer.contains("exportLauncher.launch(exportFilename)"))
         assertTrue(viewer.contains("val source = pendingExportSource?.toUri()"))

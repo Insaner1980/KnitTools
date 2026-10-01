@@ -11,9 +11,68 @@ This file is the detailed implementation reference for the current KnitTools che
 - build, dependency, CI, and release-surface checks;
 - locating the source of truth for a behavior before changing it.
 
-This file describes the committed Android application and Functions package at the current documented production checkpoint. Local uncommitted experiments are outside this implementation reference. Counts, dependency versions, workflow pins, generated schema versions, and validation results are volatile and must be rechecked when precision matters.
+This file describes the inspected working tree, not a deployed or certified release. The original documentation audit was static. The bounded 2026-09-30 follow-up verified six investigated concerns; the 2026-10-01 follow-up fixes its correction-related local failures and records verification below. Other sections retain the earlier source inventory; these follow-ups are not a new repository-wide audit. No device/emulator operation, scanner, external-service query, analysis upload or deployment was performed.
+
+### Documentation snapshot
+
+| Item | Locally established value |
+|---|---|
+| Documentation date | 2026-10-01, Europe/Helsinki; correction-related fixes and local verification |
+| Repository | `C:\Dev\KnitTools`; configured origin `https://github.com/Insaner1980/KnitTools.git` |
+| Branch | `codex/security-scan-remediation` |
+| Starting and verified HEAD | `85536415eb1f2c617c8e96db477b954e3cff21da` |
+| Initial working tree | No staged changes; 31 modified tracked files, including existing `PROJECT.md` edits; four untracked files |
+| Existing correction scope | Backup budget/provider adapter, Insights repository fold, Android auth manager, five localization presentation files, all 11 `strings.xml` files, their JVM/instrumentation tests, the JaCoCo javac path in `app/build.gradle.kts`, and `config/insights-session-budget.md` |
+| Untracked correction tests | `InstructionHintLocalizationTest.kt`, `data/backup/BackupProviderAdmissionTest.kt` under JVM tests; `ui/screens/counter/YarnUsageLocalizationTest.kt` under instrumentation tests |
+| Other existing work | Earlier `PROJECT.md` edits and untracked `coderabbit-skannaus.suunnitelma.md`; neither is attributed to the six production corrections |
+| Scope | Stale plural-resource assertion, 12 ktlint violations and five Detekt findings from the six-concern verification; combined local Android checks and JaCoCo; earlier unrelated implementation inventory was not re-audited |
+
+The 2026-09-30 task changed only root `PROJECT.md`. The 2026-10-01 task changes two production files, six test files and this document; existing work is preserved. Local repository identity does not establish that origin is current, this branch is pushed, or any app/backend release is published. Short Android paths below such as `repository/CounterRepository.kt` are relative to `app/src/main/java/com/finnvek/knittools/`; test paths explicitly identify their source set.
+
+The historical 2026-09-30 snapshot was captured at 20:52 EEST. Its recorded fingerprint `8d83d660448c4d42d8e457e4859e1ef8eb95ba345d0b732c3d65efa72f6430f6` covered 1,010 files, excluding `PROJECT.md` and inadvertently omitting Git's quoted `ui-insights-päivitys.md` path. That tracked document remains unchanged from HEAD. Historical evidence is in `C:\Users\EmmaH\AppData\Local\Temp\knittools-six-verification-20260930`.
+
+The 2026-10-01 baseline was captured at 10:17 EEST on the same branch/HEAD with the same 31 modified and four untracked files. The verified source fingerprint is `2c323e90bbc043c6a9e7de43dd790fddf088d67a8fde9aed73f72c64444c1cd6`: SHA-256 of UTF-8, newline-terminated, case-sensitive PowerShell-sorted `path<TAB>uppercase SHA-256` entries for all 1,011 tracked/untracked files other than `PROJECT.md`, including the Unicode path. Ignored build products and local configuration are excluded. Baseline copies, hashes and logs are in `C:\Users\EmmaH\AppData\Local\Temp\knittools-correction-fixes-20261001`.
 
 This is a reference, not a replacement for the code. If this file conflicts with executable source, Gradle configuration, the Android manifest, Room schema exports, Firebase configuration, or tests, the executable source wins.
+
+## Contents
+
+- [Purpose and scope](#purpose-and-scope)
+- [Source-of-truth order](#source-of-truth-order)
+- [Product snapshot](#product-snapshot)
+- [Repository layout](#repository-layout)
+- [Android dependency map](#android-dependency-map)
+- [Application startup and process lifetime](#application-startup-and-process-lifetime)
+- [Architecture and package ownership](#architecture-and-package-ownership)
+- [Navigation](#navigation)
+- [Screen and feature inventory](#screen-and-feature-inventory)
+- [Persistence](#persistence)
+- [Domain behavior and transactional invariants](#domain-behavior-and-transactional-invariants)
+- [Local files, URIs, and Storage Access Framework](#local-files-uris-and-storage-access-framework)
+- [Pattern reading, calibration, annotations, and export](#pattern-reading-calibration-annotations-and-export)
+- [Localization and locale-sensitive formatting](#localization-and-locale-sensitive-formatting)
+- [Ravelry integration](#ravelry-integration)
+- [Pro, trial, and billing](#pro-trial-and-billing)
+- [UI architecture and design system](#ui-architecture-and-design-system)
+- [Project list UX](#project-list-ux)
+- [Counter workspace UX](#counter-workspace-ux)
+- [Project actions](#project-actions)
+- [Library and yarn UX](#library-and-yarn-ux)
+- [Tools and local calculators](#tools-and-local-calculators)
+- [Insights UX and calculations](#insights-ux-and-calculations)
+- [Widgets](#widgets)
+- [Android manifest and exported surface](#android-manifest-and-exported-surface)
+- [Security and privacy boundaries](#security-and-privacy-boundaries)
+- [Build configuration and artifact gates](#build-configuration-and-artifact-gates)
+- [CI and dependency automation](#ci-and-dependency-automation)
+- [Local validation and scanner surfaces](#local-validation-and-scanner-surfaces)
+- [Test architecture](#test-architecture)
+- [Code-review map](#code-review-map)
+- [Manual local backup and replacement restore](#manual-local-backup-and-replacement-restore)
+- [Implemented versus intentionally absent](#implemented-versus-intentionally-absent)
+- [Volatile facts and common stale assumptions](#volatile-facts-and-common-stale-assumptions)
+- [Unresolved source concerns and proof limits](#unresolved-source-concerns-and-proof-limits)
+- [Relationship to repository documents](#relationship-to-repository-documents)
 
 ## Source-of-truth order
 
@@ -42,9 +101,11 @@ KnitTools is a local-first Android knitting and crochet companion. Its main prod
 - progress photos;
 - home-screen counter widgets;
 - knitting and crochet calculators and reference tables;
-- one-time Pro entitlement with a user-started 14-day trial.
+- one-time Pro entitlement with a user-started 14-day trial;
+- manual full-content backup and replacement restore through Android document providers;
+- automatic release Crashlytics crash reporting and separately opt-in release PostHog usage analytics.
 
-The app does not currently implement cloud synchronization, continuous Drive or Dropbox synchronization, voice commands, microphone input, model-backed instruction parsing, AI generation, analytics, release crash reporting, or a server-side journal.
+The app does not currently implement cloud synchronization, continuous Drive or Dropbox synchronization, voice commands, microphone input, model-backed instruction parsing, AI generation, or a server-side journal. Release telemetry has the explicit boundaries documented under Security and privacy; debug Sentry is a separate diagnostic path.
 
 ### Current platform and versions
 
@@ -60,7 +121,7 @@ The app does not currently implement cloud synchronization, continuous Drive or 
 | Room schema | 25 |
 | Java toolchain | Eclipse Temurin JDK 17 |
 | Gradle wrapper | 9.7.1 |
-| Android Gradle Plugin | 9.4.0 |
+| Android Gradle Plugin | 9.4.1 |
 | Kotlin and Compose compiler plugin | 2.4.10 |
 | Firebase Functions runtime | Node.js 22 |
 | Production UI | Jetpack Compose with Material 3 |
@@ -69,39 +130,93 @@ The app does not currently implement cloud synchronization, continuous Drive or 
 
 These are orientation counts, not coverage or pass results:
 
-- 336 production Kotlin files under `app/src/main`;
-- 261 Kotlin files in the JVM test source set under `app/src/test`;
-- 46 Kotlin files in the Android instrumented-test source set under `app/src/androidTest`;
-- 9 TypeScript test files matching `*.test.ts` under `functions/src`;
+- 367 production Kotlin files under `app/src/main`;
+- 306 Kotlin files in the JVM test source set under `app/src/test` (295 named `*Test.kt`, including two untracked correction tests);
+- 66 Kotlin files in the Android instrumented-test source set under `app/src/androidTest` (64 named `*Test.kt`, including one untracked correction test);
+- 33 TypeScript files under `functions/src`, including 14 matching `*.test.ts`;
 - 65 tracked resource files under `app/src/main/res`.
 
-### Current local validation
+Additional variants contain one Kotlin file in `app/src/debug`, two shared debug files in `app/src/debugShared/kotlin`, two in `app/src/release`, and one baseline-profile producer in `baselineprofile/src/main`. Helpers, fixtures and source-contract tests make file counts unsuitable as executed-test counts.
 
-Validation evidence in this section is commit-scoped rather than a perpetual statement about the newest checkout. The current production checkpoint is pushed SHA `40c45b7e9350a5d56b9d46e28bd1ee6c2fd89881`. Clean-HEAD local verification passed all 1,708 debug JVM tests, `assembleDebug`, `assembleDebugAndroidTest`, `lintDebug`, `ktlintCheck`, and `detekt`. GitHub Build & Test run `34591380651` succeeded for the same SHA: its Android build job passed, including lint, and its separate Functions job passed on Node.js 22. CodeQL run `34591380691` also succeeded for that SHA, including Analyze (Java/Kotlin). This checkpoint does not establish an Android device or emulator pass for the complete current package, a release artifact, a DeepSec or MobSF repository scan, deployment, live billing, live Firebase/Ravelry behavior, a human TalkBack review, full accessibility certification, or a backup/restore feature.
+### Evidence and historical verification
 
-Web Pattern Link Support V1 final verification on 2026-08-30 passed 1,535 debug JVM tests across 251 suites with `--rerun-tasks`, with no failures, errors, or skipped tests. Separate direct offline commands passed KSP, Android-test compilation, debug app and test APK assembly, `lintDebug`, `ktlintCheck`, `detekt`, `debugStabilityCheck`, and `git diff --check`; the only diff-check output was Git's existing CRLF normalization warning for two counter decision files. Functions and the user's custom check wrappers were not run. These broad Android results predate the later published Functions, security, analyzer, scanner, and dependency-verification commits and therefore are not complete validation of those later changes.
+Current follow-up evidence is separated below from historical results. JVM execution, Gradle task outcomes, instrumentation compilation and source inspection establish different claims; assembling a test APK does not execute its tests. Generated reports from before this follow-up are not treated as current passes.
 
-The complete installed 197-test package passed on API 36 (`emulator-5556`) and API 37 (`emulator-5558`), with no failed or skipped tests and no app fatal crash or ANR match. The API 36 visual pass covered populated and empty Saved Patterns, the editor with an IME, wrapped long title and URL, light and app dark detail, system-level 200 percent font, a 320 dp viewport, delete confirmation, and unlink confirmation. A manual HTTPS save produced Saved Pattern metadata without adding an app-owned file, PDF, or project document, and the save emitted no Ravelry, Firebase Functions, OkHttp, Ktor, callable, or target-host log entry. The external website was not opened. API 29, a physical device, human TalkBack listening, release artifacts, Functions, live websites, Firebase, Ravelry, deployment, and staging were not tested or used.
+**Current combined result, 2026-10-01: passed local verification.** Temurin JDK `17.0.20+8`, Gradle `9.7.1`, the existing user cache, offline mode and single-use daemons were used. First, 51 targeted JVM tests plus ktlint and Detekt passed in 5m 18s. The combined command below then passed in 10m 1s. Ktlint and Detekt reused that fresh pass with unchanged source/configuration inputs; the full JVM suite executed without test filters.
 
-Project Yarn Usage V1 final verification on 2026-08-28 and 2026-08-29 passed 1,452 debug JVM tests across 242 suites with `--rerun-tasks`, with no failures, errors, or skipped tests. Separate direct offline commands passed KSP, Android-test compilation, debug app and test APK assembly, `lintDebug`, `ktlintCheck`, and `detekt`. Debug Lint reported no issues. The debug Compose stability dump was inspected: the editor, field, derived summary, and usage row are stable and skippable/restartable; the flow retains runtime-checked list inputs, and no stability exemption was added.
+```text
+gradlew.bat --offline --no-daemon --console=plain --continue :app:testDebugUnitTest :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug ktlintCheck detekt
+```
 
-The final identical APK pair passed the entire 170-test installed package on API 36 (`emulator-5554`) and API 37 (`emulator-5556`), with no failed or skipped tests and no app crash or ANR. This includes real schema 23 to 24 migration with all 16 existing tables preserved, the full 1 to 24 chain, 14 usage repository tests, 11 usage Compose tests, and two real `MainActivity` usage flows. The 11-test API 36 rerun at a system-level 320 dp width also passed; its production and Compose-test source stayed unchanged by the later native-test project-reopening correction. Visual checks covered all requested usage states, long names, IME, light/dark themes, and system-level 200 percent font. A real save/recreation race was fixed by making successful completion durable UI state and clearing the committed draft even when sheet hiding is cancelled. Earlier full runs exposed a native-test lifecycle assumption: completing the project while its counter stayed open could switch the existing active-project selection. The test now closes that activity, proves persisted usage across completion/reopening, and explicitly opens the same project again before verifying unlink and source deletion; application navigation behavior was not changed. The unchanged Gauge clipboard-confirmation and project-folder popup tests also failed intermittently in earlier full runs. The final API 36 package was rerun alone with the same APK pair after closing the API 37 emulator; those unrelated tests were not modified.
+| Current local check | Result and scope |
+|---|---|
+| Targeted JVM tests | 51/51 passed: `ArchitectureSingleSourceSourceTest` 9, `RavelryAuthManagerTest` 27, `BackupProviderAdmissionTest` 6, `BackupProviderIoTest` 7 and `InstructionHintLocalizationTest` 2. |
+| Full debug JVM suite | 2,059/2,059 passed in 299 suites; no failures, errors or skips. |
+| Debug app / instrumentation compilation and assembly | `assembleDebug` and `assembleDebugAndroidTest` passed, including app and instrumentation Kotlin compilation. No installation or instrumentation execution. |
+| `lintDebug` | Passed; fresh report dated 2026-10-01 says `No issues found.`; XML contains zero issues. |
+| `ktlintCheck` | Passed; the affected Android/JVM test and main-source checks executed in the targeted run and were up-to-date in the combined run. |
+| `detekt` | Passed; fresh XML contains zero findings under the unchanged rules and baseline; up-to-date in the combined run. |
+| `jacocoDebugUnitTestReport` | Passed in a separate offline run after the full JVM prerequisite passed; JVM task up-to-date. Fresh XML at 10:42 EEST contains 892 class elements and 138 source-file mappings in 11 packages, including `BackupBudget`, `ContentResolverBackupProviderIo`, `ProviderDeadline`, `CounterRepository` and `InstructionParser`. No server coverage or quality-gate claim. |
+| Documentation regression tests | After the documentation update, all three `PROJECT.md`-reading tests passed (two selected `ArchitectureSingleSourceSourceTest` methods and `RavelryPhase8DocumentationSourceTest`). Full-suite XML and JaCoCo output were preserved before this focused run. |
 
-These checks do not replace a human TalkBack listening pass. Some Compose-clock screenshots transiently omitted the Save label; native MainActivity checks at 320 dp and 200 percent German font showed the label in both themes. API 29 was not run or downloaded. The optional all-variant `stabilityDump` was blocked by missing release Firebase configuration; the direct `debugStabilityDump` passed without configuration changes. No release artifact or external-service behavior is claimed. Functions and the user's custom check wrappers were not run.
+The fixes preserve the intended contracts: the yardage source assertion checks `pluralStringResource(R.plurals.yardage_format, it, it)`; three test files receive formatting only; `RavelryAuthManager.completeCallback` retains operation ownership and cancellation cleanup; `ContentResolverBackupProviderIo.executeTransfer` separates executor work from coroutine waiting without changing admission or `ProviderDeadline` reservation release. All 27 auth test bodies are unchanged, with their helpers moved to file-private declarations. The provider test extracts its blocked-read fixture and retry assertions without removing any assertions. No rules, suppressions, baselines, dependencies or build configuration were changed by these fixes.
 
-Earlier feature verification:
+The report command was `gradlew.bat --offline --no-daemon --console=plain :app:jacocoDebugUnitTestReport` (1m 16s). Its XML and full-suite test results were preserved in the current temporary evidence directory before the documentation-only test rerun. All requested local gates passed; no unresolved environment blocker or unrelated failing check was observed. The subsequent targeted Android evidence follows; live-service and performance checks remain unrun.
 
-Measurements and Gauge V1 finalization on 2026-08-28 passed 1,435 debug JVM tests across 239 suites with `--rerun-tasks` and no failures, errors, or skipped tests. The focused JVM run passed 146 tests across 18 classes. After the Compose stability correction and the direct UI-test synchronization correction, the final combined KSP, Android-test compilation, debug app and test APK assembly, baseline-profile assembly, `lintDebug`, `ktlintCheck`, and `detekt` run completed successfully (175 tasks, 7 minutes 51 seconds); Lint and Detekt reported zero issues. `GaugeScreen` uses a stable composable ViewModel provider and the shared lifecycle-aware event collector; the debug stability baseline was updated without adding a stability exemption.
+**Targeted Android verification, 2026-10-01: 12 passed, 0 failed, 0 skipped.** Branch `codex/security-scan-remediation`, HEAD `85536415eb1f2c617c8e96db477b954e3cff21da`, plus the existing 36 dirty/untracked files and focused additions to `BackupRepositoryTest` and `YarnUsageLocalizationTest`. The tested 1,011-file manifest is `reports/targeted-android-20261001/source-tested.json`, SHA-256 `BC618A0CA2669F1BDC899F13835BC90EECB7AD39AA8D547C6C2124443AD46D60`; it records the exact dirty source snapshot before this documentation update. Production source, dependencies and configuration were unchanged by this verification.
 
-The final focused API 37 run passed all 13 `GaugeScreenTest` tests. The complete installed package, including all three `GaugeNavigationRuntimeTest` tests, passed 142 tests on API 36 (272.854 seconds) and 142 tests on API 37 (288.956 seconds), with no failures or skipped tests. Both final runs used identical app and test APKs, had no active default network, and reported no crash or ANR. An earlier post-stability API 37 run passed 141 of 142 tests because an immediate Finnish copy-confirmation visibility assertion failed; that test now waits up to five seconds for visibility while retaining the display and clipboard assertions. The earlier separate system-level 320 dp viewport and 200 percent font-scale three-test rerun predates these corrections and was not repeated. API 29 runtime testing remains unavailable because its AVD and system image are not installed. These results do not replace a human TalkBack listening pass or prove any release artifact or external-service behavior.
+The disposable `KnitTools_Verify_20261001` / `emulator-5584` used the already installed Google APIs x86_64 API 36 revision 7 image (Android 16, fingerprint `google/sdk_gphone64_x86_64/emu64xa:16/BE2A.250530.026.F3/13894323:userdebug/dev-keys`). It had synthetic data only. IPv4/IPv6 non-loopback OUTPUT was blocked before APK installation and remained blocked after execution; no external test services were accessed. The physical Pixel 9 was untouched. The emulator and its child processes were stopped after the run.
 
-Project-folder verification on 2026-08-28 passed 1,361 debug JVM tests across 234 suites, the complete 126-test installed instrumentation package on API 36 and API 37, KSP, Android-test compilation, debug app and test APK assembly, debug Lint, ktlint, Detekt, and `git diff --check`. No JVM or instrumented test failed or was skipped in the final runs; Lint reported no issues. The instrumented suite includes 31 new tests and covers schema 22 to 23, older migration entrypoints and the full 1 to 23 chain, Room constraints, metadata-only transactions, project creation, folder UI, state restoration, trusted widget navigation, and active-session preservation. Schema 23 adds only the two organization tables; all 14 schema 22 entities remain structurally unchanged.
+Only `:app:assembleDebug :app:assembleDebugAndroidTest` ran, offline with JDK 17 and a single-use daemon, after the focused test additions (successful, 1m 31s; 6 tasks executed, 78 up-to-date). The APK SHA-256 values were app `E6404C46D299DAFFC54EBF3E7B3ED0E65ED3431C50CFEAE19EEC6BC891E62E82` and test `3151CB8463D8E3F17623F9F0C54E3B17677413A3EDC1525D3A143A6541BDDAEB`. The earlier JVM/lint/ktlint/Detekt/JaCoCo checks were not repeated. Direct `am instrument -w -r -e class ...` selected only these cases; the exact filter and per-case runner output are in `reports/targeted-android-20261001/test-filter.txt` and `instrumentation.txt` (98.787 seconds, not a benchmark).
 
-The same final app APK was checked with normal and disabled system animations, light and dark themes, normal and 200 percent font scale, and a 320 dp viewport. The narrow-width reruns passed 19 component/screen tests and six dark screen tests. Real MainActivity checks confirmed that a selected folder survives `ActivityScenario.recreate()` activity recreation and state restoration, while a new task starts at All Projects. Folder strings and plural resources cover all 11 locale sets; automated semantics, focus, touch-target, keyboard, and screenshot checks do not replace a human TalkBack listening pass. All Gradle work was offline, and both emulators ran with restricted networking and no active default network. No Functions tests, external-service setup, release artifact, or deployment was part of the folder work. API 29 runtime testing remains unavailable locally because its system image is not installed.
+| Executed class | Cases and established boundary |
+|---|---|
+| `SessionInsightsDatabaseTest` (4) | `sessionSnapshotSurvivesProjectDeletionBetweenBatches`, `sessionSnapshotSurvivesHistoryReplacementBetweenBatches`, `cancellingSnapshotReleasesRoomTransactionForWaitingWriter`, `keysetBatchesCoverAllRowsAndApplyProjectAndEffectiveEndBoundaries`. Real Room and the production transaction runner preserve a 256+1-row read and its 15,420-second sum while a deterministically queued deletion/replacement waits; cancellation releases the transaction for deletion. Keyset/project/effective-end filters and committed replacement counts pass. These tests exercise DAO/transaction behavior; independent project/completion flows still have no shared snapshot guarantee. |
+| `BackupRepositoryTest` (6) | `sessionHistoryRoundTripsAtOldAndNativeLimits`, `oversizedSessionsAreRejectedBeforePreviewAndAtConfirmationWithoutLiveMutation`, `exportRefusesSessionsAboveTheRestoreCeiling`, `allEighteenTablesFilesRelationshipsAndCompletionEventsSurviveRealReplacement`, `chartTrackerIdsAndDanglingMetadataAreRebasedWithoutAccidentalLinks`, `liveInsertFailureRollsBackRowsAndKeepsOldFiles`. Actual local-file export, preview and Room replacement executed at 10,000, 10,001 and **100,000 sessions**. Each committed count, seconds sum (600,000 / 600,060 / 6,000,000), zone count and project join count matched; project/session IDs rebased above the previous IDs. At 100,001, export retained all rows and produced no archive; preview and confirmation rejected oversized archives while preserving the original session ID/duration, project and referenced files. The 18-table fixture separately verifies relationships, completion data, files and restored active-session review state; chart IDs/dangling references rebase, and forced insert failure rolls back. These use local file URIs, not a real SAF provider. |
+| `YarnUsageLocalizationTest` (2) | `roundedSkeinCountMatchesDisplayedQuantity`, `fractionalSkeinCountUsesRegionalPluralRules`: 23 exact strings plus the Danish category assertion using actual Android ICU and localized Android resources for `en-US`, `fi-FI`, `de-DE`, `fr-FR`, `da-DK`, `pt-BR`, `pt-PT`. Boundaries include 0.994/0.996, 1.004/1.006 and 1.994/1.996. For example, English 1.004 becomes `1 skein`, 1.006 becomes `1.01 skeins`; Portuguese 0.5 becomes `0,5 meada` in Brazil and `0,5 meadas` in Portugal. This verifies the composed resource string, not screen clipping or native-language review. |
 
-The earlier local stabilization run on 2026-08-26 executed 1,298 debug JVM tests, 95 installed instrumented tests on API 36, 95 installed instrumented tests on API 37, and 46 Functions tests across seven suites, all without failures or skipped tests. That Android run also passed KSP, Android-test compilation, debug app and test APK assembly, focused Room migrations 18 to 19, 19 to 20, 20 to 21, 21 to 22, and 1 to 22, debug Lint, ktlint, Detekt, and `git diff --check`; Lint reported zero errors, 25 existing unused-resource warnings, and three plural suggestions. Both emulator smoke launches opened Projects, Library, Tools, Insights, and Settings without a fatal crash or ANR.
+No production defect or test failure was observed. SAF-provider behavior, live OAuth, other Android versions/OEMs, visual localization and large-history memory/latency/writer-delay measurements remain separate acceptance work. No commit, push, PR, upload or deployment was performed.
 
-The source-file counts above are inventory; they are not executed-test counts. API 29 runtime testing and a human TalkBack listening pass were not performed. Firebase and Ravelry were not configured, contacted, or deployed, and local Functions tests do not prove production OAuth or live upstream behavior. The Functions package targets Node.js 22; the earlier stabilization run used local Node.js 24.19.0 and npm 11.17.0, which is a nonblocking environment mismatch rather than deployment evidence.
+**Historical combined result, 2026-09-30: failed local verification.** This run used Temurin JDK `17.0.20+8`, Gradle `9.7.1`, the existing user cache, offline mode and a single-use daemon. It completed in 7m 5s with four failed tasks. The command was:
+
+```text
+gradlew.bat --offline --no-daemon --console=plain --continue :app:testDebugUnitTest --rerun :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug ktlintCheck detekt :app:jacocoDebugUnitTestReport
+```
+
+| 2026-09-30 local check | Result and scope |
+|---|---|
+| Debug JVM suite | 2,059 tests in 299 suites: 2,058 passed, one failed, no errors/skips. The test task was explicitly rerun. |
+| Debug app / instrumentation compilation and assembly | `assembleDebug` and `assembleDebugAndroidTest` passed, including current Kotlin compilation. No installation or instrumentation execution. |
+| `lintDebug` | Passed; fresh analyzer report says `No issues found.` |
+| `ktlintCheck` | Failed: 12 violations across correction tests; seven in Android tests and five in JVM tests. |
+| `detekt` | Failed: five findings in correction source/tests, with the existing configuration and baseline unchanged. |
+| `jacocoDebugUnitTestReport` | Requested but blocked by its failed JVM prerequisite; no fresh report was generated. Both configured class directories were verified after compilation. The pre-existing XML is historical and was not reused. |
+| Tooling inputs, separate offline read-only Gradle task | Both OWASP-configured runtime classpaths resolve `io.ktor:ktor-utils-jvm:3.6.0`; the exact 3.5.2 suppression matches neither. Sonar's configured javac/coverage paths come from Gradle. No scanner or Sonar task executed. |
+| Locale XML inventory | All 11 configured languages inspected across every text XML file; exact counts and limitations are below. |
+| Document regression checks | After editing, the three tests that read `PROJECT.md` passed: two selected `ArchitectureSingleSourceSourceTest` methods and `RavelryPhase8DocumentationSourceTest`. The full JVM XML results were preserved separately before this focused run. |
+
+All nine focused JVM suites passed within the full run: `BackupBudgetTest` 8, `BackupTablesTest` 11, `BackupProviderIoTest` 7, `BackupProviderAdmissionTest` 6, `CounterRepositoryInsightsTest` 6, `RavelryAuthManagerTest` 27, `ReferenceResourceLocalizationTest` 2, `InstructionHintLocalizationTest` 2 and `CountPluralResourcesSourceTest` 1 (70 tests total). These are boundary, fake-backend/provider and source-contract checks, not real Room/device/service execution.
+
+The following failures belonged to the existing corrections at that checkpoint. They are retained as the cause of the 2026-10-01 fixes:
+
+- `ArchitectureSingleSourceSourceTest.kt:108`, `pattern info labels use string resources`, expected `R.string.yardage_format` after Ravelry detail had changed to `R.plurals.yardage_format`. The test contract was stale.
+- Ktlint: `BackupRepositoryTest.kt:396-397` has six chain-continuation violations; `YarnUsageLocalizationTest.kt:45` has one; `InstructionHintLocalizationTest.kt:33` has four argument-wrapping violations and one line-length violation.
+- Detekt: `RavelryAuthManager.handleCallback` has complexity 20 (limit 15) and eight returns (limit five); `ContentResolverBackupProviderIo.transfer` exceeds the two-throw limit; `RavelryAuthManagerTest` exceeds the class-size limit; `BackupProviderAdmissionTest.idleViewModelCannotAccumulateCancelledProviderJobsOrStaging` is 77 lines (limit 60).
+
+No unrelated pre-existing check failure was observed in that run. The first sandboxed Gradle launch could not open the user-cache wrapper lock; the authorized retry with cache access completed, resolving that environment limitation. That documentation-only task made no source/test fixes. Device/live-service/performance checks remain unrun. Historical results below are not substituted for current evidence.
+
+The previous reference recorded the following results. They are retained as historical context, **not independently reverified results for the inspected tree**:
+
+| Previously recorded scope | Historical result and boundary |
+|---|---|
+| Checkpoint `40c45b7e9350a5d56b9d46e28bd1ee6c2fd89881` | 1,708 debug JVM tests, debug app/test assembly, lint, ktlint and Detekt; Build & Test run `34591380651` and CodeQL run `34591380691`. Remote runs were not queried in this audit. |
+| 2026-08-28/29 Gauge, folders and yarn usage | JVM and API 36/37 instrumentation runs for their then-current schema/source, including focused large-font/narrow-width checks. They predate later schema, backup, authentication and telemetry changes. |
+| 2026-08-30 web-pattern support | 1,535 JVM tests and a 197-test API 36/37 package; restricted-network metadata workflows and visual inspection. No live website/service, API 29 or human TalkBack certification. |
+| 2026-09-06 mental-model close-out | Starting `main` HEAD `caffef92c7ccfa4cedfe3a569468be9971477c50` plus local edits; 33 focused JVM tests, five follow-up source tests and six synthetic API 36 runtime tests per configuration. Ignored `reports/mental-model-closeout/` was the recorded artifact location. |
+| 2026-09-14 backup and counter history | `config/local-backup.md` records backup-focused checks. The old reference separately recorded 1,857 JVM tests and focused history/backup/navigation checks, including database reopen and Activity recreation. Neither is process-death proof for current code. |
+| Older Functions hardening `6f55bf3` | 51 tests/eight suites on local Node 24, although the declared runtime is Node 22. This predates the current 14 test files and browser-bound completion protocol. |
+
+Historical evidence must be tied to its actual source revision, variant, runtime and artifact before reuse. No current migration success, process-death recovery, rendered accessibility, performance, resolved dependency exposure, server quality gate, deployment, live billing, OAuth/CDN behavior or complete release certification is established by this document update.
 
 ## Repository layout
 
@@ -113,7 +228,7 @@ The source-file counts above are inventory; they are not executed-test counts. A
 | `config/` | Security decisions, future sync specification, scanner exceptions, and Ravelry backend progress context |
 | `gradle/` | Version catalog, verification metadata, OSV configuration, and wrapper configuration |
 | `tools/` | Project-local PowerShell entry points, release-surface checks, test helpers, and specialized validation |
-| `scripts/` | Compatibility delegates; security scanning logic must remain in `tools/sc.ps1` |
+| `scripts/` | Compatibility delegates; security requests delegate through `tools/sc.ps1` |
 | `.deepsec/` | DeepSec configuration, custom matchers, report processing, matcher tests, and the ignore boundary for generated local runtime data |
 | `.github/workflows/` | Android build and CodeQL workflows |
 | `.github/dependabot.yml` | Dependency update configuration for Gradle, Actions, DeepSec npm, and Functions npm |
@@ -126,7 +241,7 @@ The application module owns Android startup, Compose UI, navigation, ViewModels,
 - exported Room schemas under `app/schemas/com.finnvek.knittools.data.local.KnitToolsDatabase/`;
 - the versioned Compose stability baseline at `app/stability/app-debug.stability`.
 
-The module applies the Android application, Compose, Kotlin serialization, KSP, Room, Hilt, Baseline Profile, ktlint, Detekt, OWASP dependency-check, Compose Stability Analyzer, and JaCoCo-related build surfaces. Google Services is conditionally integrated through the app build logic. Do not reintroduce the old `org.jetbrains.kotlin.android` plugin or obsolete Kotlin source-set toggles.
+The module applies the Android application, Compose, Kotlin serialization, KSP, Room, Hilt, Baseline Profile, ktlint, Detekt, OWASP dependency-check, Compose Stability Analyzer, and JaCoCo-related build surfaces. Google Services and Crashlytics plugins are applied by the app build logic; configuration availability and task selection determine artifact gates. Do not reintroduce the old `org.jetbrains.kotlin.android` plugin or obsolete Kotlin source-set toggles.
 
 ### `:baselineprofile`
 
@@ -136,7 +251,7 @@ The baseline-profile module targets `:app`, uses the Android test and Baseline P
 
 The backend package is not a Gradle module. It uses TypeScript and Firebase Functions v2, targets Node.js 22, compiles to `functions/lib`, exposes authenticated callables and an OAuth callback, and stores OAuth state, tokens, and rate-limit windows in Firestore. It never downloads or stores pattern PDFs.
 
-Current core versions are `firebase-functions 7.4.0`, `firebase-admin 14.4.0`, `typescript 7.0.2`, and `@types/node 26.6.1`. Package overrides pin security-sensitive transitive packages including `brace-expansion`, `form-data`, `js-yaml`, `protobufjs`, `rimraf`, and `uuid`.
+Current core versions are `firebase-functions 7.4.0`, `firebase-admin 14.4.0`, `typescript 7.0.2`, and `@types/node 26.6.2`. Package overrides pin security-sensitive transitive packages including `brace-expansion`, `form-data`, `js-yaml`, `protobufjs`, `rimraf`, and `uuid`.
 
 ## Android dependency map
 
@@ -144,6 +259,7 @@ Current core versions are `firebase-functions 7.4.0`, `firebase-admin 14.4.0`, `
 
 | Dependency family | Version |
 |---|---|
+| KSP | 2.3.11 |
 | Hilt | 2.60.1 |
 | AndroidX Hilt | 1.4.0 |
 | Room | 2.8.5 |
@@ -163,20 +279,22 @@ Current core versions are `firebase-functions 7.4.0`, `firebase-admin 14.4.0`, `
 | Google Play Billing | 9.1.0 |
 | Glance | 1.1.1 |
 | Coil Compose and Ktor 3 network loader | 3.6.2 |
-| Ktor | 3.5.2 |
+| Ktor | 3.6.0 |
 | AndroidX Browser | 1.10.0 |
 | WorkManager | 2.11.2 |
 | Firebase BOM | 34.19.0 |
 | Google Services plugin | 4.5.0 |
+| Firebase Crashlytics plugin | 3.0.8 |
+| PostHog Android | 3.70.0, release enabled and opt-in |
 | Sentry Android Core | 8.56.0, debug only |
-| Wire | 6.4.7, benchmark/profile toolchain only |
+| Wire | 7.0.3, forced benchmark/profile dependency policy |
 | ktlint Gradle plugin | 14.2.0 |
 | Detekt | 2.0.0-alpha.5 |
 | OWASP dependency-check | 13.0.0 |
 | Compose Stability Analyzer | 0.12.0 |
 | Sonar Gradle plugin | 7.5.0.8588 |
 
-Detekt `2.0.0-alpha.5` is an intentional temporary compatibility exception. Baseline Profile/Benchmark uses stable `1.5.0`. WorkManager is directly pinned because it is part of the Glance transitive surface; there is no production `Worker` implementation. Ktor and OkHttp are present, but the current Ravelry product path uses authenticated Firebase callables rather than direct Android-to-Ravelry requests. Coil declares `coil-network-ktor3` explicitly and reuses the existing Ktor 3 and OkHttp engine surface for HTTPS thumbnail loading; it does not introduce a second image-network stack. `kotlinx-coroutines-play-services` supplies the cancellable Firebase `Task.await()` bridge; the repository no longer carries a custom task-await implementation. Wire is forced to `6.4.7` for the benchmark/profile toolchain and is absent from the app runtime graph. The Dependency Analysis Gradle plugin version remains catalogued, but plugin application is disabled because that plugin is not currently compatible with AGP 9; its presence in the catalog is not an active analyzer gate.
+Detekt `2.0.0-alpha.5` is an intentional temporary compatibility exception. Baseline Profile/Benchmark uses stable `1.5.0`. WorkManager is directly pinned because it is part of the Glance transitive surface; there is no production `Worker` implementation. Ktor and OkHttp are present, but the current Ravelry product path uses authenticated Firebase callables rather than direct Android-to-Ravelry requests. Coil declares `coil-network-ktor3` explicitly and reuses the existing Ktor 3 and OkHttp engine surface for HTTPS thumbnail loading; it does not introduce a second image-network stack. `kotlinx-coroutines-play-services` supplies the cancellable Firebase `Task.await()` bridge; the repository no longer carries a custom task-await implementation. Wire is forced to `7.0.3` by resolution policy for the benchmark/profile toolchain. The follow-up resolved debug/release runtime configurations offline specifically to inspect Ktor-utils; this is not a complete dependency inventory or vulnerability assessment. The Dependency Analysis Gradle plugin version remains catalogued, but plugin application is disabled because that plugin is not currently compatible with AGP 9; its presence in the catalog is not an active analyzer gate.
 
 ## Application startup and process lifetime
 
@@ -185,18 +303,21 @@ Detekt `2.0.0-alpha.5` is an intentional temporary compatibility exception. Base
 `app/src/main/java/com/finnvek/knittools/App.kt` is the Hilt application entry point. `App.onCreate`:
 
 1. initializes the source-set-specific `SentryInit` implementation;
-2. launches `PreferencesManager.applyStoredAppLanguage()` in the injected application coroutine scope;
-3. schedules interrupted manual-restore recovery followed by yarn-photo orphan pruning;
-4. schedules stale pattern-capture pruning on the injected I/O dispatcher;
-5. invokes the build-variant `DemoDataSeeder` facade;
-6. initializes billing and Pro state;
-7. waits for the entitlement state and refreshes widgets when widget access becomes known.
+2. installs release-enabled analytics consent observation and process-lifecycle callbacks;
+3. launches `PreferencesManager.applyStoredAppLanguage()` in the injected application coroutine scope;
+4. schedules interrupted manual-restore recovery followed by yarn-photo orphan pruning;
+5. schedules stale pattern-capture pruning on the injected I/O dispatcher;
+6. invokes the build-variant `DemoDataSeeder` facade;
+7. initializes billing and Pro state;
+8. waits for the entitlement state and refreshes widgets when widget access becomes known.
+
+These coroutine launches are concurrent startup work, not a global serial barrier. Restore recovery precedes yarn-photo pruning within its own coroutine; failure can postpone that pruning. MainActivity keeps the splash until stored-language application and initial preferences are ready. Normal Android process termination does not promise `Application.onTerminate` cleanup.
 
 Startup locale reads must not use `runBlocking`. Long-lived application work uses the Hilt-owned `@ApplicationScope`. Blocking work in that scope must still move to the injected `@IoDispatcher`.
 
 Yarn-photo pruning, stale pattern-capture pruning, and entitlement-driven widget refresh are best-effort startup work. Each rethrows coroutine cancellation but catches an ordinary failure so a cleanup or Glance update cannot crash the application process. This does not turn a failed cleanup into success evidence; it may leave an orphan for a later run.
 
-`DemoDataSeeder` is a build-variant facade. The debug implementation delegates orchestration to `data/local/DebugDemoDataSeeder`, performs one `DatabaseTransactionRunner` transaction, and reuses repository writers so project counters and yarn links obey normal invariants. The release implementation is a no-op.
+`DemoDataSeeder` is a build-variant facade. The debug facade at `app/src/debugShared/kotlin/com/finnvek/knittools/DemoDataSeeder.kt` delegates to `app/src/debugShared/kotlin/com/finnvek/knittools/data/local/DebugDemoDataSeeder.kt`, performs one `DatabaseTransactionRunner` transaction, and reuses repository writers so project counters and yarn links obey normal invariants. The release implementation is a no-op.
 
 ### Main activity
 
@@ -230,12 +351,14 @@ Production Kotlin lives under `app/src/main/java/com/finnvek/knittools`.
 
 | Package | Ownership |
 |---|---|
+| `analytics/` | Consent, lifecycle, event/route allowlists and PostHog adapter |
 | `auth/` | Firebase anonymous-auth gateway and Ravelry authentication seams |
 | `billing/` | Play Billing connection, product details, purchase, acknowledgement, and restore |
-| `data/datastore/` | Preferences, language mirror, trial persistence, and launch-token storage |
+| `data/datastore/` | App preferences, language mirror and preference I/O handling |
+| `data/backup/` | Archive budgets/validation, identity rebasing, file journals and provider I/O |
 | `data/local/` | Room database, entities, DAOs, migrations, transactions, debug seeding |
 | `data/remote/` | Firebase callable client, sanitized Ravelry transport models, backend error mapping |
-| `data/storage/` | App-owned files, SAF copy paths, PDF rendering/export, progress and yarn photos |
+| `data/storage/` | App-owned files, launch-token store, SAF copy, PDF rendering/export, progress and yarn photos |
 | `di/` | Hilt bindings, database construction, dispatchers, and application scope |
 | `domain/calculator/` | Pure calculations, formatting, parsing, row mapping, annotation geometry |
 | `domain/model/` | Domain models, enums, persisted-value parsing, and link normalization |
@@ -248,6 +371,12 @@ Production Kotlin lives under `app/src/main/java/com/finnvek/knittools`.
 | `util/` | Locale-sensitive formatting and small utilities |
 | `widget/` | Glance UI, widget state, actions, and launch behavior |
 
+### State lifetime and asynchronous boundaries
+
+Room is authoritative for content and active sessions. SavedStateHandle retains route/editor drafts (folder filter, Gauge raw/canonical inputs, yarn-usage draft, consumed shares and notes) through supported saved-state restoration; it is not a backup or guarantee after every process kill. `rememberSaveable` handles library guide state and suitable local UI selections, while annotation undo/redo, backup preview and Ravelry pending state are in memory. Navigation one-shot events and durable successful-save state have different replay rules.
+
+`di/DispatchersModule.kt` provides application `SupervisorJob`/Main-immediate scope and I/O dispatcher. Billing/Pro own manager scopes; these are intentional exceptions, not ViewModel-owned jobs. `DatabaseTransactionRunner`, pattern-reference mutex, yarn-photo mutex and backup-operation mutex address different consistency domains. Cancellation propagates before authoritative commit; cleanup/final-save paths use explicitly bounded or non-cancellable behavior where described. Source operation IDs, expected revisions/tokens and captured document/layer context guard late results. Android callback ownership and the complete Insights session transaction are described below, together with their remaining recovery and independent-flow boundaries.
+
 ### Layer rules
 
 - `data/` owns Room, DataStore, file storage, Android framework access, and transport details.
@@ -258,7 +387,7 @@ Production Kotlin lives under `app/src/main/java/com/finnvek/knittools`.
 - Repositories and ViewModels crossing architecture boundaries use injected `@IoDispatcher` rather than hardcoded `Dispatchers.IO`.
 - Multi-DAO Room writes use `DatabaseTransactionRunner` from repository methods.
 - UI-facing Room flows apply `retryOnRepositoryReadFailure` after entity-to-domain mapping. It preserves cancellation and retries at 250, 500, 1000, 2000, and 4000 ms, capped at 5000 ms.
-- Repository operations that pass caller-sized ID lists into SQLite `IN` clauses use `data/local/SqliteQueryChunking.kt`: IDs are deduplicated and split into chunks of at most 900 bind parameters. Current users are `ProgressPhotoRepository`, `ProjectDocumentRepository`, `ProjectFolderRepository`, `SavedPatternRepository`, and `YarnCardRepository`. Operations preserve their own whole-request contract across all chunks: for example, bulk folder moves validate the complete deduplicated project set before committing, while delete-by-ID paths may intentionally operate only on rows that still exist.
+- Repository operations that pass caller-sized ID lists into SQLite `IN` clauses use `data/local/SqliteQueryChunking.kt`: IDs are deduplicated and split into chunks of at most 900 bind parameters. Current users are `ProgressPhotoRepository`, `ProjectDocumentRepository`, `ProjectFolderRepository`, `SavedPatternRepository`, and `YarnCardRepository`. Chunking prevents bind-limit overflow; it does not itself provide whole-request atomicity or a coherent cross-chunk observation. Progress-photo bulk deletes are sequential and document bulk observations combine chunks. Operations preserve their own explicit request contract across chunks: for example, bulk folder moves validate the complete deduplicated project set before committing, while delete-by-ID paths may intentionally operate only on rows that still exist.
 - Final persistence that must outlive a ViewModel may use `@ApplicationScope`; ordinary screen work stays in `viewModelScope`.
 
 ## Navigation
@@ -309,6 +438,7 @@ Top-level navigation saves and restores state and avoids duplicate destinations.
 | `ravelry_detail/{patternId}` | Ravelry result detail |
 | `insights` | Insights dashboard |
 | `settings` | Settings |
+| `backup` | Manual export, validation preview and replacement restore |
 | `pro_upgrade` | Global Pro upgrade |
 
 `RavelryImport.createRoute` URI-encodes the URL. A raw URL must never be concatenated into a route segment.
@@ -324,7 +454,7 @@ Top-level navigation saves and restores state and avoids duplicate destinations.
 - Global `pro_upgrade` is outside the individual top-level graphs.
 - `KnitToolsNavActions`, `CounterScreenActions`, and `RavelrySearchActions` group route actions.
 
-The bottom bar is hidden only for `pro_upgrade`, both pattern viewer routes, `notes_editor/{projectId}`, and the web-pattern editor. It remains visible on the counter and most detail screens. `NavHost` consumes outer scaffold padding; nested scaffolds must not add duplicate insets.
+The bottom bar is hidden for `pro_upgrade`, both pattern viewer routes, `notes_editor/{projectId}`, the web-pattern editor and `backup`. It remains visible on the counter and most detail screens. `NavHost` consumes outer scaffold padding; nested scaffolds must not add duplicate insets.
 
 ## Screen and feature inventory
 
@@ -352,7 +482,7 @@ Insights combines project and session data into total work time, exact rows and 
 
 ### Settings
 
-Settings owns app language, light/dark/system theme, haptic feedback, keep-screen-awake and imperial-unit preferences, Pro status and upgrade/restore entry, the help-guide link, privacy summary, and app version. The Help and guide target is `https://knittoolsapp.com/articles/` and is opened through the shared validated external-web-link helper, with explicit no-browser/failure feedback rather than an uncaught Custom Tabs launch.
+Settings owns app language, light/dark/system theme, haptic feedback, keep-screen-awake and imperial-unit preferences, usage-analytics consent and Backup & restore, Pro status and upgrade/restore entry, the help-guide link, privacy summary, and app version. The Help and guide target is `https://knittoolsapp.com/articles/` and is opened through the shared validated external-web-link helper, with explicit no-browser/failure feedback rather than an uncaught Custom Tabs launch.
 
 ### Screen source index
 
@@ -379,6 +509,7 @@ Settings owns app language, light/dark/system theme, haptic feedback, keep-scree
 | Insights | `ui/screens/insights/InsightsScreen.kt`, `InsightsViewModel.kt`, `InsightsSections.kt` |
 | Insights chart/fabric | `InsightsChart.kt`, `InsightsChartModel.kt`, `InsightsProjectFabric.kt`, `InsightsProjectFabricModel.kt` |
 | Session history | `ui/screens/session/SessionHistoryScreen.kt`, `SessionHistoryViewModel.kt` |
+| Backup and restore | `ui/screens/backup/BackupScreen.kt`, `BackupViewModel.kt`, `repository/BackupRepository.kt`, `data/backup/` |
 | Tools landing | `ui/screens/home/HomeScreen.kt` |
 | Calculators | `GaugeScreen.kt`, `IncreaseDecreaseScreen.kt`, `CastOnScreen.kt`, `YarnEstimatorScreen.kt` |
 | References | `NeedleSizeScreen.kt`, `SizeChartScreen.kt`, `AbbreviationsScreen.kt`, `ChartSymbolScreen.kt` |
@@ -390,6 +521,29 @@ Settings owns app language, light/dark/system theme, haptic feedback, keep-scree
 ### Room database
 
 `KnitToolsDatabase` uses schema version 25. `KNITTOOLS_DATABASE_VERSION` in `data/local/KnitToolsDatabase.kt` is the single source used by the `@Database` annotation; release-surface verification resolves that constant and compares it with the exported schema directory instead of relying on a duplicated numeric literal. Its 18 entities are `CounterProjectEntity`, `CounterHistoryEntity`, `YarnCardEntity`, `SessionEntity`, `ActiveSessionEntity`, `RowReminderEntity`, `ProgressPhotoEntity`, `ProjectCounterEntity`, `ProjectYarnNoteEntity`, `ProjectYarnUsageEntity`, `SavedPatternEntity`, `PatternAnnotationLayerEntity`, `PatternAnnotationEntity`, `PatternBookmarkEntity`, `ProjectDocumentEntity`, `ProjectFolderEntity`, `ProjectFolderAssignmentEntity`, and `ProjectCompletionEntity`.
+
+The database filename is `knittools.db`, with no destructive migration fallback. Exported schema 25 has identity hash `9e9baa96c63eedd96a597d2ce371a893`; this is structural metadata, not an executed migration result.
+
+| Table | Canonical ownership and important relationship |
+|---|---|
+| `counter_projects` | CounterRepository; saved-pattern/yarn links are soft links, not cascaded foreign keys. |
+| `counter_history` | Main counter/Undo; project CASCADE, timestamp/ID descending read. |
+| `sessions` | Completed work only; project CASCADE, project/start/end indexes, 256-row Insights keyset queries. |
+| `active_sessions` | CounterRepository; fixed singleton ID 1 enforced by PK/triggers, project CASCADE. |
+| `project_completions` | Lifecycle transaction; project CASCADE, each completion cycle retained. |
+| `row_reminders` | ReminderRepository; project CASCADE. |
+| `project_counters` | ProjectCounterRepository; project CASCADE, sort-order then ID. |
+| `progress_photos` | ProgressPhotoRepository; project CASCADE, filesystem cleanup separately. |
+| `yarn_cards` | YarnCardRepository; project link is maintained bidirectionally by repository. |
+| `project_yarn_notes` | ProjectYarnNoteRepository; project CASCADE, saved-card link maintained explicitly. |
+| `project_yarn_usage` | ProjectYarnUsageRepository; project CASCADE, both source FKs SET NULL, unique non-null source/project pairs. |
+| `saved_patterns` | SavedPatternRepository; indexed Ravelry/canonical/original/PDF identities, duplicate policy in repository. |
+| `project_documents` | ProjectDocumentRepository; project CASCADE, Saved Pattern SET NULL, per-project order/key/URI indexes and at-most-one-primary triggers. |
+| `pattern_annotation_layers` | PatternAnnotationRepository; exactly one project/Saved Pattern owner, both CASCADE, unique owner/document key and active-layer triggers. |
+| `pattern_annotations` | PatternAnnotationRepository; layer CASCADE, layer/page/z-order index. |
+| `pattern_bookmarks` | PatternBookmarkRepository; project CASCADE, document key and page/Y/creation/ID ordering. |
+| `project_folders` | ProjectFolderRepository; normalized-name unique index. |
+| `project_folder_assignments` | ProjectFolderRepository; project PK, project/folder CASCADE; deleting folder preserves projects. |
 
 Automatic migrations cover 1 to 2 and 2 to 3. Manual migrations cover every step from 3 to 4 through 24 to 25. `DatabaseModule` registers `ALL_MANUAL_MIGRATIONS`. Exported schemas 1 through 25 are retained.
 
@@ -411,7 +565,7 @@ Migration 20 to 21 creates `active_sessions`, the canonical source for the one g
 
 #### Schema 22
 
-Migration 21 to 22 creates `project_documents` without rebuilding `counter_projects`. Every project with a nonblank legacy `patternUri` receives exactly one primary relation in deterministic order. The migration preserves its readable URI, strongest available label, nullable valid Saved Pattern link, stable existing project or Saved Pattern `documentKey`, current page, row mapping, horizontal line and follow state, and vertical guide state. Projects without a readable legacy URI receive no row. The retained legacy project-pattern and reader columns remain compatibility data and are no longer the production source of truth.
+Migration 21 to 22 creates `project_documents` without rebuilding `counter_projects`. Every project with a nonblank legacy `patternUri` receives exactly one primary relation in deterministic order. The migration preserves its stored URI, strongest available label, nullable valid Saved Pattern link, stable existing project or Saved Pattern `documentKey`, current page, row mapping, horizontal line and follow state, and vertical guide state. Projects without a nonblank legacy URI receive no row; migration does not prove the file is readable. The retained legacy project-pattern and reader columns remain compatibility data and are no longer the production source of truth.
 
 The table uses a cascading project foreign key and a nullable `ON DELETE SET NULL` Saved Pattern foreign key. Database triggers reject a second primary row for the same project on insert or update. Repository transactions preserve exactly one primary document for every nonempty list during add, reorder, primary change, and removal.
 
@@ -431,7 +585,7 @@ Migration 23 to 24 adds only `project_yarn_usage` and its four indexes. All 16 s
 
 `ProjectYarnUsageRepository.observeForProject` maps one transactional Room relation snapshot through `retryOnRepositoryReadFailure` on the injected `@IoDispatcher`. Its `create`, `update`, and `delete` APIs validate ownership, finite nonnegative amounts, optional positive conversion pairs, and expected update revisions inside `DatabaseTransactionRunner`. Results distinguish success, existing usage, missing/foreign sources, invalid input, stale actions, and persistence failure; cancellation propagates and failed transactions roll back. UI never calls the usage DAO. Usage writes do not change project counts/timestamps, sessions, pattern documents, files, or global stash quantity.
 
-When `Save to My Yarn` joins a project note to a saved yarn card, `ProjectYarnUsageDao.linkSavedCard` runs as one Room transaction and returns `NoUsage`, `Linked`, or `Conflict`. A single existing row receives both source IDs. If separate note-backed and card-backed rows exist, they can merge only when each amount and conversion field is equal or null-compatible; differing non-null values are a conflict. The note-backed row is preferred as the survivor, otherwise the lower ID survives; blank snapshot text can fall back to the other row, `createdAt` takes the earlier value, and `updatedAt` takes the later value. A conflict makes `ProjectYarnNoteRepository.saveToMyYarn` fail and rolls the surrounding transaction back, so the note/card link cannot be persisted while leaving two contradictory logical usage records.
+When `Save to My Yarn` joins a project note to a saved yarn card, `ProjectYarnUsageDao.linkSavedCard` runs as one Room transaction and returns `NoUsage`, `Linked`, or `Conflict`. Any matching row already belonging to a different project note is a conflict, including the inspected local multi-row correction. A single compatible row receives both source IDs. If separate note-backed and card-backed rows exist, they can merge only when each amount and conversion field is equal or null-compatible; differing non-null values are a conflict. The note-backed row is preferred as the survivor, otherwise the lower ID survives; blank snapshot text can fall back to the other row, `createdAt` takes the earlier value, and `updatedAt` takes the later value. A conflict makes `ProjectYarnNoteRepository.saveToMyYarn` fail and rolls the surrounding transaction back, so the note/card link cannot be persisted while leaving two contradictory logical usage records.
 
 #### Counter projects
 
@@ -447,7 +601,7 @@ Migration 24 to 25 adds only `project_completions`, its project index, and a cas
 
 `CounterRepository` records each active-to-completed transition and its completion-zone ID in the same transaction as project/session finalization. Repeated completion without reopening is idempotent; reactivation preserves history and a later completion adds another event. Project deletion cascades to its events. Ordinary project updates cannot bypass this transition writer.
 
-Insights observes completion events, waits for their first real snapshot, and applies its existing project and time-range filters using each event's zone with a captured device-zone fallback for legacy events. Completion counts and the event list are basic data; the timeline follows `INSIGHTS_CHARTS`. All 11 supported locales include completion wording.
+Insights observes completion events, waits for their first real snapshot, and applies its existing project and time-range filters using each event's zone with a captured device-zone fallback for legacy events. Completion counts and the event list are basic data; the timeline follows `INSIGHTS_CHARTS`. Completion vocabulary is present in all 11 configured locale sets; overall translation completeness is reported separately.
 
 #### Project documents and primary pattern
 
@@ -457,7 +611,7 @@ The first document becomes primary. Later documents can be opened, renamed, move
 
 Local SAF PDF selection, gallery-image PDF creation, camera-image PDF creation, and Saved Patterns with attached local PDFs all converge on `ProjectDocumentRepository`. Multiple-document management has no new Pro gate; existing source-specific capture/import gates remain unchanged. Destructive repository operations capture app-owned cleanup inputs before their transaction, commit the authoritative database mutation first, and then attempt physical cleanup. Database failure or pre-commit cancellation leaves files intact; post-commit cleanup failure may leave an orphan but cannot roll back or misreport the committed database result. File deletion remains reference-aware across Saved Patterns, every project-document row, other projects, and any still-relevant legacy URI. Deleting a Saved Pattern clears only its nullable relation and retains the project document and shared file; every project-deletion route delegates distinct pattern URIs to the canonical reference-aware cleanup gate after its cascade commits. `PatternFileReferenceCoordinator` provides the process-local `Mutex` shared by `CounterRepository`, `ProjectDocumentRepository`, and `SavedPatternRepository`; reference-creating/replacing mutations and `deleteLocalPatternFileIfUnused` execute under `withReferenceLock`, preventing a cleanup decision from racing with creation of a new reference.
 
-The project list and counter surface primary-document status from one repository-owned bulk observation. The viewer remembers an explicitly selected relation through recreation, falls back to the primary or first available relation when needed, and keeps reader state per relation. All document-management copy is localized in the 11 supported resource directories, and row actions expose 48 dp targets with explicit accessibility semantics.
+The project list and counter surface primary-document status from one repository-owned bulk observation. The viewer remembers an explicitly selected relation through recreation, falls back to the primary or first available relation when needed, and keeps reader state per relation. Document-management resources span the 11 configured locales; source declares 48 dp actions and accessibility semantics. Translation/rendering quality was not runtime-verified.
 
 #### History and sessions
 
@@ -470,25 +624,6 @@ The screen shows retained main-counter `increment`, `decrement`, and `reset` cha
 Room observation updates the lazy list after canonical and widget mutations or undo. SQL orders by `timestamp DESC, id DESC`, using the existing project index without limiting retained rows. Presentation groups and formats data off the UI thread using one current device zone per snapshot, the app locale, and device 12/24-hour preference with seconds. Original historical zones are not stored. Read-only event rows expose a single localized accessibility description; a loaded empty history has its own non-error message. All 11 configured locales contain the vocabulary.
 
 This feature leaves Room at schema 25 and the full-app backup format unchanged: restored `counter_history` rows need no conversion and are consumed by the same observation. Screen state is derived and is not backed up.
-
-Retention correction verified on 2026-09-14: focused JVM tests passed 34/34; the full rerun passed 1,857/1,857 with no skipped tests. API 36 emulator results were 3/3 Room tests, 8/8 backup integration tests, and 9/9 history content/navigation tests. Coverage includes 2-, 7-, and 180-day-old rows, ordinary project opening and Activity relaunch, closing/reopening the on-disk Room database, completion/reactivation, new changes, newest-only Undo, rejection of stale/unknown latest events, project-delete cascade, and old-history replacement restore. Activity relaunch and database reopen were exercised separately; this was not a force-stop/process-death test. The existing 2,001-row ordering fixture added 65,536 SQLite bytes including the project index; actual storage depends on field values and page allocation. No retention cap or schema/backup-format change was added.
-
-Executed verification commands (PowerShell, repository root):
-
-```powershell
-.\gradlew.bat :app:testDebugUnitTest --tests '*CounterHistory*' --tests '*FeatureGateRaceSourceTest' --tests '*CounterRepositoryMainCounterChangeTest' --console=plain
-.\gradlew.bat :app:compileDebugAndroidTestKotlin :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug :app:ktlintCheck :app:detekt --console=plain
-.\gradlew.bat :app:testDebugUnitTest --rerun-tasks :app:compileDebugAndroidTestKotlin :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug :app:ktlintCheck :app:detekt --continue --console=plain
-adb -s emulator-5580 install -r app/build/outputs/apk/debug/app-debug.apk
-adb -s emulator-5580 install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
-adb -s emulator-5580 shell am instrument -w -r -e class com.finnvek.knittools.repository.CounterHistoryRoomTest,com.finnvek.knittools.repository.BackupRepositoryTest,com.finnvek.knittools.ui.screens.counterhistory.CounterHistoryContentTest,com.finnvek.knittools.ui.screens.counterhistory.CounterHistoryNavigationTest com.finnvek.knittools.test/androidx.test.runner.AndroidJUnitRunner
-adb -s emulator-5580 shell am instrument -w -r -e class com.finnvek.knittools.repository.CounterHistoryRoomTest com.finnvek.knittools.test/androidx.test.runner.AndroidJUnitRunner
-git diff --check
-```
-
-The first instrumented run passed 17 tests and reported one Room test-class initialization error caused by the added measurement returning an integer; the corrected Room class then passed all three tests. The initial build/check command reported six ktlint formatting findings in that test, corrected before the final command. The final Gradle command succeeded with all 117 tasks executed: both APK builds, instrumentation compilation, ktlint, Detekt, and debug lint passed. Lint reported zero errors and four unrelated existing warnings. No migration test was required. No commit, push, merge, or pull request was made.
-
-Counter-history validation (2026-09-14): `:app:testDebugUnitTest --rerun-tasks` passed all 1,857 JVM tests; the final production source also passed the complete JVM task. The focused API 36 emulator run passed 12 tests: three Room tests, the existing full-backup replacement test with a restored-history assertion, six Compose tests (including 320 dp and 200% font in both themes), and two real navigation tests. Debug application/test APK builds, Android-test Kotlin compilation, ktlint, Detekt, and `git diff --check` passed. Final `:app:lintDebug` passed with zero errors and four warnings outside this change (three unused widget-preview strings and the backup usable-space advisory). Room schema 25 and backup production files matched their task-start hashes.
 
 `sessions` stores project, start/end timestamps and rows, display minutes, exact `durationSeconds` and `rowsWorked`, and nullable `zoneId`. New sessions capture the device zone at session start. Cross-midnight day and pace splitting use that zone. Only a legacy null or invalid zone uses the current device zone as fallback.
 
@@ -508,7 +643,7 @@ Work-session UI copy is localized in all 11 supported resource directories: defa
 
 #### Saved patterns
 
-`saved_patterns` stores source, nullable positive Ravelry ID, metadata, the canonical `free`/`paid`/`unknown` availability string, original and canonical URLs, optional local PDF URI, offline state, and save/update/sync timestamps. Persisted `ravelryId = 0` and `patternUrl` sentinels are not part of the current schema. Unknown stored source values map to `SavedPatternSource.Unknown`, not `Other`, so an unrecognized future/legacy source cannot accidentally become editable web metadata. Duplicate detection checks Ravelry ID, canonical URL, normalized original URL, then title plus designer only when explicitly requested.
+`saved_patterns` stores source, nullable positive Ravelry ID, metadata, the canonical `free`/`paid`/`unknown` availability string, original and canonical URLs, optional local PDF URI, offline state, and save/update/sync timestamps. Persisted `ravelryId = 0` and `patternUrl` sentinels are not part of the current schema. Source values are stable `RAVELRY`, `LOCAL_FILE`, `WEB_LINK`, `OTHER`, and `UNKNOWN`. Unknown stored source values map to `SavedPatternSource.Unknown`, not `Other`, so an unrecognized future/legacy source cannot accidentally become editable web metadata. Duplicate detection checks Ravelry ID, canonical URL, normalized original URL, then title plus designer only when explicitly requested.
 
 #### Web pattern links
 
@@ -553,6 +688,7 @@ Schema 15 adds foreign-key lookup indexes, schema 16 adds session zones, schema 
 | `useImperial` | false |
 | `showCompletedProjects` | false |
 | `projectSortOrder` | `ProjectSortOrder.DEFAULT` |
+| `usageAnalyticsEnabled` | false |
 
 DataStore also persists dismissed tooltip IDs. `ProjectSortOrder.persistedValue` is the storage contract; UI and repositories use the enum rather than raw strings.
 
@@ -560,7 +696,7 @@ DataStore also persists dismissed tooltip IDs. `ProjectSortOrder.persistedValue`
 
 Runtime language is owned by AppCompat and Android per-app locale APIs. `app_language` is a persistence and migration mirror. Android 13 and newer migration tracks `app_language_migrated_to_system`, preserves an existing app-selected locale, and later synchronizes external system-setting changes back to DataStore.
 
-Trial state and launch-token state have their own persistence helpers. Trial integrity must not be inferred from general app preferences alone.
+`knittools_preferences` uses a corruption handler returning empty preferences; read `IOException` emits defaults and preference write `IOException` returns failure. This differs from `trial_state`, where corruption fails closed with sticky tamper state. `CounterLaunchTokenStore` uses `counter_launch_tokens` SharedPreferences with timestamped UUID records, synchronized consume and synchronous commit; future, expired and legacy untimestamped records are rejected. At most 100 pending records survive. Widget shared `counter_widget` and per-instance Glance state plus review persistence are separate stores. These preferences/trust/entitlement stores are not full-app backup content.
 
 ## Domain behavior and transactional invariants
 
@@ -574,7 +710,8 @@ All primary counter changes go through `CounterRepository.applyMainCounterChange
 - appends history;
 - resets or updates current-stitch state as required;
 - applies linked additional-counter deltas according to domain rules;
-- updates project timestamps.
+- updates project timestamps;
+- checkpoints active-session work/net rows and resolves followed page/Y on the active document in the same transaction.
 
 The repository rejects main-counter mutation for a completed project. Arithmetic normalizes a malformed step to at least one, uses a wider intermediate, saturates increment at `Int.MAX_VALUE`, and floors decrement/reset at zero. Undo reads the latest history row and accepts it only when its project ID matches, its `newValue` equals the current project count, its values differ, the previous value is nonnegative, and the action direction is internally consistent for increment, decrement, or reset. A successful undo deletes only that history row and reverses the linked-counter/reading-line delta. The widget delegates through `applyWidgetCountChange` to the same semantics, so widget changes affect `linkedToMainCounter` counters exactly as in-app changes do.
 
@@ -597,7 +734,7 @@ Stitch state is a separate atomic repository boundary. Setting stitch count upda
 
 `ProjectCounterLogic` owns type-specific validation and updates. Repositories apply those rules inside a transaction rather than embedding behavior in DAO SQL or composables. Count-up clears every type-specific field; repeating requires positive `repeatAt`; shaping requires nonnegative starting stitches, a stitch delta, and positive cadence; repeat sections require a positive start, end at or after start, and positive repeat count. Counter arithmetic and shaping/repeat range calculations use `Long` intermediates and clamp public `Int` results instead of overflowing.
 
-`linkedToMainCounter` is chosen in the add/edit draft. A repeat-section counter must not be linked to the main counter because its progress already derives from main-counter rows. Named counters, shaping events, targets, and repeat-section progress remain separate from legacy `secondaryCount`.
+`linkedToMainCounter` is chosen in the add/edit draft. A repeat-section counter must not be linked to the main counter because its progress already derives from main-counter rows. Named counters, shaping events, targets, and repeat-section progress remain separate from legacy `secondaryCount`. Counter names are limited to 50 UTF-16 units without splitting surrogate pairs. Reminder targets/optional intervals are positive and message text is trimmed/capped at 200. Reminders match the current row/interval in-app; they do not schedule Android notifications or trigger every crossed row.
 
 `ProjectCounterRepository` returns `ProjectCounterMutationResult`: `Success`, `ProjectUnavailable`, `CounterUnavailable`, `StaleAction`, `InvalidCounter`, `FeatureUnavailable`, or `PersistenceFailure`. Creation checks `MULTIPLE_COUNTERS` and any type-specific `SHAPING_COUNTER`/`REPEAT_SECTION` gate inside the transaction. Mutation of an existing counter verifies project ownership and remains available without reapplying the creation entitlement. Cancellation propagates.
 
@@ -605,7 +742,7 @@ Stitch state is a separate atomic repository boundary. Setting stitch count upda
 
 ### Notes
 
-Project note replacement uses `CounterRepository.saveProjectNotes`. It merges the editor's base notes with current persisted notes so concurrent editor flows are preserved instead of blindly overwriting one another, and repeating the same merge does not duplicate an already appended concurrent block. The typed result is `Saved`, `ProjectUnavailable`, `FeatureUnavailable`, or `PersistenceFailure`; cancellation propagates and failed saves keep the editor draft.
+Project note replacement uses `CounterRepository.saveProjectNotes`. It merges the editor's base notes with current persisted notes so concurrent editor flows are preserved instead of blindly overwriting one another, and repeating the same merge does not duplicate an already appended concurrent block. The typed result is `Saved`, `ProjectUnavailable`, `FeatureUnavailable`, or `PersistenceFailure`; cancellation propagates and failed saves keep the editor draft. `NotesEditorViewModel` keeps draft/base/creation authorization in SavedStateHandle, debounces one second, retries before Back and requires explicit discard after failure. Its application-scope final save can outlive ViewModel clearing but cannot guarantee completion after process termination.
 
 `notesCreated` is set monotonically when note content is created. After entitlement loss, a project that previously used notes retains access to that existing surface; a never-used project still follows the creation gate.
 
@@ -617,7 +754,7 @@ Project note replacement uses `CounterRepository.saveProjectNotes`. It merges th
 
 - `saveCard` normalizes any persisted `linkedProjectId`;
 - a nonzero edit ID must still exist, a new card rechecks `UNLIMITED_YARN` inside the transaction, and negative inventory quantity is rejected;
-- the detail quantity stepper uses transactionally re-read `changeQuantity`, with the result bounded to `0..Int.MAX_VALUE`;
+- the detail quantity stepper uses transactionally re-read `changeQuantity`, with out-of-range results rejected outside `0..Int.MAX_VALUE`;
 - direct `updateQuantity` calls also reject negative values, and `updateStatus` passes stored input through `YarnCardStatus.normalize` rather than persisting an arbitrary string;
 - `updateLinkedProjectId` updates both the card's `linkedProjectId` and the project's `yarnCardIds`;
 - unlink, relink, and project deletion preserve both directions;
@@ -685,7 +822,7 @@ The internal Pro enum name `PATTERN_CAMERA_SCAN` is a legacy identifier, not use
 
 ### Progress photos
 
-Capture-target creation and abandoned-capture cleanup go through `ProgressPhotoRepository` and `CounterViewModel` on `@IoDispatcher`. Composables do not instantiate `ProgressPhotoStorage` or directly delete files. Imported progress photos are bounds-decoded first, sampled by a power-of-two factor before full decode, scaled to at most 1920 pixels on the longest edge, and encoded as JPEG quality 80; this prevents the old full-resolution-first allocation path. Gallery and all-photos views consume repository data.
+Capture-target creation and abandoned-capture cleanup go through `ProgressPhotoRepository` and `CounterViewModel` on `@IoDispatcher`. Repository reads prune metadata for unavailable photo files; notes are capped at 100 characters. Photo creation gates are applied by CounterViewModel/UI, while the storage/repository handles ownership and cleanup. Composables do not instantiate `ProgressPhotoStorage` or directly delete files. Imported progress photos are bounds-decoded first, sampled by a power-of-two factor before full decode, scaled to at most 1920 pixels on the longest edge, and encoded as JPEG quality 80; this prevents the old full-resolution-first allocation path. Gallery and all-photos views consume repository data.
 
 ### Yarn photos
 
@@ -696,7 +833,7 @@ Capture-target creation and abandoned-capture cleanup go through `ProgressPhotoR
 3. persists the new URI;
 4. deletes the old app-owned photo only after the new URI is durable.
 
-`App.onCreate` schedules `pruneUnreferencedPhotoFiles` so an interrupted replacement leaves at most a restart-cleanable orphan.
+Yarn photo copying preserves input bytes (a `.jpg` target name does not transcode them), caps input at 25 MiB and retains 32 MiB free space. Its storage mutex also coordinates pruning and backup. Yarn photo paths remain unshared. `App.onCreate` schedules `pruneUnreferencedPhotoFiles`; an interrupted replacement can leave an orphan awaiting a successful later cleanup.
 
 ## Pattern reading, calibration, annotations, and export
 
@@ -709,16 +846,9 @@ Attached-project reading-line state persists on the selected `ProjectDocument`:
 - `currentPatternPage`;
 - `patternRowMapping`.
 
-`RowMappingParser` owns serialization of `RowMarker(row, page, yPosition)` values. Input longer than 256 KiB becomes an empty mapping. Array elements are decoded independently so one malformed element does not discard valid siblings; invalid markers are removed, duplicate `(row,page)` identities keep the first value, no more than 4096 markers survive, and the result is sorted by page then row. Serialization applies the same validity, deduplication, limit, and ordering rules. A drag commit creates or updates the selected document's current row/page anchor through `CounterViewModel.upsertPatternRowMarker`. Calibration combines anchors through `mergePatternRowMarkers`. Viewer callbacks pass the initiating `projectDocumentId` and that document's row-mapping snapshot, so a late gesture cannot read or overwrite whichever document became active meanwhile. Live drag remains preview state in the viewer until commit. The project count remains global, but canonical counter and widget changes resolve followed reading-line movement only against the active document and never update the retained legacy project-level reader columns.
+`RowMappingParser` owns serialization of `RowMarker(row, page, yPosition)` values. Input longer than 256 KiB becomes an empty mapping. Array elements are decoded independently so one malformed element does not discard valid siblings; invalid markers are removed, duplicate `(row,page)` identities keep the first value, no more than 4096 markers survive, and the result is sorted by page then row. Serialization applies the same validity, deduplication, limit, and ordering rules. Manual page/line movement pauses follow without writing a marker. Explicit row-marker commands use `CounterViewModel.upsertPatternRowMarker`. Calibration combines anchors through `mergePatternRowMarkers`. Viewer callbacks pass the initiating `projectDocumentId` and that document's row-mapping snapshot, so a late gesture cannot read or overwrite whichever document became active meanwhile. Live drag remains preview state in the viewer until commit. The project count remains global, but canonical counter and widget changes resolve followed reading-line movement only against the active document and never update the retained legacy project-level reader columns.
 
-`resolveReadingLineYFraction` resolves movement in this order:
-
-1. an exact row anchor;
-2. interpolation between two anchors on the page;
-3. one-sided row-step fallback;
-4. ordinary row-step movement when no usable anchors exist.
-
-Anchors from another PDF page must not influence the current page.
+`resolveReadingLineLocation` prefers an exact current-page marker, then an unambiguous exact marker on another page or current-page bracket, then conservative row-delta fallback. Ambiguous pages do not justify guessing. Mapping changes and Return to row reevaluate with zero delta. Horizontal enabled/Y/follow/page and vertical enabled/X belong to each relation; manual movement pauses follow, explicit markers/calibration alone write row mapping. Bookmarks use project/document-key isolation, deterministic page/Y/creation/ID order, pause follow and request a one-shot focus on the correctly rendered page. Detach preserves them; same-document reattach restores visibility, replacement hides old keys and project deletion cascades.
 
 Library-only viewer reading-line state is saveable for session and configuration recreation, but it does not create a Room persistence path. Project-attached viewer state is durable.
 
@@ -746,50 +876,35 @@ Annotation UI treats Text and Callout as immediate commands, so they use `Assist
 
 `PatternAnnotationCanvasRenderer` is the single renderer for both viewer overlays and rasterized export. Adding a second geometry or rendering path risks viewer/export divergence.
 
-### Annotated PDF export
+### Annotation budgets and annotated PDF export
 
-Export uses SAF `CreateDocument(application/pdf)`:
+`domain/model/PatternAnnotationPayloadCodec.kt` accepts payload version 1, limits UTF-8 payloads to 256 KiB and freehand to 2,048 points. Chart counts are 1–999 each and at most 10,000 cells overall. `PatternAnnotationPageBudget` limits each layer/page to 256 annotations, 16,384 work units and 2 MiB payload. Repository writes, backup validation, rendering and hit testing share limits; unsafe existing rows remain stored with a bounded failure state. Undo/redo is an in-memory document/layer command stack.
 
-- the source PDF remains unchanged;
-- pages are rendered one at a time;
-- the export bitmap is bounded to at most 1800 pixels on its longest side;
-- annotation layers are rendered through the shared renderer;
-- a temporary PDF is written under cache `pattern_exports/`;
-- the temporary output is copied to the selected destination;
-- progress is reported;
-- cancellation and failure clean temporary files and opened resources.
+SAF PDF export uses `data/storage/PatternPdfExporter.kt`, `PatternPdfExportBudget.kt`, `PdfPageRenderer` and the shared `PatternAnnotationCanvasRenderer`. Preflight and export enforce:
 
-Static export tests do not replace an instrumented PDF write/read check.
+| Resource | Default limit |
+|---|---:|
+| PDF metadata pages / source side | 100 / 14,400 units |
+| Bitmap longest side / pixels per page | 1,800 / 3,240,000 |
+| Total rendered pixels | 48,600,000 |
+| Annotations / payload total | 2,000 / 16 MiB |
+| Annotation work / tracker highlighted cells | 250,000 / 20,000 |
+| Temporary output | 200 MiB |
+| Required cache space | Output allowance plus 32 MiB reserve (232 MiB) |
+
+Bitmaps/pages are acquired one at a time and recycled/closed in `finally`, but one `PdfDocument` retains accumulated pages until write, making total-pixel limits significant. Raster export preserves the source file but loses source searchable text/vector/link semantics. Chosen annotation layers use the shared renderer; guides/bookmarks are excluded. A cache temp PDF under `pattern_exports/` is copied to the selected destination with progress/cancellation. Failure/cancel cleans private files/resources; destination copying can leave partial bytes. This is separate from full-app backup and requires runtime PDF checks for rendered correctness.
 
 ## Localization and locale-sensitive formatting
 
-All user-visible strings belong in Android resources. The base locale is English. Supported resource locales are:
+Base resources are English; `res/xml/locales_config.xml`, `data/datastore/AppLanguage.kt` and the Settings picker configure English, Finnish, Swedish, German, French, Spanish, Portuguese, Italian, Norwegian Bokmål, Danish and Dutch. There are 11 explicit languages plus the System option. AppCompat/Android per-app locale APIs own runtime language; DataStore mirrors selection/migration and Settings observes it. MainActivity synchronizes external Android 13+ locale changes after migration.
 
-- Finnish (`fi`);
-- Swedish (`sv`);
-- German (`de`);
-- French (`fr`);
-- Spanish (`es`);
-- Portuguese (`pt`);
-- Italian (`it`);
-- Norwegian Bokmål (`nb`);
-- Danish (`da`);
-- Dutch (`nl`).
+The current XML inventory reads every XML file in each configured locale directory and collects top-level `string`, `plurals`, `string-array` and `array` resources. Relevant files are `strings.xml` and `pattern_reading_assistance.xml` in English, also `pattern_annotations.xml` in Finnish, and those three plus `reference_strings.xml` in each of the other nine translations. English contains 1,321 strings and 32 plurals (1,353 names); one string is nontranslatable. Every translated locale contains all 1,352 translatable names (1,320 strings and 32 plurals), with no missing/extra names, type mismatches or duplicates; there are no text arrays. Earlier missing-resource claims counted only `strings.xml` and are superseded. `ReferenceResourceLocalizationTest` checks coverage/types across all these files, string alias resolution and plural `other` branches; this does not establish native-language quality or rendered clipping.
 
-Together with the base resources, this produces 11 selectable app languages. `locales_config.xml` and `AppLanguage` must stay aligned with resource directories and the Settings picker. Settings presents the language from the observed `PreferencesManager.preferences` state. AppCompat and Android per-app locale APIs remain authoritative; DataStore is the persistence and migration mirror, and `MainActivity.onResume` synchronizes an externally changed Android 13+ app locale back into that observed state after migration.
+All 11 parser hints now state the English-only input boundary and give examples accepted by the existing regex `InstructionParser`; `InstructionHintLocalizationTest` checks the resulting calculations and Android quote escaping in hints/reminder confirmation. Project completion/deletion, yarn-card deletion, cast-on stitch results and Ravelry yardage use quantity resources, covered structurally by `CountPluralResourcesSourceTest`. `YarnUsagePresentation.skeinPluralQuantity` parses the displayed rounded number using its locale and selects an ICU plural category; its `one`/`many`/other mapping supplies Android resource quantities. `YarnUsageLocalizationTest` passed on API 36 on 2026-10-01, covering rounded quantities and full regional locales through actual Android ICU/resources; exact scope is recorded under Evidence and historical verification.
 
-Use plural resources for count-sensitive copy. Do not build sentences by concatenating separately translated fragments. The project intentionally avoids U+00B7 as a visual separator; use layout, whitespace, punctuation, or dedicated rows.
+Strings/plurals belong in resources; do not concatenate translated sentence fragments. The design avoids U+00B7 as a separator. `domain/calculator/LocaleNumberFormatter.kt`, `DurationDisplayFormatter.kt`, `MinutesPerRowFormatter.kt`, `util/extensions/CanonicalNumberFormat.kt`, `ui/components/LocaleDateFormat.kt` and `LocalizedTextTransform.kt` distinguish locale display from canonical storage/transport. Decimal comma handling, units, plural quantities and locale-aware uppercase are significant. Counter history additionally uses the device 12/24-hour setting with seconds; stored session zones and current display zones have distinct roles.
 
-Locale-sensitive helpers include:
-
-- `LocaleNumberFormatter`;
-- `CanonicalNumberFormat` for stable persisted or transport numbers;
-- `DurationDisplayFormatter`;
-- `MinutesPerRowFormatter`;
-- `LocaleDateFormat`;
-- `LocalizedTextTransform`.
-
-Code review must distinguish canonical machine formatting from localized display formatting. Decimal separators, plural forms, uppercase transforms, and relative time are locale-sensitive.
+Manifest RTL support and automatic mirroring/Compose semantics are configuration/source contracts. Large-text, keyboard, touch-target, focus and TalkBack correctness require rendered/device evidence; none was acquired here.
 
 ## Ravelry integration
 
@@ -801,9 +916,11 @@ Ravelry credentials are Secret Manager secrets used only by Functions. They must
 
 ### Android flow
 
-`RavelryAuthManager` owns backend connection status, start, disconnect, callback completion, and current-user state. Every start/status/disconnect operation gets a monotonically increasing in-memory operation ID; a response may change state only while it is still the newest operation. Browser cancellation invalidates the pending operation. The authentication browser uses Auth Tab when available with a Custom Tabs fallback; if neither activity exists, the manager records cancellation rather than crashing. Android handles only the token-free deep link `knittools://ravelry-auth-complete`. Anonymous Firebase authentication uses `kotlinx.coroutines.tasks.await`; the shared in-flight sign-in task is cleared in a `NonCancellable` section so cancellation of a waiting coroutine cannot strand a completed/stale task for later callers.
+`RavelryAuthManager` owns backend connection status, start, disconnect, callback completion, and current-user state. Start, accepted status refresh, disconnect and callback completion capture monotonically increasing in-memory operation IDs; suspended results publish only while their operation is current. Callback completion rechecks ownership after `completeAuth` and refreshes status under the same ID. `activeAuthOperationId` suppresses passive refresh during active start/disconnect/completion and releases only its own claim in `finally`. Explicit auth changes invalidate older pending/recovered callbacks; browser cancellation also invalidates a pending operation. The authentication browser uses Auth Tab when available with a Custom Tabs fallback; if neither activity exists, the manager records cancellation rather than crashing. Android handles only the token-free deep link `knittools://ravelry-auth-complete`. Anonymous Firebase authentication uses `kotlinx.coroutines.tasks.await`; the shared in-flight sign-in task is cleared in a `NonCancellable` section so cancellation of a waiting coroutine cannot strand a completed/stale task for later callers.
 
-The accepted Android callback shape is exact: scheme `knittools`, host and encoded authority `ravelry-auth-complete`, no path, no fragment, and either one nonblank `state` parameter or one nonblank `state` plus one nonblank `error`. Duplicate parameters, extra names, blank values, and the former `status` fallback are rejected before auth-state handling. A pending state, when present, must match the callback state.
+The accepted Android callback shape is exact: scheme `knittools`, host and encoded authority `ravelry-auth-complete`, no path, no fragment, and either one nonblank `state` plus one nonblank `proof`, or one nonblank `state` plus one nonblank `error`. Duplicate parameters, extra names, blank values, and the former `status` fallback are rejected before auth-state handling. A pending or activated state, when present, must match. Concurrent duplicate success callbacks do not repeat activation/status work; consumed callbacks cannot start a new operation. If cancellation interrupts status after successful activation, `activatedCallbackState` permits a matching callback to retry status without activating again. A cancelled completion can release its claim for a matching retry. Tokens are never carried in the intent.
+
+A newly created manager still accepts a valid callback without in-memory pending state, including after passive status refresh. `acceptsRecoveredCallback` distinguishes that recovery path from missing state after an explicit start, disconnect or cancellation. These flags and operation IDs are not durable across process death: backend UID/proof, expiry and connection-generation checks remain authoritative, and a delivered callback is still required for completion recovery. JVM fake-backend ordering tests do not prove real process-death delivery, browser/Firebase interaction or activation interrupted across a process restart.
 
 The connected Browse Ravelry action opens Custom Tabs with sharing enabled. Android `ACTION_SEND text/plain` accepts a validated Ravelry pattern URL, but the app shows a local confirmation surface before requesting an import preview.
 
@@ -817,54 +934,59 @@ Ravelry results and saved-pattern metadata are not attached PDF documents. Proje
 
 `RavelryDetailScreen` explains beside the unsaved Save Pattern action that saving details does not download a PDF. Saved Pattern detail shows the persistent no-PDF explanation only for a Ravelry record whose `localPdfUri` is null or blank, using `requiresRavelryAccess`. An existing nonblank attachment suppresses that explanation regardless of the offline flag; this is not a file-readability check.
 
-### Backend functions
+### Backend functions and OAuth completion protocol
 
-The implemented backend surface includes:
+`functions/src/index.ts` exports nine Functions v2 handlers. Callables require a Firebase UID and use `europe-west1`; `ravelryCallback` is the public HTTP route. `functions/src/config.ts` defines Node-side client secrets, a configurable `RAVELRY_CALLBACK_URL`, and a 10-minute OAuth-state lifetime.
 
-- OAuth start;
-- OAuth callback;
-- connection status;
-- disconnect;
-- current user;
-- pattern search;
-- import by pattern ID;
-- import by pattern URL.
+| Export | Contract and admission |
+|---|---|
+| `ravelryStartAuth` | Combined UID/global auth admission; creates PKCE state and a one-use browser-start ticket. Returns a backend browser URL, not an Android-held upstream code exchange. |
+| `ravelryCallback` | GET/POST only; shape/bounded-value validation precedes backend-global admission, which occurs before state lookup. Browser start is GET-only; normal callback binds state consumption and pending credentials to the current generation. |
+| `ravelryCompleteAuth` | UID auth admission; caller-owned state plus short-lived completion proof activates matching pending tokens. Invalid proof/state/generation/expiry returns a failed precondition. |
+| `ravelryAuthStatus` | UID auth admission only; reports stored connection state. |
+| `ravelryDisconnect` | UID-only separate disconnect bucket; advances token generation and invalidates unused states. |
+| `ravelryCurrentUser` | UID/global auth admission; token acquisition/refresh and sanitized current-user metadata. |
+| `ravelrySearchPatterns` | UID search admission, token acquisition, then one global search admission before refresh/upstream work. |
+| `ravelryImportPatternById` | UID/global import admission around token/upstream work; positive bounded ID. |
+| `ravelryImportPatternByUrl` | Exact validated Ravelry URL; a slug can require search followed by import, consuming both operations' buckets. |
 
-OAuth start stores a PKCE state document in `ravelryOAuthStates/{state}` with a short lifetime and the current `connectionGeneration`. The callback accepts only the generated 43-character base64url state shape before any state-store lookup, consumes the public callback limiter before reading Firestore, then consumes one-time state, validates ownership and generation, and writes tokens only when the connection is still current. The public callback request key is a SHA-256 digest of the trimmed request IP or the `unknown` fallback; raw IP addresses are not used as Firestore document IDs.
+The browser-bound flow is implemented by `auth.ts`, `browserAuth.ts`, `authCore.ts`, and `tokenStore.ts` under `functions/src/ravelry`:
 
-Tokens live in `ravelryTokens/{uid}`. `functions/src/ravelry/tokenAccess.ts` is the access-token gate:
+1. Start creates a 43-character random base64url state, PKCE verifier/S256 challenge, connection generation, and hashed browser-start ticket. State is stored in `ravelryOAuthStates/{state}`.
+2. Opening the backend URL validates the state/ticket and transactionally binds one browser secret before redirecting to Ravelry. The `__Host-knittools-ravelry-auth` cookie uses `Secure`, `HttpOnly`, `SameSite=Lax`, root path and a 600-second lifetime. Responses prevent caching and referrer disclosure.
+3. Callback validates state, browser cookie/hash and generation, then consumes state before exchanging the code server-side. A legacy state path remains in the core. Callback code/error input is bounded to 2,048 characters and rejects controls. Upstream errors are reduced to an allowlist.
+4. Tokens are initially pending, with a completion-proof hash and 10-minute expiry. The completion proof is derived server-side using HMAC-SHA256 over state/verifier with the client secret. The token-free Android link contains `state` and `proof`, or `state` and `error`; proof is still sensitive short-lived authorization material.
+5. `ravelryCompleteAuth` requires the current authenticated UID and exact matching pending state/proof/generation/expiry before activating tokens. A browser redirect alone does not establish an active connection.
 
-- rate limiting occurs before token refresh;
-- expired access tokens refresh server-side with Secret Manager credentials;
-- a refresh result is persisted only when the stored access token, refresh token, expiry, and connection generation still match the token that initiated the refresh;
-- a refresh that loses that compare-and-set race reloads and may use the newer already-persisted token instead of overwriting it;
-- current-user verification updates only Ravelry user metadata and verification timestamps, so an in-flight response cannot restore stale credentials;
-- disconnect advances a tombstone generation so late callback, current-user, or refresh writes cannot recreate a disconnected connection.
+A repeated consumed browser callback polls at most 32 times at 750 ms for its saved browser result, rechecking generation. An unfinished duplicate can return `409 callback_in_progress`. This is bounded retry coordination, not arbitrary replay authorization. Browser binding/consumption, pending activation and generation checks are separate transactions; disconnect tombstones prevent late writes from recreating a connection.
 
-Search and import callables validate caller input before token or upstream work. Search requires a nonblank query of at most 200 characters; text filters are at most 100 characters; controls and line separators are rejected; difficulty endpoints are within 1 through 10 and ordered; page is at most 1000; and page size is at most 50. Import IDs are safe positive integers no larger than `Int.MAX_VALUE`; import URLs are at most 2048 characters.
+`functions/src/ravelry/tokenAccess.ts` owns access-token refresh. Refresh occurs only after the owning limiter, uses Secret Manager credentials, and persists rotated credentials only if stored access token, refresh token, expiry and generation still match. A lost compare-and-set race reloads newer state. Refresh preserves matching-generation pending authentication from the current transaction snapshot; current-user updates cannot restore stale credentials.
 
-URL import accepts only HTTPS `ravelry.com`/`www.ravelry.com`, no credentials, no port other than 443, and a path of exactly `/patterns/library/<slug>`. Query and fragment text may remain in `originalUrl`, but canonical identity strips both and is derived only from the validated path. The decoded slug is nonblank, at most 512 characters, and contains no slash, backslash, question mark, hash, or control character. Numeric paths require a positive bounded ID; slug paths accept only a search result whose canonical URL exactly matches the requested canonical URL. A fuzzy or merely first search result is rejected as `pattern_not_found` rather than imported as unrelated metadata.
+Search input requires query length 1–200, text filters at most 100, no controls/line separators, ordered difficulty 1–10, page at most 1,000 and page size at most 50. IDs must be positive safe integers no larger than `Int.MAX_VALUE`; URL input is at most 2,048 characters. HTTPS `ravelry.com`/`www.ravelry.com`, no credentials, only default/443 port, and exactly `/patterns/library/<slug>` are required. Slugs are bounded to 512 decoded characters without separators or controls. Canonical identity strips query/fragment; slug search must match that identity exactly rather than accept a fuzzy first result.
 
-All Ravelry API and token fetches use a 10-second abort timeout and `redirect: "error"`. Token JSON is streamed with a 64 KiB maximum and API JSON with a 1 MiB maximum; an oversized declared `Content-Length` cancels the body immediately, while chunked bodies are counted as read. Upstream pattern/user text has controls and line separators replaced, whitespace collapsed, and limits of 500 characters for title, 300 for designer, 200 for user fields, and 512 for permalink. Remote URLs are capped at 2048; thumbnails must be credential-free HTTPS URLs with a hostname. Invalid pattern IDs are discarded and pagination falls back to bounded safe defaults. These callables return metadata only and never download a pattern PDF.
-
-At the published `6f55bf3` Ravelry hardening checkpoint, the TypeScript build and 51 tests across eight suites passed under local Node.js 24. The current tree has nine Functions test files and later response-bound, token-store, callable, and input-validation hardening. For production SHA `40c45b7e9350a5d56b9d46e28bd1ee6c2fd89881`, the separate GitHub Build & Test Functions job passed on the declared Node.js 22 runtime. That CI result supersedes the runtime mismatch for this exact checkpoint but still does not establish Firebase deployment, a real OAuth callback, Secret Manager access, or a live Ravelry/CDN request.
+`functions/src/ravelry/client.ts` uses 10-second aborts, refuses redirects, and bounds streamed token/API JSON to 64 KiB/1 MiB. Declared oversized bodies are cancelled and chunked bodies are counted. Sanitization collapses whitespace/removes controls; title/designer/user/permalink limits are 500/300/200/512, URL limits 2,048. Designer precedence is `pattern_author.name`, then `designer.name`; invalid IDs are discarded and thumbnails require credential-free HTTPS. No callable downloads a PDF.
 
 ### Rate limiting
 
-The backend enforces request-key and backend-global fixed windows. Authenticated callables use the Firebase UID as the request key; the public OAuth callback uses the hashed IP key described above. Current per-minute limits are:
+`functions/src/ravelry/rateLimit.ts` uses Firestore UID windows and ten backend-global shards. UID windows start on admission; shard/global windows align to fixed time boundaries. They are not IP-based callback keys.
 
-| Surface | Per request key | Backend global |
-|---|---:|---:|
-| Authentication | 10 | 60 |
-| OAuth callback | 10 | 60 |
-| Search | 30 | 120 |
-| Import | 20 | 80 |
+| Bucket | UID per minute | Configured global per minute | Capacity per global shard |
+|---|---:|---:|---:|
+| auth | 10 | 60 | 6 |
+| callback | 10 | 60 | 6 |
+| disconnect | 10 | 60 | 6 |
+| search | 30 | 120 | 12 |
+| import | 20 | 80 | 8 |
 
-Global limits use ten Firestore shards, giving per-shard capacities of 6, 6, 12, and 8 for authentication, callback, search, and import respectively. Auth start, status, disconnect, and current-user operations consume the authentication bucket; search/import consume their own buckets; the public callback consumes its callback bucket before OAuth-state lookup. Every request also checks an active legacy `<bucket>_global` window before using shards. That compatibility check is temporary and must be removed only after deployment is complete and all legacy single-document writers are confirmed drained. A warm process caches a confirmed saturated shard window so repeated overload rejections do not rescan every shard.
+The table describes bucket definitions; the handler table above identifies which global gates are actually called. Status, completion and disconnect use UID-only admission. Public callback uses a server-defined shared global quota before reading attacker-supplied state, then UID callback admission after valid ownership is known. `request.ip` and X-Forwarded-For do not select limiter keys. One actor can exhaust the shared quota; rejected requests can still incur Firestore admission/read costs. This design is not a deployment or availability guarantee.
 
-### Firestore boundary
+While an active legacy `<bucket>_global` window exists, admission consumes it instead of switching to shards. Remove that compatibility path only in a separately authorized cleanup after deployed legacy writers are confirmed drained. A warm process caches confirmed global saturation for the current window; cold processes still perform their own reads.
 
-Root `firestore.rules` denies Android/client reads and writes to OAuth state, token, and rate-limit collections. Backend Admin SDK access is the intended path. A Firebase Auth identity is authentication for callable ownership, not authorization to read backend token documents directly.
+### Firestore and deployment boundary
+
+`firestore.rules` explicitly denies client state/token access and has a deny-all catchall, covering rate-limit documents too. Admin SDK writes are server-owned; Firebase authentication does not grant Android direct token access. The three collections are `ravelryOAuthStates`, `ravelryTokens`, and `ravelryRateLimits`.
+
+`firestore.indexes.json` declares the collection-scope OAuth-state index on `uid`, `usedAtMillis`, and `expiresAtMillis`, all ascending. Unused-state invalidation uses that query. The checked-in declaration does not establish index READY state, deployed rules/functions/secrets, OAuth callback configuration, or TTL deletion. `firebase.json` declares Node 22 and a Functions build predeploy step; no deployment ran here.
 
 ## Pro, trial, and billing
 
@@ -892,9 +1014,11 @@ Debug builds unlock `hasFeature` through `BuildConfig.DEBUG`. This does not chan
 
 ### Trial
 
-The trial lasts 14 days and does not start automatically. The user starts it through one atomic DataStore edit in `TrialManager.startTrial`; the edit classifies the existing state instead of reading, deciding, and writing in separate operations. Results are `Started`, `AlreadyActive`, `AlreadyExpired`, `AlreadyTampered`, or `Failed`. A malformed negative start, a previously persisted tamper flag, a backward clock movement beyond the one-hour tolerance, or a start timestamp more than one hour in the future cannot create a fresh trial. Timestamp refresh also reads and advances the last-known value within one edit. Trial persistence records start state, last-known time, and clock-tamper state. Tamper state is sticky. Refresh is bounded and also reacts to a day boundary. Starting the refresh loop is mutex-protected so concurrent initial collectors do not create duplicate lifetime loops. Trial-ended copy is a one-time passive notice.
+`pro/TrialManager.kt` implements an explicitly user-started 14-day trial. `startTrial` classifies and writes in one DataStore edit: `Started`, `AlreadyActive`, `AlreadyExpired`, `AlreadyTampered`, or `Failed`. Purchased Pro takes precedence over trial state; debug `hasFeature` does not change either state.
 
-Status precedence is purchased Pro, active trial, not-started trial, then expired trial.
+`trial_state` stores start/last-known time, sticky tamper state, ended-notice state, accumulated elapsed duration and wall/elapsed-realtime/boot-count anchors. Same-boot progress uses monotonic elapsed time. Reboot handling validates wall progress and boot compensation against the new elapsed anchor; unavailable boot identity, malformed/negative/overflowing anchors, unanchored legacy started trials, and excessive rollback fail closed. Corrupt trial storage is marked tampered rather than resetting into a fresh trial. The one-hour rollback tolerance is not permission to reset anchors freely.
+
+Refresh is mutex-protected and bounded to the next day boundary or 15 minutes. Remaining days use conservative rounded-up presentation. The trial-ended notice is passive and persisted once. Source tests cover the state/clock contracts; reboot, malicious clock changes and persistence recovery were not exercised in this audit.
 
 ### Billing
 
@@ -912,6 +1036,8 @@ Status precedence is purchased Pro, active trial, not-started trial, then expire
 - reports restore as restored, not found, or failed;
 - clears readiness plus in-flight, completed, and retry acknowledgement tracking when `destroy` tears down the manager, so a later lifecycle cannot inherit stale billing work.
 
+Prices/offers are Play responses, not hardcoded entitlement proof. No server-side purchase-verification service, Play Console product activation, refund/revocation behavior or live purchase success is established by the repository audit. The Pro screen separates loading, unavailable product, pending/processing purchase, restore failure and active entitlement.
+
 Purchase state readiness is distinct from the default `ProState`. Cold-start consumers must not fail closed before billing/trial state loads.
 
 ### Cold-start and contextual gates
@@ -920,7 +1046,7 @@ Purchase state readiness is distinct from the default `ProState`. Cold-start con
 
 `ProPromptSource` values are Projects, ProjectReactivation, ProgressPhotos, Notes, YarnCards, SaveToMyYarn, Counters, Reminders, PatternCamera, PatternGallery, and Widget. Camera and gallery entry retain distinct source identities even where they intentionally reuse the same current prompt copy. `ProPromptSheet`, backed by `ProPromptViewModel`, resumes the blocked action exactly once after `TrialStartResult.Started`, `AlreadyActive`, or observed Pro access. `AlreadyExpired` and `AlreadyTampered` do not resume the mutation. Creation and reactivation have separate localized prompt copy in all configured locales; the creation count is an active-project count. Counter reactivation retains the initiating project ID and `completedAt`, is single-flight, and discards its pending request on dismissal, target deletion/state change, or navigation to another project. A real active-project observation dropping to zero retries that same request through the repository without a UI entitlement override. Returning from the Pro page reuses the pending request; opening that page grants no permission. Ravelry retries retain the original `PatternDetail` instead of reading the later detail selection. `CounterReactivationPolicyTest`, `ProjectListViewModelTest`, `RavelryViewModelTest`, and `ProLocalizationSourceTest` cover these boundaries; `ActiveProjectPolicyRuntimeTest` is restricted to an offline isolated test installation with controlled entitlement state. Settings and the Pro screen wait for initial Pro state readiness; an initial Billing failure offers restore on the Pro screen before readiness; restore and purchase controls expose and disable their in-flight action rather than accepting duplicate taps.
 
-The repository remains the authoritative gate for mutation. A prompt sheet is not a substitute for transactional enforcement.
+Repository project/yarn/counter/reminder creation gates remain authoritative. Progress-photo and image-import/camera entry gates also rely on their ViewModel/UI paths; do not infer a repository-wide Pro guard from a prompt or generalize one feature gate to every storage method.
 
 Existing-content rules are deliberate:
 
@@ -1035,6 +1161,7 @@ Dark Insights activity ramp: `#6B8A35`, `#93AE4F`, `#C9A435`, `#D4722A`.
 | `LightPrimaryTintContainer` | `#E6CFAC` | Insights tint |
 | `LightActivityCellEmpty` | `#AFA98C` | Empty fabric cell |
 | `LightCounterMinusIcon` | `#211E16` | Minus button icon |
+| `LightRavelryTeal` | `#4A7172` | Extended light teal accent |
 
 Light Insights activity ramp: `#B8C47A`, `#93AE4F`, `#C9A435`, `#C45100`.
 
@@ -1190,7 +1317,7 @@ The hero contains:
 - image-backed undo;
 - optional stitch tracker when active and permitted.
 
-Primary controls use `CounterImageButton` and `counter_minus_button.webp`, `counter_plus_button.webp`, and `counter_undo_button.webp`. Smaller steppers remain Compose/Canvas controls; removed `CounterCraftButton`, `CounterHeroActionButton`, `plus_button`, and `minus_button` assumptions are stale.
+Counter keep-awake uses an Activity window flag tied to the active counter lifecycle/project and clears it on lifecycle Stop/disposal; it is not a session wake lock or background timer. Primary controls use `CounterImageButton` and `counter_minus_button.webp`, `counter_plus_button.webp`, and `counter_undo_button.webp`. Smaller steppers remain Compose/Canvas controls; removed `CounterCraftButton`, `CounterHeroActionButton`, `plus_button`, and `minus_button` assumptions are stale.
 
 The primary number targets 115 sp and can shrink to 48 sp to fit. Primary touch targets are 144 dp, visible plus is 125 dp, visible minus is 123 dp with a 1 dp optical offset, and undo is 92 dp. The control group is capped at 360 dp. Counter-specific values live in `CounterDimens.kt`.
 
@@ -1282,7 +1409,7 @@ Planned, allocated, and used are independent nullable `Double` meters. Blank is 
 
 Changing to a different observed project clears a stale draft synchronously without running normal close side effects against the old project. Persisted enum names are restored with safe `entries` lookup, so an unknown future/legacy value does not crash through `valueOf`. If opening the management sheet produces no draft, the flow restores the management surface instead of leaving the user on no visible sheet.
 
-The scrollable editor and delete confirmation use shared numeric fields and selectors, theme typography/colors, source-specific semantics, and at least 48 dp actions. All 11 locales contain the usage labels, errors, status text, and skein plural forms. IME, long names, narrow width, large font, and both themes are covered by rendered tests and screenshots. This feature stores only project usage: it never automatically changes global My Yarn inventory and has no file, network, Firebase, or Ravelry path.
+The scrollable editor and delete confirmation use shared numeric fields and selectors, theme typography/colors, source-specific semantics, and at least 48 dp actions. All 11 locales contain the usage labels, errors, status text, and skein plural forms. Instrumented test source includes IME, long-name, narrow-width, large-font and theme cases; any older screenshots/results are historical evidence, not a current pass. This feature stores only project usage: it never automatically changes global My Yarn inventory and has no file, network, Firebase, or Ravelry path.
 
 ## Tools and local calculators
 
@@ -1309,9 +1436,11 @@ There is no model client, prompt, cloud parser, or language-model fallback in ca
 
 ### State and data boundary
 
-`InsightsViewModel` combines project and session repository flows into one `InsightsUiState`. `RepositoryLoad.Loading` and `Loaded` prevent an initially seeded empty list from replacing the skeleton before Room emits. One aggregation snapshot supplies the same `currentDate` and zone to both range metrics and current-streak calculation, avoiding a second `LocalDate.now()` read that could cross midnight between derived values.
+`InsightsViewModel` combines project, folded-session, completion and entitlement observations into one `InsightsUiState`. `RepositoryLoad.Loading` and `Loaded` prevent an initially seeded empty list from replacing the skeleton before Room emits. One captured calendar supplies the same `currentDate` and zone to both range metrics and current-streak calculation, avoiding a second `LocalDate.now()` read that could cross midnight between derived values.
 
-Heavy history calculations run upstream with `flowOn(ioDispatcher)`. Compose collects the single UI state.
+`CounterRepository.observeSessionsForInsights` reads sessions in ID-keyset batches of 256, folds them through `InsightsSessionAccumulator`, and releases each batch rather than retaining the full history. Range queries include the preceding comparison period using the conservative UTC+18 boundary; project filtering is applied in SQL. All-time earliest local date checks candidates within 36 hours of the earliest UTC start. `InsightsActivityDates` uses sparse 4,096-day bit blocks, and chart/fabric maps retain visible-window aggregates. Total work still grows with native history; cancellation is checked per batch and session. Native writers and backup share the 100,000 completed-session ceiling; existing older over-limit history remains readable without truncation.
+
+Heavy calculations run upstream on injected I/O; Compose collects one state. One `DatabaseTransactionRunner.run` now covers existence/project-activity facts, first-date queries, every session batch and accumulation, and returns the finished fold before publication. Production `RoomDatabaseTransactionRunner` delegates to `RoomDatabase.withTransaction`; invalidation cancels/restarts an unfinished fold. `CounterRepositoryInsightsTest` checks transaction membership, 256+1-row batching, publication after transaction exit and cancellation release. `SessionInsightsDatabaseTest` adds real-Room concurrent project-deletion/history-replacement and cancellation cases. Independently observed project and completion flows are still combined later in `InsightsViewModel`, so the whole UI is not one shared database snapshot. Holding the transaction through accumulation can delay writers; worst-case device latency and memory have not been measured.
 
 `TimeRange` values are `ALL_TIME`, `THIS_WEEK`, and `THIS_MONTH`. The optional selected project filters sessions but does not change the stored data.
 
@@ -1357,7 +1486,7 @@ The content order is:
 
 For All Time, the context row shows a range kicker and project filter. Week/month contexts use the right-aligned project filter without redundant range copy.
 
-A loading skeleton stays visible until both repositories emit. A full empty state is used when there are no sessions at all. A filtered/range empty state preserves the surrounding context and explains that the selection has no data.
+A loading skeleton stays visible until all required project, session and completion observations emit. A full empty state is used when there are no sessions at all. A filtered/range empty state preserves the surrounding context and explains that the selection has no data.
 
 All-project mode shows one mix bar plus project rows. Selected-project mode avoids repeating a one-project mix bar and instead shows last-worked information and an explicit history link.
 
@@ -1417,13 +1546,13 @@ The provider XML allows both-axis resizing, declares a one-hour system update pe
 
 Widget state has per-instance and shared forms. Resolution can use an existing instance state, shared state, the latest active project, or a default empty state. State updates synchronize widget instances after app or widget mutations.
 
-Increment and decrement broadcasts are handled by non-exported `CounterWidgetActions`. The exported `CounterWidgetReceiver` is limited to the AppWidget provider role. Counter mutation uses repository semantics and Pro cold-start gating.
+Increment and decrement broadcasts are handled by non-exported `CounterWidgetActions`. Its Android `goAsync` boundary launches a short local `CoroutineScope(Dispatchers.IO)` and finishes the pending broadcast in `finally`; this is a framework adapter exception, not a service keeping sessions alive. Actions target app-owned shared widget state, reread current project state and synchronize a fallback when the project disappears/completes. Ordinary failures are best effort and can leave widget presentation stale until another refresh. The exported `CounterWidgetReceiver` is limited to the AppWidget provider role. Counter mutation uses repository semantics and Pro cold-start gating.
 
 Opening a project from a widget issues the one-time token described in the startup section. Widget IDs, project IDs, and intent extras are never treated as self-authenticating input.
 
 ## Android manifest and exported surface
 
-`app/src/main/AndroidManifest.xml` declares only:
+The following is the first-party main manifest inventory. Library/plugin/variant manifest merging and final APK/AAB components were not evaluated here. `app/src/main/AndroidManifest.xml` declares only:
 
 - `android.permission.INTERNET`;
 - `android.permission.VIBRATE`;
@@ -1461,24 +1590,19 @@ Every exported input is untrusted. Shared text is classified locally as a Ravelr
 
 ## Security and privacy boundaries
 
-### Network and secrets
+### Network, Firebase and secrets
 
-- Cleartext traffic is disabled.
-- Ravelry client credentials and tokens stay in the backend.
-- Android Firebase configuration is not a Ravelry secret but is still local/generated configuration and must not be tracked at `app/google-services.json`.
-- Release signing credentials are environment variables.
-- Logging must not contain billing state, Ravelry credentials/tokens, pattern text, project data, notes, or other user content.
-- There is no release analytics, tracking, replay, tracing, logcat breadcrumb collection, or crash reporting.
+Cleartext traffic is disabled. Ravelry secrets/token exchange remain server-side; Android Firebase configuration is local/generated and must not be tracked. Release signing is environment-driven. Firebase Anonymous Auth/Functions/Google Services serve Ravelry; Crashlytics is separately approved for release crash reporting. No Firebase AI, ML Kit, Gemini, App Check or model parser path is implemented.
 
-### Firebase scope
+`app/build.gradle.kts` applies Google Services and Crashlytics plugins, enables Crashlytics collection and R8 mapping upload only for the exact release variant, and declares the Crashlytics runtime dependency. Debug/benchmark variants disable collection/uploads. Source does not add user IDs, custom logs or project content to reports. Automatic release crashes and mapping upload are distinct from user-consented usage analytics. Their configured presence does not prove a successful release upload or server collection.
 
-Firebase is allowed only for the Ravelry backend path:
+### Consent-based usage analytics
 
-- Firebase Anonymous Auth;
-- Firebase Functions;
-- Google Services configuration.
+`analytics/UsageAnalytics.kt` defines allowlisted events; `PostHogAnalytics.kt` owns consent/lifecycle and `di/AnalyticsModule.kt` binds it. `PreferencesManager.usageAnalyticsEnabled` defaults false. `App.onCreate` observes it only when release `POSTHOG_ENABLED` and a valid project token are present. The SDK is created lazily after consent; disabling opts out. Host is `https://eu.i.posthog.com`.
 
-Firebase AI, ML Kit, Gemini, App Check, voice services, and model-backed parser dependencies are not part of the current product and must not be introduced as convenience transitive dependencies.
+Twelve predefined action events cover project creation, PDF import, requested counter changes and session start/save. Requested increment/decrement events do not prove a committed counter change. Screen routes are reduced to an allowlist, with screen-enter/exit and app foreground/background duration measured monotonically. Project text, IDs, URLs, notes, billing state and user profiles are excluded from these custom properties. SDK pseudonymous identity still exists; this is not a zero-data or anonymity guarantee.
+
+Configuration disables automatic lifecycle/screen/deep-link/push capture, default properties, person profiles, feature flags, surveys, replay, error tracking and debug logging. Events explicitly disable GeoIP enrichment. Token precedence is `KNITTOOLS_POSTHOG_PROJECT_TOKEN`, then ignored `posthog.properties` key `projectToken`, accepting `phc_` alphanumeric format. Release artifacts require this configuration; its presence does not opt a user in. See `config/posthog.md` and `config/security-decisions.md`. Consent/preferences are excluded from backup. No analytics service or network was contacted during this audit.
 
 ### Sentry
 
@@ -1506,7 +1630,9 @@ There is no `RECORD_AUDIO` permission, `SpeechRecognizer`, `TextToSpeech`, conve
 - Room schema export is enabled.
 - Release shrinking/signing behavior is defined in `app/build.gradle.kts`.
 
-`jacocoTestReport` depends on debug JVM tests and reads AGP 9 built-in Kotlin plus javac debug class directories. Its `doFirst` guard requires at least one `.class` file in those configured locations; an AGP output-layout change therefore fails the report instead of silently publishing empty coverage. The release-surface Room check parses either a literal `@Database` version or the referenced `const val`, resolves `KNITTOOLS_DATABASE_VERSION`, then verifies the matching schema JSON and migration/registration chain. `tools/release-surface-test.ps1` mutates the constant itself to prove that indirection remains covered.
+JaCoCo and Sonar coverage deliberately exclude UI, widgets, auth, billing, Pro, DI and data framework/storage/remote/local packages; coverage therefore describes the remaining logic, not all product code. `sonar-project.properties` still lists historical binary directories, but root `build.gradle.kts` deliberately excludes `sonar.sources`, tests, Java/Kotlin binaries and libraries from imported properties so the Gradle plugin supplies those inputs. The offline task-property inspection confirmed the current javac and JaCoCo XML paths. App `sonar.sources` was empty in that pre-execution property map; Android resolver/scanner execution was outside scope, so the final analysis source inventory is unverified. The historical binary property is not an active Gradle override, and this inspection is not a Sonar upload, server quality-gate result or coverage certification.
+
+`jacocoDebugUnitTestReport` depends on debug JVM tests and reads `app/build/intermediates/built_in_kotlinc/debug/compileDebugKotlin/classes` plus the corrected `app/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes`. The 2026-10-01 build produced 2,900 Kotlin and 309 javac class files in those directories; the subsequent report task generated fresh XML with the expected classes and source mappings. Its `doFirst` guard requires at least one class across the combined, filtered inputs; it does not independently detect one missing directory while the other still contains classes. The XML output is `app/build/reports/jacoco/jacocoDebugUnitTestReport/jacocoDebugUnitTestReport.xml`, also configured as the app's Sonar coverage input. The release-surface Room check parses either a literal `@Database` version or the referenced `const val`, resolves `KNITTOOLS_DATABASE_VERSION`, then verifies the matching schema JSON and migration/registration chain. `tools/release-surface-test.ps1` mutates the constant itself to prove that indirection remains covered.
 
 ### Release signing
 
@@ -1535,7 +1661,7 @@ The canonical local config is ignored `app/google-services.json`. CI or local au
 
 Non-distribution variants `debug`, `benchmarkRelease`, and `nonMinifiedRelease` may generate ignored per-variant placeholder JSON when neither a real root file nor encoded config exists. Values such as `google_app_id`, `google_api_key`, and `project_id` come only from Google Services generated resources; they are not maintained in a parallel debug XML.
 
-Every guarded release artifact task depends on `verifyGoogleServicesJson` and requires a real config; a file containing the local `debug-placeholder-api-key` is rejected. The base64 secret value itself is not registered as a Gradle input value: only its presence flag is an input, which avoids exposing secret content through task metadata. `lintRelease` may disable `processReleaseGoogleServices` only when no release artifact task is requested and no real config exists. This lint-only exception must never reach an artifact graph.
+Every guarded release artifact task also depends on `verifyPostHogConfig` (valid configured token) and `verifyGoogleServicesJson` (real Firebase config); a file containing the local `debug-placeholder-api-key` is rejected. The base64 secret value itself is not registered as a Gradle input value: only its presence flag is an input, which avoids exposing secret content through task metadata. `lintRelease` may disable `processReleaseGoogleServices` only when no release artifact task is requested and no real config exists. This lint-only exception must never reach an artifact graph.
 
 ## CI and dependency automation
 
@@ -1544,7 +1670,7 @@ Every guarded release artifact task depends on `verifyGoogleServicesJson` and re
 `.github/workflows/build.yml` runs on pushes and pull requests to `main`. It uses:
 
 - `actions/checkout` v7.0.1, pinned by SHA, with credential persistence disabled;
-- `actions/setup-java` v6.0.0, pinned by SHA, Temurin 17;
+- `actions/setup-java` v6.0.1, pinned by SHA, Temurin 17;
 - `gradle/actions/setup-gradle` v6.3.0, pinned by SHA;
 - `actions/setup-node` v7.0.0, pinned by SHA, for the separate Functions job.
 
@@ -1565,13 +1691,13 @@ The separate Node 22 Functions job uses `functions/package-lock.json`, runs `npm
 - analyzes Java/Kotlin;
 - uses manual build mode;
 - builds `assembleDebug --no-daemon`;
-- uses checkout v7.0.1, setup-java v6.0.0, and CodeQL action v4.37.9 pinned by SHA;
+- uses checkout v7.0.1, setup-java v6.0.1, and CodeQL action v4.38.0 pinned by SHA;
 - has no separate Android setup action;
 - has a six-hour job timeout.
 
 ### Backend CI boundary
 
-The Build & Test workflow now validates the Functions TypeScript build and local test suite. For direct local evidence, use:
+The Build & Test workflow is configured to compile Functions and execute its local test suite. Emulator-dependent tests have environment-conditional skips; an ordinary Node job is not a Firestore-emulator run. It contains no deployment, release publication or device step. CodeQL analyzes Java/Kotlin, not the Functions TypeScript package. For direct local evidence, use:
 
 - `npm --prefix functions test`;
 - `npm --prefix functions run build`.
@@ -1591,13 +1717,11 @@ CodeQL action updates are grouped.
 
 ### Gradle dependency verification
 
-`gradle/verification-metadata.xml` enables metadata verification and leaves signature verification disabled. The Coil 3.5.0 network family currently includes verified module/POM/AAR metadata for Android plus direct local artifact-byte hashes for `coil-network-core-jvm-3.5.0.module` and `coil-network-ktor3-jvm-3.5.0.module`. The published `8a1b245` checkpoint added the Android POM entries after strict local dependency resolution; the current tree adds the two JVM module hashes without changing a dependency version or weakening the trust policy. Build & Test resolves dependencies under the checked-in verification metadata, but neither ordinary GitHub workflow has a separate step that directly re-hashes those bytes.
+`gradle/verification-metadata.xml` enables metadata/checksum verification and disables signature verification. It contains accepted artifact hashes for the declared toolchain; presence alone is not proof that a current resolved graph/artifact matches them. Dependency changes require coherent catalog/lock/verification metadata rather than disabling checks. This follow-up used ordinary offline Gradle resolution without changing that policy and inspected the two Ktor-utils selections; it did not perform a separate artifact-checksum audit.
 
 ## Local validation and scanner surfaces
 
 ### Small direct checks
-
-2026-09-06 bounded mental-model close-out: inspected `main` at `caffef92c7ccfa4cedfe3a569468be9971477c50` with uncommitted source and documentation changes; these results do not describe committed HEAD alone. The fresh offline union covered Saved Pattern deletion/localization, project-yarn source/gates/copying, and Ravelry detail/save-state/duplicate preservation: 33 JVM tests, zero failures/errors/skips (`:app:processDebugResources :app:testDebugUnitTest --rerun` with focused selectors). Runtime inspection found a clipped long-title web-pattern deletion message at large text; the Saved Pattern confirmations now opt into scrolling. The directly affected `SavedPatternDetailSourceTest` then passed all 5 tests. Debug and instrumentation APKs compiled offline. `MentalModelClarityRuntimeTest` passed 6 tests in each configuration on the temporary API 36 `emulator-5580`: English/light at 400 x 800 dp and 100% font scale, Finnish/dark at 320 x 800 dp and 200% font scale. Synthetic fixtures exercised the production composables, cancellation/confirmation, yarn save/usage callbacks, and Ravelry save/PDF-presence states; external connectivity was disabled and Ravelry used a fake backend. Visual inspection included initial/scrolled warnings and retained project-yarn entries; 26 final screenshots and the combined JVM XML reports are under ignored `reports/mental-model-closeout/`. Initial fixture compilation/locale/scroll issues and an emulator System UI ANR were resolved before the final runs. This does not establish native-language review, user comprehension, PDF readability, release validation, or live service integration.
 
 Choose the smallest command that proves the claim:
 
@@ -1613,17 +1737,19 @@ Choose the smallest command that proves the claim:
 
 Do not run the user's aggregate wrapper scripts such as `lc` or `sc` during agent work. Their behavior is documented for orientation, and `-PlanOnly` or `-ResolveOnly` is preferred when a supported checker only needs planning.
 
+The commands above are general orientation; the Evidence and historical verification section records the exact tasks executed in this bounded follow-up. Quality/coverage reports must name their source revision and exclusions; a server quality gate requires final server results, not a local estimate.
+
 ### Project-local wrappers
 
-Most short `tools/*.ps1` checker wrappers delegate to `C:\Dev\Android-check\tools\InvokeProjectCheck.ps1` and return the delegated exit code. The command names include `ac`, `cr`, `cs`, `db`, `dc`, `ds`, `ga`, `lc`, `ms`, `os`, `pc`, `ql`, `sc`, `sentry`, and `ss`.
+Most short checker wrappers resolve `ANDROID_CHECK_ROOT`, falling back to `C:\Dev\Android-check`, then delegate to `tools/InvokeProjectCheck.ps1` there and return its exit code. Command names include `ac`, `bc`, `cr`, `cs`, `db`, `dc`, `ds`, `ga`, `lc`, `ms`, `os`, `pc`, `ql`, `sc`, `sentry`, `ss` and `tc`. Empty/missing checker roots fail; external checker implementation is outside this repository audit. `config/android-check.json` declares modules/variants/tasks, dependency configurations, exception registry and Semgrep path.
 
 Special cases:
 
-- `tools/ad.ps1` builds/installs a debug APK and resolves `adb.exe` from `local.properties`;
+- `tools/ad.ps1` delegates build/install and SDK resolution to external `tools/InstallDebugToDevice.ps1`, forwarding `ResolveOnly`, `NoBuild`, APK path and adb arguments;
 - `tools/pc.ps1` defaults `PMD_CPD_MINIMUM_TOKENS` to 100;
 - `tools/rs.ps1` and `tools/rst.ps1` are repository-local release-surface and self-test entry points;
 - `tools/sonar.ps1 -PlanOnly` is read-only; an upload requires `-AllowExternalUpload` and a bounded Gradle process;
-- `tools/sc.ps1` is the only security-check implementation source of truth;
+- `tools/sc.ps1` is the repository security-check entry point, delegating implementation to the external checker;
 - Bash security scripts are fail-closed compatibility delegates, not independent scanners;
 - generated `reports/` must not be committed.
 
@@ -1643,18 +1769,18 @@ The repository has surfaces for:
 - PMD CPD;
 - Compose Stability Analyzer;
 - Baseline Profile generation;
-- release-surface verification;
+- release-surface verification (the inspected local binary-secret helper throws on a missing requested binary instead of treating it as secret-free);
 - debug/release Sentry dependency separation.
 
-Each tool proves a different claim. A zero-match raw scan is not automatically the same as an actionable clean result if wrappers, suppressions, baselines, or exception registries classify findings.
+Each tool proves a different claim. A zero-match raw scan is not automatically an actionable clean result when suppressions/baselines classify findings. `app/detekt-baseline.xml` contains 25 current-issue IDs and no manually suppressed IDs; `config/detekt/detekt.yml` defines active rules. `config/dependency-check-suppressions.xml` has 14 bounded suppression elements, ending 2026-10-31. Its exact Ktor-utils 3.5.2 package-URL selector is inactive for the current `debugRuntimeClasspath` and `releaseRuntimeClasspath`, both locally resolved offline to `ktor-utils-jvm:3.6.0`; these are the two OWASP `scanConfigurations`. The obsolete selector was not edited, and no vulnerability scan or suppression cleanup was performed. `config/semgrep/knittools-security.yml` and synthetic `tools/testdata/semgrep/knittools-security.kt` define local security rules/fixtures. `.mobsf` excludes generated/tool directories, not global rule IDs.
 
 ### Scanner exceptions
 
 `config/check-exceptions.json` is the scanner-exception registry. A MobSF exception requires one rule and one exact `findingPath`; a global `.mobsf` suppression must not hide a whole rule.
 
-`gradle/osv-scanner.toml` currently has 73 package/advisory-specific exceptions for build-tool dependencies that appear in Gradle verification metadata. It must not return to a project-wide ignore model. The earlier Functions `brace-expansion` exception is absent because the current package graph resolves that finding rather than accepting it. Runtime dependency exposure still needs its own resolved-graph or artifact evidence.
+`gradle/osv-scanner.toml` currently has 78 package/advisory-specific exceptions for build-tool dependencies that appear in Gradle verification metadata. It must not return to a project-wide ignore model. The earlier Functions `brace-expansion` exception is absent because current manifests/locks update the affected dependency rather than accept that finding; resolved runtime exposure was not verified here. Runtime dependency exposure still needs its own resolved-graph or artifact evidence.
 
-The `.deepsec` workspace currently pins DeepSec `2.3.8`, TypeScript `^7.0.2`, and `@types/node ^26.6.1`. Its custom matchers cover:
+The `.deepsec` workspace currently pins DeepSec `2.3.9`, TypeScript `^7.0.2`, and `@types/node ^26.6.2`. Its custom matchers cover:
 
 - exported Android components;
 - Kotlin entry points;
@@ -1666,13 +1792,11 @@ The `.deepsec` workspace currently pins DeepSec `2.3.8`, TypeScript `^7.0.2`, an
 - sensitive Android logging;
 - widget counter mutation.
 
-The current matcher suite declares ten tests. Component matching includes `activity-alias` and `provider` without allowing one XML tag match to cross into another; URI-share analysis evaluates each `ACTION_SEND` block independently; broad FileProvider matching includes `external-media-path`; sensitive-log matching includes multiline calls; and accepted-risk source discovery includes `app/src/release/java`. These are matcher semantics, not evidence that a repository scan is clean.
+The inspected uncommitted matcher changes mask comments/strings while retaining line offsets, handle constructor lambda defaults when locating class entry points, and avoid treating `fun` text in strings/comments as a share-block boundary. Those local changes are not committed scan/test results. There are ten configured custom matcher IDs; matcher tests additionally use loops to generate parameterized cases, so ten matchers is not ten tests. A separate accepted-risk script test suite exists. Component matching includes `activity-alias` and `provider` without allowing one XML tag match to cross into another; URI-share analysis evaluates each `ACTION_SEND` block independently; broad FileProvider matching includes `external-media-path`; sensitive-log matching includes multiline calls; and accepted-risk source discovery includes `app/src/release/java`. These are matcher semantics, not evidence that a repository scan is clean.
 
-Accepted risk is limited to documented historical Ravelry credential findings in `config/security-decisions.md`. It is not a blanket suppression for API abuse, prompt injection, or unrelated findings.
+Historical Ravelry credential decisions are superseded by backend-owned secrets. The accepted-risk script requires the exact decision/source guard and treats the current decision as fixed; the registry separately contains bounded public-client-key, scanner and dependency exceptions. None is blanket acceptance of API abuse, prompt injection or unrelated findings.
 
-`config/check-exceptions.json` contains 35 bounded records, including 31 MobSF records. Each MobSF record has one rule, an exact `findingPath`, selectors, an owner, an expiry date, and a tracking reference; `.mobsf` does not globally suppress a rule. At the published `09f217a` registry-validation checkpoint, the local matcher processed 115 raw findings: all 115 matched exactly once, with zero unsuppressed blocking findings, zero multiply covered findings, and zero suppressed confirmed defects. This is evidence for that validated commit, not a guarantee for future source, and GitHub does not run MobSF.
-
-The published `366755d` DeepSec update changed the package and lockfile, resolved CLI version `2.3.8`, and passed the six tests declared at that checkpoint; it did not run a repository scan. The current source declares ten matcher tests after later matcher hardening, so the older six-test result does not validate the added cases. GitHub does not run DeepSec. Invocation artifacts under `.deepsec/data` are generated local runtime data, not a primary implementation source or part of an ordinary source commit.
+`config/check-exceptions.json` contains 43 bounded records, including 36 MobSF records (other records: two gitleaks, two OSV, one Detekt, one OWASP and one trufflehog). Registry records all expire 2026-10-31, so none was date-expired on the audit date; 78 OSV TOML entries also use bounded expiry. Expiry alone does not validate a selector or accepted-risk rationale. Each MobSF record has one rule, an exact `findingPath`, selectors, an owner, an expiry date, and a tracking reference; `.mobsf` does not globally suppress a rule. Historical registry/matcher runs are not fresh scan results. Current wrappers and exception expiry/selector matching must be evaluated on each actual scan; GitHub does not run MobSF or DeepSec. `.deepsec/data` is generated runtime evidence, not application source.
 
 `.deepsec/.gitignore` keeps scanner source, matcher tests, configuration, and the tracked `.deepsec/data/knittools/INFO.md` visible while excluding dependencies and generated outputs. Its project-scoped rules ignore `data/*/project.json`, `data/*/tech.json`, `data/*/files/`, `data/*/runs/`, `data/*/reports/`, and `data/*/revalidation/`; exported `findings/` and generated `comment.md` files are also ignored. The published `b3343de` change added only the exact revalidation-output rule. It did not change matchers, scanner configuration, application source, or scan evidence, and it does not hide arbitrary Markdown planning documents.
 
@@ -1680,13 +1804,9 @@ The published `366755d` DeepSec update changed the package and lockfile, resolve
 
 ### Current inventory
 
-The current committed source contains:
+Source files, helpers and variant inventories are maintained once under Current source inventory. Functions includes emulator-dependent suites with environment-controlled skips. The earlier static declaration counts predate these corrections and are not current execution totals. This follow-up's full debug JVM run discovered 299 suites and executed 2,059 tests; detailed results and failures are recorded under Evidence and historical verification. The subsequent targeted API 36 run executed 12 instrumentation tests successfully; the rest of the instrumentation suite was not run. Backend/matcher loops and runtime skips likewise prevent treating lexical calls as executed totals.
 
-- 261 Kotlin files in `app/src/test`;
-- 46 Kotlin files in `app/src/androidTest`;
-- 9 TypeScript test files in `functions/src`.
-
-These source-file counts include test helpers; they are not test-class counts or executed-test totals and should be refreshed after test additions/removals.
+JVM fixtures use JUnit 4.13.2, MockK 1.14.11 and Turbine 1.2.1; Android test configuration declares AndroidX runner 1.7.0, test-ext JUnit 1.3.0 and Espresso 3.7.0, with Compose test artifacts governed by the BOM. The baseline-profile producer is a separate instrumented performance/profile layer, not an executed performance measurement.
 
 ### What the test suite covers
 
@@ -1703,7 +1823,10 @@ The test surface includes:
 - Room migration source contracts and instrumented migrations;
 - file storage and photo replacement ordering;
 - bounded PDF copy/readability checks, response/image/PDF size limits, cancellation rollback, and sampled progress-photo decoding;
-- pattern row mapping, annotations, geometry, rendering, and export;
+- pattern row mapping, annotation payload/page budgets, geometry, rendering, cumulative raster/export budgets and cancellation;
+- full backup ZIP/row/identity validation, provider cancellation/timeouts, restore rebasing/journals and real-Room replacement;
+- batched Insights aggregation, sparse activity days and completed-session writer ceilings;
+- analytics consent, event/route allowlists and release/debug telemetry separation;
 - Pro/trial state, atomic start classification, malformed/future timestamps, and clock rollback;
 - billing setup/readiness, restore/purchase single-flight behavior, already-owned, pending, disconnect, and deduplicated bounded acknowledgement paths;
 - navigation arguments and widget launch tokens;
@@ -1759,7 +1882,7 @@ Questions:
 - Are soft links repaired transactionally?
 - Does migration 17 to 18 preserve existing notes/secondary-counter access?
 - Does migration 18 to 19 map false to unknown and preserve saved-pattern annotation layers and annotations across the referenced-table rebuild?
-- Does migration 21 to 22 backfill exactly one primary relation per readable legacy project while preserving stable document keys and per-document reader state?
+- Does migration 21 to 22 backfill exactly one primary relation per nonblank legacy project URI while preserving stable document keys and per-document reader state?
 - Does migration 22 to 23 add only empty folder/assignment tables and preserve every existing project-owned row and constraint?
 - Does migration 23 to 24 add only empty usage storage, preserve all 16 earlier tables, and keep source deletion distinct from project deletion?
 - Can any caller-sized `IN` query exceed SQLite's bind limit, or does it pass through the shared deduplicating 900-ID chunker while preserving that operation's intended validation and transaction boundary?
@@ -1829,7 +1952,7 @@ Questions:
 - Do bookmark actions validate the active document and preserve rows across detach, reattach, completion, and saved-pattern deletion?
 - Does a bookmark jump wait for the correct rendered page, focus its normalized Y once, and pause following?
 - Can horizontal and vertical guides coexist without intercepting ordinary zoom and pan or entering export?
-- Do anchors affect only their page?
+- Are current-page anchors preferred and cross-page movement restricted to an unambiguous exact row marker?
 - Does detach avoid deleting a still-referenced PDF?
 - Are every reference-creating/replacing mutation and the unused-file cleanup decision serialized by the same `PatternFileReferenceCoordinator`, or can cleanup race a newly created reference?
 
@@ -1880,7 +2003,7 @@ Questions:
 - Is malformed CSV normalized centrally?
 - Does Save to My Yarn retain the project note and a single logical usage row without changing usage amounts or global inventory automatically?
 - If note-backed and card-backed usage rows already exist, are only null-compatible/equal values merged, are conflicting values rolled back, and are survivor ID/snapshot/timestamps deterministic?
-- Are Ravelry ID 0 and raw URL sentinels rejected?
+- Are persisted Ravelry ID 0 and obsolete raw URL sentinels rejected while compatibility getters stay distinct?
 - Is metadata-only content kept distinct from local PDF availability?
 - Do editor input, shared text, legacy compatibility, duplicate detection, and external opening use the same web-URL validation and canonicalization rules?
 - Do web-pattern update/delete and project attach/unlink operations use stale-action checks and preserve every `project_documents` row?
@@ -1940,7 +2063,7 @@ Questions:
 - Are malformed callback states rejected and the callback bucket consumed before any OAuth-state Firestore lookup?
 - Can disconnect prevent late writes?
 - Does refresh happen only after a limiter passes?
-- Do auth status and disconnect consume the same auth limiter as start/current-user, and does the public callback consume its bucket before state lookup?
+- Do status/completion use UID auth, disconnect its separate UID bucket, and public callback a server-defined global gate before state lookup followed by valid-owner admission?
 - Can two refreshes that finish out of order overwrite the newer access/refresh token, expiry, or generation?
 - Can current-user verification write stale credentials over a concurrent refresh?
 - Can Android read token documents or secrets?
@@ -2008,7 +2131,23 @@ Questions:
 
 Proof: resolved graph and artifact inspection; a successful configuration or debug build is not release proof.
 
-### 14. Scanner and CI claims
+### 14. Full backup and replacement restore
+
+Inspect `repository/BackupRepository.kt`, `data/backup/BackupProviderIo.kt`, `BackupBudget.kt`, `BackupTables.kt`, `BackupIdentityMap.kt`, `BackupRestoreFiles.kt`, and `ui/screens/backup/BackupViewModel.kt`.
+
+Questions: are external-provider staging and the later content snapshot distinguished? Are every table/file/identity/page budget and version checked again at confirmation? Do rebased IDs/keys and fresh paths isolate stale actions? Does the fsynced journal precede publication and cleanup follow committed references? Are active-session anchors untrusted after restore and navigation/widget refresh separate from the commit? Are cancellation and no-progress behavior tested with blocking providers without assuming every OEM cooperates?
+
+Evidence to obtain: format/provider JVM cases, real-Room replacement and file-reference tests, then separately bounded real SAF/process-interruption checks for actual runtime claims.
+
+### 15. Telemetry and privacy
+
+Inspect `analytics/UsageAnalytics.kt`, `PostHogAnalytics.kt`, `App.kt`, `PreferencesManager`, `app/build.gradle.kts`, manifests and `config/posthog.md`.
+
+Questions: is PostHog created only after consent in the release path? Are routes/events/properties allowlisted and action attempts distinguished from committed results? Are consent and private project data excluded from backup/telemetry respectively? Do debug/benchmark disable Crashlytics collection and mapping upload, and release exclude Sentry? Are token/configuration gates separate from user consent?
+
+Evidence to obtain: consent/event source and behavior tests, variant dependency/manifest/artifact checks, and authorized server observations if delivery is claimed.
+
+### 16. Scanner and CI claims
 
 Inspect raw reports, wrapper classification, exception registries, baselines, workflow files, and actual run IDs.
 
@@ -2025,23 +2164,51 @@ Questions:
 
 Proof: fresh analyzer-owned artifacts and exact run state.
 
+## Manual local backup and replacement restore
+
+Settings opens `Screen.Backup`, `BackupScreen` and `BackupViewModel`; the bottom bar is hidden. `repository/BackupRepository.kt` declares the concrete `BackupRepository` class with helpers under `data/backup/`. Export uses SAF `CreateDocument`; restore uses `OpenDocument`, private validation, a timestamp/count preview and explicit replacement confirmation. The flow is free and manual. Drive/Dropbox can be SAF providers without provider SDK/OAuth or sync. Archives are unencrypted; hashes detect corruption, not authenticity.
+
+### Snapshot and archive
+
+Export captures referenced legacy external URIs under the pattern-reference lock, yarn-photo lock and a short Room transaction. `BackupProviderIo` copies those external bytes outside the live transaction/locks. A later locked Room transaction snapshots tables and copies required immutable app-owned files, matching external references to earlier staged copies. New unstaged external references fail export. External bytes and database rows are therefore not a simultaneous snapshot; provider content may change between stages. Missing required bytes fail rather than silently omit content. Export validates the completed archive before writing the destination.
+
+`BackupFormat` defines `.knittools-backup`, `application/octet-stream`, ZIP `manifest.json`, format/data version 1 and schema 25. All 18 tables use JSON-lines with ordered column headers and primitive row arrays. Durable files deduplicate under SHA-256 identities. App version is informational; other schema/data/format needs an adapter, currently absent. No SQLite/WAL/SHM is copied or replaced.
+
+| Default hard budget (`BackupBudget.kt`, `BackupFormat.kt`) | Limit |
+|---|---:|
+| Archive / extracted bytes | 512 MiB each |
+| Table / all table JSON | 32 MiB / 64 MiB |
+| Rows per generic table / overall | 100,000 / 250,000 |
+| Completed sessions | 100,000 via `BackupLimits.MAX_SESSION_ROWS = MAX_COMPLETED_SESSIONS`; custom budgets may tighten but cannot relax this |
+| Row / field | 2 Mi / 256 Ki UTF-16 characters |
+| Durable file / yarn photo | 200 MiB / 25 MiB |
+| Durable files / total bytes | 2,000 / 448 MiB |
+| ZIP entries including manifest | 2,019 |
+| Manifest | 512 KiB |
+| Identities per table / overall | 100,000 / 150,000 |
+| Free usable space reserve | 32 MiB beyond staging requirements |
+
+Classic/ZIP64 structure, paths, duplicate names, local/central inventory agreement, trailing data, sizes, hashes, decompression, nesting and field/identity budgets are checked. An isolated current-schema Room database uses production callbacks/triggers to validate types, finite numbers, foreign keys, primary documents and annotation payload/page budgets. Preview appears only after validation; confirmation revalidates.
+
+### Replacement and recovery
+
+Restore publishes fresh files and replaces all 18 content tables in one live Room transaction. IDs are rebased above destination SQLite high-water marks together with foreign keys, weak yarn CSV links, document keys and annotation counter bindings. Old saved navigation/widget actions cannot address restored row identities. The Hilt Room singleton remains open and observers receive replacement.
+
+A private fsynced journal precedes new-file publication. Before SQL commit, failure/cancel preserves prior content; after commit, current references decide old/new cleanup. Cleanup runs in `NonCancellable`, remains reference-aware and retains unresolved journals for startup recovery. Active-session tokens/anchors reset to recovery-required state, retaining trusted checkpoints without inventing elapsed work.
+
+Staging lives under `noBackupFilesDir/manual-backup/<UUID>` with repository mutex and operation ownership so previews cannot delete another operation's active directories. UI allows cancellation during export/validation; replacement disables Back/cancel. Preview approval is ViewModel memory, not durable process-restored state. Continue after success clears saved top-level navigation and opens Projects; widget refresh is best effort.
+
+`BackupProviderIo.kt` defines `ContentResolverBackupProviderIo`, injected as a singleton. Its atomic `operationActive` admission permits one read or write per adapter instance and rejects another transfer before opening its descriptor. `ProviderDeadline` retains that reservation until the worker calls `finish` and both scheduled abort tasks (descriptor close and open cancellation) have finished; abort scheduling is deduplicated, and rejected executor submissions are accounted for. The adapter uses descriptor `CancellationSignal` and a 30-second no-progress watchdog over blocking open/read/write/flush/close, with cached daemon worker/closer pools and a scheduled watchdog. A blocked open may report timeout/cancellation before its worker exits while still retaining admission. A blocked read/write can keep cancellation cleanup waiting; the ViewModel may show idle while the previous worker still owns staging. `BackupProviderAdmissionTest` checks those ownership boundaries, retries, late bytes and executor rejection using controlled JVM fakes. A permanently blocked worker or abort task can retain the reservation until process restart. This is not a total operation deadline or universal provider guarantee; failed/cancelled SAF writes can leave partial destination bytes.
+
+### Content and exclusions
+
+All current Room content tables and referenced durable PDFs/progress/yarn photos are included, including readable legacy external references. Room Ravelry metadata is included, backend tokens are not. Orphans, arbitrary directories, caches, abandoned captures/import sessions and temp exports are excluded.
+
+Destination preferences, language, analytics consent, trial/tamper state, Play purchases, Firebase/Ravelry authentication, widget identities/state, launch tokens, review state, SavedStateHandle, debug/build configuration and credentials remain outside backup. `allowBackup=false` disables automatic Android backup independently of this manual feature. The excluded debug seed marker can cause demo data to return after restart.
+
+Backup and native writers share the 100,000 completed-session limit. `BackupBudget.addRow` also retains generic row, total-row and aggregate-identity limits; all archive/table/file/field/annotation budgets still apply, so session count alone does not guarantee exportability. Nothing is truncated. `BackupBudgetTest` and `BackupTablesTest` cover the old 10,000 boundary, 10,001, 100,000, rejection of 100,001 and independent budgets. Instrumented `BackupRepositoryTest` adds full export/restore at those accepted counts and rejection before preview/confirmation/live mutation. Format/data version 1 and schema 25 are unchanged; older app versions retaining the 10,000 limit cannot read larger archives. `config/local-backup.md` and `config/insights-session-budget.md` provide rationale and historical context, not a current device-performance result.
+
 ## Implemented versus intentionally absent
-
-### Manual local backup and replacement restore
-
-Settings contains **Backup & restore**. Export uses Android SAF `CreateDocument`; restore uses `OpenDocument`, private staging, full validation, a dated/count-based preview and an explicit destructive confirmation. The file is unencrypted and the UI says so. SAF providers may include Drive or Dropbox, but this adds no cloud sync, storage SDK, account or paid service.
-
-`BackupRepository` orchestrates a logical export of all 18 current Room 25 tables through `data/backup`. A single Room transaction covers table reads and referenced-file copies. PatternFileReferenceCoordinator protects pattern reference changes, and YarnCardRepository shares its photo mutex with backup to exclude startup photo pruning and replacement. Published photo/PDF files are immutable; missing required bytes fail the export. No live database/WAL/SHM files are copied or replaced, and the Hilt Room singleton stays open.
-
-The `.knittools-backup` file uses `application/octet-stream`, ZIP, manifest format version 1, data version 1 and schema version 25. Each table is JSON-lines with an explicit ordered column header; files have logical SHA-256 names. The manifest carries app version, timestamp, schema/data/format versions and every entry's size and SHA-256. Paths, duplicates, central/local entry inventories, EOF, sizes, hashes, JSON nesting, row sizes and total decompression are checked before any live mutation. An isolated current-schema Room database validates field types, foreign keys, indexes, production triggers, primary documents and annotation payloads. Future/other data versions require an explicit adapter; versionName is informational.
-
-Restore publishes fresh files and replaces all content tables in one transaction. Internal IDs, foreign keys, yarn links, document keys and annotation counter bindings are rebased together above destination ID high-water marks. Thus old saved navigation/widget actions and delayed old-project cleanup cannot address restored rows/files. Active session anchors become untrusted and require the existing conservative recovery review; stored checkpointed duration is retained without inventing elapsed time. The SQL transaction supplies rollback. A private journal records old/new file cleanup candidates before file publication; post-operation and startup cleanup uses current committed Room references to retain the authoritative files. Cancellation before commit leaves prior content intact. Successful return clears saved navigation when the user opens Projects; singleton database consumers observe the replacement.
-
-The backup includes projects, completion events, counters/history, reminders, sessions, folders, yarn/cards/usage/notes, saved pattern metadata, documents, bookmarks, all annotation layers/annotations, progress photo metadata and every referenced durable PDF/photo. Current and legacy app-owned URI roots are supported, and readable legacy external document references are copied into portable bytes. Orphan directories are not scanned into the backup.
-
-V1 deliberately leaves the destination's ordinary DataStore preferences and per-app language unchanged. Trial/tamper state is untouched; Play owns purchases; Firebase/Ravelry authentication is not transferred. Widget identities/state, launch trust tokens, review state, SavedStateHandle, caches, abandoned captures/import sessions, temporary exports, debug/build/Firebase configuration and credentials are excluded. No FileProvider root or storage permission is broadened.
-
-Limits and the exact storage inventory, recovery design and executed verification are maintained in [config/local-backup.md](config/local-backup.md).
 
 ### Implemented
 
@@ -2055,6 +2222,7 @@ Limits and the exact storage inventory, recovery design and executed verificatio
 - Local calculators and references.
 - Per-app language, fixed themes, haptic preference.
 - User-started trial and one-time Pro purchase.
+- Release Crashlytics and consent-based PostHog with allowlisted usage events.
 - Manual local full-content backup and replacement restore through Android SAF.
 
 ### Not implemented
@@ -2067,7 +2235,7 @@ Limits and the exact storage inventory, recovery design and executed verificatio
 - Speech recognition or text-to-speech.
 - AI/model-backed instruction parsing.
 - Cloud journal/notes processing.
-- Release Sentry, analytics, tracking, replay, or tracing.
+- Release Sentry, session replay or tracing; approved release Crashlytics and opt-in PostHog are implemented.
 - Firebase AI, ML Kit, Gemini, or App Check.
 - A generic Tools dashboard grid.
 
@@ -2090,7 +2258,7 @@ Common stale assumptions:
 
 - The root `package.json` is a DeepSec command facade, not evidence of an app website or JavaScript product runtime.
 - `allowBackup` is false, not true.
-- Room is schema 25.
+- Room is schema 25; manual backup includes its 18 content tables but excludes preferences/credentials.
 - `ProjectCard.kt` is deleted; the current row is `ProjectListItem.kt`.
 - Projects are cardless list rows plus a separate Continue hero.
 - The current main buttons use `CounterImageButton` and WebP assets.
@@ -2102,7 +2270,7 @@ Common stale assumptions:
 - Both the Saved Pattern UI and the internal library viewer route require a nonblank `localPdfUri`; there is no `patternUrl` or website fallback into PDF rendering.
 - `app/google-services.json` is ignored and required for release artifacts; debug can use a placeholder.
 - Signing and Firebase config are separate gates.
-- Sentry is debug-only.
+- Sentry is debug-only; release Crashlytics and opt-in PostHog have separate approved scopes.
 - A debug feature unlock does not mean `isPro` or purchased state.
 - Widgets mutate through the same primary-counter repository semantics.
 - Widget layout selection has four responsive size candidates, including a stacked-small height; the small surface is not always horizontal.
@@ -2114,7 +2282,25 @@ Common stale assumptions:
 - Voice commands are absent.
 - `InstructionParser` is regex-only.
 - Build & Test has separate Android and Node 22 Functions jobs; a green Android job alone still does not prove Functions, and neither job proves deployment or live Ravelry/Firebase behavior.
+- Complete translation/validation cannot be inferred from locale/test-file counts.
+- The public OAuth callback uses a shared global gate, not attacker-controlled IP keys.
 - `README.md` is not the current implementation source of truth.
+
+## Unresolved source concerns and proof limits
+
+The six investigated source claims are updated above. Remaining proof limits are separate from the historical verification failures:
+
+- **Combined local verification:** the stale yardage assertion, 12 ktlint violations and five Detekt findings were corrected on 2026-10-01; the full JVM suite, debug app/test assembly, lint, ktlint and Detekt pass. The result table separates this evidence from the historical failed run.
+- **Backup capacity:** session ceilings now agree, but archive bytes, aggregate identities and other resource budgets can still reject a valid native dataset. Full-size export/restore resource use needs device measurement.
+- **Insights consistency:** each session fold has one Room transaction; independently observed project/completion flows do not share it. The four targeted real-Room tests passed on API 36. Long accumulation can delay writers; worst-case delay remains unmeasured.
+- **OAuth recovery:** fake-backend JVM races cover in-process ownership, duplicates and passive status. In-memory recovery flags do not survive process death; real callback delivery and interrupted backend activation still need a bounded runtime check with valid UID/proof/generation state.
+- **Localization:** every supported locale has all translatable resource names. Rounded and regional skein plurals passed actual API 36 ICU/resource execution in seven full locales. Rendered quoting/clipping, native-language quality and other Android versions remain unverified.
+- **Tooling:** both JaCoCo compiler directories and the fresh XML's expected class/source mappings were verified; a combined nonempty-class guard alone cannot prove both paths remain valid in future builds. No current Sonar server result or scanner vulnerability conclusion follows from this local verification.
+- **Provider behavior:** one admitted transfer retains ownership until its worker and abort tasks finish. A permanently blocked provider can retain that reservation until process restart. Partial SAF output and unresolved cleanup journals remain possible; fake-provider results are not universal provider/OEM compatibility or process-kill proof.
+
+The targeted Room, backup and ICU step passed on API 36, including a complete synthetic 100,000-session local-file export/restore. Remaining runtime checks are: (1) one bounded SAF export/restore and cancellation sequence with the intended provider, verifying cleanup and retry; (2) one authorized OAuth round trip covering callback delivery after process recreation and an interrupted completion; (3) 100,000-session backup/Insights memory, latency and writer-delay measurements before any performance claim. These separate checks were not run.
+
+Beyond the targeted API 36 cases recorded above, this bounded follow-up does not establish deployed Firebase indexes/rules/functions/secrets, current remote CI, release manifests/APKs, billing/refunds, other device/API/OEM behavior, performance, live recovery/export or accessibility. Functions source was unchanged by these six corrections, so no local Functions check was needed or run. No scanner, external upload, deployment or release-readiness claim is included.
 
 ## Relationship to repository documents
 

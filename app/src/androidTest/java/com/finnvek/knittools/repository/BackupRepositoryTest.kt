@@ -18,6 +18,7 @@ import com.finnvek.knittools.data.backup.BackupError
 import com.finnvek.knittools.data.backup.BackupException
 import com.finnvek.knittools.data.backup.BackupFormat
 import com.finnvek.knittools.data.backup.BackupLimits
+import com.finnvek.knittools.data.backup.BackupManifest
 import com.finnvek.knittools.data.backup.BackupPreview
 import com.finnvek.knittools.data.backup.BackupProviderIo
 import com.finnvek.knittools.data.backup.BackupRestoreFiles
@@ -146,15 +147,7 @@ class BackupRepositoryTest {
             second[header.indexOf(JsonPrimitive("id"))] = JsonPrimitive(2)
             second[header.indexOf(JsonPrimitive("name"))] = JsonPrimitive("Second note")
             table.appendText(JsonArray(second).toString() + "\n")
-            val updated =
-                manifest.copy(
-                    entries =
-                        manifest.entries.map { entry ->
-                            val file = File(payload, entry.path)
-                            entry.copy(size = file.length(), sha256 = BackupFormat.digest(file))
-                        },
-                )
-            BackupArchive.write(payload, archive, updated)
+            rewriteArchive(payload, archive, manifest)
             prepare(archive.toUri())
             repository.restore(selectionId)
 
@@ -268,9 +261,7 @@ class BackupRepositoryTest {
             repository.export(archive.toUri())
             prepare(archive.toUri())
             repository.cancelPreview(selectionId)
-            assertEquals(references, BackupTables.references(db.openHelper.writableDatabase))
-            references.forEach { assertTrue(AppFileStorage.resolveAppOwnedFile(context, it.toUri())?.exists() == true) }
-            assertTrue(File(context.noBackupFilesDir, "manual-backup").listFiles().orEmpty().isEmpty())
+            assertReferencesAndPreviewCleanedUp(references)
         }
 
     @Test fun oversizedFieldsAreRejectedBeforePreviewAndAgainAtConfirmationWithoutLiveMutation() =
@@ -360,25 +351,13 @@ class BackupRepositoryTest {
             repository.export(archive.toUri())
             rewriteOversizedSessions(archive)
             expectBackupFailure(BackupError.CORRUPT) { prepare(archive.toUri()) }
-            assertEquals("Current", text("SELECT name FROM counter_projects"))
-            assertEquals(1L, number("SELECT COUNT(*) FROM sessions"))
-            assertEquals(sessionId, number("SELECT id FROM sessions"))
-            assertEquals(durationSeconds, number("SELECT durationSeconds FROM sessions"))
-            assertEquals(references, BackupTables.references(db.openHelper.writableDatabase))
-            references.forEach { assertTrue(AppFileStorage.resolveAppOwnedFile(context, it.toUri())?.exists() == true) }
-            assertTrue(File(context.noBackupFilesDir, "manual-backup").listFiles().orEmpty().isEmpty())
+            assertCurrentSessionUnchanged(sessionId, durationSeconds, references)
             val valid = File(directory, "valid-sessions")
             repository.export(valid.toUri())
             prepare(valid.toUri())
             rewriteOversizedSessions(File(context.noBackupFilesDir, "manual-backup/$selectionId/backup.zip"))
             expectBackupFailure(BackupError.CORRUPT) { repository.restore(selectionId) }
-            assertEquals("Current", text("SELECT name FROM counter_projects"))
-            assertEquals(1L, number("SELECT COUNT(*) FROM sessions"))
-            assertEquals(sessionId, number("SELECT id FROM sessions"))
-            assertEquals(durationSeconds, number("SELECT durationSeconds FROM sessions"))
-            assertEquals(references, BackupTables.references(db.openHelper.writableDatabase))
-            references.forEach { assertTrue(AppFileStorage.resolveAppOwnedFile(context, it.toUri())?.exists() == true) }
-            assertTrue(File(context.noBackupFilesDir, "manual-backup").listFiles().orEmpty().isEmpty())
+            assertCurrentSessionUnchanged(sessionId, durationSeconds, references)
         }
 
     @Test fun exportRefusesSessionsAboveTheRestoreCeiling() =
@@ -427,15 +406,7 @@ class BackupRepositoryTest {
                     writer.appendLine(JsonArray(row).toString())
                 }
             }
-            val updated =
-                manifest.copy(
-                    entries =
-                        manifest.entries.map { entry ->
-                            val file = File(payload, entry.path)
-                            entry.copy(size = file.length(), sha256 = BackupFormat.digest(file))
-                        },
-                )
-            BackupArchive.write(payload, archive, updated)
+            rewriteArchive(payload, archive, manifest)
         } finally {
             payload.deleteRecursively()
         }
@@ -662,15 +633,7 @@ class BackupRepositoryTest {
                         .toMutableList()
                 row[column] = value
                 table.writeText(original.first() + "\n" + JsonArray(row) + "\n")
-                val updated =
-                    manifest.copy(
-                        entries =
-                            manifest.entries.map { entry ->
-                                val file = File(payload, entry.path)
-                                entry.copy(size = file.length(), sha256 = BackupFormat.digest(file))
-                            },
-                    )
-                BackupArchive.write(payload, archive, updated)
+                rewriteArchive(payload, archive, manifest)
                 expectBackupFailure { prepare(archive.toUri()) }
                 assertEquals("Cardigan", text("SELECT name FROM counter_projects"))
                 assertEquals(references, BackupTables.references(db.openHelper.writableDatabase))
@@ -903,6 +866,40 @@ class BackupRepositoryTest {
         }
     }
 
+    private fun assertCurrentSessionUnchanged(
+        sessionId: Long,
+        durationSeconds: Long,
+        references: Set<String>,
+    ) {
+        assertEquals("Current", text("SELECT name FROM counter_projects"))
+        assertEquals(1L, number("SELECT COUNT(*) FROM sessions"))
+        assertEquals(sessionId, number("SELECT id FROM sessions"))
+        assertEquals(durationSeconds, number("SELECT durationSeconds FROM sessions"))
+        assertReferencesAndPreviewCleanedUp(references)
+    }
+
+    private fun assertReferencesAndPreviewCleanedUp(references: Set<String>) {
+        assertEquals(references, BackupTables.references(db.openHelper.writableDatabase))
+        references.forEach { assertTrue(AppFileStorage.resolveAppOwnedFile(context, it.toUri())?.exists() == true) }
+        assertTrue(File(context.noBackupFilesDir, "manual-backup").listFiles().orEmpty().isEmpty())
+    }
+
+    private fun rewriteArchive(
+        payload: File,
+        archive: File,
+        manifest: BackupManifest,
+    ) {
+        val updated =
+            manifest.copy(
+                entries =
+                    manifest.entries.map { entry ->
+                        val file = File(payload, entry.path)
+                        entry.copy(size = file.length(), sha256 = BackupFormat.digest(file))
+                    },
+            )
+        BackupArchive.write(payload, archive, updated)
+    }
+
     private fun rewriteTableText(
         archive: File,
         tableName: String,
@@ -923,15 +920,7 @@ class BackupRepositoryTest {
                     .toMutableList()
             row[column] = JsonPrimitive(value)
             table.writeText(lines.first() + "\n" + JsonArray(row) + "\n")
-            val updated =
-                manifest.copy(
-                    entries =
-                        manifest.entries.map { entry ->
-                            val file = File(payload, entry.path)
-                            entry.copy(size = file.length(), sha256 = BackupFormat.digest(file))
-                        },
-                )
-            BackupArchive.write(payload, archive, updated)
+            rewriteArchive(payload, archive, manifest)
         } finally {
             payload.deleteRecursively()
         }

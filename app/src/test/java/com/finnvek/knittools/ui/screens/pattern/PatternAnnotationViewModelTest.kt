@@ -46,6 +46,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -1099,32 +1100,28 @@ class PatternAnnotationDocumentSelectionTest {
     @Test
     fun `export bounds tracker highlights across all document pages`() =
         runTest {
-            val route = projectRoute()
-            val exporter = mockk<PatternPdfExporter>(relaxed = true)
-            val sourceUri = mockk<Uri>()
-            val destinationUri = mockk<Uri>()
-            val style = mockk<PatternAnnotationRenderStyle>()
+            val fixture = PdfExportFixture()
             val trackers =
                 listOf(
                     trackerAnnotation(id = 101L, layerId = 41L, page = 0),
                     trackerAnnotation(id = 102L, layerId = 41L, page = 1),
                     trackerAnnotation(id = 103L, layerId = 41L, page = 2),
                 )
-            every { route.annotationRepository.observePage(any(), 0) } returns flowOf(emptyList())
-            coEvery { route.annotationRepository.getForLayersForExport(any(), any(), any()) } returns trackers
-            val viewModel = route.viewModel(pdfExporter = exporter)
+            every { fixture.route.annotationRepository.observePage(any(), 0) } returns flowOf(emptyList())
+            coEvery { fixture.route.annotationRepository.getForLayersForExport(any(), any(), any()) } returns trackers
+            val viewModel = fixture.route.viewModel(pdfExporter = fixture.exporter)
             advanceUntilIdle()
 
-            viewModel.exportAnnotatedPdf(sourceUri, destinationUri, style)
+            viewModel.exportAnnotatedPdf(fixture.sourceUri, fixture.destinationUri, fixture.style)
             advanceUntilIdle()
 
             coVerify(exactly = 1) {
-                exporter.export(
-                    sourceUri = sourceUri,
-                    destinationUri = destinationUri,
+                fixture.exporter.export(
+                    sourceUri = fixture.sourceUri,
+                    destinationUri = fixture.destinationUri,
                     annotations = trackers,
                     trackerHighlights = match { it.keys == setOf(101L, 102L) },
-                    style = style,
+                    style = fixture.style,
                     onProgress = any(),
                 )
             }
@@ -1133,14 +1130,10 @@ class PatternAnnotationDocumentSelectionTest {
     @Test
     fun `export rejects annotation limit plus one before exporter or success state`() =
         runTest {
-            val route = projectRoute()
-            val exporter = mockk<PatternPdfExporter>(relaxed = true)
-            val sourceUri = mockk<Uri>()
-            val destinationUri = mockk<Uri>()
-            val style = mockk<PatternAnnotationRenderStyle>()
-            every { route.annotationRepository.observePage(any(), 0) } returns flowOf(emptyList())
+            val fixture = PdfExportFixture()
+            every { fixture.route.annotationRepository.observePage(any(), 0) } returns flowOf(emptyList())
             coEvery {
-                route.annotationRepository.getForLayersForExport(
+                fixture.route.annotationRepository.getForLayersForExport(
                     any(),
                     PATTERN_PDF_EXPORT_MAX_ANNOTATIONS,
                     any(),
@@ -1149,76 +1142,59 @@ class PatternAnnotationDocumentSelectionTest {
                 List(PATTERN_PDF_EXPORT_MAX_ANNOTATIONS + 1) { index ->
                     annotation(layerId = 41L, page = 0, zIndex = index.toLong())
                 }
-            val viewModel = route.viewModel(pdfExporter = exporter)
+            val viewModel = fixture.route.viewModel(pdfExporter = fixture.exporter)
             advanceUntilIdle()
 
-            viewModel.exportAnnotatedPdf(sourceUri, destinationUri, style)
+            viewModel.exportAnnotatedPdf(fixture.sourceUri, fixture.destinationUri, fixture.style)
             advanceUntilIdle()
 
             assertTrue(viewModel.uiState.value.exportFailed)
             assertFalse(viewModel.uiState.value.isExporting)
-            coVerify(exactly = 0) { exporter.export(any(), any(), any(), any(), any(), any()) }
+            coVerify(exactly = 0) { fixture.exporter.export(any(), any(), any(), any(), any(), any()) }
         }
 
     @Test
-    fun `failed preflight does not request SAF destination`() =
-        runTest {
-            val route = projectRoute()
-            val exporter = mockk<PatternPdfExporter>()
-            val sourceUri = mockk<Uri>()
-            val destinationRequests = mutableListOf<Uri>()
-            every { route.annotationRepository.observePage(any(), 0) } returns flowOf(emptyList())
-            coEvery {
-                route.annotationRepository.getForLayersForExport(
-                    any(),
-                    PATTERN_PDF_EXPORT_MAX_ANNOTATIONS,
-                    any(),
-                )
-            } returns emptyList()
+    fun `failed preflight does not request SAF destination`() = runTest { verifyPreflightDestination(fails = true) }
+
+    @Test
+    fun `successful preflight emits a destination request`() = runTest { verifyPreflightDestination(fails = false) }
+
+    private fun TestScope.verifyPreflightDestination(fails: Boolean) {
+        val route = projectRoute()
+        val exporter = mockk<PatternPdfExporter>()
+        val sourceUri = mockk<Uri>()
+        val destinationRequests = mutableListOf<Uri>()
+        every { route.annotationRepository.observePage(any(), 0) } returns flowOf(emptyList())
+        coEvery {
+            route.annotationRepository.getForLayersForExport(
+                any(),
+                PATTERN_PDF_EXPORT_MAX_ANNOTATIONS,
+                any(),
+            )
+        } returns emptyList()
+        if (fails) {
             coEvery { exporter.preflight(sourceUri, emptyList(), emptyMap()) } throws
                 PatternPdfExportLimitException(PatternPdfExportLimitReason.PAGE_COUNT)
-            val viewModel = route.viewModel(pdfExporter = exporter)
-            advanceUntilIdle()
-            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-                viewModel.exportDestinationRequests.collect { destinationRequests += it }
-            }
+        } else {
+            coEvery { exporter.preflight(sourceUri, emptyList(), emptyMap()) } returns mockk()
+        }
+        val viewModel = route.viewModel(pdfExporter = exporter)
+        advanceUntilIdle()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.exportDestinationRequests.collect { destinationRequests += it }
+        }
 
-            viewModel.requestAnnotatedPdfExport(sourceUri)
-            advanceUntilIdle()
+        viewModel.requestAnnotatedPdfExport(sourceUri)
+        advanceUntilIdle()
 
+        if (fails) {
             assertTrue(destinationRequests.isEmpty())
             assertTrue(viewModel.uiState.value.exportFailed)
-            assertFalse(viewModel.uiState.value.isExporting)
-        }
-
-    @Test
-    fun `successful preflight emits a destination request`() =
-        runTest {
-            val route = projectRoute()
-            val exporter = mockk<PatternPdfExporter>()
-            val sourceUri = mockk<Uri>()
-            val destinationRequests = mutableListOf<Uri>()
-            every { route.annotationRepository.observePage(any(), 0) } returns flowOf(emptyList())
-            coEvery {
-                route.annotationRepository.getForLayersForExport(
-                    any(),
-                    PATTERN_PDF_EXPORT_MAX_ANNOTATIONS,
-                    any(),
-                )
-            } returns emptyList()
-            coEvery { exporter.preflight(sourceUri, emptyList(), emptyMap()) } returns mockk()
-            val viewModel = route.viewModel(pdfExporter = exporter)
-            advanceUntilIdle()
-            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-                viewModel.exportDestinationRequests.collect { destinationRequests += it }
-            }
-
-            viewModel.requestAnnotatedPdfExport(sourceUri)
-            advanceUntilIdle()
-
+        } else {
             assertEquals(listOf(sourceUri), destinationRequests)
-            assertFalse(viewModel.uiState.value.isExporting)
         }
+        assertFalse(viewModel.uiState.value.isExporting)
+    }
 
     @Test
     fun `detaching document hides retained annotation layers`() =
@@ -1268,6 +1244,14 @@ private class ProjectRoute(
             pdfExporter = pdfExporter,
         )
 }
+
+private data class PdfExportFixture(
+    val route: ProjectRoute = projectRoute(),
+    val exporter: PatternPdfExporter = mockk(relaxed = true),
+    val sourceUri: Uri = mockk(),
+    val destinationUri: Uri = mockk(),
+    val style: PatternAnnotationRenderStyle = mockk(),
+)
 
 private fun projectRoute(): ProjectRoute {
     val counterRepository = mockk<CounterRepository>()

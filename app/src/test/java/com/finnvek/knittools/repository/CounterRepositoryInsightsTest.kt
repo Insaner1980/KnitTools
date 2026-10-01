@@ -60,10 +60,7 @@ class CounterRepositoryInsightsTest {
         runTest {
             val repository = repository(StandardTestDispatcher(testScheduler))
             every { dao.observeSessionChanges() } returns flowOf(true)
-            coEvery { dao.getFirstSessionStart(any()) } returns null
-            coEvery { dao.getInsightFirstDateBatch(any(), any(), any()) } returns emptyList()
-            coEvery { dao.hasAnySessions() } returns true
-            coEvery { dao.getSessionProjectActivity(null) } returns emptyList()
+            stubEmptySessionMetadata()
             // Reuse a single 256-row fixture; only IDs vary between reads.
             var page = 0
             coEvery { dao.getInsightSessionBatch(any()) } answers {
@@ -89,10 +86,7 @@ class CounterRepositoryInsightsTest {
         runTest {
             val repository = repository(StandardTestDispatcher(testScheduler))
             every { dao.observeSessionChanges() } returns flowOf(true)
-            coEvery { dao.getFirstSessionStart(any()) } returns null
-            coEvery { dao.getInsightFirstDateBatch(any(), any(), any()) } returns emptyList()
-            coEvery { dao.hasAnySessions() } returns true
-            coEvery { dao.getSessionProjectActivity(any()) } returns emptyList()
+            stubEmptySessionMetadata(projectId = 7)
             coEvery { dao.getProjectInsightSessionBatchSince(7, Long.MIN_VALUE, 123) } returns listOf(session(42))
             coEvery { dao.getProjectInsightSessionBatchSince(7, 42, 123) } returns emptyList()
             val count =
@@ -103,6 +97,7 @@ class CounterRepositoryInsightsTest {
                     }.first()
             assertEquals(1, count[0])
             coVerify(exactly = 0) { dao.getInsightSessionBatch(any()) }
+            coEvery { dao.getSessionProjectActivity(null) } returns emptyList()
             coEvery { dao.getInsightSessionBatchSince(Long.MIN_VALUE, 123) } returns emptyList()
             assertTrue(
                 repository
@@ -181,10 +176,7 @@ class CounterRepositoryInsightsTest {
         runTest {
             val changes = MutableSharedFlow<Boolean>(replay = 1)
             every { dao.observeSessionChanges() } returns changes
-            coEvery { dao.getFirstSessionStart(any()) } returns null
-            coEvery { dao.getInsightFirstDateBatch(any(), any(), any()) } returns emptyList()
-            coEvery { dao.hasAnySessions() } returns true
-            coEvery { dao.getSessionProjectActivity(null) } returns emptyList()
+            stubEmptySessionMetadata()
             coEvery { dao.getInsightSessionBatch(Long.MIN_VALUE) } returns listOf(session(1))
             coEvery { dao.getInsightSessionBatch(1) } returns emptyList()
             var cancelled = false
@@ -271,6 +263,13 @@ class CounterRepositoryInsightsTest {
             assertEquals(listOf(257, 258), counts)
             coVerify(exactly = 2) { dao.getInsightSessionBatch(Long.MIN_VALUE) }
         }
+
+    private fun stubEmptySessionMetadata(projectId: Long? = null) {
+        coEvery { dao.getFirstSessionStart(any()) } returns null
+        coEvery { dao.getInsightFirstDateBatch(any(), any(), any()) } returns emptyList()
+        coEvery { dao.hasAnySessions() } returns true
+        coEvery { dao.getSessionProjectActivity(projectId) } returns emptyList()
+    }
 
     private fun repository(
         dispatcher: kotlinx.coroutines.CoroutineDispatcher,

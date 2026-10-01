@@ -230,8 +230,7 @@ class RavelryAuthManagerTest {
             for (fails in listOf(false, true)) {
                 val completion = CompletableDeferred<Unit>()
                 val backend = FakeRavelryBackendClient(authStatus = RavelryBackendAuthStatus(true, "new-user"))
-                backend.onCompleteAuth = { state -> if (state == "state-1") completion.await() }
-                val manager = RavelryAuthManager(backend)
+                val manager = backend.managerWithPendingCompletion(completion, state = "state-1")
                 val states = mutableListOf<RavelryAuthState>()
                 backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { manager.authState.toList(states) }
 
@@ -270,8 +269,7 @@ class RavelryAuthManagerTest {
                 val completion = CompletableDeferred<Unit>()
                 val startResponse = CompletableDeferred<RavelryStartAuthResponse>()
                 val backend = FakeRavelryBackendClient()
-                backend.onCompleteAuth = { completion.await() }
-                val manager = RavelryAuthManager(backend)
+                val manager = backend.managerWithPendingCompletion(completion)
 
                 withParsedUri(AUTHORIZE_URL) { expectedUri ->
                     manager.startAuth()
@@ -345,8 +343,7 @@ class RavelryAuthManagerTest {
             for (fails in listOf(false, true)) {
                 val completion = CompletableDeferred<Unit>()
                 val backend = FakeRavelryBackendClient(authStatus = RavelryBackendAuthStatus(true, "old-user"))
-                backend.onCompleteAuth = { completion.await() }
-                val manager = RavelryAuthManager(backend)
+                val manager = backend.managerWithPendingCompletion(completion)
                 withParsedUri(AUTHORIZE_URL) { manager.startAuth() }
                 val callback =
                     async(start = CoroutineStart.UNDISPATCHED) { manager.handleCallback(callbackUri("state-1")) }
@@ -374,8 +371,7 @@ class RavelryAuthManagerTest {
             val completion = CompletableDeferred<Unit>()
             val oldStatus = CompletableDeferred<RavelryBackendAuthStatus>()
             val backend = FakeRavelryBackendClient(authStatus = RavelryBackendAuthStatus(true, "knitter"))
-            backend.onCompleteAuth = { completion.await() }
-            val manager = RavelryAuthManager(backend)
+            val manager = backend.managerWithPendingCompletion(completion)
             val states = mutableListOf<RavelryAuthState>()
             backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { manager.authState.toList(states) }
             withParsedUri(AUTHORIZE_URL) { manager.startAuth() }
@@ -449,8 +445,7 @@ class RavelryAuthManagerTest {
             val completion = CompletableDeferred<Unit>()
             val status = CompletableDeferred<RavelryBackendAuthStatus>()
             val backend = FakeRavelryBackendClient(authStatusResponse = status)
-            backend.onCompleteAuth = { completion.await() }
-            val manager = RavelryAuthManager(backend)
+            val manager = backend.managerWithPendingCompletion(completion)
             withParsedUri(AUTHORIZE_URL) { manager.startAuth() }
             val callback = async(start = CoroutineStart.UNDISPATCHED) { manager.handleCallback(callbackUri("state-1")) }
 
@@ -486,8 +481,7 @@ class RavelryAuthManagerTest {
         runTest {
             val completion = CompletableDeferred<Unit>()
             val backend = FakeRavelryBackendClient(authStatus = RavelryBackendAuthStatus(true, "new-user"))
-            backend.onCompleteAuth = { state -> if (state == "state-1") completion.await() }
-            val manager = RavelryAuthManager(backend)
+            val manager = backend.managerWithPendingCompletion(completion, state = "state-1")
             withParsedUri(AUTHORIZE_URL) {
                 manager.startAuth()
                 val callback =
@@ -508,8 +502,7 @@ class RavelryAuthManagerTest {
         runTest {
             val completion = CompletableDeferred<Unit>()
             val backend = FakeRavelryBackendClient(authStatus = RavelryBackendAuthStatus(true, "knitter"))
-            backend.onCompleteAuth = { completion.await() }
-            val manager = RavelryAuthManager(backend)
+            val manager = backend.managerWithPendingCompletion(completion)
             withParsedUri(AUTHORIZE_URL) { manager.startAuth() }
             val callback = async(start = CoroutineStart.UNDISPATCHED) { manager.handleCallback(callbackUri("state-1")) }
             callback.cancelAndJoin()
@@ -654,8 +647,7 @@ class RavelryAuthManagerTest {
             )) {
                 val completion = CompletableDeferred<Unit>()
                 val backend = FakeRavelryBackendClient()
-                backend.onCompleteAuth = { completion.await() }
-                val manager = RavelryAuthManager(backend)
+                val manager = backend.managerWithPendingCompletion(completion)
                 withParsedUri(AUTHORIZE_URL) { manager.startAuth() }
                 val callback =
                     async(start = CoroutineStart.UNDISPATCHED) { manager.handleCallback(callbackUri("state-1")) }
@@ -684,6 +676,16 @@ class RavelryAuthManagerTest {
             assertEquals(RavelryAuthState.NotConnected, manager.refreshAuthStatus())
             assertEquals(1, backend.authStatusCalls)
         }
+}
+
+private fun FakeRavelryBackendClient.managerWithPendingCompletion(
+    completion: CompletableDeferred<Unit>,
+    state: String? = null,
+): RavelryAuthManager {
+    onCompleteAuth = { incomingState ->
+        if (state == null || incomingState == state) completion.await()
+    }
+    return RavelryAuthManager(this)
 }
 
 private suspend fun <T> withParsedUri(

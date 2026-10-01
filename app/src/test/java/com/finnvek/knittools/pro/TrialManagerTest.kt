@@ -116,24 +116,7 @@ class TrialManagerTest {
 
     @Test
     fun `repeated tolerated rollbacks still consume monotonic trial time`() {
-        var storedTiming = anchors()
-        var lastKnownTimestamp = baseTime
-        var evaluation = evaluate(now = snapshot(), storedTiming = storedTiming)
-
-        repeat(2 * 24 * 4) { interval ->
-            evaluation =
-                evaluate(
-                    now =
-                        snapshot(
-                            wallClockMillis = baseTime - 59 * 60_000L,
-                            elapsedRealtimeMillis = baseElapsed + (interval + 1L) * quarterHour,
-                        ),
-                    storedTiming = storedTiming,
-                    lastKnownTimestamp = lastKnownTimestamp,
-                )
-            storedTiming = checkNotNull(evaluation.anchors)
-            lastKnownTimestamp = evaluation.lastKnownTimestamp
-        }
+        val evaluation = evaluateRepeatedRollbacks(days = 2)
 
         assertFalse(evaluation.state.clockTampered)
         assertTrue(evaluation.state.isActive)
@@ -143,11 +126,20 @@ class TrialManagerTest {
 
     @Test
     fun `trial expires after 14 monotonic days despite repeated tolerated rollbacks`() {
+        val evaluation = evaluateRepeatedRollbacks(days = 14)
+
+        assertFalse(evaluation.state.clockTampered)
+        assertFalse(evaluation.state.isActive)
+        assertEquals(14 * day, evaluation.state.elapsedDurationMillis)
+        assertEquals(0, evaluation.state.daysRemaining)
+    }
+
+    private fun evaluateRepeatedRollbacks(days: Int): TrialTimingEvaluation {
         var storedTiming = anchors()
         var lastKnownTimestamp = baseTime
         var evaluation = evaluate(now = snapshot(), storedTiming = storedTiming)
 
-        repeat(14 * 24 * 4) { interval ->
+        repeat(days * 24 * 4) { interval ->
             evaluation =
                 evaluate(
                     now =
@@ -162,10 +154,7 @@ class TrialManagerTest {
             lastKnownTimestamp = evaluation.lastKnownTimestamp
         }
 
-        assertFalse(evaluation.state.clockTampered)
-        assertFalse(evaluation.state.isActive)
-        assertEquals(14 * day, evaluation.state.elapsedDurationMillis)
-        assertEquals(0, evaluation.state.daysRemaining)
+        return evaluation
     }
 
     @Test

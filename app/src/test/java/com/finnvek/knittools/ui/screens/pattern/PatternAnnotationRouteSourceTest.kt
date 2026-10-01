@@ -49,8 +49,8 @@ class PatternAnnotationRouteSourceTest {
         assertTrue(panel.contains("readOnly = projectViewer"))
         assertTrue(panel.contains("if (projectViewer)"))
         assertTrue(viewer.contains("PatternAnnotationOverlay("))
-        assertTrue(viewer.contains("onMasterLayerVisibilityChange = annotationViewModel::setMasterLayerVisible"))
-        assertTrue(viewer.contains("onProjectLayerVisibilityChange = annotationViewModel::setProjectLayerVisible"))
+        assertTrue(viewer.contains("onMasterLayerVisibilityChange = ::setMasterLayerVisible"))
+        assertTrue(viewer.contains("onProjectLayerVisibilityChange = ::setProjectLayerVisible"))
     }
 
     private companion object {

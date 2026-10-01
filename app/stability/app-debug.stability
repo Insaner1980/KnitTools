@@ -5,6 +5,15 @@
 //   ./gradlew :app:stabilityDump
 
 @Composable
+internal fun com.finnvek.knittools.DownloadedUpdatePromptEffect(downloadedUpdatePromptId: kotlin.Long, snackbarHostState: androidx.compose.material3.SnackbarHostState, onRestart: kotlin.Function0<kotlin.Unit>): kotlin.Unit
+  skippable: true
+  restartable: true
+  params:
+    - downloadedUpdatePromptId: STABLE (primitive type)
+    - snackbarHostState: STABLE (marked @Stable or @Immutable)
+    - onRestart: STABLE (function type)
+
+@Composable
 private fun com.finnvek.knittools.MainActivity.MainActivityContent(): kotlin.Unit
   skippable: true
   restartable: true

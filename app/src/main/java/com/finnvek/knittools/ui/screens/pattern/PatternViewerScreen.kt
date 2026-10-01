@@ -500,13 +500,7 @@ fun PatternViewerScreen(
                                 viewportFocusRequest = null
                             }
                         },
-                        onMasterLayerVisibilityChange = annotationViewModel::setMasterLayerVisible,
-                        onProjectLayerVisibilityChange = annotationViewModel::setProjectLayerVisible,
-                        annotationInputActions = annotationViewModel.patternInputActions(),
-                        annotationToolbarActions = annotationViewModel.patternToolbarActions(),
-                        exportDestinationRequests = annotationViewModel.exportDestinationRequests,
-                        onExportRequest = annotationViewModel::requestAnnotatedPdfExport,
-                        onExport = annotationViewModel::exportAnnotatedPdf,
+                        annotationActions = annotationViewModel.patternContentAnnotationActions(),
                     ),
                 modifier =
                     Modifier
@@ -1356,13 +1350,7 @@ fun LibraryPatternViewerScreen(
                     },
                     onVerticalGuideDragCancel = {},
                     onViewportFocusRequestConsumed = {},
-                    onMasterLayerVisibilityChange = annotationViewModel::setMasterLayerVisible,
-                    onProjectLayerVisibilityChange = annotationViewModel::setProjectLayerVisible,
-                    annotationInputActions = annotationViewModel.patternInputActions(),
-                    annotationToolbarActions = annotationViewModel.patternToolbarActions(),
-                    exportDestinationRequests = annotationViewModel.exportDestinationRequests,
-                    onExportRequest = annotationViewModel::requestAnnotatedPdfExport,
-                    onExport = annotationViewModel::exportAnnotatedPdf,
+                    annotationActions = annotationViewModel.patternContentAnnotationActions(),
                 ),
             modifier =
                 Modifier
@@ -1876,6 +1864,7 @@ private fun PatternViewerContent(
     modifier: Modifier = Modifier,
 ) {
     val state = stateProvider()
+    val annotationActions = actions.annotationActions
     val renderedImage = remember(state.renderedBitmap) { state.renderedBitmap?.asImageBitmap() }
     val exportStyle = rememberPatternAnnotationRenderStyle()
     var pendingExportSource by rememberSaveable { mutableStateOf<String?>(null) }
@@ -1883,7 +1872,7 @@ private fun PatternViewerContent(
         rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { destination ->
             val source = pendingExportSource?.toUri()
             pendingExportSource = null
-            if (source != null && destination != null) actions.onExport(source, destination, exportStyle)
+            if (source != null && destination != null) annotationActions.onExport(source, destination, exportStyle)
         }
     val editableLayerVisible =
         when (state.annotationState.owner) {
@@ -1893,7 +1882,7 @@ private fun PatternViewerContent(
     val fallbackPatternName = stringResource(R.string.pattern_annotation_export_default_name)
     val exportBaseName = state.patternName?.substringBeforeLast('.')?.ifBlank { null } ?: fallbackPatternName
     val exportFilename = stringResource(R.string.pattern_annotation_export_filename, exportBaseName)
-    CollectWithLifecycleEffect({ actions.exportDestinationRequests }) { source ->
+    CollectWithLifecycleEffect({ annotationActions.exportDestinationRequestsProvider() }) { source ->
         if (source.toString() == state.patternUri) {
             pendingExportSource = source.toString()
             exportLauncher.launch(exportFilename)
@@ -1909,12 +1898,12 @@ private fun PatternViewerContent(
                 ) {
                     PatternAnnotationLayerPanel(
                         state = state.annotationState,
-                        onMasterVisibilityChange = actions.onMasterLayerVisibilityChange,
-                        onProjectVisibilityChange = actions.onProjectLayerVisibilityChange,
+                        onMasterVisibilityChange = annotationActions.onMasterLayerVisibilityChange,
+                        onProjectVisibilityChange = annotationActions.onProjectLayerVisibilityChange,
                     )
                     PatternAnnotationToolbar(
                         state = state.annotationState,
-                        actions = actions.annotationToolbarActions,
+                        actions = annotationActions.annotationToolbarActions,
                     )
                     if (state.annotationState.loadError == PatternAnnotationLoadError.PAGE_LIMIT) {
                         Text(
@@ -1926,7 +1915,7 @@ private fun PatternViewerContent(
                     TextButton(
                         enabled = !state.annotationState.isExporting,
                         onClick = {
-                            actions.onExportRequest(state.patternUri.toUri())
+                            annotationActions.onExportRequest(state.patternUri.toUri())
                         },
                     ) {
                         val exportText =
@@ -2047,7 +2036,7 @@ private fun PatternViewerContent(
                                     coordinateTransform = viewport.coordinateTransform,
                                     viewportScale = viewport.state.scale,
                                     pressureEnabled = state.annotationState.pressureEnabled,
-                                    actions = actions.annotationInputActions,
+                                    actions = annotationActions.annotationInputActions,
                                     modifier = Modifier.fillMaxSize(),
                                 )
                             }
@@ -2086,14 +2075,29 @@ private data class PatternViewerContentActions(
     val onVerticalGuideXFractionCommit: (Float) -> Unit,
     val onVerticalGuideDragCancel: () -> Unit,
     val onViewportFocusRequestConsumed: (Long) -> Unit,
+    val annotationActions: PatternViewerAnnotationActions,
+)
+
+private data class PatternViewerAnnotationActions(
     val onMasterLayerVisibilityChange: (Boolean) -> Unit,
     val onProjectLayerVisibilityChange: (Boolean) -> Unit,
     val annotationInputActions: PatternAnnotationInputActions,
     val annotationToolbarActions: PatternAnnotationToolbarActions,
-    val exportDestinationRequests: Flow<Uri>,
+    val exportDestinationRequestsProvider: () -> Flow<Uri>,
     val onExportRequest: (Uri) -> Unit,
     val onExport: (Uri, Uri, PatternAnnotationRenderStyle) -> Unit,
 )
+
+private fun PatternAnnotationViewModel.patternContentAnnotationActions() =
+    PatternViewerAnnotationActions(
+        onMasterLayerVisibilityChange = ::setMasterLayerVisible,
+        onProjectLayerVisibilityChange = ::setProjectLayerVisible,
+        annotationInputActions = patternInputActions(),
+        annotationToolbarActions = patternToolbarActions(),
+        exportDestinationRequestsProvider = { exportDestinationRequests },
+        onExportRequest = ::requestAnnotatedPdfExport,
+        onExport = ::exportAnnotatedPdf,
+    )
 
 private fun PatternAnnotationViewModel.patternInputActions() =
     PatternAnnotationInputActions(

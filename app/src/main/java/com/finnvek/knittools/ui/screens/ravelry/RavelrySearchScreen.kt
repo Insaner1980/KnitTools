@@ -2,16 +2,11 @@ package com.finnvek.knittools.ui.screens.ravelry
 
 import android.net.Uri
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -27,9 +22,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -37,7 +30,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -76,6 +68,7 @@ import com.finnvek.knittools.ui.components.CollectWithLifecycleEffect
 import com.finnvek.knittools.ui.components.ConfirmationDialog
 import com.finnvek.knittools.ui.components.StatusMessage
 import com.finnvek.knittools.ui.components.StatusMessageType
+import com.finnvek.knittools.ui.screens.library.SelectModeDeleteBar
 import com.finnvek.knittools.ui.screens.library.SelectionIndicator
 
 data class RavelrySearchActions(
@@ -214,38 +207,10 @@ fun RavelrySearchScreen(
             }
         },
         bottomBar = {
-            AnimatedVisibility(
+            SelectModeDeleteBar(
                 visible = isSavedSelectMode && selectedSavedIds.isNotEmpty(),
-                enter = slideInVertically(initialOffsetY = { it }),
-                exit = slideOutVertically(targetOffsetY = { it }),
-            ) {
-                Surface(color = MaterialTheme.colorScheme.surfaceVariant) {
-                    Row(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                        horizontalArrangement = Arrangement.Center,
-                    ) {
-                        Button(
-                            onClick = { showDeleteConfirmDialog = true },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors =
-                                ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.error,
-                                ),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Delete,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp),
-                            )
-                            Spacer(modifier = Modifier.size(8.dp))
-                            Text(stringResource(R.string.delete))
-                        }
-                    }
-                }
-            }
+                onDeleteClick = { showDeleteConfirmDialog = true },
+            )
         },
         // CPD-ON
     ) { padding ->

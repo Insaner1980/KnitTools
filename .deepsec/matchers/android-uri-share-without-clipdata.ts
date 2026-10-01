@@ -1,5 +1,5 @@
 import type { CandidateMatch, MatcherPlugin } from "deepsec/config";
-import { candidate, isTestFile } from "./utils.js";
+import { candidate, isTestFile, kotlinStructuralCode } from "./utils.js";
 
 export const androidUriShareWithoutClipData: MatcherPlugin = {
   slug: "android-uri-share-without-clipdata",
@@ -9,13 +9,24 @@ export const androidUriShareWithoutClipData: MatcherPlugin = {
   filePatterns: ["app/src/main/java/**/*.kt"],
   match(content, filePath): CandidateMatch[] {
     if (isTestFile(filePath)) return [];
-    const actionRegex = /Intent\.ACTION_SEND(?:_MULTIPLE)?/g;
+    const actionRegex = /\bIntent\.ACTION_SEND(?:_MULTIPLE)?\b/g;
     const actionMatches = [...content.matchAll(actionRegex)];
+    const code = kotlinStructuralCode(content);
 
     return actionMatches.flatMap((actionMatch, matchIndex) => {
       const index = actionMatch.index ?? 0;
       const nextIndex = actionMatches[matchIndex + 1]?.index ?? content.length;
-      const shareBlock = content.slice(index, nextIndex);
+      let depth = 0;
+      let endIndex = nextIndex;
+      for (const token of code.slice(index, nextIndex).matchAll(/[{}]|\bfun\s+/g)) {
+        if (token[0] === "{") depth++;
+        else if (token[0] === "}") depth--;
+        else if (depth <= 0) {
+          endIndex = index + token.index;
+          break;
+        }
+      }
+      const shareBlock = content.slice(index, endIndex);
       if (!shareBlock.includes("Intent.EXTRA_STREAM")) return [];
 
       const hasReadGrant = shareBlock.includes("FLAG_GRANT_READ_URI_PERMISSION");

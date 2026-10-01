@@ -1,11 +1,15 @@
 package com.finnvek.knittools.ui.screens.library
 
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.platform.app.InstrumentationRegistry
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.SavedPattern
@@ -19,9 +23,91 @@ import org.junit.Test
 
 class SavedPatternDetailWebScreenTest {
     @get:Rule
-    val composeRule = createComposeRule()
+    val composeRule = createAndroidComposeRule<ComponentActivity>()
 
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
+
+    @Test
+    fun attachmentSuccessAfterRestorationIsHandledOnce() =
+        verifyAttachmentAfterRestoration(SavedPatternMetadataMutationResult.Attached(7L))
+
+    @Test
+    fun attachmentFailureAfterRestorationAllowsRetry() =
+        verifyAttachmentAfterRestoration(SavedPatternMetadataMutationResult.PersistenceFailure)
+
+    @Test
+    fun attachmentReplacementAfterRestorationRequiresConfirmationOnce() =
+        verifyAttachmentAfterRestoration(SavedPatternMetadataMutationResult.ReplacementRequired(88L))
+
+    private fun verifyAttachmentAfterRestoration(firstResult: SavedPatternMetadataMutationResult) {
+        val expectedIds = mutableListOf<Long?>()
+        val callbacks = mutableListOf<(SavedPatternMetadataMutationResult) -> Unit>()
+        var attached = 0
+        val content: @Composable () -> Unit = {
+            KnitToolsTheme {
+                SavedPatternDetailScreen(
+                    pattern = webPattern(),
+                    onBack = {},
+                    onOpenPattern = {},
+                    onAttachToProject = { attached += 1 },
+                    onAttachWebPattern = { expectedId, onResult ->
+                        expectedIds += expectedId
+                        callbacks += onResult
+                    },
+                    onRemove = {},
+                )
+            }
+        }
+        composeRule.runOnUiThread { composeRule.activity.setContent(content = content) }
+        val attachLabel = context.getString(R.string.web_pattern_attach)
+        composeRule.onNodeWithText(attachLabel).performScrollTo().performClick()
+        recreate(content)
+        composeRule.onNodeWithText(attachLabel).performScrollTo().performClick()
+        composeRule.runOnIdle {
+            assertEquals(listOf<Long?>(null), expectedIds)
+            callbacks.single()(firstResult)
+        }
+
+        when (firstResult) {
+            is SavedPatternMetadataMutationResult.Attached -> {
+                composeRule.runOnIdle { assertEquals(1, attached) }
+            }
+
+            is SavedPatternMetadataMutationResult.ReplacementRequired -> {
+                val title = context.getString(R.string.web_pattern_replace_confirm_title)
+                composeRule.onNodeWithText(title).assertIsDisplayed()
+                recreate(content)
+                composeRule.onNodeWithText(title).assertIsDisplayed()
+                composeRule.runOnIdle { assertEquals(0, attached) }
+                composeRule.onAllNodesWithText(attachLabel)[1].performClick()
+                recreate(content)
+                composeRule.onAllNodesWithText(attachLabel)[1].performClick()
+                composeRule.runOnIdle {
+                    assertEquals(listOf(null, 88L), expectedIds)
+                    callbacks.last()(SavedPatternMetadataMutationResult.Attached(7L))
+                }
+            }
+
+            else -> {
+                composeRule.onNodeWithText(context.getString(R.string.web_pattern_save_failed)).assertIsDisplayed()
+                composeRule.runOnIdle { assertEquals(0, attached) }
+                composeRule.onNodeWithText(attachLabel).performScrollTo().performClick()
+                composeRule.runOnIdle {
+                    assertEquals(listOf(null, null), expectedIds)
+                    callbacks.last()(SavedPatternMetadataMutationResult.Attached(7L))
+                }
+            }
+        }
+        composeRule.runOnIdle { assertEquals(1, attached) }
+        recreate(content)
+        composeRule.runOnIdle { assertEquals(1, attached) }
+    }
+
+    private fun recreate(content: @Composable () -> Unit) {
+        composeRule.activityRule.scenario.recreate()
+        composeRule.runOnUiThread { composeRule.activity.setContent(content = content) }
+        composeRule.waitForIdle()
+    }
 
     @Test
     fun webDetailShowsWebActionsAndHidesPdfAndRavelryMetadata() {

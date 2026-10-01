@@ -98,10 +98,11 @@ class UiStateRetentionSourceTest {
     }
 
     @Test
-    fun `snackbar triggers are consumed before suspending display calls`() {
-        val mainActivity = ProjectSourceFiles.read(MAIN_ACTIVITY)
+    fun `downloaded snackbar consumption shares the host lifetime`() {
+        val mainActivity =
+            ProjectSourceFiles.read(MAIN_ACTIVITY).substringAfter("internal fun DownloadedUpdatePromptEffect(")
 
-        assertTrue(mainActivity.contains("var lastShownDownloadedUpdatePromptId by rememberSaveable"))
+        assertTrue(mainActivity.contains("var lastShownDownloadedUpdatePromptId by remember(snackbarHostState)"))
         assertTrue(mainActivity.contains("downloadedUpdatePromptId > lastShownDownloadedUpdatePromptId"))
         assertTrue(mainActivity.contains("lastShownDownloadedUpdatePromptId = downloadedUpdatePromptId"))
         assertTrue(

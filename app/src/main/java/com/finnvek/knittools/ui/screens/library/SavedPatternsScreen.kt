@@ -396,6 +396,7 @@ private fun WebPatternCard(
         modifier =
             Modifier
                 .fillMaxWidth()
+                .padding(start = if (selection != null) 48.dp else 0.dp)
                 .combinedClickable(onClick = onClick, onLongClick = onLongClick)
                 .then(
                     if (selection != null) {

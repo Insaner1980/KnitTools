@@ -1,4 +1,9 @@
 <resources>
+    <string name="notes_save_failed">Impossibile salvare le note. Le tue modifiche sono ancora qui. Riprova.</string>
+    <string name="notes_discard_title">Scartare le note non salvate?</string>
+    <string name="notes_discard_message">Non è stato possibile salvare le modifiche. Se esci ora, le modifiche non salvate verranno scartate.</string>
+    <string name="notes_discard_action">Scarta modifiche</string>
+
     <string name="app_name">KnitTools</string>
 
     <!-- Navigation & common -->
@@ -115,8 +120,16 @@
     <string name="n_selected">%d selezionati</string>
     <string name="select_all">Seleziona tutto</string>
     <string name="select_photo">Seleziona foto</string>
-    <string name="complete_n_projects">Completare %d progetti? Verranno spostati tra quelli completati.</string>
-    <string name="delete_n_projects">Eliminare %d progetti? Questa azione non può essere annullata.</string>
+    <plurals name="complete_n_projects">
+        <item quantity="one">Completare %d progetto? Verrà spostato tra quelli completati.</item>
+        <item quantity="many">Completare %d progetti? Verranno spostati tra quelli completati.</item>
+        <item quantity="other">Completare %d progetti? Verranno spostati tra quelli completati.</item>
+    </plurals>
+    <plurals name="delete_n_projects">
+        <item quantity="one">Eliminare %d progetto? Questa azione non può essere annullata.</item>
+        <item quantity="many">Eliminare %d progetti? Questa azione non può essere annullata.</item>
+        <item quantity="other">Eliminare %d progetti? Questa azione non può essere annullata.</item>
+    </plurals>
     <plurals name="rows_format">
         <item quantity="one">%1$d ferro</item>
         <item quantity="many">%1$d ferri</item>
@@ -226,8 +239,11 @@
     <string name="yarn_details_title">Dettagli</string>
     <string name="yarn_details_empty_body">Marca, spessore, colore e bagno sono facoltativi. Aggiungi solo ciò che aiuta questo progetto.</string>
     <string name="delete_yarn_card_message">Eliminare questa scheda filato? Questa azione non può essere annullata.</string>
-    <string name="skein_count_one">%1$d gomitolo</string>
-    <string name="skein_count_many">%1$d gomitoli</string>
+    <plurals name="skein_count">
+        <item quantity="one">%1$d gomitolo</item>
+        <item quantity="many">%1$d gomitoli</item>
+        <item quantity="other">%1$d gomitoli</item>
+    </plurals>
 
     <!-- Session History -->
     <string name="session_history_title">Cronologia delle sessioni</string>
@@ -252,7 +268,7 @@
 
     <string name="counter_decrease">Diminuisci</string>
     <string name="counter_increase">Aumenta</string>
-    <string name="counter_value_of_target_format">Riga %1$d / %2$d</string>
+    <string name="counter_value_of_target_format">Ferro %1$d / %2$d</string>
     <string name="repeating_counter_value_format">%1$d di %2$d</string>
     <string name="counter_decrease_named">Diminuisci %1$s</string>
     <string name="counter_increase_named">Aumenta %1$s</string>
@@ -302,7 +318,11 @@
     <string name="pattern_repeat_optional">Ripetizione del motivo (facoltativa)</string>
     <string name="edge_stitches_optional">Maglie di vivagno totali</string>
     <string name="edge_stitches_total_format">Maglie di vivagno totali: %1$d</string>
-    <string name="stitches_result">%d maglie</string>
+    <plurals name="stitches_result">
+        <item quantity="one">%d maglia</item>
+        <item quantity="many">%d maglie</item>
+        <item quantity="other">%d maglie</item>
+    </plurals>
     <string name="actual_width">Larghezza effettiva: %1$s %2$s</string>
     <string name="adjusted_down">Arrotondato per difetto: %1$d m (%2$s %3$s)</string>
     <string name="adjusted_up">Arrotondato per eccesso: %1$d m (%2$s %3$s)</string>
@@ -382,8 +402,8 @@
     <!-- Instruction parser -->
     <string name="paste_instruction">Incolla istruzione</string>
     <string name="instruction_hint">Incolla qui l\'istruzione di maglia</string>
-    <string name="instruction_hint_increase">es. "Aumenta 12 maglie in modo uniforme su 96 maglie"</string>
-    <string name="instruction_hint_gauge">es. "22 maglie e 30 ferri per 10 cm" oppure "larghezza 30 cm, 22 maglie"</string>
+    <string name="instruction_hint_increase">Solo istruzioni in inglese, ad esempio \"Increase 12 stitches evenly across 96 stitches\"</string>
+    <string name="instruction_hint_gauge">Solo istruzioni in inglese, ad esempio \"22 stitches and 30 rows per 10cm\" oppure \"width 30 cm, 22 stitches\"</string>
     <string name="parsing_instruction">Analisi…</string>
     <string name="instruction_parsed">Valori compilati dall\'istruzione</string>
     <string name="instruction_parse_failed">Impossibile capire l\'istruzione — prova a riformularla</string>
@@ -633,7 +653,11 @@
         <item quantity="other">Eliminare %1$d modelli dalla libreria?\n\nLe eventuali annotazioni PDF create nella libreria per i modelli selezionati verranno eliminate e non saranno più visibili nei progetti. I PDF già allegati ai progetti e le annotazioni PDF create nei progetti verranno conservati.</item>
     </plurals>
     <string name="delete_pattern">Elimina modello</string>
-    <string name="delete_yarn_cards_confirm">Eliminare %d schede filato?</string>
+    <plurals name="delete_yarn_cards_confirm">
+        <item quantity="one">Eliminare %d scheda filato?</item>
+        <item quantity="many">Eliminare %d schede filato?</item>
+        <item quantity="other">Eliminare %d schede filato?</item>
+    </plurals>
     <string name="delete_yarn_card">Elimina scheda filato</string>
     <string name="no_photos">Nessuna foto per ora</string>
     <string name="rename_photo">Rinomina foto</string>
@@ -691,7 +715,11 @@
     <string name="ravelry_backend_unavailable">Connessione a Ravelry temporaneamente non disponibile.</string>
     <string name="ravelry_disconnecting">Disconnessione da Ravelry…</string>
     <string name="difficulty_format">%.1f / 5</string>
-    <string name="yardage_format">%d yard</string>
+    <plurals name="yardage_format">
+        <item quantity="one">%d yard</item>
+        <item quantity="many">%d yard</item>
+        <item quantity="other">%d yard</item>
+    </plurals>
 
     <!-- Info tips -->
     <string name="tip_pattern_repeat_title">Ripetizione del motivo</string>
@@ -704,19 +732,19 @@
     <string name="tip_needle_sizes_desc">Il sistema metrico (mm) è lo standard universale. Le misure US usano un sistema numerato (0–50). Le misure UK/Canada usano un altro sistema numerato. Le misure giapponesi hanno una numerazione propria. Controlla sempre la misura in mm per sicurezza.</string>
     <string name="tip_imperial_units_title">Unità imperiali</string>
     <string name="tip_imperial_units_desc">Quando è attivo, tutti i calcolatori usano pollici invece di centimetri e yard invece di metri. Il campione viene quindi misurato su 4 pollici invece che su 10 cm.</string>
-    <string name="pattern_row_highlight_description">Riga %1$d evidenziata circa al %2$d per cento della pagina</string>
+    <string name="pattern_row_highlight_description">Valore %1$d evidenziato circa al %2$d per cento della pagina</string>
     <string name="open_notes_editor">Apri editor note</string>
     <string name="restore_purchases_checking">Controllo acquisti…</string>
     <string name="retry">Riprova</string>
     <string name="widget_rows_remaining_format">%d righe rimanenti</string>
     <string name="widget_target_reached">Obiettivo raggiunto</string>
     <string name="widget_stitches_format">Maglie: %1$d / %2$d</string>
-    <string name="target_rows_dialog_title">Imposta righe obiettivo</string>
+    <string name="target_rows_dialog_title">Imposta obiettivo</string>
     <string name="target_rows_set">Imposta obiettivo…</string>
     <string name="target_rows_edit">Modifica obiettivo</string>
     <string name="target_rows_remove">Rimuovi obiettivo</string>
-    <string name="target_rows_hint">Numero di righe</string>
-    <string name="row_label_with_target">Riga %1$d / %2$d</string>
+    <string name="target_rows_hint">Valore obiettivo</string>
+    <string name="row_label_with_target">%1$d / %2$d</string>
     <string name="widget_undo_action">Annulla</string>
     <string name="widget_undo_content_description">Annulla l’ultima modifica</string>
     <string name="search_more_error">Impossibile caricare altri modelli. Controlla la connessione internet.</string>

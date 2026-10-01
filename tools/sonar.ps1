@@ -91,6 +91,14 @@ function Import-SharedCheckerModule {
 }
 
 if ($SonarArgs.Count -gt 0) {
+    if ($PlanOnly) {
+        Write-Output @(
+            "sonar"
+            "  - sonar.exe (annetut CLI-argumentit)"
+            "  - varsinainen ajo vaatii -AllowExternalUpload"
+        )
+        exit 0
+    }
     if (-not $AllowExternalUpload) {
         Write-Error "EXTERNAL_UPLOAD_APPROVAL_REQUIRED: sonar.exe-komennot vaativat -AllowExternalUpload-valitsimen."
         exit 2

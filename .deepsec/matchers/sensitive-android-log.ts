@@ -17,11 +17,38 @@ export const sensitiveAndroidLog: MatcherPlugin = {
 
     return [...content.matchAll(logCallRegex)].flatMap((logMatch) => {
       const index = logMatch.index ?? 0;
-      const nextCallIndex = content.indexOf(")", index) + 1;
-      const call = content.slice(index, nextCallIndex > 0 ? nextCallIndex : content.length);
+      const openIndex = index + logMatch[0].length - 1;
+      const call = content.slice(index, logCallEnd(content, openIndex));
       if (!sensitiveRegex.test(call)) return [];
 
       return [candidate("sensitive-android-log", content, index, "Sensitive term in Android log call")];
     });
   },
 };
+
+function logCallEnd(content: string, openIndex: number): number {
+  let depth = 0;
+  let quote = "";
+  for (let index = openIndex; index < content.length; index += 1) {
+    if (quote === '"""') {
+      if (content.startsWith(quote, index)) {
+        quote = "";
+        index += 2;
+      }
+    } else if (quote) {
+      if (content[index] === "\\") index += 1;
+      else if (content[index] === quote) quote = "";
+    } else if (content.startsWith('"""', index)) {
+      quote = '"""';
+      index += 2;
+    } else if (content[index] === '"' || content[index] === "'") {
+      quote = content[index];
+    } else if (content[index] === "(") {
+      depth += 1;
+    } else if (content[index] === ")") {
+      depth -= 1;
+      if (depth === 0) return index + 1;
+    }
+  }
+  return content.length;
+}

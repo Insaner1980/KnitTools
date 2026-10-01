@@ -1,4 +1,9 @@
 <resources>
+    <string name="notes_save_failed">No se pudieron guardar las notas. Tus cambios siguen aquí. Inténtalo de nuevo.</string>
+    <string name="notes_discard_title">¿Descartar las notas sin guardar?</string>
+    <string name="notes_discard_message">No se pudieron guardar tus cambios. Si sales ahora, se perderán los cambios sin guardar.</string>
+    <string name="notes_discard_action">Descartar cambios</string>
+
     <string name="app_name">KnitTools</string>
 
     <!-- Navigation & common -->
@@ -115,8 +120,16 @@
     <string name="n_selected">%d seleccionados</string>
     <string name="select_all">Seleccionar todo</string>
     <string name="select_photo">Seleccionar foto</string>
-    <string name="complete_n_projects">¿Terminar %d proyectos? Se moverán a tus proyectos terminados.</string>
-    <string name="delete_n_projects">¿Eliminar %d proyectos? Esto no se puede deshacer.</string>
+    <plurals name="complete_n_projects">
+        <item quantity="one">¿Terminar %d proyecto? Se moverá a tus proyectos terminados.</item>
+        <item quantity="many">¿Terminar %d proyectos? Se moverán a tus proyectos terminados.</item>
+        <item quantity="other">¿Terminar %d proyectos? Se moverán a tus proyectos terminados.</item>
+    </plurals>
+    <plurals name="delete_n_projects">
+        <item quantity="one">¿Eliminar %d proyecto? Esto no se puede deshacer.</item>
+        <item quantity="many">¿Eliminar %d proyectos? Esto no se puede deshacer.</item>
+        <item quantity="other">¿Eliminar %d proyectos? Esto no se puede deshacer.</item>
+    </plurals>
     <plurals name="rows_format">
         <item quantity="one">%1$d vuelta</item>
         <item quantity="many">%1$d vueltas</item>
@@ -226,8 +239,11 @@
     <string name="yarn_details_title">Detalles</string>
     <string name="yarn_details_empty_body">La marca, el grosor, el color y el lote son opcionales. Añade solo lo que ayude a este proyecto.</string>
     <string name="delete_yarn_card_message">¿Eliminar esta ficha de hilo? Esto no se puede deshacer.</string>
-    <string name="skein_count_one">%1$d ovillo</string>
-    <string name="skein_count_many">%1$d ovillos</string>
+    <plurals name="skein_count">
+        <item quantity="one">%1$d ovillo</item>
+        <item quantity="many">%1$d ovillos</item>
+        <item quantity="other">%1$d ovillos</item>
+    </plurals>
 
     <!-- Session History -->
     <string name="session_history_title">Historial de sesiones</string>
@@ -252,7 +268,7 @@
 
     <string name="counter_decrease">Disminuir</string>
     <string name="counter_increase">Aumentar</string>
-    <string name="counter_value_of_target_format">Fila %1$d / %2$d</string>
+    <string name="counter_value_of_target_format">Vuelta %1$d / %2$d</string>
     <string name="repeating_counter_value_format">%1$d de %2$d</string>
     <string name="counter_decrease_named">Disminuir %1$s</string>
     <string name="counter_increase_named">Aumentar %1$s</string>
@@ -302,7 +318,11 @@
     <string name="pattern_repeat_optional">Repetición del patrón (opcional)</string>
     <string name="edge_stitches_optional">Puntos de borde totales</string>
     <string name="edge_stitches_total_format">Puntos de borde totales: %1$d</string>
-    <string name="stitches_result">%d puntos</string>
+    <plurals name="stitches_result">
+        <item quantity="one">%d punto</item>
+        <item quantity="many">%d puntos</item>
+        <item quantity="other">%d puntos</item>
+    </plurals>
     <string name="actual_width">Ancho real: %1$s %2$s</string>
     <string name="adjusted_down">Ajustado hacia abajo: %1$d p (%2$s %3$s)</string>
     <string name="adjusted_up">Ajustado hacia arriba: %1$d p (%2$s %3$s)</string>
@@ -382,8 +402,8 @@
     <!-- Instruction parser -->
     <string name="paste_instruction">Pegar instrucción</string>
     <string name="instruction_hint">Pega aquí tu instrucción de tejido</string>
-    <string name="instruction_hint_increase">p. ej., "Aumentar 12 puntos repartidos uniformemente en 96 puntos"</string>
-    <string name="instruction_hint_gauge">p. ej., "22 puntos y 30 vueltas por 10 cm" o "ancho 30 cm, 22 puntos"</string>
+    <string name="instruction_hint_increase">Solo instrucciones en inglés, p. ej. \"Increase 12 stitches evenly across 96 stitches\"</string>
+    <string name="instruction_hint_gauge">Solo instrucciones en inglés, p. ej. \"22 stitches and 30 rows per 10cm\" o \"width 30 cm, 22 stitches\"</string>
     <string name="parsing_instruction">Analizando…</string>
     <string name="instruction_parsed">Valores rellenados a partir de la instrucción</string>
     <string name="instruction_parse_failed">No se pudo entender la instrucción; intenta reformularla</string>
@@ -578,7 +598,7 @@
     <string name="edit_reminder">Editar recordatorio</string>
     <string name="no_reminders">Aún no hay recordatorios</string>
     <string name="delete_reminder_title">¿Eliminar recordatorio?</string>
-    <string name="delete_reminder_confirm">¿Eliminar el recordatorio "%1$s"?</string>
+    <string name="delete_reminder_confirm">¿Eliminar el recordatorio \"%1$s\"?</string>
     <string name="row_number">Número de vuelta</string>
     <string name="reminder_message">Mensaje</string>
     <string name="reminder_message_hint">p. ej., Cambiar al talón</string>
@@ -633,7 +653,11 @@
         <item quantity="other">¿Eliminar %1$d patrones de la biblioteca?\n\nSi hay anotaciones PDF creadas en la biblioteca para los patrones seleccionados, también se eliminarán y dejarán de aparecer en los proyectos. Se conservarán los PDF ya adjuntos a los proyectos y las anotaciones PDF creadas dentro de los proyectos.</item>
     </plurals>
     <string name="delete_pattern">Eliminar patrón</string>
-    <string name="delete_yarn_cards_confirm">¿Eliminar %d fichas de hilo?</string>
+    <plurals name="delete_yarn_cards_confirm">
+        <item quantity="one">¿Eliminar %d ficha de hilo?</item>
+        <item quantity="many">¿Eliminar %d fichas de hilo?</item>
+        <item quantity="other">¿Eliminar %d fichas de hilo?</item>
+    </plurals>
     <string name="delete_yarn_card">Eliminar ficha de hilo</string>
     <string name="no_photos">Aún no hay fotos</string>
     <string name="rename_photo">Renombrar foto</string>
@@ -691,7 +715,11 @@
     <string name="ravelry_backend_unavailable">La conexión con Ravelry no está disponible temporalmente.</string>
     <string name="ravelry_disconnecting">Desconectando Ravelry…</string>
     <string name="difficulty_format">%.1f / 5</string>
-    <string name="yardage_format">%d yardas</string>
+    <plurals name="yardage_format">
+        <item quantity="one">%d yarda</item>
+        <item quantity="many">%d yardas</item>
+        <item quantity="other">%d yardas</item>
+    </plurals>
 
     <!-- Info tips -->
     <string name="tip_pattern_repeat_title">Repetición del patrón</string>
@@ -704,19 +732,19 @@
     <string name="tip_needle_sizes_desc">El sistema métrico (mm) es el estándar universal. Las tallas US usan un sistema numerado (0–50). Las tallas UK/Canadá usan un sistema numerado diferente. Las tallas japonesas tienen su propia numeración. Comprueba siempre la medida en mm para asegurarte.</string>
     <string name="tip_imperial_units_title">Unidades imperiales</string>
     <string name="tip_imperial_units_desc">Cuando está activado, todas las calculadoras usan pulgadas en lugar de centímetros y yardas en lugar de metros. La muestra se mide por 4 pulgadas en lugar de por 10 cm.</string>
-    <string name="pattern_row_highlight_description">Fila %1$d resaltada aproximadamente al %2$d por ciento de la página</string>
+    <string name="pattern_row_highlight_description">Valor %1$d resaltado aproximadamente al %2$d por ciento de la página</string>
     <string name="open_notes_editor">Abrir editor de notas</string>
     <string name="restore_purchases_checking">Comprobando compras…</string>
     <string name="retry">Reintentar</string>
     <string name="widget_rows_remaining_format">Quedan %d filas</string>
     <string name="widget_target_reached">Objetivo alcanzado</string>
     <string name="widget_stitches_format">Puntos: %1$d / %2$d</string>
-    <string name="target_rows_dialog_title">Establecer filas objetivo</string>
+    <string name="target_rows_dialog_title">Establecer objetivo</string>
     <string name="target_rows_set">Establecer objetivo…</string>
     <string name="target_rows_edit">Editar objetivo</string>
     <string name="target_rows_remove">Quitar objetivo</string>
-    <string name="target_rows_hint">Número de filas</string>
-    <string name="row_label_with_target">Fila %1$d / %2$d</string>
+    <string name="target_rows_hint">Valor objetivo</string>
+    <string name="row_label_with_target">%1$d / %2$d</string>
     <string name="widget_undo_action">Deshacer</string>
     <string name="widget_undo_content_description">Deshacer el último cambio</string>
     <string name="search_more_error">No se pudieron cargar más patrones. Comprueba tu conexión a internet.</string>

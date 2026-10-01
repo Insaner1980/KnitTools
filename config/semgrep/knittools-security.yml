@@ -114,16 +114,16 @@ rules:
     message: Lokitus sisältää käyttäjän projektin tai laskurin tilaa. Jätä tämä vain väliaikaiseksi debug-lokitukseksi.
     patterns:
       - pattern-either:
-          - pattern: Log.v(..., $MSG)
-          - pattern: Log.d(..., $MSG)
-          - pattern: Log.i(..., $MSG)
-          - pattern: Log.w(..., $MSG)
-          - pattern: Log.e(..., $MSG)
-          - pattern: android.util.Log.v(..., $MSG)
-          - pattern: android.util.Log.d(..., $MSG)
-          - pattern: android.util.Log.i(..., $MSG)
-          - pattern: android.util.Log.w(..., $MSG)
-          - pattern: android.util.Log.e(..., $MSG)
+          - pattern: Log.v($TAG, $MSG, ...)
+          - pattern: Log.d($TAG, $MSG, ...)
+          - pattern: Log.i($TAG, $MSG, ...)
+          - pattern: Log.w($TAG, $MSG, ...)
+          - pattern: Log.e($TAG, $MSG, ...)
+          - pattern: android.util.Log.v($TAG, $MSG, ...)
+          - pattern: android.util.Log.d($TAG, $MSG, ...)
+          - pattern: android.util.Log.i($TAG, $MSG, ...)
+          - pattern: android.util.Log.w($TAG, $MSG, ...)
+          - pattern: android.util.Log.e($TAG, $MSG, ...)
       - metavariable-regex:
           metavariable: $MSG
-          regex: (?i).*(project|projectId|count|counter|before=|after=|ravelry|oauth|token|credential|secret|password|billing|purchase|pattern|instruction|ocr|prompt|voice|ai).*
+          regex: (?i).*(project|projectId|count|counter|before=|after=|ravelry|oauth|token|credential|secret|password|billing|purchase|pattern|instruction|\bocr\b|prompt|voice|\bai\b).*

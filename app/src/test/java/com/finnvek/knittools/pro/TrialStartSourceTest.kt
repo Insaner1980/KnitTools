@@ -2,6 +2,7 @@ package com.finnvek.knittools.pro
 
 import com.finnvek.knittools.ProjectSourceFiles
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -56,15 +57,10 @@ class TrialStartSourceTest {
             source
                 .substringAfter("suspend fun updateTimestamp()")
                 .substringBefore("private suspend fun refreshTrialState")
-        val refreshBody =
-            source
-                .substringAfter("private suspend fun refreshTrialState()")
-                .substringBefore("private fun startRefreshLoop")
+        val refreshBody = refreshTrialStateBody(source)
 
         listOf(updateBody, refreshBody).forEach { body ->
-            assertEqualsOne(needle = "editPreferencesSafely", source = body)
-            assertFalse(body.contains("safePreferencesData.first()"))
-            assertTrue(body.contains("preferences.evaluateAndPersistTrialState(now)"))
+            assertAtomicProgress(body)
         }
     }
 
@@ -75,10 +71,7 @@ class TrialStartSourceTest {
             source
                 .substringAfter("suspend fun updateTimestamp()")
                 .substringBefore("private suspend fun refreshTrialState")
-        val refreshBody =
-            source
-                .substringAfter("private suspend fun refreshTrialState()")
-                .substringBefore("private fun MutablePreferences.evaluateAndPersistTrialState")
+        val refreshBody = refreshTrialStateBody(source)
 
         assertTrue(updateBody.contains("if (didWrite)"))
         assertTrue(updateBody.contains("updatedState?.let { _trialState.value = it }"))
@@ -86,6 +79,44 @@ class TrialStartSourceTest {
         assertTrue(updateBody.contains("_trialState.value = TrialState()"))
         assertTrue(refreshBody.contains("else {"))
         assertTrue(refreshBody.contains("_trialState.value = TrialState()"))
+    }
+
+    @Test
+    fun `refresh boundary fails clearly when either delimiter is missing`() {
+        val source = ProjectSourceFiles.read(TRIAL_MANAGER)
+        for (delimiter in listOf(REFRESH_START, REFRESH_END)) {
+            val failure =
+                assertThrows(AssertionError::class.java) {
+                    refreshTrialStateBody(source.replace(delimiter, "missingDelimiter"))
+                }
+            assertTrue(failure.message.orEmpty().contains(delimiter))
+        }
+    }
+
+    @Test
+    fun `later functions cannot satisfy refresh atomic progress assertions`() {
+        val source = ProjectSourceFiles.read(TRIAL_MANAGER)
+        val body = refreshTrialStateBody(source)
+        val moved = source.replace(body, "\n        }\n\n") + "\nfun later() { $body }"
+
+        assertThrows(AssertionError::class.java) {
+            assertAtomicProgress(refreshTrialStateBody(moved))
+        }
+    }
+
+    private fun refreshTrialStateBody(source: String): String {
+        val start = source.indexOf(REFRESH_START)
+        assertTrue("Missing refreshTrialState start delimiter: $REFRESH_START", start >= 0)
+        val bodyStart = start + REFRESH_START.length
+        val end = source.indexOf(REFRESH_END, bodyStart)
+        assertTrue("Missing refreshTrialState end delimiter: $REFRESH_END", end >= bodyStart)
+        return source.substring(bodyStart, end)
+    }
+
+    private fun assertAtomicProgress(body: String) {
+        assertEqualsOne(needle = "editPreferencesSafely", source = body)
+        assertFalse(body.contains("safePreferencesData.first()"))
+        assertTrue(body.contains("preferences.evaluateAndPersistTrialState(now)"))
     }
 
     private fun assertEqualsOne(
@@ -97,6 +128,8 @@ class TrialStartSourceTest {
     }
 
     private companion object {
+        const val REFRESH_START = "private suspend fun refreshTrialState() {"
+        const val REFRESH_END = "private fun MutablePreferences.evaluateAndPersistTrialState"
         const val TRIAL_MANAGER = "app/src/main/java/com/finnvek/knittools/pro/TrialManager.kt"
     }
 }

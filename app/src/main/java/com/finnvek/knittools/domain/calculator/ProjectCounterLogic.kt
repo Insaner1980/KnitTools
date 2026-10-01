@@ -16,12 +16,14 @@ object ProjectCounterLogic {
             counter.copy(linkedToMainCounter = false)
         }
 
+    fun normalizeName(name: String): String =
+        name
+            .trim()
+            .take(MAX_NAME_LENGTH)
+            .let { value -> if (value.lastOrNull()?.isHighSurrogate() == true) value.dropLast(1) else value }
+
     fun validatedForPersistence(counter: ProjectCounter): ProjectCounter? {
-        val name =
-            counter.name
-                .trim()
-                .take(MAX_NAME_LENGTH)
-                .let { value -> if (value.lastOrNull()?.isHighSurrogate() == true) value.dropLast(1) else value }
+        val name = normalizeName(counter.name)
         if (name.isBlank() || counter.count < 0 || counter.stepSize <= 0) return null
 
         val normalized =

@@ -1,4 +1,9 @@
 <resources>
+    <string name="notes_save_failed">Muistiinpanoja ei voitu tallentaa. Muutoksesi ovat yhä tässä. Yritä uudelleen.</string>
+    <string name="notes_discard_title">Hylätäänkö tallentamattomat muistiinpanot?</string>
+    <string name="notes_discard_message">Muutoksiasi ei voitu tallentaa. Jos poistut nyt, tallentamattomat muutokset hylätään.</string>
+    <string name="notes_discard_action">Hylkää muutokset</string>
+
     <string name="app_name">KnitTools</string>
 
     <!-- Navigaatio ja yleiset -->
@@ -113,8 +118,14 @@
     <string name="n_selected">%d valittu</string>
     <string name="select_all">Valitse kaikki</string>
     <string name="select_photo">Valitse kuva</string>
-    <string name="complete_n_projects">Merkitäänkö %d projektia valmistuneiksi? Ne siirretään valmiisiin projekteihin.</string>
-    <string name="delete_n_projects">Poistetaanko %d projektia? Tätä ei voi kumota.</string>
+    <plurals name="complete_n_projects">
+        <item quantity="one">Merkitäänkö %d projekti valmistuneeksi? Se siirretään valmiisiin projekteihin.</item>
+        <item quantity="other">Merkitäänkö %d projektia valmistuneiksi? Ne siirretään valmiisiin projekteihin.</item>
+    </plurals>
+    <plurals name="delete_n_projects">
+        <item quantity="one">Poistetaanko %d projekti? Tätä ei voi kumota.</item>
+        <item quantity="other">Poistetaanko %d projektia? Tätä ei voi kumota.</item>
+    </plurals>
     <plurals name="rows_format">
         <item quantity="one">%1$d kerros</item>
         <item quantity="other">%1$d kerrosta</item>
@@ -223,8 +234,10 @@
     <string name="yarn_details_title">Tiedot</string>
     <string name="yarn_details_empty_body">Merkki, vahvuus, väri ja värjäyserä ovat valinnaisia. Lisää vain se, mikä auttaa tätä projektia.</string>
     <string name="delete_yarn_card_message">Poistetaanko tämä lankakortti? Tätä ei voi kumota.</string>
-    <string name="skein_count_one">%1$d kerä</string>
-    <string name="skein_count_many">%1$d kerää</string>
+    <plurals name="skein_count">
+        <item quantity="one">%1$d kerä</item>
+        <item quantity="other">%1$d kerää</item>
+    </plurals>
 
     <!-- Istuntohistoria -->
     <string name="session_history_title">Työskentelyhistoria</string>
@@ -298,7 +311,10 @@
     <string name="pattern_repeat_optional">Mallikerta (valinnainen)</string>
     <string name="edge_stitches_optional">Reunasilmukat yhteensä</string>
     <string name="edge_stitches_total_format">Reunasilmukoita yhteensä: %1$d</string>
-    <string name="stitches_result">%d silmukkaa</string>
+    <plurals name="stitches_result">
+        <item quantity="one">%d silmukka</item>
+        <item quantity="other">%d silmukkaa</item>
+    </plurals>
     <string name="actual_width">Todellinen leveys: %1$s %2$s</string>
     <string name="adjusted_down">Pyöristetty alas: %1$d s (%2$s %3$s)</string>
     <string name="adjusted_up">Pyöristetty ylös: %1$d s (%2$s %3$s)</string>
@@ -378,8 +394,8 @@
     <!-- Instruction parser -->
     <string name="paste_instruction">Liitä ohje</string>
     <string name="instruction_hint">Liitä neuleohje tähän</string>
-    <string name="instruction_hint_increase">esim. "Lisää 12 silmukkaa tasaisesti 96 silmukalle"</string>
-    <string name="instruction_hint_gauge">esim. "22 silmukkaa ja 30 kerrosta / 10 cm" tai "leveys 30 cm, 22 silmukkaa"</string>
+    <string name="instruction_hint_increase">Vain englanninkieliset ohjeet, esim. \"Increase 12 stitches evenly across 96 stitches\"</string>
+    <string name="instruction_hint_gauge">Vain englanninkieliset ohjeet, esim. \"22 stitches and 30 rows per 10cm\" tai \"width 30 cm, 22 stitches\"</string>
     <string name="parsing_instruction">Jäsennetään…</string>
     <string name="instruction_parsed">Arvot täytetty ohjeesta</string>
     <string name="instruction_parse_failed">Ohjetta ei ymmärretty — kokeile muotoilla se toisin</string>
@@ -836,7 +852,7 @@
     <string name="edit_reminder">Muokkaa muistutusta</string>
     <string name="no_reminders">Ei muistutuksia vielä</string>
     <string name="delete_reminder_title">Poistetaanko muistutus?</string>
-    <string name="delete_reminder_confirm">Poistetaanko muistutus "%1$s"?</string>
+    <string name="delete_reminder_confirm">Poistetaanko muistutus \"%1$s\"?</string>
     <string name="row_number">Kerrosnumero</string>
     <string name="reminder_message">Viesti</string>
     <string name="reminder_message_hint">esim. Siirry kantatilkkuun</string>
@@ -889,7 +905,10 @@
         <item quantity="other">Poistetaanko %1$d ohjetta kirjastosta?\n\nMyös valittuihin ohjeisiin kirjastossa mahdollisesti tehdyt PDF-merkinnät poistetaan, eivätkä ne enää näy projekteissa. Projekteihin jo liitetyt PDF:t ja projekteissa tehdyt PDF-merkinnät säilyvät.</item>
     </plurals>
     <string name="delete_pattern">Poista ohje</string>
-    <string name="delete_yarn_cards_confirm">Poistetaanko %d lankakorttia?</string>
+    <plurals name="delete_yarn_cards_confirm">
+        <item quantity="one">Poistetaanko %d lankakortti?</item>
+        <item quantity="other">Poistetaanko %d lankakorttia?</item>
+    </plurals>
     <string name="delete_yarn_card">Poista lankakortti</string>
     <string name="no_photos">Kuvia ei ole vielä</string>
     <string name="rename_photo">Nimeä kuva uudelleen</string>
@@ -947,7 +966,10 @@
     <string name="ravelry_backend_unavailable">Ravelry-yhteys ei ole juuri nyt käytettävissä.</string>
     <string name="ravelry_disconnecting">Katkaistaan Ravelry-yhteyttä…</string>
     <string name="difficulty_format">%.1f / 5</string>
-    <string name="yardage_format">%d jaardia</string>
+    <plurals name="yardage_format">
+        <item quantity="one">%d jaardi</item>
+        <item quantity="other">%d jaardia</item>
+    </plurals>
     <string name="pattern_detail_needles">Puikot</string>
     <string name="pattern_detail_yardage">Lankamäärä</string>
     <string name="pattern_detail_sizes">Koot</string>

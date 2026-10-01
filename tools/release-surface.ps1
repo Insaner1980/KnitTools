@@ -340,7 +340,7 @@ function Test-ExportedSurface {
         }
 
         $components = @{}
-        foreach ($tag in @("activity", "receiver", "service", "provider")) {
+        foreach ($tag in @("activity", "activity-alias", "receiver", "service", "provider")) {
             foreach ($node in @($application.SelectNodes($tag))) {
                 $name = Get-AndroidAttribute -Node $node -Name "name"
                 if ([string]::IsNullOrWhiteSpace($name)) {
@@ -822,7 +822,38 @@ function Test-BinaryFileContainsSecret {
 
     $path = Join-RepoPath $RelativePath
     if (-not (Test-Path -LiteralPath $path)) {
-        return $false
+        throw "Checked binary file is missing: $RelativePath"
+    }
+
+    if ([System.IO.Path]::GetExtension($path).ToLowerInvariant() -in @('.apk', '.aab')) {
+        Add-Type -AssemblyName System.IO.Compression.FileSystem
+        try {
+            $archive = [System.IO.Compression.ZipFile]::OpenRead($path)
+            try {
+                foreach ($entry in $archive.Entries) {
+                    $stream = $entry.Open()
+                    try {
+                        $reader = [System.IO.StreamReader]::new($stream, [System.Text.Encoding]::UTF8, $false)
+                        try {
+                            $text = $reader.ReadToEnd()
+                            foreach ($secret in $Secrets) {
+                                if ($secret.Length -gt 0 -and $text.IndexOf($secret, [System.StringComparison]::Ordinal) -ge 0) {
+                                    return $true
+                                }
+                            }
+                        } finally {
+                            $reader.Dispose()
+                        }
+                    } finally {
+                        $stream.Dispose()
+                    }
+                }
+            } finally {
+                $archive.Dispose()
+            }
+        } catch {
+            throw "Unable to read checked archive: $RelativePath"
+        }
     }
 
     $bytes = [System.IO.File]::ReadAllBytes($path)

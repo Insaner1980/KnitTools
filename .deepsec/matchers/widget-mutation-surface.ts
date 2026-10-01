@@ -1,5 +1,5 @@
 import type { CandidateMatch, MatcherPlugin } from "deepsec/config";
-import { isTestFile, regexCandidates } from "./utils.js";
+import { isTestFile, kotlinClassHeaderCode, regexCandidates } from "./utils.js";
 
 export const widgetMutationSurface: MatcherPlugin = {
   slug: "widget-mutation-surface",
@@ -16,11 +16,13 @@ export const widgetMutationSurface: MatcherPlugin = {
     if (isTestFile(filePath)) return [];
     if (!/\b(?:Widget|widget|BroadcastReceiver|actionSendBroadcast|applyWidgetCountChange|CounterLaunchTokenStore)\b/.test(content)) return [];
 
-    return regexCandidates("widget-mutation-surface", content, [
+    const receiver = regexCandidates("widget-mutation-surface", content, [
       {
-        regex: /\bclass\s+\w+[\s\S]{0,260}:\s*(?:[\w.]+\.)?BroadcastReceiver\s*\(/,
+        regex: /\bclass\s+\w+(?:(?!\bclass\b)[^{};]){0,260}?:\s*(?:[\w.]+\.)?BroadcastReceiver\s*\(/,
         label: "Android broadcast receiver entry point",
       },
+    ], kotlinClassHeaderCode(content));
+    return receiver.concat(regexCandidates("widget-mutation-surface", content, [
       {
         regex: /\bactionSendBroadcast\s*\(/,
         label: "Glance widget broadcast action",
@@ -45,6 +47,6 @@ export const widgetMutationSurface: MatcherPlugin = {
         regex: /\bupdateAppWidgetState\s*\(/,
         label: "Glance widget persisted state write",
       },
-    ]);
+    ]));
   },
 };

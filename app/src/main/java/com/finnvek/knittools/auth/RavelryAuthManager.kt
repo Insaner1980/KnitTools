@@ -50,12 +50,20 @@ class RavelryAuthManager
 
         private var pendingState: String? = null
         private var operationId = 0L
+        private var activeAuthOperationId: Long? = null
+        private var acceptsRecoveredCallback = true
+        private var activatedCallbackState: String? = null
 
-        suspend fun refreshAuthStatus(): RavelryAuthState = refreshAuthStatus(RavelryAuthState.NotConnected)
+        suspend fun refreshAuthStatus(): RavelryAuthState {
+            if (activeAuthOperationId == operationId) return _authState.value
+            return refreshAuthStatus(RavelryAuthState.NotConnected, beginOperation())
+        }
 
-        private suspend fun refreshAuthStatus(notConnectedState: RavelryAuthState): RavelryAuthState {
-            val currentOperationId = beginOperation()
-            return try {
+        private suspend fun refreshAuthStatus(
+            notConnectedState: RavelryAuthState,
+            currentOperationId: Long,
+        ): RavelryAuthState =
+            try {
                 val status = backendClient.authStatus()
                 val resolvedState =
                     if (status.connected) {
@@ -69,10 +77,10 @@ class RavelryAuthManager
             } catch (_: Exception) {
                 applyStateIfCurrent(currentOperationId, RavelryAuthState.BackendUnavailable)
             }
-        }
 
         suspend fun startAuth(): Uri? {
-            val currentOperationId = beginOperation()
+            val currentOperationId = beginAuthOperation()
+            activeAuthOperationId = currentOperationId
             _authState.value = RavelryAuthState.Starting
             return try {
                 val response = backendClient.startAuth()
@@ -88,6 +96,8 @@ class RavelryAuthManager
                     _authState.value = RavelryAuthState.BackendUnavailable
                 }
                 null
+            } finally {
+                finishAuthOperation(currentOperationId)
             }
         }
 
@@ -106,46 +116,70 @@ class RavelryAuthManager
             return operationId
         }
 
+        private fun beginAuthOperation(): Long {
+            pendingState = null
+            activatedCallbackState = null
+            acceptsRecoveredCallback = false
+            activeAuthOperationId = null
+            return beginOperation()
+        }
+
+        private fun finishAuthOperation(currentOperationId: Long) {
+            if (activeAuthOperationId == currentOperationId) activeAuthOperationId = null
+        }
+
         suspend fun handleCallback(uri: Uri): Boolean {
             if (!isOAuthCallback(uri)) return false
 
             val callbackState = uri.getQueryParameter(QUERY_STATE)
-            val expectedState = pendingState
+            val expectedState = pendingState ?: activatedCallbackState
             if (callbackState.isNullOrBlank() || (expectedState != null && callbackState != expectedState)) {
                 return true
             }
+            if (expectedState == null && !acceptsRecoveredCallback) return true
 
-            when (uri.callbackFailure()) {
-                CallbackFailure.Cancelled -> {
-                    beginOperation()
-                    pendingState = null
-                    _authState.value = RavelryAuthState.Cancelled
-                    return true
-                }
-
-                CallbackFailure.Expired -> {
-                    beginOperation()
-                    pendingState = null
-                    _authState.value = RavelryAuthState.Expired
-                    return true
-                }
-
-                null -> Unit
+            val failure = uri.callbackFailure()
+            if (failure != null) {
+                beginAuthOperation()
+                _authState.value =
+                    when (failure) {
+                        CallbackFailure.Cancelled -> RavelryAuthState.Cancelled
+                        CallbackFailure.Expired -> RavelryAuthState.Expired
+                    }
+            } else if (activeAuthOperationId != operationId) {
+                uri.getQueryParameter(QUERY_PROOF)?.let { completeCallback(callbackState, it) }
             }
+            return true
+        }
 
-            val completionProof = uri.getQueryParameter(QUERY_PROOF) ?: return true
+        private suspend fun completeCallback(
+            callbackState: String,
+            completionProof: String,
+        ) {
+            val currentOperationId = beginOperation()
+            activeAuthOperationId = currentOperationId
+            acceptsRecoveredCallback = false
+            if (activatedCallbackState != callbackState) pendingState = callbackState
             try {
-                backendClient.completeAuth(callbackState, completionProof)
-                pendingState = null
-                refreshAuthStatus(RavelryAuthState.Expired)
+                if (activatedCallbackState != callbackState) {
+                    backendClient.completeAuth(callbackState, completionProof)
+                    if (currentOperationId != operationId) return
+                    pendingState = null
+                    activatedCallbackState = callbackState
+                }
+                refreshAuthStatus(RavelryAuthState.Expired, currentOperationId)
+                if (currentOperationId == operationId) activatedCallbackState = null
             } catch (error: CancellationException) {
                 throw error
             } catch (_: Exception) {
-                pendingState = null
-                beginOperation()
-                _authState.value = RavelryAuthState.BackendUnavailable
+                if (currentOperationId == operationId) {
+                    pendingState = null
+                    activatedCallbackState = null
+                    _authState.value = RavelryAuthState.BackendUnavailable
+                }
+            } finally {
+                finishAuthOperation(currentOperationId)
             }
-            return true
         }
 
         fun isOAuthCallback(uri: Uri): Boolean {
@@ -173,7 +207,8 @@ class RavelryAuthManager
         }
 
         suspend fun disconnect(): RavelryAuthState {
-            val currentOperationId = beginOperation()
+            val currentOperationId = beginAuthOperation()
+            activeAuthOperationId = currentOperationId
             _authState.value = RavelryAuthState.Disconnecting
             return try {
                 backendClient.disconnect()
@@ -183,13 +218,14 @@ class RavelryAuthManager
                 throw error
             } catch (_: Exception) {
                 applyStateIfCurrent(currentOperationId, RavelryAuthState.BackendUnavailable)
+            } finally {
+                finishAuthOperation(currentOperationId)
             }
         }
 
         fun markBrowserAuthCancelled() {
             if (_authState.value == RavelryAuthState.AwaitingBrowser || _authState.value == RavelryAuthState.Starting) {
-                beginOperation()
-                pendingState = null
+                beginAuthOperation()
                 _authState.value = RavelryAuthState.Cancelled
             }
         }

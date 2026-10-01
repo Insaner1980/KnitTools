@@ -1,10 +1,13 @@
 package com.finnvek.knittools.auth
 
 import com.google.android.gms.tasks.Task
+import com.google.firebase.FirebaseNetworkException
 import com.google.firebase.auth.AuthResult
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.tasks.await
@@ -44,13 +47,22 @@ class FirebaseAnonymousAuthGateway
 
         private suspend fun currentUserUidOrNull(): String? {
             val user = firebaseAuth.currentUser ?: return null
-            return try {
+            val uid = user.uid
+            try {
                 user.reload().await()
-                firebaseAuth.currentUser?.uid ?: user.uid
-            } catch (_: FirebaseAuthInvalidUserException) {
+            } catch (error: FirebaseAuthInvalidUserException) {
+                currentCoroutineContext().ensureActive()
+                val currentUser = firebaseAuth.currentUser
+                if (currentUser != null && currentUser !== user) throw error
                 firebaseAuth.signOut()
-                null
+                return null
+            } catch (_: FirebaseNetworkException) {
+                // Only metadata refresh is skipped; callable authentication stays with the Firebase SDK.
             }
+            currentCoroutineContext().ensureActive()
+            return firebaseAuth.currentUser
+                ?.takeIf { it === user && it.uid == uid }
+                ?.uid ?: throw FirebaseAnonymousAuthException()
         }
 
         private suspend fun Task<AuthResult>.awaitSignIn(): String {

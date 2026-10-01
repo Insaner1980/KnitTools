@@ -235,12 +235,6 @@ private fun calculateYarnEstimate(
     val total = MeasurementNumberParser.parse(totalYarn, locale).value ?: return null
     val perSkein = MeasurementNumberParser.parse(yarnPerSkein, locale).value ?: return null
     val weight = MeasurementNumberParser.parse(weightPerSkein, locale).value ?: return null
-    if (!((total / perSkein).isFinite()) ||
-        ceil(total / perSkein) > Int.MAX_VALUE ||
-        !(ceil(total / perSkein) * weight).isFinite()
-    ) {
-        return null
-    }
     return YarnEstimator.estimate(total, perSkein, weight)
 }
 

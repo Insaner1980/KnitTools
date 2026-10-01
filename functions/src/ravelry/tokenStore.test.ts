@@ -3,9 +3,49 @@ import { describe, it } from "node:test";
 
 import type { Firestore } from "firebase-admin/firestore";
 
-import { createTokenStore } from "./tokenStore";
+import { createTokenStore, type StoredRavelryToken } from "./tokenStore";
 
 describe("Ravelry token Firestore store", () => {
+  it("preserves only the current generation pending while replacing refreshed active fields", async () => {
+    const active: StoredRavelryToken = {
+      uid: "uid", authType: "oauth2", accessToken: "synthetic-active",
+      refreshToken: "synthetic-refresh", expiresAtMillis: 100,
+      createdAtMillis: 1, updatedAtMillis: 1, connectionGeneration: 3,
+    };
+    const pending = {
+      token: { ...active, accessToken: "synthetic-pending" },
+      state: "synthetic-state", completionProofHash: "synthetic-hash", expiresAtMillis: 1_000,
+    };
+    let stored: Record<string, unknown> = { ...active, pending, obsoleteField: "obsolete" };
+    const reference = {};
+    const firestore = {
+      collection: () => ({ doc: () => reference }),
+      async runTransaction<T>(operation: (transaction: unknown) => Promise<T>): Promise<T> {
+        return operation({
+          get: async () => ({ data: () => stored }),
+          set(_ref: unknown, data: Record<string, unknown>, options?: unknown) {
+            assert.equal(options, undefined);
+            stored = data;
+          },
+        });
+      },
+    } as unknown as Firestore;
+    const refreshed: StoredRavelryToken = {
+      ...active, accessToken: "synthetic-rotated", refreshToken: "synthetic-rotated-refresh",
+      expiresAtMillis: undefined, updatedAtMillis: 200,
+    };
+    const tokenStore = createTokenStore(firestore);
+    await tokenStore.saveRefreshedTokenIfCurrent(refreshed, active);
+    assert.deepEqual(stored.pending, pending);
+    assert.equal(stored.refreshToken, refreshed.refreshToken);
+    assert.equal(stored.expiresAtMillis, undefined);
+    assert.equal(stored.obsoleteField, undefined);
+
+    stored = { ...active, pending: { ...pending, token: { ...pending.token, connectionGeneration: 2 } } };
+    await tokenStore.saveRefreshedTokenIfCurrent(refreshed, active);
+    assert.equal(stored.pending, undefined);
+  });
+
   it("keeps callback credentials pending until the matching uid and proof activate them", async () => {
     let stored: Record<string, unknown> = {
       uid: "uid",

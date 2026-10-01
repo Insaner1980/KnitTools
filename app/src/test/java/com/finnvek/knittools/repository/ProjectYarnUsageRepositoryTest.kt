@@ -91,6 +91,17 @@ class ProjectYarnUsageRepositoryTest {
         }
 
     @Test
+    fun `linking never merges a card usage owned by another note`() =
+        runTest {
+            val ownUsage = usage(id = 1, noteId = 4, snapshot = "Own note")
+            val foreignUsage = usage(id = 2, cardId = 3, noteId = 5, snapshot = "Other note")
+            val dao = FakeUsageDao(snapshot = null).apply { sourceRows = listOf(ownUsage, foreignUsage) }
+
+            assertEquals(LinkSavedCardUsageResult.Conflict, dao.linkSavedCard(projectId = 1, noteId = 4, cardId = 3))
+            assertEquals(listOf(ownUsage, foreignUsage), dao.sourceRows)
+        }
+
+    @Test
     fun `linking compatible note and card usages merges known amounts into one identity`() =
         runTest {
             val noteUsage = usage(id = 1, noteId = 4, snapshot = "Note").copy(usedMeters = null)

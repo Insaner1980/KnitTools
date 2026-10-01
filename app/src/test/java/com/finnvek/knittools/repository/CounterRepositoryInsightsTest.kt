@@ -123,12 +123,14 @@ class CounterRepositoryInsightsTest {
             )
         }
 
-    @Test fun sessionAccumulationRunsAfterTheFactsTransaction() =
+    @Test fun factsFirstDateAndEveryBatchShareOneTransactionBeforePublication() =
         runTest {
             var inTransaction = false
+            var transactions = 0
             val runner =
                 object : DatabaseTransactionRunner {
                     override suspend fun <T> run(block: suspend () -> T): T {
+                        transactions++
                         inTransaction = true
                         return try {
                             block()
@@ -139,22 +141,40 @@ class CounterRepositoryInsightsTest {
                 }
             val repository = repository(StandardTestDispatcher(testScheduler), runner)
             every { dao.observeSessionChanges() } returns flowOf(true)
-            coEvery { dao.hasAnySessions() } returns true
-            coEvery { dao.getSessionProjectActivity(null) } returns emptyList()
-            coEvery { dao.getFirstSessionStart(null) } returns 1000L
-            coEvery { dao.getInsightFirstDateBatch(any(), any(), any()) } answers {
-                assertFalse(inTransaction)
+            coEvery { dao.hasAnySessions() } answers {
+                assertTrue(inTransaction)
+                true
+            }
+            coEvery { dao.getSessionProjectActivity(null) } answers {
+                assertTrue(inTransaction)
                 emptyList()
             }
-            coEvery { dao.getInsightSessionBatch(Long.MIN_VALUE) } returns listOf(session(1))
-            coEvery { dao.getInsightSessionBatch(1) } returns emptyList()
+            coEvery { dao.getFirstSessionStart(null) } answers {
+                assertTrue(inTransaction)
+                1000L
+            }
+            coEvery { dao.getInsightFirstDateBatch(any(), any(), any()) } answers {
+                assertTrue(inTransaction)
+                emptyList()
+            }
+            coEvery { dao.getInsightSessionBatch(any()) } answers {
+                assertTrue(inTransaction)
+                (1L..257L).filter { it > firstArg<Long>() }.take(256).map(::session)
+            }
 
             repository
-                .observeSessionsForInsights(null, null, java.time.ZoneOffset.UTC, { 0 }) { _, _ ->
+                .observeSessionsForInsights(null, null, java.time.ZoneOffset.UTC, { intArrayOf(0) }) { total, batch ->
+                    assertTrue(inTransaction)
+                    total[0] += batch.size
+                }.collect { total ->
                     assertFalse(inTransaction)
-                }.first()
+                    assertEquals(257, total[0])
+                }
 
             assertFalse(inTransaction)
+            assertEquals(1, transactions)
+            coVerify(exactly = 1) { dao.getInsightSessionBatch(256) }
+            coVerify(exactly = 1) { dao.getInsightSessionBatch(257) }
         }
 
     @Test fun sameExistenceInvalidationCancelsAnIncompleteSnapshot() =
@@ -169,8 +189,23 @@ class CounterRepositoryInsightsTest {
             coEvery { dao.getInsightSessionBatch(1) } returns emptyList()
             var cancelled = false
             var first = true
+            var inTransaction = false
+            var releasedTransactions = 0
+            val runner =
+                object : DatabaseTransactionRunner {
+                    override suspend fun <T> run(block: suspend () -> T): T {
+                        assertFalse(inTransaction)
+                        inTransaction = true
+                        return try {
+                            block()
+                        } finally {
+                            inTransaction = false
+                            releasedTransactions++
+                        }
+                    }
+                }
             val values = mutableListOf<Int>()
-            val repository = repository(StandardTestDispatcher(testScheduler))
+            val repository = repository(StandardTestDispatcher(testScheduler), runner)
             backgroundScope.launch {
                 repository
                     .observeSessionsForInsights(
@@ -179,6 +214,7 @@ class CounterRepositoryInsightsTest {
                         java.time.ZoneOffset.UTC,
                         { intArrayOf(0) },
                     ) { total, batch ->
+                        assertTrue(inTransaction)
                         if (first) {
                             first = false
                             try {
@@ -192,9 +228,13 @@ class CounterRepositoryInsightsTest {
             }
             changes.emit(true)
             runCurrent()
+            assertTrue(inTransaction)
+            assertEquals(0, releasedTransactions)
             changes.emit(true)
             runCurrent()
             assertTrue(cancelled)
+            assertFalse(inTransaction)
+            assertEquals(2, releasedTransactions)
             assertEquals(listOf(1), values)
         }
 

@@ -11,6 +11,7 @@ import com.finnvek.knittools.data.local.KnitToolsDatabase
 import com.finnvek.knittools.data.local.ProjectYarnNoteEntity
 import com.finnvek.knittools.data.local.RoomDatabaseTransactionRunner
 import com.finnvek.knittools.data.local.YarnCardEntity
+import com.finnvek.knittools.domain.model.ProjectYarnNote
 import com.finnvek.knittools.domain.model.ProjectYarnUsage
 import com.finnvek.knittools.domain.model.YarnUsageAmounts
 import com.finnvek.knittools.domain.model.YarnUsageSource
@@ -252,6 +253,33 @@ class ProjectYarnUsageRepositoryTest {
             seed()
             noteRepository().saveToMyYarn(4)
             assertTrue(requireNotNull(repository.observeForProject(1).first()).all { it.usage == null })
+        }
+
+    @Test
+    fun concurrentNoteSavesKeepSeparateCardsAndUsageOwners() =
+        runTest {
+            seed()
+            val notes = noteRepository()
+            val secondId = notes.save(ProjectYarnNote(projectId = 1, name = "Second note"))
+            val firstUsage = create()
+            val secondUsage = create(YarnUsageSource(projectYarnNoteId = secondId))
+            val cards =
+                listOf(4L, secondId, 4L)
+                    .map { id ->
+                        async(Dispatchers.IO) { requireNotNull(notes.saveToMyYarn(id)) }
+                    }.awaitAll()
+            assertEquals(cards[0], cards[2])
+            assertTrue(cards[0] != cards[1])
+            listOf(firstUsage to cards[0], secondUsage to cards[1]).forEach { (usage, cardId) ->
+                val row = requireNotNull(database.projectYarnUsageDao().getById(usage.id))
+                assertEquals(usage.source.projectYarnNoteId, row.projectYarnNoteId)
+                assertEquals(cardId, row.yarnCardId)
+                assertEquals(usage.amounts.usedMeters, row.usedMeters)
+                assertEquals(
+                    cardId,
+                    database.projectYarnNoteDao().getById(requireNotNull(row.projectYarnNoteId))?.savedYarnCardId,
+                )
+            }
         }
 
     @Test

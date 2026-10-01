@@ -77,4 +77,17 @@ class YarnEstimatorTest {
         assertNull(YarnEstimator.estimate(Int.MAX_VALUE.toDouble() + 1.0, 1.0, 100.0))
         assertNull(YarnEstimator.estimate(Int.MAX_VALUE.toDouble(), 1.0, Double.MAX_VALUE))
     }
+
+    @Test
+    fun `integer and finite weight boundaries retain valid results`() {
+        val maxSkeins = requireNotNull(YarnEstimator.estimate(Int.MAX_VALUE.toDouble(), 1.0, 1.0))
+        assertEquals(Int.MAX_VALUE, maxSkeins.skeinsNeeded)
+        assertEquals(Int.MAX_VALUE.toDouble(), maxSkeins.totalWeight, 0.0)
+        assertNull(YarnEstimator.estimate(Int.MAX_VALUE.toDouble() + 0.25, 1.0, 1.0))
+        assertNull(YarnEstimator.estimate(Double.MAX_VALUE, Double.MIN_VALUE, 1.0))
+
+        val maxWeight = requireNotNull(YarnEstimator.estimate(1.0, 1.0, Double.MAX_VALUE))
+        assertEquals(Double.MAX_VALUE, maxWeight.totalWeight, 0.0)
+        assertNull(YarnEstimator.estimate(2.0, 1.0, Double.MAX_VALUE))
+    }
 }

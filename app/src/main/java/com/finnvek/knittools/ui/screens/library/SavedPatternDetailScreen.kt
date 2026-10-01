@@ -47,6 +47,8 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.finnvek.knittools.R
 import com.finnvek.knittools.domain.model.SavedPattern
 import com.finnvek.knittools.domain.model.SavedPatternSource
@@ -82,7 +84,8 @@ fun SavedPatternDetailScreen(
 ) {
     var showRemoveConfirmDialog by rememberSaveable { mutableStateOf(false) }
     var pendingReplacementId by rememberSaveable(pattern.id) { mutableStateOf<Long?>(null) }
-    var webAttachInFlight by rememberSaveable(pattern.id) { mutableStateOf(false) }
+    val attachmentViewModel: SavedPatternAttachmentViewModel = viewModel(key = "web-attachment-${pattern.id}")
+    val attachmentState by attachmentViewModel.state.collectAsStateWithLifecycle()
     var lastHandledDeleteErrorId by rememberSaveable(pattern.id) { mutableLongStateOf(deleteErrorId) }
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
@@ -100,7 +103,6 @@ fun SavedPatternDetailScreen(
     val noBrowserMessage = stringResource(R.string.web_pattern_no_browser)
     val webOpenFailedMessage = stringResource(R.string.web_pattern_open_failed)
     val handleWebAttachResult: (SavedPatternMetadataMutationResult) -> Unit = { result ->
-        webAttachInFlight = false
         when (result) {
             is SavedPatternMetadataMutationResult.Attached,
             is SavedPatternMetadataMutationResult.AlreadyAttached,
@@ -128,6 +130,13 @@ fun SavedPatternDetailScreen(
                 pendingReplacementId = null
                 coroutineScope.launch { snackbarHostState.showSnackbar(attachFailedMessage) }
             }
+        }
+    }
+
+    LaunchedEffect(attachmentState.result) {
+        attachmentState.result?.let { result ->
+            attachmentViewModel.consumeResult()
+            handleWebAttachResult(result)
         }
     }
 
@@ -169,10 +178,7 @@ fun SavedPatternDetailScreen(
             message = stringResource(R.string.web_pattern_replace_confirm_message, pattern.name),
             confirmText = stringResource(R.string.web_pattern_attach),
             onConfirm = {
-                if (!webAttachInFlight) {
-                    webAttachInFlight = true
-                    onAttachWebPattern(expectedExistingId, handleWebAttachResult)
-                }
+                attachmentViewModel.attach(expectedExistingId, onAttachWebPattern)
             },
             onDismiss = { pendingReplacementId = null },
         )
@@ -214,10 +220,7 @@ fun SavedPatternDetailScreen(
                     },
                     onEdit = onEditWebPattern,
                     onAttach = {
-                        if (!webAttachInFlight) {
-                            webAttachInFlight = true
-                            onAttachWebPattern(null, handleWebAttachResult)
-                        }
+                        attachmentViewModel.attach(null, onAttachWebPattern)
                     },
                     onDelete = { showRemoveConfirmDialog = true },
                 )

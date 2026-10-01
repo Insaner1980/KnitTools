@@ -23,13 +23,12 @@ function callbackState(label: string): string {
 function completeCallback(
   options: Omit<
     Parameters<typeof completeRavelryOAuthCallback>[0],
-    "rateLimiter" | "rateLimitKey"
+    "rateLimiter"
   >,
 ) {
   return completeRavelryOAuthCallback({
     ...options,
     rateLimiter: disabledRavelryRateLimiter,
-    rateLimitKey: "callback-test-client",
   });
 }
 
@@ -231,75 +230,59 @@ describe("Ravelry OAuth2 auth core", () => {
     assert.equal(stateStore.getStateCalls, 0);
   });
 
-  it("rate limits valid callback states before reading the state store", async () => {
+  for (const failure of [new Error("limiter unavailable"), new Error("ravelry_rate_limited")]) {
+    it(`rejects before state lookup when the shared limiter fails: ${failure.message}`, async () => {
+      const stateStore = new MemoryOAuthStateStore();
+      const calls: string[] = [];
+      await assert.rejects(completeRavelryOAuthCallback({
+        query: { state: "A".repeat(43), code: "code" },
+        stateStore, tokenStore: new MemoryTokenStore(),
+        exchange: async () => { throw new Error("unexpected exchange"); },
+        rateLimiter: {
+          async consume() { throw new Error("unexpected combined limit"); },
+          async consumeUid() { throw new Error("unexpected uid limit"); },
+          async consumeGlobal(bucket) { calls.push(bucket); throw failure; },
+        },
+      }), (error: unknown) => error === failure);
+      assert.deepEqual(calls, ["callback"]);
+      assert.equal(stateStore.getStateCalls, 0);
+    });
+  }
+
+  it("charges unknown states only to the shared callback budget", async () => {
     const stateStore = new MemoryOAuthStateStore();
-    const tokenStore = new MemoryTokenStore();
-    const rateLimitError = new Error("ravelry_rate_limited");
-    const calls: Array<{ readonly key: string; readonly bucket: string }> = [];
-    const rateLimiter = {
-      async consume(): Promise<void> {
-        throw new Error("global callback budget must not run before state lookup");
-      },
-      async consumeUid(key: string, bucket: string): Promise<void> {
-        calls.push({ key, bucket });
-        throw rateLimitError;
-      },
-      async consumeGlobal(): Promise<void> {
-        throw new Error("global callback budget must not run directly");
-      },
-    };
-    const options = {
+    const calls: string[] = [];
+    await assert.rejects(completeRavelryOAuthCallback({
       query: { state: "A".repeat(43), code: "code" },
-      stateStore,
-      tokenStore,
-      exchange: async () => ({ accessToken: "not-used" }),
-      rateLimiter,
-      rateLimitKey: "callback-client",
-    } as Parameters<typeof completeRavelryOAuthCallback>[0] & {
-      readonly rateLimiter: typeof rateLimiter;
-      readonly rateLimitKey: string;
-    };
-
-    await assert.rejects(
-      completeRavelryOAuthCallback(options),
-      (error: unknown) => error === rateLimitError,
-    );
-
-    assert.deepEqual(calls, [{ key: "callback-client", bucket: "callback" }]);
-    assert.equal(stateStore.getStateCalls, 0);
+      stateStore, tokenStore: new MemoryTokenStore(),
+      exchange: async () => { throw new Error("unexpected exchange"); },
+      rateLimiter: {
+        async consume() { throw new Error("unexpected combined limit"); },
+        async consumeUid() { throw new Error("unexpected uid limit"); },
+        async consumeGlobal(bucket) { calls.push(bucket); },
+      },
+    }), /invalid_state/);
+    assert.deepEqual(calls, ["callback"]);
+    assert.equal(stateStore.getStateCalls, 1);
   });
 
-  it("does not spend the global callback budget for an unknown state", async () => {
+  it("rejects malformed and oversized input before any limiter or state work", async () => {
     const stateStore = new MemoryOAuthStateStore();
-    const tokenStore = new MemoryTokenStore();
-    const calls: Array<{ readonly scope: string; readonly key: string; readonly bucket: string }> = [];
-    const rateLimiter = {
-      async consume(key: string, bucket: string): Promise<void> {
-        calls.push({ scope: "global", key, bucket });
-      },
-      async consumeUid(key: string, bucket: string): Promise<void> {
-        calls.push({ scope: "uid", key, bucket });
-      },
-      async consumeGlobal(): Promise<void> {
-        throw new Error("global callback budget must not run directly");
-      },
-    };
-
-    await assert.rejects(
-      completeRavelryOAuthCallback({
-        query: { state: "A".repeat(43), code: "code" },
-        stateStore,
-        tokenStore,
-        exchange: async () => ({ accessToken: "not-used" }),
-        rateLimiter,
-        rateLimitKey: "callback-client",
-      }),
-      (error: unknown) => error instanceof Error && error.message === "invalid_state",
-    );
-
-    assert.deepEqual(calls, [
-      { scope: "uid", key: "callback-client", bucket: "callback" },
-    ]);
+    for (const query of [
+      { state: "bad", code: "code" },
+      { state: "A".repeat(43), code: "c".repeat(2049) },
+      { state: "A".repeat(43), error: "bad\nerror" },
+    ]) {
+      await assert.rejects(completeRavelryOAuthCallback({
+        query, stateStore, tokenStore: new MemoryTokenStore(),
+        exchange: async () => { throw new Error("unexpected exchange"); },
+        rateLimiter: {
+          ...disabledRavelryRateLimiter,
+          async consumeGlobal() { throw new Error("unexpected limiter"); },
+        },
+      }), /invalid_(state|code|error)/);
+    }
+    assert.equal(stateStore.getStateCalls, 0);
   });
 
   it("rejects missing and used callback params while redirecting expired states before token exchange", async () => {

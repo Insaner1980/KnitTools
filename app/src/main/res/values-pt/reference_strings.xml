@@ -227,7 +227,7 @@
     <string name="sym_ssk_desc">Escorregar, deslizar, tricotar – diminuição inclinada para a esquerda</string>
     <string name="sym_p2tog_name">P2tog</string>
     <string name="sym_p2tog_desc">Purl 2 juntos</string>
-    <string name="sym_s2kp_name">Taxa de câmbio S2KP</string>
+    <string name="sym_s2kp_name">S2KP / CDD</string>
     <string name="sym_s2kp_desc">Dupla diminuição centrada</string>
     <string name="sym_k3tog_name">K3tog</string>
     <string name="sym_k3tog_desc">Tricotar 3 pontos juntos – diminuição dupla</string>

@@ -30,10 +30,18 @@ const RAVELRY_CREDENTIAL_PATTERNS = [
 ];
 
 const decision = fs.readFileSync(securityDecisionPath, "utf8");
-const hasRavelryDecision = decision.includes("Ravelry embedded credentials");
-const isAcceptedRisk = hasRavelryDecision && decision.includes("Status: Accepted risk");
-const isRemovedFromAndroid =
-  hasRavelryDecision && decision.includes("Status: Removed from Android");
+const headings = [...decision.matchAll(/^##[ \t]+Ravelry embedded credentials[ \t]*\r?$/gm)];
+if (headings.length !== 1) {
+  throw new Error("Exactly one Ravelry embedded credentials decision section is required.");
+}
+const sectionStart = headings[0].index + headings[0][0].length;
+const remaining = decision.slice(sectionStart);
+const nextHeading = /^#{1,2}[ \t]+/m.exec(remaining);
+const section = remaining.slice(0, nextHeading?.index ?? remaining.length);
+const statuses = [...section.matchAll(/^Status:[ \t]*(.*)$/gm)].map((match) => match[1].trim());
+const isAcceptedRisk = statuses.length === 1 && statuses[0] === "Accepted risk";
+const isRemovedFromAndroid = statuses.length === 1 &&
+  /^(?:Removed from Android|Removed from Android; superseded historical accepted risk)$/.test(statuses[0]);
 
 if (!isAcceptedRisk && !isRemovedFromAndroid) {
   throw new Error("Ravelry accepted-risk decision is missing or has an unknown status.");

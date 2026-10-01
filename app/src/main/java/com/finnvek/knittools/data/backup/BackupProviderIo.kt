@@ -23,6 +23,7 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
@@ -56,13 +57,15 @@ internal abstract class BackupProviderIoModule {
 }
 
 @Singleton
-internal class ContentResolverBackupProviderIo private constructor(
+internal class ContentResolverBackupProviderIo internal constructor(
     private val endpoint: BackupProviderEndpoint,
     private val noProgressTimeoutMillis: Long,
-    private val workerExecutor: ExecutorService,
-    private val watchdogExecutor: ScheduledExecutorService,
-    private val descriptorCloserExecutor: ExecutorService,
+    private val workerExecutor: ExecutorService = worker,
+    private val watchdogExecutor: ScheduledExecutorService = watchdog,
+    private val descriptorCloserExecutor: ExecutorService = descriptorCloser,
 ) : BackupProviderIo {
+    private val operationActive = AtomicBoolean()
+
     @Inject
     constructor(
         @ApplicationContext context: Context,
@@ -73,11 +76,6 @@ internal class ContentResolverBackupProviderIo private constructor(
         watchdog,
         descriptorCloser,
     )
-
-    internal constructor(
-        endpoint: BackupProviderEndpoint,
-        noProgressTimeoutMillis: Long,
-    ) : this(endpoint, noProgressTimeoutMillis, worker, watchdog, descriptorCloser)
 
     override suspend fun read(
         source: Uri,
@@ -114,6 +112,9 @@ internal class ContentResolverBackupProviderIo private constructor(
         request: BackupProviderRequest,
         block: (BackupProviderHandle, ProviderDeadline) -> Unit,
     ) {
+        if (!operationActive.compareAndSet(false, true)) {
+            throw IOException("A previous provider operation is still running")
+        }
         val completion = CompletableDeferred<Result<Unit>>()
         val deadline =
             ProviderDeadline(
@@ -121,31 +122,47 @@ internal class ContentResolverBackupProviderIo private constructor(
                 noProgressTimeoutMillis,
                 watchdogExecutor,
                 descriptorCloserExecutor,
+                onFinished = { operationActive.set(false) },
             ) { failure -> completion.complete(Result.failure(failure)) }
-        workerExecutor.execute {
-            var handle: BackupProviderHandle? = null
-            var failure =
-                runCatching {
-                    handle = deadline.call { request.open() } ?: throw IOException("Provider returned no descriptor")
-                    deadline.markOpened()
-                    block(checkNotNull(handle), deadline)
-                }.exceptionOrNull()?.let(deadline::classify)
-            val closeFailure =
-                runCatching {
-                    handle?.let { deadline.call { it.close() } }
-                }.exceptionOrNull()?.let(deadline::classify)
-            if (closeFailure != null) {
-                failure?.addSuppressed(closeFailure) ?: run { failure = closeFailure }
-            }
-            deadline.finish()
-            completion.complete(failure?.let { Result.failure(it) } ?: Result.success(Unit))
-        }
+        executeTransfer(request, block, deadline, completion)
         try {
             completion.await().getOrThrow()
         } catch (cancelled: CancellationException) {
             deadline.cancel(cancelled)
             withContext(NonCancellable) { completion.await() }
             throw cancelled
+        }
+    }
+
+    private fun executeTransfer(
+        request: BackupProviderRequest,
+        block: (BackupProviderHandle, ProviderDeadline) -> Unit,
+        deadline: ProviderDeadline,
+        completion: CompletableDeferred<Result<Unit>>,
+    ) {
+        try {
+            workerExecutor.execute {
+                var handle: BackupProviderHandle? = null
+                var failure =
+                    runCatching {
+                        handle =
+                            deadline.call { request.open() } ?: throw IOException("Provider returned no descriptor")
+                        deadline.markOpened()
+                        block(checkNotNull(handle), deadline)
+                    }.exceptionOrNull()?.let(deadline::classify)
+                val closeFailure =
+                    runCatching {
+                        handle?.let { deadline.call { it.close() } }
+                    }.exceptionOrNull()?.let(deadline::classify)
+                if (closeFailure != null) {
+                    failure?.addSuppressed(closeFailure) ?: run { failure = closeFailure }
+                }
+                deadline.finish()
+                completion.complete(failure?.let { Result.failure(it) } ?: Result.success(Unit))
+            }
+        } catch (failure: RejectedExecutionException) {
+            deadline.finish()
+            throw failure
         }
     }
 
@@ -299,6 +316,7 @@ internal class ProviderDeadline(
     timeoutMillis: Long,
     private val scheduler: ScheduledExecutorService,
     private val descriptorCloser: ExecutorService,
+    private val onFinished: () -> Unit,
     private val onOpenTimeout: (Throwable) -> Unit,
 ) {
     private val timeoutNanos = TimeUnit.MILLISECONDS.toNanos(timeoutMillis)
@@ -308,6 +326,8 @@ internal class ProviderDeadline(
     private var timedOut = false
     private var cancelled: CancellationException? = null
     private var finished = false
+    private var abortStarted = false
+    private var pendingAborts = 0
 
     fun <T> call(
         resetDeadline: Boolean = true,
@@ -337,14 +357,16 @@ internal class ProviderDeadline(
 
     fun cancel(cause: CancellationException) {
         val completeOpening: Boolean
+        val abort: Boolean
         synchronized(this) {
             if (finished || cancelled != null) return
             cancelled = cause
             scheduled?.cancel(false)
             scheduled = null
             completeOpening = opening
+            abort = reserveAbort()
         }
-        abortProvider()
+        if (abort) abortProvider()
         if (completeOpening) onOpenTimeout(cause)
     }
 
@@ -353,6 +375,7 @@ internal class ProviderDeadline(
         finished = true
         scheduled?.cancel(false)
         scheduled = null
+        if (pendingAborts == 0) onFinished()
     }
 
     @Synchronized
@@ -372,19 +395,48 @@ internal class ProviderDeadline(
 
     private fun expire() {
         val completeOpening: Boolean
+        val abort: Boolean
         synchronized(this) {
             if (finished || timedOut || cancelled != null) return
             timedOut = true
             scheduled = null
             completeOpening = opening
+            abort = reserveAbort()
         }
-        abortProvider()
+        if (abort) abortProvider()
         if (completeOpening) onOpenTimeout(ProviderNoProgressException())
     }
 
+    private fun reserveAbort(): Boolean {
+        if (abortStarted) return false
+        abortStarted = true
+        pendingAborts = 2
+        return true
+    }
+
     private fun abortProvider() {
-        descriptorCloser.execute { request.closeDescriptor() }
-        descriptorCloser.execute { request.cancelOpen() }
+        executeAbort { request.closeDescriptor() }
+        executeAbort { request.cancelOpen() }
+    }
+
+    private fun executeAbort(block: () -> Unit) {
+        try {
+            descriptorCloser.execute {
+                try {
+                    block()
+                } finally {
+                    abortFinished()
+                }
+            }
+        } catch (_: RejectedExecutionException) {
+            abortFinished()
+        }
+    }
+
+    @Synchronized
+    private fun abortFinished() {
+        pendingAborts--
+        if (finished && pendingAborts == 0) onFinished()
     }
 
     @Synchronized

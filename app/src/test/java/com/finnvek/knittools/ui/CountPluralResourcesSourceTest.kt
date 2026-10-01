@@ -7,7 +7,7 @@ import org.junit.Test
 
 class CountPluralResourcesSourceTest {
     @Test
-    fun `row photo and pattern counts use plural resources in every locale`() {
+    fun `counts use plural resources in every locale`() {
         ProjectSourceFiles.localizedStringFiles().forEach { stringsFile ->
             val strings = ProjectSourceFiles.read(stringsFile)
 
@@ -38,9 +38,14 @@ class CountPluralResourcesSourceTest {
                 "insights_rows_count",
                 "delete_photos_confirm",
                 "delete_patterns_confirm",
+                "complete_n_projects",
+                "delete_n_projects",
+                "delete_yarn_cards_confirm",
+                "stitches_result",
+                "yardage_format",
             )
         val SOURCE_USAGES =
-            mapOf(
+            listOf(
                 "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterScreen.kt" to
                     "rows_format",
                 "app/src/main/java/com/finnvek/knittools/ui/screens/counter/CounterWorkspaceSections.kt" to
@@ -53,6 +58,16 @@ class CountPluralResourcesSourceTest {
                     "delete_patterns_confirm",
                 "app/src/main/java/com/finnvek/knittools/ui/screens/ravelry/RavelrySearchScreen.kt" to
                     "delete_patterns_confirm",
+                "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectListScreen.kt" to
+                    "complete_n_projects",
+                "app/src/main/java/com/finnvek/knittools/ui/screens/project/ProjectListScreen.kt" to
+                    "delete_n_projects",
+                "app/src/main/java/com/finnvek/knittools/ui/screens/library/MyYarnScreen.kt" to
+                    "delete_yarn_cards_confirm",
+                "app/src/main/java/com/finnvek/knittools/ui/screens/caston/CastOnScreen.kt" to
+                    "stitches_result",
+                "app/src/main/java/com/finnvek/knittools/ui/screens/ravelry/RavelryDetailScreen.kt" to
+                    "yardage_format",
             )
     }
 }

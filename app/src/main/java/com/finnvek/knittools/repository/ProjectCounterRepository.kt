@@ -98,7 +98,7 @@ class ProjectCounterRepository
             id: Long,
             name: String,
         ): ProjectCounterMutationResult {
-            val normalizedName = name.trim().take(ProjectCounterLogic.MAX_NAME_LENGTH)
+            val normalizedName = ProjectCounterLogic.normalizeName(name)
             if (normalizedName.isBlank()) return ProjectCounterMutationResult.InvalidCounter
             return mutateOwnedCounter(projectId, id) { current ->
                 if (current.name != normalizedName) dao.updateName(id, normalizedName)

@@ -168,6 +168,8 @@ class PatternAnnotationViewModel
         private val exportDestinationChannel = Channel<Uri>(Channel.BUFFERED)
         val exportDestinationRequests: Flow<Uri> = exportDestinationChannel.receiveAsFlow()
         private var editContext: AnnotationEditContext? = null
+        private val pendingStrokes = ArrayDeque<PendingAnnotationStroke>()
+        private var savingStroke: PendingAnnotationStroke? = null
         private val counterContext =
             createCounterContextFlow(routeOwner).stateIn(
                 scope = viewModelScope,
@@ -261,7 +263,9 @@ class PatternAnnotationViewModel
                     activeTool = feedback.interaction.activeTool,
                     penArgb = feedback.interaction.penArgb,
                     penStrokeWidth = feedback.interaction.penStrokeWidth,
-                    pressureEnabled = feedback.interaction.pressureEnabled,
+                    pressureEnabled =
+                        feedback.interaction.activeTool == PatternAnnotationTool.PEN &&
+                            feedback.interaction.pressureEnabled,
                     highlighterArgb = feedback.interaction.highlighterArgb,
                     highlighterStrokeWidth = feedback.interaction.highlighterStrokeWidth,
                     highlighterAxisLock = feedback.interaction.highlighterAxisLock,
@@ -360,15 +364,16 @@ class PatternAnnotationViewModel
             if (uiState.value.loadError == PatternAnnotationLoadError.PAGE_LIMIT) return
             val state = interaction.value
             val style = state.styleForTool() ?: return
+            val pressureEnabled = state.activeTool == PatternAnnotationTool.PEN && state.pressureEnabled
             interaction.value =
                 state.copy(
                     draftStroke =
                         PatternStrokeDraft(
                             tool = state.activeTool,
-                            points = listOf(point),
+                            points = listOf(if (pressureEnabled) point else point.copy(pressure = 1f)),
                             argb = style.argb,
                             strokeWidth = style.strokeWidth,
-                            pressureEnabled = state.pressureEnabled,
+                            pressureEnabled = pressureEnabled,
                         ),
                     writeError = PatternAnnotationWriteError.NONE,
                 )
@@ -378,7 +383,8 @@ class PatternAnnotationViewModel
             interaction.update { state ->
                 val draft = state.draftStroke ?: return@update state
                 if (draft.points.size >= PatternAnnotationLimits.MAX_FREEHAND_POINTS) return@update state
-                state.copy(draftStroke = draft.copy(points = draft.points + point))
+                val draftPoint = if (draft.pressureEnabled) point else point.copy(pressure = 1f)
+                state.copy(draftStroke = draft.copy(points = draft.points + draftPoint))
             }
         }
 
@@ -386,7 +392,13 @@ class PatternAnnotationViewModel
             val interactionState = interaction.value
             val originalDraft = interactionState.draftStroke ?: return
             val layerId = uiState.value.editableLayerId ?: return
-            if (interactionState.isSaving) return
+            if (
+                uiState.value.loadError == PatternAnnotationLoadError.PAGE_LIMIT ||
+                savingStroke?.draft === originalDraft ||
+                pendingStrokes.any { it.draft === originalDraft }
+            ) {
+                return
+            }
             val lockedPoints =
                 if (originalDraft.tool == PatternAnnotationTool.HIGHLIGHTER) {
                     lockHighlighterPoints(originalDraft.points, interactionState.highlighterAxisLock)
@@ -401,8 +413,20 @@ class PatternAnnotationViewModel
                     page = currentPage.value,
                     zIndex = nextEditableZIndex(),
                 ) ?: return
-            executeCommand(PatternAnnotationCommand.Insert(annotation)) { state ->
-                state.copy(draftStroke = state.draftStroke.takeUnless { it == originalDraft })
+            if (!interactionState.isSaving) {
+                interaction.update { it.copy(writeError = PatternAnnotationWriteError.NONE) }
+            }
+            pendingStrokes.addLast(PendingAnnotationStroke(originalDraft, annotation, layers.value.editContext))
+            persistNextStroke()
+        }
+
+        private fun persistNextStroke() {
+            if (interaction.value.isSaving) return
+            val stroke = pendingStrokes.removeFirstOrNull() ?: return
+            savingStroke = stroke
+            interaction.update { it.copy(isSaving = true) }
+            persistCommand(PatternAnnotationCommand.Insert(stroke.annotation), stroke.context) { state ->
+                state.copy(draftStroke = state.draftStroke.takeUnless { it === stroke.draft })
             }
         }
 
@@ -708,6 +732,14 @@ class PatternAnnotationViewModel
             if (interaction.value.isSaving || uiState.value.loadError == PatternAnnotationLoadError.PAGE_LIMIT) return
             val commandContext = layers.value.editContext
             interaction.update { it.copy(isSaving = true, writeError = PatternAnnotationWriteError.NONE) }
+            persistCommand(command, commandContext, onSuccess)
+        }
+
+        private fun persistCommand(
+            command: PatternAnnotationCommand,
+            commandContext: AnnotationEditContext,
+            onSuccess: (PatternAnnotationInteractionState) -> PatternAnnotationInteractionState,
+        ) {
             viewModelScope.launch {
                 runCatching { command.apply(annotationRepository) }
                     .onSuccess { inverse ->
@@ -724,6 +756,7 @@ class PatternAnnotationViewModel
                         }
                     }.onFailure { failure ->
                         if (failure is CancellationException) {
+                            savingStroke = null
                             interaction.update { state -> state.copy(isSaving = false) }
                             throw failure
                         }
@@ -739,6 +772,8 @@ class PatternAnnotationViewModel
                             )
                         }
                     }
+                savingStroke = null
+                persistNextStroke()
             }
         }
 
@@ -772,6 +807,7 @@ class PatternAnnotationViewModel
                             )
                         }
                     }
+                persistNextStroke()
             }
         }
 
@@ -903,6 +939,12 @@ private data class AnnotationLayerSelection(
 private data class AnnotationEditContext(
     val owner: PatternAnnotationOwner,
     val editableLayerId: Long?,
+)
+
+private data class PendingAnnotationStroke(
+    val draft: PatternStrokeDraft,
+    val annotation: PatternAnnotation,
+    val context: AnnotationEditContext,
 )
 
 private data class PageAnnotations(

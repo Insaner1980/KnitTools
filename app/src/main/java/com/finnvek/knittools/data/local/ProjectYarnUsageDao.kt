@@ -52,8 +52,12 @@ interface ProjectYarnUsageDao {
     ): LinkSavedCardUsageResult {
         val rows = getForSource(projectId, cardId, noteId)
         if (rows.isEmpty()) return LinkSavedCardUsageResult.NoUsage
+        if (rows.any { it.projectYarnNoteId != null && it.projectYarnNoteId != noteId }) {
+            return LinkSavedCardUsageResult.Conflict
+        }
         if (rows.size == 1) {
-            check(update(rows.single().copy(yarnCardId = cardId, projectYarnNoteId = noteId)) == 1)
+            val row = rows.single()
+            check(update(row.copy(yarnCardId = cardId, projectYarnNoteId = noteId)) == 1)
             return LinkSavedCardUsageResult.Linked
         }
 

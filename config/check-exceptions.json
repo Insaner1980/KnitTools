@@ -723,7 +723,7 @@
       "id": "knittools-owasp-false-cpe-groups",
       "tool": "owasp-dependency-check",
       "rule": "false CPE and CVE mappings",
-      "scope": "10 exact package and version mappings in config/dependency-check-suppressions.xml",
+      "scope": "14 suppress blocks scoped to package and version mappings in config/dependency-check-suppressions.xml",
       "reason": "The registered Android and build libraries are not the unrelated products selected by heuristic CPE matching.",
       "owner": "project-maintainers",
       "added": "2026-07-28",

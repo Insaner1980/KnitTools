@@ -1,5 +1,6 @@
 package com.finnvek.knittools.data.backup
 
+import com.finnvek.knittools.data.local.KNITTOOLS_DATABASE_VERSION
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import java.io.File
@@ -123,7 +124,9 @@ internal object BackupArchive {
     internal fun validateManifest(manifest: BackupManifest) {
         BackupFormat.requireValid(manifest.format == "KnitTools", BackupError.INVALID)
         BackupFormat.requireValid(
-            manifest.formatVersion == 1 && manifest.dataVersion == 1 && manifest.schemaVersion == 25,
+            manifest.formatVersion == 1 &&
+                manifest.dataVersion == 1 &&
+                manifest.schemaVersion == KNITTOOLS_DATABASE_VERSION,
             BackupError.UNSUPPORTED,
         )
         BackupFormat.requireValid(

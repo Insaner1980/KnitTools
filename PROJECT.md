@@ -13,6 +13,8 @@ This file is the detailed implementation reference for the current KnitTools che
 
 This file describes the inspected working tree, not a deployed or certified release. The original documentation audit was static. The bounded 2026-09-30 follow-up verified six investigated concerns; the 2026-10-01 follow-up fixes its correction-related local failures and records verification below. Other sections retain the earlier source inventory; these follow-ups are not a new repository-wide audit. No device/emulator operation, scanner, external-service query, analysis upload or deployment was performed.
 
+The later 2026-10-01 Insights row-total follow-up corrects aggregate overflow and adds targeted JVM and debug-compilation evidence under [Evidence and historical verification](#evidence-and-historical-verification).
+
 ### Documentation snapshot
 
 | Item | Locally established value |
@@ -139,6 +141,8 @@ These are orientation counts, not coverage or pass results:
 Additional variants contain one Kotlin file in `app/src/debug`, two shared debug files in `app/src/debugShared/kotlin`, two in `app/src/release`, and one baseline-profile producer in `baselineprofile/src/main`. Helpers, fixtures and source-contract tests make file counts unsuitable as executed-test counts.
 
 ### Evidence and historical verification
+
+**Insights row-total correction, 2026-10-01:** `InsightsRowTotalsTest` reproduced the `Int` overflow in direct summaries, streaming aggregation, pace buckets and cross-project chart sums before correction (8 failures in 20 cases). Aggregates now use `Long`. All 179 targeted Insights/`MinutesPerRowFormatterTest` JVM tests passed, and `:app:compileDebugKotlin` passed with JDK 17 in offline mode. Coverage includes small counts, `Int.MAX_VALUE - 1`, `Int.MAX_VALUE`, `Int.MAX_VALUE + 1`, the 3,000,000,000-row sum, project filtering, UI state, pace, and number/plural-selector formatting. Session storage, Room schemas and dependencies are unchanged. Device/emulator rendering, release compilation, the full JVM suite, scanners and external services were not run for this fix.
 
 Current follow-up evidence is separated below from historical results. JVM execution, Gradle task outcomes, instrumentation compilation and source inspection establish different claims; assembling a test APK does not execute its tests. Generated reports from before this follow-up are not treated as current passes.
 
@@ -1458,6 +1462,8 @@ Metrics include:
 
 Session-zone day splitting is mandatory. A session crossing midnight is apportioned to local dates in its recorded zone rather than assigned wholesale by the current device zone.
 
+Aggregate rows use `Long` through `SessionMetrics.summarize`, the `SessionMetricSummary.plus` fold, project totals, pace/chart buckets, `InsightsUiState`, and minutes-per-row calculation. Individual session rows and their proportional contributions retain the existing `Int` storage contract. Display formatting receives the full `Long`; only Android plural selection uses an `Int` representative that preserves the supported locales' count endings and million multiples. The former overflow was reproduced by JVM tests: two valid 1,500,000,000-row sessions produced -1,294,967,296 instead of 3,000,000,000. The corrected path preserves the exact sum without saturation; see [Evidence and historical verification](#evidence-and-historical-verification).
+
 ### Pro shaping
 
 Basic metrics remain available without Pro. For a non-Pro state:
@@ -1928,6 +1934,7 @@ Questions:
 - Do range metrics and streak use the same captured current date and zone, including a calculation that crosses local midnight?
 - Are Pro data-shaping and measured-data flags distinct?
 - Are chart bucket and selected-project rules preserved?
+- Do row aggregates remain `Long` through overall/project/pace sums, chart and UI models, pace calculation, and displayed numbers, including around `Int.MAX_VALUE`? Are the native writer ceiling, backup ceiling, and older over-limit readability kept distinct?
 
 Proof: zone-aware unit cases, ViewModel aggregation tests, geometry tests, and device rendering for gestures.
 

@@ -83,7 +83,7 @@ class InsightsChartSelectionTest {
                 InsightsChartBucket(
                     bucketStart = LocalDate.of(2026, 7, 1).plusDays(index.toLong()),
                     totalMinutes = 10 * (index + 1),
-                    totalRows = index + 1,
+                    totalRows = index + 1L,
                 )
             }
     }

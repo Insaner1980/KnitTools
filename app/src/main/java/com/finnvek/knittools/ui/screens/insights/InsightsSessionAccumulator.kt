@@ -147,7 +147,7 @@ internal class SessionPaceAccumulator(
             project[date] =
                 PaceBucketMetric(
                     (old?.totalSeconds ?: 0L) + metric.totalSeconds,
-                    (old?.totalRows ?: 0) + metric.totalRows,
+                    (old?.totalRows ?: 0L) + metric.totalRows,
                     0f,
                 )
         }

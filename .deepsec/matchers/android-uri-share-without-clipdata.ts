@@ -16,8 +16,16 @@ export const androidUriShareWithoutClipData: MatcherPlugin = {
     return actionMatches.flatMap((actionMatch, matchIndex) => {
       const index = actionMatch.index ?? 0;
       const nextIndex = actionMatches[matchIndex + 1]?.index ?? content.length;
-      const nextFunction = /\bfun\s+/.exec(code.slice(index));
-      const endIndex = Math.min(nextIndex, nextFunction ? index + nextFunction.index : content.length);
+      let depth = 0;
+      let endIndex = nextIndex;
+      for (const token of code.slice(index, nextIndex).matchAll(/[{}]|\bfun\s+/g)) {
+        if (token[0] === "{") depth++;
+        else if (token[0] === "}") depth--;
+        else if (depth <= 0) {
+          endIndex = index + token.index;
+          break;
+        }
+      }
       const shareBlock = content.slice(index, endIndex);
       if (!shareBlock.includes("Intent.EXTRA_STREAM")) return [];
 

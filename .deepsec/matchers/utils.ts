@@ -69,7 +69,7 @@ export function kotlinClassHeaderCode(content: string): string {
       if (parentheses > 0 && char !== "\r" && char !== "\n") characters[index] = " ";
       if (char === ")") parentheses--;
       if (parentheses === 0 && char === "<") generics++;
-      if (parentheses === 0 && char === ">") generics--;
+      if (parentheses === 0 && char === ">" && code[index - 1] !== "-") generics--;
     }
   }
   return characters.join("");

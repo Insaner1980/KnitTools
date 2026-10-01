@@ -50,6 +50,15 @@ for (const [base, label] of [
         .map((match) => match.lineNumbers), [[2]]);
     }
   });
+  test(`function type bounds preserve the ${base} entry point`, () => {
+    const content = `class Helper {}\nabstract class Entry<T : () -> Unit> : ${base}()`;
+    assert.deepEqual(androidKotlinEntrypointSurface.match(content, productionPath)
+      .map((match) => [match.matchedPattern, match.lineNumbers]), [[label, [2]]]);
+    if (base === "BroadcastReceiver") {
+      assert.deepEqual(widgetMutationSurface.match(content, productionPath)
+        .map((match) => match.lineNumbers), [[2]]);
+    }
+  });
 }
 
 test("widget receiver matching cannot start in a previous class", () => {
@@ -66,6 +75,32 @@ test("constructor defaults still expose WorkManager scheduling", () => {
 });
 
 for (const action of ["ACTION_SEND", "ACTION_SEND_MULTIPLE"]) {
+  test(`${action} keeps nested local functions inside the share boundary`, () => {
+    for (const grants of ["", "addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)",
+      'addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION); clipData = ClipData.newRawUri("PDF", uri)']) {
+      const content = `fun share(uri: Uri) = Intent(Intent.${action}).apply {
+  fun title(): String {
+    fun label() = "Pattern"
+    return label()
+  }
+  putExtra(Intent.EXTRA_TITLE, title())
+  putExtra(Intent.EXTRA_STREAM, uri)
+  ${grants}
+}
+private fun later() {
+  addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+  clipData = ClipData.newRawUri("synthetic", uri)
+}`;
+      const matches = androidUriShareWithoutClipData.match(content, productionPath);
+      assert.deepEqual(matches.map((match) => match.lineNumbers),
+        grants.includes("clipData") ? [] : [[1]]);
+      if (matches.length > 0) {
+        assert.equal(matches[0].matchedPattern, grants.includes("FLAG_GRANT")
+          ? "EXTRA_STREAM content URI share without ClipData"
+          : "EXTRA_STREAM content URI share without FLAG_GRANT_READ_URI_PERMISSION");
+      }
+    }
+  });
   test(`${action} ignores fun inside strings and comments at the function boundary`, () => {
     const content = `fun share(uri: Uri) = Intent(Intent.${action}).apply {
   putExtra(Intent.EXTRA_TITLE, "A fun pattern")

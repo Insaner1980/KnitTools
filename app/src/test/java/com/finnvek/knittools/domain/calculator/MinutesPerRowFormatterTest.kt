@@ -5,6 +5,14 @@ import org.junit.Test
 
 class MinutesPerRowFormatterTest {
     @Test
+    fun `pace uses row totals above the int limit without clamping`() {
+        assertEquals(
+            MinutesPerRowDisplay.Minutes(2),
+            MinutesPerRowFormatter.fromSeconds(totalSeconds = 360_000_000_000L, totalRows = 3_000_000_000L),
+        )
+    }
+
+    @Test
     fun `no rows means no division at all`() {
         assertEquals(
             MinutesPerRowDisplay.Unavailable,

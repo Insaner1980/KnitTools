@@ -68,7 +68,7 @@ data class ProjectTime(
     val projectId: Long,
     val projectName: String?,
     val totalMinutes: Int,
-    val totalRows: Int,
+    val totalRows: Long,
     val lastSessionAt: Long,
 )
 
@@ -96,7 +96,7 @@ internal data class InsightsUiState(
     val isLoading: Boolean = true,
     val totalDuration: DurationDisplay = DurationDisplayFormatter.fromMinutes(0),
     val totalMinutes: Int = 0,
-    val totalRows: Int = 0,
+    val totalRows: Long = 0L,
     val minutesPerRow: MinutesPerRowDisplay = MinutesPerRowDisplay.Unavailable,
     val activeDays: Int = 0,
     val daysInRange: Int = 0,

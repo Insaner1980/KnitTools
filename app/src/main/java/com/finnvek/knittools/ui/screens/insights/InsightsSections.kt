@@ -231,7 +231,7 @@ internal fun InsightsStatsRow(state: InsightsUiState) {
     ) {
         if (showsRows) {
             InsightsStat(
-                value = formatIntegerForDisplay(state.totalRows.toLong(), locale),
+                value = formatIntegerForDisplay(state.totalRows, locale),
                 label = stringResource(R.string.insights_stat_rows),
             )
         }
@@ -437,7 +437,7 @@ internal fun InsightsProjectRow(
                         R.string.insights_project_sub_format,
                         pluralStringResource(
                             R.plurals.insights_rows_count,
-                            project.totalRows,
+                            insightsRowPluralQuantity(project.totalRows),
                             project.totalRows,
                         ),
                         relativeDayText(project.lastSessionAt, today),

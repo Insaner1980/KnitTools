@@ -10,7 +10,7 @@ import kotlin.math.roundToLong
 
 internal data class SessionMetricSummary(
     val totalSeconds: Long,
-    val totalRows: Int,
+    val totalRows: Long,
     val sessionCount: Int,
 ) {
     val totalMinutes: Int
@@ -27,7 +27,7 @@ internal data class SessionMetricSummary(
 
 internal data class PaceBucketMetric(
     val totalSeconds: Long,
-    val totalRows: Int,
+    val totalRows: Long,
     val rowsPerHour: Float,
 )
 
@@ -38,7 +38,7 @@ internal object SessionMetrics {
         zone: ZoneId,
     ): SessionMetricSummary {
         var totalSeconds = 0L
-        var totalRows = 0
+        var totalRows = 0L
         var sessionCount = 0
 
         sessions.forEach { session ->
@@ -293,7 +293,7 @@ private data class MutablePaceBucket(
     var seconds: Double = 0.0,
     var rows: Double = 0.0,
     var totalSeconds: Long = 0L,
-    var totalRows: Int = 0,
+    var totalRows: Long = 0L,
 )
 
 private fun KnitSession.activeDurationSeconds(): Long =

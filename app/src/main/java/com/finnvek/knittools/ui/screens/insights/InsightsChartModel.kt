@@ -30,7 +30,7 @@ data class InsightsChartSegment(
 data class InsightsChartBucket(
     val bucketStart: LocalDate,
     val totalMinutes: Int,
-    val totalRows: Int,
+    val totalRows: Long,
     val segments: List<InsightsChartSegment> = emptyList(),
 )
 

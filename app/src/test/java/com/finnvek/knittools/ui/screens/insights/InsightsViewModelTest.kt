@@ -361,7 +361,7 @@ class InsightsViewModelTest {
 
         assertEquals(listOf(yesterday, today), buckets.map { it.bucketStart })
         assertEquals(listOf(20, 30), buckets.map { it.totalMinutes })
-        assertEquals(listOf(10, 24), buckets.map { it.totalRows })
+        assertEquals(listOf(10L, 24L), buckets.map { it.totalRows })
     }
 
     @Test
@@ -484,7 +484,7 @@ class InsightsViewModelTest {
         assertEquals(LocalDate.of(2026, 1, 1), buckets.first().bucketStart)
         assertEquals(LocalDate.of(2026, 9, 1), buckets.last().bucketStart)
         // Molemmilla istunnoilla on 30 minuuttia; rivit erottavat ne toisistaan.
-        assertEquals(listOf(10, 20), buckets.filter { it.totalRows > 0 }.map { it.totalRows })
+        assertEquals(listOf(10L, 20L), buckets.filter { it.totalRows > 0 }.map { it.totalRows })
     }
 
     @Test

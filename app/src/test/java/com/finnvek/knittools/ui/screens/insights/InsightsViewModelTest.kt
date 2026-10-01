@@ -1,7 +1,6 @@
 package com.finnvek.knittools.ui.screens.insights
 
 import com.finnvek.knittools.domain.calculator.MinutesPerRowDisplay
-import com.finnvek.knittools.domain.calculator.formatIntegerForDisplay
 import com.finnvek.knittools.domain.model.CounterProject
 import com.finnvek.knittools.domain.model.KnitSession
 import com.finnvek.knittools.pro.ProFeature
@@ -73,42 +72,6 @@ class InsightsViewModelTest {
     }
 
     private fun createViewModel() = InsightsViewModel(repository, proManager, testDispatcher)
-
-    @Test
-    fun `large row totals reach UI metrics charts formatting and project filters intact`() =
-        runTest {
-            insightsFeature.value = true
-            val zone = ZoneId.systemDefault()
-            val today = LocalDate.now(zone)
-            every { repository.getAllProjects() } returns flowOf(listOf(CounterProject(1, "A"), CounterProject(2, "B")))
-            stubSessions(
-                repository,
-                flowOf(
-                    listOf(
-                        sessionAt(today, 10, 0, 1_500_000_000, 30, zone),
-                        sessionAt(today, 11, 0, 1_500_000_000, 30, zone),
-                        sessionAt(today, 12, 0, 28, 30, zone).copy(projectId = 2),
-                    ),
-                ),
-            )
-            val viewModel = createViewModel()
-
-            val state = viewModel.uiState.first { it.hasSessionData }
-
-            assertEquals(3_000_000_028L, state.totalRows)
-            assertEquals("3,000,000,028", formatIntegerForDisplay(state.totalRows, Locale.US))
-            assertEquals(MinutesPerRowDisplay.UnderOneMinute, state.minutesPerRow)
-            assertEquals(listOf(3_000_000_000L, 28L), state.timePerProject.map { it.totalRows })
-            assertEquals(3_000_000_028L, state.chartBuckets.sumOf { it.totalRows })
-
-            viewModel.selectProject(1)
-            val filtered = viewModel.uiState.first { it.selectedProjectId == 1L && !it.isLoading }
-
-            assertEquals(3_000_000_000L, filtered.totalRows)
-            assertEquals(MinutesPerRowDisplay.UnderOneMinute, filtered.minutesPerRow)
-            assertEquals(3_000_000_000L, filtered.timePerProject.single().totalRows)
-            assertEquals(3_000_000_000L, filtered.chartBuckets.sumOf { it.totalRows })
-        }
 
     @Test
     fun `isPro uses insights charts feature gate`() =

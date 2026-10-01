@@ -54,7 +54,14 @@ class InsightsRowTotalsTest(
         assertEquals(expectedRows, accumulator.summary.totalRows)
         assertEquals(expectedRows, accumulator.timePerProject(listOf(CounterProject(1, "A"))).single().totalRows)
         val pace = accumulator.chart(PaceGroupingInterval.DAY).values
-        assertEquals(expectedRows, pace.getValue(1).values.single().totalRows)
+        assertEquals(
+            expectedRows,
+            pace
+                .getValue(1)
+                .values
+                .single()
+                .totalRows,
+        )
         val chart = InsightsViewModel.chartBucketsFromMetrics(pace, listOf(1))
         assertEquals(expectedRows, chart.getValue(date).totalRows)
     }
@@ -70,19 +77,21 @@ class InsightsRowTotalsTest(
         assertEquals(expectedRows, chart.getValue(date).totalRows)
     }
 
-    private fun session(id: Long, rows: Int) =
-        KnitSession(
-            id = id,
-            projectId = 1,
-            startedAt = start + (id - 1) * 1_800_000L,
-            endedAt = start + id * 1_800_000L,
-            startRow = 0,
-            endRow = rows,
-            durationMinutes = 30,
-            durationSeconds = 1_800,
-            rowsWorked = rows,
-            zoneId = zone.id,
-        )
+    private fun session(
+        id: Long,
+        rows: Int,
+    ) = KnitSession(
+        id = id,
+        projectId = 1,
+        startedAt = start + (id - 1) * 1_800_000L,
+        endedAt = start + id * 1_800_000L,
+        startRow = 0,
+        endRow = rows,
+        durationMinutes = 30,
+        durationSeconds = 1_800,
+        rowsWorked = rows,
+        zoneId = zone.id,
+    )
 
     companion object {
         @JvmStatic

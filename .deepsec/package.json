@@ -14,7 +14,7 @@
     "test:accepted-risks": "node --test scripts/mark-accepted-risks.test.mjs"
   },
   "dependencies": {
-    "deepsec": "2.3.9"
+    "deepsec": "2.3.10"
   },
   "devDependencies": {
     "@types/node": "^26.6.2",
